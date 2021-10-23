@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "mahjongcraft",
+  "version": "${version}",
+  "name": "MahjongCraft",
+  "description": "Play Japanese(Riichi) Mahjong with your friends. 斷么九了解一下?",
+  "authors": [
+    "doublemoon1119"
+  ],
+  "contact": {
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/mahjongcraft",
+    "sources": "https://github.com/DoubleMoon1119/MahjongCraft",
+    "issues": "https://github.com/DoubleMoon1119/MahjongCraft/issues"
+  },
+  "license": "MIT",
+  "icon": "assets/mahjongcraft/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "doublemoon.mahjongcraft.MahjongCraft"
+      }
+    ],
+    "client": [
+      {
+        "adapter": "kotlin",
+        "value": "doublemoon.mahjongcraft.MahjongCraftClient"
+      }
+    ],
+    "modmenu": [
+      "doublemoon.mahjongcraft.client.ModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    "mahjongcraft.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.11.3",
+    "fabric": "*",
+    "minecraft": "1.16.x",
+    "fabric-language-kotlin": ">=1.6.1+kotlin.1.5.10",
+    "cloth-config2": "~4.11.0"
+  }
+}

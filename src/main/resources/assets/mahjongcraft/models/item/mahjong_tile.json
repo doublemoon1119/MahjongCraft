@@ -1,0 +1,49 @@
+{
+	"parent": "mahjongcraft:item/mahjong_tile_base",
+	"overrides": [
+		{"predicate": {"code": 0},  "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_m1"},
+		{"predicate": {"code": 1},  "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_m2"},
+		{"predicate": {"code": 2},  "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_m3"},
+		{"predicate": {"code": 3},  "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_m4"},
+		{"predicate": {"code": 4},  "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_m5"},
+		{"predicate": {"code": 5},  "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_m6"},
+		{"predicate": {"code": 6},  "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_m7"},
+		{"predicate": {"code": 7},  "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_m8"},
+		{"predicate": {"code": 8},  "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_m9"},
+		
+		{"predicate": {"code": 9},  "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_p1"},
+		{"predicate": {"code": 10}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_p2"},
+		{"predicate": {"code": 11}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_p3"},
+		{"predicate": {"code": 12}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_p4"},
+		{"predicate": {"code": 13}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_p5"},
+		{"predicate": {"code": 14}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_p6"},
+		{"predicate": {"code": 15}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_p7"},
+		{"predicate": {"code": 16}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_p8"},
+		{"predicate": {"code": 17}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_p9"},
+		
+		{"predicate": {"code": 18}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_s1"},
+		{"predicate": {"code": 19}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_s2"},
+		{"predicate": {"code": 20}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_s3"},
+		{"predicate": {"code": 21}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_s4"},
+		{"predicate": {"code": 22}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_s5"},
+		{"predicate": {"code": 23}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_s6"},
+		{"predicate": {"code": 24}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_s7"},
+		{"predicate": {"code": 25}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_s8"},
+		{"predicate": {"code": 26}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_s9"},
+		
+		{"predicate": {"code": 27}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_east"},	
+		{"predicate": {"code": 28}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_south"},
+		{"predicate": {"code": 29}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_west"},
+		{"predicate": {"code": 30}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_north"},
+	
+		{"predicate": {"code": 31}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_white_dragon"},
+		{"predicate": {"code": 32}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_green_dragon"},
+		{"predicate": {"code": 33}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_red_dragon"},
+	
+		{"predicate": {"code": 34}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_m5_red"},
+		{"predicate": {"code": 35}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_p5_red"},
+		{"predicate": {"code": 36}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_s5_red"},
+		
+		{"predicate": {"code": 37}, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_unknown"}
+	]
+}

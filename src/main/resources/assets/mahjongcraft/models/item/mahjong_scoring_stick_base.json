@@ -1,0 +1,59 @@
+{
+	"credit": "Made with Blockbench",
+	"textures": {
+		"0": "mahjongcraft:item/mahjong_scoring_stick/base",
+		"1": "mahjongcraft:item/mahjong_scoring_stick/100",
+		"particle": "mahjongcraft:item/mahjong_scoring_stick/base"
+	},
+	"elements": [
+		{
+			"name": "body",
+			"from": [0, 0, 6.75],
+			"to": [16, 0.5, 9.25],
+			"faces": {
+				"north": {"uv": [0, 6, 16, 7], "texture": "#0"},
+				"east": {"uv": [0, 8, 3, 9], "texture": "#0"},
+				"south": {"uv": [0, 7, 16, 8], "texture": "#0"},
+				"west": {"uv": [3, 8, 6, 9], "texture": "#0"},
+				"up": {"uv": [16, 16, 0, 0], "texture": "#1", "cullface": "up"},
+				"down": {"uv": [16, 3, 0, 6], "texture": "#0"}
+			}
+		}
+	],
+	"display": {
+		"thirdperson_righthand": {
+			"rotation": [90, 90, 0],
+			"translation": [0, 1.75, 3.25],
+			"scale": [0.4, 0.4, 0.4]
+		},
+		"thirdperson_lefthand": {
+			"rotation": [90, 90, 0],
+			"translation": [0, 1.75, 3.25],
+			"scale": [0.4, 0.4, 0.4]
+		},
+		"firstperson_righthand": {
+			"rotation": [90, 90, 0],
+			"translation": [0, 1.75, 3.25],
+			"scale": [0.4, 0.4, 0.4]
+		},
+		"firstperson_lefthand": {
+			"rotation": [90, 90, 0],
+			"translation": [0, 1.75, 3.25],
+			"scale": [0.4, 0.4, 0.4]
+		},
+		"ground": {
+			"translation": [0, 4, 0],
+			"scale": [0.4, 0.4, 0.4]
+		},
+		"gui": {
+			"rotation": [-90, -45, -180]
+		},
+		"head": {
+			"scale": [0.4, 0.4, 0.4]
+		},
+		"fixed": {
+			"rotation": [-90, 0, 0],
+			"translation": [0, 0, -8]
+		}
+	}
+}

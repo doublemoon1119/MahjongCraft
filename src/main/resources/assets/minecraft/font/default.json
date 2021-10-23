@@ -1,0 +1,308 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_east.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC00"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_south.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC01"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_west.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC02"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_north.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC03"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_red_dragon.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC04"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_green_dragon.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC05"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_white_dragon.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC06"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_m1.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC07"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_m2.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC08"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_m3.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC09"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_m4.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC0A"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_m5.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC0B"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_m6.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC0C"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_m7.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC0D"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_m8.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC0E"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_m9.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC0F"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_s1.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC10"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_s2.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC11"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_s3.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC12"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_s4.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC13"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_s5.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC14"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_s6.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC15"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_s7.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC16"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_s8.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC17"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_s9.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC18"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_p1.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC19"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_p2.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC1A"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_p3.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC1B"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_p4.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC1C"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_p5.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC1D"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_p6.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC1E"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_p7.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC1F"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_p8.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC20"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_p9.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC21"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_back.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC2B"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_m5_red.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC2C"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_s5_red.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC2D"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "mahjongcraft:item/mahjong_tile/mahjong_tile_p5_red.png",
+      "ascent": 8,
+      "chars": [
+        "\uD83C\uDC2E"
+      ]
+    }
+  ]
+}
