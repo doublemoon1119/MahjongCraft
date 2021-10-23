@@ -9,8 +9,8 @@
   ],
   "contact": {
     "homepage": "https://www.curseforge.com/minecraft/mc-mods/mahjongcraft",
-    "sources": "https://github.com/DoubleMoon1119/MahjongCraft",
-    "issues": "https://github.com/DoubleMoon1119/MahjongCraft/issues"
+    "sources": "https://github.com/doublemoon1119/MahjongCraft",
+    "issues": "https://github.com/doublemoon1119/MahjongCraft/issues"
   },
   "license": "MIT",
   "icon": "assets/mahjongcraft/icon.png",
