@@ -43,7 +43,7 @@ class MahjongTileEntityRenderer(
         with(matrices) {
             push()
             multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(-entity.yaw + 180))
-            multiply(entity.facing.xpRotDegrees)
+            multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(entity.facing.angleForDegreesQuaternionFromPositiveX))
             var offsetY = 0.0
             var offsetZ = 0.0
             when (entity.facing) {  //偏移材質用

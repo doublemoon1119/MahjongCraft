@@ -296,14 +296,14 @@ class MahjongTileEntity(
 /**
  * 麻將牌面向的方向, 會牽涉到 HitBox, 以及實體的渲染
  *
- * @param xpRotDegrees 渲染時選轉的角度
+ * @param angleForDegreesQuaternionFromPositiveX 渲染時選轉的角度
  * */
 enum class TileFacing(
-    val xpRotDegrees: Quaternion
+    val angleForDegreesQuaternionFromPositiveX: Float
 ) {
-    HORIZONTAL(Vec3f.POSITIVE_X.getDegreesQuaternion(0f)),
-    UP(Vec3f.POSITIVE_X.getDegreesQuaternion(90f)),
-    DOWN(Vec3f.POSITIVE_X.getDegreesQuaternion(-90f));
+    HORIZONTAL(0f),
+    UP(90f),
+    DOWN(-90f);
 
     val next: TileFacing
         get() = values()[(this.ordinal + 1) % values().size]
