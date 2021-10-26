@@ -829,7 +829,12 @@ class MahjongGame(
                         + "\n§6Score:"
             )
             players.sortedByDescending { player -> player.points }.forEachIndexed { index, mjPlayer ->
-                it.sendMessage(LiteralText("§7 - §e${index + 1}. §b${mjPlayer.displayName}  §c${mjPlayer.points}"))
+                val displayNameText = if (mjPlayer.isRealPlayer) {
+                    LiteralText(mjPlayer.displayName)
+                } else {
+                    TranslatableText("entity.$MOD_ID.mahjong_bot")
+                }.formatted(Formatting.AQUA)
+                it.sendMessage(LiteralText("§7 - §e${index + 1}. ") + displayNameText + "  §c${mjPlayer.points}")
             }
             it.sendMessage(LiteralText("§2------------------------------------------"))
         }
@@ -1039,7 +1044,8 @@ class MahjongGame(
             )
             yakuSettlementList += settlement
             //對分數做加減的動作
-            val riichiStickPoints = if (it.riichi || it.doubleRiichi) ScoringStick.P1000.point else 0 //這個玩家這輪有沒有立直,有->還要減去立直棒的點數
+            val riichiStickPoints =
+                if (it.riichi || it.doubleRiichi) ScoringStick.P1000.point else 0 //這個玩家這輪有沒有立直,有->還要減去立直棒的點數
             val basicScore = (settlement.score * if (isDealer) 1.5 else 1.0).toInt() //如果是莊家有 1.5 倍的分數
             val score = basicScore - riichiStickPoints + if (isAtamahanePlayer) extraScore else 0 //頭跳玩家會拿走所有積棒
             scoreList += ScoreItem(
@@ -1051,7 +1057,8 @@ class MahjongGame(
             totalScore += basicScore //總分除去已經計算的場棒分數, 只會累計基本分數
         }
         target.also { //被榮和的玩家
-            val riichiStickPoints = if (it.riichi || it.doubleRiichi) ScoringStick.P1000.point else 0 //這個玩家這輪有沒有立直,有->還要減去立直棒的點數
+            val riichiStickPoints =
+                if (it.riichi || it.doubleRiichi) ScoringStick.P1000.point else 0 //這個玩家這輪有沒有立直,有->還要減去立直棒的點數
             scoreList += ScoreItem(
                 mahjongPlayer = it,
                 scoreOrigin = it.points,
@@ -1061,7 +1068,8 @@ class MahjongGame(
         }
         val remainingPlayers = players.toMutableList().also { it -= this; it -= target } //除了 榮和 和 被榮和 以外的玩家
         remainingPlayers.forEach {
-            val riichiStickPoints = if (it.riichi || it.doubleRiichi) ScoringStick.P1000.point else 0 //這個玩家這輪有沒有立直,有->還要減去立直棒的點數
+            val riichiStickPoints =
+                if (it.riichi || it.doubleRiichi) ScoringStick.P1000.point else 0 //這個玩家這輪有沒有立直,有->還要減去立直棒的點數
             scoreList += ScoreItem(mahjongPlayer = it, scoreOrigin = it.points, scoreChange = -riichiStickPoints)
             it.points -= riichiStickPoints
         }
@@ -1107,7 +1115,8 @@ class MahjongGame(
         this.points += score
         //以下對其他玩家做計算
         players.filter { it != this }.forEach {
-            val riichiStickPoints = if (it.riichi || it.doubleRiichi) ScoringStick.P1000.point else 0 //這個玩家這輪有沒有立直,有->還要減去立直棒的點數
+            val riichiStickPoints =
+                if (it.riichi || it.doubleRiichi) ScoringStick.P1000.point else 0 //這個玩家這輪有沒有立直,有->還要減去立直棒的點數
             if (tsumoPlayerIsDealer) { //自摸的那個玩家是否是莊家->分數平分
                 val averageScore = (basicScore + honbaScore) / 3 //場棒的分數也要分擔
                 val itsScore = averageScore + riichiStickPoints

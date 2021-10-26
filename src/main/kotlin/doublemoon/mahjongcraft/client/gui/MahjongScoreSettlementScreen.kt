@@ -121,10 +121,12 @@ class MahjongScoreSettlementGui(
                     code = botCode
                 )
             }
+            val displayNameText =
+                if (isRealPlayer) LiteralText(displayName) else TranslatableText("entity.$MOD_ID.mahjong_bot")
             val displayNameLabel = label(
                 x = face.x + face.width + 8,
                 y = face.y,
-                text = LiteralText(displayName),
+                text = displayNameText,
                 width = maxDisplayNameLabelWidth,
                 verticalAlignment = VerticalAlignment.CENTER
             )
