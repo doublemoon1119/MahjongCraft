@@ -464,7 +464,7 @@ class MahjongTableGui(
             }
             if (number != 0) {
                 numberAndReady.text = if (entityName.isNotEmpty()) {
-                    playerNum + " (" + (if (ready) ttReady else ttNotReady) + ")"
+                    LiteralText("") + playerNum + " (" + (if (ready) ttReady else ttNotReady) + ")"
                 } else {
                     playerNum
                 }
