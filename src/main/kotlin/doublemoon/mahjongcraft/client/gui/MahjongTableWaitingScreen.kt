@@ -308,7 +308,7 @@ class MahjongTableGui(
                 if (buttonReadyOrNot == null) {
                     buttonReadyOrNot = WButton()
                     (rootPanel as WPlainPanel).add(
-                        buttonStart,
+                        buttonReadyOrNot,
                         buttonJoinOrLeave.x,
                         buttonJoinOrLeave.y - BUTTON_HEIGHT - BUTTON_PADDING,
                         BUTTON_WIDTH,
