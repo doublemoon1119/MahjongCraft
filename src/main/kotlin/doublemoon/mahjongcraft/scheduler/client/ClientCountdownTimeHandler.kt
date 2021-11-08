@@ -22,25 +22,8 @@ object ClientCountdownTimeHandler {
             if (value.first != null && value.second != null) {  //有新的值出現
                 displayTime(timeBase = value.first!!, timeExtra = value.second!!)
             } else {  //兩個都為 null, 清除倒數計時, 關閉所有該關的處理程序
-                when {
-                    OptionalBehaviorHandler.waiting -> OptionalBehaviorHandler.cancel()
-                }
-                with(client.inGameHud) {
-                    setTitles(
-                        LiteralText(" "),
-                        null,
-                        titleFadeInTime,
-                        titleRemainTime,
-                        titleFadeOutTime
-                    )
-                    setTitles( //副標題
-                        null,
-                        LiteralText(" "),
-                        titleFadeInTime,
-                        titleRemainTime,
-                        titleFadeOutTime
-                    )
-                }
+                if (OptionalBehaviorHandler.waiting) OptionalBehaviorHandler.cancel()
+                client.inGameHud.clearTitle()
             }
             field = value
         }
@@ -56,20 +39,8 @@ object ClientCountdownTimeHandler {
         val text = LiteralText("$textBase$textPlus$textExtra")
         //TODO 改位置顯示時間
         with(client.inGameHud) {
-            setTitles(  //標題, 天才般的設計,要分開發送才能使用
-                LiteralText(" "),
-                null,
-                titleFadeInTime,
-                titleRemainTime,
-                titleFadeOutTime
-            )
-            setTitles( //副標題
-                null,
-                text,
-                titleFadeInTime,
-                titleRemainTime,
-                titleFadeOutTime
-            )
+            setSubtitle(text)
+            setTitleTicks(titleFadeInTime, titleRemainTime, titleFadeOutTime)
         }
     }
 }

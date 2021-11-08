@@ -41,7 +41,7 @@ class MahjongScoringStickEntity(
                 val item = ItemRegistry.mahjongScoringStick.defaultStack.also { it.damage = code }
                 player.giveItemStack(item)
                 playSound(SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1f)
-                remove()
+                remove(RemovalReason.DISCARDED)
             }
         }
         return ActionResult.SUCCESS

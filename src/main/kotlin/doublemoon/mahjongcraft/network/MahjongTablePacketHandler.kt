@@ -93,14 +93,14 @@ object MahjongTablePacketHandler : CustomPacketHandler {
                     ClientScheduler.scheduleDelayAction {
                         val mahjongTableBlockEntity =
                             world.getBlockEntity(pos) as MahjongTableBlockEntity? ?: return@scheduleDelayAction
-                        client.openScreen(MahjongTableWaitingScreen(mahjongTable = mahjongTableBlockEntity))
+                        client.setScreen(MahjongTableWaitingScreen(mahjongTable = mahjongTableBlockEntity))
                     }
                 }
                 MahjongTableBehavior.OPEN_RULES_EDITOR_GUI -> {  //開啟規則編輯器 GUI
                     ClientScheduler.scheduleDelayAction {
                         val mahjongTableBlockEntity =
                             world.getBlockEntity(pos) as MahjongTableBlockEntity? ?: return@scheduleDelayAction
-                        client.openScreen(MahjongRuleEditorScreen(mahjongTable = mahjongTableBlockEntity))
+                        client.setScreen(MahjongRuleEditorScreen(mahjongTable = mahjongTableBlockEntity))
                     }
                 }
                 else -> {

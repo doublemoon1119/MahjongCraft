@@ -1,11 +1,8 @@
 package doublemoon.mahjongcraft.game
 
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
-import net.minecraft.entity.Entity
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
-import java.util.*
 
 object GameManager {
 
@@ -13,16 +10,6 @@ object GameManager {
      * 根據 [BlockPos] 方塊的位置, 儲存各種遊戲
      * */
     val games = mutableListOf<GameBase<*>>()
-
-    /**
-     * 從所有遊戲中尋找與 [uuid] 相符的 [Entity]
-     * */
-    fun getMahjongTileEntityBy(uuid: UUID): Entity? {
-        games.filterIsInstance<MahjongGame>().forEach { game ->
-            game.getMahjongTileEntityBy(uuid)?.also { return it }
-        }
-        return null
-    }
 
     /**
      * 判斷 [player] 是否在任意遊戲中

@@ -32,7 +32,7 @@ class MahjongBot(
 
     override fun teleport(targetWorld: ServerWorld, x: Double, y: Double, z: Double, yaw: Float, pitch: Float) {
         with(entity) {
-            if (this.world != targetWorld) setWorld(targetWorld)
+            if (this.world != targetWorld) this.world = targetWorld
             this.yaw = yaw
             this.pitch = pitch
             requestTeleport(x, y, z)

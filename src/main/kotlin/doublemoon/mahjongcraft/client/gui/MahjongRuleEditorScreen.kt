@@ -228,7 +228,7 @@ class MahjongRuleEditorGui(
     }
 
     private fun back() {
-        client.openScreen(MahjongTableWaitingScreen(mahjongTable = mahjongTable))
+        client.setScreen(MahjongTableWaitingScreen(mahjongTable = mahjongTable))
     }
 
     companion object {

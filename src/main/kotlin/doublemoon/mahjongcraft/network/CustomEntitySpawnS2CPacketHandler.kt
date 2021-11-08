@@ -20,7 +20,7 @@ object CustomEntitySpawnS2CPacketHandler : CustomPacketHandler {
 
     private data class CustomEntitySpawnS2CPacket(
         val entityType: EntityType<*>,
-        val entityId: Int,
+        val id: Int,
         val uuid: UUID,
         val x: Double,
         val y: Double,
@@ -37,7 +37,7 @@ object CustomEntitySpawnS2CPacketHandler : CustomPacketHandler {
 
         constructor(entity: Entity) : this(
             entityType = entity.type,
-            entityId = entity.entityId,
+            id = entity.id,
             uuid = entity.uuid,
             x = entity.x,
             y = entity.y,
@@ -52,7 +52,7 @@ object CustomEntitySpawnS2CPacketHandler : CustomPacketHandler {
 
         constructor(byteBuf: PacketByteBuf) : this(
             entityType = Registry.ENTITY_TYPE.get(byteBuf.readVarInt()),
-            entityId = byteBuf.readInt(),
+            id = byteBuf.readInt(),
             uuid = byteBuf.readUuid(),
             x = byteBuf.readDouble(),
             y = byteBuf.readDouble(),
@@ -68,7 +68,7 @@ object CustomEntitySpawnS2CPacketHandler : CustomPacketHandler {
         override fun writeByteBuf(byteBuf: PacketByteBuf) {
             with(byteBuf) {
                 writeVarInt(Registry.ENTITY_TYPE.getRawId(entityType)) //typeId
-                writeInt(entityId)
+                writeInt(id)
                 writeUuid(uuid)
                 writeDouble(x)
                 writeDouble(y)
@@ -111,10 +111,10 @@ object CustomEntitySpawnS2CPacketHandler : CustomPacketHandler {
                     updatePositionAndAngles(packet.x, packet.y, packet.z, packet.yaw, packet.pitch)
                     this.headYaw = packet.headYaw //頭跟身體都朝向頭的方向
                     setBodyYaw(packet.headYaw)
-                    this.entityId = packet.entityId
+                    this.id = packet.id
                     this.uuid = packet.uuid
                 }
-                world.addEntity(packet.entityId, entity)
+                world.addEntity(packet.id, entity)
                 entity.velocity = packet.velocity
             }
         }

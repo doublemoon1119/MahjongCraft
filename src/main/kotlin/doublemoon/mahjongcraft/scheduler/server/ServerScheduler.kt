@@ -11,6 +11,7 @@ import doublemoon.mahjongcraft.scheduler.ActionBase
 import doublemoon.mahjongcraft.scheduler.DelayAction
 import doublemoon.mahjongcraft.scheduler.LoopAction
 import doublemoon.mahjongcraft.scheduler.RepeatAction
+import net.minecraft.block.entity.BlockEntityTicker
 import net.minecraft.server.MinecraftServer
 
 /**
@@ -52,21 +53,6 @@ object ServerScheduler {
         queuedActions.clear()
         loopActions.clear()
         GameManager.games.forEach { it.onServerStopping(server) }
-        var clearCount = 0
-        server.worlds.forEach { world ->
-            world.blockEntities.filterIsInstance<MahjongTableBlockEntity>()
-                .filter { it.cachedState[MahjongTable.PART] == MahjongTablePart.BOTTOM_CENTER }
-                .forEach { table ->
-                    val game = GameManager.getGame<MahjongGame>(world, table.pos)
-                    game?.also {
-                        MahjongTablePacketHandler.syncBlockEntityDataWithGame(
-                            blockEntity = table,
-                            game = it
-                        )
-                        clearCount++
-                    }
-                }
-        }
-        logger.info("$clearCount games cleared")
+        logger.info("${GameManager.games.size} games cleared")
     }
 }

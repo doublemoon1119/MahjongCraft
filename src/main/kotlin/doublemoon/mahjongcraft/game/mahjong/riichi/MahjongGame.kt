@@ -14,11 +14,12 @@ import doublemoon.mahjongcraft.scheduler.client.ScoreSettleHandler
 import doublemoon.mahjongcraft.scheduler.client.YakuSettleHandler
 import doublemoon.mahjongcraft.util.delayOnServer
 import doublemoon.mahjongcraft.util.plus
-import doublemoon.mahjongcraft.util.sendTitle
+import doublemoon.mahjongcraft.util.sendTitles
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.minecraft.block.AirBlock
+import net.minecraft.entity.Entity
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
@@ -157,7 +158,7 @@ class MahjongGame(
             if (player is MahjongPlayer) { //是玩家
                 player.sendMessage(PREFIX + TranslatableText("$MOD_ID.game.message.be_kick"))
             } else {  //是機器人, 清掉實體
-                player.entity.remove()
+                player.entity.remove(Entity.RemovalReason.DISCARDED)
             }
         }
     }
@@ -188,7 +189,7 @@ class MahjongGame(
                     players.add(0, this)
                     this.ready = true
                 } else {
-                    botPlayers.forEach { it.entity.remove() } //清掉機器人實體
+                    botPlayers.forEach { it.entity.remove(Entity.RemovalReason.DISCARDED) } //清掉機器人實體
                     players.clear()
                 }
             }
@@ -207,7 +208,7 @@ class MahjongGame(
             if (clearRiichiSticks) { //如果要清理立直棒
                 it.sticks.filter { stick -> stick.scoringStick == ScoringStick.P1000 }
                     .forEach { stick ->
-                        stick.remove()
+                        stick.remove(Entity.RemovalReason.DISCARDED)
                         it.sticks -= stick
                     }
             }
@@ -232,7 +233,7 @@ class MahjongGame(
             "$MOD_ID.game.repeat_counter",
             round.honba
         ).formatted(Formatting.YELLOW)
-        realPlayers.map { it.entity }.sendTitle(
+        realPlayers.map { it.entity }.sendTitles(
             title = TranslatableText(
                 "$MOD_ID.game.round.title",
                 windText,
@@ -273,7 +274,7 @@ class MahjongGame(
             board.assignDeadWall()
             delayOnServer(500)
             //清除擲出的骰子
-            dices.forEach { it.remove() }
+            dices.forEach { it.remove(Entity.RemovalReason.DISCARDED) }
             dices.clear()
             delayOnServer(1000)
             var nextPlayer: MahjongPlayerBase = dealer //莊家開始打牌
@@ -1279,10 +1280,7 @@ class MahjongGame(
         delayOnServer(500) //給一個延遲, 讓擲骰完不要馬上顯示骰到的點數
         val pointsSumText =
             TranslatableText("$MOD_ID.game.dice_points").formatted(Formatting.GOLD) + " §c$totalPoints"
-        realPlayers.map { it.entity }.sendTitle(
-            title = LiteralText(""),
-            subtitle = pointsSumText
-        )
+        realPlayers.map { it.entity }.sendTitles(subtitle = pointsSumText)
         this@MahjongGame.dicePoints = totalPoints
         return dices
     }
@@ -1401,7 +1399,7 @@ class MahjongGame(
             it.sendMessage(message)
         }
         botPlayers.forEach {  //將電腦從遊戲中移除
-            it.entity.remove()
+            it.entity.remove(Entity.RemovalReason.DISCARDED)
         }
         players.clear()
         GameManager.games -= this
@@ -1443,6 +1441,10 @@ class MahjongGame(
     override fun onServerStopping(server: MinecraftServer) {
         if (isPlaying) end(sync = false)
         realPlayers.forEach { leave(it.entity) }
+//        MahjongTablePacketHandler.syncBlockEntityDataWithGame(
+//            blockEntity = world.getBlockEntity(pos) as MahjongTableBlockEntity,
+//            game = this
+//        )
     }
 
     /**
@@ -1483,8 +1485,6 @@ class MahjongGame(
             jikaze
         )
     }
-
-    fun getMahjongTileEntityBy(uuid: UUID) = board.allTiles.find { it.uuid == uuid }
 
     companion object {
         /**

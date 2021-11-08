@@ -43,8 +43,8 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
                         this.getX(),
                         yPos + ((SeatEntity) entity).getStopSitOffsetY(),
                         this.getZ(),
-                        this.yaw,
-                        this.pitch
+                        this.getYaw(),
+                        this.getPitch()
                 );
             }
             ci.cancel();

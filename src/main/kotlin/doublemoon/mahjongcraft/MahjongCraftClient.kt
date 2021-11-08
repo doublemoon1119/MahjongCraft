@@ -19,8 +19,8 @@ import net.fabricmc.fabric.api.`object`.builder.v1.client.model.FabricModelPredi
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
-import net.fabricmc.fabric.api.client.rendereregistry.v1.BlockEntityRendererRegistry
-import net.fabricmc.fabric.api.client.rendereregistry.v1.EntityRendererRegistry
+import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry
+import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.option.KeyBinding
 import net.minecraft.client.util.InputUtil
@@ -44,24 +44,23 @@ object MahjongCraftClient : ClientModInitializer {
         logger.info("Initializing client")
         ClientTickEvents.END_CLIENT_TICK.register(this::tick)
         ClientLifecycleEvents.CLIENT_STOPPING.register(ClientScheduler::onStopping)
-        with(EntityRendererRegistry.INSTANCE) {
-            register(EntityTypeRegistry.dice, ::DiceEntityRenderer)
-            register(EntityTypeRegistry.seat, ::SeatEntityRenderer)
-            register(EntityTypeRegistry.mahjongBot, ::MahjongBotEntityRenderer)
-            register(EntityTypeRegistry.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
-            register(EntityTypeRegistry.mahjongTile, ::MahjongTileEntityRenderer)
-        }
-        with(BlockEntityRendererRegistry.INSTANCE) {
-            register(BlockEntityTypeRegistry.mahjongTable, ::MahjongTableBlockEntityRenderer)
-        }
+        //Entity Renderer
+        EntityRendererRegistry.register(EntityTypeRegistry.dice, ::DiceEntityRenderer)
+        EntityRendererRegistry.register(EntityTypeRegistry.seat, ::SeatEntityRenderer)
+        EntityRendererRegistry.register(EntityTypeRegistry.mahjongBot, ::MahjongBotEntityRenderer)
+        EntityRendererRegistry.register(EntityTypeRegistry.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
+        EntityRendererRegistry.register(EntityTypeRegistry.mahjongTile, ::MahjongTileEntityRenderer)
+        //BlockEntity Renderer
+        BlockEntityRendererRegistry.register(BlockEntityTypeRegistry.mahjongTable, ::MahjongTableBlockEntityRenderer)
+        //Model Predicate Provider
         FabricModelPredicateProviderRegistry.register(
             ItemRegistry.mahjongTile,
             Identifier("code")
-        ) { itemStack, _, _ -> itemStack.damage.toFloat() }
+        ) { itemStack, _, _, _ -> itemStack.damage.toFloat() }
         FabricModelPredicateProviderRegistry.register(
             ItemRegistry.mahjongScoringStick,
             Identifier("code")
-        ) { itemStack, _, _ -> itemStack.damage.toFloat() }
+        ) { itemStack, _, _, _ -> itemStack.damage.toFloat() }
         CustomEntitySpawnS2CPacketHandler.registerClient()
         MahjongTablePacketHandler.registerClient()
         MahjongGamePacketHandler.registerClient()
@@ -72,7 +71,7 @@ object MahjongCraftClient : ClientModInitializer {
 
     private fun tick(client: MinecraftClient) {
         if (configKey.wasPressed()) {
-            client.openScreen(AutoConfig.getConfigScreen(ModConfig::class.java, null).get())
+            client.setScreen(AutoConfig.getConfigScreen(ModConfig::class.java, null).get())
         }
         ClientScheduler.tick(client)
     }

@@ -43,7 +43,7 @@ class MahjongBotEntity(
         if (!world.isClient && isSpawnedByGame && isAlive) {
             val blockEntity = world.getBlockEntity(gameBlockPos)
             if (blockEntity !is MahjongTableBlockEntity) {  //這方塊不是麻將桌
-                remove()
+                remove(RemovalReason.DISCARDED)
             }
         }
     }

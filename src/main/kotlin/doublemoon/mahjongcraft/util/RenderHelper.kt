@@ -5,6 +5,7 @@ import com.mojang.authlib.minecraft.MinecraftProfileTexture
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
+import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.gui.DrawableHelper
 import net.minecraft.client.gui.hud.PlayerListHud
 import net.minecraft.client.render.LightmapTextureManager
@@ -37,6 +38,7 @@ object RenderHelper {
         overlay: Int = OverlayTexture.DEFAULT_UV,
         light: Int,
         vertexConsumer: VertexConsumerProvider,
+        seed: Int = 0
     ) {
         with(matrices) {
             push()
@@ -48,6 +50,7 @@ object RenderHelper {
                 overlay,
                 matrices,
                 vertexConsumer,
+                seed
             )
             pop()
         }
@@ -57,6 +60,7 @@ object RenderHelper {
      * 渲染文字用
      * */
     fun renderLabel(
+        textRenderer: TextRenderer,
         matrices: MatrixStack,
         offsetX: Double,
         offsetY: Double,
@@ -73,7 +77,6 @@ object RenderHelper {
         with(matrices) {
             push()
             val client = MinecraftClient.getInstance()
-            val textRenderer = client.textRenderer
             val offset = -textRenderer.getWidth(text) / 2f
             val matrix4f = matrices.peek().model
             translate(offsetX, offsetY, offsetZ)

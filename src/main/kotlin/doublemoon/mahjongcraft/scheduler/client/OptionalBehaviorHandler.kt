@@ -32,10 +32,10 @@ object OptionalBehaviorHandler {
     /**
      * 打開 [screen] 讓玩家選擇
      * */
-    fun openScreen() {
+    fun setScreen() {
         ClientScheduler.scheduleDelayAction {
             screen = MahjongBehaviorScreen(behavior, hands, target, extraData)
-            client.openScreen(screen!!)
+            client.setScreen(screen!!)
         }
     }
 
@@ -66,7 +66,7 @@ object OptionalBehaviorHandler {
         this.hands = hands
         this.target = target
         this.extraData = extraData
-        openScreen()
+        setScreen()
     }
 
     fun cancel() {

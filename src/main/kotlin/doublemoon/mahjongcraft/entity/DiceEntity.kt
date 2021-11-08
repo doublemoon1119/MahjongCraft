@@ -51,7 +51,7 @@ class DiceEntity(
                 //蹲下才能把骰子撿起來
                 player.giveItemStack(ItemRegistry.dice.defaultStack)
                 playSound(SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1f)
-                remove()
+                remove(RemovalReason.DISCARDED)
             }
         }
         return ActionResult.SUCCESS

@@ -47,9 +47,9 @@ abstract class GameEntity(
         if (!world.isClient && isSpawnedByGame && isAlive) {
             val blockEntity = world.getBlockEntity(gameBlockPos)
             if (blockEntity !is MahjongTableBlockEntity) {  //這方塊不是麻將桌
-                remove()
+                remove(RemovalReason.DISCARDED)
             } else if (!blockEntity.playing) {  //這方塊是麻將桌, 沒有在遊玩狀態
-                remove()
+                remove(RemovalReason.DISCARDED)
             }
         }
     }

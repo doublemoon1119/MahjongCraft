@@ -1,7 +1,6 @@
 package doublemoon.mahjongcraft.network
 
 import doublemoon.mahjongcraft.entity.MahjongTileEntity
-import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.id
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
@@ -84,10 +83,13 @@ object MahjongTileCodePacketHandler : CustomPacketHandler {
         responseSender: PacketSender
     ) {
         MahjongTileCodePacket(byteBuf).apply {
-            val entity = GameManager.getMahjongTileEntityBy(uuid) as MahjongTileEntity? ?: return
-            val code = entity.getCodeForPlayer(player)
-//            logger.info("Received a packet from ${player.name}, code->$code")
-            player.sendTileCode(uuid = uuid, code = code)
+            server.worlds.forEach { world ->
+                (world.getEntity(uuid) as MahjongTileEntity?)?.also {
+                    val code = it.getCodeForPlayer(player)
+                    player.sendTileCode(uuid = uuid, code = code)
+                    return@forEach
+                }
+            }
         }
     }
 }

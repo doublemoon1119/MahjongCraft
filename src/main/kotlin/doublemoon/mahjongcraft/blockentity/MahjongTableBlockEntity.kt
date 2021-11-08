@@ -11,13 +11,14 @@ import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable
 import net.minecraft.block.BlockState
 import net.minecraft.block.entity.BlockEntity
-import net.minecraft.block.entity.BlockEntityType
 import net.minecraft.client.MinecraftClient
 import net.minecraft.nbt.NbtCompound
+import net.minecraft.util.math.BlockPos
 
 class MahjongTableBlockEntity(
-    type: BlockEntityType<*> = BlockEntityTypeRegistry.mahjongTable
-) : BlockEntity(type), BlockEntityClientSerializable {
+    pos: BlockPos,
+    state: BlockState
+) : BlockEntity(BlockEntityTypeRegistry.mahjongTable, pos, state), BlockEntityClientSerializable {
     val players = arrayListOf("", "", "", "") //以玩家的 stringUUID 儲存, 先以 4 個空字串儲存, (空字串表示空位)
     val playerEntityNames = arrayListOf("", "", "", "") //以實體的 entityName 儲存
     val bots = arrayListOf(false, false, false, false) //這個玩家是否是機器人
@@ -38,7 +39,7 @@ class MahjongTableBlockEntity(
     }
 
     override fun fromClientTag(tag: NbtCompound) {
-        fromTag(cachedState, tag)
+        readNbt(tag)
         world?.isClient?.let { isClient ->
             if (isClient) { //當有同步 tag 的情況出現
                 val screen = MinecraftClient.getInstance().currentScreen
@@ -53,10 +54,10 @@ class MahjongTableBlockEntity(
 
     override fun toClientTag(tag: NbtCompound): NbtCompound = writeNbt(tag)
 
-    override fun fromTag(state: BlockState, tag: NbtCompound) {
-        super.fromTag(state, tag)
-        if (state[MahjongTable.PART] == MahjongTablePart.BOTTOM_CENTER) {
-            with(tag) {
+    override fun readNbt(nbt: NbtCompound) {
+        super.readNbt(nbt)
+        if (cachedState[MahjongTable.PART] == MahjongTablePart.BOTTOM_CENTER) {
+            with(nbt) {
                 repeat(4) {
                     players[it] = getString("PlayerStringUUID$it")
                     playerEntityNames[it] = getString("PlayerEntityName$it")

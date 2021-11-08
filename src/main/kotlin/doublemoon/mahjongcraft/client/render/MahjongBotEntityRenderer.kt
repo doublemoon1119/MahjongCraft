@@ -5,11 +5,10 @@ import doublemoon.mahjongcraft.entity.MahjongTileEntity
 import doublemoon.mahjongcraft.util.RenderHelper
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
-import net.fabricmc.fabric.api.client.rendereregistry.v1.EntityRendererRegistry
 import net.minecraft.client.render.Frustum
 import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.entity.EntityRenderDispatcher
 import net.minecraft.client.render.entity.EntityRenderer
+import net.minecraft.client.render.entity.EntityRendererFactory
 import net.minecraft.client.render.model.json.ModelTransformation
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.util.Identifier
@@ -17,9 +16,8 @@ import net.minecraft.util.math.Vec3f
 
 @Environment(EnvType.CLIENT)
 class MahjongBotEntityRenderer(
-    dispatcher: EntityRenderDispatcher,
-    context: EntityRendererRegistry.Context
-) : EntityRenderer<MahjongBotEntity>(dispatcher) {
+    context: EntityRendererFactory.Context
+) : EntityRenderer<MahjongBotEntity>(context) {
 
     private val itemRenderer = context.itemRenderer
 

@@ -14,6 +14,7 @@ import doublemoon.mahjongcraft.entity.TilePosition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import net.minecraft.entity.Entity
 import net.minecraft.sound.SoundEvents
 import net.minecraft.util.math.Direction
 import net.minecraft.util.math.Vec3d
@@ -173,7 +174,7 @@ class MahjongBoard(
         wall.clear()
         deadWall.clear()
         //最後清除掉所有牌的實體
-        allTiles.onEach { it.remove() }.clear()
+        allTiles.onEach { if (!it.isRemoved) it.remove(Entity.RemovalReason.DISCARDED) }.clear()
     }
 
     /**
@@ -879,7 +880,7 @@ class MahjongBoard(
     fun removeHonbaSticks(player: MahjongPlayerBase) {
         if (player !in game.seat) return
         player.sticks.filter { it.scoringStick == ScoringStick.P100 }.forEach { //場棒是 100 點棒
-            it.remove()
+            it.remove(Entity.RemovalReason.DISCARDED)
             player.sticks -= it
         }
         resortSticks(player) //移除完所有場棒, 重新排列一下剩下的積棒

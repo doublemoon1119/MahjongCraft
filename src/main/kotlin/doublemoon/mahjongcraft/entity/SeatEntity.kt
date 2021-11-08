@@ -34,7 +34,7 @@ class SeatEntity(
     override fun tick() {
         super.tick()
         if (sourceBlock == null) sourceBlock = blockPos
-        if (!world.isClient && (passengerList.isEmpty() || world.isAir(sourceBlock))) remove()
+        if (!world.isClient && (passengerList.isEmpty() || world.isAir(sourceBlock))) remove(RemovalReason.DISCARDED)
     }
 
     override fun getMountedHeightOffset(): Double = 0.0
@@ -86,7 +86,7 @@ class SeatEntity(
             val seatEntitiesAtThisPos = world.getEntitiesByType(EntityTypeRegistry.seat) {  //取得在 pos 上相同的實體
                 it.blockPos == pos && it.isAlive
             }
-            seatEntitiesAtThisPos.forEach { it.remove() }
+            seatEntitiesAtThisPos.forEach { it.remove(RemovalReason.DISCARDED) }
             spawnAt(world, pos, entity, offsetY)
         }
     }

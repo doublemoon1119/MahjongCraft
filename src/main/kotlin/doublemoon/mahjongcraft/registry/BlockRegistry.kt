@@ -6,7 +6,6 @@ import doublemoon.mahjongcraft.id
 import doublemoon.mahjongcraft.itemGroup
 import net.fabricmc.fabric.api.`object`.builder.v1.block.FabricBlockSettings
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings
-import net.fabricmc.fabric.api.tool.attribute.v1.FabricToolTags
 import net.minecraft.block.Material
 import net.minecraft.item.BlockItem
 import net.minecraft.sound.BlockSoundGroup
@@ -14,12 +13,12 @@ import net.minecraft.util.registry.Registry
 
 object BlockRegistry {
 
-    val mahjongStool: MahjongStool = MahjongStool(
+    private val mahjongStool: MahjongStool = MahjongStool(
         FabricBlockSettings.of(Material.WOOD)
             .nonOpaque()
             .strength(0.3f)
             .sounds(BlockSoundGroup.WOOL)
-            .breakByTool(FabricToolTags.AXES)
+            .breakByHand(true)
     )
 
     val mahjongTable: MahjongTable = MahjongTable(
@@ -27,7 +26,7 @@ object BlockRegistry {
             .nonOpaque()
             .strength(0.7f)
             .sounds(BlockSoundGroup.WOOL)
-            .breakByTool(FabricToolTags.AXES)
+            .breakByHand(true)
     )
 
     private fun registerBlocks() {

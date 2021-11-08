@@ -18,6 +18,7 @@ repositories {
     maven(url = "https://server.bbkr.space/artifactory/libs-release") { name = "CottonMC" }
     maven(url = "https://jitpack.io")  //Mahjong4j
     maven(url = "https://maven.shedaniel.me/") //Cloth Config
+    maven(url = "https://maven.terraformersmc.com/") //Mod Menu
 }
 dependencies {
     val minecraftVersion: String by project
@@ -42,12 +43,14 @@ dependencies {
     }
     //Mod Menu (https://www.curseforge.com/minecraft/mc-mods/modmenu)
     val modMenuVersion: String by project
-    modImplementation("io.github.prospector:modmenu:$modMenuVersion")
+//    modImplementation("io.github.prospector:modmenu:$modMenuVersion")
+    modImplementation("com.terraformersmc:modmenu:$modMenuVersion")
 }
 tasks {
-    val javaVersion = JavaVersion.VERSION_1_8 //在 Minecraft 1.17 時更新到 JAVA 16
+    val javaVersion = JavaVersion.VERSION_16
     withType<JavaCompile> {
         options.encoding = "UTF-8"
+        options.release.set(javaVersion.toString().toInt())
         sourceCompatibility = "$javaVersion"
         targetCompatibility = "$javaVersion"
     }

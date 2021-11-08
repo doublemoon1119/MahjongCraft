@@ -22,10 +22,10 @@ object YakuSettleHandler {
      * 打開 [screen] 讓玩家選擇
      * */
     @Environment(EnvType.CLIENT)
-    private fun openScreen(settlements: List<YakuSettlement>) {
+    private fun setScreen(settlements: List<YakuSettlement>) {
         ClientScheduler.scheduleDelayAction {
             screen = MahjongYakuSettlementScreen(settlements = settlements)
-            MinecraftClient.getInstance().openScreen(screen)
+            MinecraftClient.getInstance().setScreen(screen)
         }
     }
 
@@ -50,7 +50,7 @@ object YakuSettleHandler {
         jobCountdown?.cancel()
         jobCountdown = CoroutineScope(Dispatchers.Default).launch {
             time = defaultTime * settlementList.size
-            openScreen(settlements = settlementList)
+            setScreen(settlements = settlementList)
             repeat(times = time) {
                 delayOnClient(1000)
                 time--

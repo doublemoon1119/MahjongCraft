@@ -22,9 +22,9 @@ class PlayerFaceIcon(
         loadGameProfileProperties()
     }
 
-    private fun loadGameProfileProperties(){
+    private fun loadGameProfileProperties() {
         CoroutineScope(Dispatchers.IO).launch {
-            SkullBlockEntity.loadProperties(gameProfile)?.also { gameProfile = it }
+            SkullBlockEntity.loadProperties(gameProfile) { gameProfile = it }
         }
     }
 

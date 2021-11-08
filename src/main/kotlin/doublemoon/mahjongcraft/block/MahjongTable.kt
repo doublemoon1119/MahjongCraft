@@ -152,7 +152,7 @@ class MahjongTable(settings: Settings) : Block(settings), BlockEntityProvider {
         return ActionResult.SUCCESS
     }
 
-    override fun createBlockEntity(world: BlockView): BlockEntity = MahjongTableBlockEntity()
+    override fun createBlockEntity(pos: BlockPos, state: BlockState): BlockEntity = MahjongTableBlockEntity(pos, state)
 
     override fun getPistonBehavior(state: BlockState): PistonBehavior = PistonBehavior.IGNORE
 

@@ -25,10 +25,10 @@ object ScoreSettleHandler {
      * 打開 [screen] 讓玩家選擇
      * */
     @Environment(EnvType.CLIENT)
-    private fun openScreen(settlement: ScoreSettlement) {
+    private fun setScreen(settlement: ScoreSettlement) {
         ClientScheduler.scheduleDelayAction {
             screen = MahjongScoreSettlementScreen(settlement = settlement)
-            MinecraftClient.getInstance().openScreen(screen)
+            MinecraftClient.getInstance().setScreen(screen)
         }
     }
 
@@ -50,7 +50,7 @@ object ScoreSettleHandler {
         jobCountdown?.cancel()
         jobCountdown = CoroutineScope(Dispatchers.Default).launch {
             time = defaultTime
-            openScreen(settlement = settlement)
+            setScreen(settlement = settlement)
             repeat(times = time) {
                 delayOnClient(1000)
                 time--

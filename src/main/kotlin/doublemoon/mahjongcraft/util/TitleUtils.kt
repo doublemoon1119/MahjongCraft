@@ -1,46 +1,35 @@
 package doublemoon.mahjongcraft.util
 
-import net.minecraft.network.packet.s2c.play.TitleS2CPacket
+import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket
 import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.LiteralText
 import net.minecraft.text.Text
 
 
 /**
- * 對玩家發送顯示標題的數據包, 好像不能控制時間(?
+ * 對玩家發送顯示標題的數據包, 不能控制時間
  *
- * @param title 一定要有才會顯示 [subtitle]
- * @param fadeInTime 單位: tick
- * @param stayTime 單位: tick
- * @param fadeOutTime 單位: tick
+ * @param title 要顯示的標題
+ * @param subtitle 要顯示的副標題
  * */
-fun ServerPlayerEntity.sendTitle(
-    title: Text,
-    subtitle: Text = LiteralText(""),
-    fadeInTime: Int = 20,
-    stayTime: Int = 60,
-    fadeOutTime: Int = 20,
+fun ServerPlayerEntity.sendTitles(
+    title: Text? = null,
+    subtitle: Text? = null,
 ) {
     with(networkHandler) {
-        sendPacket(TitleS2CPacket(TitleS2CPacket.Action.TITLE, title, fadeInTime, stayTime, fadeOutTime))
-        sendPacket(TitleS2CPacket(TitleS2CPacket.Action.SUBTITLE, subtitle, fadeInTime, stayTime, fadeOutTime))
+        title?.also { sendPacket(SubtitleS2CPacket(it)) }
+        subtitle?.also { sendPacket(SubtitleS2CPacket(it)) }
     }
 }
 
 /**
  * 對玩家發送顯示標題的數據包
  *
- * @param title 一定要有才會顯示 [subtitle]
- * @param fadeInTime 單位: tick
- * @param stayTime 單位: tick
- * @param fadeOutTime 單位: tick
+ * @param title 要顯示的標題
+ * @param subtitle 要顯示的副標題
  * */
-fun Collection<ServerPlayerEntity>.sendTitle(
-    title: Text,
-    subtitle: Text = LiteralText(""),
-    fadeInTime: Int = 20,
-    stayTime: Int = 60,
-    fadeOutTime: Int = 20,
+fun Collection<ServerPlayerEntity>.sendTitles(
+    title: Text? = null,
+    subtitle: Text? = null
 ) {
-    forEach { it.sendTitle(title, subtitle, fadeInTime, stayTime, fadeOutTime) }
+    forEach { it.sendTitles(title, subtitle) }
 }

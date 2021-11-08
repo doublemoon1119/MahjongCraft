@@ -13,8 +13,8 @@ import io.github.cottonmc.cotton.gui.widget.data.Color
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.render.VertexConsumerProvider
-import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher
 import net.minecraft.client.render.block.entity.BlockEntityRenderer
+import net.minecraft.client.render.block.entity.BlockEntityRendererFactory
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.text.LiteralText
 import net.minecraft.text.Text
@@ -22,8 +22,9 @@ import net.minecraft.text.TranslatableText
 
 @Environment(EnvType.CLIENT)
 class MahjongTableBlockEntityRenderer(
-    dispatcher: BlockEntityRenderDispatcher
-) : BlockEntityRenderer<MahjongTableBlockEntity>(dispatcher) {
+    context: BlockEntityRendererFactory.Context
+) : BlockEntityRenderer<MahjongTableBlockEntity> {
+    private val textRenderer = context.textRenderer
     private val textReady = TranslatableText("$MOD_ID.gui.button.ready")
     private val textPlayer = TranslatableText("$MOD_ID.game.player")
     private val textStatus = TranslatableText("$MOD_ID.game.status")
@@ -72,6 +73,7 @@ class MahjongTableBlockEntityRenderer(
                 reverse()
                 forEachIndexed { index1, text ->
                     RenderHelper.renderLabel(
+                        textRenderer = textRenderer,
                         matrices = matrices,
                         offsetX = 0.5 + (bPos.x - blockPos.x),
                         offsetY = 1.0 + (bPos.y - blockPos.y) + WIND_PADDING + (LABEL_INTERVAL * index1),
@@ -113,6 +115,7 @@ class MahjongTableBlockEntityRenderer(
             reverse()
             forEachIndexed { index, text -> //渲染文字
                 RenderHelper.renderLabel(
+                    textRenderer = textRenderer,
                     matrices = matrices,
                     offsetX = 0.5,
                     offsetY = 1.0 + labelPadding + (LABEL_INTERVAL * index),

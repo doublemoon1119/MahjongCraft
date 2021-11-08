@@ -8,6 +8,9 @@ import doublemoon.mahjongcraft.itemGroup
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings
 import net.minecraft.util.registry.Registry
 
+//名稱重複, 另寫為 RiichiMahjongTile
+import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTile as RiichiMahjongTile
+
 //參考: https://fabricmc.net/wiki/tutorial:items_docs
 object ItemRegistry {
 

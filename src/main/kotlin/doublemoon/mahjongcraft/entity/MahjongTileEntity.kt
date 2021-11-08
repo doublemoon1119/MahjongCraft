@@ -13,6 +13,8 @@ import kotlinx.serialization.json.Json
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
+import net.minecraft.entity.EntityDimensions
+import net.minecraft.entity.EntityPose
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker
 import net.minecraft.entity.data.TrackedData
@@ -24,9 +26,6 @@ import net.minecraft.sound.SoundEvents
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
-import net.minecraft.util.math.Quaternion
-import net.minecraft.util.math.Vec3f
 import net.minecraft.world.World
 import org.mahjong4j.tile.Tile
 
@@ -175,6 +174,8 @@ class MahjongTileEntity(
 
     override fun onTrackedDataSet(data: TrackedData<*>) {
         super.onTrackedDataSet(data)
+        if (FACING == data) boundingBox = calculateBoundsForPose(pose) //確保在 FACING 更新時, boundingBox 馬上更新
+        //以下在所有 tracked 的資料改變的時候都會執行, 以便盡可能拿到最新與正確的 tile code
         if (!world.isClient || !isSpawnedByGame) return //只限定在客戶端且必須是遊戲產生的牌
         MinecraftClient.getInstance().player!!.requestTileCode(gameBlockPos = gameBlockPos, uuid = uuid)
     }
@@ -182,27 +183,12 @@ class MahjongTileEntity(
     //實體碰撞
     override fun isCollidable(): Boolean = true
 
-    override fun getBoundingBox(): Box = when (facing) {
-        TileFacing.HORIZONTAL -> {  //面向水平方向
-            Box(
-                x - MAHJONG_TILE_WIDTH / 2.0,
-                y,
-                z - MAHJONG_TILE_WIDTH / 2.0,
-                x + MAHJONG_TILE_WIDTH / 2.0,
-                y + MAHJONG_TILE_HEIGHT,
-                z + MAHJONG_TILE_WIDTH / 2.0
-            )
+    override fun getDimensions(pose: EntityPose): EntityDimensions =
+        if (facing == TileFacing.HORIZONTAL) {
+            super.getDimensions(pose)
+        } else {
+            EntityDimensions.fixed(MAHJONG_TILE_HEIGHT, MAHJONG_TILE_DEPTH)
         }
-        //剩下的都是面向垂直方向
-        else -> Box(
-            x - MAHJONG_TILE_HEIGHT / 2.0,
-            y,
-            z - MAHJONG_TILE_HEIGHT / 2.0,
-            x + MAHJONG_TILE_HEIGHT / 2.0,
-            y + MAHJONG_TILE_DEPTH,
-            z + MAHJONG_TILE_HEIGHT / 2.0
-        )
-    }
 
     //玩家與實體互動 (右鍵)
     override fun interact(player: PlayerEntity, hand: Hand): ActionResult {
@@ -213,7 +199,7 @@ class MahjongTileEntity(
                     val item = ItemRegistry.mahjongTile.defaultStack.also { it.damage = code }
                     player.giveItemStack(item)
                     playSound(SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1f)
-                    remove()
+                    remove(RemovalReason.DISCARDED)
                 } else {  //沒蹲下, 改變牌立著的方向
                     facing = facing.next
                 }
@@ -228,9 +214,7 @@ class MahjongTileEntity(
                 }
             }
         } else {
-            when {
-                OptionalBehaviorHandler.waiting -> OptionalBehaviorHandler.openScreen()
-            }
+            if (OptionalBehaviorHandler.waiting) OptionalBehaviorHandler.setScreen()
         }
         return ActionResult.SUCCESS
     }
