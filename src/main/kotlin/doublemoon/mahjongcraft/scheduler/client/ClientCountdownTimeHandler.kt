@@ -39,6 +39,7 @@ object ClientCountdownTimeHandler {
         val text = LiteralText("$textBase$textPlus$textExtra")
         //TODO 改位置顯示時間
         with(client.inGameHud) {
+            setTitle(LiteralText(""))
             setSubtitle(text)
             setTitleTicks(titleFadeInTime, titleRemainTime, titleFadeOutTime)
         }

@@ -1,6 +1,7 @@
 package doublemoon.mahjongcraft.util
 
 import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket
+import net.minecraft.network.packet.s2c.play.TitleS2CPacket
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 
@@ -16,7 +17,7 @@ fun ServerPlayerEntity.sendTitles(
     subtitle: Text? = null,
 ) {
     with(networkHandler) {
-        title?.also { sendPacket(SubtitleS2CPacket(it)) }
+        title?.also { sendPacket(TitleS2CPacket(it)) }
         subtitle?.also { sendPacket(SubtitleS2CPacket(it)) }
     }
 }
