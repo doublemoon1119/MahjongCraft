@@ -22,8 +22,12 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
 import net.minecraft.client.MinecraftClient
+import net.minecraft.client.item.UnclampedModelPredicateProvider
 import net.minecraft.client.option.KeyBinding
 import net.minecraft.client.util.InputUtil
+import net.minecraft.client.world.ClientWorld
+import net.minecraft.entity.LivingEntity
+import net.minecraft.item.ItemStack
 import net.minecraft.util.Identifier
 import org.lwjgl.glfw.GLFW
 
@@ -53,14 +57,32 @@ object MahjongCraftClient : ClientModInitializer {
         //BlockEntity Renderer
         BlockEntityRendererRegistry.register(BlockEntityTypeRegistry.mahjongTable, ::MahjongTableBlockEntityRenderer)
         //Model Predicate Provider
+        val modelPredicateProvider = object : UnclampedModelPredicateProvider {
+            override fun unclampedCall(
+                stack: ItemStack,
+                world: ClientWorld?,
+                entity: LivingEntity?,
+                seed: Int
+            ): Float = stack.damage.toFloat()
+
+            //super.call() 使用了 MathHelper.clamp(), 導致 modelPredicate 的值限制在 0f~1f 之間, 這裡覆寫把 MathHelper.clamp() 拿掉
+            override fun call(
+                itemStack: ItemStack,
+                clientWorld: ClientWorld?,
+                livingEntity: LivingEntity?,
+                i: Int
+            ): Float = this.unclampedCall(itemStack, clientWorld, livingEntity, i)
+        }
         FabricModelPredicateProviderRegistry.register(
             ItemRegistry.mahjongTile,
-            Identifier("code")
-        ) { itemStack, _, _, _ -> itemStack.damage.toFloat() }
+            Identifier("code"),
+            modelPredicateProvider
+        )
         FabricModelPredicateProviderRegistry.register(
             ItemRegistry.mahjongScoringStick,
-            Identifier("code")
-        ) { itemStack, _, _, _ -> itemStack.damage.toFloat() }
+            Identifier("code"),
+            modelPredicateProvider
+        )
         CustomEntitySpawnS2CPacketHandler.registerClient()
         MahjongTablePacketHandler.registerClient()
         MahjongGamePacketHandler.registerClient()
