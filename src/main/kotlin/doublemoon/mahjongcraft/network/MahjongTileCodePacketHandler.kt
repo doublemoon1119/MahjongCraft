@@ -15,7 +15,6 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayNetworkHandler
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
-import java.util.*
 
 object MahjongTileCodePacketHandler : CustomPacketHandler {
 
@@ -23,19 +22,19 @@ object MahjongTileCodePacketHandler : CustomPacketHandler {
 
     private data class MahjongTileCodePacket(
         val gameBlockPos: BlockPos,
-        val uuid: UUID,
+        val id: Int,
         val code: Int
     ) : CustomPacket {
         constructor(byteBuf: PacketByteBuf) : this(
             gameBlockPos = byteBuf.readBlockPos(),
-            uuid = byteBuf.readUuid(),
+            id = byteBuf.readVarInt(),
             code = byteBuf.readVarInt()
         )
 
         override fun writeByteBuf(byteBuf: PacketByteBuf) {
             with(byteBuf) {
                 writeBlockPos(gameBlockPos)
-                writeUuid(uuid)
+                writeVarInt(id)
                 writeVarInt(code)
             }
         }
@@ -44,21 +43,21 @@ object MahjongTileCodePacketHandler : CustomPacketHandler {
     @Environment(EnvType.CLIENT)
     fun ClientPlayerEntity.requestTileCode(
         gameBlockPos: BlockPos,
-        uuid: UUID,
+        id: Int
     ) = this.networkHandler.sendPacket(
         ClientPlayNetworking.createC2SPacket(
             channelName,
-            MahjongTileCodePacket(gameBlockPos, uuid, 0).createByteBuf() //code 不重要
+            MahjongTileCodePacket(gameBlockPos, id, 0).createByteBuf() //code 不重要
         )
     )
 
     private fun ServerPlayerEntity.sendTileCode(
-        uuid: UUID,
+        id: Int,
         code: Int
     ) = this.networkHandler.sendPacket(
         ServerPlayNetworking.createS2CPacket(
             channelName,
-            MahjongTileCodePacket(BlockPos.ORIGIN, uuid, code).createByteBuf() //gameBlockPos 不重要
+            MahjongTileCodePacket(BlockPos.ORIGIN, id, code).createByteBuf() //gameBlockPos 不重要
         )
     )
 
@@ -69,8 +68,8 @@ object MahjongTileCodePacketHandler : CustomPacketHandler {
         responseSender: PacketSender
     ) {
         MahjongTileCodePacket(byteBuf).apply {
-            val world = MinecraftClient.getInstance().world ?: return
-            val tile = world.entities.find { it.uuid == uuid } as MahjongTileEntity? ?: return
+            //ClientWorld 並沒有 getEntity(uuid) 的方法, 但是 ServerWorld 就有 (wat??)
+            val tile = client.world?.getEntityById(id) as MahjongTileEntity? ?: return
             tile.code = code
         }
     }
@@ -84,9 +83,9 @@ object MahjongTileCodePacketHandler : CustomPacketHandler {
     ) {
         MahjongTileCodePacket(byteBuf).apply {
             server.worlds.forEach { world ->
-                (world.getEntity(uuid) as MahjongTileEntity?)?.also {
+                (world.getEntityById(id) as MahjongTileEntity?)?.also {
                     val code = it.getCodeForPlayer(player)
-                    player.sendTileCode(uuid = uuid, code = code)
+                    player.sendTileCode(id = id, code = code)
                     return@forEach
                 }
             }

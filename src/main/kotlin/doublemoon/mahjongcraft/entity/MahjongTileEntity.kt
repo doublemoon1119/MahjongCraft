@@ -177,7 +177,7 @@ class MahjongTileEntity(
         if (FACING == data) boundingBox = calculateBoundsForPose(pose) //確保在 FACING 更新時, boundingBox 馬上更新
         //以下在所有 tracked 的資料改變的時候都會執行, 以便盡可能拿到最新與正確的 tile code
         if (!world.isClient || !isSpawnedByGame) return //只限定在客戶端且必須是遊戲產生的牌
-        MinecraftClient.getInstance().player!!.requestTileCode(gameBlockPos = gameBlockPos, uuid = uuid)
+        MinecraftClient.getInstance().player!!.requestTileCode(gameBlockPos = gameBlockPos, id = id)
     }
 
     //實體碰撞
