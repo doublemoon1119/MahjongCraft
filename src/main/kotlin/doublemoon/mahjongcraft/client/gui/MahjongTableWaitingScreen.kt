@@ -99,8 +99,8 @@ class MahjongTableGui(
     init {
         rootPlainPanel(width = ROOT_WIDTH, height = ROOT_HEIGHT) {
             val icon = item(
-                x = 0,
-                y = 0,
+                x = 8,
+                y = 8,
                 itemStack = ItemRegistry.mahjongTile.defaultStack.also { it.damage = MahjongTile.S1.code })
             label(
                 x = icon.x + icon.width + 5,
@@ -130,7 +130,7 @@ class MahjongTableGui(
             playerInfoItems.forEachIndexed { index, playerInfoItem ->
                 this.add(
                     playerInfoItem,
-                    36,
+                    44,
                     30 + index * playerInfoItem.height,
                     playerInfoItem.width,
                     playerInfoItem.height
