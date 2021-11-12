@@ -2,6 +2,7 @@ package doublemoon.mahjongcraft.util
 
 import com.mojang.authlib.GameProfile
 import com.mojang.authlib.minecraft.MinecraftProfileTexture
+import com.mojang.blaze3d.systems.RenderSystem
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
@@ -119,7 +120,7 @@ object RenderHelper {
         } else {
             DefaultSkinHelper.getTexture(gameProfile.id)
         }
-        client.textureManager.bindTexture(skinTexture)
+        RenderSystem.setShaderTexture(0, skinTexture)
         DrawableHelper.drawTexture(matrices, x, y, width, height, 8f, 8f, 8, 8, 64, 64)
     }
 
