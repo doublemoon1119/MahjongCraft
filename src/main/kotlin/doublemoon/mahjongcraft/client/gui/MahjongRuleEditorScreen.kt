@@ -140,7 +140,7 @@ class MahjongRuleEditorGui(
 
     init {
         rootScrollPanel(width = ROOT_WIDTH, height = ROOT_HEIGHT) {
-            plainPanel(x = 24, y = 0) {
+            plainPanel(x = BORDER_MARGIN + 24, y = 0) {
                 items.forEachIndexed { index, item ->
                     val previousItem = if (index > 0) items[index - 1] else null
                     val previousItemY = previousItem?.y ?: 0
@@ -235,13 +235,11 @@ class MahjongRuleEditorGui(
         //背景圖片的大小
         private const val ROOT_WIDTH = 400
         private const val ROOT_HEIGHT = 200
-
+        private const val BORDER_MARGIN = 8
         private const val BUTTON_WIDTH = 80
         private const val BUTTON_HEIGHT = 20
-
         private const val ITEM_PADDING = 8
         private const val BUTTON_PADDING = 5
-
 
         private inline fun <reified T : Enum<T>> getTooltip(nowValue: T): Array<Text> =
             enumValues<T>().map {
@@ -377,7 +375,6 @@ class MahjongRuleEditorGui(
             tooltip = description,
             suggestion = LiteralText("$defaultValue"),
         )
-
 
         private val hintLabel = label(
             x = textField.x + textField.width + space.width,

@@ -43,21 +43,21 @@ class MahjongScoreSettlementGui(
     init {
         rootPlainPanel(width = ROOT_WIDTH, height = ROOT_HEIGHT) {
             dynamicLabel(
-                x = 0,
-                y = ROOT_HEIGHT - fontHeight,
+                x = BORDER_MARGIN,
+                y = BORDER_MARGIN + ROOT_HEIGHT - fontHeight,
                 text = { timeText.string },
                 color = COLOR_RED
             )
             val title = label(
-                x = 0,
-                y = 0,
+                x = BORDER_MARGIN,
+                y = BORDER_MARGIN,
                 text = TranslatableText(settlement.titleLang)
                     .formatted(Formatting.DARK_PURPLE)
                     .formatted(Formatting.BOLD)
             )
             val confirmButton = button(
-                x = ROOT_WIDTH - BUTTON_WIDTH,
-                y = ROOT_HEIGHT - BUTTON_HEIGHT,
+                x = ROOT_WIDTH - BUTTON_WIDTH - BORDER_MARGIN,
+                y = ROOT_HEIGHT - BUTTON_HEIGHT - BORDER_MARGIN,
                 width = BUTTON_WIDTH,
                 label = TranslatableText("$MOD_ID.gui.button.confirm"),
                 onClick = { ScoreSettleHandler.closeScreen() }
@@ -97,8 +97,8 @@ class MahjongScoreSettlementGui(
 
         init {
             val rank = label(
-                x = 20,
-                y = 0,
+                x = BORDER_MARGIN + 20,
+                y = BORDER_MARGIN,
                 height = 22,
                 text = LiteralText("$number."),
                 verticalAlignment = VerticalAlignment.CENTER
@@ -162,6 +162,7 @@ class MahjongScoreSettlementGui(
     companion object {
         private const val ROOT_WIDTH = 300
         private const val ROOT_HEIGHT = 200
+        private const val BORDER_MARGIN = 8
         private const val PADDING_NORMAL = 10
         private const val BUTTON_WIDTH = 80
         private const val BUTTON_HEIGHT = 20

@@ -63,12 +63,17 @@ class MahjongYakuSettlementGui(
                 val score = it.score
                 val widget = WPlainPanel().apply {
                     dynamicLabel(
-                        x = 0,
+                        x = BORDER_MARGIN,
                         y = ROOT_HEIGHT + TAB_HEIGHT - fontHeight,
                         text = { timeText.string },
                         color = COLOR_RED
                     )
-                    val playerInfo = plainPanel(x = 0, y = 0, width = PLAYER_INFO_WIDTH, height = PLAYER_INFO_HEIGHT) {
+                    val playerInfo = plainPanel(
+                        x = BORDER_MARGIN,
+                        y = BORDER_MARGIN,
+                        width = PLAYER_INFO_WIDTH,
+                        height = PLAYER_INFO_HEIGHT
+                    ) {
                         val face = if (it.isRealPlayer) {
                             playerFace(
                                 x = (PLAYER_INFO_WIDTH - PLAYER_FACE_WIDTH) / 2,
@@ -103,7 +108,6 @@ class MahjongYakuSettlementGui(
                     ) {
                         //很多槓的時候有機會出現 手牌 + 副露 + 槍牌 會有 16 張牌以上的情況, 會導致渲染的東西過長, 所以這裡的寬度另外做調整
                         val amount =
-
                             hands.size + fuuroList.sumOf { fuuro -> fuuro.second.size } + if (!nagashiMangan) 1 else 0
                         val rate = if (amount > 16) 16f / amount else 1f
                         val tileWidth = (TILE_WIDTH * rate).toInt()
@@ -343,7 +347,7 @@ class MahjongYakuSettlementGui(
                         label(
                             x = 0,
                             y = 0,
-                            width = yakuList.width,
+                            width = yakuList.width - BORDER_MARGIN,
                             height = scoreHeight,
                             text = scoreText,
                             horizontalAlignment = HorizontalAlignment.RIGHT,
@@ -368,6 +372,7 @@ class MahjongYakuSettlementGui(
         private const val TAB_HEIGHT = 34 //這個 34 是 WTabPanel.TAB_HEIGHT + WTabPanel.TAB_PADDING
         private const val ROOT_WIDTH = 400
         private const val ROOT_HEIGHT = 200 - TAB_HEIGHT
+        private const val BORDER_MARGIN = 8
         private const val PLAYER_INFO_WIDTH = 84
         private const val PLAYER_INFO_HEIGHT = 84
         private const val PLAYER_FACE_WIDTH = 48

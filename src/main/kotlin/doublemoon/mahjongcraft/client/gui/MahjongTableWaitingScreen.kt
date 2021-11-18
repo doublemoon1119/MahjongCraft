@@ -99,8 +99,8 @@ class MahjongTableGui(
     init {
         rootPlainPanel(width = ROOT_WIDTH, height = ROOT_HEIGHT) {
             val icon = item(
-                x = 8,
-                y = 8,
+                x = BORDER_MARGIN,
+                y = BORDER_MARGIN,
                 itemStack = ItemRegistry.mahjongTile.defaultStack.also { it.damage = MahjongTile.S1.code })
             label(
                 x = icon.x + icon.width + 5,
@@ -365,13 +365,11 @@ class MahjongTableGui(
     companion object {
         private const val ROOT_WIDTH = 400
         private const val ROOT_HEIGHT = 200
-
         private const val BUTTON_WIDTH = 80
+        private const val BORDER_MARGIN = 8
         private const val BUTTON_HEIGHT = 20
-
         private const val BUTTON_JOIN_OR_LEAVE_X = 310
         private const val BUTTON_JOIN_OR_LEAVE_Y = 160
-
         private const val BUTTON_PADDING = 5
     }
 

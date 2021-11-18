@@ -60,8 +60,8 @@ class MahjongBehaviorGui(
 
     //渲染麻將牌用
     private val hasTakenTile = when (behavior) { //在發送這行為過來時是否有拿牌, 目前只有下面 3 個情況有拿牌
-        MahjongGameBehavior.TSUMO -> true
-        MahjongGameBehavior.KYUUSHU_KYUUHAI -> true
+        MahjongGameBehavior.TSUMO,
+        MahjongGameBehavior.KYUUSHU_KYUUHAI,
         MahjongGameBehavior.ANKAN_OR_KAKAN -> true
         else -> false
     }
@@ -181,7 +181,6 @@ class MahjongBehaviorGui(
                     }
                 }
                 MahjongGameBehavior.RIICHI -> { //立直會顯示聽的牌
-//                    val machi = Json.decodeFromString<MutableList<MahjongTile>>(data)
                     val tilePairsForRiichi =
                         Json.decodeFromString<MutableList<Pair<MahjongTile, MutableList<MahjongTile>>>>(data)
                     tilePairsForRiichi.forEach { //只會顯示可以丟的牌, 並且不會顯示無役跟待取以及待取剩幾張
@@ -239,10 +238,10 @@ class MahjongBehaviorGui(
 
     init {
         rootPlainPanel(width = ROOT_WIDTH, height = ROOT_HEIGHT) {
-            val timer = dynamicLabel(x = 0, y = 0, text = { timeText.rawString }) //顯示剩餘時間用
+            val timer = dynamicLabel(x = 8, y = 8, text = { timeText.rawString }) //顯示剩餘時間用
             button(
-                x = ROOT_WIDTH - BUTTON_WIDTH,
-                y = 0,
+                x = ROOT_WIDTH - BUTTON_WIDTH - BORDER_MARGIN,
+                y = BORDER_MARGIN,
                 width = BUTTON_WIDTH,
                 label = TranslatableText("$MOD_ID.game.behavior.skip"),
                 onClick = {
@@ -255,7 +254,7 @@ class MahjongBehaviorGui(
             val handsWidgetHeight = TILE_HEIGHT + TILE_GAP + HINT_HEIGHT
             val handsWidget = handsWidget(
                 x = 0,
-                y = ROOT_HEIGHT - handsWidgetHeight,
+                y = ROOT_HEIGHT - handsWidgetHeight - BORDER_MARGIN,
                 width = ROOT_WIDTH,
                 height = handsWidgetHeight
             )
@@ -507,10 +506,8 @@ class MahjongBehaviorGui(
         //背景圖片的大小
         private const val ROOT_WIDTH = 400
         private const val ROOT_HEIGHT = 200
-
         private const val BUTTON_WIDTH = 80
         private const val BUTTON_HEIGHT = 20
-
         private const val TILE_SCALE = 0.5f //這個值要觀察一下
         private const val TILE_WIDTH = (48 * TILE_SCALE).toInt()
         private const val TILE_HEIGHT = (64 * TILE_SCALE).toInt()
@@ -518,6 +515,7 @@ class MahjongBehaviorGui(
         private const val TAKEN_TILE_GAP = TILE_GAP * 3
         private const val OPTION_GAP = TILE_GAP * 12
         private const val HINT_HEIGHT = TILE_GAP * 2
+        private const val BORDER_MARGIN = 8
     }
 
 }
