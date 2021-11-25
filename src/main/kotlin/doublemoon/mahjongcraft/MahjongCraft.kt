@@ -1,5 +1,6 @@
 package doublemoon.mahjongcraft
 
+import doublemoon.mahjongcraft.event.onPlayerChangedWorld
 import doublemoon.mahjongcraft.network.MahjongGamePacketHandler
 import doublemoon.mahjongcraft.network.MahjongTablePacketHandler
 import doublemoon.mahjongcraft.network.MahjongTileCodePacketHandler
@@ -7,6 +8,7 @@ import doublemoon.mahjongcraft.registry.*
 import doublemoon.mahjongcraft.scheduler.server.ServerScheduler
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.item.ItemGroup
@@ -31,6 +33,7 @@ object MahjongCraft : ModInitializer {
         SoundRegistry.register()
         ServerTickEvents.END_SERVER_TICK.register(ServerScheduler::tick)
         ServerLifecycleEvents.SERVER_STOPPING.register(ServerScheduler::onStopping)
+        ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register(::onPlayerChangedWorld)
         MahjongTablePacketHandler.registerServer()
         MahjongGamePacketHandler.registerServer()
         MahjongTileCodePacketHandler.registerServer()
