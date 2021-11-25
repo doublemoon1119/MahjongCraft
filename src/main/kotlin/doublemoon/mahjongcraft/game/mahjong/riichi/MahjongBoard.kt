@@ -174,7 +174,10 @@ class MahjongBoard(
         wall.clear()
         deadWall.clear()
         //最後清除掉所有牌的實體
-        allTiles.onEach { if (!it.isRemoved) it.remove(Entity.RemovalReason.DISCARDED) }.clear()
+        //有時候會同時觸發遊戲中的清除跟 MahjongGame.onBreak() 或 MahjongGame.onServerStopping() 的清除,
+        //會導致有一個 allTiles.clear() 先執行, 後面另外一個正在執行 forEach 的直接報錯, 這裡直接先複製後再執行, 避免上述情況
+        allTiles.toList().forEach { if (!it.isRemoved) it.remove(Entity.RemovalReason.DISCARDED) }
+        allTiles.clear()
     }
 
     /**

@@ -1369,14 +1369,16 @@ class MahjongGame(
     /**
      * 結束遊戲,
      * 請在主線程上調用
+     *
+     * @param sync 是否要同步 [MahjongTableBlockEntity]
      * */
     override fun end(sync: Boolean) {
         //結束遊戲
+        status = GameStatus.WAITING
         jobWaitForStart?.cancel()
         jobRound?.cancel()
         seat.clear()
         clearStuffs()
-        status = GameStatus.WAITING
         round = MahjongRound()
         realPlayers.forEach { it.gameOver() }
         botPlayers.forEach { //將電腦傳回原本的位置
