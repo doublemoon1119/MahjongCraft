@@ -4,8 +4,11 @@ import doublemoon.mahjongcraft.block.MahjongTable
 import doublemoon.mahjongcraft.block.enums.MahjongTablePart
 import doublemoon.mahjongcraft.client.gui.MahjongTableGui
 import doublemoon.mahjongcraft.client.gui.MahjongTableWaitingScreen
+import doublemoon.mahjongcraft.game.GameManager
+import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRound
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
+import doublemoon.mahjongcraft.network.MahjongTablePacketHandler
 import doublemoon.mahjongcraft.registry.BlockEntityTypeRegistry
 import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable
@@ -13,17 +16,20 @@ import net.minecraft.block.BlockState
 import net.minecraft.block.entity.BlockEntity
 import net.minecraft.client.MinecraftClient
 import net.minecraft.nbt.NbtCompound
+import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
+import net.minecraft.world.World
 
 class MahjongTableBlockEntity(
     pos: BlockPos,
     state: BlockState
 ) : BlockEntity(BlockEntityTypeRegistry.mahjongTable, pos, state), BlockEntityClientSerializable {
+    private var gameInitialized = false
     val players = arrayListOf("", "", "", "") //以玩家的 stringUUID 儲存, 先以 4 個空字串儲存, (空字串表示空位)
     val playerEntityNames = arrayListOf("", "", "", "") //以實體的 entityName 儲存
     val bots = arrayListOf(false, false, false, false) //這個玩家是否是機器人
     val ready = arrayListOf(false, false, false, false) //這個玩家是否準備了
-    var rule = MahjongRule()
+    var rule = MahjongRule() //這是為了能讓 rule 能夠儲存在桌子上, 直到開啟麻將桌時套用到新遊戲上
     var playing = false
     var round = MahjongRound() //當前的回合
     var seat = arrayListOf("", "", "", "") //座位上的玩家的 stringUUID, 按照遊戲開始的座位順序編排
@@ -95,4 +101,20 @@ class MahjongTableBlockEntity(
     }
 
     override fun toInitialChunkDataNbt(): NbtCompound = writeNbt(NbtCompound())
+
+    companion object {
+        fun tick(world: World, pos: BlockPos, blockEntity: MahjongTableBlockEntity) {
+            if (!world.isClient && !blockEntity.gameInitialized) {
+                MahjongTablePacketHandler.syncBlockEntityDataWithGame(
+                    blockEntity = blockEntity,
+                    game = GameManager.getGameOrDefault(
+                        world = world as ServerWorld,
+                        pos = pos,
+                        default = MahjongGame(world, pos, blockEntity.rule)
+                    )
+                )
+                blockEntity.gameInitialized = true
+            }
+        }
+    }
 }

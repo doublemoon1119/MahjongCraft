@@ -6,13 +6,15 @@ import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.GameStatus
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTableBehavior
 import doublemoon.mahjongcraft.network.MahjongTablePacketHandler.sendMahjongTablePacket
+import doublemoon.mahjongcraft.registry.BlockEntityTypeRegistry
 import doublemoon.mahjongcraft.util.boxBySize
 import doublemoon.mahjongcraft.util.plus
 import net.minecraft.block.*
 import net.minecraft.block.entity.BlockEntity
+import net.minecraft.block.entity.BlockEntityTicker
+import net.minecraft.block.entity.BlockEntityType
 import net.minecraft.block.piston.PistonBehavior
 import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.player.PlayerEntity
@@ -38,7 +40,7 @@ import net.minecraft.world.World
 /**
  * 參考自 [BedBlock]
  * */
-class MahjongTable(settings: Settings) : Block(settings), BlockEntityProvider {
+class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
 
     init {
         defaultState = stateManager.defaultState.with(PART, MahjongTablePart.BOTTOM_CENTER)
@@ -111,20 +113,10 @@ class MahjongTable(settings: Settings) : Block(settings), BlockEntityProvider {
         hit: BlockHitResult
     ): ActionResult {
         if (hand === Hand.MAIN_HAND && !world.isClient) {
-            val part = state[PART] ?: return ActionResult.CONSUME
-            val centerPos = getCenterPosByPart(pos = pos, part = part)
+            val centerPos = getCenterPosByPart(pos = pos, part = state[PART])
             player as ServerPlayerEntity
             world as ServerWorld
-            val blockEntity = world.getBlockEntity(centerPos) as MahjongTableBlockEntity?
-            val game = GameManager.getGameOrDefault(
-                world = world,
-                pos = centerPos,
-                default = MahjongGame(
-                    world,
-                    centerPos,
-                    blockEntity?.rule ?: MahjongRule()  //這是為了能讓 rule 能夠儲存在桌子上, 直到開啟麻將桌時套用到新遊戲上
-                )
-            )
+            val game = GameManager.getGame<MahjongGame>(world = world, pos = centerPos) ?: return ActionResult.CONSUME
             if (!GameManager.isInAnyGame(player) || game.isInGame(player)) {
                 //如果玩家沒有在任何遊戲中, 或者玩家在"這個"遊戲中
                 if (game.status == GameStatus.PLAYING) { //如果遊戲已經開始,傳訊息->遊戲已經開始了
@@ -133,12 +125,10 @@ class MahjongTable(settings: Settings) : Block(settings), BlockEntityProvider {
                         true
                     )
                 } else {  //如果遊戲尚未開始,開啟 gui
-                    blockEntity?.also {  //讓玩家開啟麻將桌 gui
-                        player.sendMahjongTablePacket(
-                            behavior = MahjongTableBehavior.OPEN_TABLE_WAITING_GUI,
-                            pos = centerPos
-                        )
-                    }
+                    player.sendMahjongTablePacket( //讓玩家開啟麻將桌 gui
+                        behavior = MahjongTableBehavior.OPEN_TABLE_WAITING_GUI,
+                        pos = centerPos
+                    )
                 }
             } else {  //玩家已經在某個遊戲中, 且不是"這個"遊戲
                 player.sendMessage(
@@ -152,7 +142,17 @@ class MahjongTable(settings: Settings) : Block(settings), BlockEntityProvider {
         return ActionResult.SUCCESS
     }
 
-    override fun createBlockEntity(pos: BlockPos, state: BlockState): BlockEntity = MahjongTableBlockEntity(pos, state)
+    override fun createBlockEntity(pos: BlockPos, state: BlockState): BlockEntity? =
+        if (state[PART] == MahjongTablePart.BOTTOM_CENTER) MahjongTableBlockEntity(pos, state) else null
+
+    override fun <T : BlockEntity?> getTicker(
+        world: World,
+        state: BlockState,
+        type: BlockEntityType<T>
+    ): BlockEntityTicker<T>? = checkType(
+        type,
+        BlockEntityTypeRegistry.mahjongTable
+    ) { world1, pos, _, blockEntity -> MahjongTableBlockEntity.tick(world1, pos, blockEntity) }
 
     override fun getPistonBehavior(state: BlockState): PistonBehavior = PistonBehavior.IGNORE
 
