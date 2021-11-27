@@ -1,17 +1,11 @@
 package doublemoon.mahjongcraft.scheduler.server
 
-import doublemoon.mahjongcraft.block.MahjongTable
-import doublemoon.mahjongcraft.block.enums.MahjongTablePart
-import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
 import doublemoon.mahjongcraft.game.GameManager
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
 import doublemoon.mahjongcraft.logger
-import doublemoon.mahjongcraft.network.MahjongTablePacketHandler
 import doublemoon.mahjongcraft.scheduler.ActionBase
 import doublemoon.mahjongcraft.scheduler.DelayAction
 import doublemoon.mahjongcraft.scheduler.LoopAction
 import doublemoon.mahjongcraft.scheduler.RepeatAction
-import net.minecraft.block.entity.BlockEntityTicker
 import net.minecraft.server.MinecraftServer
 
 /**

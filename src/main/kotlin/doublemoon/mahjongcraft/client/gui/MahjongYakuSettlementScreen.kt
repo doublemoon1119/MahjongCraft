@@ -103,7 +103,7 @@ class MahjongYakuSettlementGui(
                     val playerTiles = plainPanel(
                         x = playerInfo.x + playerInfo.width + 16,
                         y = 12,
-                        width = ROOT_WIDTH - PLAYER_INFO_WIDTH,
+                        width = ROOT_WIDTH - PLAYER_INFO_WIDTH - BORDER_MARGIN * 2,
                         height = TILE_HEIGHT
                     ) {
                         //很多槓的時候有機會出現 手牌 + 副露 + 槍牌 會有 16 張牌以上的情況, 會導致渲染的東西過長, 所以這裡的寬度另外做調整

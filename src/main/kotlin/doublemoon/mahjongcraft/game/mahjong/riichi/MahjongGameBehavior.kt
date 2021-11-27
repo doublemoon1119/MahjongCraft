@@ -2,7 +2,9 @@ package doublemoon.mahjongcraft.game.mahjong.riichi
 
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.network.MahjongGamePacketHandler
+import doublemoon.mahjongcraft.util.TextFormatting
 import kotlinx.serialization.Serializable
+import net.minecraft.text.TranslatableText
 
 /**
  * 麻將遊戲行為, 發送數據包 [MahjongGamePacketHandler] 用,
@@ -10,7 +12,7 @@ import kotlinx.serialization.Serializable
  * 玩家端->伺服端 表示: 要執行
  * */
 @Serializable
-enum class MahjongGameBehavior {
+enum class MahjongGameBehavior : TextFormatting {
     CHII,//吃
     PON_OR_CHII,//碰或吃
     PON,//碰
@@ -35,5 +37,5 @@ enum class MahjongGameBehavior {
     COUNTDOWN_TIME,//倒數時間用
     ;
 
-    val lang: String = "$MOD_ID.game.behavior.${name.lowercase()}"
+    override fun toText() = TranslatableText("$MOD_ID.game.behavior.${name.lowercase()}")
 }

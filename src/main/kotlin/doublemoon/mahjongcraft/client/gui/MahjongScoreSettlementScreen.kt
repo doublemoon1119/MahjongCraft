@@ -2,8 +2,10 @@ package doublemoon.mahjongcraft.client.gui
 
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.client.gui.widget.*
+import doublemoon.mahjongcraft.game.mahjong.riichi.RankedScoreItem
 import doublemoon.mahjongcraft.game.mahjong.riichi.ScoreSettlement
 import doublemoon.mahjongcraft.scheduler.client.ScoreSettleHandler
+import doublemoon.mahjongcraft.util.plus
 import io.github.cottonmc.cotton.gui.client.CottonClientScreen
 import io.github.cottonmc.cotton.gui.client.LightweightGuiDescription
 import io.github.cottonmc.cotton.gui.widget.WPlainPanel
@@ -30,7 +32,7 @@ class MahjongScoreSettlementGui(
 ) : LightweightGuiDescription() {
 
     private val fontHeight = MinecraftClient.getInstance().textRenderer.fontHeight
-    private val rankedScoreList = settlement.rankedScoreStringList
+    private val rankedScoreList = settlement.rankedScoreList
     private val timeText: Text
         get() {
             val time = ScoreSettleHandler.time
@@ -51,7 +53,7 @@ class MahjongScoreSettlementGui(
             val title = label(
                 x = BORDER_MARGIN,
                 y = BORDER_MARGIN,
-                text = TranslatableText(settlement.titleLang)
+                text = TranslatableText(settlement.titleTranslateKey)
                     .formatted(Formatting.DARK_PURPLE)
                     .formatted(Formatting.BOLD)
             )
@@ -69,8 +71,8 @@ class MahjongScoreSettlementGui(
                 height = ROOT_HEIGHT - title.height - confirmButton.height - PADDING_NORMAL * 2
             ) {
                 val scoreItems = mutableListOf<ScoreItem>()
-                rankedScoreList.forEachIndexed { index, info ->
-                    val item = ScoreItem(index + 1, info)
+                rankedScoreList.forEachIndexed { index, rankedScoreItem ->
+                    val item = ScoreItem(index + 1, rankedScoreItem)
                     val y = if (index > 0) scoreItems[index - 1].let { it.y + it.height + 12 } else 0
                     this.add(item, 0, y)
                     scoreItems += item
@@ -81,15 +83,15 @@ class MahjongScoreSettlementGui(
 
     class ScoreItem(
         number: Int,
-        info: List<String>
+        rankedScoreItem: RankedScoreItem
     ) : WPlainPanel() {
-        private val displayName = info[0]
-        private val stringUUID = info[1]
-        private val isRealPlayer = info[2].toBooleanStrict()
-        private val botCode = info[3].toInt()
-        private val scoreTotal = info[4]
-        private val scoreChange = info[5]
-        private val rankFloat = info[6]
+        private val displayName = rankedScoreItem.scoreItem.displayName
+        private val stringUUID = rankedScoreItem.scoreItem.stringUUID
+        private val isRealPlayer = rankedScoreItem.scoreItem.isRealPlayer
+        private val botCode = rankedScoreItem.scoreItem.botCode
+        private val scoreTotal = rankedScoreItem.scoreTotal
+        private val scoreChange = rankedScoreItem.scoreChangeText
+        private val rankFloat = rankedScoreItem.rankFloatText
 
         private val textRenderer = MinecraftClient.getInstance().textRenderer
         private val maxDisplayNameLabelWidth = textRenderer.getWidth("HI IM DOUBLEMOON") //名字的長度先取最長的 16 個字元
@@ -133,26 +135,27 @@ class MahjongScoreSettlementGui(
             val scoreTotalLabel = label(
                 x = displayNameLabel.x + displayNameLabel.width + 8,
                 y = displayNameLabel.y,
-                text = LiteralText(scoreTotal),
+                text = LiteralText("$scoreTotal"),
                 width = maxScoreLabelWidth,
                 verticalAlignment = VerticalAlignment.CENTER
             )
-            val scoreChangeTextColor = if (scoreChange == "") "" else if (scoreChange.toInt() > 0) "§a" else "§c"
+            val scoreChangeTextColor =
+                if (scoreChange.string == "") "" else if (scoreChange.string.toInt() > 0) "§a" else "§c"
             val scoreChangeLabel = label(
                 x = scoreTotalLabel.x + scoreTotalLabel.width + 8,
                 y = scoreTotalLabel.y,
-                text = LiteralText("$scoreChangeTextColor$scoreChange"),
+                text = LiteralText(scoreChangeTextColor) + scoreChange,
                 width = maxScoreLabelWidth,
                 verticalAlignment = VerticalAlignment.CENTER
             )
-            val rankFloatTextColor = when (rankFloat) {
+            val rankFloatTextColor = when (rankFloat.string) {
                 "↓" -> COLOR_RED
                 else -> COLOR_GREEN
             }
             label(
                 x = scoreChangeLabel.x + scoreChangeLabel.width + 8,
                 y = scoreChangeLabel.y,
-                text = LiteralText(rankFloat),
+                text = rankFloat,
                 verticalAlignment = VerticalAlignment.CENTER,
                 color = rankFloatTextColor
             )

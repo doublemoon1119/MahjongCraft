@@ -28,8 +28,8 @@ class MahjongTableBlockEntityRenderer(
     private val textReady = TranslatableText("$MOD_ID.gui.button.ready")
     private val textPlayer = TranslatableText("$MOD_ID.game.player")
     private val textStatus = TranslatableText("$MOD_ID.game.status")
-    private val textWaiting = TranslatableText(GameStatus.WAITING.lang)
-    private val textPlaying = TranslatableText(GameStatus.PLAYING.lang)
+    private val textWaiting = GameStatus.WAITING.toText()
+    private val textPlaying = GameStatus.PLAYING.toText()
 
     override fun render(
         blockEntity: MahjongTableBlockEntity,
@@ -68,7 +68,7 @@ class MahjongTableBlockEntityRenderer(
             }
             val windIndex = (dealerSeatIndex - index).let { if (it >= 0) 4 - it else -it } % 4
             mutableListOf<Text>().apply {
-                this += TranslatableText(Wind.values()[windIndex].lang)
+                this += Wind.values()[windIndex].toText()
                 this += LiteralText(blockEntity.points[index].toString())
                 reverse()
                 forEachIndexed { index1, text ->
@@ -109,7 +109,7 @@ class MahjongTableBlockEntityRenderer(
                 this += textCurrentReady
             } else { //在遊戲中才顯示
                 val round = blockEntity.round
-                val windText = TranslatableText(round.wind.lang)
+                val windText = round.wind.toText()
                 this += TranslatableText("$MOD_ID.game.round.title", windText, round.round + 1) //ex: 東 4 局
             }
             reverse()

@@ -54,7 +54,7 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
 
     override fun getPlacementState(ctx: ItemPlacementContext): BlockState? {
         val centerPos = ctx.blockPos
-        val canPlace = peripheryPos(centerPos).find { !ctx.world.getBlockState(it.second).canReplace(ctx) } == null
+        val canPlace = peripheryPos(centerPos).all { ctx.world.getBlockState(it.second).canReplace(ctx) }
         return if (canPlace) defaultState else null
     }
 

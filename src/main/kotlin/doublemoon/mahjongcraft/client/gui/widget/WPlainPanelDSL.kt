@@ -277,7 +277,7 @@ fun WPlainPanel.playerFace(
     name: String,
     init: WPlayerFace.() -> Unit = {}
 ): WPlayerFace {
-    val playerFace = WPlayerFace(uuid,name)
+    val playerFace = WPlayerFace(uuid, name)
     playerFace.init()
     this.add(playerFace, x, y, width, height)
     return playerFace

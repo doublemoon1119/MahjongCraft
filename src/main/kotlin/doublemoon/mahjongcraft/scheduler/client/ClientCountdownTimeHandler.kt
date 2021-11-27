@@ -18,7 +18,6 @@ object ClientCountdownTimeHandler {
      * */
     var basicAndExtraTime: Pair<Int?, Int?> = null to null
         set(value) {
-//            logger.info("base: ${value.first}, extra: ${value.second}")
             if (value.first != null && value.second != null) {  //有新的值出現
                 displayTime(timeBase = value.first!!, timeExtra = value.second!!)
             } else {  //兩個都為 null, 清除倒數計時, 關閉所有該關的處理程序

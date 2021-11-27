@@ -1,6 +1,7 @@
 package doublemoon.mahjongcraft.game.mahjong.riichi
 
 import doublemoon.mahjongcraft.MOD_ID
+import doublemoon.mahjongcraft.util.TextFormatting
 import doublemoon.mahjongcraft.util.plus
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -126,14 +127,12 @@ data class MahjongRule(
         TWO_WIND(Wind.EAST, 8, Wind.WEST to 3);
 //        FOUR_WIND(Wind.EAST, 16, "game.$MOD_ID.mahjong.length.four_wind");
 
-        private val lang = "$MOD_ID.game.length.${name.lowercase()}"
-
         /**
          * 取得開始遊戲的回合
          * */
         fun getStartingRound(): MahjongRound = MahjongRound(wind = startingWind)
 
-        override fun toText(): TranslatableText = TranslatableText(lang)
+        override fun toText() = TranslatableText("$MOD_ID.game.length.${name.lowercase()}")
     }
 
     /**
@@ -146,7 +145,7 @@ data class MahjongRule(
         FOUR(4),         // 2 翻
         YAKUMAN(13);    //13 翻(役滿限定)
 
-        override fun toText(): Text = LiteralText(han.toString())
+        override fun toText() = LiteralText(han.toString())
     }
 
     /**
@@ -163,7 +162,7 @@ data class MahjongRule(
         LONG(60, 0),
         VERY_LONG(300, 0);
 
-        override fun toText(): Text = LiteralText("$base + $extra s")
+        override fun toText() = LiteralText("$base + $extra s")
     }
 
     /**
@@ -177,10 +176,6 @@ data class MahjongRule(
         THREE(3),
         FOUR(4);
 
-        override fun toText(): Text = LiteralText(quantity.toString())
-    }
-
-    sealed interface TextFormatting {
-        fun toText(): Text
+        override fun toText() = LiteralText(quantity.toString())
     }
 }

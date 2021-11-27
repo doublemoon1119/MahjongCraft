@@ -56,13 +56,11 @@ class SeatEntity(
          * @param height 計算用的高度, 除了 [pos] 往上開始算到 [height] 都是空氣的話就表示高度可以, 預設為 2
          * */
         fun canSpawnAt(world: ServerWorld, pos: BlockPos, height: Int = 2): Boolean {
-            val seatEntitiesAtThisPos = world.getEntitiesByType(EntityTypeRegistry.seat) {
-                it.blockPos == pos && it.isAlive
-
-            }
+            val seatEntitiesAtThisPos =
+                world.getEntitiesByType(EntityTypeRegistry.seat) { it.blockPos == pos && it.isAlive }
             val heightEnough =
                 if (height <= 0) true  //不應該出現負數的情況
-                else (1..height).find { !world.isAir(pos.offset(Direction.UP, it)) } == null  //檢查上方是否有方塊, null 表示沒有
+                else (1..height).all { world.isAir(pos.offset(Direction.UP, it)) }   //檢查上方是否有方塊
             return seatEntitiesAtThisPos.isEmpty() && heightEnough //同一格不能有其他相同實體 & 高度足夠
         }
 

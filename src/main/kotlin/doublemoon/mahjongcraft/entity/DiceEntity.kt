@@ -142,7 +142,8 @@ enum class DicePoint(
     FIVE(90f, -90f, 5),
     SIX(-180f, 0f, 6);
 
-    fun next(): DicePoint = values()[(ordinal + 1) % values().size]
+    val next: DicePoint
+        get() = values()[(this.ordinal + 1) % values().size]
 
     companion object {
         fun random(): DicePoint = values()[(0..values().lastIndex).random()]

@@ -8,7 +8,7 @@ import org.mahjong4j.hands.Mentsu
  * */
 class Fuuro(
     val mentsu: Mentsu,
-    val tileMjEntities: MutableList<MahjongTileEntity>,
+    val tileMjEntities: List<MahjongTileEntity>,
     val claimTarget: ClaimTarget,
     val claimTile: MahjongTileEntity
 )

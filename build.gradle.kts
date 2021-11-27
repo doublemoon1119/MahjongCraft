@@ -43,7 +43,6 @@ dependencies {
     }
     //Mod Menu (https://www.curseforge.com/minecraft/mc-mods/modmenu)
     val modMenuVersion: String by project
-//    modImplementation("io.github.prospector:modmenu:$modMenuVersion")
     modImplementation("com.terraformersmc:modmenu:$modMenuVersion")
 }
 tasks {

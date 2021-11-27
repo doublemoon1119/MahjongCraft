@@ -28,7 +28,7 @@ class MahjongPlayer(
 
     fun sendMahjongGamePacket(
         behavior: MahjongGameBehavior,
-        hands: List<MahjongTile> = mutableListOf(),
+        hands: List<MahjongTile> = listOf(),
         target: ClaimTarget = ClaimTarget.SELF,
         extraData: String = "",
     ) {
@@ -54,7 +54,7 @@ class MahjongPlayer(
     /**
      * 正在等待客戶端執行的動作
      * */
-    var waitingBehavior = mutableListOf<MahjongGameBehavior>()
+    val waitingBehavior = mutableListOf<MahjongGameBehavior>()
 
     /**
      * 取消等待 [waitingBehavior], 用在遊戲結束的時候, 避免遊戲結束卻還在倒數
@@ -72,7 +72,7 @@ class MahjongPlayer(
     /**
      * 玩家不能丟的牌
      * */
-    var cannotDiscardTiles = mutableListOf<MahjongTile>()
+    var cannotDiscardTiles = listOf<MahjongTile>()
         private set(value) {
             field = value
             //TODO 發數據包在客戶端提示不能丟的牌之類的
@@ -89,7 +89,7 @@ class MahjongPlayer(
      * */
     override suspend fun askToDiscardTile(
         timeoutTile: MahjongTile,
-        cannotDiscardTiles: MutableList<MahjongTile>
+        cannotDiscardTiles: List<MahjongTile>
     ): MahjongTile {
         this.cannotDiscardTiles = cannotDiscardTiles
         return waitForBehaviorResult(
@@ -98,7 +98,7 @@ class MahjongPlayer(
             extraData = "",
             target = ClaimTarget.SELF
         ) { behavior, data ->
-            this.cannotDiscardTiles = mutableListOf()
+            this.cannotDiscardTiles = listOf()
             if (behavior == MahjongGameBehavior.DISCARD) MahjongTile.values()[data.toInt()]
             else timeoutTile
         }
@@ -111,12 +111,12 @@ class MahjongPlayer(
      * */
     override suspend fun askToChii(
         tile: MahjongTile,
-        tilePairs: MutableList<Pair<MahjongTile, MahjongTile>>,
+        tilePairs: List<Pair<MahjongTile, MahjongTile>>,
         target: ClaimTarget
     ): Pair<MahjongTile, MahjongTile>? = waitForBehaviorResult(
         behavior = MahjongGameBehavior.CHII,
         extraData = Json.encodeToString( //轉成 Json 字串傳過去
-            mutableListOf(
+            listOf(
                 Json.encodeToString(tile),
                 Json.encodeToString(tilePairs)
             )
@@ -134,18 +134,18 @@ class MahjongPlayer(
      * */
     override suspend fun askToPonOrChii(
         tile: MahjongTile,
-        tilePairsForChii: MutableList<Pair<MahjongTile, MahjongTile>>,
+        tilePairsForChii: List<Pair<MahjongTile, MahjongTile>>,
         tilePairForPon: Pair<MahjongTile, MahjongTile>,
         target: ClaimTarget
     ): Pair<MahjongTile, MahjongTile>? = waitForBehaviorResult(
         behavior = MahjongGameBehavior.PON_OR_CHII,
-        waitingBehavior = mutableListOf(
+        waitingBehavior = listOf(
             MahjongGameBehavior.CHII,
             MahjongGameBehavior.PON,
             MahjongGameBehavior.SKIP
         ),
         extraData = Json.encodeToString( //轉成 Json 字串傳過去
-            mutableListOf(
+            listOf(
                 Json.encodeToString(tile),
                 Json.encodeToString(tilePairsForChii),
                 Json.encodeToString(tilePairForPon)
@@ -173,7 +173,7 @@ class MahjongPlayer(
     ): Boolean = waitForBehaviorResult(
         behavior = MahjongGameBehavior.PON,
         extraData = Json.encodeToString( //轉成 Json 字串傳過去
-            mutableListOf(
+            listOf(
                 Json.encodeToString(tile),
                 Json.encodeToString(tilePairForPon)
             )
@@ -189,13 +189,13 @@ class MahjongPlayer(
      * 傳回來的額外資料是 要暗槓或加槓的 [MahjongTile], null 表示沒有要暗槓
      * */
     override suspend fun askToAnkanOrKakan(
-        canAnkanTiles: MutableSet<MahjongTile>,
-        canKakanTiles: MutableSet<Pair<MahjongTile, ClaimTarget>>,
+        canAnkanTiles: Set<MahjongTile>,
+        canKakanTiles: Set<Pair<MahjongTile, ClaimTarget>>,
         rule: MahjongRule
     ): MahjongTile? = waitForBehaviorResult(
         behavior = MahjongGameBehavior.ANKAN_OR_KAKAN,
         extraData = Json.encodeToString(
-            mutableListOf(
+            listOf(
                 Json.encodeToString(canAnkanTiles),
                 Json.encodeToString(canKakanTiles),
                 rule.toJsonString()
@@ -220,9 +220,9 @@ class MahjongPlayer(
         rule: MahjongRule
     ): MahjongGameBehavior = waitForBehaviorResult(
         behavior = MahjongGameBehavior.MINKAN,
-        waitingBehavior = mutableListOf(MahjongGameBehavior.PON, MahjongGameBehavior.MINKAN),
+        waitingBehavior = listOf(MahjongGameBehavior.PON, MahjongGameBehavior.MINKAN),
         extraData = Json.encodeToString(
-            mutableListOf(
+            listOf(
                 Json.encodeToString(tile),
                 rule.toJsonString()
             )
@@ -241,7 +241,7 @@ class MahjongPlayer(
      * 傳過去的額外資料是 要丟的牌和丟了之後對應會聽的牌,
      * 傳回來的額外資料是 空白
      * */
-    override suspend fun askToRiichi(tilePairsForRiichi: MutableList<Pair<MahjongTile, MutableList<MahjongTile>>>): MahjongTile? =
+    override suspend fun askToRiichi(tilePairsForRiichi: List<Pair<MahjongTile, List<MahjongTile>>>): MahjongTile? =
         waitForBehaviorResult(
             behavior = MahjongGameBehavior.RIICHI,
             extraData = Json.encodeToString(tilePairsForRiichi),
@@ -297,7 +297,7 @@ class MahjongPlayer(
      * */
     private suspend fun <T> waitForBehaviorResult(
         behavior: MahjongGameBehavior,
-        waitingBehavior: List<MahjongGameBehavior> = mutableListOf(behavior),
+        waitingBehavior: List<MahjongGameBehavior> = listOf(behavior),
         canSkip: Boolean = true,
         extraData: String,
         hands: List<MahjongTile> = this.hands.toMahjongTileList(),

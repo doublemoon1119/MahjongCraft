@@ -71,44 +71,50 @@ class MahjongBehaviorGui(
 
     /**
      * 根據 [behavior] 和 [data] 產生的選項的牌,
-     * 用來渲染在畫面中央, 每個牌列表的最後一個都是被鳴的牌 (加槓除外, 加槓是倒數第 2 個是原本碰被鳴的牌, 最後一張是加槓的牌)
-     * [Pair] 的格式為 Pair<Pair<行為,這個行為的對象>,牌的列表> (行為對象只有在 暗槓或加槓 的時候才會有特殊處理,否則都是 [target],加槓的對象是原本碰的對像)
+     * 用來渲染在畫面中央, 每個 [BehaviorItem.tiles] 的最後一個都是被鳴的牌 (加槓除外, 加槓是倒數第 2 個是原本碰被鳴的牌, 最後一張是加槓的牌)
+     * ([BehaviorItem.target] 只有在 暗槓或加槓 的時候才會有特殊處理, 否則都是 [target], 加槓的對象是原本碰的對象)
      * */
-    private val tilesForOptions =
-        mutableListOf<Pair<Pair<MahjongGameBehavior, ClaimTarget>, MutableList<MahjongTile>>>().apply {
+    private val behaviorItemLists =
+        mutableListOf<BehaviorItem>().apply {
             when (behavior) {
                 MahjongGameBehavior.CHII -> {
-                    val dataList = Json.decodeFromString<MutableList<String>>(data)
+                    val dataList = Json.decodeFromString<List<String>>(data)
                     claimingTile = Json.decodeFromString<MahjongTile>(dataList[0])
                     val tilePairsForChii =
-                        Json.decodeFromString<MutableList<Pair<MahjongTile, MahjongTile>>>(dataList[1])
+                        Json.decodeFromString<List<Pair<MahjongTile, MahjongTile>>>(dataList[1])
                     tilePairsForChii.forEach {
                         val tiles = it.toList().toMutableList().apply { this += claimingTile!! }
-                        this += behavior to target to tiles
+                        this += BehaviorItem(behavior, target, tiles)
                     }
                 }
                 MahjongGameBehavior.PON_OR_CHII -> {
-                    val dataList = Json.decodeFromString<MutableList<String>>(data)
+                    val dataList = Json.decodeFromString<List<String>>(data)
                     claimingTile = Json.decodeFromString<MahjongTile>(dataList[0])
                     val tilePairsForChii =
-                        Json.decodeFromString<MutableList<Pair<MahjongTile, MahjongTile>>>(dataList[1])
+                        Json.decodeFromString<List<Pair<MahjongTile, MahjongTile>>>(dataList[1])
                     val tilePairForPon = Json.decodeFromString<Pair<MahjongTile, MahjongTile>>(dataList[2])
-                    this += MahjongGameBehavior.PON to target to tilePairForPon.toList().toMutableList()
-                        .apply { this += claimingTile!! }
+                    this += BehaviorItem(
+                        behavior = MahjongGameBehavior.PON,
+                        target = target,
+                        tiles = tilePairForPon.toList().toMutableList().apply { this += claimingTile!! }
+                    )
                     tilePairsForChii.forEach {
-                        this += MahjongGameBehavior.CHII to target to it.toList().toMutableList()
-                            .apply { this += claimingTile!! }
+                        this += BehaviorItem(
+                            behavior = MahjongGameBehavior.CHII,
+                            target = target,
+                            tiles = it.toList().toMutableList().apply { this += claimingTile!! }
+                        )
                     }
                 }
                 MahjongGameBehavior.PON -> {
-                    val dataList = Json.decodeFromString<MutableList<String>>(data)
+                    val dataList = Json.decodeFromString<List<String>>(data)
                     claimingTile = Json.decodeFromString<MahjongTile>(dataList[0])
                     val tilePairForPon = Json.decodeFromString<Pair<MahjongTile, MahjongTile>>(dataList[1])
                     val tiles = tilePairForPon.toList().toMutableList().apply { this += claimingTile!! }
-                    this += MahjongGameBehavior.PON to target to tiles
+                    this += BehaviorItem(MahjongGameBehavior.PON, target, tiles)
                 }
                 MahjongGameBehavior.ANKAN_OR_KAKAN -> {
-                    val dataList = Json.decodeFromString<MutableList<String>>(data)
+                    val dataList = Json.decodeFromString<List<String>>(data)
                     val canAnkanTiles = Json.decodeFromString<MutableSet<MahjongTile>>(dataList[0])
                     val canKakanTiles = Json.decodeFromString<MutableSet<Pair<MahjongTile, ClaimTarget>>>(dataList[1])
                     val rule = MahjongRule.fromJsonString(dataList[2])
@@ -118,7 +124,7 @@ class MahjongBehaviorGui(
                         val isFiveTile = //是否是 5 的牌
                             tile.mahjong4jTile == MahjongTile.S5.mahjong4jTile || tile.mahjong4jTile == MahjongTile.P5.mahjong4jTile || tile.mahjong4jTile == MahjongTile.M5.mahjong4jTile
                         if (redFiveQuantity == 0 || !isFiveTile) { //沒有赤牌 或 不是 5 的牌
-                            this += MahjongGameBehavior.ANKAN to target to MutableList(4) { tile }
+                            this += BehaviorItem(MahjongGameBehavior.ANKAN, target, List(4) { tile })
                         } else { //有赤牌,且是 5 的牌
                             val tiles = mutableListOf<MahjongTile>()
                             val redFiveTile = when (tile) {
@@ -128,10 +134,8 @@ class MahjongBehaviorGui(
                                 else -> null
                             }!!
                             val notRedFiveTile = MahjongTile.values()[redFiveTile.mahjong4jTile.code]
-                            repeat(4) { times ->
-                                tiles += if (times < redFiveQuantity) redFiveTile else notRedFiveTile
-                            }
-                            this += MahjongGameBehavior.ANKAN to target to tiles
+                            repeat(4) { times -> tiles += if (times < redFiveQuantity) redFiveTile else notRedFiveTile }
+                            this += BehaviorItem(MahjongGameBehavior.ANKAN, target, tiles)
                         }
                     }
                     canKakanTiles.forEach { //添加加槓顯示的牌
@@ -140,7 +144,7 @@ class MahjongBehaviorGui(
                         val isFiveTile = //是否是 5 的牌
                             tile.mahjong4jTile == MahjongTile.S5.mahjong4jTile || tile.mahjong4jTile == MahjongTile.P5.mahjong4jTile || tile.mahjong4jTile == MahjongTile.M5.mahjong4jTile
                         if (redFiveQuantity == 0 || !isFiveTile) { //沒有赤牌 或 不是 5 的牌
-                            this += MahjongGameBehavior.KAKAN to oTarget to MutableList(4) { tile }
+                            this += BehaviorItem(MahjongGameBehavior.KAKAN, oTarget, List(4) { tile })
                         } else { //有赤牌,且是 5 的牌
                             val tiles = mutableListOf<MahjongTile>()
                             val redFiveAmount = redFiveQuantity - if (claimingTile!!.isRed) 1 else 0
@@ -151,7 +155,7 @@ class MahjongBehaviorGui(
                                 tiles += if (times < redFiveAmount) redFiveTile else notRedFiveTile
                             }
                             tiles += claimingTile!! //最後一張是加槓牌
-                            this += MahjongGameBehavior.KAKAN to oTarget to tiles
+                            this += BehaviorItem(MahjongGameBehavior.KAKAN, oTarget, tiles)
                         }
                     }
                 }
@@ -163,8 +167,8 @@ class MahjongBehaviorGui(
                     val isFiveTile = //是否是 5 的牌
                         claimingTile!!.mahjong4jTile == MahjongTile.S5.mahjong4jTile || claimingTile!!.mahjong4jTile == MahjongTile.P5.mahjong4jTile || claimingTile!!.mahjong4jTile == MahjongTile.M5.mahjong4jTile
                     if (redFiveQuantity == 0 || !isFiveTile) { //沒有赤牌 或 不是 5 的牌
-                        this += MahjongGameBehavior.MINKAN to target to MutableList(4) { claimingTile!! }
-                        this += MahjongGameBehavior.PON to target to MutableList(3) { claimingTile!! }
+                        this += BehaviorItem(MahjongGameBehavior.MINKAN, target, List(4) { claimingTile!! })
+                        this += BehaviorItem(MahjongGameBehavior.PON, target, List(3) { claimingTile!! })
                     } else { //有赤牌,且是 5 的牌
                         val tilesForPon = mutableListOf<MahjongTile>()
                         val redFiveAmount = redFiveQuantity - if (claimingTile!!.isRed) 1 else 0
@@ -176,8 +180,8 @@ class MahjongBehaviorGui(
                         tilesForKan += notRedFiveTile
                         tilesForPon += claimingTile!! //最後一張是加槓牌
                         tilesForKan += claimingTile!!
-                        this += MahjongGameBehavior.MINKAN to target to tilesForKan
-                        this += MahjongGameBehavior.PON to target to tilesForPon
+                        this += BehaviorItem(MahjongGameBehavior.MINKAN, target, tilesForKan)
+                        this += BehaviorItem(MahjongGameBehavior.PON, target, tilesForPon)
                     }
                 }
                 MahjongGameBehavior.RIICHI -> { //立直會顯示聽的牌
@@ -185,19 +189,19 @@ class MahjongBehaviorGui(
                         Json.decodeFromString<MutableList<Pair<MahjongTile, MutableList<MahjongTile>>>>(data)
                     tilePairsForRiichi.forEach { //只會顯示可以丟的牌, 並且不會顯示無役跟待取以及待取剩幾張
                         val tile = it.first
-                        this += MahjongGameBehavior.RIICHI to target to mutableListOf(tile)
+                        this += BehaviorItem(MahjongGameBehavior.RIICHI, target, listOf(tile))
                     }
                 }
                 MahjongGameBehavior.KYUUSHU_KYUUHAI -> { //九種九牌會顯示手牌中所有么九牌
-                    val allYaochu = hands.filter { it.mahjong4jTile.isYaochu }.toMutableList()
-                    this += behavior to target to allYaochu
+                    val allYaochu = hands.filter { it.mahjong4jTile.isYaochu }
+                    this += BehaviorItem(behavior, target, allYaochu)
                 }
                 MahjongGameBehavior.RON -> {
                     claimingTile = Json.decodeFromString<MahjongTile>(data)
-                    this += behavior to target to mutableListOf(claimingTile!!)
+                    this += BehaviorItem(behavior, target, listOf(claimingTile!!))
                 }
                 MahjongGameBehavior.TSUMO -> { //自摸為手牌最後一張
-                    this += behavior to target to mutableListOf(hands.last())
+                    this += BehaviorItem(behavior, target, listOf(hands.last()))
                 }
                 else -> { //剩下的結果都不會顯示牌
                 }
@@ -218,10 +222,9 @@ class MahjongBehaviorGui(
      * 拿來顯示手牌提示用, 僅使用 [Tile] 來比對是否為同張牌
      * */
     private val handsHintTiles: MutableList<Tile> = mutableListOf<Tile>().apply {
-        tilesForOptions.forEach {
-            val behavior = it.first.first
-            val tiles = it.second.toMutableList()
-            when (behavior) {
+        behaviorItemLists.forEach {
+            val tiles = it.tiles.toMutableList()
+            when (it.behavior) {
                 MahjongGameBehavior.ANKAN,
                 MahjongGameBehavior.KAKAN,
                 MahjongGameBehavior.MINKAN,
@@ -323,10 +326,10 @@ class MahjongBehaviorGui(
 
     private fun WPlainPanel.optionsWidget(x: Int, y: Int, width: Int, height: Int) =
         scrollPanel(x, y, width, height) { //算出第一個 x 的偏移, 讓選項置中
-            val totalWidth = tilesForOptions.size * OptionItem.WIDTH + (tilesForOptions.size - 1) * OPTION_GAP
+            val totalWidth = behaviorItemLists.size * OptionItem.WIDTH + (behaviorItemLists.size - 1) * OPTION_GAP
             val offsetX = (width - totalWidth) / 2
             val x0 = if (offsetX > 0) offsetX else 0
-            tilesForOptions.forEachIndexed { index, tilesForOption ->
+            behaviorItemLists.forEachIndexed { index, tilesForOption ->
                 val option = OptionItem(tilesForOption, hands, data)
                 val optionX = x0 + (OptionItem.WIDTH + OPTION_GAP) * index
                 this.add(option, optionX, 0, OptionItem.WIDTH, OptionItem.HEIGHT)
@@ -334,19 +337,27 @@ class MahjongBehaviorGui(
         }
 
     /**
-     * @param tilesForOption 請參考 [tilesForOptions]
+     * 對應 [behavior] 的牌, 透過 [behaviorItemLists] 處理
+     * */
+    data class BehaviorItem(
+        val behavior: MahjongGameBehavior,
+        val target: ClaimTarget,
+        val tiles: List<MahjongTile>
+    )
+
+    /**
+     * @param behaviorItem 請參考 [BehaviorItem] and [behaviorItemLists]
      * @param data 就是 [MahjongBehaviorGui.data], 單純在立直的時候產生 tooltip 用
      * */
     class OptionItem(
-        tilesForOption: Pair<Pair<MahjongGameBehavior, ClaimTarget>, MutableList<MahjongTile>>,
+        behaviorItem: BehaviorItem,
         hands: List<MahjongTile>,
         data: String
     ) : WPlainPanel() {
         private val player = MinecraftClient.getInstance().player!!
-        private val behaviorAndTarget = tilesForOption.first
-        private val behavior = behaviorAndTarget.first
-        private val target = behaviorAndTarget.second
-        private val tiles = tilesForOption.second
+        private val behavior = behaviorItem.behavior
+        private val target = behaviorItem.target
+        private val tiles = behaviorItem.tiles
 
         init {
             setSize(WIDTH, HEIGHT)
@@ -359,13 +370,13 @@ class MahjongBehaviorGui(
                         Json.decodeFromString<MutableList<Pair<MahjongTile, MutableList<MahjongTile>>>>(data)
                     val pair = tilePairsForRiichi.find { it.first == tiles[0] }
                     val machi = pair!!.second
-                        .distinctBy { tile -> tile.displayNameString } //去掉重複的選項
+                        .distinctBy { tile -> tile.toText().string } //去掉重複的選項
                         .sortedBy { tile -> tile.sortOrder } //按照順序排好
-                    texts += machi.map { LiteralText("§3 - §e${it.displayNameString}") }
+                    texts += machi.map { LiteralText("§3 - §e${it.toText().string}") }
                     texts.toTypedArray()
                 }
                 MahjongGameBehavior.EXHAUSTIVE_DRAW -> arrayOf(
-                    TranslatableText(behavior.lang).formatted(Formatting.RED).formatted(Formatting.BOLD)
+                    behavior.toText().formatted(Formatting.RED).formatted(Formatting.BOLD)
                 )
                 else -> arrayOf() //目前剩下的暫時都沒有 tooltip
             }
@@ -377,9 +388,9 @@ class MahjongBehaviorGui(
                 label = when (behavior) {
                     MahjongGameBehavior.MINKAN,
                     MahjongGameBehavior.ANKAN,
-                    MahjongGameBehavior.KAKAN -> TranslatableText(MahjongGameBehavior.KAN.lang)
-                    MahjongGameBehavior.KYUUSHU_KYUUHAI -> TranslatableText(MahjongGameBehavior.EXHAUSTIVE_DRAW.lang)
-                    else -> TranslatableText(behavior.lang)
+                    MahjongGameBehavior.KAKAN -> MahjongGameBehavior.KAN.toText()
+                    MahjongGameBehavior.KYUUSHU_KYUUHAI -> MahjongGameBehavior.EXHAUSTIVE_DRAW.toText()
+                    else -> behavior.toText()
                 },
                 onClick = { //這裡 onClick 之後並不會馬上關閉 GUI, 會等到 [ClientCountdownTimeHandler] 收到清除時間的數據後, 會自己關
                     val claimingTile =
@@ -517,5 +528,4 @@ class MahjongBehaviorGui(
         private const val HINT_HEIGHT = TILE_GAP * 2
         private const val BORDER_MARGIN = 8
     }
-
 }

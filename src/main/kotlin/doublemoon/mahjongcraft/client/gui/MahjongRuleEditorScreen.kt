@@ -6,6 +6,7 @@ import doublemoon.mahjongcraft.client.gui.widget.*
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTableBehavior
 import doublemoon.mahjongcraft.network.MahjongTablePacketHandler.sendMahjongTablePacket
+import doublemoon.mahjongcraft.util.TextFormatting
 import io.github.cottonmc.cotton.gui.client.CottonClientScreen
 import io.github.cottonmc.cotton.gui.client.LightweightGuiDescription
 import io.github.cottonmc.cotton.gui.widget.WButton
@@ -243,7 +244,7 @@ class MahjongRuleEditorGui(
 
         private inline fun <reified T : Enum<T>> getTooltip(nowValue: T): Array<Text> =
             enumValues<T>().map {
-                if (it is MahjongRule.TextFormatting) {
+                if (it is TextFormatting) {
                     it.toText().also { text ->
                         if (text is MutableText) {
                             val color = if (it == nowValue) Formatting.GREEN else Formatting.RED

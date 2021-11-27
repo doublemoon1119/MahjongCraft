@@ -69,7 +69,7 @@ class MahjongBoard(
      * 目前沒有人有副露
      * */
     private val noFuuro: Boolean
-        get() = game.players.find { it.fuuroList.size > 0 } == null
+        get() = game.players.none { it.fuuroList.size > 0 }
 
     /**
      * 是否第一輪就胡,

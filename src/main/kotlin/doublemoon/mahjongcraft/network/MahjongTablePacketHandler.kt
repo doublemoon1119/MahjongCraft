@@ -86,7 +86,6 @@ object MahjongTablePacketHandler : CustomPacketHandler {
     ) {
         MahjongTablePacket(byteBuf).apply {
             val world = client.world!!
-//        logger.info("Received MahjongTablePacket, behavior=$behavior, pos=$pos, extraData=$extraData")
             when (behavior) {
                 //加入 GUI 參考自 https://github.com/CottonMC/LibGui/wiki/Getting-Started-with-GUIs
                 MahjongTableBehavior.OPEN_TABLE_WAITING_GUI -> {  //開啟麻將桌等待中的 GUI
@@ -118,7 +117,6 @@ object MahjongTablePacketHandler : CustomPacketHandler {
     ) {
         MahjongTablePacket(byteBuf).apply {
             val world = player.world as ServerWorld
-//        logger.info("Received MahjongTablePacket, behavior=$behavior, pos=$pos, extraData=$extraData")
             when (behavior) {
                 MahjongTableBehavior.JOIN -> syncBlockEntityWithGame(world = world, pos = pos) {  //讓玩家加入遊戲
                     if (status == GameStatus.WAITING) join(player)

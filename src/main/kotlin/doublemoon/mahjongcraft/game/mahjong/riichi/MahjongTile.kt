@@ -3,18 +3,17 @@ package doublemoon.mahjongcraft.game.mahjong.riichi
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.entity.MahjongTileEntity
 import doublemoon.mahjongcraft.id
+import doublemoon.mahjongcraft.util.TextFormatting
 import net.minecraft.text.LiteralText
-import net.minecraft.text.MutableText
 import net.minecraft.text.TranslatableText
 import net.minecraft.util.Identifier
 import org.mahjong4j.tile.Tile
 import org.mahjong4j.tile.TileType
-import java.util.*
 
 /**
  * 所有麻將牌
  * */
-enum class MahjongTile {
+enum class MahjongTile : TextFormatting {
     M1,
     M2,
     M3,
@@ -144,19 +143,13 @@ enum class MahjongTile {
             }
         }
 
-    val displayName: MutableText
-        get() {
-            return when (mahjong4jTile.type) {
-                TileType.MANZU -> TranslatableText("$MOD_ID.game.tile.man", mahjong4jTile.number)
-                TileType.PINZU -> TranslatableText("$MOD_ID.game.tile.pin", mahjong4jTile.number)
-                TileType.SOHZU -> TranslatableText("$MOD_ID.game.tile.sou", mahjong4jTile.number)
-                TileType.FONPAI, TileType.SANGEN -> TranslatableText("$MOD_ID.game.tile.${name.lowercase()}")
-                else -> LiteralText("")
-            }
-        }
-
-    val displayNameString: String
-        get() = displayName.string
+    override fun toText() = when (mahjong4jTile.type) {
+        TileType.MANZU -> TranslatableText("$MOD_ID.game.tile.man", mahjong4jTile.number)
+        TileType.PINZU -> TranslatableText("$MOD_ID.game.tile.pin", mahjong4jTile.number)
+        TileType.SOHZU -> TranslatableText("$MOD_ID.game.tile.sou", mahjong4jTile.number)
+        TileType.FONPAI, TileType.SANGEN -> TranslatableText("$MOD_ID.game.tile.${name.lowercase()}")
+        else -> LiteralText("")
+    }
 
     companion object {
 
