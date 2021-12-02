@@ -46,19 +46,18 @@ dependencies {
     modImplementation("com.terraformersmc:modmenu:$modMenuVersion")
 }
 tasks {
-    val javaVersion = JavaVersion.VERSION_16
-    withType<JavaCompile> {
+    val javaVersion = JavaVersion.VERSION_17
+    compileJava {
         options.encoding = "UTF-8"
         options.release.set(javaVersion.toString().toInt())
         sourceCompatibility = "$javaVersion"
         targetCompatibility = "$javaVersion"
     }
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    compileKotlin {
         kotlinOptions {
             jvmTarget = "$javaVersion"
             //暫時先無視 實驗性序列化 API 的提示 (主要用於 Json.encodeToString<T>() 跟 Json.decodeFromString<T>())
-            freeCompilerArgs =
-                freeCompilerArgs + "-Xuse-experimental=kotlinx.serialization.ExperimentalSerializationApi"
+            freeCompilerArgs = freeCompilerArgs + "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi"
         }
         sourceCompatibility = "$javaVersion"
         targetCompatibility = "$javaVersion"

@@ -11,11 +11,13 @@ import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
 import doublemoon.mahjongcraft.network.MahjongTablePacketHandler
 import doublemoon.mahjongcraft.registry.BlockEntityTypeRegistry
 import kotlinx.serialization.json.Json
-import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable
 import net.minecraft.block.BlockState
 import net.minecraft.block.entity.BlockEntity
 import net.minecraft.client.MinecraftClient
 import net.minecraft.nbt.NbtCompound
+import net.minecraft.network.Packet
+import net.minecraft.network.listener.ClientPlayPacketListener
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.World
@@ -23,7 +25,7 @@ import net.minecraft.world.World
 class MahjongTableBlockEntity(
     pos: BlockPos,
     state: BlockState
-) : BlockEntity(BlockEntityTypeRegistry.mahjongTable, pos, state), BlockEntityClientSerializable {
+) : BlockEntity(BlockEntityTypeRegistry.mahjongTable, pos, state) {
     private var gameInitialized = false
     val players = arrayListOf("", "", "", "") //以玩家的 stringUUID 儲存, 先以 4 個空字串儲存, (空字串表示空位)
     val playerEntityNames = arrayListOf("", "", "", "") //以實體的 entityName 儲存
@@ -38,14 +40,28 @@ class MahjongTableBlockEntity(
 
     override fun markDirty() {
         super.markDirty()
-        //來自 BlockEntityClientSerializable, 使用 sync() 來同步資料, 對要同步的方塊實體 markDirty() 就好
-        world?.isClient?.let { isClient ->
-            if (!isClient) sync()
+        //對伺服端要同步的方塊實體 markDirty() 就好
+        if (this.hasWorld() && !this.world!!.isClient) {
+            (world as ServerWorld).chunkManager.markForUpdate(getPos())
         }
     }
 
-    override fun fromClientTag(tag: NbtCompound) {
-        readNbt(tag)
+    override fun readNbt(nbt: NbtCompound) {
+        super.readNbt(nbt)
+        with(nbt) {
+            repeat(4) {
+                players[it] = getString("PlayerStringUUID$it")
+                playerEntityNames[it] = getString("PlayerEntityName$it")
+                bots[it] = getBoolean("Bot$it")
+                ready[it] = getBoolean("PlayerReady$it")
+                seat[it] = getString("Seat$it")
+                points[it] = getInt("Point$it")
+            }
+            dealer = getString("Dealer")
+            rule = MahjongRule.fromJsonString(getString("Rule"))
+            playing = getBoolean("Playing")
+            round = Json.decodeFromString(MahjongRound.serializer(), getString("Round"))
+        }
         world?.isClient?.let { isClient ->
             if (isClient) { //當有同步 tag 的情況出現
                 val screen = MinecraftClient.getInstance().currentScreen
@@ -58,29 +74,7 @@ class MahjongTableBlockEntity(
         }
     }
 
-    override fun toClientTag(tag: NbtCompound): NbtCompound = writeNbt(tag)
-
-    override fun readNbt(nbt: NbtCompound) {
-        super.readNbt(nbt)
-        if (cachedState[MahjongTable.PART] == MahjongTablePart.BOTTOM_CENTER) {
-            with(nbt) {
-                repeat(4) {
-                    players[it] = getString("PlayerStringUUID$it")
-                    playerEntityNames[it] = getString("PlayerEntityName$it")
-                    bots[it] = getBoolean("Bot$it")
-                    ready[it] = getBoolean("PlayerReady$it")
-                    seat[it] = getString("Seat$it")
-                    points[it] = getInt("Point$it")
-                }
-                dealer = getString("Dealer")
-                rule = MahjongRule.fromJsonString(getString("Rule"))
-                playing = getBoolean("Playing")
-                round = Json.decodeFromString(MahjongRound.serializer(), getString("Round"))
-            }
-        }
-    }
-
-    override fun writeNbt(nbt: NbtCompound): NbtCompound {
+    override fun writeNbt(nbt: NbtCompound) {
         if (cachedState[MahjongTable.PART] == MahjongTablePart.BOTTOM_CENTER) {
             with(nbt) {
                 repeat(4) {
@@ -97,10 +91,11 @@ class MahjongTableBlockEntity(
                 putString("Round", Json.encodeToString(MahjongRound.serializer(), round))
             }
         }
-        return super.writeNbt(nbt)
     }
 
-    override fun toInitialChunkDataNbt(): NbtCompound = writeNbt(NbtCompound())
+    override fun toInitialChunkDataNbt(): NbtCompound = NbtCompound().also { writeNbt(it) }
+
+    override fun toUpdatePacket(): Packet<ClientPlayPacketListener> = BlockEntityUpdateS2CPacket.create(this)
 
     companion object {
         fun tick(world: World, pos: BlockPos, blockEntity: MahjongTableBlockEntity) {

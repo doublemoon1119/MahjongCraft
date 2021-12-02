@@ -91,7 +91,6 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
                 }
                 if (blockPart == MahjongTablePart.BOTTOM_CENTER && !player.isCreative) {  //讓玩家在非創造破壞時, 讓中間的桌子掉落
                     world.breakBlock(blockPos, true)
-//                    world.syncWorldEvent(player, 2001, blockPos, getRawIdFromState(blockState))  //這是拿來撥音效跟一些粒子特效的的
                 } else {
                     world.breakBlock(blockPos, false)
                 }

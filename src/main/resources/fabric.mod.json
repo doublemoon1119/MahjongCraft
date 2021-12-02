@@ -36,10 +36,10 @@
     "mahjongcraft.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.12.5",
+    "fabricloader": ">=0.12.8",
     "fabric": "*",
-    "minecraft": "1.17.1",
-    "fabric-language-kotlin": ">=1.6.5+kotlin.1.5.31",
-    "cloth-config2": "~5.0.38"
+    "minecraft": "1.18.x",
+    "fabric-language-kotlin": ">=1.7.0+kotlin.1.6.0",
+    "cloth-config2": "~6.0.42"
   }
 }

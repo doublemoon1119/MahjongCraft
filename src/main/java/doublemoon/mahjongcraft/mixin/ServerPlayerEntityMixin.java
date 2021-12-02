@@ -6,7 +6,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,8 +24,6 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
     @Shadow
     public ServerPlayNetworkHandler networkHandler;
 
-    @Shadow
-    public abstract ServerWorld getServerWorld();
 
     @Inject(method = "stopRiding", at = @At("HEAD"), cancellable = true)
     public void onStopRiding(CallbackInfo ci) {

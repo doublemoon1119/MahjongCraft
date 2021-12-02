@@ -79,7 +79,7 @@ object RenderHelper {
             push()
             val client = MinecraftClient.getInstance()
             val offset = -textRenderer.getWidth(text) / 2f
-            val matrix4f = matrices.peek().model
+            val matrix4f = matrices.peek().positionMatrix
             translate(offsetX, offsetY, offsetZ)
             scale(scale, scale, scale)
             multiply(client.entityRenderDispatcher.rotation)
