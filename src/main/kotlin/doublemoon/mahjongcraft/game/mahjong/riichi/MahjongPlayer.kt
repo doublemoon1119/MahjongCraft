@@ -84,7 +84,7 @@ class MahjongPlayer(
 
     /**
      * 要求並讓玩家丟牌的功能,
-     * 傳過去的額外資料是 不能丟的牌的 [MahjongTile] 編號列表,
+     * 傳過去的額外資料是 空的 (不能丟的牌的 [MahjongTile] 編號列表, 交給 [MahjongPlayer.cannotDiscardTiles] 處理),
      * 傳回來的額外資料是 要丟的牌的 [MahjongTile] 編號
      * */
     override suspend fun askToDiscardTile(
@@ -94,13 +94,14 @@ class MahjongPlayer(
         this.cannotDiscardTiles = cannotDiscardTiles
         return waitForBehaviorResult(
             behavior = MahjongGameBehavior.DISCARD,
-            canSkip = false,
             extraData = "",
             target = ClaimTarget.SELF
         ) { behavior, data ->
             this.cannotDiscardTiles = listOf()
-            if (behavior == MahjongGameBehavior.DISCARD) MahjongTile.values()[data.toInt()]
-            else timeoutTile
+            val tileCode = data.toIntOrNull() ?: return@waitForBehaviorResult timeoutTile
+            if (behavior == MahjongGameBehavior.DISCARD && tileCode in MahjongTile.values().indices) {
+                MahjongTile.values()[tileCode]
+            } else timeoutTile
         }
     }
 
@@ -123,7 +124,10 @@ class MahjongPlayer(
         ),
         target = target
     ) { behavior, data ->
-        if (behavior == MahjongGameBehavior.CHII) Json.decodeFromString(data)
+        val result = runCatching {
+            Json.decodeFromString<Pair<MahjongTile, MahjongTile>>(data)
+        }.getOrNull() ?: return@waitForBehaviorResult null
+        if (behavior == MahjongGameBehavior.CHII && result in tilePairs) result
         else null
     }
 
@@ -154,7 +158,12 @@ class MahjongPlayer(
         target = target
     ) { behavior, data ->
         when (behavior) {
-            MahjongGameBehavior.CHII -> Json.decodeFromString(data)
+            MahjongGameBehavior.CHII -> {
+                val result = runCatching {
+                    Json.decodeFromString<Pair<MahjongTile, MahjongTile>>(data)
+                }.getOrNull() ?: return@waitForBehaviorResult null
+                if (result in tilePairsForChii) result else null
+            }
             MahjongGameBehavior.PON -> tile to tile
             else -> null
         }
@@ -203,8 +212,12 @@ class MahjongPlayer(
         ),
         target = ClaimTarget.SELF
     ) { behavior, data ->
-        if (behavior == MahjongGameBehavior.ANKAN_OR_KAKAN) Json.decodeFromString(data)
-        else null
+        val result = runCatching {
+            Json.decodeFromString<MahjongTile>(data)
+        }.getOrNull() ?: return@waitForBehaviorResult null
+        if (behavior == MahjongGameBehavior.ANKAN_OR_KAKAN) {
+            if (result in canAnkanTiles || result in canKakanTiles.unzip().first) result else null
+        } else null
     }
 
     /**
@@ -247,7 +260,10 @@ class MahjongPlayer(
             extraData = Json.encodeToString(tilePairsForRiichi),
             target = ClaimTarget.SELF
         ) { behavior, data ->
-            if (behavior == MahjongGameBehavior.RIICHI) Json.decodeFromString(data)
+            val result = runCatching {
+                Json.decodeFromString<MahjongTile>(data)
+            }.getOrNull() ?: return@waitForBehaviorResult null
+            if (behavior == MahjongGameBehavior.RIICHI && result in tilePairsForRiichi.unzip().first) result
             else null
         }
 
@@ -298,14 +314,13 @@ class MahjongPlayer(
     private suspend fun <T> waitForBehaviorResult(
         behavior: MahjongGameBehavior,
         waitingBehavior: List<MahjongGameBehavior> = listOf(behavior),
-        canSkip: Boolean = true,
         extraData: String,
         hands: List<MahjongTile> = this.hands.toMahjongTileList(),
         target: ClaimTarget,
         onResult: (MahjongGameBehavior, String) -> T
     ): T {
         this.waitingBehavior += waitingBehavior
-        if (canSkip) this.waitingBehavior += MahjongGameBehavior.SKIP
+        this.waitingBehavior += MahjongGameBehavior.SKIP
         this.sendMahjongGamePacket(
             behavior = behavior,
             hands = hands,
