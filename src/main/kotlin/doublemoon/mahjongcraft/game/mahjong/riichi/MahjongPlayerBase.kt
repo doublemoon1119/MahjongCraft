@@ -908,7 +908,7 @@ abstract class MahjongPlayerBase : GamePlayer {
     /**
      * 拿牌的功能
      * */
-    fun takeTile(tile: MahjongTileEntity) {
+    fun drawTile(tile: MahjongTileEntity) {
         hands += tile
         tile.ownerUUID = uuid
         tile.facing = TileFacing.HORIZONTAL

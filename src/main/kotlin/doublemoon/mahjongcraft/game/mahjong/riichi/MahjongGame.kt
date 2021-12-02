@@ -272,7 +272,7 @@ class MahjongGame(
             dices.clear()
             delayOnServer(1000)
             var nextPlayer: MahjongPlayerBase = dealer //莊家開始打牌
-            var takeTile = true //這次動作需不需要拿牌
+            var drawTile = true //這次動作需不需要拿牌
             val cannotDiscardTiles = mutableListOf<MahjongTile>() //不能丟的牌的 mahjong4j 編號列表 出現在吃或碰的時候, 不能丟剛吃或剛碰的牌, 每次丟牌後清空
             roundLoop@ while (isPlaying) {
                 //這圈 while 最後要判斷 [wall] 還有沒有牌, 否則拿最後一張牌的後一張牌的時候會出問題
@@ -282,12 +282,12 @@ class MahjongGame(
                 val seatIndex = seat.indexOf(player)
                 val isDealer = dealer == player //是否是莊家
                 var timeoutTile = player.hands.last() //超時操作預設丟棄的牌 (預設為手牌最後一張)
-                if (takeTile) { //這次動作需要拿牌
+                if (drawTile) { //這次動作需要拿牌
                     val lastTile =
                         if (isDealer && player.discardedTiles.size == 0) player.hands.last() //如果是莊家第一輪->取手牌最後一張牌
                         else board.wall.removeFirst() //如果不是莊家第一輪->從牌山拿第一張牌,並加入手牌
                             .also {
-                                player.takeTile(it)
+                                player.drawTile(it)
                                 board.sortHands(player = player, lastTile = it) //指定最後一張牌, 否則摸的牌會被整理進去
                             }
                     if (player is MahjongBot) delayOnServer(500) //如果這是機器人, 摸牌後會等待 500 毫秒再執行動作
@@ -356,7 +356,7 @@ class MahjongGame(
                                             }
                                         }
                                     }
-                                    val rinshanTile = board.takeRinshanTile(player = player) //摸嶺上牌
+                                    val rinshanTile = board.drawRinshanTile(player = player) //摸嶺上牌
                                     board.sortHands(player = player, lastTile = rinshanTile) //整理並指定最後一張牌為摸到的嶺上牌
                                     //判斷嶺上開花
                                     val rinshanKaihoh = player.canWin(
@@ -394,7 +394,7 @@ class MahjongGame(
                             timeoutTile = lastTile //將超時會自動摸切的牌換成摸的牌
                         }
                     }
-                } else takeTile = true
+                } else drawTile = true
                 val riichiSengen = //丟牌前判斷玩家要不要立直宣言
                     if (!board.isHoutei && player.isRiichiable) { //不是 河底 且 能夠立直
                         player.askToRiichi() //詢問是否要立直宣言, 並選擇要丟出去的牌
@@ -477,7 +477,7 @@ class MahjongGame(
                                     }
                                     board.sortFuuro(player = canMinKanOrPonPlayer)
                                     nextPlayer = canMinKanOrPonPlayer
-                                    takeTile = false
+                                    drawTile = false
                                     cannotDiscardTiles += tileDiscarded.mahjongTile
                                     true
                                 }
@@ -486,7 +486,7 @@ class MahjongGame(
                                         it.playSoundAtSeat(soundEvent = SoundRegistry.kan)
                                     }
                                     board.sortFuuro(player = canMinKanOrPonPlayer) //整理副露顯示
-                                    val rinshanTile = board.takeRinshanTile(player = canMinKanOrPonPlayer) //摸嶺上牌
+                                    val rinshanTile = board.drawRinshanTile(player = canMinKanOrPonPlayer) //摸嶺上牌
                                     board.sortHands(
                                         player = canMinKanOrPonPlayer,
                                         lastTile = rinshanTile
@@ -517,7 +517,7 @@ class MahjongGame(
                                         break
                                     }
                                     nextPlayer = canMinKanOrPonPlayer
-                                    takeTile = false
+                                    drawTile = false
                                     true
                                 }
                                 else -> false
@@ -570,7 +570,7 @@ class MahjongGame(
                                             }
                                             board.sortFuuro(player = ponOrChiiPlayer)
                                             nextPlayer = ponOrChiiPlayer
-                                            takeTile = false
+                                            drawTile = false
                                             ponOrChiiResult = true
                                             return@repeat
                                         }
@@ -587,7 +587,7 @@ class MahjongGame(
                                             }
                                             board.sortFuuro(player = ponOrChiiPlayer)
                                             nextPlayer = ponOrChiiPlayer
-                                            takeTile = false
+                                            drawTile = false
                                             cannotDiscardTiles += tileDiscarded.mahjongTile
                                             ponOrChiiResult = true
                                             return@repeat
@@ -617,7 +617,7 @@ class MahjongGame(
                                 }
                                 board.sortFuuro(player = canChiiPlayer)
                                 nextPlayer = canChiiPlayer
-                                takeTile = false
+                                drawTile = false
                                 cannotDiscardTiles += tileDiscarded.mahjongTile
                                 if (indexOfTileDiscarded == 0 && tileDiscardMj4jNumber + 3 < 9) //吃的這張牌在最前面
                                     cannotDiscardTiles += tileDiscarded.mahjongTile.nextTile.nextTile.nextTile

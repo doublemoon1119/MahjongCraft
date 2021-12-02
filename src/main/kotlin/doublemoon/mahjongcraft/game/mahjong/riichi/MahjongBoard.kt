@@ -372,7 +372,7 @@ class MahjongBoard(
                 repeat(tileAmount) {
                     val tile = newWall.removeFirst() //摸走最前面的牌
                     tile.isInvisible = true //先暫時隱形一下
-                    mjPlayer.takeTile(tile)
+                    mjPlayer.drawTile(tile)
                     if (it == 13) sortHands(player = mjPlayer, lastTile = tile)
                     else sortHands(player = mjPlayer)
                 }
@@ -714,7 +714,7 @@ class MahjongBoard(
      *
      * @return 摸到的嶺上牌
      * */
-    fun takeRinshanTile(player: MahjongPlayerBase): MahjongTileEntity {
+    fun drawRinshanTile(player: MahjongPlayerBase): MahjongTileEntity {
         val tile = if (kanCount % 2 == 0) deadWall[deadWall.size - 2] else deadWall[deadWall.size - 1]
         val lastWallTile = wall.removeLast()
         val direction = deadWall.last().horizontalFacing // 王牌區方向以最後一敦為準
@@ -733,7 +733,7 @@ class MahjongBoard(
         deadWall -= tile
         kanCount++
         flipDoraIndicators()
-        player.takeTile(tile)
+        player.drawTile(tile)
         if (kanCount % 2 == 1) {
             val nowLastWallTile = wall.last() //這張牌要往下降, 不然會浮空
             nowLastWallTile.refreshPositionAfterTeleport(
