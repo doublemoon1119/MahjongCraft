@@ -276,7 +276,7 @@ class MahjongBehaviorGui(
             val tileWidget =
                 mahjongTile(
                     x = mtX,
-                    y = HINT_HEIGHT + TILE_GAP,
+                    y = HINT_HEIGHT + TILE_GAP + BORDER_MARGIN,
                     width = TILE_WIDTH,
                     height = TILE_HEIGHT,
                     mahjongTile = it

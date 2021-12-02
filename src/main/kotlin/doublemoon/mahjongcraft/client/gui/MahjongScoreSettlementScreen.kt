@@ -5,10 +5,11 @@ import doublemoon.mahjongcraft.client.gui.widget.*
 import doublemoon.mahjongcraft.game.mahjong.riichi.RankedScoreItem
 import doublemoon.mahjongcraft.game.mahjong.riichi.ScoreSettlement
 import doublemoon.mahjongcraft.scheduler.client.ScoreSettleHandler
-import doublemoon.mahjongcraft.util.plus
 import io.github.cottonmc.cotton.gui.client.CottonClientScreen
 import io.github.cottonmc.cotton.gui.client.LightweightGuiDescription
+import io.github.cottonmc.cotton.gui.widget.WLabel
 import io.github.cottonmc.cotton.gui.widget.WPlainPanel
+import io.github.cottonmc.cotton.gui.widget.data.Color
 import io.github.cottonmc.cotton.gui.widget.data.VerticalAlignment
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
@@ -140,13 +141,14 @@ class MahjongScoreSettlementGui(
                 verticalAlignment = VerticalAlignment.CENTER
             )
             val scoreChangeTextColor =
-                if (scoreChange.string == "") "" else if (scoreChange.string.toInt() > 0) "§a" else "§c"
+                if (scoreChange.string == "") WLabel.DEFAULT_TEXT_COLOR else if (scoreChange.string.toInt() > 0) Color.GREEN.toRgb() else Color.RED.toRgb()
             val scoreChangeLabel = label(
                 x = scoreTotalLabel.x + scoreTotalLabel.width + 8,
                 y = scoreTotalLabel.y,
-                text = LiteralText(scoreChangeTextColor) + scoreChange,
+                text = scoreChange,
                 width = maxScoreLabelWidth,
-                verticalAlignment = VerticalAlignment.CENTER
+                verticalAlignment = VerticalAlignment.CENTER,
+                color = scoreChangeTextColor
             )
             val rankFloatTextColor = when (rankFloat.string) {
                 "↓" -> COLOR_RED
