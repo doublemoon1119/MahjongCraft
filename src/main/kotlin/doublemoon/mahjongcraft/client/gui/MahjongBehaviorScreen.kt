@@ -289,12 +289,12 @@ class MahjongBehaviorGui(
                 x = when (target) {
                     ClaimTarget.LEFT -> tileWidget.x - TILE_GAP - hWidth
                     ClaimTarget.RIGHT -> tileWidget.x + TILE_WIDTH + TILE_GAP
-                    else -> mtX
+                    else -> tileWidget.x
                 },
                 y = when (target) {
                     ClaimTarget.ACROSS -> tileWidget.y - TILE_GAP - hHeight
                     ClaimTarget.SELF -> tileWidget.y + tileWidget.height + TILE_GAP
-                    else -> HINT_HEIGHT + TILE_GAP
+                    else -> tileWidget.y
                 },
                 width = hWidth,
                 height = hHeight,
