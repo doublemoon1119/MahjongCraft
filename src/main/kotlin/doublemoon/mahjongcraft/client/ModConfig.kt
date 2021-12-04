@@ -12,7 +12,7 @@ import me.shedaniel.autoconfig.annotation.ConfigEntry
  * */
 @Config(name = MOD_ID)
 data class ModConfig(
-    val displayTableLabels: Boolean = true,
+    var displayTableLabels: Boolean = true,
     @ConfigEntry.Gui.CollapsibleObject(startExpanded = true)
     val quickActions: QuickActions = QuickActions()
 ) : ConfigData {
@@ -28,8 +28,8 @@ data class ModConfig(
      * */
     @Config(name = "quick_action")
     data class QuickActions(
-        val displayHud: Boolean = true,
-        val autoArrange: Boolean = true,
+        var displayHud: Boolean = false,
+        var autoArrange: Boolean = true,
         @ConfigEntry.Gui.Tooltip var autoCallWin: Boolean = false,
         @ConfigEntry.Gui.Tooltip var noChiiPonKan: Boolean = false,
         @ConfigEntry.Gui.Tooltip var autoDrawAndDiscard: Boolean = false

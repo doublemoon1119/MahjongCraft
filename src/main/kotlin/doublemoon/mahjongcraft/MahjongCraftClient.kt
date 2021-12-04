@@ -1,6 +1,7 @@
 package doublemoon.mahjongcraft
 
 import doublemoon.mahjongcraft.client.ModConfig
+import doublemoon.mahjongcraft.client.gui.MahjongCraftHud
 import doublemoon.mahjongcraft.client.render.*
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGameBehavior
 import doublemoon.mahjongcraft.network.CustomEntitySpawnS2CPacketHandler
@@ -23,10 +24,11 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.minecraft.client.MinecraftClient
+import net.minecraft.client.gui.screen.TitleScreen
 import net.minecraft.client.item.UnclampedModelPredicateProvider
 import net.minecraft.client.option.KeyBinding
-import net.minecraft.client.util.InputUtil
 import net.minecraft.client.world.ClientWorld
 import net.minecraft.entity.LivingEntity
 import net.minecraft.item.ItemStack
@@ -38,11 +40,11 @@ import org.lwjgl.glfw.GLFW
 object MahjongCraftClient : ClientModInitializer {
 
     lateinit var config: ModConfig
-    lateinit var lastConfig: ModConfig
+    private lateinit var lastConfig: ModConfig
+    private var hud: MahjongCraftHud? = null
     private val configKey: KeyBinding = KeyBindingHelper.registerKeyBinding(
         KeyBinding(
             "key.$MOD_ID.open_config_gui",
-            InputUtil.Type.KEYSYM,
             GLFW.GLFW_KEY_SEMICOLON,
             "key.category.$MOD_ID.main"
         )
@@ -87,15 +89,18 @@ object MahjongCraftClient : ClientModInitializer {
             Identifier("code"),
             modelPredicateProvider
         )
+        //Packet
         CustomEntitySpawnS2CPacketHandler.registerClient()
         MahjongTablePacketHandler.registerClient()
         MahjongGamePacketHandler.registerClient()
         MahjongTileCodePacketHandler.registerClient()
+        //Config
         AutoConfig.register(ModConfig::class.java, ::GsonConfigSerializer)
         config = AutoConfig.getConfigHolder(ModConfig::class.java).config
         lastConfig = config.copy(quickActions = config.quickActions.copy())
         AutoConfig.getConfigHolder(ModConfig::class.java).registerSaveListener { _, modConfig ->
             val player = MinecraftClient.getInstance().player
+            if (modConfig.quickActions.displayHud != lastConfig.quickActions.displayHud) hud?.refresh()
             if (player != null && modConfig.quickActions.autoArrange != lastConfig.quickActions.autoArrange) {
                 player.sendMahjongGamePacket( //每次更改 AutoArrange 的設定都發送當前的狀態過去伺服器
                     behavior = MahjongGameBehavior.AUTO_ARRANGE,
@@ -105,6 +110,11 @@ object MahjongCraftClient : ClientModInitializer {
             lastConfig = modConfig.copy(quickActions = modConfig.quickActions.copy())
             ActionResult.SUCCESS
         }
+        //Hud
+        ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
+            if (screen is TitleScreen && hud == null) hud = MahjongCraftHud(config) //在第 1 次標題畫面初始化後, 再將 hud 初始化
+        }
+        ScreenEvents.BEFORE_INIT.register { _, _, _, _ -> hud?.refresh() } //在畫面 resized 的時候刷新 hud, 以適配螢幕大小
     }
 
     private fun tick(client: MinecraftClient) {

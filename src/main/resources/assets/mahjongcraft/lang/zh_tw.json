@@ -2,7 +2,7 @@
   "text.autoconfig.mahjongcraft.title": "MahjongCraft 選項",
   "text.autoconfig.mahjongcraft.option.displayTableLabels": "顯示麻將桌的標籤",
   "text.autoconfig.mahjongcraft.option.quickActions": "快速操作",
-  "text.autoconfig.mahjongcraft.option.quickActions.displayHud": "顯示遊戲內的 HUD",
+  "text.autoconfig.mahjongcraft.option.quickActions.displayHud": "顯示 HUD",
   "text.autoconfig.mahjongcraft.option.quickActions.autoArrange": "自動理牌",
   "text.autoconfig.mahjongcraft.option.quickActions.autoCallWin": "自動和牌",
   "text.autoconfig.mahjongcraft.option.quickActions.noChiiPonKan": "不吃碰槓",
