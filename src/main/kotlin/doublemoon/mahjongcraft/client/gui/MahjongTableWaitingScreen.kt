@@ -26,17 +26,16 @@ import net.minecraft.util.Identifier
 import java.util.*
 
 @Environment(EnvType.CLIENT)
-class MahjongTableWaitingScreen(description: MahjongTableGui) : CottonClientScreen(description) {
-
-    constructor(mahjongTable: MahjongTableBlockEntity) : this(MahjongTableGui(mahjongTable))
-
+class MahjongTableWaitingScreen(
+    mahjongTable: MahjongTableBlockEntity
+) : CottonClientScreen(MahjongTableGui(mahjongTable)) {
     /**
      * 不取消暫停的話, 通過按按鈕導致的更新會卡在下個 tick, 畫面會更新不了
      * */
     override fun isPauseScreen(): Boolean = false
 
     /**
-     * 刷新用, 在 [MahjongTableBlockEntity.fromClientTag] 的時候刷新,
+     * 刷新用, 在 [MahjongTableBlockEntity.readNbt] 的時候刷新,
      * 確保存在 [MahjongTableBlockEntity] 的資料能夠同步到 GUI 上
      * */
     fun refresh() {
@@ -87,8 +86,7 @@ class MahjongTableGui(
     private val darkMode: Boolean
         get() = LibGui.isDarkMode()
     private val ruleTexts = mutableListOf<WText>()
-    private val playerInfoItems: MutableList<PlayerInfoItem> =
-        mutableListOf<PlayerInfoItem>().apply { repeat(4) { this += PlayerInfoItem(it) } }
+    private val playerInfoItems: List<PlayerInfoItem> = List(4) { PlayerInfoItem(it) }
     private lateinit var buttonJoinOrLeave: WButton
     private var buttonReadyOrNot: WButton? = null
     private var buttonStart: WTooltipButton? = null
@@ -374,7 +372,7 @@ class MahjongTableGui(
     }
 
     /**
-     * @param number 顯示在玩家名稱上方, ex: Player 1 (1..4), number 最小從零開始算
+     * @param number 顯示在玩家名稱上方, ex: Player 1 (1..4), number 最小從 0 開始算
      * */
     class PlayerInfoItem(
         val number: Int,
@@ -388,8 +386,8 @@ class MahjongTableGui(
         var stringUUID: String = ""
         var isBot: Boolean = false
         var ready: Boolean = false
-        private val mc = MinecraftClient.getInstance()
-        private val fontHeight = mc.textRenderer.fontHeight
+        private val client = MinecraftClient.getInstance()
+        private val fontHeight = client.textRenderer.fontHeight
         private val ttPlayer = TranslatableText("$MOD_ID.game.player")
         private val ttHost = TranslatableText("$MOD_ID.game.host")
         private val ttReady = TranslatableText("$MOD_ID.gui.button.ready")

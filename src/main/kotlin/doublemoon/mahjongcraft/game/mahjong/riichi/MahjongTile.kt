@@ -158,10 +158,10 @@ enum class MahjongTile : TextFormatting {
         /**
          * 一般的牌山, 沒有赤寶牌
          * */
-        val normalWall = mutableListOf<MahjongTile>().apply {
+        val normalWall = buildList {
             values().forEach { tile ->
                 repeat(4) { this += tile }
-                if (tile == RED_DRAGON) return@apply
+                if (tile == RED_DRAGON) return@buildList //到紅中的時候結束
             }
         }
 

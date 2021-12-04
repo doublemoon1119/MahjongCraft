@@ -1,7 +1,6 @@
 package doublemoon.mahjongcraft
 
 import doublemoon.mahjongcraft.client.ModConfig
-import doublemoon.mahjongcraft.client.gui.MahjongCraftHud
 import doublemoon.mahjongcraft.client.render.*
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGameBehavior
 import doublemoon.mahjongcraft.network.CustomEntitySpawnS2CPacketHandler
@@ -24,7 +23,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.item.UnclampedModelPredicateProvider
 import net.minecraft.client.option.KeyBinding

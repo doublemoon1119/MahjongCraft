@@ -26,14 +26,14 @@ import net.minecraft.util.Formatting
 import java.util.*
 
 @Environment(EnvType.CLIENT)
-class MahjongYakuSettlementScreen(description: MahjongYakuSettlementGui) : CottonClientScreen(description) {
-    constructor(settlements: List<YakuSettlement>) : this(MahjongYakuSettlementGui(settlements))
-
+class YakuSettlementScreen(
+    settlements: List<YakuSettlement>
+) : CottonClientScreen(YakuSettlementGui(settlements)) {
     override fun isPauseScreen(): Boolean = false
 }
 
 @Environment(EnvType.CLIENT)
-class MahjongYakuSettlementGui(
+class YakuSettlementGui(
     private val settlements: List<YakuSettlement>
 ) : LightweightGuiDescription() {
 

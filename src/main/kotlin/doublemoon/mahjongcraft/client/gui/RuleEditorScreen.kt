@@ -23,21 +23,20 @@ import net.minecraft.text.Text
 import net.minecraft.text.TranslatableText
 import net.minecraft.util.Formatting
 
-
 @Environment(EnvType.CLIENT)
-class MahjongRuleEditorScreen(description: MahjongRuleEditorGui) : CottonClientScreen(description) {
-    constructor(mahjongTable: MahjongTableBlockEntity) : this(MahjongRuleEditorGui(mahjongTable))
-
+class RuleEditorScreen(
+    mahjongTable: MahjongTableBlockEntity
+) : CottonClientScreen(RuleEditorGui(mahjongTable)) {
     override fun isPauseScreen(): Boolean = false
     override fun tick() {
         super.tick()
-        (description as MahjongRuleEditorGui).tick()
+        (description as RuleEditorGui).tick()
     }
 }
 
 @Environment(EnvType.CLIENT)
-class MahjongRuleEditorGui(
-    val mahjongTable: MahjongTableBlockEntity
+class RuleEditorGui(
+    private val mahjongTable: MahjongTableBlockEntity
 ) : LightweightGuiDescription() {
 
     private val client = MinecraftClient.getInstance()

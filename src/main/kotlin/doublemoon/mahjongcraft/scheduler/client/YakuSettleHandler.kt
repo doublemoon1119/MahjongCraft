@@ -1,6 +1,6 @@
 package doublemoon.mahjongcraft.scheduler.client
 
-import doublemoon.mahjongcraft.client.gui.MahjongYakuSettlementScreen
+import doublemoon.mahjongcraft.client.gui.YakuSettlementScreen
 import doublemoon.mahjongcraft.game.mahjong.riichi.YakuSettlement
 import doublemoon.mahjongcraft.util.delayOnClient
 import kotlinx.coroutines.*
@@ -12,6 +12,7 @@ import net.minecraft.client.gui.screen.Screen
 object YakuSettleHandler {
     const val defaultTime = 10 //單位:秒
 
+    private val client = MinecraftClient.getInstance()
     private lateinit var screen: Screen
     private var jobCountdown: Job? = null
 
@@ -24,8 +25,8 @@ object YakuSettleHandler {
     @Environment(EnvType.CLIENT)
     private fun setScreen(settlements: List<YakuSettlement>) {
         ClientScheduler.scheduleDelayAction {
-            screen = MahjongYakuSettlementScreen(settlements = settlements)
-            MinecraftClient.getInstance().setScreen(screen)
+            screen = YakuSettlementScreen(settlements = settlements)
+            client.setScreen(screen)
         }
     }
 
@@ -36,7 +37,7 @@ object YakuSettleHandler {
     @Environment(EnvType.CLIENT)
     private fun closeScreen() {
         CoroutineScope(Dispatchers.Default).launch {
-            if (MinecraftClient.getInstance().currentScreen == screen) {
+            if (client.currentScreen == screen) {
                 ClientScheduler.scheduleDelayAction { screen.onClose() }
             }
         }

@@ -21,17 +21,16 @@ import net.minecraft.util.Formatting
 import java.util.*
 
 @Environment(EnvType.CLIENT)
-class MahjongScoreSettlementScreen(description: MahjongScoreSettlementGui) : CottonClientScreen(description) {
-    constructor(settlement: ScoreSettlement) : this(MahjongScoreSettlementGui(settlement))
-
+class ScoreSettlementScreen(
+    settlement: ScoreSettlement
+) : CottonClientScreen(ScoreSettlementGui(settlement)) {
     override fun isPauseScreen(): Boolean = false
 }
 
 @Environment(EnvType.CLIENT)
-class MahjongScoreSettlementGui(
+class ScoreSettlementGui(
     private val settlement: ScoreSettlement
 ) : LightweightGuiDescription() {
-
     private val fontHeight = MinecraftClient.getInstance().textRenderer.fontHeight
     private val rankedScoreList = settlement.rankedScoreList
     private val timeText: Text

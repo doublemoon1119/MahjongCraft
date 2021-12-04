@@ -1,6 +1,6 @@
 package doublemoon.mahjongcraft.scheduler.client
 
-import doublemoon.mahjongcraft.client.gui.MahjongBehaviorScreen
+import doublemoon.mahjongcraft.client.gui.MahjongGameBehaviorScreen
 import doublemoon.mahjongcraft.game.mahjong.riichi.ClaimTarget
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGameBehavior
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTile
@@ -13,7 +13,7 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.screen.Screen
 
 /**
- * 將資料顯示在 [MahjongBehaviorScreen] 供玩家點擊
+ * 將資料顯示在 [MahjongGameBehaviorScreen] 供玩家點擊
  * */
 @Environment(EnvType.CLIENT)
 object OptionalBehaviorHandler {
@@ -34,7 +34,7 @@ object OptionalBehaviorHandler {
      * */
     fun setScreen() {
         ClientScheduler.scheduleDelayAction {
-            screen = MahjongBehaviorScreen(behavior, hands, target, extraData)
+            screen = MahjongGameBehaviorScreen(behavior, hands, target, extraData)
             client.setScreen(screen!!)
         }
     }

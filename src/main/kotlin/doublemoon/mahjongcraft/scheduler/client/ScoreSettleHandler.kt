@@ -1,6 +1,6 @@
 package doublemoon.mahjongcraft.scheduler.client
 
-import doublemoon.mahjongcraft.client.gui.MahjongScoreSettlementScreen
+import doublemoon.mahjongcraft.client.gui.ScoreSettlementScreen
 import doublemoon.mahjongcraft.game.mahjong.riichi.ScoreSettlement
 import doublemoon.mahjongcraft.util.delayOnClient
 import kotlinx.coroutines.CoroutineScope
@@ -15,6 +15,7 @@ import net.minecraft.client.gui.screen.Screen
 object ScoreSettleHandler {
     const val defaultTime = 5 //單位:秒
 
+    private val client = MinecraftClient.getInstance()
     private lateinit var screen: Screen
     private var jobCountdown: Job? = null
 
@@ -27,8 +28,8 @@ object ScoreSettleHandler {
     @Environment(EnvType.CLIENT)
     private fun setScreen(settlement: ScoreSettlement) {
         ClientScheduler.scheduleDelayAction {
-            screen = MahjongScoreSettlementScreen(settlement = settlement)
-            MinecraftClient.getInstance().setScreen(screen)
+            screen = ScoreSettlementScreen(settlement = settlement)
+            client.setScreen(screen)
         }
     }
 
@@ -39,7 +40,7 @@ object ScoreSettleHandler {
     @Environment(EnvType.CLIENT)
     fun closeScreen() {
         CoroutineScope(Dispatchers.Default).launch {
-            if (MinecraftClient.getInstance().currentScreen == screen) {
+            if (client.currentScreen == screen) {
                 ClientScheduler.scheduleDelayAction { screen.onClose() }
             }
         }

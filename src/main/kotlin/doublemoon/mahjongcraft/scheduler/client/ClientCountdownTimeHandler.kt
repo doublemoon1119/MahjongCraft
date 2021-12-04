@@ -8,10 +8,10 @@ import net.minecraft.text.LiteralText
  * */
 object ClientCountdownTimeHandler {
 
+    private val client = MinecraftClient.getInstance()
     private const val titleFadeInTime = 5
     private const val titleRemainTime = 10
     private const val titleFadeOutTime = 5
-    private val client = MinecraftClient.getInstance()
 
     /**
      * null to null 表示沒在倒數

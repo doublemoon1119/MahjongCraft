@@ -22,7 +22,7 @@ sealed class ScoreSettlement(
      * 根據傳入的 [scoreListInput] 進行排序後顯示分數排行用的 [RankedScoreItem] 列表,
      * 照得分後總分排名由高至低排列,
      * */
-    val rankedScoreList: List<RankedScoreItem> = mutableListOf<RankedScoreItem>().apply {
+    val rankedScoreList: List<RankedScoreItem> = buildList {
         val origin = scoreListInput.sortedWith(originalScoreComparator).reversed() //用原始分數排列後倒過來 (即用原始分數降序排列)
         val after = scoreListInput.sortedWith(totalScoreComparator).reversed() //用總分降序排列後倒過來 (即用總分降序排列)
         after.forEachIndexed { index, playerScore ->

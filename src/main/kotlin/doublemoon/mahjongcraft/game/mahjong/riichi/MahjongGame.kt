@@ -85,10 +85,10 @@ class MahjongGame(
     /**
      * 從莊家開始按照順序的 [seat], seatOrderFromDealer[0] 就是莊家
      * */
-    private val seatOrderFromDealer: MutableList<MahjongPlayerBase>
-        get() = mutableListOf<MahjongPlayerBase>().apply {
+    private val seatOrderFromDealer: List<MahjongPlayerBase>
+        get() = List(4) {
             val dealerIndex = round.round
-            repeat(4) { this += seat[(dealerIndex + it) % 4] }
+            seat[(dealerIndex + it) % 4]
         }
 
     /**
@@ -269,10 +269,10 @@ class MahjongGame(
             delayOnServer(500)
             //清除擲出的骰子
             dices.forEach { it.remove(Entity.RemovalReason.DISCARDED) }
-            dices.clear()
             delayOnServer(1000)
             var nextPlayer: MahjongPlayerBase = dealer //莊家開始打牌
             var drawTile = true //這次動作需不需要拿牌
+            var drewTile: Boolean //這次動作已經拿牌了嗎
             val cannotDiscardTiles = mutableListOf<MahjongTile>() //不能丟的牌的 mahjong4j 編號列表 出現在吃或碰的時候, 不能丟剛吃或剛碰的牌, 每次丟牌後清空
             roundLoop@ while (isPlaying) {
                 //這圈 while 最後要判斷 [wall] 還有沒有牌, 否則拿最後一張牌的後一張牌的時候會出問題
@@ -290,6 +290,7 @@ class MahjongGame(
                                 player.drawTile(it)
                                 board.sortHands(player = player, lastTile = it) //指定最後一張牌, 否則摸的牌會被整理進去
                             }
+                    drewTile = true //已經拿過牌了
                     if (player is MahjongBot) delayOnServer(500) //如果這是機器人, 摸牌後會等待 500 毫秒再執行動作
                     //判斷能不能自摸
                     val canWin = player.canWin(
@@ -309,92 +310,92 @@ class MahjongGame(
                             roundExhaustiveDraw = ExhaustiveDraw.KYUUSHU_KYUUHAI
                             break
                         }
-                        if ((player.canKakan || player.canAnkan) && !board.isHoutei && board.kanCount < 4) { //手牌能(暗槓或者暗槓)並且不是河底並且目前槓數小於 4
-                            //加槓跟暗槓應該同時詢問
-                            //玩家可以選擇一直暗槓或加槓, 使用 while 判斷
-                            var finalRinshanTile: MahjongTileEntity? = null //最後一張摸的嶺上牌, null 表示沒有暗槓或加槓
-                            kanLoop@ while ((player.canKakan || player.canAnkan) && !board.isHoutei && board.kanCount < 4) {
-                                val tileToAnkanOrKakan = player.askToAnkanOrKakan(rule)
-                                if (tileToAnkanOrKakan != null) { //玩家要暗槓或加槓
-                                    val isAnkan = tileToAnkanOrKakan in player.tilesCanAnkan.toList()
-                                        .toMahjongTileList() //是要暗槓,否則就是加槓
-                                    val tileEntityToAnkanOrKakan =
-                                        player.hands.find { it.mahjongTile == tileToAnkanOrKakan } //要暗槓或加槓的牌
-                                    if (tileEntityToAnkanOrKakan == null) cancel("要暗槓的牌的實體消失, 可能是麻將桌被摧毀")
-                                    if (isAnkan) player.ankan(tileEntityToAnkanOrKakan!!) {
-                                        it.playSoundAtSeat(soundEvent = SoundRegistry.kan)
-                                    } else player.kakan(tileEntityToAnkanOrKakan!!) {
-                                        it.playSoundAtSeat(soundEvent = SoundRegistry.kan)
-                                    }
-                                    board.sortFuuro(player = player)
-                                    val canChankanList = //可以搶槓的玩家列表
-                                        if (isAnkan) canChanAnkanList(tileEntityToAnkanOrKakan, player)
-                                        else canChanMinkanList(tileEntityToAnkanOrKakan, player)
-                                    if (canChankanList.isNotEmpty()) { //有人可以搶槓
-                                        if (canChankanList.size > 1) { //超過 1 人可以榮和,會強制所有可以榮和的玩家都榮和
-                                            canChankanList.ron(
+                        //加槓跟暗槓應該同時詢問
+                        //玩家可以選擇一直暗槓或加槓, 使用 while 判斷
+                        var finalRinshanTile: MahjongTileEntity? = null //最後一張摸的嶺上牌, null 表示沒有暗槓或加槓
+                        kanLoop@ while ((player.canKakan || player.canAnkan) && !board.isHoutei && board.kanCount < 4) {
+                            val tileToAnkanOrKakan = player.askToAnkanOrKakan(rule)
+                            if (tileToAnkanOrKakan != null) { //玩家要暗槓或加槓
+                                val isAnkan = tileToAnkanOrKakan in player.tilesCanAnkan.toList()
+                                    .toMahjongTileList() //是要暗槓,否則就是加槓
+                                val tileEntityToAnkanOrKakan =
+                                    player.hands.find { it.mahjongTile == tileToAnkanOrKakan } //要暗槓或加槓的牌
+                                if (tileEntityToAnkanOrKakan == null) cancel("要暗槓的牌的實體消失, 可能是麻將桌被摧毀")
+                                if (isAnkan) player.ankan(tileEntityToAnkanOrKakan!!) {
+                                    it.playSoundAtSeat(soundEvent = SoundRegistry.kan)
+                                } else player.kakan(tileEntityToAnkanOrKakan!!) {
+                                    it.playSoundAtSeat(soundEvent = SoundRegistry.kan)
+                                }
+                                board.sortFuuro(player = player)
+                                val canChankanList = //可以搶槓的玩家列表
+                                    if (isAnkan) canChanAnkanList(tileEntityToAnkanOrKakan, player)
+                                    else canChanMinkanList(tileEntityToAnkanOrKakan, player)
+                                if (canChankanList.isNotEmpty()) { //有人可以搶槓
+                                    if (canChankanList.size > 1) { //超過 1 人可以榮和,會強制所有可以榮和的玩家都榮和
+                                        canChankanList.ron(
+                                            target = player,
+                                            isChankan = true,
+                                            tile = tileEntityToAnkanOrKakan
+                                        )
+                                        if (dealer in canChankanList) dealerRemaining = true //搶暗槓的人之中有莊家
+                                        break@roundLoop
+                                    } else { //只有 1 人可以搶暗槓
+                                        val canChanKanPlayer = canChankanList[0]
+                                        if (canChanKanPlayer.askToRon(
+                                                tileEntityToAnkanOrKakan,
+                                                canChanKanPlayer.asClaimTarget(player)
+                                            )
+                                        ) { //詢問搶暗槓是否要榮和
+                                            mutableListOf(canChanKanPlayer).ron(
                                                 target = player,
                                                 isChankan = true,
                                                 tile = tileEntityToAnkanOrKakan
                                             )
-                                            if (dealer in canChankanList) dealerRemaining = true //搶暗槓的人之中有莊家
+                                            if (dealer == canChanKanPlayer) dealerRemaining = true
                                             break@roundLoop
-                                        } else { //只有 1 人可以搶暗槓
-                                            val canChanKanPlayer = canChankanList[0]
-                                            if (canChanKanPlayer.askToRon(
-                                                    tileEntityToAnkanOrKakan,
-                                                    canChanKanPlayer.asClaimTarget(player)
-                                                )
-                                            ) { //詢問搶暗槓是否要榮和
-                                                mutableListOf(canChanKanPlayer).ron(
-                                                    target = player,
-                                                    isChankan = true,
-                                                    tile = tileEntityToAnkanOrKakan
-                                                )
-                                                if (dealer == canChanKanPlayer) dealerRemaining = true
-                                                break@roundLoop
-                                            }
                                         }
                                     }
-                                    val rinshanTile = board.drawRinshanTile(player = player) //摸嶺上牌
-                                    board.sortHands(player = player, lastTile = rinshanTile) //整理並指定最後一張牌為摸到的嶺上牌
-                                    //判斷嶺上開花
-                                    val rinshanKaihoh = player.canWin(
-                                        tile = rinshanTile,
-                                        rule = rule,
-                                        generalSituation = board.generalSituation,
-                                        personalSituation = player.getPersonalSituation(
-                                            isTsumo = true,
-                                            isRinshanKaihoh = true
-                                        )
-                                    )
-                                    if (rinshanKaihoh) { //嶺上開花成立
-                                        player.tsumo(isRinshanKaihoh = true, tile = rinshanTile)
-                                        if (isDealer) dealerRemaining = true //莊家自摸的話會連莊
-                                        break@roundLoop
-                                    }
-                                    val isFourKanAbort = //最後才判斷 四開槓
-                                        if (board.kanCount == 3) { //已經槓 3 次
-                                            val playerKanCount =
-                                                player.fuuroList.count { it.mentsu is Kantsu } //槓的這個玩家槓幾次
-                                            playerKanCount != 3 //如果不是同一個玩家已經槓了 3 次,準備槓第 4 次->四開槓成立
-                                        } else false
-                                    if (isFourKanAbort) { //四開槓, 直接結束
-                                        roundExhaustiveDraw = ExhaustiveDraw.SUUKAIKAN
-                                        break@roundLoop
-                                    }
-                                    finalRinshanTile = rinshanTile
-                                } else {
-                                    //玩家不要暗槓或加槓
-                                    break@kanLoop
                                 }
+                                val rinshanTile = board.drawRinshanTile(player = player) //摸嶺上牌
+                                board.sortHands(player = player, lastTile = rinshanTile) //整理並指定最後一張牌為摸到的嶺上牌
+                                //判斷嶺上開花
+                                val rinshanKaihoh = player.canWin(
+                                    tile = rinshanTile,
+                                    rule = rule,
+                                    generalSituation = board.generalSituation,
+                                    personalSituation = player.getPersonalSituation(
+                                        isTsumo = true,
+                                        isRinshanKaihoh = true
+                                    )
+                                )
+                                if (rinshanKaihoh) { //嶺上開花成立
+                                    player.tsumo(isRinshanKaihoh = true, tile = rinshanTile)
+                                    if (isDealer) dealerRemaining = true //莊家自摸的話會連莊
+                                    break@roundLoop
+                                }
+                                val isFourKanAbort = //最後才判斷 四開槓
+                                    if (board.kanCount == 3) { //已經槓 3 次
+                                        val playerKanCount =
+                                            player.fuuroList.count { it.mentsu is Kantsu } //槓的這個玩家槓幾次
+                                        playerKanCount != 3 //如果不是同一個玩家已經槓了 3 次,準備槓第 4 次->四開槓成立
+                                    } else false
+                                if (isFourKanAbort) { //四開槓, 直接結束
+                                    roundExhaustiveDraw = ExhaustiveDraw.SUUKAIKAN
+                                    break@roundLoop
+                                }
+                                finalRinshanTile = rinshanTile
+                            } else {
+                                //玩家不要暗槓或加槓
+                                break@kanLoop
                             }
-                            timeoutTile = finalRinshanTile ?: lastTile
-                        } else { //不能暗槓或加槓->讓玩家出牌
-                            timeoutTile = lastTile //將超時會自動摸切的牌換成摸的牌
                         }
+                        //不能或結束暗槓或加槓->讓玩家出牌
+                        timeoutTile = finalRinshanTile ?: lastTile
                     }
-                } else drawTile = true
+                } else {
+                    drewTile = false //這次沒有拿牌
+                    drawTile = true //下次要拿牌
+                }
                 val riichiSengen = //丟牌前判斷玩家要不要立直宣言
                     if (!board.isHoutei && player.isRiichiable) { //不是 河底 且 能夠立直
                         player.askToRiichi() //詢問是否要立直宣言, 並選擇要丟出去的牌
@@ -405,7 +406,11 @@ class MahjongGame(
                 }
                 //讓玩家丟牌
                 val tileToDiscard = //玩家丟掉的牌的編號
-                    riichiSengen ?: player.askToDiscardTile(timeoutTile.mahjongTile, cannotDiscardTiles)
+                    riichiSengen ?: player.askToDiscardTile(
+                        timeoutTile = timeoutTile.mahjongTile,
+                        cannotDiscardTiles = cannotDiscardTiles,
+                        skippable = drewTile //這次有沒有拿牌代表客戶端能不能 跳過(即自動摸切)
+                    )
                 val tileDiscarded = player.discardTile(tileToDiscard) //玩家丟掉的牌
                 if (tileDiscarded == null) { //實體不正常
                     cancel("要丟的牌的實體消失, 可能是麻將桌被摧毀")
@@ -555,17 +560,16 @@ class MahjongGame(
                                                     here.playSoundAtSeat(soundEvent = SoundRegistry.chii)
                                                 }
                                                 val tileDiscardedCode = tileDiscarded.mahjong4jTile.code
-                                                val tileDiscardNumber = tileDiscarded.mahjong4jTile.number
-                                                val tileList = mutableListOf<Int>().apply {
-                                                    this += tileDiscardedCode
-                                                    this += tilePairToPonOrChii.first.mahjong4jTile.code
-                                                    this += tilePairToPonOrChii.second.mahjong4jTile.code
-                                                    sort() //正序排列, 由小到大
-                                                }
-                                                val indexOfTileDiscard = tileList.indexOf(tileDiscardedCode)
-                                                if (indexOfTileDiscard == 0 && tileDiscardNumber + 3 < 9) //吃的這張牌在最前面
+                                                val tileDiscardedNumber = tileDiscarded.mahjong4jTile.number
+                                                val tileCodeList = mutableListOf(
+                                                    tileDiscardedCode,
+                                                    tilePairToPonOrChii.first.mahjong4jTile.code,
+                                                    tilePairToPonOrChii.second.mahjong4jTile.code
+                                                ).also { list -> list.sort() } //正序排列, 由小到大
+                                                val indexOfTileDiscarded = tileCodeList.indexOf(tileDiscardedCode)
+                                                if (indexOfTileDiscarded == 0 && tileDiscardedNumber + 3 < 9) //吃的這張牌在最前面
                                                     cannotDiscardTiles += tileDiscarded.mahjongTile.nextTile.nextTile.nextTile
-                                                if (indexOfTileDiscard == 2 && tileDiscardNumber - 3 > 1) //吃的這張牌在最後面
+                                                if (indexOfTileDiscarded == 2 && tileDiscardedNumber - 3 > 1) //吃的這張牌在最後面
                                                     cannotDiscardTiles += tileDiscarded.mahjongTile.previousTile.previousTile.previousTile
                                             }
                                             board.sortFuuro(player = ponOrChiiPlayer)
@@ -605,7 +609,7 @@ class MahjongGame(
                                 canChiiPlayer.askToChii(tileDiscarded, canChiiPlayer.asClaimTarget(player))
                             if (askToChiiResult != null) {
                                 val tileDiscardedCode = tileDiscarded.mahjong4jTile.code
-                                val tileDiscardMj4jNumber = tileDiscarded.mahjong4jTile.number
+                                val tileDiscardedNumber = tileDiscarded.mahjong4jTile.number
                                 val tileCodeList = mutableListOf(
                                     tileDiscardedCode,
                                     askToChiiResult.first.mahjong4jTile.code,
@@ -619,9 +623,9 @@ class MahjongGame(
                                 nextPlayer = canChiiPlayer
                                 drawTile = false
                                 cannotDiscardTiles += tileDiscarded.mahjongTile
-                                if (indexOfTileDiscarded == 0 && tileDiscardMj4jNumber + 3 < 9) //吃的這張牌在最前面
+                                if (indexOfTileDiscarded == 0 && tileDiscardedNumber + 3 < 9) //吃的這張牌在最前面
                                     cannotDiscardTiles += tileDiscarded.mahjongTile.nextTile.nextTile.nextTile
-                                if (indexOfTileDiscarded == 2 && tileDiscardMj4jNumber - 3 > 1) //吃的這張牌在最後面
+                                if (indexOfTileDiscarded == 2 && tileDiscardedNumber - 3 > 1) //吃的這張牌在最後面
                                     cannotDiscardTiles += tileDiscarded.mahjongTile.previousTile.previousTile.previousTile
                                 chiiResult = true
                             }
@@ -705,7 +709,7 @@ class MahjongGame(
      * */
     private suspend fun roundDraw(draw: ExhaustiveDraw) {
         //計算流局情況下的分數變化, 並處理成列表
-        val scoreList = mutableListOf<ScoreItem>().apply { //計算分數列表
+        val scoreList = buildList { //計算分數列表
             if (draw != ExhaustiveDraw.NORMAL) { //不是正常流局->存入原本的分數
                 players.forEach {
                     val riichiStickPoints = if (it.riichi || it.doubleRiichi) ScoringStick.P1000.point else 0
@@ -930,9 +934,6 @@ class MahjongGame(
         players.filter {
             if (it.discardedTiles.isEmpty()) return@filter false //如果這個玩家連牌都沒丟過, 先跳過
             val isDiscardPlayer = it == discardedPlayer
-//            val fuuroTiles = mutableListOf<MahjongTileEntity>().apply {
-//                it.fuuroList.map { fuuro -> this += fuuro.tileMjEntities }
-//            }
             val fuuroTiles = it.fuuroList.flatMap { fuuro -> fuuro.tileMjEntities }
             val hands = //判斷和的時候手牌必須要有要和或自摸的對像牌 (如果是搶槓的話 tile 會在副露之中)
                 if (tile in it.hands || tile in fuuroTiles) it.hands
@@ -1003,12 +1004,10 @@ class MahjongGame(
         val allRiichiStickQuantity = players.sumOf { it.riichiStickAmount } //所有立直棒的數量
         //額外分數->計算場上的積棒, 立直棒一根 1000, 本場棒一根 300 (只會給頭跳, 即摸牌順序離被榮和的人最近的那一位)
         val extraScore = allRiichiStickQuantity * ScoringStick.P1000.point + honbaScore
-        val seatOrderFromTarget = mutableListOf<MahjongPlayerBase>().apply {
+        val seatOrderFromTarget = List(4) { //從被榮和的玩家開始排序玩家位置
             val targetIndex = seat.indexOf(target)
-            repeat(4) {
-                this += seat[(targetIndex + it) % 4]
-            }
-        } //從被榮和的玩家開始排序玩家位置
+            seat[(targetIndex + it) % 4]
+        }
         val atamahanePlayer = seatOrderFromTarget.find { it in this } //找到頭跳的玩家
         this.forEach { //榮和的玩家
             it.playSoundAtSeat(soundEvent = SoundRegistry.ron) //多個人榮和會同時播放聲音
@@ -1229,10 +1228,9 @@ class MahjongGame(
      * 並設定骰子點數 [dicePoints],
      * 最後會回傳兩個骰子
      * */
-    private suspend fun rollDice(): MutableList<DiceEntity> {
-        val dices = mutableListOf<DiceEntity>()
-        repeat(2) {
-            dices += DiceEntity(
+    private suspend fun rollDice(): List<DiceEntity> {
+        val dices = List(2){
+            DiceEntity(
                 world = world,
                 pos = Vec3d(pos.x + 0.5, pos.y.toDouble() + 1.5, pos.z + 0.5),
                 yaw = (-180 until 180).random().toFloat()
@@ -1249,14 +1247,12 @@ class MahjongGame(
             }
         }
         //骰子的點數, 不管自動骰到的點數是多少, 骰完的時候都會使用這兩個點數替代
-        val dicePoints = mutableListOf(DicePoint.random(), DicePoint.random())
+        val dicePoints = dices.associateWith { DicePoint.random() }
         //這邊等待骰子都結束 rolling 才會跳出 while 迴圈
         while (dices.any { it.rolling }) delayOnServer(50)
-        dices.forEachIndexed { index, diceEntity ->
-            diceEntity.point = dicePoints[index]
-        }
+        dices.forEach { diceEntity -> diceEntity.point = dicePoints[diceEntity]!! }
         //總和的點數
-        val totalPoints = dicePoints.sumOf { it.value }
+        val totalPoints = dicePoints.values.sumOf { it.value }
         delayOnServer(500) //給一個延遲, 讓擲骰完不要馬上顯示骰到的點數
         val pointsSumText =
             TranslatableText("$MOD_ID.game.dice_points").formatted(Formatting.GOLD) + " §c$totalPoints"

@@ -67,7 +67,7 @@ class MahjongTableBlockEntityRenderer(
                 else -> blockPos.south().south()
             }
             val windIndex = (dealerSeatIndex - index).let { if (it >= 0) 4 - it else -it } % 4
-            mutableListOf<Text>().apply {
+            buildList {
                 this += Wind.values()[windIndex].toText()
                 this += LiteralText(blockEntity.points[index].toString())
                 reverse()
@@ -102,7 +102,7 @@ class MahjongTableBlockEntityRenderer(
         val textCurrentPlayers = textPlayer.copy() + ": $playerAmount/4"
         val textCurrentStatus = textStatus.copy() + ": " + (if (blockEntity.playing) textPlaying else textWaiting)
         val labelPadding = if (blockEntity.playing) PLAYING_PADDING else WAITING_PADDING
-        mutableListOf<Text>().apply {
+        buildList {
             this += textCurrentStatus
             if (!blockEntity.playing) { //沒在遊戲中才會顯示
                 this += textCurrentPlayers

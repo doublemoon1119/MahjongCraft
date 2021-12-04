@@ -1,7 +1,7 @@
 package doublemoon.mahjongcraft.network
 
 import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
-import doublemoon.mahjongcraft.client.gui.MahjongRuleEditorScreen
+import doublemoon.mahjongcraft.client.gui.RuleEditorScreen
 import doublemoon.mahjongcraft.client.gui.MahjongTableWaitingScreen
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.GameStatus
@@ -99,7 +99,7 @@ object MahjongTablePacketHandler : CustomPacketHandler {
                     ClientScheduler.scheduleDelayAction {
                         val mahjongTableBlockEntity =
                             world.getBlockEntity(pos) as MahjongTableBlockEntity? ?: return@scheduleDelayAction
-                        client.setScreen(MahjongRuleEditorScreen(mahjongTable = mahjongTableBlockEntity))
+                        client.setScreen(RuleEditorScreen(mahjongTable = mahjongTableBlockEntity))
                     }
                 }
                 else -> {

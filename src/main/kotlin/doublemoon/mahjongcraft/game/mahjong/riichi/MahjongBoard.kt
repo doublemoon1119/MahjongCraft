@@ -11,8 +11,8 @@ import doublemoon.mahjongcraft.entity.MahjongTileEntity.Companion.MAHJONG_TILE_S
 import doublemoon.mahjongcraft.entity.MahjongTileEntity.Companion.MAHJONG_TILE_WIDTH
 import doublemoon.mahjongcraft.entity.TileFacing
 import doublemoon.mahjongcraft.entity.TilePosition
+import doublemoon.mahjongcraft.util.delayOnServer
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import net.minecraft.entity.Entity
 import net.minecraft.sound.SoundEvents
@@ -105,28 +105,24 @@ class MahjongBoard(
 
     /**
      * 寶牌指示牌,
-     * 根據 [kanCount] 和 [deadWall] 取得對應的寶牌指示牌
+     * 根據 [kanCount] 和 [deadWall] 取得對應的寶牌指示牌,
+     * 寶牌指示牌的數量應該要比 [kanCount] 多 1 個
      * */
-    val doraIndicators: MutableList<MahjongTileEntity>
-        get() = mutableListOf<MahjongTileEntity>().also { list ->
-            val indicatorAmount = kanCount + 1  //寶牌指示牌應該有的數量
-            repeat(indicatorAmount) {
-                val doraIndicatorIndex = (4 - it) * 2 + kanCount //加上槓補進王牌區的牌
-                list += deadWall[doraIndicatorIndex]
-            }
+    val doraIndicators: List<MahjongTileEntity>
+        get() = List(kanCount + 1) {
+            val doraIndicatorIndex = (4 - it) * 2 + kanCount //加上槓補進王牌區的牌
+            deadWall[doraIndicatorIndex]
         }
 
     /**
      * 裏牌指示牌,
-     * 根據 [kanCount] 和 [deadWall] 取得對應的裏寶牌指示牌
+     * 根據 [kanCount] 和 [deadWall] 取得對應的裏寶牌指示牌,
+     * 裏寶牌指示牌的數量應該要比 [kanCount] 多 1 個
      * */
-    val uraDoraIndicators: MutableList<MahjongTileEntity>
-        get() = mutableListOf<MahjongTileEntity>().also { list ->
-            val indicatorAmount = kanCount + 1  //裏寶牌指示牌應該有的數量
-            repeat(indicatorAmount) {
-                val doraIndicatorIndex = (4 - it) * 2 + 1 + kanCount //加上槓補進王牌區的牌
-                list += deadWall[doraIndicatorIndex]
-            }
+    val uraDoraIndicators: List<MahjongTileEntity>
+        get() = List(kanCount + 1) {
+            val uraDoraIndicatorIndex = (4 - it) * 2 + 1 + kanCount //加上槓補進王牌區的牌
+            deadWall[uraDoraIndicatorIndex]
         }
 
     /**
@@ -358,12 +354,10 @@ class MahjongBoard(
             val directionIndex = (4 - ((dicePoints % 4 - 1) + game.round.round) % 4) //從哪邊開始拿牌
             val startingStackIndex = 2 * dicePoints //從開始處數第幾張牌開始拿
             val dealer = game.seat[game.round.round] //莊家
-            val newWall = mutableListOf<MahjongTileEntity>().apply {
+            val newWall = MutableList(wall.size) {
                 //按照摸牌的順序, 建立 newWall
-                repeat(wall.size) { times ->
-                    val tileIndex = (directionIndex * 34 + startingStackIndex + times) % wall.size
-                    this += wall[tileIndex]
-                }
+                val tileIndex = (directionIndex * 34 + startingStackIndex + it) % wall.size
+                wall[tileIndex]
             }
             //分配玩家的手牌
             game.seat.forEach { mjPlayer ->
@@ -386,7 +380,7 @@ class MahjongBoard(
                 val seatIndex = (game.round.round + times) % 4
                 game.seat[seatIndex].hands.forEach { it.isInvisible = false }
                 game.playSound(soundEvent = SoundEvents.ENTITY_ITEM_PICKUP, volume = 0.3f, pitch = 2.0f)
-                delay(250)
+                delayOnServer(250)
             }
         }
     }
@@ -406,7 +400,7 @@ class MahjongBoard(
         val tableCenterPos = game.tableCenterPos
         with(player) {
             val tileAmount = hands.size
-            hands.sortBy { it.mahjongTile.sortOrder }
+            if (player.autoArrangeHands) hands.sortBy { it.mahjongTile.sortOrder }
             lastTile?.let { //將指定的最後一張牌,移到最後的位置
                 hands -= it
                 hands += it

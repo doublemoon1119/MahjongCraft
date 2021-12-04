@@ -68,8 +68,7 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
         super.onPlaced(world, pos, state, placer, itemStack)
         if (!world.isClient) {
             peripheryPos(pos).forEach {
-                val part = it.first
-                val position = it.second
+                val (part, position) = it
                 world.setBlockState(position, state.with(PART, part))
             }
             world.updateNeighbors(pos, Blocks.AIR)
@@ -243,7 +242,7 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
          * 取得以 [centerPos] 為中心, xz 平面含 [centerPos] 的 9 格方塊位置
          * */
         private fun allPos(centerPos: BlockPos): List<BlockPos> =
-            mutableListOf(centerPos).apply { this += peripheryPos(centerPos).map { it.second } }
+            buildList { add(centerPos); addAll(peripheryPos(centerPos).map { it.second }) }
 
         /**
          * 以 [pos] 加上 [part] 找到麻將桌中心的位置

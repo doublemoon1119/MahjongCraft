@@ -35,6 +35,7 @@ enum class MahjongGameBehavior : TextFormatting {
     SCORE_SETTLEMENT,//分數結算畫面用
     YAKU_SETTLEMENT,//役結算畫面用
     COUNTDOWN_TIME,//倒數時間用
+    AUTO_ARRANGE,//詢問自動理牌用
     ;
 
     override fun toText() = TranslatableText("$MOD_ID.game.behavior.${name.lowercase()}")
