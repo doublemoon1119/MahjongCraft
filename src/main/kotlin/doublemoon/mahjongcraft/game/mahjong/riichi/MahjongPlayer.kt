@@ -23,6 +23,11 @@ class MahjongPlayer(
     override val entity: ServerPlayerEntity
 ) : MahjongPlayerBase() {
 
+    init {
+        //初始化的時候就發數據包給玩家, 用來取得玩家要不要自動理牌
+        entity.sendMahjongGamePacket(behavior = MahjongGameBehavior.AUTO_ARRANGE)
+    }
+
     override val displayName: String
         get() = entity.entityName
 
@@ -84,18 +89,20 @@ class MahjongPlayer(
 
     /**
      * 要求並讓玩家丟牌的功能,
-     * 傳過去的額外資料是 空的 (不能丟的牌的 [MahjongTile] 編號列表, 交給 [MahjongPlayer.cannotDiscardTiles] 處理),
+     * 傳過去的額外資料是 能不能自動摸切 (不能丟的牌的 [MahjongTile] 編號列表, 交給 [MahjongPlayer.cannotDiscardTiles] 處理),
      * 傳回來的額外資料是 要丟的牌的 [MahjongTile] 編號
      * */
     override suspend fun askToDiscardTile(
         timeoutTile: MahjongTile,
-        cannotDiscardTiles: List<MahjongTile>
+        cannotDiscardTiles: List<MahjongTile>,
+        skippable: Boolean
     ): MahjongTile {
         this.cannotDiscardTiles = cannotDiscardTiles
         return waitForBehaviorResult(
             behavior = MahjongGameBehavior.DISCARD,
-            extraData = "",
-            target = ClaimTarget.SELF
+            extraData = skippable.toString(),
+            target = ClaimTarget.SELF,
+            skippable = skippable
         ) { behavior, data ->
             this.cannotDiscardTiles = listOf()
             val tileCode = data.toIntOrNull() ?: return@waitForBehaviorResult timeoutTile
@@ -317,10 +324,11 @@ class MahjongPlayer(
         extraData: String,
         hands: List<MahjongTile> = this.hands.toMahjongTileList(),
         target: ClaimTarget,
+        skippable: Boolean = true,
         onResult: (MahjongGameBehavior, String) -> T
     ): T {
         this.waitingBehavior += waitingBehavior
-        this.waitingBehavior += MahjongGameBehavior.SKIP
+        if (skippable) this.waitingBehavior += MahjongGameBehavior.SKIP
         this.sendMahjongGamePacket(
             behavior = behavior,
             hands = hands,

@@ -25,6 +25,11 @@ abstract class MahjongPlayerBase : GamePlayer {
     val hands: MutableList<MahjongTileEntity> = mutableListOf()
 
     /**
+     * 自動整理手牌 [hands]
+     * */
+    var autoArrangeHands: Boolean = true
+
+    /**
      * 副露
      * */
     val fuuroList: MutableList<Fuuro> = mutableListOf()
@@ -131,16 +136,19 @@ abstract class MahjongPlayerBase : GamePlayer {
         onChii.invoke(this)
         val tileMj4jCodePair: Pair<Tile, Tile> = tilePair.first.mahjong4jTile to tilePair.second.mahjong4jTile
         val claimTarget = ClaimTarget.LEFT //只能吃上家, 這是絕對的結果
-        val tileShuntsu = mutableListOf(mjTileEntity).apply {
-            this += hands.find { it.mahjong4jTile == tileMj4jCodePair.first }!!
-            this += hands.find { it.mahjong4jTile == tileMj4jCodePair.second }!!
-            sortBy { it.mahjong4jTile.code }
-        }.onEach { it.inGameTilePosition = TilePosition.OTHER }
+        val tileShuntsu = mutableListOf(
+            mjTileEntity,
+            hands.find { it.mahjong4jTile == tileMj4jCodePair.first }!!,
+            hands.find { it.mahjong4jTile == tileMj4jCodePair.second }!!
+        ).also {
+            it.sortBy { tile -> tile.mahjong4jTile.code }
+            it.forEach { tile -> tile.inGameTilePosition = TilePosition.OTHER }
+        }
         val middleTile = tileShuntsu[1].mahjong4jTile
         val shuntsu = Shuntsu(true, middleTile)
         val fuuro =
             Fuuro(mentsu = shuntsu, tileMjEntities = tileShuntsu, claimTarget = claimTarget, claimTile = mjTileEntity)
-        hands -= tileShuntsu.toMutableList().also { it -= mjTileEntity } //將吃的牌從手牌中去除
+        hands -= tileShuntsu.toMutableList().also { it -= mjTileEntity }.toSet() //將吃的牌從手牌中去除
         target.discardedTilesForDisplay -= mjTileEntity
         fuuroList += fuuro //添加到副露
     }
@@ -296,8 +304,8 @@ abstract class MahjongPlayerBase : GamePlayer {
      * @return 可以直接對在集合中的牌可以直接使用 [ankan]
      *
      * */
-    val tilesCanAnkan: MutableSet<MahjongTileEntity>
-        get() = mutableSetOf<MahjongTileEntity>().apply {
+    val tilesCanAnkan: Set<MahjongTileEntity>
+        get() = buildSet {
             hands.distinct().forEach { //先取得牌數符合暗槓門檻的牌
                 val count = hands.count { tile -> tile.mahjong4jTile.code == it.mahjong4jTile.code }
                 if (count == 4) this += it
@@ -307,7 +315,7 @@ abstract class MahjongPlayerBase : GamePlayer {
                     val handsCopy = hands.toMutableList()
                     val anKanTilesInHands =
                         hands.filter { tile -> tile.mahjong4jTile == it.mahjong4jTile }.toMutableList()
-                    handsCopy -= anKanTilesInHands
+                    handsCopy -= anKanTilesInHands.toSet()
                     val fuuroListCopy = fuuroList.toMutableList().apply {
                         this += Fuuro(
                             mentsu = Kantsu(false, it.mahjong4jTile),
@@ -317,7 +325,7 @@ abstract class MahjongPlayerBase : GamePlayer {
                         )
                     }
                     val mentsuList = fuuroListCopy.map { fuuro -> fuuro.mentsu }
-                    val calcuMachi = mutableListOf<MahjongTile>().apply {
+                    val calcuMachi = buildList {
                         MahjongTile.values().filter { mjTile ->
                             /*
                             * 在立直可以暗槓的時候, 絕對不會聽可以暗槓的那張牌 (it.mahjong4jTile),
@@ -346,20 +354,18 @@ abstract class MahjongPlayerBase : GamePlayer {
                         * 使用 machi 判斷, 只要要暗槓的牌在手牌中可以組成順子就不能暗槓，必須是獨立存在的暗刻才能暗槓
                         * */
                         val otherTiles = hands.fromEntityListToIntArrayForMahjong4j()
-                        val mentusList = mutableListOf<Mentsu>().apply { //從副露取得已經確定的面子
-                            fuuroList.forEach { fuuro -> this += fuuro.mentsu }
-                        }
+                        val mentsuList1 = fuuroList.map { fuuro -> fuuro.mentsu } //從副露取得已經確定的面子
                         calcuMachi.forEach { here ->
                             val tile = here.mahjong4jTile
-                            val mj4jHands = Hands(otherTiles, tile, mentusList) //先初步計算牌型
+                            val mj4jHands = Hands(otherTiles, tile, mentsuList1) //先初步計算牌型
                             val mentsuCompSet = mj4jHands.mentsuCompSet
                             val shuntsuList = //取得所有手牌中可以形成的順子
-                                mutableListOf<Shuntsu>().apply { mentsuCompSet.forEach { mentsuComp -> this += mentsuComp.shuntsuList } }
+                                mentsuCompSet.flatMap { mentsuComp -> mentsuComp.shuntsuList }
                             shuntsuList.forEach { shuntsu ->
                                 val middleTile = shuntsu.tile //順子中間這張牌
                                 val previousTile = MahjongTile.values()[middleTile.code].previousTile.mahjong4jTile
                                 val nextTile = MahjongTile.values()[middleTile.code].nextTile.mahjong4jTile
-                                val shuntsuTiles = mutableListOf(previousTile, middleTile, nextTile)
+                                val shuntsuTiles = listOf(previousTile, middleTile, nextTile)
                                 if (it.mahjong4jTile in shuntsuTiles) this -= it //立直後可以暗刻的牌必須不能在手牌中組成任何順子
                             }
                         }
@@ -452,10 +458,7 @@ abstract class MahjongPlayerBase : GamePlayer {
      * 與 [mjTileEntity] 相同編號的手牌,
      * */
     private fun sameTilesInHands(mjTileEntity: MahjongTileEntity): MutableList<MahjongTileEntity> =
-        mutableListOf<MahjongTileEntity>().apply {
-            val mj4jTile = mjTileEntity.mahjong4jTile
-            this += hands.filter { it.mahjong4jTile == mj4jTile }
-        }
+        hands.filter { it.mahjong4jTile == mjTileEntity.mahjong4jTile }.toMutableList()
 
     /**
      * 是否聽牌
@@ -749,11 +752,13 @@ abstract class MahjongPlayerBase : GamePlayer {
      *
      * @param timeoutTile 當超時的時候會丟出去的牌
      * @param cannotDiscardTiles 不能丟掉的牌的列表,需要輸入 [MahjongTile]
+     * @param skippable 客戶端可以跳過的, 會影響到自動摸切而已
      * @return 要丟出的牌的編號 [MahjongTile.code]
      * */
     open suspend fun askToDiscardTile(
         timeoutTile: MahjongTile,
-        cannotDiscardTiles: List<MahjongTile>
+        cannotDiscardTiles: List<MahjongTile>,
+        skippable: Boolean
     ): MahjongTile = hands.findLast { it.mahjongTile !in cannotDiscardTiles }?.mahjongTile ?: timeoutTile
 
     /**
@@ -892,17 +897,18 @@ abstract class MahjongPlayerBase : GamePlayer {
      * 調用的時候, 手牌應該會正好 14 張
      * */
     private val tilePairsForRiichi
-        get() = mutableListOf<Pair<MahjongTile, List<MahjongTile>>>().apply {
-            if (hands.size != 14) return@apply
-            val listToAdd = mutableListOf<Pair<MahjongTile, List<MahjongTile>>>()
-            hands.forEach { entity ->
-                val nowHands = hands.toMutableList().also { it -= entity }.toMahjongTileList()
-                val nowMachi = getMachi(hands = nowHands) //取得丟了這張牌後, 會聽的牌的列表
-                if (nowMachi.isNotEmpty()) { //丟了這張牌會聽
-                    listToAdd += entity.mahjongTile to nowMachi
+        get() = buildList {
+            if (hands.size != 14) return@buildList
+            val listToAdd = buildList {
+                hands.forEach { entity ->
+                    val nowHands = hands.toMutableList().also { it -= entity }.toMahjongTileList()
+                    val nowMachi = getMachi(hands = nowHands) //取得丟了這張牌後, 會聽的牌的列表
+                    if (nowMachi.isNotEmpty()) { //丟了這張牌會聽
+                        this += entity.mahjongTile to nowMachi
+                    }
                 }
             }
-            this += listToAdd.distinct() //這個列表內容要不能重複
+            addAll(listToAdd.distinct()) //這個列表內容要不能重複
         }
 
     /**

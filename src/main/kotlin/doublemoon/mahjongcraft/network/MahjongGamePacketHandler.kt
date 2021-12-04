@@ -1,5 +1,7 @@
 package doublemoon.mahjongcraft.network
 
+import doublemoon.mahjongcraft.MahjongCraftClient
+import doublemoon.mahjongcraft.client.ModConfig
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.mahjong.riichi.*
 import doublemoon.mahjongcraft.id
@@ -10,6 +12,7 @@ import doublemoon.mahjongcraft.scheduler.client.YakuSettleHandler
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import me.shedaniel.autoconfig.AutoConfig
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
@@ -56,7 +59,7 @@ object MahjongGamePacketHandler : CustomPacketHandler {
     @Environment(EnvType.CLIENT)
     fun ClientPlayerEntity.sendMahjongGamePacket(
         behavior: MahjongGameBehavior,
-        hands: List<MahjongTile> = mutableListOf(),
+        hands: List<MahjongTile> = listOf(),
         target: ClaimTarget = ClaimTarget.SELF,
         extraData: String = "",
     ) = this.networkHandler.sendPacket(
@@ -68,7 +71,7 @@ object MahjongGamePacketHandler : CustomPacketHandler {
 
     fun ServerPlayerEntity.sendMahjongGamePacket(
         behavior: MahjongGameBehavior,
-        hands: List<MahjongTile> = mutableListOf(),
+        hands: List<MahjongTile> = listOf(),
         target: ClaimTarget = ClaimTarget.SELF,
         extraData: String = "",
     ) = this.networkHandler.sendPacket(
@@ -92,12 +95,21 @@ object MahjongGamePacketHandler : CustomPacketHandler {
                     ClientCountdownTimeHandler.basicAndExtraTime = times
                 }
                 MahjongGameBehavior.DISCARD -> {
-                    //輪到這個玩家丟牌, 目前沒有功能
+                    val skippable = extraData.toBoolean()
+                    if (skippable && MahjongCraftClient.config.quickActions.autoDrawAndDiscard) { //自動摸切
+                        client.player?.sendMahjongGamePacket(behavior = MahjongGameBehavior.SKIP)
+                    }
                 }
                 MahjongGameBehavior.GAME_OVER -> {
                     OptionalBehaviorHandler.cancel()
                 }
                 MahjongGameBehavior.SCORE_SETTLEMENT -> {
+                    with(MahjongCraftClient.config.quickActions) { //每個回合結束的時候, 重置這三個設定
+                        autoCallWin = false
+                        noChiiPonKan = false
+                        autoDrawAndDiscard = false
+                        AutoConfig.getConfigHolder(ModConfig::class.java).save()
+                    }
                     val settlement = Json.decodeFromString(ScoreSettlement.serializer(), extraData)
                     ScoreSettleHandler.start(settlement = settlement)
                 }
@@ -105,12 +117,35 @@ object MahjongGamePacketHandler : CustomPacketHandler {
                     val settlements = Json.decodeFromString<List<YakuSettlement>>(extraData)
                     YakuSettleHandler.start(settlementList = settlements)
                 }
-                else -> OptionalBehaviorHandler.start(
-                    behavior,
-                    hands,
-                    target,
-                    extraData
-                )
+                MahjongGameBehavior.AUTO_ARRANGE -> {
+                    client.player?.sendMahjongGamePacket(
+                        behavior,
+                        extraData = MahjongCraftClient.config.quickActions.autoArrange.toString()
+                    )
+                }
+                else -> {
+                    val quickActions = MahjongCraftClient.config.quickActions
+                    when (behavior) {
+                        MahjongGameBehavior.RON, MahjongGameBehavior.TSUMO ->
+                            if (quickActions.autoCallWin) { //自動和牌
+                                client.player?.sendMahjongGamePacket(behavior = behavior)
+                                return
+                            }
+                        MahjongGameBehavior.CHII, MahjongGameBehavior.PON_OR_CHII, MahjongGameBehavior.PON,
+                        MahjongGameBehavior.ANKAN_OR_KAKAN, MahjongGameBehavior.MINKAN ->
+                            if (quickActions.noChiiPonKan) { //不吃碰槓
+                                client.player?.sendMahjongGamePacket(behavior = MahjongGameBehavior.SKIP)
+                                return
+                            }
+                        else -> {}
+                    }
+                    OptionalBehaviorHandler.start(
+                        behavior,
+                        hands,
+                        target,
+                        extraData
+                    )
+                }
             }
         }
     }
@@ -125,7 +160,9 @@ object MahjongGamePacketHandler : CustomPacketHandler {
         MahjongGamePacket(byteBuf).apply {
             val game = GameManager.getGame<MahjongGame>(player) ?: return@apply
             val mjPlayer = game.getPlayer(player) as MahjongPlayer? ?: return@apply
-            if (behavior in mjPlayer.waitingBehavior) {
+            if (behavior == MahjongGameBehavior.AUTO_ARRANGE) {
+                mjPlayer.autoArrangeHands = extraData.toBoolean()
+            } else if (behavior in mjPlayer.waitingBehavior) {
                 mjPlayer.behaviorResult = behavior to extraData
             }
         }

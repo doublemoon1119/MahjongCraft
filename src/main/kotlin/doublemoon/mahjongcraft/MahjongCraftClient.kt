@@ -1,9 +1,12 @@
 package doublemoon.mahjongcraft
 
 import doublemoon.mahjongcraft.client.ModConfig
+import doublemoon.mahjongcraft.client.gui.MahjongCraftHud
 import doublemoon.mahjongcraft.client.render.*
+import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGameBehavior
 import doublemoon.mahjongcraft.network.CustomEntitySpawnS2CPacketHandler
 import doublemoon.mahjongcraft.network.MahjongGamePacketHandler
+import doublemoon.mahjongcraft.network.MahjongGamePacketHandler.sendMahjongGamePacket
 import doublemoon.mahjongcraft.network.MahjongTablePacketHandler
 import doublemoon.mahjongcraft.network.MahjongTileCodePacketHandler
 import doublemoon.mahjongcraft.registry.BlockEntityTypeRegistry
@@ -21,6 +24,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.item.UnclampedModelPredicateProvider
 import net.minecraft.client.option.KeyBinding
@@ -28,6 +32,7 @@ import net.minecraft.client.util.InputUtil
 import net.minecraft.client.world.ClientWorld
 import net.minecraft.entity.LivingEntity
 import net.minecraft.item.ItemStack
+import net.minecraft.util.ActionResult
 import net.minecraft.util.Identifier
 import org.lwjgl.glfw.GLFW
 
@@ -35,6 +40,7 @@ import org.lwjgl.glfw.GLFW
 object MahjongCraftClient : ClientModInitializer {
 
     lateinit var config: ModConfig
+    lateinit var lastConfig: ModConfig
     private val configKey: KeyBinding = KeyBindingHelper.registerKeyBinding(
         KeyBinding(
             "key.$MOD_ID.open_config_gui",
@@ -89,6 +95,18 @@ object MahjongCraftClient : ClientModInitializer {
         MahjongTileCodePacketHandler.registerClient()
         AutoConfig.register(ModConfig::class.java, ::GsonConfigSerializer)
         config = AutoConfig.getConfigHolder(ModConfig::class.java).config
+        lastConfig = config.copy(quickActions = config.quickActions.copy())
+        AutoConfig.getConfigHolder(ModConfig::class.java).registerSaveListener { _, modConfig ->
+            val player = MinecraftClient.getInstance().player
+            if (player != null && modConfig.quickActions.autoArrange != lastConfig.quickActions.autoArrange) {
+                player.sendMahjongGamePacket( //每次更改 AutoArrange 的設定都發送當前的狀態過去伺服器
+                    behavior = MahjongGameBehavior.AUTO_ARRANGE,
+                    extraData = modConfig.quickActions.autoArrange.toString()
+                )
+            }
+            lastConfig = modConfig.copy(quickActions = modConfig.quickActions.copy())
+            ActionResult.SUCCESS
+        }
     }
 
     private fun tick(client: MinecraftClient) {
