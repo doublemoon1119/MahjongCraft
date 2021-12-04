@@ -1327,7 +1327,10 @@ class MahjongGame(
             it.basicThinkingTime = rule.thinkingTime.base
             it.extraThinkingTime = rule.thinkingTime.extra
         }
-        realPlayers.forEach { it.cancelWaitingBehavior = false }
+        realPlayers.forEach {
+            it.cancelWaitingBehavior = false
+            it.sendMahjongGamePacket(behavior = MahjongGameBehavior.GAME_START)
+        }
         if (sync) syncMahjongTable()  //開始遊戲同步麻將桌
         //延遲 0.5 秒後再開始
         jobWaitForStart = CoroutineScope(Dispatchers.IO).launch {

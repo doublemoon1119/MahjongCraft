@@ -100,7 +100,11 @@ object MahjongGamePacketHandler : CustomPacketHandler {
                         client.player?.sendMahjongGamePacket(behavior = MahjongGameBehavior.SKIP)
                     }
                 }
+                MahjongGameBehavior.GAME_START -> {
+                    MahjongCraftClient.playing = true
+                }
                 MahjongGameBehavior.GAME_OVER -> {
+                    MahjongCraftClient.playing = false
                     OptionalBehaviorHandler.cancel()
                 }
                 MahjongGameBehavior.SCORE_SETTLEMENT -> {

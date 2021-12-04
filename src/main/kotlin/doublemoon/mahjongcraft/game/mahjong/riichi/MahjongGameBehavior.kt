@@ -31,6 +31,7 @@ enum class MahjongGameBehavior : TextFormatting {
     EXHAUSTIVE_DRAW,//流局
     DISCARD,//丟牌
     SKIP,//跳過
+    GAME_START,//遊戲開始
     GAME_OVER,//遊戲結束
     SCORE_SETTLEMENT,//分數結算畫面用
     YAKU_SETTLEMENT,//役結算畫面用

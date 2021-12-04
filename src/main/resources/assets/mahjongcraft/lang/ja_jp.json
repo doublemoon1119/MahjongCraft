@@ -2,7 +2,7 @@
   "text.autoconfig.mahjongcraft.title": "MahjongCraft オプション",
   "text.autoconfig.mahjongcraft.option.displayTableLabels": "麻雀テーブルのタブをディスプレイしました",
   "text.autoconfig.mahjongcraft.option.quickActions": "クイックアクション",
-  "text.autoconfig.mahjongcraft.option.quickActions.displayHud": "HUD を表示する",
+  "text.autoconfig.mahjongcraft.option.quickActions.displayHudWhenPlaying": "ゲームのプレイ中にHUDを表示する",
   "text.autoconfig.mahjongcraft.option.quickActions.autoArrange": "自動整理",
   "text.autoconfig.mahjongcraft.option.quickActions.autoCallWin": "自動和了",
   "text.autoconfig.mahjongcraft.option.quickActions.noChiiPonKan": "鳴きなし",

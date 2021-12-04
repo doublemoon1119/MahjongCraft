@@ -2,7 +2,7 @@
   "text.autoconfig.mahjongcraft.title": "MahjongCraft Options",
   "text.autoconfig.mahjongcraft.option.displayTableLabels": "Display Mahjong Table Labels",
   "text.autoconfig.mahjongcraft.option.quickActions": "Quick Actions",
-  "text.autoconfig.mahjongcraft.option.quickActions.displayHud": "Display HUD",
+  "text.autoconfig.mahjongcraft.option.quickActions.displayHudWhenPlaying": "Display HUD When Playing Game",
   "text.autoconfig.mahjongcraft.option.quickActions.autoArrange": "Auto Arrange",
   "text.autoconfig.mahjongcraft.option.quickActions.autoCallWin": "Auto Call Win",
   "text.autoconfig.mahjongcraft.option.quickActions.noChiiPonKan": "No Chii/Pon/Kan",

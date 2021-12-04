@@ -39,8 +39,8 @@ import org.lwjgl.glfw.GLFW
 @Environment(EnvType.CLIENT)
 object MahjongCraftClient : ClientModInitializer {
 
+    var playing = false //客戶端玩家是否在遊戲中
     lateinit var config: ModConfig
-    private lateinit var lastConfig: ModConfig
     private var hud: MahjongCraftHud? = null
     private val configKey: KeyBinding = KeyBindingHelper.registerKeyBinding(
         KeyBinding(
@@ -97,17 +97,16 @@ object MahjongCraftClient : ClientModInitializer {
         //Config
         AutoConfig.register(ModConfig::class.java, ::GsonConfigSerializer)
         config = AutoConfig.getConfigHolder(ModConfig::class.java).config
-        lastConfig = config.copy(quickActions = config.quickActions.copy())
+        var lastQuickActionsAutoArrange = config.quickActions.autoArrange
         AutoConfig.getConfigHolder(ModConfig::class.java).registerSaveListener { _, modConfig ->
             val player = MinecraftClient.getInstance().player
-            if (modConfig.quickActions.displayHud != lastConfig.quickActions.displayHud) hud?.refresh()
-            if (player != null && modConfig.quickActions.autoArrange != lastConfig.quickActions.autoArrange) {
+            if (player != null && modConfig.quickActions.autoArrange != lastQuickActionsAutoArrange) {
                 player.sendMahjongGamePacket( //每次更改 AutoArrange 的設定都發送當前的狀態過去伺服器
                     behavior = MahjongGameBehavior.AUTO_ARRANGE,
                     extraData = modConfig.quickActions.autoArrange.toString()
                 )
             }
-            lastConfig = modConfig.copy(quickActions = modConfig.quickActions.copy())
+            lastQuickActionsAutoArrange = modConfig.quickActions.autoArrange
             ActionResult.SUCCESS
         }
         //Hud

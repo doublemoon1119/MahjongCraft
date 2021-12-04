@@ -1,10 +1,11 @@
 package doublemoon.mahjongcraft.client.gui
 
+import doublemoon.mahjongcraft.MahjongCraftClient
 import doublemoon.mahjongcraft.client.ModConfig
+import doublemoon.mahjongcraft.client.gui.widget.WConditionalPlainPanel
 import io.github.cottonmc.cotton.gui.client.BackgroundPainter
 import io.github.cottonmc.cotton.gui.client.CottonHud
 import io.github.cottonmc.cotton.gui.widget.WDynamicLabel
-import io.github.cottonmc.cotton.gui.widget.WPlainPanel
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
@@ -21,8 +22,9 @@ class MahjongCraftHud(
     private val textRenderer = client.textRenderer
     private val fontHeight = textRenderer.fontHeight
     private val quickActions = config.quickActions
-    private val root = WPlainPanel()
-    private val textAndLabel = listOf(
+    private val quickActionsRoot =
+        WConditionalPlainPanel { MahjongCraftClient.playing && quickActions.displayHudWhenPlaying }
+    private val quickActionsTextAndLabel = listOf(
         { colorPrefix(quickActions.autoArrange) + AUTO_ARRANGE.string },
         { colorPrefix(quickActions.autoCallWin) + AUTO_CALL_WIN.string },
         { colorPrefix(quickActions.noChiiPonKan) + NO_CHII_PON_KAN.string },
@@ -30,52 +32,48 @@ class MahjongCraftHud(
     ).associateWith { WDynamicLabel(it) }
 
     init {
-        textAndLabel.forEach { (text, label) ->
-            val index = textAndLabel.values.indexOf(label)
-            root.add(
-                label,
-                ORIGIN_X,
-                ORIGIN_Y + index * (fontHeight + LABEL_INTERVAL),
-                textRenderer.getWidth(text.invoke()),
-                fontHeight
-            )
-        }
-        root.backgroundPainter = BackgroundPainter.createColorful(0x7f271c1d)
-        setRootSize()
+        initQuickActionsWidgets()
         refresh()
     }
 
     fun refresh() {
-        if (quickActions.displayHud) show() else hide()
+        val window = client.window
+        val width = window.scaledWidth
+        val height = window.scaledHeight
+        resetQuickActionsWidgetsSizeAndLocation(width, height)
+    }
+
+    private fun initQuickActionsWidgets() {
+        quickActionsTextAndLabel.forEach { (_, label) -> quickActionsRoot.add(label, 0, 0, 0, 0) }
+        quickActionsRoot.backgroundPainter = BackgroundPainter.createColorful(0x7f271c1d)
+        setQuickActionsRootSize()
+    }
+
+    private fun resetQuickActionsWidgetsSizeAndLocation(width: Int, height: Int) {
+        quickActionsTextAndLabel.forEach { (text, label) ->
+            val index = quickActionsTextAndLabel.values.indexOf(label)
+            label.setSize(textWidth(text.invoke()), fontHeight)
+            label.setLocation(INSET, INSET + index * (fontHeight + LABEL_INTERVAL))
+        }
+        setQuickActionsRootSize()
+        val hudPosition = quickActions.hudPosition
+        val x = (width * hudPosition.x).toInt()
+        val y = (height * hudPosition.y - quickActionsRoot.height / 2).toInt()
+        CottonHud.add(quickActionsRoot, x, y)
+    }
+
+    private fun setQuickActionsRootSize() {
+        val width = INSET * 2 + quickActionsTextAndLabel.maxOf { it.value.width }
+        val height = INSET * 2 + quickActionsTextAndLabel.values.size * (fontHeight + LABEL_INTERVAL) - LABEL_INTERVAL
+        quickActionsRoot.setSize(width, height)
     }
 
     private fun colorPrefix(settingEnabled: Boolean) = if (settingEnabled) "§a" else "§c"
 
-    private fun show() {
-        textAndLabel.forEach { (text, label) ->
-            val index = textAndLabel.values.indexOf(label)
-            label.setSize(textRenderer.getWidth(text.invoke()), fontHeight)
-            label.setLocation(ORIGIN_X, ORIGIN_Y + index * (fontHeight + LABEL_INTERVAL))
-        }
-        setRootSize()
-        val window = client.window
-        val hudHeight = window.scaledHeight
-        CottonHud.add(root, 0, (hudHeight * 0.7 - root.height / 2).toInt())
-    }
-
-    private fun hide() {
-        CottonHud.remove(root)
-    }
-
-    private fun setRootSize() {
-        val width = ORIGIN_X * 2 + textAndLabel.maxOf { it.value.width }
-        val height = ORIGIN_Y * 2 + textAndLabel.values.size * (fontHeight + LABEL_INTERVAL) - LABEL_INTERVAL
-        root.setSize(width, height)
-    }
+    private fun textWidth(text: String) = textRenderer.getWidth(text)
 
     companion object {
-        private const val ORIGIN_X = 6
-        private const val ORIGIN_Y = 6
+        private const val INSET = 6
         private const val LABEL_INTERVAL = 2
         private val AUTO_ARRANGE = TranslatableText("text.autoconfig.mahjongcraft.option.quickActions.autoArrange")
         private val AUTO_CALL_WIN = TranslatableText("text.autoconfig.mahjongcraft.option.quickActions.autoCallWin")
