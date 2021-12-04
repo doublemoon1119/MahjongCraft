@@ -3,6 +3,7 @@ package doublemoon.mahjongcraft.util
 import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.LiteralText
 import net.minecraft.text.Text
 
 
@@ -13,11 +14,11 @@ import net.minecraft.text.Text
  * @param subtitle 要顯示的副標題
  * */
 fun ServerPlayerEntity.sendTitles(
-    title: Text? = null,
+    title: Text = LiteralText(""),
     subtitle: Text? = null,
 ) {
     with(networkHandler) {
-        title?.also { sendPacket(TitleS2CPacket(it)) }
+        sendPacket(TitleS2CPacket(title))
         subtitle?.also { sendPacket(SubtitleS2CPacket(it)) }
     }
 }
@@ -29,7 +30,7 @@ fun ServerPlayerEntity.sendTitles(
  * @param subtitle 要顯示的副標題
  * */
 fun Collection<ServerPlayerEntity>.sendTitles(
-    title: Text? = null,
+    title: Text = LiteralText(""),
     subtitle: Text? = null
 ) {
     forEach { it.sendTitles(title, subtitle) }
