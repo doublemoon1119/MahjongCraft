@@ -57,14 +57,14 @@ class MahjongGameBehaviorGui(
         get() = LiteralText("$basicTimeText$plusTimeText$extraTimeText")
 
     //渲染麻將牌用
-    private val hasTakenTile = when (behavior) { //在發送這行為過來時是否有拿牌, 目前只有下面 3 個情況有拿牌
+    private val alreadyDrewTile = when (behavior) { //在發送這行為過來時是否有拿牌, 目前只有下面 3 個情況有拿牌
         MahjongGameBehavior.TSUMO,
         MahjongGameBehavior.KYUUSHU_KYUUHAI,
         MahjongGameBehavior.ANKAN_OR_KAKAN -> true
         else -> false
     }
     private val handsWidth =
-        TILE_WIDTH * hands.size + TILE_GAP * (hands.size - 1) + if (hasTakenTile) TAKEN_TILE_GAP else 0
+        TILE_WIDTH * hands.size + TILE_GAP * (hands.size - 1) + if (alreadyDrewTile) TAKEN_TILE_GAP else 0
     private var claimingTile: MahjongTile? = null
 
     /**
@@ -306,7 +306,7 @@ class MahjongGameBehaviorGui(
             hands.forEachIndexed { index, tile ->
                 val tileX = ((width - handsWidth) / 2
                         + (TILE_WIDTH + TILE_GAP) * index
-                        + if (hasTakenTile && index == hands.lastIndex) TAKEN_TILE_GAP else 0)
+                        + if (alreadyDrewTile && index == hands.lastIndex) TAKEN_TILE_GAP else 0)
                 if (tile.mahjong4jTile in handsHintTiles) {
                     colorBlock(
                         x = tileX,

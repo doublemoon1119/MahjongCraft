@@ -33,7 +33,7 @@ class ScoreSettlementGui(
 ) : LightweightGuiDescription() {
     private val fontHeight = MinecraftClient.getInstance().textRenderer.fontHeight
     private val rankedScoreList = settlement.rankedScoreList
-    private val timeText: Text
+    private val time: Text
         get() {
             val time = ScoreSettleHandler.time
             val dotAmount = 3 - (time % 3)
@@ -47,7 +47,7 @@ class ScoreSettlementGui(
             dynamicLabel(
                 x = BORDER_MARGIN,
                 y = BORDER_MARGIN + ROOT_HEIGHT - fontHeight,
-                text = { timeText.string },
+                text = { time.string },
                 color = COLOR_RED
             )
             val title = label(

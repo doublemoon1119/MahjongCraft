@@ -52,19 +52,12 @@ class MahjongTableGui(
     private val player: ClientPlayerEntity = client.player!!
 
     //以下來自 mahjongTableBlockEntity
-    private val players
-        get() = mahjongTable.players
-    private val playerEntityNames
-        get() = mahjongTable.playerEntityNames
-    private val bots
-        get() = mahjongTable.bots
-    private val ready
-        get() = mahjongTable.ready
-    private val rule
-        get() = mahjongTable.rule
+    private val players = mahjongTable.players
+    private val playerEntityNames = mahjongTable.playerEntityNames
+    private val bots = mahjongTable.bots
+    private val ready = mahjongTable.ready
+    private val rule = mahjongTable.rule
 
-    //    private val playing
-//        get() = mahjongTable.playing
     private val isInThisGame: Boolean
         get() = player.uuidAsString in players
     private val isHost: Boolean
@@ -87,12 +80,13 @@ class MahjongTableGui(
         get() = LibGui.isDarkMode()
     private val ruleTexts = mutableListOf<WText>()
     private val playerInfoItems: List<PlayerInfoItem> = List(4) { PlayerInfoItem(it) }
-    private lateinit var buttonJoinOrLeave: WButton
-    private var buttonReadyOrNot: WButton? = null
-    private var buttonStart: WTooltipButton? = null
-    private var buttonAddBot: WButton? = null
-    private var buttonEditRules: WButton? = null
-    private val buttonKick: MutableList<WButton?> = mutableListOf(null, null, null)  //最多三個, 房主不能踢自己
+    //Buttons
+    private lateinit var joinOrLeave: WButton
+    private var readyOrNot: WButton? = null
+    private var start: WTooltipButton? = null
+    private var addBot: WButton? = null
+    private var editRules: WButton? = null
+    private val kick: MutableList<WButton?> = mutableListOf(null, null, null)  //最多三個, 房主不能踢自己
 
     init {
         rootPlainPanel(width = ROOT_WIDTH, height = ROOT_HEIGHT) {
@@ -107,7 +101,7 @@ class MahjongTableGui(
                 text = TranslatableText("$MOD_ID.game.riichi_mahjong"),
                 verticalAlignment = VerticalAlignment.CENTER,
             )
-            buttonJoinOrLeave = button(
+            joinOrLeave = button(
                 x = BUTTON_JOIN_OR_LEAVE_X,
                 y = BUTTON_JOIN_OR_LEAVE_Y,
                 width = BUTTON_WIDTH,
@@ -178,7 +172,7 @@ class MahjongTableGui(
      * [MahjongTableBlockEntity] 更新時使用
      * */
     fun refresh() {
-        with(buttonJoinOrLeave) {
+        with(joinOrLeave) {
             isEnabled = if (isInThisGame) true else "" in players  //空位的時候, 會以 "" 表示
             label =
                 if (!isInThisGame) TranslatableText("$MOD_ID.gui.button.join") else TranslatableText("$MOD_ID.gui.button.leave")
@@ -208,20 +202,20 @@ class MahjongTableGui(
         }
         when {
             isHost -> {
-                if (buttonStart == null) {
-                    buttonStart = WTooltipButton(
+                if (start == null) {
+                    start = WTooltipButton(
                         label = TranslatableText("$MOD_ID.gui.button.start"),
                         tooltip = arrayOf(TranslatableText("$MOD_ID.gui.tooltip.clickable.when_all_ready"))
                     )
                     (rootPanel as WPlainPanel).add(
-                        buttonStart,
-                        buttonJoinOrLeave.x,
-                        buttonJoinOrLeave.y - BUTTON_HEIGHT - BUTTON_PADDING,
+                        start,
+                        joinOrLeave.x,
+                        joinOrLeave.y - BUTTON_HEIGHT - BUTTON_PADDING,
                         BUTTON_WIDTH,
                         BUTTON_HEIGHT
                     )
                 }
-                buttonStart!!.apply {
+                start!!.apply {
                     isEnabled = isAllReady
                     onClick = Runnable {
                         if (isAllReady && isHost) {
@@ -232,17 +226,17 @@ class MahjongTableGui(
                         }
                     }
                 }
-                if (buttonAddBot == null) {
-                    buttonAddBot = WButton(TranslatableText("$MOD_ID.gui.button.add_bot"))
+                if (addBot == null) {
+                    addBot = WButton(TranslatableText("$MOD_ID.gui.button.add_bot"))
                     (rootPanel as WPlainPanel).add(
-                        buttonAddBot,
-                        buttonStart!!.x,
-                        buttonStart!!.y - BUTTON_HEIGHT - BUTTON_PADDING,
+                        addBot,
+                        start!!.x,
+                        start!!.y - BUTTON_HEIGHT - BUTTON_PADDING,
                         BUTTON_WIDTH,
                         BUTTON_HEIGHT
                     )
                 }
-                buttonAddBot!!.apply {
+                addBot!!.apply {
                     isEnabled = !isFull
                     onClick = Runnable {
                         if (!isFull && isHost) {
@@ -253,17 +247,17 @@ class MahjongTableGui(
                         }
                     }
                 }
-                if (buttonEditRules == null) {
-                    buttonEditRules = WButton(TranslatableText("$MOD_ID.gui.button.edit_rules"))
+                if (editRules == null) {
+                    editRules = WButton(TranslatableText("$MOD_ID.gui.button.edit_rules"))
                     (rootPanel as WPlainPanel).add(
-                        buttonEditRules,
-                        buttonAddBot!!.x,
-                        buttonAddBot!!.y - BUTTON_HEIGHT - BUTTON_PADDING,
+                        editRules,
+                        addBot!!.x,
+                        addBot!!.y - BUTTON_HEIGHT - BUTTON_PADDING,
                         BUTTON_WIDTH,
                         BUTTON_HEIGHT
                     )
                 }
-                buttonEditRules!!.apply {
+                editRules!!.apply {
                     onClick = Runnable {
                         if (isHost) {
                             player.sendMahjongTablePacket(
@@ -275,19 +269,19 @@ class MahjongTableGui(
                 }
                 repeat(3) {  //kick 按鈕只有 3 個
                     val playerIndex = it + 1
-                    if (buttonKick[it] == null) {
+                    if (kick[it] == null) {
                         val kickText = TranslatableText("$MOD_ID.gui.button.kick")
-                        buttonKick[it] = WButton(kickText)
+                        kick[it] = WButton(kickText)
                         val buttonWidth = client.textRenderer.getWidth(kickText) + 12
                         (rootPanel as WPlainPanel).add(
-                            buttonKick[it],
+                            kick[it],
                             playerInfoItems[0].x - BUTTON_PADDING - buttonWidth,
                             playerInfoItems[playerIndex].y + 2,
                             buttonWidth,
                             BUTTON_HEIGHT
                         )
                     }
-                    buttonKick[it]!!.apply {
+                    kick[it]!!.apply {
                         isEnabled = playerAmount > playerIndex
                         onClick = Runnable {
                             if (isHost) {
@@ -303,17 +297,17 @@ class MahjongTableGui(
                 clearNotHostButtons()
             }
             isInThisGame -> {
-                if (buttonReadyOrNot == null) {
-                    buttonReadyOrNot = WButton()
+                if (readyOrNot == null) {
+                    readyOrNot = WButton()
                     (rootPanel as WPlainPanel).add(
-                        buttonReadyOrNot,
-                        buttonJoinOrLeave.x,
-                        buttonJoinOrLeave.y - BUTTON_HEIGHT - BUTTON_PADDING,
+                        readyOrNot,
+                        joinOrLeave.x,
+                        joinOrLeave.y - BUTTON_HEIGHT - BUTTON_PADDING,
                         BUTTON_WIDTH,
                         BUTTON_HEIGHT
                     )
                 }
-                buttonReadyOrNot!!.apply {
+                readyOrNot!!.apply {
                     label = if (isReady) {
                         TranslatableText("$MOD_ID.gui.button.not_ready")
                     } else {
@@ -344,20 +338,20 @@ class MahjongTableGui(
 
     //只有 host 才有的按紐
     private fun clearHostButtons() {
-        buttonStart?.let { rootPanel.remove(it) }
-        buttonStart = null
-        buttonAddBot?.let { rootPanel.remove(it) }
-        buttonAddBot = null
-        buttonEditRules?.let { rootPanel.remove(it) }
-        buttonEditRules = null
-        buttonKick.filterNotNull().forEach { rootPanel.remove(it) }
-        repeat(3) { buttonKick[it] = null }
+        start?.let { rootPanel.remove(it) }
+        start = null
+        addBot?.let { rootPanel.remove(it) }
+        addBot = null
+        editRules?.let { rootPanel.remove(it) }
+        editRules = null
+        kick.filterNotNull().forEach { rootPanel.remove(it) }
+        repeat(3) { kick[it] = null }
     }
 
     //只有在遊戲中非 host 才有的按紐
     private fun clearNotHostButtons() {
-        buttonReadyOrNot?.let { rootPanel.remove(it) }
-        buttonReadyOrNot = null
+        readyOrNot?.let { rootPanel.remove(it) }
+        readyOrNot = null
     }
 
     companion object {

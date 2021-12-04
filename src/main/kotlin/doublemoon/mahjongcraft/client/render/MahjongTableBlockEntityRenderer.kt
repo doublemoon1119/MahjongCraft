@@ -17,7 +17,6 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderer
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.text.LiteralText
-import net.minecraft.text.Text
 import net.minecraft.text.TranslatableText
 
 @Environment(EnvType.CLIENT)
@@ -25,11 +24,6 @@ class MahjongTableBlockEntityRenderer(
     context: BlockEntityRendererFactory.Context
 ) : BlockEntityRenderer<MahjongTableBlockEntity> {
     private val textRenderer = context.textRenderer
-    private val textReady = TranslatableText("$MOD_ID.gui.button.ready")
-    private val textPlayer = TranslatableText("$MOD_ID.game.player")
-    private val textStatus = TranslatableText("$MOD_ID.game.status")
-    private val textWaiting = GameStatus.WAITING.toText()
-    private val textPlaying = GameStatus.PLAYING.toText()
 
     override fun render(
         blockEntity: MahjongTableBlockEntity,
@@ -98,15 +92,15 @@ class MahjongTableBlockEntityRenderer(
     ) {
         val playerAmount = blockEntity.players.count { it.isNotEmpty() }
         val readyAmount = blockEntity.ready.count { it }
-        val textCurrentReady = textReady.copy() + ": $readyAmount/4"
-        val textCurrentPlayers = textPlayer.copy() + ": $playerAmount/4"
-        val textCurrentStatus = textStatus.copy() + ": " + (if (blockEntity.playing) textPlaying else textWaiting)
+        val currentReady = READY + ": $readyAmount/4"
+        val currentPlayers = PLAYER + ": $playerAmount/4"
+        val currentStatus = STATUS + ": " + (if (blockEntity.playing) PLAYING else WAITING)
         val labelPadding = if (blockEntity.playing) PLAYING_PADDING else WAITING_PADDING
         buildList {
-            this += textCurrentStatus
+            this += currentStatus
             if (!blockEntity.playing) { //沒在遊戲中才會顯示
-                this += textCurrentPlayers
-                this += textCurrentReady
+                this += currentPlayers
+                this += currentReady
             } else { //在遊戲中才顯示
                 val round = blockEntity.round
                 val windText = round.wind.toText()
@@ -134,5 +128,10 @@ class MahjongTableBlockEntityRenderer(
         private const val PLAYING_PADDING = 1.6
         private const val WIND_PADDING = 1.6
         private const val LABEL_INTERVAL = 0.25
+        private val READY get() = TranslatableText("$MOD_ID.gui.button.ready")
+        private val PLAYER get() = TranslatableText("$MOD_ID.game.player")
+        private val STATUS get() = TranslatableText("$MOD_ID.game.status")
+        private val WAITING = GameStatus.WAITING.toText()
+        private val PLAYING = GameStatus.PLAYING.toText()
     }
 }

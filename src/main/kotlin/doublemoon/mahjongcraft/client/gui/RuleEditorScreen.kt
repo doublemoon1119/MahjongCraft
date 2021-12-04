@@ -134,9 +134,9 @@ class RuleEditorGui(
         redFiveItem
     )
 
-    private lateinit var buttonBack: WButton
-    private lateinit var buttonConfirm: WTooltipButton
-    private lateinit var buttonApply: WTooltipButton
+    private lateinit var back: WButton
+    private lateinit var confirm: WTooltipButton
+    private lateinit var apply: WTooltipButton
 
     init {
         rootScrollPanel(width = ROOT_WIDTH, height = ROOT_HEIGHT) {
@@ -149,16 +149,16 @@ class RuleEditorGui(
                     this.add(item, 0, y)
                 }
             }
-            buttonBack = button(
+            back = button(
                 x = ROOT_WIDTH - ITEM_PADDING - BUTTON_WIDTH,
                 y = ROOT_HEIGHT - ITEM_PADDING - BUTTON_HEIGHT,
                 width = BUTTON_WIDTH,
                 label = TranslatableText("$MOD_ID.gui.button.back"),
                 onClick = { back() }
             )
-            buttonConfirm = tooltipButton(
-                x = buttonBack.x,
-                y = buttonBack.y - buttonBack.height - BUTTON_PADDING,
+            confirm = tooltipButton(
+                x = back.x,
+                y = back.y - back.height - BUTTON_PADDING,
                 width = BUTTON_WIDTH,
                 label = TranslatableText("$MOD_ID.gui.button.confirm"),
                 tooltip = arrayOf(),
@@ -166,9 +166,9 @@ class RuleEditorGui(
             ) {
                 isEnabled = false
             }
-            buttonApply = tooltipButton(
-                x = buttonConfirm.x,
-                y = buttonConfirm.y - buttonConfirm.height - BUTTON_PADDING,
+            apply = tooltipButton(
+                x = confirm.x,
+                y = confirm.y - confirm.height - BUTTON_PADDING,
                 width = BUTTON_WIDTH,
                 label = TranslatableText("$MOD_ID.gui.button.apply"),
                 tooltip = arrayOf(),
@@ -194,11 +194,11 @@ class RuleEditorGui(
                 LiteralText("")
             }
         }
-        buttonConfirm.isEnabled = buttonConfirmEnabled
-        buttonApply.isEnabled = buttonConfirm.isEnabled
+        confirm.isEnabled = confirmEnabled
+        apply.isEnabled = confirm.isEnabled
     }
 
-    private val buttonConfirmEnabled: Boolean
+    private val confirmEnabled: Boolean
         get() {
             if (startingPointsItemValueInvalid || minPointsToWinItemValueInvalid) return false
             val origin = mahjongTable.rule

@@ -796,26 +796,23 @@ class MahjongGame(
                 )
             )
             //會多傳一份給玩家的遊戲結算文字訊息
-            val textMahjong =
+            val mahjong =
                 (TranslatableText("$MOD_ID.game.riichi_mahjong") + ":").formatted(Formatting.YELLOW)
                     .formatted(Formatting.BOLD)
 //            val tooltipRuleString = rule.toTexts().joinToString(separator = "\n") { text -> text.string } //這方法會讓 text.string 沒有包含色碼, 所以不適用
-            val tooltipRule = LiteralText("").also {
+            val ruleTooltip = LiteralText("").also {
                 rule.toTexts().forEachIndexed { index, text ->
                     if (index > 0) it.append("\n")
                     it.append(text)
                 }
             }
-            val textRuleHoverEvent =
-                HoverEvent(HoverEvent.Action.SHOW_TEXT, tooltipRule)
-            val textRuleStyle = Style.EMPTY.withColor(Formatting.GREEN).withHoverEvent(textRuleHoverEvent)
-            val textRule =
-                (LiteralText("§a[") + TranslatableText("$MOD_ID.game.rules") + "§a]")
-                    .fillStyle(textRuleStyle)
+            val ruleHoverEvent = HoverEvent(HoverEvent.Action.SHOW_TEXT, ruleTooltip)
+            val ruleStyle = Style.EMPTY.withColor(Formatting.GREEN).withHoverEvent(ruleHoverEvent)
+            val ruleText = (LiteralText("§a[") + TranslatableText("$MOD_ID.game.rules") + "§a]").fillStyle(ruleStyle)
             it.sendMessage(
                 LiteralText("§2------------------------------------------")
-                        + "\n" + textMahjong
-                        + "\n§7 - " + textRule
+                        + "\n" + mahjong
+                        + "\n§7 - " + ruleText
                         + "\n§a" //故意空一行
                         + "\n§6Score:"
             )
@@ -1229,7 +1226,7 @@ class MahjongGame(
      * 最後會回傳兩個骰子
      * */
     private suspend fun rollDice(): List<DiceEntity> {
-        val dices = List(2){
+        val dices = List(2) {
             DiceEntity(
                 world = world,
                 pos = Vec3d(pos.x + 0.5, pos.y.toDouble() + 1.5, pos.z + 0.5),
@@ -1472,7 +1469,6 @@ class MahjongGame(
          * */
         const val STICKS_PER_STACK = 5
 
-        val PREFIX: TranslatableText
-            get() = TranslatableText("$MOD_ID.game.riichi_mahjong.prefix")
+        val PREFIX get() = TranslatableText("$MOD_ID.game.riichi_mahjong.prefix")
     }
 }

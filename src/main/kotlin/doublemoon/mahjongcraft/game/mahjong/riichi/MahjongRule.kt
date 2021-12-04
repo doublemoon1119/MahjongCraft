@@ -55,48 +55,48 @@ data class MahjongRule(
         color5: Formatting = Formatting.WHITE
     ): List<Text> {
         val colon = LiteralText(": ").formatted(color5)
-        val textRules =
+        val rules =
             TranslatableText("$MOD_ID.game.rules").formatted(color1).formatted(Formatting.BOLD)
-        val textLength =
+        val lengthText =
             (TranslatableText("$MOD_ID.game.length") + colon).formatted(color2)
-        val textThinkingTime =
+        val thinkingTimeText =
             (TranslatableText("$MOD_ID.game.thinking_time") + colon).formatted(
                 color2
             )
-        val textStartingPoints =
+        val startingPointsText =
             (TranslatableText("$MOD_ID.game.starting_points") + colon).formatted(
                 color2
             )
-        val textMinPointsToWin =
+        val minPointsToWinText =
             (TranslatableText("$MOD_ID.game.min_points_to_win") + colon).formatted(
                 color2
             )
-        val textMinimumHan =
+        val minimumHanText =
             (TranslatableText("$MOD_ID.game.minimum_han") + colon).formatted(
                 color2
             )
-        val textSpectate =
+        val spectateText =
             (TranslatableText("$MOD_ID.game.spectate") + colon).formatted(color2)
-        val textRedFive =
+        val redFiveText =
             (TranslatableText("$MOD_ID.game.red_five") + colon).formatted(color2)
-        val textEnable = TranslatableText("$MOD_ID.game.enabled").formatted(color3)
-        val textDisable = TranslatableText("$MOD_ID.game.disabled").formatted(color3)
-        val textSpectateStatus = if (spectate) textEnable else textDisable
-        val textSecond = TranslatableText("$MOD_ID.game.seconds").formatted(color3)
+        val enable = TranslatableText("$MOD_ID.game.enabled").formatted(color3)
+        val disable = TranslatableText("$MOD_ID.game.disabled").formatted(color3)
+        val spectateStatus = if (spectate) enable else disable
+        val second = TranslatableText("$MOD_ID.game.seconds").formatted(color3)
         return listOf(
-            textRules,
-            LiteralText("§3 - ") + textLength + (length.toText() as MutableText).formatted(color3),
+            rules,
+            LiteralText("§3 - ") + lengthText + (length.toText() as MutableText).formatted(color3),
             LiteralText("§3 - ")
-                    + textThinkingTime
+                    + thinkingTimeText
                     + LiteralText("${thinkingTime.base}").formatted(color4)
                     + LiteralText(" + ").formatted(color1)
                     + LiteralText("${thinkingTime.extra}").formatted(color4)
-                    + " " + textSecond,
-            LiteralText("§3 - ") + textStartingPoints + LiteralText("$startingPoints").formatted(color3),
-            LiteralText("§3 - ") + textMinPointsToWin + LiteralText("$minPointsToWin").formatted(color3),
-            LiteralText("§3 - ") + textMinimumHan + LiteralText("${minimumHan.han}").formatted(color3),
-            LiteralText("§3 - ") + textRedFive + LiteralText("${redFive.quantity}").formatted(color3),
-            LiteralText("§3 - ") + textSpectate + textSpectateStatus
+                    + " " + second,
+            LiteralText("§3 - ") + startingPointsText + LiteralText("$startingPoints").formatted(color3),
+            LiteralText("§3 - ") + minPointsToWinText + LiteralText("$minPointsToWin").formatted(color3),
+            LiteralText("§3 - ") + minimumHanText + LiteralText("${minimumHan.han}").formatted(color3),
+            LiteralText("§3 - ") + redFiveText + LiteralText("${redFive.quantity}").formatted(color3),
+            LiteralText("§3 - ") + spectateText + spectateStatus
         )
     }
 

@@ -32,10 +32,10 @@ object ClientCountdownTimeHandler {
      * 顯示剩餘的思考時間
      * */
     private fun displayTime(timeBase: Int, timeExtra: Int) {
-        val textBase = if (timeBase > 0) "§a$timeBase" else ""
-        val textPlus = if (timeBase > 0 && timeExtra > 0) "§e + " else ""
-        val textExtra = if (timeExtra > 0) "§c$timeExtra" else ""
-        val text = LiteralText("$textBase$textPlus$textExtra")
+        val base = if (timeBase > 0) "§a$timeBase" else ""
+        val plus = if (timeBase > 0 && timeExtra > 0) "§e + " else ""
+        val extra = if (timeExtra > 0) "§c$timeExtra" else ""
+        val text = LiteralText("$base$plus$extra")
         //TODO 改位置顯示時間
         with(client.inGameHud) {
             setTitle(LiteralText(""))
