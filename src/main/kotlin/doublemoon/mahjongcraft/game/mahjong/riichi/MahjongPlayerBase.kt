@@ -8,17 +8,15 @@ import net.minecraft.server.world.ServerWorld
 import net.minecraft.sound.SoundCategory
 import net.minecraft.sound.SoundEvent
 import net.minecraft.sound.SoundEvents
-import org.mahjong4j.GeneralSituation
-import org.mahjong4j.PersonalSituation
-import org.mahjong4j.Player
-import org.mahjong4j.Score
+import org.mahjong4j.*
 import org.mahjong4j.hands.*
 import org.mahjong4j.tile.Tile
+import org.mahjong4j.tile.TileType
+import org.mahjong4j.yaku.normals.NormalYaku
 import org.mahjong4j.yaku.yakuman.Yakuman
 import kotlin.math.absoluteValue
 
 abstract class MahjongPlayerBase : GamePlayer {
-
     /**
      * 手牌
      * */
@@ -167,7 +165,7 @@ abstract class MahjongPlayerBase : GamePlayer {
         val tilesForPon = tilesForPon(mjTileEntity).onEach { it.inGameTilePosition = TilePosition.OTHER }
         val fuuro =
             Fuuro(mentsu = kotsu, tileMjEntities = tilesForPon, claimTarget = claimTarget, claimTile = mjTileEntity)
-        hands -= tilesForPon //將碰的牌從手牌中去除
+        hands -= tilesForPon.toSet() //將碰的牌從手牌中去除
         target.discardedTilesForDisplay -= mjTileEntity
         fuuroList += fuuro //添加到副露
     }
@@ -186,7 +184,7 @@ abstract class MahjongPlayerBase : GamePlayer {
         val tilesForMinkan = tilesForMinkan(mjTileEntity).onEach { it.inGameTilePosition = TilePosition.OTHER }
         val fuuro =
             Fuuro(mentsu = kantsu, tileMjEntities = tilesForMinkan, claimTarget = claimTarget, claimTile = mjTileEntity)
-        hands -= tilesForMinkan //將明槓的牌從手牌中去除
+        hands -= tilesForMinkan.toSet() //將明槓的牌從手牌中去除
         target.discardedTilesForDisplay -= mjTileEntity
         fuuroList += fuuro //添加到副露
     }
@@ -204,7 +202,7 @@ abstract class MahjongPlayerBase : GamePlayer {
             claimTarget = ClaimTarget.SELF,
             claimTile = mjTileEntity
         )
-        hands -= tilesForAnkan //將暗槓的牌從手牌中去除
+        hands -= tilesForAnkan.toSet() //將暗槓的牌從手牌中去除
         discardedTilesForDisplay -= mjTileEntity
         fuuroList += fuuro //添加到副露
     }
@@ -256,7 +254,7 @@ abstract class MahjongPlayerBase : GamePlayer {
      * 暗槓的情況不應該傳入任何參數,只檢查手上有沒有任何一組超過 4 張相同的牌 (因為暗槓可以扣著, 輪到自己摸牌的時候隨時可以槓)
      * */
     val canAnkan: Boolean
-        get() = tilesCanAnkan.size > 0
+        get() = tilesCanAnkan.isNotEmpty()
 
     /**
      * 手牌 [hands] 中有與 [mjTileEntity] 可以組順子的牌就可以"吃",
@@ -325,7 +323,7 @@ abstract class MahjongPlayerBase : GamePlayer {
                         )
                     }
                     val mentsuList = fuuroListCopy.map { fuuro -> fuuro.mentsu }
-                    val calcuMachi = buildList {
+                    val calcMachi = buildList {
                         MahjongTile.values().filter { mjTile ->
                             /*
                             * 在立直可以暗槓的時候, 絕對不會聽可以暗槓的那張牌 (it.mahjong4jTile),
@@ -337,15 +335,15 @@ abstract class MahjongPlayerBase : GamePlayer {
                             val mj4jTile = mjTile.mahjong4jTile
                             val nowHands =
                                 handsCopy.fromEntityListToIntArrayForMahjong4j().apply { this[mj4jTile.code]++ }
-                            if (canWin(
-                                    hands = nowHands,
-                                    mentsuList = mentsuList,
-                                    lastTile = mj4jTile
-                                )
-                            ) this += mjTile //這張牌構成勝利的牌型, 加入列表中
+                            val handsCanWin = handsCanWin(
+                                hands = nowHands,
+                                mentsuList = mentsuList,
+                                lastTile = mj4jTile
+                            )
+                            if (handsCanWin) this += mjTile //這張牌構成勝利的牌型, 加入列表中
                         }
                     }
-                    if (calcuMachi != machi) { //如果計算後的 machi 與計算前不相同, 不能暗槓這張牌
+                    if (calcMachi != machi) { //如果計算後的 machi 與計算前不相同, 不能暗槓這張牌
                         this -= it
                     } else { //如果計算後的 machi 與計算前相同, 計算會不會影響其他的面子
                         /*
@@ -355,7 +353,7 @@ abstract class MahjongPlayerBase : GamePlayer {
                         * */
                         val otherTiles = hands.fromEntityListToIntArrayForMahjong4j()
                         val mentsuList1 = fuuroList.map { fuuro -> fuuro.mentsu } //從副露取得已經確定的面子
-                        calcuMachi.forEach { here ->
+                        calcMachi.forEach { here ->
                             val tile = here.mahjong4jTile
                             val mj4jHands = Hands(otherTiles, tile, mentsuList1) //先初步計算牌型
                             val mentsuCompSet = mj4jHands.mentsuCompSet
@@ -379,7 +377,7 @@ abstract class MahjongPlayerBase : GamePlayer {
      *
      * @return 可以直接對在集合中的牌可以直接使用 [kakan]
      * */
-    val tilesCanKakan: MutableSet<Pair<MahjongTileEntity, ClaimTarget>>
+    private val tilesCanKakan: MutableSet<Pair<MahjongTileEntity, ClaimTarget>>
         get() = mutableSetOf<Pair<MahjongTileEntity, ClaimTarget>>().apply {
             fuuroList.filter { it.mentsu is Kotsu }.forEach { fuuro -> //遍歷所有是刻子的副露
                 val tile =
@@ -470,14 +468,14 @@ abstract class MahjongPlayerBase : GamePlayer {
      * 聽的牌的列表,
      * 同日文 "待ち" 的意思
      * */
-    val machi: List<MahjongTile>
-        get() = getMachi()
+    private val machi: List<MahjongTile>
+        get() = calcMachi()
 
     /**
      * 根據條件得到玩家聽哪張牌,
      * 門清狀態下傳進來的 [hands] 加上 [fuuroList] 的牌應該只有 13 張, 第 14 張就是拿來偵測用的,
      * */
-    private fun getMachi(
+    private fun calcMachi(
         hands: List<MahjongTile> = this.hands.toMahjongTileList(),
         fuuroList: List<Fuuro> = this.fuuroList,
     ): List<MahjongTile> = MahjongTile.values().filter { //過濾列表
@@ -492,11 +490,10 @@ abstract class MahjongPlayerBase : GamePlayer {
             logger.debug("計算 machi 時, 手牌大於 14 張牌, 請檢查錯誤")
             logger.debug("$nowHands")
         }
-        canWin(
+        handsCanWin(
             hands = nowHands,
             mentsuList = mentsuList,
             lastTile = it.mahjong4jTile,
-            calculateMinHan = false //只計算聽的牌不會參與最小翻數的計算
         ) //這張牌構成勝利的牌型
     }
 
@@ -580,80 +577,211 @@ abstract class MahjongPlayerBase : GamePlayer {
     private fun List<Fuuro>.toMentsuList() = this.map { it.mentsu }
 
     fun canWin(
-        hands: List<MahjongTile> = this.hands.toMahjongTileList(),
-        mentsuList: List<Mentsu> = this.fuuroList.toMentsuList(),
-        tile: MahjongTile,
-        rule: MahjongRule,
-        generalSituation: GeneralSituation? = null,
-        personalSituation: PersonalSituation? = null
-    ): Boolean = canWin(
-        hands = hands.fromTileListToIntArrayForMahjong4j(),
-        mentsuList = mentsuList,
-        lastTile = tile.mahjong4jTile,
-        rule = rule,
-        generalSituation = generalSituation,
-        personalSituation = personalSituation
-    )
-
-    fun canWin(
         hands: List<MahjongTileEntity> = this.hands,
         mentsuList: List<Mentsu> = this.fuuroList.toMentsuList(),
         tile: MahjongTileEntity,
         rule: MahjongRule,
-        generalSituation: GeneralSituation? = null,
-        personalSituation: PersonalSituation? = null
+        generalSituation: GeneralSituation,
+        personalSituation: PersonalSituation
     ): Boolean = canWin(
         hands = hands.fromEntityListToIntArrayForMahjong4j(),
         mentsuList = mentsuList,
-        lastTile = tile.mahjong4jTile,
+        lastTile = tile.mahjongTile,
         rule = rule,
         generalSituation = generalSituation,
         personalSituation = personalSituation
     )
 
     /**
-     * 最底層判斷勝利的方法
+     * 判斷勝利的方法
      *
      * 按照要判斷的牌 [lastTile], 和加上 [rule] 的 [MahjongRule.minimumHan] 能組成贏的牌型嗎,
      * 振聽需另外使用 [isFuriten] 來判斷
      *
      * @param hands 手牌,處理的時候必須包含 [lastTile]
-     * @param calculateMinHan 是否要計算 [MahjongRule.minimumHan]
      * */
-    fun canWin(
+    private fun canWin(
+        hands: IntArray,
+        mentsuList: List<Mentsu>,
+        lastTile: MahjongTile,
+        rule: MahjongRule,
+        generalSituation: GeneralSituation,
+        personalSituation: PersonalSituation
+    ): Boolean {
+        val mj4jHands = Hands(hands, lastTile.mahjong4jTile, mentsuList)
+        if (!mj4jHands.canWin) return false
+        val yakuSettlement = calcYakuSettlement(
+            winningTile = lastTile,
+            mj4jHands = mj4jHands,
+            rule = rule,
+            generalSituation = generalSituation,
+            personalSituation = personalSituation
+        )
+        return with(yakuSettlement) { yakumanList.isNotEmpty() || doubleYakumanList.isNotEmpty() || han >= rule.minimumHan.han }
+    }
+
+    /**
+     * 判斷手牌是否組成能贏的狀態, 不計算任何其他條件
+     *
+     * @return [hands] 和 [mentsuList] 和 [lastTile] , 有沒有構成勝利的基本條件
+     * */
+    private fun handsCanWin(
         hands: IntArray,
         mentsuList: List<Mentsu>,
         lastTile: Tile,
-        calculateMinHan: Boolean = true,
-        rule: MahjongRule? = null,
-        generalSituation: GeneralSituation? = null,
-        personalSituation: PersonalSituation? = null
     ): Boolean {
-        val isMenzenchin = mentsuList.isEmpty() //這個判斷是否為門前清狀態, 與 this.isMenzenchin 不是同一個東西
-        val mj4jHands = if (isMenzenchin) //門前清狀態
-            Hands(hands, lastTile)
-        else { //沒有門清, 從副露取得已經確定的面子
-            Hands(hands, lastTile, mentsuList)
-        }
+        val mj4jHands = Hands(hands, lastTile, mentsuList)
+        //在 Hands 初始化的時候就有計算牌型是否有符合贏的牌型
+        return mj4jHands.canWin
+    }
 
-        if (!mj4jHands.canWin) { //先初步計算牌型是否有符合贏的牌型, 不能贏就是直接 return false 了
-            return false
-        } else if (!calculateMinHan) { //如果沒有要計算最小翻數, 能贏就是能贏了, 直接 return true
-            return true
-        }
-
-        val mj4jPlayer =  //取得 mahjong4j 的玩家
-            if (generalSituation != null && personalSituation != null) {
-                Player(mj4jHands, generalSituation, personalSituation)
-            } else Player(mj4jHands) //沒輸入 generalSituation 不會計算寶牌
-
-        return with(mj4jPlayer) {
+    /**
+     * 計算所有規則後得到的結果
+     *
+     * @param mj4jHands 確保必須在 canWin 的狀態下
+     * */
+    private fun calcYakuSettlement(
+        winningTile: MahjongTile,
+        mj4jHands: Hands,
+        rule: MahjongRule,
+        generalSituation: GeneralSituation,
+        personalSituation: PersonalSituation,
+        doraIndicators: List<MahjongTile> = listOf(),
+        uraDoraIndicators: List<MahjongTile> = listOf()
+    ): YakuSettlement {
+        val mj4jPlayer = Player(mj4jHands, generalSituation, personalSituation)
+        with(mj4jPlayer) {
             calculate()
-            //到這就表示一定有要計算最小翻數->大於起胡翻數的限制: true, 沒有輸入規則的話預設為 1 翻起胡
-            if (rule?.localYaku != true) { //沒開啟古役
-                if (Yakuman.RENHO in this.yakumanList) return false
+            var finalHan = 0 //最後計算完的翻數, 役滿不會計算
+            var finalFu = 0 //最後計算完的符數, 役滿不會計算
+            var finalRedFiveCount = 0 //最後計算完的赤寶牌數量, 役滿不會計算
+            var finalNormalYakuList = mutableListOf<NormalYaku>() //最後計算完的役種
+            val finalYakumanList = yakumanList.toMutableList()
+            val finalDoubleYakumanList = mutableListOf<DoubleYakuman>()
+            //下面開始進行各種計算
+            if (finalYakumanList.isNotEmpty()) { //有役滿出現, 只計算役滿
+                if (!rule.localYaku) { //沒開啟古役
+                    if (Yakuman.RENHO in finalYakumanList) finalYakumanList -= Yakuman.RENHO //去掉人和
+                }
+                //有雙倍役滿的情況 (ex: 大四喜, 四暗刻單騎, 純正九蓮寶燈, 國士無雙十三面)
+                when {
+                    Yakuman.DAISUSHI in finalYakumanList -> { //大四喜當作雙倍役滿
+                        finalYakumanList -= Yakuman.DAISUSHI
+                        finalDoubleYakumanList += DoubleYakuman.DAISUSHI
+                    }
+                    Yakuman.KOKUSHIMUSO in finalYakumanList && machi.size == 13 -> { //如果國士無雙是十三面聽當作雙倍役滿
+                        finalYakumanList -= Yakuman.KOKUSHIMUSO
+                        finalDoubleYakumanList += DoubleYakuman.KOKUSHIMUSO_JUSANMENMACHI
+                    }
+                    Yakuman.CHURENPOHTO in finalYakumanList && machi.size == 9 -> { //如果純正九蓮當作雙倍役滿
+                        finalYakumanList -= Yakuman.CHURENPOHTO
+                        finalDoubleYakumanList += DoubleYakuman.JUNSEI_CHURENPOHTO
+                    }
+                    Yakuman.SUANKO in finalYakumanList && machi.size == 1 -> { //如果四暗刻單騎當作雙倍役滿
+                        finalYakumanList -= Yakuman.SUANKO
+                        finalDoubleYakumanList += DoubleYakuman.SUANKO_TANKI
+                    }
+                }
+            } else { //沒有役滿, 只有一般役
+                //先計算出最好的 翻數 and 役種 and 牌組-> finalHan, finalNormalYakuList, finalComp
+                //finalComp 只要有聽牌就不可能為 null, hands 初始化就計算過 mentsuCompSet 了
+                var finalComp: MentsuComp =
+                    mj4jHands.mentsuCompSet.firstOrNull() ?: throw IllegalStateException("輸入的手牌沒有構成勝利的牌型")
+                mj4jHands.mentsuCompSet.forEach { comp ->
+                    val yakuStock = mutableListOf<NormalYaku>()
+                    val resolverSet =
+                        Mahjong4jYakuConfig.getNormalYakuResolverSet(comp, generalSituation, personalSituation)
+                    resolverSet.filter { it.isMatch }.forEach { yakuStock += it.normalYaku }
+
+                    //沒開啟食斷 且 沒有門前清 且 有斷么九, 去掉多的斷么九
+                    //這個 mj4jHands.isOpen 表示有面子是 open 的狀態, 即 沒有門前清
+                    if (!rule.openTanyao && mj4jHands.isOpen && NormalYaku.TANYAO in yakuStock) yakuStock -= NormalYaku.TANYAO
+
+                    val hanSum = if (mj4jHands.isOpen) yakuStock.sumOf { it.kuisagari } else yakuStock.sumOf { it.han }
+                    if (hanSum > finalHan) {
+                        finalHan = hanSum
+                        finalNormalYakuList = yakuStock
+                        finalComp = comp
+                    }
+                }
+                //計算加入寶牌的翻數
+                if (finalHan >= rule.minimumHan.han) { //寶牌不能用於計算起胡翻數, 至少要有起胡翻數後才能算
+                    val handsComp = mj4jHands.handsComp
+                    val isRiichi = NormalYaku.REACH in finalNormalYakuList
+                    //寶牌
+                    val doraAmount = generalSituation.dora.sumOf { handsComp[it.code] }
+                    repeat(doraAmount) {
+                        NormalYaku.DORA.apply { finalNormalYakuList += this; finalHan += this.han }
+                    }
+                    //裏寶牌
+                    if (isRiichi) {
+                        val uraDoraAmount = generalSituation.uradora.sumOf { handsComp[it.code] }
+                        repeat(uraDoraAmount) {
+                            NormalYaku.URADORA.apply { finalNormalYakuList += this; finalHan += this.han }
+                        }
+                    }
+                    //赤寶牌
+                    if (rule.redFive != MahjongRule.RedFive.NONE) {
+                        val handsRedFiveCount = this@MahjongPlayerBase.hands.count { it.mahjongTile.isRed }
+                        val fuuroListRedFiveCount =
+                            fuuroList.sumOf { it.tileMjEntities.count { tile -> tile.mahjongTile.isRed } }
+                        finalRedFiveCount = handsRedFiveCount + fuuroListRedFiveCount //取得手上總共有多少紅寶牌
+                        finalHan += finalRedFiveCount
+                    }
+                }
+                //計算符數
+                finalFu = when {
+                    finalNormalYakuList.size == 0 -> 0
+                    NormalYaku.PINFU in finalNormalYakuList && NormalYaku.TSUMO in normalYakuList -> 20
+                    NormalYaku.CHITOITSU in finalNormalYakuList -> 25
+                    else -> {
+                        var tmpFu = 20
+                        tmpFu += when {
+                            personalSituation.isTsumo -> 2
+                            !mj4jHands.isOpen -> 10
+                            else -> 0
+                        }
+                        tmpFu += finalComp.allMentsu.sumOf { it.fu }
+                        tmpFu +=
+                            if (finalComp.isKanchan(mj4jHands.last) ||
+                                finalComp.isPenchan(mj4jHands.last) ||
+                                finalComp.isTanki(mj4jHands.last)
+                            ) 2 else 0
+                        val jantoTile = finalComp.janto.tile
+                        if (jantoTile == generalSituation.bakaze) tmpFu += 2
+                        if (jantoTile == personalSituation.jikaze) tmpFu += 2
+                        if (jantoTile.type == TileType.SANGEN) tmpFu += 2
+                        tmpFu
+                    }
+                }
             }
-            han >= (rule?.minimumHan?.han ?: 1)
+            val fuuroListForSettlement = fuuroList.map { fuuro ->
+                val isAnkan = fuuro.mentsu is Kantsu && !fuuro.mentsu.isOpen
+                isAnkan to fuuro.tileMjEntities.toMahjongTileList()
+            }
+            val score = //只會計算這個玩家應該拿到多少點數
+                if (finalYakumanList.isNotEmpty() || finalDoubleYakumanList.isNotEmpty()) { //有役滿
+                    val yakumanScore = finalYakumanList.size * 32000
+                    val doubleYakumanScore = finalDoubleYakumanList.size * 64000
+                    val scoreSum = yakumanScore + doubleYakumanScore
+                    if (personalSituation.isParent) (scoreSum * 1.5).toInt() else scoreSum
+                } else { //沒有役滿
+                    Score.calculateScore(personalSituation.isParent, finalHan, finalFu).ron
+                }
+            return YakuSettlement(
+                mahjongPlayer = this@MahjongPlayerBase,
+                yakuList = finalNormalYakuList,
+                yakumanList = finalYakumanList,
+                doubleYakumanList = finalDoubleYakumanList,
+                redFiveCount = finalRedFiveCount,
+                winningTile = winningTile,
+                fuuroList = fuuroListForSettlement,
+                doraIndicators = doraIndicators,
+                uraDoraIndicators = uraDoraIndicators,
+                fu = finalFu,
+                han = finalHan,
+                score = score
+            )
         }
     }
 
@@ -662,89 +790,32 @@ abstract class MahjongPlayerBase : GamePlayer {
      * 這裡會考慮紅寶牌,
      * 請在榮和或自摸時調用,
      *
-     * @param lastTile 贏的牌
-     * @param isLastTileInHands 贏的牌是否在手牌中
+     * @param winningTile 贏的牌
+     * @param isWinningTileInHands 贏的牌是否在手牌中
      * */
-    open fun getYakuSettlement(
-        lastTile: MahjongTile,
-        isLastTileInHands: Boolean,
-        doraIndicators: List<MahjongTile>,
-        uraDoraIndicators: List<MahjongTile>,
+    open fun calcYakuSettlementForWin(
+        winningTile: MahjongTile,
+        isWinningTileInHands: Boolean,
+        rule: MahjongRule,
         generalSituation: GeneralSituation,
-        personalSituation: PersonalSituation
+        personalSituation: PersonalSituation,
+        doraIndicators: List<MahjongTile>,
+        uraDoraIndicators: List<MahjongTile>
     ): YakuSettlement {
         val hands = this.hands.fromEntityListToIntArrayForMahjong4j().also {
-            if (!isLastTileInHands) it[lastTile.mahjong4jTile.code]++ //結算用的 hands 必須包含槍牌 (lastTile)
+            if (!isWinningTileInHands) it[winningTile.mahjong4jTile.code]++ //結算用的 hands 必須包含槍牌 (winningTile)
         }
         val mentsuList: List<Mentsu> = this.fuuroList.toMentsuList()
-        val isMenzenchin = mentsuList.isEmpty() //這個判斷是否為門前清狀態
-        val mj4jHands =
-            if (isMenzenchin) Hands(hands, lastTile.mahjong4jTile) //門前清狀態
-            else Hands(
-                hands,
-                lastTile.mahjong4jTile,
-                mentsuList
-            ) //沒有門清, 從副露取得已經確定的面子 (只要有 mentsu 是 open 的, 就會自己判斷有沒有門清了)
-        val mj4jPlayer = Player(mj4jHands, generalSituation, personalSituation)
-        with(mj4jPlayer) {
-            calculate()
-            var han = han //只要有 mentsu 是 open 的, 就會自己判斷有沒有門清了
-            val handsRedFiveCount = this@MahjongPlayerBase.hands.count { it.mahjongTile.isRed }
-            val fuuroListRedFiveCount =
-                fuuroList.sumOf { it.tileMjEntities.count { tile -> tile.mahjongTile.isRed } }
-            val redFiveCount = handsRedFiveCount + fuuroListRedFiveCount //取得手上總共有多少紅寶牌
-            han += redFiveCount //將翻數加上紅寶牌數量
-            val fuuroListForSettlement = fuuroList.map { fuuro ->
-                val isAnkan = fuuro.mentsu is Kantsu && !fuuro.mentsu.isOpen
-                isAnkan to fuuro.tileMjEntities.toMahjongTileList()
-            }
-            val doubleYakumanList = mutableListOf<DoubleYakuman>()
-            val score = //只會計算這個玩家應該拿到多少點數
-                if (yakumanList.isNotEmpty()) { //有役滿
-//                    Score.calculateYakumanScore(personalSituation.isParent,yakumanList.size)
-                    // 上面計算役滿分數的方法沒有重復疊加的功能, 多個役滿都算 1 次役滿的分數, 所以我另外寫個可以疊加役滿的
-                    // 另外有雙倍役滿的情況 (ex: 大四喜, 四暗刻單騎, 純正九蓮寶燈, 國士無雙十三面)
-                    when {
-                        Yakuman.DAISUSHI in yakumanList -> { //大四喜當作雙倍役滿
-                            yakumanList -= Yakuman.DAISUSHI
-                            doubleYakumanList += DoubleYakuman.DAISUSHI
-                        }
-                        Yakuman.KOKUSHIMUSO in yakumanList && machi.size == 13 -> { //如果國士無雙是十三面聽當作雙倍役滿
-                            yakumanList -= Yakuman.KOKUSHIMUSO
-                            doubleYakumanList += DoubleYakuman.KOKUSHIMUSO_JUSANMENMACHI
-                        }
-                        Yakuman.CHURENPOHTO in yakumanList && machi.size == 9 -> { //如果純正九蓮當作雙倍役滿
-                            yakumanList -= Yakuman.CHURENPOHTO
-                            doubleYakumanList += DoubleYakuman.JUNSEI_CHURENPOHTO
-                        }
-                        Yakuman.SUANKO in yakumanList && machi.size == 1 -> { //如果四暗刻單騎當作雙倍役滿
-                            yakumanList -= Yakuman.SUANKO
-                            doubleYakumanList += DoubleYakuman.SUANKO_TANKI
-                        }
-                    }
-                    val yakumanScore = yakumanList.size * 32000
-                    val doubleYakumanScore = doubleYakumanList.size * 64000
-                    val cScore = yakumanScore + doubleYakumanScore
-                    if (personalSituation.isParent) (cScore * 1.5).toInt()
-                    else cScore
-                } else { //沒有役滿
-                    Score.calculateScore(personalSituation.isParent, han, fu).ron
-                }
-            return YakuSettlement(
-                mahjongPlayer = this@MahjongPlayerBase,
-                yakuList = normalYakuList,
-                yakumanList = yakumanList,
-                doubleYakumanList = doubleYakumanList,
-                redFiveCount = redFiveCount,
-                winningTile = lastTile,
-                fuuroList = fuuroListForSettlement,
-                doraIndicators = doraIndicators,
-                uraDoraIndicators = uraDoraIndicators,
-                fu = fu,
-                han = han,
-                score = score
-            )
-        }
+        val mj4jHands = Hands(hands, winningTile.mahjong4jTile, mentsuList)
+        return calcYakuSettlement(
+            winningTile = winningTile,
+            mj4jHands = mj4jHands,
+            rule = rule,
+            generalSituation = generalSituation,
+            personalSituation = personalSituation,
+            doraIndicators = doraIndicators,
+            uraDoraIndicators = uraDoraIndicators
+        )
     }
 
     /**
@@ -902,7 +973,7 @@ abstract class MahjongPlayerBase : GamePlayer {
             val listToAdd = buildList {
                 hands.forEach { entity ->
                     val nowHands = hands.toMutableList().also { it -= entity }.toMahjongTileList()
-                    val nowMachi = getMachi(hands = nowHands) //取得丟了這張牌後, 會聽的牌的列表
+                    val nowMachi = calcMachi(hands = nowHands) //取得丟了這張牌後, 會聽的牌的列表
                     if (nowMachi.isNotEmpty()) { //丟了這張牌會聽
                         this += entity.mahjongTile to nowMachi
                     }

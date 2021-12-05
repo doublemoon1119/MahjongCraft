@@ -105,6 +105,11 @@ class RuleEditorGui(
         val nextValue = values[(editingRule.redFive.ordinal + 1) % values.size]
         editingRule.redFive = nextValue
     }
+    private val openTanyaoItem = RuleToggleItem(
+        name = TranslatableText("$MOD_ID.game.open_tanyao"),
+        enabled = editingRule.openTanyao,
+        onClick = { editingRule.openTanyao = it }
+    )
 
     //這兩個是檢查用的
     private val startingPointsItemValueInvalid: Boolean
@@ -131,7 +136,8 @@ class RuleEditorGui(
         minPointsToWinItem,
         minimumHanItem,
         spectateItem,
-        redFiveItem
+        redFiveItem,
+        openTanyaoItem
     )
 
     private lateinit var back: WButton
@@ -139,19 +145,21 @@ class RuleEditorGui(
     private lateinit var apply: WTooltipButton
 
     init {
-        rootScrollPanel(width = ROOT_WIDTH, height = ROOT_HEIGHT) {
-            plainPanel(x = BORDER_MARGIN + 24, y = 0) {
-                items.forEachIndexed { index, item ->
-                    val previousItem = if (index > 0) items[index - 1] else null
-                    val previousItemY = previousItem?.y ?: 0
-                    val previousItemHeight = previousItem?.height ?: 0
-                    val y = previousItemY + previousItemHeight + ITEM_PADDING
-                    this.add(item, 0, y)
+        rootPlainPanel(width = ROOT_WIDTH, height = ROOT_HEIGHT) {
+            scrollPanel(x = INSET, y = INSET, width = ROOT_WIDTH - INSET * 2, height = ROOT_HEIGHT - INSET * 2) {
+                plainPanel(x = 24, y = 0) {
+                    items.forEachIndexed { index, item ->
+                        val previousItem = if (index > 0) items[index - 1] else null
+                        val previousItemY = previousItem?.y ?: 0
+                        val previousItemHeight = previousItem?.height ?: 0
+                        val y = previousItemY + previousItemHeight + ITEM_PADDING
+                        this.add(item, 0, y)
+                    }
                 }
             }
             back = button(
-                x = ROOT_WIDTH - ITEM_PADDING - BUTTON_WIDTH,
-                y = ROOT_HEIGHT - ITEM_PADDING - BUTTON_HEIGHT,
+                x = ROOT_WIDTH - INSET * 2 - BUTTON_WIDTH - INSET,
+                y = ROOT_HEIGHT - INSET * 2 - INSET * 2,
                 width = BUTTON_WIDTH,
                 label = TranslatableText("$MOD_ID.gui.button.back"),
                 onClick = { back() }
@@ -207,9 +215,10 @@ class RuleEditorGui(
             val minimumHanDiff = origin.minimumHan != editingRule.minimumHan
             val spectateDiff = origin.spectate != editingRule.spectate
             val redFiveDiff = origin.redFive != editingRule.redFive
+            val openTanyaoDiff = origin.openTanyao != editingRule.openTanyao
             val startingPointsDiff = origin.startingPoints != startingPointsItem.value!!
             val minPointsToWinDiff = origin.minPointsToWin != minPointsToWinItem.value!!
-            return lengthDiff || thinkingTimeDiff || minimumHanDiff || spectateDiff || redFiveDiff || startingPointsDiff || minPointsToWinDiff
+            return lengthDiff || thinkingTimeDiff || minimumHanDiff || spectateDiff || redFiveDiff || openTanyaoDiff || startingPointsDiff || minPointsToWinDiff
         }
 
     private fun apply() {
@@ -235,10 +244,10 @@ class RuleEditorGui(
         //背景圖片的大小
         private const val ROOT_WIDTH = 400
         private const val ROOT_HEIGHT = 200
-        private const val BORDER_MARGIN = 8
+        private const val INSET = 8
+        private const val ITEM_PADDING = 8
         private const val BUTTON_WIDTH = 80
         private const val BUTTON_HEIGHT = 20
-        private const val ITEM_PADDING = 8
         private const val BUTTON_PADDING = 5
 
         private inline fun <reified T : Enum<T>> getTooltip(nowValue: T): Array<Text> =

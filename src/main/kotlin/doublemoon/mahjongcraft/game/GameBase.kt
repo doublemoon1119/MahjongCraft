@@ -63,12 +63,12 @@ interface GameBase<T : GamePlayer> {
     /**
      * 當玩家登出伺服器
      * */
-    fun onPlayerLoggedOut(player: ServerPlayerEntity)
+    fun onPlayerDisconnect(player: ServerPlayerEntity)
 
     /**
      * 當玩家變更世界
      * */
-    fun onPlayerChangedDimension(player: ServerPlayerEntity)
+    fun onPlayerChangedWorld(player: ServerPlayerEntity)
 
     /**
      * 當 [server] 關閉

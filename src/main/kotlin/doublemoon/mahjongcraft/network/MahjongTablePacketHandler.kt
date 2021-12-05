@@ -1,8 +1,8 @@
 package doublemoon.mahjongcraft.network
 
 import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
-import doublemoon.mahjongcraft.client.gui.RuleEditorScreen
 import doublemoon.mahjongcraft.client.gui.MahjongTableWaitingScreen
+import doublemoon.mahjongcraft.client.gui.RuleEditorScreen
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.GameStatus
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongBot
@@ -10,6 +10,7 @@ import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTableBehavior
 import doublemoon.mahjongcraft.id
+import doublemoon.mahjongcraft.logger
 import doublemoon.mahjongcraft.scheduler.client.ClientScheduler
 import doublemoon.mahjongcraft.scheduler.server.ServerScheduler
 import net.fabricmc.api.EnvType
@@ -190,8 +191,11 @@ object MahjongTablePacketHandler : CustomPacketHandler {
             val world = game.world
             val pos = game.pos
             val blockEntity = world.getBlockEntity(pos) as MahjongTableBlockEntity?
-                ?: throw IllegalStateException("Cannot find a MahjongTableBlockEntity at (world=$world,pos=$pos)")
-            syncBlockEntityDataWithGame(blockEntity, game)
+            if (blockEntity != null) {
+                syncBlockEntityDataWithGame(blockEntity, game)
+            } else {
+                logger.error("Cannot find a MahjongTableBlockEntity at (world=$world,pos=$pos)")
+            }
         }
         if (invokeOnNextTick) {
             ServerScheduler.scheduleDelayAction { syncAction.invoke() }

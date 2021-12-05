@@ -80,6 +80,7 @@ class MahjongTableGui(
         get() = LibGui.isDarkMode()
     private val ruleTexts = mutableListOf<WText>()
     private val playerInfoItems: List<PlayerInfoItem> = List(4) { PlayerInfoItem(it) }
+
     //Buttons
     private lateinit var joinOrLeave: WButton
     private var readyOrNot: WButton? = null
@@ -128,9 +129,11 @@ class MahjongTableGui(
                     playerInfoItem.height
                 )
             }
-            plainPanel(
+            scrollPanel(
                 x = playerInfoItems[0].x + playerInfoItems[0].width,
                 y = 14,
+                width = 140,
+                height = ROOT_HEIGHT - 14 * 2
             ) {
                 rule.toTexts(
                     color2 = if (!darkMode) Formatting.DARK_GRAY else Formatting.YELLOW,
@@ -143,7 +146,7 @@ class MahjongTableGui(
                         3 -> tooltipText( //起始點數
                             x = 0,
                             y = y,
-                            width = 140,
+                            width = 132,
                             text = text,
                             tooltip = arrayOf(
                                 TranslatableText(
@@ -156,11 +159,11 @@ class MahjongTableGui(
                         4 -> tooltipText( //一位必要點數
                             x = 0,
                             y = y,
-                            width = 140,
+                            width = 132,
                             text = text,
                             tooltip = arrayOf(TranslatableText("$MOD_ID.game.min_points_to_win.description"))
                         )
-                        else -> text(x = 0, y = y, width = 140, text = text)
+                        else -> text(x = 0, y = y, width = 132, text = text)
                     }
                 }
             }

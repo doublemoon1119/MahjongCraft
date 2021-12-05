@@ -929,8 +929,8 @@ class MahjongGame(
         isChanKan: Boolean = false
     ): List<MahjongPlayerBase> =
         players.filter {
-            if (it.discardedTiles.isEmpty()) return@filter false //如果這個玩家連牌都沒丟過, 先跳過
-            val isDiscardPlayer = it == discardedPlayer
+            if (it == discardedPlayer) return@filter false //丟牌玩家不能和自己的牌
+            if (it.discardedTiles.isEmpty() && it.isMenzenchin) return@filter false //如果這個玩家連牌都沒丟過而且門前清, 先跳過
             val fuuroTiles = it.fuuroList.flatMap { fuuro -> fuuro.tileMjEntities }
             val hands = //判斷和的時候手牌必須要有要和或自摸的對像牌 (如果是搶槓的話 tile 會在副露之中)
                 if (tile in it.hands || tile in fuuroTiles) it.hands
@@ -943,7 +943,7 @@ class MahjongGame(
                 personalSituation = it.getPersonalSituation(isChankan = isChanKan)
             )
             val isFuriten = it.isFuriten(tile = tile, discards = board.discards) //需要沒有振聽
-            (!isDiscardPlayer && canWin && !isFuriten)
+            (canWin && !isFuriten)
         }
 
     /**
@@ -1011,9 +1011,10 @@ class MahjongGame(
             it.openHands()
             val isDealer = it == seatOrderFromDealer[0]
             val isAtamahanePlayer = it == atamahanePlayer
-            val settlement = it.getYakuSettlement(
-                lastTile = tile.mahjongTile,
-                isLastTileInHands = false,
+            val settlement = it.calcYakuSettlementForWin(
+                winningTile = tile.mahjongTile,
+                isWinningTileInHands = false,
+                rule = rule,
                 generalSituation = board.generalSituation,
                 personalSituation = it.getPersonalSituation(isChankan = isChankan),
                 doraIndicators = board.doraIndicators.map { entity -> entity.mahjongTile },
@@ -1073,9 +1074,10 @@ class MahjongGame(
         //以下對自摸的玩家做計算
         val extraScore = allRiichiStickQuantity * ScoringStick.P1000.point + honbaScore
         val tsumoPlayerIsDealer = this == seatOrderFromDealer[0]
-        val settlement = this.getYakuSettlement(
-            lastTile = tile.mahjongTile,
-            isLastTileInHands = true,
+        val settlement = this.calcYakuSettlementForWin(
+            winningTile = tile.mahjongTile,
+            isWinningTileInHands = true,
+            rule = rule,
             generalSituation = board.generalSituation,
             personalSituation = this.getPersonalSituation(isTsumo = true, isRinshanKaihoh = isRinshanKaihoh),
             doraIndicators = board.doraIndicators.map { entity -> entity.mahjongTile },
@@ -1384,7 +1386,7 @@ class MahjongGame(
     /**
      * 有任何玩家離開遊戲時結束遊戲, 向玩家顯示有人離開遊戲
      * */
-    override fun onPlayerLoggedOut(player: ServerPlayerEntity) {
+    override fun onPlayerDisconnect(player: ServerPlayerEntity) {
         if (isPlaying) {
             showGameResult()
             end(sync = false)
@@ -1400,7 +1402,7 @@ class MahjongGame(
     /**
      * 有任何玩家切換世界時結束遊戲, 向玩家顯示有人不在當前的世界
      * */
-    override fun onPlayerChangedDimension(player: ServerPlayerEntity) {
+    override fun onPlayerChangedWorld(player: ServerPlayerEntity) {
         if (isPlaying) {
             showGameResult()
             end(sync = false)

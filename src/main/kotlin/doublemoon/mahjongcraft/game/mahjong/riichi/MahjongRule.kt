@@ -29,6 +29,7 @@ import net.minecraft.util.Formatting
  * @param minimumHan 翻縛, 預設 ONE
  * @param spectate 旁觀, 這裡的意思在遊戲外的玩家能否看到遊戲內玩家的手牌 (已經打出去的牌或者副露原本就看得見)
  * @param redFive 赤寶牌數量
+ * @param openTanyao 食斷
  * @param localYaku 古役,(目前沒有加入)
  *
  * @see <a href="https://github.com/Kotlin/kotlinx.serialization/blob/master/docs/json.md">詳細 Serializable 對 Json 的操作請看這</a>
@@ -42,6 +43,7 @@ data class MahjongRule(
     var minimumHan: MinimumHan = MinimumHan.ONE,
     var spectate: Boolean = true,
     var redFive: RedFive = RedFive.NONE,
+    var openTanyao: Boolean = true,
     var localYaku: Boolean = false
 ) {
     //將 MahjongRule 編碼成 json 格式的 String
@@ -79,9 +81,12 @@ data class MahjongRule(
             (TranslatableText("$MOD_ID.game.spectate") + colon).formatted(color2)
         val redFiveText =
             (TranslatableText("$MOD_ID.game.red_five") + colon).formatted(color2)
+        val openTanyaoText =
+            (TranslatableText("$MOD_ID.game.open_tanyao") + colon).formatted(color2)
         val enable = TranslatableText("$MOD_ID.game.enabled").formatted(color3)
         val disable = TranslatableText("$MOD_ID.game.disabled").formatted(color3)
         val spectateStatus = if (spectate) enable else disable
+        val openTanyaoStatus = if (openTanyao) enable else disable
         val second = TranslatableText("$MOD_ID.game.seconds").formatted(color3)
         return listOf(
             rules,
@@ -95,8 +100,9 @@ data class MahjongRule(
             LiteralText("§3 - ") + startingPointsText + LiteralText("$startingPoints").formatted(color3),
             LiteralText("§3 - ") + minPointsToWinText + LiteralText("$minPointsToWin").formatted(color3),
             LiteralText("§3 - ") + minimumHanText + LiteralText("${minimumHan.han}").formatted(color3),
+            LiteralText("§3 - ") + spectateText + spectateStatus,
             LiteralText("§3 - ") + redFiveText + LiteralText("${redFive.quantity}").formatted(color3),
-            LiteralText("§3 - ") + spectateText + spectateStatus
+            LiteralText("§3 - ") + openTanyaoText + openTanyaoStatus
         )
     }
 

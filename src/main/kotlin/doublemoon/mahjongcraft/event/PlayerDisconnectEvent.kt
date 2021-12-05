@@ -14,7 +14,7 @@ fun onPlayerDisconnect(player: ServerPlayerEntity) {
         when (val game = GameManager.getGameBy(player) ?: return) {
             is MahjongGame -> {
                 MahjongTablePacketHandler.syncBlockEntityWithGame(game = game) {
-                    onPlayerLoggedOut(player)
+                    onPlayerDisconnect(player)
                 }
             }
         }
