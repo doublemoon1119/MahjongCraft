@@ -733,7 +733,7 @@ class MahjongBoard(
             nowLastWallTile.refreshPositionAfterTeleport(
                 nowLastWallTile.pos.add(
                     0.0,
-                    MAHJONG_TILE_DEPTH.toDouble(),
+                    -MAHJONG_TILE_DEPTH.toDouble(),
                     0.0
                 )
             )
