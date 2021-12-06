@@ -353,6 +353,7 @@ fun WPlainPanel.tooltipText(
     return wText
 }
 
+@Environment(EnvType.CLIENT)
 fun WPlainPanel.colorBlock(
     x: Int,
     y: Int,
@@ -362,6 +363,7 @@ fun WPlainPanel.colorBlock(
     init: WColorBlock.() -> Unit = {}
 ): WColorBlock = colorBlock(x, y, width, height, color.toRgb(), init)
 
+@Environment(EnvType.CLIENT)
 fun WPlainPanel.colorBlock(
     x: Int,
     y: Int,
@@ -376,6 +378,7 @@ fun WPlainPanel.colorBlock(
     return block
 }
 
+@Environment(EnvType.CLIENT)
 fun WPlainPanel.mahjongTile(
     x: Int,
     y: Int,

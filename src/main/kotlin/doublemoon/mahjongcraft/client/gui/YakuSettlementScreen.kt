@@ -126,9 +126,7 @@ class YakuSettlementGui(
                         }
                         if (it.fuuroList.isNotEmpty()) { //副露不為空
                             tileX += tileGap * 2 //手牌跟副露中間的間隔大一點
-                            it.fuuroList.forEach { fuuro ->
-                                val isAnkan = fuuro.first
-                                val tiles = fuuro.second
+                            it.fuuroList.forEach { (isAnkan, tiles) ->
                                 tiles.forEachIndexed { index, mahjongTile ->
                                     if (isAnkan && (index == 0 || index == 3)) {
                                         colorBlock(

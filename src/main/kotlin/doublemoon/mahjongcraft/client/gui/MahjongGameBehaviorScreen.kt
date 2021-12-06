@@ -135,8 +135,7 @@ class MahjongGameBehaviorGui(
                             this += BehaviorItem(MahjongGameBehavior.ANKAN, target, tiles)
                         }
                     }
-                    canKakanTiles.forEach { //添加加槓顯示的牌
-                        val (tile, oTarget) = it
+                    canKakanTiles.forEach { (tile, oTarget) -> //添加加槓顯示的牌
                         val isFiveTile = //是否是 5 的牌
                             tile.mahjong4jTile == MahjongTile.S5.mahjong4jTile || tile.mahjong4jTile == MahjongTile.P5.mahjong4jTile || tile.mahjong4jTile == MahjongTile.M5.mahjong4jTile
                         if (redFiveQuantity == 0 || !isFiveTile) { //沒有赤牌 或 不是 5 的牌
@@ -184,8 +183,7 @@ class MahjongGameBehaviorGui(
                 MahjongGameBehavior.RIICHI -> { //立直會顯示聽的牌
                     val tilePairsForRiichi =
                         Json.decodeFromString<MutableList<Pair<MahjongTile, MutableList<MahjongTile>>>>(data)
-                    tilePairsForRiichi.forEach { //只會顯示可以丟的牌, 並且不會顯示無役跟待取以及待取剩幾張
-                        val tile = it.first
+                    tilePairsForRiichi.forEach { (tile, _) -> //只會顯示可以丟的牌, 並且不會顯示無役跟待取以及待取剩幾張
                         this += BehaviorItem(MahjongGameBehavior.RIICHI, target, listOf(tile))
                     }
                 }

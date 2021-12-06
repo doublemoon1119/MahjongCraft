@@ -67,10 +67,7 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
     ) {
         super.onPlaced(world, pos, state, placer, itemStack)
         if (!world.isClient) {
-            peripheryPos(pos).forEach {
-                val (part, position) = it
-                world.setBlockState(position, state.with(PART, part))
-            }
+            peripheryPos(pos).forEach { (part, position) -> world.setBlockState(position, state.with(PART, part)) }
             world.updateNeighbors(pos, Blocks.AIR)
             state.updateNeighbors(world, pos, 3)
         }
