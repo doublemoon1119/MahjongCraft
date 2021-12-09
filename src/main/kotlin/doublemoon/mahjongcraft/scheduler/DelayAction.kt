@@ -1,5 +1,6 @@
 package doublemoon.mahjongcraft.scheduler
 
+import doublemoon.mahjongcraft.logger
 import java.time.Instant
 
 /**
@@ -17,7 +18,7 @@ class DelayAction(
         return when {
             stop -> true
             Instant.now().toEpochMilli() >= timeToAction -> {
-                action.invoke()
+                kotlin.runCatching { action.invoke() }.onFailure { logger.error("Error when invoking DelayAction", it) }
                 true
             }
             else -> false

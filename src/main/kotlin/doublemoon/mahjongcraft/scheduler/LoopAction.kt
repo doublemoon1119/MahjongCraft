@@ -1,5 +1,6 @@
 package doublemoon.mahjongcraft.scheduler
 
+import doublemoon.mahjongcraft.logger
 import java.time.Instant
 
 /**
@@ -20,7 +21,7 @@ class LoopAction(
     override fun tick(): Boolean {
         if (stop) return true
         if (Instant.now().toEpochMilli() >= timeToAction) {
-            action.invoke()
+            kotlin.runCatching { action.invoke() }.onFailure { logger.error("Error when invoking LoopAction", it) }
             resetTimer()
         }
         return false

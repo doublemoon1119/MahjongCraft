@@ -18,8 +18,7 @@ object ServerScheduler {
 
     fun tick(server: MinecraftServer) {
         if (!server.isRunning) return
-        kotlin.runCatching { queuedActions.removeIf { it.tick() } }.onFailure { it.printStackTrace() }
-//        queuedActions.removeIf { it.tick() }
+        queuedActions.removeIf { it.tick() }
         loopActions.forEach { it.tick() }
     }
 

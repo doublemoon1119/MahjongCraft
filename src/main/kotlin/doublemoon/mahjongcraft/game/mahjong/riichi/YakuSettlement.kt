@@ -100,5 +100,29 @@ data class YakuSettlement(
             han = 0,
             score = if (isDealer) 12000 else 8000 // 滿貫 8000 (莊家 12000) 點
         )
+
+        /**
+         * 無役, 判斷是否聽牌用
+         * */
+        val NO_YAKU = YakuSettlement(
+            displayName = "",
+            uuid = "",
+            isRealPlayer = false,
+            botCode = MahjongTile.UNKNOWN.code,
+            yakuList = emptyList(),
+            yakumanList = emptyList(),
+            doubleYakumanList = emptyList(),
+            nagashiMangan = false,
+            redFiveCount = 0,
+            riichi = false,
+            winningTile = MahjongTile.UNKNOWN,
+            hands = emptyList(),
+            fuuroList = emptyList(),
+            doraIndicators = emptyList(),
+            uraDoraIndicators = emptyList(),
+            fu = 0,
+            han = 0,
+            score = 0
+        )
     }
 }
