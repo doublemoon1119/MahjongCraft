@@ -245,19 +245,18 @@ class MahjongGame(
      * */
     private fun startRound(clearRiichiSticks: Boolean = true) {
         if (status != GameStatus.PLAYING) return
-        clearStuffs(clearRiichiSticks = clearRiichiSticks)
-        showRoundsTitle()
-        syncMahjongTable() //每個 Round 開始時同步
-        board.generateAllTilesAndSpawnWall() //產生所有牌
-        val dealer = seatOrderFromDealer[0]
-        var dealerRemaining = false //判斷連莊用
-        var clearNextRoundRiichiSticks = true //判斷下回合要不要清掉立直棒用 (四家立直會保留立直棒)
-        var roundExhaustiveDraw: ExhaustiveDraw? = null //判斷結束遊戲的原因用
-        val handler = CoroutineExceptionHandler { _, exception ->
-            //目前遊戲過程中的例外、異常情況都暫時先無視
-            logger.error("Caught $exception\n${exception.stackTraceToString()}")
+        val handler = CoroutineExceptionHandler { _, exception -> //目前遊戲過程中的例外, 異常情況都暫時先無視
+            logger.warn("Something happened, I hope you can report it.", exception)
         }
         jobRound = CoroutineScope(Dispatchers.IO).launch(handler) {
+            clearStuffs(clearRiichiSticks = clearRiichiSticks)
+            showRoundsTitle()
+            syncMahjongTable() //每個 Round 開始時同步
+            board.generateAllTilesAndSpawnWall() //產生所有牌
+            val dealer = seatOrderFromDealer[0] //這回合的莊家
+            var dealerRemaining = false //判斷連莊用
+            var clearNextRoundRiichiSticks = true //判斷下回合要不要清掉立直棒用 (四家立直會保留立直棒)
+            var roundExhaustiveDraw: ExhaustiveDraw? = null //判斷結束遊戲的原因用
             delayOnServer(0) //等待 1 tick 後才整理積棒, 否則可能積棒還沒清就整理了, 導致整理的位置不對
             players.forEach { board.resortSticks(it) }
             delayOnServer(1000)
@@ -660,49 +659,46 @@ class MahjongGame(
                     true //特殊流局莊家直接連莊
                 }
                 clearNextRoundRiichiSticks = false //只要流局就不會回收立直棒
-                roundDraw(roundExhaustiveDraw!!)
+                roundDraw(roundExhaustiveDraw)
             }
             //結束後等待一下
             delayOnServer(3000L)
-        }.apply {
-            invokeOnCompletion {
-                //準備進行下一回合
-                if (!round.isAllLast(rule)) { //不是 AllLast
-                    if (dealerRemaining) {//有連莊就本場 + 1
+            //準備進行下一回合
+            if (!round.isAllLast(rule)) { //不是 AllLast
+                if (dealerRemaining) {//有連莊就本場 + 1
+                    board.addHonbaStick(player = dealer)
+                    round.honba++
+                } else { //沒連莊就換莊家
+                    board.removeHonbaSticks(player = dealer)
+                    round.nextRound()
+                }
+                startRound(clearRiichiSticks = clearNextRoundRiichiSticks)
+            } else {  //是 AllLast
+                //AllLast 要考慮連莊,和第一點數不足 南/西入的問題
+                if (players.none { it.points >= rule.minPointsToWin }) {
+                    //沒有任何玩家的點數大於 1 位必要點數->繼續遊戲直到有人大於 1 位必要點數,玩家可以連莊
+                    if (dealerRemaining) { //莊家有連莊
                         board.addHonbaStick(player = dealer)
                         round.honba++
-                    } else { //沒連莊就換莊家
+                        startRound(clearRiichiSticks = clearNextRoundRiichiSticks)
+                    } else { //莊家沒連莊
+                        //最多 AllLast 只能持續一個風
                         board.removeHonbaSticks(player = dealer)
-                        round.nextRound()
-                    }
-                    startRound(clearRiichiSticks = clearNextRoundRiichiSticks)
-                } else {  //是 AllLast
-                    //AllLast 要考慮連莊,和第一點數不足 南/西入的問題
-                    if (players.none { it.points >= rule.minPointsToWin }) {
-                        //沒有任何玩家的點數大於 1 位必要點數->繼續遊戲直到有人大於 1 位必要點數,玩家可以連莊
-                        if (dealerRemaining) { //莊家有連莊
-                            board.addHonbaStick(player = dealer)
-                            round.honba++
+                        val finalRound = rule.length.finalRound
+                        if (round.wind == finalRound.first && round.round == finalRound.second) {
+                            //是最後一局->結束遊戲
+                            showGameResult()
+                            end()
+                        } else {
+                            //不是最後一局->繼續下一場
+                            round.nextRound()
                             startRound(clearRiichiSticks = clearNextRoundRiichiSticks)
-                        } else { //莊家沒連莊
-                            //最多 AllLast 只能持續一個風
-                            board.removeHonbaSticks(player = dealer)
-                            val finalRound = rule.length.finalRound
-                            if (round.wind == finalRound.first && round.round == finalRound.second) {
-                                //是最後一局->結束遊戲
-                                showGameResult()
-                                end()
-                            } else {
-                                //不是最後一局->繼續下一場
-                                round.nextRound()
-                                startRound(clearRiichiSticks = clearNextRoundRiichiSticks)
-                            }
                         }
-                    } else {
-                        //至少一個玩家的點數大於 1 位必要點數->結束遊戲
-                        showGameResult()
-                        end()
                     }
+                } else {
+                    //至少一個玩家的點數大於 1 位必要點數->結束遊戲
+                    showGameResult()
+                    end()
                 }
             }
         }
@@ -1336,10 +1332,10 @@ class MahjongGame(
         }
         if (sync) syncMahjongTable()  //開始遊戲同步麻將桌
         //延遲 0.5 秒後再開始
-        jobWaitForStart = CoroutineScope(Dispatchers.IO).launch {
+        val handler = CoroutineExceptionHandler { _, _ -> } //通常只有中途拆了麻將桌才會導致這的錯誤, 目前先直接無視
+        jobWaitForStart = CoroutineScope(Dispatchers.IO).launch(handler) {
             delayOnServer(500)
-        }.apply {
-            invokeOnCompletion { startRound() }
+            startRound()
         }
     }
 
