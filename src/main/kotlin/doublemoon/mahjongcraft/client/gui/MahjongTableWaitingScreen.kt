@@ -56,7 +56,7 @@ class MahjongTableGui(
     private val playerEntityNames = mahjongTable.playerEntityNames
     private val bots = mahjongTable.bots
     private val ready = mahjongTable.ready
-    private val rule = mahjongTable.rule
+    private val rule get() = mahjongTable.rule
 
     private val isInThisGame: Boolean
         get() = player.uuidAsString in players
