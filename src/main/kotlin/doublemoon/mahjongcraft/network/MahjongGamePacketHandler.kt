@@ -1,7 +1,6 @@
 package doublemoon.mahjongcraft.network
 
 import doublemoon.mahjongcraft.MahjongCraftClient
-import doublemoon.mahjongcraft.client.ModConfig
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.mahjong.riichi.*
 import doublemoon.mahjongcraft.id
@@ -12,7 +11,6 @@ import doublemoon.mahjongcraft.scheduler.client.YakuSettleHandler
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import me.shedaniel.autoconfig.AutoConfig
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
@@ -112,7 +110,7 @@ object MahjongGamePacketHandler : CustomPacketHandler {
                         autoCallWin = false
                         noChiiPonKan = false
                         autoDrawAndDiscard = false
-                        AutoConfig.getConfigHolder(ModConfig::class.java).save()
+                        MahjongCraftClient.saveConfig()
                     }
                     val settlement = Json.decodeFromString(ScoreSettlement.serializer(), extraData)
                     ScoreSettleHandler.start(settlement = settlement)
