@@ -17,10 +17,19 @@ import java.util.*
 
 object ConfigScreen {
     private val title = TranslatableText("config.$MOD_ID.title")
+
+    //general
     private val displayTableLabelsText = TranslatableText("config.$MOD_ID.display_table_labels")
     private val hudBackgroundColorText = TranslatableText("config.$MOD_ID.hud.background_color")
+    private val hudScaleText = TranslatableText("config.$MOD_ID.hud.scale")
+    private val displayHudText = TranslatableText("config.$MOD_ID.hud.display")
+    private val displayHudWhenPlayingText = TranslatableText("config.$MOD_ID.hud.display_when_playing")
+
+    //tile hints
+    private val tileHintsText = TranslatableText("config.$MOD_ID.tile_hints")
+
+    //quick actions
     private val quickActionsText = TranslatableText("config.$MOD_ID.quick_actions")
-    private val displayHudWhenPlayingText = TranslatableText("config.$MOD_ID.quick_actions.display_hud_when_playing")
     private val autoArrangeText = TranslatableText("config.$MOD_ID.quick_actions.auto_arrange")
     private val autoCallWinText = TranslatableText("config.$MOD_ID.quick_actions.auto_call_win")
     private val noChiiPonKanText = TranslatableText("config.$MOD_ID.quick_actions.no_chii_pon_kan")
@@ -57,6 +66,35 @@ object ConfigScreen {
                         MinecraftClient.getInstance().options.write()
                     }
                 )
+                subCategory(text = tileHintsText) {
+                    booleanToggle(
+                        text = displayHudText,
+                        startValue = config.tileHints.displayHud,
+                        defaultValue = { defaultConfig.tileHints.displayHud }
+                    ) {
+                        config.tileHints.displayHud = it
+                        MahjongCraftClient.hud?.refresh()
+                    }
+                    intSlider(
+                        text = hudScaleText,
+                        startValue = (config.tileHints.hudAttribute.scale * 100.0).toInt(),
+                        minValue = 0,
+                        maxValue = 500, //最大可以放大到 500 %
+                        defaultValue = { (defaultConfig.tileHints.hudAttribute.scale * 100.0).toInt() },
+                        textGetter = { LiteralText("$it %") }
+                    ) {
+                        config.tileHints.hudAttribute.scale = it / 100.0
+                        MahjongCraftClient.hud?.refresh()
+                    }
+                    alphaColorField(
+                        text = hudBackgroundColorText,
+                        startColor = config.tileHints.hudAttribute.backgroundColor,
+                        defaultColor = { defaultConfig.tileHints.hudAttribute.backgroundColor }
+                    ) {
+                        config.tileHints.hudAttribute.backgroundColor = it
+                        MahjongCraftClient.hud?.refresh()
+                    }
+                }
                 subCategory(text = quickActionsText) {
                     booleanToggle(
                         text = displayHudWhenPlayingText,

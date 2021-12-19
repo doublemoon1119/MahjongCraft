@@ -1,5 +1,6 @@
 package doublemoon.mahjongcraft.entity
 
+import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.mahjong.riichi.*
 import doublemoon.mahjongcraft.network.MahjongTileCodePacketHandler
@@ -87,7 +88,10 @@ class MahjongTileEntity(
         set(value) {
             if (isSpawnedByGame) {
                 if (!world.isClient) spawnedByGameServerSideCode = value
-                else spawnedByGameClientSideCode = value
+                else {
+                    if (value != MahjongTile.UNKNOWN.code) mahjongTable?.calculateRemainingTiles()
+                    spawnedByGameClientSideCode = value
+                }
             } else {
                 dataTracker.set(CODE, value)
             }
@@ -150,6 +154,13 @@ class MahjongTileEntity(
      * */
     val mahjong4jTile: Tile
         get() = mahjongTile.mahjong4jTile
+
+    /**
+     * 這張牌如果是由遊戲產生的,
+     * 這個會指到遊戲的 [MahjongTableBlockEntity] 上
+     * */
+    val mahjongTable: MahjongTableBlockEntity?
+        get() = if (isSpawnedByGame) world.getBlockEntity(gameBlockPos) as MahjongTableBlockEntity? else null
 
     /**
      * 伺服端的遊戲專用,

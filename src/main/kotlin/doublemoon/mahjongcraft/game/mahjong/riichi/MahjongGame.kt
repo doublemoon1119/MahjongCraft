@@ -1459,6 +1459,32 @@ class MahjongGame(
         )
     }
 
+    /**
+     * 取得玩家在丟了 [tile] 之後會聽的所有牌跟對應的翻數
+     * */
+    fun MahjongPlayerBase.getMachiAndHan(tile: MahjongTile): Map<MahjongTile, Int> {
+        if (board.deadWall.isEmpty()) return emptyMap() //王牌區還沒初始化, 直接回傳空 map
+        val handsForCalculate = this.hands.toMahjongTileList().toMutableList().apply { remove(tile) }
+        return this.calculateMachiAndHan(
+            hands = handsForCalculate,
+            rule = rule,
+            generalSituation = board.generalSituation,
+            personalSituation = this.getPersonalSituation(
+                isTsumo = false,
+                isChankan = false,
+                isRinshanKaihoh = false
+            )
+        )
+    }
+
+    /**
+     * 計算是否振聽, 接在 [getMachiAndHan] 使用
+     *
+     * @param machi 直接使用 [getMachiAndHan] 的 keys 即可
+     * */
+    fun MahjongPlayerBase.isFuriten(tile: MahjongTile, machi: List<MahjongTile>): Boolean =
+        this.isFuriten(tile.mahjong4jTile, board.discards.map { it.mahjong4jTile }, machi.map { it.mahjong4jTile })
+
     companion object {
         /**
          * 最小等待時間,

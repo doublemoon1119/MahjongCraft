@@ -10,8 +10,8 @@ import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.util.math.Vec3f
 
 class WMahjongTile(
-    private val mahjongTile: MahjongTile,
-    private val direction: TileDirection = TileDirection.NORMAL
+    var mahjongTile: MahjongTile,
+    var direction: TileDirection = TileDirection.NORMAL
 ) : WWidget() {
 
     override fun canResize(): Boolean = true

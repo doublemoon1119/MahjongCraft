@@ -504,9 +504,9 @@ abstract class MahjongPlayerBase : GamePlayer {
         if (allTileHere) return@filter false //如果玩家持有這張牌的 4 張就直接跳過計算這張牌
         val nowHands = hands.toIntArray().apply { this[it.mahjong4jTile.code]++ }
         val mentsuList = fuuroList.map { fuuro -> fuuro.mentsu }
-        if (nowHands.sum() > 14) { //這個 BUG 有出現過, 在回合結束調用 isTenpai 的時候, 待觀察
+        if (nowHands.sum() > 14) {
             logger.error("計算 machi 時, 手牌大於 14 張牌, 請檢查錯誤")
-            logger.error("$nowHands")
+            logger.error(nowHands.joinToString(prefix = "Hands: ") { code -> "$code" })
         }
         tilesWinnable(
             hands = nowHands,
@@ -550,22 +550,31 @@ abstract class MahjongPlayerBase : GamePlayer {
      *
      * @param discards 所有玩家丟過的牌, 須按照丟的順序排序
      * */
-    fun isFuriten(tile: MahjongTileEntity, discards: List<MahjongTileEntity>): Boolean {
+    fun isFuriten(tile: MahjongTileEntity, discards: List<MahjongTileEntity>): Boolean =
+        isFuriten(tile.mahjong4jTile, discards.map { it.mahjong4jTile })
+
+    /**
+     * 振聽使用 mahjong4j 的 [Tile] 處理, 避免出現赤寶牌沒有算到的情況
+     * */
+    fun isFuriten(
+        tile: Tile, discards: List<Tile>,
+        machi: List<Tile> = this.machi.map { it.mahjong4jTile }
+    ): Boolean {
+        val discardedTiles = discardedTiles.map { it.mahjong4jTile }
         if (tile in discardedTiles) return true //一般振聽
         //考慮同巡振聽
         val lastDiscard = discardedTiles.last() //玩家丟過的最後一張牌
         val sameTurnStartIndex = discards.indexOf(lastDiscard) //取得丟過的最後一張牌在所有人丟過的牌中的索引
         for (index in sameTurnStartIndex until discards.lastIndex) { //從玩家最後丟的這張牌開始算到所有人丟過的牌的倒數第 2 張牌
             // (算到倒數第 2 張的意思是, 因為會在倒數第 1 張的時候才會調用這裡詢問玩家要不要榮和, 玩家如果沒選擇榮和才會振聽)
-            val dTile = discards[index]
-            if (dTile.mahjongTile in machi) return true //有丟過的牌是玩家聽的牌, 同巡振聽成立
+            if (discards[index] in machi) return true //有丟過的牌是玩家聽的牌, 同巡振聽成立
         }
         //考慮立直振聽
-        if ((riichi || doubleRiichi) && riichiSengenTile != null) {
+        val riichiSengenTile = riichiSengenTile?.mahjong4jTile ?: return false
+        if (riichi || doubleRiichi) {
             val riichiStartIndex = discards.indexOf(riichiSengenTile)
             for (index in riichiStartIndex until discards.lastIndex) { //從玩家丟的立直宣言牌開始算到所有人丟過的牌的倒數第 2 張牌
-                val dTile = discards[index]
-                if (dTile.mahjongTile in machi) return true //有丟過的牌是玩家聽的牌, 立直振聽成立
+                if (discards[index] in machi) return true //有丟過的牌是玩家聽的牌, 立直振聽成立
             }
         }
         return false
@@ -613,13 +622,13 @@ abstract class MahjongPlayerBase : GamePlayer {
      * */
     @JvmName("toIntArrayMahjongTileEntity")
     private fun List<MahjongTileEntity>.toIntArray() =
-        IntArray(34) { code -> this.count { it.mahjong4jTile.code == code } }
+        IntArray(Tile.values().size) { code -> this.count { it.mahjong4jTile.code == code } }
 
     /**
      * 將裝著 [MahjongTile] 的列表轉成 Mahjong4j 判斷手牌用的 [IntArray]
      * */
     private fun List<MahjongTile>.toIntArray() =
-        IntArray(34) { code -> this.count { it.mahjong4jTile.code == code } }
+        IntArray(Tile.values().size) { code -> this.count { it.mahjong4jTile.code == code } }
 
     private fun List<Fuuro>.toMentsuList() = this.map { it.mentsu }
 

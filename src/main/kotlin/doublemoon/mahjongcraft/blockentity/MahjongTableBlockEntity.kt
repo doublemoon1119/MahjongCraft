@@ -4,13 +4,17 @@ import doublemoon.mahjongcraft.block.MahjongTable
 import doublemoon.mahjongcraft.block.enums.MahjongTablePart
 import doublemoon.mahjongcraft.client.gui.MahjongTableGui
 import doublemoon.mahjongcraft.client.gui.MahjongTableWaitingScreen
+import doublemoon.mahjongcraft.entity.MahjongTileEntity
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRound
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
+import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTile
 import doublemoon.mahjongcraft.network.MahjongTablePacketHandler
 import doublemoon.mahjongcraft.registry.BlockEntityTypeRegistry
 import kotlinx.serialization.json.Json
+import net.fabricmc.api.EnvType
+import net.fabricmc.api.Environment
 import net.minecraft.block.BlockState
 import net.minecraft.block.entity.BlockEntity
 import net.minecraft.client.MinecraftClient
@@ -20,7 +24,10 @@ import net.minecraft.network.listener.ClientPlayPacketListener
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
+import net.minecraft.util.math.Box
+import net.minecraft.util.math.Vec3d
 import net.minecraft.world.World
+import org.mahjong4j.tile.Tile
 
 class MahjongTableBlockEntity(
     pos: BlockPos,
@@ -37,6 +44,29 @@ class MahjongTableBlockEntity(
     var seat = arrayListOf("", "", "", "") //座位上的玩家的 stringUUID, 按照遊戲開始的座位順序編排
     var dealer = "" //莊家的 stringUUID
     var points = arrayListOf(0, 0, 0, 0) //玩家的點數, 排列順序比照 seat
+
+    /**
+     * 剩餘的牌, index 為 [Tile.code], value 為剩下的張數,
+     * 這裡存的資料是只有面向客戶端的, 每個人看到剩下的張數都不一樣, 要經過計算才能確定
+     * */
+    @Environment(EnvType.CLIENT)
+    val remainingTiles = IntArray(Tile.values().size)
+
+    /**
+     * 從桌子中心取得牌桌大小內所有 牌的實體,
+     * 經過計算後修正 [remainingTiles]
+     * */
+    @Environment(EnvType.CLIENT)
+    fun calculateRemainingTiles() {
+        val tableCenter = with(this.pos) { Vec3d(x + 0.5, y + 1.0, z + 0.5) }
+        val tiles = world?.getEntitiesByClass(
+            MahjongTileEntity::class.java,
+            Box.of(tableCenter, 3.0, 2.0, 3.0)
+        ) { it.isSpawnedByGame && it.gameBlockPos == this.pos && it.mahjongTile != MahjongTile.UNKNOWN } ?: return
+        for (i in Tile.values().indices) {
+            remainingTiles[i] = 4 - tiles.count { it.mahjong4jTile.code == i }
+        }
+    }
 
     override fun markDirty() {
         super.markDirty()

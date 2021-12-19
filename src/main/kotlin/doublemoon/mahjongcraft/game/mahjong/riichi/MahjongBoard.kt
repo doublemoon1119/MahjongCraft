@@ -46,7 +46,7 @@ class MahjongBoard(
      * 王牌區,
      * 王牌區的順序是按照原本在牌山的順序排序的
      * */
-    private val deadWall = mutableListOf<MahjongTileEntity>()
+    val deadWall = mutableListOf<MahjongTileEntity>()
 
     /**
      * 槓牌計數

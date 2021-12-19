@@ -163,6 +163,8 @@ fun WPlainPanel.label(
 fun WPlainPanel.dynamicLabel(
     x: Int,
     y: Int,
+    width: Int? = null,
+    height: Int? = null,
     text: () -> String,
     horizontalAlignment: HorizontalAlignment = HorizontalAlignment.LEFT,
     color: Int = WDynamicLabel.DEFAULT_TEXT_COLOR,
@@ -173,7 +175,7 @@ fun WPlainPanel.dynamicLabel(
     label.setAlignment(horizontalAlignment)
     label.setColor(color, darkModeColor)
     label.init()
-    this.add(label, x, y, label.width, label.height)
+    this.add(label, x, y,width ?: label.width,height ?: label.height)
     return label
 }
 

@@ -1,6 +1,7 @@
 package doublemoon.mahjongcraft.network
 
 import doublemoon.mahjongcraft.MahjongCraftClient
+import doublemoon.mahjongcraft.client.gui.widget.WTileHints
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.mahjong.riichi.*
 import doublemoon.mahjongcraft.id
@@ -88,6 +89,9 @@ object MahjongGamePacketHandler : CustomPacketHandler {
     ) {
         MahjongGamePacket(byteBuf).apply {
             when (behavior) {
+                MahjongGameBehavior.MACHI -> {
+                    WTileHints.machiOfTarget = Json.decodeFromString(extraData)
+                }
                 MahjongGameBehavior.COUNTDOWN_TIME -> {
                     val times = Json.decodeFromString<Pair<Int?, Int?>>(extraData)
                     ClientCountdownTimeHandler.basicAndExtraTime = times
@@ -162,10 +166,32 @@ object MahjongGamePacketHandler : CustomPacketHandler {
         MahjongGamePacket(byteBuf).apply {
             val game = GameManager.getGame<MahjongGame>(player) ?: return@apply
             val mjPlayer = game.getPlayer(player) as MahjongPlayer? ?: return@apply
-            if (behavior == MahjongGameBehavior.AUTO_ARRANGE) {
-                mjPlayer.autoArrangeHands = extraData.toBoolean()
-            } else if (behavior in mjPlayer.waitingBehavior) {
-                mjPlayer.behaviorResult = behavior to extraData
+            when (behavior) {
+                MahjongGameBehavior.MACHI -> {
+                    val tile = Json.decodeFromString<MahjongTile>(extraData)
+                    val machiAndHanOrigin = with(game) { mjPlayer.getMachiAndHan(tile) }
+                    val machiAndHan = machiAndHanOrigin.keys
+                        .map { MahjongTile.values()[it.mahjong4jTile.code] } //過濾赤寶牌的情況
+                        .associateWith {
+                            machiAndHanOrigin[it] to with(game) {
+                                mjPlayer.isFuriten(
+                                    tile = it,
+                                    machi = machiAndHanOrigin.keys.toList()
+                                )
+                            }
+                        }
+                    player.sendMahjongGamePacket(
+                        behavior = MahjongGameBehavior.MACHI,
+                        extraData = Json.encodeToString(machiAndHan)
+                    )
+                }
+                MahjongGameBehavior.AUTO_ARRANGE -> {
+                    mjPlayer.autoArrangeHands = extraData.toBoolean()
+                }
+                in mjPlayer.waitingBehavior -> {
+                    mjPlayer.behaviorResult = behavior to extraData
+                }
+                else -> {}
             }
         }
     }

@@ -1,6 +1,7 @@
 package doublemoon.mahjongcraft.client.gui
 
 import doublemoon.mahjongcraft.MahjongCraftClient
+import doublemoon.mahjongcraft.client.gui.widget.WTileHints
 import io.github.cottonmc.cotton.gui.client.BackgroundPainter
 import io.github.cottonmc.cotton.gui.client.CottonHud
 import io.github.cottonmc.cotton.gui.widget.WDynamicLabel
@@ -15,7 +16,8 @@ import net.minecraft.text.TranslatableText
  * */
 @Environment(EnvType.CLIENT)
 class MahjongCraftHud {
-    val quickActionRootSize: Pair<Int, Int> get() = quickActionsRoot.let { it.width to it.height }
+    val quickActionsRootSize: Pair<Int, Int> get() = quickActionsRoot.let { it.width to it.height }
+    val tileHintsRootSize: Pair<Int, Int> get() = tileHintsRoot.let { it.width to it.height }
     private val config = MahjongCraftClient.config
     private val client = MinecraftClient.getInstance()
     private val window = client.window
@@ -29,6 +31,8 @@ class MahjongCraftHud {
         { colorPrefix(quickActions.noChiiPonKan) + NO_CHII_PON_KAN.string },
         { colorPrefix(quickActions.autoDrawAndDiscard) + AUTO_DRAW_AND_DISCARD.string }
     ).associateWith { WDynamicLabel(it) }
+    private val tileHints = config.tileHints
+    private val tileHintsRoot = WTileHints(tileHints)
 
     init {
         initQuickActions()
@@ -38,17 +42,20 @@ class MahjongCraftHud {
 
     fun refresh() {
         quickActionsRoot.backgroundPainter = BackgroundPainter.createColorful(quickActions.hudAttribute.backgroundColor)
+        tileHintsRoot.backgroundPainter = BackgroundPainter.createColorful(tileHints.hudAttribute.backgroundColor)
         if (MahjongCraftClient.playing) {
             quickActionsRoot.also { if (quickActions.displayHudWhenPlaying) CottonHud.add(it) else CottonHud.remove(it) }
         } else {
             CottonHud.remove(quickActionsRoot)
         }
+        tileHintsRoot.also { if (tileHints.displayHud) CottonHud.add(it) else CottonHud.remove(it) }
     }
 
     fun reposition() {
         val width = window.scaledWidth
         val height = window.scaledHeight
         repositionQuickActions(width, height)
+        repositionTileHints(width, height)
     }
 
     private fun initQuickActions() {
@@ -71,6 +78,13 @@ class MahjongCraftHud {
         val x = (width * hudX).toInt()
         val y = (height * hudY).toInt()
         quickActionsRoot.setLocation(x, y)
+    }
+
+    private fun repositionTileHints(width: Int, height: Int) {
+        tileHintsRoot.reposition()
+        val x = ((width - tileHintsRoot.width) / 2.0).toInt()
+        val y = (height * tileHints.hudAttribute.y).toInt()
+        tileHintsRoot.setLocation(x, y)
     }
 
     private fun colorPrefix(settingEnabled: Boolean) = if (settingEnabled) "§a" else "§c"

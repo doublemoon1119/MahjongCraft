@@ -3,10 +3,7 @@ package doublemoon.mahjongcraft.client.gui.config
 import me.shedaniel.clothconfig2.api.ConfigBuilder
 import me.shedaniel.clothconfig2.api.ConfigCategory
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder
-import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry
-import me.shedaniel.clothconfig2.gui.entries.ColorEntry
-import me.shedaniel.clothconfig2.gui.entries.KeyCodeEntry
-import me.shedaniel.clothconfig2.gui.entries.SubCategoryListEntry
+import me.shedaniel.clothconfig2.gui.entries.*
 import me.shedaniel.clothconfig2.impl.builders.SubCategoryBuilder
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.util.InputUtil
@@ -129,4 +126,25 @@ fun Pair<SubCategoryBuilder, ConfigEntryBuilder>.alphaColorField(
         .build()
     subCategory.add(colorEntry)
     return colorEntry
+}
+
+fun Pair<SubCategoryBuilder, ConfigEntryBuilder>.intSlider(
+    text: Text,
+    startValue: Int,
+    minValue: Int,
+    maxValue: Int,
+    defaultValue: () -> Int,
+    tooltipSupplier: (Int) -> Optional<Array<Text>> = { Optional.empty<Array<Text>>() },
+    textGetter: (Int) -> Text,
+    saveConsumer: (Int) -> Unit
+): IntegerSliderEntry {
+    val (subCategory, entryBuilder) = this
+    val sliderEntry = entryBuilder.startIntSlider(text, startValue, minValue, maxValue)
+        .setDefaultValue(defaultValue)
+        .setTooltipSupplier(tooltipSupplier)
+        .setSaveConsumer(saveConsumer)
+        .setTextGetter(textGetter)
+        .build()
+    subCategory.add(sliderEntry)
+    return sliderEntry
 }
