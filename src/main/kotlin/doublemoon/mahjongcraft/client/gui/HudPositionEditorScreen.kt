@@ -43,7 +43,7 @@ class HudPositionEditorGui(
         MahjongCraftClient.saveConfig()
     }.also { it.add(quickActionsText, 0, 0, it.width, it.height) }
     private val tileHintsText = createCenteredTextWidget(TranslatableText("config.$MOD_ID.tile_hints"))
-    private val tileHints = WDraggablePlainPanel(color = config.tileHints.hudAttribute.backgroundColor) { x, y ->
+    private val tileHints = WDraggablePlainPanel(color = config.tileHints.hudAttribute.backgroundColor) { _, y ->
         config.tileHints.hudAttribute.setPosition(0, y) //牌的提示不能調整 x 軸, 這是永遠置中的
         MahjongCraftClient.saveConfig()
     }.also { it.add(tileHintsText, 0, 0, it.width, it.height) }

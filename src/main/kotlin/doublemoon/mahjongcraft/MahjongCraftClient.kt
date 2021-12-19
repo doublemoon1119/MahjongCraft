@@ -61,7 +61,7 @@ object MahjongCraftClient : ClientModInitializer {
     override fun onInitializeClient() {
         logger.info("Initializing client")
         ClientTickEvents.END_CLIENT_TICK.register(this::tick)
-        ClientLifecycleEvents.CLIENT_STOPPING.register(ClientScheduler::onStopping)
+        ClientLifecycleEvents.CLIENT_STOPPING.register { ClientScheduler.onStopping() }
         //Entity Renderer
         EntityRendererRegistry.register(EntityTypeRegistry.dice, ::DiceEntityRenderer)
         EntityRendererRegistry.register(EntityTypeRegistry.seat, ::SeatEntityRenderer)
