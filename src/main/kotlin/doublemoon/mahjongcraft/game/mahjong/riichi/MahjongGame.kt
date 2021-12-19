@@ -583,6 +583,8 @@ class MahjongGame(
                                         drawTile = false
                                         ponOrChiiResult = true
                                         return@repeat
+                                    } else { //玩家沒有要碰或吃
+                                        canChiiList -= ponOrChiiPlayer //避免重複詢問吃的動作
                                     }
                                 } else { //正常情況
                                     val claimTarget = when (seatIndex) {
@@ -916,8 +918,8 @@ class MahjongGame(
         tile: MahjongTileEntity,
         discardedPlayer: MahjongPlayerBase,
         seatIndex: Int = seat.indexOf(discardedPlayer)
-    ): List<MahjongPlayerBase> =
-        players.filter { it != discardedPlayer && it.canChii(tile) && it == seat[(seatIndex + 1) % 4] }
+    ): MutableList<MahjongPlayerBase> =
+        players.filter { it != discardedPlayer && it.canChii(tile) && it == seat[(seatIndex + 1) % 4] }.toMutableList()
 
 
     /**
