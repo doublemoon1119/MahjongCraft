@@ -92,12 +92,11 @@ object MahjongTileCodePacketHandler : CustomPacketHandler {
         responseSender: PacketSender
     ) {
         MahjongTileCodePacket(byteBuf).apply {
-            server.worlds.forEach { world ->
-                (world.getEntityById(id) as MahjongTileEntity?)?.also {
-                    val code = it.getCodeForPlayer(player)
-                    player.sendTileCode(id = id, code = code)
-                    return@forEach
-                }
+            for (world in server.worlds) {
+                val entity = world.getEntityById(id) as? MahjongTileEntity ?: continue
+                val code = entity.getCodeForPlayer(player)
+                player.sendTileCode(id = id, code = code)
+                break
             }
         }
     }
