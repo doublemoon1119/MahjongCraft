@@ -24,7 +24,7 @@ import java.util.*
 class ScoreSettlementScreen(
     settlement: ScoreSettlement
 ) : CottonClientScreen(ScoreSettlementGui(settlement)) {
-    override fun isPauseScreen(): Boolean = false
+    override fun shouldPause(): Boolean = false
 }
 
 @Environment(EnvType.CLIENT)

@@ -32,7 +32,7 @@ class MahjongTableWaitingScreen(
     /**
      * 不取消暫停的話, 通過按按鈕導致的更新會卡在下個 tick, 畫面會更新不了
      * */
-    override fun isPauseScreen(): Boolean = false
+    override fun shouldPause(): Boolean = false
 
     /**
      * 刷新用, 在 [MahjongTableBlockEntity.readNbt] 的時候刷新,

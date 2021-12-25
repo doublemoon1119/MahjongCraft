@@ -27,7 +27,7 @@ import net.minecraft.util.Formatting
 class RuleEditorScreen(
     mahjongTable: MahjongTableBlockEntity
 ) : CottonClientScreen(RuleEditorGui(mahjongTable)) {
-    override fun isPauseScreen(): Boolean = false
+    override fun shouldPause(): Boolean = false
     override fun tick() {
         super.tick()
         (description as RuleEditorGui).tick()

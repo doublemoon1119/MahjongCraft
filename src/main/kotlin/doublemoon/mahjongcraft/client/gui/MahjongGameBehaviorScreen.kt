@@ -31,7 +31,7 @@ class MahjongGameBehaviorScreen(
     target: ClaimTarget,
     data: String
 ) : CottonClientScreen(MahjongGameBehaviorGui(behavior, hands, target, data)) {
-    override fun isPauseScreen(): Boolean = false
+    override fun shouldPause(): Boolean = false
 }
 
 @Environment(EnvType.CLIENT)

@@ -29,7 +29,7 @@ import java.util.*
 class YakuSettlementScreen(
     settlements: List<YakuSettlement>
 ) : CottonClientScreen(YakuSettlementGui(settlements)) {
-    override fun isPauseScreen(): Boolean = false
+    override fun shouldPause(): Boolean = false
 }
 
 @Environment(EnvType.CLIENT)
