@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "WWL",
+    "WWL",
+    "WWL"
+  ],
+  "key": {
+    "W": {
+      "item": "minecraft:white_concrete"
+    },
+    "L": [
+      {
+        "item": "minecraft:lime_concrete"
+      },
+      {
+        "item": "minecraft:green_concrete"
+      }
+    ]
+  },
+  "result": {
+    "item": "mahjongcraft:mahjong_tile",
+    "count": 16
+  }
+}

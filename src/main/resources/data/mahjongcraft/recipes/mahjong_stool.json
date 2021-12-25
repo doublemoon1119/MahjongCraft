@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "==",
+    "||"
+  ],
+  "key": {
+    "=": {
+      "item": "minecraft:gray_carpet"
+    },
+    "|": {
+      "item": "minecraft:stick"
+    }
+  },
+  "result": {
+    "item": "mahjongcraft:mahjong_stool",
+    "count": 1
+  }
+}
