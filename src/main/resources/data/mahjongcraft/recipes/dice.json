@@ -1,13 +1,16 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    "W"
-  ],
-  "key": {
-    "W": {
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
       "item": "minecraft:white_concrete"
+    },
+    {
+      "item": "minecraft:red_dye"
+    },
+    {
+      "item": "minecraft:black_dye"
     }
-  },
+  ],
   "result": {
     "item": "mahjongcraft:dice",
     "count": 2

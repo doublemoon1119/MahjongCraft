@@ -1,15 +1,24 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
+    " D ",
     "WWW"
   ],
   "key": {
     "W": {
       "item": "minecraft:white_concrete"
-    }
+    },
+    "D": [
+      {
+        "item": "minecraft:red_dye"
+      },
+      {
+        "item": "minecraft:black_dye"
+      }
+    ]
   },
   "result": {
     "item": "mahjongcraft:mahjong_scoring_stick",
-    "count": 4
+    "count": 6
   }
 }
