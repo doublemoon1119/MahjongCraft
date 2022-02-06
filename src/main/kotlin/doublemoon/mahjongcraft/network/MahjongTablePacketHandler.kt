@@ -178,16 +178,19 @@ object MahjongTablePacketHandler : CustomPacketHandler {
 
     /**
      * 對 [MahjongTableBlockEntity] 設置改變,
-     * 同步伺服端與客戶端的麻將桌,
-     * 注意: [ServerWorld.getBlockEntity] 必須在主線程上調用, 否則會為 null, 這裡 [invokeOnNextTick] 會將任務調度到下個 tick 執行
+     * 同步伺服端與客戶端的麻將桌
+     *
+     * 注意:
+     * - [ServerWorld.getBlockEntity] 必須在主線程上調用, 否則會為 null, 這裡 [invokeOnNextTick] 會將任務調度到下個 tick 執行
+     * - 在伺服器世界中生成 Entity 時, 也要在主線程上調用, 否則可能會有小概率出錯
      * */
     fun syncBlockEntityWithGame(
         invokeOnNextTick: Boolean = true,
         game: MahjongGame,
         apply: MahjongGame.() -> Unit = {}
     ) {
-        game.apply()
         val syncAction = {
+            game.apply()
             val world = game.world
             val pos = game.pos
             val blockEntity = world.getBlockEntity(pos) as MahjongTableBlockEntity?

@@ -11,6 +11,7 @@ import doublemoon.mahjongcraft.entity.MahjongTileEntity.Companion.MAHJONG_TILE_S
 import doublemoon.mahjongcraft.entity.MahjongTileEntity.Companion.MAHJONG_TILE_WIDTH
 import doublemoon.mahjongcraft.entity.TileFacing
 import doublemoon.mahjongcraft.entity.TilePosition
+import doublemoon.mahjongcraft.scheduler.server.ServerScheduler
 import doublemoon.mahjongcraft.util.delayOnServer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -241,9 +242,8 @@ class MahjongBoard(
                         }
                     }
                 }
-                //將牌生成到遊戲中
-                world.spawnEntity(tile)
             }
+            ServerScheduler.scheduleDelayAction { this.forEach { world.spawnEntity(it) } } //將牌生成到遊戲中
         }
         game.playSound(soundEvent = SoundEvents.ENTITY_ITEM_PICKUP)
     }
@@ -772,7 +772,7 @@ class MahjongBoard(
             isSpawnedByGame = true
             refreshPositionAfterTeleport(stickPos) //先移到位置上
             yaw = stickYaw //再轉個方向
-            world.spawnEntity(this) //再生成到世界上
+            ServerScheduler.scheduleDelayAction { world.spawnEntity(this) } //再生成到世界上
         }
     }
 
@@ -866,7 +866,7 @@ class MahjongBoard(
             gameBlockPos = game.pos
             isSpawnedByGame = true
             moveStickToLast(player = player, stick = this) //這時候場棒還沒生到世界上
-            world.spawnEntity(this)
+            ServerScheduler.scheduleDelayAction { world.spawnEntity(this) }
         }
     }
 

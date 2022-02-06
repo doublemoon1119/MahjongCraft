@@ -12,6 +12,7 @@ import doublemoon.mahjongcraft.network.MahjongTablePacketHandler
 import doublemoon.mahjongcraft.registry.SoundRegistry
 import doublemoon.mahjongcraft.scheduler.client.ScoreSettleHandler
 import doublemoon.mahjongcraft.scheduler.client.YakuSettleHandler
+import doublemoon.mahjongcraft.scheduler.server.ServerScheduler
 import doublemoon.mahjongcraft.util.delayOnServer
 import doublemoon.mahjongcraft.util.plus
 import doublemoon.mahjongcraft.util.sendTitles
@@ -1241,7 +1242,7 @@ class MahjongGame(
                 val randomMoveXPercentage = ((range).random()) / 100.0
                 val randomMoveZPercentage = ((range).random()) / 100.0
                 setVelocity(0.1 * cos * randomMoveXPercentage, 0.03, 0.1 * sin * randomMoveZPercentage)
-                world.spawnEntity(this)
+                ServerScheduler.scheduleDelayAction { world.spawnEntity(this) }
             }
         }
         //骰子的點數, 不管自動骰到的點數是多少, 骰完的時候都會使用這兩個點數替代
