@@ -19,7 +19,6 @@ import doublemoon.mahjongcraft.util.sendTitles
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import net.minecraft.block.AirBlock
 import net.minecraft.entity.Entity
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
@@ -32,7 +31,6 @@ import net.minecraft.text.Style
 import net.minecraft.text.TranslatableText
 import net.minecraft.util.Formatting
 import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Direction
 import net.minecraft.util.math.MathHelper
 import net.minecraft.util.math.Vec3d
 import org.mahjong4j.PersonalSituation
@@ -1272,7 +1270,26 @@ class MahjongGame(
                 //傳送到對應座位的
                 with(mjPlayer) {
                     val yaw = 90 - 90f * index
-                    fun MahjongPlayerBase.teleportToTableCenterAndLookAtSeat() {
+                    val stoolX = pos.x + if (index == 0) 2 else if (index == 2) -2 else 0
+                    val stoolZ = pos.z + if (index == 1) -2 else if (index == 3) 2 else 0
+                    val stoolBlockPos = BlockPos(stoolX, pos.y, stoolZ) //麻將凳應該在的位置
+                    val block = world.getBlockState(stoolBlockPos).block //在麻將凳應該在的位置上的方塊
+                    if (block is MahjongStool && SeatEntity.canSpawnAt(world, stoolBlockPos)) { //檢查有沒有麻將凳的存在和高度是否足夠
+                        ServerScheduler.scheduleDelayAction { //先傳送再讓玩家坐在椅子上, 因為先把玩家傳到椅子後面, 所以玩家會自動看向麻將桌
+                            val x = pos.x + 0.5 + if (index == 0) 3 else if (index == 2) -3 else 0
+                            val y = pos.y.toDouble()
+                            val z = pos.z + 0.5 + if (index == 1) -3 else if (index == 3) 3 else 0
+                            this.teleport(world, x, y, z, yaw, 0f) //先將玩家傳送到椅子後面
+                            val offsetY = if (this is MahjongPlayer) 0.4 else 1.0 / 16.0 * 10.0
+                            SeatEntity.forceSpawnAt(
+                                entity = this.entity,
+                                world = world,
+                                pos = stoolBlockPos,
+                                offsetY = offsetY
+                            )
+                            if (this is MahjongBot) this.entity.isInvisible = false //Bot->傳送後再解除隱形
+                        }
+                    } else { //不能的話就生在桌子上, 會看向自己的凳子的方向
                         this.teleport(
                             world,
                             pos.x + 0.5,
@@ -1281,45 +1298,8 @@ class MahjongGame(
                             yaw + 180, //yaw 會朝凳子方向
                             0f
                         )
+                        if (this is MahjongBot) this.entity.isInvisible = false //Bot->傳送後再解除隱形
                     }
-
-                    val x = pos.x + 0.5 + if (index == 0) 3 else if (index == 2) -3 else 0
-                    val y = pos.y.toDouble()
-                    val z = pos.z + 0.5 + if (index == 1) -3 else if (index == 3) 3 else 0
-                    val stoolX = pos.x + if (index == 0) 2 else if (index == 2) -2 else 0
-                    val stoolZ = pos.z + if (index == 1) -2 else if (index == 3) 2 else 0
-                    val stoolBlockPos = BlockPos(stoolX, pos.y, stoolZ) //麻將凳應該在的位置
-                    val block = world.getBlockState(stoolBlockPos).block //在麻將凳應該在的位置上的方塊
-                    if (block is MahjongStool) { //檢查有沒有麻將凳的存在
-                        //存在->先傳送再讓玩家坐在椅子上, 因為之前把玩家傳到椅子後面, 所以照理來講玩家會自動看向麻將桌
-                        val offsetY = if (this is MahjongPlayer) 0.4 else 1.0 / 16.0 * 10.0
-                        this.teleport(world, x, y, z, yaw, 0f) //先將玩家傳送到椅子後面
-                        SeatEntity.forceSpawnAt(
-                            entity = this.entity,
-                            world = world,
-                            pos = stoolBlockPos,
-                            offsetY = offsetY
-                        )
-                    } else if (block is AirBlock) { //如果麻將凳位置的方塊是空氣
-                        val blockPosBelowStool = stoolBlockPos.offset(Direction.DOWN, 1)
-                        val blockBelowStool = world.getBlockState(blockPosBelowStool).block
-                        if (blockBelowStool !is AirBlock) { //麻將凳位置下方的方塊不是空氣->將玩家傳送到凳子的座標位置
-                            this.teleport(world, stoolX + 0.5, y, stoolZ + 0.5, yaw, 0f)
-                        } else { //麻將凳下的方塊也是空氣->將玩家傳送到麻將桌上
-                            this.teleportToTableCenterAndLookAtSeat()
-                        }
-                    } else { //最後的條件, 才將玩家傳送到椅子的座標位置後面
-                        val blockBelowX = pos.x + if (index == 0) 3 else if (index == 2) -3 else 0
-                        val blockBelowZ = pos.z + if (index == 1) -3 else if (index == 3) 3 else 0
-                        val blockPosBelow = BlockPos(blockBelowX, pos.y, blockBelowZ)
-                        val blockBelow = world.getBlockState(blockPosBelow).block
-                        if (blockBelow !is AirBlock) {
-                            this.teleport(world, x + 0.5, y, z + 0.5, yaw, 0f)
-                        } else {
-                            this.teleportToTableCenterAndLookAtSeat()
-                        }
-                    }
-                    if (mjPlayer is MahjongBot) this.entity.isInvisible = false //Bot->傳送後再解除隱形
                 }
             }
         }
