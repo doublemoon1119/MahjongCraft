@@ -31,6 +31,7 @@ import net.minecraft.text.Style
 import net.minecraft.text.TranslatableText
 import net.minecraft.util.Formatting
 import net.minecraft.util.math.BlockPos
+import net.minecraft.util.math.Direction
 import net.minecraft.util.math.MathHelper
 import net.minecraft.util.math.Vec3d
 import org.mahjong4j.PersonalSituation
@@ -1273,7 +1274,8 @@ class MahjongGame(
                     val stoolX = pos.x + if (index == 0) 2 else if (index == 2) -2 else 0
                     val stoolZ = pos.z + if (index == 1) -2 else if (index == 3) 2 else 0
                     val stoolBlockPos = BlockPos(stoolX, pos.y, stoolZ) //麻將凳應該在的位置
-                    val block = world.getBlockState(stoolBlockPos).block //在麻將凳應該在的位置上的方塊
+                    val blockState = world.getBlockState(stoolBlockPos)
+                    val block = blockState.block //在麻將凳應該在的位置上的方塊
                     if (block is MahjongStool && SeatEntity.canSpawnAt(world, stoolBlockPos)) { //檢查有沒有麻將凳的存在和高度是否足夠
                         ServerScheduler.scheduleDelayAction { //先傳送再讓玩家坐在椅子上, 因為先把玩家傳到椅子後面, 所以玩家會自動看向麻將桌
                             val x = pos.x + 0.5 + if (index == 0) 3 else if (index == 2) -3 else 0
@@ -1289,15 +1291,25 @@ class MahjongGame(
                             )
                             if (this is MahjongBot) this.entity.isInvisible = false //Bot->傳送後再解除隱形
                         }
-                    } else { //不能的話就生在桌子上, 會看向自己的凳子的方向
-                        this.teleport(
-                            world,
-                            pos.x + 0.5,
-                            pos.y + 1.2,
-                            pos.z + 0.5,
-                            yaw + 180, //yaw 會朝凳子方向
-                            0f
-                        )
+                    } else { //沒有麻將凳或者高度不夠
+                        fun BlockPos.collisionExists() =
+                            this.let { !world.getBlockState(it).getCollisionShape(world, it).isEmpty }
+
+                        val blockBelowCollisionExists = stoolBlockPos.offset(Direction.DOWN).collisionExists()
+                        val blockCollisionDoesNotExist = !stoolBlockPos.collisionExists()
+                        val blockAboveCollisionDoesNotExist = !stoolBlockPos.offset(Direction.UP).collisionExists()
+                        if (blockBelowCollisionExists && blockCollisionDoesNotExist && blockAboveCollisionDoesNotExist) {
+                            this.teleport(world, stoolX + 0.5, pos.y.toDouble(), stoolZ + 0.5, yaw, 0f) //將玩家傳送到凳子的位置上
+                        } else { //最後不能的話就生在桌子上, 會看向自己的凳子的方向
+                            this.teleport(
+                                world,
+                                pos.x + 0.5,
+                                pos.y + 1.2,
+                                pos.z + 0.5,
+                                yaw + 180, //yaw 會朝凳子方向
+                                0f
+                            )
+                        }
                         if (this is MahjongBot) this.entity.isInvisible = false //Bot->傳送後再解除隱形
                     }
                 }
