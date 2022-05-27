@@ -98,7 +98,7 @@ class MahjongTableBlockEntity(
                 if (!playing) {  //遊戲還沒開始, 刷新開著這個麻將桌視窗的玩家的視窗
                     if (screen is MahjongTableWaitingScreen && (screen.description as MahjongTableGui).mahjongTable == this) screen.refresh()
                 } else {  //遊戲開始就關閉遊戲視窗
-                    if (screen is MahjongTableWaitingScreen && (screen.description as MahjongTableGui).mahjongTable == this) screen.onClose()
+                    if (screen is MahjongTableWaitingScreen && (screen.description as MahjongTableGui).mahjongTable == this) screen.close()
                 }
             }
         }

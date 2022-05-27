@@ -25,8 +25,8 @@ class HudPositionEditorScreen(hud: MahjongCraftHud) : CottonClientScreen(HudPosi
         (description as HudPositionEditorGui).reposition(width, height)
     }
 
-    override fun onClose() {
-        super.onClose()
+    override fun close() {
+        super.close()
         MahjongCraftClient.hud?.reposition()
     }
 }

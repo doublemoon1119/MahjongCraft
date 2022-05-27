@@ -3,7 +3,10 @@ package doublemoon.mahjongcraft.scheduler.client
 import doublemoon.mahjongcraft.client.gui.YakuSettlementScreen
 import doublemoon.mahjongcraft.game.mahjong.riichi.YakuSettlement
 import doublemoon.mahjongcraft.util.delayOnClient
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
@@ -38,7 +41,7 @@ object YakuSettleHandler {
     private fun closeScreen() {
         CoroutineScope(Dispatchers.Default).launch {
             if (client.currentScreen == screen) {
-                ClientScheduler.scheduleDelayAction { screen.onClose() }
+                ClientScheduler.scheduleDelayAction { screen.close() }
             }
         }
     }

@@ -47,7 +47,7 @@ object OptionalBehaviorHandler {
         CoroutineScope(Dispatchers.Default).launch {
             val nowScreen = screen
             if (nowScreen != null && client.currentScreen == nowScreen) {
-                ClientScheduler.scheduleDelayAction { nowScreen.onClose() }
+                ClientScheduler.scheduleDelayAction { nowScreen.close() }
             }
         }
     }

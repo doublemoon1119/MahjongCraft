@@ -41,7 +41,7 @@ object ScoreSettleHandler {
     fun closeScreen() {
         CoroutineScope(Dispatchers.Default).launch {
             if (client.currentScreen == screen) {
-                ClientScheduler.scheduleDelayAction { screen.onClose() }
+                ClientScheduler.scheduleDelayAction { screen.close() }
             }
         }
     }

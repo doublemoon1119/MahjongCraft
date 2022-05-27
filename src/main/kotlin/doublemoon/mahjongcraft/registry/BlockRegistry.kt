@@ -18,7 +18,6 @@ object BlockRegistry {
             .nonOpaque()
             .strength(0.3f)
             .sounds(BlockSoundGroup.WOOL)
-            .breakByHand(true)
     )
 
     val mahjongTable: MahjongTable = MahjongTable(
@@ -26,7 +25,6 @@ object BlockRegistry {
             .nonOpaque()
             .strength(0.7f)
             .sounds(BlockSoundGroup.WOOL)
-            .breakByHand(true)
     )
 
     private fun registerBlocks() {

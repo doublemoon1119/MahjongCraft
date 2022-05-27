@@ -18,10 +18,6 @@ abstract class GameEntity(
     world: World
 ) : Entity(type, world) {
 
-    init {
-        inanimate = true
-    }
-
     // 沒這行選不到實體
     override fun collides(): Boolean = true
 

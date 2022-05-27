@@ -13,7 +13,7 @@ val modVersion: String by project
 version = modVersion
 val mavenGroup: String by project
 group = mavenGroup
-minecraft {}
+
 repositories {
     maven(url = "https://server.bbkr.space/artifactory/libs-release") { name = "CottonMC" }
     maven(url = "https://jitpack.io")  //Mahjong4j
