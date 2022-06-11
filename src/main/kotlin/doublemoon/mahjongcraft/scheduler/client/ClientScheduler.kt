@@ -1,6 +1,5 @@
 package doublemoon.mahjongcraft.scheduler.client
 
-import doublemoon.mahjongcraft.logger
 import doublemoon.mahjongcraft.scheduler.ActionBase
 import doublemoon.mahjongcraft.scheduler.DelayAction
 import doublemoon.mahjongcraft.scheduler.LoopAction
@@ -32,9 +31,11 @@ object ClientScheduler {
             queuedActions.clear()
             return
         }
-        kotlin.runCatching { queuedActions.removeIf { it.tick() } }
-            .onFailure { logger.error("Error when ticking queued actions.", it) }
-        loopActions.forEach { it.tick() }
+
+        val copyOfQueuedAction = queuedActions.toList()
+        val copyOfLoopAction = loopActions.toList()
+        copyOfQueuedAction.forEach { if (it.tick()) queuedActions.remove(it) }
+        copyOfLoopAction.forEach { it.tick() }
     }
 
     /**

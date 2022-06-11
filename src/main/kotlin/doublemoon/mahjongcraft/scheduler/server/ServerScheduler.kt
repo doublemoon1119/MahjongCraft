@@ -18,8 +18,16 @@ object ServerScheduler {
 
     fun tick(server: MinecraftServer) {
         if (!server.isRunning) return
-        queuedActions.removeIf { it.tick() }
-        loopActions.forEach { it.tick() }
+
+        /*
+        * 因為有可能對 queuedActions 使用 removeIf 或者 forEach 時, 其他地方會在 queuedActions 迭代的過程中,
+        * 對 queuedActions "添加"新的物件, 導致產生了 java.util.ConcurrentModificationException,
+        * 為了避免錯誤, 雖然可能有點浪費資源, 但這邊簡單粗暴直接 copy 一個新的 list 來用
+        * */
+        val copyOfQueuedAction = queuedActions.toList()
+        val copyOfLoopAction = loopActions.toList()
+        copyOfQueuedAction.forEach { if (it.tick()) queuedActions.remove(it) }
+        copyOfLoopAction.forEach { it.tick() }
     }
 
     /**
