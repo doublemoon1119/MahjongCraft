@@ -4,11 +4,13 @@ import doublemoon.mahjongcraft.network.CustomEntitySpawnS2CPacketHandler
 import doublemoon.mahjongcraft.registry.EntityTypeRegistry
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
+import net.minecraft.entity.LivingEntity
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.network.Packet
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Direction
+import net.minecraft.util.math.Vec3d
 import net.minecraft.world.World
 
 /**
@@ -21,9 +23,9 @@ import net.minecraft.world.World
 class SeatEntity(
     type: EntityType<SeatEntity> = EntityTypeRegistry.seat,
     world: World,
-    var sourceBlock: BlockPos? = null,
-    var sitOffsetY: Double = 0.3,
-    var stopSitOffsetY: Double = 0.8
+    private var sourceBlock: BlockPos? = null,
+    private val sitOffsetY: Double = 0.3,
+    private val stopSitOffsetY: Double = 0.8
 ) : Entity(type, world) {
 
     init {
@@ -46,6 +48,9 @@ class SeatEntity(
     override fun writeCustomDataToNbt(nbt: NbtCompound?) {}
 
     override fun createSpawnPacket(): Packet<*> = CustomEntitySpawnS2CPacketHandler.createPacket(this)
+
+    override fun updatePassengerForDismount(passenger: LivingEntity): Vec3d =
+        Vec3d(blockPos.x + 0.5, blockPos.y + stopSitOffsetY, blockPos.z + 0.5)
 
     companion object {
         /**
@@ -72,10 +77,21 @@ class SeatEntity(
          * 使用前請使用 [canSpawnAt] 檢查,
          * 必須在伺服端調用
          * */
-        fun spawnAt(world: ServerWorld, pos: BlockPos, entity: Entity, offsetY: Double = 0.3) {
-            val seatEntity = SeatEntity(world = world, sourceBlock = pos, sitOffsetY = offsetY)
+        fun spawnAt(
+            world: ServerWorld,
+            pos: BlockPos,
+            entity: Entity,
+            sitOffsetY: Double = 0.3,
+            stopSitOffsetY: Double = 0.8
+        ) {
+            val seatEntity = SeatEntity(
+                world = world,
+                sourceBlock = pos,
+                sitOffsetY = sitOffsetY,
+                stopSitOffsetY = stopSitOffsetY
+            )
             world.spawnEntity(seatEntity)
-            entity.startRiding(seatEntity)
+            entity.startRiding(seatEntity, false)
         }
 
         /**
@@ -83,12 +99,18 @@ class SeatEntity(
          * 會強制讓原本坐在 [pos] 上的 [SeatEntity] 上的實體下來,
          * 必須在伺服端調用
          * */
-        fun forceSpawnAt(world: ServerWorld, pos: BlockPos, entity: Entity, offsetY: Double = 0.3) {
+        fun forceSpawnAt(
+            world: ServerWorld,
+            pos: BlockPos,
+            entity: Entity,
+            sitOffsetY: Double = 0.3,
+            stopSitOffsetY: Double = 0.8
+        ) {
             val seatEntitiesAtThisPos = world.getEntitiesByType(EntityTypeRegistry.seat) {  //取得在 pos 上相同的實體
                 it.blockPos == pos && it.isAlive
             }
             seatEntitiesAtThisPos.forEach { it.remove(RemovalReason.DISCARDED) }
-            spawnAt(world, pos, entity, offsetY)
+            spawnAt(world, pos, entity, sitOffsetY, stopSitOffsetY)
         }
     }
 }
