@@ -2,7 +2,7 @@ package doublemoon.mahjongcraft.game.mahjong.riichi
 
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.util.TextFormatting
-import net.minecraft.text.TranslatableText
+import net.minecraft.text.Text
 import org.mahjong4j.tile.Tile
 
 enum class Wind(
@@ -13,5 +13,5 @@ enum class Wind(
     WEST(Tile.SHA),
     NORTH(Tile.PEI);
 
-    override fun toText() = TranslatableText("$MOD_ID.game.wind.${name.lowercase()}")
+    override fun toText(): Text = Text.translatable("$MOD_ID.game.wind.${name.lowercase()}")
 }

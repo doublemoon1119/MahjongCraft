@@ -9,7 +9,7 @@ import io.github.cottonmc.cotton.gui.widget.WPlainPanel
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
-import net.minecraft.text.TranslatableText
+import net.minecraft.text.Text
 
 /**
  * 請參考 [CottonHud]
@@ -94,10 +94,9 @@ class MahjongCraftHud {
     companion object {
         private const val INSET = 6
         private const val LABEL_INTERVAL = 2
-        private val AUTO_ARRANGE = TranslatableText("config.mahjongcraft.quick_actions.auto_arrange")
-        private val AUTO_CALL_WIN = TranslatableText("config.mahjongcraft.quick_actions.auto_call_win")
-        private val NO_CHII_PON_KAN = TranslatableText("config.mahjongcraft.quick_actions.no_chii_pon_kan")
-        private val AUTO_DRAW_AND_DISCARD =
-            TranslatableText("config.mahjongcraft.quick_actions.auto_draw_and_discard")
+        private val AUTO_ARRANGE = Text.translatable("config.mahjongcraft.quick_actions.auto_arrange")
+        private val AUTO_CALL_WIN = Text.translatable("config.mahjongcraft.quick_actions.auto_call_win")
+        private val NO_CHII_PON_KAN = Text.translatable("config.mahjongcraft.quick_actions.no_chii_pon_kan")
+        private val AUTO_DRAW_AND_DISCARD = Text.translatable("config.mahjongcraft.quick_actions.auto_draw_and_discard")
     }
 }

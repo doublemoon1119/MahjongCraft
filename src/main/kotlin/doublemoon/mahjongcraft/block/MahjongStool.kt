@@ -32,7 +32,7 @@ class MahjongStool(settings: Settings) : Block(settings) {
                 pos = pos
             )
         ) {
-            SeatEntity.spawnAt(world = world, pos = pos, entity = player, offsetY = 0.4)
+            SeatEntity.spawnAt(world = world, pos = pos, entity = player, sitOffsetY = 0.4)
             ActionResult.SUCCESS
         } else {
             ActionResult.PASS

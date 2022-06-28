@@ -18,10 +18,8 @@ import io.github.cottonmc.cotton.gui.widget.data.VerticalAlignment
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
-import net.minecraft.text.LiteralText
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
-import net.minecraft.text.TranslatableText
 import net.minecraft.util.Formatting
 import java.util.*
 
@@ -46,7 +44,7 @@ class YakuSettlementGui(
             val dotAmount = 3 - (time % 3)
             var text = "$time "
             repeat(dotAmount) { text += "." }
-            return LiteralText(text)
+            return Text.of(text)
         }
     private val darkMode: Boolean
         get() = LibGui.isDarkMode()
@@ -97,7 +95,7 @@ class YakuSettlementGui(
                             y = face.y + face.height + 12,
                             width = face.width,
                             horizontalAlignment = HorizontalAlignment.CENTER,
-                            text = LiteralText(it.displayName)
+                            text = Text.of(it.displayName)
                         )
                     }
                     val playerTiles = plainPanel(
@@ -180,7 +178,7 @@ class YakuSettlementGui(
                             y = 0,
                             height = TILE_HEIGHT,
                             verticalAlignment = VerticalAlignment.CENTER,
-                            text = TranslatableText("$MOD_ID.game.dora"),
+                            text = Text.translatable("$MOD_ID.game.dora"),
                             color = Color.PURPLE_DYE.toRgb()
                         )
                         tileX += doraText.width + TILE_GAP * 2
@@ -210,7 +208,7 @@ class YakuSettlementGui(
                             y = 0,
                             height = TILE_HEIGHT,
                             verticalAlignment = VerticalAlignment.CENTER,
-                            text = TranslatableText("$MOD_ID.game.ura_dora"),
+                            text = Text.translatable("$MOD_ID.game.ura_dora"),
                             color = Color.PURPLE_DYE.toRgb()
                         )
                         tileX += uraDoraText.width + TILE_GAP * 2
@@ -283,7 +281,7 @@ class YakuSettlementGui(
                                 y = if (yakuLabels.size > 0) yakuLabels.last()
                                     .let { label -> label.y + label.height + SEPARATOR_PADDING * 2 + SEPARATOR_SIZE } else 0,
                                 width = YAKU_LABEL_WIDTH,
-                                text = TranslatableText("$MOD_ID.game.yaku.$yaku"), //先印役的名稱
+                                text = Text.translatable("$MOD_ID.game.yaku.$yaku"), //先印役的名稱
                                 verticalAlignment = VerticalAlignment.CENTER,
                                 color = if (han >= 0) Color.BLACK.toRgb() else Color.CYAN_DYE.toRgb() //(役滿、雙倍役滿、流局滿貫皆為 -1, 顏色顯示不一樣)
                             )
@@ -294,7 +292,7 @@ class YakuSettlementGui(
                                     y = yakuName.y,
                                     width = doraAndUraDoraIndicators.width - yakuName.width - SCROLL_BAR_SIZE - 8,
                                     height = yakuName.height,
-                                    text = LiteralText(han.toString()), //再印翻數
+                                    text = Text.of(han.toString()), //再印翻數
                                     color = Color.GREEN_DYE.toRgb(),
                                     verticalAlignment = VerticalAlignment.CENTER,
                                     horizontalAlignment = HorizontalAlignment.RIGHT
@@ -304,30 +302,30 @@ class YakuSettlementGui(
                     }
                     //最後是顯示 符, 翻數, 分數, 跟分數的名稱的位置
                     val scoreHeight = fontHeight + TILE_GAP * 3
-                    var scoreText: MutableText = LiteralText("") //先建立空文字
+                    var scoreText: MutableText = Text.literal("") //先建立空文字
                     //沒有役滿 也沒有雙倍役滿 也沒有流局滿貫, 才顯示符數跟翻數
                     if (yakumanList.isEmpty() && doubleYakumanList.isEmpty() && !nagashiMangan) {
-                        val fu = LiteralText("${it.fu}").formatted(Formatting.DARK_AQUA)
-                        val fuText = TranslatableText("$MOD_ID.game.fu").formatted(Formatting.DARK_PURPLE)
-                        val han = LiteralText("${it.han}").formatted(Formatting.DARK_AQUA)
-                        val hanText = TranslatableText("$MOD_ID.game.han").formatted(Formatting.DARK_PURPLE)
+                        val fu = Text.literal("${it.fu}").formatted(Formatting.DARK_AQUA)
+                        val fuText = Text.translatable("$MOD_ID.game.fu").formatted(Formatting.DARK_PURPLE)
+                        val han = Text.literal("${it.han}").formatted(Formatting.DARK_AQUA)
+                        val hanText = Text.translatable("$MOD_ID.game.han").formatted(Formatting.DARK_PURPLE)
                         scoreText += (fu + " " + fuText + " " + han + " " + hanText)
                     }
                     scoreText += "  §c$score"
-                    val scoreAlias: TranslatableText? = when { //計算出分數對應的名稱, ex: 滿貫, 倍滿, 役滿
-                        nagashiMangan -> TranslatableText("$MOD_ID.game.score.mangan") //流局滿貫出現一定只有滿貫
+                    val scoreAlias: MutableText? = when { //計算出分數對應的名稱, ex: 滿貫, 倍滿, 役滿
+                        nagashiMangan -> Text.translatable("$MOD_ID.game.score.mangan") //流局滿貫出現一定只有滿貫
                         yakumanList.isNotEmpty() || doubleYakumanList.isNotEmpty() -> { //有役滿的役種出現
                             val rate = (yakumanList.size * 1 + doubleYakumanList.size * 2).let { amount ->
                                 if (amount > 6) 6 else amount //算出役滿倍率 (理論上最大應該是 六倍役滿 所以超過 六倍 一律當作 六倍役滿)
                             }
-                            TranslatableText("$MOD_ID.game.score.yakuman_${rate}x")
+                            Text.translatable("$MOD_ID.game.score.yakuman_${rate}x")
                         }
-                        it.han >= 13 -> TranslatableText("$MOD_ID.game.score.kazoe_yakuman") //大於等於 13 翻, 累計役滿
-                        it.han >= 11 -> TranslatableText("$MOD_ID.game.score.sanbaiman") // 12, 11 翻, 三倍滿
-                        it.han >= 8 -> TranslatableText("$MOD_ID.game.score.baiman") // 10, 9, 8 翻, 倍滿
-                        it.han >= 6 -> TranslatableText("$MOD_ID.game.score.haneman") // 7, 6 翻, 跳滿
+                        it.han >= 13 -> Text.translatable("$MOD_ID.game.score.kazoe_yakuman") //大於等於 13 翻, 累計役滿
+                        it.han >= 11 -> Text.translatable("$MOD_ID.game.score.sanbaiman") // 12, 11 翻, 三倍滿
+                        it.han >= 8 -> Text.translatable("$MOD_ID.game.score.baiman") // 10, 9, 8 翻, 倍滿
+                        it.han >= 6 -> Text.translatable("$MOD_ID.game.score.haneman") // 7, 6 翻, 跳滿
                         it.han >= 5 || (it.fu >= 40 && it.han == 4) || (it.fu >= 70 && it.han == 3) -> //滿貫
-                            TranslatableText("$MOD_ID.game.score.mangan")
+                            Text.translatable("$MOD_ID.game.score.mangan")
                         else -> null
                     }?.also { alias -> alias.formatted(Formatting.BOLD).formatted(Formatting.DARK_RED) }
                     if (scoreAlias != null) {
@@ -360,7 +358,7 @@ class YakuSettlementGui(
                         uuid = UUID.fromString(it.uuid),
                         name = it.displayName
                     ) else BotFaceIcon(code = it.botCode),
-                    tooltip = listOf(LiteralText(it.displayName))
+                    tooltip = listOf(Text.of(it.displayName))
                 )
             }
         }

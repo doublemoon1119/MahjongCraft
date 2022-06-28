@@ -19,8 +19,7 @@ import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.text.LiteralText
-import net.minecraft.text.TranslatableText
+import net.minecraft.text.Text
 import net.minecraft.util.hit.EntityHitResult
 import net.minecraft.util.hit.HitResult
 
@@ -175,9 +174,9 @@ class WTileHints(
         private val furitenWidget: WLabel
         private val tileWidget: WMahjongTile
         private val remainingAmountWidget: WLabel
-        private val furitenText get() = TranslatableText("$MOD_ID.game.furiten")
-        private val noYakuText get() = TranslatableText("$MOD_ID.game.no_yaku")
-        private val tilesLeftText = { amount: Int -> TranslatableText("$MOD_ID.game.tiles_left", amount) }
+        private val furitenText get() = Text.translatable("$MOD_ID.game.furiten")
+        private val noYakuText get() = Text.translatable("$MOD_ID.game.no_yaku")
+        private val tilesLeftText = { amount: Int -> Text.translatable("$MOD_ID.game.tiles_left", amount) }
 
         init {
             val furitenWidth = client.textRenderer.getWidth(furitenText)
@@ -191,7 +190,7 @@ class WTileHints(
                 y = INSET,
                 width = width,
                 height = client.textRenderer.fontHeight,
-                text = if (furiten) furitenText else LiteralText(""),
+                text = if (furiten) furitenText else Text.of(""),
                 horizontalAlignment = HorizontalAlignment.CENTER,
                 verticalAlignment = VerticalAlignment.CENTER,
                 color = Color.PURPLE_DYE.toRgb()
@@ -211,7 +210,7 @@ class WTileHints(
                 text = when {
                     noYaku -> noYakuText
                     remainingAmountVisible -> tilesLeftText(remainingAmount)
-                    else -> LiteralText("")
+                    else -> Text.of("")
                 },
                 horizontalAlignment = HorizontalAlignment.CENTER,
                 verticalAlignment = VerticalAlignment.CENTER,
@@ -229,7 +228,7 @@ class WTileHints(
             remainingAmountWidget.text = when {
                 noYaku -> noYakuText
                 visible -> tilesLeftText(amount)
-                else -> LiteralText("")
+                else -> Text.of("")
             }
             remainingAmountWidget.color = if (machi) Color.GREEN.toRgb() else Color.WHITE.toRgb()
         }

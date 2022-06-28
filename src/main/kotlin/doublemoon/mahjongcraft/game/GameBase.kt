@@ -6,7 +6,7 @@ import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.sound.SoundCategory
 import net.minecraft.sound.SoundEvent
-import net.minecraft.text.TranslatableText
+import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
 
 interface GameBase<T : GamePlayer> {
@@ -18,7 +18,7 @@ interface GameBase<T : GamePlayer> {
     /**
      * 遊戲的名稱
      * */
-    val name: TranslatableText
+    val name: Text
 
     /**
      * 遊戲所在的世界

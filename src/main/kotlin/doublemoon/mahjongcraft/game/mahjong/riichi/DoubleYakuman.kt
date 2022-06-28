@@ -2,7 +2,7 @@ package doublemoon.mahjongcraft.game.mahjong.riichi
 
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.util.TextFormatting
-import net.minecraft.text.TranslatableText
+import net.minecraft.text.Text
 
 
 /**
@@ -15,5 +15,5 @@ enum class DoubleYakuman : TextFormatting {
     KOKUSHIMUSO_JUSANMENMACHI //國士無雙十三面
     ;
 
-    override fun toText() = TranslatableText("$MOD_ID.game.yaku.${name.lowercase()}")
+    override fun toText(): Text = Text.translatable("$MOD_ID.game.yaku.${name.lowercase()}")
 }

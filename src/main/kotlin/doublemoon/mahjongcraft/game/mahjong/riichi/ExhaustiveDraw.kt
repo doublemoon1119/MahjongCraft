@@ -2,7 +2,7 @@ package doublemoon.mahjongcraft.game.mahjong.riichi
 
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.util.TextFormatting
-import net.minecraft.text.TranslatableText
+import net.minecraft.text.Text
 
 
 /**
@@ -17,5 +17,6 @@ enum class ExhaustiveDraw : TextFormatting {
     SUUKAIKAN,      //四開槓(四槓散了)
     ;
 
-    override fun toText() = TranslatableText("$MOD_ID.game.exhaustive_draw.${name.lowercase()}")
+    val translateKey = "$MOD_ID.game.exhaustive_draw.${name.lowercase()}"
+    override fun toText(): Text = Text.translatable(translateKey)
 }

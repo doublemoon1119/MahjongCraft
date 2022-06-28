@@ -2,7 +2,6 @@ package doublemoon.mahjongcraft.game.mahjong.riichi
 
 import doublemoon.mahjongcraft.MOD_ID
 import kotlinx.serialization.Serializable
-import net.minecraft.text.LiteralText
 import net.minecraft.text.Text
 
 /**
@@ -38,8 +37,8 @@ sealed class ScoreSettlement(
             this += RankedScoreItem(
                 scoreItem = playerScore,
                 scoreTotal = playerScore.scoreOrigin + playerScore.scoreChange,
-                scoreChangeText = LiteralText(scoreChangeString),
-                rankFloatText = LiteralText(rankFloat)
+                scoreChangeText = Text.of(scoreChangeString),
+                rankFloatText = Text.of(rankFloat)
             )
         }
     }
@@ -48,17 +47,17 @@ sealed class ScoreSettlement(
     data class ExhaustiveDraw(
         val exhaustiveDraw: doublemoon.mahjongcraft.game.mahjong.riichi.ExhaustiveDraw,
         val scoreList: List<ScoreItem>,
-    ) : ScoreSettlement(titleTranslateKey = exhaustiveDraw.toText().key, scoreListInput = scoreList)
+    ) : ScoreSettlement(titleTranslateKey = exhaustiveDraw.translateKey, scoreListInput = scoreList)
 
     @Serializable
     data class Ron(
         val scoreList: List<ScoreItem>,
-    ) : ScoreSettlement(titleTranslateKey = MahjongGameBehavior.RON.toText().key, scoreListInput = scoreList)
+    ) : ScoreSettlement(titleTranslateKey = MahjongGameBehavior.RON.translateKey, scoreListInput = scoreList)
 
     @Serializable
     data class Tsumo(
         val scoreList: List<ScoreItem>,
-    ) : ScoreSettlement(titleTranslateKey = MahjongGameBehavior.TSUMO.toText().key, scoreListInput = scoreList)
+    ) : ScoreSettlement(titleTranslateKey = MahjongGameBehavior.TSUMO.translateKey, scoreListInput = scoreList)
 
     @Serializable
     data class GameOver(

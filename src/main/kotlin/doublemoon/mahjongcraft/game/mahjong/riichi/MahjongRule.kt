@@ -5,10 +5,8 @@ import doublemoon.mahjongcraft.util.TextFormatting
 import doublemoon.mahjongcraft.util.plus
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import net.minecraft.text.LiteralText
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
-import net.minecraft.text.TranslatableText
 import net.minecraft.util.Formatting
 
 /**
@@ -56,53 +54,45 @@ data class MahjongRule(
         color4: Formatting = Formatting.AQUA,
         color5: Formatting = Formatting.WHITE
     ): List<Text> {
-        val colon = LiteralText(": ").formatted(color5)
+        val colon = Text.literal(": ").formatted(color5)
         val rules =
-            TranslatableText("$MOD_ID.game.rules").formatted(color1).formatted(Formatting.BOLD)
+            Text.translatable("$MOD_ID.game.rules").formatted(color1).formatted(Formatting.BOLD)
         val lengthText =
-            (TranslatableText("$MOD_ID.game.length") + colon).formatted(color2)
+            (Text.translatable("$MOD_ID.game.length") + colon).formatted(color2)
         val thinkingTimeText =
-            (TranslatableText("$MOD_ID.game.thinking_time") + colon).formatted(
-                color2
-            )
+            (Text.translatable("$MOD_ID.game.thinking_time") + colon).formatted(color2)
         val startingPointsText =
-            (TranslatableText("$MOD_ID.game.starting_points") + colon).formatted(
-                color2
-            )
+            (Text.translatable("$MOD_ID.game.starting_points") + colon).formatted(color2)
         val minPointsToWinText =
-            (TranslatableText("$MOD_ID.game.min_points_to_win") + colon).formatted(
-                color2
-            )
+            (Text.translatable("$MOD_ID.game.min_points_to_win") + colon).formatted(color2)
         val minimumHanText =
-            (TranslatableText("$MOD_ID.game.minimum_han") + colon).formatted(
-                color2
-            )
+            (Text.translatable("$MOD_ID.game.minimum_han") + colon).formatted(color2)
         val spectateText =
-            (TranslatableText("$MOD_ID.game.spectate") + colon).formatted(color2)
+            (Text.translatable("$MOD_ID.game.spectate") + colon).formatted(color2)
         val redFiveText =
-            (TranslatableText("$MOD_ID.game.red_five") + colon).formatted(color2)
+            (Text.translatable("$MOD_ID.game.red_five") + colon).formatted(color2)
         val openTanyaoText =
-            (TranslatableText("$MOD_ID.game.open_tanyao") + colon).formatted(color2)
-        val enable = TranslatableText("$MOD_ID.game.enabled").formatted(color3)
-        val disable = TranslatableText("$MOD_ID.game.disabled").formatted(color3)
+            (Text.translatable("$MOD_ID.game.open_tanyao") + colon).formatted(color2)
+        val enable = Text.translatable("$MOD_ID.game.enabled").formatted(color3)
+        val disable = Text.translatable("$MOD_ID.game.disabled").formatted(color3)
         val spectateStatus = if (spectate) enable else disable
         val openTanyaoStatus = if (openTanyao) enable else disable
-        val second = TranslatableText("$MOD_ID.game.seconds").formatted(color3)
+        val second = Text.translatable("$MOD_ID.game.seconds").formatted(color3)
         return listOf(
             rules,
-            LiteralText("§3 - ") + lengthText + (length.toText() as MutableText).formatted(color3),
-            LiteralText("§3 - ")
+            Text.literal("§3 - ") + lengthText + (length.toText() as MutableText).formatted(color3),
+            Text.literal("§3 - ")
                     + thinkingTimeText
-                    + LiteralText("${thinkingTime.base}").formatted(color4)
-                    + LiteralText(" + ").formatted(color1)
-                    + LiteralText("${thinkingTime.extra}").formatted(color4)
+                    + Text.literal("${thinkingTime.base}").formatted(color4)
+                    + Text.literal(" + ").formatted(color1)
+                    + Text.literal("${thinkingTime.extra}").formatted(color4)
                     + " " + second,
-            LiteralText("§3 - ") + startingPointsText + LiteralText("$startingPoints").formatted(color3),
-            LiteralText("§3 - ") + minPointsToWinText + LiteralText("$minPointsToWin").formatted(color3),
-            LiteralText("§3 - ") + minimumHanText + LiteralText("${minimumHan.han}").formatted(color3),
-            LiteralText("§3 - ") + spectateText + spectateStatus,
-            LiteralText("§3 - ") + redFiveText + LiteralText("${redFive.quantity}").formatted(color3),
-            LiteralText("§3 - ") + openTanyaoText + openTanyaoStatus
+            Text.literal("§3 - ") + startingPointsText + Text.literal("$startingPoints").formatted(color3),
+            Text.literal("§3 - ") + minPointsToWinText + Text.literal("$minPointsToWin").formatted(color3),
+            Text.literal("§3 - ") + minimumHanText + Text.literal("${minimumHan.han}").formatted(color3),
+            Text.literal("§3 - ") + spectateText + spectateStatus,
+            Text.literal("§3 - ") + redFiveText + Text.literal("${redFive.quantity}").formatted(color3),
+            Text.literal("§3 - ") + openTanyaoText + openTanyaoStatus
         )
     }
 
@@ -138,7 +128,7 @@ data class MahjongRule(
          * */
         fun getStartingRound(): MahjongRound = MahjongRound(wind = startingWind)
 
-        override fun toText() = TranslatableText("$MOD_ID.game.length.${name.lowercase()}")
+        override fun toText() = Text.translatable("$MOD_ID.game.length.${name.lowercase()}")
     }
 
     /**
@@ -151,7 +141,7 @@ data class MahjongRule(
         FOUR(4),         // 2 翻
         YAKUMAN(13);    //13 翻(役滿限定)
 
-        override fun toText() = LiteralText(han.toString())
+        override fun toText(): Text = Text.of(han.toString())
     }
 
     /**
@@ -168,7 +158,7 @@ data class MahjongRule(
         LONG(60, 0),
         VERY_LONG(300, 0);
 
-        override fun toText() = LiteralText("$base + $extra s")
+        override fun toText(): Text = Text.of("$base + $extra s")
     }
 
     /**
@@ -182,6 +172,6 @@ data class MahjongRule(
         THREE(3),
         FOUR(4);
 
-        override fun toText() = LiteralText(quantity.toString())
+        override fun toText(): Text = Text.of(quantity.toString())
     }
 }

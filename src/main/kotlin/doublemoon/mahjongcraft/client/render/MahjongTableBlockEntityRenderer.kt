@@ -16,8 +16,7 @@ import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.block.entity.BlockEntityRenderer
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory
 import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.text.LiteralText
-import net.minecraft.text.TranslatableText
+import net.minecraft.text.Text
 
 @Environment(EnvType.CLIENT)
 class MahjongTableBlockEntityRenderer(
@@ -63,7 +62,7 @@ class MahjongTableBlockEntityRenderer(
             val windIndex = (dealerSeatIndex - index).let { if (it >= 0) 4 - it else -it } % 4
             buildList {
                 this += Wind.values()[windIndex].toText()
-                this += LiteralText(blockEntity.points[index].toString())
+                this += Text.of(blockEntity.points[index].toString())
                 reverse()
                 forEachIndexed { index1, text ->
                     RenderHelper.renderLabel(
@@ -104,7 +103,7 @@ class MahjongTableBlockEntityRenderer(
             } else { //在遊戲中才顯示
                 val round = blockEntity.round
                 val windText = round.wind.toText()
-                this += TranslatableText("$MOD_ID.game.round.title", windText, round.round + 1) //ex: 東 4 局
+                this += Text.translatable("$MOD_ID.game.round.title", windText, round.round + 1) //ex: 東 4 局
             }
             reverse()
             forEachIndexed { index, text -> //渲染文字
@@ -128,9 +127,9 @@ class MahjongTableBlockEntityRenderer(
         private const val PLAYING_PADDING = 1.6
         private const val WIND_PADDING = 1.6
         private const val LABEL_INTERVAL = 0.25
-        private val READY get() = TranslatableText("$MOD_ID.gui.button.ready")
-        private val PLAYER get() = TranslatableText("$MOD_ID.game.player")
-        private val STATUS get() = TranslatableText("$MOD_ID.game.status")
+        private val READY get() = Text.translatable("$MOD_ID.gui.button.ready")
+        private val PLAYER get() = Text.translatable("$MOD_ID.game.player")
+        private val STATUS get() = Text.translatable("$MOD_ID.game.status")
         private val WAITING = GameStatus.WAITING.toText()
         private val PLAYING = GameStatus.PLAYING.toText()
     }

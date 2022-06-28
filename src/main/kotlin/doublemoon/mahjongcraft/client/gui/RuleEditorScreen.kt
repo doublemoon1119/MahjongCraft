@@ -17,10 +17,8 @@ import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.network.ClientPlayerEntity
-import net.minecraft.text.LiteralText
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
-import net.minecraft.text.TranslatableText
 import net.minecraft.util.Formatting
 
 @Environment(EnvType.CLIENT)
@@ -45,7 +43,7 @@ class RuleEditorGui(
     //編輯中的設定
     private val editingRule: MahjongRule = mahjongTable.rule.copy()
     private val lengthItem = RuleSelectItem(
-        name = TranslatableText("$MOD_ID.game.length"),
+        name = Text.translatable("$MOD_ID.game.length"),
         value = { editingRule.length },
         label = { it.toText() },
         tooltip = { length -> getTooltip(length) }
@@ -55,7 +53,7 @@ class RuleEditorGui(
         editingRule.length = nextValue
     }
     private val thinkingTimeItem = RuleSelectItem(
-        name = TranslatableText("$MOD_ID.game.thinking_time"),
+        name = Text.translatable("$MOD_ID.game.thinking_time"),
         value = { editingRule.thinkingTime },
         label = { it.toText() },
         tooltip = { thinkingTime -> getTooltip(thinkingTime) }
@@ -65,9 +63,9 @@ class RuleEditorGui(
         editingRule.thinkingTime = nextValue
     }
     private val startingPointsItem = RuleIntegerTextFieldItem(
-        name = TranslatableText("$MOD_ID.game.starting_points"),
+        name = Text.translatable("$MOD_ID.game.starting_points"),
         description = arrayOf(
-            TranslatableText(
+            Text.translatable(
                 "mahjongcraft.game.starting_points.description",
                 MahjongRule.MIN_POINTS,
                 MahjongRule.MAX_POINTS
@@ -76,12 +74,12 @@ class RuleEditorGui(
         defaultValue = editingRule.startingPoints
     )
     private val minPointsToWinItem = RuleIntegerTextFieldItem(
-        name = TranslatableText("$MOD_ID.game.min_points_to_win"),
-        description = arrayOf(TranslatableText("$MOD_ID.game.min_points_to_win.description")),
+        name = Text.translatable("$MOD_ID.game.min_points_to_win"),
+        description = arrayOf(Text.translatable("$MOD_ID.game.min_points_to_win.description")),
         defaultValue = editingRule.minPointsToWin
     )
     private val minimumHanItem = RuleSelectItem(
-        name = TranslatableText("$MOD_ID.game.minimum_han"),
+        name = Text.translatable("$MOD_ID.game.minimum_han"),
         value = { editingRule.minimumHan },
         label = { it.toText() },
         tooltip = { minimumHan -> getTooltip(minimumHan) }
@@ -91,12 +89,12 @@ class RuleEditorGui(
         editingRule.minimumHan = nextValue
     }
     private val spectateItem = RuleToggleItem(
-        name = TranslatableText("$MOD_ID.game.spectate"),
+        name = Text.translatable("$MOD_ID.game.spectate"),
         enabled = editingRule.spectate,
         onClick = { editingRule.spectate = it }
     )
     private val redFiveItem = RuleSelectItem(
-        name = TranslatableText("$MOD_ID.game.red_five"),
+        name = Text.translatable("$MOD_ID.game.red_five"),
         value = { editingRule.redFive },
         label = { it.toText() },
         tooltip = { redFive -> getTooltip(redFive) }
@@ -106,7 +104,7 @@ class RuleEditorGui(
         editingRule.redFive = nextValue
     }
     private val openTanyaoItem = RuleToggleItem(
-        name = TranslatableText("$MOD_ID.game.open_tanyao"),
+        name = Text.translatable("$MOD_ID.game.open_tanyao"),
         enabled = editingRule.openTanyao,
         onClick = { editingRule.openTanyao = it }
     )
@@ -161,14 +159,14 @@ class RuleEditorGui(
                 x = ROOT_WIDTH - INSET * 2 - BUTTON_WIDTH - INSET,
                 y = ROOT_HEIGHT - INSET * 2 - INSET * 2,
                 width = BUTTON_WIDTH,
-                label = TranslatableText("$MOD_ID.gui.button.back"),
+                label = Text.translatable("$MOD_ID.gui.button.back"),
                 onClick = { back() }
             )
             confirm = tooltipButton(
                 x = back.x,
                 y = back.y - back.height - BUTTON_PADDING,
                 width = BUTTON_WIDTH,
-                label = TranslatableText("$MOD_ID.gui.button.confirm"),
+                label = Text.translatable("$MOD_ID.gui.button.confirm"),
                 tooltip = arrayOf(),
                 onClick = { confirm() }
             ) {
@@ -178,7 +176,7 @@ class RuleEditorGui(
                 x = confirm.x,
                 y = confirm.y - confirm.height - BUTTON_PADDING,
                 width = BUTTON_WIDTH,
-                label = TranslatableText("$MOD_ID.gui.button.apply"),
+                label = Text.translatable("$MOD_ID.gui.button.apply"),
                 tooltip = arrayOf(),
                 onClick = { apply() }
             ) {
@@ -190,16 +188,16 @@ class RuleEditorGui(
     fun tick() {
         startingPointsItem.apply {
             hint = if (startingPointsItemValueInvalid) {
-                TranslatableText("$MOD_ID.gui.invalid_value").formatted(Formatting.RED)
+                Text.translatable("$MOD_ID.gui.invalid_value").formatted(Formatting.RED)
             } else {
-                LiteralText("")
+                Text.of("")
             }
         }
         minPointsToWinItem.apply {
             hint = if (minPointsToWinItemValueInvalid) {
-                TranslatableText("$MOD_ID.gui.invalid_value").formatted(Formatting.RED)
+                Text.translatable("$MOD_ID.gui.invalid_value").formatted(Formatting.RED)
             } else {
-                LiteralText("")
+                Text.of("")
             }
         }
         confirm.isEnabled = confirmEnabled
@@ -260,7 +258,7 @@ class RuleEditorGui(
                         }
                     }
                 } else {
-                    LiteralText(it.name)
+                    Text.of(it.name)
                 }
             }.toTypedArray()
     }
@@ -352,7 +350,7 @@ class RuleEditorGui(
         }
 
         private val buttonText: Text
-            get() = if (enabled) TranslatableText("$MOD_ID.game.enabled") else TranslatableText("$MOD_ID.game.disabled")
+            get() = if (enabled) Text.translatable("$MOD_ID.game.enabled") else Text.translatable("$MOD_ID.game.disabled")
     }
 
     class RuleIntegerTextFieldItem(
@@ -382,7 +380,7 @@ class RuleEditorGui(
             width = BUTTON_WIDTH,
             text = "$defaultValue",
             tooltip = description,
-            suggestion = LiteralText("$defaultValue"),
+            suggestion = Text.of("$defaultValue"),
         )
 
         private val hintLabel = label(
@@ -390,7 +388,7 @@ class RuleEditorGui(
             y = textField.y,
             height = textField.height,
             verticalAlignment = VerticalAlignment.CENTER,
-            text = LiteralText("")
+            text = Text.of("")
         )
     }
 }

@@ -4,7 +4,8 @@ import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.network.MahjongGamePacketHandler
 import doublemoon.mahjongcraft.util.TextFormatting
 import kotlinx.serialization.Serializable
-import net.minecraft.text.TranslatableText
+import net.minecraft.text.MutableText
+import net.minecraft.text.Text
 
 /**
  * 麻將遊戲行為, 發送數據包 [MahjongGamePacketHandler] 用,
@@ -40,5 +41,6 @@ enum class MahjongGameBehavior : TextFormatting {
     MACHI,//待取(聽的牌)
     ;
 
-    override fun toText() = TranslatableText("$MOD_ID.game.behavior.${name.lowercase()}")
+    val translateKey = "$MOD_ID.game.behavior.${name.lowercase()}"
+    override fun toText(): MutableText = Text.translatable(translateKey)
 }

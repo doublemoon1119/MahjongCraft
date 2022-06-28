@@ -4,8 +4,7 @@ import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.entity.MahjongTileEntity
 import doublemoon.mahjongcraft.id
 import doublemoon.mahjongcraft.util.TextFormatting
-import net.minecraft.text.LiteralText
-import net.minecraft.text.TranslatableText
+import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 import org.mahjong4j.tile.Tile
 import org.mahjong4j.tile.TileType
@@ -143,12 +142,12 @@ enum class MahjongTile : TextFormatting {
             }
         }
 
-    override fun toText() = when (mahjong4jTile.type) {
-        TileType.MANZU -> TranslatableText("$MOD_ID.game.tile.man", mahjong4jTile.number)
-        TileType.PINZU -> TranslatableText("$MOD_ID.game.tile.pin", mahjong4jTile.number)
-        TileType.SOHZU -> TranslatableText("$MOD_ID.game.tile.sou", mahjong4jTile.number)
-        TileType.FONPAI, TileType.SANGEN -> TranslatableText("$MOD_ID.game.tile.${name.lowercase()}")
-        else -> LiteralText("")
+    override fun toText(): Text = when (mahjong4jTile.type) {
+        TileType.MANZU -> Text.translatable("$MOD_ID.game.tile.man", mahjong4jTile.number)
+        TileType.PINZU -> Text.translatable("$MOD_ID.game.tile.pin", mahjong4jTile.number)
+        TileType.SOHZU -> Text.translatable("$MOD_ID.game.tile.sou", mahjong4jTile.number)
+        TileType.FONPAI, TileType.SANGEN -> Text.translatable("$MOD_ID.game.tile.${name.lowercase()}")
+        else -> Text.of("")
     }
 
     companion object {

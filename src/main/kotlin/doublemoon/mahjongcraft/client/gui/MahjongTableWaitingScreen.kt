@@ -19,8 +19,7 @@ import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.network.ClientPlayerEntity
 import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.LiteralText
-import net.minecraft.text.TranslatableText
+import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.Identifier
 import java.util.*
@@ -99,7 +98,7 @@ class MahjongTableGui(
                 x = icon.x + icon.width + 5,
                 y = icon.y,
                 height = icon.height,
-                text = TranslatableText("$MOD_ID.game.riichi_mahjong"),
+                text = Text.translatable("$MOD_ID.game.riichi_mahjong"),
                 verticalAlignment = VerticalAlignment.CENTER,
             )
             joinOrLeave = button(
@@ -149,7 +148,7 @@ class MahjongTableGui(
                             width = 132,
                             text = text,
                             tooltip = arrayOf(
-                                TranslatableText(
+                                Text.translatable(
                                     "$MOD_ID.game.starting_points.description",
                                     MahjongRule.MIN_POINTS,
                                     MahjongRule.MAX_POINTS
@@ -161,7 +160,7 @@ class MahjongTableGui(
                             y = y,
                             width = 132,
                             text = text,
-                            tooltip = arrayOf(TranslatableText("$MOD_ID.game.min_points_to_win.description"))
+                            tooltip = arrayOf(Text.translatable("$MOD_ID.game.min_points_to_win.description"))
                         )
                         else -> text(x = 0, y = y, width = 132, text = text)
                     }
@@ -178,7 +177,7 @@ class MahjongTableGui(
         with(joinOrLeave) {
             isEnabled = if (isInThisGame) true else "" in players  //空位的時候, 會以 "" 表示
             label =
-                if (!isInThisGame) TranslatableText("$MOD_ID.gui.button.join") else TranslatableText("$MOD_ID.gui.button.leave")
+                if (!isInThisGame) Text.translatable("$MOD_ID.gui.button.join") else Text.translatable("$MOD_ID.gui.button.leave")
         }
         playerInfoItems.forEach {
             it.entityName = playerEntityNames[it.number]
@@ -207,8 +206,8 @@ class MahjongTableGui(
             isHost -> {
                 if (start == null) {
                     start = WTooltipButton(
-                        label = TranslatableText("$MOD_ID.gui.button.start"),
-                        tooltip = arrayOf(TranslatableText("$MOD_ID.gui.tooltip.clickable.when_all_ready"))
+                        label = Text.translatable("$MOD_ID.gui.button.start"),
+                        tooltip = arrayOf(Text.translatable("$MOD_ID.gui.tooltip.clickable.when_all_ready"))
                     )
                     (rootPanel as WPlainPanel).add(
                         start,
@@ -230,7 +229,7 @@ class MahjongTableGui(
                     }
                 }
                 if (addBot == null) {
-                    addBot = WButton(TranslatableText("$MOD_ID.gui.button.add_bot"))
+                    addBot = WButton(Text.translatable("$MOD_ID.gui.button.add_bot"))
                     (rootPanel as WPlainPanel).add(
                         addBot,
                         start!!.x,
@@ -251,7 +250,7 @@ class MahjongTableGui(
                     }
                 }
                 if (editRules == null) {
-                    editRules = WButton(TranslatableText("$MOD_ID.gui.button.edit_rules"))
+                    editRules = WButton(Text.translatable("$MOD_ID.gui.button.edit_rules"))
                     (rootPanel as WPlainPanel).add(
                         editRules,
                         addBot!!.x,
@@ -273,7 +272,7 @@ class MahjongTableGui(
                 repeat(3) {  //kick 按鈕只有 3 個
                     val playerIndex = it + 1
                     if (kick[it] == null) {
-                        val kickText = TranslatableText("$MOD_ID.gui.button.kick")
+                        val kickText = Text.translatable("$MOD_ID.gui.button.kick")
                         kick[it] = WButton(kickText)
                         val buttonWidth = client.textRenderer.getWidth(kickText) + 12
                         (rootPanel as WPlainPanel).add(
@@ -312,9 +311,9 @@ class MahjongTableGui(
                 }
                 readyOrNot!!.apply {
                     label = if (isReady) {
-                        TranslatableText("$MOD_ID.gui.button.not_ready")
+                        Text.translatable("$MOD_ID.gui.button.not_ready")
                     } else {
-                        TranslatableText("$MOD_ID.gui.button.ready")
+                        Text.translatable("$MOD_ID.gui.button.ready")
                     }
                     onClick = Runnable {
                         if (isReady) {
@@ -385,11 +384,11 @@ class MahjongTableGui(
         var ready: Boolean = false
         private val client = MinecraftClient.getInstance()
         private val fontHeight = client.textRenderer.fontHeight
-        private val ttPlayer = TranslatableText("$MOD_ID.game.player")
-        private val ttHost = TranslatableText("$MOD_ID.game.host")
-        private val ttReady = TranslatableText("$MOD_ID.gui.button.ready")
-        private val ttNotReady = TranslatableText("$MOD_ID.gui.button.not_ready")
-        private val ttEmpty = TranslatableText("$MOD_ID.game.empty")
+        private val ttPlayer = Text.translatable("$MOD_ID.game.player")
+        private val ttHost = Text.translatable("$MOD_ID.game.host")
+        private val ttReady = Text.translatable("$MOD_ID.gui.button.ready")
+        private val ttNotReady = Text.translatable("$MOD_ID.gui.button.not_ready")
+        private val ttEmpty = Text.translatable("$MOD_ID.game.empty")
 
         init {
             this.setSize(WIDTH, HEIGHT)
@@ -401,7 +400,7 @@ class MahjongTableGui(
         private val name: WLabel = label(
             x = face.x + face.width + 6,
             y = face.y + face.height - fontHeight,
-            text = LiteralText(entityName)
+            text = Text.of(entityName)
         )
         private val playerNum = ttPlayer + " ${number + 1}"
         private val numberAndReady: WLabel = label(
@@ -457,15 +456,15 @@ class MahjongTableGui(
             }
             if (number != 0) {
                 numberAndReady.text = if (entityName.isNotEmpty()) {
-                    LiteralText("") + playerNum + " (" + (if (ready) ttReady else ttNotReady) + ")"
+                    Text.literal("") + playerNum + " (" + (if (ready) ttReady else ttNotReady) + ")"
                 } else {
                     playerNum
                 }
             }
             name.text = when {
                 entityName.isNotEmpty() ->
-                    if (!isBot) LiteralText(entityName)
-                    else TranslatableText("entity.$MOD_ID.mahjong_bot")
+                    if (!isBot) Text.of(entityName)
+                    else Text.translatable("entity.$MOD_ID.mahjong_bot")
                 else -> ttEmpty
             }
         }

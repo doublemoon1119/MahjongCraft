@@ -2,7 +2,7 @@ package doublemoon.mahjongcraft.game
 
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.util.TextFormatting
-import net.minecraft.text.TranslatableText
+import net.minecraft.text.Text
 
 
 /**
@@ -12,5 +12,5 @@ enum class GameStatus : TextFormatting {
     WAITING,
     PLAYING;
 
-    override fun toText() = TranslatableText("$MOD_ID.game.status.${name.lowercase()}")
+    override fun toText(): Text = Text.translatable("$MOD_ID.game.status.${name.lowercase()}")
 }

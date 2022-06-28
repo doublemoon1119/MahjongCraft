@@ -18,9 +18,7 @@ import kotlinx.serialization.json.Json
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
-import net.minecraft.text.LiteralText
 import net.minecraft.text.Text
-import net.minecraft.text.TranslatableText
 import net.minecraft.util.Formatting
 import org.mahjong4j.tile.Tile
 
@@ -53,8 +51,8 @@ class MahjongGameBehaviorGui(
         get() = if (basicTime > 0 && extraTime > 0) "§e + " else ""
     private val extraTimeText: String
         get() = if (extraTime > 0) "§c$extraTime" else ""
-    private val timeText: LiteralText
-        get() = LiteralText("$basicTimeText$plusTimeText$extraTimeText")
+    private val timeText: Text
+        get() = Text.of("$basicTimeText$plusTimeText$extraTimeText")
 
     //渲染麻將牌用
     private val alreadyDrewTile = when (behavior) { //在發送這行為過來時是否有拿牌, 目前只有下面 3 個情況有拿牌
@@ -236,12 +234,12 @@ class MahjongGameBehaviorGui(
 
     init {
         rootPlainPanel(width = ROOT_WIDTH, height = ROOT_HEIGHT) {
-            val timer = dynamicLabel(x = 8, y = 8, text = { timeText.rawString }) //顯示剩餘時間用
+            val timer = dynamicLabel(x = 8, y = 8, text = { timeText.string }) //顯示剩餘時間用
             button(
                 x = ROOT_WIDTH - BUTTON_WIDTH - BORDER_MARGIN,
                 y = BORDER_MARGIN,
                 width = BUTTON_WIDTH,
-                label = TranslatableText("$MOD_ID.game.behavior.skip"),
+                label = Text.translatable("$MOD_ID.game.behavior.skip"),
                 onClick = {
                     MinecraftClient.getInstance().player?.sendMahjongGamePacket(
                         behavior = MahjongGameBehavior.SKIP
@@ -360,7 +358,7 @@ class MahjongGameBehaviorGui(
             val tooltip: Array<Text> = when (behavior) {
                 MahjongGameBehavior.RIICHI ->
                     buildList<Text> {
-                        this += TranslatableText("$MOD_ID.game.machi").formatted(Formatting.RED)
+                        this += Text.translatable("$MOD_ID.game.machi").formatted(Formatting.RED)
                             .formatted(Formatting.BOLD)
                         val tilePairsForRiichi =
                             Json.decodeFromString<MutableList<Pair<MahjongTile, MutableList<MahjongTile>>>>(data)
@@ -368,7 +366,7 @@ class MahjongGameBehaviorGui(
                         val machi = pair!!.second
                             .distinctBy { tile -> tile.toText().string } //去掉重複的選項
                             .sortedBy { tile -> tile.sortOrder } //按照順序排好
-                        this += machi.map { LiteralText("§3 - §e${it.toText().string}") }
+                        this += machi.map { Text.of("§3 - §e${it.toText().string}") }
                     }.toTypedArray()
                 MahjongGameBehavior.EXHAUSTIVE_DRAW ->
                     arrayOf(behavior.toText().formatted(Formatting.RED).formatted(Formatting.BOLD))
@@ -448,12 +446,12 @@ class MahjongGameBehaviorGui(
                     ClaimTarget.RIGHT -> 2
                     ClaimTarget.ACROSS -> 1
                     ClaimTarget.LEFT -> 0
-                    else -> return // else 情況不可能出現, 出現一定是錯誤
+                    else -> throw IllegalStateException("在計算麻將動作的選項時, 不可能的情況出現") // else 情況不可能出現, 出現一定是錯誤
                 }
                 val claimingTileDirection = when (target) {
                     ClaimTarget.RIGHT, ClaimTarget.ACROSS -> WMahjongTile.TileDirection.RIGHT
                     ClaimTarget.LEFT -> WMahjongTile.TileDirection.LEFT
-                    else -> WMahjongTile.TileDirection.NORMAL
+                    else -> throw IllegalStateException("在計算麻將動作的選項時, 不可能的情況出現")  // else 情況不可能出現, 出現一定是錯誤
                 }
                 atLeastOneHorizontalTiles.add(claimingTileIndex, claimingTile) //將被鳴的牌放入應該在的位置
                 val totalWidth = ((atLeastOneHorizontalTiles.size - 1) * TILE_WIDTH //直的牌
@@ -476,8 +474,7 @@ class MahjongGameBehaviorGui(
                         }
                         widgets += mahjongTile(
                             x = x,
-                            y = if (claimingTileDirection == WMahjongTile.TileDirection.NORMAL) NORMAL_TILE_Y
-                            else HORIZONTAL_TILE_Y,
+                            y = HORIZONTAL_TILE_Y,
                             width = TILE_WIDTH,
                             height = TILE_HEIGHT,
                             mahjongTile = tile,

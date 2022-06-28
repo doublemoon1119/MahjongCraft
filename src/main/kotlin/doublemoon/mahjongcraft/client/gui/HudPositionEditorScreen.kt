@@ -16,7 +16,6 @@ import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
 import net.minecraft.text.Text
-import net.minecraft.text.TranslatableText
 
 @Environment(EnvType.CLIENT)
 class HudPositionEditorScreen(hud: MahjongCraftHud) : CottonClientScreen(HudPositionEditorGui(hud)) {
@@ -37,12 +36,12 @@ class HudPositionEditorGui(
 ) : LightweightGuiDescription() {
     private val window = MinecraftClient.getInstance().window
     private val config = MahjongCraftClient.config
-    private val quickActionsText = createCenteredTextWidget(TranslatableText("config.$MOD_ID.quick_actions"))
+    private val quickActionsText = createCenteredTextWidget(Text.translatable("config.$MOD_ID.quick_actions"))
     private val quickActions = WDraggablePlainPanel(color = config.quickActions.hudAttribute.backgroundColor) { x, y ->
         config.quickActions.hudAttribute.setPosition(x, y)
         MahjongCraftClient.saveConfig()
     }.also { it.add(quickActionsText, 0, 0, it.width, it.height) }
-    private val tileHintsText = createCenteredTextWidget(TranslatableText("config.$MOD_ID.tile_hints"))
+    private val tileHintsText = createCenteredTextWidget(Text.translatable("config.$MOD_ID.tile_hints"))
     private val tileHints = WDraggablePlainPanel(color = config.tileHints.hudAttribute.backgroundColor) { _, y ->
         config.tileHints.hudAttribute.setPosition(0, y) //牌的提示不能調整 x 軸, 這是永遠置中的
         MahjongCraftClient.saveConfig()

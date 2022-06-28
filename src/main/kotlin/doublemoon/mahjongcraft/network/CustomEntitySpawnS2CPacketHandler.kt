@@ -32,7 +32,6 @@ object CustomEntitySpawnS2CPacketHandler : CustomPacketHandler {
         val velocityY: Double,
         val velocityZ: Double,
     ) : CustomPacket {
-        val pos = Vec3d(x, y, z)
         val velocity = Vec3d(velocityX, velocityY, velocityZ)
 
         constructor(entity: Entity) : this(
@@ -107,10 +106,10 @@ object CustomEntitySpawnS2CPacketHandler : CustomPacketHandler {
                     "Failed to create instance of entity \"" + Registry.ENTITY_TYPE.getId(packet.entityType)
                         .toString() + "\"!"
                 )).apply {
-                    updateTrackedPosition(packet.pos)
+                    updateTrackedPosition(packet.x, packet.y, packet.z)
                     updatePositionAndAngles(packet.x, packet.y, packet.z, packet.yaw, packet.pitch)
                     this.headYaw = packet.headYaw //頭跟身體都朝向頭的方向
-                    setBodyYaw(packet.headYaw)
+                    this.bodyYaw = packet.headYaw
                     this.id = packet.id
                     this.uuid = packet.uuid
                 }

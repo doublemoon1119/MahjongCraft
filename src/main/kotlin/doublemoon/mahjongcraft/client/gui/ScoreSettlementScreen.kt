@@ -14,9 +14,7 @@ import io.github.cottonmc.cotton.gui.widget.data.VerticalAlignment
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
-import net.minecraft.text.LiteralText
 import net.minecraft.text.Text
-import net.minecraft.text.TranslatableText
 import net.minecraft.util.Formatting
 import java.util.*
 
@@ -39,7 +37,7 @@ class ScoreSettlementGui(
             val dotAmount = 3 - (time % 3)
             var text = "$time "
             repeat(dotAmount) { text += "." }
-            return LiteralText(text)
+            return Text.of(text)
         }
 
     init {
@@ -53,7 +51,7 @@ class ScoreSettlementGui(
             val title = label(
                 x = BORDER_MARGIN,
                 y = BORDER_MARGIN,
-                text = TranslatableText(settlement.titleTranslateKey)
+                text = Text.translatable(settlement.titleTranslateKey)
                     .formatted(Formatting.DARK_PURPLE)
                     .formatted(Formatting.BOLD)
             )
@@ -61,7 +59,7 @@ class ScoreSettlementGui(
                 x = ROOT_WIDTH - BUTTON_WIDTH - BORDER_MARGIN,
                 y = ROOT_HEIGHT - BUTTON_HEIGHT - BORDER_MARGIN,
                 width = BUTTON_WIDTH,
-                label = TranslatableText("$MOD_ID.gui.button.confirm"),
+                label = Text.translatable("$MOD_ID.gui.button.confirm"),
                 onClick = { ScoreSettleHandler.closeScreen() }
             )
             scrollPanel(
@@ -102,7 +100,7 @@ class ScoreSettlementGui(
                 x = BORDER_MARGIN + 20,
                 y = BORDER_MARGIN,
                 height = 22,
-                text = LiteralText("$number."),
+                text = Text.of("$number."),
                 verticalAlignment = VerticalAlignment.CENTER
             )
             val face = if (isRealPlayer) {
@@ -124,7 +122,7 @@ class ScoreSettlementGui(
                 )
             }
             val displayNameText =
-                if (isRealPlayer) LiteralText(displayName) else TranslatableText("entity.$MOD_ID.mahjong_bot")
+                if (isRealPlayer) Text.of(displayName) else Text.translatable("entity.$MOD_ID.mahjong_bot")
             val displayNameLabel = label(
                 x = face.x + face.width + 8,
                 y = face.y,
@@ -135,7 +133,7 @@ class ScoreSettlementGui(
             val scoreTotalLabel = label(
                 x = displayNameLabel.x + displayNameLabel.width + 8,
                 y = displayNameLabel.y,
-                text = LiteralText("$scoreTotal"),
+                text = Text.of("$scoreTotal"),
                 width = maxScoreLabelWidth,
                 verticalAlignment = VerticalAlignment.CENTER
             )

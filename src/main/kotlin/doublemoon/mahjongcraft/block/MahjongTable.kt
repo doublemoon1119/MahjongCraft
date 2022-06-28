@@ -20,16 +20,15 @@ import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.ItemPlacementContext
 import net.minecraft.item.ItemStack
-import net.minecraft.network.MessageType
+import net.minecraft.network.message.MessageType
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.state.StateManager
 import net.minecraft.state.property.EnumProperty
-import net.minecraft.text.TranslatableText
+import net.minecraft.text.Text
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Formatting
 import net.minecraft.util.Hand
-import net.minecraft.util.Util
 import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.shape.VoxelShape
@@ -116,7 +115,7 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
                 //如果玩家沒有在任何遊戲中, 或者玩家在"這個"遊戲中
                 if (game.status == GameStatus.PLAYING) { //如果遊戲已經開始,傳訊息->遊戲已經開始了
                     player.sendMessage(
-                        TranslatableText("$MOD_ID.game.message.already_started").formatted(Formatting.YELLOW),
+                        Text.translatable("$MOD_ID.game.message.already_started").formatted(Formatting.YELLOW),
                         true
                     )
                 } else {  //如果遊戲尚未開始,開啟 gui
@@ -127,10 +126,9 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
                 }
             } else {  //玩家已經在某個遊戲中, 且不是"這個"遊戲
                 player.sendMessage(
-                    TranslatableText("$MOD_ID.game.message.already_in_a_game")
+                    Text.translatable("$MOD_ID.game.message.already_in_a_game")
                         .formatted(Formatting.YELLOW) + " (" + game.name + ")",
-                    MessageType.GAME_INFO,
-                    Util.NIL_UUID
+                    MessageType.GAME_INFO
                 )
             }
         }

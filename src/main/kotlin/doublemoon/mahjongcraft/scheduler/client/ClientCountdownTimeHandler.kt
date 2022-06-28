@@ -1,7 +1,7 @@
 package doublemoon.mahjongcraft.scheduler.client
 
 import net.minecraft.client.MinecraftClient
-import net.minecraft.text.LiteralText
+import net.minecraft.text.Text
 
 /**
  * 儲存由數據包收到的時間, 沒有任何功能
@@ -35,10 +35,10 @@ object ClientCountdownTimeHandler {
         val base = if (timeBase > 0) "§a$timeBase" else ""
         val plus = if (timeBase > 0 && timeExtra > 0) "§e + " else ""
         val extra = if (timeExtra > 0) "§c$timeExtra" else ""
-        val text = LiteralText("$base$plus$extra")
+        val text = Text.of("$base$plus$extra")
         //TODO 改位置顯示時間
         with(client.inGameHud) {
-            setTitle(LiteralText(""))
+            setTitle(Text.of(""))
             setSubtitle(text)
             setTitleTicks(titleFadeInTime, titleRemainTime, titleFadeOutTime)
         }

@@ -8,13 +8,12 @@ import doublemoon.mahjongcraft.util.delayOnServer
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import net.minecraft.network.MessageType
+import net.minecraft.network.message.MessageType
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
-import net.minecraft.text.MutableText
-import net.minecraft.util.Util
+import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
-import java.util.*
+import net.minecraft.util.registry.RegistryKey
 
 /**
  * 麻將玩家
@@ -49,11 +48,10 @@ class MahjongPlayer(
     }
 
     fun sendMessage(
-        text: MutableText,
-        messageType: MessageType = MessageType.SYSTEM,
-        senderUUID: UUID = Util.NIL_UUID
+        text: Text,
+        messageType: RegistryKey<MessageType> = MessageType.GAME_INFO
     ) {
-        entity.sendMessage(text, messageType, senderUUID)
+        entity.sendMessage(text, messageType)
     }
 
     /**
@@ -78,10 +76,7 @@ class MahjongPlayer(
      * 玩家不能丟的牌
      * */
     var cannotDiscardTiles = listOf<MahjongTile>()
-        private set(value) {
-            field = value
-            //TODO 發數據包在客戶端提示不能丟的牌之類的
-        }
+        private set
 
     override fun teleport(targetWorld: ServerWorld, x: Double, y: Double, z: Double, yaw: Float, pitch: Float) {
         this.entity.teleport(targetWorld, x, y, z, yaw, pitch)
