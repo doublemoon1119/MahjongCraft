@@ -8,18 +8,16 @@ import doublemoon.mahjongcraft.util.delayOnServer
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import net.minecraft.network.message.MessageType
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
-import net.minecraft.util.registry.RegistryKey
 
 /**
  * 麻將玩家
  * */
 class MahjongPlayer(
-    override val entity: ServerPlayerEntity
+    override val entity: ServerPlayerEntity,
 ) : MahjongPlayerBase() {
 
     init {
@@ -42,16 +40,13 @@ class MahjongPlayer(
     fun sendMahjongTablePacket(
         behavior: MahjongTableBehavior,
         pos: BlockPos,
-        extraData: String = ""
+        extraData: String = "",
     ) {
         entity.sendMahjongTablePacket(behavior, pos, extraData)
     }
 
-    fun sendMessage(
-        text: Text,
-        messageType: RegistryKey<MessageType> = MessageType.GAME_INFO
-    ) {
-        entity.sendMessage(text, messageType)
+    fun sendMessage(text: Text, overlay: Boolean = true) {
+        entity.sendMessage(text, overlay)
     }
 
     /**
@@ -90,7 +85,7 @@ class MahjongPlayer(
     override suspend fun askToDiscardTile(
         timeoutTile: MahjongTile,
         cannotDiscardTiles: List<MahjongTile>,
-        skippable: Boolean
+        skippable: Boolean,
     ): MahjongTile {
         this.cannotDiscardTiles = cannotDiscardTiles
         return waitForBehaviorResult(
@@ -115,7 +110,7 @@ class MahjongPlayer(
     override suspend fun askToChii(
         tile: MahjongTile,
         tilePairs: List<Pair<MahjongTile, MahjongTile>>,
-        target: ClaimTarget
+        target: ClaimTarget,
     ): Pair<MahjongTile, MahjongTile>? = waitForBehaviorResult(
         behavior = MahjongGameBehavior.CHII,
         extraData = Json.encodeToString( //轉成 Json 字串傳過去
@@ -142,7 +137,7 @@ class MahjongPlayer(
         tile: MahjongTile,
         tilePairsForChii: List<Pair<MahjongTile, MahjongTile>>,
         tilePairForPon: Pair<MahjongTile, MahjongTile>,
-        target: ClaimTarget
+        target: ClaimTarget,
     ): Pair<MahjongTile, MahjongTile>? = waitForBehaviorResult(
         behavior = MahjongGameBehavior.PON_OR_CHII,
         waitingBehavior = listOf(
@@ -180,7 +175,7 @@ class MahjongPlayer(
     override suspend fun askToPon(
         tile: MahjongTile,
         tilePairForPon: Pair<MahjongTile, MahjongTile>,
-        target: ClaimTarget
+        target: ClaimTarget,
     ): Boolean = waitForBehaviorResult(
         behavior = MahjongGameBehavior.PON,
         extraData = Json.encodeToString( //轉成 Json 字串傳過去
@@ -202,7 +197,7 @@ class MahjongPlayer(
     override suspend fun askToAnkanOrKakan(
         canAnkanTiles: Set<MahjongTile>,
         canKakanTiles: Set<Pair<MahjongTile, ClaimTarget>>,
-        rule: MahjongRule
+        rule: MahjongRule,
     ): MahjongTile? = waitForBehaviorResult(
         behavior = MahjongGameBehavior.ANKAN_OR_KAKAN,
         extraData = Json.encodeToString(
@@ -232,7 +227,7 @@ class MahjongPlayer(
     override suspend fun askToMinkanOrPon(
         tile: MahjongTile,
         target: ClaimTarget,
-        rule: MahjongRule
+        rule: MahjongRule,
     ): MahjongGameBehavior = waitForBehaviorResult(
         behavior = MahjongGameBehavior.MINKAN,
         waitingBehavior = listOf(MahjongGameBehavior.PON, MahjongGameBehavior.MINKAN),
@@ -320,7 +315,7 @@ class MahjongPlayer(
         hands: List<MahjongTile> = this.hands.toMahjongTileList(),
         target: ClaimTarget,
         skippable: Boolean = true,
-        onResult: (MahjongGameBehavior, String) -> T
+        onResult: (MahjongGameBehavior, String) -> T,
     ): T {
         this.waitingBehavior += waitingBehavior
         if (skippable) this.waitingBehavior += MahjongGameBehavior.SKIP

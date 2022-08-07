@@ -19,7 +19,7 @@ abstract class GameEntity(
 ) : Entity(type, world) {
 
     // 沒這行選不到實體
-    override fun collides(): Boolean = true
+    override fun canHit(): Boolean = !isRemoved
 
     /**
      * 遊戲所在的座標,
@@ -80,5 +80,4 @@ abstract class GameEntity(
         private val SPAWNED_BY_GAME: TrackedData<Boolean> =
             DataTracker.registerData(GameEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
     }
-
 }

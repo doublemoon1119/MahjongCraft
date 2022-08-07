@@ -20,7 +20,6 @@ import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.ItemPlacementContext
 import net.minecraft.item.ItemStack
-import net.minecraft.network.message.MessageType
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.state.StateManager
@@ -62,7 +61,7 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
         pos: BlockPos,
         state: BlockState,
         placer: LivingEntity?,
-        itemStack: ItemStack
+        itemStack: ItemStack,
     ) {
         super.onPlaced(world, pos, state, placer, itemStack)
         if (!world.isClient) {
@@ -104,7 +103,7 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
         pos: BlockPos,
         player: PlayerEntity,
         hand: Hand,
-        hit: BlockHitResult
+        hit: BlockHitResult,
     ): ActionResult {
         if (hand === Hand.MAIN_HAND && !world.isClient) {
             val centerPos = getCenterPosByPart(pos = pos, part = state[PART])
@@ -125,11 +124,9 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
                     )
                 }
             } else {  //玩家已經在某個遊戲中, 且不是"這個"遊戲
-                player.sendMessage(
-                    Text.translatable("$MOD_ID.game.message.already_in_a_game")
-                        .formatted(Formatting.YELLOW) + " (" + game.name + ")",
-                    MessageType.GAME_INFO
-                )
+                val message = Text.translatable("$MOD_ID.game.message.already_in_a_game")
+                    .formatted(Formatting.YELLOW) + " (" + game.name + ")"
+                player.sendMessage(message, true)
             }
         }
         return ActionResult.SUCCESS
@@ -141,7 +138,7 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
     override fun <T : BlockEntity?> getTicker(
         world: World,
         state: BlockState,
-        type: BlockEntityType<T>
+        type: BlockEntityType<T>,
     ): BlockEntityTicker<T>? = checkType(
         type,
         BlockEntityTypeRegistry.mahjongTable
@@ -153,7 +150,7 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
         state: BlockState,
         world: BlockView,
         pos: BlockPos,
-        context: ShapeContext
+        context: ShapeContext,
     ): VoxelShape = when (state[PART] ?: MahjongTablePart.BOTTOM_CENTER) {
         MahjongTablePart.BOTTOM_CENTER -> BOTTOM_CENTER_SHAPE
         MahjongTablePart.BOTTOM_EAST -> BOTTOM_EAST_SHAPE

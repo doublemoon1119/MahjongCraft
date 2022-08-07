@@ -34,9 +34,9 @@ class MahjongBotEntity(
     }
 
     //可以看到實體才有實體碰撞
-    override fun isCollidable(): Boolean = !isInvisible
+    override fun isCollidable(): Boolean = !isInvisible && !isRemoved
 
-    override fun collides(): Boolean = !isInvisible
+    override fun canHit(): Boolean = isCollidable
 
     //目前機器人實體在麻將桌按下 加入機器人 的時候 (即遊戲還沒開始的時候) 就存在了,
     override fun autoRemove() {
@@ -72,6 +72,4 @@ class MahjongBotEntity(
         private val CODE: TrackedData<Int> =
             DataTracker.registerData(MahjongBotEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
     }
-
-
 }
