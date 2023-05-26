@@ -6,9 +6,9 @@ import doublemoon.mahjongcraft.client.gui.HudPositionEditorScreen
 import doublemoon.mahjongcraft.client.gui.MahjongCraftHud
 import doublemoon.mahjongcraft.client.render.*
 import doublemoon.mahjongcraft.network.CustomEntitySpawnS2CPacketHandler
-import doublemoon.mahjongcraft.network.MahjongGamePacketHandler
-import doublemoon.mahjongcraft.network.MahjongTablePacketHandler
-import doublemoon.mahjongcraft.network.MahjongTileCodePacketHandler
+import doublemoon.mahjongcraft.network.MahjongGamePacketListener
+import doublemoon.mahjongcraft.network.MahjongTablePacketListener
+import doublemoon.mahjongcraft.network.MahjongTileCodePacketListener
 import doublemoon.mahjongcraft.registry.BlockEntityTypeRegistry
 import doublemoon.mahjongcraft.registry.EntityTypeRegistry
 import doublemoon.mahjongcraft.registry.ItemRegistry
@@ -21,14 +21,14 @@ import net.fabricmc.api.Environment
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
-import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.screen.TitleScreen
+import net.minecraft.client.item.ClampedModelPredicateProvider
 import net.minecraft.client.item.ModelPredicateProviderRegistry
-import net.minecraft.client.item.UnclampedModelPredicateProvider
 import net.minecraft.client.option.KeyBinding
+import net.minecraft.client.render.block.entity.BlockEntityRendererFactories
 import net.minecraft.client.util.InputUtil
 import net.minecraft.client.world.ClientWorld
 import net.minecraft.entity.LivingEntity
@@ -69,9 +69,9 @@ object MahjongCraftClient : ClientModInitializer {
         EntityRendererRegistry.register(EntityTypeRegistry.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
         EntityRendererRegistry.register(EntityTypeRegistry.mahjongTile, ::MahjongTileEntityRenderer)
         //BlockEntity Renderer
-        BlockEntityRendererRegistry.register(BlockEntityTypeRegistry.mahjongTable, ::MahjongTableBlockEntityRenderer)
+        BlockEntityRendererFactories.register(BlockEntityTypeRegistry.mahjongTable, ::MahjongTableBlockEntityRenderer)
         //Model Predicate Provider
-        val modelPredicateProvider = object : UnclampedModelPredicateProvider {
+        val modelPredicateProvider = object : ClampedModelPredicateProvider {
             override fun unclampedCall(
                 stack: ItemStack,
                 world: ClientWorld?,
@@ -99,9 +99,9 @@ object MahjongCraftClient : ClientModInitializer {
         )
         //Packet
         CustomEntitySpawnS2CPacketHandler.registerClient()
-        MahjongTablePacketHandler.registerClient()
-        MahjongGamePacketHandler.registerClient()
-        MahjongTileCodePacketHandler.registerClient()
+        MahjongTablePacketListener.registerClient()
+        MahjongGamePacketListener.registerClient()
+        MahjongTileCodePacketListener.registerClient()
         //Config
         AutoConfig.register(ModConfig::class.java, ::GsonConfigSerializer)
         config = AutoConfig.getConfigHolder(ModConfig::class.java).config
@@ -124,6 +124,6 @@ object MahjongCraftClient : ClientModInitializer {
         translationKey: String,
         type: InputUtil.Type = InputUtil.Type.KEYSYM,
         code: Int = InputUtil.UNKNOWN_KEY.code,
-        category: String = "key.category.$MOD_ID.main"
+        category: String = "key.category.$MOD_ID.main",
     ): KeyBinding = KeyBindingHelper.registerKeyBinding(KeyBinding(translationKey, type, code, category))
 }

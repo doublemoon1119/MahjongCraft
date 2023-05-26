@@ -9,13 +9,14 @@ import net.minecraft.entity.data.TrackedData
 import net.minecraft.entity.data.TrackedDataHandlerRegistry
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.nbt.NbtHelper
-import net.minecraft.network.Packet
+import net.minecraft.network.listener.ClientPlayPacketListener
+import net.minecraft.network.packet.Packet
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.World
 
 abstract class GameEntity(
     type: EntityType<*>,
-    world: World
+    world: World,
 ) : Entity(type, world) {
 
     // 沒這行選不到實體
@@ -70,7 +71,8 @@ abstract class GameEntity(
         nbt.putBoolean("SpawnedByGame", isSpawnedByGame)
     }
 
-    override fun createSpawnPacket(): Packet<*> = CustomEntitySpawnS2CPacketHandler.createPacket(this)
+    override fun createSpawnPacket(): Packet<ClientPlayPacketListener> =
+        CustomEntitySpawnS2CPacketHandler.createPacket(this)
 
     companion object {
         private val GAME_BLOCK_POS: TrackedData<BlockPos> = DataTracker.registerData(

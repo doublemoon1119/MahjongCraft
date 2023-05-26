@@ -7,7 +7,7 @@ import doublemoon.mahjongcraft.entity.MahjongTileEntity
 import doublemoon.mahjongcraft.entity.TileFacing
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGameBehavior
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTile
-import doublemoon.mahjongcraft.network.MahjongGamePacketHandler.sendMahjongGamePacket
+import doublemoon.mahjongcraft.network.MahjongGamePacketListener.sendMahjongGamePacket
 import io.github.cottonmc.cotton.gui.widget.WLabel
 import io.github.cottonmc.cotton.gui.widget.WPlainPanel
 import io.github.cottonmc.cotton.gui.widget.data.Color

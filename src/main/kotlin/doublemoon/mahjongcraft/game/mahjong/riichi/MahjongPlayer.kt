@@ -1,8 +1,8 @@
 package doublemoon.mahjongcraft.game.mahjong.riichi
 
 import doublemoon.mahjongcraft.entity.toMahjongTileList
-import doublemoon.mahjongcraft.network.MahjongGamePacketHandler.sendMahjongGamePacket
-import doublemoon.mahjongcraft.network.MahjongTablePacketHandler.sendMahjongTablePacket
+import doublemoon.mahjongcraft.network.MahjongGamePacketListener.sendMahjongGamePacket
+import doublemoon.mahjongcraft.network.MahjongTablePacketListener.sendMahjongTablePacket
 import doublemoon.mahjongcraft.scheduler.server.ServerScheduler
 import doublemoon.mahjongcraft.util.delayOnServer
 import kotlinx.serialization.decodeFromString

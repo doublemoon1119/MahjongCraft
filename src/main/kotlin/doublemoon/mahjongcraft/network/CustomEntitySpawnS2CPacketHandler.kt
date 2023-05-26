@@ -7,14 +7,15 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.client.network.ClientPlayNetworkHandler
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
-import net.minecraft.network.Packet
 import net.minecraft.network.PacketByteBuf
+import net.minecraft.network.listener.ClientPlayPacketListener
+import net.minecraft.network.packet.Packet
+import net.minecraft.registry.Registries
 import net.minecraft.util.math.Vec3d
-import net.minecraft.util.registry.Registry
 import java.util.*
 import kotlin.math.floor
 
-object CustomEntitySpawnS2CPacketHandler : CustomPacketHandler {
+object CustomEntitySpawnS2CPacketHandler : CustomPacketListener {
 
     override val channelName = id("entity_spawn_packet")
 
@@ -50,7 +51,7 @@ object CustomEntitySpawnS2CPacketHandler : CustomPacketHandler {
         )
 
         constructor(byteBuf: PacketByteBuf) : this(
-            entityType = Registry.ENTITY_TYPE.get(byteBuf.readVarInt()),
+            entityType = Registries.ENTITY_TYPE.get(byteBuf.readVarInt()),
             id = byteBuf.readInt(),
             uuid = byteBuf.readUuid(),
             x = byteBuf.readDouble(),
@@ -66,7 +67,7 @@ object CustomEntitySpawnS2CPacketHandler : CustomPacketHandler {
 
         override fun writeByteBuf(byteBuf: PacketByteBuf) {
             with(byteBuf) {
-                writeVarInt(Registry.ENTITY_TYPE.getRawId(entityType)) //typeId
+                writeVarInt(Registries.ENTITY_TYPE.getRawId(entityType)) //typeId
                 writeInt(id)
                 writeUuid(uuid)
                 writeDouble(x)
@@ -88,7 +89,7 @@ object CustomEntitySpawnS2CPacketHandler : CustomPacketHandler {
     /**
      * 參考與借用 Forge 的 FMLPlayMessages 的寫法
      * */
-    fun createPacket(entity: Entity): Packet<*> {
+    fun createPacket(entity: Entity): Packet<ClientPlayPacketListener> {
         if (entity.world.isClient) throw IllegalStateException("CustomEntitySpawnS2CPacket.create called on the logical client!")
         return ServerPlayNetworking.createS2CPacket(channelName, CustomEntitySpawnS2CPacket(entity).createByteBuf())
     }
@@ -97,13 +98,13 @@ object CustomEntitySpawnS2CPacketHandler : CustomPacketHandler {
         client: MinecraftClient,
         handler: ClientPlayNetworkHandler,
         byteBuf: PacketByteBuf,
-        responseSender: PacketSender
+        responseSender: PacketSender,
     ) {
         CustomEntitySpawnS2CPacket(byteBuf).also { packet ->
             client.execute {
                 val world = handler.world.also { checkNotNull(it) { "Tried to spawn entity in a null world!" } }
                 val entity = (packet.entityType.create(world) ?: throw IllegalStateException(
-                    "Failed to create instance of entity \"" + Registry.ENTITY_TYPE.getId(packet.entityType)
+                    "Failed to create instance of entity \"" + Registries.ENTITY_TYPE.getId(packet.entityType)
                         .toString() + "\"!"
                 )).apply {
                     updateTrackedPosition(packet.x, packet.y, packet.z)

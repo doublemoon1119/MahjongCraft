@@ -8,7 +8,7 @@ import doublemoon.mahjongcraft.game.GameBase
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.GameStatus
 import doublemoon.mahjongcraft.logger
-import doublemoon.mahjongcraft.network.MahjongTablePacketHandler
+import doublemoon.mahjongcraft.network.MahjongTablePacketListener
 import doublemoon.mahjongcraft.registry.SoundRegistry
 import doublemoon.mahjongcraft.scheduler.client.ScoreSettleHandler
 import doublemoon.mahjongcraft.scheduler.client.YakuSettleHandler
@@ -1275,7 +1275,10 @@ class MahjongGame(
                     val stoolBlockPos = BlockPos(stoolX, pos.y, stoolZ) //麻將凳應該在的位置
                     val blockState = world.getBlockState(stoolBlockPos)
                     val block = blockState.block //在麻將凳應該在的位置上的方塊
-                    if (block is MahjongStool && SeatEntity.canSpawnAt(world, stoolBlockPos)) { //檢查有沒有麻將凳的存在和高度是否足夠
+                    if (block is MahjongStool && SeatEntity.canSpawnAt(world,
+                            stoolBlockPos,
+                            checkEntity = false)
+                    ) { //檢查有沒有麻將凳的存在和高度是否足夠
                         ServerScheduler.scheduleDelayAction { //先傳送再讓玩家坐在椅子上, 因為先把玩家傳到椅子後面, 所以玩家會自動看向麻將桌
                             val x = pos.x + 0.5 + if (index == 0) 3 else if (index == 2) -3 else 0
                             val y = pos.y.toDouble()
@@ -1416,7 +1419,7 @@ class MahjongGame(
      * 同步 [MahjongTableBlockEntity]
      * */
     private fun syncMahjongTable(invokeOnNextTick: Boolean = true) {
-        MahjongTablePacketHandler.syncBlockEntityWithGame(invokeOnNextTick = invokeOnNextTick, game = this)
+        MahjongTablePacketListener.syncBlockEntityWithGame(invokeOnNextTick = invokeOnNextTick, game = this)
     }
 
     /**

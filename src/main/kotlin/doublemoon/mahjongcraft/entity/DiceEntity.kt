@@ -9,9 +9,9 @@ import net.minecraft.entity.data.TrackedData
 import net.minecraft.entity.data.TrackedDataHandlerRegistry
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.nbt.NbtCompound
+import net.minecraft.registry.tag.FluidTags
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.sound.SoundEvents
-import net.minecraft.tag.FluidTags
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import net.minecraft.util.math.BlockPos
@@ -26,7 +26,7 @@ class DiceEntity(
     type: EntityType<DiceEntity> = EntityTypeRegistry.dice,
     world: World,
     pos: Vec3d? = null,
-    yaw: Float? = null
+    yaw: Float? = null,
 ) : GameEntity(type, world) {
 
     /**
@@ -81,7 +81,7 @@ class DiceEntity(
         move(MovementType.SELF, velocity)
         var f = 0.98f
         if (onGround) {
-            val pos = BlockPos(x, y - 1.0, z)
+            val pos = BlockPos(x.toInt(), (y - 1.0).toInt(), z.toInt())
             f = world.getBlockState(pos).block.slipperiness * 0.98f
         }
         velocity = velocity.multiply(f.toDouble(), 0.98, f.toDouble())
@@ -133,7 +133,7 @@ class DiceEntity(
 enum class DicePoint(
     val xpRotDegrees: Float,
     val ypRotDegrees: Float,
-    val value: Int
+    val value: Int,
 ) {
     ONE(0f, 0f, 1),
     TWO(90f, 0f, 2),

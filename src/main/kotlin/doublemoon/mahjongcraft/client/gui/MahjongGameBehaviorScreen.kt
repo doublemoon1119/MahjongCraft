@@ -6,7 +6,7 @@ import doublemoon.mahjongcraft.game.mahjong.riichi.ClaimTarget
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGameBehavior
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTile
-import doublemoon.mahjongcraft.network.MahjongGamePacketHandler.sendMahjongGamePacket
+import doublemoon.mahjongcraft.network.MahjongGamePacketListener.sendMahjongGamePacket
 import doublemoon.mahjongcraft.scheduler.client.ClientCountdownTimeHandler
 import io.github.cottonmc.cotton.gui.client.CottonClientScreen
 import io.github.cottonmc.cotton.gui.client.LightweightGuiDescription

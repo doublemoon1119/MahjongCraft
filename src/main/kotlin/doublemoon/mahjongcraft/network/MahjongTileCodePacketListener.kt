@@ -16,7 +16,7 @@ import net.minecraft.server.network.ServerPlayNetworkHandler
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
 
-object MahjongTileCodePacketHandler : CustomPacketHandler {
+object MahjongTileCodePacketListener : CustomPacketListener {
 
     override val channelName = id("mahjong_tile_code_packet")
 

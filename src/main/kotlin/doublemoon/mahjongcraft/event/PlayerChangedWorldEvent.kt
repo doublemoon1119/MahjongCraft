@@ -2,7 +2,7 @@ package doublemoon.mahjongcraft.event
 
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
-import doublemoon.mahjongcraft.network.MahjongTablePacketHandler
+import doublemoon.mahjongcraft.network.MahjongTablePacketListener
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
@@ -16,7 +16,7 @@ fun onPlayerChangedWorld(player: PlayerEntity, origin: ServerWorld, destination:
     if (!player.world.isClient && GameManager.isInAnyGame(player as ServerPlayerEntity)) {
         when (val game = GameManager.getGameBy(player) ?: return) {
             is MahjongGame -> {
-                MahjongTablePacketHandler.syncBlockEntityWithGame(game = game) {
+                MahjongTablePacketListener.syncBlockEntityWithGame(game = game) {
                     onPlayerChangedWorld(player)
                 }
             }

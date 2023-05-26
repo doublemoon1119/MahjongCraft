@@ -68,8 +68,8 @@ fun Pair<ConfigCategory, ConfigEntryBuilder>.keyCodeField(
     val (category, entryBuilder) = this
     val keyCodeEntry = entryBuilder.startKeyCodeField(text, startKey)
         .setDefaultValue(defaultKey)
-        .setTooltipSupplier(tooltipSupplier)
-        .setSaveConsumer(saveConsumer)
+        .setKeyTooltipSupplier(tooltipSupplier)
+        .setKeySaveConsumer(saveConsumer)
         .build()
     category.addEntry(keyCodeEntry)
     return keyCodeEntry

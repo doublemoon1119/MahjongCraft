@@ -36,7 +36,7 @@
     "fabricloader": ">=0.12.8",
     "fabric": "*",
     "minecraft": "1.19.x",
-    "fabric-language-kotlin": ">=1.8.2+kotlin.1.7.10",
-    "cloth-config2": ">=6.1.48"
+    "fabric-language-kotlin": "*",
+    "cloth-config2": ">=10.0.96"
   }
 }

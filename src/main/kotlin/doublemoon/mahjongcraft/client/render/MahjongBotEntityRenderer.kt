@@ -9,10 +9,10 @@ import net.minecraft.client.render.Frustum
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRenderer
 import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.render.model.json.ModelTransformation
+import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.util.Identifier
-import net.minecraft.util.math.Vec3f
+import net.minecraft.util.math.RotationAxis
 
 @Environment(EnvType.CLIENT)
 class MahjongBotEntityRenderer(
@@ -36,7 +36,7 @@ class MahjongBotEntityRenderer(
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         with(matrices) {
             push()
-            multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(-entity.yaw + 180))
+            multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-entity.yaw + 180))
             val scale = MahjongBotEntity.MAHJONG_BOT_HEIGHT / MahjongTileEntity.MAHJONG_TILE_HEIGHT
             scale(scale, scale, scale)
             RenderHelper.renderItem(
@@ -48,7 +48,7 @@ class MahjongBotEntityRenderer(
                 offsetZ = 0.0,
                 light = light,
                 vertexConsumer = vertexConsumers,
-                mode = ModelTransformation.Mode.HEAD
+                mode = ModelTransformationMode.HEAD
             )
             pop()
         }

@@ -13,7 +13,7 @@ import net.minecraft.server.network.ServerPlayNetworkHandler
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.Identifier
 
-interface CustomPacketHandler {
+interface CustomPacketListener {
 
     val channelName: Identifier
 

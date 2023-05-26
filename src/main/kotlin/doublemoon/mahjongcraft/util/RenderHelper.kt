@@ -7,19 +7,20 @@ import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
+import net.minecraft.client.font.TextRenderer.TextLayerType
 import net.minecraft.client.gui.DrawableHelper
 import net.minecraft.client.gui.hud.PlayerListHud
 import net.minecraft.client.render.LightmapTextureManager
 import net.minecraft.client.render.OverlayTexture
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.item.ItemRenderer
-import net.minecraft.client.render.model.json.ModelTransformation
+import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.util.DefaultSkinHelper
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.item.ItemStack
 import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Vec3f
+import net.minecraft.util.math.RotationAxis
 import net.minecraft.world.LightType
 import net.minecraft.world.World
 
@@ -35,11 +36,12 @@ object RenderHelper {
         offsetY: Double,
         offsetZ: Double,
         stack: ItemStack,
-        mode: ModelTransformation.Mode = ModelTransformation.Mode.GROUND,
+        mode: ModelTransformationMode = ModelTransformationMode.GROUND,
         overlay: Int = OverlayTexture.DEFAULT_UV,
         light: Int,
         vertexConsumer: VertexConsumerProvider,
-        seed: Int = 0
+        world: World? = null,
+        seed: Int = 0,
     ) {
         with(matrices) {
             push()
@@ -51,6 +53,7 @@ object RenderHelper {
                 overlay,
                 matrices,
                 vertexConsumer,
+                world,
                 seed
             )
             pop()
@@ -73,7 +76,7 @@ object RenderHelper {
         light: Int,
         vertexConsumers: VertexConsumerProvider,
         shadow: Boolean = false,
-        seeThrough: Boolean = false
+        textLayerType: TextLayerType = TextLayerType.NORMAL,
     ) {
         with(matrices) {
             push()
@@ -83,7 +86,7 @@ object RenderHelper {
             translate(offsetX, offsetY, offsetZ)
             scale(scale, scale, scale)
             multiply(client.entityRenderDispatcher.rotation)
-            multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(180f))
+            multiply(RotationAxis.POSITIVE_Z.rotationDegrees(180f))
             textRenderer.draw(
                 text,
                 offset,
@@ -92,7 +95,7 @@ object RenderHelper {
                 shadow,
                 matrix4f,
                 vertexConsumers,
-                seeThrough,
+                textLayerType,
                 backgroundColor,
                 light
             )
@@ -110,7 +113,7 @@ object RenderHelper {
         x: Int,
         y: Int,
         width: Int,
-        height: Int
+        height: Int,
     ) {
         val client = MinecraftClient.getInstance()
         val textures = client.skinProvider.getTextures(gameProfile)

@@ -13,14 +13,14 @@ import net.minecraft.client.render.Frustum
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRenderer
 import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.render.model.json.ModelTransformation
+import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.util.Identifier
-import net.minecraft.util.math.Vec3f
+import net.minecraft.util.math.RotationAxis
 
 @Environment(EnvType.CLIENT)
 class MahjongTileEntityRenderer(
-    context: EntityRendererFactory.Context
+    context: EntityRendererFactory.Context,
 ) : EntityRenderer<MahjongTileEntity>(context) {
 
     private val itemRenderer = context.itemRenderer
@@ -35,13 +35,13 @@ class MahjongTileEntityRenderer(
         tickDelta: Float,
         matrices: MatrixStack,
         vertexConsumers: VertexConsumerProvider,
-        light: Int
+        light: Int,
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         with(matrices) {
             push()
-            multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(-entity.yaw + 180))
-            multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(entity.facing.angleForDegreesQuaternionFromPositiveX))
+            multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-entity.yaw + 180))
+            multiply(RotationAxis.POSITIVE_X.rotationDegrees(entity.facing.angleForDegreesQuaternionFromPositiveX))
             var offsetY = 0.0
             var offsetZ = 0.0
             when (entity.facing) {  //偏移材質用
@@ -58,7 +58,7 @@ class MahjongTileEntityRenderer(
                 offsetZ = offsetZ,
                 light = light,
                 vertexConsumer = vertexConsumers,
-                mode = ModelTransformation.Mode.HEAD
+                mode = ModelTransformationMode.HEAD
             )
             pop()
         }

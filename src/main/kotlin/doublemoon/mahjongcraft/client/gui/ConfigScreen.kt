@@ -5,7 +5,7 @@ import doublemoon.mahjongcraft.MahjongCraftClient
 import doublemoon.mahjongcraft.client.ModConfig
 import doublemoon.mahjongcraft.client.gui.config.*
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGameBehavior
-import doublemoon.mahjongcraft.network.MahjongGamePacketHandler.sendMahjongGamePacket
+import doublemoon.mahjongcraft.network.MahjongGamePacketListener.sendMahjongGamePacket
 import me.shedaniel.clothconfig2.api.ConfigBuilder
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.minecraft.client.MinecraftClient

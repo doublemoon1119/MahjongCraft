@@ -1,14 +1,14 @@
 package doublemoon.mahjongcraft.game.mahjong.riichi
 
 import doublemoon.mahjongcraft.MOD_ID
-import doublemoon.mahjongcraft.network.MahjongGamePacketHandler
+import doublemoon.mahjongcraft.network.MahjongGamePacketListener
 import doublemoon.mahjongcraft.util.TextFormatting
 import kotlinx.serialization.Serializable
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
 
 /**
- * 麻將遊戲行為, 發送數據包 [MahjongGamePacketHandler] 用,
+ * 麻將遊戲行為, 發送數據包 [MahjongGamePacketListener] 用,
  * 伺服端->玩家端 表示: 詢問玩家是否要執行,
  * 玩家端->伺服端 表示: 要執行
  * */

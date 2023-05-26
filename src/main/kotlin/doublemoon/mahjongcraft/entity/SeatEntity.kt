@@ -6,7 +6,8 @@ import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.LivingEntity
 import net.minecraft.nbt.NbtCompound
-import net.minecraft.network.Packet
+import net.minecraft.network.listener.ClientPlayPacketListener
+import net.minecraft.network.packet.Packet
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Direction
@@ -25,7 +26,7 @@ class SeatEntity(
     world: World,
     private var sourceBlock: BlockPos? = null,
     private val sitOffsetY: Double = 0.3,
-    private val stopSitOffsetY: Double = 0.8
+    private val stopSitOffsetY: Double = 0.8,
 ) : Entity(type, world) {
 
     init {
@@ -47,7 +48,8 @@ class SeatEntity(
 
     override fun writeCustomDataToNbt(nbt: NbtCompound?) {}
 
-    override fun createSpawnPacket(): Packet<*> = CustomEntitySpawnS2CPacketHandler.createPacket(this)
+    override fun createSpawnPacket(): Packet<ClientPlayPacketListener> =
+        CustomEntitySpawnS2CPacketHandler.createPacket(this)
 
     override fun updatePassengerForDismount(passenger: LivingEntity): Vec3d =
         Vec3d(blockPos.x + 0.5, blockPos.y + stopSitOffsetY, blockPos.z + 0.5)
@@ -59,17 +61,28 @@ class SeatEntity(
          *
          * @param pos 要生成 [SeatEntity] 的位置
          * @param height 計算用的高度, 除了 [pos] 往上開始算到 [height] 空間足夠的話就表示高度可以, 預設為 2
+         * @param checkEntity 檢查 [pos] 上否已經有 [SeatEntity] 存在 (即檢查是否有人已經坐在這)
          * */
-        fun canSpawnAt(world: ServerWorld, pos: BlockPos, height: Int = 2): Boolean {
-            val seatEntitiesAtThisPos =
-                world.getEntitiesByType(EntityTypeRegistry.seat) { it.blockPos == pos && it.isAlive }
+        fun canSpawnAt(
+            world: ServerWorld,
+            pos: BlockPos,
+            height: Int = 2,
+            checkEntity: Boolean = true,
+        ): Boolean {
             val heightEnough =
                 if (height <= 0) true  //不應該出現負數的情況
                 else (1..height).all {  //檢查上方是否有足夠空間
                     val blockState = world.getBlockState(pos.offset(Direction.UP, it))
                     blockState.getCollisionShape(world, pos).isEmpty
                 }
-            return seatEntitiesAtThisPos.isEmpty() && heightEnough //同一格不能有其他相同實體 & 高度足夠
+
+            return if (checkEntity) {
+                val seatEntitiesAtThisPos =
+                    world.getEntitiesByType(EntityTypeRegistry.seat) { it.blockPos == pos && it.isAlive }
+                seatEntitiesAtThisPos.isEmpty() && heightEnough //同一格不能有其他 SeatEntity 實體 & 高度足夠
+            } else {
+                heightEnough
+            }
         }
 
         /**
@@ -82,7 +95,7 @@ class SeatEntity(
             pos: BlockPos,
             entity: Entity,
             sitOffsetY: Double = 0.3,
-            stopSitOffsetY: Double = 0.8
+            stopSitOffsetY: Double = 0.8,
         ) {
             val seatEntity = SeatEntity(
                 world = world,
@@ -104,7 +117,7 @@ class SeatEntity(
             pos: BlockPos,
             entity: Entity,
             sitOffsetY: Double = 0.3,
-            stopSitOffsetY: Double = 0.8
+            stopSitOffsetY: Double = 0.8,
         ) {
             val seatEntitiesAtThisPos = world.getEntitiesByType(EntityTypeRegistry.seat) {  //取得在 pos 上相同的實體
                 it.blockPos == pos && it.isAlive

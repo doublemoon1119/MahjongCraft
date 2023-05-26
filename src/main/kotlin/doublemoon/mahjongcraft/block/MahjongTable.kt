@@ -7,7 +7,7 @@ import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.GameStatus
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTableBehavior
-import doublemoon.mahjongcraft.network.MahjongTablePacketHandler.sendMahjongTablePacket
+import doublemoon.mahjongcraft.network.MahjongTablePacketListener.sendMahjongTablePacket
 import doublemoon.mahjongcraft.registry.BlockEntityTypeRegistry
 import doublemoon.mahjongcraft.util.boxBySize
 import doublemoon.mahjongcraft.util.plus

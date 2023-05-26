@@ -5,7 +5,7 @@ import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
 import doublemoon.mahjongcraft.client.gui.widget.*
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTableBehavior
-import doublemoon.mahjongcraft.network.MahjongTablePacketHandler.sendMahjongTablePacket
+import doublemoon.mahjongcraft.network.MahjongTablePacketListener.sendMahjongTablePacket
 import doublemoon.mahjongcraft.util.TextFormatting
 import io.github.cottonmc.cotton.gui.client.CottonClientScreen
 import io.github.cottonmc.cotton.gui.client.LightweightGuiDescription

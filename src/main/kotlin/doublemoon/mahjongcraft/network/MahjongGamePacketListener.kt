@@ -28,7 +28,7 @@ import net.minecraft.server.network.ServerPlayerEntity
 /**
  * 對麻將遊戲進行操作的
  * */
-object MahjongGamePacketHandler : CustomPacketHandler {
+object MahjongGamePacketListener : CustomPacketListener {
 
     override val channelName = id("mahjong_game_packet")
 

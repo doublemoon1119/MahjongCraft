@@ -3,8 +3,8 @@ package doublemoon.mahjongcraft.entity
 import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.mahjong.riichi.*
-import doublemoon.mahjongcraft.network.MahjongTileCodePacketHandler
-import doublemoon.mahjongcraft.network.MahjongTileCodePacketHandler.requestTileCode
+import doublemoon.mahjongcraft.network.MahjongTileCodePacketListener
+import doublemoon.mahjongcraft.network.MahjongTileCodePacketListener.requestTileCode
 import doublemoon.mahjongcraft.registry.EntityTypeRegistry
 import doublemoon.mahjongcraft.registry.ItemRegistry
 import doublemoon.mahjongcraft.scheduler.client.OptionalBehaviorHandler
@@ -164,7 +164,7 @@ class MahjongTileEntity(
 
     /**
      * 伺服端的遊戲專用,
-     * 用來取得 [player] 應該看到這張麻將牌的 code, 通常在 [MahjongTileCodePacketHandler] 使用
+     * 用來取得 [player] 應該看到這張麻將牌的 code, 通常在 [MahjongTileCodePacketListener] 使用
      * */
     fun getCodeForPlayer(player: ServerPlayerEntity): Int {
         if (world.isClient) throw IllegalStateException("Cannot get code from client side")

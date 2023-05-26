@@ -1,9 +1,9 @@
 package doublemoon.mahjongcraft.game.mahjong.riichi
 
-import doublemoon.mahjongcraft.network.MahjongTablePacketHandler
+import doublemoon.mahjongcraft.network.MahjongTablePacketListener
 
 /**
- * 麻將桌行為, 發送數據包 [MahjongTablePacketHandler] 用
+ * 麻將桌行為, 發送數據包 [MahjongTablePacketListener] 用
  * */
 enum class MahjongTableBehavior {
     //c2s

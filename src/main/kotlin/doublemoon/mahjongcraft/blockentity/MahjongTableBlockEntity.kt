@@ -10,7 +10,7 @@ import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRound
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTile
-import doublemoon.mahjongcraft.network.MahjongTablePacketHandler
+import doublemoon.mahjongcraft.network.MahjongTablePacketListener
 import doublemoon.mahjongcraft.registry.BlockEntityTypeRegistry
 import kotlinx.serialization.json.Json
 import net.fabricmc.api.EnvType
@@ -19,8 +19,8 @@ import net.minecraft.block.BlockState
 import net.minecraft.block.entity.BlockEntity
 import net.minecraft.client.MinecraftClient
 import net.minecraft.nbt.NbtCompound
-import net.minecraft.network.Packet
 import net.minecraft.network.listener.ClientPlayPacketListener
+import net.minecraft.network.packet.Packet
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
@@ -31,7 +31,7 @@ import org.mahjong4j.tile.Tile
 
 class MahjongTableBlockEntity(
     pos: BlockPos,
-    state: BlockState
+    state: BlockState,
 ) : BlockEntity(BlockEntityTypeRegistry.mahjongTable, pos, state) {
     private var gameInitialized = false
     val players = arrayListOf("", "", "", "") //以玩家的 stringUUID 儲存, 先以 4 個空字串儲存, (空字串表示空位)
@@ -130,7 +130,7 @@ class MahjongTableBlockEntity(
     companion object {
         fun tick(world: World, pos: BlockPos, blockEntity: MahjongTableBlockEntity) {
             if (!world.isClient && !blockEntity.gameInitialized) {
-                MahjongTablePacketHandler.syncBlockEntityDataWithGame(
+                MahjongTablePacketListener.syncBlockEntityDataWithGame(
                     blockEntity = blockEntity,
                     game = GameManager.getGameOrDefault(
                         world = world as ServerWorld,

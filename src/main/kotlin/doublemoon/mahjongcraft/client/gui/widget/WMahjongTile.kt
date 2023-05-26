@@ -7,11 +7,11 @@ import io.github.cottonmc.cotton.gui.widget.data.Color
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.util.math.Vec3f
+import net.minecraft.util.math.RotationAxis
 
 class WMahjongTile(
     var mahjongTile: MahjongTile,
-    var direction: TileDirection = TileDirection.NORMAL
+    var direction: TileDirection = TileDirection.NORMAL,
 ) : WWidget() {
 
     override fun canResize(): Boolean = true
@@ -43,11 +43,11 @@ class WMahjongTile(
             when (direction) {
                 TileDirection.RIGHT -> {
                     matrices.translate((x + width).toDouble(), y.toDouble(), 0.0)
-                    matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(90f))
+                    matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(90f))
                 }
                 TileDirection.LEFT -> {
                     matrices.translate(x.toDouble(), (y + height).toDouble(), 0.0)
-                    matrices.multiply(Vec3f.NEGATIVE_Z.getDegreesQuaternion(90f))
+                    matrices.multiply(RotationAxis.NEGATIVE_Z.rotationDegrees(90f))
                 }
                 else -> return //這種情況不會發生
             }

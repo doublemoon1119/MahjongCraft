@@ -6,10 +6,12 @@ import doublemoon.mahjongcraft.id
 import doublemoon.mahjongcraft.itemGroup
 import net.fabricmc.fabric.api.`object`.builder.v1.block.FabricBlockSettings
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings
+import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents
 import net.minecraft.block.Material
 import net.minecraft.item.BlockItem
+import net.minecraft.registry.Registries
+import net.minecraft.registry.Registry
 import net.minecraft.sound.BlockSoundGroup
-import net.minecraft.util.registry.Registry
 
 object BlockRegistry {
 
@@ -28,21 +30,19 @@ object BlockRegistry {
     )
 
     private fun registerBlocks() {
-        Registry.register(Registry.BLOCK, id("mahjong_stool"), mahjongStool)
-        Registry.register(Registry.BLOCK, id("mahjong_table"), mahjongTable)
+        Registry.register(Registries.BLOCK, id("mahjong_stool"), mahjongStool)
+        Registry.register(Registries.BLOCK, id("mahjong_table"), mahjongTable)
     }
 
     private fun registerBlockItems() {
-        Registry.register(
-            Registry.ITEM,
-            id("mahjong_stool"),
-            BlockItem(mahjongStool, FabricItemSettings().group(itemGroup))
-        )
-        Registry.register(
-            Registry.ITEM,
-            id("mahjong_table"),
-            BlockItem(mahjongTable, FabricItemSettings().group(itemGroup))
-        )
+        val mahjongStoolBlockItem = BlockItem(mahjongStool, FabricItemSettings())
+        val mahjongTableBlockItem = BlockItem(mahjongTable, FabricItemSettings())
+        Registry.register(Registries.ITEM, id("mahjong_stool"), mahjongStoolBlockItem)
+        Registry.register(Registries.ITEM, id("mahjong_table"), mahjongTableBlockItem)
+        ItemGroupEvents.modifyEntriesEvent(itemGroup).register {
+            it.add(mahjongStoolBlockItem)
+            it.add(mahjongTableBlockItem)
+        }
     }
 
     fun register() {

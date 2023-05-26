@@ -14,11 +14,11 @@ import net.minecraft.client.render.entity.EntityRenderer
 import net.minecraft.client.render.entity.EntityRendererFactory
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.util.Identifier
-import net.minecraft.util.math.Vec3f
+import net.minecraft.util.math.RotationAxis
 
 @Environment(EnvType.CLIENT)
 class DiceEntityRenderer(
-    context: EntityRendererFactory.Context
+    context: EntityRendererFactory.Context,
 ) : EntityRenderer<DiceEntity>(context) {
 
     private val itemRenderer = context.itemRenderer
@@ -33,14 +33,14 @@ class DiceEntityRenderer(
         tickDelta: Float,
         matrices: MatrixStack,
         vertexConsumers: VertexConsumerProvider,
-        light: Int
+        light: Int,
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         with(matrices) {
             push()
-            multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(-entity.yaw + 180))
-            multiply(Vec3f.POSITIVE_X.getDegreesQuaternion(entity.point.xpRotDegrees))
-            multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(entity.point.ypRotDegrees))
+            multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-entity.yaw + 180))
+            multiply(RotationAxis.POSITIVE_X.rotationDegrees(entity.point.xpRotDegrees))
+            multiply(RotationAxis.POSITIVE_Y.rotationDegrees(entity.point.ypRotDegrees))
             val baseOffset = DICE_HEIGHT / 2.0 + (1f * DICE_SCALE - DICE_HEIGHT) / 2.0
             val halfHeight = DICE_HEIGHT / 2.0
             val offsetX = when (entity.point) {
@@ -66,7 +66,7 @@ class DiceEntityRenderer(
                 offsetZ = offsetZ,
                 stack = diceItem,
                 light = light,
-                vertexConsumer = vertexConsumers
+                vertexConsumer = vertexConsumers,
             )
             pop()
         }

@@ -31,7 +31,7 @@ import net.minecraft.util.math.BlockPos
 /**
  * 對麻將桌進行操作的
  * */
-object MahjongTablePacketHandler : CustomPacketHandler {
+object MahjongTablePacketListener : CustomPacketListener {
 
     override val channelName = id("mahjong_table_packet")
 
