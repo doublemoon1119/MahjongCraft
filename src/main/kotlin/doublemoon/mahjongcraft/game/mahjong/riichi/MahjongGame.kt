@@ -45,7 +45,7 @@ import kotlin.math.abs
 class MahjongGame(
     override val world: ServerWorld,
     override val pos: BlockPos,
-    var rule: MahjongRule = MahjongRule()
+    var rule: MahjongRule = MahjongRule(),
 ) : GameBase<MahjongPlayerBase> {
 
     override val name = Text.translatable("$MOD_ID.game.riichi_mahjong")
@@ -839,7 +839,7 @@ class MahjongGame(
         soundEvent: SoundEvent,
         category: SoundCategory = SoundCategory.PLAYERS,
         volume: Float = 1f,
-        pitch: Float = 1f
+        pitch: Float = 1f,
     ) {
         val seatIndex = seat.indexOf(this)
         val x = pos.x + 0.5 + if (seatIndex == 0) 2 else if (seatIndex == 2) -2 else 0
@@ -859,9 +859,9 @@ class MahjongGame(
 
     /**
      * 玩家是否滿足九種九牌的條件,
-     * 第一巡 且 么九牌數量 >= 9
+     * 第一巡 且 么九牌種類 >= 9
      * */
-    private fun MahjongPlayerBase.isKyuushuKyuuhai(): Boolean = board.isFirstRound && yaochuuhaiQuantity >= 9
+    private fun MahjongPlayerBase.isKyuushuKyuuhai(): Boolean = board.isFirstRound && numbersOfYaochuuhaiTypes >= 9
 
     /**
      * 以 [this] 為基礎, 按 [target] 相對的位置返回 鳴牌的對象
@@ -885,7 +885,7 @@ class MahjongGame(
      * */
     private fun canPonList(
         tile: MahjongTileEntity,
-        discardedPlayer: MahjongPlayerBase
+        discardedPlayer: MahjongPlayerBase,
     ): MutableList<MahjongPlayerBase> =
         players.filter { it != discardedPlayer && it.canPon(tile) }.toMutableList()
 
@@ -900,7 +900,7 @@ class MahjongGame(
     private fun canMinKanOrPonList(
         tile: MahjongTileEntity,
         discardedPlayer: MahjongPlayerBase,
-        seatIndex: Int = seat.indexOf(discardedPlayer)
+        seatIndex: Int = seat.indexOf(discardedPlayer),
     ): List<MahjongPlayerBase> =
         if (board.kanCount < 4) //4 槓以前都可以明槓
             players.filter { it != discardedPlayer && it.canMinkan(tile) && it != seat[(seatIndex + 1) % 4] }
@@ -916,7 +916,7 @@ class MahjongGame(
     private fun canChiiList(
         tile: MahjongTileEntity,
         discardedPlayer: MahjongPlayerBase,
-        seatIndex: Int = seat.indexOf(discardedPlayer)
+        seatIndex: Int = seat.indexOf(discardedPlayer),
     ): MutableList<MahjongPlayerBase> =
         players.filter { it != discardedPlayer && it.canChii(tile) && it == seat[(seatIndex + 1) % 4] }.toMutableList()
 
@@ -929,7 +929,7 @@ class MahjongGame(
     private fun canRonList(
         tile: MahjongTileEntity,
         discardedPlayer: MahjongPlayerBase,
-        isChanKan: Boolean = false
+        isChanKan: Boolean = false,
     ): List<MahjongPlayerBase> = players.filter {
         if (it == discardedPlayer) return@filter false //丟牌玩家不能和自己的牌
         if (it.discardedTiles.isEmpty() && it.isMenzenchin) return@filter false //如果這個玩家連牌都沒丟過而且門前清, 先跳過
@@ -951,7 +951,7 @@ class MahjongGame(
      * */
     private fun canChanKakanList(
         kanTile: MahjongTileEntity,
-        discardedPlayer: MahjongPlayerBase
+        discardedPlayer: MahjongPlayerBase,
     ): List<MahjongPlayerBase> =
         canRonList(tile = kanTile, isChanKan = true, discardedPlayer = discardedPlayer)
 
@@ -963,7 +963,7 @@ class MahjongGame(
      * */
     private fun canChanAnkanList(
         kanTile: MahjongTileEntity,
-        discardedPlayer: MahjongPlayerBase
+        discardedPlayer: MahjongPlayerBase,
     ): List<MahjongPlayerBase> =
         canChanKakanList(
             kanTile = kanTile,
@@ -990,7 +990,7 @@ class MahjongGame(
     private suspend fun List<MahjongPlayerBase>.ron(
         target: MahjongPlayerBase,
         isChankan: Boolean = false,
-        tile: MahjongTileEntity
+        tile: MahjongTileEntity,
     ) {
         val yakuSettlementList = mutableListOf<YakuSettlement>()
         val scoreList = mutableListOf<ScoreItem>()
@@ -1059,7 +1059,7 @@ class MahjongGame(
      * */
     private suspend fun MahjongPlayerBase.tsumo(
         isRinshanKaihoh: Boolean = false,
-        tile: MahjongTileEntity
+        tile: MahjongTileEntity,
     ) {
         playSoundAtSeat(soundEvent = SoundRegistry.tsumo)
         val yakuSettlementList = mutableListOf<YakuSettlement>()
@@ -1435,7 +1435,7 @@ class MahjongGame(
     private fun MahjongPlayerBase.getPersonalSituation(
         isTsumo: Boolean = false,
         isChankan: Boolean = false,
-        isRinshanKaihoh: Boolean = false
+        isRinshanKaihoh: Boolean = false,
     ): PersonalSituation {
         val selfWindNumber = seatOrderFromDealer.indexOf(this) //從以莊家開始排序的座位中取得 this 玩家的座位編號 (與自風編號一樣)
         val jikaze = Wind.values()[selfWindNumber].tile

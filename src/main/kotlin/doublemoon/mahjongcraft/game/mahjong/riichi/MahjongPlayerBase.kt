@@ -104,10 +104,10 @@ abstract class MahjongPlayerBase : GamePlayer {
     var extraThinkingTime = 0
 
     /**
-     * 手牌中的么九牌數量
+     * 手牌中的么九牌的種類的數量
      * */
-    val yaochuuhaiQuantity: Int
-        get() = hands.count { it.mahjong4jTile.isYaochu }
+    val numbersOfYaochuuhaiTypes: Int
+        get() = hands.map { it.mahjong4jTile }.distinct().count { it.isYaochu }
 
     /**
      * 傳送的功能, 因為玩家的實體 [ServerPlayerEntity] 有內鍵玩家特殊的傳送方法,
@@ -119,7 +119,7 @@ abstract class MahjongPlayerBase : GamePlayer {
         y: Double,
         z: Double,
         yaw: Float,
-        pitch: Float
+        pitch: Float,
     )
 
     /**
@@ -129,7 +129,7 @@ abstract class MahjongPlayerBase : GamePlayer {
         mjTileEntity: MahjongTileEntity,
         tilePair: Pair<MahjongTile, MahjongTile>,
         target: MahjongPlayerBase,
-        onChii: (MahjongPlayerBase) -> Unit = {}
+        onChii: (MahjongPlayerBase) -> Unit = {},
     ) {
         onChii.invoke(this)
         val tileMj4jCodePair: Pair<Tile, Tile> = tilePair.first.mahjong4jTile to tilePair.second.mahjong4jTile
@@ -158,7 +158,7 @@ abstract class MahjongPlayerBase : GamePlayer {
         mjTileEntity: MahjongTileEntity,
         claimTarget: ClaimTarget,
         target: MahjongPlayerBase,
-        onPon: (MahjongPlayerBase) -> Unit = {}
+        onPon: (MahjongPlayerBase) -> Unit = {},
     ) {
         onPon.invoke(this)
         val kotsu = Kotsu(true, mjTileEntity.mahjong4jTile)
@@ -177,7 +177,7 @@ abstract class MahjongPlayerBase : GamePlayer {
         mjTileEntity: MahjongTileEntity,
         claimTarget: ClaimTarget,
         target: MahjongPlayerBase,
-        onMinkan: (MahjongPlayerBase) -> Unit = {}
+        onMinkan: (MahjongPlayerBase) -> Unit = {},
     ) {
         onMinkan.invoke(this)
         val kantsu = Kantsu(true, mjTileEntity.mahjong4jTile)
@@ -525,7 +525,7 @@ abstract class MahjongPlayerBase : GamePlayer {
         fuuroList: List<Fuuro> = this.fuuroList,
         rule: MahjongRule,
         generalSituation: GeneralSituation,
-        personalSituation: PersonalSituation
+        personalSituation: PersonalSituation,
     ): Map<MahjongTile, Int> {
         val allMachi = calculateMachi(hands, fuuroList)
         return allMachi.associateWith { machiTile ->
@@ -558,7 +558,7 @@ abstract class MahjongPlayerBase : GamePlayer {
      * */
     fun isFuriten(
         tile: Tile, discards: List<Tile>,
-        machi: List<Tile> = this.machi.map { it.mahjong4jTile }
+        machi: List<Tile> = this.machi.map { it.mahjong4jTile },
     ): Boolean {
         val discardedTiles = discardedTiles.map { it.mahjong4jTile }
         if (tile in discardedTiles) return true //一般振聽
@@ -643,7 +643,7 @@ abstract class MahjongPlayerBase : GamePlayer {
         fuuroList: List<Fuuro> = this.fuuroList,
         rule: MahjongRule,
         generalSituation: GeneralSituation,
-        personalSituation: PersonalSituation
+        personalSituation: PersonalSituation,
     ): Boolean {
         val yakuSettlement = calculateYakuSettlement(
             winningTile = winningTile,
@@ -684,7 +684,7 @@ abstract class MahjongPlayerBase : GamePlayer {
         generalSituation: GeneralSituation,
         personalSituation: PersonalSituation,
         doraIndicators: List<MahjongTile> = listOf(),
-        uraDoraIndicators: List<MahjongTile> = listOf()
+        uraDoraIndicators: List<MahjongTile> = listOf(),
     ): YakuSettlement {
         val handsIntArray = hands.toIntArray().also { if (!isWinningTileInHands) it[winningTile.mahjong4jTile.code]++ }
         val mentsuList = fuuroList.toMentsuList() //從副露取得已知的面子
@@ -837,7 +837,7 @@ abstract class MahjongPlayerBase : GamePlayer {
         generalSituation: GeneralSituation,
         personalSituation: PersonalSituation,
         doraIndicators: List<MahjongTile>,
-        uraDoraIndicators: List<MahjongTile>
+        uraDoraIndicators: List<MahjongTile>,
     ): YakuSettlement = calculateYakuSettlement(
         winningTile = winningTile,
         isWinningTileInHands = isWinningTileInHands,
@@ -861,7 +861,7 @@ abstract class MahjongPlayerBase : GamePlayer {
     open suspend fun askToDiscardTile(
         timeoutTile: MahjongTile,
         cannotDiscardTiles: List<MahjongTile>,
-        skippable: Boolean
+        skippable: Boolean,
     ): MahjongTile = hands.findLast { it.mahjongTile !in cannotDiscardTiles }?.mahjongTile ?: timeoutTile
 
     /**
@@ -873,7 +873,7 @@ abstract class MahjongPlayerBase : GamePlayer {
     open suspend fun askToChii(
         tile: MahjongTile,
         tilePairs: List<Pair<MahjongTile, MahjongTile>>,
-        target: ClaimTarget
+        target: ClaimTarget,
     ): Pair<MahjongTile, MahjongTile>? = null
 
     suspend fun askToChii(entity: MahjongTileEntity, target: ClaimTarget): Pair<MahjongTile, MahjongTile>? =
@@ -890,7 +890,7 @@ abstract class MahjongPlayerBase : GamePlayer {
         tile: MahjongTile,
         tilePairsForChii: List<Pair<MahjongTile, MahjongTile>>,
         tilePairForPon: Pair<MahjongTile, MahjongTile>,
-        target: ClaimTarget
+        target: ClaimTarget,
     ): Pair<MahjongTile, MahjongTile>? = null
 
     suspend fun askToPonOrChii(entity: MahjongTileEntity, target: ClaimTarget): Pair<MahjongTile, MahjongTile>? =
@@ -908,7 +908,7 @@ abstract class MahjongPlayerBase : GamePlayer {
     open suspend fun askToPon(
         tile: MahjongTile,
         tilePairForPon: Pair<MahjongTile, MahjongTile>,
-        target: ClaimTarget
+        target: ClaimTarget,
     ): Boolean = true
 
     suspend fun askToPon(entity: MahjongTileEntity, target: ClaimTarget): Boolean =
@@ -929,7 +929,7 @@ abstract class MahjongPlayerBase : GamePlayer {
     open suspend fun askToAnkanOrKakan(
         canAnkanTiles: Set<MahjongTile>,
         canKakanTiles: Set<Pair<MahjongTile, ClaimTarget>>,
-        rule: MahjongRule
+        rule: MahjongRule,
     ): MahjongTile? = null
 
     suspend fun askToAnkanOrKakan(rule: MahjongRule): MahjongTile? =
@@ -946,14 +946,14 @@ abstract class MahjongPlayerBase : GamePlayer {
     open suspend fun askToMinkanOrPon(
         tile: MahjongTile,
         target: ClaimTarget,
-        rule: MahjongRule
+        rule: MahjongRule,
     ): MahjongGameBehavior =
         MahjongGameBehavior.MINKAN
 
     suspend fun askToMinkanOrPon(
         mjTileEntity: MahjongTileEntity,
         target: ClaimTarget,
-        rule: MahjongRule
+        rule: MahjongRule,
     ): MahjongGameBehavior =
         askToMinkanOrPon(tile = mjTileEntity.mahjongTile, target = target, rule = rule)
 
@@ -962,7 +962,7 @@ abstract class MahjongPlayerBase : GamePlayer {
      * (詢問立直應該要傳入要丟的牌和對應會聽的牌)
      * */
     open suspend fun askToRiichi(
-        tilePairsForRiichi: List<Pair<MahjongTile, List<MahjongTile>>> = this.tilePairsForRiichi
+        tilePairsForRiichi: List<Pair<MahjongTile, List<MahjongTile>>> = this.tilePairsForRiichi,
     ): MahjongTile? = null
 
     /**
@@ -1049,7 +1049,7 @@ abstract class MahjongPlayerBase : GamePlayer {
         soundEvent: SoundEvent,
         category: SoundCategory = SoundCategory.VOICE,
         volume: Float = 1f,
-        pitch: Float = 1f
+        pitch: Float = 1f,
     ) {
         if (hands.size > 0) {
             val handsMiddleIndex = hands.size / 2
