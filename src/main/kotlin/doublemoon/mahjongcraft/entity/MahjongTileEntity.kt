@@ -89,7 +89,7 @@ class MahjongTileEntity(
             if (isSpawnedByGame) {
                 if (!world.isClient) spawnedByGameServerSideCode = value
                 else {
-                    if (value != MahjongTile.UNKNOWN.code) mahjongTable?.calculateRemainingTiles()
+                    if (value != MahjongTile.UNKNOWN.code) mahjongTable?.calculateRemainingTiles(value)
                     spawnedByGameClientSideCode = value
                 }
             } else {

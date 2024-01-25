@@ -9,7 +9,6 @@ import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRound
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTile
 import doublemoon.mahjongcraft.network.MahjongTablePacketListener
 import doublemoon.mahjongcraft.registry.BlockEntityTypeRegistry
 import kotlinx.serialization.json.Json
@@ -28,6 +27,7 @@ import net.minecraft.util.math.Box
 import net.minecraft.util.math.Vec3d
 import net.minecraft.world.World
 import org.mahjong4j.tile.Tile
+import java.util.concurrent.ConcurrentHashMap
 
 class MahjongTableBlockEntity(
     pos: BlockPos,
@@ -50,22 +50,22 @@ class MahjongTableBlockEntity(
      * 這裡存的資料是只有面向客戶端的, 每個人看到剩下的張數都不一樣, 要經過計算才能確定
      * */
     @Environment(EnvType.CLIENT)
-    val remainingTiles = IntArray(Tile.values().size)
+    val remainingTiles = ConcurrentHashMap<Int, Int>().apply {
+        Tile.values().forEach { this[it.code] = 0 }
+    }
 
     /**
      * 從桌子中心取得牌桌大小內所有 牌的實體,
      * 經過計算後修正 [remainingTiles]
      * */
     @Environment(EnvType.CLIENT)
-    fun calculateRemainingTiles() {
+    fun calculateRemainingTiles(code: Int) {
         val tableCenter = with(this.pos) { Vec3d(x + 0.5, y + 1.0, z + 0.5) }
         val tiles = world?.getEntitiesByClass(
             MahjongTileEntity::class.java,
             Box.of(tableCenter, 3.0, 2.0, 3.0)
-        ) { it.isSpawnedByGame && it.gameBlockPos == this.pos && it.mahjongTile != MahjongTile.UNKNOWN } ?: return
-        for (i in Tile.values().indices) {
-            remainingTiles[i] = 4 - tiles.count { it.mahjong4jTile.code == i }
-        }
+        ) { it.isSpawnedByGame && it.gameBlockPos == this.pos && it.mahjongTile.code == code } ?: return
+        remainingTiles[code] = 4 - tiles.size
     }
 
     override fun markDirty() {
