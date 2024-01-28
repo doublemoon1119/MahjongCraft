@@ -396,10 +396,6 @@ abstract class MahjongPlayerBase : GamePlayer {
         val mj4jTile = mjTileEntity.mahjong4jTile
         if (mj4jTile.number == 0) return emptyList() //只有字牌 number 是 0, 不能吃
         val mjTile = mjTileEntity.mahjongTile
-        val sameTypeRedFiveTile = //手中的同個種類的赤寶牌, (同種類的赤寶牌取第一張就好, 因為牌都一樣是赤5)
-            hands.filter { it.mahjongTile.isRed && it.mahjong4jTile.type == mj4jTile.type }.getOrNull(0)
-        val canChiiWithRedFive = //可以使用紅寶牌吃的情況, 被吃的牌編號是 3,4,6,7 且 手中有同個種類的赤寶牌
-            (mj4jTile.number in 3..4 || mj4jTile.number in 6..7) && sameTypeRedFiveTile != null
         val next = hands.find { it.mahjongTile == mjTile.nextTile }?.mahjongTile
         val nextNext = hands.find { it.mahjongTile == mjTile.nextTile.nextTile }?.mahjongTile
         val previous = hands.find { it.mahjongTile == mjTile.previousTile }?.mahjongTile
@@ -411,23 +407,28 @@ abstract class MahjongPlayerBase : GamePlayer {
         if (mj4jTile.number in 2..8 && previous != null && next != null) pairs += previous to next
         //被吃的牌在尾, number 需大於 2,只有在上張牌存在跟上上張牌存在時才成立
         if (mj4jTile.number > 2 && previous != null && previousPrevious != null) pairs += previous to previousPrevious
+
+        val sameTypeRedFiveTile = //手中的同個種類的赤寶牌, (同種類的赤寶牌取第一張就好, 因為牌都一樣是赤5)
+            hands.filter { it.mahjongTile.isRed && it.mahjong4jTile.type == mj4jTile.type }.getOrNull(0)
+        val canChiiWithRedFive = //可以使用紅寶牌吃的情況, 被吃的牌編號是 3,4,6,7 且 手中有同個種類的赤寶牌
+            (mj4jTile.number in 3..4 || mj4jTile.number in 6..7) && sameTypeRedFiveTile != null
         if (canChiiWithRedFive) { //如果可以用赤寶牌吃的話
             val redFiveTile = sameTypeRedFiveTile!! //赤寶牌
-            val redFiveTileNum = redFiveTile.mahjong4jTile.number
-            val targetNum = mj4jTile.number
+            val redFiveTileCode = redFiveTile.mahjong4jTile.code
+            val targetCode = mj4jTile.code
             // 求赤寶牌跟被吃的牌的差距, 1 為赤寶牌與被吃的牌連續, 2 為赤寶牌與被吃的牌組成中洞 (不會出現 0 或 3 以上)
-            val gap = redFiveTileNum - targetNum
+            val gap = redFiveTileCode - targetCode
             if (gap.absoluteValue == 1) { //赤寶牌與被吃的牌連續, 檢查前後兩張牌有沒有存在
-                val firstTile = MahjongTile.values()[minOf(redFiveTileNum, targetNum)].previousTile //開頭的牌
-                val lastTile = MahjongTile.values()[maxOf(redFiveTileNum, targetNum)].nextTile //結尾的牌
+                val firstTile = MahjongTile.values()[minOf(redFiveTileCode, targetCode)].previousTile //開頭的牌
+                val lastTile = MahjongTile.values()[maxOf(redFiveTileCode, targetCode)].nextTile //結尾的牌
                 val allTileInHands = //開頭跟結尾的牌都存在手牌中
                     hands.any { it.mahjongTile == firstTile } && hands.any { it.mahjongTile == lastTile }
                 if (allTileInHands) {
                     pairs += firstTile to lastTile
                 }
             } else { //赤寶牌與被吃的牌組成中洞, 檢查手牌有沒有中間牌存在
-                val midTileNum = (redFiveTileNum + targetNum) / 2 //中間牌的 number
-                val midTile = MahjongTile.values()[midTileNum]
+                val midTileCode = (redFiveTileCode + targetCode) / 2 //中間牌的 code
+                val midTile = MahjongTile.values()[midTileCode]
                 val midTileInHands = hands.any { it.mahjongTile == midTile }
                 if (midTileInHands) { //手牌中有存在中洞的這張牌
                     pairs += if (gap > 0) { //手中有 5, 6 萬吃 7 萬
