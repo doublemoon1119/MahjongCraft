@@ -27,7 +27,7 @@ class MahjongGameBehaviorScreen(
     behavior: MahjongGameBehavior,
     hands: List<MahjongTile>,
     target: ClaimTarget,
-    data: String
+    data: String,
 ) : CottonClientScreen(MahjongGameBehaviorGui(behavior, hands, target, data)) {
     override fun shouldPause(): Boolean = false
 }
@@ -37,7 +37,7 @@ class MahjongGameBehaviorGui(
     private val behavior: MahjongGameBehavior,
     private val hands: List<MahjongTile>,
     private val target: ClaimTarget,
-    private val data: String
+    private val data: String,
 ) : LightweightGuiDescription() {
 
     //渲染時間用
@@ -58,7 +58,8 @@ class MahjongGameBehaviorGui(
     private val alreadyDrewTile = when (behavior) { //在發送這行為過來時是否有拿牌, 目前只有下面 3 個情況有拿牌
         MahjongGameBehavior.TSUMO,
         MahjongGameBehavior.KYUUSHU_KYUUHAI,
-        MahjongGameBehavior.ANKAN_OR_KAKAN -> true
+        MahjongGameBehavior.ANKAN_OR_KAKAN,
+        -> true
         else -> false
     }
     private val handsWidth =
@@ -115,39 +116,35 @@ class MahjongGameBehaviorGui(
                     val canKakanTiles = Json.decodeFromString<MutableSet<Pair<MahjongTile, ClaimTarget>>>(dataList[1])
                     val rule = MahjongRule.fromJsonString(dataList[2])
                     val redFiveQuantity = rule.redFive.quantity
-                    claimingTile = hands.last() //加槓才會用到
-                    canAnkanTiles.forEach { tile -> //添加暗槓顯示的牌
-                        val isFiveTile = //是否是 5 的牌
-                            tile.mahjong4jTile == MahjongTile.S5.mahjong4jTile || tile.mahjong4jTile == MahjongTile.P5.mahjong4jTile || tile.mahjong4jTile == MahjongTile.M5.mahjong4jTile
-                        if (redFiveQuantity == 0 || !isFiveTile) { //沒有赤牌 或 不是 5 的牌
-                            this += BehaviorItem(MahjongGameBehavior.ANKAN, target, List(4) { tile })
-                        } else { //有赤牌,且是 5 的牌
-                            val redFiveTile = when (tile) {
-                                MahjongTile.M5, MahjongTile.M5_RED -> MahjongTile.M5_RED
-                                MahjongTile.S5, MahjongTile.S5_RED -> MahjongTile.S5_RED
-                                MahjongTile.P5, MahjongTile.P5_RED -> MahjongTile.P5_RED
-                                else -> null
-                            }!!
-                            val notRedFiveTile = MahjongTile.values()[redFiveTile.mahjong4jTile.code]
-                            val tiles = List(4) { if (it < redFiveQuantity) redFiveTile else notRedFiveTile }
-                            this += BehaviorItem(MahjongGameBehavior.ANKAN, target, tiles)
+                    canAnkanTiles.distinctBy { it.mahjong4jTile.code }  // 避免赤牌重複出現槓的選項
+                        .forEach { tile -> //添加暗槓顯示的牌
+                            val isFiveTile = //是否是 5 的牌
+                                tile.mahjong4jTile == MahjongTile.S5.mahjong4jTile || tile.mahjong4jTile == MahjongTile.P5.mahjong4jTile || tile.mahjong4jTile == MahjongTile.M5.mahjong4jTile
+                            if (redFiveQuantity == 0 || !isFiveTile) { //沒有赤牌 或 不是 5 的牌
+                                this += BehaviorItem(MahjongGameBehavior.ANKAN, target, List(4) { tile })
+                            } else { //有赤牌,且是 5 的牌
+                                val redFiveTile = getRedFiveTile(tile)
+                                    ?: throw IllegalStateException("Cannot get red-five tile from $tile")
+                                val notRedFiveTile = MahjongTile.values()[redFiveTile.mahjong4jTile.code]
+                                val tiles = List(4) { if (it < redFiveQuantity) redFiveTile else notRedFiveTile }
+                                this += BehaviorItem(MahjongGameBehavior.ANKAN, target, tiles)
+                            }
                         }
-                    }
                     canKakanTiles.forEach { (tile, oTarget) -> //添加加槓顯示的牌
                         val isFiveTile = //是否是 5 的牌
                             tile.mahjong4jTile == MahjongTile.S5.mahjong4jTile || tile.mahjong4jTile == MahjongTile.P5.mahjong4jTile || tile.mahjong4jTile == MahjongTile.M5.mahjong4jTile
                         if (redFiveQuantity == 0 || !isFiveTile) { //沒有赤牌 或 不是 5 的牌
                             this += BehaviorItem(MahjongGameBehavior.KAKAN, oTarget, List(4) { tile })
                         } else { //有赤牌,且是 5 的牌
-                            val redFiveAmount = redFiveQuantity - if (claimingTile!!.isRed) 1 else 0
+                            val redFiveAmount = redFiveQuantity - if (tile.isRed) 1 else 0
                             val redFiveTile = getRedFiveTile(tile)
                                 ?: throw IllegalStateException("Cannot get red-five tile from $tile")
                             val notRedFiveTile = MahjongTile.values()[redFiveTile.mahjong4jTile.code]
                             val tiles = List(4) { index ->
                                 if (index < 3) {
-                                    if (index < redFiveAmount) redFiveTile else notRedFiveTile
+                                    if (index < redFiveAmount) redFiveTile else notRedFiveTile  // 如果有赤牌，會將它擺在第一位
                                 } else {
-                                    claimingTile!! //最後一張是加槓牌
+                                    tile //最後一張是加槓牌
                                 }
                             }
                             this += BehaviorItem(MahjongGameBehavior.KAKAN, oTarget, tiles)
@@ -223,7 +220,8 @@ class MahjongGameBehaviorGui(
                 MahjongGameBehavior.MINKAN,
                 MahjongGameBehavior.RIICHI,
                 MahjongGameBehavior.TSUMO,
-                MahjongGameBehavior.RON -> this += tiles.last().mahjong4jTile //只傳入最後一張牌
+                MahjongGameBehavior.RON,
+                -> this += tiles.last().mahjong4jTile //只傳入最後一張牌
                 else -> { //剩下的情況傳入除了最後一張牌以外的牌
                     tiles.removeLast()
                     tiles.forEach { tile -> this += tile.mahjong4jTile }
@@ -335,7 +333,7 @@ class MahjongGameBehaviorGui(
     data class BehaviorItem(
         val behavior: MahjongGameBehavior,
         val target: ClaimTarget,
-        val tiles: List<MahjongTile>
+        val tiles: List<MahjongTile>,
     )
 
     /**
@@ -345,7 +343,7 @@ class MahjongGameBehaviorGui(
     class OptionItem(
         behaviorItem: BehaviorItem,
         hands: List<MahjongTile>,
-        data: String
+        data: String,
     ) : WPlainPanel() {
         private val player = MinecraftClient.getInstance().player!!
         private val behavior = behaviorItem.behavior
@@ -380,13 +378,12 @@ class MahjongGameBehaviorGui(
                 label = when (behavior) {
                     MahjongGameBehavior.MINKAN,
                     MahjongGameBehavior.ANKAN,
-                    MahjongGameBehavior.KAKAN -> MahjongGameBehavior.KAN.toText()
+                    MahjongGameBehavior.KAKAN,
+                    -> MahjongGameBehavior.KAN.toText()
                     MahjongGameBehavior.KYUUSHU_KYUUHAI -> MahjongGameBehavior.EXHAUSTIVE_DRAW.toText()
                     else -> behavior.toText()
                 },
                 onClick = { //這裡 onClick 之後並不會馬上關閉 GUI, 會等到 [ClientCountdownTimeHandler] 收到清除時間的數據後, 會自己關
-                    val claimingTile =
-                        if (behavior != MahjongGameBehavior.TSUMO) hands.last() else tiles.last() //自摸的話是手牌最後一張
                     when (behavior) {
                         MahjongGameBehavior.CHII -> {
                             val pair = tiles[0] to tiles[1]
@@ -398,12 +395,13 @@ class MahjongGameBehaviorGui(
                         MahjongGameBehavior.KAKAN, MahjongGameBehavior.ANKAN -> {
                             player.sendMahjongGamePacket(
                                 behavior = MahjongGameBehavior.ANKAN_OR_KAKAN,
-                                extraData = Json.encodeToString(claimingTile)
+                                extraData = Json.encodeToString(tiles.last())
                             )
                         }
                         MahjongGameBehavior.PON, MahjongGameBehavior.MINKAN,
                         MahjongGameBehavior.TSUMO, MahjongGameBehavior.RON,
-                        MahjongGameBehavior.KYUUSHU_KYUUHAI -> {
+                        MahjongGameBehavior.KYUUSHU_KYUUHAI,
+                        -> {
                             player.sendMahjongGamePacket(
                                 behavior = behavior
                             )
