@@ -459,10 +459,11 @@ class MahjongGame(
                     seatIndex = seatIndex,
                     discardedPlayer = player
                 ) //有 4 槓以後, 這個列表不會有玩家 (即最多 4 槓且必須是 4 槓子的情況才行)
-                val canPonList = //去除掉與 canMinKanOrPonList 重複的玩家
-                    canPonList(tile = tileDiscarded, discardedPlayer = player).also { it -= canMinKanOrPonList.toSet() }
-                val canChiiList =
-                    canChiiList(tile = tileDiscarded, seatIndex = seatIndex, discardedPlayer = player)
+                val canPonList = canPonList(tile = tileDiscarded, discardedPlayer = player)
+                    .toMutableList()
+                    .also { it -= canMinKanOrPonList.toSet() }  // 去除掉與 canMinKanOrPonList 重複的玩家
+                val canChiiList = canChiiList(tile = tileDiscarded, seatIndex = seatIndex, discardedPlayer = player)
+                    .toMutableList()
                 //這裡是明槓或碰的部分, 有沒有玩家槓或碰了
                 val someoneKanOrPon =
                     if (canMinKanOrPonList.isNotEmpty()) { //有人可以明槓 (明槓一定只有一個人能明槓, 而且可以進行明槓的人除了上家以外一定能碰)
@@ -886,8 +887,9 @@ class MahjongGame(
     private fun canPonList(
         tile: MahjongTileEntity,
         discardedPlayer: MahjongPlayerBase,
-    ): MutableList<MahjongPlayerBase> =
-        players.filter { it != discardedPlayer && it.canPon(tile) }.toMutableList()
+    ): List<MahjongPlayerBase> =
+        if (!board.isHoutei) players.filter { it != discardedPlayer && it.canPon(tile) }
+        else emptyList()
 
     /**
      * 根據 [tile] 判斷有沒有人可以 明槓,
@@ -902,9 +904,9 @@ class MahjongGame(
         discardedPlayer: MahjongPlayerBase,
         seatIndex: Int = seat.indexOf(discardedPlayer),
     ): List<MahjongPlayerBase> =
-        if (board.kanCount < 4) //4 槓以前都可以明槓
+        if (board.kanCount < 4 && !board.isHoutei) // 4 槓前或者不是河底都可以明槓
             players.filter { it != discardedPlayer && it.canMinkan(tile) && it != seat[(seatIndex + 1) % 4] }
-        else listOf()
+        else emptyList()
 
     /**
      * 根據 [tile] 判斷有沒有人可以 吃
@@ -917,9 +919,9 @@ class MahjongGame(
         tile: MahjongTileEntity,
         discardedPlayer: MahjongPlayerBase,
         seatIndex: Int = seat.indexOf(discardedPlayer),
-    ): MutableList<MahjongPlayerBase> =
-        players.filter { it != discardedPlayer && it.canChii(tile) && it == seat[(seatIndex + 1) % 4] }.toMutableList()
-
+    ): List<MahjongPlayerBase> =
+        if (!board.isHoutei) players.filter { it != discardedPlayer && it.canChii(tile) && it == seat[(seatIndex + 1) % 4] }
+        else emptyList()
 
     /**
      * 根據 [tile] 判斷有沒有人可以 榮和
