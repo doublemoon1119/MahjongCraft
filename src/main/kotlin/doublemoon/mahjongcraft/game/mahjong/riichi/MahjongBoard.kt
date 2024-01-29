@@ -28,7 +28,7 @@ import org.mahjong4j.tile.TileType
  * 在 [MahjongGame] 中所有與 [MahjongTileEntity] (麻將牌) 或者 [MahjongScoringStickEntity] (積棒) 有關的操作大部分都在這
  * */
 class MahjongBoard(
-    val game: MahjongGame
+    val game: MahjongGame,
 ) {
     /**
      * [game] 的所有麻將牌, 用來裝所有牌的實體 [MahjongTileEntity],
@@ -393,7 +393,7 @@ class MahjongBoard(
      * */
     fun sortHands(
         player: MahjongPlayerBase,
-        lastTile: MahjongTileEntity? = null
+        lastTile: MahjongTileEntity? = null,
     ) {
         if (player !in game.seat) return
         val seatIndex = game.seat.indexOf(player)
@@ -455,7 +455,7 @@ class MahjongBoard(
      * */
     fun sortDiscardedTilesForDisplay(
         player: MahjongPlayerBase,
-        openDoorPlayer: MahjongPlayerBase
+        openDoorPlayer: MahjongPlayerBase,
     ) {
         if (player !in game.seat) return
         val seatIndex = game.seat.indexOf(player)
@@ -547,7 +547,7 @@ class MahjongBoard(
      * 調整副露的位置, 配合積棒的位置
      * */
     fun sortFuuro(
-        player: MahjongPlayerBase
+        player: MahjongPlayerBase,
     ) {
         //記得實體的座標是以實體本身底部的正中央為主
         if (player !in game.seat) return
@@ -556,35 +556,35 @@ class MahjongBoard(
         val halfTableLengthNoBorder = 0.5 + 15.0 / 16.0 //沒有包含邊框的半張桌子長度
         val halfHeightOfTile = MAHJONG_TILE_HEIGHT / 2.0 //麻將牌高度的一半
         val startingPos = when (seatIndex) { //計算玩家右手方的牌桌角落靠邊的座標
-            //這裡的方向就是以遊戲內的面朝東為準，按照麻將桌"逆"時針東南西北的方向
+            // 這裡的`東南西北`方向是指以麻將桌為中心，向外看的方向
             0 -> tableCenterPos.add(halfTableLengthNoBorder - halfHeightOfTile, 0.0, -halfTableLengthNoBorder) //東
             3 -> tableCenterPos.add(halfTableLengthNoBorder, 0.0, halfTableLengthNoBorder - halfHeightOfTile) //南
             2 -> tableCenterPos.add(-halfTableLengthNoBorder + halfHeightOfTile, 0.0, halfTableLengthNoBorder) //西
-            else -> tableCenterPos.add(
-                -halfTableLengthNoBorder,
-                0.0,
-                -halfTableLengthNoBorder + halfHeightOfTile
-            ) //北
-        }.let { //計算出角落座標後, 檢查有沒有積棒的存在
-            val lastStickOfFirstStack = //尋找第一疊最後一根積棒的位置, null 表示沒有任何積棒
+            else -> tableCenterPos.add(-halfTableLengthNoBorder, 0.0, -halfTableLengthNoBorder + halfHeightOfTile) //北
+        }.let {
+            //計算出角落座標後, 檢查有沒有積棒的存在
+
+            //尋找第一疊最後一根積棒的位置, null 表示沒有任何積棒
+            val lastStickOfFirstStack =
                 player.sticks.findLast { stick -> player.sticks.indexOf(stick) < MahjongGame.STICKS_PER_STACK }
-            if (lastStickOfFirstStack != null) { //如果有積棒的存在
-                val stickPos = lastStickOfFirstStack.pos //積棒的位置
-                val offset = stickPos.subtract(it) //算出點棒到角落座標的偏移
-                val halfDepthOfStick = MAHJONG_POINT_STICK_DEPTH / 2.0 //積棒深度的一半
-                val pos = when (seatIndex) { //計算出只求 與積棒擺放方向平行的位置的偏移 後的角落座標
-                    0 -> it.add(offset.multiply(0.0, 0.0, 1.0))    //東, 只取  z 軸方向偏移
-                    3 -> it.add(offset.multiply(1.0, 0.0, 0.0))    //南, 只取  x 軸方向偏移
-                    2 -> it.add(offset.multiply(0.0, 0.0, -1.0))   //西, 只取 -z 軸方向偏移
-                    else -> it.add(offset.multiply(-1.0, 0.0, 0.0))//北, 只取 -x 軸方向偏移
-                }
-                when (seatIndex) { //再將 積棒的深度 補上, 讓他對齊積棒的邊
-                    0 -> pos.add(0.0, 0.0, halfDepthOfStick)
-                    3 -> pos.add(-halfDepthOfStick, 0.0, 0.0)
-                    2 -> pos.add(0.0, 0.0, -halfDepthOfStick)
-                    else -> pos.add(halfDepthOfStick, 0.0, 0.0)
-                }
-            } else it //沒有積棒就維持原本的座標
+                    ?: return@let it  //沒有積棒就維持原本的座標
+
+            //如果有積棒的存在
+            val stickPos = lastStickOfFirstStack.pos //積棒的位置
+            val offset = stickPos.subtract(it) //算出點棒到角落座標的偏移
+            val halfDepthOfStick = MAHJONG_POINT_STICK_DEPTH / 2.0 //積棒深度的一半
+            val pos = when (seatIndex) { //計算出只求 與積棒擺放方向平行的位置的偏移 後的角落座標
+                0 -> it.add(offset.multiply(0.0, 0.0, 1.0))    //東, 只取 z 軸方向偏移
+                3 -> it.add(offset.multiply(1.0, 0.0, 0.0))    //南, 只取 x 軸方向偏移
+                2 -> it.add(offset.multiply(0.0, 0.0, 1.0))    //西, 只取 z 軸方向偏移
+                else -> it.add(offset.multiply(1.0, 0.0, 0.0)) //北, 只取 x 軸方向偏移
+            }
+            when (seatIndex) { //再將 積棒的深度 補上, 讓他對齊積棒的邊
+                0 -> pos.add(0.0, 0.0, halfDepthOfStick)
+                3 -> pos.add(-halfDepthOfStick, 0.0, 0.0)
+                2 -> pos.add(0.0, 0.0, -halfDepthOfStick)
+                else -> pos.add(halfDepthOfStick, 0.0, 0.0)
+            }
         }
         val tileGap = MAHJONG_TILE_SMALL_PADDING
         val verticalTileOffset = when (seatIndex) { //以牌桌邊緣為底, 垂直擺放的牌的偏移量 (由右手往左手方向)
@@ -624,6 +624,7 @@ class MahjongBoard(
             2 -> Vec3d(-halfGapBetweenHeightAndWidth, 0.0, 0.0)        //西
             else -> Vec3d(0.0, 0.0, -halfGapBetweenHeightAndWidth)      //北
         }
+
         val tileRot = when (seatIndex) { //牌的面朝方向
             0 -> -90f       //東
             3 -> 0f         //南
@@ -634,48 +635,76 @@ class MahjongBoard(
         var tileCount = 0
         var lastTile: MahjongTileEntity? = null
         var lastClaimTile: MahjongTileEntity? = null
-        fun placeEachTile(fuuro: Fuuro, isKakan: Boolean = false) {
+
+        fun placeEachTile(fuuro: Fuuro) {
+            // 是不是加槓
+            val isKakan = fuuro.mentsu is Kakantsu
+
+            // 所有要進行遍歷的牌
             val tiles =
-                if (isKakan) fuuro.tileMjEntities.toMutableList()
+                if (isKakan) fuuro.tileMjEntities.toMutableList()  // 加槓的副露是不進行 sortedByDescending 排序的
                 else fuuro.tileMjEntities.sortedByDescending { it.mahjongTile.sortOrder }.toMutableList()
-            val kakanTile = if (isKakan) tiles.removeLast() else null //加槓牌必定是最後一張, 先將加槓牌移出列表, 最後再加入
-            tiles -= fuuro.claimTile //再將被鳴的牌移出列表
-            when (fuuro.claimTarget) { //再將被鳴的牌放回列表上應該存放的位置
+
+            // 加槓牌必定是最後一張, 先將加槓牌移出列表, 最後再加入
+            val kakanTile = if (isKakan) tiles.removeLast() else null
+
+            // 再將被鳴的牌移出列表
+            tiles -= fuuro.claimTile
+
+            // 再將被鳴的牌放回列表上應該存放的位置
+            when (fuuro.claimTarget) {
                 ClaimTarget.RIGHT -> tiles.add(0, fuuro.claimTile)
                 ClaimTarget.LEFT -> tiles.add(fuuro.claimTile)
                 ClaimTarget.ACROSS -> tiles.add(1, fuuro.claimTile)
-                else -> {
-                }
+                else -> {}
             }
+
+            // 遍歷每個牌並設置位置
             tiles.forEach {
+                // 這張牌是不是被鳴的牌
                 val isClaimTile = it == fuuro.claimTile
-                val yRot =
-                    if (it != fuuro.claimTile) tileRot
-                    else when (fuuro.claimTarget) { //根據鳴牌對象轉向
-                        ClaimTarget.RIGHT -> tileRot + 90
-                        ClaimTarget.LEFT -> tileRot - 90
-                        ClaimTarget.ACROSS -> tileRot + 90
-                        else -> tileRot
+
+                // 上個牌是不是水平擺設的
+                val isLastTileHorizontal = lastTile != null && lastClaimTile != null && lastTile == lastClaimTile
+
+                // 位置
+                nowPos = when {
+                    // 這是第一張牌
+                    tileCount == 0 -> {
+                        if (isClaimTile) nowPos.add(halfHorizontalTileOffset)
+                        else nowPos.add(halfVerticalTileOffset)
                     }
-                val isLastTileHorizontal: Boolean = lastTile == lastClaimTile
-                nowPos = if (tileCount == 0) {
-                    if (isClaimTile) nowPos.add(halfHorizontalTileOffset)
-                    else nowPos.add(halfVerticalTileOffset)
-                } else if (isClaimTile || isLastTileHorizontal) {
-                    if (isClaimTile && isLastTileHorizontal)
-                        nowPos.add(horizontalTileOffset)
-                    else
-                        nowPos.add(halfHorizontalTileOffset)
-                            .add(halfVerticalTileOffset)
-                } else nowPos.add(verticalTileOffset)
+                    // 這是被鳴的牌 或者 上一張牌是水平的
+                    isClaimTile || isLastTileHorizontal -> {
+                        if (isClaimTile && isLastTileHorizontal) nowPos.add(horizontalTileOffset)
+                        else nowPos.add(halfHorizontalTileOffset).add(halfVerticalTileOffset)
+                    }
+                    // 其他剩下的情況，牌都是垂直擺設的
+                    else -> nowPos.add(verticalTileOffset)
+                }
+
                 val pos = if (!isClaimTile) nowPos else nowPos.add(horizontalTileGravityOffset)
+                val yRot =  // 牌的面向方向
+                    if (it == fuuro.claimTile)
+                        when (fuuro.claimTarget) {  // 根據鳴牌對象轉向
+                            ClaimTarget.RIGHT -> tileRot + 90
+                            ClaimTarget.LEFT -> tileRot - 90
+                            ClaimTarget.ACROSS -> tileRot + 90
+                            else -> tileRot
+                        }
+                    else tileRot
+
+                // 將牌傳送
                 it.refreshPositionAndAngles(pos.x, pos.y, pos.z, yRot, 0f)
                 it.facing = TileFacing.UP
+
                 lastTile = it
                 if (isClaimTile) lastClaimTile = it
                 tileCount++
             }
-            kakanTile?.let { //有加槓牌的話
+
+            // 有加槓牌的話，最後再放到被鳴的牌的上方
+            kakanTile?.let {
                 val claimTile = fuuro.claimTile
                 val claimTilePos = fuuro.claimTile.pos
                 val pos = claimTilePos.add(kakanOffset)
@@ -683,21 +712,32 @@ class MahjongBoard(
                 it.facing = TileFacing.UP
             }
         }
+
+        // 將副露按照順序擺放
         player.fuuroList.forEach { fuuro ->
-            if (fuuro.mentsu is Kantsu && fuuro.claimTarget == ClaimTarget.SELF) { //是暗槓
+            if (fuuro.mentsu is Kantsu && fuuro.claimTarget == ClaimTarget.SELF) { // 是暗槓
+                // 暗槓的牌都是直立的，所以比較好處理
                 fuuro.tileMjEntities.forEachIndexed { index, tileMjEntity ->
-                    nowPos =
-                        if (tileCount == 0) nowPos.add(halfVerticalTileOffset)
-                        else nowPos.add(verticalTileOffset)
+                    // 上個牌是不是水平擺設的
+                    val isLastTileHorizontal = lastTile != null && lastClaimTile != null && lastTile == lastClaimTile
+
+                    // 位置
+                    nowPos = when {
+                        tileCount == 0 -> nowPos.add(halfVerticalTileOffset)
+                        isLastTileHorizontal -> nowPos.add(halfHorizontalTileOffset).add(halfVerticalTileOffset)
+                        else -> nowPos.add(verticalTileOffset)
+                    }
+
+                    // 將牌傳送
                     tileMjEntity.refreshPositionAndAngles(nowPos.x, nowPos.y, nowPos.z, tileRot, 0f)
-                    tileMjEntity.facing = //index == 1 or 2 是中間兩張牌->面朝上, 否則是旁邊兩張->面朝下
-                        if (index == 1 || index == 2) TileFacing.UP else TileFacing.DOWN
+                    // index == 1 or 2 是中間兩張牌->面朝上, 否則是旁邊兩張->面朝下
+                    tileMjEntity.facing = if (index == 1 || index == 2) TileFacing.UP else TileFacing.DOWN
+
+                    lastTile = tileMjEntity
                     tileCount++
                 }
-            } else if (fuuro.mentsu is Kakantsu) { //是加槓
-                placeEachTile(fuuro = fuuro, isKakan = true)
-            } else { //不是暗槓也不是加槓
-                placeEachTile(fuuro = fuuro, isKakan = false)
+            } else { // 不是暗槓
+                placeEachTile(fuuro = fuuro)
             }
         }
     }
