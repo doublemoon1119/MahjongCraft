@@ -81,10 +81,12 @@ abstract class MahjongPlayerBase : GamePlayer {
     var points: Int = 0
 
     /**
-     * 門前清
+     * 門前清,
+     * 暗槓也算門清
      * */
     val isMenzenchin: Boolean
-        get() = fuuroList.isEmpty()
+        get() = fuuroList.isEmpty() ||  // 沒有副露
+                fuuroList.all { it.mentsu is Kantsu && !it.mentsu.isOpen }  // 副露都是暗槓
 
     /**
      * 當前能不能立直,
