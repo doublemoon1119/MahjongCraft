@@ -77,7 +77,6 @@ class MahjongTileEntity(
     /**
      * 暫時存取 由遊戲產生且在客戶端中 的麻將牌的 code,不是每個玩家都一樣, 透過數據包對 [code] 操作時進行同步
      * */
-    @Environment(EnvType.CLIENT)
     private var spawnedByGameClientSideCode: Int = MahjongTile.UNKNOWN.code
 
     /**

@@ -49,7 +49,6 @@ class MahjongTableBlockEntity(
      * 剩餘的牌, index 為 [Tile.code], value 為剩下的張數,
      * 這裡存的資料是只有面向客戶端的, 每個人看到剩下的張數都不一樣, 要經過計算才能確定
      * */
-    @Environment(EnvType.CLIENT)
     val remainingTiles = ConcurrentHashMap<Int, Int>().apply {
         Tile.values().forEach { this[it.code] = 0 }
     }
