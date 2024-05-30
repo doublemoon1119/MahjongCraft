@@ -3,9 +3,9 @@ package doublemoon.mahjongcraft.client.gui
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
 import doublemoon.mahjongcraft.client.gui.widget.*
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTableBehavior
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTile
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongRule
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTableBehavior
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTile
 import doublemoon.mahjongcraft.network.MahjongTablePacketListener.sendMahjongTablePacket
 import doublemoon.mahjongcraft.registry.ItemRegistry
 import doublemoon.mahjongcraft.util.plus

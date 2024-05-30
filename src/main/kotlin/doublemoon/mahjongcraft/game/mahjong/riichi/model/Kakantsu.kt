@@ -1,4 +1,4 @@
-package doublemoon.mahjongcraft.game.mahjong.riichi
+package doublemoon.mahjongcraft.game.mahjong.riichi.model
 
 import org.mahjong4j.hands.Kantsu
 import org.mahjong4j.tile.Tile

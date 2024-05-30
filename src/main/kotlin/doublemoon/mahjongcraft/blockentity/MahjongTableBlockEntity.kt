@@ -7,8 +7,8 @@ import doublemoon.mahjongcraft.client.gui.MahjongTableWaitingScreen
 import doublemoon.mahjongcraft.entity.MahjongTileEntity
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRound
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongRound
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongRule
 import doublemoon.mahjongcraft.network.MahjongTablePacketListener
 import doublemoon.mahjongcraft.registry.BlockEntityTypeRegistry
 import kotlinx.serialization.json.Json
@@ -94,10 +94,12 @@ class MahjongTableBlockEntity(
         world?.isClient?.let { isClient ->
             if (isClient) { //當有同步 tag 的情況出現
                 val screen = MinecraftClient.getInstance().currentScreen
-                if (!playing) {  //遊戲還沒開始, 刷新開著這個麻將桌視窗的玩家的視窗
-                    if (screen is MahjongTableWaitingScreen && (screen.description as MahjongTableGui).mahjongTable == this) screen.refresh()
-                } else {  //遊戲開始就關閉遊戲視窗
-                    if (screen is MahjongTableWaitingScreen && (screen.description as MahjongTableGui).mahjongTable == this) screen.close()
+                if (screen is MahjongTableWaitingScreen && (screen.description as MahjongTableGui).mahjongTable == this) {
+                    if (!playing) {  //遊戲還沒開始, 刷新開著這個麻將桌視窗的玩家的視窗
+                        screen.refresh()
+                    } else {  //遊戲開始就關閉遊戲視窗
+                        screen.close()
+                    }
                 }
             }
         }

@@ -4,7 +4,7 @@ import doublemoon.mahjongcraft.entity.MahjongTileEntity
 import doublemoon.mahjongcraft.entity.MahjongTileEntity.Companion.MAHJONG_TILE_DEPTH
 import doublemoon.mahjongcraft.entity.MahjongTileEntity.Companion.MAHJONG_TILE_HEIGHT
 import doublemoon.mahjongcraft.entity.TileFacing
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTile
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTile
 import doublemoon.mahjongcraft.registry.ItemRegistry
 import doublemoon.mahjongcraft.util.RenderHelper
 import net.fabricmc.api.EnvType

@@ -1,6 +1,6 @@
 package doublemoon.mahjongcraft.client.gui.icon
 
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTile
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTile
 import io.github.cottonmc.cotton.gui.client.ScreenDrawing
 import io.github.cottonmc.cotton.gui.widget.data.Color
 import io.github.cottonmc.cotton.gui.widget.icon.Icon

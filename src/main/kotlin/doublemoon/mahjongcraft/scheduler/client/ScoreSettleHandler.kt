@@ -1,7 +1,7 @@
 package doublemoon.mahjongcraft.scheduler.client
 
 import doublemoon.mahjongcraft.client.gui.ScoreSettlementScreen
-import doublemoon.mahjongcraft.game.mahjong.riichi.ScoreSettlement
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.ScoreSettlement
 import doublemoon.mahjongcraft.util.delayOnClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

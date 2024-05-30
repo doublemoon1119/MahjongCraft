@@ -4,6 +4,8 @@ import doublemoon.mahjongcraft.MahjongCraftClient
 import doublemoon.mahjongcraft.client.gui.widget.WTileHints
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.mahjong.riichi.*
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.*
+import doublemoon.mahjongcraft.game.mahjong.riichi.player.MahjongPlayer
 import doublemoon.mahjongcraft.id
 import doublemoon.mahjongcraft.scheduler.client.ClientCountdownTimeHandler
 import doublemoon.mahjongcraft.scheduler.client.OptionalBehaviorHandler

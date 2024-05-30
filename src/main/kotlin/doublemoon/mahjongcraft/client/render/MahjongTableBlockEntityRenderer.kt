@@ -6,7 +6,7 @@ import doublemoon.mahjongcraft.block.MahjongTable
 import doublemoon.mahjongcraft.block.enums.MahjongTablePart
 import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
 import doublemoon.mahjongcraft.game.GameStatus
-import doublemoon.mahjongcraft.game.mahjong.riichi.Wind
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.Wind
 import doublemoon.mahjongcraft.util.RenderHelper
 import doublemoon.mahjongcraft.util.plus
 import io.github.cottonmc.cotton.gui.widget.data.Color

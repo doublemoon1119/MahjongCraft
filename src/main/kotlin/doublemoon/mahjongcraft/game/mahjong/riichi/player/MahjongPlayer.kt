@@ -1,6 +1,7 @@
-package doublemoon.mahjongcraft.game.mahjong.riichi
+package doublemoon.mahjongcraft.game.mahjong.riichi.player
 
 import doublemoon.mahjongcraft.entity.toMahjongTileList
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.*
 import doublemoon.mahjongcraft.network.MahjongGamePacketListener.sendMahjongGamePacket
 import doublemoon.mahjongcraft.network.MahjongTablePacketListener.sendMahjongTablePacket
 import doublemoon.mahjongcraft.scheduler.server.ServerScheduler

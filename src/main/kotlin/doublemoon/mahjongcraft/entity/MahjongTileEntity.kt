@@ -2,7 +2,11 @@ package doublemoon.mahjongcraft.entity
 
 import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
 import doublemoon.mahjongcraft.game.GameManager
-import doublemoon.mahjongcraft.game.mahjong.riichi.*
+import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongBoard
+import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongGameBehavior
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTile
+import doublemoon.mahjongcraft.game.mahjong.riichi.player.MahjongPlayer
 import doublemoon.mahjongcraft.network.MahjongTileCodePacketListener
 import doublemoon.mahjongcraft.network.MahjongTileCodePacketListener.requestTileCode
 import doublemoon.mahjongcraft.registry.EntityTypeRegistry
@@ -11,8 +15,6 @@ import doublemoon.mahjongcraft.scheduler.client.OptionalBehaviorHandler
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import net.fabricmc.api.EnvType
-import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
 import net.minecraft.entity.EntityDimensions
 import net.minecraft.entity.EntityPose
@@ -96,7 +98,8 @@ class MahjongTileEntity(
             }
         }
         get() = if (isSpawnedByGame) {
-            if (!world.isClient) spawnedByGameServerSideCode else spawnedByGameClientSideCode
+            if (!world.isClient) spawnedByGameServerSideCode
+            else spawnedByGameClientSideCode
         } else {
             dataTracker[CODE]
         }

@@ -1,4 +1,4 @@
-package doublemoon.mahjongcraft.game.mahjong.riichi
+package doublemoon.mahjongcraft.game.mahjong.riichi.model
 
 /**
  * 所有麻將點棒, 按材質順序排

@@ -1,6 +1,8 @@
-package doublemoon.mahjongcraft.game.mahjong.riichi
+package doublemoon.mahjongcraft.game.mahjong.riichi.model
 
 import doublemoon.mahjongcraft.entity.toMahjongTileList
+import doublemoon.mahjongcraft.game.mahjong.riichi.player.MahjongBot
+import doublemoon.mahjongcraft.game.mahjong.riichi.player.MahjongPlayerBase
 import kotlinx.serialization.Serializable
 import org.mahjong4j.yaku.normals.NormalYaku
 import org.mahjong4j.yaku.yakuman.Yakuman

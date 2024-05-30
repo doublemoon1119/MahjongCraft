@@ -4,7 +4,7 @@ import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.client.gui.icon.BotFaceIcon
 import doublemoon.mahjongcraft.client.gui.icon.PlayerFaceIcon
 import doublemoon.mahjongcraft.client.gui.widget.*
-import doublemoon.mahjongcraft.game.mahjong.riichi.YakuSettlement
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.YakuSettlement
 import doublemoon.mahjongcraft.scheduler.client.YakuSettleHandler
 import doublemoon.mahjongcraft.util.plus
 import io.github.cottonmc.cotton.gui.client.CottonClientScreen

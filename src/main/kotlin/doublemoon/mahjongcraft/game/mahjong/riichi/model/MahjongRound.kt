@@ -1,4 +1,4 @@
-package doublemoon.mahjongcraft.game.mahjong.riichi
+package doublemoon.mahjongcraft.game.mahjong.riichi.model
 
 import kotlinx.serialization.Serializable
 

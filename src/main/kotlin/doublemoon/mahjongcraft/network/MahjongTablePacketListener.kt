@@ -5,10 +5,10 @@ import doublemoon.mahjongcraft.client.gui.MahjongTableWaitingScreen
 import doublemoon.mahjongcraft.client.gui.RuleEditorScreen
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.GameStatus
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongBot
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTableBehavior
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongRule
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTableBehavior
+import doublemoon.mahjongcraft.game.mahjong.riichi.player.MahjongBot
 import doublemoon.mahjongcraft.id
 import doublemoon.mahjongcraft.logger
 import doublemoon.mahjongcraft.scheduler.client.ClientScheduler

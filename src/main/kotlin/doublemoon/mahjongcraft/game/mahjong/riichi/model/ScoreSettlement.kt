@@ -1,6 +1,8 @@
-package doublemoon.mahjongcraft.game.mahjong.riichi
+package doublemoon.mahjongcraft.game.mahjong.riichi.model
 
 import doublemoon.mahjongcraft.MOD_ID
+import doublemoon.mahjongcraft.game.mahjong.riichi.player.MahjongBot
+import doublemoon.mahjongcraft.game.mahjong.riichi.player.MahjongPlayerBase
 import kotlinx.serialization.Serializable
 import net.minecraft.text.Text
 
@@ -45,7 +47,7 @@ sealed class ScoreSettlement(
 
     @Serializable
     data class ExhaustiveDraw(
-        val exhaustiveDraw: doublemoon.mahjongcraft.game.mahjong.riichi.ExhaustiveDraw,
+        val exhaustiveDraw: doublemoon.mahjongcraft.game.mahjong.riichi.model.ExhaustiveDraw,
         val scoreList: List<ScoreItem>,
     ) : ScoreSettlement(titleTranslateKey = exhaustiveDraw.translateKey, scoreListInput = scoreList)
 

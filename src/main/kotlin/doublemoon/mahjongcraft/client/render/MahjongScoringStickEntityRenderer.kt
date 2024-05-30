@@ -3,7 +3,7 @@ package doublemoon.mahjongcraft.client.render
 import doublemoon.mahjongcraft.entity.MahjongScoringStickEntity
 import doublemoon.mahjongcraft.entity.MahjongScoringStickEntity.Companion.MAHJONG_POINT_STICK_HEIGHT
 import doublemoon.mahjongcraft.entity.MahjongScoringStickEntity.Companion.MAHJONG_POINT_STICK_SCALE
-import doublemoon.mahjongcraft.game.mahjong.riichi.ScoringStick
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.ScoringStick
 import doublemoon.mahjongcraft.registry.ItemRegistry
 import doublemoon.mahjongcraft.util.RenderHelper
 import net.fabricmc.api.EnvType

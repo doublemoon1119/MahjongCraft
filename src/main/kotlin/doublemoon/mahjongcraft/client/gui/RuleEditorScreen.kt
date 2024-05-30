@@ -3,8 +3,8 @@ package doublemoon.mahjongcraft.client.gui
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
 import doublemoon.mahjongcraft.client.gui.widget.*
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTableBehavior
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongRule
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTableBehavior
 import doublemoon.mahjongcraft.network.MahjongTablePacketListener.sendMahjongTablePacket
 import doublemoon.mahjongcraft.util.TextFormatting
 import io.github.cottonmc.cotton.gui.client.CottonClientScreen

@@ -2,8 +2,8 @@ package doublemoon.mahjongcraft.client.gui
 
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.client.gui.widget.*
-import doublemoon.mahjongcraft.game.mahjong.riichi.RankedScoreItem
-import doublemoon.mahjongcraft.game.mahjong.riichi.ScoreSettlement
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.RankedScoreItem
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.ScoreSettlement
 import doublemoon.mahjongcraft.scheduler.client.ScoreSettleHandler
 import io.github.cottonmc.cotton.gui.client.CottonClientScreen
 import io.github.cottonmc.cotton.gui.client.LightweightGuiDescription

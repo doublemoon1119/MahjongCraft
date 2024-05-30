@@ -1,4 +1,4 @@
-package doublemoon.mahjongcraft.game.mahjong.riichi
+package doublemoon.mahjongcraft.game.mahjong.riichi.model
 
 import doublemoon.mahjongcraft.entity.MahjongTileEntity
 import org.mahjong4j.hands.Mentsu

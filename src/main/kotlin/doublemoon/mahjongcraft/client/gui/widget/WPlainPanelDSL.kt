@@ -1,6 +1,6 @@
 package doublemoon.mahjongcraft.client.gui.widget
 
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTile
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTile
 import io.github.cottonmc.cotton.gui.client.LightweightGuiDescription
 import io.github.cottonmc.cotton.gui.widget.*
 import io.github.cottonmc.cotton.gui.widget.data.Color

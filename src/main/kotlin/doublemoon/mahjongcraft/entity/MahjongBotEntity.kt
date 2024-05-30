@@ -4,7 +4,7 @@ import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
 import doublemoon.mahjongcraft.entity.MahjongTileEntity.Companion.MAHJONG_TILE_HEIGHT
 import doublemoon.mahjongcraft.entity.MahjongTileEntity.Companion.MAHJONG_TILE_SCALE
 import doublemoon.mahjongcraft.entity.MahjongTileEntity.Companion.MAHJONG_TILE_WIDTH
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongBot
+import doublemoon.mahjongcraft.game.mahjong.riichi.player.MahjongBot
 import doublemoon.mahjongcraft.registry.EntityTypeRegistry
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker

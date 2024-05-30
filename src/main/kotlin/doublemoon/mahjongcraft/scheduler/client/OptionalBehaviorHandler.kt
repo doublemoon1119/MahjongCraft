@@ -1,9 +1,9 @@
 package doublemoon.mahjongcraft.scheduler.client
 
 import doublemoon.mahjongcraft.client.gui.MahjongGameBehaviorScreen
-import doublemoon.mahjongcraft.game.mahjong.riichi.ClaimTarget
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGameBehavior
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTile
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.ClaimTarget
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongGameBehavior
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

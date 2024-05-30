@@ -1,6 +1,6 @@
 package doublemoon.mahjongcraft.entity
 
-import doublemoon.mahjongcraft.game.mahjong.riichi.ScoringStick
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.ScoringStick
 import doublemoon.mahjongcraft.registry.EntityTypeRegistry
 import doublemoon.mahjongcraft.registry.ItemRegistry
 import net.minecraft.entity.EntityType

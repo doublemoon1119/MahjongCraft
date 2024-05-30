@@ -2,10 +2,10 @@ package doublemoon.mahjongcraft.client.gui
 
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.client.gui.widget.*
-import doublemoon.mahjongcraft.game.mahjong.riichi.ClaimTarget
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGameBehavior
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongRule
-import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongTile
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.ClaimTarget
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongGameBehavior
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongRule
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTile
 import doublemoon.mahjongcraft.network.MahjongGamePacketListener.sendMahjongGamePacket
 import doublemoon.mahjongcraft.scheduler.client.ClientCountdownTimeHandler
 import io.github.cottonmc.cotton.gui.client.CottonClientScreen
