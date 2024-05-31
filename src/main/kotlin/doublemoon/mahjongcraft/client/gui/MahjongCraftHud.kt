@@ -1,5 +1,6 @@
 package doublemoon.mahjongcraft.client.gui
 
+import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.MahjongCraftClient
 import doublemoon.mahjongcraft.client.gui.widget.WTileHints
 import io.github.cottonmc.cotton.gui.client.BackgroundPainter
@@ -94,9 +95,9 @@ class MahjongCraftHud {
     companion object {
         private const val INSET = 6
         private const val LABEL_INTERVAL = 2
-        private val AUTO_ARRANGE = Text.translatable("config.mahjongcraft.quick_actions.auto_arrange")
-        private val AUTO_CALL_WIN = Text.translatable("config.mahjongcraft.quick_actions.auto_call_win")
-        private val NO_CHII_PON_KAN = Text.translatable("config.mahjongcraft.quick_actions.no_chii_pon_kan")
-        private val AUTO_DRAW_AND_DISCARD = Text.translatable("config.mahjongcraft.quick_actions.auto_draw_and_discard")
+        private val AUTO_ARRANGE = Text.translatable("config.$MOD_ID.quick_actions.auto_arrange")
+        private val AUTO_CALL_WIN = Text.translatable("config.$MOD_ID.quick_actions.auto_call_win")
+        private val NO_CHII_PON_KAN = Text.translatable("config.$MOD_ID.quick_actions.no_chii_pon_kan")
+        private val AUTO_DRAW_AND_DISCARD = Text.translatable("config.$MOD_ID.quick_actions.auto_draw_and_discard")
     }
 }
