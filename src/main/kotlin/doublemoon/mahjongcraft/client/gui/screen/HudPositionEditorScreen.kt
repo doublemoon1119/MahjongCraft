@@ -1,4 +1,4 @@
-package doublemoon.mahjongcraft.client.gui
+package doublemoon.mahjongcraft.client.gui.screen
 
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.MahjongCraftClient

@@ -112,17 +112,20 @@ fun WPlainPanel.button(
     x: Int,
     y: Int,
     width: Int = 18,
+    height: Int = 20,
     icon: Icon? = null,
     label: Text? = null,
+    enabled: Boolean = true,
     textAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
     onClick: WButton.() -> Unit = {},
     init: WButton.() -> Unit = {}
 ): WButton {
     val button = WButton(icon, label)
     button.init()
+    button.isEnabled = enabled
     button.alignment = textAlignment
     button.setOnClick { onClick.invoke(button) }
-    this.add(button, x, y, width, 20)
+    this.add(button, x, y, width, height)
     return button
 }
 

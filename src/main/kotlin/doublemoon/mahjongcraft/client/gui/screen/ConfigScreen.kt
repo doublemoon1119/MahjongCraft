@@ -1,4 +1,4 @@
-package doublemoon.mahjongcraft.client.gui
+package doublemoon.mahjongcraft.client.gui.screen
 
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.MahjongCraftClient
@@ -36,11 +36,10 @@ object ConfigScreen {
     private val autoResetTooltip = Text.translatable("config.$MOD_ID.tooltip.auto_reset")
 
     private val hudPositionEditorKey = MahjongCraftClient.hudPositionEditorKey
-    private val hudPositionEditorTooltip
-        get() = Text.translatable(
-            "config.$MOD_ID.tooltip.hud_position_editor",
-            hudPositionEditorKey.boundKeyLocalizedText
-        )
+    private val hudPositionEditorTooltip = Text.translatable(
+        "config.$MOD_ID.tooltip.hud_position_editor",
+        hudPositionEditorKey.boundKeyLocalizedText
+    )
 
     fun build(parent: Screen? = null): Screen = getConfigBuilder(parent).build()
 

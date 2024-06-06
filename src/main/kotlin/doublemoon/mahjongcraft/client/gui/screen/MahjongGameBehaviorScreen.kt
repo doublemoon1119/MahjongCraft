@@ -1,4 +1,4 @@
-package doublemoon.mahjongcraft.client.gui
+package doublemoon.mahjongcraft.client.gui.screen
 
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.client.gui.widget.*
@@ -237,6 +237,7 @@ class MahjongGameBehaviorGui(
                 x = ROOT_WIDTH - BUTTON_WIDTH - BORDER_MARGIN,
                 y = BORDER_MARGIN,
                 width = BUTTON_WIDTH,
+                height = BUTTON_HEIGHT,
                 label = Text.translatable("$MOD_ID.game.behavior.skip"),
                 onClick = {
                     MinecraftClient.getInstance().player?.sendMahjongGamePacket(

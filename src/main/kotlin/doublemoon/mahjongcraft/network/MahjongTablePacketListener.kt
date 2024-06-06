@@ -1,8 +1,8 @@
 package doublemoon.mahjongcraft.network
 
 import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
-import doublemoon.mahjongcraft.client.gui.MahjongTableWaitingScreen
-import doublemoon.mahjongcraft.client.gui.RuleEditorScreen
+import doublemoon.mahjongcraft.client.gui.screen.MahjongTableWaitingScreen
+import doublemoon.mahjongcraft.client.gui.screen.RuleEditorScreen
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.GameStatus
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame

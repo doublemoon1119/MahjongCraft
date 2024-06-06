@@ -1,9 +1,10 @@
 package doublemoon.mahjongcraft
 
 import doublemoon.mahjongcraft.client.ModConfig
-import doublemoon.mahjongcraft.client.gui.ConfigScreen
-import doublemoon.mahjongcraft.client.gui.HudPositionEditorScreen
-import doublemoon.mahjongcraft.client.gui.MahjongCraftHud
+import doublemoon.mahjongcraft.client.gui.screen.ConfigScreen
+import doublemoon.mahjongcraft.client.gui.screen.HudPositionEditorScreen
+import doublemoon.mahjongcraft.client.gui.screen.MahjongCraftHud
+import doublemoon.mahjongcraft.client.gui.screen.yaku_overview.YakuOverviewScreen
 import doublemoon.mahjongcraft.client.render.*
 import doublemoon.mahjongcraft.network.CustomEntitySpawnS2CPacketHandler
 import doublemoon.mahjongcraft.network.MahjongGamePacketListener
@@ -56,6 +57,9 @@ object MahjongCraftClient : ClientModInitializer {
     )
     val hudPositionEditorKey: KeyBinding = registerKeyBinding(
         translationKey = "key.$MOD_ID.open_hud_position_editor",
+    )
+    val yakuOverviewKey: KeyBinding = registerKeyBinding(
+        translationKey = "key.$MOD_ID.open_yaku_overview",
     )
 
     override fun onInitializeClient() {
@@ -117,6 +121,7 @@ object MahjongCraftClient : ClientModInitializer {
     private fun tick(client: MinecraftClient) {
         if (configKey.wasPressed()) client.setScreen(ConfigScreen.build(null))
         if (hudPositionEditorKey.wasPressed()) hud?.also { client.setScreen(HudPositionEditorScreen(it)) }
+        if (yakuOverviewKey.wasPressed()) client.setScreen(YakuOverviewScreen())
         ClientScheduler.tick(client)
     }
 

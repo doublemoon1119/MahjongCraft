@@ -1,6 +1,6 @@
 package doublemoon.mahjongcraft.scheduler.client
 
-import doublemoon.mahjongcraft.client.gui.YakuSettlementScreen
+import doublemoon.mahjongcraft.client.gui.screen.YakuSettlementScreen
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.YakuSettlement
 import doublemoon.mahjongcraft.util.delayOnClient
 import kotlinx.coroutines.CoroutineScope

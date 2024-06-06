@@ -1,6 +1,6 @@
 package doublemoon.mahjongcraft.scheduler.client
 
-import doublemoon.mahjongcraft.client.gui.MahjongGameBehaviorScreen
+import doublemoon.mahjongcraft.client.gui.screen.MahjongGameBehaviorScreen
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.ClaimTarget
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongGameBehavior
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTile

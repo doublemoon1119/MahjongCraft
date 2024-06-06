@@ -2,8 +2,8 @@ package doublemoon.mahjongcraft.blockentity
 
 import doublemoon.mahjongcraft.block.MahjongTable
 import doublemoon.mahjongcraft.block.enums.MahjongTablePart
-import doublemoon.mahjongcraft.client.gui.MahjongTableGui
-import doublemoon.mahjongcraft.client.gui.MahjongTableWaitingScreen
+import doublemoon.mahjongcraft.client.gui.screen.MahjongTableGui
+import doublemoon.mahjongcraft.client.gui.screen.MahjongTableWaitingScreen
 import doublemoon.mahjongcraft.entity.MahjongTileEntity
 import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
