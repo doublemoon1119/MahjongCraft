@@ -41,6 +41,12 @@ object ConfigScreen {
         hudPositionEditorKey.boundKeyLocalizedText
     )
 
+    private val yakuOverviewKey = MahjongCraftClient.yakuOverviewKey
+    private val yakuOverviewTooltip = Text.translatable(
+        "config.$MOD_ID.tooltip.yaku_overview",
+        yakuOverviewKey.boundKeyLocalizedText
+    )
+
     fun build(parent: Screen? = null): Screen = getConfigBuilder(parent).build()
 
     private fun getConfigBuilder(parent: Screen? = null): ConfigBuilder {
@@ -60,6 +66,17 @@ object ConfigScreen {
                     tooltipSupplier = { Optional.of(arrayOf(hudPositionEditorTooltip)) },
                     saveConsumer = {
                         hudPositionEditorKey.setBoundKey(it)
+                        KeyBinding.updateKeysByCode()
+                        MinecraftClient.getInstance().options.write()
+                    }
+                )
+                keyCodeField(
+                    text = Text.translatable(yakuOverviewKey.translationKey),
+                    startKey = KeyBindingHelper.getBoundKeyOf(yakuOverviewKey),
+                    defaultKey = { yakuOverviewKey.defaultKey },
+                    tooltipSupplier = { Optional.of(arrayOf(yakuOverviewTooltip)) },
+                    saveConsumer = {
+                        yakuOverviewKey.setBoundKey(it)
                         KeyBinding.updateKeysByCode()
                         MinecraftClient.getInstance().options.write()
                     }

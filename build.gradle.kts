@@ -62,7 +62,7 @@ tasks {
         kotlinOptions {
             jvmTarget = "$javaVersion"
             //暫時先無視 實驗性序列化 API 的提示 (主要用於 Json.encodeToString<T>() 跟 Json.decodeFromString<T>())
-            freeCompilerArgs = freeCompilerArgs + "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi"
+            freeCompilerArgs = freeCompilerArgs + "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
         }
     }
 
