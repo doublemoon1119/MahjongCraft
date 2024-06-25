@@ -14,6 +14,9 @@ import net.minecraft.client.render.entity.EntityRenderer
 import net.minecraft.client.render.entity.EntityRendererFactory
 import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.util.math.MatrixStack
+import net.minecraft.component.DataComponentTypes
+import net.minecraft.component.type.NbtComponent
+import net.minecraft.nbt.NbtCompound
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.RotationAxis
 
@@ -64,7 +67,12 @@ class MahjongScoringStickEntityRenderer(
     override fun getTexture(entity: MahjongScoringStickEntity): Identifier? = null
 
     companion object {
-        private val scoringSticks = ScoringStick.values()
-            .map { ItemRegistry.mahjongScoringStick.defaultStack.also { itemStack -> itemStack.damage = it.code } }
+        private val scoringSticks = ScoringStick.entries.map { stick->
+            ItemRegistry.mahjongScoringStick.defaultStack.also {
+                val nbt = NbtCompound()
+                nbt.putInt("code", stick.code)
+                it.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt))
+            }
+        }
     }
 }

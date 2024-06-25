@@ -5,7 +5,7 @@ import io.github.cottonmc.cotton.gui.widget.WPlainPanel
 import io.github.cottonmc.cotton.gui.widget.data.InputResult
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
-import net.minecraft.client.util.math.MatrixStack
+import net.minecraft.client.gui.DrawContext
 
 /**
  *
@@ -26,8 +26,8 @@ class WDraggablePlainPanel(
     }
 
     @Environment(EnvType.CLIENT)
-    override fun paint(matrices: MatrixStack, x: Int, y: Int, mouseX: Int, mouseY: Int) {
-        super.paint(matrices, x, y, mouseX, mouseY)
+    override fun paint(context: DrawContext, x: Int, y: Int, mouseX: Int, mouseY: Int) {
+        super.paint(context, x, y, mouseX, mouseY)
         if (isDragging) {
             var deltaX = mouseX - anchorX
             var deltaY = mouseY - anchorY

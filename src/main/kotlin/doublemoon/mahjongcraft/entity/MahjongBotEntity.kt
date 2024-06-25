@@ -50,9 +50,9 @@ class MahjongBotEntity(
 
     override fun shouldRenderName(): Boolean = true
 
-    override fun initDataTracker() {
-        super.initDataTracker()
-        dataTracker.startTracking(CODE, 0)
+    override fun initDataTracker(builder: DataTracker.Builder) {
+        super.initDataTracker(builder)
+        builder.add(CODE, 0)
     }
 
     override fun readCustomDataFromNbt(nbt: NbtCompound) {

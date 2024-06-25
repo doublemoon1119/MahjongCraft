@@ -1,13 +1,11 @@
 package doublemoon.mahjongcraft.entity
 
-import doublemoon.mahjongcraft.network.CustomEntitySpawnS2CPacketHandler
 import doublemoon.mahjongcraft.registry.EntityTypeRegistry
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.LivingEntity
+import net.minecraft.entity.data.DataTracker
 import net.minecraft.nbt.NbtCompound
-import net.minecraft.network.listener.ClientPlayPacketListener
-import net.minecraft.network.packet.Packet
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Direction
@@ -40,16 +38,16 @@ class SeatEntity(
         if (!world.isClient && (passengerList.isEmpty() || world.isAir(sourceBlock))) remove(RemovalReason.DISCARDED)
     }
 
-    override fun getMountedHeightOffset(): Double = 0.0
+    override fun getPosWithYOffset(offset: Float): BlockPos {
+        return super.getPosWithYOffset(0.0f)
+    }
 
-    override fun initDataTracker() {}
+    override fun initDataTracker(builder: DataTracker.Builder?) {}
 
     override fun readCustomDataFromNbt(nbt: NbtCompound?) {}
 
     override fun writeCustomDataToNbt(nbt: NbtCompound?) {}
 
-    override fun createSpawnPacket(): Packet<ClientPlayPacketListener> =
-        CustomEntitySpawnS2CPacketHandler.createPacket(this)
 
     override fun updatePassengerForDismount(passenger: LivingEntity): Vec3d =
         Vec3d(blockPos.x + 0.5, blockPos.y + stopSitOffsetY, blockPos.z + 0.5)

@@ -7,17 +7,17 @@ import io.github.cottonmc.cotton.gui.widget.data.Color
 import io.github.cottonmc.cotton.gui.widget.data.HorizontalAlignment
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
-import net.minecraft.client.util.math.MatrixStack
+import net.minecraft.client.gui.DrawContext
 
 class WBotFace(
     var code: Int? = null,
-    var alignment: HorizontalAlignment = HorizontalAlignment.CENTER
+    var alignment: HorizontalAlignment = HorizontalAlignment.CENTER,
 ) : WWidget() {
 
     override fun canResize(): Boolean = true
 
     @Environment(EnvType.CLIENT)
-    override fun paint(matrices: MatrixStack, x: Int, y: Int, mouseX: Int, mouseY: Int) {
+    override fun paint(context: DrawContext, x: Int, y: Int, mouseX: Int, mouseY: Int) {
         val tile = code?.let { MahjongTile.values()[it] } ?: MahjongTile.UNKNOWN
         val boxWidth = height * 48 / 64   //配合牌的材質的寬高比, 高比較大, 以高為準, 寬用計算的
         val imgX = when (alignment) {
@@ -25,6 +25,6 @@ class WBotFace(
             HorizontalAlignment.CENTER -> x + (width - boxWidth) / 2
             HorizontalAlignment.RIGHT -> x + width - boxWidth
         }
-        ScreenDrawing.texturedRect(matrices, imgX, y, boxWidth, height, tile.surfaceIdentifier, Color.WHITE.toRgb())
+        ScreenDrawing.texturedRect(context, imgX, y, boxWidth, height, tile.surfaceIdentifier, Color.WHITE.toRgb())
     }
 }

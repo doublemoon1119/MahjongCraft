@@ -9,16 +9,20 @@ import kotlinx.coroutines.launch
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.block.entity.SkullBlockEntity
-import net.minecraft.client.util.math.MatrixStack
+import net.minecraft.client.gui.DrawContext
 import java.util.*
+import kotlin.jvm.optionals.getOrNull
+import kotlin.math.min
 
 class WPlayerFace(
     uuid: UUID,
     name: String,
 ) : WWidget() {
+    private val coroutineScope = CoroutineScope(Dispatchers.Default)
+
     private var gameProfile = GameProfile(uuid, name)
 
-    //constructor 不能含有 private set 只好這樣用
+    // constructor 不能含有 private set 只好這樣用
     var uuid: UUID = uuid
         private set
     var name: String = name
@@ -38,20 +42,21 @@ class WPlayerFace(
     override fun canResize(): Boolean = true
 
     private fun loadGameProfileProperties() {
-        CoroutineScope(Dispatchers.IO).launch {
-            SkullBlockEntity.loadProperties(gameProfile) { gameProfile = it }
+        coroutineScope.launch(Dispatchers.IO) {
+            val profile = SkullBlockEntity.fetchProfileByUuid(uuid).get().getOrNull()
+                ?: SkullBlockEntity.fetchProfileByName(name).get().getOrNull()
+            if (profile != null) gameProfile = profile
         }
     }
 
     @Environment(EnvType.CLIENT)
-    override fun paint(matrices: MatrixStack, x: Int, y: Int, mouseX: Int, mouseY: Int) {
+    override fun paint(context: DrawContext, x: Int, y: Int, mouseX: Int, mouseY: Int) {
         RenderHelper.renderPlayerFace(
-            matrices = matrices,
+            context = context,
             gameProfile = gameProfile,
             x = x,
             y = y,
-            width = width,
-            height = height
+            size = min(width, height)
         )
     }
 }

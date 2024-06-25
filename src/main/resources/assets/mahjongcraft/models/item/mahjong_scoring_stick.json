@@ -1,9 +1,9 @@
 {
 	"parent": "mahjongcraft:item/mahjong_scoring_stick_base",
 	"overrides": [
-		{"predicate": {"code": 0},  "model": "mahjongcraft:item/mahjong_scoring_stick/100"},
-		{"predicate": {"code": 1},  "model": "mahjongcraft:item/mahjong_scoring_stick/1000"},
-		{"predicate": {"code": 2},  "model": "mahjongcraft:item/mahjong_scoring_stick/5000"},
-		{"predicate": {"code": 3},  "model": "mahjongcraft:item/mahjong_scoring_stick/10000"}
+		{"predicate": {"code": 0.00},  "model": "mahjongcraft:item/mahjong_scoring_stick/100"},
+		{"predicate": {"code": 0.01},  "model": "mahjongcraft:item/mahjong_scoring_stick/1000"},
+		{"predicate": {"code": 0.02},  "model": "mahjongcraft:item/mahjong_scoring_stick/5000"},
+		{"predicate": {"code": 0.03},  "model": "mahjongcraft:item/mahjong_scoring_stick/10000"}
 		]
 }

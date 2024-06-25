@@ -7,7 +7,8 @@ import doublemoon.mahjongcraft.entity.MahjongTileEntity
 import doublemoon.mahjongcraft.entity.TileFacing
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongGameBehavior
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTile
-import doublemoon.mahjongcraft.network.MahjongGamePacketListener.sendMahjongGamePacket
+import doublemoon.mahjongcraft.network.mahjong_game.MahjongGamePayload
+import doublemoon.mahjongcraft.network.sendPayloadToServer
 import io.github.cottonmc.cotton.gui.widget.WLabel
 import io.github.cottonmc.cotton.gui.widget.WPlainPanel
 import io.github.cottonmc.cotton.gui.widget.data.Color
@@ -18,7 +19,7 @@ import kotlinx.serialization.json.Json
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
-import net.minecraft.client.util.math.MatrixStack
+import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
 import net.minecraft.util.hit.EntityHitResult
 import net.minecraft.util.hit.HitResult
@@ -27,7 +28,7 @@ import net.minecraft.util.hit.HitResult
  * 專門在 HUD 渲染牌的提示時使用的
  * */
 class WTileHints(
-    private val tileHints: ModConfig.TileHints
+    private val tileHints: ModConfig.TileHints,
 ) : WPlainPanel() {
     /**
      * 玩家指著的牌, 會顯示這張牌的一些資訊
@@ -46,15 +47,15 @@ class WTileHints(
     private var hitResult: EntityHitResult? = null
 
     @Environment(EnvType.CLIENT)
-    override fun paint(matrices: MatrixStack, x: Int, y: Int, mouseX: Int, mouseY: Int) {
+    override fun paint(context: DrawContext, x: Int, y: Int, mouseX: Int, mouseY: Int) {
         val target =
             MinecraftClient.getInstance().crosshairTarget?.takeIf { it.type == HitResult.Type.ENTITY } as EntityHitResult?
         hitResult =
             target?.takeIf { it.entity is MahjongTileEntity && (it.entity as MahjongTileEntity).mahjongTile != MahjongTile.UNKNOWN }
         updateHints(hitResult)
         //下面是改寫 super.paint() 的部分
-        if (backgroundPainter != null && backgroundVisible) backgroundPainter.paintBackground(matrices, x, y, this)
-        children.forEach { it.paint(matrices, x + it.x, y + it.y, mouseX - it.x, mouseY - it.y) }
+        if (backgroundPainter != null && backgroundVisible) backgroundPainter.paintBackground(context, x, y, this)
+        children.forEach { it.paint(context, x + it.x, y + it.y, mouseX - it.x, mouseY - it.y) }
     }
 
     private fun updateHints(hitResult: EntityHitResult?) {
@@ -89,10 +90,15 @@ class WTileHints(
             it.scale = tileHints.hudAttribute.scale
             val isOwner = playerUuidString != null && mahjongTileEntity.ownerUUID == playerUuidString //這張牌的主人是這個玩家
             val isFacingHorizontal = mahjongTileEntity.facing == TileFacing.HORIZONTAL
-            if (isOwner && isFacingHorizontal && (it.tile != mahjongTile || (machiOfTarget == null && machiOfTargetItems == null))) { //是牌的主人, 且牌是面向水平的, 且牌有改變或者沒有計算過 machi
-                player?.sendMahjongGamePacket( //傳送數據包請求 machi 列表
-                    behavior = MahjongGameBehavior.MACHI,
-                    extraData = Json.encodeToString(mahjongTile)
+
+            // 是牌的主人, 且牌是面向水平的, 且牌有改變或者沒有計算過 machi
+            if (isOwner && isFacingHorizontal && (it.tile != mahjongTile || (machiOfTarget == null && machiOfTargetItems == null))) {
+                //傳送數據包請求 machi 列表
+                sendPayloadToServer(
+                    payload = MahjongGamePayload(
+                        behavior = MahjongGameBehavior.MACHI,
+                        extraData = Json.encodeToString(mahjongTile)
+                    )
                 )
             }
             it.tile = mahjongTile
@@ -168,7 +174,7 @@ class WTileHints(
         remainingAmount: Int,
         remainingAmountVisible: Boolean,
         noYaku: Boolean = false,
-        machi: Boolean = false
+        machi: Boolean = false,
     ) : WPlainPanel() {
         private val client = MinecraftClient.getInstance()
         private val furitenWidget: WLabel

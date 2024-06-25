@@ -15,6 +15,9 @@ import net.minecraft.client.render.entity.EntityRenderer
 import net.minecraft.client.render.entity.EntityRendererFactory
 import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.util.math.MatrixStack
+import net.minecraft.component.DataComponentTypes
+import net.minecraft.component.type.NbtComponent
+import net.minecraft.nbt.NbtCompound
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.RotationAxis
 
@@ -71,7 +74,12 @@ class MahjongTileEntityRenderer(
          * 所有的麻將牌物品, 先存著渲染的時候直接用, 省下每次實例化 ItemStack 的效能
          * */
         @Environment(EnvType.CLIENT)
-        val mahjongTiles = MahjongTile.values()
-            .map { ItemRegistry.mahjongTile.defaultStack.also { itemStack -> itemStack.damage = it.code } }
+        val mahjongTiles = MahjongTile.entries.map { tile ->
+            ItemRegistry.mahjongTile.defaultStack.also {
+                val nbt = NbtCompound()
+                nbt.putInt("code", tile.code)
+                it.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt))
+            }
+        }
     }
 }

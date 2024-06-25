@@ -2,7 +2,6 @@ package doublemoon.mahjongcraft.game.mahjong.riichi.player
 
 import doublemoon.mahjongcraft.entity.*
 import doublemoon.mahjongcraft.game.GamePlayer
-import doublemoon.mahjongcraft.game.mahjong.riichi.*
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.*
 import doublemoon.mahjongcraft.logger
 import net.minecraft.server.network.ServerPlayerEntity
@@ -603,8 +602,7 @@ abstract class MahjongPlayerBase : GamePlayer {
                     }
                 }
             }
-            if (someoneCalls) return false //只要有人鳴牌, 一發就不成立
-            return true
+            return !someoneCalls //只要有人鳴牌, 一發就不成立
         }
         return false
     }
@@ -1032,7 +1030,7 @@ abstract class MahjongPlayerBase : GamePlayer {
             it.facing = TileFacing.UP
             it.inGameTilePosition = TilePosition.OTHER
         }
-        playSoundAtHandsMiddle(soundEvent = SoundEvents.ITEM_ARMOR_EQUIP_GENERIC)
+        playSoundAtHandsMiddle(soundEvent = SoundEvents.ITEM_ARMOR_EQUIP_GENERIC.value())
     }
 
     /**
@@ -1044,7 +1042,7 @@ abstract class MahjongPlayerBase : GamePlayer {
             it.facing = TileFacing.DOWN
             it.inGameTilePosition = TilePosition.OTHER
         }
-        playSoundAtHandsMiddle(soundEvent = SoundEvents.ITEM_ARMOR_EQUIP_GENERIC)
+        playSoundAtHandsMiddle(soundEvent = SoundEvents.ITEM_ARMOR_EQUIP_GENERIC.value())
     }
 
     /**

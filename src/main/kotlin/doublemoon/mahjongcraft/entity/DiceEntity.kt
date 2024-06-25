@@ -80,12 +80,12 @@ class DiceEntity(
         }
         move(MovementType.SELF, velocity)
         var f = 0.98f
-        if (onGround) {
+        if (isOnGround) {
             val pos = BlockPos(x.toInt(), (y - 1.0).toInt(), z.toInt())
             f = world.getBlockState(pos).block.slipperiness * 0.98f
         }
         velocity = velocity.multiply(f.toDouble(), 0.98, f.toDouble())
-        if (onGround) {
+        if (isOnGround) {
             velocity = velocity.multiply(1.0, -0.9, 1.0)
         }
         ++age
@@ -103,9 +103,9 @@ class DiceEntity(
         )
     }
 
-    override fun initDataTracker() {
-        super.initDataTracker()
-        dataTracker.startTracking(POINT, DicePoint.random().name)
+    override fun initDataTracker(builder: DataTracker.Builder) {
+        super.initDataTracker(builder)
+        builder.add(POINT, DicePoint.random().name)
     }
 
     override fun readCustomDataFromNbt(nbt: NbtCompound) {

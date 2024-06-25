@@ -19,7 +19,7 @@
     ]
   },
   "result": {
-    "item": "mahjongcraft:mahjong_tile",
+    "id": "mahjongcraft:mahjong_tile",
     "count": 16
   }
 }

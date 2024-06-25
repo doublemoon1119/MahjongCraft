@@ -6,10 +6,9 @@ import doublemoon.mahjongcraft.client.gui.screen.HudPositionEditorScreen
 import doublemoon.mahjongcraft.client.gui.screen.MahjongCraftHud
 import doublemoon.mahjongcraft.client.gui.screen.yaku_overview.YakuOverviewScreen
 import doublemoon.mahjongcraft.client.render.*
-import doublemoon.mahjongcraft.network.CustomEntitySpawnS2CPacketHandler
-import doublemoon.mahjongcraft.network.MahjongGamePacketListener
-import doublemoon.mahjongcraft.network.MahjongTablePacketListener
-import doublemoon.mahjongcraft.network.MahjongTileCodePacketListener
+import doublemoon.mahjongcraft.network.mahjong_game.MahjongGamePayloadListener
+import doublemoon.mahjongcraft.network.mahjong_table.MahjongTablePayloadListener
+import doublemoon.mahjongcraft.network.mahjong_tile_code.MahjongTileCodePayloadListener
 import doublemoon.mahjongcraft.registry.BlockEntityTypeRegistry
 import doublemoon.mahjongcraft.registry.EntityTypeRegistry
 import doublemoon.mahjongcraft.registry.ItemRegistry
@@ -31,9 +30,7 @@ import net.minecraft.client.item.ModelPredicateProviderRegistry
 import net.minecraft.client.option.KeyBinding
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactories
 import net.minecraft.client.util.InputUtil
-import net.minecraft.client.world.ClientWorld
-import net.minecraft.entity.LivingEntity
-import net.minecraft.item.ItemStack
+import net.minecraft.component.DataComponentTypes
 import net.minecraft.util.Identifier
 import org.lwjgl.glfw.GLFW
 
@@ -66,30 +63,21 @@ object MahjongCraftClient : ClientModInitializer {
         logger.info("Initializing client")
         ClientTickEvents.END_CLIENT_TICK.register(this::tick)
         ClientLifecycleEvents.CLIENT_STOPPING.register { ClientScheduler.onStopping() }
-        //Entity Renderer
+
+        // Entity Renderer
         EntityRendererRegistry.register(EntityTypeRegistry.dice, ::DiceEntityRenderer)
         EntityRendererRegistry.register(EntityTypeRegistry.seat, ::SeatEntityRenderer)
         EntityRendererRegistry.register(EntityTypeRegistry.mahjongBot, ::MahjongBotEntityRenderer)
         EntityRendererRegistry.register(EntityTypeRegistry.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
         EntityRendererRegistry.register(EntityTypeRegistry.mahjongTile, ::MahjongTileEntityRenderer)
-        //BlockEntity Renderer
-        BlockEntityRendererFactories.register(BlockEntityTypeRegistry.mahjongTable, ::MahjongTableBlockEntityRenderer)
-        //Model Predicate Provider
-        val modelPredicateProvider = object : ClampedModelPredicateProvider {
-            override fun unclampedCall(
-                stack: ItemStack,
-                world: ClientWorld?,
-                entity: LivingEntity?,
-                seed: Int
-            ): Float = stack.damage.toFloat()
 
-            //super.call() 使用了 MathHelper.clamp(), 導致 modelPredicate 的值限制在 0f~1f 之間, 這裡覆寫把 MathHelper.clamp() 拿掉
-            override fun call(
-                itemStack: ItemStack,
-                clientWorld: ClientWorld?,
-                livingEntity: LivingEntity?,
-                i: Int
-            ): Float = this.unclampedCall(itemStack, clientWorld, livingEntity, i)
+        // BlockEntity Renderer
+        BlockEntityRendererFactories.register(BlockEntityTypeRegistry.mahjongTable, ::MahjongTableBlockEntityRenderer)
+
+        // Model Predicate Provider
+        val modelPredicateProvider = ClampedModelPredicateProvider { stack, _, _, _ ->
+            val code = stack.get(DataComponentTypes.CUSTOM_DATA)?.copyNbt()?.getInt("code") ?: 0
+            code / 100f  // 這個值必須介於 0f ~ 1f 之間，所以 MahjongTile.code 除以 100 後，會對應到材質檔案之中的 predicate.code 欄位
         }
         ModelPredicateProviderRegistry.register(
             ItemRegistry.mahjongTile,
@@ -101,15 +89,17 @@ object MahjongCraftClient : ClientModInitializer {
             Identifier("code"),
             modelPredicateProvider
         )
-        //Packet
-        CustomEntitySpawnS2CPacketHandler.registerClient()
-        MahjongTablePacketListener.registerClient()
-        MahjongGamePacketListener.registerClient()
-        MahjongTileCodePacketListener.registerClient()
-        //Config
+
+        // Packet
+        MahjongTablePayloadListener.registerClient()
+        MahjongGamePayloadListener.registerClient()
+        MahjongTileCodePayloadListener.registerClient()
+
+        // Config
         AutoConfig.register(ModConfig::class.java, ::GsonConfigSerializer)
         config = AutoConfig.getConfigHolder(ModConfig::class.java).config
-        //Hud
+
+        // HUD
         ScreenEvents.AFTER_INIT.register { _, screen, _, _ ->
             if (screen is TitleScreen && hud == null) hud = MahjongCraftHud() //在第 1 次標題畫面初始化後, 再將 hud 初始化
         }

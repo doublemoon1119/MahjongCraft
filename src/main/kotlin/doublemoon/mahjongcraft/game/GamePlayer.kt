@@ -14,7 +14,7 @@ interface GamePlayer {
      * 遊戲玩家的顯示用名稱
      * */
     val displayName: String
-        get() = entity.displayName.string
+        get() = entity.displayName?.string ?: ""
 
     /**
      * 遊戲玩家的名稱

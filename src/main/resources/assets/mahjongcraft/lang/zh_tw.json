@@ -66,6 +66,7 @@
   "mahjongcraft.game.repeat_counter": "%d 本場",
   "mahjongcraft.game.round.title": "%s %d 局",
   "mahjongcraft.game.open_tanyao": "食斷",
+  "mahjongcraft.game.score": "分數",
   "mahjongcraft.game.score.baiman": "倍滿",
   "mahjongcraft.game.score.haneman": "跳滿",
   "mahjongcraft.game.score.kazoe_yakuman": "累計役滿",

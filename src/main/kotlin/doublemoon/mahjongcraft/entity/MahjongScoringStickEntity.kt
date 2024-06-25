@@ -3,6 +3,8 @@ package doublemoon.mahjongcraft.entity
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.ScoringStick
 import doublemoon.mahjongcraft.registry.EntityTypeRegistry
 import doublemoon.mahjongcraft.registry.ItemRegistry
+import net.minecraft.component.DataComponentTypes
+import net.minecraft.component.type.NbtComponent
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker
 import net.minecraft.entity.data.TrackedData
@@ -29,17 +31,21 @@ class MahjongScoringStickEntity(
         get() = dataTracker[CODE]
 
     val scoringStick: ScoringStick
-        get() = ScoringStick.values()[code]
+        get() = ScoringStick.entries[code]
 
     override fun isCollidable(): Boolean = true
 
     override fun interact(player: PlayerEntity, hand: Hand): ActionResult {
-        if (!player.world.isClient) {
+        if (!world.isClient) {
             player as ServerPlayerEntity
             if (!isSpawnedByGame && player.isSneaking) {  //不是由遊戲產生, 是手動放置的一般實體
-                //有蹲下, 把棒子撿起來
-                val item = ItemRegistry.mahjongScoringStick.defaultStack.also { it.damage = code }
-                player.giveItemStack(item)
+                //有 蹲下, 把棒子撿起來
+                val itemStack = ItemRegistry.mahjongScoringStick.defaultStack.also {
+                    val nbt = NbtCompound()
+                    nbt.putInt("code", code)
+                    it.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt))
+                }
+                player.giveItemStack(itemStack)
                 playSound(SoundEvents.ENTITY_ITEM_PICKUP, 1f, 1f)
                 remove(RemovalReason.DISCARDED)
             }
@@ -47,9 +53,9 @@ class MahjongScoringStickEntity(
         return ActionResult.SUCCESS
     }
 
-    override fun initDataTracker() {
-        super.initDataTracker()
-        dataTracker.startTracking(CODE, ScoringStick.P100.code)
+    override fun initDataTracker(builder: DataTracker.Builder) {
+        super.initDataTracker(builder)
+        builder.add(CODE, ScoringStick.P100.code)
     }
 
     override fun readCustomDataFromNbt(nbt: NbtCompound) {

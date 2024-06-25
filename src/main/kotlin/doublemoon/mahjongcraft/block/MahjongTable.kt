@@ -1,5 +1,6 @@
 package doublemoon.mahjongcraft.block
 
+import com.mojang.serialization.MapCodec
 import doublemoon.mahjongcraft.MOD_ID
 import doublemoon.mahjongcraft.block.enums.MahjongTablePart
 import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
@@ -7,7 +8,8 @@ import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.GameStatus
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTableBehavior
-import doublemoon.mahjongcraft.network.MahjongTablePacketListener.sendMahjongTablePacket
+import doublemoon.mahjongcraft.network.mahjong_table.MahjongTablePayload
+import doublemoon.mahjongcraft.network.sendPayloadToPlayer
 import doublemoon.mahjongcraft.registry.BlockEntityTypeRegistry
 import doublemoon.mahjongcraft.util.boxBySize
 import doublemoon.mahjongcraft.util.plus
@@ -15,7 +17,6 @@ import net.minecraft.block.*
 import net.minecraft.block.entity.BlockEntity
 import net.minecraft.block.entity.BlockEntityTicker
 import net.minecraft.block.entity.BlockEntityType
-import net.minecraft.block.piston.PistonBehavior
 import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.ItemPlacementContext
@@ -27,7 +28,6 @@ import net.minecraft.state.property.EnumProperty
 import net.minecraft.text.Text
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Formatting
-import net.minecraft.util.Hand
 import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.shape.VoxelShape
@@ -71,7 +71,7 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
         }
     }
 
-    override fun onBreak(world: World, pos: BlockPos, state: BlockState, player: PlayerEntity) {
+    override fun onBreak(world: World, pos: BlockPos, state: BlockState, player: PlayerEntity): BlockState {
         if (!world.isClient) {
             val part = state[PART] ?: return super.onBreak(world, pos, state, player)
             val centerPos = getCenterPosByPart(pos, part)
@@ -90,22 +90,23 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
                 }
             }
         }
-        super.onBreak(world, pos, state, player)
+        return super.onBreak(world, pos, state, player)
     }
 
     override fun appendProperties(builder: StateManager.Builder<Block, BlockState>) {
         builder.add(PART)
     }
 
+    override fun getCodec(): MapCodec<out BlockWithEntity> = createCodec(::MahjongTable)
+
     override fun onUse(
         state: BlockState,
         world: World,
         pos: BlockPos,
         player: PlayerEntity,
-        hand: Hand,
         hit: BlockHitResult,
     ): ActionResult {
-        if (hand === Hand.MAIN_HAND && !world.isClient) {
+        if (!world.isClient) {
             val centerPos = getCenterPosByPart(pos = pos, part = state[PART])
             player as ServerPlayerEntity
             world as ServerWorld
@@ -117,10 +118,13 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
                         Text.translatable("$MOD_ID.game.message.already_started").formatted(Formatting.YELLOW),
                         true
                     )
-                } else {  //如果遊戲尚未開始,開啟 gui
-                    player.sendMahjongTablePacket( //讓玩家開啟麻將桌 gui
-                        behavior = MahjongTableBehavior.OPEN_TABLE_WAITING_GUI,
-                        pos = centerPos
+                } else {  // 如果遊戲尚未開始, 讓玩家開啟麻將桌 gui
+                    sendPayloadToPlayer(
+                        player = player,
+                        payload = MahjongTablePayload(
+                            behavior = MahjongTableBehavior.OPEN_TABLE_WAITING_GUI,
+                            pos = centerPos
+                        )
                     )
                 }
             } else {  //玩家已經在某個遊戲中, 且不是"這個"遊戲
@@ -139,12 +143,10 @@ class MahjongTable(settings: Settings) : BlockWithEntity(settings) {
         world: World,
         state: BlockState,
         type: BlockEntityType<T>,
-    ): BlockEntityTicker<T>? = checkType(
+    ): BlockEntityTicker<T>? = validateTicker(
         type,
         BlockEntityTypeRegistry.mahjongTable
     ) { world1, pos, _, blockEntity -> MahjongTableBlockEntity.tick(world1, pos, blockEntity) }
-
-    override fun getPistonBehavior(state: BlockState): PistonBehavior = PistonBehavior.IGNORE
 
     override fun getOutlineShape(
         state: BlockState,

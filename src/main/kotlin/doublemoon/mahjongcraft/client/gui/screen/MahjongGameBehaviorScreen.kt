@@ -6,18 +6,17 @@ import doublemoon.mahjongcraft.game.mahjong.riichi.model.ClaimTarget
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongGameBehavior
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongRule
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTile
-import doublemoon.mahjongcraft.network.MahjongGamePacketListener.sendMahjongGamePacket
+import doublemoon.mahjongcraft.network.mahjong_game.MahjongGamePayload
+import doublemoon.mahjongcraft.network.sendPayloadToServer
 import doublemoon.mahjongcraft.scheduler.client.ClientCountdownTimeHandler
 import io.github.cottonmc.cotton.gui.client.CottonClientScreen
 import io.github.cottonmc.cotton.gui.client.LightweightGuiDescription
 import io.github.cottonmc.cotton.gui.widget.WPlainPanel
 import io.github.cottonmc.cotton.gui.widget.data.Color
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
-import net.minecraft.client.MinecraftClient
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import org.mahjong4j.tile.Tile
@@ -125,7 +124,7 @@ class MahjongGameBehaviorGui(
                             } else { //有赤牌,且是 5 的牌
                                 val redFiveTile = getRedFiveTile(tile)
                                     ?: throw IllegalStateException("Cannot get red-five tile from $tile")
-                                val notRedFiveTile = MahjongTile.values()[redFiveTile.mahjong4jTile.code]
+                                val notRedFiveTile = MahjongTile.entries[redFiveTile.mahjong4jTile.code]
                                 val tiles = List(4) { if (it < redFiveQuantity) redFiveTile else notRedFiveTile }
                                 this += BehaviorItem(MahjongGameBehavior.ANKAN, target, tiles)
                             }
@@ -139,7 +138,7 @@ class MahjongGameBehaviorGui(
                             val redFiveAmount = redFiveQuantity - if (tile.isRed) 1 else 0
                             val redFiveTile = getRedFiveTile(tile)
                                 ?: throw IllegalStateException("Cannot get red-five tile from $tile")
-                            val notRedFiveTile = MahjongTile.values()[redFiveTile.mahjong4jTile.code]
+                            val notRedFiveTile = MahjongTile.entries[redFiveTile.mahjong4jTile.code]
                             val tiles = List(4) { index ->
                                 if (index < 3) {
                                     if (index < redFiveAmount) redFiveTile else notRedFiveTile  // 如果有赤牌，會將它擺在第一位
@@ -165,7 +164,7 @@ class MahjongGameBehaviorGui(
                         val redFiveAmount = redFiveQuantity - if (claimingTile!!.isRed) 1 else 0
                         val redFiveTile = getRedFiveTile(claimingTile!!)
                             ?: throw IllegalStateException("Cannot get red-five tile from $claimingTile")
-                        val notRedFiveTile = MahjongTile.values()[redFiveTile.mahjong4jTile.code]
+                        val notRedFiveTile = MahjongTile.entries[redFiveTile.mahjong4jTile.code]
                         val tilesForPon = MutableList(2) { if (it < redFiveAmount) redFiveTile else notRedFiveTile }
                         val tilesForKan = tilesForPon.toMutableList()
                         tilesForKan += notRedFiveTile
@@ -240,8 +239,8 @@ class MahjongGameBehaviorGui(
                 height = BUTTON_HEIGHT,
                 label = Text.translatable("$MOD_ID.game.behavior.skip"),
                 onClick = {
-                    MinecraftClient.getInstance().player?.sendMahjongGamePacket(
-                        behavior = MahjongGameBehavior.SKIP
+                    sendPayloadToServer(
+                        payload = MahjongGamePayload(behavior = MahjongGameBehavior.SKIP)
                     )
                 }
             )
@@ -346,7 +345,6 @@ class MahjongGameBehaviorGui(
         hands: List<MahjongTile>,
         data: String,
     ) : WPlainPanel() {
-        private val player = MinecraftClient.getInstance().player!!
         private val behavior = behaviorItem.behavior
         private val target = behaviorItem.target
         private val tiles = behaviorItem.tiles
@@ -388,29 +386,35 @@ class MahjongGameBehaviorGui(
                     when (behavior) {
                         MahjongGameBehavior.CHII -> {
                             val pair = tiles[0] to tiles[1]
-                            player.sendMahjongGamePacket(
-                                behavior = behavior,
-                                extraData = Json.encodeToString(pair)
+                            sendPayloadToServer(
+                                payload = MahjongGamePayload(
+                                    behavior = behavior,
+                                    extraData = Json.encodeToString(pair)
+                                )
                             )
                         }
                         MahjongGameBehavior.KAKAN, MahjongGameBehavior.ANKAN -> {
-                            player.sendMahjongGamePacket(
-                                behavior = MahjongGameBehavior.ANKAN_OR_KAKAN,
-                                extraData = Json.encodeToString(tiles.last())
+                            sendPayloadToServer(
+                                payload = MahjongGamePayload(
+                                    behavior = MahjongGameBehavior.ANKAN_OR_KAKAN,
+                                    extraData = Json.encodeToString(tiles.last())
+                                )
                             )
                         }
                         MahjongGameBehavior.PON, MahjongGameBehavior.MINKAN,
                         MahjongGameBehavior.TSUMO, MahjongGameBehavior.RON,
                         MahjongGameBehavior.KYUUSHU_KYUUHAI,
                         -> {
-                            player.sendMahjongGamePacket(
-                                behavior = behavior
+                            sendPayloadToServer(
+                                payload = MahjongGamePayload(behavior = behavior)
                             )
                         }
                         MahjongGameBehavior.RIICHI -> {
-                            player.sendMahjongGamePacket(
-                                behavior = MahjongGameBehavior.RIICHI,
-                                extraData = Json.encodeToString(tiles.first())
+                            sendPayloadToServer(
+                                payload = MahjongGamePayload(
+                                    behavior = MahjongGameBehavior.RIICHI,
+                                    extraData = Json.encodeToString(tiles.first())
+                                )
                             )
                         }
                         else -> {

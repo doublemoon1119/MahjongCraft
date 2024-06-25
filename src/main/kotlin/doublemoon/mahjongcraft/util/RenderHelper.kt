@@ -1,21 +1,21 @@
 package doublemoon.mahjongcraft.util
 
 import com.mojang.authlib.GameProfile
-import com.mojang.authlib.minecraft.MinecraftProfileTexture
-import com.mojang.blaze3d.systems.RenderSystem
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.font.TextRenderer.TextLayerType
-import net.minecraft.client.gui.DrawableHelper
+import net.minecraft.client.gui.DrawContext
+import net.minecraft.client.gui.PlayerSkinDrawer
 import net.minecraft.client.gui.hud.PlayerListHud
 import net.minecraft.client.render.LightmapTextureManager
 import net.minecraft.client.render.OverlayTexture
 import net.minecraft.client.render.VertexConsumerProvider
+import net.minecraft.client.render.entity.LivingEntityRenderer
+import net.minecraft.client.render.entity.PlayerModelPart
 import net.minecraft.client.render.item.ItemRenderer
 import net.minecraft.client.render.model.json.ModelTransformationMode
-import net.minecraft.client.util.DefaultSkinHelper
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.item.ItemStack
 import net.minecraft.text.Text
@@ -105,26 +105,23 @@ object RenderHelper {
 
     /**
      * 渲染玩家的臉, 參考自 [PlayerListHud]
-     * @see <a href="https://forums.minecraftforge.net/topic/42871-110-get-skin-to-use-on-custom-model-from-a-given-username/">and 參考自這</a>
      * */
     fun renderPlayerFace(
-        matrices: MatrixStack,
+        context: DrawContext,
         gameProfile: GameProfile,
         x: Int,
         y: Int,
-        width: Int,
-        height: Int,
+        size: Int,
     ) {
         val client = MinecraftClient.getInstance()
-        val textures = client.skinProvider.getTextures(gameProfile)
-        val skinTexture = if (MinecraftProfileTexture.Type.SKIN in textures.keys) {
-            val texture = textures[MinecraftProfileTexture.Type.SKIN]
-            client.skinProvider.loadSkin(texture, MinecraftProfileTexture.Type.SKIN)
-        } else {
-            DefaultSkinHelper.getTexture(gameProfile.id)
-        }
-        RenderSystem.setShaderTexture(0, skinTexture)
-        DrawableHelper.drawTexture(matrices, x, y, width, height, 8f, 8f, 8, 8, 64, 64)
+        val playerEntity = client.world?.getPlayerByUuid(gameProfile.id)
+        val hatVisible = playerEntity != null && playerEntity.isPartVisible(PlayerModelPart.HAT)
+        val upsideDown = playerEntity != null && LivingEntityRenderer.shouldFlipUpsideDown(playerEntity)
+
+        val skinTextures = client.skinProvider.getSkinTextures(gameProfile)
+        val texture = skinTextures.texture
+
+        PlayerSkinDrawer.draw(context, texture, x, y, size, hatVisible, upsideDown)
     }
 
     fun getLightLevel(world: World, pos: BlockPos): Int {

@@ -9,8 +9,9 @@ import doublemoon.mahjongcraft.game.GameManager
 import doublemoon.mahjongcraft.game.mahjong.riichi.MahjongGame
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongRound
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongRule
-import doublemoon.mahjongcraft.network.MahjongTablePacketListener
+import doublemoon.mahjongcraft.network.mahjong_table.MahjongTablePayloadListener
 import doublemoon.mahjongcraft.registry.BlockEntityTypeRegistry
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
@@ -21,6 +22,7 @@ import net.minecraft.nbt.NbtCompound
 import net.minecraft.network.listener.ClientPlayPacketListener
 import net.minecraft.network.packet.Packet
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket
+import net.minecraft.registry.RegistryWrapper
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
@@ -50,7 +52,7 @@ class MahjongTableBlockEntity(
      * 這裡存的資料是只有面向客戶端的, 每個人看到剩下的張數都不一樣, 要經過計算才能確定
      * */
     val remainingTiles = ConcurrentHashMap<Int, Int>().apply {
-        Tile.values().forEach { this[it.code] = 0 }
+        Tile.entries.forEach { this[it.code] = 0 }
     }
 
     /**
@@ -75,8 +77,7 @@ class MahjongTableBlockEntity(
         }
     }
 
-    override fun readNbt(nbt: NbtCompound) {
-        super.readNbt(nbt)
+    override fun readNbt(nbt: NbtCompound, registryLookup: RegistryWrapper.WrapperLookup) {
         with(nbt) {
             repeat(4) {
                 players[it] = getString("PlayerStringUUID$it")
@@ -89,7 +90,7 @@ class MahjongTableBlockEntity(
             dealer = getString("Dealer")
             rule = MahjongRule.fromJsonString(getString("Rule"))
             playing = getBoolean("Playing")
-            round = Json.decodeFromString(MahjongRound.serializer(), getString("Round"))
+            round = Json.decodeFromString(getString("Round"))
         }
         world?.isClient?.let { isClient ->
             if (isClient) { //當有同步 tag 的情況出現
@@ -105,7 +106,7 @@ class MahjongTableBlockEntity(
         }
     }
 
-    override fun writeNbt(nbt: NbtCompound) {
+    override fun writeNbt(nbt: NbtCompound, registryLookup: RegistryWrapper.WrapperLookup) {
         if (cachedState[MahjongTable.PART] == MahjongTablePart.BOTTOM_CENTER) {
             with(nbt) {
                 repeat(4) {
@@ -119,19 +120,20 @@ class MahjongTableBlockEntity(
                 putString("Dealer", dealer)
                 putString("Rule", rule.toJsonString())
                 putBoolean("Playing", playing)
-                putString("Round", Json.encodeToString(MahjongRound.serializer(), round))
+                putString("Round", Json.encodeToString(round))
             }
         }
     }
 
-    override fun toInitialChunkDataNbt(): NbtCompound = NbtCompound().also { writeNbt(it) }
+    override fun toInitialChunkDataNbt(registryLookup: RegistryWrapper.WrapperLookup): NbtCompound =
+        NbtCompound().also { writeNbt(it, registryLookup) }
 
     override fun toUpdatePacket(): Packet<ClientPlayPacketListener> = BlockEntityUpdateS2CPacket.create(this)
 
     companion object {
         fun tick(world: World, pos: BlockPos, blockEntity: MahjongTableBlockEntity) {
             if (!world.isClient && !blockEntity.gameInitialized) {
-                MahjongTablePacketListener.syncBlockEntityDataWithGame(
+                MahjongTablePayloadListener.syncBlockEntityDataWithGame(
                     blockEntity = blockEntity,
                     game = GameManager.getGameOrDefault(
                         world = world as ServerWorld,

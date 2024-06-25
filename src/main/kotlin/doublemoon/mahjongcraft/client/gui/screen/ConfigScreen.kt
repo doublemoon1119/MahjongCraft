@@ -5,7 +5,8 @@ import doublemoon.mahjongcraft.MahjongCraftClient
 import doublemoon.mahjongcraft.client.ModConfig
 import doublemoon.mahjongcraft.client.gui.config.*
 import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongGameBehavior
-import doublemoon.mahjongcraft.network.MahjongGamePacketListener.sendMahjongGamePacket
+import doublemoon.mahjongcraft.network.mahjong_game.MahjongGamePayload
+import doublemoon.mahjongcraft.network.sendPayloadToServer
 import me.shedaniel.clothconfig2.api.ConfigBuilder
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.minecraft.client.MinecraftClient
@@ -133,10 +134,16 @@ object ConfigScreen {
                         defaultValue = { defaultConfig.quickActions.autoArrange }
                     ) {
                         config.quickActions.autoArrange = it
-                        MinecraftClient.getInstance().player?.sendMahjongGamePacket( //每次更改 AutoArrange 的設定都發送當前的狀態過去伺服器
-                            behavior = MahjongGameBehavior.AUTO_ARRANGE,
-                            extraData = it.toString()
-                        )
+                        val world = MinecraftClient.getInstance().world
+                        if (world != null) {
+                            // 每次在遊戲內更改 AutoArrange 的設定都會同步到伺服器
+                            sendPayloadToServer(
+                                payload = MahjongGamePayload(
+                                    behavior = MahjongGameBehavior.AUTO_ARRANGE,
+                                    extraData = it.toString()
+                                )
+                            )
+                        }
                     }
                     booleanToggle(
                         text = autoCallWinText,

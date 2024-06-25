@@ -1,10 +1,13 @@
 package doublemoon.mahjongcraft.item
 
 import doublemoon.mahjongcraft.entity.MahjongScoringStickEntity
+import net.minecraft.component.DataComponentTypes
+import net.minecraft.component.type.NbtComponent
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
 import net.minecraft.item.ItemUsageContext
+import net.minecraft.nbt.NbtCompound
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
@@ -13,6 +16,8 @@ import net.minecraft.world.World
 
 /**
  * 麻將點棒物品
+ *
+ * 使用 NBT 之中的 "code" 來控制牌的外觀
  * */
 class MahjongScoringStick(settings: Settings) : Item(settings) {
     /**
@@ -22,11 +27,14 @@ class MahjongScoringStick(settings: Settings) : Item(settings) {
      * */
     override fun use(world: World, user: PlayerEntity, hand: Hand): TypedActionResult<ItemStack> {
         val itemStack = user.getStackInHand(hand)
+        // 僅允許伺服端執行，如果是客戶端就直接返回
         if (world.isClient) return TypedActionResult.success(itemStack)
-        //如果是在客戶端觸發, 直接當作完成, 不會進行以下操作
-        val stickCode = itemStack.damage
-        if (!user.isSneaking) { //沒有蹲下
-            itemStack.damage = (stickCode + 1) % 4
+
+        if (!user.isSneaking) { // 沒有蹲下
+            val nbt = itemStack.get(DataComponentTypes.CUSTOM_DATA)?.copyNbt() ?: NbtCompound()
+            val stickCode = nbt.getInt("code")
+            nbt.putInt("code", (stickCode + 1) % 4)
+            itemStack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt))
             return TypedActionResult.success(itemStack)
         }
         return TypedActionResult.pass(itemStack)
@@ -38,10 +46,13 @@ class MahjongScoringStick(settings: Settings) : Item(settings) {
      * */
     override fun useOnBlock(context: ItemUsageContext): ActionResult {
         val player = context.player ?: return ActionResult.PASS
+        // 僅允許伺服端執行，如果是客戶端就直接返回
         if (context.world.isClient) return ActionResult.SUCCESS
-        //如果是在客戶端觸發, 直接當作完成, 不會進行以下操作
+
         val itemStack = context.stack
-        val stickCode = itemStack.damage
+        val nbt = itemStack.get(DataComponentTypes.CUSTOM_DATA)?.copyNbt() ?: NbtCompound()
+        val stickCode = nbt.getInt("code")
+
         return if (player.isSneaking) { //有蹲下才能放置
             val world = context.world as ServerWorld
             MahjongScoringStickEntity(world = world).apply {
@@ -53,9 +64,9 @@ class MahjongScoringStick(settings: Settings) : Item(settings) {
             if (!player.abilities.creativeMode) itemStack.decrement(1)
             ActionResult.CONSUME
         } else {  //沒蹲下, 改變牌的外觀
-            itemStack.damage = (stickCode + 1) % 4
+            nbt.putInt("code", (stickCode + 1) % 4)
+            itemStack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt))
             ActionResult.SUCCESS
         }
     }
-
 }

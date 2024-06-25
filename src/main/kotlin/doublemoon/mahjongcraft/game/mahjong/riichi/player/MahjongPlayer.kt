@@ -1,18 +1,19 @@
 package doublemoon.mahjongcraft.game.mahjong.riichi.player
 
 import doublemoon.mahjongcraft.entity.toMahjongTileList
-import doublemoon.mahjongcraft.game.mahjong.riichi.model.*
-import doublemoon.mahjongcraft.network.MahjongGamePacketListener.sendMahjongGamePacket
-import doublemoon.mahjongcraft.network.MahjongTablePacketListener.sendMahjongTablePacket
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.ClaimTarget
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongGameBehavior
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongRule
+import doublemoon.mahjongcraft.game.mahjong.riichi.model.MahjongTile
+import doublemoon.mahjongcraft.network.mahjong_game.MahjongGamePayload
+import doublemoon.mahjongcraft.network.sendPayloadToPlayer
 import doublemoon.mahjongcraft.scheduler.server.ServerScheduler
 import doublemoon.mahjongcraft.util.delayOnServer
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.text.Text
-import net.minecraft.util.math.BlockPos
 
 /**
  * 麻將玩家
@@ -22,28 +23,11 @@ class MahjongPlayer(
 ) : MahjongPlayerBase() {
 
     init {
-        //初始化的時候就發數據包給玩家, 用來取得玩家要不要自動理牌
-        entity.sendMahjongGamePacket(behavior = MahjongGameBehavior.AUTO_ARRANGE)
-    }
-
-    override val displayName: String
-        get() = entity.entityName
-
-    fun sendMahjongGamePacket(
-        behavior: MahjongGameBehavior,
-        hands: List<MahjongTile> = listOf(),
-        target: ClaimTarget = ClaimTarget.SELF,
-        extraData: String = "",
-    ) {
-        entity.sendMahjongGamePacket(behavior, hands, target, extraData)
-    }
-
-    fun sendMahjongTablePacket(
-        behavior: MahjongTableBehavior,
-        pos: BlockPos,
-        extraData: String = "",
-    ) {
-        entity.sendMahjongTablePacket(behavior, pos, extraData)
+        // 初始化的時候就發數據包給玩家, 用來取得玩家要不要自動理牌
+        sendPayloadToPlayer(
+            player = entity,
+            payload = MahjongGamePayload(behavior = MahjongGameBehavior.AUTO_ARRANGE)
+        )
     }
 
     fun sendMessage(text: Text, overlay: Boolean = true) {
@@ -320,12 +304,19 @@ class MahjongPlayer(
     ): T {
         this.waitingBehavior += waitingBehavior
         if (skippable) this.waitingBehavior += MahjongGameBehavior.SKIP
-        this.sendMahjongGamePacket(
-            behavior = behavior,
-            hands = hands,
-            target = target,
-            extraData = extraData
+
+        // 發送請求
+        sendPayloadToPlayer(
+            player = entity,
+            payload = MahjongGamePayload(
+                behavior = behavior,
+                hands = hands,
+                target = target,
+                extraData = extraData
+            )
         )
+
+        // 倒數計時並等待回應
         var tBase = basicThinkingTime
         var tExtra = extraThinkingTime
         var count = 0
@@ -338,10 +329,14 @@ class MahjongPlayer(
             if (cancelWaitingBehavior || behaviorResult != null || ((tBase + tExtra) <= 0 && count % 20 == 1)) {
                 completed = true
             } else if ((tBase + tExtra) > 0 && count % 20 == 1) {
-                entity.sendMahjongGamePacket(
-                    behavior = MahjongGameBehavior.COUNTDOWN_TIME,
-                    extraData = Json.encodeToString<Pair<Int?, Int?>>(tBase to tExtra)
+                sendPayloadToPlayer(
+                    player = entity,
+                    payload = MahjongGamePayload(
+                        behavior = MahjongGameBehavior.COUNTDOWN_TIME,
+                        extraData = Json.encodeToString<Pair<Int?, Int?>>(tBase to tExtra)
+                    )
                 )
+
                 if (tBase > 0) {
                     tBase--
                 } else if (tExtra > 0) {
@@ -351,10 +346,16 @@ class MahjongPlayer(
         }
         while (!completed) delayOnServer(50)
         ServerScheduler.removeQueuedAction(action)
-        entity.sendMahjongGamePacket( //傳兩個 null 過去表示倒數結束
-            behavior = MahjongGameBehavior.COUNTDOWN_TIME,
-            extraData = Json.encodeToString<Pair<Int?, Int?>>(null to null)
+
+        // 傳兩個 null 過去表示倒數結束
+        sendPayloadToPlayer(
+            player = entity,
+            payload = MahjongGamePayload(
+                behavior = MahjongGameBehavior.COUNTDOWN_TIME,
+                extraData = Json.encodeToString<Pair<Int?, Int?>>(null to null)
+            )
         )
+
         val usedExtraTime = extraThinkingTime - tExtra //使用過的額外思考時間
         extraThinkingTime -= usedExtraTime //扣掉用掉的額外思考時間
         val result = behaviorResult ?: (MahjongGameBehavior.SKIP to "")

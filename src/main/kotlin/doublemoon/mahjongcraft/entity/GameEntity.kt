@@ -1,7 +1,6 @@
 package doublemoon.mahjongcraft.entity
 
 import doublemoon.mahjongcraft.blockentity.MahjongTableBlockEntity
-import doublemoon.mahjongcraft.network.CustomEntitySpawnS2CPacketHandler
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker
@@ -9,8 +8,6 @@ import net.minecraft.entity.data.TrackedData
 import net.minecraft.entity.data.TrackedDataHandlerRegistry
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.nbt.NbtHelper
-import net.minecraft.network.listener.ClientPlayPacketListener
-import net.minecraft.network.packet.Packet
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.World
 
@@ -56,13 +53,13 @@ abstract class GameEntity(
         autoRemove()
     }
 
-    override fun initDataTracker() {
-        dataTracker.startTracking(GAME_BLOCK_POS, blockPos)
-        dataTracker.startTracking(SPAWNED_BY_GAME, false)
+    override fun initDataTracker(builder: DataTracker.Builder) {
+        builder.add(GAME_BLOCK_POS, blockPos)
+        builder.add(SPAWNED_BY_GAME, false)
     }
 
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        gameBlockPos = NbtHelper.toBlockPos(nbt.getCompound("GameBlockPos"))
+        gameBlockPos = NbtHelper.toBlockPos(nbt, "GameBlockPos").get()
         isSpawnedByGame = nbt.getBoolean("SpawnedByGame")
     }
 
@@ -70,9 +67,6 @@ abstract class GameEntity(
         nbt.put("GameBlockPos", NbtHelper.fromBlockPos(gameBlockPos))
         nbt.putBoolean("SpawnedByGame", isSpawnedByGame)
     }
-
-    override fun createSpawnPacket(): Packet<ClientPlayPacketListener> =
-        CustomEntitySpawnS2CPacketHandler.createPacket(this)
 
     companion object {
         private val GAME_BLOCK_POS: TrackedData<BlockPos> = DataTracker.registerData(

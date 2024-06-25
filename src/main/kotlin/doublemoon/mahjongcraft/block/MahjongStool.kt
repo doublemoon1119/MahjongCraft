@@ -5,11 +5,9 @@ import doublemoon.mahjongcraft.util.boxBySize
 import net.minecraft.block.Block
 import net.minecraft.block.BlockState
 import net.minecraft.block.ShapeContext
-import net.minecraft.block.piston.PistonBehavior
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.ActionResult
-import net.minecraft.util.Hand
 import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.shape.VoxelShape
@@ -24,27 +22,20 @@ class MahjongStool(settings: Settings) : Block(settings) {
         world: World,
         pos: BlockPos,
         player: PlayerEntity,
-        hand: Hand,
-        hit: BlockHitResult
+        hit: BlockHitResult,
     ): ActionResult =
-        if (hand === Hand.MAIN_HAND && !world.isClient && SeatEntity.canSpawnAt(
-                world = world as ServerWorld,
-                pos = pos
-            )
-        ) {
+        if (!world.isClient && SeatEntity.canSpawnAt(world = world as ServerWorld, pos = pos)) {
             SeatEntity.spawnAt(world = world, pos = pos, entity = player, sitOffsetY = 0.4)
             ActionResult.SUCCESS
         } else {
             ActionResult.PASS
         }
 
-    override fun getPistonBehavior(state: BlockState): PistonBehavior = PistonBehavior.DESTROY
-
     override fun getOutlineShape(
         state: BlockState?,
         world: BlockView?,
         pos: BlockPos?,
-        context: ShapeContext?
+        context: ShapeContext?,
     ): VoxelShape = SHAPE
 
     companion object {

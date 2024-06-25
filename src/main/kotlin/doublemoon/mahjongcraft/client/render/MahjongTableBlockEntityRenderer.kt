@@ -61,7 +61,7 @@ class MahjongTableBlockEntityRenderer(
             }
             val windIndex = (dealerSeatIndex - index).let { if (it >= 0) 4 - it else -it } % 4
             buildList {
-                this += Wind.values()[windIndex].toText()
+                this += Wind.entries[windIndex].toText()
                 this += Text.of(blockEntity.points[index].toString())
                 reverse()
                 forEachIndexed { index1, text ->

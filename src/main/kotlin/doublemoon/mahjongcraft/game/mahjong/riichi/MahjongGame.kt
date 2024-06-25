@@ -12,7 +12,9 @@ import doublemoon.mahjongcraft.game.mahjong.riichi.player.MahjongBot
 import doublemoon.mahjongcraft.game.mahjong.riichi.player.MahjongPlayer
 import doublemoon.mahjongcraft.game.mahjong.riichi.player.MahjongPlayerBase
 import doublemoon.mahjongcraft.logger
-import doublemoon.mahjongcraft.network.MahjongTablePacketListener
+import doublemoon.mahjongcraft.network.mahjong_game.MahjongGamePayload
+import doublemoon.mahjongcraft.network.mahjong_table.MahjongTablePayloadListener
+import doublemoon.mahjongcraft.network.sendPayloadToPlayer
 import doublemoon.mahjongcraft.registry.SoundRegistry
 import doublemoon.mahjongcraft.scheduler.client.ScoreSettleHandler
 import doublemoon.mahjongcraft.scheduler.client.YakuSettleHandler
@@ -821,11 +823,16 @@ class MahjongGame(
         }
         delayOnServer(3000) //玩家倒牌後小延遲一下, 再發送和局, 看起來比較自然
         realPlayers.forEach {  //寄送結算數據包以及分數列表
-            it.sendMahjongGamePacket(
-                behavior = MahjongGameBehavior.SCORE_SETTLEMENT,
-                extraData = Json.encodeToString(
-                    ScoreSettlement.serializer(),
-                    ScoreSettlement.ExhaustiveDraw(exhaustiveDraw = draw, scoreList = scoreList)
+            sendPayloadToPlayer(
+                player = it.entity,
+                payload = MahjongGamePayload(
+                    behavior = MahjongGameBehavior.SCORE_SETTLEMENT,
+                    extraData = Json.encodeToString(
+                        ScoreSettlement(
+                            titleTranslateKey = draw.translateKey,
+                            scoreList = scoreList
+                        )
+                    )
                 )
             )
         }
@@ -843,16 +850,24 @@ class MahjongGame(
                 scoreChange = 0
             )
         }
-        realPlayers.forEach {  //寄送結算數據包以及分數列表
-            it.sendMahjongGamePacket(
-                behavior = MahjongGameBehavior.SCORE_SETTLEMENT,
-                extraData = Json.encodeToString(
-                    ScoreSettlement.serializer(),
-                    ScoreSettlement.GameOver(scoreList = scoreList)
+
+        realPlayers.forEach {
+            // 寄送結算數據包以及分數列表
+            sendPayloadToPlayer(
+                player = it.entity,
+                payload = MahjongGamePayload(
+                    behavior = MahjongGameBehavior.SCORE_SETTLEMENT,
+                    extraData = Json.encodeToString(
+                        ScoreSettlement(
+                            titleTranslateKey = "$MOD_ID.game.game_over",
+                            scoreList = scoreList
+                        )
+                    )
                 )
             )
-            //會多傳一份給玩家的遊戲結算文字訊息
-            val mahjong = (Text.translatable("$MOD_ID.game.riichi_mahjong") + ":")
+
+            // 會多傳一份給玩家的遊戲結算文字訊息
+            val mahjongText = (Text.translatable("$MOD_ID.game.riichi_mahjong") + ":")
                 .formatted(Formatting.YELLOW)
                 .formatted(Formatting.BOLD)
 //            val tooltipRuleString = rule.toTexts().joinToString(separator = "\n") { text -> text.string } //這方法會讓 text.string 沒有包含色碼, 所以不適用
@@ -865,12 +880,13 @@ class MahjongGame(
             val ruleHoverEvent = HoverEvent(HoverEvent.Action.SHOW_TEXT, ruleTooltip)
             val ruleStyle = Style.EMPTY.withColor(Formatting.GREEN).withHoverEvent(ruleHoverEvent)
             val ruleText = (Text.literal("§a[") + Text.translatable("$MOD_ID.game.rules") + "§a]").fillStyle(ruleStyle)
+            val scoreText = Text.translatable("$MOD_ID.game.score")
             it.sendMessage(
                 Text.literal("§2------------------------------------------")
-                        + "\n" + mahjong
+                        + "\n" + mahjongText
                         + "\n§7 - " + ruleText
-                        + "\n§a" //故意空一行
-                        + "\n§6Score:"
+                        + "\n§a" // 空一行
+                        + "\n§6" + scoreText + ":"
             )
             players.sortedByDescending { player -> player.points }.forEachIndexed { index, mjPlayer ->
                 val displayNameText = if (mjPlayer.isRealPlayer) {
@@ -1103,7 +1119,10 @@ class MahjongGame(
             scoreList += ScoreItem(mahjongPlayer = it, scoreOrigin = it.points, scoreChange = -riichiStickPoints)
             it.points -= riichiStickPoints
         }
-        val scoreSettlement = ScoreSettlement.Ron(scoreList = scoreList)
+        val scoreSettlement = ScoreSettlement(
+            titleTranslateKey = MahjongGameBehavior.RON.translateKey,
+            scoreList = scoreList
+        )
         realPlayers.sendSettlePacketAndDelay(yakuSettlementList, scoreSettlement)
     }
 
@@ -1180,7 +1199,10 @@ class MahjongGame(
                 }
             }
         }
-        val scoreSettlement = ScoreSettlement.Tsumo(scoreList = scoreList)
+        val scoreSettlement = ScoreSettlement(
+            titleTranslateKey = MahjongGameBehavior.TSUMO.translateKey,
+            scoreList = scoreList
+        )
         realPlayers.sendSettlePacketAndDelay(
             yakuSettlementList = yakuSettlementList,
             scoreSettlement = scoreSettlement
@@ -1229,7 +1251,10 @@ class MahjongGame(
                 scoreChange = -scoreChange
             )
         }
-        val scoreSettlement = ScoreSettlement.Tsumo(scoreList = scoreList)
+        val scoreSettlement = ScoreSettlement(
+            titleTranslateKey = MahjongGameBehavior.TSUMO.translateKey,
+            scoreList = scoreList
+        )
         realPlayers.sendSettlePacketAndDelay(
             yakuSettlementList = yakuSettlementList,
             scoreSettlement = scoreSettlement
@@ -1245,9 +1270,12 @@ class MahjongGame(
     ) {
         if (yakuSettlementList != null) {
             this.forEach { //發送給玩家役結算畫面的數據
-                it.sendMahjongGamePacket(
-                    behavior = MahjongGameBehavior.YAKU_SETTLEMENT,
-                    extraData = Json.encodeToString(yakuSettlementList)
+                sendPayloadToPlayer(
+                    player = it.entity,
+                    payload = MahjongGamePayload(
+                        behavior = MahjongGameBehavior.YAKU_SETTLEMENT,
+                        extraData = Json.encodeToString(yakuSettlementList)
+                    )
                 )
             }
             val yakuSettlementTime = YakuSettleHandler.defaultTime * 1000L * yakuSettlementList.size //顯示役結算畫面需要的時間
@@ -1255,9 +1283,12 @@ class MahjongGame(
         }
         if (scoreSettlement != null) {
             this.forEach { //發送給玩家分數結算畫面的數據
-                it.sendMahjongGamePacket(
-                    behavior = MahjongGameBehavior.SCORE_SETTLEMENT,
-                    extraData = Json.encodeToString(ScoreSettlement.serializer(), scoreSettlement)
+                sendPayloadToPlayer(
+                    player = it.entity,
+                    payload = MahjongGamePayload(
+                        behavior = MahjongGameBehavior.SCORE_SETTLEMENT,
+                        extraData = Json.encodeToString(scoreSettlement)
+                    )
                 )
             }
             val scoreSettlementTime = ScoreSettleHandler.defaultTime * 1000L //顯示分數結算畫面需要的時間
@@ -1271,7 +1302,12 @@ class MahjongGame(
     private fun MahjongPlayer.gameOver() {
         if (!isHost(this.entity)) ready = false //非 Host 玩家會取消準備
         cancelWaitingBehavior = true
-        this.sendMahjongGamePacket(behavior = MahjongGameBehavior.GAME_OVER) //對玩家發送 GAME_OVER 的數據包
+
+        // 對玩家發送 GAME_OVER 的數據包
+        sendPayloadToPlayer(
+            player = this.entity,
+            payload = MahjongGamePayload(behavior = MahjongGameBehavior.GAME_OVER)
+        )
     }
 
     /**
@@ -1329,9 +1365,11 @@ class MahjongGame(
                     val stoolBlockPos = BlockPos(stoolX, pos.y, stoolZ) //麻將凳應該在的位置
                     val blockState = world.getBlockState(stoolBlockPos)
                     val block = blockState.block //在麻將凳應該在的位置上的方塊
-                    if (block is MahjongStool && SeatEntity.canSpawnAt(world,
+                    if (block is MahjongStool && SeatEntity.canSpawnAt(
+                            world,
                             stoolBlockPos,
-                            checkEntity = false)
+                            checkEntity = false
+                        )
                     ) { //檢查有沒有麻將凳的存在和高度是否足夠
                         ServerScheduler.scheduleDelayAction { //先傳送再讓玩家坐在椅子上, 因為先把玩家傳到椅子後面, 所以玩家會自動看向麻將桌
                             val x = pos.x + 0.5 + if (index == 0) 3 else if (index == 2) -3 else 0
@@ -1379,7 +1417,10 @@ class MahjongGame(
         }
         realPlayers.forEach {
             it.cancelWaitingBehavior = false
-            it.sendMahjongGamePacket(behavior = MahjongGameBehavior.GAME_START)
+            sendPayloadToPlayer(
+                player = it.entity,
+                payload = MahjongGamePayload(behavior = MahjongGameBehavior.GAME_START)
+            )
         }
         if (sync) syncMahjongTable()  //開始遊戲同步麻將桌
         //延遲 0.5 秒後再開始
@@ -1440,7 +1481,7 @@ class MahjongGame(
             end(sync = false)
         }
         leave(player)
-        val message = PREFIX + Text.translatable("$MOD_ID.game.message.player_left_game", player.displayName.string)
+        val message = PREFIX + Text.translatable("$MOD_ID.game.message.player_left_game", player.displayName)
         realPlayers.forEach { //傳給玩家-> [player] 離開遊戲的訊息
             it.sendMessage(message)
         }
@@ -1457,7 +1498,7 @@ class MahjongGame(
         }
         leave(player)
         val message =
-            PREFIX + Text.translatable("$MOD_ID.game.message.player_is_not_in_this_world", player.displayName.string)
+            PREFIX + Text.translatable("$MOD_ID.game.message.player_is_not_in_this_world", player.displayName)
         realPlayers.forEach {  //傳給玩家-> [player] 改變世界的訊息
             it.sendMessage(message)
         }
@@ -1473,7 +1514,7 @@ class MahjongGame(
      * 同步 [MahjongTableBlockEntity]
      * */
     private fun syncMahjongTable(invokeOnNextTick: Boolean = true) {
-        MahjongTablePacketListener.syncBlockEntityWithGame(invokeOnNextTick = invokeOnNextTick, game = this)
+        MahjongTablePayloadListener.syncBlockEntityWithGame(invokeOnNextTick = invokeOnNextTick, game = this)
     }
 
     /**
