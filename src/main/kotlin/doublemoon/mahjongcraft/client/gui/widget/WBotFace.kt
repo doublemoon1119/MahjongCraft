@@ -18,7 +18,7 @@ class WBotFace(
 
     @Environment(EnvType.CLIENT)
     override fun paint(context: DrawContext, x: Int, y: Int, mouseX: Int, mouseY: Int) {
-        val tile = code?.let { MahjongTile.values()[it] } ?: MahjongTile.UNKNOWN
+        val tile = code?.let { MahjongTile.entries[it] } ?: MahjongTile.UNKNOWN
         val boxWidth = height * 48 / 64   //配合牌的材質的寬高比, 高比較大, 以高為準, 寬用計算的
         val imgX = when (alignment) {
             HorizontalAlignment.LEFT -> x

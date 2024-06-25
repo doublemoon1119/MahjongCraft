@@ -81,8 +81,8 @@ class MahjongPlayer(
         ) { behavior, data ->
             this.cannotDiscardTiles = listOf()
             val tileCode = data.toIntOrNull() ?: return@waitForBehaviorResult timeoutTile
-            if (behavior == MahjongGameBehavior.DISCARD && tileCode in MahjongTile.values().indices) {
-                MahjongTile.values()[tileCode]
+            if (behavior == MahjongGameBehavior.DISCARD && tileCode in MahjongTile.entries.toTypedArray().indices) {
+                MahjongTile.entries[tileCode]
             } else timeoutTile
         }
     }

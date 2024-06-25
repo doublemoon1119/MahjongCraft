@@ -331,7 +331,7 @@ abstract class MahjongPlayerBase : GamePlayer {
                 }
                 val mentsuList = fuuroListCopy.map { fuuro -> fuuro.mentsu }
                 val calculatedMachi = buildList {
-                    MahjongTile.values().filter { mjTile ->
+                    MahjongTile.entries.filter { mjTile ->
                         mjTile.mahjong4jTile != it.mahjong4jTile
                     }.forEach { mjTile -> //遍歷所有牌
                         val mj4jTile = mjTile.mahjong4jTile
@@ -363,8 +363,8 @@ abstract class MahjongPlayerBase : GamePlayer {
                             mentsuCompSet.flatMap { mentsuComp -> mentsuComp.shuntsuList }
                         shuntsuList.forEach { shuntsu ->
                             val middleTile = shuntsu.tile //順子中間這張牌
-                            val previousTile = MahjongTile.values()[middleTile.code].previousTile.mahjong4jTile
-                            val nextTile = MahjongTile.values()[middleTile.code].nextTile.mahjong4jTile
+                            val previousTile = MahjongTile.entries[middleTile.code].previousTile.mahjong4jTile
+                            val nextTile = MahjongTile.entries[middleTile.code].nextTile.mahjong4jTile
                             val shuntsuTiles = listOf(previousTile, middleTile, nextTile)
                             if (it.mahjong4jTile in shuntsuTiles) this -= it //立直後可以暗刻的牌必須不能在手牌中組成任何順子
                         }
@@ -422,8 +422,8 @@ abstract class MahjongPlayerBase : GamePlayer {
             // 求赤寶牌跟被吃的牌的差距, 1 為赤寶牌與被吃的牌連續, 2 為赤寶牌與被吃的牌組成中洞 (不會出現 0 或 3 以上)
             val gap = redFiveTileCode - targetCode
             if (gap.absoluteValue == 1) { //赤寶牌與被吃的牌連續, 檢查前後兩張牌有沒有存在
-                val firstTile = MahjongTile.values()[minOf(redFiveTileCode, targetCode)].previousTile //開頭的牌
-                val lastTile = MahjongTile.values()[maxOf(redFiveTileCode, targetCode)].nextTile //結尾的牌
+                val firstTile = MahjongTile.entries[minOf(redFiveTileCode, targetCode)].previousTile //開頭的牌
+                val lastTile = MahjongTile.entries[maxOf(redFiveTileCode, targetCode)].nextTile //結尾的牌
                 val allTileInHands = //開頭跟結尾的牌都存在手牌中
                     hands.any { it.mahjongTile == firstTile } && hands.any { it.mahjongTile == lastTile }
                 if (allTileInHands) {
@@ -431,7 +431,7 @@ abstract class MahjongPlayerBase : GamePlayer {
                 }
             } else { //赤寶牌與被吃的牌組成中洞, 檢查手牌有沒有中間牌存在
                 val midTileCode = (redFiveTileCode + targetCode) / 2 //中間牌的 code
-                val midTile = MahjongTile.values()[midTileCode]
+                val midTile = MahjongTile.entries[midTileCode]
                 val midTileInHands = hands.any { it.mahjongTile == midTile }
                 if (midTileInHands) { //手牌中有存在中洞的這張牌
                     pairs += if (gap > 0) { //手中有 5, 6 萬吃 7 萬
@@ -500,7 +500,7 @@ abstract class MahjongPlayerBase : GamePlayer {
     private fun calculateMachi(
         hands: List<MahjongTile> = this.hands.toMahjongTileList(),
         fuuroList: List<Fuuro> = this.fuuroList,
-    ): List<MahjongTile> = MahjongTile.values().filter { //過濾列表
+    ): List<MahjongTile> = MahjongTile.entries.filter { //過濾列表
         val tileInHandsCount = hands.count { tile -> tile.mahjong4jTile == it.mahjong4jTile }
         val tileInFuuroCount =
             fuuroList.sumOf { fuuro -> fuuro.tileMjEntities.count { entity -> entity.mahjong4jTile == it.mahjong4jTile } }
@@ -625,13 +625,13 @@ abstract class MahjongPlayerBase : GamePlayer {
      * */
     @JvmName("toIntArrayMahjongTileEntity")
     private fun List<MahjongTileEntity>.toIntArray() =
-        IntArray(Tile.values().size) { code -> this.count { it.mahjong4jTile.code == code } }
+        IntArray(Tile.entries.size) { code -> this.count { it.mahjong4jTile.code == code } }
 
     /**
      * 將裝著 [MahjongTile] 的列表轉成 Mahjong4j 判斷手牌用的 [IntArray]
      * */
     private fun List<MahjongTile>.toIntArray() =
-        IntArray(Tile.values().size) { code -> this.count { it.mahjong4jTile.code == code } }
+        IntArray(Tile.entries.size) { code -> this.count { it.mahjong4jTile.code == code } }
 
     private fun List<Fuuro>.toMentsuList() = this.map { it.mentsu }
 

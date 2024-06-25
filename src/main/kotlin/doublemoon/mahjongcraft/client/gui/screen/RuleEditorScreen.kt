@@ -47,7 +47,7 @@ class RuleEditorGui(
         label = { it.toText() },
         tooltip = { length -> getTooltip(length) }
     ) {
-        val values = MahjongRule.GameLength.values()
+        val values = MahjongRule.GameLength.entries.toTypedArray()
         val nextValue = values[(editingRule.length.ordinal + 1) % values.size]
         editingRule.length = nextValue
     }
@@ -57,7 +57,7 @@ class RuleEditorGui(
         label = { it.toText() },
         tooltip = { thinkingTime -> getTooltip(thinkingTime) }
     ) {
-        val values = MahjongRule.ThinkingTime.values()
+        val values = MahjongRule.ThinkingTime.entries.toTypedArray()
         val nextValue = values[(editingRule.thinkingTime.ordinal + 1) % values.size]
         editingRule.thinkingTime = nextValue
     }
@@ -83,7 +83,7 @@ class RuleEditorGui(
         label = { it.toText() },
         tooltip = { minimumHan -> getTooltip(minimumHan) }
     ) {
-        val values = MahjongRule.MinimumHan.values()
+        val values = MahjongRule.MinimumHan.entries.toTypedArray()
         val nextValue = values[(editingRule.minimumHan.ordinal + 1) % values.size]
         editingRule.minimumHan = nextValue
     }
@@ -98,7 +98,7 @@ class RuleEditorGui(
         label = { it.toText() },
         tooltip = { redFive -> getTooltip(redFive) }
     ) {
-        val values = MahjongRule.RedFive.values()
+        val values = MahjongRule.RedFive.entries.toTypedArray()
         val nextValue = values[(editingRule.redFive.ordinal + 1) % values.size]
         editingRule.redFive = nextValue
     }

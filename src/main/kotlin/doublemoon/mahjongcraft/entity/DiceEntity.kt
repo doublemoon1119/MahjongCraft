@@ -143,9 +143,9 @@ enum class DicePoint(
     SIX(-180f, 0f, 6);
 
     val next: DicePoint
-        get() = values()[(this.ordinal + 1) % values().size]
+        get() = entries[(this.ordinal + 1) % entries.size]
 
     companion object {
-        fun random(): DicePoint = values()[(0..values().lastIndex).random()]
+        fun random(): DicePoint = entries[(0..entries.toTypedArray().lastIndex).random()]
     }
 }

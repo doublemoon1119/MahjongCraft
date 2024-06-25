@@ -58,14 +58,6 @@ tasks {
         targetCompatibility = "$javaVersion"
     }
 
-    compileKotlin {
-        kotlinOptions {
-            jvmTarget = "$javaVersion"
-            //暫時先無視 實驗性序列化 API 的提示 (主要用於 Json.encodeToString<T>() 跟 Json.decodeFromString<T>())
-            freeCompilerArgs = freeCompilerArgs + "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
-        }
-    }
-
     jar { from("LICENSE") { rename { "${it}_${base.archivesName}" } } }
     processResources {
         inputs.property("version", project.version)

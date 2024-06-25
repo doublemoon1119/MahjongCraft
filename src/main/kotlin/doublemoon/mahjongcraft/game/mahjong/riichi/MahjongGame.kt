@@ -1536,7 +1536,7 @@ class MahjongGame(
         isRinshanKaihoh: Boolean = false,
     ): PersonalSituation {
         val selfWindNumber = seatOrderFromDealer.indexOf(this) //從以莊家開始排序的座位中取得 this 玩家的座位編號 (與自風編號一樣)
-        val jikaze = Wind.values()[selfWindNumber].tile
+        val jikaze = Wind.entries[selfWindNumber].tile
         val isIppatsu: Boolean = isIppatsu(players, board.discards) //是否一發
         return PersonalSituation(
             isTsumo,

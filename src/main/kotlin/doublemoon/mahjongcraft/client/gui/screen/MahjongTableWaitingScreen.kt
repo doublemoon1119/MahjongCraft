@@ -393,7 +393,7 @@ class MahjongTableGui(
         /**
          * 對象的實體名稱, 不是 displayName, 是 gameProfile.name,
          * 請不要使用 [ServerPlayerEntity.getDisplayName],
-         * 麻煩使用 [ServerPlayerEntity.getName] 或 [ServerPlayerEntity.getEntityName], empty 表示空位
+         * 麻煩使用 [ServerPlayerEntity.getName], empty 表示空位
          */
         var entityName: String = ""
         var stringUUID: String = ""
