@@ -33,3 +33,7 @@ bin/
 # for mod loader. e.g., forge, neoforge, fabric
 
 **/run/
+
+# local development settings
+
+/local.dev.properties
