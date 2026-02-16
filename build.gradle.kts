@@ -1,71 +1,44 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
+
 plugins {
-    id("fabric-loom")
-    val kotlinVersion: String by System.getProperties()
-    kotlin("jvm").version(kotlinVersion)
-    kotlin("plugin.serialization").version(kotlinVersion)
+    alias(libs.plugins.kotlin.jvm) apply false
 }
 
-base {
-    val minecraftVersion: String by project
-    val archivesBaseName: String by project
-    archivesName.set("$archivesBaseName-mc$minecraftVersion")
-}
+allprojects {
+    group = "doublemoon.mahjongcraft"
+    version = "0.4.13-SNAPSHOT"
 
-val modVersion: String by project
-version = modVersion
-val mavenGroup: String by project
-group = mavenGroup
+    // 必須先套用 base 插件，才能存取 base.archivesName
+    apply(plugin = "base")
 
-repositories {
-    maven(url = "https://server.bbkr.space/artifactory/libs-release") { name = "CottonMC" }
-    maven(url = "https://jitpack.io")  //Mahjong4j
-    maven(url = "https://maven.shedaniel.me/") //Cloth Config
-    maven(url = "https://maven.terraformersmc.com/") //Mod Menu
-}
+    val javaRelease = rootProject.libs.versions.java.release.get().toInt()
 
-dependencies {
-    val minecraftVersion: String by project
-    minecraft("com.mojang:minecraft:$minecraftVersion")
-    val yarnMappings: String by project
-    mappings("net.fabricmc:yarn:$yarnMappings:v2")
-    val loaderVersion: String by project
-    modImplementation("net.fabricmc:fabric-loader:$loaderVersion")
-    val fabricVersion: String by project
-    modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricVersion")
-    val fabricKotlinVersion: String by project
-    modImplementation("net.fabricmc:fabric-language-kotlin:$fabricKotlinVersion")
-    // Mahjong4J (https://github.com/mahjong4j/mahjong4j)
-    include("com.github.mahjong4j:mahjong4j:0.3.2")?.let { modImplementation(it) }
-    // LibGui (https://github.com/cottonmc/libgui)
-    val libguiVersion: String by project
-    include("io.github.cottonmc:LibGui:$libguiVersion")?.let { modImplementation(it) }
-    val clothConfigVersion: String by project
-    // Cloth Config API (https://www.curseforge.com/minecraft/mc-mods/cloth-config)
-    modApi("me.shedaniel.cloth:cloth-config-fabric:$clothConfigVersion") {
-        exclude(group = "net.fabricmc.fabric-api")
-    }
-    // Mod Menu (https://www.curseforge.com/minecraft/mc-mods/modmenu)
-    val modMenuVersion: String by project
-    modImplementation("com.terraformersmc:modmenu:$modMenuVersion")
-}
-
-tasks {
-    val javaVersion = JavaVersion.VERSION_21
-    compileJava {
+    tasks.withType<JavaCompile>().configureEach {
         options.encoding = "UTF-8"
-        options.release.set(javaVersion.toString().toInt())
-        sourceCompatibility = "$javaVersion"
-        targetCompatibility = "$javaVersion"
+        options.release.set(javaRelease)
     }
 
-    jar { from("LICENSE") { rename { "${it}_${base.archivesName}" } } }
-    processResources {
-        inputs.property("version", project.version)
-        filesMatching("fabric.mod.json") { expand(mutableMapOf("version" to project.version)) }
+    tasks.withType<KotlinJvmCompile>().configureEach {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.fromTarget(javaRelease.toString()))
+            freeCompilerArgs.add("-Xjvm-default=all")
+        }
     }
-    java {
-        sourceCompatibility = javaVersion
-        targetCompatibility = javaVersion
-        withSourcesJar()
+
+    val baseExtension = extensions.getByType<BasePluginExtension>()
+    tasks.withType<Jar>().configureEach {
+        from(rootProject.file("LICENSE")) {
+            rename { "${it}_${baseExtension.archivesName.get()}" }
+        }
+    }
+
+    // 統一處理資源替換
+    tasks.withType<ProcessResources>().configureEach {
+        val props = mapOf("version" to project.version)
+        inputs.properties(props)
+        filesMatching(listOf("fabric.mod.json", "META-INF/neoforge.mods.toml")) {
+            expand(props)
+        }
     }
 }

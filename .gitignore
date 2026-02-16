@@ -4,6 +4,9 @@
 build/
 out/
 
+# kotlin
+.kotlin/
+
 # idea
 
 .idea/
@@ -27,6 +30,6 @@ bin/
 
 *.DS_STORE
 
-# fabric
+# for mod loader. e.g., forge, neoforge, fabric
 
-run/
+**/run/
