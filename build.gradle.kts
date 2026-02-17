@@ -6,7 +6,7 @@ plugins {
 }
 
 allprojects {
-    group = "doublemoon.mahjongcraft"
+    group = "com.doublemoon1119.mahjongcraft"
     version = "0.4.13-SNAPSHOT"
 
     // 必須先套用 base 插件，才能存取 base.archivesName
