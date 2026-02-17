@@ -1,12 +1,14 @@
-package com.doublemoon1119.mahjongcraft.model
+package com.doublemoon1119.mahjongcraft.model.riichi
 
+import com.doublemoon1119.mahjongcraft.model.Tile
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+
 /**
- * 針對 [TileOrderTest] 進行單元測試。
+ * 針對 [RiichiTileOrder] 進行單元測試。
  */
-class TileOrderTest {
+class RiichiTileOrderTest {
     /**
      * 測試白、中的排序順序。
      */
