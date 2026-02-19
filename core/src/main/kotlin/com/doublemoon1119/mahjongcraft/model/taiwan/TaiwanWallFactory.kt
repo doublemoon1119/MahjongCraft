@@ -1,21 +1,27 @@
 package com.doublemoon1119.mahjongcraft.model.taiwan
 
+import com.doublemoon1119.mahjongcraft.model.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.model.Tile
 import com.doublemoon1119.mahjongcraft.model.TileWall
 import com.doublemoon1119.mahjongcraft.model.TileWallFactory
+import java.util.*
 
 /**
  * 台灣麻將牌山生成工廠。
- * * 總數為 144 張，包含基礎 136 張與 8 張花牌。
+ *
+ * 負責生成具備唯一識別碼的 144 張台灣麻將牌（含 8 張花牌）。
  */
 class TaiwanWallFactory : TileWallFactory {
     override fun create(): TileWall {
-        val tiles = mutableListOf<Tile>()
+        val tiles = mutableListOf<IdentifiedTile>()
 
         // 1. 生成基礎數牌 (無赤牌)
         Tile.Suit.entries.forEach { suit ->
             for (value in 1..9) {
-                repeat(4) { tiles.add(Tile.Numeric(suit, value, isRed = false)) }
+                repeat(4) {
+                    val tile = Tile.Numeric(suit, value, isRed = false)
+                    tiles.add(IdentifiedTile(UUID.randomUUID(), tile))
+                }
             }
         }
 
@@ -25,7 +31,9 @@ class TaiwanWallFactory : TileWallFactory {
             Tile.Honor.Red, Tile.Honor.Green, Tile.Honor.White
         )
         honors.forEach { honor ->
-            repeat(4) { tiles.add(honor) }
+            repeat(4) {
+                tiles.add(IdentifiedTile(UUID.randomUUID(), honor))
+            }
         }
 
         // 3. 生成花牌
@@ -33,7 +41,9 @@ class TaiwanWallFactory : TileWallFactory {
             Tile.Flower.Spring, Tile.Flower.Summer, Tile.Flower.Autumn, Tile.Flower.Winter,
             Tile.Flower.Plum, Tile.Flower.Orchid, Tile.Flower.Bamboo, Tile.Flower.Chrysanthemum
         )
-        flowers.forEach { tiles.add(it) }
+        flowers.forEach { flower ->
+            tiles.add(IdentifiedTile(UUID.randomUUID(), flower))
+        }
 
         return TileWall(tiles)
     }

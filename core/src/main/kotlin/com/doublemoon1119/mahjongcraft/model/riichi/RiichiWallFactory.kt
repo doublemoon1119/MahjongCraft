@@ -1,24 +1,28 @@
 package com.doublemoon1119.mahjongcraft.model.riichi
 
+import com.doublemoon1119.mahjongcraft.model.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.model.Tile
 import com.doublemoon1119.mahjongcraft.model.TileWall
 import com.doublemoon1119.mahjongcraft.model.TileWallFactory
+import java.util.*
 
 /**
  * 日本麻將 (Riichi) 牌山生成工廠。
- * * 總數為 136 張，不包含花牌。
+ *
+ * 負責生成具備唯一識別碼的 136 張日本麻將牌。
  * @property redFiveCount 每種數牌花色中赤五張的數量，預設為各 1 張。
  */
 class RiichiWallFactory(private val redFiveCount: Int = 1) : TileWallFactory {
     override fun create(): TileWall {
-        val tiles = mutableListOf<Tile>()
+        val tiles = mutableListOf<IdentifiedTile>()
 
         // 生成數牌：萬、筒、條 (各 4 張)
         Tile.Suit.entries.forEach { suit ->
             for (value in 1..9) {
                 repeat(4) { count ->
                     val isRed = value == 5 && count < redFiveCount
-                    tiles.add(Tile.Numeric(suit, value, isRed))
+                    val tile = Tile.Numeric(suit, value, isRed)
+                    tiles.add(IdentifiedTile(UUID.randomUUID(), tile))
                 }
             }
         }
@@ -29,7 +33,9 @@ class RiichiWallFactory(private val redFiveCount: Int = 1) : TileWallFactory {
             Tile.Honor.White, Tile.Honor.Green, Tile.Honor.Red
         )
         honors.forEach { honor ->
-            repeat(4) { tiles.add(honor) }
+            repeat(4) {
+                tiles.add(IdentifiedTile(UUID.randomUUID(), honor))
+            }
         }
 
         return TileWall(tiles)

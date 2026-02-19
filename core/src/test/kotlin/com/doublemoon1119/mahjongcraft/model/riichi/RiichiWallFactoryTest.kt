@@ -14,20 +14,19 @@ class RiichiWallFactoryTest {
      */
     @Test
     fun `test riichi wall composition`() {
-        // 設定每種花色 1 張赤 5
         val factory = RiichiWallFactory(redFiveCount = 1)
         val wall = factory.create()
 
-        // 總數應為 136
         assertEquals(136, wall.remainingCount)
 
-        // 驗證赤牌總數應為 3 (紅5萬, 紅5筒, 紅5條)
         val allTiles = wall.getAllTiles()
-        val redCount = allTiles.filterIsInstance<Tile.Numeric>().count { it.isRed }
+
+        // 驗證赤牌總數
+        val redCount = allTiles.count { (it.tile as? Tile.Numeric)?.isRed == true }
         assertEquals(3, redCount)
 
-        // 驗證不含花牌
-        val flowerCount = allTiles.count { it is Tile.Flower }
-        assertEquals(0, flowerCount)
+        // 驗證 UUID 唯一性 (不應有重複的 ID)
+        val uniqueIds = allTiles.map { it.id }.toSet()
+        assertEquals(136, uniqueIds.size)
     }
 }

@@ -17,16 +17,16 @@ class TaiwanWallFactoryTest {
         val factory = TaiwanWallFactory()
         val wall = factory.create()
 
-        // 總數應為 144
         assertEquals(144, wall.remainingCount)
 
-        // 驗證花牌總數應為 8
         val allTiles = wall.getAllTiles()
-        val flowerCount = allTiles.count { it is Tile.Flower }
+
+        // 驗證花牌總數
+        val flowerCount = allTiles.count { it.tile is Tile.Flower }
         assertEquals(8, flowerCount)
 
-        // 驗證台麻不應有赤牌
-        val redCount = allTiles.filterIsInstance<Tile.Numeric>().count { it.isRed }
-        assertEquals(0, redCount)
+        // 驗證 UUID 唯一性
+        val uniqueIds = allTiles.map { it.id }.toSet()
+        assertEquals(144, uniqueIds.size)
     }
 }

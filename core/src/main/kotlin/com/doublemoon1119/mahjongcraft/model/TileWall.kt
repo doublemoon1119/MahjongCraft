@@ -3,9 +3,11 @@ package com.doublemoon1119.mahjongcraft.model
 /**
  * 代表一場遊戲中的牌山。
  *
- * @property tiles 牌山中剩餘的牌，採用可變列表以支援摸牌動作。
+ * 內部存儲 [IdentifiedTile]，確保每一張牌在遊戲進程中都具有可追蹤的唯一性。
+ *
+ * @property tiles 牌山中剩餘的牌列表。
  */
-class TileWall(private val tiles: MutableList<Tile>) {
+class TileWall(private val tiles: MutableList<IdentifiedTile>) {
 
     /**
      * 剩餘牌數。
@@ -21,15 +23,16 @@ class TileWall(private val tiles: MutableList<Tile>) {
 
     /**
      * 從牌山中摸取一張牌。
-     * * @return 摸到的 [Tile]，若牌山已空則返回 null。
+     *
+     * @return 摸到的 [IdentifiedTile]，若牌山已空則返回 null。
      */
-    fun draw(): Tile? {
+    fun draw(): IdentifiedTile? {
         if (tiles.isEmpty()) return null
         return tiles.removeAt(0)
     }
 
     /**
-     * 獲取目前牌山的唯讀列表（用於調試或顯示）。
+     * 獲取目前牌山的唯讀列表（用於調試或狀態同步）。
      */
-    fun getAllTiles(): List<Tile> = tiles.toList()
+    fun getAllTiles(): List<IdentifiedTile> = tiles.toList()
 }
