@@ -37,8 +37,8 @@ class RiichiDiscardPileTest {
     @Test
     fun `test riichi takeLast behavior`() {
         val pile = RiichiDiscardPile()
-        val tile1 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dots, 1))
-        val tile2 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dots, 2))
+        val tile1 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
+        val tile2 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2))
 
         pile.discard(RiichiDiscardEntry(tile1))
         pile.discard(RiichiDiscardEntry(tile2))

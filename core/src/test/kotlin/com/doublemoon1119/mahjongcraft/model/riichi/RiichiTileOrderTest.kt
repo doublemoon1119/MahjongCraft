@@ -29,14 +29,14 @@ class RiichiTileOrderTest {
      */
     @Test
     fun `test sorting with red five`() {
-        val normalFive = Tile.Numeric(Tile.Suit.Dots, 5, isRed = false)
-        val redFive = Tile.Numeric(Tile.Suit.Dots, 5, isRed = true)
-        val sixDots = Tile.Numeric(Tile.Suit.Dots, 6)
+        val normalFive = Tile.Numeric(Tile.Suit.Dot, 5, isRed = false)
+        val redFive = Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)
+        val sixDot = Tile.Numeric(Tile.Suit.Dot, 6)
 
-        val list = listOf(sixDots, redFive, normalFive)
+        val list = listOf(sixDot, redFive, normalFive)
         val sorted = list.sortedWith(RiichiTileOrder)
 
         // 預期順序：普通 5 筒 -> 赤 5 筒 -> 6 筒
-        assertEquals(listOf(normalFive, redFive, sixDots), sorted)
+        assertEquals(listOf(normalFive, redFive, sixDot), sorted)
     }
 }

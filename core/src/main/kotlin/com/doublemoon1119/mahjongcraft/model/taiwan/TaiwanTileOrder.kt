@@ -16,9 +16,9 @@ object TaiwanTileOrder : TileOrder {
     private fun getWeight(tile: Tile): Double = when (tile) {
         is Tile.Numeric -> {
             val suitBase = when (tile.suit) {
-                Tile.Suit.Characters -> 10.0
-                Tile.Suit.Dots       -> 20.0
-                Tile.Suit.Bamboos    -> 30.0
+                Tile.Suit.Character -> 10.0
+                Tile.Suit.Dot       -> 20.0
+                Tile.Suit.Bamboo    -> 30.0
             }
             suitBase + tile.value.toDouble()
         }

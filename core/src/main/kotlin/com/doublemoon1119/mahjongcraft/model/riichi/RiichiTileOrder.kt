@@ -24,9 +24,9 @@ object RiichiTileOrder : TileOrder {
     private fun getWeight(tile: Tile): Double = when (tile) {
         is Tile.Numeric -> {
             val suitBase = when (tile.suit) {
-                Tile.Suit.Characters -> 10.0 // 萬子基數
-                Tile.Suit.Dots       -> 20.0 // 筒子基數
-                Tile.Suit.Bamboos    -> 30.0 // 條子基數
+                Tile.Suit.Character -> 10.0 // 萬子基數
+                Tile.Suit.Dot       -> 20.0 // 筒子基數
+                Tile.Suit.Bamboo    -> 30.0 // 條子基數
             }
             // 赤寶牌權重增加 0.1，使其排在同數值的普通牌之後
             suitBase + tile.value + (if (tile.isRed) 0.1 else 0.0)

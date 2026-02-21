@@ -35,7 +35,7 @@ class TaiwanDiscardPileTest {
     @Test
     fun `test taiwan takeLast behavior`() {
         val pile = TaiwanDiscardPile()
-        val tile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Characters, 9))
+        val tile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9))
 
         pile.discard(DiscardPile.DiscardEntry(tile))
 

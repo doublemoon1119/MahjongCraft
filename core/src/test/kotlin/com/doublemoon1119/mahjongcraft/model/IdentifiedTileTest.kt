@@ -15,7 +15,7 @@ class IdentifiedTileTest {
      */
     @Test
     fun `test identity equality with same tile type`() {
-        val tileType = Tile.Numeric(Tile.Suit.Dots, 1)
+        val tileType = Tile.Numeric(Tile.Suit.Dot, 1)
         val id1 = UUID.randomUUID()
         val id2 = UUID.randomUUID()
 

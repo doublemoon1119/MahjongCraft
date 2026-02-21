@@ -15,8 +15,8 @@ class TileTest {
      */
     @Test
     fun `test valid numeric tile creation`() {
-        val tile = Tile.Numeric(Tile.Suit.Characters, 5)
-        assertEquals(Tile.Suit.Characters, tile.suit)
+        val tile = Tile.Numeric(Tile.Suit.Character, 5)
+        assertEquals(Tile.Suit.Character, tile.suit)
         assertEquals(5, tile.value)
     }
 
@@ -37,7 +37,7 @@ class TileTest {
     @Test
     fun `test invalid numeric tile value too low`() {
         assertFailsWith<IllegalArgumentException> {
-            Tile.Numeric(Tile.Suit.Dots, 0)
+            Tile.Numeric(Tile.Suit.Dot, 0)
         }
     }
 
@@ -47,7 +47,7 @@ class TileTest {
     @Test
     fun `test invalid numeric tile value too high`() {
         assertFailsWith<IllegalArgumentException> {
-            Tile.Numeric(Tile.Suit.Bamboos, 10)
+            Tile.Numeric(Tile.Suit.Bamboo, 10)
         }
     }
 }

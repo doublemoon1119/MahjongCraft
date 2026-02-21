@@ -35,12 +35,12 @@ class TaiwanTileOrderTest {
         val spring = Tile.Flower.Spring
         val autumn = Tile.Flower.Autumn
         val east = Tile.Honor.East
-        val nineDots = Tile.Numeric(Tile.Suit.Dots, 9)
+        val nineDot = Tile.Numeric(Tile.Suit.Dot, 9)
 
-        val list = listOf(spring, east, nineDots, autumn)
+        val list = listOf(spring, east, nineDot, autumn)
         val sorted = list.sortedWith(TaiwanTileOrder)
 
         // 預期順序：9 筒 -> 東風 -> 春 -> 秋
-        assertEquals(listOf(nineDots, east, spring, autumn), sorted)
+        assertEquals(listOf(nineDot, east, spring, autumn), sorted)
     }
 }

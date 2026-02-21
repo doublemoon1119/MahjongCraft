@@ -17,8 +17,8 @@ class TileWallTest {
     @Test
     fun `test drawing from wall`() {
         val tiles = mutableListOf(
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dots, 1)),
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dots, 2))
+            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1)),
+            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2))
         )
         val wall = TileWall(tiles)
 
