@@ -26,9 +26,9 @@ class TableStateTest {
     }
 
     /**
-     * 測試用的額外狀態實作。
+     * 測試用的動態規則狀態實作，模擬不同規則下的動態數據。
      */
-    private class MockExtraState : RuleExtraState
+    private class MockDynamicState : DynamicRuleState
 
     /**
      * 輔助方法：建立測試用的玩家物件。
@@ -62,17 +62,17 @@ class TableStateTest {
     }
 
     /**
-     * 驗證 TableState 能正確持有規則特有的額外狀態介面。
+     * 驗證 TableState 能正確持有動態規則狀態介面。
      */
     @Test
-    fun `test extra state assignment`() {
-        val extra = MockExtraState()
+    fun `test dynamic rule state assignment`() {
+        val dynamicState = MockDynamicState()
         val table = TableState(
             players = emptyList(),
             tileWall = TileWall(mutableListOf()),
-            extraState = extra
+            dynamicRuleState = dynamicState
         )
 
-        assertEquals(extra, table.extraState, "TableState should store and return the extra state")
+        assertEquals(dynamicState, table.dynamicRuleState, "TableState should store and return the dynamic state")
     }
 }

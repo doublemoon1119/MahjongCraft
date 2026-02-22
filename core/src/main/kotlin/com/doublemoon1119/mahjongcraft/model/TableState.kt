@@ -12,7 +12,7 @@ package com.doublemoon1119.mahjongcraft.model
  * @property roundNumber 當前的局數（如東一局的 1）。
  * @property comboCount 連莊次數。在日麻中為「本場數」，在台麻中為「連幾」。
  * @property currentPlayerIndex 目前輪到執行動作的玩家在 [players] 列表中的索引。
- * @property extraState 規則特有的額外狀態實體（如日麻的立直棒資訊）。
+ * @property dynamicRuleState 規則特有的動態狀態實體，參考 [DynamicRuleState]。
  */
 data class TableState(
     val players: List<MahjongPlayer>,
@@ -21,7 +21,7 @@ data class TableState(
     var roundNumber: Int = 1,
     var comboCount: Int = 0,
     var currentPlayerIndex: Int = 0,
-    val extraState: RuleExtraState? = null
+    val dynamicRuleState: DynamicRuleState? = null
 ) {
     /** 獲取參與遊戲的總人數 */
     val playerCount: Int get() = players.size
