@@ -14,4 +14,7 @@ interface MahjongRuleConfig {
 
     /** 牌山結束時需保留在場上不被使用的「王牌」張數。 */
     val deadTileCount: Int
+
+    /** 該規則對應的積分配置。 */
+    val scoreConfig: ScoreConfig
 }
