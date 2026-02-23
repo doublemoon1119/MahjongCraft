@@ -1,12 +1,12 @@
 # Development Environment Configuration Example
 # ---------------------------------------------
-# 此檔案用於範例說明。請複製此檔案並重新命名為 local.dev.properties 進行實際配置。
-# local.dev.properties 已被列入 .gitignore，不會影響他人設定。
-
-# 目標 Minecraft 版本資料夾名稱 (位於 /versions/ 之下，模組加載器的上一層)
-# 範例: v1.20.1, v1.21.1
+# This file serves as a template. Copy this file and rename it to 'local.dev.properties'
+# for your actual configuration. 'local.dev.properties' is ignored by Git to prevent
+# local settings from being committed.
+# The target Minecraft version folder name (located under /versions/, above the loader level)
+# Example: v1.20.1, v1.21.1
 targetVersion=v1.20.1
 
-# 目標加載器名稱 (位於對應版本資料夾之下)
-# 範例: fabric, neoforge
+# The target mod loader name (located under the corresponding version folder)
+# Example: fabric, neoforge
 targetLoader=fabric
