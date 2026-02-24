@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.model
+package com.doublemoon1119.mahjongcraft.model.base
 
 /**
  * 麻將牌排序策略介面。

@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.model
+package com.doublemoon1119.mahjongcraft.model.config
 
 /**
  * 代表規則特有的動態桌況狀態介面。

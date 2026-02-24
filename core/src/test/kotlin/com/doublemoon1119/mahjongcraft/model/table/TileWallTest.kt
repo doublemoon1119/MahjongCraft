@@ -1,5 +1,7 @@
-package com.doublemoon1119.mahjongcraft.model
+package com.doublemoon1119.mahjongcraft.model.table
 
+import com.doublemoon1119.mahjongcraft.model.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.model.base.Tile
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals

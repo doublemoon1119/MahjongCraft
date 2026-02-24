@@ -1,4 +1,6 @@
-package com.doublemoon1119.mahjongcraft.model
+package com.doublemoon1119.mahjongcraft.model.table
+
+import com.doublemoon1119.mahjongcraft.model.config.DynamicRuleState
 
 /**
  * 代表一場麻將遊戲的通用全局狀態。

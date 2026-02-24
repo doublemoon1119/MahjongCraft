@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.model.taiwan
 
-import com.doublemoon1119.mahjongcraft.model.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.model.ScoreConfig
+import com.doublemoon1119.mahjongcraft.model.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.model.config.ScoreConfig
 
 /**
  * 台灣麻將特有的積分配置實作。

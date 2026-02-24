@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.model
+package com.doublemoon1119.mahjongcraft.model.base
 
 /**
  * 定義麻將牌的基本模型。

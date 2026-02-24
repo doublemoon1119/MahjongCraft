@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.model
+package com.doublemoon1119.mahjongcraft.model.base
 
 /**
  * 代表玩家的副露（鳴牌組合）。

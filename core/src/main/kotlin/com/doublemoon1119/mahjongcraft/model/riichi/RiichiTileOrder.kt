@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.model.riichi
 
-import com.doublemoon1119.mahjongcraft.model.Tile
-import com.doublemoon1119.mahjongcraft.model.TileOrder
+import com.doublemoon1119.mahjongcraft.model.base.Tile
+import com.doublemoon1119.mahjongcraft.model.base.TileOrder
 
 
 /**

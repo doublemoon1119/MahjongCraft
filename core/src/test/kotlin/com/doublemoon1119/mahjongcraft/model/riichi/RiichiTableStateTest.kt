@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.model.riichi
 
-import com.doublemoon1119.mahjongcraft.model.TableState
-import com.doublemoon1119.mahjongcraft.model.TileWall
+import com.doublemoon1119.mahjongcraft.model.table.TableState
+import com.doublemoon1119.mahjongcraft.model.table.TileWall
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

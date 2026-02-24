@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.model.taiwan
 
-import com.doublemoon1119.mahjongcraft.model.Tile
-import com.doublemoon1119.mahjongcraft.model.TileOrder
+import com.doublemoon1119.mahjongcraft.model.base.Tile
+import com.doublemoon1119.mahjongcraft.model.base.TileOrder
 
 /**
  * 台灣麻將標準排序策略。

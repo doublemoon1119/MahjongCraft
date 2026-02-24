@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.model
+package com.doublemoon1119.mahjongcraft.model.base
 
 import com.doublemoon1119.mahjongcraft.model.riichi.RiichiTileOrder
 import com.doublemoon1119.mahjongcraft.model.taiwan.TaiwanTileOrder

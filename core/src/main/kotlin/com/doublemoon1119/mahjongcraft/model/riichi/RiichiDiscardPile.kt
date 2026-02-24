@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.model.riichi
 
-import com.doublemoon1119.mahjongcraft.model.DiscardPile
-import com.doublemoon1119.mahjongcraft.model.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.model.table.DiscardPile
+import com.doublemoon1119.mahjongcraft.model.base.IdentifiedTile
 
 /**
  * 日本麻將專用的牌河紀錄實體。

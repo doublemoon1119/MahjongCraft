@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.model.taiwan
 
-import com.doublemoon1119.mahjongcraft.model.DiscardPile
+import com.doublemoon1119.mahjongcraft.model.table.DiscardPile
 
 /**
  * 台灣麻將專用的牌河實作。

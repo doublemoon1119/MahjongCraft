@@ -1,4 +1,6 @@
-package com.doublemoon1119.mahjongcraft.model
+package com.doublemoon1119.mahjongcraft.model.table
+
+import com.doublemoon1119.mahjongcraft.model.base.IdentifiedTile
 
 /**
  * 牌河介面。

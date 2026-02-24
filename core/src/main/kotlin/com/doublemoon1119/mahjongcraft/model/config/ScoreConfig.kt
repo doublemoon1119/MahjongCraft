@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.model
+package com.doublemoon1119.mahjongcraft.model.config
 
 /**
  * 定義遊戲的積分與結算配置介面。

@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.model.riichi
 
-import com.doublemoon1119.mahjongcraft.model.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.model.Tile
-import com.doublemoon1119.mahjongcraft.model.TileWall
-import com.doublemoon1119.mahjongcraft.model.TileWallFactory
+import com.doublemoon1119.mahjongcraft.model.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.model.base.Tile
+import com.doublemoon1119.mahjongcraft.model.table.TileWall
+import com.doublemoon1119.mahjongcraft.model.table.TileWallFactory
 import java.util.*
 
 /**

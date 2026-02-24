@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.model.taiwan
 
-import com.doublemoon1119.mahjongcraft.model.Tile
+import com.doublemoon1119.mahjongcraft.model.base.Tile
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

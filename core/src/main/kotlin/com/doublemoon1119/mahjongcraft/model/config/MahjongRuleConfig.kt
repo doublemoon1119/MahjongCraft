@@ -1,4 +1,6 @@
-package com.doublemoon1119.mahjongcraft.model
+package com.doublemoon1119.mahjongcraft.model.config
+
+import com.doublemoon1119.mahjongcraft.model.base.Tile
 
 /**
  * 定義麻將遊戲最基礎的物理配置介面。
@@ -17,4 +19,13 @@ interface MahjongRuleConfig {
 
     /** 該規則對應的積分配置。 */
     val scoreConfig: ScoreConfig
+
+    /** 該規則對應的對局長度配置。 */
+    val gameLength: GameLength
+
+    /**
+     * 最小胡牌翻數或台數限制（翻縛）。
+     * 日本麻將通常為 1，台灣麻將通常為 0。
+     */
+    val minimumWinConstraint: Int
 }

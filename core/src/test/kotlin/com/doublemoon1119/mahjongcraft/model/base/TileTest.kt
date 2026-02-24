@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.model
+package com.doublemoon1119.mahjongcraft.model.base
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

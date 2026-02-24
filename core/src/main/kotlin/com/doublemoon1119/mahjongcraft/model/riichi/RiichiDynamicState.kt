@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.model.riichi
 
-import com.doublemoon1119.mahjongcraft.model.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.model.config.DynamicRuleState
 
 /**
  * 日本麻將特有的動態桌況狀態。
