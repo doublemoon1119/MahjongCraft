@@ -1,14 +1,17 @@
 package com.doublemoon1119.mahjongcraft.model.table
 
 import com.doublemoon1119.mahjongcraft.model.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.model.base.Tile
 import com.doublemoon1119.mahjongcraft.model.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.model.config.GameLength
+import com.doublemoon1119.mahjongcraft.model.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.model.config.ScoreConfig
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
  * 針對 [TableState] 的基礎通用邏輯進行測試。
- * 僅依賴核心模型層，確保測試的純粹性，不依賴特定規則。
  */
 class TableStateTest {
 
@@ -28,12 +31,31 @@ class TableStateTest {
     }
 
     /**
-     * 測試用的動態規則狀態實作，模擬不同規則下的動態數據。
+     * 測試用的規則配置實作。
+     */
+    private class MockConfig(
+        override val initialHandSize: Int = 13,
+        override val scoreConfig: ScoreConfig = object : ScoreConfig {
+            override val initialScore: Int = 25000
+            override val bustThreshold: Int? = 0
+        },
+        override val gameLength: GameLength = object : GameLength {
+            override val totalRounds: Int = 8
+            override val name: String = "TEST_LENGTH"
+        }
+    ) : MahjongRuleConfig {
+        override val tileSet: List<Tile> = emptyList()
+        override val deadTileCount: Int = 14
+        override val minimumWinConstraint: Int = 1
+    }
+
+    /**
+     * 測試用的動態規則狀態實作。
      */
     private class MockDynamicState : DynamicRuleState
 
     /**
-     * 輔助方法：建立測試用的玩家物件。
+     * 建立測試用的玩家物件。
      */
     private fun createMockPlayer(name: String, seat: Wind): MahjongPlayer {
         return MahjongPlayer(
@@ -45,7 +67,36 @@ class TableStateTest {
     }
 
     /**
-     * 驗證下家獲取邏輯是否正確，並確保支援動態人數（3人或4人）。
+     * 驗證 TableState 初始化時，是否能根據規則配置正確設定所有玩家的起始分數。
+     */
+    @Test
+    fun `test player score initialization from config`() {
+        val initialScoreValue = 30000
+        val config = MockConfig(
+            scoreConfig = object : ScoreConfig {
+                override val initialScore: Int = initialScoreValue
+                override val bustThreshold: Int? = null
+            }
+        )
+        val players = listOf(
+            createMockPlayer("A", Wind.EAST),
+            createMockPlayer("B", Wind.SOUTH)
+        )
+
+        // 建立 TableState 時會觸發 init 區塊
+        TableState(
+            players = players,
+            tileWall = TileWall(mutableListOf()),
+            config = config
+        )
+
+        for (player in players) {
+            assertEquals(initialScoreValue, player.score, "Player score should be initialized to $initialScoreValue")
+        }
+    }
+
+    /**
+     * 驗證下家獲取邏輯是否正確，並確保支援動態人數。
      */
     @Test
     fun `test next player logic supports dynamic player count`() {
@@ -55,7 +106,8 @@ class TableStateTest {
 
         val table = TableState(
             players = listOf(p1, p2, p3),
-            tileWall = TileWall(mutableListOf())
+            tileWall = TileWall(mutableListOf()),
+            config = MockConfig()
         )
 
         assertEquals(3, table.playerCount, "Should support 3 players")
@@ -72,6 +124,7 @@ class TableStateTest {
         val table = TableState(
             players = emptyList(),
             tileWall = TileWall(mutableListOf()),
+            config = MockConfig(),
             dynamicRuleState = dynamicState
         )
 
