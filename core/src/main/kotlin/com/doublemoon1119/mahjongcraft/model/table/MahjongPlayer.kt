@@ -21,25 +21,17 @@ class MahjongPlayer(
     val hand: Hand = Hand(),
     val discardPile: DiscardPile<*>
 ) {
-    /** 玩家目前的總分（持點） */
+    /**
+     * 玩家目前的總分（持點）。
+     *
+     * 其初始值通常由 [TableState] 根據規則配置進行初始化。
+     * */
     var score: Int = 0
 
-    /** * 玩家目前的方位。
+    /**
+     * 玩家目前的方位。
+     *
      * 隨連莊或過莊改變，用於判定當前局數中的親家/子家關係。
      */
     var currentWind: Wind = initialSeat
-}
-
-/**
- * 麻將方位定義。
- */
-enum class Wind {
-    /** 東 (Ton) */
-    EAST,
-    /** 南 (Nan) */
-    SOUTH,
-    /** 西 (Sha) */
-    WEST,
-    /** 北 (Pei) */
-    NORTH
 }
