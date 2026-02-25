@@ -37,7 +37,7 @@ class TableStateTest {
         override val initialHandSize: Int = 13,
         override val scoreConfig: ScoreConfig = object : ScoreConfig {
             override val initialScore: Int = 25000
-            override val bustThreshold: Int? = 0
+            override val bustThreshold: Int = 0
         },
         override val gameLength: GameLength = object : GameLength {
             override val totalRounds: Int = 8

@@ -2,8 +2,6 @@ package com.doublemoon1119.mahjongcraft.model.riichi
 
 import com.doublemoon1119.mahjongcraft.model.base.Tile
 import com.doublemoon1119.mahjongcraft.model.config.GameLength
-import com.doublemoon1119.mahjongcraft.model.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.model.config.ScoreConfig
 import com.doublemoon1119.mahjongcraft.model.table.TableState
 import com.doublemoon1119.mahjongcraft.model.table.TileWall
 import kotlin.test.Test
@@ -60,7 +58,7 @@ class RiichiTableStateTest {
         state.riichiStickCount += 1
 
         // 重新從 table 獲取狀態並驗證
-        val updatedState = table.dynamicRuleState as RiichiDynamicState
+        val updatedState = table.dynamicRuleState
         assertEquals(6, updatedState.riichiStickCount, "Riichi stick count should be updated to 6 via reference")
     }
 }
