@@ -7,9 +7,6 @@ kotlin {
 }
 
 dependencies {
-    implementation(platform(libs.koin.bom))
-    implementation(libs.koin.core)
-
     // 僅用於編譯期，不打包進 Jar
     compileOnly(libs.kotlin.coroutines)
 
