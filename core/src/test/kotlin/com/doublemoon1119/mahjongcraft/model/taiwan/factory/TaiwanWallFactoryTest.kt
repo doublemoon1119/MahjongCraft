@@ -1,38 +1,26 @@
 package com.doublemoon1119.mahjongcraft.model.taiwan.factory
 
 import com.doublemoon1119.mahjongcraft.model.base.Tile
-import com.doublemoon1119.mahjongcraft.model.config.GameLength
-import com.doublemoon1119.mahjongcraft.model.taiwan.TaiwanRuleConfig
-import com.doublemoon1119.mahjongcraft.model.taiwan.TaiwanScoreConfig
+import com.doublemoon1119.mahjongcraft.test.fakes.FakeTaiwanRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
- * 針對 [TaiwanWallFactory] 進行單元測試。
+ * 針對 [TaiwanWallFactory] 進行的單元測試。
+ *
+ * 驗證台灣麻將牌山的組成是否符合預期，包含基礎 136 張牌以及可選的 8 張花牌。
  */
 class TaiwanWallFactoryTest {
 
     /**
-     * 模擬台麻配置實作類別。
-     */
-    private class TaiwanMock(override val useFlowerTiles: Boolean) : TaiwanRuleConfig {
-        override val initialHandSize = 16
-        override val tileSet = emptyList<Tile>()
-        override val deadTileCount = 8
-        override val minimumWinConstraint = 0
-        override val scoreConfig = TaiwanScoreConfig(30, 10)
-        override val gameLength = object : GameLength {
-            override val totalRounds = 16
-            override val name = "ONE_SHOE"
-        }
-    }
-
-    /**
      * 驗證台麻牌山在啟用花牌時的總數與組成。
+     *
+     * 預期總數為 144 張，且應包含 8 張花牌。
      */
     @Test
     fun `test taiwan wall composition with flowers`() {
-        val config = TaiwanMock(useFlowerTiles = true)
+        val config = FakeTaiwanRuleConfig(useFlowerTiles = true)
         val factory = TaiwanWallFactory(config)
         val wall = factory.create()
 
@@ -45,17 +33,18 @@ class TaiwanWallFactoryTest {
     }
 
     /**
-     * 驗證台麻牌山在停用花牌時的總數。
+     * 驗證台麻牌山在停用花牌時的總數與組成。
+     *
+     * 預期總數為 136 張，且不應包含任何花牌。
      */
     @Test
     fun `test taiwan wall composition without flowers`() {
-        val config = TaiwanMock(useFlowerTiles = false)
+        val config = FakeTaiwanRuleConfig(useFlowerTiles = false)
         val factory = TaiwanWallFactory(config)
         val wall = factory.create()
 
+        // 僅 136 張基礎牌
         assertEquals(136, wall.remainingCount)
-
-        val flowerCount = wall.getAllTiles().count { it.tile is Tile.Flower }
-        assertEquals(0, flowerCount)
+        assertTrue(wall.getAllTiles().none { it.tile is Tile.Flower })
     }
 }

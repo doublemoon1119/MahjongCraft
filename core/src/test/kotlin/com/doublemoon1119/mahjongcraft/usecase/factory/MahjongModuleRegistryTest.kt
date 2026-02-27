@@ -1,62 +1,56 @@
 package com.doublemoon1119.mahjongcraft.usecase.factory
 
 import com.doublemoon1119.mahjongcraft.model.base.Tile
-import com.doublemoon1119.mahjongcraft.model.config.GameLength
 import com.doublemoon1119.mahjongcraft.model.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.model.config.ScoreConfig
-import com.doublemoon1119.mahjongcraft.model.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.model.table.TileWallFactory
+import com.doublemoon1119.mahjongcraft.test.fakes.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.test.fakes.FakeGameLength
+import com.doublemoon1119.mahjongcraft.test.fakes.FakeScoreConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 /**
- * 測試用的 ScoreConfig 實作。
- */
-class RegistryTestScoreConfig(
-    override val initialScore: Int = 25000,
-    override val bustThreshold: Int? = 0
-) : ScoreConfig
-
-/**
- * 測試用的 GameLength 實作。
- */
-class RegistryTestGameLength(
-    override val totalRounds: Int = 4,
-    override val name: String = "RegistryTest"
-) : GameLength
-
-/**
  * 測試用的規則配置實作 A。
  */
-class FakeConfigA(
+private class FakeConfigA(
     override val initialHandSize: Int = 13,
     override val tileSet: List<Tile> = emptyList(),
     override val deadTileCount: Int = 14,
-    override val scoreConfig: ScoreConfig = RegistryTestScoreConfig(),
-    override val gameLength: GameLength = RegistryTestGameLength(),
-    override val minimumWinConstraint: Int = 1
+    override val minimumWinConstraint: Int = 1,
+    override val scoreConfig: FakeScoreConfig = FakeScoreConfig(),
+    override val gameLength: FakeGameLength = FakeGameLength()
 ) : MahjongRuleConfig
 
 /**
- * 測試用的規則模組實作。
+ * 測試用的規則配置實作 B。
  */
-class FakeModule<T : MahjongRuleConfig> : MahjongRuleModule<T> {
-    override fun createWallFactory(config: T): TileWallFactory {
-        throw UnsupportedOperationException("Not needed for registry testing")
+private class FakeConfigB(
+    override val initialHandSize: Int = 16,
+    override val tileSet: List<Tile> = emptyList(),
+    override val deadTileCount: Int = 16,
+    override val minimumWinConstraint: Int = 0,
+    override val scoreConfig: FakeScoreConfig = FakeScoreConfig(),
+    override val gameLength: FakeGameLength = FakeGameLength()
+) : MahjongRuleConfig
+
+/**
+ * 測試用的通用模擬模組。
+ */
+private class FakeModule<T : MahjongRuleConfig> : MahjongRuleModule<T> {
+    override fun createWallFactory(config: T): TileWallFactory = object : TileWallFactory {
+        override fun create() = throw UnsupportedOperationException()
     }
-    override fun createDiscardPile(config: T): DiscardPile<*> {
-        throw UnsupportedOperationException("Not needed for registry testing")
-    }
+    override fun createDiscardPile(config: T) = FakeDiscardPile()
 }
 
 /**
- * MahjongModuleRegistry 的單元測試。
+ * 針對 [MahjongModuleRegistry] 進行的單元測試。
  */
 class MahjongModuleRegistryTest {
 
     /**
-     * 驗證成功註冊並取得正確模組的流程。
+     * 驗證註冊後是否能正確取出對應的模組。
      */
     @Test
     fun `test register and get module`() {
@@ -71,19 +65,19 @@ class MahjongModuleRegistryTest {
     }
 
     /**
-     * 驗證當請求未註冊的配置時，是否拋出正確訊息的 IllegalStateException。
+     * 驗證當請求未註冊的配置時，是否拋出預期的 IllegalStateException。
      */
     @Test
     fun `test get unregistered module throws exception`() {
         val registry = MahjongModuleRegistry()
         val configA = FakeConfigA()
 
-        val exception = assertFailsWith<IllegalStateException>("Should throw IllegalStateException for unregistered configuration.") {
+        val exception = assertFailsWith<IllegalStateException> {
             registry.getModule(configA)
         }
 
         val expectedMessage = "No MahjongRuleModule registered for configuration: FakeConfigA"
-        assertEquals(expectedMessage, exception.message, "The exception message should match the expected English format.")
+        assertEquals(expectedMessage, exception.message)
     }
 
     /**
@@ -100,6 +94,25 @@ class MahjongModuleRegistryTest {
         registry.register(FakeConfigA::class, secondModule)
 
         val result = registry.getModule(configA)
-        assertEquals(secondModule, result, "The registry should return the latest registered module.")
+        assertEquals(secondModule, result, "The second registered module should overwrite the first one.")
+    }
+
+    /**
+     * 驗證註冊表是否能同時正確處理多種不同的配置類別。
+     */
+    @Test
+    fun `test multiple registrations`() {
+        val registry = MahjongModuleRegistry()
+        val moduleA = FakeModule<FakeConfigA>()
+        val moduleB = FakeModule<FakeConfigB>()
+
+        val configA = FakeConfigA()
+        val configB = FakeConfigB()
+
+        registry.register(FakeConfigA::class, moduleA)
+        registry.register(FakeConfigB::class, moduleB)
+
+        assertEquals(moduleA, registry.getModule(configA))
+        assertEquals(moduleB, registry.getModule(configB))
     }
 }

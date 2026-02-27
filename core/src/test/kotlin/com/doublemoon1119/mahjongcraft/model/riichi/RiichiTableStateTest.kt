@@ -1,64 +1,45 @@
 package com.doublemoon1119.mahjongcraft.model.riichi
 
-import com.doublemoon1119.mahjongcraft.model.base.Tile
-import com.doublemoon1119.mahjongcraft.model.config.GameLength
 import com.doublemoon1119.mahjongcraft.model.table.TableState
 import com.doublemoon1119.mahjongcraft.model.table.TileWall
+import com.doublemoon1119.mahjongcraft.test.fakes.FakeRiichiRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * 針對日本麻將特有的動態桌況狀態進行測試。
- * 位於 riichi 子套件下，允許依賴日麻實作與配置。
+ * 針對日本麻將特有的動態桌況狀態進行單元測試。
+ *
+ * 驗證 [TableState] 在持有日麻專屬動態狀態時的型別安全性與屬性變動。
  */
 class RiichiTableStateTest {
 
     /**
-     * 模擬日麻專用的最簡配置實作。
-     */
-    private class RiichiMockConfig : RiichiRuleConfig {
-        override val redDoraCount: Int = 3
-        override val allowOpenTanyao: Boolean = true
-        override val useLocalYaku: Boolean = false
-        override val initialHandSize: Int = 13
-        override val tileSet: List<Tile> = emptyList()
-        override val deadTileCount: Int = 14
-        override val minimumWinConstraint: Int = 1
-        override val scoreConfig = RiichiScoreConfig()
-        override val gameLength = object : GameLength {
-            override val totalRounds: Int = 8
-            override val name: String = "HALF_CHAN"
-        }
-    }
-
-    /**
      * 驗證日麻特有的立直棒（供託）計數功能。
-     * 測試動態狀態在 [TableState] 中的型別安全性與屬性變動。
+     *
+     * 測試動態狀態在 [TableState] 中的屬性變動是否能正確透過引用反映。
      */
     @Test
     fun `test riichi stick count in table state`() {
-        // 初始化日麻特有的動態狀態
         val riichiDynamic = RiichiDynamicState(riichiStickCount = 5)
 
-        // 建立桌況，注入日麻專用配置與動態狀態
         val table = TableState(
             players = emptyList(),
             tileWall = TileWall(mutableListOf()),
-            config = RiichiMockConfig(),
+            config = FakeRiichiRuleConfig(),
             dynamicRuleState = riichiDynamic
         )
 
-        // 驗證 dynamicRuleState 的型別轉換與初始屬性存取
         val state = table.dynamicRuleState
-        assertTrue(state is RiichiDynamicState, "dynamicRuleState should be instance of RiichiDynamicState")
-        assertEquals(5, state.riichiStickCount, "Initial riichi stick count should be 5")
+        assertTrue(state is RiichiDynamicState, "The dynamic state should be an instance of RiichiDynamicState.")
+        assertEquals(5, state.riichiStickCount)
 
-        // 模擬立直棒更新（如玩家立直時供託增加），並驗證狀態同步
-        state.riichiStickCount += 1
+        riichiDynamic.riichiStickCount += 1
 
-        // 重新從 table 獲取狀態並驗證
-        val updatedState = table.dynamicRuleState
-        assertEquals(6, updatedState.riichiStickCount, "Riichi stick count should be updated to 6 via reference")
+        assertEquals(
+            6,
+            table.dynamicRuleState.riichiStickCount,
+            "Changes to the dynamic state object should be reflected in TableState."
+        )
     }
 }

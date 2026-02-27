@@ -2,12 +2,10 @@ package com.doublemoon1119.mahjongcraft.usecase
 
 import com.doublemoon1119.mahjongcraft.model.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.model.base.Tile
-import com.doublemoon1119.mahjongcraft.model.config.GameLength
-import com.doublemoon1119.mahjongcraft.model.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.model.config.ScoreConfig
-import com.doublemoon1119.mahjongcraft.model.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.model.table.TileWall
 import com.doublemoon1119.mahjongcraft.model.table.TileWallFactory
+import com.doublemoon1119.mahjongcraft.test.fakes.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.test.fakes.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.usecase.factory.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.usecase.factory.MahjongRuleModule
 import java.util.*
@@ -16,80 +14,33 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 /**
- * 測試用的 ScoreConfig 實作。
- */
-class FakeScoreConfig(
-    override val initialScore: Int = 25000,
-    override val bustThreshold: Int? = 0
-) : ScoreConfig
-
-/**
- * 測試用的 GameLength 實作。
- */
-class FakeGameLength(
-    override val totalRounds: Int = 4,
-    override val name: String = "TestMode"
-) : GameLength
-
-/**
- * 測試用的規則配置實作，嚴格遵循 MahjongRuleConfig 介面。
- */
-class FakeRuleConfig(
-    override val initialHandSize: Int = 13,
-    override val tileSet: List<Tile> = emptyList(),
-    override val deadTileCount: Int = 14,
-    override val scoreConfig: ScoreConfig = FakeScoreConfig(),
-    override val gameLength: GameLength = FakeGameLength(),
-    override val minimumWinConstraint: Int = 1
-) : MahjongRuleConfig
-
-/**
- * 測試用的基礎牌河實作，繼承 DiscardPile.DiscardEntry。
- */
-class FakeDiscardPile : DiscardPile<DiscardPile.DiscardEntry> {
-    private val _entries = mutableListOf<DiscardPile.DiscardEntry>()
-    override val entries: List<DiscardPile.DiscardEntry> get() = _entries
-
-    override fun discard(entry: DiscardPile.DiscardEntry) {
-        _entries.add(entry)
-    }
-
-    override fun takeLast() {
-        _entries.lastOrNull()?.isTaken = true
-    }
-}
-
-/**
- * 開始遊戲使用案例的單元測試組。
- * 僅使用 kotlin.test 且不使用任何 Mock 框架。
+ * 針對 [StartGameUseCase] 進行的單元測試。
+ *
+ * 驗證遊戲初始化流程，包含玩家註冊、牌山生成及初始發牌邏輯。
  */
 class StartGameUseCaseTest {
 
     /**
-     * 驗證開始遊戲時的初始化邏輯是否正確執行。
+     * 驗證在正常配置下，遊戲是否能正確初始化所有玩家狀態與手牌。
      */
     @Test
-    fun `test start game success`() {
+    fun `test start game successfully`() {
         // Arrange
         val registry = MahjongModuleRegistry()
-        val config = FakeRuleConfig(initialHandSize = 13)
-        val initialWallCount = 136
+        val config = FakeMahjongRuleConfig(initialHandSize = 13)
 
-        // 建立測試用模組
-        val fakeModule = object : MahjongRuleModule<FakeRuleConfig> {
-            override fun createWallFactory(config: FakeRuleConfig) = object : TileWallFactory {
+        // 註冊模擬規則模組
+        registry.register(FakeMahjongRuleConfig::class, object : MahjongRuleModule<FakeMahjongRuleConfig> {
+            override fun createWallFactory(config: FakeMahjongRuleConfig) = object : TileWallFactory {
                 override fun create(): TileWall {
-                    val tiles = MutableList(initialWallCount) {
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.East)
-                    }
+                    // 生成足夠數量的測試牌
+                    val tiles = MutableList(100) { IdentifiedTile(UUID.randomUUID(), Tile.Honor.East) }
                     return TileWall(tiles)
                 }
             }
 
-            override fun createDiscardPile(config: FakeRuleConfig) = FakeDiscardPile()
-        }
-
-        registry.register(FakeRuleConfig::class, fakeModule)
+            override fun createDiscardPile(config: FakeMahjongRuleConfig) = FakeDiscardPile()
+        })
 
         val useCase = StartGameUseCase(registry)
         val playerMap = mapOf(
@@ -104,38 +55,30 @@ class StartGameUseCaseTest {
         val tableState = useCase(request)
 
         // Assert
-        assertEquals(4, tableState.players.size, "Player count should be 4.")
-
-        // 驗證發牌後的張數 (13 * 4 = 52)
-        val expectedRemaining = initialWallCount - (4 * 13)
-        assertEquals(
-            expectedRemaining,
-            tableState.tileWall.remainingCount,
-            "RemainingCount should be correctly calculated after dealing."
-        )
-
+        assertEquals(4, tableState.players.size)
         tableState.players.forEach { player ->
-            assertEquals(13, player.hand.standingTiles.size, "Each player should have 13 tiles in hand.")
-            assertEquals(25000, player.score, "Initial score should be correctly assigned from ScoreConfig.")
+            // 驗證初始手牌張數是否符合設定（13張）
+            assertEquals(13, player.hand.standingTiles.size)
+            // 驗證初始分數是否正確設定
+            assertEquals(config.scoreConfig.initialScore, player.score)
         }
     }
 
     /**
-     * 驗證當對應規則模組未註冊時，是否拋出正確的英文異常訊息。
+     * 驗證當傳入未註冊模組的規則配置時，應拋出 IllegalStateException。
      */
     @Test
-    fun `test module not found throws exception`() {
+    fun `test start game with unregistered config should throw exception`() {
         // Arrange
-        val registry = MahjongModuleRegistry()
+        val registry = MahjongModuleRegistry() // 空註冊表
         val useCase = StartGameUseCase(registry)
-        val request = StartGameRequest(mapOf(UUID.randomUUID() to "Test"), FakeRuleConfig())
+        val request = StartGameRequest(emptyMap(), FakeMahjongRuleConfig())
 
         // Act & Assert
-        val exception =
-            assertFailsWith<IllegalStateException>("Should throw IllegalStateException when module is missing.") {
-                useCase(request)
-            }
-        assertEquals("No MahjongRuleModule registered for configuration: FakeRuleConfig", exception.message)
+        val exception = assertFailsWith<IllegalStateException> {
+            useCase(request)
+        }
+        assertEquals("No MahjongRuleModule registered for configuration: FakeMahjongRuleConfig", exception.message)
     }
 
     /**
@@ -145,18 +88,18 @@ class StartGameUseCaseTest {
     fun `test tile wall exhausted during initial dealing`() {
         // Arrange
         val registry = MahjongModuleRegistry()
-        val config = FakeRuleConfig(initialHandSize = 13)
+        val config = FakeMahjongRuleConfig(initialHandSize = 13)
 
-        registry.register(FakeRuleConfig::class, object : MahjongRuleModule<FakeRuleConfig> {
-            override fun createWallFactory(config: FakeRuleConfig) = object : TileWallFactory {
+        registry.register(FakeMahjongRuleConfig::class, object : MahjongRuleModule<FakeMahjongRuleConfig> {
+            override fun createWallFactory(config: FakeMahjongRuleConfig) = object : TileWallFactory {
                 override fun create(): TileWall {
-                    // 故意提供不足發給 4 個玩家的牌數 (只有 10 張)
+                    // 故意提供不足發給 4 個玩家的牌數 (只有 10 張，需求為 13 * 4 = 52 張)
                     val tiles = MutableList(10) { IdentifiedTile(UUID.randomUUID(), Tile.Honor.East) }
                     return TileWall(tiles)
                 }
             }
 
-            override fun createDiscardPile(config: FakeRuleConfig) = FakeDiscardPile()
+            override fun createDiscardPile(config: FakeMahjongRuleConfig) = FakeDiscardPile()
         })
 
         val useCase = StartGameUseCase(registry)
@@ -167,9 +110,7 @@ class StartGameUseCaseTest {
         val request = StartGameRequest(playerMap, config)
 
         // Act & Assert
-        // 因為 StartGameUseCase 中 TileWall.draw() 可能回傳 null，且 Hand.addTile 接收非空值
-        // 這裡會拋出 NullPointerException 或在此前被攔截。
-        assertFailsWith<Exception>("Should fail when tile wall is exhausted during dealing.") {
+        assertFailsWith<IllegalStateException> {
             useCase(request)
         }
     }

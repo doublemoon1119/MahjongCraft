@@ -1,89 +1,39 @@
 package com.doublemoon1119.mahjongcraft.model.table
 
-import com.doublemoon1119.mahjongcraft.model.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.model.base.Tile
 import com.doublemoon1119.mahjongcraft.model.config.DynamicRuleState
-import com.doublemoon1119.mahjongcraft.model.config.GameLength
-import com.doublemoon1119.mahjongcraft.model.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.model.config.ScoreConfig
-import java.util.*
+import com.doublemoon1119.mahjongcraft.test.fakes.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.test.fakes.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.test.fakes.FakeScoreConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * 針對 [TableState] 的基礎通用邏輯進行測試。
+ * 測試用的模擬動態規則狀態實作。
+ */
+private class MockDynamicState : DynamicRuleState
+
+/**
+ * 針對 [TableState] 的基礎通用邏輯進行單元測試。
+ *
+ * 驗證包含玩家分數初始化、下家邏輯判定以及動態狀態持有等核心功能。
  */
 class TableStateTest {
 
     /**
-     * 測試用的最簡捨牌紀錄實作。
-     */
-    private class BaseEntry(tile: IdentifiedTile) : DiscardPile.DiscardEntry(tile)
-
-    /**
-     * 測試用的最簡牌河實作。
-     */
-    private class BaseDiscardPile : DiscardPile<BaseEntry> {
-        private val _entries = mutableListOf<BaseEntry>()
-        override val entries: List<BaseEntry> get() = _entries
-        override fun discard(entry: BaseEntry) { _entries.add(entry) }
-        override fun takeLast() { _entries.lastOrNull()?.isTaken = true }
-    }
-
-    /**
-     * 測試用的規則配置實作。
-     */
-    private class MockConfig(
-        override val initialHandSize: Int = 13,
-        override val scoreConfig: ScoreConfig = object : ScoreConfig {
-            override val initialScore: Int = 25000
-            override val bustThreshold: Int = 0
-        },
-        override val gameLength: GameLength = object : GameLength {
-            override val totalRounds: Int = 8
-            override val name: String = "TEST_LENGTH"
-        }
-    ) : MahjongRuleConfig {
-        override val tileSet: List<Tile> = emptyList()
-        override val deadTileCount: Int = 14
-        override val minimumWinConstraint: Int = 1
-    }
-
-    /**
-     * 測試用的動態規則狀態實作。
-     */
-    private class MockDynamicState : DynamicRuleState
-
-    /**
-     * 建立測試用的玩家物件。
-     */
-    private fun createMockPlayer(name: String, seat: Wind): MahjongPlayer {
-        return MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = name,
-            initialSeat = seat,
-            discardPile = BaseDiscardPile()
-        )
-    }
-
-    /**
-     * 驗證 TableState 初始化時，是否能根據規則配置正確設定所有玩家的起始分數。
+     * 驗證當 [TableState] 初始化時，是否能正確根據規則配置設定所有玩家的初始分數。
      */
     @Test
     fun `test player score initialization from config`() {
         val initialScoreValue = 30000
-        val config = MockConfig(
-            scoreConfig = object : ScoreConfig {
-                override val initialScore: Int = initialScoreValue
-                override val bustThreshold: Int? = null
-            }
+        // 透過傳入具備特定分數的 FakeScoreConfig 來達成測試需求
+        val config = FakeMahjongRuleConfig(
+            scoreConfig = FakeScoreConfig(initialScore = initialScoreValue)
         )
         val players = listOf(
-            createMockPlayer("A", Wind.EAST),
-            createMockPlayer("B", Wind.SOUTH)
+            FakeMahjongPlayerFactory.create(name = "P1", initialSeat = Wind.EAST),
+            FakeMahjongPlayerFactory.create(name = "P2", initialSeat = Wind.SOUTH)
         )
 
-        // 建立 TableState 時會觸發 init 區塊
         TableState(
             players = players,
             tileWall = TileWall(mutableListOf()),
@@ -91,32 +41,36 @@ class TableStateTest {
         )
 
         for (player in players) {
-            assertEquals(initialScoreValue, player.score, "Player score should be initialized to $initialScoreValue")
+            assertEquals(
+                initialScoreValue,
+                player.score,
+                "Player score should be initialized to the value defined in config."
+            )
         }
     }
 
     /**
-     * 驗證下家獲取邏輯是否正確，並確保支援動態人數。
+     * 驗證下家獲取邏輯是否正確，並確保支援動態人數（如三人麻將）。
      */
     @Test
     fun `test next player logic supports dynamic player count`() {
-        val p1 = createMockPlayer("Player 1", Wind.EAST)
-        val p2 = createMockPlayer("Player 2", Wind.SOUTH)
-        val p3 = createMockPlayer("Player 3", Wind.WEST)
+        val p1 = FakeMahjongPlayerFactory.create("Player 1", Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create("Player 2", Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create("Player 3", Wind.WEST)
 
         val table = TableState(
             players = listOf(p1, p2, p3),
             tileWall = TileWall(mutableListOf()),
-            config = MockConfig()
+            config = FakeMahjongRuleConfig()
         )
 
-        assertEquals(3, table.playerCount, "Should support 3 players")
-        assertEquals(p2, table.getNextPlayer(p1), "Next player of P1 should be P2")
-        assertEquals(p1, table.getNextPlayer(p3), "Next player of P3 should wrap back to P1")
+        assertEquals(3, table.playerCount, "Table should correctly reflect the number of joined players.")
+        assertEquals(p2, table.getNextPlayer(p1), "The next player of P1 (East) should be P2 (South).")
+        assertEquals(p1, table.getNextPlayer(p3), "The next player of the last person (P3) should wrap back to the first person (P1).")
     }
 
     /**
-     * 驗證 TableState 能正確持有動態規則狀態介面。
+     * 驗證 TableState 能正確持有並透過介面存取動態規則狀態。
      */
     @Test
     fun `test dynamic rule state assignment`() {
@@ -124,10 +78,10 @@ class TableStateTest {
         val table = TableState(
             players = emptyList(),
             tileWall = TileWall(mutableListOf()),
-            config = MockConfig(),
+            config = FakeMahjongRuleConfig(),
             dynamicRuleState = dynamicState
         )
 
-        assertEquals(dynamicState, table.dynamicRuleState, "TableState should store and return the dynamic state")
+        assertEquals(dynamicState, table.dynamicRuleState, "TableState should hold the assigned dynamic rule state.")
     }
 }

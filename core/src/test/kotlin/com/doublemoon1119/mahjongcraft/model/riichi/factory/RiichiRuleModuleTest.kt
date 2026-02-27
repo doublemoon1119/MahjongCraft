@@ -1,42 +1,19 @@
 package com.doublemoon1119.mahjongcraft.model.riichi.factory
 
-import com.doublemoon1119.mahjongcraft.model.base.Tile
-import com.doublemoon1119.mahjongcraft.model.config.GameLength
 import com.doublemoon1119.mahjongcraft.model.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.model.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.model.riichi.RiichiScoreConfig
+import com.doublemoon1119.mahjongcraft.test.fakes.FakeRiichiRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
 /**
- * 符合 RiichiRuleConfig 介面的測試實作。
- */
-class FakeRiichiConfig(
-    override val initialHandSize: Int = 13,
-    override val tileSet: List<Tile> = emptyList(),
-    override val deadTileCount: Int = 14,
-    override val redDoraCount: Int = 3,
-    override val allowOpenTanyao: Boolean = true,
-    override val useLocalYaku: Boolean = false,
-    override val minimumWinConstraint: Int = 1,
-    override val scoreConfig: RiichiScoreConfig = RiichiScoreConfig(
-        initialScore = 25000,
-        bustThreshold = 0,
-        minPointsToWin = 30000
-    ),
-    override val gameLength: GameLength = object : GameLength {
-        override val totalRounds: Int = 8
-        override val name: String = "Hanchan"
-    }
-) : RiichiRuleConfig
-
-/**
- * 驗證 RiichiRuleModule 是否正確生產日本麻將專屬組件。
+ * 針對 [RiichiRuleModule] 進行的單元測試。
+ *
+ * 驗證該模組是否能針對日本麻將規則正確生產對應的領域層組件。
  */
 class RiichiRuleModuleTest {
 
     private val module = RiichiRuleModule()
-    private val config = FakeRiichiConfig()
+    private val config = FakeRiichiRuleConfig()
 
     /**
      * 驗證建立的牌山工廠是否為日本麻將實作。
@@ -44,15 +21,15 @@ class RiichiRuleModuleTest {
     @Test
     fun `test create wall factory returns riichi implementation`() {
         val factory = module.createWallFactory(config)
-        assertTrue(factory is RiichiWallFactory, "Factory should be an instance of RiichiWallFactory.")
+        assertTrue(factory is RiichiWallFactory)
     }
 
     /**
-     * 驗證建立的牌河是否為日本麻將專用的 RiichiDiscardPile。
+     * 驗證建立的牌河是否為日本麻將實作。
      */
     @Test
     fun `test create discard pile returns riichi implementation`() {
         val discardPile = module.createDiscardPile(config)
-        assertTrue(discardPile is RiichiDiscardPile, "DiscardPile should be an instance of RiichiDiscardPile.")
+        assertTrue(discardPile is RiichiDiscardPile)
     }
 }

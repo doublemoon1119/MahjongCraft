@@ -3,20 +3,24 @@ package com.doublemoon1119.mahjongcraft.usecase
 import com.doublemoon1119.mahjongcraft.model.base.Hand
 import com.doublemoon1119.mahjongcraft.model.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.model.base.Tile
-import com.doublemoon1119.mahjongcraft.model.config.GameLength
-import com.doublemoon1119.mahjongcraft.model.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.model.config.ScoreConfig
-import com.doublemoon1119.mahjongcraft.model.table.*
+import com.doublemoon1119.mahjongcraft.model.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.model.table.TableState
+import com.doublemoon1119.mahjongcraft.model.table.TileWall
+import com.doublemoon1119.mahjongcraft.model.table.Wind
+import com.doublemoon1119.mahjongcraft.test.fakes.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.test.fakes.FakeMahjongRuleConfig
 import java.util.*
 import kotlin.test.*
 
 /**
  * 針對 [DrawTileUseCase] 進行的領域邏輯單元測試。
+ *
+ * 本測試使用自定義的 Fake 類別來模擬規則配置與牌河實體。
  */
 class DrawTileUseCaseTest {
 
     private lateinit var useCase: DrawTileUseCase
-    private val playerId = UUID.randomUUID()
+    private val playerId: UUID = UUID.randomUUID()
 
     @BeforeTest
     fun `setup draw tile use case test environment`() {
@@ -28,32 +32,34 @@ class DrawTileUseCaseTest {
      */
     @Test
     fun `test draw tile successfully`() {
-        // 準備測試用的牌
+        // 準備測試數據：一張數牌與包含該牌的牌山
         val targetTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
         val tileWall = TileWall(mutableListOf(targetTile))
 
-        // 建立測試玩家與捨牌河實體
+        // 建立測試玩家，使用 FakeDiscardPile 替代匿名實作
         val player = MahjongPlayer(
             id = playerId,
             name = "TestPlayer",
             initialSeat = Wind.EAST,
             hand = Hand(),
-            discardPile = createMockDiscardPile()
+            discardPile = FakeDiscardPile()
         )
 
+        // 建立桌況狀態，使用 FakeMahjongRuleConfig 替代匿名實作
         val tableState = TableState(
             players = listOf(player),
             tileWall = tileWall,
-            config = createMockConfig()
+            config = FakeMahjongRuleConfig()
         )
 
-        // 執行摸牌
+        // 執行摸牌行為
         useCase(tableState, playerId)
 
-        // 驗證玩家最後摸到的牌是否正確
+        // 驗證玩家最後摸到的牌（lastDrawn）是否為牌山中的那張牌
         assertNotNull(player.hand.lastDrawn)
         assertEquals(targetTile.id, player.hand.lastDrawn?.id)
-        // 驗證牌山數量是否減少
+
+        // 驗證牌山中的牌已被移除
         assertEquals(0, tileWall.remainingCount)
     }
 
@@ -62,50 +68,25 @@ class DrawTileUseCaseTest {
      */
     @Test
     fun `test draw tile when wall is empty should throw exception`() {
+        // 準備空牌山
         val tileWall = TileWall(mutableListOf())
         val player = MahjongPlayer(
             id = playerId,
             name = "TestPlayer",
             initialSeat = Wind.EAST,
             hand = Hand(),
-            discardPile = createMockDiscardPile()
+            discardPile = FakeDiscardPile()
         )
 
         val tableState = TableState(
             players = listOf(player),
             tileWall = tileWall,
-            config = createMockConfig()
+            config = FakeMahjongRuleConfig()
         )
 
+        // 驗證當呼叫 UseCase 時會觸發預期的異常
         assertFailsWith<IllegalStateException> {
             useCase(tableState, playerId)
         }
-    }
-
-    /**
-     * 輔助方法：建立測試用的最小化規則配置。
-     */
-    private fun createMockConfig() = object : MahjongRuleConfig {
-        override val initialHandSize = 13
-        override val tileSet = emptyList<Tile>()
-        override val deadTileCount = 14
-        override val minimumWinConstraint = 1
-        override val scoreConfig = object : ScoreConfig {
-            override val initialScore = 25000
-            override val bustThreshold = 0
-        }
-        override val gameLength = object : GameLength {
-            override val totalRounds = 4
-            override val name = "East Only"
-        }
-    }
-
-    /**
-     * 輔助方法：建立測試用的簡易捨牌河。
-     */
-    private fun createMockDiscardPile() = object : DiscardPile<DiscardPile.DiscardEntry> {
-        override val entries = mutableListOf<DiscardPile.DiscardEntry>()
-        override fun discard(entry: DiscardPile.DiscardEntry) { entries.add(entry) }
-        override fun takeLast() { entries.lastOrNull()?.isTaken = true }
     }
 }

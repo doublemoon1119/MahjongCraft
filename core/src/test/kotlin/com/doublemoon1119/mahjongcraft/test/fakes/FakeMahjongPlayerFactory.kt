@@ -1,0 +1,38 @@
+package com.doublemoon1119.mahjongcraft.test.fakes
+
+import com.doublemoon1119.mahjongcraft.model.base.Hand
+import com.doublemoon1119.mahjongcraft.model.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.model.table.Wind
+import java.util.*
+
+/**
+ * 用於單元測試的玩家實體工廠。
+ *
+ * 提供便捷的方法來產生 [MahjongPlayer]，並預設注入 [FakeDiscardPile]。
+ */
+object FakeMahjongPlayerFactory {
+
+    /**
+     * 建立一個測試用的玩家。
+     *
+     * @param name 玩家名稱，預設為 "TestPlayer"。
+     * @param initialSeat 初始座位方位，預設為 [Wind.EAST]。
+     * @param id 玩家唯一識別碼，預設隨機產生。
+     * @param hand 初始手牌，預設建立新的空 [Hand]。
+     * @return 具備模擬牌河的 [MahjongPlayer] 實體。
+     */
+    fun create(
+        name: String = "TestPlayer",
+        initialSeat: Wind = Wind.EAST,
+        id: UUID = UUID.randomUUID(),
+        hand: Hand = Hand()
+    ): MahjongPlayer {
+        return MahjongPlayer(
+            id = id,
+            name = name,
+            initialSeat = initialSeat,
+            hand = hand,
+            discardPile = FakeDiscardPile()
+        )
+    }
+}
