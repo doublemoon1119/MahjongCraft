@@ -6,11 +6,31 @@ import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * 針對 [Hand] 的基礎功能進行單元測試。
  */
 class HandTest {
+    /**
+     * 驗證 addTile 方法是否能正確將牌加入立牌清單中。
+     */
+    @Test
+    fun `test addTile`() {
+        // Arrange
+        val hand = Hand()
+        val tile1 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
+        val tile2 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5))
+
+        // Act
+        hand.addTile(tile1)
+        hand.addTile(tile2)
+
+        // Assert
+        assertEquals(2, hand.standingTiles.size, "Hand should contain exactly 2 standing tiles.")
+        assertTrue(hand.standingTiles.contains(tile1), "Hand should contain the first added tile.")
+        assertTrue(hand.standingTiles.contains(tile2), "Hand should contain the second added tile.")
+    }
 
     /**
      * 測試摸牌與透過 UUID 捨牌的邏輯。

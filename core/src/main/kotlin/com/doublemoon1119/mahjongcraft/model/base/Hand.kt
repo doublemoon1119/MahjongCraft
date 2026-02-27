@@ -18,6 +18,15 @@ class Hand(
     var lastDrawn: IdentifiedTile? = null
 ) {
     /**
+     * 將一張具備唯一標識的牌加入手牌列表。
+     *
+     * @param tile 欲加入手牌的 [IdentifiedTile] 實體。
+     */
+    fun addTile(tile: IdentifiedTile) {
+        tiles.add(tile)
+    }
+
+    /**
      * 獲取所有立牌（包含最後一張摸牌）。
      *
      * @return 包含目前所有立牌的列表。
