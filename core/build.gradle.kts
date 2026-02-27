@@ -2,10 +2,6 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
 }
 
-kotlin {
-    jvmToolchain(libs.versions.java.compiler.get().toInt())
-}
-
 dependencies {
     // 僅用於編譯期，不打包進 Jar
     compileOnly(libs.kotlin.coroutines)

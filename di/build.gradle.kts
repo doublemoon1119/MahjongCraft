@@ -2,10 +2,6 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
 }
 
-kotlin {
-    jvmToolchain(libs.versions.java.compiler.get().toInt())
-}
-
 dependencies {
     api(project(":core"))
 
