@@ -53,7 +53,7 @@ class DrawTileUseCaseTest {
         )
 
         // 執行摸牌行為
-        useCase(tableState, playerId)
+        useCase(DrawTileRequest(tableState, playerId))
 
         // 驗證玩家最後摸到的牌（lastDrawn）是否為牌山中的那張牌
         assertNotNull(player.hand.lastDrawn)
@@ -86,7 +86,7 @@ class DrawTileUseCaseTest {
 
         // 驗證當呼叫 UseCase 時會觸發預期的異常
         assertFailsWith<IllegalStateException> {
-            useCase(tableState, playerId)
+            useCase(DrawTileRequest(tableState, playerId))
         }
     }
 }

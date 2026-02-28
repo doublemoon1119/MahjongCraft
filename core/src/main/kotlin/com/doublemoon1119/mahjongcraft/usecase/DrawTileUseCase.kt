@@ -4,6 +4,17 @@ import com.doublemoon1119.mahjongcraft.model.table.TableState
 import java.util.*
 
 /**
+ * 摸牌動作的請求封裝。
+ *
+ * @property tableState 當前的遊戲桌況。
+ * @property playerId 執行摸牌動作的玩家 ID。
+ */
+data class DrawTileRequest(
+    val tableState: TableState,
+    val playerId: UUID
+)
+
+/**
  * 處理玩家摸牌邏輯的領域層 UseCase。
  *
  * 負責從 [TableState] 內的 [com.doublemoon1119.mahjongcraft.model.table.TileWall] 取出一張牌，
@@ -14,17 +25,18 @@ class DrawTileUseCase {
     /**
      * 執行摸牌動作。
      *
-     * @param tableState 當前的對局桌況。
-     * @param playerId 執行摸牌動作的玩家唯一識別碼。
-     * @throws IllegalStateException 當在桌上找不到該玩家、或是牌山已空（荒牌）時拋出。
+     * @param request 摸牌請求參數，包含桌況與玩家資訊。
+     * @throws IllegalStateException 當牌山已空、找不到玩家或非該玩家回合時拋出。
      */
-    operator fun invoke(tableState: TableState, playerId: UUID) {
+    operator fun invoke(request: DrawTileRequest) {
+        val table = request.tableState
+
         // 尋找目標玩家
-        val player = tableState.players.find { it.id == playerId }
-            ?: throw IllegalStateException("Player with ID $playerId not found on the current table.")
+        val player = table.players.find { it.id == request.playerId }
+            ?: throw IllegalStateException("Player with ID ${request.playerId} not found on this table.")
 
         // 從牌山摸取一張牌
-        val drawnTile = tableState.tileWall.draw()
+        val drawnTile = table.tileWall.draw()
             ?: throw IllegalStateException("The tile wall is empty; cannot perform a draw action.")
 
         // 根據 Hand.kt 的定義，將摸到的牌存入最後摸牌區
