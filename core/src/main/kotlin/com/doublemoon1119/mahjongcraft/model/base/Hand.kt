@@ -18,6 +18,17 @@ class Hand(
     var lastDrawn: IdentifiedTile? = null
 ) {
     /**
+     * 捨牌動作的結果封裝。
+     *
+     * @property tile 被捨棄的那張牌。
+     * @property isTsumogiri 是否為摸切（即打出剛摸到的那張牌）。
+     */
+    data class DiscardResult(
+        val tile: IdentifiedTile,
+        val isTsumogiri: Boolean
+    )
+
+    /**
      * 將一張具備唯一標識的牌加入手牌列表。
      *
      * @param tile 欲加入手牌的 [IdentifiedTile] 實體。
@@ -114,17 +125,35 @@ class Hand(
     /**
      * 根據唯一識別碼捨棄手牌。
      *
+     * 如果捨棄的是剛摸到的牌（[lastDrawn]），則直接移除。
+     * 如果捨棄的是手牌中的牌，則會將原本的 [lastDrawn] 加入手牌列表中，並移除目標牌。
+     *
      * @param id 欲捨棄牌的 UUID。
-     * @return 被捨棄的 [IdentifiedTile]，若找不到則返回 null。
+     * @return 包含捨棄結果的 [DiscardResult]，若找不到則返回 null。
      */
-    fun discardById(id: UUID): IdentifiedTile? {
+    fun discardById(id: UUID): DiscardResult? {
+        // 1. 檢查是否為摸切
         if (lastDrawn?.id == id) {
-            val t = lastDrawn
+            val tile = lastDrawn!!
             lastDrawn = null
-            return t
+            return DiscardResult(tile, isTsumogiri = true)
         }
+
+        // 2. 檢查是否在立牌中
         val index = tiles.indexOfFirst { it.id == id }
-        return if (index != -1) tiles.removeAt(index) else null
+        if (index != -1) {
+            val discardedTile = tiles.removeAt(index)
+
+            // 若打出手牌而非摸切牌，則將摸到的牌併入立牌中
+            lastDrawn?.let {
+                tiles.add(it)
+                lastDrawn = null
+            }
+
+            return DiscardResult(discardedTile, isTsumogiri = false)
+        }
+
+        return null
     }
 
     /**
