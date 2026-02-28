@@ -8,6 +8,17 @@ import com.doublemoon1119.mahjongcraft.usecase.factory.MahjongModuleRegistry
 import java.util.*
 
 /**
+ * 開始遊戲的使用案例請求資料包。
+ *
+ * @property playerNames 玩家唯一識別碼與名稱之鍵值對。
+ * @property config 本次對局套用之規則配置。
+ */
+data class StartGameRequest(
+    val playerNames: Map<UUID, String>,
+    val config: MahjongRuleConfig
+)
+
+/**
  * 開始遊戲的使用案例。
  *
  * 負責執行對局初始化的完整流程：
@@ -85,14 +96,3 @@ class StartGameUseCase(
         }
     }
 }
-
-/**
- * 開始遊戲的使用案例請求資料包。
- *
- * @property playerNames 玩家唯一識別碼與名稱之鍵值對。
- * @property config 本次對局套用之規則配置。
- */
-data class StartGameRequest(
-    val playerNames: Map<UUID, String>,
-    val config: MahjongRuleConfig
-)
