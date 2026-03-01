@@ -21,11 +21,11 @@ class Hand(
      * 捨牌動作的結果封裝。
      *
      * @property tile 被捨棄的那張牌。
-     * @property isTsumogiri 是否為摸切（即打出剛摸到的那張牌）。
+     * @property isDiscardedFromDraw 是否為打出剛摸到的牌（摸切）。
      */
     data class DiscardResult(
         val tile: IdentifiedTile,
-        val isTsumogiri: Boolean
+        val isDiscardedFromDraw: Boolean
     )
 
     /**
@@ -136,7 +136,7 @@ class Hand(
         if (lastDrawn?.id == id) {
             val tile = lastDrawn!!
             lastDrawn = null
-            return DiscardResult(tile, isTsumogiri = true)
+            return DiscardResult(tile, isDiscardedFromDraw = true)
         }
 
         // 2. 檢查是否在立牌中
@@ -150,7 +150,7 @@ class Hand(
                 lastDrawn = null
             }
 
-            return DiscardResult(discardedTile, isTsumogiri = false)
+            return DiscardResult(discardedTile, isDiscardedFromDraw = false)
         }
 
         return null

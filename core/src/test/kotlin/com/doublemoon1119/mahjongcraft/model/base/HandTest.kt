@@ -54,7 +54,7 @@ class HandTest {
 
         assertTrue(result != null, "Discard result should not be null.")
         assertEquals(tile2, result.tile, "The discarded tile should be the one just drawn.")
-        assertTrue(result.isTsumogiri, "This action should be identified as tsumogiri.")
+        assertTrue(result.isDiscardedFromDraw, "This action should be identified as a draw-cut.")
         assertNull(hand.lastDrawn, "lastDrawn should be cleared after discard.")
         assertEquals(1, hand.allTiles.size)
     }
@@ -78,7 +78,7 @@ class HandTest {
 
         assertTrue(result != null)
         assertEquals(tileInHand, result.tile)
-        assertFalse(result.isTsumogiri, "Discarding a tile from standing tiles should not be tsumogiri.")
+        assertFalse(result.isDiscardedFromDraw, "Discarding a tile from standing tiles should not be a draw-cut.")
 
         // 驗證原本摸到的 9 萬是否已經自動併入手牌清單
         assertNull(hand.lastDrawn, "lastDrawn should be cleared because it was moved to standing tiles.")
