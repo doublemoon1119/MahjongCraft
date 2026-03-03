@@ -3,7 +3,7 @@ kotlin = "2.3.10"
 coroutines = "1.10.2"
 koin-bom = "4.2.0-RC1"
 jvm-toolchain = "21"
-jvm-core-release = "17"
+jvm-domain-release = "17"
 
 [libraries]
 kotlin-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }

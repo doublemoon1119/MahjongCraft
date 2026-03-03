@@ -3,10 +3,24 @@
 # This file serves as a template. Copy this file and rename it to 'local.dev.properties'
 # for your actual configuration. 'local.dev.properties' is ignored by Git to prevent
 # local settings from being committed.
-# The target Minecraft version folder name (located under /versions/, above the loader level)
-# Example: v1.20.1, v1.21.1
-targetVersion=v1.20.1
+#
+# Parameters can also be overridden via Gradle command-line arguments, e.g.:
+# ./gradlew build -PtargetPlatform=minecraft -PtargetMinecraftVersion=v1.20.1 -PtargetMinecraftLoader=fabric
 
-# The target mod loader name (located under the corresponding version folder)
+# The target platform for development.
+# This determines which set of platform-specific modules will be included.
+# Example: minecraft, hytale (for future expansion)
+targetPlatform=minecraft
+
+# --- Minecraft Specific Parameters ---
+# These parameters are only relevant when 'targetPlatform' is set to 'minecraft'.
+
+# The target Minecraft version folder name.
+# This corresponds to the version-specific common module and loader-specific modules.
+# Example: v1.20.1, v1.21.1
+targetMinecraftVersion=v1.20.1
+
+# The target mod loader name for the specified Minecraft version.
+# This corresponds to the loader-specific module.
 # Example: fabric, neoforge
-targetLoader=fabric
+targetMinecraftLoader=fabric

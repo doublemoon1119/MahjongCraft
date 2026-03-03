@@ -10,12 +10,12 @@ dependencyResolutionManagement {
     }
 }
 
-// 預設始終加載的模組
-include(":core")
-include(":di")
+// 預設始終加載的核心模組
+include(":domain")
+include(":application")
 
 /**
- * 動態路由配置：根據參數加載特定 Minecraft 適配層
+ * 動態路由配置：根據參數加載特定平台適配層
  * 優先序：指令行參數 (-P) > local.dev.properties > 預設值 (null)
  */
 val devProps = java.util.Properties().apply {
@@ -25,42 +25,58 @@ val devProps = java.util.Properties().apply {
     }
 }
 
-// 獲取目標版本與加載器: (可以透過指令參數 -PtargetVersion=xxx -PtargetLoader=xxx，或者是 local.dev.properties 設定)
-val targetVersion: String? = providers.gradleProperty("targetVersion").orNull
-    ?: devProps.getProperty("targetVersion")
-val targetLoader: String? = providers.gradleProperty("targetLoader").orNull
-    ?: devProps.getProperty("targetLoader")
+// 獲取目標平台
+val targetPlatform: String? = providers.gradleProperty("targetPlatform").orNull
+    ?: devProps.getProperty("targetPlatform")
 
-if (targetVersion != null && targetLoader != null) {
-    val versionPath = findVersionPath(targetVersion, targetLoader)
+// 獲取 Minecraft 特定的版本與加載器
+val targetMinecraftVersion: String? = providers.gradleProperty("targetMinecraftVersion").orNull
+    ?: devProps.getProperty("targetMinecraftVersion")
+val targetMinecraftLoader: String? = providers.gradleProperty("targetMinecraftLoader").orNull
+    ?: devProps.getProperty("targetMinecraftLoader")
 
-    if (versionPath != null && versionPath.exists()) {
-        // 建立一個具備唯一性的模組名稱，例如 :v1_20_1_fabric
-        val sanitizedVersion = targetVersion.replace(".", "_")
-        val moduleName = "${sanitizedVersion}_$targetLoader"
+// 標記是否有任何平台模組被成功載入
+var anyModuleLoaded = false
 
-        // 動態包含該模組並指定路徑
-        include(":$moduleName")
-        project(":$moduleName").projectDir = versionPath
-
-        logger.lifecycle("BUILD LOG: Environment active -> :$moduleName")
+// 輔助函數，用於註冊平台模組
+fun includePlatformModule(path: String) {
+    val moduleDir = file(path)
+    if (moduleDir.exists() && moduleDir.isDirectory) {
+        // 將路徑轉換為模組名稱，移除 'platform/' 前綴以保持簡潔
+        val moduleName = ":" + path.removePrefix("platform/").replace('/', '_')
+        include(moduleName)
+        project(moduleName).projectDir = moduleDir
+        anyModuleLoaded = true // 標記成功載入
     } else {
-        logger.warn("BUILD LOG: Specified path does not exist -> $targetVersion/$targetLoader")
+        logger.warn("BUILD LOG: Module path does not exist, skipping -> $path")
     }
-} else {
-    logger.lifecycle("BUILD LOG: No target specified. Running in core-only mode.")
 }
 
-/**
- * 尋找指定版本與加載器的實體路徑
- * @param version 版本資料夾名稱
- * @param loader 加載器資料夾名稱
- * @return 對應的目錄 File 物件，若不存在則返回 null
- */
-fun findVersionPath(version: String, loader: String): File? {
-    val versionsRoot = file("versions")
-    return versionsRoot.walkTopDown()
-        .filter { it.isDirectory && it.name == version }
-        .map { it.resolve(loader) }
-        .firstOrNull { it.exists() && it.isDirectory }
+// 根據目標平台載入模組
+if (targetPlatform != null) {
+    when (targetPlatform) {
+        "minecraft" -> {
+            if (targetMinecraftVersion != null && targetMinecraftLoader != null) {
+                // 嘗試載入所有相關的 Minecraft 模組
+                includePlatformModule("platform/minecraft/common")
+                includePlatformModule("platform/minecraft/$targetMinecraftVersion/common")
+                includePlatformModule("platform/minecraft/$targetMinecraftVersion/$targetMinecraftLoader")
+
+                // 只有在至少一個模組成功載入後，才顯示活動環境日誌
+                if (anyModuleLoaded) {
+                    logger.lifecycle("BUILD LOG: Environment active -> Platform: $targetPlatform, Version: $targetMinecraftVersion, Loader: $targetMinecraftLoader")
+                } else {
+                    logger.lifecycle("BUILD LOG: All specified Minecraft module paths were missing. Running in domain/application-only mode.")
+                }
+            } else {
+                logger.lifecycle("BUILD LOG: Minecraft platform specified, but targetMinecraftVersion or targetMinecraftLoader is missing. Running in domain/application-only mode.")
+            }
+        }
+        // 未來可以在這裡添加其他平台的處理邏輯
+        else -> {
+            logger.lifecycle("BUILD LOG: Unknown targetPlatform '$targetPlatform'. Running in domain/application-only mode.")
+        }
+    }
+} else {
+    logger.lifecycle("BUILD LOG: No targetPlatform specified. Running in domain/application-only mode.")
 }
