@@ -43,6 +43,13 @@
   - **用途**: 包含業務流程的具體實現 (Use Cases)，並定義與外部世界溝通的介面 (Ports)。此層也負責依賴注入 (DI) 的模組配置。
   - **特點**: 依賴 `:domain` 模組，並可引入如 Koin, Coroutines 等應用級框架。
 
+- **`:testing`**: 測試輔助工具模組。
+  - **用途**: 提供跨模組共享的測試 Fake 物件（如 FakeGameLength、FakeDiscardPile）。
+  - **特點**:
+    - 依賴 `:domain` 模組以取得介面來實作 Fakes。
+    - 不使用 JVM 特有的 testFixtures，以支援未來 Kotlin Multiplatform 擴展。
+    - 由於此模組僅包含測試程式碼，不影響 production 依賴方向
+
 - **`:platform`**: 平台適配層。
   - **用途**: 包含所有與特定平台（如 Minecraft, Hytale(?)）相關的具體實現 (Adapters)。它負責實現 `:application` 層定義的介面。
   - **結構**:

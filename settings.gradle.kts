@@ -13,6 +13,7 @@ dependencyResolutionManagement {
 // 預設始終加載的核心模組
 include(":domain")
 include(":application")
+include(":testing")
 
 /**
  * 動態路由配置：根據參數加載特定平台適配層

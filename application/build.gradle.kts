@@ -22,4 +22,5 @@ dependencies {
 
     // 單元測試相關
     testImplementation(kotlin("test"))
+    testImplementation(project(":testing"))
 }
