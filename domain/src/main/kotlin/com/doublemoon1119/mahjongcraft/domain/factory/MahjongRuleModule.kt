@@ -15,6 +15,14 @@ import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
 interface MahjongRuleModule<T : MahjongRuleConfig> {
 
     /**
+     * 規則模組的唯一識別碼（ID）。
+     *
+     * 用於在存檔、網路傳輸或 UI 顯示時識別此規則模組。
+     * 格式建議使用 ResourceLocation 格式，例如 "mahjongcraft:riichi"。
+     */
+    val id: String
+
+    /**
      * 建立適用於該規則的牌山生成工廠。
      *
      * @param config 規則配置實例。

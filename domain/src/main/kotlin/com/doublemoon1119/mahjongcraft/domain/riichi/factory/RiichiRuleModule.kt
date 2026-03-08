@@ -14,6 +14,11 @@ import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
 class RiichiRuleModule : MahjongRuleModule<RiichiRuleConfig> {
 
     /**
+     * 規則模組 ID：`mahjongcraft:riichi`。
+     */
+    override val id: String = "mahjongcraft:riichi"
+
+    /**
      * 建立日本麻將牌山工廠。
      *
      * @param config 日本麻將規則配置。

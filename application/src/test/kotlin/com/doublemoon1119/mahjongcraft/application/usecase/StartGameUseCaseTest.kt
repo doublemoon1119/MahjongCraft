@@ -32,6 +32,7 @@ class StartGameUseCaseTest {
 
         // 註冊模擬規則模組
         registry.register(FakeMahjongRuleConfig::class, object : MahjongRuleModule<FakeMahjongRuleConfig> {
+            override val id: String = "fake:module"
             override fun createWallFactory(config: FakeMahjongRuleConfig) = object : TileWallFactory {
                 override fun create(): TileWall {
                     // 生成足夠數量的測試牌
@@ -92,6 +93,7 @@ class StartGameUseCaseTest {
         val config = FakeMahjongRuleConfig(initialHandSize = 13)
 
         registry.register(FakeMahjongRuleConfig::class, object : MahjongRuleModule<FakeMahjongRuleConfig> {
+            override val id: String = "fake:module"
             override fun createWallFactory(config: FakeMahjongRuleConfig) = object : TileWallFactory {
                 override fun create(): TileWall {
                     // 故意提供不足發給 4 個玩家的牌數 (只有 10 張，需求為 13 * 4 = 52 張)

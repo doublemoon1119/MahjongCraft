@@ -14,6 +14,11 @@ import com.doublemoon1119.mahjongcraft.domain.taiwan.TaiwanRuleConfig
 class TaiwanRuleModule : MahjongRuleModule<TaiwanRuleConfig> {
 
     /**
+     * 規則模組 ID：`mahjongcraft:taiwan`。
+     */
+    override val id: String = "mahjongcraft:taiwan"
+
+    /**
      * 建立台灣麻將牌山工廠。
      *
      * @param config 台灣麻將規則配置。

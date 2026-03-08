@@ -38,7 +38,9 @@ private class FakeConfigB(
 /**
  * 測試用的通用模擬模組。
  */
-private class FakeModule<T : MahjongRuleConfig> : MahjongRuleModule<T> {
+private class FakeModule<T : MahjongRuleConfig>(
+    override val id: String = "fake_module"
+) : MahjongRuleModule<T> {
     override fun createWallFactory(config: T): TileWallFactory = object : TileWallFactory {
         override fun create() = throw UnsupportedOperationException()
     }
@@ -83,20 +85,19 @@ class MahjongModuleRegistryTest {
     }
 
     /**
-     * 驗證重複註冊相同配置時，後者是否會覆蓋前者。
+     * 驗證重複註冊相同 ID 的模組時，應拋出異常。
      */
     @Test
-    fun `test overwrite registration`() {
+    fun `test duplicate registration throws exception`() {
         val registry = MahjongModuleRegistry()
-        val firstModule = FakeModule<FakeConfigA>()
-        val secondModule = FakeModule<FakeConfigA>()
-        val configA = FakeConfigA()
+        val firstModule = FakeModule<FakeConfigA>("moduleA")
+        val secondModule = FakeModule<FakeConfigA>("moduleA") // Same ID
 
         registry.register(FakeConfigA::class, firstModule)
-        registry.register(FakeConfigA::class, secondModule)
 
-        val result = registry.getModule(configA)
-        assertEquals(secondModule, result, "The second registered module should overwrite the first one.")
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(FakeConfigA::class, secondModule)
+        }
     }
 
     /**
@@ -105,8 +106,8 @@ class MahjongModuleRegistryTest {
     @Test
     fun `test multiple registrations`() {
         val registry = MahjongModuleRegistry()
-        val moduleA = FakeModule<FakeConfigA>()
-        val moduleB = FakeModule<FakeConfigB>()
+        val moduleA = FakeModule<FakeConfigA>("moduleA")
+        val moduleB = FakeModule<FakeConfigB>("moduleB")
 
         val configA = FakeConfigA()
         val configB = FakeConfigB()
