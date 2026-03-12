@@ -2,10 +2,12 @@ package com.doublemoon1119.mahjongcraft.application.usecase.factory
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.factory.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
+import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
-import com.doublemoon1119.mahjongcraft.testing.fakes.*
+import com.doublemoon1119.mahjongcraft.testing.fakes.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.testing.fakes.FakeGameLength
+import com.doublemoon1119.mahjongcraft.testing.fakes.FakeScoreConfig
+import com.doublemoon1119.mahjongcraft.testing.fakes.FakeShantenCalculator
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

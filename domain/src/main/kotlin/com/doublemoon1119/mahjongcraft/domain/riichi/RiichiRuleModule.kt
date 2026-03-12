@@ -1,10 +1,7 @@
-package com.doublemoon1119.mahjongcraft.domain.riichi.factory
+package com.doublemoon1119.mahjongcraft.domain.riichi
 
-import com.doublemoon1119.mahjongcraft.domain.factory.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
-import com.doublemoon1119.mahjongcraft.domain.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.domain.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.riichi.RiichiShantenCalculator
+import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
 

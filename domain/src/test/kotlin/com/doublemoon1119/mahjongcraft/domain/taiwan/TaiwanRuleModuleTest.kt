@@ -1,6 +1,5 @@
-package com.doublemoon1119.mahjongcraft.domain.taiwan.factory
+package com.doublemoon1119.mahjongcraft.domain.taiwan
 
-import com.doublemoon1119.mahjongcraft.domain.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeTaiwanRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertTrue

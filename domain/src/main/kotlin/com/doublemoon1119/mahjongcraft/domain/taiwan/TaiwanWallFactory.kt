@@ -1,11 +1,10 @@
-package com.doublemoon1119.mahjongcraft.domain.taiwan.factory
+package com.doublemoon1119.mahjongcraft.domain.taiwan
 
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
-import com.doublemoon1119.mahjongcraft.domain.taiwan.TaiwanRuleConfig
-import java.util.*
+import java.util.UUID
 
 /**
  * 台灣麻將牌山生成工廠。

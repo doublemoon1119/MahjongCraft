@@ -4,8 +4,8 @@ import com.doublemoon1119.mahjongcraft.application.ports.concurrency.TestCorouti
 import com.doublemoon1119.mahjongcraft.application.usecase.factory.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import com.doublemoon1119.mahjongcraft.domain.factory.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
+import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeDiscardPile

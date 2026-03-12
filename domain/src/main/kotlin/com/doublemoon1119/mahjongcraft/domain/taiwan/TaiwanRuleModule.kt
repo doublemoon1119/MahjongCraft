@@ -1,12 +1,9 @@
-package com.doublemoon1119.mahjongcraft.domain.taiwan.factory
+package com.doublemoon1119.mahjongcraft.domain.taiwan
 
-import com.doublemoon1119.mahjongcraft.domain.factory.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
+import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
-import com.doublemoon1119.mahjongcraft.domain.taiwan.TaiwanDiscardPile
-import com.doublemoon1119.mahjongcraft.domain.taiwan.TaiwanRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.taiwan.TaiwanShantenCalculator
 
 /**
  * 台灣麻將規則模組實作。

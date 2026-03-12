@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.domain.riichi.factory
+package com.doublemoon1119.mahjongcraft.domain.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeRiichiRuleConfig

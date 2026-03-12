@@ -1,6 +1,5 @@
-package com.doublemoon1119.mahjongcraft.domain.riichi.factory
+package com.doublemoon1119.mahjongcraft.domain.riichi
 
-import com.doublemoon1119.mahjongcraft.domain.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeRiichiRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertTrue

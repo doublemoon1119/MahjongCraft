@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.domain.factory
+package com.doublemoon1119.mahjongcraft.domain.module
 
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator

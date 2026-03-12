@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.application.usecase.factory
 
-import com.doublemoon1119.mahjongcraft.domain.factory.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
 import kotlin.reflect.KClass
 
 /**
