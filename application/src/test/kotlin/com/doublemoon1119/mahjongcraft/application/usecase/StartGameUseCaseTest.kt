@@ -5,10 +5,12 @@ import com.doublemoon1119.mahjongcraft.application.usecase.factory.MahjongModule
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.factory.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.fakes.FakeShantenCalculator
 import kotlinx.coroutines.test.runTest
 import java.util.*
 import kotlin.test.Test
@@ -45,6 +47,7 @@ class StartGameUseCaseTest {
             }
 
             override fun createDiscardPile(config: FakeMahjongRuleConfig) = FakeDiscardPile()
+            override fun createShantenCalculator(config: FakeMahjongRuleConfig) = FakeShantenCalculator()
         })
 
         val useCase = StartGameUseCase(registry, dispatchers)
@@ -106,6 +109,9 @@ class StartGameUseCaseTest {
             }
 
             override fun createDiscardPile(config: FakeMahjongRuleConfig) = FakeDiscardPile()
+            override fun createShantenCalculator(config: FakeMahjongRuleConfig): ShantenCalculator {
+                return FakeShantenCalculator()
+            }
         })
 
         val useCase = StartGameUseCase(registry, dispatchers)

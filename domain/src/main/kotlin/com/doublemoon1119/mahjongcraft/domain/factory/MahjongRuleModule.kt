@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.factory
 
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
 
@@ -37,4 +38,14 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 實作了 [DiscardPile] 的物件。
      */
     fun createDiscardPile(config: T): DiscardPile<*>
+
+    /**
+     * 建立適用於該規則的向聽數計算器 (Shanten Calculator)。
+     *
+     * 負責分析手牌距離聽牌狀態的最小進張數。
+     *
+     * @param config 規則配置實例。
+     * @return 實作了 [ShantenCalculator] 的物件。
+     */
+    fun createShantenCalculator(config: T): ShantenCalculator
 }

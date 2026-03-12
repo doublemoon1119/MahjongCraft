@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.domain.riichi.factory
 
 import com.doublemoon1119.mahjongcraft.domain.factory.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.domain.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.riichi.RiichiShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
 
@@ -36,5 +38,15 @@ class RiichiRuleModule : MahjongRuleModule<RiichiRuleConfig> {
      */
     override fun createDiscardPile(config: RiichiRuleConfig): DiscardPile<*> {
         return RiichiDiscardPile()
+    }
+
+    /**
+     * 建立日本麻將的向聽數計算器。
+     *
+     * @param config 日本麻將規則配置。
+     * @return [RiichiShantenCalculator] 實體。
+     */
+    override fun createShantenCalculator(config: RiichiRuleConfig): ShantenCalculator {
+        return RiichiShantenCalculator()
     }
 }
