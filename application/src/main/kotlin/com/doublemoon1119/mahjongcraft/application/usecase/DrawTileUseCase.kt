@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.application.usecase
 
+import com.doublemoon1119.mahjongcraft.application.ports.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
+import kotlinx.coroutines.withContext
 import java.util.*
 
 /**
@@ -19,8 +21,12 @@ data class DrawTileRequest(
  *
  * 負責從 [TableState] 內的 [com.doublemoon1119.mahjongcraft.domain.table.TileWall] 取出一張牌，
  * 並將其設置為指定玩家 [com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer] 手牌中的 [com.doublemoon1119.mahjongcraft.domain.base.Hand.lastDrawn]。
+ *
+ * @property dispatchers 協程調度器，用於將計算密集型任務切換到背景執行緒。
  */
-class DrawTileUseCase {
+class DrawTileUseCase(
+    private val dispatchers: CoroutineDispatchers
+) {
 
     /**
      * 執行摸牌動作。
@@ -28,7 +34,7 @@ class DrawTileUseCase {
      * @param request 摸牌請求參數，包含桌況與玩家資訊。
      * @throws IllegalStateException 當牌山已空、找不到玩家或非該玩家回合時拋出。
      */
-    operator fun invoke(request: DrawTileRequest) {
+    suspend operator fun invoke(request: DrawTileRequest) = withContext(dispatchers.default) {
         val table = request.tableState
 
         // 尋找目標玩家

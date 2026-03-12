@@ -1,10 +1,12 @@
 package com.doublemoon1119.mahjongcraft.application.usecase
 
+import com.doublemoon1119.mahjongcraft.application.ports.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.application.usecase.factory.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
-import com.doublemoon1119.mahjongcraft.application.usecase.factory.MahjongModuleRegistry
+import kotlinx.coroutines.withContext
 import java.util.*
 
 /**
@@ -28,9 +30,11 @@ data class StartGameRequest(
  * 4. 根據規則定義之初始張數發放手牌。
  *
  * @property registry 規則模組註冊表，用於跨規則檢索對應的組件工廠。
+ * @property dispatchers 協程調度器，用於將計算密集型任務切換到背景執行緒。
  */
 class StartGameUseCase(
-    private val registry: MahjongModuleRegistry
+    private val registry: MahjongModuleRegistry,
+    private val dispatchers: CoroutineDispatchers
 ) {
 
     /**
@@ -40,7 +44,7 @@ class StartGameUseCase(
      * @return 包含初始化資料的 [TableState] 實體。
      * @throws IllegalStateException 當牌山剩餘數量不足以完成發牌時拋出。
      */
-    operator fun invoke(request: StartGameRequest): TableState {
+    suspend operator fun invoke(request: StartGameRequest): TableState = withContext(dispatchers.default) {
         // 1. 獲取規則對應的模組實作
         val module = registry.getModule(request.config)
 
@@ -74,7 +78,7 @@ class StartGameUseCase(
         // 5. 執行發牌邏輯
         dealInitialHands(tableState)
 
-        return tableState
+        tableState
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.application.usecase
 
+import com.doublemoon1119.mahjongcraft.application.ports.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.application.usecase.factory.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
@@ -8,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeMahjongRuleConfig
+import kotlinx.coroutines.test.runTest
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,12 +21,13 @@ import kotlin.test.assertFailsWith
  * 驗證遊戲初始化流程，包含玩家註冊、牌山生成及初始發牌邏輯。
  */
 class StartGameUseCaseTest {
+    private val dispatchers = TestCoroutineDispatchers()
 
     /**
      * 驗證在正常配置下，遊戲是否能正確初始化所有玩家狀態與手牌。
      */
     @Test
-    fun `test start game successfully`() {
+    fun `test start game successfully`() = runTest {
         // Arrange
         val registry = MahjongModuleRegistry()
         val config = FakeMahjongRuleConfig(initialHandSize = 13)
@@ -44,7 +47,7 @@ class StartGameUseCaseTest {
             override fun createDiscardPile(config: FakeMahjongRuleConfig) = FakeDiscardPile()
         })
 
-        val useCase = StartGameUseCase(registry)
+        val useCase = StartGameUseCase(registry, dispatchers)
         val playerMap = mapOf(
             UUID.randomUUID() to "Player1",
             UUID.randomUUID() to "Player2",
@@ -70,10 +73,10 @@ class StartGameUseCaseTest {
      * 驗證當傳入未註冊模組的規則配置時，應拋出 IllegalStateException。
      */
     @Test
-    fun `test start game with unregistered config should throw exception`() {
+    fun `test start game with unregistered config should throw exception`() = runTest {
         // Arrange
         val registry = MahjongModuleRegistry() // 空註冊表
-        val useCase = StartGameUseCase(registry)
+        val useCase = StartGameUseCase(registry, dispatchers)
         val request = StartGameRequest(emptyMap(), FakeMahjongRuleConfig())
 
         // Act & Assert
@@ -87,7 +90,7 @@ class StartGameUseCaseTest {
      * 驗證當牌山剩餘牌數不足以發放初始手牌時的異常處理。
      */
     @Test
-    fun `test tile wall exhausted during initial dealing`() {
+    fun `test tile wall exhausted during initial dealing`() = runTest {
         // Arrange
         val registry = MahjongModuleRegistry()
         val config = FakeMahjongRuleConfig(initialHandSize = 13)
@@ -105,7 +108,7 @@ class StartGameUseCaseTest {
             override fun createDiscardPile(config: FakeMahjongRuleConfig) = FakeDiscardPile()
         })
 
-        val useCase = StartGameUseCase(registry)
+        val useCase = StartGameUseCase(registry, dispatchers)
         val playerMap = mapOf(
             UUID.randomUUID() to "P1", UUID.randomUUID() to "P2",
             UUID.randomUUID() to "P3", UUID.randomUUID() to "P4"

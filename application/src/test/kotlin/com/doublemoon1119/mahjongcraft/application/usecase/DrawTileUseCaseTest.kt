@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.application.usecase
 
+import com.doublemoon1119.mahjongcraft.application.ports.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
@@ -9,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeMahjongRuleConfig
+import kotlinx.coroutines.test.runTest
 import java.util.*
 import kotlin.test.*
 
@@ -19,19 +21,15 @@ import kotlin.test.*
  */
 class DrawTileUseCaseTest {
 
-    private lateinit var useCase: DrawTileUseCase
+    private val dispatchers = TestCoroutineDispatchers()
+    private val useCase = DrawTileUseCase(dispatchers)
     private val playerId: UUID = UUID.randomUUID()
-
-    @BeforeTest
-    fun `setup draw tile use case test environment`() {
-        useCase = DrawTileUseCase()
-    }
 
     /**
      * 測試在牌山有牌的情況下，摸牌動作是否能正確更新玩家的最後摸牌欄位。
      */
     @Test
-    fun `test draw tile successfully`() {
+    fun `test draw tile successfully`() = runTest {
         // 準備測試數據：一張數牌與包含該牌的牌山
         val targetTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
         val tileWall = TileWall(mutableListOf(targetTile))
@@ -67,7 +65,7 @@ class DrawTileUseCaseTest {
      * 測試當牌山已空時，執行摸牌應拋出 IllegalStateException。
      */
     @Test
-    fun `test draw tile when wall is empty should throw exception`() {
+    fun `test draw tile when wall is empty should throw exception`() = runTest {
         // 準備空牌山
         val tileWall = TileWall(mutableListOf())
         val player = MahjongPlayer(
