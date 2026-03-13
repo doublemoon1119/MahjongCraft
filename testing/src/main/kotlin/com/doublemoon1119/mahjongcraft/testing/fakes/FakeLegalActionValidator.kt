@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.testing.fakes
 
 import com.doublemoon1119.mahjongcraft.domain.base.GameAction
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
@@ -17,6 +18,7 @@ class FakeLegalActionValidator(
     override fun getLegalActions(
         tableState: TableState,
         player: MahjongPlayer,
+        source: RelativeDirection,
         incomingTile: IdentifiedTile?
     ): List<GameAction> {
         return actionsToReturn

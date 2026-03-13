@@ -55,6 +55,7 @@ class RiichiRuleModule : MahjongRuleModule<RiichiRuleConfig> {
      * @return [RiichiLegalActionValidator] 實體。
      */
     override fun createLegalActionValidator(config: RiichiRuleConfig): LegalActionValidator {
-        return RiichiLegalActionValidator()
+        val shantenCalculator = createShantenCalculator(config)
+        return RiichiLegalActionValidator(shantenCalculator)
     }
 }

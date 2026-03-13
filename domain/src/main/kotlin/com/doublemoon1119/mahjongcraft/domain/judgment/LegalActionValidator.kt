@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.domain.judgment
 
 import com.doublemoon1119.mahjongcraft.domain.base.GameAction
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
 
@@ -17,6 +18,7 @@ interface LegalActionValidator {
      *
      * @param tableState 當前的遊戲桌況。
      * @param player 欲判斷合法動作的玩家。
+     * @param source 動作的來源方位。例如，`RelativeDirection.Left` 表示上家打出牌，`RelativeDirection.Self` 表示自己摸牌。
      * @param incomingTile 可選參數，表示剛摸到或他家打出的牌。
      *                     若為 null，則表示判斷玩家在自己回合內（未摸牌或已摸牌但未捨牌）的動作。
      * @return 該玩家可以執行的合法動作列表。
@@ -24,6 +26,7 @@ interface LegalActionValidator {
     fun getLegalActions(
         tableState: TableState,
         player: MahjongPlayer,
+        source: RelativeDirection,
         incomingTile: IdentifiedTile? = null
     ): List<GameAction>
 }

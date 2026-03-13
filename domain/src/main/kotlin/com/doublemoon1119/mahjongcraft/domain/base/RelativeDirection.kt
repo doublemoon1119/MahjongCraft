@@ -15,6 +15,10 @@ sealed class RelativeDirection {
     /** 下家 (Right) */
     data object Right : RelativeDirection()
 
-    /** 無 (None) */
-    data object None : RelativeDirection()
+    /**
+     * 來源於玩家自身。
+     *
+     * 用於表示動作的觸發點是玩家自己，例如自摸 (Tsumo) 或暗槓 (Closed Kan)。
+     */
+    data object Self : RelativeDirection()
 }

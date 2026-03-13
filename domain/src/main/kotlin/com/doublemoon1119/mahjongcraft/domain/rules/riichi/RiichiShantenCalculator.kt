@@ -56,21 +56,89 @@ class RiichiShantenCalculator : ShantenCalculator {
         val exposedMeldsCount = hand.exposedMelds.size
 
         // 計算標準型向聽數 (4面子 + 1雀頭)
-        var minShanten = calculateStandardShanten(counts, exposedMeldsCount)
+        val standardShanten = calculateStandardShanten(counts, exposedMeldsCount)
 
         // 計算七對子向聽數 (七對子必須門前清，即 exposedMeldsCount == 0)
+        var sevenPairsShanten = 8
         if (exposedMeldsCount == 0) {
-            val sevenPairsShanten = calculateSevenPairsShanten(counts)
-            minShanten = min(minShanten, sevenPairsShanten)
+            sevenPairsShanten = calculateSevenPairsShanten(counts)
         }
 
         // 計算國士無雙向聽數 (國士無雙必須門前清)
+        var kokushiShanten = 8
         if (exposedMeldsCount == 0) {
-            val kokushiShanten = calculateKokushiShanten(counts)
-            minShanten = min(minShanten, kokushiShanten)
+            kokushiShanten = calculateKokushiShanten(counts)
+        }
+
+        // 取最小值
+        var minShanten = min(standardShanten, min(sevenPairsShanten, kokushiShanten))
+
+        // 檢查是否已胡牌（向聽數為 0 且標準型已完成）
+        if (minShanten == 0 && isStandardCompleteHand(counts, exposedMeldsCount)) {
+            minShanten = -1
         }
 
         return ShantenResult(shanten = minShanten)
+    }
+
+    /**
+     * 檢查標準型手牌是否已經完成（4面子+1雀頭）。
+     *
+     * @param counts 立牌的計數陣列。
+     * @param exposedMeldsCount 已副露的面子數。
+     * @return 如果標準型手牌已完成則為 true。
+     */
+    private fun isStandardCompleteHand(counts: IntArray, exposedMeldsCount: Int): Boolean {
+        val targetMelds = 4 - exposedMeldsCount
+
+        // 嘗試找雀頭
+        for (i in counts.indices) {
+            if (counts[i] >= 2) {
+                val tempCounts = counts.copyOf()
+                tempCounts[i] -= 2
+                val melds = countMeldsRecursive(tempCounts, 0, 0, targetMelds)
+                if (melds >= targetMelds) {
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
+
+    /**
+     * 遞迴計算能夠組成的最多面子數。
+     */
+    private fun countMeldsRecursive(counts: IntArray, index: Int, currentMelds: Int, targetMelds: Int): Int {
+        if (currentMelds >= targetMelds || index >= 34) {
+            return currentMelds
+        }
+
+        if (counts[index] == 0) {
+            return countMeldsRecursive(counts, index + 1, currentMelds, targetMelds)
+        }
+
+        var best = currentMelds
+
+        // 刻子
+        if (counts[index] >= 3) {
+            counts[index] -= 3
+            best = max(best, countMeldsRecursive(counts, index, currentMelds + 1, targetMelds))
+            counts[index] += 3
+        }
+
+        // 順子
+        if (index < 27 && index % 9 < 7 && counts[index + 1] > 0 && counts[index + 2] > 0) {
+            counts[index]--
+            counts[index + 1]--
+            counts[index + 2]--
+            best = max(best, countMeldsRecursive(counts, index, currentMelds + 1, targetMelds))
+            counts[index]++
+            counts[index + 1]++
+            counts[index + 2]++
+        }
+
+        return best
     }
 
     /**
