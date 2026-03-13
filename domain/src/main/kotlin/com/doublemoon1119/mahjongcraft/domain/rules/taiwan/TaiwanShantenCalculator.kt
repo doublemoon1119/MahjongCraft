@@ -1,20 +1,20 @@
-package com.doublemoon1119.mahjongcraft.domain.riichi
+package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import kotlin.math.max
 import kotlin.math.min
 
 /**
- * 立直麻將規則的向聽數計算器。
+ * 台灣麻將規則的向聽數計算器。
  *
- * 負責根據立直麻將的規則（包含標準型、七對子、國士無雙）分析手牌。
+ * 負責根據台灣麻將的規則（標準型：5面子 + 1雀頭）分析手牌。
  */
-class RiichiShantenCalculator : ShantenCalculator {
+class TaiwanShantenCalculator : ShantenCalculator {
 
     // 為了方便計算，將所有牌型映射到 0-33 的索引
+    // 台麻雖然有花牌，但花牌不參與向聽計算（摸到即補），所以這裡只處理數牌和字牌
     private val tileMap: Map<Tile, Int> = buildMap {
         // 萬子 1-9 (0-8)
         (1..9).forEach { put(Tile.Numeric(Tile.Suit.Character, it), it - 1) }
@@ -33,7 +33,7 @@ class RiichiShantenCalculator : ShantenCalculator {
     }
 
     /**
-     * 計算給定手牌在立直麻將規則下的向聽數。
+     * 計算給定手牌在台灣麻將規則下的向聽數。
      *
      * @param hand 待分析的玩家手牌。
      * @return 包含計算結果的 [ShantenResult]。
@@ -42,54 +42,46 @@ class RiichiShantenCalculator : ShantenCalculator {
         // 統計手牌中每種牌的數量
         val counts = IntArray(34)
         hand.standingTiles.forEach { identifiedTile ->
-            // 忽略赤寶牌標記，將其視為普通牌處理
+            // 台麻通常不使用赤寶牌，若有也視為普通牌
+            // 忽略花牌 (Flower)
             val tileKey = when (val tile = identifiedTile.tile) {
                 is Tile.Numeric -> tile.copy(isRed = false)
+                is Tile.Flower -> return@forEach // 跳過花牌
                 else -> tile
             }
             tileMap[tileKey]?.let { index ->
                 counts[index]++
             }
         }
-        
+
         // 獲取已副露的面子數
         val exposedMeldsCount = hand.exposedMelds.size
 
-        // 計算標準型向聽數 (4面子 + 1雀頭)
-        var minShanten = calculateStandardShanten(counts, exposedMeldsCount)
-
-        // 計算七對子向聽數 (七對子必須門前清，即 exposedMeldsCount == 0)
-        if (exposedMeldsCount == 0) {
-            val sevenPairsShanten = calculateSevenPairsShanten(counts)
-            minShanten = min(minShanten, sevenPairsShanten)
-        }
-
-        // 計算國士無雙向聽數 (國士無雙必須門前清)
-        if (exposedMeldsCount == 0) {
-            val kokushiShanten = calculateKokushiShanten(counts)
-            minShanten = min(minShanten, kokushiShanten)
-        }
+        // 計算標準型向聽數 (5面子 + 1雀頭)
+        val minShanten = calculateStandardShanten(counts, exposedMeldsCount)
 
         return ShantenResult(shanten = minShanten)
     }
 
     /**
-     * 計算標準型 (4面子 + 1雀頭) 的向聽數。
+     * 計算標準型 (5面子 + 1雀頭) 的向聽數。
+     *
+     * 公式：10 - (面子*2) - 搭子 - 雀頭
      *
      * @param counts 立牌的計數陣列。
      * @param initialMelds 已副露的面子數。
      */
     private fun calculateStandardShanten(counts: IntArray, initialMelds: Int): Int {
-        var minShanten = 8 // 立直麻將的初始最大向聽數
+        var minShanten = 10 // 台灣麻將的初始最大向聽數
 
         // 情況 A: 有雀頭
         for (i in counts.indices) {
             if (counts[i] >= 2) {
                 counts[i] -= 2
-                // 雀頭已定 (1組)，目標是湊齊 4 組面子
+                // 雀頭已定 (1組)，目標是湊齊 5 組面子
                 val shanten = calculateMelds(counts, 0, initialMelds, 0)
-                // 標準型公式：8 - (總面子*2) - 搭子 - 雀頭(1)
-                // calculateMelds 回傳的是 8 - (initialMelds + melds_in_standing*2) - tatsus
+                // 標準型公式：10 - (總面子*2) - 搭子 - 雀頭(1)
+                // calculateMelds 回傳的是 10 - (initialMelds + melds_in_standing*2) - tatsus
                 // 所以這裡要減去雀頭的貢獻
                 minShanten = min(minShanten, shanten - 1)
                 counts[i] += 2
@@ -97,7 +89,7 @@ class RiichiShantenCalculator : ShantenCalculator {
         }
 
         // 情況 B: 無雀頭（或尚未找到雀頭）
-        // 雀頭數為 0，目標是凑齊 4 組面子，最後缺的雀頭視為一個搭子缺口
+        // 雀頭數為 0，目標是凑齊 5 組面子，最後缺的雀頭視為一個搭子缺口
         val shantenNoPair = calculateMelds(counts, 0, initialMelds, 0)
         minShanten = min(minShanten, shantenNoPair)
 
@@ -111,22 +103,22 @@ class RiichiShantenCalculator : ShantenCalculator {
      * @param index 當前處理的牌索引。
      * @param currentMelds 已副露的面子數 + 立牌中找到的面子數。
      * @param currentTatsus 立牌中找到的搭子數。
-     * @return 8 - (總面子*2) - 有效搭子數。
+     * @return 10 - (總面子*2) - 有效搭子數。
      */
     private fun calculateMelds(counts: IntArray, index: Int, currentMelds: Int, currentTatsus: Int): Int {
-        // 總目標面子數為 4
-        val targetMelds = 4
+        // 總目標面子數為 5
+        val targetMelds = 5
 
         // 剪枝：如果總面子數 + 總搭子數 已經達到或超過目標面子數，可以停止
         if (currentMelds + currentTatsus >= targetMelds) {
-            return 8 - (currentMelds * 2) - currentTatsus
+            return 10 - (currentMelds * 2) - currentTatsus
         }
 
         if (index >= 34) {
             // 遍歷結束
             // 有效搭子數不能超過 (目標面子數 - 總面子數)
             val validTatsus = min(currentTatsus, targetMelds - currentMelds)
-            return 8 - (currentMelds * 2) - validTatsus
+            return 10 - (currentMelds * 2) - validTatsus
         }
 
         // 如果當前牌數為 0，直接跳下一個
@@ -134,7 +126,7 @@ class RiichiShantenCalculator : ShantenCalculator {
             return calculateMelds(counts, index + 1, currentMelds, currentTatsus)
         }
 
-        var bestShanten = 8
+        var bestShanten = 10
 
         // 1. 嘗試組成刻子 (3張一樣)
         if (counts[index] >= 3) {
@@ -184,62 +176,5 @@ class RiichiShantenCalculator : ShantenCalculator {
         bestShanten = min(bestShanten, calculateMelds(counts, index + 1, currentMelds, currentTatsus))
 
         return bestShanten
-    }
-
-    /**
-     * 計算七對子 (Seven Pairs) 的向聽數。
-     * 規則：必須有 7 個不同的對子。
-     * 向聽數 = 6 - 對子數 + max(0, 7 - 牌種類數)
-     */
-    private fun calculateSevenPairsShanten(counts: IntArray): Int {
-        var pairs = 0
-        var kinds = 0 // 有幾種牌
-        
-        for (count in counts) {
-            if (count > 0) {
-                kinds++
-                if (count >= 2) {
-                    pairs++
-                }
-            }
-        }
-        
-        // 七對子向聽數公式：
-        // 基本值：6 - pairs
-        // 如果牌種類不足 7 種，需要額外補張
-        // 補張數 = 7 - kinds
-        // 所以總向聽數 = 6 - pairs + max(0, 7 - kinds)
-        
-        return 6 - pairs + max(0, 7 - kinds)
-    }
-
-    /**
-     * 計算國士無雙 (Thirteen Orphans) 的向聽數。
-     * 規則：13 種么九牌各一張，其中一種有兩張。
-     * 向聽數 = 13 - (現有的么九牌種類數) - (是否有任何一種么九牌 >= 2 ? 1 : 0)
-     */
-    private fun calculateKokushiShanten(counts: IntArray): Int {
-        // 么九牌的索引列表: 1,9m (0,8), 1,9p (9,17), 1,9s (18,26), z (27-33)
-        val termIndices = intArrayOf(
-            0, 8,   // 1m, 9m
-            9, 17,  // 1p, 9p
-            18, 26, // 1s, 9s
-            27, 28, 29, 30, 31, 32, 33 // 東南西北白發中
-        )
-        
-        var yaochuTypes = 0
-        var hasPair = false
-        
-        for (index in termIndices) {
-            if (counts[index] > 0) {
-                yaochuTypes++
-                if (counts[index] >= 2) {
-                    hasPair = true
-                }
-            }
-        }
-        
-        // 公式：13 - 么九牌種類數 - (如果有雀頭 ? 1 : 0)
-        return 13 - yaochuTypes - (if (hasPair) 1 else 0)
     }
 }

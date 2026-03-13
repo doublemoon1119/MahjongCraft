@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.base
 
-import com.doublemoon1119.mahjongcraft.domain.riichi.RiichiTileOrder
-import com.doublemoon1119.mahjongcraft.domain.taiwan.TaiwanTileOrder
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiTileOrder
+import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanTileOrder
 import java.util.*
 import kotlin.test.*
 

@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.testing.fakes
 
-import com.doublemoon1119.mahjongcraft.domain.riichi.RiichiScoreConfig
-import com.doublemoon1119.mahjongcraft.domain.taiwan.TaiwanScoreConfig
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiScoreConfig
+import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanScoreConfig
 
 /**
  * 集中管理測試中常用的預設配置實體。

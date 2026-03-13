@@ -1,7 +1,8 @@
-package com.doublemoon1119.mahjongcraft.domain.taiwan
+package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
 import java.util.*
 import kotlin.test.Test

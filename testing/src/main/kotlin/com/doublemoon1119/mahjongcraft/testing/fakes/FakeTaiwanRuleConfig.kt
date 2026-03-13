@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.testing.fakes
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import com.doublemoon1119.mahjongcraft.domain.taiwan.TaiwanRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.taiwan.TaiwanScoreConfig
+import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanScoreConfig
 
 /**
  * 用於單元測試的台灣麻將模擬規則配置。

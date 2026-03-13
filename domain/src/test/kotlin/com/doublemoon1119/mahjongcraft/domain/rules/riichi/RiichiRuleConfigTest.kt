@@ -1,7 +1,9 @@
-package com.doublemoon1119.mahjongcraft.domain.riichi
+package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.config.GameLength
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiScoreConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

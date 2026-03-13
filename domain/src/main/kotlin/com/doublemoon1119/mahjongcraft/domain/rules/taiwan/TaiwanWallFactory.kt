@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.domain.taiwan
+package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile

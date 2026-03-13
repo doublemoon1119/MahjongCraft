@@ -1,7 +1,9 @@
-package com.doublemoon1119.mahjongcraft.domain.riichi
+package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiDiscardPile
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -1,6 +1,7 @@
-package com.doublemoon1119.mahjongcraft.domain.taiwan
+package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanWallFactory
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeTaiwanRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals

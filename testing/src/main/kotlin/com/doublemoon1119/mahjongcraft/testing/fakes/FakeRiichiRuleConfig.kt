@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.testing.fakes
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import com.doublemoon1119.mahjongcraft.domain.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.riichi.RiichiScoreConfig
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiScoreConfig
 
 /**
  * 用於單元測試的日本麻將模擬規則配置。
