@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.module
 
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
@@ -48,4 +49,14 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 實作了 [ShantenCalculator] 的物件。
      */
     fun createShantenCalculator(config: T): ShantenCalculator
+
+    /**
+     * 建立適用於該規則的合法動作判定器 (Legal Action Validator)。
+     *
+     * 負責根據當前遊戲狀態判斷玩家可以執行的所有合法動作。
+     *
+     * @param config 規則配置實例。
+     * @return 實作了 [LegalActionValidator] 的物件。
+     */
+    fun createLegalActionValidator(config: T): LegalActionValidator
 }

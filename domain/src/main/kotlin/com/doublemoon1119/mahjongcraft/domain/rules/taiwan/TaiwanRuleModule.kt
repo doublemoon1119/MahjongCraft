@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
+import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
@@ -45,5 +46,15 @@ class TaiwanRuleModule : MahjongRuleModule<TaiwanRuleConfig> {
      */
     override fun createShantenCalculator(config: TaiwanRuleConfig): ShantenCalculator {
         return TaiwanShantenCalculator()
+    }
+
+    /**
+     * 建立台灣麻將的合法動作判定器。
+     *
+     * @param config 台灣麻將規則配置。
+     * @return [TaiwanLegalActionValidator] 實體。
+     */
+    override fun createLegalActionValidator(config: TaiwanRuleConfig): LegalActionValidator {
+        return TaiwanLegalActionValidator()
     }
 }

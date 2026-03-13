@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
@@ -45,5 +46,15 @@ class RiichiRuleModule : MahjongRuleModule<RiichiRuleConfig> {
      */
     override fun createShantenCalculator(config: RiichiRuleConfig): ShantenCalculator {
         return RiichiShantenCalculator()
+    }
+
+    /**
+     * 建立日本麻將的合法動作判定器。
+     *
+     * @param config 日本麻將規則配置。
+     * @return [RiichiLegalActionValidator] 實體。
+     */
+    override fun createLegalActionValidator(config: RiichiRuleConfig): LegalActionValidator {
+        return RiichiLegalActionValidator()
     }
 }

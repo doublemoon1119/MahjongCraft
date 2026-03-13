@@ -12,11 +12,11 @@ import kotlin.test.assertTrue
 class MeldTest {
 
     /**
-     * 測試吃牌 (CHOW) 邏輯。
+     * 測試吃牌 (CHI) 邏輯。
      * 驗證手牌正確減少兩張，且來自他人的牌 (source) 不應從手牌中扣除。
      */
     @Test
-    fun `test call chow removes tiles from hand except source`() {
+    fun `test call chi removes tiles from hand except source`() {
         // 手牌中有 1萬, 2萬
         val t1 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
         val t2 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 2))
@@ -27,17 +27,17 @@ class MeldTest {
 
         // 執行吃牌 (1,2,3萬)
         hand.call(
-            type = MeldType.CHOW,
+            type = MeldType.CHI,
             tiles = listOf(t1, t2, source),
             source = source,
-            direction = RelativeDirection.LEFT
+            direction = RelativeDirection.Left
         )
 
         // 驗證：立牌應該變空
         assertTrue(hand.standingTiles.isEmpty())
         // 驗證：副露列表應有一組吃
         assertEquals(1, hand.exposedMelds.size)
-        assertEquals(MeldType.CHOW, hand.exposedMelds[0].type)
+        assertEquals(MeldType.CHI, hand.exposedMelds[0].type)
         assertEquals(3, hand.exposedMelds[0].tiles.size)
         assertEquals(source, hand.exposedMelds[0].sourceTile)
     }
@@ -74,7 +74,7 @@ class MeldTest {
 
     /**
      * 測試加槓 (ADDED_KAN) 邏輯。
-     * 驗證原本的 PUNG 被正確升級為 ADDED_KAN。
+     * 驗證原本的 PON 被正確升級為 ADDED_KAN。
      */
     @Test
     fun `test upgrade to added kan`() {
@@ -85,8 +85,8 @@ class MeldTest {
         val t4 = IdentifiedTile(UUID.randomUUID(), tileType) // 剛摸到的加槓牌
 
         val hand = Hand()
-        // 先建立一個碰 (PUNG)
-        hand.call(MeldType.PUNG, listOf(t1, t2, t3), t3, RelativeDirection.CENTER)
+        // 先建立一個碰 (PON)
+        hand.call(MeldType.PON, listOf(t1, t2, t3), t3, RelativeDirection.Across)
 
         // 摸到第四張
         hand.lastDrawn = t4

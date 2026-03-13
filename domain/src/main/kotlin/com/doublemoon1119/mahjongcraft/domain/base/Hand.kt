@@ -106,15 +106,15 @@ class Hand(
     /**
      * 執行加槓動作 (Added Kan)。
      *
-     * 將手牌中的一張牌加入至既有的碰組 (PUNG) 副露中。
+     * 將手牌中的一張牌加入至既有的碰組 (PON) 副露中。
      *
      * @param tile 欲加槓的牌。
      * @param targetMeldIndex 欲升級的碰組在 [exposedMelds] 中的索引。
-     * @throws IllegalArgumentException 當索引無效或指定的副露不是 [MeldType.PUNG] 時拋出。
+     * @throws IllegalArgumentException 當索引無效或指定的副露不是 [MeldType.PON] 時拋出。
      */
     fun upgradeToAddedKan(tile: IdentifiedTile, targetMeldIndex: Int) {
         val oldMeld = melds[targetMeldIndex]
-        require(oldMeld.type == MeldType.PUNG) { "Only PUNG can be upgraded to ADDED_KAN" }
+        require(oldMeld.type == MeldType.PON) { "Only PON can be upgraded to ADDED_KAN" }
 
         removeFromHand(tile.id)
 

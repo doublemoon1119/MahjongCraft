@@ -4,11 +4,13 @@ import com.doublemoon1119.mahjongcraft.application.ports.concurrency.TestCorouti
 import com.doublemoon1119.mahjongcraft.application.usecase.factory.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.testing.fakes.FakeLegalActionValidator
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeShantenCalculator
 import kotlinx.coroutines.test.runTest
@@ -47,7 +49,8 @@ class StartGameUseCaseTest {
             }
 
             override fun createDiscardPile(config: FakeMahjongRuleConfig) = FakeDiscardPile()
-            override fun createShantenCalculator(config: FakeMahjongRuleConfig) = FakeShantenCalculator()
+            override fun createShantenCalculator(config: FakeMahjongRuleConfig): ShantenCalculator = FakeShantenCalculator()
+            override fun createLegalActionValidator(config: FakeMahjongRuleConfig): LegalActionValidator = FakeLegalActionValidator()
         })
 
         val useCase = StartGameUseCase(registry, dispatchers)
@@ -109,9 +112,8 @@ class StartGameUseCaseTest {
             }
 
             override fun createDiscardPile(config: FakeMahjongRuleConfig) = FakeDiscardPile()
-            override fun createShantenCalculator(config: FakeMahjongRuleConfig): ShantenCalculator {
-                return FakeShantenCalculator()
-            }
+            override fun createShantenCalculator(config: FakeMahjongRuleConfig): ShantenCalculator = FakeShantenCalculator()
+            override fun createLegalActionValidator(config: FakeMahjongRuleConfig): LegalActionValidator = FakeLegalActionValidator()
         })
 
         val useCase = StartGameUseCase(registry, dispatchers)
