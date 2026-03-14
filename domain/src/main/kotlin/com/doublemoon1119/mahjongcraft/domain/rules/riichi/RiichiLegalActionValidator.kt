@@ -96,6 +96,7 @@ class RiichiLegalActionValidator(
                 // 1. 先檢查玩家在收到這張牌前是否已經聽牌
                 // 2. 如果已經聽牌，檢查是否有打過這張牌（胡牌張）
                 // 3. 有打過 → 振聽狀態，不能榮和
+                // 4. 在當前巡迴中放過榮和（同巡振聽）
                 val currentHandResult = shantenCalculator.calculate(
                     Hand(player.hand.standingTiles.toMutableList())
                 )
