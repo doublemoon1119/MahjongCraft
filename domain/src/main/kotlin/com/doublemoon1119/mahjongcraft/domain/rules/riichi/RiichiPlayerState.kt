@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.domain.table.PlayerRuleState
+import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 
 /**
  * 日本麻將特有的玩家狀態。
@@ -30,17 +31,9 @@ data class RiichiPlayerState(
         passedTilesInRound: Set<Tile>
     ): Set<Tile> {
         val discardedTiles = discardPile.entries
-            .map { it.tile.tile.stripRed() }
+            .map { it.tile.tile.withoutRed }
             .toSet()
 
         return discardedTiles + passedTilesInRound
-    }
-
-    /**
-     * 取得牌的基礎類型（忽略赤寶牌屬性）。
-     */
-    private fun Tile.stripRed(): Tile = when (this) {
-        is Tile.Numeric -> Tile.Numeric(suit, value, isRed = false)
-        else -> this
     }
 }

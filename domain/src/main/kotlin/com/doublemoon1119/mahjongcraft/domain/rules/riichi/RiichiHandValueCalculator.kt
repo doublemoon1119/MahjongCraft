@@ -5,6 +5,10 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContex
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.dora.calculateDora
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateChinitsu
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateHonitsu
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateIttuitsu
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateTanyao
 
 /**
  * 日本麻將手牌番數計算機。
@@ -27,9 +31,24 @@ class RiichiHandValueCalculator {
      * @return 包含所有役種結果的 [HandYakuResult]。
      */
     fun calculate(context: RiichiYakuContext): HandYakuResult {
+        // 1. 先計算役滿
+        val yakumanResults = mutableListOf<YakuResult>()
+        calculateYakuman(context, yakumanResults)
+
+        // 若有役滿，則只計算役滿（役滿疊加）
+        if (yakumanResults.isNotEmpty()) {
+            val totalHan = calculateTotalHan(yakumanResults)
+            return HandYakuResult(
+                yakuResults = yakumanResults,
+                totalHan = totalHan,
+                isCompleteHand = true
+            )
+        }
+
+        // 2. 無役滿時，計算一般役
         val yakuResults = mutableListOf<YakuResult>()
 
-        // 1. 計算寶牌（包括裏寶牌與赤寶牌）
+        // 計算寶牌
         val doraResult = calculateDora(
             hand = context.hand,
             winningTile = context.winningTile,
@@ -41,23 +60,20 @@ class RiichiHandValueCalculator {
             yakuResults.add(doraResult)
         }
 
-        // 2. 計算赤寶牌（在 winningTile 上的赤寶牌額外計算）
+        // 計算赤寶牌
         val akaDoraCount = countAkaDora(context)
         if (akaDoraCount > 0) {
             yakuResults.add(YakuResult.han(YakuType.AkaDora, akaDoraCount))
         }
 
-        // 3. 計算一般役
+        // 計算一般役
         calculateStandardYaku(context, yakuResults)
 
-        // 4. 計算字牌役
+        // 計算字牌役
         calculateHonorYaku(context, yakuResults)
 
-        // 5. 計算特殊役
+        // 計算特殊役
         calculateSpecialYaku(context, yakuResults)
-
-        // 6. 計算役滿
-        calculateYakuman(context, yakuResults)
 
         // 計算總番數
         val totalHan = calculateTotalHan(yakuResults)
@@ -102,9 +118,49 @@ class RiichiHandValueCalculator {
 
     /**
      * 計算一般役（1-6 翻）。
+     *
+     * 處理役種之間的互斥與優先級：
+     * - 清一色 > 混一色（保留較高番數者）
+     * - 兩杯口 > 一杯口（保留較高番數者）
      */
     private fun calculateStandardYaku(context: RiichiYakuContext, results: MutableList<YakuResult>) {
-        // TODO: 實作斷么九、平和、一杯口等役種檢測
+        val standardResults = mutableListOf<YakuResult>()
+
+        // 斷么九
+        calculateTanyao(
+            hand = context.hand,
+            winningTile = context.winningTile,
+            isMenzen = context.isMenzen,
+            allowOpenTanyao = context.allowOpenTanyao
+        )?.let { standardResults.add(it) }
+
+        // 一氣通貫
+        calculateIttuitsu(
+            hand = context.hand,
+            winningTile = context.winningTile,
+            isMenzen = context.isMenzen
+        )?.let { standardResults.add(it) }
+
+        // 混一色與清一色
+        val honitsu = calculateHonitsu(
+            hand = context.hand,
+            winningTile = context.winningTile
+        )
+        val chinitsu = calculateChinitsu(
+            hand = context.hand,
+            winningTile = context.winningTile
+        )
+        // 清一色優先於混一色
+        if (chinitsu != null) {
+            standardResults.add(chinitsu)
+        } else if (honitsu != null) {
+            standardResults.add(honitsu)
+        }
+
+        // 處理一杯口與兩杯口的衝突（TODO: 待實作）
+        // 處理七對子與一般役種的衝突（TODO: 待實作）
+
+        results.addAll(standardResults)
     }
 
     /**
@@ -144,13 +200,8 @@ class RiichiHandValueCalculator {
             results.add(YakuResult.han(YakuType.Houtei, 1))
         }
 
-        // 槓槓
-        if (context.revealedExposedKans.isNotEmpty()) {
-            results.add(YakuResult.han(YakuType.Chankan, context.revealedExposedKans.size))
-        }
-
         // 搶槓
-        if (context.isRobbingKan && context.revealedExposedKans.isEmpty()) {
+        if (context.isRobbingKan) {
             results.add(YakuResult.han(YakuType.Chankan, 1))
         }
     }

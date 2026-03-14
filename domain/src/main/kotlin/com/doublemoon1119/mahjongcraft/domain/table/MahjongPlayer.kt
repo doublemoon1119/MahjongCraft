@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.domain.table
 
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 import java.util.*
 
 /**
@@ -60,7 +61,7 @@ class MahjongPlayer(
      * @param tile 放過的牌（應為基礎類型，忽略赤寶牌屬性）。
      */
     fun addPassedTile(tile: Tile) {
-        _passedTilesInRound.add(tile.stripRed())
+        _passedTilesInRound.add(tile.withoutRed)
     }
 
     /**
@@ -70,13 +71,5 @@ class MahjongPlayer(
      */
     fun clearPassedTiles() {
         _passedTilesInRound.clear()
-    }
-
-    /**
-     * 取得牌的基礎類型（忽略赤寶牌屬性）。
-     */
-    private fun Tile.stripRed(): Tile = when (this) {
-        is Tile.Numeric -> Tile.Numeric(suit, value, isRed = false)
-        else -> this
     }
 }

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 
 /**
  * 寶牌 (Dora) 役種檢測器。
@@ -33,13 +34,13 @@ fun calculateDora(
 
     val doraCount = doraIndicators.sumOf { indicator ->
         val doraTile = getNextDora(indicator)
-        allTiles.count { stripRed(it) == doraTile }
+        allTiles.count { it.withoutRed == doraTile }
     }
 
     val uraDoraCount = if (isRiichi) {
         uraDoraIndicators.sumOf { indicator ->
             val doraTile = getNextDora(indicator)
-            allTiles.count { stripRed(it) == doraTile }
+            allTiles.count { it.withoutRed == doraTile }
         }
     } else {
         0
@@ -74,18 +75,5 @@ private fun getNextDora(indicator: Tile): Tile {
         is Tile.Honor.Red -> Tile.Honor.White
         // 花牌在日麻中不作為寶牌指示牌
         is Tile.Flower -> indicator
-    }
-}
-
-/**
- * 移除赤寶牌標記，將其視為普通牌。
- *
- * @param tile 原始麻將牌。
- * @return 去除赤寶牌標記後的牌。
- */
-private fun stripRed(tile: Tile): Tile {
-    return when (tile) {
-        is Tile.Numeric -> tile.copy(isRed = false)
-        else -> tile
     }
 }

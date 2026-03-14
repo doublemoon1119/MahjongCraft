@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.domain.table.Wind
  * @property isIppatsu 是否為一發。
  * @property isDoubleRiichi 是否為兩立直（雙立直）。
  * @property isMenzen 是否有門前清（無副露）。
+ * @property allowOpenTanyao 是否允許食斷（斷么九鳴牌有效）。
  * @property doraIndicators 寶牌指示牌列表。
  * @property uraDoraIndicators 裏寶牌指示牌列表（立直時）。
  * @property revealedExposedKans 揭示的明槓列表（用於槓槓檢測）。
@@ -34,6 +35,7 @@ data class RiichiYakuContext(
     val isIppatsu: Boolean = false,
     val isDoubleRiichi: Boolean = false,
     val isMenzen: Boolean = true,
+    val allowOpenTanyao: Boolean = true,
     val doraIndicators: List<Tile> = emptyList(),
     val uraDoraIndicators: List<Tile> = emptyList(),
     val revealedExposedKans: List<Tile> = emptyList(),

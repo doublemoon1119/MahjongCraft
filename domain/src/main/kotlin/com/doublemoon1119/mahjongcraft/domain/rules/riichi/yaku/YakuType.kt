@@ -31,7 +31,7 @@ enum class YakuType {
     Haitei,
     /** 河底撈魚 (Houtei Raoyue) - 1 翻 */
     Houtei,
-    /** 槓槓 (Chankan) - 1 翻 */
+    /** 搶槓 (Chankan) - 1 翻 */
     Chankan,
 
     /** 對對胡 (Toitoi) - 2 翻 */
