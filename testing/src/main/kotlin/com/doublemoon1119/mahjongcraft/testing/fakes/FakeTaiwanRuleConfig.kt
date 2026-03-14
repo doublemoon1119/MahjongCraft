@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.testing.fakes
 
-import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanScoreConfig
 
@@ -12,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanScoreConfig
  *
  * @property useFlowerTiles 是否使用花牌，預設為 true。
  * @property initialHandSize 初始手牌張數，預設為 16。
- * @property tileSet 遊戲使用的牌組實體列表，預設為空。
  * @property deadTileCount 牌山尾端保留的死牌張數，預設為 8。
  * @property minimumWinConstraint 起胡台數限制，預設為 0。
  * @property scoreConfig 台灣麻將專屬的積分配置，預設使用 [TestConstants.TAIWAN_SCORE_CONFIG]。
@@ -21,7 +19,6 @@ import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanScoreConfig
 class FakeTaiwanRuleConfig(
     override val useFlowerTiles: Boolean = true,
     override val initialHandSize: Int = 16,
-    override val tileSet: List<Tile> = emptyList(),
     override val deadTileCount: Int = 8,
     override val minimumWinConstraint: Int = 0,
     override val scoreConfig: TaiwanScoreConfig = TestConstants.TAIWAN_SCORE_CONFIG,

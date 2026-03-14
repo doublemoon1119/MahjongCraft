@@ -1,9 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.config.GameLength
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiScoreConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -39,9 +36,6 @@ class RiichiRuleConfigTest {
     ) : RiichiRuleConfig {
         /** 固定日麻標準初始手牌張數 13。 */
         override val initialHandSize = 13
-
-        /** 測試用空牌組。 */
-        override val tileSet = emptyList<Tile>()
 
         /** 固定日麻王牌張數 14。 */
         override val deadTileCount = 14

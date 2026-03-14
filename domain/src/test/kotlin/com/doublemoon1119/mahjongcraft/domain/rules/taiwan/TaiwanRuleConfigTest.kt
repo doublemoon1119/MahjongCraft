@@ -1,9 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
-import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.config.GameLength
-import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanScoreConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -36,9 +33,6 @@ class TaiwanRuleConfigTest {
     ) : TaiwanRuleConfig {
         /** 固定台麻標準初始手牌張數 16。 */
         override val initialHandSize = 16
-
-        /** 測試用空牌組。 */
-        override val tileSet = emptyList<Tile>()
 
         /** 固定台麻王牌/保留牌張數 8。 */
         override val deadTileCount = 8

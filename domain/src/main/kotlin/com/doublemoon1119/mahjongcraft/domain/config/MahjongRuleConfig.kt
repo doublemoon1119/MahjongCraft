@@ -1,7 +1,5 @@
 package com.doublemoon1119.mahjongcraft.domain.config
 
-import com.doublemoon1119.mahjongcraft.domain.base.Tile
-
 /**
  * 定義麻將遊戲最基礎的物理配置介面。
  *
@@ -10,9 +8,6 @@ import com.doublemoon1119.mahjongcraft.domain.base.Tile
 interface MahjongRuleConfig {
     /** 初始手牌張數（不含摸牌）。例如日本麻將為 13，台灣麻將為 16。 */
     val initialHandSize: Int
-
-    /** 該規則使用的完整牌組列表。 */
-    val tileSet: List<Tile>
 
     /** 牌山結束時需保留在場上不被使用的「王牌」張數。 */
     val deadTileCount: Int

@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.application.usecase.factory
 
-import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
@@ -15,7 +14,6 @@ import kotlin.test.assertFailsWith
  */
 private class FakeConfigA(
     override val initialHandSize: Int = 13,
-    override val tileSet: List<Tile> = emptyList(),
     override val deadTileCount: Int = 14,
     override val minimumWinConstraint: Int = 1,
     override val scoreConfig: FakeScoreConfig = FakeScoreConfig(),
@@ -27,7 +25,6 @@ private class FakeConfigA(
  */
 private class FakeConfigB(
     override val initialHandSize: Int = 16,
-    override val tileSet: List<Tile> = emptyList(),
     override val deadTileCount: Int = 16,
     override val minimumWinConstraint: Int = 0,
     override val scoreConfig: FakeScoreConfig = FakeScoreConfig(),

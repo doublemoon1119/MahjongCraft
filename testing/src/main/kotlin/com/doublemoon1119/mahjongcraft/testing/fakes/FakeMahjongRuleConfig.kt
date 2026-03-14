@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.testing.fakes
 
-import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.config.GameLength
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.config.ScoreConfig
@@ -22,6 +21,4 @@ class FakeMahjongRuleConfig(
     override val minimumWinConstraint: Int = 1,
     override val scoreConfig: ScoreConfig = FakeScoreConfig(),
     override val gameLength: GameLength = FakeGameLength()
-) : MahjongRuleConfig {
-    override val tileSet: List<Tile> = emptyList()
-}
+) : MahjongRuleConfig
