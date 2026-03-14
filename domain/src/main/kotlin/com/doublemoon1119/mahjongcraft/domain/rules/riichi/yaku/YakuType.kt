@@ -42,9 +42,9 @@ enum class YakuType {
     Sansankou,
     /** 三杠子 (Sankantsu) - 2 翻 */
     Sankantsu,
-    /** 全帶么 (Honchan) - 2 翻 */
+    /** 混全帶么九 (Honchan) - 2 翻 */
     Honchan,
-    /** 純全帶么 (Junchan) - 3 翻 */
+    /** 純全帶么九 (Junchan) - 3 翻 */
     Junchan,
     /** 混一色 (Honitsu) - 3 翻 */
     Honitsu,
@@ -55,11 +55,15 @@ enum class YakuType {
 
     /** 混老頭 (Honroutou) - 2 翻 */
     Honroutou,
-    /** 清怪聲 (Chinroutou) - 役滿 */
+    /** 清老頭 (Chinroutou) - 役滿 */
     Chinroutou,
 
     /** 清一色 (Chinitsu) - 6 翻 */
     Chinitsu,
+
+    // ===== 特殊胡牌型 =====
+    /** 七對子 (Chiitoitsu) - 2 翻 */
+    Chiitoitsu,
 
     // ===== 字牌役 =====
     /** 場風 (Bakaze) - 1 翻 */
