@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.HandYakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuResult
@@ -88,7 +89,7 @@ class RiichiHandValueCalculator {
     /**
      * 計算赤寶牌數量。
      *
-     * 赤寶牌為帶有 [com.doublemoon1119.mahjongcraft.domain.base.Tile.Numeric.isRed] 標記的牌（5 萬、5 筒、5 條）。
+     * 赤寶牌為帶有 [Tile.Numeric.isRed] 標記的牌（5 萬、5 筒、5 條）。
      * 每一張赤寶牌額外提供 1 翻。
      *
      * @param context 役種計算上下文。
@@ -99,7 +100,7 @@ class RiichiHandValueCalculator {
 
         // 檢查立牌中的赤寶牌
         context.hand.standingTiles.forEach { identifiedTile ->
-            if (identifiedTile.tile is com.doublemoon1119.mahjongcraft.domain.base.Tile.Numeric &&
+            if (identifiedTile.tile is Tile.Numeric &&
                 identifiedTile.tile.isRed
             ) {
                 count++
@@ -107,7 +108,7 @@ class RiichiHandValueCalculator {
         }
 
         // 檢查胡牌張是否為赤寶牌
-        if (context.winningTile is com.doublemoon1119.mahjongcraft.domain.base.Tile.Numeric &&
+        if (context.winningTile is Tile.Numeric &&
             context.winningTile.isRed
         ) {
             count++
