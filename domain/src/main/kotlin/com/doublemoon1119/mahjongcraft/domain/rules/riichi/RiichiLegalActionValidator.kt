@@ -105,8 +105,13 @@ class RiichiLegalActionValidator(
                     val discardPile = player.discardPile
                     val discardedBaseTiles = discardPile.entries.map { it.tile.tile.stripRed() }
 
-                    // 檢查是否打過這張牌（振聽）
-                    discardedBaseTiles.contains(incomingBaseTile)
+                    // 檢查是否打過這張牌（傳統振聽）
+                    val hasDiscardedWinningTile = discardedBaseTiles.contains(incomingBaseTile)
+
+                    // 檢查是否在當前巡迴中放過榮和（同巡振聽）
+                    val hasPassedRon = player.isPassedTile(incomingBaseTile)
+
+                    hasDiscardedWinningTile || hasPassedRon
                 } else {
                     // 手牌原本未聽牌，不可能是振聽
                     false
@@ -120,8 +125,9 @@ class RiichiLegalActionValidator(
             // 2. 檢查是否可以碰 (Pon)
             // 立直後不能碰
             // 赤寶牌與普通牌視為同一張牌，故使用 stripRed() 比較
+            // 過水碰：若玩家在當前巡迴中已放過此牌，則不可碰
             val ponCount = player.hand.standingTiles.count { it.tile.stripRed() == incomingBaseTile }
-            if (ponCount >= 2 && !isRiichiDeclared) {
+            if (ponCount >= 2 && !isRiichiDeclared && !player.isPassedTile(incomingBaseTile)) {
                 legalActions.add(GameAction.Pon(incomingTile.id))
             }
 

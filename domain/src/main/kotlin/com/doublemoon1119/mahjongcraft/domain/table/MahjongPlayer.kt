@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.table
 
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
+import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import java.util.*
 
 /**
@@ -37,4 +38,51 @@ class MahjongPlayer(
      * 隨連莊或過莊改變，用於判定當前局數中的親家/子家關係。
      */
     var currentWind: Wind = initialSeat
+
+    /**
+     * 當前巡迴中玩家放過的牌（用於過水碰及同巡振聽判定）。
+     *
+     * 記錄玩家在當前巡迴中放過的牌：
+     * - 放過碰牌機會 → 過水碰（之後不能碰）
+     * - 放過榮和機會 → 同巡振聽（之後不能榮和）
+     * 當玩家摸牌時（新的巡迴開始）應清除此集合。
+     * 此屬性為私有，透過 [isPassedTile] 方法進行查詢。
+     */
+    private val passedTilesInRound: MutableSet<Tile> = mutableSetOf()
+
+    /**
+     * 檢查指定牌是否在當前巡迴中已被放過。
+     *
+     * @param tile 要檢查的牌（應為基礎類型，忽略赤寶牌屬性）。
+     * @return 若已放過返回 true，否則返回 false。
+     */
+    fun isPassedTile(tile: Tile): Boolean {
+        return passedTilesInRound.contains(tile.stripRed())
+    }
+
+    /**
+     * 記錄玩家放過的牌（用於過水碰及同巡振聽判定）。
+     *
+     * @param tile 放過的牌（應為基礎類型，忽略赤寶牌屬性）。
+     */
+    fun addPassedTile(tile: Tile) {
+        passedTilesInRound.add(tile.stripRed())
+    }
+
+    /**
+     * 清除當前巡迴中放過的牌。
+     *
+     * 通常在玩家摸牌（新的巡迴開始）時呼叫。
+     */
+    fun clearPassedTiles() {
+        passedTilesInRound.clear()
+    }
+
+    /**
+     * 取得牌的基礎類型（忽略赤寶牌屬性）。
+     */
+    private fun Tile.stripRed(): Tile = when (this) {
+        is Tile.Numeric -> Tile.Numeric(suit, value, isRed = false)
+        else -> this
+    }
 }

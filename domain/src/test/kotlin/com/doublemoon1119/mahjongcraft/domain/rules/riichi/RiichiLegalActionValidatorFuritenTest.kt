@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.testing.fakes.FakeMahjongRuleConfig
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * 立直麻將合法動作驗證器之振聽測試。
@@ -151,5 +152,142 @@ class RiichiLegalActionValidatorFuritenTest {
 
         // 驗證 - 因為打過普通5萬（視為同張牌），所以不可榮和
         assertFalse(actions.any { it is GameAction.Ron })
+    }
+
+    /**
+     * 測試過水碰之情況：放過碰牌後，同巡再次出現相同機會不可碰。
+     *
+     * 玩家在巡迴中放過了碰5萬的機會，後續再出現5萬時不可碰。
+     */
+    @Test
+    fun `test cannot pon after passing in same round`() {
+        // 準備
+        val playerHand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 5)
+            )
+        )
+
+        val player = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "TestPlayer",
+            hand = playerHand,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile()
+        )
+        // 建立已放過5萬的狀態
+        player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5))
+
+        val tableState = TableState(
+            players = listOf(player),
+            tileWall = TileWall(mutableListOf()),
+            config = FakeMahjongRuleConfig()
+        )
+        // 他家打5萬
+        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5))
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            source = RelativeDirection.Across,
+            incomingTile = incomingTile
+        )
+
+        // 驗證 - 已經放過，不可碰
+        assertFalse(actions.any { it is GameAction.Pon })
+    }
+
+    /**
+     * 測試過水碰之情況：摸牌後清除過水碰記錄。
+     *
+     * 玩家放過碰牌機會後，下次摸牌時應清除記錄，可再次碰牌。
+     * 注意：此測試需要在 Use Case 層實作清除邏輯後才能正確運作。
+     */
+    @Test
+    fun `test can pon after clearing passed tiles manually`() {
+        // 準備
+        val playerHand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 5)
+            )
+        )
+
+        val player = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "TestPlayer",
+            hand = playerHand,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile()
+        )
+        // 建立已放過5萬的狀態
+        player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5))
+
+        val tableState = TableState(
+            players = listOf(player),
+            tileWall = TileWall(mutableListOf()),
+            config = FakeMahjongRuleConfig()
+        )
+
+        // 手動清除記錄（模擬 Use Case 層的行為）
+        player.clearPassedTiles()
+
+        // 再測試他家打5萬
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            source = RelativeDirection.Across,
+            incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5))
+        )
+
+        // 驗證 - 清除記錄後，可以碰
+        assertTrue(actions.any { it is GameAction.Pon })
+    }
+
+    /**
+     * 測試過水碰之情況：過水碰不受赤寶牌影響。
+     *
+     * 玩家放過普通5萬，他家打赤5萬時也不可碰（視為同張牌）。
+     */
+    @Test
+    fun `test cannot pon after passing with red dora`() {
+        // 準備
+        val playerHand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 5)
+            )
+        )
+
+        val player = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "TestPlayer",
+            hand = playerHand,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile()
+        )
+        // 放過普通5萬
+        player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5, isRed = false))
+
+        val tableState = TableState(
+            players = listOf(player),
+            tileWall = TileWall(mutableListOf()),
+            config = FakeMahjongRuleConfig()
+        )
+        // 他家打赤5萬
+        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            source = RelativeDirection.Across,
+            incomingTile = incomingTile
+        )
+
+        // 驗證 - 放過普通5萬，赤5萬也不能碰
+        assertFalse(actions.any { it is GameAction.Pon })
     }
 }
