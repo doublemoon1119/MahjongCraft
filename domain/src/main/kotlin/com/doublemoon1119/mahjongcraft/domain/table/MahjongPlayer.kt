@@ -13,13 +13,16 @@ import java.util.*
  * @property initialSeat 初始座位方位。
  * @property hand 該玩家的手牌實體。
  * @property discardPile 該玩家的牌河實體，其具體類型由遊戲規則決定。
+ * @property playerRuleState 用於儲存規則特有的玩家狀態（如立直、振聽等）。
+ *                          具體類型由各規則決定，例如 [com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiPlayerState]。
  */
 class MahjongPlayer(
     val id: UUID,
     val name: String,
     val initialSeat: Wind,
     val hand: Hand = Hand(),
-    val discardPile: DiscardPile<*>
+    val discardPile: DiscardPile<*>,
+    val playerRuleState: PlayerRuleState? = null
 ) {
     /**
      * 玩家目前的總分（持點）。

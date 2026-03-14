@@ -33,16 +33,24 @@ class RiichiLegalActionValidator(
         incomingTile: IdentifiedTile?
     ): List<GameAction> {
         val legalActions = mutableListOf<GameAction>()
+        val riichiState = player.playerRuleState as? RiichiPlayerState
+        val isRiichiDeclared = riichiState?.isRiichiDeclared == true
 
-        // TODO: 實裝打牌階段邏輯
-        // - incomingTile == null 表示玩家正在打牌（準備捨牌）
-        // - 此時應檢查：
-        //   1. 是否可以立直 (Riichi)：向聽數為 0 且門前清（無副露）且未曾立直
-        //   2. 一般捨牌選項（打出手牌中的任何一張牌）
-        // - 立直後限制：
-        //   - 不能吃、碰、明槓
-        //   - 只能摸切（打剛摸到的牌）
+        // incomingTile == null 表示玩家正在打牌（準備捨牌）
+        // 捨牌動作由 UI 層處理，讓玩家選擇要打的牌
+        // 此 Validator 只處理「額外動作」（鳴牌、胡牌、立直）
         if (incomingTile == null) {
+            // 檢查是否可以立直 (Riichi)
+            // 條件：向聽數為 0 且門前清（無副露）且未曾立直
+            if (!isRiichiDeclared && player.hand.exposedMelds.isEmpty()) {
+                val currentShanten = shantenCalculator.calculate(
+                    Hand(player.hand.standingTiles.toMutableList())
+                ).shanten
+                if (currentShanten == 0) {
+                    legalActions.add(GameAction.Riichi)
+                }
+            }
+
             return legalActions
         }
 
@@ -63,6 +71,10 @@ class RiichiLegalActionValidator(
             }
 
             // 3. 檢查是否可以暗槓 (Closed Kan)
+            // 立直後暗槓限制：
+            // - 暗槓前跟暗槓後聽的牌必須一模一樣才能暗槓
+            // - 需要計算暗槓後的聽牌列表，與暗槓前的聽牌列表比對
+            // TODO: 待向聽計算器支援聽牌分析後實作
             val closedKanCount = player.hand.standingTiles.count { it.tile == incomingTile.tile }
             if (closedKanCount == 3) {
                 val withTiles = player.hand.standingTiles.filter { it.tile == incomingTile.tile }.map { it.id }
@@ -72,23 +84,34 @@ class RiichiLegalActionValidator(
         } else {
             // 他家打牌
             // 1. 檢查是否可以榮和 (Ron)
-            // TODO: 振聽檢查
-            // - 如果玩家已經聽牌，檢查是否打過相同的牌
+            // 振聽檢查：
+            // - 如果玩家已經聽牌（向聽數為 0），檢查是否打過相同的牌
             // - 如果打過（振聽），則不可榮和
-            // - 需記錄玩家打過的牌（可從 discardPile 取得）
+            // - 需從 discardPile 取得玩家打過的牌
             val tempHandRon = Hand((player.hand.standingTiles + incomingTile).toMutableList())
-            if (shantenCalculator.calculate(tempHandRon).shanten == -1) {
+            val isTenpai = shantenCalculator.calculate(tempHandRon).shanten == -1
+
+            if (isTenpai) {
+                // 振聽檢查：若玩家已聽牌且打過相同牌，則不可榮和
+                // 需從 discardPile 取得玩家打過的牌
+                // TODO: 待 discardPile API 完成後實作
+                // val discardedTiles = player.discardPile.getAllTiles()
+                // if (!discardedTiles.any { it.tile == incomingTile.tile }) {
+                //     legalActions.add(GameAction.Ron(incomingTile.id))
+                // }
                 legalActions.add(GameAction.Ron(incomingTile.id))
             }
 
             // 2. 檢查是否可以碰 (Pon)
+            // 立直後不能碰
             val ponCount = player.hand.standingTiles.count { it.tile == incomingTile.tile }
-            if (ponCount >= 2) {
+            if (ponCount >= 2 && !isRiichiDeclared) {
                 legalActions.add(GameAction.Pon(incomingTile.id))
             }
 
             // 3. 檢查是否可以吃 (Chi)
-            if (source == RelativeDirection.Left && incomingTile.tile is Tile.Numeric) {
+            // 立直後不能吃
+            if (source == RelativeDirection.Left && incomingTile.tile is Tile.Numeric && !isRiichiDeclared) {
                 val iTile = incomingTile.tile
                 val handTiles = player.hand.standingTiles
 
@@ -127,8 +150,9 @@ class RiichiLegalActionValidator(
             }
 
             // 4. 檢查是否可以大明槓 (Open Kan)
+            // 立直後不能明槓
             val openKanCount = player.hand.standingTiles.count { it.tile == incomingTile.tile }
-            if (openKanCount == 3) {
+            if (openKanCount == 3 && !isRiichiDeclared) {
                 val withTiles = player.hand.standingTiles.filter { it.tile == incomingTile.tile }.map { it.id }
                 legalActions.add(GameAction.Kan(GameAction.KanType.OPEN_KAN, incomingTile.id, withTiles))
             }
