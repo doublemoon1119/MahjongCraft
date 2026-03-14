@@ -41,8 +41,8 @@ class RiichiLegalActionValidator(
         // 此 Validator 只處理「額外動作」（鳴牌、胡牌、立直）
         if (incomingTile == null) {
             // 檢查是否可以立直 (Riichi)
-            // 條件：向聽數為 0 且門前清（無副露）且未曾立直
-            if (!isRiichiDeclared && player.hand.exposedMelds.isEmpty()) {
+            // 條件：向聽數為 0 且門前清（無副露）且未曾立直且點數 >= 1000
+            if (!isRiichiDeclared && player.hand.exposedMelds.isEmpty() && player.score >= 1000) {
                 val result = shantenCalculator.calculate(
                     Hand(player.hand.standingTiles.toMutableList())
                 )
@@ -53,6 +53,9 @@ class RiichiLegalActionValidator(
 
             return legalActions
         }
+
+        // 取得進牌的基礎類型（忽略赤寶牌屬性）
+        val incomingBaseTile = incomingTile.tile.stripRed()
 
         // 處理有 incomingTile 的情況
         if (source == RelativeDirection.Self) {
@@ -66,7 +69,7 @@ class RiichiLegalActionValidator(
 
             // 2. 檢查是否可以加槓 (Added Kan)
             player.hand.exposedMelds.forEach { meld ->
-                if (meld.type == MeldType.PON && meld.tiles.first().tile == incomingTile.tile) {
+                if (meld.type == MeldType.PON && meld.tiles.first().tile.stripRed() == incomingBaseTile) {
                     legalActions.add(GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()))
                 }
             }
@@ -76,51 +79,65 @@ class RiichiLegalActionValidator(
             // - 暗槓前跟暗槓後聽的牌必須一模一樣才能暗槓
             // - 需要計算暗槓後的聽牌列表，與暗槓前的聽牌列表比對
             // TODO: 待向聽計算器支援聽牌分析後實作
-            val closedKanCount = player.hand.standingTiles.count { it.tile == incomingTile.tile }
+            val closedKanCount = player.hand.standingTiles.count { it.tile.stripRed() == incomingBaseTile }
             if (closedKanCount == 3) {
-                val withTiles = player.hand.standingTiles.filter { it.tile == incomingTile.tile }.map { it.id }
+                val withTiles = player.hand.standingTiles.filter { it.tile.stripRed() == incomingBaseTile }.map { it.id }
                 legalActions.add(GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, withTiles))
             }
 
         } else {
             // 他家打牌
             // 1. 檢查是否可以榮和 (Ron)
-            // 振聽檢查：
-            // - 如果玩家已經聽牌，檢查是否打過相同的牌
-            // - 如果打過（振聽），則不可榮和
-            // - 需從 discardPile 取得玩家打過的牌
             val tempHandRon = Hand((player.hand.standingTiles + incomingTile).toMutableList())
             val ronResult = shantenCalculator.calculate(tempHandRon)
 
             if (ronResult is ShantenResult.Complete) {
-                // 振聽檢查：若玩家已聽牌且打過相同牌，則不可榮和
-                // TODO: 待 discardPile API 完成後實作
-                // val discardedTiles = player.discardPile.getAllTiles()
-                // if (!discardedTiles.any { it.tile == incomingTile.tile }) {
-                //     legalActions.add(GameAction.Ron(incomingTile.id))
-                // }
-                legalActions.add(GameAction.Ron(incomingTile.id))
+                // 振聽檢查：
+                // 1. 先檢查玩家在收到這張牌前是否已經聽牌
+                // 2. 如果已經聽牌，檢查是否有打過這張牌（胡牌張）
+                // 3. 有打過 → 振聽狀態，不能榮和
+                val currentHandResult = shantenCalculator.calculate(
+                    Hand(player.hand.standingTiles.toMutableList())
+                )
+
+                val isFuriten = if (currentHandResult is ShantenResult.Tenpai) {
+                    // 取得玩家已打過的牌（忽略赤寶牌屬性）
+                    val discardPile = player.discardPile
+                    val discardedBaseTiles = discardPile.entries.map { it.tile.tile.stripRed() }
+
+                    // 檢查是否打過這張牌（振聽）
+                    discardedBaseTiles.contains(incomingBaseTile)
+                } else {
+                    // 手牌原本未聽牌，不可能是振聽
+                    false
+                }
+
+                if (!isFuriten) {
+                    legalActions.add(GameAction.Ron(incomingTile.id))
+                }
             }
 
             // 2. 檢查是否可以碰 (Pon)
             // 立直後不能碰
-            val ponCount = player.hand.standingTiles.count { it.tile == incomingTile.tile }
+            // 赤寶牌與普通牌視為同一張牌，故使用 stripRed() 比較
+            val ponCount = player.hand.standingTiles.count { it.tile.stripRed() == incomingBaseTile }
             if (ponCount >= 2 && !isRiichiDeclared) {
                 legalActions.add(GameAction.Pon(incomingTile.id))
             }
 
             // 3. 檢查是否可以吃 (Chi)
             // 立直後不能吃
+            // 吃不受赤寶牌影響，但仍需使用 stripRed() 確保一致性
             if (source == RelativeDirection.Left && incomingTile.tile is Tile.Numeric && !isRiichiDeclared) {
                 val iTile = incomingTile.tile
                 val handTiles = player.hand.standingTiles
 
                 // 3a. 檢查 (tile - 1, tile - 2) 的組合
                 if (iTile.value > 2) {
-                    val t1 = Tile.Numeric(iTile.suit, iTile.value - 1)
-                    val t2 = Tile.Numeric(iTile.suit, iTile.value - 2)
-                    val id1 = handTiles.find { it.tile == t1 }?.id
-                    val id2 = handTiles.find { it.tile == t2 }?.id
+                    val t1 = Tile.Numeric(iTile.suit, iTile.value - 1, isRed = false)
+                    val t2 = Tile.Numeric(iTile.suit, iTile.value - 2, isRed = false)
+                    val id1 = handTiles.find { it.tile.stripRed() == t1 }?.id
+                    val id2 = handTiles.find { it.tile.stripRed() == t2 }?.id
                     if (id1 != null && id2 != null) {
                         legalActions.add(GameAction.Chi(incomingTile.id, listOf(id1, id2)))
                     }
@@ -128,10 +145,10 @@ class RiichiLegalActionValidator(
 
                 // 3b. 檢查 (tile - 1, tile + 1) 的組合
                 if (iTile.value in 2..<9) {
-                    val t1 = Tile.Numeric(iTile.suit, iTile.value - 1)
-                    val t2 = Tile.Numeric(iTile.suit, iTile.value + 1)
-                    val id1 = handTiles.find { it.tile == t1 }?.id
-                    val id2 = handTiles.find { it.tile == t2 }?.id
+                    val t1 = Tile.Numeric(iTile.suit, iTile.value - 1, isRed = false)
+                    val t2 = Tile.Numeric(iTile.suit, iTile.value + 1, isRed = false)
+                    val id1 = handTiles.find { it.tile.stripRed() == t1 }?.id
+                    val id2 = handTiles.find { it.tile.stripRed() == t2 }?.id
                     if (id1 != null && id2 != null) {
                         legalActions.add(GameAction.Chi(incomingTile.id, listOf(id1, id2)))
                     }
@@ -139,10 +156,10 @@ class RiichiLegalActionValidator(
 
                 // 3c. 檢查 (tile + 1, tile + 2) 的組合
                 if (iTile.value < 8) {
-                    val t1 = Tile.Numeric(iTile.suit, iTile.value + 1)
-                    val t2 = Tile.Numeric(iTile.suit, iTile.value + 2)
-                    val id1 = handTiles.find { it.tile == t1 }?.id
-                    val id2 = handTiles.find { it.tile == t2 }?.id
+                    val t1 = Tile.Numeric(iTile.suit, iTile.value + 1, isRed = false)
+                    val t2 = Tile.Numeric(iTile.suit, iTile.value + 2, isRed = false)
+                    val id1 = handTiles.find { it.tile.stripRed() == t1 }?.id
+                    val id2 = handTiles.find { it.tile.stripRed() == t2 }?.id
                     if (id1 != null && id2 != null) {
                         legalActions.add(GameAction.Chi(incomingTile.id, listOf(id1, id2)))
                     }
@@ -151,13 +168,26 @@ class RiichiLegalActionValidator(
 
             // 4. 檢查是否可以大明槓 (Open Kan)
             // 立直後不能明槓
-            val openKanCount = player.hand.standingTiles.count { it.tile == incomingTile.tile }
+            // 赤寶牌與普通牌視為同一張牌，故使用 stripRed() 比較
+            val openKanCount = player.hand.standingTiles.count { it.tile.stripRed() == incomingBaseTile }
             if (openKanCount == 3 && !isRiichiDeclared) {
-                val withTiles = player.hand.standingTiles.filter { it.tile == incomingTile.tile }.map { it.id }
+                val withTiles = player.hand.standingTiles.filter { it.tile.stripRed() == incomingBaseTile }.map { it.id }
                 legalActions.add(GameAction.Kan(GameAction.KanType.OPEN_KAN, incomingTile.id, withTiles))
             }
         }
 
         return legalActions
     }
+}
+
+/**
+ * 取得牌的基礎類型（忽略赤寶牌屬性）。
+ *
+ * 赤寶牌與普通牌在聽牌分析上視為同張牌，故進行比較時需忽略 [Tile.Numeric.isRed] 屬性。
+ *
+ * @return 不含赤寶牌屬性的牌副本，若非 [Tile.Numeric] 直接回傳原牌。
+ */
+private fun Tile.stripRed(): Tile = when (this) {
+    is Tile.Numeric -> Tile.Numeric(suit, value, isRed = false)
+    else -> this
 }

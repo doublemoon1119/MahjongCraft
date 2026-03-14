@@ -28,7 +28,7 @@ class MahjongPlayer(
      * 玩家目前的總分（持點）。
      *
      * 其初始值通常由 [TableState] 根據規則配置進行初始化。
-     * */
+     */
     var score: Int = 0
 
     /**
