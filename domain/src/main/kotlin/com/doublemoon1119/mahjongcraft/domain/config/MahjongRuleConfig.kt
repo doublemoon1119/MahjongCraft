@@ -19,7 +19,7 @@ interface MahjongRuleConfig {
     val gameLength: GameLength
 
     /**
-     * 最小胡牌翻數或台數限制（翻縛）。
+     * 最小胡牌番數或台數限制（翻縛）。
      * 日本麻將通常為 1，台灣麻將通常為 0。
      */
     val minimumWinConstraint: Int

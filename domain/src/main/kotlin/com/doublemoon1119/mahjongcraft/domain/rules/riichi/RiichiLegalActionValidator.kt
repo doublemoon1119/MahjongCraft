@@ -64,6 +64,8 @@ class RiichiLegalActionValidator(
             val tempHandTsumo = Hand((player.hand.standingTiles + incomingTile).toMutableList())
             val tsumoResult = shantenCalculator.calculate(tempHandTsumo)
             if (tsumoResult is ShantenResult.Complete) {
+                // TODO: 檢查是否符合最低胡牌番數限制 (minimumWinConstraint)
+                // 需要計算手牌的番數，若低於 config.minimumWinConstraint則不能胡
                 legalActions.add(GameAction.Tsumo)
             }
 
@@ -112,6 +114,8 @@ class RiichiLegalActionValidator(
                 }
 
                 if (!isFuriten) {
+                    // TODO: 檢查是否符合最低胡牌番數限制 (minimumWinConstraint)
+                    // 需要計算手牌的番數，若低於 config.minimumWinConstraint則不能胡
                     legalActions.add(GameAction.Ron(incomingTile.id))
                 }
             }
