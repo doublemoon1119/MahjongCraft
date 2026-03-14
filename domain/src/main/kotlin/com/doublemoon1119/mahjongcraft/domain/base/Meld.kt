@@ -15,7 +15,7 @@ data class Meld(
     val type: MeldType,
     val tiles: List<IdentifiedTile>,
     val sourceTile: IdentifiedTile? = null,
-    val sourceDirection: RelativeDirection? = null
+    val sourceDirection: RelativeDirection
 )
 
 /**

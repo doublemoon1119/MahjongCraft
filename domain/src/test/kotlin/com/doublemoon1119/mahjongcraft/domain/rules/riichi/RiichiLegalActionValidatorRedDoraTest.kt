@@ -207,7 +207,8 @@ class RiichiLegalActionValidatorRedDoraTest {
                 IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5, isRed = false)),
                 IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5, isRed = false)),
                 IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5, isRed = false))
-            )
+            ),
+            sourceDirection = RelativeDirection.Left
         )
         val playerHand = Hand(melds = mutableListOf(ponMeld))
         val player = MahjongPlayer(

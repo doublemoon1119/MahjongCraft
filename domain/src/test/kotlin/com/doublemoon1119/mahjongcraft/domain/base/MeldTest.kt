@@ -62,7 +62,8 @@ class MeldTest {
         hand.call(
             type = MeldType.CLOSED_KAN,
             tiles = listOf(t1, t2, t3, t4),
-            source = null
+            source = null,
+            direction = RelativeDirection.Self
         )
 
         // 驗證：立牌與摸牌區都應清空

@@ -169,7 +169,8 @@ class RiichiLegalActionValidatorTest {
                 IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
                 IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
                 IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
-            )
+            ),
+            sourceDirection = RelativeDirection.Left
         )
         val playerHand = Hand(melds = mutableListOf(ponMeld))
         val player = MahjongPlayer(
@@ -425,7 +426,8 @@ class RiichiLegalActionValidatorTest {
                 IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 6)),
                 IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 6)),
                 IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 6))
-            )
+            ),
+            sourceDirection = RelativeDirection.Left
         )
         playerHand.call(ponMeld.type, ponMeld.tiles, ponMeld.sourceTile, ponMeld.sourceDirection)
         val player = MahjongPlayer(

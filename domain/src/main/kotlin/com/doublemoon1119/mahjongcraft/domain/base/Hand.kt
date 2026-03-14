@@ -83,14 +83,14 @@ class Hand(
      *
      * @param type 副露種類。
      * @param tiles 構成該副露的所有牌（包含來自他人的牌與自己手牌中的牌）。
-     * @param source 鳴取來源的牌（別家打出的牌）。若為暗槓 [MeldType.CLOSED_KAN] 則傳入 null。
-     * @param direction 鳴取來源的方位。
+     * @param source 鳴取來源的牌（別家打出的牌）。若為暗槓 [MeldType.CLOSED_KAN]則傳入 null。
+     * @param direction 鳴取來源的方位。對於暗槓 [MeldType.CLOSED_KAN]，必須傳入 [RelativeDirection.Self]。
      */
     fun call(
         type: MeldType,
         tiles: List<IdentifiedTile>,
         source: IdentifiedTile? = null,
-        direction: RelativeDirection? = null
+        direction: RelativeDirection
     ) {
         // 遍歷組成副露的這些牌 (通常是 3 或 4 張)
         tiles.forEach { mTile ->

@@ -1,6 +1,11 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.domain.base.MeldType
+import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Fuuro
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Mentsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.HandYakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuResult
@@ -10,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calcula
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateHonitsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateIttuitsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateTanyao
+import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 
 /**
  * 日本麻將手牌番數計算機。
@@ -32,9 +38,29 @@ class RiichiHandValueCalculator {
      * @return 包含所有役種結果的 [HandYakuResult]。
      */
     fun calculate(context: RiichiYakuContext): HandYakuResult {
-        // 1. 先計算役滿
+        // 1. 嘗試分解手牌（用於需要手牌結構的役種）
+        val allTiles = context.hand.standingTiles.map { it.tile.withoutRed } + context.winningTile.withoutRed
+        val fuuro = context.hand.exposedMelds.map { meld ->
+            // 將 base.Meld 轉換為 structure.Fuuro
+            val tile = meld.tiles.first().tile.withoutRed
+            val mentsu = when (meld.type) {
+                MeldType.PON -> Mentsu.Kotsu(tile)
+                MeldType.CHI -> Mentsu.Shuntsu(headTile = tile)
+                MeldType.OPEN_KAN -> Mentsu.Minkan(tile)
+                MeldType.CLOSED_KAN -> Mentsu.Ankan(tile)
+                MeldType.ADDED_KAN -> Mentsu.Kakan(tile)
+            }
+            Fuuro(
+                mentsu = mentsu,
+                from = meld.sourceDirection ?: RelativeDirection.Left
+            )
+        }
+
+        val handStructure = RiichiHandDecomposer.decompose(allTiles, fuuro)
+
+        // 2. 先計算役滿
         val yakumanResults = mutableListOf<YakuResult>()
-        calculateYakuman(context, yakumanResults)
+        calculateYakuman(context, handStructure, yakumanResults)
 
         // 若有役滿，則只計算役滿（役滿疊加）
         if (yakumanResults.isNotEmpty()) {
@@ -46,7 +72,7 @@ class RiichiHandValueCalculator {
             )
         }
 
-        // 2. 無役滿時，計算一般役
+        // 3. 無役滿時，計算一般役
         val yakuResults = mutableListOf<YakuResult>()
 
         // 計算寶牌
@@ -210,8 +236,12 @@ class RiichiHandValueCalculator {
     /**
      * 計算役滿。
      */
-    private fun calculateYakuman(context: RiichiYakuContext, results: MutableList<YakuResult>) {
-        // TODO: 實作國士無雙、九蓮寶燈、四暗刻等役滿檢測
+    private fun calculateYakuman(
+        context: RiichiYakuContext,
+        handStructure: HandStructure?,
+        results: MutableList<YakuResult>
+    ) {
+        // TODO: 使用 handStructure 實作國士無雙、九蓮寶燈、四暗刻等役滿檢測
     }
 
     /**
