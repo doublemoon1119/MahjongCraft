@@ -46,19 +46,13 @@ class MahjongPlayer(
      * - 放過碰牌機會 → 過水碰（之後不能碰）
      * - 放過榮和機會 → 同巡振聽（之後不能榮和）
      * 當玩家摸牌時（新的巡迴開始）應清除此集合。
-     * 此屬性為私有，透過 [isPassedTile] 方法進行查詢。
      */
-    private val passedTilesInRound: MutableSet<Tile> = mutableSetOf()
+    private val _passedTilesInRound: MutableSet<Tile> = mutableSetOf()
 
     /**
-     * 檢查指定牌是否在當前巡迴中已被放過。
-     *
-     * @param tile 要檢查的牌（應為基礎類型，忽略赤寶牌屬性）。
-     * @return 若已放過返回 true，否則返回 false。
+     * 當前巡迴中玩家放過的牌集合（唯讀）。
      */
-    fun isPassedTile(tile: Tile): Boolean {
-        return passedTilesInRound.contains(tile.stripRed())
-    }
+    val passedTilesInRound: Set<Tile> = _passedTilesInRound
 
     /**
      * 記錄玩家放過的牌（用於過水碰及同巡振聽判定）。
@@ -66,7 +60,7 @@ class MahjongPlayer(
      * @param tile 放過的牌（應為基礎類型，忽略赤寶牌屬性）。
      */
     fun addPassedTile(tile: Tile) {
-        passedTilesInRound.add(tile.stripRed())
+        _passedTilesInRound.add(tile.stripRed())
     }
 
     /**
@@ -75,7 +69,7 @@ class MahjongPlayer(
      * 通常在玩家摸牌（新的巡迴開始）時呼叫。
      */
     fun clearPassedTiles() {
-        passedTilesInRound.clear()
+        _passedTilesInRound.clear()
     }
 
     /**

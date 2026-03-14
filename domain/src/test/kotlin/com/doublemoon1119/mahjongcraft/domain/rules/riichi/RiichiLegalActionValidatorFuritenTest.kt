@@ -66,12 +66,14 @@ class RiichiLegalActionValidatorFuritenTest {
                 IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
             )
         )
+        val riichiState = RiichiPlayerState()
         val player = MahjongPlayer(
             id = UUID.randomUUID(),
             name = "TestPlayer",
             hand = playerHand,
             initialSeat = Wind.EAST,
-            discardPile = fakeDiscardPile
+            discardPile = fakeDiscardPile,
+            playerRuleState = riichiState
         )
         val tableState = TableState(
             players = listOf(player),
@@ -127,12 +129,14 @@ class RiichiLegalActionValidatorFuritenTest {
                 IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5, isRed = false))
             )
         )
+        val riichiState = RiichiPlayerState()
         val player = MahjongPlayer(
             id = UUID.randomUUID(),
             name = "TestPlayer",
             hand = playerHand,
             initialSeat = Wind.EAST,
-            discardPile = fakeDiscardPile
+            discardPile = fakeDiscardPile,
+            playerRuleState = riichiState
         )
         val tableState = TableState(
             players = listOf(player),

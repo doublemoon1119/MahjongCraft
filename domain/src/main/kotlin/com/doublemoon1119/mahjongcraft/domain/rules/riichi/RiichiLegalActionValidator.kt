@@ -94,25 +94,18 @@ class RiichiLegalActionValidator(
             if (ronResult is ShantenResult.Complete) {
                 // 振聽檢查：
                 // 1. 先檢查玩家在收到這張牌前是否已經聽牌
-                // 2. 如果已經聽牌，檢查是否有打過這張牌（胡牌張）
-                // 3. 有打過 → 振聽狀態，不能榮和
-                // 4. 在當前巡迴中放過榮和（同巡振聽）
+                // 2. 如果已經聽牌，檢查這張牌是否在振聽列表中
                 val currentHandResult = shantenCalculator.calculate(
                     Hand(player.hand.standingTiles.toMutableList())
                 )
 
                 val isFuriten = if (currentHandResult is ShantenResult.Tenpai) {
-                    // 取得玩家已打過的牌（忽略赤寶牌屬性）
-                    val discardPile = player.discardPile
-                    val discardedBaseTiles = discardPile.entries.map { it.tile.tile.stripRed() }
+                    val furitenTiles = riichiState?.getFuritenTiles(
+                        discardPile = player.discardPile,
+                        passedTilesInRound = player.passedTilesInRound
+                    ) ?: emptySet()
 
-                    // 檢查是否打過這張牌（傳統振聽）
-                    val hasDiscardedWinningTile = discardedBaseTiles.contains(incomingBaseTile)
-
-                    // 檢查是否在當前巡迴中放過榮和（同巡振聽）
-                    val hasPassedRon = player.isPassedTile(incomingBaseTile)
-
-                    hasDiscardedWinningTile || hasPassedRon
+                    furitenTiles.contains(incomingBaseTile)
                 } else {
                     // 手牌原本未聽牌，不可能是振聽
                     false
@@ -128,7 +121,7 @@ class RiichiLegalActionValidator(
             // 赤寶牌與普通牌視為同一張牌，故使用 stripRed() 比較
             // 過水碰：若玩家在當前巡迴中已放過此牌，則不可碰
             val ponCount = player.hand.standingTiles.count { it.tile.stripRed() == incomingBaseTile }
-            if (ponCount >= 2 && !isRiichiDeclared && !player.isPassedTile(incomingBaseTile)) {
+            if (ponCount >= 2 && !isRiichiDeclared && incomingBaseTile !in player.passedTilesInRound) {
                 legalActions.add(GameAction.Pon(incomingTile.id))
             }
 
