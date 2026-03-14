@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import kotlin.math.max
 import kotlin.math.min
 
 /**
@@ -60,7 +61,102 @@ class TaiwanShantenCalculator : ShantenCalculator {
         // 計算標準型向聽數 (5面子 + 1雀頭)
         val minShanten = calculateStandardShanten(counts, exposedMeldsCount)
 
-        return ShantenResult(shanten = minShanten)
+        // 檢查是否已胡牌（向聽數 <= 0 且標準型已完成）
+        if (minShanten <= 0 && isStandardCompleteHand(counts, exposedMeldsCount)) {
+            return ShantenResult.Complete()
+        }
+
+        // 檢查是否聽牌
+        if (minShanten <= 0) {
+            val winningTiles = calculateWinningTiles(counts, exposedMeldsCount)
+            return ShantenResult.Tenpai(winningTiles)
+        }
+
+        // 返回 n 向聽
+        return ShantenResult.NotTenpai(minShanten)
+    }
+
+    /**
+     * 檢查標準型手牌是否已經完成（5面子+1雀頭）。
+     *
+     * @param counts 立牌的計數陣列。
+     * @param exposedMeldsCount 已副露的面子數。
+     * @return 如果標準型手牌已完成則為 true。
+     */
+    private fun isStandardCompleteHand(counts: IntArray, exposedMeldsCount: Int): Boolean {
+        val targetMelds = 5 - exposedMeldsCount
+
+        // 嘗試找雀頭
+        for (i in counts.indices) {
+            if (counts[i] >= 2) {
+                val tempCounts = counts.copyOf()
+                tempCounts[i] -= 2
+                val melds = countMeldsRecursive(tempCounts, 0, 0, targetMelds)
+                if (melds >= targetMelds) {
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
+
+    /**
+     * 遞迴計算能夠組成的最多面子數。
+     */
+    private fun countMeldsRecursive(counts: IntArray, index: Int, currentMelds: Int, targetMelds: Int): Int {
+        if (currentMelds >= targetMelds || index >= 34) {
+            return currentMelds
+        }
+
+        if (counts[index] == 0) {
+            return countMeldsRecursive(counts, index + 1, currentMelds, targetMelds)
+        }
+
+        var best = currentMelds
+
+        // 刻子
+        if (counts[index] >= 3) {
+            counts[index] -= 3
+            best = max(best, countMeldsRecursive(counts, index, currentMelds + 1, targetMelds))
+            counts[index] += 3
+        }
+
+        // 順子
+        if (index < 27 && index % 9 < 7 && counts[index + 1] > 0 && counts[index + 2] > 0) {
+            counts[index]--
+            counts[index + 1]--
+            counts[index + 2]--
+            best = max(best, countMeldsRecursive(counts, index, currentMelds + 1, targetMelds))
+            counts[index]++
+            counts[index + 1]++
+            counts[index + 2]++
+        }
+
+        return best
+    }
+
+    /**
+     * 計算聽牌列表。
+     */
+    private fun calculateWinningTiles(counts: IntArray, exposedMeldsCount: Int): List<Tile> {
+        val winningTiles = mutableListOf<Tile>()
+
+        for (i in counts.indices) {
+            val currentCount = counts[i]
+            if (currentCount >= 4) continue
+
+            val tempCounts = counts.copyOf()
+            tempCounts[i]++
+
+            if (isStandardCompleteHand(tempCounts, exposedMeldsCount)) {
+                tileMap.entries.find { it.value == i }?.key?.let { tile ->
+                    winningTiles.add(tile)
+                }
+            }
+        }
+
+        return winningTiles.distinct()
     }
 
     /**

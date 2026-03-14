@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 import com.doublemoon1119.mahjongcraft.domain.base.*
 import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
+import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
-import java.util.*
 
 /**
  * 日本麻將規則的合法動作判定器。
@@ -43,10 +43,10 @@ class RiichiLegalActionValidator(
             // 檢查是否可以立直 (Riichi)
             // 條件：向聽數為 0 且門前清（無副露）且未曾立直
             if (!isRiichiDeclared && player.hand.exposedMelds.isEmpty()) {
-                val currentShanten = shantenCalculator.calculate(
+                val result = shantenCalculator.calculate(
                     Hand(player.hand.standingTiles.toMutableList())
-                ).shanten
-                if (currentShanten == 0) {
+                )
+                if (result is ShantenResult.Tenpai) {
                     legalActions.add(GameAction.Riichi)
                 }
             }
@@ -59,7 +59,8 @@ class RiichiLegalActionValidator(
             // 自己摸牌
             // 1. 檢查是否可以自摸 (Tsumo)
             val tempHandTsumo = Hand((player.hand.standingTiles + incomingTile).toMutableList())
-            if (shantenCalculator.calculate(tempHandTsumo).shanten == -1) {
+            val tsumoResult = shantenCalculator.calculate(tempHandTsumo)
+            if (tsumoResult is ShantenResult.Complete) {
                 legalActions.add(GameAction.Tsumo)
             }
 
@@ -85,15 +86,14 @@ class RiichiLegalActionValidator(
             // 他家打牌
             // 1. 檢查是否可以榮和 (Ron)
             // 振聽檢查：
-            // - 如果玩家已經聽牌（向聽數為 0），檢查是否打過相同的牌
+            // - 如果玩家已經聽牌，檢查是否打過相同的牌
             // - 如果打過（振聽），則不可榮和
             // - 需從 discardPile 取得玩家打過的牌
             val tempHandRon = Hand((player.hand.standingTiles + incomingTile).toMutableList())
-            val isTenpai = shantenCalculator.calculate(tempHandRon).shanten == -1
+            val ronResult = shantenCalculator.calculate(tempHandRon)
 
-            if (isTenpai) {
+            if (ronResult is ShantenResult.Complete) {
                 // 振聽檢查：若玩家已聽牌且打過相同牌，則不可榮和
-                // 需從 discardPile 取得玩家打過的牌
                 // TODO: 待 discardPile API 完成後實作
                 // val discardedTiles = player.discardPile.getAllTiles()
                 // if (!discardedTiles.any { it.tile == incomingTile.tile }) {
@@ -127,7 +127,7 @@ class RiichiLegalActionValidator(
                 }
 
                 // 3b. 檢查 (tile - 1, tile + 1) 的組合
-                if (iTile.value > 1 && iTile.value < 9) {
+                if (iTile.value in 2..<9) {
                     val t1 = Tile.Numeric(iTile.suit, iTile.value - 1)
                     val t2 = Tile.Numeric(iTile.suit, iTile.value + 1)
                     val id1 = handTiles.find { it.tile == t1 }?.id

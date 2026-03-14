@@ -3,9 +3,11 @@ package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenResult
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * 立直麻將向聽數計算器之單元測試。
@@ -55,7 +57,7 @@ class RiichiShantenCalculatorTest {
             )
         )
         val result = calculator.calculate(hand)
-        assertEquals(0, result.shanten, "Tenpai hand should have 0 shanten, but was: ${result.shanten}")
+        assertTrue(result is ShantenResult.Tenpai, "Tenpai hand should be Tenpai result")
     }
 
     /**
@@ -85,8 +87,7 @@ class RiichiShantenCalculatorTest {
             )
         )
         val result = calculator.calculate(hand)
-        // 7 pairs should return -1
-        assertEquals(-1, result.shanten, "Seven pairs complete hand should have -1 shanten")
+        assertTrue(result is ShantenResult.Complete, "Seven pairs complete hand should be Complete")
     }
 
     /**
@@ -115,8 +116,7 @@ class RiichiShantenCalculatorTest {
             )
         )
         val result = calculator.calculate(hand)
-        // 6 pairs = already tenpai (0 shanten) for seven pairs
-        assertEquals(0, result.shanten, "Six pairs should be tenpai (0 shanten) for seven pairs")
+        assertTrue(result is ShantenResult.Tenpai, "Six pairs should be Tenpai for seven pairs")
     }
 
     /**
@@ -152,7 +152,7 @@ class RiichiShantenCalculatorTest {
             )
         )
         val result = calculator.calculate(hand)
-        assertEquals(-1, result.shanten, "Kokushi complete hand should have -1 shanten")
+        assertTrue(result is ShantenResult.Complete, "Kokushi complete hand should be Complete")
     }
 
     /**
@@ -186,7 +186,7 @@ class RiichiShantenCalculatorTest {
             )
         )
         val result = calculator.calculate(hand)
-        assertEquals(0, result.shanten, "Kokushi tenpai hand should have 0 shanten")
+        assertTrue(result is ShantenResult.Tenpai, "Kokushi tenpai hand should be Tenpai")
     }
 
     /**
@@ -219,6 +219,7 @@ class RiichiShantenCalculatorTest {
             )
         )
         val result = calculator.calculate(hand)
-        assertEquals(1, result.shanten, "Kokushi one away should have 1 shanten")
+        val notTenpaiResult = result as ShantenResult.NotTenpai
+        assertEquals(1, notTenpaiResult.shanten, "Kokushi one away should have 1 shanten")
     }
 }

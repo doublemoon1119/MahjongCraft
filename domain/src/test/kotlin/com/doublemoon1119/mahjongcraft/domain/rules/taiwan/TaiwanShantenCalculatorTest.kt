@@ -3,10 +3,12 @@ package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanShantenCalculator
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class TaiwanShantenCalculatorTest {
 
@@ -48,7 +50,7 @@ class TaiwanShantenCalculatorTest {
             )
         )
         val result = calculator.calculate(hand)
-        assertEquals(0, result.shanten, "Hand with 4 melds, 1 pair, 1 tatsu should be 0 shanten.")
+        assertTrue(result is ShantenResult.Tenpai, "Hand with 4 melds, 1 pair, 1 tatsu should be Tenpai.")
     }
 
     @Test
@@ -78,7 +80,7 @@ class TaiwanShantenCalculatorTest {
             )
         )
         val result = calculator.calculate(hand)
-        assertEquals(0, result.shanten, "Hand with 5 melds, 1 single should be 0 shanten.")
+        assertTrue(result is ShantenResult.Tenpai, "Hand with 5 melds, 1 single should be Tenpai.")
     }
 
     @Test
@@ -107,6 +109,7 @@ class TaiwanShantenCalculatorTest {
             )
         )
         val result = calculator.calculate(hand)
-        assertEquals(-1, result.shanten, "Hand with 5 melds, 1 pair should be -1 shanten (Agari).")
+        println("Result: $result")
+        assertTrue(result is ShantenResult.Complete, "Hand with 5 melds, 1 pair should be Complete (Agari), but was: $result")
     }
 }

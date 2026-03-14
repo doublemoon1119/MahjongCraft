@@ -51,7 +51,7 @@ class RiichiShantenCalculator : ShantenCalculator {
                 counts[index]++
             }
         }
-        
+
         // 獲取已副露的面子數
         val exposedMeldsCount = hand.exposedMelds.size
 
@@ -71,14 +71,90 @@ class RiichiShantenCalculator : ShantenCalculator {
         }
 
         // 取最小值
-        var minShanten = min(standardShanten, min(sevenPairsShanten, kokushiShanten))
+        val minShanten = min(standardShanten, min(sevenPairsShanten, kokushiShanten))
 
-        // 檢查是否已胡牌（向聽數為 0 且標準型已完成）
-        if (minShanten == 0 && isStandardCompleteHand(counts, exposedMeldsCount)) {
-            minShanten = -1
+        // 檢查是否已胡牌（向聽數 <= 0 且標準型已完成）
+        if (minShanten <= 0 && isStandardCompleteHand(counts, exposedMeldsCount)) {
+            return ShantenResult.Complete()
         }
 
-        return ShantenResult(shanten = minShanten)
+        // 檢查是否已胡牌（七對子）
+        if (exposedMeldsCount == 0 && calculateSevenPairsShanten(counts) == -1) {
+            return ShantenResult.Complete()
+        }
+
+        // 檢查是否已胡牌（國士無雙）
+        if (exposedMeldsCount == 0 && calculateKokushiShanten(counts) == -1) {
+            return ShantenResult.Complete()
+        }
+
+        // 檢查是否聽牌
+        if (minShanten <= 0) {
+            val winningTiles = calculateWinningTiles(counts, exposedMeldsCount)
+            return ShantenResult.Tenpai(winningTiles)
+        }
+
+        // 返回 n 向聽
+        return ShantenResult.NotTenpai(minShanten)
+    }
+
+    /**
+     * 計算聽牌列表。
+     *
+     * 嘗試將手牌中的每張牌作為「進張」，計算加入該牌後是否可胡牌。
+     *
+     * @param counts 立牌的計數陣列。
+     * @param exposedMeldsCount 已副露的面子數。
+     * @return 可以胡的牌列表。
+     */
+    private fun calculateWinningTiles(counts: IntArray, exposedMeldsCount: Int): List<Tile> {
+        val winningTiles = mutableListOf<Tile>()
+
+        // 嘗試每種牌作為進張
+        for (i in counts.indices) {
+            // 檢查該牌是否已經在手中（如果是，需要有超過 3 張才能再摸一張）
+            val currentCount = counts[i]
+            if (currentCount >= 4) continue // 手中已有 4 張，無法再摸
+
+            // 模擬摸進這張牌
+            val tempCounts = counts.copyOf()
+            tempCounts[i]++
+
+            // 檢查是否可以胡牌
+            if (canWin(tempCounts, exposedMeldsCount)) {
+                tileMap.entries.find { it.value == i }?.key?.let { tile ->
+                    winningTiles.add(tile)
+                }
+            }
+        }
+
+        return winningTiles.distinct()
+    }
+
+    /**
+     * 檢查給定的牌型是否已經胡牌。
+     *
+     * @param counts 立牌的計數陣列。
+     * @param exposedMeldsCount 已副露的面子數。
+     * @return 如果已經胡牌則為 true。
+     */
+    private fun canWin(counts: IntArray, exposedMeldsCount: Int): Boolean {
+        // 檢查標準型
+        if (isStandardCompleteHand(counts, exposedMeldsCount)) {
+            return true
+        }
+
+        // 檢查七對子
+        if (exposedMeldsCount == 0 && calculateSevenPairsShanten(counts) == -1) {
+            return true
+        }
+
+        // 檢查國士無雙
+        if (exposedMeldsCount == 0 && calculateKokushiShanten(counts) == -1) {
+            return true
+        }
+
+        return false
     }
 
     /**
@@ -258,11 +334,12 @@ class RiichiShantenCalculator : ShantenCalculator {
      * 計算七對子 (Seven Pairs) 的向聽數。
      * 規則：必須有 7 個不同的對子。
      * 向聽數 = 6 - 對子數 + max(0, 7 - 牌種類數)
+     * 若已湊齊 7 對子，返回 -1 表示胡牌。
      */
     private fun calculateSevenPairsShanten(counts: IntArray): Int {
         var pairs = 0
         var kinds = 0 // 有幾種牌
-        
+
         for (count in counts) {
             if (count > 0) {
                 kinds++
@@ -271,20 +348,23 @@ class RiichiShantenCalculator : ShantenCalculator {
                 }
             }
         }
-        
+
         // 七對子向聽數公式：
         // 基本值：6 - pairs
         // 如果牌種類不足 7 種，需要額外補張
         // 補張數 = 7 - kinds
         // 所以總向聽數 = 6 - pairs + max(0, 7 - kinds)
-        
-        return 6 - pairs + max(0, 7 - kinds)
+        // 當 pairs == 7 且 kinds == 7 時，返回 -1（胡牌）
+
+        val shanten = 6 - pairs + max(0, 7 - kinds)
+        return if (shanten == 0 && pairs == 7 && kinds == 7) -1 else shanten
     }
 
     /**
      * 計算國士無雙 (Thirteen Orphans) 的向聽數。
      * 規則：13 種么九牌各一張，其中一種有兩張。
      * 向聽數 = 13 - (現有的么九牌種類數) - (是否有任何一種么九牌 >= 2 ? 1 : 0)
+     * 若已湊齊 13 種么九牌且有雀頭，返回 -1 表示胡牌。
      */
     private fun calculateKokushiShanten(counts: IntArray): Int {
         // 么九牌的索引列表: 1,9m (0,8), 1,9p (9,17), 1,9s (18,26), z (27-33)
@@ -294,10 +374,10 @@ class RiichiShantenCalculator : ShantenCalculator {
             18, 26, // 1s, 9s
             27, 28, 29, 30, 31, 32, 33 // 東南西北白發中
         )
-        
+
         var yaochuTypes = 0
         var hasPair = false
-        
+
         for (index in termIndices) {
             if (counts[index] > 0) {
                 yaochuTypes++
@@ -306,8 +386,11 @@ class RiichiShantenCalculator : ShantenCalculator {
                 }
             }
         }
-        
+
         // 公式：13 - 么九牌種類數 - (如果有雀頭 ? 1 : 0)
-        return 13 - yaochuTypes - (if (hasPair) 1 else 0)
+        // 當 yaochuTypes == 13 且 hasPair == true 時，返回 -1（胡牌）
+
+        val shanten = 13 - yaochuTypes - (if (hasPair) 1 else 0)
+        return if (shanten == 0 && yaochuTypes == 13 && hasPair) -1 else shanten
     }
 }
