@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContex
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.dora.calculateDora
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateChiitoitsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateChinitsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateHonitsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateIttuitsu
@@ -52,7 +53,7 @@ class RiichiHandValueCalculator {
             }
             Fuuro(
                 mentsu = mentsu,
-                from = meld.sourceDirection ?: RelativeDirection.Left
+                from = meld.sourceDirection
             )
         }
 
@@ -94,7 +95,7 @@ class RiichiHandValueCalculator {
         }
 
         // 計算一般役
-        calculateStandardYaku(context, yakuResults)
+        calculateStandardYaku(context, handStructure, yakuResults)
 
         // 計算字牌役
         calculateHonorYaku(context, yakuResults)
@@ -149,8 +150,13 @@ class RiichiHandValueCalculator {
      * 處理役種之間的互斥與優先級：
      * - 清一色 > 混一色（保留較高番數者）
      * - 兩杯口 > 一杯口（保留較高番數者）
+     * - 七對子與一杯口、兩杯口互斥（按點數決定）
      */
-    private fun calculateStandardYaku(context: RiichiYakuContext, results: MutableList<YakuResult>) {
+    private fun calculateStandardYaku(
+        context: RiichiYakuContext,
+        handStructure: HandStructure?,
+        results: MutableList<YakuResult>
+    ) {
         val standardResults = mutableListOf<YakuResult>()
 
         // 斷么九
@@ -184,8 +190,23 @@ class RiichiHandValueCalculator {
             standardResults.add(honitsu)
         }
 
-        // 處理一杯口與兩杯口的衝突（TODO: 待實作）
-        // 處理七對子與一般役種的衝突（TODO: 待實作）
+        // 計算一杯口與兩杯口（TODO: 待實作）
+        val iipeikou: YakuResult? = null // TODO: calculateIipeikou(...)
+        val ryanpeikou: YakuResult? = null // TODO: calculateRyanpeikou(...)
+
+        // 計算七對子
+        val chiitoitsu = calculateChiitoitsu(
+            handStructure = handStructure,
+            isMenzen = context.isMenzen
+        )
+
+        // 處理七對子與一杯口、兩杯口的衝突
+        // 兩杯口 (3 han) > 七對子 (2 han) > 一杯口 (1 han)
+        when {
+            ryanpeikou != null -> standardResults.add(ryanpeikou)
+            chiitoitsu != null -> standardResults.add(chiitoitsu)
+            iipeikou != null -> standardResults.add(iipeikou)
+        }
 
         results.addAll(standardResults)
     }
