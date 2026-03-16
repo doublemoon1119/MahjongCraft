@@ -9,7 +9,7 @@ import kotlin.test.assertNull
 /**
  * 立直麻將手牌番數計算機之一般役種測試。
  *
- * 測試內容涵蓋斷么九、一氣通貫、混一色、清一色等役種。
+ * 測試內容涵蓋斷么九、一氣通貫、混一色、清一色、一杯口、兩杯口、七對子等役種。
  *
  * @see RiichiHandValueCalculator
  */
@@ -382,5 +382,254 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
 
         val chiitoitsuResult = result.yakuResults.find { it.yaku == YakuType.Chiitoitsu }
         assertNull(chiitoitsuResult, "Non-chiitoitsu hand should not have chiitoitsu yaku")
+    }
+
+    /**
+     * 測試一杯口 - 門前清。
+     *
+     * 手牌有兩個相同的順子（123m 兩個），應獲得 1 翻。
+     */
+    @Test
+    fun `test iipeikou menzen`() {
+        // 手牌 13 張：兩個 123m 順子 + 一個 456m 順子 + 雀頭 77m
+        // 123m x2 (6) + 456m (3) + 77m (2) + 1m (自摸) = 12 張 -> 需要再調整
+        // 正確：123m x2 (6) + 456m (3) + 789m (3) + 77m = 13 張手牌
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 7)
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val iipeikouResult = result.yakuResults.find { it.yaku == YakuType.Iipeikou }
+        assertEquals(1, iipeikouResult?.han, "Iipeikou should be 1 han")
+    }
+
+    /**
+     * 測試一杯口 - 有副露。
+     *
+     * 有副露時應無法獲得一杯口。
+     */
+    @Test
+    fun `test iipeikou with fuuro returns null`() {
+        // 手牌 13 張：兩個 123m 順子 + 一個 456m 順子 + 雀頭 55m
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Dot, 5)
+            ),
+            hasExposedMelds = true
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
+        val result = calculator.calculate(context)
+
+        val iipeikouResult = result.yakuResults.find { it.yaku == YakuType.Iipeikou }
+        assertNull(iipeikouResult, "Iipeikou should not be present when there is fuuro")
+    }
+
+    /**
+     * 測試一杯口 - 非一杯口牌型。
+     *
+     * 手牌中沒有兩個相同的順子，應不成立一杯口。
+     */
+    @Test
+    fun `test non-iipeikou hand returns null`() {
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1)
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val iipeikouResult = result.yakuResults.find { it.yaku == YakuType.Iipeikou }
+        assertNull(iipeikouResult, "Non-iipeikou hand should not have iipeikou yaku")
+    }
+
+    /**
+     * 測試兩杯口 - 門前清。
+     *
+     * 手牌有兩個不同的相同順子（123m 兩個 + 456m 兩個），應獲得 3 翻。
+     */
+    @Test
+    fun `test ryanpeikou menzen`() {
+        // 手牌 13 張：兩個 123m 順子 + 兩個 456m 順子 + 雀頭 77m
+        // 123m x2 (6) + 456m x2 (6) + 77m (2) = 14 tiles total
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7)
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val ryanpeikouResult = result.yakuResults.find { it.yaku == YakuType.Ryanpeikou }
+        assertEquals(3, ryanpeikouResult?.han, "Ryanpeikou should be 3 han")
+    }
+
+    /**
+     * 測試兩杯口 - 有副露。
+     *
+     * 有副露時應無法獲得兩杯口。
+     */
+    @Test
+    fun `test ryanpeikou with fuuro returns null`() {
+        // 手牌 13 張：兩個 123m 順子 + 兩個 456m 順子 + 雀頭 77m
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7)
+            ),
+            hasExposedMelds = true
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
+        val result = calculator.calculate(context)
+
+        val ryanpeikouResult = result.yakuResults.find { it.yaku == YakuType.Ryanpeikou }
+        assertNull(ryanpeikouResult, "Ryanpeikou should not be present when there is fuuro")
+    }
+
+    /**
+     * 測試兩杯口優先於七對子。
+     *
+     * 兩杯口 (3 翻) 優先於七對子 (2 翻)。
+     */
+    @Test
+    fun `test ryanpeikou takes precedence over chiitoitsu`() {
+        // 手牌 13 張：兩個 123m 順子 + 兩個 456m 順子 + 雀頭 77m
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7)
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val ryanpeikouResult = result.yakuResults.find { it.yaku == YakuType.Ryanpeikou }
+        val chiitoitsuResult = result.yakuResults.find { it.yaku == YakuType.Chiitoitsu }
+
+        assertEquals(3, ryanpeikouResult?.han, "Ryanpeikou should be 3 han")
+        assertNull(chiitoitsuResult, "Chiitoitsu should not be present when Ryanpeikou is present")
+    }
+
+    /**
+     * 測試七對子優先於一杯口。
+     *
+     * 七對子 (2 翻) 優先於一杯口 (1 翻)。
+     */
+    @Test
+    fun `test chiitoitsu takes precedence over iipeikou`() {
+        // 這個牌型同時滿足七對子和一杯口的條件，但七對子優先
+        // 11223344556677m -> 7 個對子
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+                Tile.Numeric(Tile.Suit.Bamboo, 6),
+                Tile.Numeric(Tile.Suit.Bamboo, 6),
+                Tile.Numeric(Tile.Suit.Bamboo, 7)
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 7)
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val chiitoitsuResult = result.yakuResults.find { it.yaku == YakuType.Chiitoitsu }
+        val iipeikouResult = result.yakuResults.find { it.yaku == YakuType.Iipeikou }
+
+        assertEquals(2, chiitoitsuResult?.han, "Chiitoitsu should be 2 han")
+        assertNull(iipeikouResult, "Iipeikou should not be present when Chiitoitsu is present")
     }
 }

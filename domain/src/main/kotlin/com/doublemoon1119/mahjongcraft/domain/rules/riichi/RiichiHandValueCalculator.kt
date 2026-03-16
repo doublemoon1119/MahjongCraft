@@ -14,7 +14,9 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.dora.calculateDo
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateChiitoitsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateChinitsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateHonitsu
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateIipeikou
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateIttuitsu
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateRyanpeikou
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateTanyao
 import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 
@@ -190,9 +192,15 @@ class RiichiHandValueCalculator {
             standardResults.add(honitsu)
         }
 
-        // 計算一杯口與兩杯口（TODO: 待實作）
-        val iipeikou: YakuResult? = null // TODO: calculateIipeikou(...)
-        val ryanpeikou: YakuResult? = null // TODO: calculateRyanpeikou(...)
+        // 計算一杯口與兩杯口
+        val iipeikou = calculateIipeikou(
+            handStructure = handStructure,
+            isMenzen = context.isMenzen
+        )
+        val ryanpeikou = calculateRyanpeikou(
+            handStructure = handStructure,
+            isMenzen = context.isMenzen
+        )
 
         // 計算七對子
         val chiitoitsu = calculateChiitoitsu(
