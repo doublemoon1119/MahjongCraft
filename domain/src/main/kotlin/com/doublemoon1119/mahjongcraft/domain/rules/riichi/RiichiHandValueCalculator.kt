@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContex
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.dora.calculateDora
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.honor.calculateHonorYaku
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateChiitoitsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateChinitsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateHonitsu
@@ -100,7 +101,7 @@ class RiichiHandValueCalculator {
         calculateStandardYaku(context, handStructure, yakuResults)
 
         // 計算字牌役
-        calculateHonorYaku(context, yakuResults)
+        calculateHonorYaku(context, fuuro, yakuResults)
 
         // 計算特殊役
         calculateSpecialYaku(context, yakuResults)
@@ -222,8 +223,23 @@ class RiichiHandValueCalculator {
     /**
      * 計算字牌役（場風、自風、役牌）。
      */
-    private fun calculateHonorYaku(context: RiichiYakuContext, results: MutableList<YakuResult>) {
-        // TODO: 實作字牌役檢測
+    private fun calculateHonorYaku(
+        context: RiichiYakuContext,
+        fuuro: List<Fuuro>,
+        results: MutableList<YakuResult>
+    ) {
+        // 取得所有牌（去除赤寶牌標記）
+        val allTiles = context.hand.standingTiles.map { it.tile.withoutRed }
+
+        // 計算字牌役
+        val honorResults = calculateHonorYaku(
+            handTiles = allTiles,
+            fuuro = fuuro,
+            roundWind = context.roundWind,
+            seatWind = context.seatWind
+        )
+
+        results.addAll(honorResults)
     }
 
     /**
