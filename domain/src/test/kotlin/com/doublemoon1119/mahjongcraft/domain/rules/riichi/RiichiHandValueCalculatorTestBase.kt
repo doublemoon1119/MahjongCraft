@@ -3,8 +3,6 @@ package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Meld
-import com.doublemoon1119.mahjongcraft.domain.base.MeldType
-import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
@@ -19,24 +17,9 @@ abstract class RiichiHandValueCalculatorTestBase {
 
     protected val calculator = RiichiHandValueCalculator()
 
-    protected fun createHand(tiles: List<Tile>, hasExposedMelds: Boolean = false): Hand {
+    protected fun createHand(tiles: List<Tile>, melds: List<Meld> = emptyList()): Hand {
         val identifiedTiles = tiles.map { IdentifiedTile(UUID.randomUUID(), it) }
-        val melds = if (hasExposedMelds) {
-            mutableListOf(
-                Meld(
-                    type = MeldType.PON,
-                    tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1))
-                    ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
-        } else {
-            mutableListOf()
-        }
-        return Hand(identifiedTiles.toMutableList(), melds = melds)
+        return Hand(identifiedTiles.toMutableList(), melds = melds.toMutableList())
     }
 
     protected fun createContext(

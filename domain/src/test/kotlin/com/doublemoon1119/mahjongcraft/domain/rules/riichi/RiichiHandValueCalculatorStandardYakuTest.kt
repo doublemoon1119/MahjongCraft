@@ -1,7 +1,12 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.domain.base.Meld
+import com.doublemoon1119.mahjongcraft.domain.base.MeldType
+import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -341,7 +346,17 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
                 Tile.Numeric(Tile.Suit.Dot, 7),
                 Tile.Numeric(Tile.Suit.Dot, 7)
             ),
-            hasExposedMelds = true
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
+            )
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
@@ -445,7 +460,17 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 5)
             ),
-            hasExposedMelds = true
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
+            )
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
 
@@ -474,10 +499,18 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1)
+                Tile.Numeric(Tile.Suit.Dot, 2)
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
             )
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
@@ -531,7 +564,6 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
      */
     @Test
     fun `test ryanpeikou with fuuro returns null`() {
-        // 手牌 13 張：兩個 123m 順子 + 兩個 456m 順子 + 雀頭 77m
         val hand = createHand(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -543,12 +575,19 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
                 Tile.Numeric(Tile.Suit.Character, 4),
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 6),
-                Tile.Numeric(Tile.Suit.Character, 4),
-                Tile.Numeric(Tile.Suit.Character, 5),
-                Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7)
             ),
-            hasExposedMelds = true
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
+            )
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
 
@@ -566,7 +605,6 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
      */
     @Test
     fun `test ryanpeikou takes precedence over chiitoitsu`() {
-        // 手牌 13 張：兩個 123m 順子 + 兩個 456m 順子 + 雀頭 77m
         val hand = createHand(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -690,12 +728,19 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Dot, 2),
-                Tile.Numeric(Tile.Suit.Dot, 3),
-                Tile.Numeric(Tile.Suit.Dot, 4),
-                Tile.Numeric(Tile.Suit.Dot, 5)
+                Tile.Numeric(Tile.Suit.Dot, 2)
             ),
-            hasExposedMelds = true
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
+            )
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 

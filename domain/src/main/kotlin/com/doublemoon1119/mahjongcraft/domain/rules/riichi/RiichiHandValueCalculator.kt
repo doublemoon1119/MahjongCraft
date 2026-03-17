@@ -1,8 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
-import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
-import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Fuuro
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Mentsu
@@ -10,16 +8,11 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.HandYakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.dora.calculateAkaDora
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.dora.calculateDora
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.dora.calculateUraDora
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.honor.calculateHonorYaku
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateChiitoitsu
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateChinitsu
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateHonitsu
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateIipeikou
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateIttuitsu
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculatePinfu
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateRyanpeikou
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateTanyao
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.*
 import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 
 /**
@@ -84,18 +77,31 @@ class RiichiHandValueCalculator {
         val doraResult = calculateDora(
             hand = context.hand,
             winningTile = context.winningTile,
-            doraIndicators = context.doraIndicators,
-            isRiichi = context.isRiichi,
-            uraDoraIndicators = context.uraDoraIndicators
+            doraIndicators = context.doraIndicators
         )
         if (doraResult.han > 0) {
             yakuResults.add(doraResult)
         }
 
+        // 計算裏寶牌（立直時）
+        if (context.isRiichi) {
+            val uraDoraResult = calculateUraDora(
+                hand = context.hand,
+                winningTile = context.winningTile,
+                uraDoraIndicators = context.uraDoraIndicators
+            )
+            if (uraDoraResult.han > 0) {
+                yakuResults.add(uraDoraResult)
+            }
+        }
+
         // 計算赤寶牌
-        val akaDoraCount = countAkaDora(context)
-        if (akaDoraCount > 0) {
-            yakuResults.add(YakuResult.han(YakuType.AkaDora, akaDoraCount))
+        val akaDoraResult = calculateAkaDora(
+            hand = context.hand,
+            winningTile = context.winningTile
+        )
+        if (akaDoraResult.han > 0) {
+            yakuResults.add(akaDoraResult)
         }
 
         // 計算一般役
@@ -115,37 +121,6 @@ class RiichiHandValueCalculator {
             totalHan = totalHan,
             isCompleteHand = true
         )
-    }
-
-    /**
-     * 計算赤寶牌數量。
-     *
-     * 赤寶牌為帶有 [Tile.Numeric.isRed] 標記的牌（5 萬、5 筒、5 條）。
-     * 每一張赤寶牌額外提供 1 翻。
-     *
-     * @param context 役種計算上下文。
-     * @return 赤寶牌數量。
-     */
-    private fun countAkaDora(context: RiichiYakuContext): Int {
-        var count = 0
-
-        // 檢查立牌中的赤寶牌
-        context.hand.standingTiles.forEach { identifiedTile ->
-            if (identifiedTile.tile is Tile.Numeric &&
-                identifiedTile.tile.isRed
-            ) {
-                count++
-            }
-        }
-
-        // 檢查胡牌張是否為赤寶牌
-        if (context.winningTile is Tile.Numeric &&
-            context.winningTile.isRed
-        ) {
-            count++
-        }
-
-        return count
     }
 
     /**

@@ -1,7 +1,8 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.base.*
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
+import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -182,5 +183,202 @@ class RiichiHandValueCalculatorDoraTest : RiichiHandValueCalculatorTestBase() {
 
         val akaDoraResult = result.yakuResults.find { it.yaku == YakuType.AkaDora }
         assertEquals(1, akaDoraResult?.han, "Should have 1 aka dora")
+    }
+
+    /**
+     * 測試赤寶牌計算 - 胡牌張為赤寶牌。
+     *
+     * 胡牌張為赤 5m，應獲得 1 翻。
+     */
+    @Test
+    fun `test aka dora calculation with winning tile`() {
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Dot, 4)
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)
+
+        val context = createContext(hand, winningTile, isTsumo = true)
+        val result = calculator.calculate(context)
+
+        val akaDoraResult = result.yakuResults.find { it.yaku == YakuType.AkaDora }
+        assertEquals(1, akaDoraResult?.han, "Should have 1 aka dora from winning tile")
+    }
+
+    /**
+     * 測試裏寶牌計算 - 立直時。
+     *
+     * 裏寶牌指示牌為 5m，手牌包含 6m（立牌），胡牌張也是 6m，應獲得 2 翻。
+     */
+    @Test
+    fun `test ura dora calculation with riichi`() {
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1)
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 6)
+        val doraIndicators = listOf(Tile.Numeric(Tile.Suit.Character, 5))
+        val uraDoraIndicators = listOf(Tile.Numeric(Tile.Suit.Character, 5))
+
+        val context = createContext(
+            hand = hand,
+            winningTile = winningTile,
+            isTsumo = true,
+            isRiichi = true,
+            doraIndicators = doraIndicators,
+            uraDoraIndicators = uraDoraIndicators
+        )
+        val result = calculator.calculate(context)
+
+        val uraDoraResult = result.yakuResults.find { it.yaku == YakuType.UraDora }
+        assertEquals(2, uraDoraResult?.han, "Should have 2 ura dora (one in hand + one as winning tile)")
+    }
+
+    /**
+     * 測試裏寶牌計算 - 非立直時不計算。
+     *
+     * 非立直時，裏寶牌不應被計算。
+     */
+    @Test
+    fun `test ura dora calculation without riichi returns null`() {
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1)
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 6)
+        val uraDoraIndicators = listOf(Tile.Numeric(Tile.Suit.Character, 5))
+
+        val context = createContext(
+            hand = hand,
+            winningTile = winningTile,
+            isTsumo = true,
+            isRiichi = false,
+            uraDoraIndicators = uraDoraIndicators
+        )
+        val result = calculator.calculate(context)
+
+        val uraDoraResult = result.yakuResults.find { it.yaku == YakuType.UraDora }
+        assertEquals(null, uraDoraResult, "Should not have ura dora without riichi")
+    }
+
+    /**
+     * 測試赤寶牌計算 - 副露中的赤寶牌。
+     *
+     * 副露包含赤 5m x3，應獲得 3 翻。
+     */
+    @Test
+    fun `test aka dora calculation with exposed meld`() {
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 2)
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 5, isRed = true))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 5)
+
+        val context = createContext(hand, winningTile, isTsumo = true)
+        val result = calculator.calculate(context)
+
+        val akaDoraResult = result.yakuResults.find { it.yaku == YakuType.AkaDora }
+        assertEquals(3, akaDoraResult?.han, "Should have 3 aka dora from exposed meld (3 tiles)")
+    }
+
+    /**
+     * 測試赤寶牌計算 - 多張赤寶牌。
+     *
+     * 手牌包含赤 5p x2，副露包含赤 5m x3，胡牌張為赤 5s，應獲得 6 翻。
+     */
+    @Test
+    fun `test aka dora calculation with multiple`() {
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Dot, 5, isRed = true),
+                Tile.Numeric(Tile.Suit.Dot, 5, isRed = true),
+                Tile.Numeric(Tile.Suit.Dot, 6),
+                Tile.Numeric(Tile.Suit.Dot, 7),
+                Tile.Numeric(Tile.Suit.Dot, 8),
+                Tile.Numeric(Tile.Suit.Dot, 9),
+                Tile.Numeric(Tile.Suit.Bamboo, 1)
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5, isRed = true)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5, isRed = true)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 5, isRed = true)
+
+        val context = createContext(hand, winningTile, isTsumo = true)
+        val result = calculator.calculate(context)
+
+        val akaDoraResult = result.yakuResults.find { it.yaku == YakuType.AkaDora }
+        assertEquals(6, akaDoraResult?.han, "Should have 6 aka dora (2 in hand + 3 in meld + 1 as winning)")
     }
 }

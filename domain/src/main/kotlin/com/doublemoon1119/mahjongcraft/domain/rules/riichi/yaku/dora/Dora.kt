@@ -19,16 +19,12 @@ import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
  * @param hand 玩家手牌（包含立牌與副露）。
  * @param winningTile 胡牌張（計入寶牌計算）。
  * @param doraIndicators 寶牌指示牌列表。
- * @param isRiichi 是否為立直（影響裏寶牌計算）。
- * @param uraDoraIndicators 裏寶牌指示牌列表（立直時）。
  * @return 寶牌番數結果。
  */
 fun calculateDora(
     hand: Hand,
     winningTile: Tile,
-    doraIndicators: List<Tile>,
-    isRiichi: Boolean,
-    uraDoraIndicators: List<Tile> = emptyList()
+    doraIndicators: List<Tile>
 ): YakuResult {
     val allTiles = hand.allTiles.map { it.tile } + winningTile
 
@@ -37,18 +33,7 @@ fun calculateDora(
         allTiles.count { it.withoutRed == doraTile }
     }
 
-    val uraDoraCount = if (isRiichi) {
-        uraDoraIndicators.sumOf { indicator ->
-            val doraTile = getNextDora(indicator)
-            allTiles.count { it.withoutRed == doraTile }
-        }
-    } else {
-        0
-    }
-
-    val totalDora = doraCount + uraDoraCount
-
-    return YakuResult.han(YakuType.Dora, totalDora)
+    return YakuResult.han(YakuType.Dora, doraCount)
 }
 
 /**
@@ -57,7 +42,7 @@ fun calculateDora(
  * @param indicator 寶牌指示牌。
  * @return 對應的寶牌。
  */
-private fun getNextDora(indicator: Tile): Tile {
+internal fun getNextDora(indicator: Tile): Tile {
     return when (indicator) {
         // 數牌：循環 1-9
         is Tile.Numeric -> {
