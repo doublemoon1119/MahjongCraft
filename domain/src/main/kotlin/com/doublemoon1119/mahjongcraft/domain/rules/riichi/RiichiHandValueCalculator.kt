@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calcula
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateHonitsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateIipeikou
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateIttuitsu
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculatePinfu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateRyanpeikou
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculateTanyao
 import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
@@ -193,7 +194,7 @@ class RiichiHandValueCalculator {
             standardResults.add(honitsu)
         }
 
-        // 計算一杯口與兩杯口
+        // 計算一杯口、兩杯口、七對子
         val iipeikou = calculateIipeikou(
             handStructure = handStructure,
             isMenzen = context.isMenzen
@@ -202,8 +203,6 @@ class RiichiHandValueCalculator {
             handStructure = handStructure,
             isMenzen = context.isMenzen
         )
-
-        // 計算七對子
         val chiitoitsu = calculateChiitoitsu(
             handStructure = handStructure,
             isMenzen = context.isMenzen
@@ -216,6 +215,13 @@ class RiichiHandValueCalculator {
             chiitoitsu != null -> standardResults.add(chiitoitsu)
             iipeikou != null -> standardResults.add(iipeikou)
         }
+
+        // 計算平和（與一杯口、兩杯口共存，與七對子互斥）
+        calculatePinfu(
+            handStructure = handStructure,
+            winningTile = context.winningTile,
+            isMenzen = context.isMenzen
+        )?.let { standardResults.add(it) }
 
         results.addAll(standardResults)
     }
