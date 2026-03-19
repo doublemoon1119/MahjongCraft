@@ -121,6 +121,51 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
     }
 
     /**
+     * 測試斷么九 - 有副露。
+     *
+     * 有副露時手牌仍能正確分解為「副露 + 手牌」，並計算斷么九。
+     * 此測試驗證 [RiichiHandDecomposer.tryDecomposeStandard] 正確處理副露。
+     */
+    @Test
+    fun `test tanyao with pon fuuro`() {
+        // 副露：碰 555m
+        // 手牌：234m, 678m, 55m, 自摸 2m = 10張 + 1張 = 14張
+        // 手牌與副露全部為 2-8 數牌，應獲得 1 翻（斷么九）
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 2)
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 5)
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
+        val result = calculator.calculate(context)
+
+        val tanyaoResult = result.yakuResults.find { it.yaku == YakuType.Tanyao }
+        assertEquals(1, tanyaoResult?.han, "Tanyao should be 1 han even with fuuro")
+    }
+
+    /**
      * 測試一氣通貫。
      *
      * 手牌包含萬子 123、456、789，應獲得 1 翻。
