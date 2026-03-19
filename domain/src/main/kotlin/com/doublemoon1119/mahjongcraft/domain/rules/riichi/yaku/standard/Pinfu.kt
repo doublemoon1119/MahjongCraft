@@ -65,43 +65,47 @@ private fun isYakuhai(tile: Tile): Boolean {
 }
 
 /**
- * 檢查聽牌型是否為兩面聽（坦張）。
+ * 檢查此胡牌結構中，[winningTile] 是否是以「兩面聽（Ryanmen）」完成最後一組面子。
  *
- * 兩面聽是指聽牌時可以胡兩張牌，且這兩張牌是相鄰的。
- * 例如：聽 2, 3 萬（胡 1 萬或 4 萬），或聽 7, 8 萬（胡 6 萬或 9 萬）
+ * 平和（Pinfu）成立的必要條件之一是聽牌形式必須為兩面。
+ * 兩面聽是指：手中持有相鄰的兩張牌（如 23），聽其兩端的牌（1 或 4）。
  *
- * 在已完成的手牌中，如果 winningTile 在某個順子中：
- * - index=0 (headTile): 原本是邊張聽 (例如 23m 等待 1m 或 4m) -> 是兩面
- * - index=1 (middleTile): 原本是嵌張或兩面 (例如 12m 等待 3m，或 23m 等待 1m 或 4m) -> 需進一步分析
- * - index=2 (tailTile): 原本是邊張聽 (例如 78m 等待 6m 或 9m) -> 是兩面
+ * 在已完成的 [standard] 結構中：
+ * 1. **排除單騎**：[winningTile] 不能是雀頭（Pair）。
+ * 2. **排除嵌張**：[winningTile] 若為順子的中間張（index 1），必非兩面（如 24 聽 3）。
+ * 3. **排除邊張**：
+ *    - 若胡的是 3，且組成 123（index 2），代表原本是 12 邊張聽。
+ *    - 若胡的是 7，且組成 789（index 0），代表原本是 89 邊張聽。
+ * 4. **判定兩面**：
+ *    - 若胡的是順子的第三張（index 2）且非 3（如 23 聽 4 組成 234）。
+ *    - 若胡的是順子的第一張（index 0）且非 7（如 78 聽 6 組成 678）。
  *
- * 實際上，平和的兩面聽是指「搭子」的形狀為「兩面」
- * 即：12, 23, 34, 45, 56, 67, 78, 89 這些搭子
- *
- * @param standard 標準手牌結構。
- * @param winningTile 胡牌張。
- * @return 是否為兩面聽。
+ * @param standard 已經過拆解的標準手牌結構（4面子 + 1雀頭）。
+ * @param winningTile 最終胡的那一張牌。
+ * @return 若該結構下 [winningTile] 符合兩面聽定義則回傳 true。
  */
 private fun isRyanmenTenpai(standard: HandStructure.Standard, winningTile: Tile): Boolean {
-    // 首先檢查是否為單騎聽（雀頭等待）
-    if (standard.pair.tile == winningTile) {
-        return false
-    }
+    // 1. 排除單騎（雀頭聽）
+    if (standard.pair.tile == winningTile) return false
 
-    // 找出 winningTile 在哪個順子中
+    // 2. 遍歷所有順子，尋找包含 winningTile 的組合
     for (mentsu in standard.mentsus) {
         if (mentsu is Mentsu.Shuntsu) {
-            val tiles = mentsu.tiles
-            if (winningTile in tiles) {
-                val index = tiles.indexOf(winningTile)
-                // index=0 或 index=2 表示 winningTile 在順子的兩端
-                // 這種情況下，原來的搭子是兩面搭子
-                // 例如：waiting 23m，winning 1m (index=0) -> 變成 123m，搭子是 23 (兩面)
-                // 例如：waiting 23m，winning 4m (index=2) -> 變成 234m，搭子是 23 (兩面)
-                return index == 0 || index == 2
-            }
+            val tiles = mentsu.tiles // 升序排列，例如 [2, 3, 4]
+            if (winningTile !in tiles) continue
+
+            val index = tiles.indexOf(winningTile)
+            val value = (winningTile as? Tile.Numeric)?.value ?: continue // 取得點數 (1-9)
+
+            // 判斷是否為兩面：
+            // 狀況 A: 胡的是順子的第三張 (index 2)，且這張牌不能是 3
+            // (如果是 3，代表原本是 12，那是邊張)
+            if (index == 2 && value != 3) return true
+
+            // 狀況 B: 胡的是順子的第一張 (index 0)，且這張牌不能是 7
+            // (如果是 7，代表原本是 89，那是邊張)
+            if (index == 0 && value != 7) return true
         }
     }
-
     return false
 }

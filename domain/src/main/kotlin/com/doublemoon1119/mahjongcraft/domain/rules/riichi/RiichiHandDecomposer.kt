@@ -64,16 +64,29 @@ object RiichiHandDecomposer {
         tiles: List<Tile>,
         fuuro: List<Fuuro>
     ): HandStructure.Standard? {
-        val totalTiles = tiles.size + fuuro.sumOf { it.mentsu.tiles.size }
-        if (totalTiles != 14) return null
+        // 計算副露的牌張總數（碰為 3 張，槓為 4 張）
+        val fuuroTilesAmount = fuuro.sumOf { it.mentsu.tiles.size }
+        // 計算副露中的槓數量（暗槓、明槓、加槓均計為槓）
+        val fuuroKanAmount = fuuro.count {
+            it.mentsu is Mentsu.Ankan ||
+            it.mentsu is Mentsu.Minkan ||
+            it.mentsu is Mentsu.Kakan
+        }
+        // 當前手牌總張數（手牌 + 副露牌張）
+        val currentHandSize = tiles.size + fuuroTilesAmount
+        // 正確的手牌張數：標準為 14 張，每多一個槓多 1 張
+        val correctHandSize = 14 + fuuroKanAmount
+        if (currentHandSize != correctHandSize) return null
 
-        // 建立 TileCountMap
+        val fuuroCount = fuuro.size
+
+        // 建立 TileCountMap，只包含手牌（不含 fuuro）
         val tileCounts = mutableMapOf<Tile, Int>()
         for (tile in tiles) {
             tileCounts[tile] = (tileCounts[tile] ?: 0) + 1
         }
 
-        // 嘗試每個可能的雀頭
+        // 嘗試每個可能的雀頭（雀頭必須來自手牌）
         for ((headTile, count) in tileCounts) {
             if (count >= 2) {
                 // 複製並移除雀頭
@@ -83,9 +96,10 @@ object RiichiHandDecomposer {
                     remainingCounts.remove(headTile)
                 }
 
-                // 嘗試分割剩餘的牌為 4 個面子
-                val mentsus = tryFindMentsusFromCounts(remainingCounts)
-                if (mentsus != null && mentsus.size == 4) {
+                // 副露貢獻 fuuroCount 個面子，門清部分需要 4 - fuuroCount 個面子
+                val requiredMentsus = 4 - fuuroCount
+                val mentsus = tryFindMentsusFromCounts(remainingCounts, requiredMentsus)
+                if (mentsus != null && mentsus.size == requiredMentsus) {
                     return HandStructure.Standard(
                         mentsus = mentsus,
                         pair = Janto(headTile),
@@ -99,16 +113,20 @@ object RiichiHandDecomposer {
     }
 
     /**
-     * 從 TileCountMap 遞迴尋找面子。
+     * 從 TileCountMap 遞迴尋找指定數量的面子。
      */
     private fun tryFindMentsusFromCounts(
         tileCounts: Map<Tile, Int>,
+        requiredMentsus: Int,
         currentMentsus: MutableList<Mentsu> = mutableListOf()
     ): List<Mentsu>? {
-        if (tileCounts.isEmpty() && currentMentsus.size == 4) {
+        if (tileCounts.isEmpty() && currentMentsus.size == requiredMentsus) {
             return currentMentsus.toList()
         }
         if (tileCounts.isEmpty()) {
+            return null
+        }
+        if (currentMentsus.size > requiredMentsus) {
             return null
         }
 
@@ -124,7 +142,7 @@ object RiichiHandDecomposer {
             newCounts[tile] = count - 3
             if (newCounts[tile] == 0) newCounts.remove(tile)
 
-            val result = tryFindMentsusFromCounts(newCounts, currentMentsus.apply { add(Mentsu.Kotsu(tile)) })
+            val result = tryFindMentsusFromCounts(newCounts, requiredMentsus, currentMentsus.apply { add(Mentsu.Kotsu(tile)) })
             if (result != null) return result
             currentMentsus.removeLast()
         }
@@ -135,7 +153,7 @@ object RiichiHandDecomposer {
             newCounts[tile] = count - 4
             if (newCounts[tile] == 0) newCounts.remove(tile)
 
-            val result = tryFindMentsusFromCounts(newCounts, currentMentsus.apply { add(Mentsu.Ankan(tile)) })
+            val result = tryFindMentsusFromCounts(newCounts, requiredMentsus, currentMentsus.apply { add(Mentsu.Ankan(tile)) })
             if (result != null) return result
             currentMentsus.removeLast()
         }
@@ -158,7 +176,7 @@ object RiichiHandDecomposer {
                 newCounts[next2] = count2 - 1
                 if (newCounts[next2] == 0) newCounts.remove(next2)
 
-                val result = tryFindMentsusFromCounts(newCounts, currentMentsus.apply { add(Mentsu.Shuntsu(tile)) })
+                val result = tryFindMentsusFromCounts(newCounts, requiredMentsus, currentMentsus.apply { add(Mentsu.Shuntsu(tile)) })
                 if (result != null) return result
                 currentMentsus.removeLast()
             }
@@ -174,9 +192,9 @@ object RiichiHandDecomposer {
         tiles: List<Tile>,
         fuuro: List<Fuuro>
     ): HandStructure.Chiitoitsu? {
-        val totalTiles = tiles.size + fuuro.sumOf { it.mentsu.tiles.size }
-        if (totalTiles != 14) return null
         if (fuuro.isNotEmpty()) return null // 七對子不能有副露
+
+        if (tiles.size != 14) return null
 
         // 使用 groupingBy 來正確計算相同牌的數量
         val tileCounts = tiles.groupingBy { it }.eachCount()
@@ -197,7 +215,7 @@ object RiichiHandDecomposer {
             if ((tileCounts[pair.tile] ?: 0) != 2) return null
         }
 
-        return HandStructure.Chiitoitsu(pairs = uniquePairs, fuuro = fuuro)
+        return HandStructure.Chiitoitsu(pairs = uniquePairs)
     }
 
     /**

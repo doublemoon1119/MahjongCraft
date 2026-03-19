@@ -13,7 +13,7 @@ sealed class HandStructure {
     /**
      * 標準手牌（4 面子 + 1 雀頭）。
      *
-     * @property mentsus 四個面子（不包含副露）。
+     * @property mentsus 最多四個面子（不包含副露）。
      * @property pair 雀頭。
      * @property fuuro 副露（已曝光的面子）。
      */
@@ -26,12 +26,12 @@ sealed class HandStructure {
     /**
      * 七對子（Chiitoitsu）。
      *
+     * 七對子必定為門清，不包含副露。
+     *
      * @property pairs 七個對子。
-     * @property fuuro 副露（已曝光的面子）。
      */
     data class Chiitoitsu(
-        val pairs: List<Janto>,
-        val fuuro: List<Fuuro> = emptyList()
+        val pairs: List<Janto>
     ) : HandStructure()
 
     /**

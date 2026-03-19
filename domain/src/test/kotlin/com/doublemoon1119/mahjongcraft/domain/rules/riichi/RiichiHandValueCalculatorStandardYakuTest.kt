@@ -678,11 +678,8 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
      * 手牌為標準平和型，應獲得 1 翻。
      */
     @Test
-    @kotlin.test.Ignore
     fun `test pinfu menzen ryanmen`() {
-        // 手牌：123m, 456m, 789m, 234m, 55m
-        // 聽牌：1m, 6m 兩面聽
-        // 自摸 3m -> 234m 變成 234m，聽 1m, 6m（winning 在 index=2，兩端）
+        // 手牌：123m, 456m, 789m, 23m, 55m（兩面聽牌：1m, 4m）
         val hand = createHand(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -700,14 +697,49 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
                 Tile.Numeric(Tile.Suit.Character, 5)
             )
         )
-        // 自摸 3m，形成 234m 順子，聽 1m, 6m 兩面
-        val winningTile = Tile.Numeric(Tile.Suit.Character, 3)
+        // 自摸 4m，形成 234m 順子
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 4)
 
         val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
         val result = calculator.calculate(context)
 
         val pinfuResult = result.yakuResults.find { it.yaku == YakuType.Pinfu }
         assertEquals(1, pinfuResult?.han, "Pinfu should be 1 han")
+    }
+
+    /**
+     * 測試平和 - 邊張聽牌不應有平和。
+     *
+     * 聽牌為邊張時，無法獲得平和。
+     */
+    @Test
+    fun `test pinfu with penchan returns null`() {
+        // 手牌：123m, 456m, 789m, 12m, 55m（邊張聽牌：3m）
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 5)
+            )
+        )
+        // 自摸 3m，形成 123m 順子，邊張聽牌（非兩面）
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 3)
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val pinfuResult = result.yakuResults.find { it.yaku == YakuType.Pinfu }
+        assertNull(pinfuResult, "Pinfu should not be present with penchan tenpai")
     }
 
     /**
