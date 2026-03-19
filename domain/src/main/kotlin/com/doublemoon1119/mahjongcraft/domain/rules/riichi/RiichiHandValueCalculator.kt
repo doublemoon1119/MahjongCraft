@@ -18,15 +18,7 @@ import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 /**
  * 日本麻將手牌番數計算機。
  *
- * 負責計算手牌的全部番數，包含：
- * - 寶牌 (Dora)
- * - 裏寶牌 (Ura Dora)
- * - 赤寶牌 (Aka Dora)
- * - 各類一般役 (1-6 翻)
- * - 字牌役
- * - 役滿
- *
- * 使用 [RiichiYakuContext] 提供計算所需的上下文資訊。
+ * 負責計算手牌的全部番數，使用 [RiichiYakuContext] 提供計算所需的上下文資訊。
  */
 class RiichiHandValueCalculator {
     /**
@@ -54,6 +46,9 @@ class RiichiHandValueCalculator {
             )
         }
 
+        // 手牌結構用於需要分析手牌內部結構的役種，
+        // 例如：Pinfu、Chiitoitsu、Iipeikou、Ryanpeikou 等。
+        // 不需要 [HandStructure] 的役種（如 Dora、Tanyao、Chinitsu 等）則直接從 hand 計算。
         val handStructure = RiichiHandDecomposer.decompose(allTiles, fuuro)
 
         // 2. 先計算役滿
