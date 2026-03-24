@@ -38,21 +38,21 @@ enum class YakuType {
     Toitoi,
     /** 三暗刻 (Sanankou) - 2 翻 */
     Sanankou,
+    /** 三杠子 (Sankantsu) - 2 翻 */
+    Sankantsu,
     /** 三色同刻 (Sanshoku Dokoku) - 2 翻 */
     SanshokuDokoku,
     /** 三色同順 (Sanshoku Doujun) - 2 翻 */
     SanshokuDoujun,
-    /** 三杠子 (Sankantsu) - 2 翻 */
-    Sankantsu,
     /** 混全帶么九 (Honchan) - 2 翻 */
     Honchan,
     /** 純全帶么九 (Junchan) - 3 翻 */
     Junchan,
-    /** 混一色 (Honitsu) - 3 翻 */
+    /** 混一色 (Honitsu) - 2 翻（副露）/ 3 翻（門前清） */
     Honitsu,
     /** 兩杯口 (Ryanpeikou) - 3 翻 */
     Ryanpeikou,
-    /** 一氣通貫 (Ittuitsu) - 1 翻 */
+    /** 一氣通貫 (Ittuitsu) - 1 翻（副露）/ 2 翻（門前清） */
     Ittuitsu,
 
     /** 混老頭 (Honroutou) - 2 翻 */
@@ -60,7 +60,7 @@ enum class YakuType {
     /** 清老頭 (Chinroutou) - 役滿 */
     Chinroutou,
 
-    /** 清一色 (Chinitsu) - 6 翻 */
+    /** 清一色 (Chinitsu) - 5 翻（副露）/ 6 翻（門前清） */
     Chinitsu,
 
     // ===== 特殊胡牌型 =====

@@ -151,11 +151,13 @@ class RiichiHandValueCalculator {
         // 混一色與清一色
         val honitsu = calculateHonitsu(
             hand = context.hand,
-            winningTile = context.winningTile
+            winningTile = context.winningTile,
+            isMenzen = context.isMenzen
         )
         val chinitsu = calculateChinitsu(
             hand = context.hand,
-            winningTile = context.winningTile
+            winningTile = context.winningTile,
+            isMenzen = context.isMenzen
         )
         // 清一色優先於混一色
         if (chinitsu != null) {

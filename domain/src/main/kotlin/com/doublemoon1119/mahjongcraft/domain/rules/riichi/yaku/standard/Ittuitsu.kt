@@ -22,10 +22,6 @@ fun calculateIttuitsu(
     winningTile: Tile,
     isMenzen: Boolean
 ): YakuResult? {
-    if (!isMenzen) {
-        return null
-    }
-
     val allTiles = (hand.allTiles.map { it.tile } + winningTile)
         .map { it.withoutRed }
 
@@ -36,7 +32,8 @@ fun calculateIttuitsu(
         val hasUpper = hasMelds(suitTiles, 7, 8, 9)
 
         if (hasLower && hasMiddle && hasUpper) {
-            return YakuResult.han(YakuType.Ittuitsu, 1)
+            val han = if (isMenzen) 2 else 1
+            return YakuResult.han(YakuType.Ittuitsu, han)
         }
     }
 

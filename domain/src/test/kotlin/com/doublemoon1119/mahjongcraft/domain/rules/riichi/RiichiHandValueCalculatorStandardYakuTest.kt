@@ -168,10 +168,10 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
     /**
      * 測試一氣通貫。
      *
-     * 手牌包含萬子 123、456、789，應獲得 1 翻。
+     * 手牌包含萬子 123、456、789，門前清應獲得 2 翻。
      */
     @Test
-    fun `test ittuitsu`() {
+    fun `test ittuitsu menzen`() {
         val hand = createHand(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -195,16 +195,16 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
         val result = calculator.calculate(context)
 
         val ittuitsuResult = result.yakuResults.find { it.yaku == YakuType.Ittuitsu }
-        assertEquals(1, ittuitsuResult?.han, "Ittuitsu should be 1 han")
+        assertEquals(2, ittuitsuResult?.han, "Ittuitsu should be 2 han for menzen")
     }
 
     /**
      * 測試一氣通貫 - 有副露。
      *
-     * 有副露時應無法獲得一氣通貫。
+     * 有副露時應獲得 1 翻。
      */
     @Test
-    fun `test ittuitsu with meld`() {
+    fun `test ittuitsu with fuuro`() {
         val hand = createHand(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -228,7 +228,7 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
         val result = calculator.calculate(context)
 
         val ittuitsuResult = result.yakuResults.find { it.yaku == YakuType.Ittuitsu }
-        assertNull(ittuitsuResult, "Should not have Ittuitsu with meld")
+        assertEquals(1, ittuitsuResult?.han, "Ittuitsu should be 1 han with fuuro")
     }
 
     /**
@@ -261,7 +261,51 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
         val result = calculator.calculate(context)
 
         val honitsuResult = result.yakuResults.find { it.yaku == YakuType.Honitsu }
-        assertEquals(3, honitsuResult?.han, "Honitsu should be 3 han")
+        assertEquals(3, honitsuResult?.han, "Honitsu should be 3 han for menzen")
+    }
+
+    /**
+     * 測試混一色 - 有副露。
+     *
+     * 手牌僅有一種數牌花色 + 字牌，有副露應獲得 2 翻。
+     */
+    @Test
+    fun `test honitsu with fuuro`() {
+        // 副露：碰 111m
+        // 手牌：234m, 567m, 789m, 東風對子
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Honor.East,
+                Tile.Honor.East,
+                Tile.Honor.East
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 9)
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
+        val result = calculator.calculate(context)
+
+        val honitsuResult = result.yakuResults.find { it.yaku == YakuType.Honitsu }
+        assertEquals(2, honitsuResult?.han, "Honitsu should be 2 han with fuuro")
     }
 
     /**
@@ -294,7 +338,50 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
         val result = calculator.calculate(context)
 
         val chinitsuResult = result.yakuResults.find { it.yaku == YakuType.Chinitsu }
-        assertEquals(6, chinitsuResult?.han, "Chinitsu should be 6 han")
+        assertEquals(6, chinitsuResult?.han, "Chinitsu should be 6 han for menzen")
+    }
+
+    /**
+     * 測試清一色 - 有副露。
+     *
+     * 手牌僅有一種數牌花色（無字牌），有副露應獲得 5 翻。
+     */
+    @Test
+    fun `test chinitsu with fuuro`() {
+        // 副露：碰 111m
+        // 手牌：234m, 567m, 789m, 55m
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 5)
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 9)
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
+        val result = calculator.calculate(context)
+
+        val chinitsuResult = result.yakuResults.find { it.yaku == YakuType.Chinitsu }
+        assertEquals(5, chinitsuResult?.han, "Chinitsu should be 5 han with fuuro")
     }
 
     /**
