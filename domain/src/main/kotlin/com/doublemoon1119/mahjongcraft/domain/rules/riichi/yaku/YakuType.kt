@@ -38,8 +38,10 @@ enum class YakuType {
     Toitoi,
     /** 三暗刻 (Sanankou) - 2 翻 */
     Sanankou,
-    /** 三同刻 (Sansankou) - 2 翻 */
-    Sansankou,
+    /** 三色同刻 (Sanshoku Dokoku) - 2 翻 */
+    SanshokuDokoku,
+    /** 三色同順 (Sanshoku Doujun) - 2 翻 */
+    SanshokuDoujun,
     /** 三杠子 (Sankantsu) - 2 翻 */
     Sankantsu,
     /** 混全帶么九 (Honchan) - 2 翻 */
