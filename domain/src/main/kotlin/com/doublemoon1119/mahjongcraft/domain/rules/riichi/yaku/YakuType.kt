@@ -42,11 +42,11 @@ enum class YakuType {
     Sankantsu,
     /** 三色同刻 (Sanshoku Dokoku) - 2 翻 */
     SanshokuDokoku,
-    /** 三色同順 (Sanshoku Doujun) - 2 翻 */
+    /** 三色同順 (Sanshoku Doujun) - 1 翻（副露）/ 2 翻（門前清） */
     SanshokuDoujun,
-    /** 混全帶么九 (Honchan) - 2 翻 */
+    /** 混全帶么九 (Honchan) - 1 翻（副露）/ 2 翻（門前清） */
     Honchan,
-    /** 純全帶么九 (Junchan) - 3 翻 */
+    /** 純全帶么九 (Junchan) - 2 翻（副露）/ 3 翻（門前清） */
     Junchan,
     /** 混一色 (Honitsu) - 2 翻（副露）/ 3 翻（門前清） */
     Honitsu,
