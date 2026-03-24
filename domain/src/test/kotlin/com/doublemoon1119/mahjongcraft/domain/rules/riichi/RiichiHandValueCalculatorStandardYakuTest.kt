@@ -1481,4 +1481,183 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
         assertEquals(2, sanankouResult?.han, "Sanankou should be 2 han")
         assertEquals(2, toitoiResult?.han, "Toitoi should be 2 han")
     }
+
+    /**
+     * 測試三杠子 - 三個暗槓。
+     *
+     * 手牌有三個暗槓，應獲得 2 翻。
+     */
+    @Test
+    fun `test sankantsu three ankan`() {
+        // 副露：三個暗槓 111m, 222p, 333s
+        // 手牌：44m, 55z (雀頭), 自摸 5z
+        // 3 個暗槓 + 1 面子 + 1 雀頭 = 三杠子
+        // standingTiles 4 張 + winning 1 張 + 3 個暗槓 12 張 = 17 張 (14 + 3)
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Honor.Red,
+                Tile.Honor.Red
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.CLOSED_KAN,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                    ),
+                    sourceDirection = RelativeDirection.Self
+                ),
+                Meld(
+                    type = MeldType.CLOSED_KAN,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2))
+                    ),
+                    sourceDirection = RelativeDirection.Self
+                ),
+                Meld(
+                    type = MeldType.CLOSED_KAN,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 3)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 3)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 3)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 3))
+                    ),
+                    sourceDirection = RelativeDirection.Self
+                )
+            )
+        )
+        val winningTile = Tile.Honor.Red
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
+        val result = calculator.calculate(context)
+
+        val sankantsuResult = result.yakuResults.find { it.yaku == YakuType.Sankantsu }
+        assertEquals(2, sankantsuResult?.han, "Sankantsu should be 2 han")
+    }
+
+    /**
+     * 測試三杠子 - 不足三組槓。
+     *
+     * 槓數量不足三組時，應不成立三杠子。
+     */
+    @Test
+    fun `test sankantsu with only two kan returns null`() {
+        // 副露：兩個暗槓 111m, 222p
+        // 手牌：333s (面子), 44z (雀頭), 5s (自摸湊成面子)
+        // standingTiles 7 張 + winning 1 張 + 2 個槓 8 張 = 16 張 (14 + 2)
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Honor.Red,
+                Tile.Honor.Red,
+                Tile.Honor.Red,
+                Tile.Numeric(Tile.Suit.Bamboo, 5)
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.CLOSED_KAN,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                    ),
+                    sourceDirection = RelativeDirection.Self
+                ),
+                Meld(
+                    type = MeldType.CLOSED_KAN,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2))
+                    ),
+                    sourceDirection = RelativeDirection.Self
+                )
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 5)
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
+        val result = calculator.calculate(context)
+
+        val sankantsuResult = result.yakuResults.find { it.yaku == YakuType.Sankantsu }
+        assertNull(sankantsuResult, "Should not have Sankantsu with only 2 kan")
+    }
+
+    /**
+     * 測試三杠子 - 超過三組槓。
+     *
+     * 四個槓時成立四杠子 (Sukantsu)，不成立三杠子。
+     */
+    @Test
+    fun `test sankantsu with four kan returns null`() {
+        // 副露：四個暗槓 111m, 222p, 333s, 444z
+        // 四杠子是役滿，不應計算三杠子
+        // 手牌：東 (自摸湊成雀頭)
+        // standingTiles 1 張 + winning 1 張 + 4 個槓 16 張 = 18 張 (14 + 4)
+        val hand = createHand(
+            listOf(
+                Tile.Honor.Red
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.CLOSED_KAN,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                    ),
+                    sourceDirection = RelativeDirection.Self
+                ),
+                Meld(
+                    type = MeldType.CLOSED_KAN,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2))
+                    ),
+                    sourceDirection = RelativeDirection.Self
+                ),
+                Meld(
+                    type = MeldType.CLOSED_KAN,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 3)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 3)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 3)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 3))
+                    ),
+                    sourceDirection = RelativeDirection.Self
+                ),
+                Meld(
+                    type = MeldType.CLOSED_KAN,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 4)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 4)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 4)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 4))
+                    ),
+                    sourceDirection = RelativeDirection.Self
+                )
+            )
+        )
+        val winningTile = Tile.Honor.Red
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
+        val result = calculator.calculate(context)
+
+        val sankantsuResult = result.yakuResults.find { it.yaku == YakuType.Sankantsu }
+        assertNull(sankantsuResult, "Should not have Sankantsu with 4 kan (should be Sukantsu yakuman)")
+    }
 }

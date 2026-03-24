@@ -205,6 +205,11 @@ class RiichiHandValueCalculator {
             handStructure = handStructure
         )?.let { standardResults.add(it) }
 
+        // 計算三杠子
+        calculateSankantsu(
+            handStructure = handStructure
+        )?.let { standardResults.add(it) }
+
         results.addAll(standardResults)
     }
 
