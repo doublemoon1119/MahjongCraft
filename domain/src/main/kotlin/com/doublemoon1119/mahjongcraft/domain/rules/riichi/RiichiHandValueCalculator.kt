@@ -186,11 +186,16 @@ class RiichiHandValueCalculator {
             iipeikou != null -> standardResults.add(iipeikou)
         }
 
-        // 計算平和（與一杯口、兩杯口共存，與七對子互斥）
+        // 計算平和
         calculatePinfu(
             handStructure = handStructure,
             winningTile = context.winningTile,
             isMenzen = context.isMenzen
+        )?.let { standardResults.add(it) }
+
+        // 計算對對胡
+        calculateToitoi(
+            handStructure = handStructure
         )?.let { standardResults.add(it) }
 
         results.addAll(standardResults)

@@ -933,4 +933,233 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
         assertNotNull(chiitoitsuResult, "Chiitoitsu should be present")
         assertNull(pinfuResult, "Pinfu should not be present with Chiitoitsu hand")
     }
+
+    /**
+     * 測試對對胡 - 純手牌（門前清）。
+     *
+     * 手牌為四組刻子 + 一組雀頭，應獲得 2 翻。
+     */
+    @Test
+    fun `test toitoi menzen`() {
+        // 手牌：111m, 222m, 333p, 444s, 55z
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Honor.Red
+            )
+        )
+        val winningTile = Tile.Honor.Red
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val toitoiResult = result.yakuResults.find { it.yaku == YakuType.Toitoi }
+        assertEquals(2, toitoiResult?.han, "Toitoi should be 2 han")
+    }
+
+    /**
+     * 測試對對胡 - 有副露。
+     *
+     * 有副露時仍可成立對對胡，此為與七對子之差異。
+     */
+    @Test
+    fun `test toitoi with fuuro`() {
+        // 副露：碰 111m (1 組刻子)
+        // 手牌：222m, 333p, 444s, 55z (3 組刻子 + 1 雀頭)
+        // 手牌 10 張 + 副露 3 張 + 自摸 1 張 = 14 張
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Honor.Red
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
+            )
+        )
+        val winningTile = Tile.Honor.Red
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
+        val result = calculator.calculate(context)
+
+        val toitoiResult = result.yakuResults.find { it.yaku == YakuType.Toitoi }
+        assertEquals(2, toitoiResult?.han, "Toitoi should be 2 han even with fuuro")
+    }
+
+    /**
+     * 測試對對胡 - 包含槓。
+     *
+     * 手牌包含明槓或暗槓時，仍可成立對對胡。
+     */
+    @Test
+    fun `test toitoi with kan`() {
+        // 副露：明槓 111m (1 組槓)
+        // 手牌：222m, 333p, 444s, 55z (3 組刻子 + 1 雀頭)
+        // 手牌 10 張 + 副露 4 張 + 自摸 1 張 = 15 張（含槓多一張）
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Honor.Red
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.OPEN_KAN,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
+            )
+        )
+        val winningTile = Tile.Honor.Red
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
+        val result = calculator.calculate(context)
+
+        val toitoiResult = result.yakuResults.find { it.yaku == YakuType.Toitoi }
+        assertEquals(2, toitoiResult?.han, "Toitoi should be 2 han with kan")
+    }
+
+    /**
+     * 測試對對胡 - 含有順子。
+     *
+     * 手牌含有順子時，應不成立對對胡。
+     */
+    @Test
+    fun `test toitoi with shuntsu returns null`() {
+        // 手牌：123m (順子), 111m, 222p, 333s, 55z
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Honor.Red
+            )
+        )
+        val winningTile = Tile.Honor.Red
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val toitoiResult = result.yakuResults.find { it.yaku == YakuType.Toitoi }
+        assertNull(toitoiResult, "Should not have Toitoi with shuntsu")
+    }
+
+    /**
+     * 測試對對胡 - 不足四組刻子。
+     *
+     * 刻子數量不足四組時，應不成立對對胡。
+     */
+    @Test
+    fun `test toitoi with only three pungs returns null`() {
+        // 手牌：111m, 222p, 55z, 123m (順子), 456s (順子)
+        // 僅有 2 組刻子
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Numeric(Tile.Suit.Bamboo, 5),
+                Tile.Numeric(Tile.Suit.Bamboo, 6),
+                Tile.Honor.Red
+            )
+        )
+        val winningTile = Tile.Honor.Red
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val toitoiResult = result.yakuResults.find { it.yaku == YakuType.Toitoi }
+        assertNull(toitoiResult, "Should not have Toitoi with only 2 pungs")
+    }
+
+    /**
+     * 測試對對胡與七對子互斥。
+     *
+     * 對對胡與七對子同為 2 翻，但七對子優先計算，對對胡應不成立。
+     */
+    @Test
+    fun `test toitoi and chiitoitsu are mutually exclusive`() {
+        // 七對子牌型：7 個對子
+        val chiitoitsuHand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+                Tile.Numeric(Tile.Suit.Bamboo, 6),
+                Tile.Numeric(Tile.Suit.Bamboo, 6),
+                Tile.Numeric(Tile.Suit.Bamboo, 7)
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 7)
+
+        val context = createContext(chiitoitsuHand, winningTile, isTsumo = true, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val chiitoitsuResult = result.yakuResults.find { it.yaku == YakuType.Chiitoitsu }
+        val toitoiResult = result.yakuResults.find { it.yaku == YakuType.Toitoi }
+
+        assertNotNull(chiitoitsuResult, "Chiitoitsu should be present")
+        assertNull(toitoiResult, "Toitoi should not be present with Chiitoitsu hand")
+    }
 }
