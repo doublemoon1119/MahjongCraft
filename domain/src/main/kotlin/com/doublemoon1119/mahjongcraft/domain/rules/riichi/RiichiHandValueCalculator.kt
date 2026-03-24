@@ -198,6 +198,11 @@ class RiichiHandValueCalculator {
             handStructure = handStructure
         )?.let { standardResults.add(it) }
 
+        // 計算三暗刻
+        calculateSanankou(
+            handStructure = handStructure
+        )?.let { standardResults.add(it) }
+
         results.addAll(standardResults)
     }
 
