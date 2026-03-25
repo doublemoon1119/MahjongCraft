@@ -1028,7 +1028,7 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
      */
     @Test
     fun `test toitoi menzen`() {
-        // 手牌：111m, 222m, 333p, 444s, 55z
+        // 手牌：111m, 222m, 333p, 444s, 77z
         val hand = createHand(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -1063,7 +1063,7 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
     @Test
     fun `test toitoi with fuuro`() {
         // 副露：碰 111m (1 組刻子)
-        // 手牌：222m, 333p, 444s, 55z (3 組刻子 + 1 雀頭)
+        // 手牌：222m, 333p, 444s, 77z (3 組刻子 + 1 雀頭)
         // 手牌 10 張 + 副露 3 張 + 自摸 1 張 = 14 張
         val hand = createHand(
             listOf(
@@ -1107,7 +1107,7 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
     @Test
     fun `test toitoi with kan`() {
         // 副露：明槓 111m (1 組槓)
-        // 手牌：222m, 333p, 444s, 55z (3 組刻子 + 1 雀頭)
+        // 手牌：222m, 333p, 444s, 77z (3 組刻子 + 1 雀頭)
         // 手牌 10 張 + 副露 4 張 + 自摸 1 張 = 15 張（含槓多一張）
         val hand = createHand(
             listOf(
@@ -1151,7 +1151,7 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
      */
     @Test
     fun `test toitoi with shuntsu returns null`() {
-        // 手牌：123m (順子), 111m, 222p, 333s, 55z
+        // 手牌：123m (順子), 111m, 222p, 333s, 77z
         val hand = createHand(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -1185,7 +1185,7 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
      */
     @Test
     fun `test toitoi with only three pungs returns null`() {
-        // 手牌：111m, 222p, 55z, 123m (順子), 456s (順子)
+        // 手牌：111m, 222p, 77z, 123m (順子), 456s (順子)
         // 僅有 2 組刻子
         val hand = createHand(
             listOf(
@@ -1257,7 +1257,7 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
      */
     @Test
     fun `test sanankou menzen`() {
-        // 手牌：111m (暗刻), 222p (暗刻), 333s (暗刻), 55z, 7m (自摸)
+        // 手牌：111m (暗刻), 222p (暗刻), 333s (暗刻), 77z, 7m (自摸)
         val hand = createHand(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -1292,7 +1292,7 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
     @Test
     fun `test sanankou with fuuro`() {
         // 副露：碰 111m
-        // 手牌：222p (暗刻), 333s (暗刻), 44z, 5s, 5s (湊成另一暗刻)
+        // 手牌：222p (暗刻), 333s (暗刻), 77z, 5s, 5s (湊成另一暗刻)
         // 手牌 10 張 + 副露 3 張 + 自摸 1 張 = 14 張
         val hand = createHand(
             listOf(
@@ -1336,7 +1336,7 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
     @Test
     fun `test sanankou with ankan`() {
         // 副露：暗槓 111m
-        // 手牌：222p (暗刻), 333s (暗刻), 44z, 5z (自摸湊成暗刻)
+        // 手牌：222p (暗刻), 333s (暗刻), 77z, 66z (自摸湊成暗刻)
         // 暗槓 + 2 暗刻 + 1 暗刻（自摸）= 3 暗面子
         // 手牌 10 張 + 暗槓 4 張 + 自摸 1 張 = 15 張（含槓多一張）
         val hand = createHand(
@@ -1381,7 +1381,7 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
      */
     @Test
     fun `test sanankou with only two ankou returns null`() {
-        // 手牌：111m (暗刻), 222p (暗刻), 123s (順子), 55z, 4s (自摸)
+        // 手牌：111m (暗刻), 222p (暗刻), 123s (順子), 77z, 4s (自摸)
         val hand = createHand(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -1414,7 +1414,7 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
      */
     @Test
     fun `test sanankou with shuntsu`() {
-        // 手牌：111m (暗刻), 222p (暗刻), 333s (暗刻), 456p (順子), 55z (1 張), 自摸 5z
+        // 手牌：111m (暗刻), 222p (暗刻), 333s (暗刻), 456p (順子), 7z (1 張), 自摸 7z
         // 湊成：3 暗刻 + 1 順子 + 1 雀頭
         // 13 張手牌 (3+3+3+3+1) + 1 張自摸 = 14 張
         val hand = createHand(
@@ -1450,8 +1450,8 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
      */
     @Test
     fun `test sanankou and toitoi can coexist`() {
-        // 手牌：111m (暗刻), 222p (暗刻), 333s (暗刻), 44z (雀頭), 5z, 5z (暗刻)
-        // 111m, 222p, 333s, 55z 為暗刻，構成三暗刻
+        // 手牌：111m (暗刻), 222p (暗刻), 333s (暗刻), 77z (雀頭), 66z, 6z (暗刻)
+        // 111m, 222p, 333s 為暗刻，構成三暗刻
         // 同時也是對對胡（4 組刻子 + 1 雀頭）
         val hand = createHand(
             listOf(
@@ -1489,8 +1489,8 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
      */
     @Test
     fun `test sankantsu three ankan`() {
-        // 副露：三個暗槓 111m, 222p, 333s
-        // 手牌：44m, 55z (雀頭), 自摸 5z
+        // 副露：三個暗槓 1111m, 2222p, 3333s
+        // 手牌：44m, 77z (雀頭), 自摸 7z
         // 3 個暗槓 + 1 面子 + 1 雀頭 = 三杠子
         // standingTiles 4 張 + winning 1 張 + 3 個暗槓 12 張 = 17 張 (14 + 3)
         val hand = createHand(
@@ -1549,9 +1549,9 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
      */
     @Test
     fun `test sankantsu with only two kan returns null`() {
-        // 副露：兩個暗槓 111m, 222p
-        // 手牌：333s (面子), 44z (雀頭), 5s (自摸湊成面子)
-        // standingTiles 7 張 + winning 1 張 + 2 個槓 8 張 = 16 張 (14 + 2)
+        // 副露：兩個暗槓 1111m, 2222p
+        // 手牌：333s (面子), 777z (雀頭), 5s (自摸湊成面子)
+        // standingTiles 6 張 + winning 1 張 + 2 個槓 8 張 = 15 張 (14 + 1)
         val hand = createHand(
             listOf(
                 Tile.Numeric(Tile.Suit.Bamboo, 3),
@@ -1601,10 +1601,10 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
      */
     @Test
     fun `test sankantsu with four kan returns null`() {
-        // 副露：四個暗槓 111m, 222p, 333s, 444z
+        // 副露：四個暗槓 1111m, 2222p, 3333s, 4444s
         // 四杠子是役滿，不應計算三杠子
-        // 手牌：東 (自摸湊成雀頭)
-        // standingTiles 1 張 + winning 1 張 + 4 個槓 16 張 = 18 張 (14 + 4)
+        // 手牌：7z (自摸湊成雀頭)
+        // standingTiles 1 張 + winning 1 張 + 4 個槓 16 張 = 18 張
         val hand = createHand(
             listOf(
                 Tile.Honor.Red
