@@ -2175,4 +2175,116 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
         val honchanResult = result.yakuResults.find { it.yaku == YakuType.Honchan }
         assertNull(honchanResult, "Should not have Honchan with non-terminal mentsu")
     }
+
+    /**
+     * 純全帶么九 (Junchan) 測試。
+     */
+    @Test
+    fun `test junchan menzen`() {
+        // 手牌：111m (刻子), 111p (刻子), 111s (刻子), 789m (順子), 9s, 9s (餘牌)
+        // 所有面子和雀頭都包含么九牌，無字牌
+        // 門前清：3 翻
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Bamboo, 1),
+                Tile.Numeric(Tile.Suit.Bamboo, 1),
+                Tile.Numeric(Tile.Suit.Bamboo, 1),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Bamboo, 9)
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9)
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val junchanResult = result.yakuResults.find { it.yaku == YakuType.Junchan }
+        assertNotNull(junchanResult, "Should have Junchan")
+        assertEquals(3, junchanResult.han, "Menzen Junchan should be 3 han")
+    }
+
+    @Test
+    fun `test junchan with fuuro`() {
+        // 手牌：111m (刻子), 999p (刻子), 111s (刻子), 789m (順子), 9s, 9s (餘牌)
+        // 所有面子和雀頭都包含么九牌，無字牌
+        // 副露：2 翻
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Bamboo, 1),
+                Tile.Numeric(Tile.Suit.Bamboo, 1),
+                Tile.Numeric(Tile.Suit.Bamboo, 1),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Bamboo, 9)
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9)
+
+        val context = createContext(hand, winningTile, isTsumo = false, isMenzen = false)
+        val result = calculator.calculate(context)
+
+        val junchanResult = result.yakuResults.find { it.yaku == YakuType.Junchan }
+        assertNotNull(junchanResult, "Should have Junchan")
+        assertEquals(2, junchanResult.han, "Open Junchan should be 2 han")
+    }
+
+    @Test
+    fun `test junchan with honor tiles returns null`() {
+        // 手牌：含有字牌，應該是 Honchan 不是 Junchan
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Bamboo, 1),
+                Tile.Numeric(Tile.Suit.Bamboo, 1),
+                Tile.Numeric(Tile.Suit.Bamboo, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Honor.Red,
+                Tile.Honor.Red
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
+            )
+        )
+        val winningTile = Tile.Honor.Red
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val junchanResult = result.yakuResults.find { it.yaku == YakuType.Junchan }
+        assertNull(junchanResult, "Should not have Junchan with honor tiles")
+    }
 }

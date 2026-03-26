@@ -233,6 +233,12 @@ class RiichiHandValueCalculator {
             isMenzen = context.isMenzen
         )?.let { standardResults.add(it) }
 
+        // 計算純全帶么九
+        calculateJunchan(
+            handStructure = handStructure,
+            isMenzen = context.isMenzen
+        )?.let { standardResults.add(it) }
+
         results.addAll(standardResults)
     }
 
