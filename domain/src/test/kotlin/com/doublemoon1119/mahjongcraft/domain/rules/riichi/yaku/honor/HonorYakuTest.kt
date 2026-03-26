@@ -15,7 +15,7 @@ import kotlin.test.assertNull
  *
  * @see com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueCalculator
  */
-class RiichiHandValueCalculatorHonorYakuTest : RiichiHandValueCalculatorTestBase() {
+class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
 
     /**
      * 測試場風 - 東場。

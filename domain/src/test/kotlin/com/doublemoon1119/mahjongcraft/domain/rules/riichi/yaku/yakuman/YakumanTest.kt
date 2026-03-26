@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
  *
  * @see com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueCalculator
  */
-class RiichiHandValueCalculatorYakumanTest : RiichiHandValueCalculatorTestBase() {
+class YakumanTest : RiichiHandValueCalculatorTestBase() {
 
     /**
      * 測試役滿計算 - 單一役滿。

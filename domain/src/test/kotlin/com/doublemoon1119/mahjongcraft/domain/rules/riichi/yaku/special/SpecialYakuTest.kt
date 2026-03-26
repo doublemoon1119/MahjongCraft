@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
  *
  * @see com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueCalculator
  */
-class RiichiHandValueCalculatorSpecialYakuTest : RiichiHandValueCalculatorTestBase() {
+class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
 
     private fun createBasicHand(): List<Tile> = listOf(
         Tile.Numeric(Tile.Suit.Character, 1),

@@ -16,7 +16,7 @@ import kotlin.test.assertEquals
  *
  * @see com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueCalculator
  */
-class RiichiHandValueCalculatorDoraTest : RiichiHandValueCalculatorTestBase() {
+class DoraTest : RiichiHandValueCalculatorTestBase() {
 
     /**
      * 測試寶牌計算 - 單一寶牌指示牌。
