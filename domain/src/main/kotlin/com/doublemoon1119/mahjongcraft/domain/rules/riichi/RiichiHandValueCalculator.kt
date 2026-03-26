@@ -227,6 +227,12 @@ class RiichiHandValueCalculator {
             winningTile = context.winningTile
         )?.let { standardResults.add(it) }
 
+        // 計算混全帶么九
+        calculateHonchan(
+            handStructure = handStructure,
+            isMenzen = context.isMenzen
+        )?.let { standardResults.add(it) }
+
         results.addAll(standardResults)
     }
 
