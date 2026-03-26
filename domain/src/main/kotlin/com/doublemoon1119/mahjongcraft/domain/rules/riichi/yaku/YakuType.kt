@@ -57,8 +57,6 @@ enum class YakuType {
 
     /** 混老頭 (Honroutou) - 2 翻 */
     Honroutou,
-    /** 清老頭 (Chinroutou) - 役滿 */
-    Chinroutou,
 
     /** 清一色 (Chinitsu) - 5 翻（副露）/ 6 翻（門前清） */
     Chinitsu,
@@ -92,6 +90,8 @@ enum class YakuType {
     Daisuushii,
     /** 大三元 (Daisangen) - 役滿 */
     Daisangen,
+    /** 清老頭 (Chinroutou) - 役滿 */
+    Chinroutou,
 
     // ===== 雙倍役滿 =====
     /** 國士無雙十三面 (Kokushi Musou 13-men) - 雙倍役滿 */

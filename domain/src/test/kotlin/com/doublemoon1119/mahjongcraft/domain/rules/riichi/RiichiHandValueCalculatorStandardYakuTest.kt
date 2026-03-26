@@ -1884,9 +1884,63 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
      */
     @Test
     fun `test honroutou valid`() {
-        // 副露：111m, 999p, 111s,
+        // 副露：777z, 999p, 111s,
         // 手牌：11m, 99s (老頭牌)
         // 混老頭：2 翻
+        val hand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Bamboo, 9),
+                Tile.Numeric(Tile.Suit.Bamboo, 9)
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Red),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Red),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Red)
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                ),
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(),Tile.Numeric(Tile.Suit.Dot, 9)),
+                        IdentifiedTile(UUID.randomUUID(),Tile.Numeric(Tile.Suit.Dot, 9)),
+                        IdentifiedTile(UUID.randomUUID(),Tile.Numeric(Tile.Suit.Dot, 9))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                ),
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(),Tile.Numeric(Tile.Suit.Bamboo, 9)),
+                        IdentifiedTile(UUID.randomUUID(),Tile.Numeric(Tile.Suit.Bamboo, 9)),
+                        IdentifiedTile(UUID.randomUUID(),Tile.Numeric(Tile.Suit.Bamboo, 9))
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
+            )
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9)
+
+        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val honroutouResult = result.yakuResults.find { it.yaku == YakuType.Honroutou }
+        assertNotNull(honroutouResult, "Should have Honroutou")
+        assertEquals(2, honroutouResult.han, "Honroutou should be 2 han")
+    }
+
+    /**
+     * 混老頭 (Honroutou) 使用清老頭 (Chinroutou) 測試。
+     */
+    @Test
+    fun `test honroutou with chinroutou returns null`() {
+        // 副露：111m, 999p, 111s,
+        // 手牌：11m, 99s (老頭牌)
         val hand = createHand(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -1930,13 +1984,12 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
         val result = calculator.calculate(context)
 
         val honroutouResult = result.yakuResults.find { it.yaku == YakuType.Honroutou }
-        assertNotNull(honroutouResult, "Should have Honroutou")
-        assertEquals(2, honroutouResult.han, "Honroutou should be 2 han")
+        assertNull( honroutouResult, "Should not have Honroutou with Chinroutou")
     }
 
     @Test
     fun `test honroutou with non-routou tile returns null`() {
-        // 副露：111m, 999p, 111s,
+        // 副露：777z, 999p, 111s,
         // 手牌：22m, 99s (老頭牌)
         // 含有非老頭牌
         val hand = createHand(
@@ -1950,9 +2003,9 @@ class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestB
                 Meld(
                     type = MeldType.PON,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Red),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Red),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Red)
                     ),
                     sourceDirection = RelativeDirection.Left
                 ),

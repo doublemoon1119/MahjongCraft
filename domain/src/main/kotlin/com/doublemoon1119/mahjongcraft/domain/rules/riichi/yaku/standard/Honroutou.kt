@@ -46,5 +46,10 @@ fun calculateHonroutou(
         }
     }
 
+    // 全部都是么九牌，是清老頭 (役滿)
+    if (allTiles.all { it.isTerminal }) {
+        return null
+    }
+
     return YakuResult.han(YakuType.Honroutou, 2)
 }
