@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Mentsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.domain.util.isTerminal
 
 /**
  * 平和 (Pinfu) 役種檢測器。
@@ -59,7 +60,7 @@ fun calculatePinfu(
 private fun isYakuhai(tile: Tile): Boolean {
     return when (tile) {
         is Tile.Honor -> true
-        is Tile.Numeric -> tile.value == 1 || tile.value == 9
+        is Tile.Numeric -> tile.isTerminal
         is Tile.Flower -> false
     }
 }

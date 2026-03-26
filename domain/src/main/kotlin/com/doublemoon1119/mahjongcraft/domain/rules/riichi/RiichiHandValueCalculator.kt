@@ -221,6 +221,12 @@ class RiichiHandValueCalculator {
             isMenzen = context.isMenzen
         )?.let { standardResults.add(it) }
 
+        // 計算混老頭
+        calculateHonroutou(
+            hand = context.hand,
+            winningTile = context.winningTile
+        )?.let { standardResults.add(it) }
+
         results.addAll(standardResults)
     }
 
