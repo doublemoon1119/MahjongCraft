@@ -1,6 +1,7 @@
-package com.doublemoon1119.mahjongcraft.domain.rules.riichi
+package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.special
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,7 +11,7 @@ import kotlin.test.assertEquals
  *
  * 測試內容涵蓋立直、一發、嶺上花、海底撈月、河底撈魚、槓槓、搶槓等役種。
  *
- * @see RiichiHandValueCalculator
+ * @see com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueCalculator
  */
 class RiichiHandValueCalculatorSpecialYakuTest : RiichiHandValueCalculatorTestBase() {
 

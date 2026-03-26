@@ -1,6 +1,7 @@
-package com.doublemoon1119.mahjongcraft.domain.rules.riichi
+package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -9,7 +10,7 @@ import kotlin.test.assertTrue
 /**
  * 立直麻將手牌番數計算機之役滿測試。
  *
- * @see RiichiHandValueCalculator
+ * @see com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueCalculator
  */
 class RiichiHandValueCalculatorYakumanTest : RiichiHandValueCalculatorTestBase() {
 

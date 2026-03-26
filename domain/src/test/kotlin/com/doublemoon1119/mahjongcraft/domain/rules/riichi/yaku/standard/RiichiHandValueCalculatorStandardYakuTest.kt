@@ -1,6 +1,11 @@
-package com.doublemoon1119.mahjongcraft.domain.rules.riichi
+package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard
 
-import com.doublemoon1119.mahjongcraft.domain.base.*
+import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.domain.base.Meld
+import com.doublemoon1119.mahjongcraft.domain.base.MeldType
+import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import java.util.*
 import kotlin.test.Test
@@ -13,7 +18,7 @@ import kotlin.test.assertNull
  *
  * 測試內容涵蓋斷么九、一氣通貫、混一色、清一色、一杯口、兩杯口、七對子等役種。
  *
- * @see RiichiHandValueCalculator
+ * @see com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueCalculator
  */
 class RiichiHandValueCalculatorStandardYakuTest : RiichiHandValueCalculatorTestBase() {
 

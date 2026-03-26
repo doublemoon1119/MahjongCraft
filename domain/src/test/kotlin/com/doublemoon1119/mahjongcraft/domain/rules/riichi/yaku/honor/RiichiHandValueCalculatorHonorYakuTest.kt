@@ -1,6 +1,7 @@
-package com.doublemoon1119.mahjongcraft.domain.rules.riichi
+package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.honor
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
 import kotlin.test.Test
@@ -12,7 +13,7 @@ import kotlin.test.assertNull
  *
  * 測試內容涵蓋場風、自風、役牌（三元牌）等役種。
  *
- * @see RiichiHandValueCalculator
+ * @see com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueCalculator
  */
 class RiichiHandValueCalculatorHonorYakuTest : RiichiHandValueCalculatorTestBase() {
 

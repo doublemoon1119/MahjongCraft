@@ -1,6 +1,11 @@
-package com.doublemoon1119.mahjongcraft.domain.rules.riichi
+package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.dora
 
-import com.doublemoon1119.mahjongcraft.domain.base.*
+import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.domain.base.Meld
+import com.doublemoon1119.mahjongcraft.domain.base.MeldType
+import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import java.util.*
 import kotlin.test.Test
@@ -9,7 +14,7 @@ import kotlin.test.assertEquals
 /**
  * 立直麻將手牌番數計算機之寶牌測試。
  *
- * @see RiichiHandValueCalculator
+ * @see com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueCalculator
  */
 class RiichiHandValueCalculatorDoraTest : RiichiHandValueCalculatorTestBase() {
 
