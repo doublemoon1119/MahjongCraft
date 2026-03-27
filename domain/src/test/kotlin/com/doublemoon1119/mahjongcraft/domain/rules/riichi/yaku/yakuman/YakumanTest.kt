@@ -1,7 +1,8 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman
 
-import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.base.*
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
+import java.util.*
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -17,7 +18,7 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
     /**
      * 測試役滿計算 - 單一役滿。
      *
-     * 有一個役滿，totalHan 應為 -1。
+     * 有一個役滿 (四暗刻)，totalHan 應為 -1。
      */
     @Test
     @Ignore("TODO: 實作役滿檢測")
@@ -35,7 +36,7 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.South,
                 Tile.Honor.White,
                 Tile.Honor.White,
-                Tile.Honor.White,
+                Tile.Honor.Green,
                 Tile.Honor.Green
             )
         )
@@ -51,7 +52,7 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
     /**
      * 測試役滿計算 - 雙倍役滿。
      *
-     * 有一個雙倍役滿，totalHan 應為 -2。
+     * 有一個雙倍役滿 (四暗刻單騎)，totalHan 應為 -2。
      */
     @Test
     @Ignore("TODO: 實作役滿檢測")
@@ -60,14 +61,14 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Honor.East,
                 Tile.Honor.East,
                 Tile.Honor.East,
                 Tile.Honor.South,
                 Tile.Honor.South,
-                Tile.Honor.West,
-                Tile.Honor.West,
-                Tile.Honor.North,
-                Tile.Honor.North,
+                Tile.Honor.South,
+                Tile.Honor.White,
                 Tile.Honor.White,
                 Tile.Honor.White,
                 Tile.Honor.Green
@@ -85,29 +86,30 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
     /**
      * 測試役滿計算 - 兩個一般役滿。
      *
-     * 有兩個一般役滿，totalHan 應為 -2。
+     * 有兩個一般役滿 (字一色 + 大三元)，totalHan 應為 -2。
      */
     @Test
     @Ignore("TODO: 實作役滿檢測")
     fun `test two yakuman calculation`() {
         val hand = createHand(
             listOf(
-                Tile.Numeric(Tile.Suit.Character, 1),
-                Tile.Numeric(Tile.Suit.Character, 1),
-                Tile.Honor.East,
-                Tile.Honor.East,
-                Tile.Honor.East,
-                Tile.Honor.South,
-                Tile.Honor.South,
-                Tile.Honor.South,
+                Tile.Honor.Red,
+                Tile.Honor.Red,
+                Tile.Honor.Red,
                 Tile.Honor.White,
                 Tile.Honor.White,
                 Tile.Honor.White,
                 Tile.Honor.Green,
-                Tile.Honor.Green
+                Tile.Honor.Green,
+                Tile.Honor.Green,
+                Tile.Honor.East,
+                Tile.Honor.East,
+                Tile.Honor.East,
+                Tile.Honor.West,
+                Tile.Honor.West
             )
         )
-        val winningTile = Tile.Honor.Green
+        val winningTile = Tile.Honor.West
 
         val context = createContext(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
@@ -119,26 +121,34 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
     /**
      * 測試役滿計算 - 雙倍役滿加一般役滿。
      *
-     * 有一個雙倍役滿和一個一般役滿，totalHan 應為 -3。
+     * 有一個雙倍役滿 (大四喜) 和一個一般役滿 (字一色)，totalHan 應為 -3。
      */
     @Test
     @Ignore("TODO: 實作役滿檢測")
     fun `test double yakuman plus yakuman calculation`() {
         val hand = createHand(
             listOf(
-                Tile.Numeric(Tile.Suit.Character, 1),
-                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Honor.East,
                 Tile.Honor.East,
                 Tile.Honor.East,
                 Tile.Honor.South,
                 Tile.Honor.South,
+                Tile.Honor.South,
                 Tile.Honor.West,
                 Tile.Honor.West,
-                Tile.Honor.North,
-                Tile.Honor.North,
-                Tile.Honor.White,
-                Tile.Honor.White,
+                Tile.Honor.West,
                 Tile.Honor.Green
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.North),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.North),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.North)
+                    ),
+                    sourceDirection = RelativeDirection.Left
+                )
             )
         )
         val winningTile = Tile.Honor.Green
