@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.dora.calculateDo
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.dora.calculateUraDora
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.honor.calculateHonorYaku
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.*
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateChurenPoto
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateKokushiMusou
 import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 
@@ -313,6 +314,14 @@ class RiichiHandValueCalculator {
         calculateKokushiMusou(
             handStructure = handStructure,
             winningTile = context.winningTile
+        )?.let { results.add(it) }
+
+        // 計算九蓮寶燈
+        calculateChurenPoto(
+            hand = context.hand,
+            winningTile = context.winningTile,
+            handStructure = handStructure,
+            isMenzen = context.isMenzen
         )?.let { results.add(it) }
     }
 
