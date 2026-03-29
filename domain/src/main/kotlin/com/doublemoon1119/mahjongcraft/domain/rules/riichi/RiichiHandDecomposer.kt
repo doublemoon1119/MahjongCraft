@@ -81,8 +81,14 @@ object RiichiHandDecomposer {
         val fuuroCount = fuuro.size
 
         // 建立 TileCountMap，只包含手牌（不含 fuuro）
+        // 排序確保遞迴時的一致性：數牌先於字牌，數牌依花色與數值排序
+        val sortedTiles = tiles.sortedWith(compareBy(
+            { it !is Tile.Numeric }, // 1. 數牌排在前面（false < true）
+            { (it as? Tile.Numeric)?.suit },    // 2. 數牌再按花色排序
+            { (it as? Tile.Numeric)?.value }    // 3. 數牌再按數值排序
+        ))
         val tileCounts = mutableMapOf<Tile, Int>()
-        for (tile in tiles) {
+        for (tile in sortedTiles) {
             tileCounts[tile] = (tileCounts[tile] ?: 0) + 1
         }
 
