@@ -86,8 +86,8 @@ enum class YakuType {
     Suuankou,
     /** 四杠子 (Sukantsu) - 役滿 */
     Sukantsu,
-    /** 大四喜 (Daisuushii) - 役滿 */
-    Daisuushii,
+    /** 小四喜 (Shousuushi) - 役滿 */
+    Shousuushi,
     /** 大三元 (Daisangen) - 役滿 */
     Daisangen,
     /** 清老頭 (Chinroutou) - 役滿 */
@@ -100,6 +100,6 @@ enum class YakuType {
     ChurenPoto9,
     /** 四暗刻單騎 (Suuankou Tanki) - 雙倍役滿 */
     SuuankouTanki,
-    /** 大四喜小四喜 (Daisuushii Suushi) - 雙倍役滿 */
-    DaisuushiiSuushi
+    /** 大四喜 (Daisuushii) - 雙倍役滿 */
+    Daisuushii
 }
