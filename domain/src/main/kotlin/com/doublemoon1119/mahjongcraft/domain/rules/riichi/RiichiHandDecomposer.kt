@@ -239,7 +239,10 @@ object RiichiHandDecomposer {
 
         // 選擇第一個可以做雀頭的牌
         val headTile = headCandidates.first()
-        val orphans = tiles.filter { it != headTile }
+        
+        // 移除一張雀頭牌，保留其餘 13 張作為孤張
+        val orphans = tiles.toMutableList()
+        orphans.remove(headTile)
 
         if (orphans.size != 13) return null
 

@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.dora.calculateDo
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.dora.calculateUraDora
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.honor.calculateHonorYaku
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.*
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateKokushiMusou
 import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 
 /**
@@ -308,7 +309,11 @@ class RiichiHandValueCalculator {
         handStructure: HandStructure?,
         results: MutableList<YakuResult>
     ) {
-        // TODO: 使用 handStructure 實作國士無雙、九蓮寶燈、四暗刻等役滿檢測
+        // 計算國士無雙
+        calculateKokushiMusou(
+            handStructure = handStructure,
+            winningTile = context.winningTile
+        )?.let { results.add(it) }
     }
 
     /**
