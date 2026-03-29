@@ -30,7 +30,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
  * - 牌型：1m1m 9m 1p 9p 1s 東西南北白發中
  * - 也就是說，有 1 個對子（1m），其餘 12 種牌各 1 張
  * - 聽牌：1m（單騎聽牌）
- * - 胡牌時： winningTile != headTile（例如摸 9s 形成 9s）
+ * - 胡牌時： winningTile != headTile（例如摸 9s 與其他單張形成端子）
  *
  * @param handStructure 手牌結構（由 [com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandDecomposer] 分割後的結果）。
  * @param winningTile 胡牌張。
