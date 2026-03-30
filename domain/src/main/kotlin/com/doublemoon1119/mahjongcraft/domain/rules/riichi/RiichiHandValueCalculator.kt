@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.honor.calculateH
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.*
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateChurenPoto
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateKokushiMusou
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateTsuuiisou
 import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 
 /**
@@ -322,6 +323,12 @@ class RiichiHandValueCalculator {
             winningTile = context.winningTile,
             handStructure = handStructure,
             isMenzen = context.isMenzen
+        )?.let { results.add(it) }
+
+        // 計算字一色
+        calculateTsuuiisou(
+            hand = context.hand,
+            winningTile = context.winningTile
         )?.let { results.add(it) }
     }
 
