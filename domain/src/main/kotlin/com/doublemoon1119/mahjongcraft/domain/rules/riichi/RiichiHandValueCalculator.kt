@@ -50,10 +50,15 @@ class RiichiHandValueCalculator {
             )
         }
 
-        // 手牌結構用於需要分析手牌內部結構的役種，
+        // 手牌結構用於需要分析手牌內部結構的役種，null 表示手牌不符合胡牌牌型。
         // 例如：Pinfu、Chiitoitsu、Iipeikou、Ryanpeikou 等。
         // 不需要 [HandStructure] 的役種（如 Dora、Tanyao、Chinitsu 等）則直接從 hand 計算。
         val handStructure = RiichiHandDecomposer.decompose(allTiles, fuuro)
+            ?: return HandYakuResult(
+                yakuResults = emptyList(),
+                totalHan = 0,
+                isCompleteHand = true
+            )
 
         // 2. 先計算役滿
         val yakumanResults = mutableListOf<YakuResult>()
@@ -118,7 +123,7 @@ class RiichiHandValueCalculator {
         return HandYakuResult(
             yakuResults = yakuResults,
             totalHan = totalHan,
-            isCompleteHand = handStructure != null
+            isCompleteHand = true
         )
     }
 
@@ -132,7 +137,7 @@ class RiichiHandValueCalculator {
      */
     private fun calculateStandardYaku(
         context: RiichiYakuContext,
-        handStructure: HandStructure?,
+        handStructure: HandStructure,
         results: MutableList<YakuResult>
     ) {
         val standardResults = mutableListOf<YakuResult>()
@@ -309,7 +314,7 @@ class RiichiHandValueCalculator {
      */
     private fun calculateYakuman(
         context: RiichiYakuContext,
-        handStructure: HandStructure?,
+        handStructure: HandStructure,
         results: MutableList<YakuResult>
     ) {
         // 計算國士無雙

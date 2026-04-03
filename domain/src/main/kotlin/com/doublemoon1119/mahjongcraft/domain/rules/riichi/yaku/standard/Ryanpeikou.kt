@@ -19,7 +19,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
  * @return 兩杯口役種結果，若不符合則返回 null。
  */
 fun calculateRyanpeikou(
-    handStructure: HandStructure?,
+    handStructure: HandStructure,
     isMenzen: Boolean
 ): YakuResult? {
     val standard = handStructure as? HandStructure.Standard ?: return null

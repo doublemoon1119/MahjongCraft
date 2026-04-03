@@ -21,7 +21,7 @@ import com.doublemoon1119.mahjongcraft.domain.util.isTerminal
  * @return 混全帶么九役種結果，若不符合則返回 null。
  */
 fun calculateHonchan(
-    handStructure: HandStructure?,
+    handStructure: HandStructure,
     isMenzen: Boolean
 ): YakuResult? {
     val standard = handStructure as? HandStructure.Standard ?: return null

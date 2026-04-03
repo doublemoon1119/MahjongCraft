@@ -39,7 +39,7 @@ import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 fun calculateChurenPoto(
     hand: Hand,
     winningTile: Tile,
-    handStructure: HandStructure?,
+    handStructure: HandStructure,
     isMenzen: Boolean
 ): YakuResult? {
     // 必須為門前清

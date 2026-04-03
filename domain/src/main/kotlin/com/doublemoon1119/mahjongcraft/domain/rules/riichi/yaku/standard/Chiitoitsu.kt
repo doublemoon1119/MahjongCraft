@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
  * @return 七對子役種結果，若不符合則返回 null。
  */
 fun calculateChiitoitsu(
-    handStructure: HandStructure?,
+    handStructure: HandStructure,
     isMenzen: Boolean
 ): YakuResult? {
     if (handStructure !is HandStructure.Chiitoitsu) {

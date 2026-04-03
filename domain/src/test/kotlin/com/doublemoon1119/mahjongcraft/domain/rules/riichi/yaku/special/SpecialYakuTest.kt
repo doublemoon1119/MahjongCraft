@@ -17,6 +17,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
 
     private fun createBasicHand(): List<Tile> = listOf(
         Tile.Numeric(Tile.Suit.Character, 1),
+        Tile.Numeric(Tile.Suit.Character, 1),
         Tile.Numeric(Tile.Suit.Character, 2),
         Tile.Numeric(Tile.Suit.Character, 3),
         Tile.Numeric(Tile.Suit.Character, 4),
@@ -24,7 +25,6 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
         Tile.Numeric(Tile.Suit.Character, 6),
         Tile.Numeric(Tile.Suit.Character, 7),
         Tile.Numeric(Tile.Suit.Character, 8),
-        Tile.Numeric(Tile.Suit.Character, 9),
         Tile.Numeric(Tile.Suit.Character, 9),
         Tile.Numeric(Tile.Suit.Dot, 1),
         Tile.Numeric(Tile.Suit.Dot, 1),

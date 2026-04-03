@@ -56,7 +56,7 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
         val allTiles = tiles.map { it.withoutRed } + winningTile
         val handStructure = RiichiHandDecomposer.decompose(allTiles)
 
-        val result = calculateKokushiMusou(handStructure, winningTile)
+        val result = calculateKokushiMusou(handStructure!!, winningTile)
 
         assertTrue(result != null, "Should be Kokushi Musou")
         assertEquals(YakuType.KokushiMusou, result.yaku, "Yaku type should be KokushiMusou")
@@ -97,7 +97,7 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
         val allTiles = tiles.map { it.withoutRed } + winningTile
         val handStructure = RiichiHandDecomposer.decompose(allTiles)
 
-        val result = calculateKokushiMusou(handStructure, winningTile)
+        val result = calculateKokushiMusou(handStructure!!, winningTile)
 
         assertTrue(result != null, "Should be Kokushi Musou 13-men")
         assertEquals(YakuType.KokushiMusou13, result.yaku, "Yaku type should be KokushiMusou13")
@@ -131,7 +131,7 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
         val allTiles = tiles + winningTile
         val handStructure = RiichiHandDecomposer.decompose(allTiles)
 
-        val result = calculateKokushiMusou(handStructure, winningTile)
+        val result = calculateKokushiMusou(handStructure!!, winningTile)
 
         assertNull(result, "Should return null when hand is not Kokushi Musou")
     }

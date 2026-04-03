@@ -19,7 +19,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
  * @return 對對胡役種結果，若不符合則返回 null。
  */
 fun calculateToitoi(
-    handStructure: HandStructure?
+    handStructure: HandStructure
 ): YakuResult? {
     val standard = handStructure as? HandStructure.Standard ?: return null
 

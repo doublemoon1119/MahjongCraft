@@ -22,7 +22,7 @@ import com.doublemoon1119.mahjongcraft.domain.util.isTerminal
  * @return 平和役種結果，若不符合則返回 null。
  */
 fun calculatePinfu(
-    handStructure: HandStructure?,
+    handStructure: HandStructure,
     winningTile: Tile,
     isMenzen: Boolean
 ): YakuResult? {

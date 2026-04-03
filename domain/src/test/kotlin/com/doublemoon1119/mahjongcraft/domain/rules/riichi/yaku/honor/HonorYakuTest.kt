@@ -41,7 +41,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 5)
             )
         )
-        val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
+        val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
         val context = createContext(
             hand = hand,
@@ -80,7 +80,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 5)
             )
         )
-        val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
+        val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
         val context = createContext(
             hand = hand,
@@ -119,7 +119,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 5)
             )
         )
-        val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
+        val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
         val context = createContext(
             hand = hand,
@@ -159,7 +159,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 5)
             )
         )
-        val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
+        val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
         val context = createContext(
             hand = hand,

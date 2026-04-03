@@ -42,10 +42,10 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.East,
                 Tile.Honor.East,
                 Tile.Honor.East,
-                Tile.Honor.East
+                Tile.Honor.South
             )
         )
-        val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
+        val winningTile = Tile.Honor.South
 
         val context = createContext(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
@@ -70,8 +70,7 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 4),
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 6),
-                Tile.Numeric(Tile.Suit.Character, 7),
-                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Honor.East,
                 Tile.Honor.East,
@@ -89,7 +88,7 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
                 )
             )
         )
-        val winningTile = Tile.Numeric(Tile.Suit.Character, 9)
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
 
         val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
         val result = calculator.calculate(context)
@@ -116,10 +115,10 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 1),
-                Tile.Numeric(Tile.Suit.Character, 1),
-                Tile.Numeric(Tile.Suit.Character, 1),
-                Tile.Numeric(Tile.Suit.Character, 1)
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 2)
             )
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
@@ -192,10 +191,10 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 1),
-                Tile.Numeric(Tile.Suit.Character, 1),
-                Tile.Numeric(Tile.Suit.Character, 1),
-                Tile.Numeric(Tile.Suit.Character, 1)
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 2)
             )
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 2)

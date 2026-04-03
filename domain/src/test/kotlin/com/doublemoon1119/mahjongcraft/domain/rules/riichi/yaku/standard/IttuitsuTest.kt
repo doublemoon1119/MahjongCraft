@@ -1,8 +1,13 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard
 
+import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.domain.base.Meld
+import com.doublemoon1119.mahjongcraft.domain.base.MeldType
+import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -34,10 +39,10 @@ class IttuitsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1)
+                Tile.Numeric(Tile.Suit.Dot, 2)
             )
         )
-        val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
+        val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
         val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
         val result = calculator.calculate(context)
@@ -64,13 +69,21 @@ class IttuitsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1)
+                Tile.Numeric(Tile.Suit.Dot, 2)
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1)),
+                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
+                    ),
+                    sourceDirection = RelativeDirection.Across
+                )
             )
         )
-        val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
+        val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
         val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
         val result = calculator.calculate(context)

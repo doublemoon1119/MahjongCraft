@@ -37,7 +37,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
  * @return 國士無雙役滿結果，若不符合則返回 null。
  */
 fun calculateKokushiMusou(
-    handStructure: HandStructure?,
+    handStructure: HandStructure,
     winningTile: Tile
 ): YakuResult? {
     // 檢查是否為國士無雙牌型

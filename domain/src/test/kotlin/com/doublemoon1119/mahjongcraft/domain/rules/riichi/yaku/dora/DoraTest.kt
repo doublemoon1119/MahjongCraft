@@ -31,11 +31,11 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 4),
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
-                Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
@@ -105,7 +105,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7),
-                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 1),
@@ -141,7 +141,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
-                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1)
@@ -173,7 +173,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 5, isRed = true),
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7),
-                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 1),
@@ -209,7 +209,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 3),
                 Tile.Numeric(Tile.Suit.Dot, 4)
             )
@@ -236,13 +236,13 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1)
             )
@@ -308,7 +308,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
     /**
      * 測試赤寶牌計算 - 副露中的赤寶牌。
      *
-     * 副露包含赤 5m x3，應獲得 3 翻。
+     * 副露包含赤 5p x3，應獲得 3 翻。
      */
     @Test
     fun `test aka dora calculation with exposed meld`() {
@@ -323,7 +323,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 2)
+                Tile.Numeric(Tile.Suit.Dot, 1)
             ),
             melds = listOf(
                 Meld(
@@ -360,11 +360,11 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Dot, 5, isRed = true),
                 Tile.Numeric(Tile.Suit.Dot, 5, isRed = true),
-                Tile.Numeric(Tile.Suit.Dot, 6),
                 Tile.Numeric(Tile.Suit.Dot, 7),
                 Tile.Numeric(Tile.Suit.Dot, 8),
                 Tile.Numeric(Tile.Suit.Dot, 9),
-                Tile.Numeric(Tile.Suit.Bamboo, 1)
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 4)
             ),
             melds = listOf(
                 Meld(
