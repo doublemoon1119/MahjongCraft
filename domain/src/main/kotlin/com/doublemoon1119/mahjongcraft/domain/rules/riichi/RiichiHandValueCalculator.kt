@@ -117,7 +117,7 @@ class RiichiHandValueCalculator {
         return HandYakuResult(
             yakuResults = yakuResults,
             totalHan = totalHan,
-            isCompleteHand = true
+            isCompleteHand = handStructure != null
         )
     }
 
