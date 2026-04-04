@@ -218,7 +218,7 @@ class RyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
         // 胡牌：8s
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 8)
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = createContext(hand, winningTile, isTsumo = false)
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")

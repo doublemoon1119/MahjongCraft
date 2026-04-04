@@ -21,7 +21,7 @@ class ToitoiTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test toitoi menzen`() {
-        // 手牌：111m, 222m, 333p, 444s, 77z
+        // 手牌：111m, 222m, 333p, 44s, 77z
         val hand = createHand(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -35,13 +35,13 @@ class ToitoiTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 3),
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
-                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Honor.Red,
                 Tile.Honor.Red
             )
         )
         val winningTile = Tile.Honor.Red
 
-        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val context = createContext(hand, winningTile, isTsumo = false, isMenzen = true)
         val result = calculator.calculate(context)
 
         val toitoiResult = result.yakuResults.find { it.yaku == YakuType.Toitoi }
