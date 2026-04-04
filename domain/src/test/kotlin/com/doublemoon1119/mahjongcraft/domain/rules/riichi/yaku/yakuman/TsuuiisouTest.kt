@@ -186,6 +186,9 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
 
     /**
      * 測試字一色 - 含副露透過 RiichiHandValueCalculator 整合測試。
+     *
+     * 此手牌同時滿足字一色 (Tsuuiisou) 和大四喜 (Daisuushi) 的條件，
+     * 因此總番數為 -3（三倍役滿）。
      */
     @Test
     fun `test tsuuiisou with fuuro via calculator`() {
@@ -231,8 +234,9 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
-        assertEquals(-1, result.totalHan, "Total han should be -1")
-        assertEquals(1, result.yakuResults.size, "Should have 1 yaku result")
+        assertEquals(-3, result.totalHan, "Total han should be -3")
+        assertEquals(2, result.yakuResults.size, "Should have 2 yaku results")
         assertEquals(YakuType.Tsuuiisou, result.yakuResults[0].yaku, "Yaku should be Tsuuiisou")
+        assertEquals(YakuType.Daisuushii, result.yakuResults[1].yaku, "Yaku should be Daisuushi")
     }
 }
