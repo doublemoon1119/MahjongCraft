@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.*
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateChurenPoto
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateKokushiMusou
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateRyuuuiisou
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateSangaen
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateSuushii
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateSukantsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateSuuankou
@@ -64,22 +65,20 @@ class RiichiHandValueCalculator {
             )
 
         // 2. 先計算役滿
-        val yakumanResults = mutableListOf<YakuResult>()
-        calculateYakuman(context, handStructure, yakumanResults)
+        val yakuResults = mutableListOf<YakuResult>()
+        calculateYakuman(context, handStructure, yakuResults)
 
-        // 若有役滿，則只計算役滿（役滿疊加）
-        if (yakumanResults.isNotEmpty()) {
-            val totalHan = calculateTotalHan(yakumanResults)
+        // 若有任何役滿，則只計算役滿（役滿疊加）
+        if (yakuResults.any { it.isYakuman }) {
+            val totalHan = calculateTotalHan(yakuResults)
             return HandYakuResult(
-                yakuResults = yakumanResults,
+                yakuResults = yakuResults,
                 totalHan = totalHan,
                 isCompleteHand = true
             )
         }
 
         // 3. 無役滿時，計算一般役
-        val yakuResults = mutableListOf<YakuResult>()
-
         // 計算寶牌
         val doraResult = calculateDora(
             hand = context.hand,
@@ -314,6 +313,8 @@ class RiichiHandValueCalculator {
 
     /**
      * 計算役滿。
+     *
+     * 可能會含有小三元 (非役滿)
      */
     private fun calculateYakuman(
         context: RiichiYakuContext,
@@ -361,6 +362,11 @@ class RiichiHandValueCalculator {
 
         // 計算四喜
         calculateSuushii(
+            handStructure = handStructure
+        )?.let { results.add(it) }
+
+        // 計算三元
+        calculateSangaen(
             handStructure = handStructure
         )?.let { results.add(it) }
     }
