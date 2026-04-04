@@ -61,6 +61,9 @@ enum class YakuType {
     /** 清一色 (Chinitsu) - 5 翻（副露）/ 6 翻（門前清） */
     Chinitsu,
 
+    /** 小三元 (Shousangen) - 2 翻 */
+    Shousangen,
+
     // ===== 特殊胡牌型 =====
     /** 七對子 (Chiitoitsu) - 2 翻 */
     Chiitoitsu,
