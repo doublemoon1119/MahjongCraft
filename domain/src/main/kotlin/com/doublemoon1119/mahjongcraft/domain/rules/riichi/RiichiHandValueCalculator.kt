@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.*
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateChurenPoto
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateKokushiMusou
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateRyuuuiisou
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateSukantsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateSuuankou
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.calculateTsuuiisou
 import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
@@ -350,6 +351,11 @@ class RiichiHandValueCalculator {
             winningTile = context.winningTile,
             isMenzen = context.isMenzen,
             isTsumo = context.isTsumo
+        )?.let { results.add(it) }
+
+        // 計算四杠子
+        calculateSukantsu(
+            handStructure = handStructure
         )?.let { results.add(it) }
     }
 
