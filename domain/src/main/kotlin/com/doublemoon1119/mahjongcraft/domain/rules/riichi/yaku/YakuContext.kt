@@ -19,7 +19,6 @@ import com.doublemoon1119.mahjongcraft.domain.table.Wind
  * @property allowOpenTanyao 是否允許食斷（斷么九鳴牌有效）。
  * @property doraIndicators 寶牌指示牌列表。
  * @property uraDoraIndicators 裏寶牌指示牌列表（立直時）。
- * @property revealedExposedKans 揭示的明槓列表（用於槓槓檢測）。
  * @property roundWind 圈風。
  * @property seatWind 自風。
  * @property isLastDraw 是否為海底撈月。
@@ -39,7 +38,6 @@ data class RiichiYakuContext(
     val allowOpenTanyao: Boolean = true,
     val doraIndicators: List<Tile> = emptyList(),
     val uraDoraIndicators: List<Tile> = emptyList(),
-    val revealedExposedKans: List<Tile> = emptyList(),
     val roundWind: Wind = Wind.EAST,
     val seatWind: Wind = Wind.EAST,
     val isLastDraw: Boolean = false,
