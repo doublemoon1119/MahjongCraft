@@ -66,7 +66,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
         val context = createContext(hand, winningTile, isTsumo = true, isRiichi = true, isDoubleRiichi = true)
         val result = calculator.calculate(context)
 
-        val riichiResult = result.yakuResults.find { it.yaku == YakuType.Riichi }
+        val riichiResult = result.yakuResults.find { it.yaku == YakuType.DoubleRiichi }
         assertEquals(2, riichiResult?.han, "Double Riichi should be 2 han")
     }
 

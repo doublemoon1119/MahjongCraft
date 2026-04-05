@@ -273,13 +273,17 @@ class RiichiHandValueCalculator {
      */
     private fun calculateSpecialYaku(context: RiichiYakuContext, results: MutableList<YakuResult>) {
         // 立直
-        if (context.isRiichi) {
-            val riichiHan = if (context.isDoubleRiichi) 2 else 1
-            results.add(YakuResult.han(YakuType.Riichi, riichiHan))
+        if (context.isMenzen && context.isRiichi) {
+            results.add(YakuResult.han(YakuType.Riichi, 1))
+        }
+
+        // 雙立直
+        if (context.isMenzen && context.isDoubleRiichi) {
+            results.add(YakuResult.han(YakuType.DoubleRiichi, 2))
         }
 
         // 一發
-        if (context.isIppatsu) {
+        if (context.isMenzen && context.isIppatsu) {
             results.add(YakuResult.han(YakuType.Ippatsu, 1))
         }
 

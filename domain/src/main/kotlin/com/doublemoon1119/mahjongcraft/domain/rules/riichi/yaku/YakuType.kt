@@ -23,6 +23,8 @@ enum class YakuType {
     Iipeikou,
     /** 立直 (Riichi) - 1 翻 */
     Riichi,
+    /** 雙立直 (Riichi) - 2 翻 */
+    DoubleRiichi,
     /** 一發 (Ippatsu) - 1 翻 */
     Ippatsu,
     /** 嶺上花 (Rinshan Kaihou) - 1 翻 */
