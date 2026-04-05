@@ -377,6 +377,18 @@ class RiichiHandValueCalculator {
             hand = context.hand,
             winningTile = context.winningTile
         )?.let { results.add(it) }
+
+        // 計算天和與地和
+        if (context.isFirstTurn && context.isTsumo) {
+            // 天和：親（莊家）在第一巡自摸
+            if (context.seatWind == context.roundWind) {
+                results.add(YakuResult.yakuman(YakuType.Tenhou))
+            }
+            // 地和：子在第一巡自摸
+            else {
+                results.add(YakuResult.yakuman(YakuType.Chiihou))
+            }
+        }
     }
 
     /**

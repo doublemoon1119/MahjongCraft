@@ -99,6 +99,10 @@ enum class YakuType {
     Daisangen,
     /** 清老頭 (Chinroutou) - 役滿 */
     Chinroutou,
+    /** 天和 (Tenhou) - 役滿 */
+    Tenhou,
+    /** 地和 (Chiihou) - 役滿 */
+    Chiihou,
 
     // ===== 雙倍役滿 =====
     /** 國士無雙十三面 (Kokushi Musou 13-men) - 雙倍役滿 */

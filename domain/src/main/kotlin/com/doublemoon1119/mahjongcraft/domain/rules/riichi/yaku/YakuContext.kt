@@ -26,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.domain.table.Wind
  * @property isLastDiscard 是否為河底撈魚。
  * @property isRobbingKan 是否為搶槓。
  * @property isRinshanKaihou 是否為嶺上花。
+ * @property isFirstTurn 是否為第一巡。用於天和、地和的判定。
  */
 data class RiichiYakuContext(
     val hand: Hand,
@@ -44,5 +45,6 @@ data class RiichiYakuContext(
     val isLastDraw: Boolean = false,
     val isLastDiscard: Boolean = false,
     val isRobbingKan: Boolean = false,
-    val isRinshanKaihou: Boolean = false
+    val isRinshanKaihou: Boolean = false,
+    val isFirstTurn: Boolean = false
 )

@@ -41,7 +41,8 @@ abstract class RiichiHandValueCalculatorTestBase {
         isLastDraw: Boolean = false,
         isLastDiscard: Boolean = false,
         isRobbingKan: Boolean = false,
-        isRinshanKaihou: Boolean = false
+        isRinshanKaihou: Boolean = false,
+        isFirstTurn: Boolean = false
     ): RiichiYakuContext {
         return RiichiYakuContext(
             hand = hand,
@@ -60,7 +61,8 @@ abstract class RiichiHandValueCalculatorTestBase {
             isLastDraw = isLastDraw,
             isLastDiscard = isLastDiscard,
             isRobbingKan = isRobbingKan,
-            isRinshanKaihou = isRinshanKaihou
+            isRinshanKaihou = isRinshanKaihou,
+            isFirstTurn = isFirstTurn
         )
     }
 }
