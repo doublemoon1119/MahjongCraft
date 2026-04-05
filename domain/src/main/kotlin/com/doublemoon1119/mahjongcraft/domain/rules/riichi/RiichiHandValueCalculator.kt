@@ -367,6 +367,12 @@ class RiichiHandValueCalculator {
         calculateSangaen(
             handStructure = handStructure
         )?.let { results.add(it) }
+
+        // 計算清老頭
+        calculateChinroutou(
+            hand = context.hand,
+            winningTile = context.winningTile
+        )?.let { results.add(it) }
     }
 
     /**

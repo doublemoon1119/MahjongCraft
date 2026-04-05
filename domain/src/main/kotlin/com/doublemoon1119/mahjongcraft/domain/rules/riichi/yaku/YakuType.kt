@@ -33,6 +33,8 @@ enum class YakuType {
     Houtei,
     /** 搶槓 (Chankan) - 1 翻 */
     Chankan,
+    /** 門前清自摸 (Menzentsumo) - 1 翻 */
+    Menzentsumo,
 
     /** 對對胡 (Toitoi) - 2 翻 */
     Toitoi,
