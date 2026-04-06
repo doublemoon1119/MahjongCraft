@@ -21,7 +21,10 @@ import kotlin.test.assertTrue
  */
 class RiichiLegalActionValidatorTest {
 
-    private val validator = RiichiLegalActionValidator(RiichiShantenCalculator())
+    private val validator = RiichiLegalActionValidator(
+        shantenCalculator = RiichiShantenCalculator(),
+        handValueCalculator = RiichiHandValueCalculator()
+    )
 
     /**
      * 輔助函式，用於從 Tile 列表快速建立一個 Hand 物件。
@@ -454,5 +457,164 @@ class RiichiLegalActionValidatorTest {
 
         // 驗證
         assertFalse(actions.any { it is GameAction.Ron })
+    }
+
+    /**
+     * 測試最低胡牌番數限制 - 番數不足無法自摸。
+     *
+     * 當 minimumWinConstraint = 2 時，手牌番數為 1 則不可自摸。
+     */
+    @Test
+    fun `test tsumo not allowed when han is insufficient`() {
+        // 準備：手牌為 1 番 (門前清自摸) 的牌型
+        val playerHand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+                Tile.Numeric(Tile.Suit.Dot, 6),
+                Tile.Numeric(Tile.Suit.Bamboo, 2),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Honor.West,
+            )
+        )
+        val player = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "TestPlayer",
+            hand = playerHand,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile()
+        )
+        val tableState = TableState(
+            players = listOf(player),
+            tileWall = TileWall(mutableListOf()),
+            config = FakeMahjongRuleConfig(minimumWinConstraint = 2)
+        )
+
+        // 摸到胡牌張
+        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Honor.West)
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            source = RelativeDirection.Self,
+            incomingTile = incomingTile
+        )
+
+        // 驗證：不可自摸（番數不足）
+        assertFalse(actions.any { it is GameAction.Tsumo })
+    }
+
+    /**
+     * 測試最低胡牌番數限制 - 番數足夠可以自摸。
+     *
+     * 當 minimumWinConstraint = 1 時，使用役滿牌型確保通過。
+     */
+    @Test
+    fun `test tsumo allowed when han is sufficient`() {
+        val playerHand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9)
+            )
+        )
+        val player = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "TestPlayer",
+            hand = playerHand,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile()
+        )
+        val tableState = TableState(
+            players = listOf(player),
+            tileWall = TileWall(mutableListOf()),
+            config = FakeMahjongRuleConfig(),
+            prevalentWind = Wind.EAST
+        )
+
+        // 摸到胡牌張
+        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            source = RelativeDirection.Self,
+            incomingTile = incomingTile
+        )
+
+        // 驗證：可以自摸（役滿）
+        assertTrue(actions.any { it is GameAction.Tsumo })
+    }
+
+    /**
+     * 測試最低胡牌番數限制 - 役滿必定可以胡牌。
+     *
+     * 當 minimumWinConstraint = 13 時，役滿仍可自摸。
+     */
+    @Test
+    fun `test yakuman always allowed regardless of minimum constraint`() {
+        val playerHand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9)
+            )
+        )
+        val player = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "TestPlayer",
+            hand = playerHand,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile()
+        )
+        val tableState = TableState(
+            players = listOf(player),
+            tileWall = TileWall(mutableListOf()),
+            config = FakeMahjongRuleConfig(),
+            prevalentWind = Wind.EAST
+        )
+
+        // 摸到胡牌張
+        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            source = RelativeDirection.Self,
+            incomingTile = incomingTile
+        )
+
+        // 驗證：可以自摸（役滿不受最低番數限制）
+        assertTrue(actions.any { it is GameAction.Tsumo })
     }
 }

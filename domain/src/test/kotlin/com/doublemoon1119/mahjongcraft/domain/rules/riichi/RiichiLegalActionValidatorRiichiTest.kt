@@ -21,7 +21,10 @@ import kotlin.test.assertTrue
  */
 class RiichiLegalActionValidatorRiichiTest {
 
-    private val validator = RiichiLegalActionValidator(RiichiShantenCalculator())
+    private val validator = RiichiLegalActionValidator(
+        shantenCalculator = RiichiShantenCalculator(),
+        handValueCalculator = RiichiHandValueCalculator()
+    )
 
     /**
      * 輔助函式，用於從 Tile 列表快速建立一個 Hand 物件。
@@ -234,5 +237,125 @@ class RiichiLegalActionValidatorRiichiTest {
 
         // 驗證
         assertFalse(actions.any { it is GameAction.Riichi })
+    }
+
+    /**
+     * 測試立直後暗槓 - 牌型改變則不可暗槓。
+     *
+     * 立直後暗槓，必須暗槓前後的牌型相同才能暗槓。
+     */
+    @Test
+    fun `test closed kan not allowed after riichi when tenpai changes`() {
+        // 手牌： 111 餅 + 23 餅 + 444 餅 + 222 條 + 56 萬 (聽牌中)
+        // 聽牌： 兩面聽 4 萬、7 萬
+        // 摸到： 1 餅
+        val playerHand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Bamboo, 2),
+                Tile.Numeric(Tile.Suit.Bamboo, 2),
+                Tile.Numeric(Tile.Suit.Bamboo, 2),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6)
+            )
+        )
+        
+        val player = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "TestPlayer",
+            hand = playerHand,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile(),
+            playerRuleState = RiichiPlayerState(isRiichiDeclared = true)
+        )
+        
+        val tableState = TableState(
+            players = listOf(player),
+            tileWall = TileWall(mutableListOf()),
+            config = FakeMahjongRuleConfig()
+        )
+
+        // 摸到 1 餅（暗槓後改變聽牌）
+        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            source = RelativeDirection.Self,
+            incomingTile = incomingTile
+        )
+
+        // 驗證：暗槓 1 餅會改變牌型，不可暗槓
+        val closedKanActions = actions.filterIsInstance<GameAction.Kan>()
+        val hasClosedKan = closedKanActions.any { it.type == GameAction.KanType.CLOSED_KAN }
+        assertFalse(hasClosedKan)
+    }
+
+    /**
+     * 測試立直後暗槓 - 聽牌不變則可暗槓。
+     *
+     * 立直後暗槓，若暗槓前後的聽牌列表完全相同才能暗槓。
+     */
+    @Test
+    fun `test closed kan allowed after riichi when tenpai unchanged`() {
+        // 手牌： 111 萬 + 234 餅 + 567 索 + 東東 + 89 萬
+        // 聽牌： 7 萬
+        // 摸到： 1 萬
+        val playerHand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Bamboo, 5),
+                Tile.Numeric(Tile.Suit.Bamboo, 6),
+                Tile.Numeric(Tile.Suit.Bamboo, 7),
+                Tile.Honor.East,
+                Tile.Honor.East,
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9)
+            )
+        )
+        
+        val player = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "TestPlayer",
+            hand = playerHand,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile(),
+            playerRuleState = RiichiPlayerState(isRiichiDeclared = true)
+        )
+        
+        val tableState = TableState(
+            players = listOf(player),
+            tileWall = TileWall(mutableListOf()),
+            config = FakeMahjongRuleConfig()
+        )
+
+        // 摸到 1 萬（暗槓後聽牌不變，仍只聽 7 萬）
+        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            source = RelativeDirection.Self,
+            incomingTile = incomingTile
+        )
+
+        // 驗證：暗槓 1 萬不影響聽牌（仍只聽 7 萬），可暗槓
+        val closedKanActions = actions.filterIsInstance<GameAction.Kan>()
+        val hasClosedKan = closedKanActions.any { it.type == GameAction.KanType.CLOSED_KAN }
+        assertTrue(hasClosedKan)
     }
 }

@@ -22,7 +22,10 @@ import kotlin.test.assertTrue
  */
 class RiichiLegalActionValidatorFuritenTest {
 
-    private val validator = RiichiLegalActionValidator(RiichiShantenCalculator())
+    private val validator = RiichiLegalActionValidator(
+        shantenCalculator = RiichiShantenCalculator(),
+        handValueCalculator = RiichiHandValueCalculator()
+    )
 
     /**
      * 輔助函式，用於從 Tile 列表快速建立一個 Hand 物件。

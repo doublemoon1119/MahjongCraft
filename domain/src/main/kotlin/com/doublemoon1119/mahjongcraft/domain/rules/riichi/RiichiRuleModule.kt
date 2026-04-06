@@ -14,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
  *
  * 負責串接日本麻將特有的組件，包含 [RiichiWallFactory] 與 [RiichiDiscardPile]。
  *
- * 每一個 [create] 方法都會根據傳入的 [config] 返回新的實例，
+ * 每一個 `create` 方法都會根據傳入的 `config` 返回新的實例，
  * 以確保每個麻將桌可以擁有獨立的組件，實現規則配置的獨立性。
  */
 class RiichiRuleModule : MahjongRuleModule<RiichiRuleConfig> {
@@ -62,7 +62,13 @@ class RiichiRuleModule : MahjongRuleModule<RiichiRuleConfig> {
      */
     override fun createLegalActionValidator(config: RiichiRuleConfig): LegalActionValidator {
         val shantenCalculator = createShantenCalculator(config)
-        return RiichiLegalActionValidator(shantenCalculator)
+
+        @Suppress("UNCHECKED_CAST")
+        val handValueCalculator = createHandValueCalculator(config) as HandValueCalculator<RiichiYakuContext, *>
+        return RiichiLegalActionValidator(
+            shantenCalculator = shantenCalculator,
+            handValueCalculator = handValueCalculator,
+        )
     }
 
     /**
