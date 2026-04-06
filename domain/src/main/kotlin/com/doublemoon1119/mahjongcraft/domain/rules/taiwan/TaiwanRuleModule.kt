@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
+import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
@@ -10,6 +11,9 @@ import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
  * 台灣麻將規則模組實作。
  *
  * 負責串接台灣麻將特有的組件，包含 [TaiwanWallFactory] 與 [TaiwanDiscardPile]。
+ *
+ * 每一個 [create] 方法都會根據傳入的 [config] 返回新的實例，
+ * 以確保每個麻將桌可以擁有獨立的組件，實現規則配置的獨立性。
  */
 class TaiwanRuleModule : MahjongRuleModule<TaiwanRuleConfig> {
 
@@ -56,5 +60,16 @@ class TaiwanRuleModule : MahjongRuleModule<TaiwanRuleConfig> {
      */
     override fun createLegalActionValidator(config: TaiwanRuleConfig): LegalActionValidator {
         return TaiwanLegalActionValidator()
+    }
+
+    /**
+     * 建立台灣麻將的手牌役種計算機。
+     *
+     * @param config 台灣麻將規則配置。
+     * @return [HandValueCalculator] 實體。
+     * @throws NotImplementedError 目前尚未實作 TaiwanHandValueCalculator。
+     */
+    override fun createHandValueCalculator(config: TaiwanRuleConfig): HandValueCalculator<*, *> {
+        TODO("TaiwanHandValueCalculator is not yet implemented")
     }
 }

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku
 
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueContext
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
 
 /**
@@ -28,21 +29,21 @@ import com.doublemoon1119.mahjongcraft.domain.table.Wind
  * @property isFirstTurn 是否為第一巡。用於天和、地和的判定。
  */
 data class RiichiYakuContext(
-    val hand: Hand,
-    val winningTile: Tile,
-    val isTsumo: Boolean,
+    override val hand: Hand,
+    override val winningTile: Tile,
+    override val isTsumo: Boolean,
+    override val isMenzen: Boolean = true,
+    override val roundWind: Wind = Wind.EAST,
+    override val seatWind: Wind = Wind.EAST,
     val isRiichi: Boolean = false,
     val isIppatsu: Boolean = false,
     val isDoubleRiichi: Boolean = false,
-    val isMenzen: Boolean = true,
     val allowOpenTanyao: Boolean = true,
     val doraIndicators: List<Tile> = emptyList(),
     val uraDoraIndicators: List<Tile> = emptyList(),
-    val roundWind: Wind = Wind.EAST,
-    val seatWind: Wind = Wind.EAST,
     val isLastDraw: Boolean = false,
     val isLastDiscard: Boolean = false,
     val isRobbingKan: Boolean = false,
     val isRinshanKaihou: Boolean = false,
     val isFirstTurn: Boolean = false
-)
+) : HandValueContext

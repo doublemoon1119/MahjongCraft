@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku
 
+import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueResult
+
 /**
  * 役種計算結果。
  *
@@ -39,4 +41,8 @@ data class HandYakuResult(
     val totalHan: Int,
     val isYakuman: Boolean = totalHan < 0,
     val isCompleteHand: Boolean = true
-)
+) : HandValueResult {
+    override val totalValue: Int get() = totalHan
+
+    override val isSpecial: Boolean get() = isYakuman
+}

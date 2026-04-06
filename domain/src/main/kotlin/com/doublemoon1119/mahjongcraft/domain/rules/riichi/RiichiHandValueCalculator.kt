@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
+import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueCalculator
+import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueContext
+import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Fuuro
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Mentsu
@@ -20,15 +23,20 @@ import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
  * 日本麻將手牌番數計算機。
  *
  * 負責計算手牌的全部番數，使用 [RiichiYakuContext] 提供計算所需的上下文資訊。
+ *
+ * @property useLocalYaku 是否啟用古役（Local Yaku）。TODO: 回頭實作古役邏輯。
  */
-class RiichiHandValueCalculator {
+class RiichiHandValueCalculator(
+    private val useLocalYaku: Boolean = false
+) : HandValueCalculator<RiichiYakuContext, HandYakuResult> {
+
     /**
-     * 計算手牌的總番數。
+     * 計算手牌的役種與價值。
      *
-     * @param context 役種計算所需的上下文資訊。
-     * @return 包含所有役種結果的 [HandYakuResult]。
+     * @param context 價值計算所需的上下文資訊。
+     * @return 役種計算結果，包含役種列表與總番數。
      */
-    fun calculate(context: RiichiYakuContext): HandYakuResult {
+    override fun calculate(context: RiichiYakuContext): HandYakuResult {
         // 1. 嘗試分解手牌（用於需要手牌結構的役種）
         val allTiles = context.hand.standingTiles.map { it.tile.withoutRed } + context.winningTile.withoutRed
         val fuuro = context.hand.exposedMelds.map { meld ->
