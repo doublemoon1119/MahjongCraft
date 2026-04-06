@@ -75,17 +75,17 @@ class RiichiShantenCalculator : ShantenCalculator {
 
         // 檢查是否已胡牌（向聽數 <= 0 且標準型已完成）
         if (minShanten <= 0 && isStandardCompleteHand(counts, exposedMeldsCount)) {
-            return ShantenResult.Complete()
+            return ShantenResult.Complete
         }
 
         // 檢查是否已胡牌（七對子）
         if (exposedMeldsCount == 0 && calculateSevenPairsShanten(counts) == -1) {
-            return ShantenResult.Complete()
+            return ShantenResult.Complete
         }
 
         // 檢查是否已胡牌（國士無雙）
         if (exposedMeldsCount == 0 && calculateKokushiShanten(counts) == -1) {
-            return ShantenResult.Complete()
+            return ShantenResult.Complete
         }
 
         // 檢查是否聽牌

@@ -14,13 +14,8 @@ sealed class ShantenResult {
 
     /**
      * 手牌已完成（可胡牌）。
-     *
-     * @property han 番數。若為 null 表示尚未計算番數。
-     *               TODO: 未來可擴展為計算實際番數，用於判斷是否滿足起胡番數限制。
      */
-    data class Complete(
-        val han: Int? = null
-    ) : ShantenResult()
+    data object Complete : ShantenResult()
 
     /**
      * 手牌已聽牌（聽牌中）。

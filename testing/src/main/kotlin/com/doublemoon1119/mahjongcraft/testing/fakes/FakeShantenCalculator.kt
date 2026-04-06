@@ -19,7 +19,7 @@ class FakeShantenCalculator(
 ) : ShantenCalculator {
     override fun calculate(hand: Hand): ShantenResult {
         return when {
-            isComplete -> ShantenResult.Complete()
+            isComplete -> ShantenResult.Complete
             shantenToReturn == 0 -> ShantenResult.Tenpai(winningTiles)
             else -> ShantenResult.NotTenpai(shantenToReturn)
         }

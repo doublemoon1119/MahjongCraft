@@ -63,7 +63,7 @@ class TaiwanShantenCalculator : ShantenCalculator {
 
         // 檢查是否已胡牌（向聽數 <= 0 且標準型已完成）
         if (minShanten <= 0 && isStandardCompleteHand(counts, exposedMeldsCount)) {
-            return ShantenResult.Complete()
+            return ShantenResult.Complete
         }
 
         // 檢查是否聽牌
