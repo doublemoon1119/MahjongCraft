@@ -21,7 +21,6 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
      * 有一個役滿 (四暗刻)，totalHan 應為 -1。
      */
     @Test
-    @Ignore("TODO: 實作役滿檢測")
     fun `test yakuman calculation single`() {
         val hand = createHand(
             listOf(
@@ -55,7 +54,6 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
      * 有一個雙倍役滿 (四暗刻單騎)，totalHan 應為 -2。
      */
     @Test
-    @Ignore("TODO: 實作役滿檢測")
     fun `test double yakuman calculation`() {
         val hand = createHand(
             listOf(
@@ -89,7 +87,6 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
      * 有兩個一般役滿 (字一色 + 大三元)，totalHan 應為 -2。
      */
     @Test
-    @Ignore("TODO: 實作役滿檢測")
     fun `test two yakuman calculation`() {
         val hand = createHand(
             listOf(
@@ -104,14 +101,13 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.Green,
                 Tile.Honor.East,
                 Tile.Honor.East,
-                Tile.Honor.East,
                 Tile.Honor.West,
                 Tile.Honor.West
             )
         )
         val winningTile = Tile.Honor.West
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = createContext(hand, winningTile, isTsumo = false)
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
@@ -124,7 +120,6 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
      * 有一個雙倍役滿 (大四喜) 和一個一般役滿 (字一色)，totalHan 應為 -3。
      */
     @Test
-    @Ignore("TODO: 實作役滿檢測")
     fun `test double yakuman plus yakuman calculation`() {
         val hand = createHand(
             listOf(
