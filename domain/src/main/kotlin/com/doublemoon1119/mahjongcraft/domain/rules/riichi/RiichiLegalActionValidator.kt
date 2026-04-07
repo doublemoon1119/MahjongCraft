@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.HandYakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
@@ -23,7 +24,7 @@ import kotlin.math.abs
  */
 class RiichiLegalActionValidator(
     private val shantenCalculator: ShantenCalculator,
-    private val handValueCalculator: HandValueCalculator<RiichiYakuContext, *>
+    private val handValueCalculator: HandValueCalculator<RiichiYakuContext, HandYakuResult>
 ) : LegalActionValidator {
 
     /**

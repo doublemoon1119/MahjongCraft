@@ -63,8 +63,7 @@ class RiichiRuleModule : MahjongRuleModule<RiichiRuleConfig> {
     override fun createLegalActionValidator(config: RiichiRuleConfig): LegalActionValidator {
         val shantenCalculator = createShantenCalculator(config)
 
-        @Suppress("UNCHECKED_CAST")
-        val handValueCalculator = createHandValueCalculator(config) as HandValueCalculator<RiichiYakuContext, *>
+        val handValueCalculator = createHandValueCalculator(config)
         return RiichiLegalActionValidator(
             shantenCalculator = shantenCalculator,
             handValueCalculator = handValueCalculator,
