@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.HandYakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
-import com.doublemoon1119.mahjongcraft.domain.table.Wind
 import com.doublemoon1119.mahjongcraft.domain.util.isNumeric
 import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 import kotlin.math.abs
@@ -43,11 +42,10 @@ class RiichiLegalActionValidator(
         incomingTile: IdentifiedTile?
     ): List<GameAction> {
         val legalActions = mutableListOf<GameAction>()
-        val minimumWinConstraint = tableState.config.minimumWinConstraint
+        val hand = player.hand
+        val isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.CLOSED_KAN }
         val riichiState = player.playerRuleState as? RiichiPlayerState
-        val isRiichiDeclared = riichiState?.isRiichiDeclared == true
-        val roundWind = tableState.prevalentWind
-        val seatWind = player.currentWind
+        val isRiichi = riichiState?.isRiichiDeclared == true
 
         // incomingTile == null 表示玩家正在打牌（準備捨牌）
         // 捨牌動作由 UI 層處理，讓玩家選擇要打的牌
@@ -55,7 +53,7 @@ class RiichiLegalActionValidator(
         if (incomingTile == null) {
             // 檢查是否可以立直 (Riichi)
             // 條件：向聽數為 0 且門前清（無副露）且未曾立直且點數 >= 1000
-            if (!isRiichiDeclared && player.hand.exposedMelds.isEmpty() && player.score >= 1000) {
+            if (!isRiichi && isMenzen && player.score >= 1000) {
                 val result = shantenCalculator.calculate(
                     Hand(
                         player.hand.standingTiles.toMutableList(),
@@ -84,13 +82,10 @@ class RiichiLegalActionValidator(
             val tsumoResult = shantenCalculator.calculate(tempHandTsumo)
             if (tsumoResult is ShantenResult.Complete) {
                 if (checkMinimumHan(
-                        minimumWinConstraint = minimumWinConstraint,
-                        hand = player.hand,
+                        tableState = tableState,
+                        player = player,
                         incomingTile = incomingTile,
-                        isTsumo = true,
-                        roundWind = roundWind,
-                        seatWind = seatWind,
-                        isRiichi = isRiichiDeclared
+                        isTsumo = true
                     )
                 ) {
                     legalActions.add(GameAction.Tsumo)
@@ -114,7 +109,7 @@ class RiichiLegalActionValidator(
                     player.hand.standingTiles.filter { it.tile.withoutRed == incomingBaseTile }.map { it.id }
 
                 // 若已宣告立直，檢查暗槓後聽牌是否不變
-                if (isRiichiDeclared) {
+                if (isRiichi) {
                     if (checkClosedKanAfterRiichi(player, incomingTile)) {
                         legalActions.add(GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, withTiles))
                     }
@@ -158,13 +153,10 @@ class RiichiLegalActionValidator(
 
                 if (!isFuriten) {
                     if (checkMinimumHan(
-                            minimumWinConstraint = minimumWinConstraint,
-                            hand = player.hand,
+                            tableState = tableState,
+                            player = player,
                             incomingTile = incomingTile,
-                            isTsumo = false,
-                            roundWind = roundWind,
-                            seatWind = seatWind,
-                            isRiichi = isRiichiDeclared
+                            isTsumo = false
                         )
                     ) {
                         legalActions.add(GameAction.Ron(incomingTile.id))
@@ -177,14 +169,14 @@ class RiichiLegalActionValidator(
             // 赤寶牌與普通牌視為同一張牌，故使用 withoutRed 比較
             // 過水碰：若玩家在當前巡迴中已放過此牌，則不可碰
             val ponCount = player.hand.standingTiles.count { it.tile.withoutRed == incomingBaseTile }
-            if (ponCount >= 2 && !isRiichiDeclared && incomingBaseTile !in player.passedTilesInRound) {
+            if (ponCount >= 2 && !isRiichi && incomingBaseTile !in player.passedTilesInRound) {
                 legalActions.add(GameAction.Pon(incomingTile.id))
             }
 
             // 3. 檢查是否可以吃 (Chi)
             // 立直後不能吃
             // 吃不受赤寶牌影響，但仍需使用 withoutRed 確保一致性
-            if (source == RelativeDirection.Left && incomingTile.tile is Tile.Numeric && !isRiichiDeclared) {
+            if (source == RelativeDirection.Left && incomingTile.tile is Tile.Numeric && !isRiichi) {
                 val iTile = incomingTile.tile
                 val handTiles = player.hand.standingTiles
 
@@ -226,7 +218,7 @@ class RiichiLegalActionValidator(
             // 立直後不能明槓
             // 赤寶牌與普通牌視為同一張牌，故使用 withoutRed 比較
             val openKanCount = player.hand.standingTiles.count { it.tile.withoutRed == incomingBaseTile }
-            if (openKanCount == 3 && !isRiichiDeclared) {
+            if (openKanCount == 3 && !isRiichi) {
                 val withTiles =
                     player.hand.standingTiles.filter { it.tile.withoutRed == incomingBaseTile }.map { it.id }
                 legalActions.add(GameAction.Kan(GameAction.KanType.OPEN_KAN, incomingTile.id, withTiles))
@@ -239,34 +231,36 @@ class RiichiLegalActionValidator(
     /**
      * 檢查手牌是否符合最低胡牌番數限制。
      *
-     * @param minimumWinConstraint 最低胡牌番數限制
-     * @param hand 玩家手牌（不包含 incomingTile）。
+     * @param tableState 當前的遊戲桌況。
+     * @param player 欲判斷合法動作的玩家。
      * @param incomingTile 進來的牌（胡牌的那張牌）。
      * @param isTsumo 是否為自摸。
-     * @param roundWind 場風。
-     * @param seatWind 自風。
-     * @param isRiichi 是否立直。
      * @return 是否符合最低番數限制。
      */
     private fun checkMinimumHan(
-        minimumWinConstraint: Int,
-        hand: Hand,
+        tableState: TableState,
+        player: MahjongPlayer,
         incomingTile: IdentifiedTile,
-        isTsumo: Boolean,
-        roundWind: Wind,
-        seatWind: Wind,
-        isRiichi: Boolean
+        isTsumo: Boolean
     ): Boolean {
+        val minimumWinConstraint = tableState.config.minimumWinConstraint
         if (minimumWinConstraint <= 0) {
             return true
         }
+
+        val roundWind = tableState.prevalentWind
+        val seatWind = player.currentWind
+        val hand = player.hand
+        val isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.CLOSED_KAN }
+        val riichiState = player.playerRuleState as? RiichiPlayerState
+        val isRiichi = riichiState?.isRiichiDeclared == true
 
         // TODO: 補齊 Context
         val context = RiichiYakuContext(
             hand = hand,
             winningTile = incomingTile.tile,
             isTsumo = isTsumo,
-            isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.CLOSED_KAN },
+            isMenzen = isMenzen,
             roundWind = roundWind,
             seatWind = seatWind,
             isRiichi = isRiichi
