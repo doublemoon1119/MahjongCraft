@@ -273,7 +273,9 @@ class RiichiLegalActionValidatorRiichiTest {
             hand = playerHand,
             initialSeat = Wind.EAST,
             discardPile = FakeDiscardPile(),
-            playerRuleState = RiichiPlayerState(isRiichiDeclared = true)
+            playerRuleState = RiichiPlayerState(
+                riichiTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9))
+            )
         )
         
         val tableState = TableState(
@@ -333,7 +335,9 @@ class RiichiLegalActionValidatorRiichiTest {
             hand = playerHand,
             initialSeat = Wind.EAST,
             discardPile = FakeDiscardPile(),
-            playerRuleState = RiichiPlayerState(isRiichiDeclared = true)
+            playerRuleState = RiichiPlayerState(
+                riichiTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9))
+            )
         )
         
         val tableState = TableState(

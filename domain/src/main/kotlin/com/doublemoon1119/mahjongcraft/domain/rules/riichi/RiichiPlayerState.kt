@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.domain.table.PlayerRuleState
@@ -10,11 +11,24 @@ import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
  *
  * 用於記錄玩家在遊戲過程中的立直相關狀態。
  *
- * @property isRiichiDeclared 玩家是否已宣告立直。
+ * @property riichiTile 玩家立直時打出的牌，若未立直則為 null。
+ * @property doubleRiichiTile 玩家雙立直時打出的牌，若未雙立直則為 null。
  */
 data class RiichiPlayerState(
-    var isRiichiDeclared: Boolean = false
+    var riichiTile: IdentifiedTile? = null,
+    var doubleRiichiTile: IdentifiedTile? = null
 ) : PlayerRuleState {
+
+    /**
+     * 玩家是否已宣告 立直/雙立直。
+     */
+    val isRiichi: Boolean get() = riichiTile != null || doubleRiichiTile != null
+
+    /**
+     * 玩家是否已宣告雙立直。
+     */
+    val isDoubleRiichi: Boolean get() = doubleRiichiTile != null
+
     /**
      * 取得玩家當前振聽的牌列表。
      *

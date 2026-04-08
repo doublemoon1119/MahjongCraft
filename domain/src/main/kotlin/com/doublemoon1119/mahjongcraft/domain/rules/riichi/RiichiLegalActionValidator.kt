@@ -45,7 +45,7 @@ class RiichiLegalActionValidator(
         val hand = player.hand
         val isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.CLOSED_KAN }
         val riichiState = player.playerRuleState as? RiichiPlayerState
-        val isRiichi = riichiState?.isRiichiDeclared == true
+        val isRiichi = riichiState?.isRiichi == true
 
         // incomingTile == null 表示玩家正在打牌（準備捨牌）
         // 捨牌動作由 UI 層處理，讓玩家選擇要打的牌
@@ -253,7 +253,8 @@ class RiichiLegalActionValidator(
         val hand = player.hand
         val isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.CLOSED_KAN }
         val riichiState = player.playerRuleState as? RiichiPlayerState
-        val isRiichi = riichiState?.isRiichiDeclared == true
+        val isRiichi = riichiState?.isRiichi == true
+        val isDoubleRiichi = riichiState?.isDoubleRiichi == true
 
         // TODO: 補齊 Context
         val context = RiichiYakuContext(
@@ -263,7 +264,8 @@ class RiichiLegalActionValidator(
             isMenzen = isMenzen,
             roundWind = roundWind,
             seatWind = seatWind,
-            isRiichi = isRiichi
+            isRiichi = isRiichi,
+            isDoubleRiichi = isDoubleRiichi
         )
 
         val result = handValueCalculator.calculate(context)
