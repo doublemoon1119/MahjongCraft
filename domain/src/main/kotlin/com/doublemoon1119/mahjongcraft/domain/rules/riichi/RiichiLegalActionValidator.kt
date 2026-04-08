@@ -89,7 +89,8 @@ class RiichiLegalActionValidator(
                         incomingTile = incomingTile,
                         isTsumo = true,
                         roundWind = roundWind,
-                        seatWind = seatWind
+                        seatWind = seatWind,
+                        isRiichi = isRiichiDeclared
                     )
                 ) {
                     legalActions.add(GameAction.Tsumo)
@@ -162,7 +163,8 @@ class RiichiLegalActionValidator(
                             incomingTile = incomingTile,
                             isTsumo = false,
                             roundWind = roundWind,
-                            seatWind = seatWind
+                            seatWind = seatWind,
+                            isRiichi = isRiichiDeclared
                         )
                     ) {
                         legalActions.add(GameAction.Ron(incomingTile.id))
@@ -241,6 +243,9 @@ class RiichiLegalActionValidator(
      * @param hand 玩家手牌（不包含 incomingTile）。
      * @param incomingTile 進來的牌（胡牌的那張牌）。
      * @param isTsumo 是否為自摸。
+     * @param roundWind 場風。
+     * @param seatWind 自風。
+     * @param isRiichi 是否立直。
      * @return 是否符合最低番數限制。
      */
     private fun checkMinimumHan(
@@ -249,7 +254,8 @@ class RiichiLegalActionValidator(
         incomingTile: IdentifiedTile,
         isTsumo: Boolean,
         roundWind: Wind,
-        seatWind: Wind
+        seatWind: Wind,
+        isRiichi: Boolean
     ): Boolean {
         if (minimumWinConstraint <= 0) {
             return true
@@ -262,7 +268,8 @@ class RiichiLegalActionValidator(
             isTsumo = isTsumo,
             isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.CLOSED_KAN },
             roundWind = roundWind,
-            seatWind = seatWind
+            seatWind = seatWind,
+            isRiichi = isRiichi
         )
 
         val result = handValueCalculator.calculate(context)

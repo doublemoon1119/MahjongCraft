@@ -2,8 +2,6 @@ package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueCalculator
-import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueContext
-import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Fuuro
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Mentsu
@@ -280,14 +278,13 @@ class RiichiHandValueCalculator(
      * 計算特殊役（立直、一發、嶺上花等）。
      */
     private fun calculateSpecialYaku(context: RiichiYakuContext, results: MutableList<YakuResult>) {
-        // 立直
-        if (context.isMenzen && context.isRiichi) {
-            results.add(YakuResult.han(YakuType.Riichi, 1))
-        }
-
-        // 雙立直
-        if (context.isMenzen && context.isDoubleRiichi) {
-            results.add(YakuResult.han(YakuType.DoubleRiichi, 2))
+        // 立直 和 雙立直
+        if (context.isMenzen) {
+            if (context.isDoubleRiichi) {  // 雙立直
+                results.add(YakuResult.han(YakuType.DoubleRiichi, 2))
+            } else if (context.isRiichi) {  // 立直
+                results.add(YakuResult.han(YakuType.Riichi, 1))
+            }
         }
 
         // 一發

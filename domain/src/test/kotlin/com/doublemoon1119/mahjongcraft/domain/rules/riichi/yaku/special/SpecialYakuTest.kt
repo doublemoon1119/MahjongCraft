@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 /**
  * 立直麻將手牌番數計算機之特殊役種測試。
@@ -66,8 +67,11 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
         val context = createContext(hand, winningTile, isTsumo = true, isRiichi = true, isDoubleRiichi = true)
         val result = calculator.calculate(context)
 
-        val riichiResult = result.yakuResults.find { it.yaku == YakuType.DoubleRiichi }
-        assertEquals(2, riichiResult?.han, "Double Riichi should be 2 han")
+        val riichiResult = result.yakuResults.find { it.yaku == YakuType.Riichi }
+        assertNull(riichiResult, "Should be double riichi, not riichi")
+
+        val doubleRiichiResult = result.yakuResults.find { it.yaku == YakuType.DoubleRiichi }
+        assertEquals(2, doubleRiichiResult?.han, "Double Riichi should be 2 han")
     }
 
     /**
