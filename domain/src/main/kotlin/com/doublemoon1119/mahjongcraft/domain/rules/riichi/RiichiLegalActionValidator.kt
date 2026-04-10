@@ -255,6 +255,7 @@ class RiichiLegalActionValidator(
         val riichiState = player.playerRuleState as? RiichiPlayerState
         val isRiichi = riichiState?.isRiichi == true
         val isDoubleRiichi = riichiState?.isDoubleRiichi == true
+        val isIppatsu = riichiState?.isIppatsu == true
 
         // TODO: 補齊 Context
         val context = RiichiYakuContext(
@@ -265,7 +266,8 @@ class RiichiLegalActionValidator(
             roundWind = roundWind,
             seatWind = seatWind,
             isRiichi = isRiichi,
-            isDoubleRiichi = isDoubleRiichi
+            isDoubleRiichi = isDoubleRiichi,
+            isIppatsu = isIppatsu
         )
 
         val result = handValueCalculator.calculate(context)

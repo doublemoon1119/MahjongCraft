@@ -13,10 +13,12 @@ import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
  *
  * @property riichiTile 玩家立直時打出的牌，若未立直則為 null。
  * @property doubleRiichiTile 玩家雙立直時打出的牌，若未雙立直則為 null。
+ * @property isIppatsu 玩家立直時為 true，摸下一張牌之後或者期間有其他人鳴牌就會設為 false
  */
 data class RiichiPlayerState(
     var riichiTile: IdentifiedTile? = null,
-    var doubleRiichiTile: IdentifiedTile? = null
+    var doubleRiichiTile: IdentifiedTile? = null,
+    var isIppatsu: Boolean = false
 ) : PlayerRuleState {
 
     /**
