@@ -225,6 +225,11 @@ class RiichiLegalActionValidator(
             }
         }
 
+        // 若有其他合法動作，允許玩家選擇放棄
+        if (legalActions.isNotEmpty()) {
+            legalActions.add(GameAction.Pass)
+        }
+
         return legalActions
     }
 
