@@ -71,6 +71,14 @@ sealed class GameAction {
     data object Pass : GameAction()
 
     /**
+     * 和局動作。
+     * 用於處理流局相關的動作（如日麻的九種九牌、四風連打）。
+     *
+     * @property reason 和局的原因。
+     */
+    data class ExhaustiveDraw(val reason: ExhaustiveDrawReason) : GameAction()
+
+    /**
      * 槓牌的種類。
      */
     enum class KanType {
