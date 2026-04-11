@@ -268,14 +268,10 @@ class RiichiLegalActionValidator(
             return true
         }
 
-        val roundWind = tableState.prevalentWind
-        val seatWind = player.currentWind
         val hand = player.hand
         val isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.CLOSED_KAN }
         val riichiState = player.playerRuleState as? RiichiPlayerState
-        val isRiichi = riichiState?.isRiichi == true
-        val isDoubleRiichi = riichiState?.isDoubleRiichi == true
-        val isIppatsu = riichiState?.isIppatsu == true
+        val config = tableState.config as? RiichiRuleConfig
 
         // TODO: 補齊 Context
         val context = RiichiYakuContext(
@@ -283,11 +279,15 @@ class RiichiLegalActionValidator(
             winningTile = incomingTile.tile,
             isTsumo = isTsumo,
             isMenzen = isMenzen,
-            roundWind = roundWind,
-            seatWind = seatWind,
-            isRiichi = isRiichi,
-            isDoubleRiichi = isDoubleRiichi,
-            isIppatsu = isIppatsu
+            roundWind = tableState.prevalentWind,
+            seatWind = player.currentWind,
+            isRiichi = riichiState?.isRiichi == true,
+            isDoubleRiichi = riichiState?.isDoubleRiichi == true,
+            isIppatsu = riichiState?.isIppatsu == true,
+            allowOpenTanyao = config?.allowOpenTanyao == true,
+            isFirstTurn = tableState.players.all { it.hand.exposedMelds.isEmpty() } &&  // 場上沒人鳴牌（包含暗槓）
+                    tableState.players.all { it.discardPile.entries.size <= 1 } &&  // 每個人打出的牌都不能超過 1 張
+                    player.discardPile.entries.isEmpty()  // 自己還沒打過牌
         )
 
         val result = handValueCalculator.calculate(context)

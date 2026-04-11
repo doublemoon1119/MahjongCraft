@@ -482,14 +482,21 @@ class RiichiLegalActionValidatorTest {
                 Tile.Numeric(Tile.Suit.Bamboo, 3),
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
                 Tile.Honor.West,
-            )
+            ),
         )
         val player = MahjongPlayer(
             id = UUID.randomUUID(),
             name = "TestPlayer",
             hand = playerHand,
             initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+            discardPile = FakeDiscardPile().apply {
+                discard(
+                    entry = FakeDiscardPile.FakeEntry(
+                        tile = IdentifiedTile(UUID.randomUUID(), Tile.Honor.East),
+                        isTaken = false
+                    )
+                )
+            }
         )
         val tableState = TableState(
             players = listOf(player),
