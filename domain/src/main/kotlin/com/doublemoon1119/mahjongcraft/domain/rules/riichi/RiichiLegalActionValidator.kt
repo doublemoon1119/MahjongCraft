@@ -9,7 +9,9 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.HandYakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
+import com.doublemoon1119.mahjongcraft.domain.util.isHonor
 import com.doublemoon1119.mahjongcraft.domain.util.isNumeric
+import com.doublemoon1119.mahjongcraft.domain.util.isTerminal
 import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 import kotlin.math.abs
 
@@ -119,6 +121,19 @@ class RiichiLegalActionValidator(
                 }
             }
 
+            // 4. 檢查是否可以宣告和局 (九種九牌)
+            val isFirstTurn = tableState.players.all { it.hand.exposedMelds.isEmpty() } &&  // 場上沒人鳴牌（包含暗槓）
+                    tableState.players.all { it.discardPile.entries.size <= 1 } &&  // 每個人打出的牌都不能超過 1 張
+                    player.discardPile.entries.isEmpty()  // 自己還沒打過牌
+            if (isFirstTurn) {
+                val isKyuushuKyuuhai = (player.hand.standingTiles + incomingTile)
+                    .filter { it.tile.isTerminal || it.tile.isHonor }
+                    .map { it.tile.withoutRed }
+                    .toSet().size >= 9
+                if (isKyuushuKyuuhai) {
+                    legalActions.add(GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai))
+                }
+            }
         } else {
             // 他家打牌
             // 1. 檢查是否可以榮和 (Ron)

@@ -617,4 +617,174 @@ class RiichiLegalActionValidatorTest {
         // 驗證：可以自摸（役滿不受最低番數限制）
         assertTrue(actions.any { it is GameAction.Tsumo })
     }
+
+    /**
+     * 測試可執行九種九牌和局動作之情況。
+     *
+     * 當滿足以下條件時，應可執行九種九牌和局：
+     * - 第一巡（場上無鳴牌、每人最多打1張牌、自己未打牌）
+     * - 持有的字牌或數牌總數達9種以上
+     */
+    @Test
+    fun `test can kyuushu kyuuhai`() {
+        // 準備：持有九種牌（東南西北發中白 + 1-9m = 16種取9種）
+        val playerHand = createHand(
+            listOf(
+                Tile.Honor.East,
+                Tile.Honor.South,
+                Tile.Honor.West,
+                Tile.Honor.North,
+                Tile.Honor.White,
+                Tile.Honor.Green,
+                Tile.Honor.Red,
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6)
+            )
+        )
+        val discardPile = FakeDiscardPile()
+        val player = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "TestPlayer",
+            initialSeat = Wind.EAST,
+            hand = playerHand,
+            discardPile = discardPile
+        )
+        // 建立其他玩家（每人只打1張以滿足第一巡條件）
+        val discardPile1 = FakeDiscardPile()
+        discardPile1.discard(
+            FakeDiscardPile.FakeEntry(
+                IdentifiedTile(
+                    UUID.randomUUID(),
+                    Tile.Numeric(Tile.Suit.Bamboo, 1)
+                )
+            )
+        )
+        val otherPlayer1 = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "Other1",
+            initialSeat = Wind.SOUTH,
+            hand = createHand(listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))),
+            discardPile = discardPile1
+        )
+        val discardPile2 = FakeDiscardPile()
+        discardPile2.discard(
+            FakeDiscardPile.FakeEntry(
+                IdentifiedTile(
+                    UUID.randomUUID(),
+                    Tile.Numeric(Tile.Suit.Bamboo, 2)
+                )
+            )
+        )
+        val otherPlayer2 = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "Other2",
+            initialSeat = Wind.WEST,
+            hand = createHand(listOf(Tile.Numeric(Tile.Suit.Bamboo, 2))),
+            discardPile = discardPile2
+        )
+        val discardPile3 = FakeDiscardPile()
+        discardPile3.discard(
+            FakeDiscardPile.FakeEntry(
+                IdentifiedTile(
+                    UUID.randomUUID(),
+                    Tile.Numeric(Tile.Suit.Bamboo, 3)
+                )
+            )
+        )
+        val otherPlayer3 = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "Other3",
+            initialSeat = Wind.NORTH,
+            hand = createHand(listOf(Tile.Numeric(Tile.Suit.Bamboo, 3))),
+            discardPile = discardPile3
+        )
+        val tableState = TableState(
+            players = listOf(player, otherPlayer1, otherPlayer2, otherPlayer3),
+            tileWall = TileWall(mutableListOf()),
+            config = FakeMahjongRuleConfig()
+        )
+        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9))
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            source = RelativeDirection.Self,
+            incomingTile = incomingTile
+        )
+
+        // 驗證：可執行九種九牌
+        assertTrue(actions.any { it is GameAction.ExhaustiveDraw })
+    }
+
+    /**
+     * 測試不符合九種九牌條件時不可執行和局動作之情況。
+     *
+     * 當持有的牌不足9種時，不可執行九種九牌和局。
+     */
+    @Test
+    fun `test cannot kyuushu kyuuhai with insufficient tile types`() {
+        // 準備：只持有5種牌
+        val playerHand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Dot, 4)
+            )
+        )
+        val player = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "TestPlayer",
+            initialSeat = Wind.EAST,
+            hand = playerHand,
+            discardPile = FakeDiscardPile()
+        )
+        val discardPile1 = FakeDiscardPile()
+        discardPile1.discard(
+            FakeDiscardPile.FakeEntry(
+                IdentifiedTile(
+                    UUID.randomUUID(),
+                    Tile.Numeric(Tile.Suit.Bamboo, 1)
+                )
+            )
+        )
+        val otherPlayer1 = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "Other1",
+            initialSeat = Wind.SOUTH,
+            hand = createHand(listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))),
+            discardPile = discardPile1
+        )
+        val tableState = TableState(
+            players = listOf(player, otherPlayer1),
+            tileWall = TileWall(mutableListOf()),
+            config = FakeMahjongRuleConfig()
+        )
+        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 5))
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            source = RelativeDirection.Self,
+            incomingTile = incomingTile
+        )
+
+        // 驗證：不可執行九種九牌
+        assertFalse(actions.any { it is GameAction.ExhaustiveDraw })
+    }
 }
