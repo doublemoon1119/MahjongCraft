@@ -202,7 +202,9 @@ class RiichiHandValueCalculator(
         calculatePinfu(
             handStructure = handStructure,
             winningTile = context.winningTile,
-            isMenzen = context.isMenzen
+            isMenzen = context.isMenzen,
+            roundWind = context.roundWind,
+            seatWind = context.seatWind
         )?.let { standardResults.add(it) }
 
         // 計算對對胡

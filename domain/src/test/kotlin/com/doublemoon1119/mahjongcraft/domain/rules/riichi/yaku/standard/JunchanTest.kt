@@ -24,7 +24,7 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test junchan menzen`() {
         // 手牌：111m (刻子), 111p (刻子), 111s (刻子), 789m (順子), 9s, 9s (餘牌)
-        // 所有面子和雀頭都包含么九牌，無字牌
+        // 所有面子和雀頭都包含老頭牌，無字牌
         // 門前清：3 翻
         val hand = createHand(
             listOf(
@@ -56,7 +56,7 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test junchan with fuuro`() {
         // 手牌：111m (刻子), 999p (刻子), 111s (刻子), 789m (順子), 9s, 9s (餘牌)
-        // 所有面子和雀頭都包含么九牌，無字牌
+        // 所有面子和雀頭都包含老頭牌，無字牌
         // 副露：2 翻
         val hand = createHand(
             listOf(

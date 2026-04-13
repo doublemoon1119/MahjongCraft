@@ -46,7 +46,7 @@ fun calculateHonroutou(
         }
     }
 
-    // 全部都是么九牌，是清老頭 (役滿)
+    // 全部都是老頭牌，是清老頭 (役滿)
     if (allTiles.all { it.isTerminal }) {
         return null
     }

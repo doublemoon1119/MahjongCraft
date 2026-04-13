@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.domain.util.isTerminal
  * - 門前清：3 翻
  * - 副露：2 翻
  *
- * 手牌的所有面子（順子、刻子、槓）和雀頭都必須包含么九牌（1、9 數牌）。
+ * 手牌的所有面子（順子、刻子、槓）和雀頭都必須包含老頭牌（1、9 數牌）。
  * 與混全帶么九不同，純全帶么九不能包含任何字牌。
  *
  * @param handStructure 手牌結構（由 [com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandDecomposer] 分割後的結果）。
@@ -29,10 +29,10 @@ fun calculateJunchan(
     // 收集所有面子（手牌 + 副露）
     val allMentsus = standard.mentsus + standard.fuuro.map { it.mentsu }
 
-    // 檢查每個面子是否包含么九牌（不能有字牌）
+    // 檢查每個面子是否包含老頭牌（不能有字牌）
     for (mentsu in allMentsus) {
         val tiles = mentsu.tiles
-        // 必須包含么九牌
+        // 必須包含老頭牌
         val hasTerminal = tiles.any { tile -> tile is Tile.Numeric && tile.isTerminal }
         // 不能有字牌
         val hasHonor = tiles.any { tile -> tile is Tile.Honor }
@@ -42,7 +42,7 @@ fun calculateJunchan(
         }
     }
 
-    // 檢查雀頭是否包含么九牌（不能有字牌）
+    // 檢查雀頭是否包含老頭牌（不能有字牌）
     val pairTiles = listOf(standard.pair.tile, standard.pair.tile)
     val pairHasTerminal = pairTiles.any { tile -> tile is Tile.Numeric && tile.isTerminal }
     val pairHasHonor = pairTiles.any { tile -> tile is Tile.Honor }

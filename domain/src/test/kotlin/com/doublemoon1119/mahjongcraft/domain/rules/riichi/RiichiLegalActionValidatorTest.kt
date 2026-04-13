@@ -629,12 +629,12 @@ class RiichiLegalActionValidatorTest {
      * 測試可執行九種九牌和局動作之情況。
      *
      * 當滿足以下條件時，應可執行九種九牌和局：
-     * - 第一巡（場上無鳴牌、每人最多打1張牌、自己未打牌）
-     * - 持有的字牌或數牌總數達9種以上
+     * - 第一巡（場上無鳴牌、每人最多打 1 張牌、自己未打牌）
+     * - 持有的么九牌總數達 9 種以上
      */
     @Test
     fun `test can kyuushu kyuuhai`() {
-        // 準備：持有九種牌（東南西北發中白 + 1-9m = 16種取9種）
+        // 準備：持有九種么九牌（東南西北發中白 + 19m + 19s + 19p = 13種取9種）
         val playerHand = createHand(
             listOf(
                 Tile.Honor.East,
@@ -731,11 +731,11 @@ class RiichiLegalActionValidatorTest {
     /**
      * 測試不符合九種九牌條件時不可執行和局動作之情況。
      *
-     * 當持有的牌不足9種時，不可執行九種九牌和局。
+     * 當持有的么九牌不足9種時，不可執行九種九牌和局。
      */
     @Test
     fun `test cannot kyuushu kyuuhai with insufficient tile types`() {
-        // 準備：只持有5種牌
+        // 準備：只持有3種么九牌
         val playerHand = createHand(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
