@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.table
 
+import com.doublemoon1119.mahjongcraft.domain.base.GameAction
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
@@ -71,5 +72,49 @@ class MahjongPlayer(
      */
     fun clearPassedTiles() {
         _passedTilesInRound.clear()
+    }
+
+    /**
+     * 記錄玩家執行的動作歷史。
+     *
+     * 用於記錄玩家在遊戲過程中執行的各項動作，如摸牌、捨牌、槓牌、胡牌等。
+     * 此歷史記錄可用於判斷特定的胡牌役（如嶺上开花需要「槓牌 → 摸牌」的动作序列）。
+     *
+     * @see recordAction
+     * @see clearActionHistory
+     */
+    private val _actionHistory: MutableList<GameAction> = mutableListOf()
+
+    /**
+     * 玩家動作歷史的唯讀列表。
+     *
+     * @see recordAction
+     * @see clearActionHistory
+     */
+    val actionHistory: List<GameAction> = _actionHistory
+
+    /**
+     * 記錄玩家執行的動作。
+     *
+     * 將 [action] 加入動作歷史記錄中，用於後續判斷特定役種或其他遊戲邏輯。
+     *
+     * @param action 玩家執行的動作。
+     * @see actionHistory
+     * @see clearActionHistory
+     */
+    fun recordAction(action: GameAction) {
+        _actionHistory.add(action)
+    }
+
+    /**
+     * 清除動作歷史記錄。
+     *
+     * 通常在一局結束時呼叫，以重置記錄避免與下一局資料混淆。
+     *
+     * @see actionHistory
+     * @see recordAction
+     */
+    fun clearActionHistory() {
+        _actionHistory.clear()
     }
 }

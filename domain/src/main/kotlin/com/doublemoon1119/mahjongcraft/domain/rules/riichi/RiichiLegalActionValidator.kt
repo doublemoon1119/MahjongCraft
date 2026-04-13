@@ -272,6 +272,7 @@ class RiichiLegalActionValidator(
         val isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.CLOSED_KAN }
         val riichiState = player.playerRuleState as? RiichiPlayerState
         val config = tableState.config as? RiichiRuleConfig
+        val actionHistory = player.actionHistory
 
         // TODO: 補齊 Context
         val context = RiichiYakuContext(
@@ -285,6 +286,18 @@ class RiichiLegalActionValidator(
             isDoubleRiichi = riichiState?.isDoubleRiichi == true,
             isIppatsu = riichiState?.isIppatsu == true,
             allowOpenTanyao = config?.allowOpenTanyao == true,
+            isRinshanKaihou = if (actionHistory.size >= 2) {
+                // 嶺上花需要「槓牌 → 摸牌 → 自摸」的动作序列
+                val lastTwoActions = actionHistory.takeLast(2)
+                val firstAction = lastTwoActions.first()
+                val secondAction = lastTwoActions.last()
+                // TODO: 包牌邏輯應獨立到另外的模組處理
+                //  當此役成立且為大明槓（OPEN_KAN）時，
+                //  應由觸發大明槓的玩家（丟牌者）全付點數
+                firstAction is GameAction.Kan && secondAction is GameAction.Draw && isTsumo
+            } else {
+                false
+            },
             isFirstTurn = tableState.players.all { it.hand.exposedMelds.isEmpty() } &&  // 場上沒人鳴牌（包含暗槓）
                     tableState.players.all { it.discardPile.entries.size <= 1 } &&  // 每個人打出的牌都不能超過 1 張
                     player.discardPile.entries.isEmpty()  // 自己還沒打過牌

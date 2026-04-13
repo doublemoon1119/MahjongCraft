@@ -1,10 +1,13 @@
 package com.doublemoon1119.mahjongcraft.domain.table
 
+import com.doublemoon1119.mahjongcraft.domain.base.GameAction
+import com.doublemoon1119.mahjongcraft.domain.base.GameAction.KanType
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeMahjongPlayerFactory
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * 針對 [MahjongPlayer] 的實體狀態與基礎邏輯進行單元測試。
@@ -57,5 +60,58 @@ class MahjongPlayerTest {
         // 測試方位變更 (例如過莊)
         player.currentWind = Wind.SOUTH
         assertEquals(Wind.SOUTH, player.currentWind, "Player's current wind should be updatable.")
+    }
+
+    /**
+     * 驗證動作歷史的記錄功能。
+     *
+     * 確保玩家執行的動作能夠被正確記錄，且歷史記錄維持正確的順序。
+     */
+    @Test
+    fun `test action history recording`() {
+        val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+
+        // 驗證初始歷史為空
+        assertTrue(player.actionHistory.isEmpty(), "Initial action history should be empty.")
+
+        // 記錄幾個動作
+        player.recordAction(GameAction.Draw)
+        player.recordAction(GameAction.Discard(UUID.randomUUID()))
+        player.recordAction(
+            GameAction.Kan(
+                KanType.OPEN_KAN,
+                UUID.randomUUID(),
+                listOf(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+            )
+        )
+
+        // 驗證歷史記錄數量與內容
+        assertEquals(3, player.actionHistory.size, "Action history should contain 3 actions.")
+        assertTrue(player.actionHistory[0] is GameAction.Draw, "First action should be Draw.")
+        assertTrue(player.actionHistory[1] is GameAction.Discard, "Second action should be Discard.")
+        assertTrue(player.actionHistory[2] is GameAction.Kan, "Third action should be Kan.")
+    }
+
+    /**
+     * 驗證動作歷史的清除功能。
+     *
+     * 確保清除歷史記錄後，動作歷史會被正確重設。
+     */
+    @Test
+    fun `test action history clearing`() {
+        val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+
+        // 記錄動作
+        player.recordAction(GameAction.Draw)
+        player.recordAction(GameAction.Tsumo)
+
+        // 驗證有記錄
+        assertEquals(2, player.actionHistory.size, "Action history should contain 2 actions before clearing.")
+
+        // 清除歷史
+        player.clearActionHistory()
+
+        // 驗證已清除
+        assertTrue(player.actionHistory.isEmpty(), "Action history should be empty after clearing.")
     }
 }
