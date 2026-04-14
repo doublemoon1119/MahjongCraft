@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.fakes.FakeRiichiRuleConfig
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -886,5 +887,116 @@ class RiichiLegalActionValidatorTest {
 
         // 驗證：搶槓可榮和
         assertTrue(actions.any { it is GameAction.Ron })
+    }
+
+    /**
+     * 測試搶暗槓時可執行榮和動作之情況（國士無雙）。
+     *
+     * 當手牌為國士無雙聽牌，且其他玩家執行暗槓時，可搶暗槓榮和。
+     * 國士無雙為役滿牌型，可搶暗槓。
+     *
+     * 牌型：國士無雙（19 萬筒索＋東南西北白發中各一張，再加 1 張東風作雀頭）
+     */
+    @Test
+    fun `test can robbing closed kan with kokushi musou`() {
+        // 準備：國士無雙聽牌（13張幺九牌 + 1張東風雀頭）
+        // 聽牌為其他任意幺九牌，暗槓東風後手牌變為 14 張（東風刻子 + 13 張幺九牌）
+        val playerHand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 9),
+                Tile.Numeric(Tile.Suit.Bamboo, 1),
+                Tile.Numeric(Tile.Suit.Bamboo, 9),
+                Tile.Honor.East,
+                Tile.Honor.South,
+                Tile.Honor.West,
+                Tile.Honor.North,
+                Tile.Honor.White,
+                Tile.Honor.Green,
+                Tile.Honor.Red
+            )
+        )
+        val player = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "TestPlayer",
+            hand = playerHand,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile()
+        )
+        val tableState = TableState(
+            players = listOf(player),
+            tileWall = TileWall(mutableListOf()),
+            config = FakeMahjongRuleConfig()
+        )
+        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Honor.East)
+
+        // 執行：模擬其他玩家暗槓東風，觸發搶暗槓判定
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, emptyList()),
+            sourceDirection = RelativeDirection.Across,
+            incomingTile = incomingTile
+        )
+
+        // 驗證：國士無雙可搶暗槓榮和
+        assertTrue(actions.any { it is GameAction.Ron })
+    }
+
+    /**
+     * 測試搶暗槓時不可執行榮和動作之情況（非國士無雙）。
+     *
+     * 當手牌為非國士無雙的聽牌，且其他玩家執行暗槓時，不可搶暗槓榮和。
+     * 只有國士無雙可以搶暗槓。
+     *
+     * 牌型：非國士無雙聽牌
+     */
+    @Test
+    fun `test cannot robbing closed kan without kokushi musou`() {
+        // 準備：九蓮寶燈 (聽 2 萬)
+        val playerHand = createHand(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9)
+            )
+        )
+        val player = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "TestPlayer",
+            hand = playerHand,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile()
+        )
+        val tableState = TableState(
+            players = listOf(player),
+            tileWall = TileWall(mutableListOf()),
+            config = FakeMahjongRuleConfig()
+        )
+        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 2))
+
+        // 執行：模擬其他玩家暗槓 2m，觸發搶暗槓判定
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, emptyList()),
+            sourceDirection = RelativeDirection.Across,
+            incomingTile = incomingTile
+        )
+
+        // 驗證：非國士無雙手牌不可搶暗槓榮和
+        assertFalse(actions.any { it is GameAction.Ron })
     }
 }

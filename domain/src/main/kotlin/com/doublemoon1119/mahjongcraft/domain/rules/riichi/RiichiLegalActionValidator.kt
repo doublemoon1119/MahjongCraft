@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.HandYakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
 import com.doublemoon1119.mahjongcraft.domain.util.isHonor
@@ -174,7 +175,8 @@ class RiichiLegalActionValidator(
                             player = player,
                             incomingTile = incomingTile,
                             isTsumo = false,
-                            isRobbingKan = sourceAction is GameAction.Kan && sourceAction.type == GameAction.KanType.ADDED_KAN
+                            isRobbingKan = sourceAction is GameAction.Kan && sourceAction.type == GameAction.KanType.ADDED_KAN,
+                            isRobbingClosedKan = sourceAction is GameAction.Kan && sourceAction.type == GameAction.KanType.CLOSED_KAN
                         )
                     ) {
                         legalActions.add(GameAction.Ron(incomingTile.id))
@@ -259,6 +261,7 @@ class RiichiLegalActionValidator(
      * @param incomingTile 進來的牌（胡牌的那張牌）。
      * @param isTsumo 是否為自摸。
      * @param isRobbingKan 是否為搶槓。
+     * @param isRobbingClosedKan 是否為搶暗槓。
      * @return 是否符合最低番數限制。
      */
     private fun checkMinimumHan(
@@ -266,7 +269,8 @@ class RiichiLegalActionValidator(
         player: MahjongPlayer,
         incomingTile: IdentifiedTile,
         isTsumo: Boolean,
-        isRobbingKan: Boolean = false
+        isRobbingKan: Boolean = false,
+        isRobbingClosedKan: Boolean = false
     ): Boolean {
         val minimumWinConstraint = tableState.config.minimumWinConstraint
         if (minimumWinConstraint <= 0) {
@@ -311,9 +315,24 @@ class RiichiLegalActionValidator(
 
         val result = handValueCalculator.calculate(context)
 
-        // 役滿（totalValue < 0）必定滿足最低番數限制
+        // 役滿（totalValue < 0）
         if (result.totalValue < 0) {
-            return true
+            // 判斷是否為國士無雙
+            val isKokushiMusou =
+                result.yakuResults.any { it.yaku == YakuType.KokushiMusou || it.yaku == YakuType.KokushiMusou13 }
+
+            return if (isRobbingClosedKan) {
+                // 國士無雙才可以搶暗槓
+                isKokushiMusou
+            } else {
+                // 溢滿必定滿足最低番數限制
+                true
+            }
+        }
+
+        // 非役滿不能搶暗槓
+        if (isRobbingClosedKan) {
+            return false
         }
 
         return result.totalValue >= minimumWinConstraint
