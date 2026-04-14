@@ -72,14 +72,16 @@ class TaiwanLegalActionValidator : LegalActionValidator {
      *
      * @param tableState 當前的遊戲桌況。
      * @param player 欲判斷合法動作的玩家。
-     * @param source 動作的來源方位。
+     * @param sourceAction 觸發此判斷的動作。
+     * @param sourceDirection 動作的來源方位。
      * @param incomingTile 可選參數，表示剛摸到或他家打出的牌。
      * @return 該玩家可以執行的合法動作列表。
      */
     override fun getLegalActions(
         tableState: TableState,
         player: MahjongPlayer,
-        source: RelativeDirection,
+        sourceAction: GameAction,
+        sourceDirection: RelativeDirection,
         incomingTile: IdentifiedTile?
     ): List<GameAction> {
         // TODO: 實作台灣麻將的合法動作判定邏輯

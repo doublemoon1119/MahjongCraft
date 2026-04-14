@@ -78,7 +78,8 @@ class RiichiLegalActionValidatorRiichiTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
             incomingTile = null
         )
 
@@ -129,7 +130,8 @@ class RiichiLegalActionValidatorRiichiTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
             incomingTile = null
         )
 
@@ -180,7 +182,8 @@ class RiichiLegalActionValidatorRiichiTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
             incomingTile = null
         )
 
@@ -231,7 +234,8 @@ class RiichiLegalActionValidatorRiichiTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
             incomingTile = null
         )
 
@@ -291,7 +295,8 @@ class RiichiLegalActionValidatorRiichiTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
             incomingTile = incomingTile
         )
 
@@ -353,7 +358,8 @@ class RiichiLegalActionValidatorRiichiTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
             incomingTile = incomingTile
         )
 

@@ -18,7 +18,8 @@ class FakeLegalActionValidator(
     override fun getLegalActions(
         tableState: TableState,
         player: MahjongPlayer,
-        source: RelativeDirection,
+        sourceAction: GameAction,
+        sourceDirection: RelativeDirection,
         incomingTile: IdentifiedTile?
     ): List<GameAction> {
         return actionsToReturn

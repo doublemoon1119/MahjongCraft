@@ -69,7 +69,8 @@ class RiichiLegalActionValidatorTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Across,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
             incomingTile = incomingTile
         )
 
@@ -109,7 +110,8 @@ class RiichiLegalActionValidatorTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Left,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Left,
             incomingTile = incomingTile
         )
 
@@ -150,7 +152,8 @@ class RiichiLegalActionValidatorTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Across,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
             incomingTile = incomingTile
         )
 
@@ -194,7 +197,8 @@ class RiichiLegalActionValidatorTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Self,
             incomingTile = incomingTile
         )
 
@@ -235,7 +239,8 @@ class RiichiLegalActionValidatorTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Self,
             incomingTile = incomingTile
         )
 
@@ -288,7 +293,8 @@ class RiichiLegalActionValidatorTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Across,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
             incomingTile = incomingTile
         )
 
@@ -341,7 +347,8 @@ class RiichiLegalActionValidatorTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
             incomingTile = incomingTile
         )
 
@@ -393,7 +400,8 @@ class RiichiLegalActionValidatorTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Across,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
             incomingTile = incomingTile
         )
 
@@ -451,7 +459,8 @@ class RiichiLegalActionValidatorTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Across,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
             incomingTile = incomingTile
         )
 
@@ -511,7 +520,8 @@ class RiichiLegalActionValidatorTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
             incomingTile = incomingTile
         )
 
@@ -564,7 +574,8 @@ class RiichiLegalActionValidatorTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
             incomingTile = incomingTile
         )
 
@@ -617,7 +628,8 @@ class RiichiLegalActionValidatorTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
             incomingTile = incomingTile
         )
 
@@ -720,7 +732,8 @@ class RiichiLegalActionValidatorTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
             incomingTile = incomingTile
         )
 
@@ -787,11 +800,91 @@ class RiichiLegalActionValidatorTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
             incomingTile = incomingTile
         )
 
         // 驗證：不可執行九種九牌
         assertFalse(actions.any { it is GameAction.ExhaustiveDraw })
+    }
+
+    /**
+     * 測試搶槓時可執行榮和動作之情況。
+     *
+     * 當手牌已听牌，且其他玩家執行加槓時，可搶槓榮和。
+     * 此手牌為無役牌型（副露含老頭牌與字牌），但搶槓本身有 1 番，
+     * 故在 minimumWinConstraint = 1 之條件下可榮和。
+     *
+     * 牌型：
+     * - 副露 1：123m（吃）
+     * - 副露 2：999p（碰）
+     * - 副露 3：西西西（碰，非場風非自風非三元牌）
+     * - 手中：55s（雀頭）、67s（聽 5s, 8s）
+     */
+    @Test
+    fun `test can robbing kan`() {
+        // 準備
+        val chiMeld = Meld(
+            MeldType.CHI,
+            listOf(
+                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
+                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 2)),
+                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 3))
+            ),
+            sourceDirection = RelativeDirection.Left
+        )
+        val ponMeld1 = Meld(
+            MeldType.PON,
+            listOf(
+                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9)),
+                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9)),
+                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9))
+            ),
+            sourceDirection = RelativeDirection.Across
+        )
+        val ponMeld2 = Meld(
+            MeldType.PON,
+            listOf(
+                IdentifiedTile(UUID.randomUUID(), Tile.Honor.West),
+                IdentifiedTile(UUID.randomUUID(), Tile.Honor.West),
+                IdentifiedTile(UUID.randomUUID(), Tile.Honor.West)
+            ),
+            sourceDirection = RelativeDirection.Right
+        )
+        val playerHand = Hand(
+            mutableListOf(
+                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 6)),
+                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 7))
+            ),
+            mutableListOf(chiMeld, ponMeld1, ponMeld2)
+        )
+        val player = MahjongPlayer(
+            id = UUID.randomUUID(),
+            name = "TestPlayer",
+            hand = playerHand,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile()
+        )
+        val tableState = TableState(
+            players = listOf(player),
+            tileWall = TileWall(mutableListOf()),
+            config = FakeMahjongRuleConfig(minimumWinConstraint = 1)
+        )
+        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5))
+
+        // 執行：模擬其他玩家加槓 5s，觸發搶槓判定
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()),
+            sourceDirection = RelativeDirection.Across,
+            incomingTile = incomingTile
+        )
+
+        // 驗證：搶槓可榮和
+        assertTrue(actions.any { it is GameAction.Ron })
     }
 }

@@ -66,7 +66,8 @@ class RiichiLegalActionValidatorRedDoraTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Across,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
             incomingTile = incomingTile
         )
 
@@ -106,7 +107,8 @@ class RiichiLegalActionValidatorRedDoraTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Across,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
             incomingTile = incomingTile
         )
 
@@ -147,7 +149,8 @@ class RiichiLegalActionValidatorRedDoraTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Across,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
             incomingTile = incomingTile
         )
 
@@ -188,7 +191,8 @@ class RiichiLegalActionValidatorRedDoraTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
             incomingTile = incomingTile
         )
 
@@ -232,7 +236,8 @@ class RiichiLegalActionValidatorRedDoraTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Self,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
             incomingTile = incomingTile
         )
 
@@ -272,7 +277,8 @@ class RiichiLegalActionValidatorRedDoraTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Left,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Left,
             incomingTile = incomingTile
         )
 

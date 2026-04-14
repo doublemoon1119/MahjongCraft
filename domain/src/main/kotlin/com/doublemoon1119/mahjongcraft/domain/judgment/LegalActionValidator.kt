@@ -18,15 +18,17 @@ interface LegalActionValidator {
      *
      * @param tableState 當前的遊戲桌況。
      * @param player 欲判斷合法動作的玩家。
-     * @param source 動作的來源方位。例如，`RelativeDirection.Left` 表示上家打出牌，`RelativeDirection.Self` 表示自己摸牌。
-     * @param incomingTile 可選參數，表示剛摸到或他家打出的牌。
+     * @param sourceAction 觸發此次判斷的動作。例如：[GameAction.Discard] 表示有玩家丟牌觸發判斷。
+     * @param sourceDirection 動作的來源方位。例如：[RelativeDirection.Left] 表示上家，[RelativeDirection.Self] 表示自己。
+     * @param incomingTile 可選參數，表示剛摸到或他家打出或加槓之類的牌。
      *                     若為 null，則表示判斷玩家在自己回合內（未摸牌或已摸牌但未捨牌）的動作。
      * @return 該玩家可以執行的合法動作列表。
      */
     fun getLegalActions(
         tableState: TableState,
         player: MahjongPlayer,
-        source: RelativeDirection,
+        sourceAction: GameAction,
+        sourceDirection: RelativeDirection,
         incomingTile: IdentifiedTile? = null
     ): List<GameAction>
 }

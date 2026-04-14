@@ -33,14 +33,16 @@ class RiichiLegalActionValidator(
      *
      * @param tableState 當前的遊戲桌況。
      * @param player 欲判斷合法動作的玩家。
-     * @param source 動作的來源方位。
+     * @param sourceAction 觸發此判斷的動作。
+     * @param sourceDirection 動作的來源方位。
      * @param incomingTile 可選參數，表示剛摸到或他家打出的牌。
      * @return 該玩家可以執行的合法動作列表。
      */
     override fun getLegalActions(
         tableState: TableState,
         player: MahjongPlayer,
-        source: RelativeDirection,
+        sourceAction: GameAction,
+        sourceDirection: RelativeDirection,
         incomingTile: IdentifiedTile?
     ): List<GameAction> {
         val legalActions = mutableListOf<GameAction>()
@@ -74,7 +76,7 @@ class RiichiLegalActionValidator(
         val incomingBaseTile = incomingTile.tile.withoutRed
 
         // 處理有 incomingTile 的情況
-        if (source == RelativeDirection.Self) {
+        if (sourceDirection == RelativeDirection.Self) {
             // 自己摸牌
             // 1. 檢查是否可以自摸 (Tsumo)
             val tempHandTsumo = Hand(
@@ -171,7 +173,8 @@ class RiichiLegalActionValidator(
                             tableState = tableState,
                             player = player,
                             incomingTile = incomingTile,
-                            isTsumo = false
+                            isTsumo = false,
+                            isRobbingKan = sourceAction is GameAction.Kan && sourceAction.type == GameAction.KanType.ADDED_KAN
                         )
                     ) {
                         legalActions.add(GameAction.Ron(incomingTile.id))
@@ -191,7 +194,7 @@ class RiichiLegalActionValidator(
             // 3. 檢查是否可以吃 (Chi)
             // 立直後不能吃
             // 吃不受赤寶牌影響，但仍需使用 withoutRed 確保一致性
-            if (source == RelativeDirection.Left && incomingTile.tile is Tile.Numeric && !isRiichi) {
+            if (sourceDirection == RelativeDirection.Left && incomingTile.tile is Tile.Numeric && !isRiichi) {
                 val iTile = incomingTile.tile
                 val handTiles = player.hand.standingTiles
 
@@ -255,13 +258,15 @@ class RiichiLegalActionValidator(
      * @param player 欲判斷合法動作的玩家。
      * @param incomingTile 進來的牌（胡牌的那張牌）。
      * @param isTsumo 是否為自摸。
+     * @param isRobbingKan 是否為搶槓。
      * @return 是否符合最低番數限制。
      */
     private fun checkMinimumHan(
         tableState: TableState,
         player: MahjongPlayer,
         incomingTile: IdentifiedTile,
-        isTsumo: Boolean
+        isTsumo: Boolean,
+        isRobbingKan: Boolean = false
     ): Boolean {
         val minimumWinConstraint = tableState.config.minimumWinConstraint
         if (minimumWinConstraint <= 0) {
@@ -286,6 +291,7 @@ class RiichiLegalActionValidator(
             isDoubleRiichi = riichiState?.isDoubleRiichi == true,
             isIppatsu = riichiState?.isIppatsu == true,
             allowOpenTanyao = config?.allowOpenTanyao == true,
+            isRobbingKan = isRobbingKan,
             isRinshanKaihou = if (actionHistory.size >= 2) {
                 // 嶺上花需要「槓牌 → 摸牌 → 自摸」的动作序列
                 val lastTwoActions = actionHistory.takeLast(2)

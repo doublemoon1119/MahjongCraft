@@ -90,7 +90,8 @@ class RiichiLegalActionValidatorFuritenTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Across,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
             incomingTile = incomingTile
         )
 
@@ -153,7 +154,8 @@ class RiichiLegalActionValidatorFuritenTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Across,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
             incomingTile = incomingTile
         )
 
@@ -198,7 +200,8 @@ class RiichiLegalActionValidatorFuritenTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Across,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
             incomingTile = incomingTile
         )
 
@@ -242,11 +245,13 @@ class RiichiLegalActionValidatorFuritenTest {
         player.clearPassedTiles()
 
         // 再測試他家打5萬
+        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5))
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Across,
-            incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5))
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
+            incomingTile = incomingTile
         )
 
         // 驗證 - 清除記錄後，可以碰
@@ -290,7 +295,8 @@ class RiichiLegalActionValidatorFuritenTest {
         val actions = validator.getLegalActions(
             tableState = tableState,
             player = player,
-            source = RelativeDirection.Across,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
             incomingTile = incomingTile
         )
 
