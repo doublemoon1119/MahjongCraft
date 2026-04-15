@@ -24,7 +24,8 @@ class RiichiLegalActionValidatorTest {
 
     private val validator = RiichiLegalActionValidator(
         shantenCalculator = RiichiShantenCalculator(),
-        handValueCalculator = RiichiHandValueCalculator()
+        handValueCalculator = RiichiHandValueCalculator(),
+        contextCalculator = RiichiHandValueContextCalculator(FakeRiichiRuleConfig())
     )
 
     /**
@@ -281,12 +282,13 @@ class RiichiLegalActionValidatorTest {
             name = "TestPlayer",
             hand = playerHand,
             initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+            discardPile = FakeDiscardPile(),
+            playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+            config = FakeRiichiRuleConfig()
         )
         val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9))
 
@@ -335,12 +337,13 @@ class RiichiLegalActionValidatorTest {
             name = "TestPlayer",
             hand = playerHand,
             initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+            discardPile = FakeDiscardPile(),
+            playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+            config = FakeRiichiRuleConfig()
         )
         val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9))
 
@@ -388,12 +391,13 @@ class RiichiLegalActionValidatorTest {
             name = "TestPlayer",
             hand = playerHand,
             initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+            discardPile = FakeDiscardPile(),
+            playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+            config = FakeRiichiRuleConfig()
         )
         val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 7))
 
@@ -506,12 +510,13 @@ class RiichiLegalActionValidatorTest {
                         isTaken = false
                     )
                 )
-            }
+            },
+            playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig(minimumWinConstraint = 2)
+            config = FakeRiichiRuleConfig(minimumWinConstraint = 2)
         )
 
         // 摸到胡牌張
@@ -559,12 +564,13 @@ class RiichiLegalActionValidatorTest {
             name = "TestPlayer",
             hand = playerHand,
             initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+            discardPile = FakeDiscardPile(),
+            playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig(),
+            config = FakeRiichiRuleConfig(),
             prevalentWind = Wind.EAST
         )
 
@@ -613,12 +619,13 @@ class RiichiLegalActionValidatorTest {
             name = "TestPlayer",
             hand = playerHand,
             initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+            discardPile = FakeDiscardPile(),
+            playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig(),
+            config = FakeRiichiRuleConfig(),
             prevalentWind = Wind.EAST
         )
 
@@ -867,12 +874,13 @@ class RiichiLegalActionValidatorTest {
             name = "TestPlayer",
             hand = playerHand,
             initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+            discardPile = FakeDiscardPile(),
+            playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig(minimumWinConstraint = 1)
+            config = FakeRiichiRuleConfig(minimumWinConstraint = 1)
         )
         val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5))
 
@@ -923,12 +931,13 @@ class RiichiLegalActionValidatorTest {
             name = "TestPlayer",
             hand = playerHand,
             initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+            discardPile = FakeDiscardPile(),
+            playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+            config = FakeRiichiRuleConfig()
         )
         val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Honor.East)
 
@@ -978,12 +987,13 @@ class RiichiLegalActionValidatorTest {
             name = "TestPlayer",
             hand = playerHand,
             initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+            discardPile = FakeDiscardPile(),
+            playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+            config = FakeRiichiRuleConfig()
         )
         val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 2))
 

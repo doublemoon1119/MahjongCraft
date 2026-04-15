@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.fakes.FakeRiichiRuleConfig
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -23,7 +24,8 @@ class RiichiLegalActionValidatorRedDoraTest {
 
     private val validator = RiichiLegalActionValidator(
         shantenCalculator = RiichiShantenCalculator(),
-        handValueCalculator = RiichiHandValueCalculator()
+        handValueCalculator = RiichiHandValueCalculator(),
+        contextCalculator = RiichiHandValueContextCalculator(FakeRiichiRuleConfig())
     )
 
     /**
@@ -101,7 +103,8 @@ class RiichiLegalActionValidatorRedDoraTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeMahjongRuleConfig()
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5, isRed = false))  // 普通5萬
+        val incomingTile =
+            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5, isRed = false))  // 普通5萬
 
         // 執行
         val actions = validator.getLegalActions(

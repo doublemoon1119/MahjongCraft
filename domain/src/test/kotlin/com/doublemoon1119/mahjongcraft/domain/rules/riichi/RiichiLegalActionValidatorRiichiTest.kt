@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.fakes.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.fakes.FakeRiichiRuleConfig
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -23,7 +24,8 @@ class RiichiLegalActionValidatorRiichiTest {
 
     private val validator = RiichiLegalActionValidator(
         shantenCalculator = RiichiShantenCalculator(),
-        handValueCalculator = RiichiHandValueCalculator()
+        handValueCalculator = RiichiHandValueCalculator(),
+        contextCalculator = RiichiHandValueContextCalculator(FakeRiichiRuleConfig())
     )
 
     /**
@@ -270,7 +272,7 @@ class RiichiLegalActionValidatorRiichiTest {
                 Tile.Numeric(Tile.Suit.Character, 6)
             )
         )
-        
+
         val player = MahjongPlayer(
             id = UUID.randomUUID(),
             name = "TestPlayer",
@@ -281,7 +283,7 @@ class RiichiLegalActionValidatorRiichiTest {
                 riichiTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9))
             )
         )
-        
+
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
@@ -333,7 +335,7 @@ class RiichiLegalActionValidatorRiichiTest {
                 Tile.Numeric(Tile.Suit.Character, 9)
             )
         )
-        
+
         val player = MahjongPlayer(
             id = UUID.randomUUID(),
             name = "TestPlayer",
@@ -344,7 +346,7 @@ class RiichiLegalActionValidatorRiichiTest {
                 riichiTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9))
             )
         )
-        
+
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
