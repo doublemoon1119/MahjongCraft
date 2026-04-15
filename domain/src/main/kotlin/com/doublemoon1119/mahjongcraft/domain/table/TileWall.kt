@@ -24,17 +24,26 @@ class TileWall(private val tiles: MutableList<IdentifiedTile>) {
     }
 
     /**
-     * 從牌山中摸取一張牌。
+     * 從牌山最前方摸取一張牌。
      *
      * @return 摸到的 [IdentifiedTile]，若牌山已空則返回 null。
      */
-    fun draw(): IdentifiedTile? {
-        if (tiles.isEmpty()) return null
-        return tiles.removeAt(0)
-    }
+    fun draw(): IdentifiedTile? = tiles.removeFirstOrNull()
 
     /**
-     * 獲取目前牌山的唯讀列表（用於調試或狀態同步）。
+     * 從牌山最後方摸取一張牌 (嶺上)。
+     *
+     * @return 摸到的 [IdentifiedTile]，若牌山已空則返回 null。
+     */
+    fun drawLast(): IdentifiedTile? = tiles.removeLastOrNull()
+
+    /**
+     * 僅查看特定位置的牌，不移除。
+     */
+    fun peekAt(index: Int): IdentifiedTile? = tiles.getOrNull(index)
+
+    /**
+     * 獲取目前牌山的唯讀列表。
      */
     fun getAllTiles(): List<IdentifiedTile> = tiles.toList()
 }

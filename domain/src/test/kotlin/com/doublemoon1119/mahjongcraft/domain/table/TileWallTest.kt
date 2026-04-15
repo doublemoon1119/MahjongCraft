@@ -14,7 +14,7 @@ import kotlin.test.assertNull
 class TileWallTest {
 
     /**
-     * 驗證摸牌邏輯是否正確減少牌山數量。
+     * 驗證從牌山前方摸牌的邏輯，是否正確減少牌山數量。
      */
     @Test
     fun `test drawing from wall`() {
@@ -36,6 +36,52 @@ class TileWallTest {
 
         // 牌山空了應返回 null
         assertNull(wall.draw())
+    }
+
+    /**
+     * 驗證從牌山後方摸牌的邏輯，是否正確減少牌山數量。
+     */
+    @Test
+    fun `test drawing last from wall`() {
+        val tiles = mutableListOf(
+            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1)),
+            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2))
+        )
+        val wall = TileWall(tiles)
+
+        assertEquals(2, wall.remainingCount)
+
+        val firstDraw = wall.drawLast()
+        assertNotNull(firstDraw)
+        assertEquals(1, wall.remainingCount)
+
+        val secondDraw = wall.draw()
+        assertNotNull(secondDraw)
+        assertEquals(0, wall.remainingCount)
+
+        // 牌山空了應返回 null
+        assertNull(wall.draw())
+    }
+
+    /**
+     * 驗證從牌山讀取特定位置的牌的邏輯。
+     */
+    @Test
+    fun `test peeking from wall`() {
+        val tile1 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
+        val tile2 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2))
+        val tiles = mutableListOf(tile1, tile2)
+        val wall = TileWall(tiles)
+
+        assertEquals(2, wall.remainingCount)
+
+        val firstTile = wall.peekAt(0)
+        assertNotNull(firstTile)
+        assertEquals(firstTile, tile1)
+
+        val secondTile = wall.peekAt(1)
+        assertNotNull(secondTile)
+        assertEquals(secondTile, tile2)
     }
 
     /**
