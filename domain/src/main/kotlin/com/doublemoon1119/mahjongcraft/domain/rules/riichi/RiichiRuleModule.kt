@@ -1,13 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueCalculator
-import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
-import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.HandYakuResult
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
-import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
-import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
 
 /**
  * 日本麻將規則模組實作。
@@ -30,7 +23,7 @@ class RiichiRuleModule : MahjongRuleModule<RiichiRuleConfig> {
      * @param config 日本麻將規則配置。
      * @return [RiichiWallFactory] 實體。
      */
-    override fun createWallFactory(config: RiichiRuleConfig): TileWallFactory {
+    override fun createWallFactory(config: RiichiRuleConfig): RiichiWallFactory {
         return RiichiWallFactory(config)
     }
 
@@ -40,7 +33,7 @@ class RiichiRuleModule : MahjongRuleModule<RiichiRuleConfig> {
      * @param config 日本麻將規則配置。
      * @return [RiichiDiscardPile] 實體。
      */
-    override fun createDiscardPile(config: RiichiRuleConfig): DiscardPile<*> {
+    override fun createDiscardPile(config: RiichiRuleConfig): RiichiDiscardPile {
         return RiichiDiscardPile()
     }
 
@@ -50,7 +43,7 @@ class RiichiRuleModule : MahjongRuleModule<RiichiRuleConfig> {
      * @param config 日本麻將規則配置。
      * @return [RiichiShantenCalculator] 實體。
      */
-    override fun createShantenCalculator(config: RiichiRuleConfig): ShantenCalculator {
+    override fun createShantenCalculator(config: RiichiRuleConfig): RiichiShantenCalculator {
         return RiichiShantenCalculator()
     }
 
@@ -60,13 +53,14 @@ class RiichiRuleModule : MahjongRuleModule<RiichiRuleConfig> {
      * @param config 日本麻將規則配置。
      * @return [RiichiLegalActionValidator] 實體。
      */
-    override fun createLegalActionValidator(config: RiichiRuleConfig): LegalActionValidator {
+    override fun createLegalActionValidator(config: RiichiRuleConfig): RiichiLegalActionValidator {
         val shantenCalculator = createShantenCalculator(config)
-
         val handValueCalculator = createHandValueCalculator(config)
+        val contextCalculator = createHandValueContextCalculator(config)
         return RiichiLegalActionValidator(
             shantenCalculator = shantenCalculator,
             handValueCalculator = handValueCalculator,
+            contextCalculator = contextCalculator,
         )
     }
 
@@ -76,7 +70,17 @@ class RiichiRuleModule : MahjongRuleModule<RiichiRuleConfig> {
      * @param config 日本麻將規則配置。
      * @return [RiichiHandValueCalculator] 實體。
      */
-    override fun createHandValueCalculator(config: RiichiRuleConfig): HandValueCalculator<RiichiYakuContext, HandYakuResult> {
+    override fun createHandValueCalculator(config: RiichiRuleConfig): RiichiHandValueCalculator {
         return RiichiHandValueCalculator(useLocalYaku = config.useLocalYaku)
+    }
+
+    /**
+     * 建立日本麻將的手牌役種上下文計算機。
+     *
+     * @param config 日本麻將規則配置。
+     * @return [RiichiHandValueContextCalculator] 實體。
+     */
+    override fun createHandValueContextCalculator(config: RiichiRuleConfig): RiichiHandValueContextCalculator {
+        return RiichiHandValueContextCalculator(config)
     }
 }

@@ -1,11 +1,8 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueCalculator
-import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
-import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
+import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
-import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
 
 /**
  * 台灣麻將規則模組實作。
@@ -28,7 +25,7 @@ class TaiwanRuleModule : MahjongRuleModule<TaiwanRuleConfig> {
      * @param config 台灣麻將規則配置。
      * @return [TaiwanWallFactory] 實體。
      */
-    override fun createWallFactory(config: TaiwanRuleConfig): TileWallFactory {
+    override fun createWallFactory(config: TaiwanRuleConfig): TaiwanWallFactory {
         return TaiwanWallFactory(config)
     }
 
@@ -38,7 +35,7 @@ class TaiwanRuleModule : MahjongRuleModule<TaiwanRuleConfig> {
      * @param config 台灣麻將規則配置。
      * @return [TaiwanDiscardPile] 實體。
      */
-    override fun createDiscardPile(config: TaiwanRuleConfig): DiscardPile<*> {
+    override fun createDiscardPile(config: TaiwanRuleConfig): TaiwanDiscardPile {
         return TaiwanDiscardPile()
     }
 
@@ -48,7 +45,7 @@ class TaiwanRuleModule : MahjongRuleModule<TaiwanRuleConfig> {
      * @param config 台灣麻將規則配置。
      * @return [TaiwanShantenCalculator] 實體。
      */
-    override fun createShantenCalculator(config: TaiwanRuleConfig): ShantenCalculator {
+    override fun createShantenCalculator(config: TaiwanRuleConfig): TaiwanShantenCalculator {
         return TaiwanShantenCalculator()
     }
 
@@ -58,7 +55,7 @@ class TaiwanRuleModule : MahjongRuleModule<TaiwanRuleConfig> {
      * @param config 台灣麻將規則配置。
      * @return [TaiwanLegalActionValidator] 實體。
      */
-    override fun createLegalActionValidator(config: TaiwanRuleConfig): LegalActionValidator {
+    override fun createLegalActionValidator(config: TaiwanRuleConfig): TaiwanLegalActionValidator {
         return TaiwanLegalActionValidator()
     }
 
@@ -71,5 +68,16 @@ class TaiwanRuleModule : MahjongRuleModule<TaiwanRuleConfig> {
      */
     override fun createHandValueCalculator(config: TaiwanRuleConfig): HandValueCalculator<*, *> {
         TODO("TaiwanHandValueCalculator is not yet implemented")
+    }
+
+    /**
+     * 建立台灣麻將的手牌役種上下文計算機。
+     *
+     * @param config 台灣麻將規則配置。
+     * @return [HandValueContextCalculator] 實體。
+     * @throws NotImplementedError 目前尚未實作 TaiwanHandValueContextCalculator。
+     */
+    override fun createHandValueContextCalculator(config: TaiwanRuleConfig): HandValueContextCalculator<*, *> {
+        TODO("TaiwanHandValueContextCalculator is not yet implemented")
     }
 }

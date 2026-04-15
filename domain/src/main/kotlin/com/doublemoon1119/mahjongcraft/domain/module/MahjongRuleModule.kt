@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.domain.module
 
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueCalculator
+import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
@@ -73,4 +74,15 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 實作了 [HandValueCalculator] 的物件。
      */
     fun createHandValueCalculator(config: T): HandValueCalculator<*, *>
+
+    /**
+     * 建立適用於該規則的手牌役種上下文計算機 (Hand Value Context Calculator)。
+     *
+     * 負責根據當前遊戲狀態計算役種結算所需的上下文資訊，
+     * 例如：寶牌指示牌、裏寶牌、海底撈月、河底撈魚等。
+     *
+     * @param config 規則配置實例。
+     * @return 實作了 [HandValueContextCalculator] 的物件。
+     */
+    fun createHandValueContextCalculator(config: T): HandValueContextCalculator<*, *>
 }
