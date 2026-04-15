@@ -14,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
  * 本介面定義了特定麻將規則（如日麻、台麻）必須提供的核心組件工廠。
  * UseCase 層透過此介面獲取具體組件，而不直接依賴特定的規則實作。
  *
- * 每一個 [create] 方法都會根據傳入的 [config] 返回新的實例，
+ * 每一個 `create` 方法都會根據傳入的 `config` 返回新的實例，
  * 以確保每個麻將桌可以擁有獨立的組件，實現規則配置的独立性。
  *
  * @param T 該模組所支援的規則配置型別，必須繼承自 [MahjongRuleConfig]。
