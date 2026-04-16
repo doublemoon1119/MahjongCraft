@@ -287,8 +287,8 @@ class RiichiLegalActionValidator(
 
         val result = handValueCalculator.calculate(context)
 
-        // 役滿（totalValue < 0）
-        if (result.totalValue < 0) {
+        // 役滿（totalHan < 0）
+        if (result.totalHan < 0) {
             // 判斷是否為國士無雙
             val isKokushiMusou =
                 result.yakuResults.any { it.yaku == YakuType.KokushiMusou || it.yaku == YakuType.KokushiMusou13 }
@@ -307,7 +307,7 @@ class RiichiLegalActionValidator(
             return false
         }
 
-        return result.totalValue >= minimumWinConstraint
+        return result.totalHan >= minimumWinConstraint
     }
 
     /**

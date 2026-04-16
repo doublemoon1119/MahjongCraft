@@ -41,8 +41,4 @@ data class HandYakuResult(
     val totalHan: Int,
     val isYakuman: Boolean = totalHan < 0,
     val isCompleteHand: Boolean = true
-) : HandValueResult {
-    override val totalValue: Int get() = totalHan
-
-    override val isSpecial: Boolean get() = isYakuman
-}
+) : HandValueResult
