@@ -1,7 +1,5 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku
 
-import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueResult
-
 /**
  * 役種計算結果。
  *
@@ -27,18 +25,3 @@ data class YakuResult(
         fun han(yaku: YakuType, han: Int) = YakuResult(yaku, han)
     }
 }
-
-/**
- * 手牌役種計算的完整結果。
- *
- * @property yakuResults 各役種的計算結果列表。
- * @property totalHan 總番數（役滿時為 -1，雙倍役滿時為 -2，以此類推）。
- * @property isYakuman 是否為役滿。
- * @property isCompleteHand 是否為已完成的手牌（可胡牌）。
- */
-data class HandYakuResult(
-    val yakuResults: List<YakuResult>,
-    val totalHan: Int,
-    val isYakuman: Boolean = totalHan < 0,
-    val isCompleteHand: Boolean = true
-) : HandValueResult
