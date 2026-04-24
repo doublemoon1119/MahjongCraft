@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Fuuro
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Mentsu
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.HandYakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -26,7 +25,7 @@ import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
  */
 class RiichiHandValueCalculator(
     private val useLocalYaku: Boolean = false
-) : HandValueCalculator<RiichiYakuContext, HandYakuResult> {
+) : HandValueCalculator<RiichiYakuContext, RiichiHandValueResult> {
 
     /**
      * 計算手牌的役種與價值。
@@ -34,9 +33,10 @@ class RiichiHandValueCalculator(
      * @param context 價值計算所需的上下文資訊。
      * @return 役種計算結果，包含役種列表與總番數。
      */
-    override fun calculate(context: RiichiYakuContext): HandYakuResult {
-        // 1. 嘗試分解手牌（用於需要手牌結構的役種）
-        val allTiles = context.hand.standingTiles.map { it.tile.withoutRed } + context.winningTile.withoutRed
+    override fun calculate(context: RiichiYakuContext): RiichiHandValueResult {
+        // 嘗試分解手牌（用於需要手牌結構的役種）
+        val handTiles = context.hand.standingTiles.map { it.tile.withoutRed }
+        val winningTile = context.winningTile.withoutRed
         val fuuro = context.hand.exposedMelds.map { meld ->
             // 將 base.Meld 轉換為 structure.Fuuro
             val tile = meld.tiles.first().tile.withoutRed
@@ -53,79 +53,100 @@ class RiichiHandValueCalculator(
             )
         }
 
-        // 手牌結構用於需要分析手牌內部結構的役種，null 表示手牌不符合胡牌牌型。
-        // 例如：Pinfu、Chiitoitsu、Iipeikou、Ryanpeikou 等。
+        // [HandStructure] 用於分析手牌內部結構，將一副手牌拆解成所有可能胡牌的形式，empty 表示手牌不符合任何胡牌形式。
+        // 會需要 [HandStructure] 進行役種判定的役，例如：Pinfu、Chiitoitsu、Iipeikou、Ryanpeikou 等。
         // 不需要 [HandStructure] 的役種（如 Dora、Tanyao、Chinitsu 等）則直接從 hand 計算。
-        val handStructure = RiichiHandDecomposer.decompose(allTiles, fuuro)
-            ?: return HandYakuResult(
-                yakuResults = emptyList(),
-                totalHan = 0,
-                isCompleteHand = true
-            )
+        val handStructures =
+            RiichiHandDecomposer.decompose(handTiles = handTiles, winningTile = winningTile, fuuro = fuuro)
+                .ifEmpty {
+                    return RiichiHandValueResult(
+                        yakuResults = emptyList(),
+                        totalHan = 0
+                    )
+                }
 
-        // 2. 先計算役滿
-        val yakuResults = mutableListOf<YakuResult>()
-        calculateYakuman(context, handStructure, yakuResults)
+        // 將 handStructures 轉化成對應的點數
+        val handValueResults = handStructures.map { handStructure ->
+            // 先計算役滿
+            val yakuResults = mutableListOf<YakuResult>()
+            calculateYakuman(context, handStructure, yakuResults)
 
-        // 若有任何役滿，則只計算役滿（役滿疊加）
-        if (yakuResults.any { it.isYakuman }) {
-            val totalHan = calculateTotalHan(yakuResults)
-            return HandYakuResult(
-                yakuResults = yakuResults,
-                totalHan = totalHan,
-                isCompleteHand = true
-            )
-        }
+            // 若有任何役滿，則只計算役滿（役滿疊加）
+            if (yakuResults.any { it.isYakuman }) {
+                val totalHan = calculateTotalHan(yakuResults)
+                return@map RiichiHandValueResult(
+                    yakuResults = yakuResults,
+                    totalHan = totalHan
+                )
+            }
 
-        // 3. 無役滿時，計算一般役
-        // 計算寶牌
-        val doraResult = calculateDora(
-            hand = context.hand,
-            winningTile = context.winningTile,
-            doraIndicators = context.doraIndicators
-        )
-        if (doraResult.han > 0) {
-            yakuResults.add(doraResult)
-        }
-
-        // 計算裏寶牌（立直時）
-        if (context.isRiichi) {
-            val uraDoraResult = calculateUraDora(
+            // 無役滿時，計算一般役
+            // 計算寶牌
+            val doraResult = calculateDora(
                 hand = context.hand,
                 winningTile = context.winningTile,
-                uraDoraIndicators = context.uraDoraIndicators
+                doraIndicators = context.doraIndicators
             )
-            if (uraDoraResult.han > 0) {
-                yakuResults.add(uraDoraResult)
+            if (doraResult.han > 0) {
+                yakuResults.add(doraResult)
             }
+
+            // 計算裏寶牌（立直時）
+            if (context.isRiichi) {
+                val uraDoraResult = calculateUraDora(
+                    hand = context.hand,
+                    winningTile = context.winningTile,
+                    uraDoraIndicators = context.uraDoraIndicators
+                )
+                if (uraDoraResult.han > 0) {
+                    yakuResults.add(uraDoraResult)
+                }
+            }
+
+            // 計算赤寶牌
+            val akaDoraResult = calculateAkaDora(
+                hand = context.hand,
+                winningTile = context.winningTile
+            )
+            if (akaDoraResult.han > 0) {
+                yakuResults.add(akaDoraResult)
+            }
+
+            // 計算一般役
+            calculateStandardYaku(context, handStructure, yakuResults)
+
+            // 計算字牌役
+            calculateHonorYaku(context, fuuro, yakuResults)
+
+            // 計算特殊役
+            calculateSpecialYaku(context, yakuResults)
+
+            // 計算總番數
+            val totalHan = calculateTotalHan(yakuResults)
+
+            // 計算符數（滿貫(5翻)以上時不計算）
+            val totalFu = if (totalHan !in 0..<5) {
+                -1 // 滿貫(5翻)以上時返回 -1
+            } else {
+                FuCalculator.calculateTotalFu(context, handStructure)
+            }
+
+            return@map RiichiHandValueResult(
+                yakuResults = yakuResults,
+                totalHan = totalHan,
+                totalFu = totalFu
+            )
         }
 
-        // 計算赤寶牌
-        val akaDoraResult = calculateAkaDora(
-            hand = context.hand,
-            winningTile = context.winningTile
-        )
-        if (akaDoraResult.han > 0) {
-            yakuResults.add(akaDoraResult)
+        // 日本麻將適用高點法，這裡下方只會回傳點數最高的結果
+        val yakumanResult = handValueResults.filter { it.isYakuman }
+        return if (yakumanResult.isNotEmpty()) {
+            // 如果有役滿，役滿翻數在 totalHan 計算上是負的，所以找 totalHan 最小的結果回傳
+            yakumanResult.minBy { it.totalHan }
+        } else {
+            // 如果沒有役滿，根據高點法判定流程，先比較翻數，翻數相同時才比較符數
+            handValueResults.maxWith(compareBy<RiichiHandValueResult> { it.totalHan }.thenBy { it.totalFu })
         }
-
-        // 計算一般役
-        calculateStandardYaku(context, handStructure, yakuResults)
-
-        // 計算字牌役
-        calculateHonorYaku(context, fuuro, yakuResults)
-
-        // 計算特殊役
-        calculateSpecialYaku(context, yakuResults)
-
-        // 計算總番數
-        val totalHan = calculateTotalHan(yakuResults)
-
-        return HandYakuResult(
-            yakuResults = yakuResults,
-            totalHan = totalHan,
-            isCompleteHand = true
-        )
     }
 
     /**
@@ -201,7 +222,6 @@ class RiichiHandValueCalculator(
         // 計算平和
         calculatePinfu(
             handStructure = handStructure,
-            winningTile = context.winningTile,
             isMenzen = context.isMenzen,
             roundWind = context.roundWind,
             seatWind = context.seatWind
@@ -263,11 +283,11 @@ class RiichiHandValueCalculator(
         results: MutableList<YakuResult>
     ) {
         // 取得所有牌（去除赤寶牌標記）
-        val allTiles = context.hand.standingTiles.map { it.tile.withoutRed }
+        val handTiles = context.hand.standingTiles.map { it.tile.withoutRed }
 
         // 計算字牌役
         val honorResults = calculateHonorYaku(
-            handTiles = allTiles,
+            handTiles = handTiles,
             fuuro = fuuro,
             roundWind = context.roundWind,
             seatWind = context.seatWind
@@ -359,7 +379,6 @@ class RiichiHandValueCalculator(
         // 計算四暗刻
         calculateSuuankou(
             handStructure = handStructure,
-            winningTile = context.winningTile,
             isMenzen = context.isMenzen,
             isTsumo = context.isTsumo
         )?.let { results.add(it) }
