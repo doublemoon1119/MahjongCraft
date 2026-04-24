@@ -1,11 +1,10 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman
 
-import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.CompletionType
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Mentsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
-import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 
 /**
  * 四暗刻 (Suuankou / Four Concealed Triplets) 役滿檢測器。
@@ -29,14 +28,12 @@ import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
  * - 四暗刻單騎：1m 1m 1m、9m 9m 9m、5s 5s 5s、發 發 發、2p 2p（雀頭，等待發）
  *
  * @param handStructure 手牌結構（由 [com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandDecomposer] 分割後的結果）。
- * @param winningTile 胡牌張（用於判斷四暗刻單騎）。
  * @param isMenzen 是否為門前清。
  * @param isTsumo 是否為自摸。
  * @return 四暗刻或四暗刻單騎結果，若不符合則返回 null。
  */
 fun calculateSuuankou(
     handStructure: HandStructure,
-    winningTile: Tile,
     isMenzen: Boolean,
     isTsumo: Boolean,
 ): YakuResult? {
@@ -55,7 +52,7 @@ fun calculateSuuankou(
     }
 
     // 雀頭的牌與胡牌相同（單騎和牌）
-    val isTankiWait = standard.pair.tile.withoutRed == winningTile.withoutRed
+    val isTankiWait = standard.completionType is CompletionType.Tanki
 
     val isSuuuankou = if (isTankiWait) {
         concealedKotsuCount == 4
