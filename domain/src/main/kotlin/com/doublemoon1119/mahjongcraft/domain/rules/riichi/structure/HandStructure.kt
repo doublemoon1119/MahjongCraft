@@ -16,11 +16,13 @@ sealed class HandStructure {
      * @property mentsus 最多四個面子（不包含副露）。
      * @property pair 雀頭。
      * @property fuuro 副露（已曝光的面子）。
+     * @property completionType 判斷是單騎、雙碰聽、兩面、邊張、嵌張的情況。
      */
     data class Standard(
         val mentsus: List<Mentsu>,
         val pair: Janto,
-        val fuuro: List<Fuuro> = emptyList()
+        val fuuro: List<Fuuro> = emptyList(),
+        val completionType: CompletionType = CompletionType.Ryanmen
     ) : HandStructure()
 
     /**
