@@ -1,13 +1,12 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman
 
-import com.doublemoon1119.mahjongcraft.domain.base.*
+import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandDecomposer
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -53,15 +52,17 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
         // Winning: 9s != headTile(1m) → 一般國士無雙
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9).withoutRed
 
-        val allTiles = tiles.map { it.withoutRed } + winningTile
-        val handStructure = RiichiHandDecomposer.decompose(allTiles)
+        val handTiles = tiles.map { it.withoutRed }
+        val handStructures = RiichiHandDecomposer.decompose(handTiles, winningTile)
 
-        val result = calculateKokushiMusou(handStructure!!, winningTile)
+        val result = handStructures.mapNotNull { handStructure ->
+            calculateKokushiMusou(handStructure, winningTile)
+        }
 
-        assertTrue(result != null, "Should be Kokushi Musou")
-        assertEquals(YakuType.KokushiMusou, result.yaku, "Yaku type should be KokushiMusou")
-        assertTrue(result.isYakuman, "Should be yakuman")
-        assertEquals(-1, result.han, "Han should be -1 for yakuman")
+        assertTrue(result.isNotEmpty(), "Should be Kokushi Musou")
+        assertTrue(result.all { it.yaku == YakuType.KokushiMusou }, "Yaku type should be KokushiMusou")
+        assertTrue(result.all { it.isYakuman }, "Should be yakuman")
+        assertTrue(result.all { it.han == -1 }, "Han should be -1 for yakuman")
     }
 
     /**
@@ -94,15 +95,17 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
         // Winning: 1m == headTile(1m) → 十三面
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1).withoutRed
 
-        val allTiles = tiles.map { it.withoutRed } + winningTile
-        val handStructure = RiichiHandDecomposer.decompose(allTiles)
+        val handTiles = tiles.map { it.withoutRed }
+        val handStructures = RiichiHandDecomposer.decompose(handTiles, winningTile)
 
-        val result = calculateKokushiMusou(handStructure!!, winningTile)
+        val result = handStructures.mapNotNull { handStructure ->
+            calculateKokushiMusou(handStructure, winningTile)
+        }
 
-        assertTrue(result != null, "Should be Kokushi Musou 13-men")
-        assertEquals(YakuType.KokushiMusou13, result.yaku, "Yaku type should be KokushiMusou13")
-        assertTrue(result.isDoubleYakuman, "Should be double yakuman")
-        assertEquals(-2, result.han, "Han should be -2 for double yakuman")
+        assertTrue(result.isNotEmpty(), "Should be Kokushi Musou 13-men")
+        assertTrue(result.all { it.yaku == YakuType.KokushiMusou13 }, "Yaku type should be KokushiMusou13")
+        assertTrue(result.all { it.isDoubleYakuman }, "Should be double yakuman")
+        assertTrue(result.all { it.han == -2 }, "Han should be -2 for double yakuman")
     }
 
     /**
@@ -128,12 +131,14 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.White
 
-        val allTiles = tiles + winningTile
-        val handStructure = RiichiHandDecomposer.decompose(allTiles)
+        val handTiles = tiles.map { it.withoutRed }
+        val handStructures = RiichiHandDecomposer.decompose(handTiles, winningTile)
 
-        val result = calculateKokushiMusou(handStructure!!, winningTile)
+        val result = handStructures.mapNotNull { handStructure ->
+            calculateKokushiMusou(handStructure, winningTile)
+        }
 
-        assertNull(result, "Should return null when hand is not Kokushi Musou")
+        assertTrue(result.isEmpty(), "Should be empty when hand is not Kokushi Musou")
     }
 
     /**

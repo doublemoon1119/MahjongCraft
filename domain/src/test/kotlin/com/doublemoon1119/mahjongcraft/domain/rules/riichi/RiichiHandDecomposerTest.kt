@@ -5,11 +5,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Fuuro
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Mentsu
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 /**
  * [RiichiHandDecomposer] 的單元測試。
@@ -24,31 +20,31 @@ class RiichiHandDecomposerTest {
      * 牌數不足 14 張時，應返回 null。
      */
     @Test
-    fun `test invalid hand returns null`() {
-        val tiles = listOf(
+    fun `test invalid hand returns empty hand structure`() {
+        val handTiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 2),
             Tile.Numeric(Tile.Suit.Character, 3)
         )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile)
 
-        val result = RiichiHandDecomposer.decompose(tiles)
-
-        assertNull(result)
+        assertTrue(result.isEmpty())
     }
 
     /**
      * 測試非 14 張牌無法分割。
      */
     @Test
-    fun `test not 14 tiles returns null`() {
-        val tiles = listOf(
+    fun `test not 14 tiles returns empty hand structure`() {
+        val handTiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 1)
         )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile)
 
-        val result = RiichiHandDecomposer.decompose(tiles)
-
-        assertNull(result)
+        assertTrue(result.isEmpty())
     }
 
     /**
@@ -57,8 +53,8 @@ class RiichiHandDecomposerTest {
      * 國士無雙需要十三張不同的么九牌加上一張重複的牌做雀頭。
      */
     @Test
-    fun `test kokushi musou without pair returns null`() {
-        val tiles = listOf(
+    fun `test kokushi musou without pair returns empty hand structure`() {
+        val handTiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 9),
             Tile.Numeric(Tile.Suit.Dot, 1),
@@ -71,13 +67,12 @@ class RiichiHandDecomposerTest {
             Tile.Honor.North,
             Tile.Honor.Red,
             Tile.Honor.Green,
-            Tile.Honor.White,
-            Tile.Numeric(Tile.Suit.Character, 2)
+            Tile.Honor.White
         )
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile)
 
-        val result = RiichiHandDecomposer.decompose(tiles)
-
-        assertNull(result)
+        assertTrue(result.isEmpty())
     }
 
     /**
@@ -87,7 +82,7 @@ class RiichiHandDecomposerTest {
      */
     @Test
     fun `test chiitoitsu cannot have fuuro`() {
-        val tiles = listOf(
+        val handTiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 2),
@@ -100,7 +95,6 @@ class RiichiHandDecomposerTest {
             Tile.Numeric(Tile.Suit.Character, 5),
             Tile.Numeric(Tile.Suit.Character, 6),
             Tile.Numeric(Tile.Suit.Character, 6),
-            Tile.Numeric(Tile.Suit.Character, 7),
             Tile.Numeric(Tile.Suit.Character, 7)
         )
 
@@ -111,9 +105,10 @@ class RiichiHandDecomposerTest {
             )
         )
 
-        val result = RiichiHandDecomposer.decompose(tiles, fuuro)
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile, fuuro)
 
-        assertNull(result)
+        assertTrue(result.isEmpty())
     }
 
     /**
@@ -123,7 +118,7 @@ class RiichiHandDecomposerTest {
      */
     @Test
     fun `test chiitoitsu decomposition`() {
-        val tiles = listOf(
+        val handTiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Dot, 2),
@@ -136,11 +131,11 @@ class RiichiHandDecomposerTest {
             Tile.Numeric(Tile.Suit.Dot, 6),
             Tile.Numeric(Tile.Suit.Bamboo, 7),
             Tile.Numeric(Tile.Suit.Bamboo, 7),
-            Tile.Numeric(Tile.Suit.Character, 9),
             Tile.Numeric(Tile.Suit.Character, 9)
         )
 
-        val result = RiichiHandDecomposer.decompose(tiles)
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 9)
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile).find { it is HandStructure.Chiitoitsu }
 
         assertNotNull(result)
         assertTrue(result is HandStructure.Chiitoitsu)
@@ -154,7 +149,7 @@ class RiichiHandDecomposerTest {
      */
     @Test
     fun `test toitoi hand decomposition`() {
-        val tiles = listOf(
+        val handTiles = listOf(
             Tile.Honor.White,
             Tile.Honor.White,
             Tile.Honor.White,
@@ -167,11 +162,11 @@ class RiichiHandDecomposerTest {
             Tile.Honor.Red,
             Tile.Honor.Red,
             Tile.Honor.Red,
-            Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 1)
         )
 
-        val result = RiichiHandDecomposer.decompose(tiles)
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile).find { it is HandStructure.Standard }
 
         assertNotNull(result)
         assertTrue(result is HandStructure.Standard)
@@ -189,8 +184,7 @@ class RiichiHandDecomposerTest {
      */
     @Test
     fun `test standard hand with sequences decomposition`() {
-        val tiles = listOf(
-            Tile.Numeric(Tile.Suit.Character, 1),
+        val handTiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 2),
             Tile.Numeric(Tile.Suit.Character, 3),
@@ -206,7 +200,8 @@ class RiichiHandDecomposerTest {
             Tile.Honor.Red
         )
 
-        val result = RiichiHandDecomposer.decompose(tiles)
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile).find { it is HandStructure.Standard }
 
         assertNotNull(result)
         assertTrue(result is HandStructure.Standard)
