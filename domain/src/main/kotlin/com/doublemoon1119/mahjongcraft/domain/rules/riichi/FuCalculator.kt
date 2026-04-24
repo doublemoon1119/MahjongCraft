@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.CompletionT
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Mentsu
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculatePinfu
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
 import com.doublemoon1119.mahjongcraft.domain.util.isHonor
 import com.doublemoon1119.mahjongcraft.domain.util.isTerminal
@@ -45,8 +46,8 @@ object FuCalculator {
     fun calculateTotalFu(context: RiichiYakuContext, handStructure: HandStructure): Int {
         return when (handStructure) {
             is HandStructure.Standard -> calculateFuForStandard(context, handStructure)
-            is HandStructure.Chiitoitsu -> 25
-            is HandStructure.KokushiMusou -> -1
+            is HandStructure.Chiitoitsu -> 25  // 特殊牌型：七對子固定 25符
+            is HandStructure.KokushiMusou -> 0
         }
     }
 
@@ -54,11 +55,18 @@ object FuCalculator {
      * 計算標準手牌的符數。
      */
     private fun calculateFuForStandard(context: RiichiYakuContext, structure: HandStructure.Standard): Int {
-        // TODO: 實作特殊牌型：門前平和自摸固定 20符、副露平和型的榮和固定 30符 的判斷
-        var fu = 0
+        // 特殊牌型：門前平和自摸固定 20符
+        if (isMenzenPinfuTsumo(context, structure)) {
+            return 20
+        }
+
+        // 特殊牌型：副露平和型的榮和固定 30符
+        if (isFuuroPinfuRon(context, structure)) {
+            return 30
+        }
 
         // 1. 符底 (20符)
-        fu += 20
+        var fu = 20
 
         // 2. 門前清榮和加符 (10符)
         if (context.isMenzen && !context.isTsumo) {
@@ -84,6 +92,42 @@ object FuCalculator {
 
         // 向上進到 10 的倍數
         return ceilToTen(fu)
+    }
+
+    /***
+     * 是否為門前平和自摸
+     */
+    private fun isMenzenPinfuTsumo(context: RiichiYakuContext, structure: HandStructure.Standard): Boolean {
+        if (context.isMenzen && context.isTsumo){
+            val pinfu = calculatePinfu(
+                handStructure = structure,
+                isMenzen = context.isMenzen,
+                roundWind = context.roundWind,
+                seatWind = context.seatWind,
+            )
+            if (pinfu != null) {
+                return true
+            }
+        }
+        return false
+    }
+
+    /***
+     * 是否為副露平和型的榮和
+     */
+    private fun isFuuroPinfuRon(context: RiichiYakuContext, structure: HandStructure.Standard): Boolean {
+        if (!context.isMenzen && !context.isTsumo){
+            val pinfu = calculatePinfu(
+                handStructure = structure,
+                isMenzen = true,  // 這裡強制丟 true 讓 calculatePinfu 可以進行判斷
+                roundWind = context.roundWind,
+                seatWind = context.seatWind,
+            )
+            if (pinfu != null) {
+                return true
+            }
+        }
+        return false
     }
 
     /**

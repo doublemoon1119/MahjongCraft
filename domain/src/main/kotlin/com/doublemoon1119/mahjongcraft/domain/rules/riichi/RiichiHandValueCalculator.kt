@@ -61,7 +61,8 @@ class RiichiHandValueCalculator(
                 .ifEmpty {
                     return RiichiHandValueResult(
                         yakuResults = emptyList(),
-                        totalHan = 0
+                        totalHan = 0,
+                        totalFu = 0
                     )
                 }
 
@@ -76,7 +77,8 @@ class RiichiHandValueCalculator(
                 val totalHan = calculateTotalHan(yakuResults)
                 return@map RiichiHandValueResult(
                     yakuResults = yakuResults,
-                    totalHan = totalHan
+                    totalHan = totalHan,
+                    totalFu = 0
                 )
             }
 
