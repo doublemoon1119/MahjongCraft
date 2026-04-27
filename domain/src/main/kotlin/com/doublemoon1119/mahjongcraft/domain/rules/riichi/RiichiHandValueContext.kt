@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku
+package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueContext
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
 
 /**
- * 役種計算所需的上下文資訊。
+ * 立直麻將手牌價值計算所需的上下文資訊。
  *
  * 包含手牌資訊、遊戲狀態、環境資訊等，用於各役種的檢測計算。
  *
@@ -28,7 +28,7 @@ import com.doublemoon1119.mahjongcraft.domain.table.Wind
  * @property isRinshanKaihou 是否為嶺上花。
  * @property isFirstTurn 是否為第一巡。用於天和、地和的判定。
  */
-data class RiichiYakuContext(
+data class RiichiHandValueContext(
     override val hand: Hand,
     override val winningTile: Tile,
     override val isTsumo: Boolean,

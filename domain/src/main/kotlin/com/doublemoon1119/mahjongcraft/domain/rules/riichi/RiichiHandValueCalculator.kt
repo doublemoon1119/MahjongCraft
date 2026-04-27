@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Fuuro
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Mentsu
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.dora.calculateAkaDora
@@ -26,15 +26,9 @@ import kotlin.math.abs
  */
 class RiichiHandValueCalculator(
     private val useLocalYaku: Boolean = false
-) : HandValueCalculator<RiichiYakuContext, RiichiHandValueResult> {
+) : HandValueCalculator<RiichiHandValueContext, RiichiHandValueResult> {
 
-    /**
-     * 計算手牌的役種與價值。
-     *
-     * @param context 價值計算所需的上下文資訊。
-     * @return 役種計算結果，包含役種列表與總番數。
-     */
-    override fun calculate(context: RiichiYakuContext): RiichiHandValueResult {
+    override fun calculate(context: RiichiHandValueContext): RiichiHandValueResult {
         // 嘗試分解手牌（用於需要手牌結構的役種）
         val handTiles = context.hand.standingTiles.map { it.tile.withoutRed }
         val winningTile = context.winningTile.withoutRed
@@ -179,7 +173,7 @@ class RiichiHandValueCalculator(
      * - 七對子與一杯口、兩杯口互斥（按點數決定）
      */
     private fun calculateStandardYaku(
-        context: RiichiYakuContext,
+        context: RiichiHandValueContext,
         handStructure: HandStructure,
         results: MutableList<YakuResult>
     ) {
@@ -299,7 +293,7 @@ class RiichiHandValueCalculator(
      * 計算字牌役（場風、自風、役牌）。
      */
     private fun calculateHonorYaku(
-        context: RiichiYakuContext,
+        context: RiichiHandValueContext,
         fuuro: List<Fuuro>,
         results: MutableList<YakuResult>
     ) {
@@ -320,7 +314,7 @@ class RiichiHandValueCalculator(
     /**
      * 計算特殊役（立直、一發、嶺上花等）。
      */
-    private fun calculateSpecialYaku(context: RiichiYakuContext, results: MutableList<YakuResult>) {
+    private fun calculateSpecialYaku(context: RiichiHandValueContext, results: MutableList<YakuResult>) {
         // 立直 和 雙立直
         if (context.isMenzen) {
             if (context.isDoubleRiichi) {  // 雙立直
@@ -367,7 +361,7 @@ class RiichiHandValueCalculator(
      * 可能會含有小三元 (非役滿)
      */
     private fun calculateYakuman(
-        context: RiichiYakuContext,
+        context: RiichiHandValueContext,
         handStructure: HandStructure,
         results: MutableList<YakuResult>
     ) {

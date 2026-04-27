@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueCalculator
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
 import java.util.*
@@ -40,8 +41,8 @@ abstract class RiichiHandValueCalculatorTestBase {
         isRobbingKan: Boolean = false,
         isRinshanKaihou: Boolean = false,
         isFirstTurn: Boolean = false
-    ): RiichiYakuContext {
-        return RiichiYakuContext(
+    ): RiichiHandValueContext {
+        return RiichiHandValueContext(
             hand = hand,
             winningTile = winningTile,
             isTsumo = isTsumo,

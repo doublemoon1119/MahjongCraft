@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.CompletionType
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Janto
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,8 +30,8 @@ class FuCalculatorTest {
         isTsumo: Boolean = false,
         roundWind: Wind = Wind.EAST,
         seatWind: Wind = Wind.EAST
-    ): RiichiYakuContext {
-        return RiichiYakuContext(
+    ): RiichiHandValueContext {
+        return RiichiHandValueContext(
             hand = Hand(mutableListOf()),
             winningTile = Tile.Numeric(Tile.Suit.Character, 1),
             isTsumo = isTsumo,

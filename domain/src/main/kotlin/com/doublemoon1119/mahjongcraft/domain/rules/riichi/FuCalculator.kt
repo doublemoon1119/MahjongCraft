@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueContext
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.CompletionType
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Mentsu
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculatePinfu
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
 import com.doublemoon1119.mahjongcraft.domain.util.isHonor
@@ -43,7 +43,7 @@ object FuCalculator {
      * @param handStructure 手牌結構。
      * @return 總符數。
      */
-    fun calculateTotalFu(context: RiichiYakuContext, handStructure: HandStructure): Int {
+    fun calculateTotalFu(context: RiichiHandValueContext, handStructure: HandStructure): Int {
         return when (handStructure) {
             is HandStructure.Standard -> calculateFuForStandard(context, handStructure)
             is HandStructure.Chiitoitsu -> 25  // 特殊牌型：七對子固定 25符
@@ -54,7 +54,7 @@ object FuCalculator {
     /**
      * 計算標準手牌的符數。
      */
-    private fun calculateFuForStandard(context: RiichiYakuContext, structure: HandStructure.Standard): Int {
+    private fun calculateFuForStandard(context: RiichiHandValueContext, structure: HandStructure.Standard): Int {
         // 特殊牌型：門前平和自摸固定 20符
         if (isMenzenPinfuTsumo(context, structure)) {
             return 20
@@ -97,7 +97,7 @@ object FuCalculator {
     /***
      * 是否為門前平和自摸
      */
-    private fun isMenzenPinfuTsumo(context: RiichiYakuContext, structure: HandStructure.Standard): Boolean {
+    private fun isMenzenPinfuTsumo(context: RiichiHandValueContext, structure: HandStructure.Standard): Boolean {
         if (context.isMenzen && context.isTsumo){
             val pinfu = calculatePinfu(
                 handStructure = structure,
@@ -115,7 +115,7 @@ object FuCalculator {
     /***
      * 是否為副露平和型的榮和
      */
-    private fun isFuuroPinfuRon(context: RiichiYakuContext, structure: HandStructure.Standard): Boolean {
+    private fun isFuuroPinfuRon(context: RiichiHandValueContext, structure: HandStructure.Standard): Boolean {
         if (!context.isMenzen && !context.isTsumo){
             val pinfu = calculatePinfu(
                 handStructure = structure,

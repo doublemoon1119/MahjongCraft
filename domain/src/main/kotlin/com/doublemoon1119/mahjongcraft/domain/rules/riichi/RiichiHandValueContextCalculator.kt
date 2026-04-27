@@ -5,14 +5,14 @@ import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueContextCalculator
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiYakuContext
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
 
 /**
  * 日本麻將役種上下文計算機。
  *
- * 負責根據當前遊戲狀態計算 [RiichiYakuContext]，包含：
+ * 負責根據當前遊戲狀態計算 [RiichiHandValueContext]，包含：
  * - 寶牌指示牌與裏寶牌指示牌
  * - 海底撈月、河底撈魚判定
  * - 嶺上花判定
@@ -21,7 +21,7 @@ import com.doublemoon1119.mahjongcraft.domain.table.TableState
  */
 class RiichiHandValueContextCalculator(
     private val config: RiichiRuleConfig
-) : HandValueContextCalculator<RiichiYakuContext, RiichiHandValueContextCalculator.Input> {
+) : HandValueContextCalculator<RiichiHandValueContext, RiichiHandValueContextCalculator.Input> {
 
     /**
      * 計算役種上下文所需的輸入參數。
@@ -34,7 +34,7 @@ class RiichiHandValueContextCalculator(
         val isRobbingKan: Boolean = false
     )
 
-    override fun calculate(input: Input): RiichiYakuContext {
+    override fun calculate(input: Input): RiichiHandValueContext {
         val (tableState, player, incomingTile, isTsumo, isRobbingKan) = input
         val hand = player.hand
         val isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.CLOSED_KAN }
@@ -96,7 +96,7 @@ class RiichiHandValueContextCalculator(
             }
         }
 
-        return RiichiYakuContext(
+        return RiichiHandValueContext(
             hand = hand,
             winningTile = incomingTile.tile,
             isTsumo = isTsumo,
