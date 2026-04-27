@@ -37,3 +37,6 @@ bin/
 # local development settings
 
 /local.dev.properties
+
+# temporary development files
+docs/temp/
