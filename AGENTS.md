@@ -66,3 +66,8 @@
 - **同層依賴**:
   - 在 `platform` 層內部，具體實現模組 (如 `fabric`)應依賴其對應的通用模組 (如 `common`)。
   - 範例: `:minecraft_v1_20_1_fabric` -> `:minecraft_v1_20_1_common` -> `:minecraft_common`。
+
+## 臨時文件管理
+- 所有開發過程中產生的臨時性指令、邏輯草稿或一次性 Prompt 檔案，必須統一生成於 `docs/temp/` 目錄。
+- 禁止在專案根目錄或 `src/` 目錄下直接產生非代碼性質的 `.md` 檔案。
+- `docs/temp/` 目錄已加入 `.gitignore`，不會被 git 追蹤。
