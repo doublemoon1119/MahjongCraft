@@ -15,6 +15,8 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.honor.calculateH
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.*
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman.*
 import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
+import kotlin.math.abs
+import kotlin.math.pow
 
 /**
  * 日本麻將手牌番數計算機。
@@ -62,7 +64,8 @@ class RiichiHandValueCalculator(
                     return RiichiHandValueResult(
                         yakuResults = emptyList(),
                         totalHan = 0,
-                        totalFu = 0
+                        totalFu = 0,
+                        totalPoint = 0
                     )
                 }
 
@@ -75,10 +78,16 @@ class RiichiHandValueCalculator(
             // 若有任何役滿，則只計算役滿（役滿疊加）
             if (yakuResults.any { it.isYakuman }) {
                 val totalHan = calculateTotalHan(yakuResults)
+                val totalPoint = calculateYakumanPoint(
+                    yakumanMultiplier = abs(totalHan),  // 役滿總翻數為負數，這裡帶入絕對值
+                    isDealer = context.roundWind == context.seatWind
+                )
+
                 return@map RiichiHandValueResult(
                     yakuResults = yakuResults,
                     totalHan = totalHan,
-                    totalFu = 0
+                    totalFu = 0,
+                    totalPoint = totalPoint
                 )
             }
 
@@ -127,28 +136,39 @@ class RiichiHandValueCalculator(
             val totalHan = calculateTotalHan(yakuResults)
 
             // 計算符數（滿貫(5翻)以上時不計算）
-            val totalFu = if (totalHan !in 0..<5) {
+            val totalFu = if (totalHan >= 5) {
                 -1 // 滿貫(5翻)以上時返回 -1
             } else {
                 FuCalculator.calculateTotalFu(context, handStructure)
             }
 
+            // 計算總點數
+            val totalPoint = calculateNonYakumanPoint(
+                han = totalHan,
+                fu = totalFu,
+                isDealer = context.roundWind == context.seatWind
+            )
+
             return@map RiichiHandValueResult(
                 yakuResults = yakuResults,
                 totalHan = totalHan,
-                totalFu = totalFu
+                totalFu = totalFu,
+                totalPoint = totalPoint
             )
         }
 
-        // 日本麻將適用高點法，這裡下方只會回傳點數最高的結果
-        val yakumanResult = handValueResults.filter { it.isYakuman }
-        return if (yakumanResult.isNotEmpty()) {
-            // 如果有役滿，役滿翻數在 totalHan 計算上是負的，所以找 totalHan 最小的結果回傳
-            yakumanResult.minBy { it.totalHan }
-        } else {
-            // 如果沒有役滿，根據高點法判定流程，先比較翻數，翻數相同時才比較符數
-            handValueResults.maxWith(compareBy<RiichiHandValueResult> { it.totalHan }.thenBy { it.totalFu })
-        }
+        // 日本麻將適用高點法，選擇最終點數最高的結果。
+        return handValueResults.maxWithOrNull(
+            compareBy<RiichiHandValueResult> { it.totalPoint } // 1. 點數最高優先
+                .thenBy { it.isYakuman } // 2. 點數相同時，役滿役優先於數役滿 (避免`累計役滿`覆蓋掉`役滿`)
+                .thenBy { if (it.isYakuman) abs(it.totalHan) else it.totalHan }  // 3. 翻數次之 (如果是役滿，其翻數以負數表示，這裡取其絕對值)
+                .thenBy { it.totalFu } // 4. 最後才是符數
+        ) ?: RiichiHandValueResult(
+            yakuResults = emptyList(),
+            totalHan = 0,
+            totalFu = 0,
+            totalPoint = 0
+        )
     }
 
     /**
@@ -438,5 +458,69 @@ class RiichiHandValueCalculator(
         } else {
             results.sumOf { it.han }
         }
+    }
+
+    /**
+     * 計算役滿最終點數。
+     *
+     * @param yakumanMultiplier 役滿倍數 (如 1, 2...)
+     * @param isDealer 是否為莊家
+     * @return 最終總點數
+     */
+    fun calculateYakumanPoint(yakumanMultiplier: Int, isDealer: Boolean): Int {
+        val basePoint = if (isDealer) 48000 else 32000
+        return basePoint * yakumanMultiplier
+    }
+
+    /**
+     * 計算非役滿手牌的最終點數。
+     *
+     * 根據翻數與符數，判定點數等級（滿貫、跳滿等）或使用指數公式計算。
+     * 最終點數會根據是否為莊家進行加成，並確保符合百位數進位規則。
+     *
+     * @param han 總翻數。
+     * @param fu 總符數。
+     * @param isDealer 是否為莊家。
+     * @return 最終獲得的總點數（榮和總點數）。
+     */
+    fun calculateNonYakumanPoint(han: Int, fu: Int, isDealer: Boolean): Int {
+        // 1. 判定固定點數等級 (滿貫以上)
+        val fixedBasicPoint = when {
+            han >= 13 -> 8000   // 數役滿
+            han >= 11 -> 6000   // 三倍滿
+            han >= 8 -> 4000    // 倍滿
+            han >= 6 -> 3000    // 跳滿
+            han == 5 -> 2000    // 滿貫
+            else -> null        // 滿貫以下，需要計算
+        }
+
+        // 2. 計算基本點 (Basic Point)
+        val basicPoint = if (fixedBasicPoint != null) {
+            fixedBasicPoint
+        } else {
+            // 公式：符數 * 2^(翻數 + 2)
+            val calculatedBP = fu * 2.0.pow(han + 2).toInt()
+            // 滿貫封頂：基本點最高為 2000
+            calculatedBP.coerceAtMost(2000)
+        }
+
+        // 3. 根據身分倍率計算最終榮和點數
+        // 莊家為基本點的 6 倍，子家為 4 倍
+        val multiplier = if (isDealer) 6 else 4
+        val rawTotal = basicPoint * multiplier
+
+        // 4. 向上進位至百位數
+        // 例如：3840 點進位至 3900 點
+        return ceilToHundred(rawTotal)
+    }
+
+    /**
+     * 將數值向上進位至百位數。
+     *
+     * @param value 原始點數。
+     * @return 進位後的點數。
+     */
+    private fun ceilToHundred(value: Int): Int {
+        return if (value % 100 == 0) value else (value / 100 + 1) * 100
     }
 }
