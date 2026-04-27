@@ -99,7 +99,7 @@ class HanCalculatorTest {
     }
 
     /**
-     * 測試 calculateNonYakumanHan：仅有非役满时返回正整数。
+     * 測試 [HanCalculator.calculateNonYakumanHan]：仅有非役满时返回正整数。
      */
     @Test
     fun `test calculate non yakuman han`() {
@@ -112,7 +112,7 @@ class HanCalculatorTest {
     }
 
     /**
-     * 測試 calculateNonYakumanHan：包含役满时只计算非役满。
+     * 測試 [HanCalculator.calculateNonYakumanHan]：包含役满时只计算非役满。
      */
     @Test
     fun `test calculate non yakuman han ignores yakuman`() {
@@ -126,7 +126,7 @@ class HanCalculatorTest {
     }
 
     /**
-     * 測試 calculateYakumanMultiplier：單一般役滿 = 1。
+     * 測試 [HanCalculator.calculateYakumanMultiplier]：單一般役滿 = 1。
      */
     @Test
     fun `test calculate yakuman multiplier single`() {
@@ -138,7 +138,7 @@ class HanCalculatorTest {
     }
 
     /**
-     * 測試 calculateYakumanMultiplier：單雙倍役滿 = 2。
+     * 測試 [HanCalculator.calculateYakumanMultiplier]：單雙倍役滿 = 2。
      */
     @Test
     fun `test calculate yakuman multiplier double`() {
@@ -150,7 +150,7 @@ class HanCalculatorTest {
     }
 
     /**
-     * 測試 calculateYakumanMultiplier：一般役滿 + 雙倍役滿 = 3。
+     * 測試 [HanCalculator.calculateYakumanMultiplier]：一般役滿 + 雙倍役滿 = 3。
      */
     @Test
     fun `test calculate yakuman multiplier combined`() {

@@ -90,11 +90,10 @@ class PointCalculatorTest {
     }
 
     /**
-     * 測試滿貫（5 翻）：子家 8000 點 / 莊家 12000 點。
+     * 測試滿貫（5 翻）：子家 8000 點。
      *
      * 等級點數固定為 2000 基本點。
      * - 子家：2000 * 4 = 8000
-     * - 莊家：2000 * 6 = 12000
      */
     @Test
     fun `test mangan 5 han for non-dealer`() {
@@ -102,6 +101,12 @@ class PointCalculatorTest {
         assertEquals(8000, result)
     }
 
+    /**
+     * 測試滿貫（5 翻）：莊家 12000 點。
+     *
+     * 等級點數固定為 2000 基本點。
+     * - 莊家：2000 * 6 = 12000
+     */
     @Test
     fun `test mangan 5 han for dealer`() {
         val result = PointCalculator.calculateNonYakumanPoint(han = 5, fu = 0, isDealer = true)
@@ -109,11 +114,10 @@ class PointCalculatorTest {
     }
 
     /**
-     * 測試跳滿（6 翻）：子家 12000 點 / 莊家 18000 點。
+     * 測試跳滿（6 翻）：子家 12000 點。
      *
      * 等級點數固定為 3000 基本點。
      * - 子家：3000 * 4 = 12000
-     * - 莊家：3000 * 6 = 18000
      */
     @Test
     fun `test haneman 6 han for non-dealer`() {
@@ -121,6 +125,12 @@ class PointCalculatorTest {
         assertEquals(12000, result)
     }
 
+    /**
+     * 測試跳滿（6 翻）：莊家 18000 點。
+     *
+     * 等級點數固定為 3000 基本點。
+     * - 莊家：3000 * 6 = 18000
+     */
     @Test
     fun `test haneman 6 han for dealer`() {
         val result = PointCalculator.calculateNonYakumanPoint(han = 6, fu = 0, isDealer = true)
@@ -128,11 +138,10 @@ class PointCalculatorTest {
     }
 
     /**
-     * 測試倍滿（8 翻）：子家 16000 點 / 莊家 24000 點。
+     * 測試倍滿（8 翻）：子家 16000 點。
      *
      * 等級點數固定為 4000 基本點。
      * - 子家：4000 * 4 = 16000
-     * - 莊家：4000 * 6 = 24000
      */
     @Test
     fun `test baiman 8 han for non-dealer`() {
@@ -140,6 +149,12 @@ class PointCalculatorTest {
         assertEquals(16000, result)
     }
 
+    /**
+     * 測試倍滿（8 翻）：莊家 24000 點。
+     *
+     * 等級點數固定為 4000 基本點。
+     * - 莊家：4000 * 6 = 24000
+     */
     @Test
     fun `test baiman 8 han for dealer`() {
         val result = PointCalculator.calculateNonYakumanPoint(han = 8, fu = 0, isDealer = true)
@@ -147,11 +162,10 @@ class PointCalculatorTest {
     }
 
     /**
-     * 測試三倍滿（11 翻）：子家 24000 點 / 莊家 36000 點。
+     * 測試三倍滿（11 翻）：子家 24000 點。
      *
      * 等級點數固定為 6000 基本點。
      * - 子家：6000 * 4 = 24000
-     * - 莊家：6000 * 6 = 36000
      */
     @Test
     fun `test sanbaiman 11 han for non-dealer`() {
@@ -159,6 +173,12 @@ class PointCalculatorTest {
         assertEquals(24000, result)
     }
 
+    /**
+     * 測試三倍滿（11 翻）：莊家 36000 點。
+     *
+     * 等級點數固定為 6000 基本點。
+     * - 莊家：6000 * 6 = 36000
+     */
     @Test
     fun `test sanbaiman 11 han for dealer`() {
         val result = PointCalculator.calculateNonYakumanPoint(han = 11, fu = 0, isDealer = true)
@@ -166,11 +186,10 @@ class PointCalculatorTest {
     }
 
     /**
-     * 測試數役滿（13 翻）：子家 32000 點 / 莊家 48000 點。
+     * 測試數役滿（13 翻）：子家 32000 點 。
      *
      * 等級點數固定為 8000 基本點。
      * - 子家：8000 * 4 = 32000
-     * - 莊家：8000 * 6 = 48000
      */
     @Test
     fun `test suuankou 13 han for non-dealer`() {
@@ -178,6 +197,12 @@ class PointCalculatorTest {
         assertEquals(32000, result)
     }
 
+    /**
+     * 測試數役滿（13 翻）：莊家 48000 點。
+     *
+     * 等級點數固定為 8000 基本點。
+     * - 莊家：8000 * 6 = 48000
+     */
     @Test
     fun `test suuankou 13 han for dealer`() {
         val result = PointCalculator.calculateNonYakumanPoint(han = 13, fu = 0, isDealer = true)
@@ -236,7 +261,7 @@ class PointCalculatorTest {
     }
 
     /**
-     * 測試役滿點數（單倍役滿）：子家 32000 點 / 莊家 48000 點。
+     * 測試役滿點數（單倍役滿）：子家 32000 點 。
      */
     @Test
     fun `test yakuman 1x for non-dealer`() {
@@ -244,6 +269,9 @@ class PointCalculatorTest {
         assertEquals(32000, result)
     }
 
+    /**
+     * 測試役滿點數（單倍役滿）：莊家 48000 點。
+     */
     @Test
     fun `test yakuman 1x for dealer`() {
         val result = PointCalculator.calculateYakumanPoint(yakumanMultiplier = 1, isDealer = true)
@@ -251,7 +279,7 @@ class PointCalculatorTest {
     }
 
     /**
-     * 測試役滿點數（雙倍役滿）：子家 64000 點 / 莊家 96000 點。
+     * 測試役滿點數（雙倍役滿）：子家 64000 點。
      */
     @Test
     fun `test yakuman 2x for non-dealer`() {
@@ -259,6 +287,9 @@ class PointCalculatorTest {
         assertEquals(64000, result)
     }
 
+    /**
+     * 測試役滿點數（雙倍役滿）：莊家 96000 點。
+     */
     @Test
     fun `test yakuman 2x for dealer`() {
         val result = PointCalculator.calculateYakumanPoint(yakumanMultiplier = 2, isDealer = true)
@@ -266,7 +297,7 @@ class PointCalculatorTest {
     }
 
     /**
-     * 測試役滿點數（累計役滿，三倍）：子家 96000 點 / 莊家 144000 點。
+     * 測試役滿點數（累計役滿，三倍）：子家 96000 點。
      */
     @Test
     fun `test yakuman 3x for non-dealer`() {
@@ -274,6 +305,9 @@ class PointCalculatorTest {
         assertEquals(96000, result)
     }
 
+    /**
+     * 測試役滿點數（累計役滿，三倍）：莊家 144000 點。
+     */
     @Test
     fun `test yakuman 3x for dealer`() {
         val result = PointCalculator.calculateYakumanPoint(yakumanMultiplier = 3, isDealer = true)
@@ -287,5 +321,14 @@ class PointCalculatorTest {
     fun `test yakuman 4x for non-dealer`() {
         val result = PointCalculator.calculateYakumanPoint(yakumanMultiplier = 4, isDealer = false)
         assertEquals(128000, result)
+    }
+
+    /**
+     * 測試役滿點數（累計役滿役滿，四倍）：莊家 192000 點。
+     */
+    @Test
+    fun `test yakuman 4x for dealer`() {
+        val result = PointCalculator.calculateYakumanPoint(yakumanMultiplier = 4, isDealer = true)
+        assertEquals(192000, result)
     }
 }
