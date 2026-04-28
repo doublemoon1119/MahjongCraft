@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.application.ports.concurrency
+package com.doublemoon1119.mahjongcraft.domain.concurrency
 
 import kotlinx.coroutines.CoroutineDispatcher
 

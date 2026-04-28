@@ -12,4 +12,5 @@ extra["javaRelease"] = libs.versions.jvm.domain.release.get().toInt()
 dependencies {
     // testing 模組需要存取 domain 中的類別和介面來建立 Fake 物件。
     api(project(":domain"))
+    api(libs.kotlinx.coroutines.test)
 }

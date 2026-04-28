@@ -1,8 +1,9 @@
-package com.doublemoon1119.mahjongcraft.application.usecase.factory
+package com.doublemoon1119.mahjongcraft.domain.module
 
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueCalculator
+import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
-import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
 import com.doublemoon1119.mahjongcraft.testing.fakes.*
 import kotlin.test.Test
@@ -46,6 +47,13 @@ private class FakeModule<T : MahjongRuleConfig>(
     override fun createShantenCalculator(config: T) = FakeShantenCalculator()
 
     override fun createLegalActionValidator(config: T): LegalActionValidator = FakeLegalActionValidator()
+    override fun createHandValueCalculator(config: T): HandValueCalculator<*, *> {
+        TODO("Not yet implemented")
+    }
+
+    override fun createHandValueContextCalculator(config: T): HandValueContextCalculator<*, *> {
+        TODO("Not yet implemented")
+    }
 }
 
 /**
@@ -58,11 +66,11 @@ class MahjongModuleRegistryTest {
      */
     @Test
     fun `test register and get module`() {
-        val registry = MahjongModuleRegistry()
+        val registry: MahjongModuleRegistry = MahjongModuleRegistryImpl()
         val moduleA = FakeModule<FakeConfigA>()
         val configA = FakeConfigA()
 
-        registry.register(FakeConfigA::class, moduleA)
+        registry.register(FakeConfigA::class.java, moduleA.id, { moduleA })
 
         val result = registry.getModule(configA)
         assertEquals(moduleA, result, "The registry should return the module associated with FakeConfigA.")
@@ -73,7 +81,7 @@ class MahjongModuleRegistryTest {
      */
     @Test
     fun `test get unregistered module throws exception`() {
-        val registry = MahjongModuleRegistry()
+        val registry: MahjongModuleRegistry = MahjongModuleRegistryImpl()
         val configA = FakeConfigA()
 
         val exception = assertFailsWith<IllegalStateException> {
@@ -89,14 +97,14 @@ class MahjongModuleRegistryTest {
      */
     @Test
     fun `test duplicate registration throws exception`() {
-        val registry = MahjongModuleRegistry()
+        val registry: MahjongModuleRegistry = MahjongModuleRegistryImpl()
         val firstModule = FakeModule<FakeConfigA>("moduleA")
         val secondModule = FakeModule<FakeConfigA>("moduleA") // Same ID
 
-        registry.register(FakeConfigA::class, firstModule)
+        registry.register(FakeConfigA::class.java, firstModule.id, { firstModule })
 
         assertFailsWith<IllegalArgumentException> {
-            registry.register(FakeConfigA::class, secondModule)
+            registry.register(FakeConfigA::class.java, secondModule.id, { secondModule })
         }
     }
 
@@ -105,15 +113,15 @@ class MahjongModuleRegistryTest {
      */
     @Test
     fun `test multiple registrations`() {
-        val registry = MahjongModuleRegistry()
+        val registry: MahjongModuleRegistry = MahjongModuleRegistryImpl()
         val moduleA = FakeModule<FakeConfigA>("moduleA")
         val moduleB = FakeModule<FakeConfigB>("moduleB")
 
         val configA = FakeConfigA()
         val configB = FakeConfigB()
 
-        registry.register(FakeConfigA::class, moduleA)
-        registry.register(FakeConfigB::class, moduleB)
+        registry.register(FakeConfigA::class.java, moduleA.id, { moduleA })
+        registry.register(FakeConfigB::class.java, moduleB.id, { moduleB })
 
         assertEquals(moduleA, registry.getModule(configA))
         assertEquals(moduleB, registry.getModule(configB))

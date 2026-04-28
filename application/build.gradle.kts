@@ -17,10 +17,7 @@ dependencies {
     api(platform(libs.koin.bom))
     api(libs.koin.core)
 
-    api(libs.kotlin.coroutines)
-
     // 單元測試相關
     testImplementation(kotlin("test"))
     testImplementation(project(":testing"))
-    testImplementation(libs.kotlinx.coroutines.test)
 }

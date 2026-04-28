@@ -1,7 +1,6 @@
-package com.doublemoon1119.mahjongcraft.application.usecase.factory
+package com.doublemoon1119.mahjongcraft.domain.module
 
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
 
 /**
  * 麻將規則模組註冊中心。
@@ -9,10 +8,10 @@ import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
  * 負責管理所有已載入的麻將規則模組。
  * 提供基於規則配置 (Config) 或模組 ID 的查找功能。
  *
- * 每一次 [getModule] 呼叫都會根據傳入的 [config] 返回新的模組實例，
+ * 每一次 [getModule] 呼叫都會根據傳入的 [MahjongRuleConfig] 返回新的模組實例，
  * 以確保每個麻將桌可以擁有獨立的組件，實現規則配置的獨立性。
  */
-class MahjongModuleRegistry {
+class MahjongModuleRegistryImpl: MahjongModuleRegistry {
 
     /**
      * 工廠函數映射：Config Class 對應工廠函數。
@@ -34,7 +33,7 @@ class MahjongModuleRegistry {
      * @throws IllegalArgumentException 如果該模組 ID 已經被註冊。
      */
     @Suppress("UNCHECKED_CAST")
-    fun <T : MahjongRuleConfig> register(
+    override fun <T : MahjongRuleConfig> register(
         configClass: Class<T>,
         id: String,
         factory: (T) -> MahjongRuleModule<T>
@@ -56,7 +55,7 @@ class MahjongModuleRegistry {
      * @throws IllegalStateException 如果找不到對應的模組。
      */
     @Suppress("UNCHECKED_CAST")
-    fun <T : MahjongRuleConfig> getModule(config: T): MahjongRuleModule<T> {
+    override fun <T : MahjongRuleConfig> getModule(config: T): MahjongRuleModule<T> {
         val factory = factoryMap[config::class.java]
             ?: throw IllegalStateException("No MahjongRuleModule registered for configuration: ${config::class.simpleName}")
         return factory(config) as MahjongRuleModule<T>
@@ -70,7 +69,7 @@ class MahjongModuleRegistry {
      * @param id 規則模組 ID。
      * @return 對應的配置類別，若無則返回 null。
      */
-    fun getConfigClass(id: String): Class<out MahjongRuleConfig>? {
+    override fun getConfigClass(id: String): Class<out MahjongRuleConfig>? {
         return idMap[id]
     }
 
@@ -81,7 +80,7 @@ class MahjongModuleRegistry {
      *
      * @return 所有已註冊模組 ID 的集合。
      */
-    fun getAllModuleIds(): Set<String> {
+    override fun getAllModuleIds(): Set<String> {
         return idMap.keys
     }
 }
