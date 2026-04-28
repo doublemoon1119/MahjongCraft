@@ -1,5 +1,6 @@
-package com.doublemoon1119.mahjongcraft.domain.fakes
+package com.doublemoon1119.mahjongcraft.domain.fakes.rules.taiwan
 
+import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeGameLength
 import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanScoreConfig
 
@@ -13,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanScoreConfig
  * @property initialHandSize 初始手牌張數，預設為 16。
  * @property deadTileCount 牌山尾端保留的死牌張數，預設為 8。
  * @property minimumWinConstraint 起胡台數限制，預設為 0。
- * @property scoreConfig 台灣麻將專屬的積分配置，預設使用 [TestConstants.TAIWAN_SCORE_CONFIG]。
+ * @property scoreConfig 台灣麻將專屬的積分配置。
  * @property gameLength 遊戲長度配置，預設為 16 局的模擬配置。
  */
 class FakeTaiwanRuleConfig(
@@ -21,6 +22,11 @@ class FakeTaiwanRuleConfig(
     override val initialHandSize: Int = 16,
     override val deadTileCount: Int = 8,
     override val minimumWinConstraint: Int = 0,
-    override val scoreConfig: TaiwanScoreConfig = TestConstants.TAIWAN_SCORE_CONFIG,
+    override val scoreConfig: TaiwanScoreConfig = TaiwanScoreConfig(
+        baseScore = 30,
+        pointPerTai = 10,
+        initialScore = 0,
+        bustThreshold = null
+    ),
     override val gameLength: FakeGameLength = FakeGameLength(16, "TaiwanRound")
 ) : TaiwanRuleConfig

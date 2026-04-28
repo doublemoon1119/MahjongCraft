@@ -5,8 +5,8 @@ import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
-import com.doublemoon1119.mahjongcraft.domain.fakes.FakeDiscardPile
-import com.doublemoon1119.mahjongcraft.domain.fakes.FakeRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals

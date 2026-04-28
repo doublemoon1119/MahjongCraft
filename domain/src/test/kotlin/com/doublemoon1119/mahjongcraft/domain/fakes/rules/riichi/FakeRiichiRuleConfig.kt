@@ -1,5 +1,6 @@
-package com.doublemoon1119.mahjongcraft.domain.fakes
+package com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeGameLength
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiScoreConfig
 
@@ -14,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiScoreConfig
  * @property initialHandSize 初始手牌張數，預設為 13。
  * @property deadTileCount 王牌（死牌）張數，預設為 14。
  * @property minimumWinConstraint 起胡番數限制（通常為 1 番），預設為 1。
- * @property scoreConfig 日本麻將專屬的積分配置，預設使用 [TestConstants.RIICHI_SCORE_CONFIG]。
+ * @property scoreConfig 日本麻將專屬的積分配置。
  * @property gameLength 遊戲長度配置，預設為 8 局（半莊戰）的模擬配置。
  */
 class FakeRiichiRuleConfig(
@@ -24,6 +25,10 @@ class FakeRiichiRuleConfig(
     override val initialHandSize: Int = 13,
     override val deadTileCount: Int = 14,
     override val minimumWinConstraint: Int = 1,
-    override val scoreConfig: RiichiScoreConfig = TestConstants.RIICHI_SCORE_CONFIG,
+    override val scoreConfig: RiichiScoreConfig =  RiichiScoreConfig(
+        initialScore = 25000,
+        bustThreshold = 0,
+        minPointsToWin = 30000
+    ),
     override val gameLength: FakeGameLength = FakeGameLength(8, "Hanchan")
 ) : RiichiRuleConfig

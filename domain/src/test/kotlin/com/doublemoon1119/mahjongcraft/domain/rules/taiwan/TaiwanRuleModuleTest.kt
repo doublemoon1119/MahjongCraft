@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.domain.fakes.FakeTaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.taiwan.FakeTaiwanRuleConfig
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertTrue
