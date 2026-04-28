@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.*
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
@@ -29,11 +30,6 @@ class RiichiHandValueContextCalculatorTest {
     private fun createCalculator(deadTileCount: Int = 14): RiichiHandValueContextCalculator {
         val config = FakeRiichiRuleConfig(deadTileCount = deadTileCount)
         return RiichiHandValueContextCalculator(config)
-    }
-
-    private fun createHand(tiles: List<Tile>): Hand {
-        val identifiedTiles = tiles.map { FakeIdentifiedTileFactory.create(it) }
-        return Hand(identifiedTiles.toMutableList())
     }
 
     private fun createPlayer(hand: Hand, riichiState: RiichiPlayerState? = null): MahjongPlayer {
@@ -76,7 +72,7 @@ class RiichiHandValueContextCalculatorTest {
     fun `test tsumo at last draw sets isLastDraw true`() {
         val calculator = createCalculator(deadTileCount = 14)
 
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -128,7 +124,7 @@ class RiichiHandValueContextCalculatorTest {
     fun `test ron at last discard sets isLastDiscard true`() {
         val calculator = createCalculator(deadTileCount = 14)
 
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -180,7 +176,7 @@ class RiichiHandValueContextCalculatorTest {
     fun `test last draw discard flags not set when tiles remain`() {
         val calculator = createCalculator(deadTileCount = 14)
 
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -232,7 +228,7 @@ class RiichiHandValueContextCalculatorTest {
     fun `test dora indicator count with no kan`() {
         val calculator = createCalculator(deadTileCount = 14)
 
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -434,7 +430,7 @@ class RiichiHandValueContextCalculatorTest {
     fun `test ura dora not included without riichi`() {
         val calculator = createCalculator(deadTileCount = 14)
 
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -486,7 +482,7 @@ class RiichiHandValueContextCalculatorTest {
     fun `test ura dora included with riichi`() {
         val calculator = createCalculator(deadTileCount = 14)
 
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -541,7 +537,7 @@ class RiichiHandValueContextCalculatorTest {
     fun `test dora calculation with zero wanpai count`() {
         val calculator = createCalculator(deadTileCount = 0)
 
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -678,7 +674,7 @@ class RiichiHandValueContextCalculatorTest {
     fun `test dora indicators with different kan counts`() {
         val calculator = createCalculator(deadTileCount = 14)
 
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),

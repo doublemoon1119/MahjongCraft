@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -32,7 +33,7 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test tsuuiisou all honor tiles`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 刻子：東東東
                 Tile.Honor.East,
@@ -74,7 +75,7 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test tsuuiisou with fuuro`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 刻子：南南南
                 Tile.Honor.South,
@@ -123,7 +124,7 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test non-tsuuiisou returns null`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 刻子：東東東
                 Tile.Honor.East,
@@ -158,7 +159,7 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test tsuuiisou via calculator`() {
         // 手牌: 七對子字一色
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Honor.East,
                 Tile.Honor.East,
@@ -195,7 +196,7 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test tsuuiisou with fuuro via calculator`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 刻子：南南南
                 Tile.Honor.South,

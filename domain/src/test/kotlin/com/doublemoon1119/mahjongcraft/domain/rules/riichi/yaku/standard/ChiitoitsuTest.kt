@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -20,7 +21,7 @@ class ChiitoitsuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test chiitoitsu menzen`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -55,7 +56,7 @@ class ChiitoitsuTest : RiichiHandValueCalculatorTestBase() {
     fun `test chiitoitsu with fuuro returns null`() {
         // 七對子手牌：13 張手牌 + 1 張自摸 = 7 對子
         // 其中一對被副露消耗（副露 3 張 + 手牌 10 張 + 摸牌 1 張 = 14 張）
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -99,7 +100,7 @@ class ChiitoitsuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test chiitoitsu with more than seven pairs returns null`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),

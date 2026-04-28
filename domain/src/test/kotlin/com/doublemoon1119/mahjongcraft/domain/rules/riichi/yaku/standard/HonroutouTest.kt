@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -25,7 +26,7 @@ class HonroutouTest : RiichiHandValueCalculatorTestBase() {
         // 副露：777z, 999p, 111s,
         // 手牌：11m, 99s (老頭牌)
         // 混老頭：2 翻
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -77,7 +78,7 @@ class HonroutouTest : RiichiHandValueCalculatorTestBase() {
         // 副露：777z, 999p, 111s,
         // 手牌：22m, 99s (老頭牌)
         // 含有非老頭牌
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 2),

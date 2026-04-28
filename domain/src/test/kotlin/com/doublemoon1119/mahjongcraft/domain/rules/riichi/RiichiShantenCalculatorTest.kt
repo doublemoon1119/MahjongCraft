@@ -1,8 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,17 +19,6 @@ class RiichiShantenCalculatorTest {
     private val calculator = RiichiShantenCalculator()
 
     /**
-     * 輔助函式，用於從 Tile 列表快速建立一個 Hand 物件。
-     *
-     * @param tiles 組成手牌的牌列表。
-     * @return 包含指定牌的手牌物件。
-     */
-    private fun createHand(tiles: List<Tile>): Hand {
-        val identifiedTiles = tiles.map { FakeIdentifiedTileFactory.create(it) }
-        return Hand(identifiedTiles.toMutableList())
-    }
-
-    /**
      * 測試標準型聽牌手牌。
      *
      * 手牌為 1112345678999m，聽 1m 對倒，向聽數應為 0。
@@ -38,7 +26,7 @@ class RiichiShantenCalculatorTest {
     @Test
     fun `test tenpai standard hand`() {
         // 手牌: 1112345678999m (聽 1m) - 向聽 0
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -67,7 +55,7 @@ class RiichiShantenCalculatorTest {
     @Test
     fun `test complete hand - seven pairs`() {
         // 7對子 = 14張牌 (門前清)
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -97,7 +85,7 @@ class RiichiShantenCalculatorTest {
     @Test
     fun `test seven pairs one away`() {
         // 6對子 + 一張單張 = 聽七對子 (門前清)
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -127,7 +115,7 @@ class RiichiShantenCalculatorTest {
     fun `test complete hand - kokushi`() {
         // 國士無雙胡牌: 13種么九牌各一張 + 其中一張有兩張 = 14張
         // 手牌: 1m,9m,1p,9p,1s,9s,東,南,西北,白發中 + 雙東
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 萬子
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -163,7 +151,7 @@ class RiichiShantenCalculatorTest {
     fun `test tenpai hand - kokushi`() {
         // 國士無雙聽牌: 13種么九牌各一張 = 13張 (聽最後一張)
         // 手牌: 1m,9m,1p,9p,1s,9s,東,南,西北,白發中 (13張)
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 萬子
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -197,7 +185,7 @@ class RiichiShantenCalculatorTest {
     fun `test kokushi one away`() {
         // 國士無雙一間聽: 12種么九牌 = 12張 (需要再補1種)
         // 手牌: 1m,9m,1p,9p,1s,9s,東,南,西北,白發 (12張)
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 萬子
                 Tile.Numeric(Tile.Suit.Character, 1),

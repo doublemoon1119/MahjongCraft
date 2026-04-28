@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -31,7 +32,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test shousangen with red pair`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 聽牌：中
                 Tile.Honor.Red,
@@ -73,7 +74,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test shousangen with green pair and fuuro`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 聽牌：發
                 Tile.Honor.Green,
@@ -123,7 +124,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test shousangen with ankan`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 聽牌：發
                 Tile.Honor.Green,
@@ -176,7 +177,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test not shousangen with three dragon kotsu and non-dragon pair`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 聽牌：發
                 Tile.Honor.Green,
@@ -223,7 +224,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test daisangen`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 聽牌：中
                 Tile.Honor.Red,
@@ -265,7 +266,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test daisangen with fuuro`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 聽牌：發
                 Tile.Honor.Green,
@@ -315,7 +316,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test daisangen with minkan`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 聽牌：發
                 Tile.Honor.Green,
@@ -382,7 +383,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
 
         // 情境 1：胡「白」 -> 變成 白刻子 + 1m雀頭 => 大三元
         val winningWhite = Tile.Honor.White
-        val handWhite = createHand(baseTiles)
+        val handWhite = FakeHandFactory.create(baseTiles)
         val contextWhite = createContext(handWhite, winningWhite, isTsumo = false)
         val resultWhite = calculator.calculate(contextWhite)
 
@@ -393,7 +394,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
 
         // 情境 2：胡「1m」 -> 變成 1m刻子 + 白雀頭 => 小三元
         val winning1m = Tile.Numeric(Tile.Suit.Character, 1)
-        val hand1m = createHand(baseTiles)
+        val hand1m = FakeHandFactory.create(baseTiles)
         val context1m = createContext(hand1m, winning1m, isTsumo = false)
         val result1m = calculator.calculate(context1m)
 
@@ -413,7 +414,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test not sangaen with only one dragon kotsu`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 聽牌：中
                 Tile.Honor.Red,

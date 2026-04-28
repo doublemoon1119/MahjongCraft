@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -39,7 +40,7 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test suuankou with four concealed triplets`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 暗刻 1：1m 1m 1m
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -82,7 +83,7 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test suuankou with ankan`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 暗刻 1：1m 1m 1m
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -135,7 +136,7 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test suuankou tanki with single wait`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 暗刻 1：1m 1m 1m
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -175,7 +176,7 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test non-suuankou with pon returns null`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 暗刻 1：1m 1m 1m
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -224,7 +225,7 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test non-suuankou only three kotsu returns null`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 暗刻 1：1m 1m 1m
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -269,7 +270,7 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test suuankou non-tanki with head formation`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 暗刻 1：1m 1m 1m
                 Tile.Numeric(Tile.Suit.Character, 1),

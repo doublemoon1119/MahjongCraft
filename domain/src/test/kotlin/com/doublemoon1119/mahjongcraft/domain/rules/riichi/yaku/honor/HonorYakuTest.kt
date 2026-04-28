@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.honor
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
@@ -24,7 +25,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test round wind east`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Honor.East,
                 Tile.Honor.East,
@@ -63,7 +64,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test seat wind south`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Honor.South,
                 Tile.Honor.South,
@@ -102,7 +103,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test dragon yakuhai`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Honor.Red,
                 Tile.Honor.Red,
@@ -142,7 +143,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test round wind equals seat wind`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Honor.East,
                 Tile.Honor.East,
@@ -184,7 +185,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test honor not enough returns null`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Honor.East,
                 Tile.Honor.East,

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -26,7 +27,7 @@ class SanankouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test sanankou menzen`() {
         // 手牌：111m (暗刻), 222p (暗刻), 333s (暗刻), 77z, 7m (自摸)
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -62,7 +63,7 @@ class SanankouTest : RiichiHandValueCalculatorTestBase() {
         // 副露：碰 111m
         // 手牌：222p (暗刻), 333s (暗刻), 77z, 5s, 5s (湊成另一暗刻)
         // 手牌 10 張 + 副露 3 張 + 自摸 1 張 = 14 張
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Dot, 2),
                 Tile.Numeric(Tile.Suit.Dot, 2),
@@ -107,7 +108,7 @@ class SanankouTest : RiichiHandValueCalculatorTestBase() {
         // 手牌：222p (暗刻), 333s (暗刻), 77z, 66z (自摸湊成暗刻)
         // 暗槓 + 2 暗刻 + 1 暗刻（自摸）= 3 暗面子
         // 手牌 10 張 + 暗槓 4 張 + 自摸 1 張 = 15 張（含槓多一張）
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Dot, 2),
                 Tile.Numeric(Tile.Suit.Dot, 2),
@@ -150,7 +151,7 @@ class SanankouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test sanankou with only two ankou returns null`() {
         // 手牌：111m (暗刻), 222p (暗刻), 123s (順子), 77z, 4s (自摸)
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),

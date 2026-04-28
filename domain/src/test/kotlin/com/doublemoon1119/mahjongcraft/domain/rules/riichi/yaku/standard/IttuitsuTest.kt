@@ -1,14 +1,13 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard
 
-import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
-import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -26,7 +25,7 @@ class IttuitsuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test ittuitsu menzen`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -59,7 +58,7 @@ class IttuitsuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test ittuitsu with fuuro`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),

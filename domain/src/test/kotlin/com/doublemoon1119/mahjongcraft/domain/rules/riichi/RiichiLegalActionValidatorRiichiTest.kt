@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.GameAction
-import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
@@ -30,14 +30,6 @@ class RiichiLegalActionValidatorRiichiTest {
     )
 
     /**
-     * 輔助函式，用於從 Tile 列表快速建立一個 Hand 物件。
-     */
-    private fun createHand(tiles: List<Tile>): Hand {
-        val identifiedTiles = tiles.map { FakeIdentifiedTileFactory.create(it) }
-        return Hand(identifiedTiles.toMutableList())
-    }
-
-    /**
      * 測試可執行立直動作之情況（點數充足）。
      *
      * 當玩家聽牌、門前清且點數 >= 1000 時，應可執行立直動作。
@@ -46,7 +38,7 @@ class RiichiLegalActionValidatorRiichiTest {
     fun `test can riichi with sufficient score`() {
         // 準備
         // 手牌已聽牌
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -94,7 +86,7 @@ class RiichiLegalActionValidatorRiichiTest {
     @Test
     fun `test can riichi with high score`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -142,7 +134,7 @@ class RiichiLegalActionValidatorRiichiTest {
     @Test
     fun `test cannot riichi with insufficient score`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -190,7 +182,7 @@ class RiichiLegalActionValidatorRiichiTest {
     @Test
     fun `test cannot riichi with zero score`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -240,7 +232,7 @@ class RiichiLegalActionValidatorRiichiTest {
         // 手牌： 111 餅 + 23 餅 + 444 餅 + 222 條 + 56 萬 (聽牌中)
         // 聽牌： 兩面聽 4 萬、7 萬
         // 摸到： 1 餅
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
@@ -299,7 +291,7 @@ class RiichiLegalActionValidatorRiichiTest {
         // 手牌： 111 萬 + 234 餅 + 567 索 + 東東 + 89 萬
         // 聽牌： 7 萬
         // 摸到： 1 萬
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),

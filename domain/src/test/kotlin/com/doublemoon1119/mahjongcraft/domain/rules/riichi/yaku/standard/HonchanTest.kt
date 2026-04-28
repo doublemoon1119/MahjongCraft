@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -25,7 +26,7 @@ class HonchanTest : RiichiHandValueCalculatorTestBase() {
         // 手牌：123m (順子), 789p (刻子), 111s (刻子), 111z (刻子), 6z (聽發)
         // 所有面子和雀頭都包含么九牌
         // 門前清：2 翻
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -57,7 +58,7 @@ class HonchanTest : RiichiHandValueCalculatorTestBase() {
         // 手牌：123m (順子), 789p (刻子), 111s (刻子), 111z (刻子), 66z (雀頭)
         // 所有面子和雀頭都包含么九牌
         // 門前清：2 翻
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -96,7 +97,7 @@ class HonchanTest : RiichiHandValueCalculatorTestBase() {
     fun `test honchan with non-terminal mentsu returns null`() {
         // 手牌：123m, 789p, 111z, 456s, 77z (雀頭)
         // 456s 不包含么九牌，不構成混全帶么九
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -36,7 +37,7 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test suukantsu with three ankan and one minkan`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 單騎：東
                 Tile.Honor.East,
@@ -108,7 +109,7 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test suukantsu with four ankan`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 單騎：東
                 Tile.Honor.East
@@ -176,7 +177,7 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test non-sukantsu with only three kans returns null`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 面子：2p 3p 4p
                 Tile.Numeric(Tile.Suit.Dot, 2),
@@ -240,7 +241,7 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test non-sukantsu with non-kan mentsu returns null`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 面子：2p 3p 4p
                 Tile.Numeric(Tile.Suit.Dot, 2),

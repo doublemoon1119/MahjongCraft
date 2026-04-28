@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -24,7 +25,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test dora calculation with single indicator`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -58,7 +59,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test dora calculation with multiple indicators`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -95,7 +96,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test dora calculation with wrap-around`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -129,7 +130,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test dora calculation with honor tile wrap-around`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Honor.South,
                 Tile.Honor.South,
@@ -163,7 +164,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test aka dora calculation`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -196,7 +197,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test aka dora calculation with winning tile`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -229,7 +230,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test ura dora calculation with riichi`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -271,7 +272,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test ura dora calculation without riichi returns null`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -311,7 +312,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test aka dora calculation with exposed meld`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -352,7 +353,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test aka dora calculation with multiple`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),

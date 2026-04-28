@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import kotlin.test.Test
@@ -24,7 +25,7 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test yakuman calculation single`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -57,7 +58,7 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test double yakuman calculation`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -90,7 +91,7 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test two yakuman calculation`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Honor.Red,
                 Tile.Honor.Red,
@@ -123,7 +124,7 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test double yakuman plus yakuman calculation`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Honor.East,
                 Tile.Honor.East,

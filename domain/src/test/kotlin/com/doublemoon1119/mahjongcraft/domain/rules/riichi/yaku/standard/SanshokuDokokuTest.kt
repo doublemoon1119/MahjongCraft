@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -29,7 +30,7 @@ class SanshokuDokokuTest : RiichiHandValueCalculatorTestBase() {
     fun `test sanshoku dokoku menzen`() {
         // 手牌：111m, 111p, 111s, 77z, 56m (自摸)
         // 3 刻子 + 1 雀頭
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -65,7 +66,7 @@ class SanshokuDokokuTest : RiichiHandValueCalculatorTestBase() {
         // 副露：碰 111m
         // 手牌：111p, 111s, 77z, 66z (自摸湊成刻子)
         // 副露 1 刻子 + 手牌 2 刻子 = 3 刻子
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
@@ -108,7 +109,7 @@ class SanshokuDokokuTest : RiichiHandValueCalculatorTestBase() {
     fun `test sanshoku dokoku with only two pungs returns null`() {
         // 手牌：111m, 111p, 234s, 77z, 66s (自摸)
         // 只有 2 組三色同刻的要素
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),

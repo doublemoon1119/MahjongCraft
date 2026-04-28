@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -36,7 +37,7 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test churen poto 9-men`() {
         // Hand: 111m 999m 2345678m (13 tiles) - 這個牌型有 2 個刻子 + 7 張單張
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 111m (3)
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -79,7 +80,7 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test churen poto general`() {
         // Hand: 111m 999m 2345677m (13 tiles)
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 111m (3)
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -115,7 +116,7 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test churen poto not menzen returns null`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 234m (3)
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -162,7 +163,7 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test non-churen poto with mixed suits returns null`() {
         // Hand: 111m 999m 234p...
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 111m
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -197,7 +198,7 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test non-churen poto without 111 or 999 returns null`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 234m (3)
                 Tile.Numeric(Tile.Suit.Character, 2),

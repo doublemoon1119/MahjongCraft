@@ -1,8 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
-import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenResult
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -11,19 +10,11 @@ class TaiwanShantenCalculatorTest {
 
     private val calculator = TaiwanShantenCalculator()
 
-    /**
-     * 輔助函式，用於從 Tile 列表快速建立一個 Hand 物件。
-     */
-    private fun createHand(tiles: List<Tile>): Hand {
-        val identifiedTiles = tiles.map { FakeIdentifiedTileFactory.create(it) }
-        return Hand(identifiedTiles.toMutableList())
-    }
-
     @Test
     fun `test tenpai hand - 4 melds, 1 pair, 1 tatsu`() {
         // 手牌: 111m, 234m, 567m, 東東東, 南南, 88m (16張)
         // 4 面子, 1 雀頭, 1 搭子 -> 聽牌 (0 shanten)
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 4 面子
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -54,7 +45,7 @@ class TaiwanShantenCalculatorTest {
     fun `test tenpai hand - 5 melds, 1 single`() {
         // 手牌: 111m, 234m, 567m, 888m, 東東東, 南 (16張)
         // 5 面子, 1 單張 -> 聽牌 (0 shanten), 聽單騎 南
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 5 面子
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -84,7 +75,7 @@ class TaiwanShantenCalculatorTest {
     fun `test agari hand - 5 melds, 1 pair`() {
         // 手牌: 111m, 234m, 567m, 888m, 東東東, 南南 (17張)
         // 5 面子, 1 雀頭 -> 胡牌 (-1 shanten)
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -21,7 +22,7 @@ class ToitoiTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test toitoi menzen`() {
         // 手牌：111m, 222m, 333p, 44s, 77z
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -57,7 +58,7 @@ class ToitoiTest : RiichiHandValueCalculatorTestBase() {
         // 副露：碰 111m (1 組刻子)
         // 手牌：222m, 333p, 444s, 77z (3 組刻子 + 1 雀頭)
         // 手牌 10 張 + 副露 3 張 + 自摸 1 張 = 14 張
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -101,7 +102,7 @@ class ToitoiTest : RiichiHandValueCalculatorTestBase() {
         // 副露：明槓 111m (1 組槓)
         // 手牌：222m, 333p, 444s, 77z (3 組刻子 + 1 雀頭)
         // 手牌 10 張 + 副露 4 張 + 自摸 1 張 = 15 張（含槓多一張）
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -144,7 +145,7 @@ class ToitoiTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test toitoi with shuntsu returns null`() {
         // 手牌：123m (順子), 111m, 222p, 333s, 77z
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),

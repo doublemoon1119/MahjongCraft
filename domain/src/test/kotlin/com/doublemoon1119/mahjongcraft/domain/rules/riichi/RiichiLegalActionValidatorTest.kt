@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.*
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
@@ -34,7 +35,7 @@ class RiichiLegalActionValidatorTest {
      * @param tiles 組成手牌的牌列表。
      * @return 包含指定牌的手牌物件。
      */
-    private fun createHand(tiles: List<Tile>): Hand {
+    private fun FakeHandFactory.create(tiles: List<Tile>): Hand {
         val identifiedTiles = tiles.map { FakeIdentifiedTileFactory.create(it) }
         return Hand(identifiedTiles.toMutableList())
     }
@@ -47,7 +48,7 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test can pon`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1)
@@ -84,7 +85,7 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test can chi`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3)
@@ -121,7 +122,7 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test can open kan`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -200,7 +201,7 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test can closed kan`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -240,7 +241,7 @@ class RiichiLegalActionValidatorTest {
         // 準備
         // 手牌: 111234567899m + incoming 9m = 111 234 567 899 99 (4面子+1雀頭=14張=胡牌)
         // 原本13張: 1,1,1,2,3,4,5,6,7,8,9,9,9 = 13張
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -291,7 +292,7 @@ class RiichiLegalActionValidatorTest {
         // 準備
         // 手牌: 111234567899m + incoming 9m = 111 234 567 899 99 (4面子+1雀頭=14張=胡牌)
         // 原本13張: 1,1,1,2,3,4,5,6,7,8,9,9,9 = 13張
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -341,7 +342,7 @@ class RiichiLegalActionValidatorTest {
     fun `test can ron with seven pairs`() {
         // 準備
         // 手牌: 112233445566m (6對子=12張) + incoming 7m = 7對子 (胡牌)
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -390,7 +391,7 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test cannot ron with seven pairs if exposed meld`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -445,7 +446,7 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test tsumo not allowed when han is insufficient`() {
         // 準備：手牌為 1 番 (門前清自摸) 的牌型
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -503,7 +504,7 @@ class RiichiLegalActionValidatorTest {
      */
     @Test
     fun `test tsumo allowed when han is sufficient`() {
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -554,7 +555,7 @@ class RiichiLegalActionValidatorTest {
      */
     @Test
     fun `test yakuman always allowed regardless of minimum constraint`() {
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -608,7 +609,7 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test can kyuushu kyuuhai`() {
         // 準備：持有九種么九牌（東南西北發中白 + 19m + 19s + 19p = 13種取9種）
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Honor.East,
                 Tile.Honor.South,
@@ -640,7 +641,7 @@ class RiichiLegalActionValidatorTest {
         val otherPlayer1 = FakeMahjongPlayerFactory.create(
             name = "Other1",
             initialSeat = Wind.SOUTH,
-            hand = createHand(listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))),
+            hand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))),
             discardPile = discardPile1
         )
         val discardPile2 = FakeDiscardPile()
@@ -652,7 +653,7 @@ class RiichiLegalActionValidatorTest {
         val otherPlayer2 = FakeMahjongPlayerFactory.create(
             name = "Other2",
             initialSeat = Wind.WEST,
-            hand = createHand(listOf(Tile.Numeric(Tile.Suit.Bamboo, 2))),
+            hand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Bamboo, 2))),
             discardPile = discardPile2
         )
         val discardPile3 = FakeDiscardPile()
@@ -664,7 +665,7 @@ class RiichiLegalActionValidatorTest {
         val otherPlayer3 = FakeMahjongPlayerFactory.create(
             name = "Other3",
             initialSeat = Wind.NORTH,
-            hand = createHand(listOf(Tile.Numeric(Tile.Suit.Bamboo, 3))),
+            hand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Bamboo, 3))),
             discardPile = discardPile3
         )
         val tableState = TableState(
@@ -695,7 +696,7 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test cannot kyuushu kyuuhai with insufficient tile types`() {
         // 準備：只持有3種么九牌
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -725,7 +726,7 @@ class RiichiLegalActionValidatorTest {
         val otherPlayer1 = FakeMahjongPlayerFactory.create(
             name = "Other1",
             initialSeat = Wind.SOUTH,
-            hand = createHand(listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))),
+            hand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))),
             discardPile = discardPile1
         )
         val tableState = TableState(
@@ -836,7 +837,7 @@ class RiichiLegalActionValidatorTest {
     fun `test can robbing closed kan with kokushi musou`() {
         // 準備：國士無雙聽牌（13張幺九牌 + 1張東風雀頭）
         // 聽牌為其他任意幺九牌，暗槓東風後手牌變為 14 張（東風刻子 + 13 張幺九牌）
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 9),
@@ -888,7 +889,7 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test cannot robbing closed kan without kokushi musou`() {
         // 準備：九蓮寶燈 (聽 2 萬)
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),

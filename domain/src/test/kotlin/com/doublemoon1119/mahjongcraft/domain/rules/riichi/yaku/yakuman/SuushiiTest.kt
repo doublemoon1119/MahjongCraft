@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -31,7 +32,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test shousuushi with south pair`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 聽牌：南
                 Tile.Honor.South,
@@ -73,7 +74,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test shousuushi with north pair and fuuro`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 聽牌：北
                 Tile.Honor.North,
@@ -123,7 +124,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test not shousuushi with three wind kotsu but non-wind pair`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 聽牌：南
                 Tile.Honor.South,
@@ -165,7 +166,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test daisuushi`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 聽牌：南
                 Tile.Honor.South,
@@ -207,7 +208,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test daisuushi with fuuro`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 聽牌：北
                 Tile.Honor.North,
@@ -257,7 +258,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test daisuushi with ankan`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 聽牌：北
                 Tile.Honor.North,
@@ -321,7 +322,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
 
         // 情境 1：胡「北」 -> 變成 北刻子 + 1m雀頭 => 大四喜
         val winningNorth = Tile.Honor.North
-        val handNorth = createHand(baseTiles)
+        val handNorth = FakeHandFactory.create(baseTiles)
         val contextNorth = createContext(handNorth, winningNorth, isTsumo = false)
         val resultNorth = calculator.calculate(contextNorth)
 
@@ -332,7 +333,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
 
         // 情境 2：胡「1m」 -> 變成 1m刻子 + 北雀頭 => 小四喜
         val winning1m = Tile.Numeric(Tile.Suit.Character, 1)
-        val hand1m = createHand(baseTiles)
+        val hand1m = FakeHandFactory.create(baseTiles)
         val context1m = createContext(hand1m, winning1m, isTsumo = false)
         val result1m = calculator.calculate(context1m)
 

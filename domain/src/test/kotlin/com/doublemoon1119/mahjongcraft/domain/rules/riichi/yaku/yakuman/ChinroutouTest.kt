@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -32,7 +33,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test chinroutou complete hand`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 1m 刻子
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -77,7 +78,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test chinroutou with fuuro`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 9m 刻子
                 Tile.Numeric(Tile.Suit.Character, 9),
@@ -130,7 +131,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test chinroutou with ankan`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 9m 刻子
                 Tile.Numeric(Tile.Suit.Character, 9),
@@ -183,7 +184,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test not chinroutou with honor tile`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 1m 刻子
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -226,7 +227,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test not chinroutou with non-terminal tile`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 1m 刻子
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -266,7 +267,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test chinroutou excludes honroutou`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 1m 刻子
                 Tile.Numeric(Tile.Suit.Character, 1),

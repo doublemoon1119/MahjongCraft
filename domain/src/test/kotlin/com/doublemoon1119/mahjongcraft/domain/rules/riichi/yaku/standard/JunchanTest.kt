@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -25,7 +26,7 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
         // 手牌：111m (刻子), 111p (刻子), 111s (刻子), 789m (順子), 9s, 9s (餘牌)
         // 所有面子和雀頭都包含老頭牌，無字牌
         // 門前清：3 翻
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -57,7 +58,7 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
         // 手牌：111m (刻子), 999p (刻子), 111s (刻子), 789m (順子), 9s, 9s (餘牌)
         // 所有面子和雀頭都包含老頭牌，無字牌
         // 副露：2 翻
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -95,7 +96,7 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test junchan with honor tiles returns null`() {
         // 手牌：含有字牌，應該是 Honchan 不是 Junchan
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),

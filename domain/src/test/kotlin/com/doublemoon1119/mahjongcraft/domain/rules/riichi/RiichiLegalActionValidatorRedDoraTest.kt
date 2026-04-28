@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.*
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
@@ -27,14 +28,6 @@ class RiichiLegalActionValidatorRedDoraTest {
     )
 
     /**
-     * 輔助函式，用於從 Tile 列表快速建立一個 Hand 物件。
-     */
-    private fun createHand(tiles: List<Tile>): Hand {
-        val identifiedTiles = tiles.map { FakeIdentifiedTileFactory.create(it) }
-        return Hand(identifiedTiles.toMutableList())
-    }
-
-    /**
      * 測試赤寶牌之情況：可執行碰牌動作（手牌有普通5萬，他家打赤5萬）。
      *
      * 赤寶牌與普通牌在動作判定上視為同張牌，故手牌有普通5萬時可碰赤5萬。
@@ -42,7 +35,7 @@ class RiichiLegalActionValidatorRedDoraTest {
     @Test
     fun `test can pon with red dora incoming`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 5, isRed = false),  // 普通5萬
                 Tile.Numeric(Tile.Suit.Character, 5, isRed = false)   // 普通5萬
@@ -79,7 +72,7 @@ class RiichiLegalActionValidatorRedDoraTest {
     @Test
     fun `test can pon with red dora in hand`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 5, isRed = true),   // 赤5萬
                 Tile.Numeric(Tile.Suit.Character, 5, isRed = true)   // 赤5萬
@@ -117,7 +110,7 @@ class RiichiLegalActionValidatorRedDoraTest {
     @Test
     fun `test can open kan with red dora`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 5, isRed = false),
                 Tile.Numeric(Tile.Suit.Character, 5, isRed = false),
@@ -155,7 +148,7 @@ class RiichiLegalActionValidatorRedDoraTest {
     @Test
     fun `test can closed kan with red dora`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 5, isRed = false),
                 Tile.Numeric(Tile.Suit.Character, 5, isRed = false),
@@ -234,7 +227,7 @@ class RiichiLegalActionValidatorRedDoraTest {
     @Test
     fun `test can chi with red dora incoming`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 4),
                 Tile.Numeric(Tile.Suit.Character, 6)

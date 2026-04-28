@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandDecomposer
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -146,7 +147,7 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test kokushi musou via calculator`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 對子：1m
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -183,7 +184,7 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test kokushi musou 13-men via calculator`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 // 單張：全部 13 種
                 Tile.Numeric(Tile.Suit.Character, 1),

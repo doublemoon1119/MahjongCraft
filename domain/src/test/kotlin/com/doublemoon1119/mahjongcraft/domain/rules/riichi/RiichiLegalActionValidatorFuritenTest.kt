@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.GameAction
-import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
@@ -32,14 +32,6 @@ class RiichiLegalActionValidatorFuritenTest {
     )
 
     /**
-     * 輔助函式，用於從 Tile 列表快速建立一個 Hand 物件。
-     */
-    private fun createHand(tiles: List<Tile>): Hand {
-        val identifiedTiles = tiles.map { FakeIdentifiedTileFactory.create(it) }
-        return Hand(identifiedTiles.toMutableList())
-    }
-
-    /**
      * 測試振聽之情況：振聽狀態下不可執行榮和動作。
      *
      * 玩家聽牌後打了赤5萬，他家打普通5萬時不可榮和（視為振聽）。
@@ -49,7 +41,7 @@ class RiichiLegalActionValidatorFuritenTest {
     fun `test cannot ron when furiten with red dora`() {
         // 準備
         // 手牌已聽牌，聽普通5萬
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -110,7 +102,7 @@ class RiichiLegalActionValidatorFuritenTest {
     fun `test cannot ron when furiten with red dora incoming`() {
         // 準備
         // 手牌已聽牌，聽普通5萬
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -169,7 +161,7 @@ class RiichiLegalActionValidatorFuritenTest {
     @Test
     fun `test cannot pon after passing in same round`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 5)
@@ -212,7 +204,7 @@ class RiichiLegalActionValidatorFuritenTest {
     @Test
     fun `test can pon after clearing passed tiles manually`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 5)
@@ -256,7 +248,7 @@ class RiichiLegalActionValidatorFuritenTest {
     @Test
     fun `test cannot pon after passing with red dora`() {
         // 準備
-        val playerHand = createHand(
+        val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 5)

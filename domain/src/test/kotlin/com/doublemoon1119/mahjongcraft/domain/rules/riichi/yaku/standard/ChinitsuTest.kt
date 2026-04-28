@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -27,7 +28,7 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test honitsu`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -62,7 +63,7 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
     fun `test honitsu with fuuro`() {
         // 副露：碰 111m
         // 手牌：234m, 567m, 789m, 東風對子
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -103,7 +104,7 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test chinitsu`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -138,7 +139,7 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
     fun `test chinitsu with fuuro`() {
         // 副露：碰 111m
         // 手牌：234m, 567m, 789m, 55m
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -179,7 +180,7 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test chinitsu overrides honitsu`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),

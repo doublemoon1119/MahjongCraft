@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -27,7 +28,7 @@ class TanyaoTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test tanyao menzen`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -60,7 +61,7 @@ class TanyaoTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test tanyao with terminal`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -93,7 +94,7 @@ class TanyaoTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test tanyao with honor`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -130,7 +131,7 @@ class TanyaoTest : RiichiHandValueCalculatorTestBase() {
         // 副露：碰 555m
         // 手牌：234m, 678m, 55m, 自摸 2m = 10張 + 1張 = 14張
         // 手牌與副露全部為 2-8 數牌，應獲得 1 翻（斷么九）
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),

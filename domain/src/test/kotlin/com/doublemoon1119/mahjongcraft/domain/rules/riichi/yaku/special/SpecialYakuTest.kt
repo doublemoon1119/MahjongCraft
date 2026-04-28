@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -43,7 +44,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test riichi yaku`() {
-        val hand = createHand(createBasicHand())
+        val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val context = createContext(hand, winningTile, isTsumo = true, isRiichi = true)
@@ -60,7 +61,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test double riichi yaku`() {
-        val hand = createHand(createBasicHand())
+        val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val context = createContext(hand, winningTile, isTsumo = true, isRiichi = true, isDoubleRiichi = true)
@@ -80,7 +81,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test ippatsu yaku`() {
-        val hand = createHand(createBasicHand())
+        val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val context = createContext(hand, winningTile, isTsumo = true, isRiichi = true, isIppatsu = true)
@@ -97,7 +98,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test rinshan kaihou yaku`() {
-        val hand = createHand(createBasicHand())
+        val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val context = createContext(hand, winningTile, isTsumo = true, isRinshanKaihou = true)
@@ -114,7 +115,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test haitei yaku`() {
-        val hand = createHand(createBasicHand())
+        val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val context = createContext(hand, winningTile, isTsumo = true, isLastDraw = true)
@@ -131,7 +132,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test houtei yaku`() {
-        val hand = createHand(createBasicHand())
+        val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val context = createContext(hand, winningTile, isTsumo = false, isLastDiscard = true)
@@ -148,7 +149,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test robbing kan yaku`() {
-        val hand = createHand(createBasicHand())
+        val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val context = createContext(hand, winningTile, isTsumo = false, isRobbingKan = true)
@@ -165,7 +166,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test menzentsumo yaku`() {
-        val hand = createHand(createBasicHand())
+        val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
@@ -182,7 +183,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test menzentsumo not valid for ron`() {
-        val hand = createHand(createBasicHand())
+        val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val context = createContext(hand, winningTile, isTsumo = false, isMenzen = true)
@@ -199,7 +200,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test menzentsumo not valid with meld`() {
-        val hand = createHand(
+        val hand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman
 
 import com.doublemoon1119.mahjongcraft.domain.base.*
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
@@ -47,7 +48,7 @@ class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test Tenhou tsumo as dealer`() {
-        val hand = createHand(createBasicHand())
+        val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val context = createContext(
@@ -79,7 +80,7 @@ class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test chiihou tsumo as non-dealer`() {
-        val hand = createHand(createBasicHand())
+        val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val context = createContext(
@@ -111,7 +112,7 @@ class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test Tenhou not valid after first turn`() {
-        val hand = createHand(createBasicHand())
+        val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val context = createContext(
@@ -142,7 +143,7 @@ class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
      */
     @Test
     fun `test chiihou not valid for ron`() {
-        val hand = createHand(createBasicHand())
+        val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val context = createContext(
