@@ -10,7 +10,7 @@ import java.util.UUID
 /**
  * 用於單元測試的玩家實體工廠。
  *
- * 提供便捷的方法來產生 [MahjongPlayer]，並預設注入 [FakeDiscardPile]。
+ * 提供便捷的方法來產生 [MahjongPlayer]
  */
 object FakeMahjongPlayerFactory {
 

@@ -1,9 +1,12 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman
 
-import com.doublemoon1119.mahjongcraft.domain.base.*
+import com.doublemoon1119.mahjongcraft.domain.base.Meld
+import com.doublemoon1119.mahjongcraft.domain.base.MeldType
+import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
-import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -43,10 +46,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
                     ),
                     sourceDirection = RelativeDirection.Self
                 ),
@@ -54,10 +57,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
                     ),
                     sourceDirection = RelativeDirection.Self
                 ),
@@ -65,10 +68,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
                     ),
                     sourceDirection = RelativeDirection.Self
                 ),
@@ -76,10 +79,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.OPEN_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Green),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Green),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Green),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Green)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green)
                     ),
                     sourceDirection = RelativeDirection.Across
                 )
@@ -115,10 +118,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
                     ),
                     sourceDirection = RelativeDirection.Self
                 ),
@@ -126,10 +129,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
                     ),
                     sourceDirection = RelativeDirection.Self
                 ),
@@ -137,10 +140,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
                     ),
                     sourceDirection = RelativeDirection.Self
                 ),
@@ -148,10 +151,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Green),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Green),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Green),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Green)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green)
                     ),
                     sourceDirection = RelativeDirection.Self
                 )
@@ -187,10 +190,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
                     ),
                     sourceDirection = RelativeDirection.Self
                 ),
@@ -198,10 +201,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
                     ),
                     sourceDirection = RelativeDirection.Self
                 ),
@@ -209,10 +212,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
                     ),
                     sourceDirection = RelativeDirection.Self
                 )
@@ -223,7 +226,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
         val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
         val result = calculator.calculate(context)
 
-        assertNull(result.yakuResults.find { it.yaku == YakuType.Sukantsu }, "Should not have Sukantsu with only 3 kans")
+        assertNull(
+            result.yakuResults.find { it.yaku == YakuType.Sukantsu },
+            "Should not have Sukantsu with only 3 kans"
+        )
         assertTrue(result.yakuResults.any { it.yaku == YakuType.Sankantsu }, "Should have Sankantsu with 3 kans")
     }
 
@@ -248,10 +254,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
                     ),
                     sourceDirection = RelativeDirection.Self
                 ),
@@ -259,10 +265,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
                     ),
                     sourceDirection = RelativeDirection.Self
                 ),
@@ -270,10 +276,10 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.OPEN_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Green),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Green),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Green),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.Green)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green)
                     ),
                     sourceDirection = RelativeDirection.Across
                 )
@@ -284,6 +290,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
         val context = createContext(hand, winningTile, isTsumo = false, isMenzen = false)
         val result = calculator.calculate(context)
 
-        assertNull(result.yakuResults.find { it.yaku == YakuType.Sukantsu }, "Should not have Sukantsu with non-kan mentsu")
+        assertNull(
+            result.yakuResults.find { it.yaku == YakuType.Sukantsu },
+            "Should not have Sukantsu with non-kan mentsu"
+        )
     }
 }

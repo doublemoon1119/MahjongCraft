@@ -1,10 +1,9 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
-import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenResult
-import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -27,7 +26,7 @@ class RiichiShantenCalculatorTest {
      * @return 包含指定牌的手牌物件。
      */
     private fun createHand(tiles: List<Tile>): Hand {
-        val identifiedTiles = tiles.map { IdentifiedTile(UUID.randomUUID(), it) }
+        val identifiedTiles = tiles.map { FakeIdentifiedTileFactory.create(it) }
         return Hand(identifiedTiles.toMutableList())
     }
 

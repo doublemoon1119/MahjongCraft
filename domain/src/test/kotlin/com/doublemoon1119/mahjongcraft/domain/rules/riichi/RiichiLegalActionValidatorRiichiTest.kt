@@ -1,15 +1,15 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.domain.base.*
-import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.domain.table.TableState
-import com.doublemoon1119.mahjongcraft.domain.table.TileWall
-import com.doublemoon1119.mahjongcraft.domain.table.Wind
-import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.domain.base.GameAction
+import com.doublemoon1119.mahjongcraft.domain.base.Hand
+import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
-import java.util.*
+import com.doublemoon1119.mahjongcraft.domain.table.TableState
+import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -33,7 +33,7 @@ class RiichiLegalActionValidatorRiichiTest {
      * 輔助函式，用於從 Tile 列表快速建立一個 Hand 物件。
      */
     private fun createHand(tiles: List<Tile>): Hand {
-        val identifiedTiles = tiles.map { IdentifiedTile(UUID.randomUUID(), it) }
+        val identifiedTiles = tiles.map { FakeIdentifiedTileFactory.create(it) }
         return Hand(identifiedTiles.toMutableList())
     }
 
@@ -261,7 +261,7 @@ class RiichiLegalActionValidatorRiichiTest {
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
             playerRuleState = RiichiPlayerState(
-                riichiTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9))
+                riichiTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
             )
         )
 
@@ -272,7 +272,7 @@ class RiichiLegalActionValidatorRiichiTest {
         )
 
         // 摸到 1 餅（暗槓後改變聽牌）
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -320,7 +320,7 @@ class RiichiLegalActionValidatorRiichiTest {
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
             playerRuleState = RiichiPlayerState(
-                riichiTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9))
+                riichiTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
             )
         )
 
@@ -331,7 +331,7 @@ class RiichiLegalActionValidatorRiichiTest {
         )
 
         // 摸到 1 萬（暗槓後聽牌不變，仍只聽 7 萬）
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
         val actions = validator.getLegalActions(

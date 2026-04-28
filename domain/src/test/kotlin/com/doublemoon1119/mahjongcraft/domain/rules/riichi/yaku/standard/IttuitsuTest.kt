@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import java.util.UUID
@@ -75,9 +76,9 @@ class IttuitsuTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.PON,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
                     ),
                     sourceDirection = RelativeDirection.Across
                 )

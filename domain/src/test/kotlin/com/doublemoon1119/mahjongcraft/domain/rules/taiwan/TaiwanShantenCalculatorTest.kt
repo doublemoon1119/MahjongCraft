@@ -1,13 +1,10 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
-import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenResult
-import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanShantenCalculator
-import java.util.*
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class TaiwanShantenCalculatorTest {
@@ -18,7 +15,7 @@ class TaiwanShantenCalculatorTest {
      * 輔助函式，用於從 Tile 列表快速建立一個 Hand 物件。
      */
     private fun createHand(tiles: List<Tile>): Hand {
-        val identifiedTiles = tiles.map { IdentifiedTile(UUID.randomUUID(), it) }
+        val identifiedTiles = tiles.map { FakeIdentifiedTileFactory.create(it) }
         return Hand(identifiedTiles.toMutableList())
     }
 
@@ -110,6 +107,9 @@ class TaiwanShantenCalculatorTest {
         )
         val result = calculator.calculate(hand)
         println("Result: $result")
-        assertTrue(result is ShantenResult.Complete, "Hand with 5 melds, 1 pair should be Complete (Agari), but was: $result")
+        assertTrue(
+            result is ShantenResult.Complete,
+            "Hand with 5 melds, 1 pair should be Complete (Agari), but was: $result"
+        )
     }
 }

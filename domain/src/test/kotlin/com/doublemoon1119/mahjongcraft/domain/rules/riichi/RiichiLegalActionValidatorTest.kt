@@ -1,15 +1,14 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.*
-import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
-import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeDiscardPile
-import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
-import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -36,7 +35,7 @@ class RiichiLegalActionValidatorTest {
      * @return 包含指定牌的手牌物件。
      */
     private fun createHand(tiles: List<Tile>): Hand {
-        val identifiedTiles = tiles.map { IdentifiedTile(UUID.randomUUID(), it) }
+        val identifiedTiles = tiles.map { FakeIdentifiedTileFactory.create(it) }
         return Hand(identifiedTiles.toMutableList())
     }
 
@@ -62,7 +61,7 @@ class RiichiLegalActionValidatorTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeMahjongRuleConfig()
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -99,7 +98,7 @@ class RiichiLegalActionValidatorTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeMahjongRuleConfig()
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -137,7 +136,7 @@ class RiichiLegalActionValidatorTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeMahjongRuleConfig()
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -163,9 +162,9 @@ class RiichiLegalActionValidatorTest {
         val ponMeld = Meld(
             MeldType.PON,
             listOf(
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
             ),
             sourceDirection = RelativeDirection.Left
         )
@@ -178,7 +177,7 @@ class RiichiLegalActionValidatorTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeMahjongRuleConfig()
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -216,7 +215,7 @@ class RiichiLegalActionValidatorTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeMahjongRuleConfig()
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -267,7 +266,7 @@ class RiichiLegalActionValidatorTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeRiichiRuleConfig()
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -318,7 +317,7 @@ class RiichiLegalActionValidatorTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeRiichiRuleConfig()
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -368,7 +367,7 @@ class RiichiLegalActionValidatorTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeRiichiRuleConfig()
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 7))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 7))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -408,9 +407,9 @@ class RiichiLegalActionValidatorTest {
         val ponMeld = Meld(
             MeldType.PON,
             listOf(
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 6)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 6)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 6))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6))
             ),
             sourceDirection = RelativeDirection.Left
         )
@@ -423,7 +422,7 @@ class RiichiLegalActionValidatorTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeMahjongRuleConfig()
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 7))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 7))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -468,7 +467,7 @@ class RiichiLegalActionValidatorTest {
             discardPile = FakeDiscardPile().apply {
                 discard(
                     entry = FakeDiscardPile.FakeEntry(
-                        tile = IdentifiedTile(UUID.randomUUID(), Tile.Honor.East),
+                        tile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
                         isTaken = false
                     )
                 )
@@ -482,7 +481,7 @@ class RiichiLegalActionValidatorTest {
         )
 
         // 摸到胡牌張
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Honor.West)
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Honor.West)
 
         // 執行
         val actions = validator.getLegalActions(
@@ -533,7 +532,7 @@ class RiichiLegalActionValidatorTest {
         )
 
         // 摸到胡牌張
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -584,7 +583,7 @@ class RiichiLegalActionValidatorTest {
         )
 
         // 摸到胡牌張
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -635,10 +634,7 @@ class RiichiLegalActionValidatorTest {
         val discardPile1 = FakeDiscardPile()
         discardPile1.discard(
             FakeDiscardPile.FakeEntry(
-                IdentifiedTile(
-                    UUID.randomUUID(),
-                    Tile.Numeric(Tile.Suit.Bamboo, 1)
-                )
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
             )
         )
         val otherPlayer1 = FakeMahjongPlayerFactory.create(
@@ -650,10 +646,7 @@ class RiichiLegalActionValidatorTest {
         val discardPile2 = FakeDiscardPile()
         discardPile2.discard(
             FakeDiscardPile.FakeEntry(
-                IdentifiedTile(
-                    UUID.randomUUID(),
-                    Tile.Numeric(Tile.Suit.Bamboo, 2)
-                )
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2))
             )
         )
         val otherPlayer2 = FakeMahjongPlayerFactory.create(
@@ -665,10 +658,7 @@ class RiichiLegalActionValidatorTest {
         val discardPile3 = FakeDiscardPile()
         discardPile3.discard(
             FakeDiscardPile.FakeEntry(
-                IdentifiedTile(
-                    UUID.randomUUID(),
-                    Tile.Numeric(Tile.Suit.Bamboo, 3)
-                )
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3))
             )
         )
         val otherPlayer3 = FakeMahjongPlayerFactory.create(
@@ -682,7 +672,7 @@ class RiichiLegalActionValidatorTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeMahjongRuleConfig()
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -729,10 +719,7 @@ class RiichiLegalActionValidatorTest {
         val discardPile1 = FakeDiscardPile()
         discardPile1.discard(
             FakeDiscardPile.FakeEntry(
-                IdentifiedTile(
-                    UUID.randomUUID(),
-                    Tile.Numeric(Tile.Suit.Bamboo, 1)
-                )
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
             )
         )
         val otherPlayer1 = FakeMahjongPlayerFactory.create(
@@ -746,7 +733,7 @@ class RiichiLegalActionValidatorTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeMahjongRuleConfig()
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 5))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -780,36 +767,36 @@ class RiichiLegalActionValidatorTest {
         val chiMeld = Meld(
             MeldType.CHI,
             listOf(
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 2)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 3))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3))
             ),
             sourceDirection = RelativeDirection.Left
         )
         val ponMeld1 = Meld(
             MeldType.PON,
             listOf(
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 9))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
             ),
             sourceDirection = RelativeDirection.Across
         )
         val ponMeld2 = Meld(
             MeldType.PON,
             listOf(
-                IdentifiedTile(UUID.randomUUID(), Tile.Honor.West),
-                IdentifiedTile(UUID.randomUUID(), Tile.Honor.West),
-                IdentifiedTile(UUID.randomUUID(), Tile.Honor.West)
+                FakeIdentifiedTileFactory.create(Tile.Honor.West),
+                FakeIdentifiedTileFactory.create(Tile.Honor.West),
+                FakeIdentifiedTileFactory.create(Tile.Honor.West)
             ),
             sourceDirection = RelativeDirection.Right
         )
         val playerHand = Hand(
             mutableListOf(
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 6)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 7))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 6)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 7))
             ),
             mutableListOf(chiMeld, ponMeld1, ponMeld2)
         )
@@ -822,7 +809,7 @@ class RiichiLegalActionValidatorTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeRiichiRuleConfig(minimumWinConstraint = 1)
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
 
         // 執行：模擬其他玩家加槓 5s，觸發搶槓判定
         val actions = validator.getLegalActions(
@@ -875,7 +862,7 @@ class RiichiLegalActionValidatorTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeRiichiRuleConfig()
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Honor.East)
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
 
         // 執行：模擬其他玩家暗槓東風，觸發搶暗槓判定
         val actions = validator.getLegalActions(
@@ -927,7 +914,7 @@ class RiichiLegalActionValidatorTest {
             tileWall = TileWall(mutableListOf()),
             config = FakeRiichiRuleConfig()
         )
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 2))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2))
 
         // 執行：模擬其他玩家暗槓 2m，觸發搶暗槓判定
         val actions = validator.getLegalActions(

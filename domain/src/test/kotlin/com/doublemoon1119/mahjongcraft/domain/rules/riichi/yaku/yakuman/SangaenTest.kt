@@ -1,9 +1,12 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman
 
-import com.doublemoon1119.mahjongcraft.domain.base.*
+import com.doublemoon1119.mahjongcraft.domain.base.Meld
+import com.doublemoon1119.mahjongcraft.domain.base.MeldType
+import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
-import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -92,9 +95,9 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.PON,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.White),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.White),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.White)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White)
                     ),
                     sourceDirection = RelativeDirection.Across
                 )
@@ -142,10 +145,10 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.White),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.White),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.White),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.White)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White)
                     ),
                     sourceDirection = RelativeDirection.Self
                 )
@@ -284,9 +287,9 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.PON,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.White),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.White),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.White)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White)
                     ),
                     sourceDirection = RelativeDirection.Across
                 )
@@ -334,10 +337,10 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.OPEN_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.White),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.White),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.White),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.White)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White)
                     ),
                     sourceDirection = RelativeDirection.Across
                 )

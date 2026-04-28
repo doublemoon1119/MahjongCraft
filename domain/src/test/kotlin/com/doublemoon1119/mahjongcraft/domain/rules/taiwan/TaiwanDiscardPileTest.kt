@@ -1,10 +1,8 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
-import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanDiscardPile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
-import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -20,7 +18,7 @@ class TaiwanDiscardPileTest {
     @Test
     fun `test taiwan discard pile basic storage`() {
         val pile = TaiwanDiscardPile()
-        val tile = IdentifiedTile(UUID.randomUUID(), Tile.Flower.Spring)
+        val tile = FakeIdentifiedTileFactory.create(Tile.Flower.Spring)
 
         // 台灣麻將僅使用基礎的 DiscardEntry
         val entry = DiscardPile.DiscardEntry(tile)
@@ -36,7 +34,7 @@ class TaiwanDiscardPileTest {
     @Test
     fun `test taiwan takeLast behavior`() {
         val pile = TaiwanDiscardPile()
-        val tile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9))
+        val tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
 
         pile.discard(DiscardPile.DiscardEntry(tile))
 

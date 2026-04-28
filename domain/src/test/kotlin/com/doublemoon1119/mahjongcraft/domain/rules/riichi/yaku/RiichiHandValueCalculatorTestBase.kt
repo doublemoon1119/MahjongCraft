@@ -1,13 +1,12 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku
 
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
-import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueContext
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueCalculator
+import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
-import java.util.*
 
 /**
  * 立直麻將手牌番數計算機測試基底類別。
@@ -19,7 +18,7 @@ abstract class RiichiHandValueCalculatorTestBase {
     protected val calculator = RiichiHandValueCalculator()
 
     protected fun createHand(tiles: List<Tile>, melds: List<Meld> = emptyList()): Hand {
-        val identifiedTiles = tiles.map { IdentifiedTile(UUID.randomUUID(), it) }
+        val identifiedTiles = tiles.map { FakeIdentifiedTileFactory.create(it) }
         return Hand(identifiedTiles.toMutableList(), melds = melds.toMutableList())
     }
 

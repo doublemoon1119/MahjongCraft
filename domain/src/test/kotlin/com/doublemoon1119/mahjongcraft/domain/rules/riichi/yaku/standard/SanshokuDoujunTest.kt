@@ -1,13 +1,12 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard
 
-import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Meld
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
-import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -71,9 +70,9 @@ class SanshokuDoujunTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CHI,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 2)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 3))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3))
                     ),
                     sourceDirection = RelativeDirection.Left
                 )

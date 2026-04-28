@@ -1,14 +1,12 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.*
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall
-import com.doublemoon1119.mahjongcraft.domain.table.Wind
-import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeDiscardPile
-import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
-import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -34,7 +32,7 @@ class RiichiHandValueContextCalculatorTest {
     }
 
     private fun createHand(tiles: List<Tile>): Hand {
-        val identifiedTiles = tiles.map { IdentifiedTile(UUID.randomUUID(), it) }
+        val identifiedTiles = tiles.map { FakeIdentifiedTileFactory.create(it) }
         return Hand(identifiedTiles.toMutableList())
     }
 
@@ -52,10 +50,10 @@ class RiichiHandValueContextCalculatorTest {
             val kanMeld = Meld(
                 MeldType.OPEN_KAN,
                 listOf(
-                    IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, tileValue)),
-                    IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, tileValue)),
-                    IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, tileValue)),
-                    IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, tileValue))
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, tileValue)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, tileValue)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, tileValue)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, tileValue))
                 ),
                 sourceDirection = RelativeDirection.Across
             )
@@ -98,7 +96,7 @@ class RiichiHandValueContextCalculatorTest {
         val player = createPlayer(hand)
 
         val wanPaiTiles = (1..14).map {
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
         val tileWall = TileWall(wanPaiTiles.toMutableList())
 
@@ -108,7 +106,7 @@ class RiichiHandValueContextCalculatorTest {
             config = FakeRiichiRuleConfig(deadTileCount = 14)
         )
 
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         val context = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -150,7 +148,7 @@ class RiichiHandValueContextCalculatorTest {
         val player = createPlayer(hand)
 
         val wanPaiTiles = (1..14).map {
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
         val tileWall = TileWall(wanPaiTiles.toMutableList())
 
@@ -160,7 +158,7 @@ class RiichiHandValueContextCalculatorTest {
             config = FakeRiichiRuleConfig(deadTileCount = 14)
         )
 
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
 
         val context = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -202,7 +200,7 @@ class RiichiHandValueContextCalculatorTest {
         val player = createPlayer(hand)
 
         val wallTiles = (1..15).map {
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
         val tileWall = TileWall(wallTiles.toMutableList())
 
@@ -212,7 +210,7 @@ class RiichiHandValueContextCalculatorTest {
             config = FakeRiichiRuleConfig(deadTileCount = 14)
         )
 
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
 
         val context = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -254,10 +252,10 @@ class RiichiHandValueContextCalculatorTest {
         val player = createPlayer(hand)
 
         val normalTiles = (1..30).map {
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
         val wanPaiTiles = (1..14).map {
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, (it % 9) + 1))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, (it % 9) + 1))
         }
         val allTiles = normalTiles + wanPaiTiles
         val tileWall = TileWall(allTiles.toMutableList())
@@ -268,7 +266,7 @@ class RiichiHandValueContextCalculatorTest {
             config = FakeRiichiRuleConfig(deadTileCount = 14)
         )
 
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         val context = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -292,35 +290,35 @@ class RiichiHandValueContextCalculatorTest {
         val kanMeld = Meld(
             MeldType.OPEN_KAN,
             listOf(
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
             ),
             sourceDirection = RelativeDirection.Across
         )
         val hand = Hand(
             mutableListOf(
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 2)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 3)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 4)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 6)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 7)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 8)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 7)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 8)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
             ),
             mutableListOf(kanMeld)
         )
         val player = createPlayer(hand)
 
         val normalTiles = (1..30).map {
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
         val wanPaiTiles = (1..14).map {
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, (it % 9) + 1))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, (it % 9) + 1))
         }
         val allTiles = normalTiles + wanPaiTiles
         val tileWall = TileWall(allTiles.toMutableList())
@@ -331,7 +329,7 @@ class RiichiHandValueContextCalculatorTest {
             config = FakeRiichiRuleConfig(deadTileCount = 14)
         )
 
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
 
         val context = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -355,56 +353,56 @@ class RiichiHandValueContextCalculatorTest {
         val kanMeld1 = Meld(
             MeldType.OPEN_KAN,
             listOf(
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
             ),
             sourceDirection = RelativeDirection.Across
         )
         val kanMeld2 = Meld(
             MeldType.OPEN_KAN,
             listOf(
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
             ),
             sourceDirection = RelativeDirection.Across
         )
         val kanMeld3 = Meld(
             MeldType.OPEN_KAN,
             listOf(
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 3)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 3)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 3)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 3))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3))
             ),
             sourceDirection = RelativeDirection.Across
         )
         val kanMeld4 = Meld(
             MeldType.OPEN_KAN,
             listOf(
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 4)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 4)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 4)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 4))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4))
             ),
             sourceDirection = RelativeDirection.Across
         )
         val hand = Hand(
             mutableListOf(
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
             ),
             mutableListOf(kanMeld1, kanMeld2, kanMeld3, kanMeld4)
         )
         val player = createPlayer(hand)
 
         val normalTiles = (1..30).map {
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
         val wanPaiTiles = (1..14).map {
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, (it % 9) + 1))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, (it % 9) + 1))
         }
         val allTiles = normalTiles + wanPaiTiles
         val tileWall = TileWall(allTiles.toMutableList())
@@ -415,7 +413,7 @@ class RiichiHandValueContextCalculatorTest {
             config = FakeRiichiRuleConfig(deadTileCount = 14)
         )
 
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
 
         val context = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -456,7 +454,7 @@ class RiichiHandValueContextCalculatorTest {
         val player = createPlayer(hand)
 
         val wanPaiTiles = (1..14).map {
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
         val tileWall = TileWall(wanPaiTiles.toMutableList())
 
@@ -466,7 +464,7 @@ class RiichiHandValueContextCalculatorTest {
             config = FakeRiichiRuleConfig(deadTileCount = 14)
         )
 
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         val context = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -505,12 +503,12 @@ class RiichiHandValueContextCalculatorTest {
                 Tile.Numeric(Tile.Suit.Character, 9)
             )
         )
-        val riichiTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
+        val riichiTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val riichiState = RiichiPlayerState(riichiTile = riichiTile)
         val player = createPlayer(hand, riichiState)
 
         val wanPaiTiles = (1..14).map {
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
         val tileWall = TileWall(wanPaiTiles.toMutableList())
 
@@ -520,7 +518,7 @@ class RiichiHandValueContextCalculatorTest {
             config = FakeRiichiRuleConfig(deadTileCount = 14)
         )
 
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         val context = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -563,7 +561,7 @@ class RiichiHandValueContextCalculatorTest {
         val player = createPlayer(hand)
 
         val wallTiles = (1..30).map {
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
         val tileWall = TileWall(wallTiles.toMutableList())
 
@@ -573,7 +571,7 @@ class RiichiHandValueContextCalculatorTest {
             config = FakeRiichiRuleConfig(deadTileCount = 0)
         )
 
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         val context = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -595,35 +593,35 @@ class RiichiHandValueContextCalculatorTest {
     fun `test rinshan kaihou detection`() {
         val calculator = createCalculator(deadTileCount = 14)
 
-        val kanSourceTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
+        val kanSourceTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val kanMeld = Meld(
             MeldType.OPEN_KAN,
             listOf(
                 kanSourceTile,
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
             ),
             sourceTile = kanSourceTile,
             sourceDirection = RelativeDirection.Across
         )
         val hand = Hand(
             mutableListOf(
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 2)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 3)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 4)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 6)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 7)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 8)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),
-                IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 7)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 8)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
             ),
             mutableListOf(kanMeld)
         )
 
-        val kanTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
+        val kanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val riichiState = RiichiPlayerState(riichiTile = kanTile)
         val player = createPlayer(hand, riichiState)
         player.recordAction(
@@ -636,7 +634,7 @@ class RiichiHandValueContextCalculatorTest {
         player.recordAction(GameAction.Draw)
 
         val wallTiles = (1..30).map {
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
         val tileWall = TileWall(wallTiles.toMutableList())
 
@@ -646,7 +644,7 @@ class RiichiHandValueContextCalculatorTest {
             config = FakeRiichiRuleConfig(deadTileCount = 14)
         )
 
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
 
         val context = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -724,20 +722,20 @@ class RiichiHandValueContextCalculatorTest {
          * | 13 | uraDora5 | - | - | - | - |
          */
         val wanPaiTiles = listOf(
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),  // wanPai[13]
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),  // wanPai[12]
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 3)),  // wanPai[11]
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),  // wanPai[10]
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),  // wanPai[9]
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 2)),  // wanPai[8]
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 2)),  // wanPai[7]
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 2)),  // wanPai[6]
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 2)),  // wanPai[5]
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),  // wanPai[4]
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),  // wanPai[3]
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 3)),  // wanPai[2]
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 9)),  // wanPai[1]
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 5, isRed = true))  // wanPai[0]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),  // wanPai[13]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),  // wanPai[12]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)),  // wanPai[11]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),  // wanPai[10]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),  // wanPai[9]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),  // wanPai[8]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),  // wanPai[7]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),  // wanPai[6]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),  // wanPai[5]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),  // wanPai[4]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),  // wanPai[3]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)),  // wanPai[2]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),  // wanPai[1]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))  // wanPai[0]
         )
         val tileWall = TileWall(wanPaiTiles.toMutableList())
 
@@ -747,7 +745,7 @@ class RiichiHandValueContextCalculatorTest {
             config = FakeRiichiRuleConfig(deadTileCount = 14)
         )
 
-        val incomingTile = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 測試無槓：baseIndex = 4
         val context0Kan = calculator.calculate(
@@ -763,7 +761,10 @@ class RiichiHandValueContextCalculatorTest {
         assertEquals(Tile.Numeric(Tile.Suit.Character, 1), context0Kan.doraIndicators[0]) // wanPai[4]
 
         // 測試 1 槓
-        val player1Kan = createPlayerWithKan(hand.standingTiles.map { IdentifiedTile(it.id, it.tile) }, 1)
+        val player1Kan = createPlayerWithKan(
+            hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
+            1
+        )
         val tableState1Kan = TableState(
             players = listOf(player1Kan),
             tileWall = TileWall(wanPaiTiles.toMutableList()).apply { repeat(1) { this.drawLast() } },
@@ -783,7 +784,10 @@ class RiichiHandValueContextCalculatorTest {
         assertEquals(Tile.Numeric(Tile.Suit.Character, 2), context1Kan.doraIndicators[1]) // wanPai[5]
 
         // 測試 2 槓
-        val player2Kan = createPlayerWithKan(hand.standingTiles.map { IdentifiedTile(it.id, it.tile) }, 2)
+        val player2Kan = createPlayerWithKan(
+            hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
+            2
+        )
         val tableState2Kan = TableState(
             players = listOf(player2Kan),
             tileWall = TileWall(wanPaiTiles.toMutableList()).apply { repeat(2) { this.drawLast() } },
@@ -804,7 +808,10 @@ class RiichiHandValueContextCalculatorTest {
         assertEquals(Tile.Numeric(Tile.Suit.Character, 2), context2Kan.doraIndicators[2]) // wanPai[6]
 
         // 測試 3 槓
-        val player3Kan = createPlayerWithKan(hand.standingTiles.map { IdentifiedTile(it.id, it.tile) }, 3)
+        val player3Kan = createPlayerWithKan(
+            hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
+            3
+        )
         val tableState3Kan = TableState(
             players = listOf(player3Kan),
             tileWall = TileWall(wanPaiTiles.toMutableList()).apply { repeat(3) { this.drawLast() } },
@@ -826,7 +833,10 @@ class RiichiHandValueContextCalculatorTest {
         assertEquals(Tile.Numeric(Tile.Suit.Character, 1), context3Kan.doraIndicators[3]) // wanPai[7]
 
         // 測試 4 槓
-        val player4Kan = createPlayerWithKan(hand.standingTiles.map { IdentifiedTile(it.id, it.tile) }, 4)
+        val player4Kan = createPlayerWithKan(
+            hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
+            4
+        )
         val tableState4Kan = TableState(
             players = listOf(player4Kan),
             tileWall = TileWall(wanPaiTiles.toMutableList()).apply { repeat(4) { this.drawLast() } },

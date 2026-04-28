@@ -1,9 +1,11 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman
 
-import com.doublemoon1119.mahjongcraft.domain.base.*
+import com.doublemoon1119.mahjongcraft.domain.base.Meld
+import com.doublemoon1119.mahjongcraft.domain.base.MeldType
+import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
-import java.util.*
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -138,9 +140,9 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.PON,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.North),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.North),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.North)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.North),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.North),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.North)
                     ),
                     sourceDirection = RelativeDirection.Left
                 )

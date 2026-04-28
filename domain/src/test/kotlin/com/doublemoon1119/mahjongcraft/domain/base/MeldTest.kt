@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.base
 
-import java.util.*
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -18,10 +18,10 @@ class MeldTest {
     @Test
     fun `test call chi removes tiles from hand except source`() {
         // 手牌中有 1萬, 2萬
-        val t1 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
-        val t2 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 2))
+        val t1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+        val t2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2))
         // 上家打出 3萬 (source)
-        val source = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 3))
+        val source = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3))
 
         val hand = Hand(mutableListOf(t1, t2))
 
@@ -49,10 +49,10 @@ class MeldTest {
     @Test
     fun `test call closed kan removes four tiles from hand`() {
         val tileType = Tile.Numeric(Tile.Suit.Dot, 9)
-        val t1 = IdentifiedTile(UUID.randomUUID(), tileType)
-        val t2 = IdentifiedTile(UUID.randomUUID(), tileType)
-        val t3 = IdentifiedTile(UUID.randomUUID(), tileType)
-        val t4 = IdentifiedTile(UUID.randomUUID(), tileType)
+        val t1 = FakeIdentifiedTileFactory.create(tileType)
+        val t2 = FakeIdentifiedTileFactory.create(tileType)
+        val t3 = FakeIdentifiedTileFactory.create(tileType)
+        val t4 = FakeIdentifiedTileFactory.create(tileType)
 
         // 手牌三張，摸到第四張
         val hand = Hand(mutableListOf(t1, t2, t3))
@@ -80,10 +80,10 @@ class MeldTest {
     @Test
     fun `test upgrade to added kan`() {
         val tileType = Tile.Numeric(Tile.Suit.Bamboo, 5)
-        val t1 = IdentifiedTile(UUID.randomUUID(), tileType)
-        val t2 = IdentifiedTile(UUID.randomUUID(), tileType)
-        val t3 = IdentifiedTile(UUID.randomUUID(), tileType) // 來自他人的 source
-        val t4 = IdentifiedTile(UUID.randomUUID(), tileType) // 剛摸到的加槓牌
+        val t1 = FakeIdentifiedTileFactory.create(tileType)
+        val t2 = FakeIdentifiedTileFactory.create(tileType)
+        val t3 = FakeIdentifiedTileFactory.create(tileType) // 來自他人的 source
+        val t4 = FakeIdentifiedTileFactory.create(tileType) // 剛摸到的加槓牌
 
         val hand = Hand()
         // 先建立一個碰 (PON)

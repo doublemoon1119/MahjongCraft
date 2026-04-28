@@ -1,8 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.table
 
-import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import java.util.*
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -19,8 +18,8 @@ class TileWallTest {
     @Test
     fun `test drawing from wall`() {
         val tiles = mutableListOf(
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1)),
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
         )
         val wall = TileWall(tiles)
 
@@ -44,8 +43,8 @@ class TileWallTest {
     @Test
     fun `test drawing last from wall`() {
         val tiles = mutableListOf(
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1)),
-            IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
         )
         val wall = TileWall(tiles)
 
@@ -68,8 +67,8 @@ class TileWallTest {
      */
     @Test
     fun `test peeking from wall`() {
-        val tile1 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
-        val tile2 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2))
+        val tile1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val tile2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
         val tiles = mutableListOf(tile1, tile2)
         val wall = TileWall(tiles)
 
@@ -90,7 +89,7 @@ class TileWallTest {
     @Test
     fun `test getAllTiles returns immutable list copy`() {
         val tiles = mutableListOf(
-            IdentifiedTile(UUID.randomUUID(), Tile.Honor.West)
+            FakeIdentifiedTileFactory.create(Tile.Honor.West)
         )
         val wall = TileWall(tiles)
 

@@ -1,10 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiDiscardEntry
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiDiscardPile
-import java.util.*
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -21,7 +18,7 @@ class RiichiDiscardPileTest {
     @Test
     fun `test riichi discard entry properties`() {
         val pile = RiichiDiscardPile()
-        val tile = IdentifiedTile(UUID.randomUUID(), Tile.Honor.East)
+        val tile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
 
         // 建立並放入立直捨牌紀錄
         val entry = RiichiDiscardEntry(tile, isRiichi = true)
@@ -39,8 +36,8 @@ class RiichiDiscardPileTest {
     @Test
     fun `test riichi takeLast behavior`() {
         val pile = RiichiDiscardPile()
-        val tile1 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
-        val tile2 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 2))
+        val tile1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val tile2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
 
         pile.discard(RiichiDiscardEntry(tile1))
         pile.discard(RiichiDiscardEntry(tile2))

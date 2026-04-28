@@ -1,9 +1,12 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman
 
-import com.doublemoon1119.mahjongcraft.domain.base.*
+import com.doublemoon1119.mahjongcraft.domain.base.Meld
+import com.doublemoon1119.mahjongcraft.domain.base.MeldType
+import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
-import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -56,8 +59,10 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
-        assertTrue(result.yakuResults.any { it.yaku == YakuType.Shousuushi },
-            "Should contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}")
+        assertTrue(
+            result.yakuResults.any { it.yaku == YakuType.Shousuushi },
+            "Should contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}"
+        )
     }
 
     /**
@@ -90,9 +95,9 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.PON,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.East),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.East),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.East)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East)
                     ),
                     sourceDirection = RelativeDirection.Across
                 )
@@ -104,8 +109,10 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
-        assertTrue(result.yakuResults.any { it.yaku == YakuType.Shousuushi },
-            "Should contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}")
+        assertTrue(
+            result.yakuResults.any { it.yaku == YakuType.Shousuushi },
+            "Should contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}"
+        )
     }
 
     /**
@@ -144,8 +151,10 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertFalse(result.isYakuman, "Should not be yakuman")
-        assertFalse(result.yakuResults.any { it.yaku == YakuType.Shousuushi },
-            "Should not contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}")
+        assertFalse(
+            result.yakuResults.any { it.yaku == YakuType.Shousuushi },
+            "Should not contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}"
+        )
     }
 
     /**
@@ -184,8 +193,10 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
-        assertTrue(result.yakuResults.any { it.yaku == YakuType.Daisuushii },
-            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}")
+        assertTrue(
+            result.yakuResults.any { it.yaku == YakuType.Daisuushii },
+            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}"
+        )
     }
 
     /**
@@ -218,9 +229,9 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.PON,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.East),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.East),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.East)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East)
                     ),
                     sourceDirection = RelativeDirection.Across
                 )
@@ -232,8 +243,10 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be double yakuman")
-        assertTrue(result.yakuResults.any { it.yaku == YakuType.Daisuushii },
-            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}")
+        assertTrue(
+            result.yakuResults.any { it.yaku == YakuType.Daisuushii },
+            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}"
+        )
     }
 
     /**
@@ -266,10 +279,10 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.East),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.East),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.East),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Honor.East)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East)
                     ),
                     sourceDirection = RelativeDirection.Self
                 )
@@ -281,8 +294,10 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be double yakuman")
-        assertTrue(result.yakuResults.any { it.yaku == YakuType.Daisuushii },
-            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}")
+        assertTrue(
+            result.yakuResults.any { it.yaku == YakuType.Daisuushii },
+            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}"
+        )
     }
 
     /**
@@ -310,8 +325,10 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
         val contextNorth = createContext(handNorth, winningNorth, isTsumo = false)
         val resultNorth = calculator.calculate(contextNorth)
 
-        assertTrue(resultNorth.yakuResults.any { it.yaku == YakuType.Daisuushii },
-            "Winning North should be Daisuushii, but got: ${resultNorth.yakuResults.map { it.yaku }}")
+        assertTrue(
+            resultNorth.yakuResults.any { it.yaku == YakuType.Daisuushii },
+            "Winning North should be Daisuushii, but got: ${resultNorth.yakuResults.map { it.yaku }}"
+        )
 
         // 情境 2：胡「1m」 -> 變成 1m刻子 + 北雀頭 => 小四喜
         val winning1m = Tile.Numeric(Tile.Suit.Character, 1)
@@ -319,7 +336,9 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
         val context1m = createContext(hand1m, winning1m, isTsumo = false)
         val result1m = calculator.calculate(context1m)
 
-        assertTrue(result1m.yakuResults.any { it.yaku == YakuType.Shousuushi },
-            "Winning 1m should be Shousuushi, but got: ${result1m.yakuResults.map { it.yaku }}")
+        assertTrue(
+            result1m.yakuResults.any { it.yaku == YakuType.Shousuushi },
+            "Winning 1m should be Shousuushi, but got: ${result1m.yakuResults.map { it.yaku }}"
+        )
     }
 }

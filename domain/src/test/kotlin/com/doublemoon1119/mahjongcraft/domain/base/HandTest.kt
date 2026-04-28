@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.base
 
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiTileOrder
 import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanTileOrder
 import java.util.*
@@ -19,8 +20,8 @@ class HandTest {
     fun `test addTile`() {
         // Arrange
         val hand = Hand()
-        val tile1 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Dot, 1))
-        val tile2 = IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Bamboo, 5))
+        val tile1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val tile2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
 
         // Act
         hand.addTile(tile1)
@@ -38,11 +39,11 @@ class HandTest {
     @Test
     fun `test drawing and discarding by id with tsumogiri check`() {
         val id1 = UUID.randomUUID()
-        val tile1 = IdentifiedTile(id1, Tile.Numeric(Tile.Suit.Dot, 1))
+        val tile1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1), id = id1)
         val hand = Hand(mutableListOf(tile1))
 
         val id2 = UUID.randomUUID()
-        val tile2 = IdentifiedTile(id2, Tile.Numeric(Tile.Suit.Dot, 2))
+        val tile2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2), id = id2)
 
         // 模擬摸牌
         hand.lastDrawn = tile2
@@ -65,10 +66,10 @@ class HandTest {
     @Test
     fun `test non tsumogiri discard moves lastDrawn to standing tiles`() {
         val idInHand = UUID.randomUUID()
-        val tileInHand = IdentifiedTile(idInHand, Tile.Numeric(Tile.Suit.Character, 5))
+        val tileInHand = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5), id = idInHand)
 
         val idLastDrawn = UUID.randomUUID()
-        val tileLastDrawn = IdentifiedTile(idLastDrawn, Tile.Numeric(Tile.Suit.Character, 9))
+        val tileLastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9), id = idLastDrawn)
 
         val hand = Hand(mutableListOf(tileInHand))
         hand.lastDrawn = tileLastDrawn
@@ -94,8 +95,8 @@ class HandTest {
      */
     @Test
     fun `test sorting with different regional orders`() {
-        val white = IdentifiedTile(UUID.randomUUID(), Tile.Honor.White)
-        val red = IdentifiedTile(UUID.randomUUID(), Tile.Honor.Red)
+        val white = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val red = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
 
         val hand = Hand(mutableListOf(red))
         hand.lastDrawn = white
@@ -120,9 +121,9 @@ class HandTest {
     @Test
     fun `test discardById from standing tiles`() {
         val id1 = UUID.randomUUID()
-        val tile1 = IdentifiedTile(id1, Tile.Numeric(Tile.Suit.Bamboo, 1))
+        val tile1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1), id = id1)
         val id2 = UUID.randomUUID()
-        val tile2 = IdentifiedTile(id2, Tile.Numeric(Tile.Suit.Bamboo, 2))
+        val tile2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2), id = id2)
 
         val hand = Hand(mutableListOf(tile1, tile2))
 

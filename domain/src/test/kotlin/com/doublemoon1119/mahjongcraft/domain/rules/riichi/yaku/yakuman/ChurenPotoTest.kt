@@ -1,11 +1,12 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman
 
-import com.doublemoon1119.mahjongcraft.domain.base.*
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandDecomposer
+import com.doublemoon1119.mahjongcraft.domain.base.Meld
+import com.doublemoon1119.mahjongcraft.domain.base.MeldType
+import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
-import com.doublemoon1119.mahjongcraft.domain.util.withoutRed
-import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -135,9 +136,9 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.PON,
                     tiles = listOf(
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1)),
-                        IdentifiedTile(UUID.randomUUID(), Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
                     ),
                     sourceDirection = RelativeDirection.Left
                 )
@@ -150,7 +151,8 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         // 應該不是九蓮寶燈
-        val churenPotoResult = result.yakuResults.find { it.yaku == YakuType.ChurenPoto || it.yaku == YakuType.ChurenPoto9 }
+        val churenPotoResult =
+            result.yakuResults.find { it.yaku == YakuType.ChurenPoto || it.yaku == YakuType.ChurenPoto9 }
         assertNull(churenPotoResult, "Should return null when not menzen")
     }
 
@@ -185,7 +187,8 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
         val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
         val result = calculator.calculate(context)
 
-        val churenPotoResult = result.yakuResults.find { it.yaku == YakuType.ChurenPoto || it.yaku == YakuType.ChurenPoto9 }
+        val churenPotoResult =
+            result.yakuResults.find { it.yaku == YakuType.ChurenPoto || it.yaku == YakuType.ChurenPoto9 }
         assertNull(churenPotoResult, "Should return null when hand has mixed suits")
     }
 
@@ -220,7 +223,8 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
         val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
         val result = calculator.calculate(context)
 
-        val churenPotoResult = result.yakuResults.find { it.yaku == YakuType.ChurenPoto || it.yaku == YakuType.ChurenPoto9 }
+        val churenPotoResult =
+            result.yakuResults.find { it.yaku == YakuType.ChurenPoto || it.yaku == YakuType.ChurenPoto9 }
         assertNull(churenPotoResult, "Should return null when hand lacks 111 or 999")
     }
 }
