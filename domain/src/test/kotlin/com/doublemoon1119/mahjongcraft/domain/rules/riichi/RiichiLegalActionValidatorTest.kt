@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.domain.table.Wind
 import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -53,12 +54,8 @@ class RiichiLegalActionValidatorTest {
                 Tile.Numeric(Tile.Suit.Character, 1)
             )
         )
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
-            hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand
         )
         val tableState = TableState(
             players = listOf(player),
@@ -94,12 +91,8 @@ class RiichiLegalActionValidatorTest {
                 Tile.Numeric(Tile.Suit.Character, 3)
             )
         )
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
-            hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand
         )
         val tableState = TableState(
             players = listOf(player),
@@ -136,12 +129,8 @@ class RiichiLegalActionValidatorTest {
                 Tile.Numeric(Tile.Suit.Character, 1)
             )
         )
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
-            hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand
         )
         val tableState = TableState(
             players = listOf(player),
@@ -181,12 +170,8 @@ class RiichiLegalActionValidatorTest {
             sourceDirection = RelativeDirection.Left
         )
         val playerHand = Hand(melds = mutableListOf(ponMeld))
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
-            hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand
         )
         val tableState = TableState(
             players = listOf(player),
@@ -223,12 +208,8 @@ class RiichiLegalActionValidatorTest {
                 Tile.Numeric(Tile.Suit.Character, 1)
             )
         )
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
-            hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand
         )
         val tableState = TableState(
             players = listOf(player),
@@ -277,12 +258,8 @@ class RiichiLegalActionValidatorTest {
                 Tile.Numeric(Tile.Suit.Character, 9)
             )
         )
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
+        val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile(),
             playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
@@ -332,12 +309,8 @@ class RiichiLegalActionValidatorTest {
                 Tile.Numeric(Tile.Suit.Character, 9)
             )
         )
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
+        val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile(),
             playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
@@ -386,12 +359,8 @@ class RiichiLegalActionValidatorTest {
                 Tile.Numeric(Tile.Suit.Character, 7)
             )
         )
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
+        val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile(),
             playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
@@ -446,12 +415,8 @@ class RiichiLegalActionValidatorTest {
             sourceDirection = RelativeDirection.Left
         )
         playerHand.call(ponMeld.type, ponMeld.tiles, ponMeld.sourceTile, ponMeld.sourceDirection)
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
-            hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand
         )
         val tableState = TableState(
             players = listOf(player),
@@ -498,11 +463,8 @@ class RiichiLegalActionValidatorTest {
                 Tile.Honor.West,
             ),
         )
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
+        val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            initialSeat = Wind.EAST,
             discardPile = FakeDiscardPile().apply {
                 discard(
                     entry = FakeDiscardPile.FakeEntry(
@@ -559,12 +521,8 @@ class RiichiLegalActionValidatorTest {
                 Tile.Numeric(Tile.Suit.Character, 9)
             )
         )
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
+        val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile(),
             playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
@@ -614,12 +572,8 @@ class RiichiLegalActionValidatorTest {
                 Tile.Numeric(Tile.Suit.Character, 9)
             )
         )
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
+        val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile(),
             playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
@@ -673,10 +627,7 @@ class RiichiLegalActionValidatorTest {
             )
         )
         val discardPile = FakeDiscardPile()
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
-            initialSeat = Wind.EAST,
+        val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
             discardPile = discardPile
         )
@@ -690,8 +641,7 @@ class RiichiLegalActionValidatorTest {
                 )
             )
         )
-        val otherPlayer1 = MahjongPlayer(
-            id = UUID.randomUUID(),
+        val otherPlayer1 = FakeMahjongPlayerFactory.create(
             name = "Other1",
             initialSeat = Wind.SOUTH,
             hand = createHand(listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))),
@@ -706,8 +656,7 @@ class RiichiLegalActionValidatorTest {
                 )
             )
         )
-        val otherPlayer2 = MahjongPlayer(
-            id = UUID.randomUUID(),
+        val otherPlayer2 = FakeMahjongPlayerFactory.create(
             name = "Other2",
             initialSeat = Wind.WEST,
             hand = createHand(listOf(Tile.Numeric(Tile.Suit.Bamboo, 2))),
@@ -722,8 +671,7 @@ class RiichiLegalActionValidatorTest {
                 )
             )
         )
-        val otherPlayer3 = MahjongPlayer(
-            id = UUID.randomUUID(),
+        val otherPlayer3 = FakeMahjongPlayerFactory.create(
             name = "Other3",
             initialSeat = Wind.NORTH,
             hand = createHand(listOf(Tile.Numeric(Tile.Suit.Bamboo, 3))),
@@ -774,10 +722,7 @@ class RiichiLegalActionValidatorTest {
                 Tile.Numeric(Tile.Suit.Dot, 4)
             )
         )
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
-            initialSeat = Wind.EAST,
+        val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
             discardPile = FakeDiscardPile()
         )
@@ -790,8 +735,7 @@ class RiichiLegalActionValidatorTest {
                 )
             )
         )
-        val otherPlayer1 = MahjongPlayer(
-            id = UUID.randomUUID(),
+        val otherPlayer1 = FakeMahjongPlayerFactory.create(
             name = "Other1",
             initialSeat = Wind.SOUTH,
             hand = createHand(listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))),
@@ -869,12 +813,8 @@ class RiichiLegalActionValidatorTest {
             ),
             mutableListOf(chiMeld, ponMeld1, ponMeld2)
         )
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
+        val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile(),
             playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
@@ -926,12 +866,8 @@ class RiichiLegalActionValidatorTest {
                 Tile.Honor.Red
             )
         )
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
+        val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile(),
             playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(
@@ -982,12 +918,8 @@ class RiichiLegalActionValidatorTest {
                 Tile.Numeric(Tile.Suit.Character, 9)
             )
         )
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
+        val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile(),
             playerRuleState = RiichiPlayerState()
         )
         val tableState = TableState(

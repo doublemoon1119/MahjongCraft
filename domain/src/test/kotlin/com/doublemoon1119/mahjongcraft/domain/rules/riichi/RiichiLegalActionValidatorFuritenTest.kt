@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.domain.table.Wind
 import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -72,11 +73,8 @@ class RiichiLegalActionValidatorFuritenTest {
             )
         )
         val riichiState = RiichiPlayerState()
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
+        val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            initialSeat = Wind.EAST,
             discardPile = fakeDiscardPile,
             playerRuleState = riichiState
         )
@@ -136,11 +134,8 @@ class RiichiLegalActionValidatorFuritenTest {
             )
         )
         val riichiState = RiichiPlayerState()
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
+        val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            initialSeat = Wind.EAST,
             discardPile = fakeDiscardPile,
             playerRuleState = riichiState
         )
@@ -180,12 +175,8 @@ class RiichiLegalActionValidatorFuritenTest {
             )
         )
 
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
-            hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand
         )
         // 建立已放過5萬的狀態
         player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5))
@@ -227,12 +218,8 @@ class RiichiLegalActionValidatorFuritenTest {
             )
         )
 
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
-            hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand
         )
         // 建立已放過5萬的狀態
         player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5))
@@ -275,12 +262,8 @@ class RiichiLegalActionValidatorFuritenTest {
             )
         )
 
-        val player = MahjongPlayer(
-            id = UUID.randomUUID(),
-            name = "TestPlayer",
-            hand = playerHand,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile()
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand
         )
         // 放過普通5萬
         player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5, isRed = false))
