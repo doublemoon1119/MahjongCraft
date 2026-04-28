@@ -12,8 +12,9 @@ plugins {
 extra["javaRelease"] = libs.versions.jvm.domain.release.get().toInt()
 
 dependencies {
-    api(project(":domain"))
-    api(libs.kotlin.coroutines)
+    api(project(":application"))
+    api(platform(libs.koin.bom))
+    api(libs.koin.core)
 
     // 單元測試相關
     testImplementation(kotlin("test"))

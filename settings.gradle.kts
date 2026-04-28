@@ -13,6 +13,7 @@ dependencyResolutionManagement {
 // 預設始終加載的核心模組
 include(":domain")
 include(":application")
+include(":infrastructure")
 include(":testing")
 
 /**

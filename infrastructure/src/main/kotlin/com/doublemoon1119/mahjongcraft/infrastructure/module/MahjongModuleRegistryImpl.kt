@@ -1,6 +1,8 @@
-package com.doublemoon1119.mahjongcraft.domain.module
+package com.doublemoon1119.mahjongcraft.infrastructure.module
 
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
 
 /**
  * 麻將規則模組註冊中心。
@@ -11,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
  * 每一次 [getModule] 呼叫都會根據傳入的 [MahjongRuleConfig] 返回新的模組實例，
  * 以確保每個麻將桌可以擁有獨立的組件，實現規則配置的獨立性。
  */
-class MahjongModuleRegistryImpl: MahjongModuleRegistry {
+class MahjongModuleRegistryImpl : MahjongModuleRegistry {
 
     /**
      * 配置類別與註冊資訊的映射表。

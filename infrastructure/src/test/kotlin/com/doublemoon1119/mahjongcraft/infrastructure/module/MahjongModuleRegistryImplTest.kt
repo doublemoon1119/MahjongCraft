@@ -1,14 +1,16 @@
-package com.doublemoon1119.mahjongcraft.domain.module
+package com.doublemoon1119.mahjongcraft.infrastructure.module
 
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeGameLength
-import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeScoreConfig
 import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
+import com.doublemoon1119.mahjongcraft.domain.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
+import com.doublemoon1119.mahjongcraft.testing.fakes.config.FakeGameLength
+import com.doublemoon1119.mahjongcraft.testing.fakes.config.FakeScoreConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -44,7 +46,8 @@ private class FakeModule<T : MahjongRuleConfig>(
 ) : MahjongRuleModule<T> {
 
     // 對於確定不會用到的功能，統一使用此私有輔助方法拋出異常
-    private fun notRequired(): Nothing = throw UnsupportedOperationException("Functional component not required for registry testing.")
+    private fun notRequired(): Nothing =
+        throw UnsupportedOperationException("Functional component not required for registry testing.")
 
     override fun createWallFactory(): TileWallFactory = notRequired()
     override fun createDiscardPile(): DiscardPile<*> = notRequired()
@@ -55,9 +58,9 @@ private class FakeModule<T : MahjongRuleConfig>(
 }
 
 /**
- * 針對 [MahjongModuleRegistry] 進行的單元測試。
+ * 針對 [MahjongModuleRegistryImpl] 進行的單元測試。
  */
-class MahjongModuleRegistryTest {
+class MahjongModuleRegistryImplTest {
 
     /**
      * 驗證註冊後是否能正確取出對應的模組。
@@ -74,7 +77,11 @@ class MahjongModuleRegistryTest {
 
         val result = registry.getModule(configA)
         // 驗證 ID 是否正確傳遞
-        assertEquals(expectedId, result.id, "The module should hold the ID specified during registration in the Registry.")
+        assertEquals(
+            expectedId,
+            result.id,
+            "The module should hold the ID specified during registration in the Registry."
+        )
         assertEquals(configA, result.config)
     }
 

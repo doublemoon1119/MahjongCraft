@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.domain.fakes.config
+package com.doublemoon1119.mahjongcraft.testing.fakes.config
 
 import com.doublemoon1119.mahjongcraft.domain.config.GameLength
 

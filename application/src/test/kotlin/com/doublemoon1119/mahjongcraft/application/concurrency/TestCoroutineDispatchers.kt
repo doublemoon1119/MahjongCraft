@@ -1,6 +1,5 @@
-package com.doublemoon1119.mahjongcraft.testing.concurrency
+package com.doublemoon1119.mahjongcraft.application.concurrency
 
-import com.doublemoon1119.mahjongcraft.domain.concurrency.CoroutineDispatchers
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher

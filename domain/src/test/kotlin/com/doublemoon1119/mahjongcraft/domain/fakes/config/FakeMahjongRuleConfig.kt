@@ -3,6 +3,8 @@ package com.doublemoon1119.mahjongcraft.domain.fakes.config
 import com.doublemoon1119.mahjongcraft.domain.config.GameLength
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.config.ScoreConfig
+import com.doublemoon1119.mahjongcraft.testing.fakes.config.FakeGameLength
+import com.doublemoon1119.mahjongcraft.testing.fakes.config.FakeScoreConfig
 
 /**
  * 用於測試的模擬規則配置實作。
