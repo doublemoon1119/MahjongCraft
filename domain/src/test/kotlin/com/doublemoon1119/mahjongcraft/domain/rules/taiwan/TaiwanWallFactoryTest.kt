@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import com.doublemoon1119.mahjongcraft.domain.fakes.rules.taiwan.FakeTaiwanRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -20,7 +19,7 @@ class TaiwanWallFactoryTest {
      */
     @Test
     fun `test taiwan wall composition with flowers`() {
-        val config = FakeTaiwanRuleConfig(useFlowerTiles = true)
+        val config = TaiwanRuleConfig(useFlowerTiles = true)
         val factory = TaiwanWallFactory(config)
         val wall = factory.create()
 
@@ -39,7 +38,7 @@ class TaiwanWallFactoryTest {
      */
     @Test
     fun `test taiwan wall composition without flowers`() {
-        val config = FakeTaiwanRuleConfig(useFlowerTiles = false)
+        val config = TaiwanRuleConfig(useFlowerTiles = false)
         val factory = TaiwanWallFactory(config)
         val wall = factory.create()
 

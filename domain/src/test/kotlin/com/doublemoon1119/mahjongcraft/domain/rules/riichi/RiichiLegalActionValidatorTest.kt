@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.domain.base.*
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
@@ -26,7 +25,7 @@ class RiichiLegalActionValidatorTest {
     private val validator = RiichiLegalActionValidator(
         shantenCalculator = RiichiShantenCalculator(),
         handValueCalculator = RiichiHandValueCalculator(),
-        contextCalculator = RiichiHandValueContextCalculator(FakeRiichiRuleConfig())
+        contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig())
     )
 
     /**
@@ -265,7 +264,7 @@ class RiichiLegalActionValidatorTest {
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeRiichiRuleConfig()
+            config = RiichiRuleConfig()
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
 
@@ -316,7 +315,7 @@ class RiichiLegalActionValidatorTest {
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeRiichiRuleConfig()
+            config = RiichiRuleConfig()
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
 
@@ -366,7 +365,7 @@ class RiichiLegalActionValidatorTest {
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeRiichiRuleConfig()
+            config = RiichiRuleConfig()
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 7))
 
@@ -478,7 +477,7 @@ class RiichiLegalActionValidatorTest {
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeRiichiRuleConfig(minimumWinConstraint = 2)
+            config = RiichiRuleConfig(minimumWinConstraint = 2)
         )
 
         // 摸到胡牌張
@@ -528,7 +527,7 @@ class RiichiLegalActionValidatorTest {
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeRiichiRuleConfig(),
+            config = RiichiRuleConfig(),
             prevalentWind = Wind.EAST
         )
 
@@ -579,7 +578,7 @@ class RiichiLegalActionValidatorTest {
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeRiichiRuleConfig(),
+            config = RiichiRuleConfig(),
             prevalentWind = Wind.EAST
         )
 
@@ -808,7 +807,7 @@ class RiichiLegalActionValidatorTest {
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeRiichiRuleConfig(minimumWinConstraint = 1)
+            config = RiichiRuleConfig(minimumWinConstraint = 1)
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
 
@@ -861,7 +860,7 @@ class RiichiLegalActionValidatorTest {
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeRiichiRuleConfig()
+            config = RiichiRuleConfig()
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
 
@@ -913,7 +912,7 @@ class RiichiLegalActionValidatorTest {
         val tableState = TableState(
             players = listOf(player),
             tileWall = TileWall(mutableListOf()),
-            config = FakeRiichiRuleConfig()
+            config = RiichiRuleConfig()
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2))
 

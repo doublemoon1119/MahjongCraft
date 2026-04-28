@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -12,8 +11,10 @@ import kotlin.test.assertTrue
  */
 class RiichiRuleModuleTest {
 
-    private val config = FakeRiichiRuleConfig()
-    private val module: MahjongRuleModule<RiichiRuleConfig> = RiichiRuleModule("mahjongcraft:riichi", config)
+    private val module: MahjongRuleModule<RiichiRuleConfig> = RiichiRuleModule(
+        id = "mahjongcraft:riichi",
+        config = RiichiRuleConfig()
+    )
 
     /**
      * 驗證建立的牌山工廠是否為日本麻將實作。

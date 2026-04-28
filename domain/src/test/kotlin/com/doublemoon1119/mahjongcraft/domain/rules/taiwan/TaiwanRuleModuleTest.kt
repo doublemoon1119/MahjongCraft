@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.domain.fakes.rules.taiwan.FakeTaiwanRuleConfig
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -13,8 +12,10 @@ import kotlin.test.assertTrue
  */
 class TaiwanRuleModuleTest {
 
-    private val config = FakeTaiwanRuleConfig()
-    private val module: MahjongRuleModule<TaiwanRuleConfig> = TaiwanRuleModule("mahjongcraft:taiwan", config)
+    private val module: MahjongRuleModule<TaiwanRuleConfig> = TaiwanRuleModule(
+        id = "mahjongcraft:taiwan",
+        config = TaiwanRuleConfig()
+    )
 
     /**
      * 驗證建立的牌山工廠是否為台灣麻將實作。

@@ -7,5 +7,5 @@ import com.doublemoon1119.mahjongcraft.domain.config.GameLength
  */
 class FakeGameLength(
     override val totalRounds: Int = 4,
-    override val name: String = "Test Game Length"
+    override val roundsOffset: Int = 0
 ) : GameLength

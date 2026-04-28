@@ -1,46 +1,29 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.config.ScoreConfig
 
-/**
- * 日本麻將特有的積分配置實作。
- *
- * @property initialScore 初始點數，通常為 25000。
- * @property bustThreshold 擊飛門檻，通常為 0（點數小於 0 則結束）。
- * @property minPointsToWin 一位必要點數（如 30000），未達標則觸發延長賽（西入）。
- */
-data class RiichiScoreConfig(
-    override val initialScore: Int = 25000,
-    override val bustThreshold: Int? = 0,
-    val minPointsToWin: Int = 30000
-) : ScoreConfig
 
 /**
  * 日本麻將（Riichi Mahjong）特有的規則配置介面。
  *
  * 繼承自 [MahjongRuleConfig] 並增加與日麻計分和道具相關的參數。
+ *
+ * @property redDoraCount 赤牌（五萬、五筒、五條）的總張數，預設為 3，常見配置為 3 張（五萬、五筒、五條各一）或 4 張 （五筒兩張，五萬、五條各一）。
+ * @property allowOpenTanyao 是否允許食斷（斷么九鳴牌有效），預設為 true。
+ * @property useLocalYaku 是否啟用古役（Local Yaku），預設為 false。
+ * @property initialHandSize 初始手牌張數，預設為 13。
+ * @property deadTileCount 王牌（死牌）張數，預設為 14。
+ * @property minimumWinConstraint 起胡番數限制（通常為 1 番），預設為 1。
+ * @property scoreConfig 日本麻將專屬的積分配置。
+ * @property gameLength 遊戲長度配置，預設為 [RiichiGameLength.OneGame]。
  */
-interface RiichiRuleConfig : MahjongRuleConfig {
-    /**
-     * 遊戲中使用的赤寶牌（Aka Dora）總數。
-     *
-     * 常見配置為 3 張（五萬、五筒、五條各一）或 4 張 （五筒兩張，五萬、五條各一）。
-     */
-    val redDoraCount: Int
-
-    /**
-     * 是否啟用食斷（斷么九鳴牌有效）。
-     * */
-    val allowOpenTanyao: Boolean
-
-    /**
-     * 是否啟用古役（Local Yaku）。
-     * */
-    val useLocalYaku: Boolean
-
-    /**
-     * 覆寫計分配置為日麻專用格式。
-     * */
-    override val scoreConfig: RiichiScoreConfig
-}
+data class RiichiRuleConfig(
+    val redDoraCount: Int = 3,
+    val allowOpenTanyao: Boolean = true,
+    val useLocalYaku: Boolean = false,
+    override val initialHandSize: Int = 13,
+    override val deadTileCount: Int = 14,
+    override val minimumWinConstraint: Int = 1,
+    override val scoreConfig: RiichiScoreConfig = RiichiScoreConfig(),
+    override val gameLength: RiichiGameLength = RiichiGameLength.OneGame,
+) : MahjongRuleConfig

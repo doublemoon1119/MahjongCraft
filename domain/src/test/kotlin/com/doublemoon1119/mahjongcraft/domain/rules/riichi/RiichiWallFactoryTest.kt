@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -19,7 +18,7 @@ class RiichiWallFactoryTest {
      */
     @Test
     fun `test riichi wall composition with three red dora`() {
-        val config = FakeRiichiRuleConfig(redDoraCount = 3)
+        val config = RiichiRuleConfig(redDoraCount = 3)
         val factory = RiichiWallFactory(config)
         val wall = factory.create()
 
@@ -42,7 +41,7 @@ class RiichiWallFactoryTest {
      */
     @Test
     fun `test riichi wall composition with four red dora`() {
-        val config = FakeRiichiRuleConfig(redDoraCount = 4)
+        val config = RiichiRuleConfig(redDoraCount = 4)
         val factory = RiichiWallFactory(config)
         val wall = factory.create()
 

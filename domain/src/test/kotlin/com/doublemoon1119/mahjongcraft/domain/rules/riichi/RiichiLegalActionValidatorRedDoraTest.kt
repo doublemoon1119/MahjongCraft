@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.domain.base.*
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall
@@ -24,7 +23,7 @@ class RiichiLegalActionValidatorRedDoraTest {
     private val validator = RiichiLegalActionValidator(
         shantenCalculator = RiichiShantenCalculator(),
         handValueCalculator = RiichiHandValueCalculator(),
-        contextCalculator = RiichiHandValueContextCalculator(FakeRiichiRuleConfig())
+        contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig())
     )
 
     /**

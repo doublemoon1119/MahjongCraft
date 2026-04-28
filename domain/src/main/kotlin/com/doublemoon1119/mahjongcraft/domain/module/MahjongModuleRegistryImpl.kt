@@ -14,13 +14,18 @@ import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 class MahjongModuleRegistryImpl: MahjongModuleRegistry {
 
     /**
-     * 工廠函數映射：Config Class 對應工廠函數。
-     * 使用 @Suppress("UNCHECKED_CAST") 來處理泛型型別。
+     * 配置類別與註冊資訊的映射表。
+     *
+     * Key 為規則配置的類別類型 ([MahjongRuleConfig])，Value 為包含規則 ID 與工廠函式的註冊物件。
+     * 用於根據傳入的配置實例快速檢索對應的模組生產工廠。
      */
     private val registrationMap = mutableMapOf<Class<out MahjongRuleConfig>, Registration<*>>()
 
     /**
-     * ID 對應 Config Class (用於存檔識別)。
+     * 規則 ID 與配置類別的映射表。
+     *
+     * Key 為唯一的規則識別字串 (例如 "mahjongcraft:riichi")，Value 為該規則對應的配置類別類型。
+     * 用於確保規則 ID 的唯一性，並提供根據 ID 查詢配置類別的功能。
      */
     private val idToConfigClassMap = mutableMapOf<String, Class<out MahjongRuleConfig>>()
 
@@ -40,7 +45,6 @@ class MahjongModuleRegistryImpl: MahjongModuleRegistry {
      * @param factory 工廠函數，接收 config 返回新的模組實例。
      * @throws IllegalArgumentException 如果該模組 ID 已經被註冊。
      */
-    @Suppress("UNCHECKED_CAST")
     override fun <T : MahjongRuleConfig> register(
         configClass: Class<T>,
         id: String,
