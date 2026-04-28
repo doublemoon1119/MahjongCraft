@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.honor
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiHandValueContextFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
@@ -44,7 +45,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
-        val context = createContext(
+        val context = FakeRiichiHandValueContextFactory.create(
             hand = hand,
             winningTile = winningTile,
             isTsumo = true,
@@ -83,7 +84,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
-        val context = createContext(
+        val context = FakeRiichiHandValueContextFactory.create(
             hand = hand,
             winningTile = winningTile,
             isTsumo = true,
@@ -122,7 +123,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
-        val context = createContext(
+        val context = FakeRiichiHandValueContextFactory.create(
             hand = hand,
             winningTile = winningTile,
             isTsumo = true,
@@ -162,7 +163,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
-        val context = createContext(
+        val context = FakeRiichiHandValueContextFactory.create(
             hand = hand,
             winningTile = winningTile,
             isTsumo = true,
@@ -204,7 +205,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
 
-        val context = createContext(
+        val context = FakeRiichiHandValueContextFactory.create(
             hand = hand,
             winningTile = winningTile,
             isTsumo = true,

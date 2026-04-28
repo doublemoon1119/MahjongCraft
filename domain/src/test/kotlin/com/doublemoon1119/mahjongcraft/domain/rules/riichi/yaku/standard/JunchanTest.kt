@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiHandValueContextFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import kotlin.test.Test
@@ -45,7 +46,7 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9)
 
-        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isMenzen = true)
         val result = calculator.calculate(context)
 
         val junchanResult = result.yakuResults.find { it.yaku == YakuType.Junchan }
@@ -85,7 +86,7 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9)
 
-        val context = createContext(hand, winningTile, isTsumo = false, isMenzen = false)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = false, isMenzen = false)
         val result = calculator.calculate(context)
 
         val junchanResult = result.yakuResults.find { it.yaku == YakuType.Junchan }
@@ -123,7 +124,7 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.Red
 
-        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isMenzen = true)
         val result = calculator.calculate(context)
 
         val junchanResult = result.yakuResults.find { it.yaku == YakuType.Junchan }

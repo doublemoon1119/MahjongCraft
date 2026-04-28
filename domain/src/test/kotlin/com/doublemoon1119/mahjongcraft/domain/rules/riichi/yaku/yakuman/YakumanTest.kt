@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiHandValueContextFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -44,7 +45,7 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.Green
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
@@ -77,7 +78,7 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.Green
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
@@ -110,7 +111,7 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.West
 
-        val context = createContext(hand, winningTile, isTsumo = false)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = false)
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
@@ -151,7 +152,7 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.Green
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")

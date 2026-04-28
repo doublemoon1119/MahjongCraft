@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiHandValueContextFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import kotlin.test.Test
@@ -45,7 +46,8 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
         val winningTile = Tile.Numeric(Tile.Suit.Character, 6)
         val doraIndicators = listOf(Tile.Numeric(Tile.Suit.Character, 5))
 
-        val context = createContext(hand, winningTile, isTsumo = true, doraIndicators = doraIndicators)
+        val context =
+            FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, doraIndicators = doraIndicators)
         val result = calculator.calculate(context)
 
         val doraResult = result.yakuResults.find { it.yaku == YakuType.Dora }
@@ -82,7 +84,8 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
             Tile.Numeric(Tile.Suit.Character, 3)
         )
 
-        val context = createContext(hand, winningTile, isTsumo = true, doraIndicators = doraIndicators)
+        val context =
+            FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, doraIndicators = doraIndicators)
         val result = calculator.calculate(context)
 
         val doraResult = result.yakuResults.find { it.yaku == YakuType.Dora }
@@ -116,7 +119,8 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
         val doraIndicators = listOf(Tile.Numeric(Tile.Suit.Character, 9))
 
-        val context = createContext(hand, winningTile, isTsumo = true, doraIndicators = doraIndicators)
+        val context =
+            FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, doraIndicators = doraIndicators)
         val result = calculator.calculate(context)
 
         val doraResult = result.yakuResults.find { it.yaku == YakuType.Dora }
@@ -150,7 +154,8 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
         val winningTile = Tile.Honor.South
         val doraIndicators = listOf(Tile.Honor.East)
 
-        val context = createContext(hand, winningTile, isTsumo = true, doraIndicators = doraIndicators)
+        val context =
+            FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, doraIndicators = doraIndicators)
         val result = calculator.calculate(context)
 
         val doraResult = result.yakuResults.find { it.yaku == YakuType.Dora }
@@ -183,7 +188,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         val akaDoraResult = result.yakuResults.find { it.yaku == YakuType.AkaDora }
@@ -216,7 +221,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         val akaDoraResult = result.yakuResults.find { it.yaku == YakuType.AkaDora }
@@ -251,7 +256,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
         val doraIndicators = listOf(Tile.Numeric(Tile.Suit.Character, 5))
         val uraDoraIndicators = listOf(Tile.Numeric(Tile.Suit.Character, 5))
 
-        val context = createContext(
+        val context = FakeRiichiHandValueContextFactory.create(
             hand = hand,
             winningTile = winningTile,
             isTsumo = true,
@@ -292,7 +297,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
         val winningTile = Tile.Numeric(Tile.Suit.Character, 6)
         val uraDoraIndicators = listOf(Tile.Numeric(Tile.Suit.Character, 5))
 
-        val context = createContext(
+        val context = FakeRiichiHandValueContextFactory.create(
             hand = hand,
             winningTile = winningTile,
             isTsumo = true,
@@ -339,7 +344,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 5)
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         val akaDoraResult = result.yakuResults.find { it.yaku == YakuType.AkaDora }
@@ -380,7 +385,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 5, isRed = true)
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         val akaDoraResult = result.yakuResults.find { it.yaku == YakuType.AkaDora }

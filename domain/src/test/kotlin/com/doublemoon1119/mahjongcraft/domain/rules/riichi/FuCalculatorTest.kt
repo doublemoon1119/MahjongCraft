@@ -1,7 +1,8 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
+import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiHandValueContextFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.CompletionType
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Janto
@@ -30,16 +31,11 @@ class FuCalculatorTest {
         roundWind: Wind = Wind.EAST,
         seatWind: Wind = Wind.EAST
     ): RiichiHandValueContext {
-        return RiichiHandValueContext(
-            hand = Hand(mutableListOf()),
+        return FakeRiichiHandValueContextFactory.create(
+            hand = FakeHandFactory.create(),
             winningTile = Tile.Numeric(Tile.Suit.Character, 1),
             isTsumo = isTsumo,
-            isRiichi = false,
-            isDoubleRiichi = false,
-            isIppatsu = false,
             isMenzen = isMenzen,
-            doraIndicators = emptyList(),
-            uraDoraIndicators = emptyList(),
             roundWind = roundWind,
             seatWind = seatWind
         )

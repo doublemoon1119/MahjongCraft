@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman
 
 import com.doublemoon1119.mahjongcraft.domain.base.*
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiHandValueContextFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
@@ -51,7 +52,7 @@ class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
         val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(
+        val context = FakeRiichiHandValueContextFactory.create(
             hand = hand,
             winningTile = winningTile,
             isTsumo = true,
@@ -83,7 +84,7 @@ class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
         val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(
+        val context = FakeRiichiHandValueContextFactory.create(
             hand = hand,
             winningTile = winningTile,
             isTsumo = true,
@@ -115,7 +116,7 @@ class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
         val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(
+        val context = FakeRiichiHandValueContextFactory.create(
             hand = hand,
             winningTile = winningTile,
             isTsumo = true,
@@ -146,7 +147,7 @@ class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
         val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(
+        val context = FakeRiichiHandValueContextFactory.create(
             hand = hand,
             winningTile = winningTile,
             isTsumo = false,

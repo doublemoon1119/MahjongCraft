@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiHandValueContextFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import kotlin.test.Test
@@ -60,7 +61,7 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
         // 自摸 8m
         val winningTile2 = Tile.Numeric(Tile.Suit.Character, 8)
 
-        val context = createContext(hand, winningTile2, isTsumo = true, isMenzen = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile2, isTsumo = true, isMenzen = true)
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be double yakuman")
@@ -102,7 +103,7 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 8)
 
-        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isMenzen = true)
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
@@ -148,7 +149,7 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
         val winningTile = Tile.Numeric(Tile.Suit.Character, 8)
 
         // isMenzen = false
-        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isMenzen = false)
         val result = calculator.calculate(context)
 
         // 應該不是九蓮寶燈
@@ -185,7 +186,7 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 8)
 
-        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isMenzen = true)
         val result = calculator.calculate(context)
 
         val churenPotoResult =
@@ -221,7 +222,7 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isMenzen = true)
         val result = calculator.calculate(context)
 
         val churenPotoResult =

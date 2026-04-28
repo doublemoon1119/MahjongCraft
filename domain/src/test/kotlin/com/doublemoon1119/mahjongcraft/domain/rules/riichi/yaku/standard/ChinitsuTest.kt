@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiHandValueContextFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import kotlin.test.Test
@@ -47,7 +48,7 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.South
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         val honitsuResult = result.yakuResults.find { it.yaku == YakuType.Honitsu }
@@ -90,7 +91,7 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
 
-        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isMenzen = false)
         val result = calculator.calculate(context)
 
         val honitsuResult = result.yakuResults.find { it.yaku == YakuType.Honitsu }
@@ -123,7 +124,7 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         val chinitsuResult = result.yakuResults.find { it.yaku == YakuType.Chinitsu }
@@ -166,7 +167,7 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 9)
 
-        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isMenzen = false)
         val result = calculator.calculate(context)
 
         val chinitsuResult = result.yakuResults.find { it.yaku == YakuType.Chinitsu }
@@ -199,7 +200,7 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         val chinitsuResult = result.yakuResults.find { it.yaku == YakuType.Chinitsu }

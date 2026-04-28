@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiHandValueContextFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import kotlin.test.Test
@@ -56,7 +57,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.Red
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         assertFalse(result.isYakuman, "Should not be yakuman")
@@ -106,7 +107,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.Green
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         assertFalse(result.isYakuman, "Should not be yakuman")
@@ -157,7 +158,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.Green
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         assertFalse(result.isYakuman, "Should not be yakuman")
@@ -201,7 +202,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.Green
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         // 三個三元牌刻子應該是大三元
@@ -248,7 +249,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.Red
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
@@ -298,7 +299,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.Green
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
@@ -349,7 +350,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.Green
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
@@ -384,7 +385,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         // 情境 1：胡「白」 -> 變成 白刻子 + 1m雀頭 => 大三元
         val winningWhite = Tile.Honor.White
         val handWhite = FakeHandFactory.create(baseTiles)
-        val contextWhite = createContext(handWhite, winningWhite, isTsumo = false)
+        val contextWhite = FakeRiichiHandValueContextFactory.create(handWhite, winningWhite, isTsumo = false)
         val resultWhite = calculator.calculate(contextWhite)
 
         assertTrue(
@@ -395,7 +396,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         // 情境 2：胡「1m」 -> 變成 1m刻子 + 白雀頭 => 小三元
         val winning1m = Tile.Numeric(Tile.Suit.Character, 1)
         val hand1m = FakeHandFactory.create(baseTiles)
-        val context1m = createContext(hand1m, winning1m, isTsumo = false)
+        val context1m = FakeRiichiHandValueContextFactory.create(hand1m, winning1m, isTsumo = false)
         val result1m = calculator.calculate(context1m)
 
         assertTrue(
@@ -438,7 +439,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.Red
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         assertFalse(

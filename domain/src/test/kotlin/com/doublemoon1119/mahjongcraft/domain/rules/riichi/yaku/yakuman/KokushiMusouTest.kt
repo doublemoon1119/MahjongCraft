@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiHandValueContextFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandDecomposer
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
@@ -170,7 +171,7 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
         // Winning: 9s != headTile(1m)
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9)
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
@@ -206,7 +207,7 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
         // Winning: 1m == headTile → 十三面
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")

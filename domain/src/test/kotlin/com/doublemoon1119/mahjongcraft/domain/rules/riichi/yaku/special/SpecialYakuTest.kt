@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.rules.riichi.FakeRiichiHandValueContextFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import kotlin.test.Test
@@ -47,7 +48,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
         val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(hand, winningTile, isTsumo = true, isRiichi = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isRiichi = true)
         val result = calculator.calculate(context)
 
         val riichiResult = result.yakuResults.find { it.yaku == YakuType.Riichi }
@@ -64,7 +65,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
         val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(hand, winningTile, isTsumo = true, isRiichi = true, isDoubleRiichi = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isRiichi = true, isDoubleRiichi = true)
         val result = calculator.calculate(context)
 
         val riichiResult = result.yakuResults.find { it.yaku == YakuType.Riichi }
@@ -84,7 +85,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
         val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(hand, winningTile, isTsumo = true, isRiichi = true, isIppatsu = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isRiichi = true, isIppatsu = true)
         val result = calculator.calculate(context)
 
         val ippatsuResult = result.yakuResults.find { it.yaku == YakuType.Ippatsu }
@@ -101,7 +102,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
         val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(hand, winningTile, isTsumo = true, isRinshanKaihou = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isRinshanKaihou = true)
         val result = calculator.calculate(context)
 
         val rinshanResult = result.yakuResults.find { it.yaku == YakuType.RinshanKaihou }
@@ -118,7 +119,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
         val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(hand, winningTile, isTsumo = true, isLastDraw = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isLastDraw = true)
         val result = calculator.calculate(context)
 
         val haiteiResult = result.yakuResults.find { it.yaku == YakuType.Haitei }
@@ -135,7 +136,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
         val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(hand, winningTile, isTsumo = false, isLastDiscard = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = false, isLastDiscard = true)
         val result = calculator.calculate(context)
 
         val houteiResult = result.yakuResults.find { it.yaku == YakuType.Houtei }
@@ -152,7 +153,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
         val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(hand, winningTile, isTsumo = false, isRobbingKan = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = false, isRobbingKan = true)
         val result = calculator.calculate(context)
 
         val chankanResult = result.yakuResults.find { it.yaku == YakuType.Chankan }
@@ -169,7 +170,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
         val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isMenzen = true)
         val result = calculator.calculate(context)
 
         val menzentsumoResult = result.yakuResults.find { it.yaku == YakuType.Menzentsumo }
@@ -186,7 +187,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
         val hand = FakeHandFactory.create(createBasicHand())
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
-        val context = createContext(hand, winningTile, isTsumo = false, isMenzen = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = false, isMenzen = true)
         val result = calculator.calculate(context)
 
         val menzentsumoResult = result.yakuResults.find { it.yaku == YakuType.Menzentsumo }
@@ -226,7 +227,7 @@ class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
             )
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 9)
-        val context = createContext(hand, winningTile, isTsumo = true, isMenzen = false)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isMenzen = false)
         val result = calculator.calculate(context)
 
         val menzentsumoResult = result.yakuResults.find { it.yaku == YakuType.Menzentsumo }
