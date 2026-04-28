@@ -44,9 +44,9 @@
   - **特點**: 依賴 `:domain` 模組，並可引入如 Koin 等應用級框架。
 
 - **`:testing`**: 測試輔助工具模組。
-  - **用途**: 提供跨模組共享的測試 Fake 物件（如 FakeGameLength、FakeDiscardPile）。
+  - **用途**: 提供跨模組共享的測試物件（如 TestCoroutineDispatchers）。
   - **特點**:
-    - 依賴 `:domain` 模組以取得介面來實作 Fakes。
+    - 依賴 `:domain` 模組以取得介面來實作對應的物件。
     - 不使用 JVM 特有的 testFixtures，以支援未來 Kotlin Multiplatform 擴展。
     - 由於此模組僅包含測試程式碼，不影響 production 依賴方向
 

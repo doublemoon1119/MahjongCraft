@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.testing.fakes
+package com.doublemoon1119.mahjongcraft.domain.fakes
 
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.Tile

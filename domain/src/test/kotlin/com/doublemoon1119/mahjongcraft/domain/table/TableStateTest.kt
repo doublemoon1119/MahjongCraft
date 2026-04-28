@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.domain.table
 
 import com.doublemoon1119.mahjongcraft.domain.config.DynamicRuleState
-import com.doublemoon1119.mahjongcraft.testing.fakes.FakeMahjongPlayerFactory
-import com.doublemoon1119.mahjongcraft.testing.fakes.FakeMahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.testing.fakes.FakeScoreConfig
+import com.doublemoon1119.mahjongcraft.domain.fakes.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.fakes.FakeScoreConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.testing.fakes
+package com.doublemoon1119.mahjongcraft.domain.fakes
 
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
 /**
  * 用於單元測試的模擬牌河實作。
  *
- * 透過繼承 [DiscardPile.DiscardEntry] 來定義測試用的捨牌紀錄實體，
+ * 透過繼承 [DiscardEntry] 來定義測試用的捨牌紀錄實體，
  * 並實作 [DiscardPile] 介面以提供紀錄的存取與管理邏輯。
  */
 class FakeDiscardPile : DiscardPile<FakeDiscardPile.FakeEntry> {
@@ -38,7 +38,7 @@ class FakeDiscardPile : DiscardPile<FakeDiscardPile.FakeEntry> {
     /**
      * 測試用的捨牌紀錄實體類別。
      *
-     * 透過建構子將 [tile] 與 [isTaken] 傳遞給父類別 [DiscardPile.DiscardEntry]。
+     * 透過建構子將 [tile] 與 [isTaken] 傳遞給父類別 [DiscardEntry]。
      */
     class FakeEntry(
         tile: IdentifiedTile,

@@ -1,13 +1,14 @@
 package com.doublemoon1119.mahjongcraft.domain.module
 
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.fakes.FakeGameLength
+import com.doublemoon1119.mahjongcraft.domain.fakes.FakeScoreConfig
 import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
-import com.doublemoon1119.mahjongcraft.testing.fakes.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

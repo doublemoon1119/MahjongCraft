@@ -1,14 +1,13 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.*
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
-import com.doublemoon1119.mahjongcraft.testing.fakes.FakeDiscardPile
-import com.doublemoon1119.mahjongcraft.testing.fakes.FakeMahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.testing.fakes.FakeRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.fakes.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.domain.fakes.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.fakes.FakeRiichiRuleConfig
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertFalse

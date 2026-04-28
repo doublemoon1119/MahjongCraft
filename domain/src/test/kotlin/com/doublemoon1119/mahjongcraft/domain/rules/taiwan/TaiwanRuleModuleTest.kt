@@ -1,16 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.domain.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueCalculator
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueContextCalculator
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiLegalActionValidator
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiRuleModule
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiShantenCalculator
-import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanDiscardPile
-import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanRuleModule
-import com.doublemoon1119.mahjongcraft.domain.rules.taiwan.TaiwanWallFactory
-import com.doublemoon1119.mahjongcraft.testing.fakes.FakeTaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.fakes.FakeTaiwanRuleConfig
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertTrue
