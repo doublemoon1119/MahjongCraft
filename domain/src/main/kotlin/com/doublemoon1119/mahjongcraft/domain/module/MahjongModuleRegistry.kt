@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 
 /**
  * 麻將規則模組註冊中心介面。
- * 定義了註冊與獲取規則模組的標準行為。
+ * 負責管理不同麻將規則配置 (Config) 與其對應模組 (Module) 的映射關係。
  */
 interface MahjongModuleRegistry {
 
@@ -17,21 +17,21 @@ interface MahjongModuleRegistry {
     fun <T : MahjongRuleConfig> register(
         configClass: Class<T>,
         id: String,
-        factory: (T) -> MahjongRuleModule<T>
+        factory: (T, id: String) -> MahjongRuleModule<T>
     )
 
     /**
-     * 根據配置獲取規則模組實體。
+     * 根據傳入的配置獲取已綁定該配置的規則模組實例。
      */
     fun <T : MahjongRuleConfig> getModule(config: T): MahjongRuleModule<T>
 
     /**
-     * 獲取所有已註冊的模組 ID。
+     * 獲取所有已註冊模組的唯一識別碼集合。
      */
     fun getAllModuleIds(): Set<String>
 
     /**
-     * 根據 ID 獲取配置類別。
+     * 根據 ID 獲取對應的配置類別。
      */
     fun getConfigClass(id: String): Class<out MahjongRuleConfig>?
 }

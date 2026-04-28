@@ -17,12 +17,20 @@ class MahjongModuleRegistryImpl: MahjongModuleRegistry {
      * 工廠函數映射：Config Class 對應工廠函數。
      * 使用 @Suppress("UNCHECKED_CAST") 來處理泛型型別。
      */
-    private val factoryMap = mutableMapOf<Class<out MahjongRuleConfig>, (MahjongRuleConfig) -> MahjongRuleModule<*>>()
+    private val registrationMap = mutableMapOf<Class<out MahjongRuleConfig>, Registration<*>>()
 
     /**
      * ID 對應 Config Class (用於存檔識別)。
      */
-    private val idMap = mutableMapOf<String, Class<out MahjongRuleConfig>>()
+    private val idToConfigClassMap = mutableMapOf<String, Class<out MahjongRuleConfig>>()
+
+    /**
+     * 內部的資料結構，用來綁定 ID 與 Factory
+     */
+    private data class Registration<T : MahjongRuleConfig>(
+        val id: String,
+        val factory: (T, String) -> MahjongRuleModule<T>
+    )
 
     /**
      * 註冊一個新的規則模組。
@@ -36,13 +44,17 @@ class MahjongModuleRegistryImpl: MahjongModuleRegistry {
     override fun <T : MahjongRuleConfig> register(
         configClass: Class<T>,
         id: String,
-        factory: (T) -> MahjongRuleModule<T>
+        factory: (T, id: String) -> MahjongRuleModule<T>
     ) {
-        if (idMap.containsKey(id)) {
-            throw IllegalArgumentException("Duplicate Mahjong Module ID: $id")
+        if (registrationMap.containsKey(configClass)) {
+            throw IllegalArgumentException("Config class ${configClass.simpleName} already registered.")
         }
-        factoryMap[configClass] = factory as (MahjongRuleConfig) -> MahjongRuleModule<*>
-        idMap[id] = configClass
+        if (idToConfigClassMap.containsKey(id)) {
+            throw IllegalArgumentException("ID $id already registered.")
+        }
+
+        registrationMap[configClass] = Registration(id, factory)
+        idToConfigClassMap[id] = configClass
     }
 
     /**
@@ -56,9 +68,9 @@ class MahjongModuleRegistryImpl: MahjongModuleRegistry {
      */
     @Suppress("UNCHECKED_CAST")
     override fun <T : MahjongRuleConfig> getModule(config: T): MahjongRuleModule<T> {
-        val factory = factoryMap[config::class.java]
-            ?: throw IllegalStateException("No MahjongRuleModule registered for configuration: ${config::class.simpleName}")
-        return factory(config) as MahjongRuleModule<T>
+        val registration = registrationMap[config::class.java] as? Registration<T>
+            ?: throw IllegalStateException("No registration for ${config::class.java.simpleName}")
+        return registration.factory(config, registration.id)
     }
 
     /**
@@ -70,7 +82,7 @@ class MahjongModuleRegistryImpl: MahjongModuleRegistry {
      * @return 對應的配置類別，若無則返回 null。
      */
     override fun getConfigClass(id: String): Class<out MahjongRuleConfig>? {
-        return idMap[id]
+        return idToConfigClassMap[id]
     }
 
     /**
@@ -81,6 +93,6 @@ class MahjongModuleRegistryImpl: MahjongModuleRegistry {
      * @return 所有已註冊模組 ID 的集合。
      */
     override fun getAllModuleIds(): Set<String> {
-        return idMap.keys
+        return idToConfigClassMap.keys
     }
 }

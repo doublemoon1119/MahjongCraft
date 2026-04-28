@@ -36,12 +36,12 @@
 本專案遵循 Clean Architecture 原則，將程式碼劃分為獨立的模組，以實現關注點分離和高可維護性。
 
 - **`:domain`**: 核心領域層。
-  - **用途**: 包含最純粹的麻將核心業務規則、實體 (Entities) 和值物件 (Value Objects)。
-  - **特點**: 這是一個純 Kotlin 模組，不依賴任何外部框架或平台 API (包括 Minecraft, Koin, Coroutines)。
+  - **用途**: 包含最純粹的麻將核心業務規則、實體 (Entities) 和值物件 (Value Objects) 以及具體實現 (Use Cases)。
+  - **特點**: 這是一個純 Kotlin 模組，不依賴任何外部框架或平台 API (包括 Minecraft, Koin, 但是 Coroutines 例外)。
 
 - **`:application`**: 應用服務層。
-  - **用途**: 包含業務流程的具體實現 (Use Cases)，並定義與外部世界溝通的介面 (Ports)。此層也負責依賴注入 (DI) 的模組配置。
-  - **特點**: 依賴 `:domain` 模組，並可引入如 Koin, Coroutines 等應用級框架。
+  - **用途**: 定義與外部世界溝通的介面。此層也負責依賴注入 (DI) 的模組配置。
+  - **特點**: 依賴 `:domain` 模組，並可引入如 Koin 等應用級框架。
 
 - **`:testing`**: 測試輔助工具模組。
   - **用途**: 提供跨模組共享的測試 Fake 物件（如 FakeGameLength、FakeDiscardPile）。

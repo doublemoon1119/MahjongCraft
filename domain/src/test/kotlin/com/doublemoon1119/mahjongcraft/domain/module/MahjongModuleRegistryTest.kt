@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.domain.judgment.LegalActionValidator
+import com.doublemoon1119.mahjongcraft.domain.judgment.ShantenCalculator
+import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.domain.table.TileWallFactory
 import com.doublemoon1119.mahjongcraft.testing.fakes.*
 import kotlin.test.Test
@@ -36,24 +38,19 @@ private class FakeConfigB(
  * 測試用的通用模擬模組。
  */
 private class FakeModule<T : MahjongRuleConfig>(
-    override val id: String = "fake_module"
+    override val id: String,
+    override val config: T
 ) : MahjongRuleModule<T> {
-    override fun createWallFactory(config: T): TileWallFactory = object : TileWallFactory {
-        override fun create() = throw UnsupportedOperationException()
-    }
 
-    override fun createDiscardPile(config: T) = FakeDiscardPile()
+    // 對於確定不會用到的功能，統一使用此私有輔助方法拋出異常
+    private fun notRequired(): Nothing = throw UnsupportedOperationException("Functional component not required for registry testing.")
 
-    override fun createShantenCalculator(config: T) = FakeShantenCalculator()
-
-    override fun createLegalActionValidator(config: T): LegalActionValidator = FakeLegalActionValidator()
-    override fun createHandValueCalculator(config: T): HandValueCalculator<*, *> {
-        TODO("Not yet implemented")
-    }
-
-    override fun createHandValueContextCalculator(config: T): HandValueContextCalculator<*, *> {
-        TODO("Not yet implemented")
-    }
+    override fun createWallFactory(): TileWallFactory = notRequired()
+    override fun createDiscardPile(): DiscardPile<*> = notRequired()
+    override fun createShantenCalculator(): ShantenCalculator = notRequired()
+    override fun createLegalActionValidator(): LegalActionValidator = notRequired()
+    override fun createHandValueCalculator(): HandValueCalculator<*, *> = notRequired()
+    override fun createHandValueContextCalculator(): HandValueContextCalculator<*, *> = notRequired()
 }
 
 /**
@@ -67,13 +64,17 @@ class MahjongModuleRegistryTest {
     @Test
     fun `test register and get module`() {
         val registry: MahjongModuleRegistry = MahjongModuleRegistryImpl()
-        val moduleA = FakeModule<FakeConfigA>()
         val configA = FakeConfigA()
+        val expectedId = "mahjongcraft:test"
 
-        registry.register(FakeConfigA::class.java, moduleA.id, { moduleA })
+        registry.register(FakeConfigA::class.java, expectedId) { config, id ->
+            FakeModule(config = config, id = id)
+        }
 
         val result = registry.getModule(configA)
-        assertEquals(moduleA, result, "The registry should return the module associated with FakeConfigA.")
+        // 驗證 ID 是否正確傳遞
+        assertEquals(expectedId, result.id, "The module should hold the ID specified during registration in the Registry.")
+        assertEquals(configA, result.config)
     }
 
     /**
@@ -88,7 +89,7 @@ class MahjongModuleRegistryTest {
             registry.getModule(configA)
         }
 
-        val expectedMessage = "No MahjongRuleModule registered for configuration: FakeConfigA"
+        val expectedMessage = "No registration for FakeConfigA"
         assertEquals(expectedMessage, exception.message)
     }
 
@@ -98,13 +99,20 @@ class MahjongModuleRegistryTest {
     @Test
     fun `test duplicate registration throws exception`() {
         val registry: MahjongModuleRegistry = MahjongModuleRegistryImpl()
-        val firstModule = FakeModule<FakeConfigA>("moduleA")
-        val secondModule = FakeModule<FakeConfigA>("moduleA") // Same ID
+        val duplicateId = "mahjongcraft:duplicate"
 
-        registry.register(FakeConfigA::class.java, firstModule.id, { firstModule })
+        // 第一次註冊模組工廠
+        registry.register(FakeConfigA::class.java, duplicateId) { config, id ->
+            FakeModule(id = id, config = config)
+        }
 
-        assertFailsWith<IllegalArgumentException> {
-            registry.register(FakeConfigA::class.java, secondModule.id, { secondModule })
+        // 驗證使用相同 ID 進行第二次註冊時，是否拋出 IllegalArgumentException
+        assertFailsWith<IllegalArgumentException>(
+            message = "Registry should throw IllegalArgumentException when registering a duplicate module ID."
+        ) {
+            registry.register(FakeConfigB::class.java, duplicateId) { config, id ->
+                FakeModule(id = id, config = config)
+            }
         }
     }
 
@@ -114,16 +122,47 @@ class MahjongModuleRegistryTest {
     @Test
     fun `test multiple registrations`() {
         val registry: MahjongModuleRegistry = MahjongModuleRegistryImpl()
-        val moduleA = FakeModule<FakeConfigA>("moduleA")
-        val moduleB = FakeModule<FakeConfigB>("moduleB")
+        val idA = "mahjongcraft:module_a"
+        val idB = "mahjongcraft:module_b"
+
+        // 註冊 A 配置及其對應工廠
+        registry.register(FakeConfigA::class.java, idA) { config, id ->
+            FakeModule(id = id, config = config)
+        }
+
+        // 註冊 B 配置及其對應工廠
+        registry.register(FakeConfigB::class.java, idB) { config, id ->
+            FakeModule(id = id, config = config)
+        }
 
         val configA = FakeConfigA()
         val configB = FakeConfigB()
 
-        registry.register(FakeConfigA::class.java, moduleA.id, { moduleA })
-        registry.register(FakeConfigB::class.java, moduleB.id, { moduleB })
+        // 獲取模組實體
+        val resultA = registry.getModule(configA)
+        val resultB = registry.getModule(configB)
 
-        assertEquals(moduleA, registry.getModule(configA))
-        assertEquals(moduleB, registry.getModule(configB))
+        // 驗證回傳實體之 ID 與配置是否符合註冊時的定義
+        assertEquals(
+            expected = idA,
+            actual = resultA.id,
+            message = "Module A should retain the ID specified during registration."
+        )
+        assertEquals(
+            expected = configA,
+            actual = resultA.config,
+            message = "Module A should hold the corresponding configuration instance."
+        )
+
+        assertEquals(
+            expected = idB,
+            actual = resultB.id,
+            message = "Module B should retain the ID specified during registration."
+        )
+        assertEquals(
+            expected = configB,
+            actual = resultB.config,
+            message = "Module B should hold the corresponding configuration instance."
+        )
     }
 }
