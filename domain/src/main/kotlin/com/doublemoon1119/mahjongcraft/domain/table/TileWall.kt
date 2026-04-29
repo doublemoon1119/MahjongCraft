@@ -6,22 +6,17 @@ import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
  * 代表一場遊戲中的牌山。
  *
  * 內部存儲 [IdentifiedTile]，確保每一張牌在遊戲進程中都具有可追蹤的唯一性。
- *
- * @property tiles 牌山中剩餘的牌列表。
  */
-class TileWall(private val tiles: MutableList<IdentifiedTile>) {
+class TileWall(tiles: List<IdentifiedTile>) {
+    /**
+     * 牌山的牌列表。
+     */
+    private val tiles: MutableList<IdentifiedTile> = tiles.toMutableList()
 
     /**
      * 剩餘牌數。
      */
     val remainingCount: Int get() = tiles.size
-
-    /**
-     * 進行洗牌。
-     */
-    fun shuffle() {
-        tiles.shuffle()
-    }
 
     /**
      * 從牌山最前方摸取一張牌。

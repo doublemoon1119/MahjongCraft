@@ -4,8 +4,8 @@ import com.doublemoon1119.mahjongcraft.domain.base.*
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeTableStateFactory
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.domain.table.TableState
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -93,9 +93,9 @@ class RiichiHandValueContextCalculatorTest {
         val wanPaiTiles = (1..14).map {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
-        val tileWall = TileWall(wanPaiTiles.toMutableList())
+        val tileWall = TileWall(wanPaiTiles)
 
-        val tableState = TableState(
+        val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(deadTileCount = 14)
@@ -145,9 +145,9 @@ class RiichiHandValueContextCalculatorTest {
         val wanPaiTiles = (1..14).map {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
-        val tileWall = TileWall(wanPaiTiles.toMutableList())
+        val tileWall = TileWall(wanPaiTiles)
 
-        val tableState = TableState(
+        val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(deadTileCount = 14)
@@ -197,9 +197,9 @@ class RiichiHandValueContextCalculatorTest {
         val wallTiles = (1..15).map {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
-        val tileWall = TileWall(wallTiles.toMutableList())
+        val tileWall = TileWall(wallTiles)
 
-        val tableState = TableState(
+        val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(deadTileCount = 14)
@@ -253,9 +253,9 @@ class RiichiHandValueContextCalculatorTest {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, (it % 9) + 1))
         }
         val allTiles = normalTiles + wanPaiTiles
-        val tileWall = TileWall(allTiles.toMutableList())
+        val tileWall = TileWall(allTiles)
 
-        val tableState = TableState(
+        val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(deadTileCount = 14)
@@ -316,9 +316,9 @@ class RiichiHandValueContextCalculatorTest {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, (it % 9) + 1))
         }
         val allTiles = normalTiles + wanPaiTiles
-        val tileWall = TileWall(allTiles.toMutableList())
+        val tileWall = TileWall(allTiles)
 
-        val tableState = TableState(
+        val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(deadTileCount = 14)
@@ -400,9 +400,9 @@ class RiichiHandValueContextCalculatorTest {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, (it % 9) + 1))
         }
         val allTiles = normalTiles + wanPaiTiles
-        val tileWall = TileWall(allTiles.toMutableList())
+        val tileWall = TileWall(allTiles)
 
-        val tableState = TableState(
+        val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(deadTileCount = 14)
@@ -451,9 +451,9 @@ class RiichiHandValueContextCalculatorTest {
         val wanPaiTiles = (1..14).map {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
-        val tileWall = TileWall(wanPaiTiles.toMutableList())
+        val tileWall = TileWall(wanPaiTiles)
 
-        val tableState = TableState(
+        val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(deadTileCount = 14)
@@ -505,9 +505,9 @@ class RiichiHandValueContextCalculatorTest {
         val wanPaiTiles = (1..14).map {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
-        val tileWall = TileWall(wanPaiTiles.toMutableList())
+        val tileWall = TileWall(wanPaiTiles)
 
-        val tableState = TableState(
+        val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(deadTileCount = 14)
@@ -558,9 +558,9 @@ class RiichiHandValueContextCalculatorTest {
         val wallTiles = (1..30).map {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
-        val tileWall = TileWall(wallTiles.toMutableList())
+        val tileWall = TileWall(wallTiles)
 
-        val tableState = TableState(
+        val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(deadTileCount = 0)
@@ -631,9 +631,9 @@ class RiichiHandValueContextCalculatorTest {
         val wallTiles = (1..30).map {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
         }
-        val tileWall = TileWall(wallTiles.toMutableList())
+        val tileWall = TileWall(wallTiles)
 
-        val tableState = TableState(
+        val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(deadTileCount = 14)
@@ -732,9 +732,9 @@ class RiichiHandValueContextCalculatorTest {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),  // wanPai[1]
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))  // wanPai[0]
         )
-        val tileWall = TileWall(wanPaiTiles.toMutableList())
+        val tileWall = TileWall(wanPaiTiles)
 
-        val tableState = TableState(
+        val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(deadTileCount = 14)
@@ -760,9 +760,9 @@ class RiichiHandValueContextCalculatorTest {
             hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
             1
         )
-        val tableState1Kan = TableState(
+        val tableState1Kan = FakeTableStateFactory.create(
             players = listOf(player1Kan),
-            tileWall = TileWall(wanPaiTiles.toMutableList()).apply { repeat(1) { this.drawLast() } },
+            tileWall = TileWall(wanPaiTiles).apply { repeat(1) { this.drawLast() } },
             config = RiichiRuleConfig(deadTileCount = 14)
         )
         val context1Kan = calculator.calculate(
@@ -783,9 +783,9 @@ class RiichiHandValueContextCalculatorTest {
             hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
             2
         )
-        val tableState2Kan = TableState(
+        val tableState2Kan = FakeTableStateFactory.create(
             players = listOf(player2Kan),
-            tileWall = TileWall(wanPaiTiles.toMutableList()).apply { repeat(2) { this.drawLast() } },
+            tileWall = TileWall(wanPaiTiles).apply { repeat(2) { this.drawLast() } },
             config = RiichiRuleConfig(deadTileCount = 14)
         )
         val context2Kan = calculator.calculate(
@@ -807,9 +807,9 @@ class RiichiHandValueContextCalculatorTest {
             hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
             3
         )
-        val tableState3Kan = TableState(
+        val tableState3Kan = FakeTableStateFactory.create(
             players = listOf(player3Kan),
-            tileWall = TileWall(wanPaiTiles.toMutableList()).apply { repeat(3) { this.drawLast() } },
+            tileWall = TileWall(wanPaiTiles).apply { repeat(3) { this.drawLast() } },
             config = RiichiRuleConfig(deadTileCount = 14)
         )
         val context3Kan = calculator.calculate(
@@ -832,9 +832,9 @@ class RiichiHandValueContextCalculatorTest {
             hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
             4
         )
-        val tableState4Kan = TableState(
+        val tableState4Kan = FakeTableStateFactory.create(
             players = listOf(player4Kan),
-            tileWall = TileWall(wanPaiTiles.toMutableList()).apply { repeat(4) { this.drawLast() } },
+            tileWall = TileWall(wanPaiTiles).apply { repeat(4) { this.drawLast() } },
             config = RiichiRuleConfig(deadTileCount = 14)
         )
         val context4Kan = calculator.calculate(

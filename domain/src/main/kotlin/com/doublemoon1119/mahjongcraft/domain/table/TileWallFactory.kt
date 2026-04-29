@@ -6,7 +6,7 @@ package com.doublemoon1119.mahjongcraft.domain.table
  */
 interface TileWallFactory {
     /**
-     * 建立一個全新的、未洗牌的 [TileWall]。
+     * 建立一個全新的、已經洗牌的 [TileWall]。
      */
     fun create(): TileWall
 }

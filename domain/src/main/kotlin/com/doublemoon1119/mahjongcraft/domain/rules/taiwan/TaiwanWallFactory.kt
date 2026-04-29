@@ -61,6 +61,9 @@ class TaiwanWallFactory(private val config: TaiwanRuleConfig) : TileWallFactory 
             }
         }
 
+        // 3. 洗牌
+        tiles.shuffle()
+
         return TileWall(tiles)
     }
 }

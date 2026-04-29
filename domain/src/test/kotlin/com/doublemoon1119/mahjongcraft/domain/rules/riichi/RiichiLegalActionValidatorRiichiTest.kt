@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
-import com.doublemoon1119.mahjongcraft.domain.table.TableState
+import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeTableStateFactory
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -57,10 +57,8 @@ class RiichiLegalActionValidatorRiichiTest {
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand
         )
-        val tableState = TableState(
-            players = listOf(player),
-            tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player)
         )
         player.score = 1000  // 點數剛好 1000（要在 TableState 建立後設定）
 
@@ -105,10 +103,8 @@ class RiichiLegalActionValidatorRiichiTest {
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand
         )
-        val tableState = TableState(
-            players = listOf(player),
-            tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player)
         )
         player.score = 2500  // 點數超過 1000（要在 TableState 建立後設定）
 
@@ -153,10 +149,8 @@ class RiichiLegalActionValidatorRiichiTest {
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand
         )
-        val tableState = TableState(
-            players = listOf(player),
-            tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player)
         )
         player.score = 500  // 點數不足 1000（要在 TableState 建立後設定）
 
@@ -201,10 +195,8 @@ class RiichiLegalActionValidatorRiichiTest {
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand
         )
-        val tableState = TableState(
-            players = listOf(player),
-            tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player)
         )
         player.score = 0  // 點數為 0（要在 TableState 建立後設定）
 
@@ -256,10 +248,8 @@ class RiichiLegalActionValidatorRiichiTest {
             )
         )
 
-        val tableState = TableState(
-            players = listOf(player),
-            tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player)
         )
 
         // 摸到 1 餅（暗槓後改變聽牌）
@@ -315,10 +305,8 @@ class RiichiLegalActionValidatorRiichiTest {
             )
         )
 
-        val tableState = TableState(
-            players = listOf(player),
-            tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player)
         )
 
         // 摸到 1 萬（暗槓後聽牌不變，仍只聽 7 萬）

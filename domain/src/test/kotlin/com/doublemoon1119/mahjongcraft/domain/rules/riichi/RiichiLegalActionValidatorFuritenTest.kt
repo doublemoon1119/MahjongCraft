@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFacto
 import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
-import com.doublemoon1119.mahjongcraft.domain.table.TableState
+import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeTableStateFactory
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -70,10 +70,8 @@ class RiichiLegalActionValidatorFuritenTest {
             discardPile = fakeDiscardPile,
             playerRuleState = riichiState
         )
-        val tableState = TableState(
-            players = listOf(player),
-            tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player)
         )
         // 他家打普通5萬
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = false))
@@ -131,10 +129,8 @@ class RiichiLegalActionValidatorFuritenTest {
             discardPile = fakeDiscardPile,
             playerRuleState = riichiState
         )
-        val tableState = TableState(
-            players = listOf(player),
-            tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player)
         )
         // 他家打赤5萬
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
@@ -173,10 +169,8 @@ class RiichiLegalActionValidatorFuritenTest {
         // 建立已放過5萬的狀態
         player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5))
 
-        val tableState = TableState(
-            players = listOf(player),
-            tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player)
         )
         // 他家打5萬
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
@@ -216,10 +210,8 @@ class RiichiLegalActionValidatorFuritenTest {
         // 建立已放過5萬的狀態
         player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5))
 
-        val tableState = TableState(
-            players = listOf(player),
-            tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player)
         )
 
         // 手動清除記錄（模擬 Use Case 層的行為）
@@ -260,10 +252,8 @@ class RiichiLegalActionValidatorFuritenTest {
         // 放過普通5萬
         player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5, isRed = false))
 
-        val tableState = TableState(
-            players = listOf(player),
-            tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player)
         )
         // 他家打赤5萬
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))

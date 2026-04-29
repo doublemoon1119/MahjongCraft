@@ -1,8 +1,9 @@
 package com.doublemoon1119.mahjongcraft.domain.table
 
 import com.doublemoon1119.mahjongcraft.domain.config.DynamicRuleState
-import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeTableStateFactory
 import com.doublemoon1119.mahjongcraft.testing.fakes.config.FakeScoreConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -34,9 +35,8 @@ class TableStateTest {
             FakeMahjongPlayerFactory.create(name = "P2", initialSeat = Wind.SOUTH)
         )
 
-        TableState(
+        FakeTableStateFactory.create(
             players = players,
-            tileWall = TileWall(mutableListOf()),
             config = config
         )
 
@@ -58,10 +58,8 @@ class TableStateTest {
         val p2 = FakeMahjongPlayerFactory.create("Player 2", Wind.SOUTH)
         val p3 = FakeMahjongPlayerFactory.create("Player 3", Wind.WEST)
 
-        val table = TableState(
-            players = listOf(p1, p2, p3),
-            tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig()
+        val table = FakeTableStateFactory.create(
+            players = listOf(p1, p2, p3)
         )
 
         assertEquals(3, table.playerCount, "Table should correctly reflect the number of joined players.")
@@ -79,10 +77,8 @@ class TableStateTest {
     @Test
     fun `test dynamic rule state assignment`() {
         val dynamicState = MockDynamicState()
-        val table = TableState(
+        val table = FakeTableStateFactory.create(
             players = emptyList(),
-            tileWall = TileWall(mutableListOf()),
-            config = FakeMahjongRuleConfig(),
             dynamicRuleState = dynamicState
         )
 

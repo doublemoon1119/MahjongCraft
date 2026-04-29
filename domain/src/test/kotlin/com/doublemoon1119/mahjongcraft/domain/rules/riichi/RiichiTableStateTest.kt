@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeTableStateFactory
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall
 import kotlin.test.Test
@@ -22,9 +23,8 @@ class RiichiTableStateTest {
     fun `test riichi stick count in table state`() {
         val riichiDynamic = RiichiDynamicState(riichiStickCount = 5)
 
-        val table = TableState(
+        val table = FakeTableStateFactory.create(
             players = emptyList(),
-            tileWall = TileWall(mutableListOf()),
             config = RiichiRuleConfig(),
             dynamicRuleState = riichiDynamic
         )

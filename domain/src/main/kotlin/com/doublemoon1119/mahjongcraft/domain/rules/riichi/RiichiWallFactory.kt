@@ -55,6 +55,9 @@ class RiichiWallFactory(private val config: RiichiRuleConfig) : TileWallFactory 
             }
         }
 
+        // 3. 洗牌
+        tiles.shuffle()
+
         return TileWall(tiles)
     }
 }

@@ -2,15 +2,17 @@ package com.doublemoon1119.mahjongcraft.domain.table
 
 import com.doublemoon1119.mahjongcraft.domain.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
+import java.util.*
 
 /**
  * 代表一場麻將遊戲的通用全局狀態。
  *
  * 負責管理所有參與玩家、牌山、規則配置以及跨規則通用的局數資訊。
  *
+ * @property id 當前遊戲的唯一識別碼
  * @property players 參與遊戲的玩家列表。
- * @property tileWall 當前遊戲使用的牌山。
  * @property config 當前遊戲的規則配置，包含物理參數與計分規則。
+ * @property tileWall 當前遊戲使用的牌山。
  * @property prevalentWind 當前的場風（圈風）。
  * @property roundNumber 當前的局數。
  * @property comboCount 連莊次數（日麻：本場數；台麻：連幾）。
@@ -18,9 +20,10 @@ import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
  * @property dynamicRuleState 規則特有的動態狀態實體（如日麻的立直棒、供託）。
  */
 data class TableState(
+    val id: UUID,
     val players: List<MahjongPlayer>,
-    val tileWall: TileWall,
     val config: MahjongRuleConfig,
+    val tileWall: TileWall,
     var prevalentWind: Wind = Wind.EAST,
     var roundNumber: Int = 1,
     var comboCount: Int = 0,
