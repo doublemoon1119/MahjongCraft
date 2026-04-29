@@ -33,15 +33,18 @@
 - 路徑標註：在對話中的代碼區塊上方必須註明該檔案的存放路徑。
 
 ## 專案模組架構 (Project Architecture)
-本專案遵循 Clean Architecture 原則，將程式碼劃分為獨立的模組，以實現關注點分離和高可維護性。
+本專案遵循 Clean Architecture 原則，將程式碼劃分為獨立的模組，並在內部採用 **Package by Feature (PBF)** 策略進行組織，以實現關注點分離、高內聚性與高可維護性。
 
 - **`:domain`**: 核心領域層。
   - **用途**: 包含最純粹的麻將核心業務規則、實體 (Entities) 和值物件 (Value Objects)（如手牌邏輯、規則配置數據類別）。
   - **特點**: 這是一個純 Kotlin 模組，不依賴任何外部框架或平台 API (包括 Minecraft, Koin, Coroutines, Serialization)。
 
 - **`:application`**: 應用服務層。
-  - **用途**: 負責編排業務流程，包含具體的業務實現 (Use Cases) 以及定義與外部世界溝通的介面 (Ports)。
-  - **特點**: 依賴 `:domain` 模組，此層級開始引入 Coroutines 用於處理非同步業務流程。
+  - **用途**: 負責編排業務流程，包含具體的業務實現 (Use Cases) 以及定義資料存取的契約介面 (Repositories)。
+  - **特點**:
+    - 依賴 `:domain` 模組。
+    - 此層級為非同步流程的核心，引入 Coroutines 以非同步的業務操作。
+    - 僅定義 Repository 介面，具體實作則交由外層處理
 
 - **`:infrastructure`**: 技術基礎設施層。
   - **用途**: 負責技術細節的實現與系統組裝。包含依賴注入 (DI) 的模組配置、資料持久化實作、DTO 以及序列化邏輯。
