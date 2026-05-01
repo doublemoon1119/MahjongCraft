@@ -40,8 +40,7 @@ class RiichiHandValueContextCalculator(
         val riichiState = player.playerRuleState as? RiichiPlayerState
         val actionHistory = player.actionHistory
 
-        val doraIndicators = mutableListOf<Tile>()
-        val uraDoraIndicators = mutableListOf<Tile>()
+        // 計算海底撈月或河底撈魚
         var isLastDraw = false
         var isLastDiscard = false
 
@@ -62,37 +61,18 @@ class RiichiHandValueContextCalculator(
             }
         }
 
-        // 牌桌上槓的總數
-        val kanCount = tableState.players.sumOf { p ->
-            p.hand.exposedMelds.count {
-                it.type == MeldType.OPEN_KAN || it.type == MeldType.ADDED_KAN || it.type == MeldType.CLOSED_KAN
-            }
-        }
+        // 計算寶牌指示器
+        val doraIndicators: List<Tile>
+        val uraDoraIndicators: List<Tile>
 
-        // 取得王牌
-        val wanPai = tableState.tileWall.getAllTiles()
-            .takeLast(wanPaiCount)
-            .reversed()  // 反轉後索引 0 轉為嶺上位置，便於由左至右計算
-
-        // 根據槓數推算指示牌索引
-        // 初始 0 槓 = 1 張 (索引 = (4 - kanCount))
-        // 每多 1 槓 = 多 1 張 (索引 = (4 - kanCount) + n*2)
-        val indicatorCount = (1 + kanCount).coerceAtMost(5)
-
-        for (i in 0 until indicatorCount) {
-            // 補償計算：(4 - kanCount) 抵消了因為 drawLast() 導致嶺上牌移除後的索引位移
-            // i * 2 則用於跳過每一墩的下層牌（裏寶牌指示牌）
-            val baseIndex = (4 - kanCount) + (i * 2)
-
-            // 取得寶牌指示牌
-            wanPai.getOrNull(baseIndex)?.let {
-                doraIndicators.add(it.tile)
-            }
-
-            // 取得裏寶牌指示牌
-            wanPai.getOrNull(baseIndex + 1)?.let {
-                uraDoraIndicators.add(it.tile)
-            }
+        val riichiDynamicState = tableState.dynamicRuleState as? RiichiDynamicState
+        if (riichiDynamicState != null) {
+            val indicators = riichiDynamicState.getDoraIndicators(tableState)
+            doraIndicators = indicators.first.map { it.tile }
+            uraDoraIndicators = indicators.second.map { it.tile }
+        } else {
+            doraIndicators = emptyList()
+            uraDoraIndicators = emptyList()
         }
 
         return RiichiHandValueContext(

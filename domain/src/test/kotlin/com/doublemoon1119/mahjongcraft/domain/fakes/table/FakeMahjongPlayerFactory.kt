@@ -26,7 +26,6 @@ object FakeMahjongPlayerFactory {
      * @return 具備模擬牌河的 [MahjongPlayer] 實體。
      */
     fun create(
-        name: String = "TestPlayer",
         initialSeat: Wind = Wind.EAST,
         id: UUID = UUID.randomUUID(),
         hand: Hand = Hand(),
@@ -35,7 +34,6 @@ object FakeMahjongPlayerFactory {
     ): MahjongPlayer {
         return MahjongPlayer(
             id = id,
-            name = name,
             initialSeat = initialSeat,
             hand = hand,
             discardPile = discardPile,

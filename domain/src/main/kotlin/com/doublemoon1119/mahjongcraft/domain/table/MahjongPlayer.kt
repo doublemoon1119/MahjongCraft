@@ -12,7 +12,6 @@ import java.util.*
  * 本類別作為玩家數據的載體，封裝了手牌、牌河、分數及方位。
  *
  * @property id 玩家的唯一識別碼（通常對應 Minecraft 玩家的 UUID）。
- * @property name 玩家顯示名稱。
  * @property initialSeat 初始座位方位。
  * @property hand 該玩家的手牌實體。
  * @property discardPile 該玩家的牌河實體，其具體類型由遊戲規則決定。
@@ -21,7 +20,6 @@ import java.util.*
  */
 class MahjongPlayer(
     val id: UUID,
-    val name: String,
     val initialSeat: Wind,
     val hand: Hand = Hand(),
     val discardPile: DiscardPile<*>,

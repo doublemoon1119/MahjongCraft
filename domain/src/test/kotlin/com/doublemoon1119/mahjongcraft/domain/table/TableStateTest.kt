@@ -31,8 +31,8 @@ class TableStateTest {
             scoreConfig = FakeScoreConfig(initialScore = initialScoreValue)
         )
         val players = listOf(
-            FakeMahjongPlayerFactory.create(name = "P1", initialSeat = Wind.EAST),
-            FakeMahjongPlayerFactory.create(name = "P2", initialSeat = Wind.SOUTH)
+            FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST),
+            FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
         )
 
         FakeTableStateFactory.create(
@@ -54,9 +54,9 @@ class TableStateTest {
      */
     @Test
     fun `test next player logic supports dynamic player count`() {
-        val p1 = FakeMahjongPlayerFactory.create("Player 1", Wind.EAST)
-        val p2 = FakeMahjongPlayerFactory.create("Player 2", Wind.SOUTH)
-        val p3 = FakeMahjongPlayerFactory.create("Player 3", Wind.WEST)
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
 
         val table = FakeTableStateFactory.create(
             players = listOf(p1, p2, p3)

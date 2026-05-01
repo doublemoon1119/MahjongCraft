@@ -24,19 +24,16 @@ class MahjongPlayerTest {
     @Test
     fun `test player initialization and basic properties`() {
         val uuid = UUID.randomUUID()
-        val name = "TestPlayer"
         val seat = Wind.EAST
 
         // 使用工廠建立玩家，工廠會自動注入 FakeDiscardPile
         val player = FakeMahjongPlayerFactory.create(
             id = uuid,
-            name = name,
             initialSeat = seat
         )
 
         // 驗證屬性賦值
         assertEquals(uuid, player.id, "Player ID should match the provided UUID.")
-        assertEquals(name, player.name, "Player name should match the provided name.")
         assertEquals(seat, player.initialSeat, "Initial seat should be correctly assigned.")
         assertEquals(seat, player.currentWind, "Current wind should be equal to initial seat upon initialization.")
         assertEquals(0, player.score, "Initial score should be 0 by default.")

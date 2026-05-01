@@ -23,4 +23,11 @@ interface MahjongRuleConfig {
      * 日本麻將通常為 1，台灣麻將通常為 0。
      */
     val minimumWinConstraint: Int
+
+    /**
+     * 是否允許旁觀
+     *
+     * 在遊戲外的玩家能否看到遊戲內玩家的手牌，在牌河或者副露的牌則不在此限
+     * */
+    val isSpectateAllowed : Boolean
 }

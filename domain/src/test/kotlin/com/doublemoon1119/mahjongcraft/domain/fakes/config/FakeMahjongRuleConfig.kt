@@ -22,5 +22,6 @@ class FakeMahjongRuleConfig(
     override val deadTileCount: Int = 14,
     override val minimumWinConstraint: Int = 1,
     override val scoreConfig: ScoreConfig = FakeScoreConfig(),
-    override val gameLength: GameLength = FakeGameLength()
+    override val gameLength: GameLength = FakeGameLength(),
+    override val isSpectateAllowed: Boolean = true
 ) : MahjongRuleConfig

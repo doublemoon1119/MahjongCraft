@@ -609,7 +609,6 @@ class RiichiLegalActionValidatorTest {
             )
         )
         val otherPlayer1 = FakeMahjongPlayerFactory.create(
-            name = "Other1",
             initialSeat = Wind.SOUTH,
             hand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))),
             discardPile = discardPile1
@@ -621,7 +620,6 @@ class RiichiLegalActionValidatorTest {
             )
         )
         val otherPlayer2 = FakeMahjongPlayerFactory.create(
-            name = "Other2",
             initialSeat = Wind.WEST,
             hand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Bamboo, 2))),
             discardPile = discardPile2
@@ -633,7 +631,6 @@ class RiichiLegalActionValidatorTest {
             )
         )
         val otherPlayer3 = FakeMahjongPlayerFactory.create(
-            name = "Other3",
             initialSeat = Wind.NORTH,
             hand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Bamboo, 3))),
             discardPile = discardPile3
@@ -692,7 +689,6 @@ class RiichiLegalActionValidatorTest {
             )
         )
         val otherPlayer1 = FakeMahjongPlayerFactory.create(
-            name = "Other1",
             initialSeat = Wind.SOUTH,
             hand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))),
             discardPile = discardPile1

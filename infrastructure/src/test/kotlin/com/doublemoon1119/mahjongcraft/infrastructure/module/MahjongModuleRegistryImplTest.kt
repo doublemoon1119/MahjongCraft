@@ -23,7 +23,8 @@ private class FakeConfigA(
     override val deadTileCount: Int = 14,
     override val minimumWinConstraint: Int = 1,
     override val scoreConfig: FakeScoreConfig = FakeScoreConfig(),
-    override val gameLength: FakeGameLength = FakeGameLength()
+    override val gameLength: FakeGameLength = FakeGameLength(),
+    override val isSpectateAllowed: Boolean = true
 ) : MahjongRuleConfig
 
 /**
@@ -34,7 +35,8 @@ private class FakeConfigB(
     override val deadTileCount: Int = 16,
     override val minimumWinConstraint: Int = 0,
     override val scoreConfig: FakeScoreConfig = FakeScoreConfig(),
-    override val gameLength: FakeGameLength = FakeGameLength()
+    override val gameLength: FakeGameLength = FakeGameLength(),
+    override val isSpectateAllowed: Boolean = true
 ) : MahjongRuleConfig
 
 /**

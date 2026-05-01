@@ -36,5 +36,18 @@ class RiichiRuleConfigTest {
 
         // 驗證遊戲長度配置
         assertEquals(RiichiGameLength.OneGame, config.gameLength)
+
+        // 驗證旁觀配置
+        assertTrue(config.isSpectateAllowed, "Default spectate allowed should be true.")
+    }
+
+    /**
+     * 測試 isSpectateAllowed 可設定為 false。
+     */
+    @Test
+    fun `test isSpectateAllowed can be disabled`() {
+        val config = RiichiRuleConfig(isSpectateAllowed = false)
+
+        kotlin.test.assertFalse(config.isSpectateAllowed, "Spectate allowed should be false when explicitly disabled.")
     }
 }

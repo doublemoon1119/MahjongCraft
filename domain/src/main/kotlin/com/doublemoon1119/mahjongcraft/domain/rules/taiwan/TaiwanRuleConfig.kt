@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
  * @property minimumWinConstraint 起胡番數限制，預設為 0。
  * @property scoreConfig 積分配置，預設為 [TaiwanScoreConfig]。
  * @property gameLength 遊戲長度配置，預設使用 [TaiwanGameLength.OneGame]。
+ * @property isSpectateAllowed 允許在遊戲外的玩家能否看到遊戲內玩家的手牌，在牌河或者副露的牌則不在此限，預設為 true。
  */
 data class TaiwanRuleConfig(
     val useFlowerTiles: Boolean = true,
@@ -22,4 +23,5 @@ data class TaiwanRuleConfig(
     override val minimumWinConstraint: Int = 0,
     override val scoreConfig: TaiwanScoreConfig = TaiwanScoreConfig(),
     override val gameLength: TaiwanGameLength = TaiwanGameLength.OneGame,
+    override val isSpectateAllowed: Boolean = true
 ) : MahjongRuleConfig
