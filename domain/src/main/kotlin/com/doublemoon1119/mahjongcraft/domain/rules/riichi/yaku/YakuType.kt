@@ -71,6 +71,8 @@ enum class YakuType {
     // ===== 特殊胡牌型 =====
     /** 七對子 (Chiitoitsu) - 2 翻 */
     Chiitoitsu,
+    /** 流局滿貫 (Nagashi Mangan) */
+    NagashiMangan,  // TODO: 在流局時實作流局滿貫
 
     // ===== 字牌役 =====
     /** 場風 (Bakaze) - 1 翻 */

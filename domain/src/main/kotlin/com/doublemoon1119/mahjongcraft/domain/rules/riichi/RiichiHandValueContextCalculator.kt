@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueContextCalculator
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
 

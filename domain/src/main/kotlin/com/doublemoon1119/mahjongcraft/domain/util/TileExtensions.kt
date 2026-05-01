@@ -16,7 +16,7 @@ val Tile.withoutRed: Tile
 /**
  * 檢查是否為老頭牌（1 或 9 的數牌）。
  */
-val Tile?.isTerminal: Boolean
+val Tile.isTerminal: Boolean
     get() = (this as? Tile.Numeric)?.let { it.value == 1 || it.value == 9 } ?: false
 
 /**

@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueContext
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.CompletionType
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Mentsu
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.standard.calculatePinfu
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
 import com.doublemoon1119.mahjongcraft.domain.util.isHonor
@@ -98,7 +97,7 @@ object FuCalculator {
      * 是否為門前平和自摸
      */
     private fun isMenzenPinfuTsumo(context: RiichiHandValueContext, structure: HandStructure.Standard): Boolean {
-        if (context.isMenzen && context.isTsumo){
+        if (context.isMenzen && context.isTsumo) {
             val pinfu = calculatePinfu(
                 handStructure = structure,
                 isMenzen = context.isMenzen,
@@ -116,7 +115,7 @@ object FuCalculator {
      * 是否為副露平和型的榮和
      */
     private fun isFuuroPinfuRon(context: RiichiHandValueContext, structure: HandStructure.Standard): Boolean {
-        if (!context.isMenzen && !context.isTsumo){
+        if (!context.isMenzen && !context.isTsumo) {
             val pinfu = calculatePinfu(
                 handStructure = structure,
                 isMenzen = true,  // 這裡強制丟 true 讓 calculatePinfu 可以進行判斷
@@ -160,7 +159,7 @@ object FuCalculator {
             val tile = mentsu.tiles.first().withoutRed
 
             // 是否為么九牌
-            val isTerminal = tile.isTerminal
+            val isTerminalOrHonor = tile.isTerminal || tile.isHonor
 
             // 是否為三元牌
             val isDragon = tile in dragonTiles
@@ -175,19 +174,19 @@ object FuCalculator {
                 is Mentsu.Minkan,
                 is Mentsu.Kakan -> when {
                     isSeatOrRoundWind || isDragon -> 16
-                    isTerminal || isKaze -> 16
+                    isTerminalOrHonor || isKaze -> 16
                     else -> 8
                 }
 
                 is Mentsu.Ankan -> when {
                     isSeatOrRoundWind || isDragon -> 32
-                    isTerminal || isKaze -> 32
+                    isTerminalOrHonor || isKaze -> 32
                     else -> 16
                 }
                 // 明刻
                 is Mentsu.Kotsu -> when {
                     isSeatOrRoundWind || isDragon -> 4
-                    isTerminal || isKaze -> 4
+                    isTerminalOrHonor || isKaze -> 4
                     else -> 2
                 }
 
@@ -200,7 +199,7 @@ object FuCalculator {
             val tile = mentsu.tiles.first().withoutRed
 
             // 是否為么九牌
-            val isTerminal = tile.isTerminal
+            val isTerminalOrHonor = tile.isTerminal || tile.isHonor
 
             // 是否為三元牌
             val isDragon = tile in dragonTiles
@@ -215,7 +214,7 @@ object FuCalculator {
                 // 暗刻
                 is Mentsu.Kotsu -> when {
                     isSeatOrRoundWind || isDragon -> 8
-                    isTerminal || isKaze -> 8
+                    isTerminalOrHonor || isKaze -> 8
                     else -> 4
                 }
                 // 手牌當中的面子只有暗刻，其他都視為 0 符

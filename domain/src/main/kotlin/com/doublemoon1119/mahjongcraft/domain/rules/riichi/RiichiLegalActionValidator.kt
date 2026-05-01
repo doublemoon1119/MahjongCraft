@@ -128,7 +128,7 @@ class RiichiLegalActionValidator(
                     player.discardPile.entries.isEmpty()  // 自己還沒打過牌
             if (isFirstTurn) {
                 val isKyuushuKyuuhai = (player.hand.standingTiles + incomingTile)
-                    .filter { it.tile.isTerminal || it.tile.isHonor }
+                    .filter { it.tile.isTerminal || it.tile.isHonor }  // 過濾么九牌
                     .map { it.tile.withoutRed }
                     .toSet().size >= 9
                 if (isKyuushuKyuuhai) {

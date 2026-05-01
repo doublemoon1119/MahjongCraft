@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.domain.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Fuuro
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Mentsu
-import com.doublemoon1119.mahjongcraft.domain.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.dora.calculateAkaDora
@@ -20,7 +19,7 @@ import kotlin.math.abs
 /**
  * 日本麻將手牌番數計算機。
  *
- * 負責計算手牌的全部番數，使用 [RiichiYakuContext] 提供計算所需的上下文資訊。
+ * 負責計算手牌的全部番數，使用 [RiichiHandValueContext] 提供計算所需的上下文資訊。
  *
  * @property useLocalYaku 是否啟用古役（Local Yaku）。TODO: 回頭實作古役邏輯。
  */
