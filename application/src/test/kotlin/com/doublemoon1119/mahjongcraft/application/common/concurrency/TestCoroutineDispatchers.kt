@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.application.concurrency
+package com.doublemoon1119.mahjongcraft.application.common.concurrency
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
