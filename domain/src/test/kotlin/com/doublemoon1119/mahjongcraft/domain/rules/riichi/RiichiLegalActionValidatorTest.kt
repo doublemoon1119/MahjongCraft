@@ -1,13 +1,11 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.*
-import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeHandFactory
-import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
-import com.doublemoon1119.mahjongcraft.domain.fakes.config.FakeMahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeDiscardPile
-import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
-import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeTableStateFactory
-import com.doublemoon1119.mahjongcraft.domain.table.TileWall
+import com.doublemoon1119.mahjongcraft.testing.domain.fakes.base.FakeHandFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.fakes.table.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.testing.domain.fakes.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.fakes.table.FakeTableStateFactory
 import com.doublemoon1119.mahjongcraft.domain.table.Wind
 import kotlin.test.Test
 import kotlin.test.assertFalse

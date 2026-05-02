@@ -51,11 +51,12 @@
   - **特點**: 依賴 `:application` 與 `:domain`，作為整個系統的組裝中心 (Composition Root)。
 
 - **`:testing`**: 測試輔助工具模組。
-  - **用途**: 提供跨模組共享的測試物件（如 Fake 物件）。
+  - **用途**: 提供跨模組共享的測試物件（如 Fake 物件、`TestCoroutineDispatchers`）。
+  - **結構**: 採用與產品對稱的階層化子模組結構（如 `:testing-domain`, `:testing-application` 等），以確保依賴鏈單向且清晰。
   - **特點**:
-    - 依賴 `:domain` 模組以取得介面來實作對應的物件。
-    - 不使用 JVM 特有的 testFixtures，以支援未來 Kotlin Multiplatform 擴展。
-    - 由於此模組僅包含測試程式碼，不影響生產環境 (Production) 的依賴方向。
+    - **依賴原則**: 各測試子模組依賴對應層級的生產代碼模組（例如 `:testing-domain` 依賴 `:domain`），嚴禁反向依賴。
+    - **跨平台支持**: 嚴禁使用 JVM 特有的 `testFixtures`，以純 Kotlin 模組建構以支援未來 Kotlin Multiplatform 擴展。
+    - **零污染**: 僅包含測試專用程式碼，不影響生產環境（Production）的依賴方向。
 
 - **`:platform`**: 平台適配層。
   - **用途**: 包含所有與特定平台（如 Minecraft, Hytale）相關的具體實現 (Adapters)。它負責實現 `:application` 層定義的介面，並作為最終的執行進入點。

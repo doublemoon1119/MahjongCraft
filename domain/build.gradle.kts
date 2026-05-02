@@ -12,5 +12,5 @@ extra["javaRelease"] = libs.versions.jvm.domain.release.get().toInt()
 dependencies {
     // 單元測試相關
     testImplementation(kotlin("test"))
-    testImplementation(project(":testing"))
+    testImplementation(project(":testing:testing-domain"))
 }

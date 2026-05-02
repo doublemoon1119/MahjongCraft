@@ -1,9 +1,10 @@
 package com.doublemoon1119.mahjongcraft.domain.table
 
+import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import com.doublemoon1119.mahjongcraft.domain.fakes.base.FakeIdentifiedTileFactory
-import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeDiscardPile
-import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.fakes.table.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.testing.domain.fakes.table.FakeMahjongPlayerFactory
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,7 +26,7 @@ class MahjongPlayerSnapshotTest {
         val tile2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
         val player = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.EAST,
-            hand = com.doublemoon1119.mahjongcraft.domain.base.Hand(
+            hand = Hand(
                 tiles = mutableListOf(tile1, tile2)
             )
         )
@@ -48,7 +49,7 @@ class MahjongPlayerSnapshotTest {
         val tile2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
         val player = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.SOUTH,
-            hand = com.doublemoon1119.mahjongcraft.domain.base.Hand(
+            hand = Hand(
                 tiles = mutableListOf(tile1, tile2)
             )
         )

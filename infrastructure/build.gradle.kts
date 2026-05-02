@@ -13,7 +13,9 @@ subprojects {
     dependencies {
         // 單元測試相關
         testImplementation(kotlin("test"))
-        testImplementation(project(":testing"))
         testImplementation(rootProject.libs.kotlinx.coroutines.test)
+        testImplementation(project(":testing:testing-domain"))
+        testImplementation(project(":testing:testing-application"))
+        testImplementation(project(":testing:testing-infrastructure"))
     }
 }

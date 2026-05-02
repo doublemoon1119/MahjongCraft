@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.domain.table
 
 import com.doublemoon1119.mahjongcraft.domain.base.GameAction
 import com.doublemoon1119.mahjongcraft.domain.base.GameAction.KanType
-import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeDiscardPile
-import com.doublemoon1119.mahjongcraft.domain.fakes.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.fakes.table.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.testing.domain.fakes.table.FakeMahjongPlayerFactory
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
