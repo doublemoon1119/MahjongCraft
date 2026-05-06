@@ -35,10 +35,11 @@ class TableStateTest {
             FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
         )
 
-        FakeTableStateFactory.create(
+        val tableState = FakeTableStateFactory.create(
             players = players,
             config = config
         )
+        tableState.init()
 
         for (player in players) {
             assertEquals(

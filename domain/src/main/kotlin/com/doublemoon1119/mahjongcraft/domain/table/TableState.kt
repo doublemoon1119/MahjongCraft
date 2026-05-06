@@ -40,7 +40,7 @@ data class TableState(
      * 初始化對局。
      * 將所有玩家的分數根據 [config] 設定為初始分數。
      */
-    init {
+    fun init(){
         val initialScore = config.scoreConfig.initialScore
         players.forEach { it.score = initialScore }
     }
