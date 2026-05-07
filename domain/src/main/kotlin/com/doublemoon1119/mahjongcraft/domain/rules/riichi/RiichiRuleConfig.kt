@@ -17,15 +17,20 @@ import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
  * @property scoreConfig 日本麻將專屬的積分配置。
  * @property gameLength 遊戲長度配置，預設為 [RiichiGameLength.OneGame]。
  * @property isSpectateAllowed 允許在遊戲外的玩家能否看到遊戲內玩家的手牌，在牌河或者副露的牌則不在此限，預設為 true。
+ * @property minPlayers 該規則要求的最小玩家人數
+ * @property maxPlayers 該規則允許的最大玩家人數
  */
 data class RiichiRuleConfig(
     val redDoraCount: Int = 3,
     val allowOpenTanyao: Boolean = true,
     val useLocalYaku: Boolean = false,
-    override val initialHandSize: Int = 13,
-    override val deadTileCount: Int = 14,
     override val minimumWinConstraint: Int = 1,
     override val scoreConfig: RiichiScoreConfig = RiichiScoreConfig(),
     override val gameLength: RiichiGameLength = RiichiGameLength.OneGame,
-    override val isSpectateAllowed: Boolean = true
-) : MahjongRuleConfig
+    override val isSpectateAllowed: Boolean = true,
+) : MahjongRuleConfig {
+    override val initialHandSize: Int = 13
+    override val deadTileCount: Int = 14
+    override val minPlayers: Int = 4
+    override val maxPlayers: Int = 4
+}

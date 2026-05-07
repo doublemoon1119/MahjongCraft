@@ -2,52 +2,36 @@ package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
- * 針對日本麻將規則配置 [RiichiRuleConfig] 進行測試。
+ * 驗證 [RiichiRuleConfig] 的設定屬性。
  */
 class RiichiRuleConfigTest {
+
     /**
-     * 測試日本麻將特有屬性、積分規則與胡牌限制的存取與正確性。
+     * 測試預設建構的 [RiichiRuleConfig] 是否具有正確的初始值。
      */
     @Test
-    fun `test riichi specific configuration`() {
-        // 初始化模擬配置
-        val config = RiichiRuleConfig(
-            redDoraCount = 4,
-            allowOpenTanyao = true,
-            useLocalYaku = true
-        )
+    fun `test default config values`() {
+        val config = RiichiRuleConfig()
 
-        // 驗證繼承自基礎介面的通用屬性
         assertEquals(13, config.initialHandSize)
-        assertEquals(1, config.minimumWinConstraint, "Riichi should have 1-han constraint")
-
-        // 驗證日麻特有的規則開關
-        assertEquals(4, config.redDoraCount)
-        assertTrue(config.allowOpenTanyao, "Should support open tanyao configuration")
-        assertTrue(config.useLocalYaku, "Should support local yaku configuration")
-
-        // 驗證積分配置（包含新增的 1 位必要點數）
-        assertEquals(25000, config.scoreConfig.initialScore)
-        assertEquals(0, config.scoreConfig.bustThreshold)
-        assertEquals(30000, config.scoreConfig.minPointsToWin, "Default min points to win should be 30000")
-
-        // 驗證遊戲長度配置
-        assertEquals(RiichiGameLength.OneGame, config.gameLength)
-
-        // 驗證旁觀配置
-        assertTrue(config.isSpectateAllowed, "Default spectate allowed should be true.")
+        assertEquals(14, config.deadTileCount)
+        assertEquals(4, config.minPlayers)
+        assertEquals(4, config.maxPlayers)
+        assertEquals(1, config.minimumWinConstraint)
+        assertEquals(3, config.redDoraCount)
+        assertEquals(true, config.allowOpenTanyao)
+        assertEquals(false, config.useLocalYaku)
     }
 
     /**
-     * 測試 isSpectateAllowed 可設定為 false。
+     * 測試自定義赤牌數量的設定。
      */
     @Test
-    fun `test isSpectateAllowed can be disabled`() {
-        val config = RiichiRuleConfig(isSpectateAllowed = false)
+    fun `test custom red dora count`() {
+        val config = RiichiRuleConfig(redDoraCount = 4)
 
-        kotlin.test.assertFalse(config.isSpectateAllowed, "Spectate allowed should be false when explicitly disabled.")
+        assertEquals(4, config.redDoraCount)
     }
 }

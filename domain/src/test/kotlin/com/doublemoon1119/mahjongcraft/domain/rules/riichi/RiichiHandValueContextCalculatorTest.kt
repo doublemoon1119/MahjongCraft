@@ -26,9 +26,8 @@ import kotlin.test.assertTrue
  */
 class RiichiHandValueContextCalculatorTest {
 
-    private fun createCalculator(deadTileCount: Int = 14): RiichiHandValueContextCalculator {
-        val config = RiichiRuleConfig(deadTileCount = deadTileCount)
-        return RiichiHandValueContextCalculator(config)
+    private fun createCalculator(): RiichiHandValueContextCalculator {
+        return RiichiHandValueContextCalculator(RiichiRuleConfig())
     }
 
     private fun createPlayer(hand: Hand, riichiState: RiichiPlayerState? = null): MahjongPlayer {
@@ -69,7 +68,7 @@ class RiichiHandValueContextCalculatorTest {
      */
     @Test
     fun `test tsumo at last draw sets isLastDraw true`() {
-        val calculator = createCalculator(deadTileCount = 14)
+        val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
             listOf(
@@ -98,7 +97,7 @@ class RiichiHandValueContextCalculatorTest {
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
-            config = RiichiRuleConfig(deadTileCount = 14)
+            config = RiichiRuleConfig()
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
@@ -121,7 +120,7 @@ class RiichiHandValueContextCalculatorTest {
      */
     @Test
     fun `test ron at last discard sets isLastDiscard true`() {
-        val calculator = createCalculator(deadTileCount = 14)
+        val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
             listOf(
@@ -150,7 +149,7 @@ class RiichiHandValueContextCalculatorTest {
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
-            config = RiichiRuleConfig(deadTileCount = 14)
+            config = RiichiRuleConfig()
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
@@ -173,7 +172,7 @@ class RiichiHandValueContextCalculatorTest {
      */
     @Test
     fun `test last draw discard flags not set when tiles remain`() {
-        val calculator = createCalculator(deadTileCount = 14)
+        val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
             listOf(
@@ -202,7 +201,7 @@ class RiichiHandValueContextCalculatorTest {
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
-            config = RiichiRuleConfig(deadTileCount = 14)
+            config = RiichiRuleConfig()
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
@@ -225,7 +224,7 @@ class RiichiHandValueContextCalculatorTest {
      */
     @Test
     fun `test dora indicator count with no kan`() {
-        val calculator = createCalculator(deadTileCount = 14)
+        val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
             listOf(
@@ -258,7 +257,7 @@ class RiichiHandValueContextCalculatorTest {
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
-            config = RiichiRuleConfig(deadTileCount = 14),
+            config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
 
@@ -281,7 +280,7 @@ class RiichiHandValueContextCalculatorTest {
      */
     @Test
     fun `test dora indicator count with one kan`() {
-        val calculator = createCalculator(deadTileCount = 14)
+        val calculator = createCalculator()
 
         val kanMeld = Meld(
             MeldType.OPEN_KAN,
@@ -322,7 +321,7 @@ class RiichiHandValueContextCalculatorTest {
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
-            config = RiichiRuleConfig(deadTileCount = 14),
+            config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
 
@@ -345,7 +344,7 @@ class RiichiHandValueContextCalculatorTest {
      */
     @Test
     fun `test dora indicator count with four kan`() {
-        val calculator = createCalculator(deadTileCount = 14)
+        val calculator = createCalculator()
 
         val kanMeld1 = Meld(
             MeldType.OPEN_KAN,
@@ -407,7 +406,7 @@ class RiichiHandValueContextCalculatorTest {
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
-            config = RiichiRuleConfig(deadTileCount = 14),
+            config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
 
@@ -430,7 +429,7 @@ class RiichiHandValueContextCalculatorTest {
      */
     @Test
     fun `test ura dora not included without riichi`() {
-        val calculator = createCalculator(deadTileCount = 14)
+        val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
             listOf(
@@ -459,7 +458,7 @@ class RiichiHandValueContextCalculatorTest {
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
-            config = RiichiRuleConfig(deadTileCount = 14),
+            config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
 
@@ -483,7 +482,7 @@ class RiichiHandValueContextCalculatorTest {
      */
     @Test
     fun `test ura dora included with riichi`() {
-        val calculator = createCalculator(deadTileCount = 14)
+        val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
             listOf(
@@ -514,7 +513,7 @@ class RiichiHandValueContextCalculatorTest {
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
-            config = RiichiRuleConfig(deadTileCount = 14),
+            config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
 
@@ -539,7 +538,7 @@ class RiichiHandValueContextCalculatorTest {
      */
     @Test
     fun `test dora calculation with zero wanpai count`() {
-        val calculator = createCalculator(deadTileCount = 0)
+        val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
             listOf(
@@ -559,16 +558,12 @@ class RiichiHandValueContextCalculatorTest {
             )
         )
         val player = createPlayer(hand)
-
-        val wallTiles = (1..30).map {
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
-        }
-        val tileWall = TileWall(wallTiles)
+        val tileWall = TileWall(emptyList())
 
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
-            config = RiichiRuleConfig(deadTileCount = 0),
+            config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
 
@@ -592,7 +587,7 @@ class RiichiHandValueContextCalculatorTest {
      */
     @Test
     fun `test rinshan kaihou detection`() {
-        val calculator = createCalculator(deadTileCount = 14)
+        val calculator = createCalculator()
 
         val kanSourceTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val kanMeld = Meld(
@@ -642,7 +637,7 @@ class RiichiHandValueContextCalculatorTest {
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
-            config = RiichiRuleConfig(deadTileCount = 14)
+            config = RiichiRuleConfig()
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
@@ -677,7 +672,7 @@ class RiichiHandValueContextCalculatorTest {
      */
     @Test
     fun `test dora indicators with different kan counts`() {
-        val calculator = createCalculator(deadTileCount = 14)
+        val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
             listOf(
@@ -743,7 +738,7 @@ class RiichiHandValueContextCalculatorTest {
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = tileWall,
-            config = RiichiRuleConfig(deadTileCount = 14),
+            config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
 
@@ -770,7 +765,7 @@ class RiichiHandValueContextCalculatorTest {
         val tableState1Kan = FakeTableStateFactory.create(
             players = listOf(player1Kan),
             tileWall = TileWall(wanPaiTiles).apply { repeat(1) { this.drawLast() } },
-            config = RiichiRuleConfig(deadTileCount = 14),
+            config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
         val context1Kan = calculator.calculate(
@@ -794,7 +789,7 @@ class RiichiHandValueContextCalculatorTest {
         val tableState2Kan = FakeTableStateFactory.create(
             players = listOf(player2Kan),
             tileWall = TileWall(wanPaiTiles).apply { repeat(2) { this.drawLast() } },
-            config = RiichiRuleConfig(deadTileCount = 14),
+            config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
         val context2Kan = calculator.calculate(
@@ -819,7 +814,7 @@ class RiichiHandValueContextCalculatorTest {
         val tableState3Kan = FakeTableStateFactory.create(
             players = listOf(player3Kan),
             tileWall = TileWall(wanPaiTiles).apply { repeat(3) { this.drawLast() } },
-            config = RiichiRuleConfig(deadTileCount = 14),
+            config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
         val context3Kan = calculator.calculate(
@@ -845,7 +840,7 @@ class RiichiHandValueContextCalculatorTest {
         val tableState4Kan = FakeTableStateFactory.create(
             players = listOf(player4Kan),
             tileWall = TileWall(wanPaiTiles).apply { repeat(4) { this.drawLast() } },
-            config = RiichiRuleConfig(deadTileCount = 14),
+            config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
         val context4Kan = calculator.calculate(
