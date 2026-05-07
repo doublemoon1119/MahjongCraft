@@ -6,28 +6,31 @@ import java.util.UUID
 /**
  * 桌況快照數據倉庫。
  *
- * 用於管理供視圖渲染或同步使用的快照數據。
+ * 用於管理供不同觀察者視圖渲染或同步使用的快照數據。
  */
 interface GameSnapshotRepository {
     /**
-     * 獲取指定遊戲 ID 的快照數據。
+     * 獲取特定觀察者所看見的桌況快照。
      *
      * @param gameId 遊戲的唯一識別碼。
-     * @return 該局遊戲的 [TableStateSnapshot]，若不存在則回傳 null。
+     * @param observerId 觀察者的玩家 UUID。
+     * @return 該觀察者視角的 [TableStateSnapshot]，若不存在則回傳 null。
      */
-    suspend fun getSnapshot(gameId: UUID): TableStateSnapshot?
+    suspend fun getSnapshot(gameId: UUID, observerId: UUID): TableStateSnapshot?
 
     /**
-     * 設置或更新最新的遊戲快照。
+     * 設置或更新特定觀察者的遊戲快照。
      *
-     * @param snapshot 最新生成的快照物件。
+     * @param observerId 接收此快照的觀察者 UUID。
+     * @param snapshot 針對該觀察者生成的過濾後快照。
      */
-    suspend fun setSnapshot(snapshot: TableStateSnapshot)
+    suspend fun setSnapshot(observerId: UUID, snapshot: TableStateSnapshot)
 
     /**
-     * 移除指定遊戲的快照數據。
+     * 移除特定觀察者的遊戲快照。
      *
      * @param gameId 遊戲的唯一識別碼。
+     * @param observerId 觀察者的玩家 UUID。
      */
-    suspend fun removeSnapshot(gameId: UUID)
+    suspend fun removeSnapshot(gameId: UUID, observerId: UUID)
 }
