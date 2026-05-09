@@ -95,17 +95,17 @@ if (targetPlatform != null) {
                 if (anyModuleLoaded) {
                     logger.lifecycle("BUILD LOG: Environment active -> Platform: $targetPlatform, Version: $targetMinecraftVersion, Loader: $targetMinecraftLoader")
                 } else {
-                    logger.lifecycle("BUILD LOG: All specified Minecraft module paths were missing. Running in domain/application-only mode.")
+                    logger.lifecycle("BUILD LOG: All specified Minecraft module paths were missing. Running in domain/application/infrastructure-only mode.")
                 }
             } else {
-                logger.lifecycle("BUILD LOG: Minecraft platform specified, but targetMinecraftVersion or targetMinecraftLoader is missing. Running in domain/application-only mode.")
+                logger.lifecycle("BUILD LOG: Minecraft platform specified, but targetMinecraftVersion or targetMinecraftLoader is missing. Running in domain/application/infrastructure-only mode.")
             }
         }
         // 未來可以在這裡添加其他平台的處理邏輯
         else -> {
-            logger.lifecycle("BUILD LOG: Unknown targetPlatform '$targetPlatform'. Running in domain/application-only mode.")
+            logger.lifecycle("BUILD LOG: Unknown targetPlatform '$targetPlatform'. Running in domain/application/infrastructure-only mode.")
         }
     }
 } else {
-    logger.lifecycle("BUILD LOG: No targetPlatform specified. Running in domain/application-only mode.")
+    logger.lifecycle("BUILD LOG: No targetPlatform specified. Running in domain/application/infrastructure-only mode.")
 }
