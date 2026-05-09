@@ -44,11 +44,11 @@ class CreateRoomUseCaseTest {
         useCase(roomId, hostId, config)
 
         val savedRoom = roomRepo.getRoom(roomId)
-        assertNotNull(savedRoom)
-        assertEquals(hostId, savedRoom.hostId)
+        assertNotNull(savedRoom, "The created room should be persisted in the repository.")
+        assertEquals(hostId, savedRoom.hostId, "The host ID in the persisted room should match the creator.")
 
         val savedSnapshot = snapshotRepo.getSnapshot(roomId, hostId)
-        assertNotNull(savedSnapshot)
+        assertNotNull(savedSnapshot, "A room snapshot should be generated and synchronized for the host.")
     }
 
     /**
@@ -72,7 +72,9 @@ class CreateRoomUseCaseTest {
         roomRepo.setRoom(existingRoom)
 
         // 驗證執行時拋出 IllegalStateException
-        assertFailsWith<IllegalStateException> {
+        assertFailsWith<IllegalStateException>(
+            message = "Should throw IllegalStateException when a room with the same ID already exists."
+        ) {
             useCase(roomId, hostId, config)
         }
     }
