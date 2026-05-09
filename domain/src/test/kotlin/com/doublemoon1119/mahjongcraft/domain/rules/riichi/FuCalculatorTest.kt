@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.base.FakeHandFactory
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.rules.riichi.FakeRiichiHandValueContextFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.base.FakeHandFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.rules.riichi.FakeRiichiHandValueContextFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.CompletionType
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.structure.Janto

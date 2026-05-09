@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.testing.domain.fakes.table
+package com.doublemoon1119.mahjongcraft.testing.domain.table
 
 import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile

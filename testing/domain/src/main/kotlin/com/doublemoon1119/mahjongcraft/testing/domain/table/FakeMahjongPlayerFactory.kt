@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.testing.domain.fakes.table
+package com.doublemoon1119.mahjongcraft.testing.domain.table
 
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.table.DiscardPile
@@ -17,7 +17,6 @@ object FakeMahjongPlayerFactory {
     /**
      * 建立一個測試用的玩家。
      *
-     * @param name 玩家名稱，預設為 "TestPlayer"。
      * @param initialSeat 初始座位方位，預設為 [Wind.EAST]。
      * @param id 玩家唯一識別碼，預設隨機產生。
      * @param hand 初始手牌，預設建立新的空 [Hand]。

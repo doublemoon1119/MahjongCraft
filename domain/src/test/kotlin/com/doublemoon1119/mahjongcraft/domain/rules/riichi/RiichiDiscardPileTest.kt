@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.base.FakeIdentifiedTileFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

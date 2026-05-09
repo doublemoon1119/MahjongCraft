@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.room
 
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.config.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.domain.config.FakeMahjongRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.base
 
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.base.FakeIdentifiedTileFactory
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals

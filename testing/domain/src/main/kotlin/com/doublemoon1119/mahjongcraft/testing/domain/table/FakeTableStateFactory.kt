@@ -1,8 +1,8 @@
-package com.doublemoon1119.mahjongcraft.testing.domain.fakes.table
+package com.doublemoon1119.mahjongcraft.testing.domain.table
 
 import com.doublemoon1119.mahjongcraft.domain.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.config.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.domain.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall

@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.yakuman
 
 import com.doublemoon1119.mahjongcraft.domain.base.*
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.base.FakeHandFactory
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.rules.riichi.FakeRiichiHandValueContextFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.base.FakeHandFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.rules.riichi.FakeRiichiHandValueContextFactory
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.domain.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.domain.table.Wind

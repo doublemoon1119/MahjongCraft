@@ -5,10 +5,10 @@ import com.doublemoon1119.mahjongcraft.domain.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.domain.base.MeldType
 import com.doublemoon1119.mahjongcraft.domain.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.base.FakeIdentifiedTileFactory
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.config.FakeMahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.table.FakeMahjongPlayerFactory
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.config.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.domain.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.table.FakeTableStateFactory
 import com.doublemoon1119.mahjongcraft.domain.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
 import com.doublemoon1119.mahjongcraft.domain.table.TileWall

@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.testing.domain.fakes.rules.riichi
+package com.doublemoon1119.mahjongcraft.testing.domain.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.Tile

@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.testing.domain.fakes.config
+package com.doublemoon1119.mahjongcraft.testing.domain.config
 
 import com.doublemoon1119.mahjongcraft.domain.config.ScoreConfig
 

@@ -3,10 +3,10 @@ package com.doublemoon1119.mahjongcraft.domain.table
 import com.doublemoon1119.mahjongcraft.domain.base.Hand
 import com.doublemoon1119.mahjongcraft.domain.base.Tile
 import com.doublemoon1119.mahjongcraft.domain.config.DynamicRuleState
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.base.FakeIdentifiedTileFactory
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.config.FakeMahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.table.FakeMahjongPlayerFactory
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.config.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.domain.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.table.FakeTableStateFactory
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.domain.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.testing.domain.fakes.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.domain.table.FakeTableStateFactory
 import com.doublemoon1119.mahjongcraft.domain.table.TableState
 import kotlin.test.Test
 import kotlin.test.assertEquals
