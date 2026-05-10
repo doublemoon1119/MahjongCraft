@@ -5,8 +5,7 @@ import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRe
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.room.Room
 import com.doublemoon1119.mahjongcraft.domain.room.toSnapshot
-import java.util.UUID
-import kotlin.uuid.Uuid
+import java.util.*
 
 /**
  * 創建房間的實例化用例。

@@ -2,9 +2,8 @@ package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
 import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRepository
-import com.doublemoon1119.mahjongcraft.domain.room.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.domain.room.toSnapshot
-import java.util.UUID
+import java.util.*
 
 /**
  * 同步房間快照的應用層用例。
