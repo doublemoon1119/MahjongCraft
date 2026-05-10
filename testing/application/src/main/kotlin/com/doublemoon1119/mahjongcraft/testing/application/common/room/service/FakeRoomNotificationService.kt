@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.testing.application.common.room.service
 import com.doublemoon1119.mahjongcraft.application.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.application.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.application.common.room.service.RoomNotificationService
+import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import java.util.*
 
 /**
@@ -31,6 +32,13 @@ class FakeRoomNotificationService : RoomNotificationService {
      * Key: Triple(房間ID, 接收者ID, 事件主體ID)
      */
     private val readyNotifications = mutableMapOf<Triple<UUID, UUID, UUID>, Boolean>()
+
+    /**
+     * 紀錄房間配置變更通知。
+     *
+     * Key: Pair(房間ID, 接收者ID)
+     */
+    private val configChangeNotifications = mutableMapOf<Pair<UUID, UUID>, MahjongRuleConfig>()
 
     /**
      * 紀錄加入事件通知。
@@ -84,6 +92,21 @@ class FakeRoomNotificationService : RoomNotificationService {
     }
 
     /**
+     * 紀錄房間配置變更通知。
+     *
+     * @param roomId 房間 UUID。
+     * @param targetPlayerId 接收通知的房間成員 UUID。
+     * @param newConfig 變更後的配置實例。
+     */
+    override suspend fun notifyConfigChanged(
+        roomId: UUID,
+        targetPlayerId: UUID,
+        newConfig: MahjongRuleConfig
+    ) {
+        configChangeNotifications[roomId to targetPlayerId] = newConfig
+    }
+
+    /**
      * 獲取特定玩家收到的加入通知原因。
      *
      * @param roomId 房間 UUID。
@@ -124,4 +147,16 @@ class FakeRoomNotificationService : RoomNotificationService {
         targetPlayerId: UUID,
         readyPlayerId: UUID
     ): Boolean? = readyNotifications[Triple(roomId, targetPlayerId, readyPlayerId)]
+
+    /**
+     * 獲取特定玩家收到的配置變更通知。
+     *
+     * @param roomId 房間 UUID。
+     * @param targetPlayerId 接收通知的成員 UUID。
+     * @return 該觀察者收到的最新配置，若無紀錄則回傳 null。
+     */
+    fun getConfigChangedNotification(
+        roomId: UUID,
+        targetPlayerId: UUID
+    ): MahjongRuleConfig? = configChangeNotifications[roomId to targetPlayerId]
 }

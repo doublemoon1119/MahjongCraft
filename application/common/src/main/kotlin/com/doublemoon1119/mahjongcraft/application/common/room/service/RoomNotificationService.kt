@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.application.common.room.service
 
 import com.doublemoon1119.mahjongcraft.application.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.application.common.room.model.LeaveReason
+import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import java.util.UUID
 
 /**
@@ -53,5 +54,18 @@ interface RoomNotificationService {
         targetPlayerId: UUID,
         readyPlayerId: UUID,
         isReady: Boolean
+    )
+
+    /**
+     * 通知房間成員房間配置已變更。
+     *
+     * @param roomId 房間 UUID。
+     * @param targetPlayerId 接收此通知的房間成員 UUID。
+     * @param newConfig 變更後的配置實例。
+     */
+    suspend fun notifyConfigChanged(
+        roomId: UUID,
+        targetPlayerId: UUID,
+        newConfig: MahjongRuleConfig
     )
 }
