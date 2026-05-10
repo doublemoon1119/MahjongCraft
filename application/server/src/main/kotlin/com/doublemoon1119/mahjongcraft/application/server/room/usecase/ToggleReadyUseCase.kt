@@ -1,9 +1,10 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
 import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.application.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.domain.room.toSnapshot
-import java.util.UUID
+import java.util.*
 
 /**
  * 切換玩家準備狀態的應用層用例。
@@ -12,10 +13,12 @@ import java.util.UUID
  *
  * @property roomRepository 權威房間數據倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
+ * @property notificationService 房間通知服務。
  */
 class ToggleReadyUseCase(
     private val roomRepository: RoomRepository,
-    private val snapshotRepository: RoomSnapshotRepository
+    private val snapshotRepository: RoomSnapshotRepository,
+    private val notificationService: RoomNotificationService
 ) {
     /**
      * 執行準備狀態切換邏輯。
@@ -42,10 +45,11 @@ class ToggleReadyUseCase(
         }
 
         // 3. 計算新的準備狀態集合
-        val newReadyPlayerIds = if (room.readyPlayerIds.contains(playerId)) {
-            room.readyPlayerIds - playerId
-        } else {
+        val isNowReady = !room.readyPlayerIds.contains(playerId)
+        val newReadyPlayerIds = if (isNowReady) {
             room.readyPlayerIds + playerId
+        } else {
+            room.readyPlayerIds - playerId
         }
 
         // 4. 更新領域模型並持久化
@@ -56,6 +60,16 @@ class ToggleReadyUseCase(
         val observers = snapshotRepository.getAllObservers(roomId)
         observers.forEach { observerId ->
             snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
+        }
+
+        // 6. 通知房間內的所有成員
+        updatedRoom.playerIds.forEach { memberId ->
+            notificationService.notifyReady(
+                roomId = roomId,
+                targetPlayerId = memberId,
+                readyPlayerId = playerId,
+                isReady = isNowReady
+            )
         }
     }
 }

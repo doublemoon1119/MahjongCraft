@@ -39,4 +39,19 @@ interface RoomNotificationService {
         leftPlayerId: UUID,
         reason: LeaveReason
     )
+
+    /**
+     * 通知房間成員有玩家切換準備狀態。
+     *
+     * @param roomId 房間 UUID。
+     * @param targetPlayerId 接收此通知的房間成員 UUID。
+     * @param readyPlayerId 切換準備狀態的玩家 UUID。
+     * @param isReady 該玩家目前的準備狀態。
+     */
+    suspend fun notifyReady(
+        roomId: UUID,
+        targetPlayerId: UUID,
+        readyPlayerId: UUID,
+        isReady: Boolean
+    )
 }

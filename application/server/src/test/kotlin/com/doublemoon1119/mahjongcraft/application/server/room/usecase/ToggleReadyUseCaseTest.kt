@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.room.Room
 import com.doublemoon1119.mahjongcraft.domain.room.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.application.common.room.repository.FakeRoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.application.common.room.service.FakeRoomNotificationService
 import com.doublemoon1119.mahjongcraft.testing.domain.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
 import java.util.*
@@ -26,28 +27,54 @@ class ToggleReadyUseCaseTest {
     fun `test toggle ready status and sync to observers`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo)
+        val notificationService = FakeRoomNotificationService()
+        val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo, notificationService)
 
         val guestId = UUID.randomUUID()
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
         roomRepo.setRoom(room)
 
-        // 模擬房主與客場玩家都在觀察
-        snapshotRepo.setSnapshot(hostId, room.copy().toSnapshot(hostId))
-        snapshotRepo.setSnapshot(guestId, room.copy().toSnapshot(guestId))
+        // 模擬房主正在觀察房間
+        snapshotRepo.setSnapshot(hostId, room.toSnapshot(hostId))
 
-        // Act: 玩家切換為準備
+        // Act: 客場玩家切換準備
         useCase(roomId, guestId)
 
-        // Assert: 檢查權威資料
+        // Assert: 檢查持久化資料
         val updatedRoom = roomRepo.getRoom(roomId)
         assertNotNull(updatedRoom)
-        assertTrue(updatedRoom.readyPlayerIds.contains(guestId), "Player should be in ready state.")
+        assertTrue(updatedRoom.readyPlayerIds.contains(guestId), "Guest player should be in ready set.")
 
-        // Assert: 檢查房主收到的快照是否更新
+        // Assert: 檢查房主的快照是否同步更新
         val hostSnapshot = snapshotRepo.getSnapshot(roomId, hostId)
         assertNotNull(hostSnapshot)
         assertTrue(hostSnapshot.readyPlayerIds.contains(guestId), "Host snapshot should reflect guest's ready status.")
+    }
+
+    /**
+     * 驗證點：當玩家切換準備狀態時，房間內所有成員（包含房主與自己）都應收到通知。
+     */
+    @Test
+    fun `test toggle ready notifies all members`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val notificationService = FakeRoomNotificationService()
+        val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo, notificationService)
+
+        val guestId = UUID.randomUUID()
+        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
+        roomRepo.setRoom(room)
+
+        // Act: 客場玩家切換準備（從未準備變更為已準備）
+        useCase(roomId, guestId)
+
+        // Assert: 房主應收到通知
+        val hostReceived = notificationService.getReadyStatus(roomId, hostId, guestId)
+        assertEquals(true, hostReceived, "Host should be notified that guest is now ready.")
+
+        // Assert: 發起者本人也應收到通知
+        val guestReceived = notificationService.getReadyStatus(roomId, guestId, guestId)
+        assertEquals(true, guestReceived, "Guest should be notified of their own ready status change.")
     }
 
     /**
@@ -57,7 +84,8 @@ class ToggleReadyUseCaseTest {
     fun `test toggle ready does nothing for host`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo)
+        val notificationService = FakeRoomNotificationService()
+        val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo, notificationService)
 
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
         roomRepo.setRoom(room)
@@ -78,17 +106,19 @@ class ToggleReadyUseCaseTest {
     fun `test toggle ready fails when player not in room`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo)
+        val notificationService = FakeRoomNotificationService()
+        val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo, notificationService)
 
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
         roomRepo.setRoom(room)
 
-        val intruderId = UUID.randomUUID()
+        val strangerId = UUID.randomUUID()
 
+        // Act & Assert
         assertFailsWith<IllegalStateException>(
-            message = "Should throw IllegalStateException if the player is not a member of the room."
+            message = "Should throw IllegalStateException when player not in room."
         ) {
-            useCase(roomId, intruderId)
+            useCase(roomId, strangerId)
         }
     }
 }
