@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
 import com.doublemoon1119.mahjongcraft.application.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.application.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.domain.room.toSnapshot
 import java.util.UUID
@@ -13,7 +14,8 @@ import java.util.UUID
  */
 class KickPlayerUseCase(
     private val roomRepository: RoomRepository,
-    private val snapshotRepository: RoomSnapshotRepository
+    private val snapshotRepository: RoomSnapshotRepository,
+    private val notificationService: RoomNotificationService
 ) {
     /**
      * 執行剔除玩家邏輯。
@@ -51,12 +53,13 @@ class KickPlayerUseCase(
         )
         roomRepository.setRoom(updatedRoom)
 
-        // 4. 通知被剔除的玩家，並指定原因為 Kicked
-        snapshotRepository.removeSnapshot(roomId, targetPlayerId, LeaveReason.Kicked)
-
-        // 5. 同步新狀態給留下的成員
-        updatedRoom.playerIds.forEach { memberId ->
-            snapshotRepository.setSnapshot(memberId, updatedRoom.toSnapshot(memberId))
+        // 4. 同步新狀態給所有觀察者
+        val observers = snapshotRepository.getAllObservers(roomId)
+        observers.forEach { observerId ->
+            snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
         }
+
+        // 5. 發送被剔除的通知
+        notificationService.notifyLeave(roomId, targetPlayerId, LeaveReason.Kicked)
     }
 }

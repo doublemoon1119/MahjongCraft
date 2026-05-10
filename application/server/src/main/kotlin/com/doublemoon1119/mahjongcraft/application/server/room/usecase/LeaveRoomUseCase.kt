@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
 import com.doublemoon1119.mahjongcraft.application.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.application.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.domain.room.toSnapshot
 import java.util.UUID
@@ -16,7 +17,8 @@ import java.util.UUID
  */
 class LeaveRoomUseCase(
     private val roomRepository: RoomRepository,
-    private val snapshotRepository: RoomSnapshotRepository
+    private val snapshotRepository: RoomSnapshotRepository,
+    private val notificationService: RoomNotificationService
 ) {
     /**
      * 執行離開房間邏輯。
@@ -30,12 +32,16 @@ class LeaveRoomUseCase(
     ) {
         val room = roomRepository.getRoom(roomId) ?: return
 
+        // 獲取當前所有觀察者名單
+        val observers = snapshotRepository.getAllObservers(roomId)
+
         // 1. 若離開者為房主，則解散房間
         if (playerId == room.hostId) {
             roomRepository.removeRoom(roomId)
-            // 通知所有成員房間已解散
-            room.playerIds.forEach { memberId ->
-                snapshotRepository.removeSnapshot(roomId, memberId, LeaveReason.Dissolved)
+            observers.forEach { observerId ->
+                // 先發送通知，再移除快照
+                notificationService.notifyLeave(roomId, observerId, LeaveReason.Dissolved)
+                snapshotRepository.removeSnapshot(roomId, observerId)
             }
             return
         }
@@ -49,13 +55,12 @@ class LeaveRoomUseCase(
         // 3. 儲存更新後的狀態
         roomRepository.setRoom(updatedRoom)
 
-        // 通知離開者已成功退出
-        snapshotRepository.removeSnapshot(roomId, playerId, LeaveReason.Voluntary)
-
-        // 4. 同步最新快照給留下的所有成員
-        updatedRoom.playerIds.forEach { memberId ->
-            val snapshot = updatedRoom.toSnapshot(memberId)
-            snapshotRepository.setSnapshot(memberId, snapshot)
+        // 4. 同步最新快照給所有觀察者
+        observers.forEach { observerId ->
+            snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
         }
+
+        // 5. 單獨通知主動離開的玩家
+        notificationService.notifyLeave(roomId, playerId, LeaveReason.Voluntary)
     }
 }

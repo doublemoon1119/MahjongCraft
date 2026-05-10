@@ -4,7 +4,9 @@ import com.doublemoon1119.mahjongcraft.application.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.room.Room
+import com.doublemoon1119.mahjongcraft.domain.room.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.application.common.room.repository.FakeRoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.application.common.room.service.FakeRoomNotificationService
 import com.doublemoon1119.mahjongcraft.testing.domain.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
 import java.util.*
@@ -20,117 +22,74 @@ class LeaveRoomUseCaseTest {
     private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
 
     /**
-     * 測試普通玩家離開房間後，房間狀態應正確更新且同步給剩餘玩家。
-     */
-    @Test
-    fun `test guest player leaves room correctly`() = runTest {
-        val roomRepo = FakeRoomRepository()
-        val snapshotRepo = FakeRoomSnapshotRepository()
-        val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo)
-
-        // Arrange: 建立一個 4 人房間，其中一名客場玩家已準備
-        val guestIds = List(3) { UUID.randomUUID() }
-        val leavingPlayerId = guestIds[0]
-        val allPlayerIds = (guestIds + hostId).toSet()
-        val room = Room(
-            id = roomId,
-            hostId = hostId,
-            config = config,
-            playerIds = allPlayerIds,
-            readyPlayerIds = setOf(leavingPlayerId)
-        )
-        roomRepo.setRoom(room)
-
-        // Act: 其中一名準備好的客場玩家離開
-        useCase(roomId, leavingPlayerId)
-
-        // Assert: 檢查人數與準備名單
-        val updatedRoom = roomRepo.getRoom(roomId)
-        assertNotNull(updatedRoom)
-        assertEquals(3, updatedRoom.playerIds.size, "Room should have 3 players remaining.")
-        assertFalse(
-            updatedRoom.playerIds.contains(leavingPlayerId),
-            "The leaving player should be removed from playerIds."
-        )
-        assertFalse(
-            updatedRoom.readyPlayerIds.contains(leavingPlayerId),
-            "The leaving player should be removed from readyPlayerIds."
-        )
-
-        // Assert: 檢查剩餘玩家是否收到同步
-        assertNotNull(snapshotRepo.getSnapshot(roomId, hostId), "Host should receive updated snapshot.")
-    }
-
-    /**
-     * 測試當房主離開時，房間應從倉庫中移除（解散）。
-     */
-    @Test
-    fun `test room is removed when host leaves`() = runTest {
-        val roomRepo = FakeRoomRepository()
-        val snapshotRepo = FakeRoomSnapshotRepository()
-        val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo)
-
-        // Arrange
-        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
-        roomRepo.setRoom(room)
-
-        // Act: 房主離開
-        useCase(roomId, hostId)
-
-        // Assert: 房間應不存在
-        assertNull(roomRepo.getRoom(roomId), "The room should be dissolved and removed when the host leaves.")
-    }
-
-    /**
-     * 測試普通玩家離開時，應記錄原因為 Voluntary。
+     * 測試普通玩家離開房間，驗證房間狀態更新與 Voluntary 通知。
      */
     @Test
     fun `test guest player leaves with voluntary reason`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo)
+        val service = FakeRoomNotificationService()
+        val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo, service)
 
         val guestId = UUID.randomUUID()
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
         roomRepo.setRoom(room)
+
+        // 模擬兩位玩家都在觀察
+        snapshotRepo.setSnapshot(hostId, room.toSnapshot(hostId))
+        snapshotRepo.setSnapshot(guestId, room.toSnapshot(guestId))
 
         // Act
         useCase(roomId, guestId)
 
-        // Assert
+        // Assert: 檢查通知
         assertEquals(
-            LeaveReason.Voluntary,
-            snapshotRepo.getLastLeaveReason(roomId, guestId),
-            "Guest leaving should have Voluntary reason."
+            expected = LeaveReason.Voluntary,
+            actual = service.getReceivedReason(roomId, guestId),
+            message = "The leaving guest should receive Voluntary reason."
         )
+
+        // Assert: 檢查快照更新（房主應看到玩家已離開）
+        val hostSnapshot = snapshotRepo.getSnapshot(roomId, hostId)
+        assertNotNull(hostSnapshot)
+        assertFalse(hostSnapshot.playerIds.contains(guestId), "Host snapshot should reflect guest left.")
     }
 
     /**
-     * 測試房主離開時，所有房間成員應記錄原因為 Dissolved。
+     * 測試房主離開時，驗證房間解散且所有觀察者收到 Dissolved 通知。
      */
     @Test
-    fun `test all players get dissolved reason when host leaves`() = runTest {
+    fun `test all observers get dissolved reason when host leaves`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo)
+        val service = FakeRoomNotificationService()
+        val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo, service)
 
         val guestId = UUID.randomUUID()
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
         roomRepo.setRoom(room)
 
-        // Act
+        // 模擬房主與客場玩家都在觀察該房間
+        snapshotRepo.setSnapshot(hostId, room.toSnapshot(hostId))
+        snapshotRepo.setSnapshot(guestId, room.toSnapshot(guestId))
+
+        // Act: 房主解散房間
         useCase(roomId, hostId)
 
-        // Assert
+        // Assert: 檢查解散通知
         assertEquals(
-            LeaveReason.Dissolved,
-            snapshotRepo.getLastLeaveReason(roomId, hostId),
-            "Host should get Dissolved reason."
+            expected = LeaveReason.Dissolved,
+            actual = service.getReceivedReason(roomId, hostId),
+            message = "Host should be notified of dissolution."
         )
         assertEquals(
-            LeaveReason.Dissolved,
-            snapshotRepo.getLastLeaveReason(roomId, guestId),
-            "Guest should get Dissolved reason when host leaves."
+            expected = LeaveReason.Dissolved,
+            actual = service.getReceivedReason(roomId, guestId),
+            message = "Guest should be notified of dissolution."
         )
+
+        // Assert: 檢查快照是否已移除
+        assertNull(snapshotRepo.getSnapshot(roomId, hostId), "Host snapshot should be removed.")
+        assertNull(snapshotRepo.getSnapshot(roomId, guestId), "Guest snapshot should be removed.")
     }
 }

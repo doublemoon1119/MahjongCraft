@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.runTest
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -21,11 +22,7 @@ class SyncRoomSnapshotUseCaseTest {
     private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
 
     /**
-     * 測試玩家請求同步時，是否能正確收到針對該玩家身分生成的快照。
-     *
-     * 驗證點：
-     * 1. 快照已存入 [FakeRoomSnapshotRepository] 且對象為請求者。
-     * 2. 快照內容反映了請求者的身分狀態。
+     * 測試玩家請求同步時，應正確生成針對該玩家身分的快照。
      */
     @Test
     fun `test sync room snapshot for host correctly`() = runTest {
@@ -33,15 +30,32 @@ class SyncRoomSnapshotUseCaseTest {
         val snapshotRepo = FakeRoomSnapshotRepository()
         val useCase = SyncRoomSnapshotUseCase(roomRepo, snapshotRepo)
 
-        // 預先準備一個房間
         val room = Room(id = roomId, hostId = hostId, config = config)
         roomRepo.setRoom(room)
 
-        // 模擬房主請求同步
+        // Act
         useCase(roomId, hostId)
 
+        // Assert
         val snapshot = snapshotRepo.getSnapshot(roomId, hostId)
         assertNotNull(snapshot, "A snapshot should be generated for the host.")
-        assertTrue(snapshot.isHost, "When the host synchronizes, the isHost flag in the snapshot should be true.")
+        assertTrue(snapshot.isHost, "The host's snapshot should have isHost set to true.")
+    }
+
+    /**
+     * 測試當房間不存在時，同步請求不應產生任何快照。
+     */
+    @Test
+    fun `test sync room snapshot does nothing when room not exists`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val useCase = SyncRoomSnapshotUseCase(roomRepo, snapshotRepo)
+
+        // Act
+        useCase(roomId, hostId)
+
+        // Assert
+        val snapshot = snapshotRepo.getSnapshot(roomId, hostId)
+        assertNull(snapshot, "No snapshot should be created if the room does not exist.")
     }
 }

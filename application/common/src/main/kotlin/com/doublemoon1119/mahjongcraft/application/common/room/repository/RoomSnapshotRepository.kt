@@ -7,11 +7,12 @@ import java.util.UUID
 /**
  * 房間快照資料存取介面。
  *
- * 用於在伺服器與客戶端之間同步針對特定觀察者的唯讀房間狀態。
+ * 負責管理房間快照的生命週期與同步。
+ * 此介面定義了針對特定房間狀態的觀察者行為，不涉及具體的硬體或平台實作細節。
  */
 interface RoomSnapshotRepository {
     /**
-     * 獲取特定觀察者所看見的房間快照。
+     * 獲取特定觀察者針對某房間的快照。
      *
      * @param roomId 房間的 UUID。
      * @param observerId 觀察者的 UUID。
@@ -28,11 +29,18 @@ interface RoomSnapshotRepository {
     suspend fun setSnapshot(observerId: UUID, snapshot: RoomSnapshot)
 
     /**
-     * 移除特定觀察者的房間快照，並註明移除原因。
+     * 移除特定觀察者的房間快照。
      *
      * @param roomId 房間的 UUID。
      * @param observerId 觀察者的 UUID。
-     * @param reason 移除原因，參閱 [LeaveReason]。
      */
-    suspend fun removeSnapshot(roomId: UUID, observerId: UUID, reason: LeaveReason)
+    suspend fun removeSnapshot(roomId: UUID, observerId: UUID)
+
+    /**
+     * 獲取目前所有正在觀察該房間的所有觀察者 UUID 集合。
+     *
+     * @param roomId 房間的 UUID。
+     * @return 觀察該房間的所有玩家 UUID 集合。
+     */
+    suspend fun getAllObservers(roomId: UUID): Set<UUID>
 }

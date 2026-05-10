@@ -8,7 +8,7 @@ import java.util.UUID
 /**
  * 切換玩家準備狀態的應用層用例。
  *
- * 負責處理房間內非房主玩家的準備狀態切換。若請求者為房主，則不執行任何狀態變更。
+ * 負責處理房間內非房主玩家的準備狀態變更。變更後會向所有相關觀察者同步最新的房間快照。
  *
  * @property roomRepository 權威房間數據倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
@@ -36,28 +36,26 @@ class ToggleReadyUseCase(
             throw IllegalStateException("Player $playerId is not in the room.")
         }
 
-        // 2. 業務規則：房主不參與準備狀態切換
+        // 2. 房主不參與準備狀態切換（業務邏輯限制）
         if (playerId == room.hostId) {
             return
         }
 
-        // 3. 計算新的準備玩家集合
+        // 3. 計算新的準備狀態集合
         val newReadyPlayerIds = if (room.readyPlayerIds.contains(playerId)) {
             room.readyPlayerIds - playerId
         } else {
             room.readyPlayerIds + playerId
         }
 
-        // 4. 更新領域模型與持久化
-        val updatedRoom = room.copy(
-            readyPlayerIds = newReadyPlayerIds
-        )
+        // 4. 更新領域模型並持久化
+        val updatedRoom = room.copy(readyPlayerIds = newReadyPlayerIds)
         roomRepository.setRoom(updatedRoom)
 
-        // 5. 同步最新狀態給所有成員
-        updatedRoom.playerIds.forEach { memberId ->
-            val snapshot = updatedRoom.toSnapshot(memberId)
-            snapshotRepository.setSnapshot(memberId, snapshot)
+        // 5. 向所有觀察者同步更新後的狀態
+        val observers = snapshotRepository.getAllObservers(roomId)
+        observers.forEach { observerId ->
+            snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
         }
     }
 }

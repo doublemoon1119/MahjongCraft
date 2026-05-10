@@ -50,9 +50,11 @@ class CreateRoomUseCase(
         // 3. 存入權威數據倉庫
         roomRepository.setRoom(newRoom)
 
-        // 4. 產生針對房主的初始快照並同步
-        val initialSnapshot = newRoom.toSnapshot(hostId)
-        snapshotRepository.setSnapshot(hostId, initialSnapshot)
+        // 4. 同步給所有正在觀察的玩家
+        val observers = snapshotRepository.getAllObservers(roomId)
+        observers.forEach { observerId ->
+            snapshotRepository.setSnapshot(observerId, newRoom.toSnapshot(observerId))
+        }
 
         return newRoom
     }

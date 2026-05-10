@@ -47,10 +47,10 @@ class JoinRoomUseCase(
         )
         roomRepository.setRoom(updatedRoom)
 
-        // 4. 同步快照給所有成員（包含新加入者）
-        updatedRoom.playerIds.forEach { memberId ->
-            val snapshot = updatedRoom.toSnapshot(memberId)
-            snapshotRepository.setSnapshot(memberId, snapshot)
+        // 4. 同步給所有正在觀察的玩家
+        val observers = snapshotRepository.getAllObservers(roomId)
+        observers.forEach { observerId ->
+            snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
         }
     }
 }
