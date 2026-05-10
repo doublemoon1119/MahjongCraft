@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.application.common.game.repository
 
 import com.doublemoon1119.mahjongcraft.domain.table.TableStateSnapshot
-import java.util.UUID
+import java.util.*
 
 /**
  * 桌況快照數據倉庫。
@@ -33,4 +33,12 @@ interface GameSnapshotRepository {
      * @param observerId 觀察者的玩家 UUID。
      */
     suspend fun removeSnapshot(gameId: UUID, observerId: UUID)
+
+    /**
+     * 獲取目前所有正在觀察該遊戲的所有觀察者 UUID 集合。
+     *
+     * @param roomId 遊戲的唯一識別碼。
+     * @return 觀察該遊戲的所有玩家 UUID 集合。
+     */
+    suspend fun getAllObservers(roomId: UUID): Set<UUID>
 }

@@ -1,8 +1,7 @@
 package com.doublemoon1119.mahjongcraft.application.common.room.repository
 
-import com.doublemoon1119.mahjongcraft.application.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.domain.room.RoomSnapshot
-import java.util.UUID
+import java.util.*
 
 /**
  * 房間快照資料存取介面。

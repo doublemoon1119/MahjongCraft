@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSn
 import com.doublemoon1119.mahjongcraft.application.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.domain.room.toSnapshot
-import java.util.UUID
+import java.util.*
 
 /**
  * 玩家離開房間的應用層用例。
