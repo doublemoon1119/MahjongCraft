@@ -52,7 +52,7 @@ class KickPlayerUseCaseTest {
         // Assert: 檢查通知服務
         assertEquals(
             expected = LeaveReason.Kicked,
-            actual = service.getReceivedReason(roomId, targetId),
+            actual = service.getLeaveReason(roomId, targetId, targetId),
             message = "The kicked player should receive Kicked reason via notification service."
         )
     }

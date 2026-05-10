@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.application.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.domain.room.toSnapshot
 import java.util.UUID
@@ -12,10 +14,12 @@ import java.util.UUID
  *
  * @property roomRepository 權威房間數據倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
+ * @property notificationService 房間通知服務。
  */
 class JoinRoomUseCase(
     private val roomRepository: RoomRepository,
-    private val snapshotRepository: RoomSnapshotRepository
+    private val snapshotRepository: RoomSnapshotRepository,
+    private val notificationService: RoomNotificationService
 ) {
     /**
      * 執行加入房間邏輯。
@@ -51,6 +55,16 @@ class JoinRoomUseCase(
         val observers = snapshotRepository.getAllObservers(roomId)
         observers.forEach { observerId ->
             snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
+        }
+
+        // 5. 通知房間內的所有玩家
+        updatedRoom.playerIds.forEach { memberId ->
+            notificationService.notifyJoin(
+                roomId = roomId,
+                targetPlayerId = memberId, // 接收者
+                joinedPlayerId = playerId, // 事件主體（加入的那個人）
+                reason = JoinReason.Joined
+            )
         }
     }
 }

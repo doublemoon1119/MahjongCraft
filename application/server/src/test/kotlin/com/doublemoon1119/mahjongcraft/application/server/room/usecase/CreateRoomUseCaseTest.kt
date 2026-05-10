@@ -1,10 +1,12 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.room.Room
 import com.doublemoon1119.mahjongcraft.domain.room.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.application.common.room.repository.FakeRoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.application.common.room.service.FakeRoomNotificationService
 import com.doublemoon1119.mahjongcraft.testing.domain.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
 import java.util.*
@@ -31,7 +33,8 @@ class CreateRoomUseCaseTest {
     fun `test create room and sync snapshots to observers`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val useCase = CreateRoomUseCase(roomRepo, snapshotRepo)
+        val service = FakeRoomNotificationService()
+        val useCase = CreateRoomUseCase(roomRepo, snapshotRepo, service)
 
         // 模擬房主已經是該位置的觀察者
         val roomSnapshot = Room(id = roomId, hostId = hostId, config = config).toSnapshot(hostId)
@@ -60,7 +63,8 @@ class CreateRoomUseCaseTest {
     fun `test create room fails when room id already exists`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val useCase = CreateRoomUseCase(roomRepo, snapshotRepo)
+        val service = FakeRoomNotificationService()
+        val useCase = CreateRoomUseCase(roomRepo, snapshotRepo, service)
 
         val existingRoom = Room(
             id = roomId,
@@ -74,5 +78,29 @@ class CreateRoomUseCaseTest {
         ) {
             useCase(roomId, hostId, config)
         }
+    }
+
+    /**
+     * 測試創建房間時，房主應收到 Created 的加入通知。
+     */
+    @Test
+    fun `test create room notifies host with created reason`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomNotificationService()
+        val useCase = CreateRoomUseCase(roomRepo, snapshotRepo, service)
+
+        // Act
+        useCase(roomId, hostId, config)
+
+        // Assert: 驗證持久化
+        assertNotNull(roomRepo.getRoom(roomId))
+
+        // Assert: 驗證加入原因
+        assertEquals(
+            expected = JoinReason.Created,
+            actual = service.getJoinReason(roomId, hostId, hostId),
+            message = "Host should be notified with Created reason when opening a room."
+        )
     }
 }

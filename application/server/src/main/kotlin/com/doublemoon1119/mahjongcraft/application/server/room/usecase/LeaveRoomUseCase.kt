@@ -14,6 +14,7 @@ import java.util.UUID
  *
  * @property roomRepository 權威房間數據倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
+ * @property notificationService 房間通知服務。
  */
 class LeaveRoomUseCase(
     private val roomRepository: RoomRepository,
@@ -32,16 +33,18 @@ class LeaveRoomUseCase(
     ) {
         val room = roomRepository.getRoom(roomId) ?: return
 
-        // 獲取當前所有觀察者名單
-        val observers = snapshotRepository.getAllObservers(roomId)
-
         // 1. 若離開者為房主，則解散房間
         if (playerId == room.hostId) {
             roomRepository.removeRoom(roomId)
-            observers.forEach { observerId ->
-                // 先發送通知，再移除快照
-                notificationService.notifyLeave(roomId, observerId, LeaveReason.Dissolved)
-                snapshotRepository.removeSnapshot(roomId, observerId)
+            room.playerIds.forEach { memberId ->
+                // 通知房間內的所有玩家，並移除快照
+                notificationService.notifyLeave(
+                    roomId = roomId,
+                    targetPlayerId = memberId,
+                    leftPlayerId = memberId,
+                    reason = LeaveReason.Dissolved
+                )
+                snapshotRepository.removeSnapshot(roomId, memberId)
             }
             return
         }
@@ -56,11 +59,19 @@ class LeaveRoomUseCase(
         roomRepository.setRoom(updatedRoom)
 
         // 4. 同步最新快照給所有觀察者
+        val observers = snapshotRepository.getAllObservers(roomId)
         observers.forEach { observerId ->
             snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
         }
 
-        // 5. 單獨通知主動離開的玩家
-        notificationService.notifyLeave(roomId, playerId, LeaveReason.Voluntary)
+        // 5. 通知**原房間**內的所有玩家
+        room.playerIds.forEach { memberId ->
+            notificationService.notifyLeave(
+                roomId = roomId,
+                targetPlayerId = memberId,
+                leftPlayerId = playerId,
+                reason = LeaveReason.Voluntary
+            )
+        }
     }
 }

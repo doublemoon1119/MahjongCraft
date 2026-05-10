@@ -45,7 +45,7 @@ class LeaveRoomUseCaseTest {
         // Assert: 檢查通知
         assertEquals(
             expected = LeaveReason.Voluntary,
-            actual = service.getReceivedReason(roomId, guestId),
+            actual = service.getLeaveReason(roomId, guestId, guestId),
             message = "The leaving guest should receive Voluntary reason."
         )
 
@@ -79,12 +79,12 @@ class LeaveRoomUseCaseTest {
         // Assert: 檢查解散通知
         assertEquals(
             expected = LeaveReason.Dissolved,
-            actual = service.getReceivedReason(roomId, hostId),
+            actual = service.getLeaveReason(roomId, hostId, hostId),
             message = "Host should be notified of dissolution."
         )
         assertEquals(
             expected = LeaveReason.Dissolved,
-            actual = service.getReceivedReason(roomId, guestId),
+            actual = service.getLeaveReason(roomId, guestId, guestId),
             message = "Guest should be notified of dissolution."
         )
 

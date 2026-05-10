@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.application.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.application.common.room.service.RoomNotificationService
@@ -11,6 +12,10 @@ import java.util.UUID
  * 處理房主剔除成員流程的應用層用例。
  *
  * 驗證房主權限後移除目標玩家，並明確標記移除原因為被剔除。
+ *
+ * @property roomRepository 權威房間數據倉庫。
+ * @property snapshotRepository 房間快照數據倉庫。
+ * @property notificationService 房間通知服務。
  */
 class KickPlayerUseCase(
     private val roomRepository: RoomRepository,
@@ -59,7 +64,14 @@ class KickPlayerUseCase(
             snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
         }
 
-        // 5. 發送被剔除的通知
-        notificationService.notifyLeave(roomId, targetPlayerId, LeaveReason.Kicked)
+        // 5. 通知**原房間**內的所有玩家
+        room.playerIds.forEach { memberId ->
+            notificationService.notifyLeave(
+                roomId = roomId,
+                targetPlayerId = memberId,
+                leftPlayerId = targetPlayerId,
+                reason = LeaveReason.Kicked
+            )
+        }
     }
 }
