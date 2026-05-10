@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.application.common.room.repository
 
+import com.doublemoon1119.mahjongcraft.application.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.domain.room.RoomSnapshot
 import java.util.UUID
 
@@ -27,10 +28,11 @@ interface RoomSnapshotRepository {
     suspend fun setSnapshot(observerId: UUID, snapshot: RoomSnapshot)
 
     /**
-     * 移除特定觀察者的房間快照。
+     * 移除特定觀察者的房間快照，並註明移除原因。
      *
      * @param roomId 房間的 UUID。
      * @param observerId 觀察者的 UUID。
+     * @param reason 移除原因，參閱 [LeaveReason]。
      */
-    suspend fun removeSnapshot(roomId: UUID, observerId: UUID)
+    suspend fun removeSnapshot(roomId: UUID, observerId: UUID, reason: LeaveReason)
 }

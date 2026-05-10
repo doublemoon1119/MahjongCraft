@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.room.Room
@@ -78,5 +79,58 @@ class LeaveRoomUseCaseTest {
 
         // Assert: 房間應不存在
         assertNull(roomRepo.getRoom(roomId), "The room should be dissolved and removed when the host leaves.")
+    }
+
+    /**
+     * 測試普通玩家離開時，應記錄原因為 Voluntary。
+     */
+    @Test
+    fun `test guest player leaves with voluntary reason`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo)
+
+        val guestId = UUID.randomUUID()
+        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
+        roomRepo.setRoom(room)
+
+        // Act
+        useCase(roomId, guestId)
+
+        // Assert
+        assertEquals(
+            LeaveReason.Voluntary,
+            snapshotRepo.getLastLeaveReason(roomId, guestId),
+            "Guest leaving should have Voluntary reason."
+        )
+    }
+
+    /**
+     * 測試房主離開時，所有房間成員應記錄原因為 Dissolved。
+     */
+    @Test
+    fun `test all players get dissolved reason when host leaves`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo)
+
+        val guestId = UUID.randomUUID()
+        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
+        roomRepo.setRoom(room)
+
+        // Act
+        useCase(roomId, hostId)
+
+        // Assert
+        assertEquals(
+            LeaveReason.Dissolved,
+            snapshotRepo.getLastLeaveReason(roomId, hostId),
+            "Host should get Dissolved reason."
+        )
+        assertEquals(
+            LeaveReason.Dissolved,
+            snapshotRepo.getLastLeaveReason(roomId, guestId),
+            "Guest should get Dissolved reason when host leaves."
+        )
     }
 }

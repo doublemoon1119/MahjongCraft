@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.domain.room.toSnapshot
@@ -32,7 +33,10 @@ class LeaveRoomUseCase(
         // 1. 若離開者為房主，則解散房間
         if (playerId == room.hostId) {
             roomRepository.removeRoom(roomId)
-            // 可在此處額外實作通知所有玩家房間已關閉的邏輯
+            // 通知所有成員房間已解散
+            room.playerIds.forEach { memberId ->
+                snapshotRepository.removeSnapshot(roomId, memberId, LeaveReason.Dissolved)
+            }
             return
         }
 
@@ -44,6 +48,9 @@ class LeaveRoomUseCase(
 
         // 3. 儲存更新後的狀態
         roomRepository.setRoom(updatedRoom)
+
+        // 通知離開者已成功退出
+        snapshotRepository.removeSnapshot(roomId, playerId, LeaveReason.Voluntary)
 
         // 4. 同步最新快照給留下的所有成員
         updatedRoom.playerIds.forEach { memberId ->
