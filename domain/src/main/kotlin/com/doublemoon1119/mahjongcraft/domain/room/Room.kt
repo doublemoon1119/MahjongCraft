@@ -12,8 +12,8 @@ import java.util.*
  * @property id 房間的唯一識別碼。
  * @property hostId 房主的玩家 ID，擁有更改配置與開始遊戲的權限。
  * @property config 該房間採用的麻將規則配置，必須實作 [MahjongRuleConfig]。
- * @property playerIds 目前在房間內的所有玩家 ID 集合。
- * @property readyPlayerIds 已點擊準備的玩家 ID 集合。
+ * @property playerIds 目前在房間內的所有玩家 ID 集合（包含房主）。
+ * @property readyPlayerIds 已點擊準備的玩家 ID 集合（不包含房主）。
  */
 data class Room(
     val id: UUID,
@@ -35,13 +35,23 @@ data class Room(
     /**
      * 檢查是否符合開始遊戲的條件。
      *
-     * 條件：
-     * 1. 人數在規則允許的範圍內。
-     * 2. 所有在場玩家皆已準備。
-     * 3. 確保準備名單中的所有玩家確實都存在於房間內。
+     * 驗證邏輯：
+     * 1. 總人數位於 [MahjongRuleConfig] 定義的合法範圍內。
+     * 2. 除了房主以外的所有玩家皆已在準備名單中。
+     * 3. 確保準備名單中沒有不在房間內的外部玩家。
+     *
+     * @return 若符合開局條件則返回 true。
      */
     val canStart: Boolean
-        get() = playerIds.size in allowedRange &&
-                playerIds.size == readyPlayerIds.size &&
-                readyPlayerIds.containsAll(playerIds)
+        get() {
+            // 1. 人數要在範圍內
+            if (playerIds.size !in allowedRange) return false
+
+            // 2. 獲取除了房主以外的所有玩家
+            val otherPlayers = playerIds - hostId
+
+            // 3. 檢查「其他玩家」是否與「準備玩家」完全一致
+            return readyPlayerIds.size == otherPlayers.size &&
+                    readyPlayerIds.containsAll(otherPlayers)
+        }
 }
