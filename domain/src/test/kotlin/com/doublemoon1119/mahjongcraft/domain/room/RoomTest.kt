@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.domain.config.FakeMahjongRuleConfig
 import java.util.*
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -140,5 +141,46 @@ class RoomTest {
         )
 
         assertFalse(room.canStart, "Room should not start if ready list contains players not present in the room.")
+    }
+
+    /**
+     * 驗證 [Room.isAi] 能正確辨識被標記為 AI 的玩家。
+     */
+    @Test
+    fun `test isAi returns true for players in ai set`() {
+        val aiId = UUID.randomUUID()
+        val room = Room(
+            id = UUID.randomUUID(),
+            hostId = UUID.randomUUID(),
+            config = FakeMahjongRuleConfig(),
+            aiPlayerIds = setOf(aiId)
+        )
+
+        assertTrue(room.isAi(aiId), "isAi should return true for ID in aiPlayerIds.")
+        assertFalse(room.isAi(UUID.randomUUID()), "isAi should return false for unknown ID.")
+    }
+
+    /**
+     * 驗證 [Room.humanPlayerIds] 能正確從所有玩家中排除 AI，僅留下真人玩家。
+     */
+    @Test
+    fun `test humanPlayerIds filters out ai players`() {
+        val hostId = UUID.randomUUID()
+        val humanId = UUID.randomUUID()
+        val aiId = UUID.randomUUID()
+
+        val room = Room(
+            id = UUID.randomUUID(),
+            hostId = hostId,
+            config = FakeMahjongRuleConfig(),
+            playerIds = setOf(hostId, humanId, aiId),
+            aiPlayerIds = setOf(aiId)
+        )
+
+        val humanPlayers = room.humanPlayerIds
+        assertEquals(2, humanPlayers.size, "Should only contain 2 human players.")
+        assertTrue(humanPlayers.contains(hostId))
+        assertTrue(humanPlayers.contains(humanId))
+        assertFalse(humanPlayers.contains(aiId), "AI player should be filtered out.")
     }
 }

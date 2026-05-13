@@ -5,6 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import java.util.UUID
+import kotlin.test.assertEquals
 
 /**
  * 驗證 [Room.toSnapshot] 的觀察者識別邏輯。
@@ -77,5 +78,26 @@ class RoomSnapshotTest {
 
         assertFalse(snapshot.isHost)
         assertFalse(snapshot.isInRoom)
+    }
+
+    /**
+     * 驗證轉換後的快照是否正確包含了 AI 玩家的清單。
+     */
+    @Test
+    fun `test toSnapshot contains ai player info`() {
+        val hostId = UUID.randomUUID()
+        val aiId = UUID.randomUUID()
+        val room = Room(
+            id = UUID.randomUUID(),
+            hostId = hostId,
+            config = FakeMahjongRuleConfig(),
+            playerIds = setOf(hostId, aiId),
+            aiPlayerIds = setOf(aiId)
+        )
+
+        val snapshot = room.toSnapshot(hostId)
+
+        assertEquals(room.aiPlayerIds, snapshot.aiPlayerIds, "Snapshot should contain the same AI player IDs.")
+        assertTrue(snapshot.aiPlayerIds.contains(aiId), "AI player should be present in snapshot.")
     }
 }

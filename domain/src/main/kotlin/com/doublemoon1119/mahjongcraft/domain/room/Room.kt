@@ -14,13 +14,15 @@ import java.util.*
  * @property config 該房間採用的麻將規則配置，必須實作 [MahjongRuleConfig]。
  * @property playerIds 目前在房間內的所有玩家 ID 集合（包含房主）。
  * @property readyPlayerIds 已點擊準備的玩家 ID 集合（不包含房主）。
+ * @property aiPlayerIds 被標記為電腦（AI）的 UUID 集合。
  */
 data class Room(
     val id: UUID,
     val hostId: UUID,
     val config: MahjongRuleConfig,
     val playerIds: Set<UUID> = emptySet(),
-    val readyPlayerIds: Set<UUID> = emptySet()
+    val readyPlayerIds: Set<UUID> = emptySet(),
+    val aiPlayerIds: Set<UUID> = emptySet()
 ) {
     /**
      * 獲取此規則允許的人數範圍。
@@ -54,4 +56,19 @@ data class Room(
             return readyPlayerIds.size == otherPlayers.size &&
                     readyPlayerIds.containsAll(otherPlayers)
         }
+
+    /**
+     * 獲取房間內的真人玩家 UUID 集合。
+     *
+     * 從所有成員中排除掉被標記為 AI 的成員。
+     */
+    val humanPlayerIds: Set<UUID> get() = playerIds - aiPlayerIds
+
+    /**
+     * 判斷特定玩家是否為 AI。
+     *
+     * @param playerId 待檢查的玩家 UUID。
+     * @return 若該玩家存在於 [aiPlayerIds] 中則回傳 true。
+     */
+    fun isAi(playerId: UUID): Boolean = aiPlayerIds.contains(playerId)
 }

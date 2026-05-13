@@ -13,6 +13,7 @@ import java.util.UUID
  * @property config 房間規則配置。
  * @property playerIds 目前在房間內的玩家集合。
  * @property readyPlayerIds 已準備的玩家集合。
+ * @property aiPlayerIds 電腦（AI）的集合。
  * @property canStart 是否已達開賽門檻。
  * @property isHost 接收此快照的玩家是否為房主。
  * @property isInRoom 接收此快照的玩家是否已加入房間。
@@ -23,6 +24,7 @@ data class RoomSnapshot(
     val config: MahjongRuleConfig,
     val playerIds: Set<UUID>,
     val readyPlayerIds: Set<UUID>,
+    val aiPlayerIds: Set<UUID>,
     val canStart: Boolean,
     val isHost: Boolean,
     val isInRoom: Boolean
@@ -41,6 +43,7 @@ fun Room.toSnapshot(observerId: UUID): RoomSnapshot {
         config = config,
         playerIds = playerIds,
         readyPlayerIds = readyPlayerIds,
+        aiPlayerIds = aiPlayerIds,
         canStart = canStart,
         isHost = observerId == hostId,
         isInRoom = playerIds.contains(observerId)
