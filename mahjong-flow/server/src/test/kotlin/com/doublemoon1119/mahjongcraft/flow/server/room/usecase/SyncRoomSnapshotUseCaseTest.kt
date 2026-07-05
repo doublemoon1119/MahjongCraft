@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.room.Room
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest

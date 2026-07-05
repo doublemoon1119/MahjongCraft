@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository
 
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
-import com.doublemoon1119.mahjongcraft.logic.room.RoomSnapshot
 import java.util.*
 
 /**

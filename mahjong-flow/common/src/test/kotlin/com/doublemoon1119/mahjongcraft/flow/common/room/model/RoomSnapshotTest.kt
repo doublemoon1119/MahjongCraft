@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.logic.room
+package com.doublemoon1119.mahjongcraft.flow.common.room.model
 
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import java.util.*
@@ -7,14 +7,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/**
- * 驗證 [Room.toSnapshot] 的觀察者識別邏輯。
- */
 class RoomSnapshotTest {
 
-    /**
-     * 測試 toSnapshot 能正確識別觀察者是否為房主。
-     */
     @Test
     fun `test toSnapshot identifies host correctly`() {
         val config = FakeMahjongRuleConfig()
@@ -33,9 +27,6 @@ class RoomSnapshotTest {
         assertTrue(snapshot.isHost)
     }
 
-    /**
-     * 測試 toSnapshot 能正確識別觀察者是否為房間成員。
-     */
     @Test
     fun `test toSnapshot identifies room member correctly`() {
         val config = FakeMahjongRuleConfig()
@@ -56,9 +47,6 @@ class RoomSnapshotTest {
         assertFalse(snapshot.isHost)
     }
 
-    /**
-     * 測試 toSnapshot 能正確識別外部觀察者（非房主、非成員）。
-     */
     @Test
     fun `test toSnapshot identifies external observer correctly`() {
         val config = FakeMahjongRuleConfig()
@@ -80,9 +68,6 @@ class RoomSnapshotTest {
         assertFalse(snapshot.isInRoom)
     }
 
-    /**
-     * 驗證轉換後的快照是否正確包含了 AI 玩家的清單。
-     */
     @Test
     fun `test toSnapshot contains ai player info`() {
         val hostId = UUID.randomUUID()

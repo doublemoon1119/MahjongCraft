@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
-import com.doublemoon1119.mahjongcraft.logic.room.Room
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomNotificationService
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
