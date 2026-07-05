@@ -1,10 +1,9 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
-import org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper
-import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.kotlin.multiplatform) apply false
 }
 
 allprojects {
@@ -14,27 +13,26 @@ allprojects {
     // 必須先套用 base 插件，才能存取 base.archivesName
     apply(plugin = "base")
 
-    // 取得 libs.versions.toml 中的預設 JVM Toolchain 版本
+    // 取得 libs.versions.toml 中的預設 JVM Toolchain/Release 版本
     val jvmToolchainVersion = rootProject.libs.versions.jvm.toolchain.get().toInt()
+    val jvmReleaseVersion = rootProject.libs.versions.jvm.release.get().toInt()
 
     // 統一設定 Kotlin jvmToolchain (這會自動影響 JavaCompile 和 KotlinCompile)
-    plugins.withType<KotlinBasePluginWrapper> {
-        extensions.configure<KotlinJvmProjectExtension> {
+    plugins.withId("org.jetbrains.kotlin.multiplatform") {
+        extensions.configure<KotlinMultiplatformExtension> {
             jvmToolchain(jvmToolchainVersion)
         }
     }
 
-    // 取得 libs.versions.toml 中的預設 JVM Release 版本
-    val jvmReleaseVersion = rootProject.libs.versions.jvm.release.get().toInt()
-
-    // 處理編譯選項與各模組自定義的 javaRelease
     afterEvaluate {
+        // Java 編譯選項
         tasks.withType<JavaCompile>().configureEach {
             options.encoding = "UTF-8"
             options.release.set(jvmReleaseVersion)
         }
 
-        tasks.withType<KotlinJvmCompile>().configureEach {
+        // Kotlin 編譯選項
+        tasks.withType<KotlinCompile>().configureEach {
             compilerOptions {
                 jvmTarget.set(JvmTarget.fromTarget(jvmReleaseVersion.toString()))
                 freeCompilerArgs.add("-Xjvm-default=all")

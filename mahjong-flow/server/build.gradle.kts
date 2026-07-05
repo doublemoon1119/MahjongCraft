@@ -1,15 +1,22 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.multiplatform)
 }
 
-dependencies {
-    implementation(libs.kotlin.coroutines)
-    implementation(project(":mahjong-logic"))
-    implementation(project(":mahjong-flow:mahjong-flow-common"))
+kotlin {
+    jvm()
 
-    // 單元測試相關
-    testImplementation(kotlin("test"))
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(project(":testing:testing-mahjong-logic"))
-    testImplementation(project(":testing:testing-mahjong-flow"))
+    sourceSets {
+        commonMain.dependencies {
+            implementation(libs.kotlin.coroutines)
+            implementation(project(":mahjong-logic"))
+            implementation(project(":mahjong-flow:mahjong-flow-common"))
+        }
+
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(project(":testing:testing-mahjong-logic"))
+            implementation(project(":testing:testing-mahjong-flow"))
+        }
+    }
 }

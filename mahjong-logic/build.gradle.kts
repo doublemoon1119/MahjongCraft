@@ -1,9 +1,14 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.multiplatform)
 }
 
-dependencies {
-    // 單元測試相關
-    testImplementation(kotlin("test"))
-    testImplementation(project(":testing:testing-mahjong-logic"))
+kotlin {
+    jvm()
+
+    sourceSets {
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(project(":testing:testing-mahjong-logic"))
+        }
+    }
 }
