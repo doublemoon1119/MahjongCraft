@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.application.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.domain.room.Room
@@ -8,7 +9,10 @@ import com.doublemoon1119.mahjongcraft.testing.application.common.room.service.F
 import com.doublemoon1119.mahjongcraft.testing.domain.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
 import java.util.*
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * [AddAiPlayerUseCase] 的單元測試類別。
@@ -33,7 +37,9 @@ class AddAiPlayerUseCaseTest {
         roomRepo.setRoom(room)
 
         // Act
-        val aiId = useCase(roomId, hostId)
+        val result = useCase(roomId, hostId)
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val aiId = result.value
 
         // Assert
         val updatedRoom = roomRepo.getRoom(roomId)
@@ -64,9 +70,8 @@ class AddAiPlayerUseCaseTest {
         val room = Room(id = roomId, hostId = hostId, config = fullConfig, playerIds = setOf(hostId))
         roomRepo.setRoom(room)
 
-        assertFailsWith<IllegalStateException> {
-            useCase(roomId, hostId)
-        }
+        val result = useCase(roomId, hostId)
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
     }
 
     /**
@@ -83,8 +88,7 @@ class AddAiPlayerUseCaseTest {
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
         roomRepo.setRoom(room)
 
-        assertFailsWith<IllegalStateException> {
-            useCase(roomId, guestId)
-        }
+        val result = useCase(roomId, guestId)
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
     }
 }

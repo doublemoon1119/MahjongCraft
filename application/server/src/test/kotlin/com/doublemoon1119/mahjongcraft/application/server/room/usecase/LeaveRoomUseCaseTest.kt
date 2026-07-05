@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.application.common.room.model.LeaveReason
+import com.doublemoon1119.mahjongcraft.application.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.room.Room
@@ -40,7 +42,8 @@ class LeaveRoomUseCaseTest {
         snapshotRepo.setSnapshot(guestId, room.toSnapshot(guestId))
 
         // Act
-        useCase(roomId, guestId)
+        val result = useCase(roomId, guestId)
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
 
         // Assert: 檢查通知
         assertEquals(
@@ -74,7 +77,8 @@ class LeaveRoomUseCaseTest {
         snapshotRepo.setSnapshot(guestId, room.toSnapshot(guestId))
 
         // Act: 房主解散房間
-        useCase(roomId, hostId)
+        val dissolveResult = useCase(roomId, hostId)
+        assertTrue(dissolveResult is Outcome.Success, "Expected Success but got $dissolveResult")
 
         // Assert: 檢查解散通知
         assertEquals(
@@ -91,5 +95,20 @@ class LeaveRoomUseCaseTest {
         // Assert: 檢查快照是否已移除
         assertNull(snapshotRepo.getSnapshot(roomId, hostId), "Host snapshot should be removed.")
         assertNull(snapshotRepo.getSnapshot(roomId, guestId), "Guest snapshot should be removed.")
+    }
+
+    /**
+     * 測試對不存在的房間執行離開操作時，應回傳 [RoomError.RoomNotFound]。
+     */
+    @Test
+    fun `test leave room fails when room does not exist`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomNotificationService()
+        val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo, service)
+
+        val result = useCase(roomId, hostId)
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
+        assertEquals(RoomError.RoomNotFound(roomId), (result as Outcome.Error).error)
     }
 }

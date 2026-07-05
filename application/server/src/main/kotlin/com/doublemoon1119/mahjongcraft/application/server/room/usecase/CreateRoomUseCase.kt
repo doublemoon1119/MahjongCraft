@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.application.common.room.model.JoinReason
+import com.doublemoon1119.mahjongcraft.application.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.application.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRepository
@@ -29,17 +31,16 @@ class CreateRoomUseCase(
      * @param roomId 房間的唯一識別碼（通常對應 BlockEntity UUID）。
      * @param hostId 房主的玩家 UUID。
      * @param config 房間採用的規則配置。
-     * @return 創建成功的 [Room] 實例。
-     * @throws IllegalStateException 若該 roomId 已存在房間。
+     * @return 創建結果，成功時包含 [Room] 實例，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
         roomId: UUID,
         hostId: UUID,
         config: MahjongRuleConfig
-    ): Room {
+    ): Outcome<Room, RoomError> {
         // 1. 檢查房間是否已存在，避免重複創建
         if (roomRepository.getRoom(roomId) != null) {
-            throw IllegalStateException("Room with id $roomId already exists.")
+            return Outcome.Error(RoomError.RoomAlreadyExists(roomId))
         }
 
         // 2. 初始化房間物件，房主預設加入且不預設準備
@@ -63,6 +64,6 @@ class CreateRoomUseCase(
         // 5. 發送創建房間通知
         notificationService.notifyJoin(roomId, hostId, hostId, JoinReason.Created)
 
-        return newRoom
+        return Outcome.Success(newRoom)
     }
 }

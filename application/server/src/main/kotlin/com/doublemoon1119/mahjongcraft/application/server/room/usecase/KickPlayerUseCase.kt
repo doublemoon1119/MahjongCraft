@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.application.common.room.model.LeaveReason
+import com.doublemoon1119.mahjongcraft.application.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.application.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRepository
@@ -27,27 +29,27 @@ class KickPlayerUseCase(
      * @param roomId 房間 UUID。
      * @param operatorId 發起剔除請求的玩家 UUID。
      * @param targetPlayerId 被剔除的目標玩家 UUID。
-     * @throws IllegalStateException 若房間不存在、發起者非房主、或目標不在房間內。
+     * @return 剔除結果，成功時為 [Unit]，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
         roomId: UUID,
         operatorId: UUID,
         targetPlayerId: UUID
-    ) {
+    ): Outcome<Unit, RoomError> {
         val room = roomRepository.getRoom(roomId)
-            ?: throw IllegalStateException("Room with id $roomId does not exist.")
+            ?: return Outcome.Error(RoomError.RoomNotFound(roomId))
 
         // 1. 驗證發起者是否為房主
         if (operatorId != room.hostId) {
-            throw IllegalStateException("Only the host can kick players.")
+            return Outcome.Error(RoomError.NotHost(operatorId))
         }
 
         // 2. 驗證目標是否在房間內且不是房主本人
         if (!room.playerIds.contains(targetPlayerId)) {
-            throw IllegalStateException("Player $targetPlayerId is not in the room.")
+            return Outcome.Error(RoomError.PlayerNotInRoom(targetPlayerId, roomId))
         }
         if (targetPlayerId == room.hostId) {
-            throw IllegalStateException("Host cannot kick themselves.")
+            return Outcome.Error(RoomError.HostCannotKickSelf(targetPlayerId))
         }
 
         // 3. 更新房間資料並持久化
@@ -72,5 +74,7 @@ class KickPlayerUseCase(
                 reason = LeaveReason.Kicked
             )
         }
+
+        return Outcome.Success(Unit)
     }
 }

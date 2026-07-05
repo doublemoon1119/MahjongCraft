@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.application.common.room.model.JoinReason
+import com.doublemoon1119.mahjongcraft.application.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.room.Room
@@ -12,8 +14,8 @@ import kotlinx.coroutines.test.runTest
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * [CreateRoomUseCase] 的單元測試類別。
@@ -41,7 +43,8 @@ class CreateRoomUseCaseTest {
         snapshotRepo.setSnapshot(hostId, roomSnapshot)
 
         // Act
-        useCase(roomId, hostId, config)
+        val result = useCase(roomId, hostId, config)
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
 
         // Assert: 檢查權威資料
         val savedRoom = roomRepo.getRoom(roomId)
@@ -54,10 +57,7 @@ class CreateRoomUseCaseTest {
     }
 
     /**
-     * 測試當房間 ID 已存在時，是否會拋出 [IllegalStateException]。
-     *
-     * 驗證點：
-     * 1. 當 Repository 中已存在相同 ID 的房間時，執行用例應拋出異常。
+     * 測試當房間 ID 已存在時，應回傳 [RoomError.RoomAlreadyExists]。
      */
     @Test
     fun `test create room fails when room id already exists`() = runTest {
@@ -73,11 +73,9 @@ class CreateRoomUseCaseTest {
         )
         roomRepo.setRoom(existingRoom)
 
-        assertFailsWith<IllegalStateException>(
-            message = "Should throw IllegalStateException when a room with the same ID already exists."
-        ) {
-            useCase(roomId, hostId, config)
-        }
+        val result = useCase(roomId, hostId, config)
+        assertTrue(result is Outcome.Error)
+        assertEquals(RoomError.RoomAlreadyExists(roomId), (result as Outcome.Error).error)
     }
 
     /**
@@ -91,7 +89,8 @@ class CreateRoomUseCaseTest {
         val useCase = CreateRoomUseCase(roomRepo, snapshotRepo, service)
 
         // Act
-        useCase(roomId, hostId, config)
+        val result = useCase(roomId, hostId, config)
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
 
         // Assert: 驗證持久化
         assertNotNull(roomRepo.getRoom(roomId))

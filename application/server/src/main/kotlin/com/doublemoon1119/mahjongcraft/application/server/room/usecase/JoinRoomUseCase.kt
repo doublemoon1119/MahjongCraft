@@ -1,11 +1,13 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.application.common.room.model.JoinReason
+import com.doublemoon1119.mahjongcraft.application.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.application.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.domain.room.toSnapshot
-import java.util.UUID
+import java.util.*
 
 /**
  * 玩家加入房間的應用層用例。
@@ -26,23 +28,23 @@ class JoinRoomUseCase(
      *
      * @param roomId 欲加入的房間 UUID。
      * @param playerId 請求加入的玩家 UUID。
-     * @throws IllegalStateException 若房間不存在、房間已滿、或玩家已在房間內。
+     * @return 加入結果，成功時為 [Unit]，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
         roomId: UUID,
         playerId: UUID
-    ) {
+    ): Outcome<Unit, RoomError> {
         val room = roomRepository.getRoom(roomId)
-            ?: throw IllegalStateException("Room with id $roomId does not exist.")
+            ?: return Outcome.Error(RoomError.RoomNotFound(roomId))
 
         // 1. 驗證業務規則：檢查是否已經在房間內
         if (room.playerIds.contains(playerId)) {
-            throw IllegalStateException("Player $playerId is already in the room.")
+            return Outcome.Error(RoomError.PlayerAlreadyInRoom(playerId, roomId))
         }
 
         // 2. 驗證業務規則：利用 Room 領域模型檢查是否已滿
         if (room.isFull) {
-            throw IllegalStateException("Room $roomId is already full.")
+            return Outcome.Error(RoomError.RoomIsFull(roomId))
         }
 
         // 3. 更新領域模型並持久化
@@ -61,10 +63,12 @@ class JoinRoomUseCase(
         updatedRoom.playerIds.forEach { memberId ->
             notificationService.notifyJoin(
                 roomId = roomId,
-                targetPlayerId = memberId, // 接收者
-                joinedPlayerId = playerId, // 事件主體（加入的那個人）
+                targetPlayerId = memberId,
+                joinedPlayerId = playerId,
                 reason = JoinReason.Joined
             )
         }
+
+        return Outcome.Success(Unit)
     }
 }

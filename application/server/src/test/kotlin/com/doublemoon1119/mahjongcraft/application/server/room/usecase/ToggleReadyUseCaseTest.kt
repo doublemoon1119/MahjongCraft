@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.room.Room
@@ -38,7 +39,8 @@ class ToggleReadyUseCaseTest {
         snapshotRepo.setSnapshot(hostId, room.toSnapshot(hostId))
 
         // Act: 客場玩家切換準備
-        useCase(roomId, guestId)
+        val toggleResult = useCase(roomId, guestId)
+        assertTrue(toggleResult is Outcome.Success, "Expected Success but got $toggleResult")
 
         // Assert: 檢查持久化資料
         val updatedRoom = roomRepo.getRoom(roomId)
@@ -66,7 +68,8 @@ class ToggleReadyUseCaseTest {
         roomRepo.setRoom(room)
 
         // Act: 客場玩家切換準備（從未準備變更為已準備）
-        useCase(roomId, guestId)
+        val toggleResult = useCase(roomId, guestId)
+        assertTrue(toggleResult is Outcome.Success, "Expected Success but got $toggleResult")
 
         // Assert: 房主應收到通知
         val hostReceived = notificationService.getReadyStatus(roomId, hostId, guestId)
@@ -91,7 +94,8 @@ class ToggleReadyUseCaseTest {
         roomRepo.setRoom(room)
 
         // Act
-        useCase(roomId, hostId)
+        val toggleResult = useCase(roomId, hostId)
+        assertTrue(toggleResult is Outcome.Success, "Expected Success but got $toggleResult")
 
         // Assert
         val updatedRoom = roomRepo.getRoom(roomId)
@@ -115,10 +119,7 @@ class ToggleReadyUseCaseTest {
         val strangerId = UUID.randomUUID()
 
         // Act & Assert
-        assertFailsWith<IllegalStateException>(
-            message = "Should throw IllegalStateException when player not in room."
-        ) {
-            useCase(roomId, strangerId)
-        }
+        val result = useCase(roomId, strangerId)
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
     }
 }

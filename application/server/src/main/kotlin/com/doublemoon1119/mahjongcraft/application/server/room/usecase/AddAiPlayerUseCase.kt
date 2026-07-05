@@ -1,11 +1,13 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.application.common.room.model.JoinReason
+import com.doublemoon1119.mahjongcraft.application.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.application.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.domain.room.toSnapshot
-import java.util.UUID
+import java.util.*
 
 /**
  * 在房間中新增電腦玩家（AI）的應用層用例。
@@ -27,24 +29,23 @@ class AddAiPlayerUseCase(
      *
      * @param roomId 房間 UUID。
      * @param operatorId 發起請求的玩家 UUID（必須為房主）。
-     * @return 新產生的 AI 玩家 UUID。
-     * @throws IllegalStateException 若房間不存在、非房主操作、或房間已滿。
+     * @return 新增 AI 的結果，成功時包含新產生的 AI 玩家 UUID，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
         roomId: UUID,
         operatorId: UUID
-    ): UUID {
+    ): Outcome<UUID, RoomError> {
         val room = roomRepository.getRoom(roomId)
-            ?: throw IllegalStateException("Room with id $roomId does not exist.")
+            ?: return Outcome.Error(RoomError.RoomNotFound(roomId))
 
         // 1. 權限驗證：僅限房主操作
         if (operatorId != room.hostId) {
-            throw IllegalStateException("Only the host can add AI players.")
+            return Outcome.Error(RoomError.NotHost(operatorId))
         }
 
         // 2. 業務規則驗證：檢查人數上限
         if (room.isFull) {
-            throw IllegalStateException("Room $roomId is already full.")
+            return Outcome.Error(RoomError.RoomIsFull(roomId))
         }
 
         // 3. 產生 AI 的 UUID 並更新領域模型，並持久化
@@ -72,6 +73,6 @@ class AddAiPlayerUseCase(
             )
         }
 
-        return aiId
+        return Outcome.Success(aiId)
     }
 }

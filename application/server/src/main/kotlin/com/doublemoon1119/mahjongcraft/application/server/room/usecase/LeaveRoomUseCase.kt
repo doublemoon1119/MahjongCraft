@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.application.common.room.model.LeaveReason
+import com.doublemoon1119.mahjongcraft.application.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.application.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRepository
@@ -26,12 +28,14 @@ class LeaveRoomUseCase(
      *
      * @param roomId 房間 UUID。
      * @param playerId 欲離開的玩家 UUID。
+     * @return 離開房間的結果，成功時為 [Unit]，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
         roomId: UUID,
         playerId: UUID
-    ) {
-        val room = roomRepository.getRoom(roomId) ?: return
+    ): Outcome<Unit, RoomError> {
+        val room = roomRepository.getRoom(roomId)
+            ?: return Outcome.Error(RoomError.RoomNotFound(roomId))
 
         // 1. 若離開者為房主，則解散房間
         if (playerId == room.hostId) {
@@ -46,7 +50,7 @@ class LeaveRoomUseCase(
                 )
                 snapshotRepository.removeSnapshot(roomId, memberId)
             }
-            return
+            return Outcome.Success(Unit)
         }
 
         // 2. 若為普通玩家，更新成員清單與準備狀態
@@ -73,5 +77,7 @@ class LeaveRoomUseCase(
                 reason = LeaveReason.Voluntary
             )
         }
+
+        return Outcome.Success(Unit)
     }
 }

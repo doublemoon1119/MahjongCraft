@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.application.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.room.Room
@@ -8,8 +10,8 @@ import com.doublemoon1119.mahjongcraft.testing.domain.config.FakeMahjongRuleConf
 import kotlinx.coroutines.test.runTest
 import java.util.*
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -34,7 +36,8 @@ class SyncRoomSnapshotUseCaseTest {
         roomRepo.setRoom(room)
 
         // Act
-        useCase(roomId, hostId)
+        val result = useCase(roomId, hostId)
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
 
         // Assert
         val snapshot = snapshotRepo.getSnapshot(roomId, hostId)
@@ -43,19 +46,19 @@ class SyncRoomSnapshotUseCaseTest {
     }
 
     /**
-     * 測試當房間不存在時，同步請求不應產生任何快照。
+     * 測試當房間不存在時，應回傳 [RoomError.RoomNotFound]。
      */
     @Test
-    fun `test sync room snapshot does nothing when room not exists`() = runTest {
+    fun `test sync room snapshot fails when room not exists`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val useCase = SyncRoomSnapshotUseCase(roomRepo, snapshotRepo)
 
         // Act
-        useCase(roomId, hostId)
+        val result = useCase(roomId, hostId)
 
         // Assert
-        val snapshot = snapshotRepo.getSnapshot(roomId, hostId)
-        assertNull(snapshot, "No snapshot should be created if the room does not exist.")
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
+        assertEquals(RoomError.RoomNotFound(roomId), (result as Outcome.Error).error)
     }
 }

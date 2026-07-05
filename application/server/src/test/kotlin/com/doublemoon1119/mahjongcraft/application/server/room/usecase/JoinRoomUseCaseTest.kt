@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.application.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.room.Room
@@ -10,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.testing.domain.config.FakeMahjongRuleConf
 import kotlinx.coroutines.test.runTest
 import java.util.*
 import kotlin.test.Test
-import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -46,7 +47,8 @@ class JoinRoomUseCaseTest {
         snapshotRepo.setSnapshot(otherPlayerId, initialRoom.toSnapshot(otherPlayerId))
 
         // Act
-        useCase(roomId, otherPlayerId)
+        val joinResult = useCase(roomId, otherPlayerId)
+        assertTrue(joinResult is Outcome.Success, "Expected Success but got $joinResult")
 
         // Assert: 檢查權威資料
         val updatedRoom = roomRepo.getRoom(roomId)
@@ -63,7 +65,7 @@ class JoinRoomUseCaseTest {
     }
 
     /**
-     * 測試當房間已滿時，玩家加入應拋出 IllegalStateException。
+     * 測試當房間已滿時，玩家加入應回傳 [RoomError.RoomIsFull]。
      */
     @Test
     fun `test join room fails when room is full`() = runTest {
@@ -76,15 +78,12 @@ class JoinRoomUseCaseTest {
         val fullRoom = Room(id = roomId, hostId = fullPlayerIds.first(), config = config, playerIds = fullPlayerIds)
         roomRepo.setRoom(fullRoom)
 
-        assertFailsWith<IllegalStateException>(
-            message = "Should throw IllegalStateException when trying to join a full room."
-        ) {
-            useCase(roomId, otherPlayerId)
-        }
+        val result = useCase(roomId, otherPlayerId)
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
     }
 
     /**
-     * 測試當玩家已在房間內時，重複加入應拋出異常。
+     * 測試當玩家已在房間內時，重複加入應回傳 [RoomError.PlayerAlreadyInRoom]。
      */
     @Test
     fun `test join room fails when player already in room`() = runTest {
@@ -96,11 +95,8 @@ class JoinRoomUseCaseTest {
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
         roomRepo.setRoom(room)
 
-        assertFailsWith<IllegalStateException>(
-            message = "Should throw IllegalStateException when the player is already in the room."
-        ) {
-            useCase(roomId, hostId)
-        }
+        val result = useCase(roomId, hostId)
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
     }
 
     /**
@@ -125,7 +121,8 @@ class JoinRoomUseCaseTest {
         snapshotRepo.setSnapshot(observerOnlyId, room.toSnapshot(observerOnlyId))
 
         // Act: 新玩家加入
-        useCase(roomId, otherPlayerId)
+        val joinResult = useCase(roomId, otherPlayerId)
+        assertTrue(joinResult is Outcome.Success, "Expected Success but got $joinResult")
 
         // Assert: 房間內成員應收到通知
         assertNotNull(notificationService.getJoinReason(roomId, hostId, otherPlayerId))

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.room.Room
@@ -11,8 +12,8 @@ import kotlinx.coroutines.test.runTest
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * [UpdateConfigUseCase] 的單元測試類別。
@@ -50,7 +51,8 @@ class UpdateConfigUseCaseTest {
         snapshotRepo.setSnapshot(guestId, room.toSnapshot(guestId))
 
         // Act: 房主發起配置更新
-        useCase(roomId, hostId, newConfig)
+        val result = useCase(roomId, hostId, newConfig)
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
 
         // Assert: 檢查持久化數據是否更新
         val updatedRoom = roomRepo.getRoom(roomId)
@@ -90,11 +92,8 @@ class UpdateConfigUseCaseTest {
         roomRepo.setRoom(room)
 
         // Act & Assert: 客場玩家嘗試修改配置
-        assertFailsWith<IllegalStateException>(
-            message = "Should throw IllegalStateException when non-host tries to update config."
-        ) {
-            useCase(roomId, guestId, newConfig)
-        }
+        val result = useCase(roomId, guestId, newConfig)
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
 
         // 驗證配置維持原樣
         val roomInRepo = roomRepo.getRoom(roomId)
@@ -112,10 +111,7 @@ class UpdateConfigUseCaseTest {
         val useCase = UpdateConfigUseCase(roomRepo, snapshotRepo, notificationService)
 
         // Act & Assert
-        assertFailsWith<IllegalStateException>(
-            message = "Should throw IllegalStateException when room does not exist."
-        ) {
-            useCase(roomId, hostId, newConfig)
-        }
+        val result = useCase(roomId, hostId, newConfig)
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
     }
 }

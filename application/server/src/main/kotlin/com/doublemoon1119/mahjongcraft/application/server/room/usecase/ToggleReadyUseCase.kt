@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.application.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.application.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRepository
@@ -25,23 +27,23 @@ class ToggleReadyUseCase(
      *
      * @param roomId 房間 UUID。
      * @param playerId 發起請求的玩家 UUID。
-     * @throws IllegalStateException 若房間不存在或玩家不在房間內。
+     * @return 切換準備狀態的結果，成功時為 [Unit]，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
         roomId: UUID,
         playerId: UUID
-    ) {
+    ): Outcome<Unit, RoomError> {
         val room = roomRepository.getRoom(roomId)
-            ?: throw IllegalStateException("Room with id $roomId does not exist.")
+            ?: return Outcome.Error(RoomError.RoomNotFound(roomId))
 
         // 1. 驗證玩家是否在房間內
         if (!room.playerIds.contains(playerId)) {
-            throw IllegalStateException("Player $playerId is not in the room.")
+            return Outcome.Error(RoomError.PlayerNotInRoom(playerId, roomId))
         }
 
         // 2. 房主不參與準備狀態切換（業務邏輯限制）
         if (playerId == room.hostId) {
-            return
+            return Outcome.Success(Unit)
         }
 
         // 3. 計算新的準備狀態集合
@@ -71,5 +73,7 @@ class ToggleReadyUseCase(
                 isReady = isNowReady
             )
         }
+
+        return Outcome.Success(Unit)
     }
 }

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.application.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
@@ -41,7 +42,8 @@ class KickPlayerUseCaseTest {
         roomRepo.setRoom(room)
 
         // Act
-        useCase(roomId, hostId, targetId)
+        val result = useCase(roomId, hostId, targetId)
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
 
         // Assert: 檢查持久化資料
         val updatedRoom = roomRepo.getRoom(roomId)
@@ -70,11 +72,8 @@ class KickPlayerUseCaseTest {
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
         roomRepo.setRoom(room)
 
-        assertFailsWith<IllegalStateException>(
-            message = "Should throw IllegalStateException when host tries to kick themselves."
-        ) {
-            useCase(roomId, hostId, hostId)
-        }
+        val result = useCase(roomId, hostId, hostId)
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
     }
 
     /**
@@ -92,10 +91,7 @@ class KickPlayerUseCaseTest {
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId, targetId))
         roomRepo.setRoom(room)
 
-        assertFailsWith<IllegalStateException>(
-            message = "Only the host should have permission to kick players."
-        ) {
-            useCase(roomId, guestId, targetId)
-        }
+        val result = useCase(roomId, guestId, targetId)
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
     }
 }

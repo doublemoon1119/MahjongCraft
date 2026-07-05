@@ -1,11 +1,13 @@
 package com.doublemoon1119.mahjongcraft.application.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.application.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.application.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.application.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.application.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.application.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.domain.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.domain.room.toSnapshot
-import java.util.UUID
+import java.util.*
 
 /**
  * 更新房間配置的應用層用例。
@@ -27,19 +29,19 @@ class UpdateConfigUseCase(
      * @param roomId 房間 UUID。
      * @param operatorId 發起請求的玩家 UUID（必須為房主）。
      * @param newConfig 新的規則配置。
-     * @throws IllegalStateException 若房間不存在或操作者非房主。
+     * @return 更新配置的結果，成功時為 [Unit]，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
         roomId: UUID,
         operatorId: UUID,
         newConfig: MahjongRuleConfig
-    ) {
+    ): Outcome<Unit, RoomError> {
         val room = roomRepository.getRoom(roomId)
-            ?: throw IllegalStateException("Room with id $roomId does not exist.")
+            ?: return Outcome.Error(RoomError.RoomNotFound(roomId))
 
         // 1. 權限驗證：只有房主能修改配置
         if (operatorId != room.hostId) {
-            throw IllegalStateException("Only the host can update the room configuration.")
+            return Outcome.Error(RoomError.NotHost(operatorId))
         }
 
         // 2. 更新領域模型並持久化
@@ -60,5 +62,7 @@ class UpdateConfigUseCase(
                 newConfig = newConfig
             )
         }
+
+        return Outcome.Success(Unit)
     }
 }
