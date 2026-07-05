@@ -15,37 +15,28 @@ allprojects {
     apply(plugin = "base")
 
     // 取得 libs.versions.toml 中的預設 JVM Toolchain 版本
-    val defaultToolchainVersion = rootProject.libs.versions.jvm.toolchain.get().toInt()
+    val jvmToolchainVersion = rootProject.libs.versions.jvm.toolchain.get().toInt()
 
-    // 統一設定 Kotlin Toolchain (這會自動影響 JavaCompile 和 KotlinCompile)
+    // 統一設定 Kotlin jvmToolchain (這會自動影響 JavaCompile 和 KotlinCompile)
     plugins.withType<KotlinBasePluginWrapper> {
         extensions.configure<KotlinJvmProjectExtension> {
-            jvmToolchain(defaultToolchainVersion)
+            jvmToolchain(jvmToolchainVersion)
         }
     }
 
+    // 取得 libs.versions.toml 中的預設 JVM Release 版本
+    val jvmReleaseVersion = rootProject.libs.versions.jvm.release.get().toInt()
+
     // 處理編譯選項與各模組自定義的 javaRelease
     afterEvaluate {
-        // 檢查子模組是否有定義自定義屬性 "javaRelease"
-        // 例如在子模組 build.gradle.kts 寫: extra["javaRelease"] = 17
-        val customRelease = project.extensions.extraProperties.let {
-            if (it.has("javaRelease")) it.get("javaRelease")?.toString()?.toInt() else null
-        }
-
         tasks.withType<JavaCompile>().configureEach {
             options.encoding = "UTF-8"
-            // 如果子模組有自定義，則覆蓋工具鏈的預設編譯版本
-            if (customRelease != null) {
-                options.release.set(customRelease)
-            }
+            options.release.set(jvmReleaseVersion)
         }
 
         tasks.withType<KotlinJvmCompile>().configureEach {
             compilerOptions {
-                // 如果子模組有自定義，調整 jvmTarget
-                if (customRelease != null) {
-                    jvmTarget.set(JvmTarget.fromTarget(customRelease.toString()))
-                }
+                jvmTarget.set(JvmTarget.fromTarget(jvmReleaseVersion.toString()))
                 freeCompilerArgs.add("-Xjvm-default=all")
             }
         }

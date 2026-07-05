@@ -1,9 +1,9 @@
 [versions]
-kotlin = "2.3.10"
-coroutines = "1.10.2"
-koin-bom = "4.2.0-RC1"
+kotlin = "2.4.0"
+coroutines = "1.11.0"
+koin-bom = "4.2.2"
 jvm-toolchain = "21"
-jvm-domain-release = "17"
+jvm-release = "17"
 
 [libraries]
 kotlin-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -13,3 +13,4 @@ koin-core = { module = "io.insert-koin:koin-core" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
