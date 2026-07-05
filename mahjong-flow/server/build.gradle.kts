@@ -7,7 +7,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.kotlin.coroutines)
+            implementation(libs.kotlinx.coroutines)
             implementation(project(":mahjong-logic"))
             implementation(project(":mahjong-flow:mahjong-flow-common"))
         }

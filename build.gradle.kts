@@ -9,7 +9,7 @@ plugins {
 
 allprojects {
     group = "com.doublemoon1119.mahjongcraft"
-    version = "0.4.13-SNAPSHOT"
+    version = rootProject.libs.versions.project.version.get()
 
     // 必須先套用 base 插件，才能存取 base.archivesName
     apply(plugin = "base")
