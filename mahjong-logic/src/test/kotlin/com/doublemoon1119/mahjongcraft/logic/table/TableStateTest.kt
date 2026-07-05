@@ -1,0 +1,88 @@
+package com.doublemoon1119.mahjongcraft.logic.table
+
+import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeScoreConfig
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+/**
+ * 測試用的模擬動態規則狀態實作。
+ */
+private class MockDynamicState : DynamicRuleState
+
+/**
+ * 針對 [TableState] 的基礎通用邏輯進行單元測試。
+ *
+ * 驗證包含玩家分數初始化、下家邏輯判定以及動態狀態持有等核心功能。
+ */
+class TableStateTest {
+
+    /**
+     * 驗證當 [TableState] 初始化時，是否能正確根據規則配置設定所有玩家的初始分數。
+     */
+    @Test
+    fun `test player score initialization from config`() {
+        val initialScoreValue = 30000
+        // 透過傳入具備特定分數的 FakeScoreConfig 來達成測試需求
+        val config = FakeMahjongRuleConfig(
+            scoreConfig = FakeScoreConfig(initialScore = initialScoreValue)
+        )
+        val players = listOf(
+            FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST),
+            FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
+        )
+
+        val tableState = FakeTableStateFactory.create(
+            players = players,
+            config = config
+        )
+        tableState.init()
+
+        for (player in players) {
+            assertEquals(
+                initialScoreValue,
+                player.score,
+                "Player score should be initialized to the value defined in config."
+            )
+        }
+    }
+
+    /**
+     * 驗證下家獲取邏輯是否正確，並確保支援動態人數（如三人麻將）。
+     */
+    @Test
+    fun `test next player logic supports dynamic player count`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+
+        val table = FakeTableStateFactory.create(
+            players = listOf(p1, p2, p3)
+        )
+
+        assertEquals(3, table.playerCount, "Table should correctly reflect the number of joined players.")
+        assertEquals(p2, table.getNextPlayer(p1), "The next player of P1 (East) should be P2 (South).")
+        assertEquals(
+            p1,
+            table.getNextPlayer(p3),
+            "The next player of the last person (P3) should wrap back to the first person (P1)."
+        )
+    }
+
+    /**
+     * 驗證 TableState 能正確持有並透過介面存取動態規則狀態。
+     */
+    @Test
+    fun `test dynamic rule state assignment`() {
+        val dynamicState = MockDynamicState()
+        val table = FakeTableStateFactory.create(
+            players = emptyList(),
+            dynamicRuleState = dynamicState
+        )
+
+        assertEquals(dynamicState, table.dynamicRuleState, "TableState should hold the assigned dynamic rule state.")
+    }
+}

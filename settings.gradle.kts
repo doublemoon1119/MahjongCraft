@@ -11,37 +11,26 @@ dependencyResolutionManagement {
 }
 
 // 預設始終加載的核心模組
-include(":domain")
+include(":mahjong-logic")
 
 // 透過重新命名 Gradle 專案物件（Project Name），解決不同層級下同名模組（如 :common）
 // 導致的 Artifact ID 衝突與循環依賴，同時維持實體目錄結構的整潔。
 
 // testing
 include(":testing")
-include(":testing:domain")
-project(":testing:domain").name = "testing-domain"
-include(":testing:application")
-project(":testing:application").name = "testing-application"
-include(":testing:infrastructure")
-project(":testing:infrastructure").name = "testing-infrastructure"
+include(":testing:mahjong-logic")
+project(":testing:mahjong-logic").name = "testing-mahjong-logic"
+include(":testing:mahjong-flow")
+project(":testing:mahjong-flow").name = "testing-mahjong-flow"
 
 // application
-include(":application")
-include(":application:common")
-project(":application:common").name = "application-common"
-include(":application:server")
-project(":application:server").name = "application-server"
-include(":application:client")
-project(":application:client").name = "application-client"
-
-// infrastructure
-include(":infrastructure")
-include(":infrastructure:common")
-project(":infrastructure:common").name = "infrastructure-common"
-include(":infrastructure:server")
-project(":infrastructure:server").name = "infrastructure-server"
-include(":infrastructure:client")
-project(":infrastructure:client").name = "infrastructure-client"
+include(":mahjong-flow")
+include(":mahjong-flow:common")
+project(":mahjong-flow:common").name = "mahjong-flow-common"
+include(":mahjong-flow:server")
+project(":mahjong-flow:server").name = "mahjong-flow-server"
+include(":mahjong-flow:client")
+project(":mahjong-flow:client").name = "mahjong-flow-client"
 
 /**
  * 動態路由配置：根據參數加載特定平台適配層

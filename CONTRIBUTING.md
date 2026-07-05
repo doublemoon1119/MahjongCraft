@@ -39,38 +39,37 @@
 
 This project follows Clean Architecture, organizing code into separate modules with **Package by Feature (PBF)** inside each module.
 
-### `:domain`
+### `:mahjong-logic`
 
 Core business logic layer.
 
 - **Purpose**: Pure Mahjong business rules, entities, and value objects (e.g., hand logic, rule config data classes).
+- **Package**: `com.doublemoon1119.mahjongcraft.logic.*`
 - **Characteristics**: A pure Kotlin module with no external framework or platform dependencies (no Minecraft, Koin, Coroutines, Serialization).
 
-### `:application`
+### `:mahjong-flow`
 
 Application service layer.
 
 - **Purpose**: Orchestrates business workflows (Use Cases) and defines data access contracts (Repositories).
+- **Package**: `com.doublemoon1119.mahjongcraft.flow.*`
+- **Sub-modules**:
+  - `:mahjong-flow:common`: Shared contracts, models, and repository interfaces.
+  - `:mahjong-flow:server`: Server-side Use Case implementations.
+  - `:mahjong-flow:client`: Client-side Use Case implementations.
 - **Characteristics**:
-  - Depends on `:domain`.
+  - Depends on `:mahjong-logic`.
   - Core of asynchronous operations — introduces Coroutines for non-blocking workflows.
   - Only defines Repository interfaces; implementations belong to outer layers.
-
-### `:infrastructure`
-
-Technical infrastructure layer.
-
-- **Purpose**: Provides dependency injection (DI) wiring, DTO definitions, and cross-platform serialization (kotlinx.serialization).
-- **Characteristics**: Depends on `:application` and `:domain`. Serves as the Composition Root for cross-platform wiring.
 
 ### `:testing`
 
 Shared test utility module.
 
 - **Purpose**: Provides cross-module test objects (Fakes, `TestCoroutineDispatchers`).
-- **Structure**: Mirrors the production module hierarchy (e.g., `:testing-domain`, `:testing-application`) to maintain a clear one-way dependency chain.
+- **Structure**: Mirrors the production module hierarchy (e.g., `:testing:mahjong-logic`, `:testing:mahjong-flow`) to maintain a clear one-way dependency chain.
 - **Characteristics**:
-  - **Dependency rule**: Each test sub-module depends on its corresponding production module (e.g., `:testing-domain` depends on `:domain`). Reverse dependencies are strictly forbidden.
+  - **Dependency rule**: Each test sub-module depends on its corresponding production module (e.g., `:testing:mahjong-logic` depends on `:mahjong-logic`). Reverse dependencies are strictly forbidden.
   - **Cross-platform support**: JVM-specific `testFixtures` are forbidden. Use pure Kotlin modules to support future Kotlin Multiplatform expansion.
   - **Zero pollution**: Contains test-only code only. Must not affect production dependency direction.
 
@@ -78,7 +77,7 @@ Shared test utility module.
 
 Platform adaptation layer.
 
-- **Purpose**: Contains platform-specific implementations (e.g., Minecraft, Hytale). Implements DataSource interfaces defined in `:application` with platform-native storage (world save, I/O). Serves as the final entry point for each platform.
+- **Purpose**: Contains platform-specific implementations (e.g., Minecraft, Hytale). Implements DataSource interfaces defined in `:mahjong-flow` with platform-native storage (world save, I/O). Serves as the final entry point for each platform.
 - **Structure**:
   - `platform/{platform}/common`: Platform-level common abstractions and shared implementations.
   - `platform/{platform}/{version}/common`: Version-specific code (e.g., networking, world save format).
@@ -88,9 +87,9 @@ Platform adaptation layer.
 
 All modules must strictly follow the rules below to form a one-way dependency chain.
 
-- **Direction**: `platform` -> `:infrastructure` + `:application` -> `:domain`
-- **No reverse dependencies**: `:domain` must not depend on any outer layer. `:application` must not depend on `:infrastructure` or `platform`.
-- **Cross-layer access**: `platform` modules may directly depend on `:application` to implement DataSource interfaces. They must not depend on `:domain` directly — domain interaction must go through `:application`.
+- **Direction**: `platform` -> `:mahjong-flow` -> `:mahjong-logic`
+- **No reverse dependencies**: `:mahjong-logic` must not depend on any outer layer. `:mahjong-flow` must not depend on `platform`.
+- **Cross-layer access**: `platform` modules may directly depend on `:mahjong-flow` to implement DataSource interfaces. They must not depend on `:mahjong-logic` directly — domain interaction must go through `:mahjong-flow`.
 - **Same-layer dependencies**:
   - Inside `platform`, concrete implementation modules (e.g., `fabric`) should depend on their corresponding common module (e.g., `common`).
   - Example: `:minecraft_v1_20_1_fabric` -> `:minecraft_v1_20_1_common` -> `:minecraft_common`.
