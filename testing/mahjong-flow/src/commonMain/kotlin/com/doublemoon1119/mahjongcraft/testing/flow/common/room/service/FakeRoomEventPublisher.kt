@@ -2,16 +2,16 @@ package com.doublemoon1119.mahjongcraft.testing.flow.common.room.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
-import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomNotificationService
+import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import kotlin.uuid.Uuid
 
 /**
- * 供測試使用的 [RoomNotificationService] 模擬實作。
+ * 供測試使用的 [RoomEventPublisher] 模擬實作。
  *
  * 紀錄所有發送出的房間事件通知，以便在單元測試中驗證業務邏輯是否正確向特定玩家發送了關於特定目標的事件。
  */
-class FakeRoomNotificationService : RoomNotificationService {
+class FakeRoomEventPublisher : RoomEventPublisher {
     /**
      * 紀錄加入通知。
      *
@@ -40,15 +40,7 @@ class FakeRoomNotificationService : RoomNotificationService {
      */
     private val configChangeNotifications = mutableMapOf<Pair<Uuid, Uuid>, MahjongRuleConfig>()
 
-    /**
-     * 紀錄加入事件通知。
-     *
-     * @param roomId 房間 Uuid。
-     * @param targetPlayerId 接收通知的房間成員 Uuid。
-     * @param joinedPlayerId 實際加入房間的玩家 Uuid。
-     * @param reason 加入的原因。
-     */
-    override suspend fun notifyJoin(
+    override suspend fun publishJoin(
         roomId: Uuid,
         targetPlayerId: Uuid,
         joinedPlayerId: Uuid,
@@ -57,15 +49,7 @@ class FakeRoomNotificationService : RoomNotificationService {
         joinNotifications[Triple(roomId, targetPlayerId, joinedPlayerId)] = reason
     }
 
-    /**
-     * 紀錄離開事件通知。
-     *
-     * @param roomId 房間 Uuid。
-     * @param targetPlayerId 接收通知的房間成員 Uuid。
-     * @param leftPlayerId 實際離開房間的玩家 Uuid。
-     * @param reason 離開的原因。
-     */
-    override suspend fun notifyLeave(
+    override suspend fun publishLeave(
         roomId: Uuid,
         targetPlayerId: Uuid,
         leftPlayerId: Uuid,
@@ -74,15 +58,7 @@ class FakeRoomNotificationService : RoomNotificationService {
         leaveNotifications[Triple(roomId, targetPlayerId, leftPlayerId)] = reason
     }
 
-    /**
-     * 紀錄準備狀態變更通知。
-     *
-     * @param roomId 房間 Uuid。
-     * @param targetPlayerId 接收通知的房間成員 Uuid。
-     * @param readyPlayerId 切換準備狀態的玩家 Uuid。
-     * @param isReady 該玩家目前的準備狀態。
-     */
-    override suspend fun notifyReady(
+    override suspend fun publishReady(
         roomId: Uuid,
         targetPlayerId: Uuid,
         readyPlayerId: Uuid,
@@ -91,14 +67,7 @@ class FakeRoomNotificationService : RoomNotificationService {
         readyNotifications[Triple(roomId, targetPlayerId, readyPlayerId)] = isReady
     }
 
-    /**
-     * 紀錄房間配置變更通知。
-     *
-     * @param roomId 房間 Uuid。
-     * @param targetPlayerId 接收通知的房間成員 Uuid。
-     * @param newConfig 變更後的配置實例。
-     */
-    override suspend fun notifyConfigChanged(
+    override suspend fun publishConfigChanged(
         roomId: Uuid,
         targetPlayerId: Uuid,
         newConfig: MahjongRuleConfig

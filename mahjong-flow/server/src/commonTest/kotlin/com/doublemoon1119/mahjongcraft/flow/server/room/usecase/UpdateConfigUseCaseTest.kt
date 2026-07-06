@@ -6,14 +6,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
-import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomNotificationService
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
-import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /**
  * [UpdateConfigUseCase] 的單元測試類別。
@@ -34,7 +34,7 @@ class UpdateConfigUseCaseTest {
     fun `test host updates config successfully`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val notificationService = FakeRoomNotificationService()
+        val notificationService = FakeRoomEventPublisher()
         val useCase = UpdateConfigUseCase(roomRepo, snapshotRepo, notificationService)
 
         val guestId = Uuid.random()
@@ -84,7 +84,7 @@ class UpdateConfigUseCaseTest {
     fun `test update config fails when operator is not host`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val notificationService = FakeRoomNotificationService()
+        val notificationService = FakeRoomEventPublisher()
         val useCase = UpdateConfigUseCase(roomRepo, snapshotRepo, notificationService)
 
         val guestId = Uuid.random()
@@ -107,7 +107,7 @@ class UpdateConfigUseCaseTest {
     fun `test update config fails when room does not exist`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val notificationService = FakeRoomNotificationService()
+        val notificationService = FakeRoomEventPublisher()
         val useCase = UpdateConfigUseCase(roomRepo, snapshotRepo, notificationService)
 
         // Act & Assert

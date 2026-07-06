@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
-import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomNotificationService
+import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import org.koin.core.annotation.Factory
@@ -18,13 +18,13 @@ import kotlin.uuid.Uuid
  *
  * @property roomRepository 權威房間數據倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
- * @property notificationService 房間通知服務。
+ * @property eventPublisher 房間通知服務。
  */
 @Factory
 class UpdateConfigUseCase(
     private val roomRepository: RoomRepository,
     private val snapshotRepository: RoomSnapshotRepository,
-    @Provided private val notificationService: RoomNotificationService
+    @Provided private val eventPublisher: RoomEventPublisher
 ) {
     /**
      * 執行更新配置邏輯。
@@ -59,7 +59,7 @@ class UpdateConfigUseCase(
 
         // 4. 通知房間內的所有成員（用於顯示系統訊息或提示）
         updatedRoom.playerIds.forEach { memberId ->
-            notificationService.notifyConfigChanged(
+            eventPublisher.publishConfigChanged(
                 roomId = roomId,
                 targetPlayerId = memberId,
                 newConfig = newConfig

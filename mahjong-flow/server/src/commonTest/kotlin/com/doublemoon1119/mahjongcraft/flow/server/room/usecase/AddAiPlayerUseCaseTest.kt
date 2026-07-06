@@ -5,14 +5,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
-import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomNotificationService
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
-import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /**
  * [AddAiPlayerUseCase] 的單元測試類別。
@@ -30,7 +30,7 @@ class AddAiPlayerUseCaseTest {
     fun `test host adds ai successfully`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service)
 
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
@@ -62,7 +62,7 @@ class AddAiPlayerUseCaseTest {
     fun `test add ai fails when room is full`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service)
 
         // 創建一個只有 1 人的房間配置，並填滿它
@@ -81,7 +81,7 @@ class AddAiPlayerUseCaseTest {
     fun `test add ai fails when operator is not host`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service)
 
         val guestId = Uuid.random()

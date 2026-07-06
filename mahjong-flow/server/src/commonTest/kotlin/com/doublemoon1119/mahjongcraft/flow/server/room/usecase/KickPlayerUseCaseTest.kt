@@ -6,11 +6,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
-import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomNotificationService
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
-import kotlin.uuid.Uuid
 import kotlin.test.*
+import kotlin.uuid.Uuid
 
 /**
  * [KickPlayerUseCase] 的單元測試類別。
@@ -28,7 +28,7 @@ class KickPlayerUseCaseTest {
     fun `test host kicks player successfully`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = KickPlayerUseCase(roomRepo, snapshotRepo, service)
 
         val targetId = Uuid.random()
@@ -66,7 +66,7 @@ class KickPlayerUseCaseTest {
     fun `test host cannot kick themselves`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = KickPlayerUseCase(roomRepo, snapshotRepo, service)
 
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
@@ -83,7 +83,7 @@ class KickPlayerUseCaseTest {
     fun `test non host cannot kick player`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = KickPlayerUseCase(roomRepo, snapshotRepo, service)
 
         val guestId = Uuid.random()

@@ -8,14 +8,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
-import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomNotificationService
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
-import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /**
  * [CreateRoomUseCase] 的單元測試類別。
@@ -35,7 +35,7 @@ class CreateRoomUseCaseTest {
     fun `test create room and sync snapshots to observers`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = CreateRoomUseCase(roomRepo, snapshotRepo, service)
 
         // 模擬房主已經是該位置的觀察者
@@ -63,7 +63,7 @@ class CreateRoomUseCaseTest {
     fun `test create room fails when room id already exists`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = CreateRoomUseCase(roomRepo, snapshotRepo, service)
 
         val existingRoom = Room(
@@ -85,7 +85,7 @@ class CreateRoomUseCaseTest {
     fun `test create room notifies host with created reason`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = CreateRoomUseCase(roomRepo, snapshotRepo, service)
 
         // Act

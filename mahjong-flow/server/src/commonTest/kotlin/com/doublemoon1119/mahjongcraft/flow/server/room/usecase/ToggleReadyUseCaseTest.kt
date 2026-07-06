@@ -6,11 +6,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
-import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomNotificationService
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
-import kotlin.uuid.Uuid
 import kotlin.test.*
+import kotlin.uuid.Uuid
 
 /**
  * [ToggleReadyUseCase] 的單元測試類別。
@@ -28,7 +28,7 @@ class ToggleReadyUseCaseTest {
     fun `test toggle ready status and sync to observers`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val notificationService = FakeRoomNotificationService()
+        val notificationService = FakeRoomEventPublisher()
         val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo, notificationService)
 
         val guestId = Uuid.random()
@@ -60,7 +60,7 @@ class ToggleReadyUseCaseTest {
     fun `test toggle ready notifies all members`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val notificationService = FakeRoomNotificationService()
+        val notificationService = FakeRoomEventPublisher()
         val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo, notificationService)
 
         val guestId = Uuid.random()
@@ -87,7 +87,7 @@ class ToggleReadyUseCaseTest {
     fun `test toggle ready does nothing for host`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val notificationService = FakeRoomNotificationService()
+        val notificationService = FakeRoomEventPublisher()
         val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo, notificationService)
 
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
@@ -110,7 +110,7 @@ class ToggleReadyUseCaseTest {
     fun `test toggle ready fails when player not in room`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val notificationService = FakeRoomNotificationService()
+        val notificationService = FakeRoomEventPublisher()
         val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo, notificationService)
 
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))

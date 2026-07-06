@@ -7,14 +7,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
-import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomNotificationService
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
-import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /**
  * [JoinRoomUseCase] 的單元測試類別。
@@ -36,7 +36,7 @@ class JoinRoomUseCaseTest {
     fun `test join room successfully and sync snapshots`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = JoinRoomUseCase(roomRepo, snapshotRepo, service)
 
         val initialRoom = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
@@ -71,7 +71,7 @@ class JoinRoomUseCaseTest {
     fun `test join room fails when room is full`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = JoinRoomUseCase(roomRepo, snapshotRepo, service)
 
         val fullPlayerIds = (1..4).map { Uuid.random() }.toSet()
@@ -89,7 +89,7 @@ class JoinRoomUseCaseTest {
     fun `test join room fails when player already in room`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = JoinRoomUseCase(roomRepo, snapshotRepo, service)
 
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
@@ -110,7 +110,7 @@ class JoinRoomUseCaseTest {
     fun `test only players in room receive join notification`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val notificationService = FakeRoomNotificationService()
+        val notificationService = FakeRoomEventPublisher()
         val useCase = JoinRoomUseCase(roomRepo, snapshotRepo, notificationService)
 
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))

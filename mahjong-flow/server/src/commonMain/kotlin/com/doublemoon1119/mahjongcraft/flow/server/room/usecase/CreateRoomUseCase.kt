@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
-import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomNotificationService
+import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import org.koin.core.annotation.Factory
@@ -20,13 +20,13 @@ import kotlin.uuid.Uuid
  *
  * @property roomRepository 權威房間數據倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
- * @property notificationService 房間通知服務。
+ * @property eventPublisher 房間通知服務。
  */
 @Factory
 class CreateRoomUseCase(
     private val roomRepository: RoomRepository,
     private val snapshotRepository: RoomSnapshotRepository,
-    @Provided private val notificationService: RoomNotificationService
+    @Provided private val eventPublisher: RoomEventPublisher
 ) {
     /**
      * 執行創建房間邏輯。
@@ -65,7 +65,7 @@ class CreateRoomUseCase(
         }
 
         // 5. 發送創建房間通知
-        notificationService.notifyJoin(roomId, hostId, hostId, JoinReason.Created)
+        eventPublisher.publishJoin(roomId, hostId, hostId, JoinReason.Created)
 
         return Outcome.Success(newRoom)
     }

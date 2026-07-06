@@ -8,11 +8,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
-import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomNotificationService
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
-import kotlin.uuid.Uuid
 import kotlin.test.*
+import kotlin.uuid.Uuid
 
 /**
  * [LeaveRoomUseCase] 的單元測試類別。
@@ -30,7 +30,7 @@ class LeaveRoomUseCaseTest {
     fun `test guest player leaves with voluntary reason`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo, service)
 
         val guestId = Uuid.random()
@@ -65,7 +65,7 @@ class LeaveRoomUseCaseTest {
     fun `test all observers get dissolved reason when host leaves`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo, service)
 
         val guestId = Uuid.random()
@@ -104,7 +104,7 @@ class LeaveRoomUseCaseTest {
     fun `test leave room fails when room does not exist`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
-        val service = FakeRoomNotificationService()
+        val service = FakeRoomEventPublisher()
         val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo, service)
 
         val result = useCase(roomId, hostId)

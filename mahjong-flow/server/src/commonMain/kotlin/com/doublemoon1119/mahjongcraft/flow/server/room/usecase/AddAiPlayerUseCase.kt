@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
-import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomNotificationService
+import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -19,13 +19,13 @@ import kotlin.uuid.Uuid
  *
  * @property roomRepository 權威房間數據倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
- * @property notificationService 房間通知服務。
+ * @property eventPublisher 房間通知服務。
  */
 @Factory
 class AddAiPlayerUseCase(
     private val roomRepository: RoomRepository,
     private val snapshotRepository: RoomSnapshotRepository,
-    @Provided private val notificationService: RoomNotificationService
+    @Provided private val eventPublisher: RoomEventPublisher
 ) {
     /**
      * 執行新增 AI 玩家邏輯。
@@ -68,7 +68,7 @@ class AddAiPlayerUseCase(
 
         // 5. 通知房間內所有成員
         updatedRoom.playerIds.forEach { memberId ->
-            notificationService.notifyJoin(
+            eventPublisher.publishJoin(
                 roomId = roomId,
                 targetPlayerId = memberId,
                 joinedPlayerId = aiId,
