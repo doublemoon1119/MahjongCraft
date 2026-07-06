@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
-import java.util.*
+import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -70,7 +70,7 @@ class MahjongPlayerSnapshotTest {
      */
     @Test
     fun `test toSnapshot preserves discardPile playerRuleState and score`() {
-        val id = UUID.randomUUID()
+        val id = Uuid.random()
         val discardPile = FakeDiscardPile()
         val player = FakeMahjongPlayerFactory.create(
             id = id,

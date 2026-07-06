@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
-import java.util.*
+import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -24,8 +24,8 @@ class TableStateSnapshotTest {
      */
     @Test
     fun `test observer sees own hand but not others`() {
-        val observerId = UUID.randomUUID()
-        val otherId = UUID.randomUUID()
+        val observerId = Uuid.random()
+        val otherId = Uuid.random()
 
         val observerTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val otherTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
@@ -138,7 +138,7 @@ class TableStateSnapshotTest {
      */
     @Test
     fun `test snapshot retains table id`() {
-        val tableId = UUID.randomUUID()
+        val tableId = Uuid.random()
         val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
         val table = FakeTableStateFactory.create(
             id = tableId,

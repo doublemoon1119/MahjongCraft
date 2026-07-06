@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 玩家加入房間的應用層用例。
@@ -26,13 +26,13 @@ class JoinRoomUseCase(
     /**
      * 執行加入房間邏輯。
      *
-     * @param roomId 欲加入的房間 UUID。
-     * @param playerId 請求加入的玩家 UUID。
+     * @param roomId 欲加入的房間 Uuid。
+     * @param playerId 請求加入的玩家 Uuid。
      * @return 加入結果，成功時為 [Unit]，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
-        roomId: UUID,
-        playerId: UUID
+        roomId: Uuid,
+        playerId: Uuid
     ): Outcome<Unit, RoomError> {
         val room = roomRepository.getRoom(roomId)
             ?: return Outcome.Error(RoomError.RoomNotFound(roomId))

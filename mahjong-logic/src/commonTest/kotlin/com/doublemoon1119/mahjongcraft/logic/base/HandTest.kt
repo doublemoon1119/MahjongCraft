@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.base
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTileOrder
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTileOrder
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
-import java.util.*
+import kotlin.uuid.Uuid
 import kotlin.test.*
 
 /**
@@ -38,11 +38,11 @@ class HandTest {
      */
     @Test
     fun `test drawing and discarding by id with tsumogiri check`() {
-        val id1 = UUID.randomUUID()
+        val id1 = Uuid.random()
         val tile1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1), id = id1)
         val hand = Hand(mutableListOf(tile1))
 
-        val id2 = UUID.randomUUID()
+        val id2 = Uuid.random()
         val tile2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2), id = id2)
 
         // 模擬摸牌
@@ -65,10 +65,10 @@ class HandTest {
      */
     @Test
     fun `test non tsumogiri discard moves lastDrawn to standing tiles`() {
-        val idInHand = UUID.randomUUID()
+        val idInHand = Uuid.random()
         val tileInHand = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5), id = idInHand)
 
-        val idLastDrawn = UUID.randomUUID()
+        val idLastDrawn = Uuid.random()
         val tileLastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9), id = idLastDrawn)
 
         val hand = Hand(mutableListOf(tileInHand))
@@ -120,9 +120,9 @@ class HandTest {
      */
     @Test
     fun `test discardById from standing tiles`() {
-        val id1 = UUID.randomUUID()
+        val id1 = Uuid.random()
         val tile1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1), id = id1)
-        val id2 = UUID.randomUUID()
+        val id2 = Uuid.random()
         val tile2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2), id = id2)
 
         val hand = Hand(mutableListOf(tile1, tile2))

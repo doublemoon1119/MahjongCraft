@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeR
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomNotificationService
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
-import java.util.*
+import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -23,10 +23,10 @@ import kotlin.test.assertTrue
  */
 class JoinRoomUseCaseTest {
 
-    private val roomId: UUID = UUID.randomUUID()
-    private val hostId: UUID = UUID.randomUUID()
-    private val otherPlayerId: UUID = UUID.randomUUID()
-    private val observerOnlyId: UUID = UUID.randomUUID()
+    private val roomId: Uuid = Uuid.random()
+    private val hostId: Uuid = Uuid.random()
+    private val otherPlayerId: Uuid = Uuid.random()
+    private val observerOnlyId: Uuid = Uuid.random()
     private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
 
     /**
@@ -74,7 +74,7 @@ class JoinRoomUseCaseTest {
         val service = FakeRoomNotificationService()
         val useCase = JoinRoomUseCase(roomRepo, snapshotRepo, service)
 
-        val fullPlayerIds = (1..4).map { UUID.randomUUID() }.toSet()
+        val fullPlayerIds = (1..4).map { Uuid.random() }.toSet()
         val fullRoom = Room(id = roomId, hostId = fullPlayerIds.first(), config = config, playerIds = fullPlayerIds)
         roomRepo.setRoom(fullRoom)
 

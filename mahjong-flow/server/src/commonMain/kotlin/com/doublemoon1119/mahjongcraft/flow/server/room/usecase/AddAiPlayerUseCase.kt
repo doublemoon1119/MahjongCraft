@@ -7,12 +7,12 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 在房間中新增電腦玩家（AI）的應用層用例。
  *
- * 負責處理房主發起的「新增 AI」請求。此用例會產生一個全新的 UUID 作為 AI 識別碼，
+ * 負責處理房主發起的「新增 AI」請求。此用例會產生一個全新的 Uuid 作為 AI 識別碼，
  * 並將其加入房間的成員清單與 AI 清單中，同時預設 AI 為已準備狀態。
  *
  * @property roomRepository 權威房間數據倉庫。
@@ -27,14 +27,14 @@ class AddAiPlayerUseCase(
     /**
      * 執行新增 AI 玩家邏輯。
      *
-     * @param roomId 房間 UUID。
-     * @param operatorId 發起請求的玩家 UUID（必須為房主）。
-     * @return 新增 AI 的結果，成功時包含新產生的 AI 玩家 UUID，失敗時為 [RoomError]。
+     * @param roomId 房間 Uuid。
+     * @param operatorId 發起請求的玩家 Uuid（必須為房主）。
+     * @return 新增 AI 的結果，成功時包含新產生的 AI 玩家 Uuid，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
-        roomId: UUID,
-        operatorId: UUID
-    ): Outcome<UUID, RoomError> {
+        roomId: Uuid,
+        operatorId: Uuid
+    ): Outcome<Uuid, RoomError> {
         val room = roomRepository.getRoom(roomId)
             ?: return Outcome.Error(RoomError.RoomNotFound(roomId))
 
@@ -48,8 +48,8 @@ class AddAiPlayerUseCase(
             return Outcome.Error(RoomError.RoomIsFull(roomId))
         }
 
-        // 3. 產生 AI 的 UUID 並更新領域模型，並持久化
-        val aiId = UUID.randomUUID()
+        // 3. 產生 AI 的 Uuid 並更新領域模型，並持久化
+        val aiId = Uuid.random()
         val updatedRoom = room.copy(
             playerIds = room.playerIds + aiId,
             aiPlayerIds = room.aiPlayerIds + aiId,

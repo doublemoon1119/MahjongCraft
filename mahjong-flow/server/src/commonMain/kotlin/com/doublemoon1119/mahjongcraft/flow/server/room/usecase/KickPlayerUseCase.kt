@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 處理房主剔除成員流程的應用層用例。
@@ -26,15 +26,15 @@ class KickPlayerUseCase(
     /**
      * 執行剔除玩家邏輯。
      *
-     * @param roomId 房間 UUID。
-     * @param operatorId 發起剔除請求的玩家 UUID。
-     * @param targetPlayerId 被剔除的目標玩家 UUID。
+     * @param roomId 房間 Uuid。
+     * @param operatorId 發起剔除請求的玩家 Uuid。
+     * @param targetPlayerId 被剔除的目標玩家 Uuid。
      * @return 剔除結果，成功時為 [Unit]，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
-        roomId: UUID,
-        operatorId: UUID,
-        targetPlayerId: UUID
+        roomId: Uuid,
+        operatorId: Uuid,
+        targetPlayerId: Uuid
     ): Outcome<Unit, RoomError> {
         val room = roomRepository.getRoom(roomId)
             ?: return Outcome.Error(RoomError.RoomNotFound(roomId))

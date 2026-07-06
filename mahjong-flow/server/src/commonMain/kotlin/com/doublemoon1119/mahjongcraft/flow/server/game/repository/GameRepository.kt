@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.repository
 
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 伺服器端桌況數據倉庫。
@@ -15,7 +15,7 @@ interface GameRepository {
      * @param gameId 遊戲的唯一識別碼。
      * @return 遊戲桌狀態物件，若不存在則回傳 null。
      */
-    suspend fun getTableState(gameId: UUID): TableState?
+    suspend fun getTableState(gameId: Uuid): TableState?
 
     /**
      * 設置或更新遊戲桌狀態。
@@ -29,5 +29,5 @@ interface GameRepository {
      *
      * @param gameId 遊戲的唯一識別碼。
      */
-    suspend fun removeTableState(gameId: UUID)
+    suspend fun removeTableState(gameId: Uuid)
 }

@@ -1,12 +1,12 @@
 package com.doublemoon1119.mahjongcraft.logic.base
 
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * [IdentifiedTile] 的對稱快照，用於 Client 端渲染
  */
 data class IdentifiedTileSnapshot(
-    val id: UUID,
+    val id: Uuid,
     val tile: Tile?
 )
 

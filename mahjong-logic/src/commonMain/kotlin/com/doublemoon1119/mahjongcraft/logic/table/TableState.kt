@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 代表一場麻將遊戲的通用全局狀態。
@@ -20,7 +20,7 @@ import java.util.*
  * @property dynamicRuleState 規則特有的動態狀態實體（如日麻的立直棒、供託）。
  */
 data class TableState(
-    val id: UUID,
+    val id: Uuid,
     val players: List<MahjongPlayer>,
     val config: MahjongRuleConfig,
     val tileWall: TileWall,

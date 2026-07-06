@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeR
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomNotificationService
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
-import java.util.*
+import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -24,8 +24,8 @@ import kotlin.test.assertTrue
  */
 class CreateRoomUseCaseTest {
 
-    private val roomId: UUID = UUID.randomUUID()
-    private val hostId: UUID = UUID.randomUUID()
+    private val roomId: Uuid = Uuid.random()
+    private val hostId: Uuid = Uuid.random()
     private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
 
     /**
@@ -68,7 +68,7 @@ class CreateRoomUseCaseTest {
 
         val existingRoom = Room(
             id = roomId,
-            hostId = UUID.randomUUID(),
+            hostId = Uuid.random(),
             config = config
         )
         roomRepo.setRoom(existingRoom)

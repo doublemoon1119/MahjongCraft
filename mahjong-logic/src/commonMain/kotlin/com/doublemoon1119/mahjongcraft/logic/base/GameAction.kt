@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.base
 
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 定義麻將遊戲中玩家可以執行的合法動作。
@@ -19,7 +19,7 @@ sealed class GameAction {
      * 玩家從手牌中選擇一張牌打出。
      * @property tileId 欲捨棄牌的唯一識別碼。
      */
-    data class Discard(val tileId: UUID) : GameAction()
+    data class Discard(val tileId: Uuid) : GameAction()
 
     /**
      * 吃牌動作。
@@ -27,14 +27,14 @@ sealed class GameAction {
      * @property tileId 欲吃的他家捨牌的唯一識別碼。
      * @property withTiles 玩家手牌中用於組成順子的兩張牌的唯一識別碼。
      */
-    data class Chi(val tileId: UUID, val withTiles: List<UUID>) : GameAction()
+    data class Chi(val tileId: Uuid, val withTiles: List<Uuid>) : GameAction()
 
     /**
      * 碰牌動作。
      * 玩家使用手牌中的兩張牌與他人的捨牌組成刻子。
      * @property tileId 欲碰的他家捨牌的唯一識別碼。
      */
-    data class Pon(val tileId: UUID) : GameAction()
+    data class Pon(val tileId: Uuid) : GameAction()
 
     /**
      * 槓牌動作。
@@ -43,14 +43,14 @@ sealed class GameAction {
      * @property tileId 觸發槓牌的牌的唯一識別碼。
      * @property withTiles 玩家手牌中用於組成槓子的牌的唯一識別碼（不包含觸發牌）。
      */
-    data class Kan(val type: KanType, val tileId: UUID, val withTiles: List<UUID>) : GameAction()
+    data class Kan(val type: KanType, val tileId: Uuid, val withTiles: List<Uuid>) : GameAction()
 
     /**
      * 胡牌動作（榮和）。
      * 玩家胡他人的捨牌。
      * @property tileId 欲胡的他家捨牌的唯一識別碼。
      */
-    data class Ron(val tileId: UUID) : GameAction()
+    data class Ron(val tileId: Uuid) : GameAction()
 
     /**
      * 胡牌動作（自摸）。

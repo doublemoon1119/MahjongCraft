@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 日本麻將牌山生成工廠。
@@ -39,7 +39,7 @@ class RiichiWallFactory(private val config: RiichiRuleConfig) : TileWallFactory 
                     // 僅有 5 號牌可能是赤牌
                     val isRed = value == 5 && count < redInThisSuit
                     val tile = Tile.Numeric(suit, value, isRed)
-                    tiles.add(IdentifiedTile(UUID.randomUUID(), tile))
+                    tiles.add(IdentifiedTile(Uuid.random(), tile))
                 }
             }
         }
@@ -51,7 +51,7 @@ class RiichiWallFactory(private val config: RiichiRuleConfig) : TileWallFactory 
         )
         honors.forEach { honor ->
             repeat(4) {
-                tiles.add(IdentifiedTile(UUID.randomUUID(), honor))
+                tiles.add(IdentifiedTile(Uuid.random(), honor))
             }
         }
 

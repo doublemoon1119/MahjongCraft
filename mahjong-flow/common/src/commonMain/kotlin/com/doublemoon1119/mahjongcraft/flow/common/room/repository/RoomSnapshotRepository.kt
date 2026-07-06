@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.room.repository
 
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 房間快照資料存取介面。
@@ -13,33 +13,33 @@ interface RoomSnapshotRepository {
     /**
      * 獲取特定觀察者針對某房間的快照。
      *
-     * @param roomId 房間的 UUID。
-     * @param observerId 觀察者的 UUID。
+     * @param roomId 房間的 Uuid。
+     * @param observerId 觀察者的 Uuid。
      * @return 找到的 [RoomSnapshot] 實例，若不存在則回傳 null。
      */
-    suspend fun getSnapshot(roomId: UUID, observerId: UUID): RoomSnapshot?
+    suspend fun getSnapshot(roomId: Uuid, observerId: Uuid): RoomSnapshot?
 
     /**
      * 儲存或更新特定觀察者的房間快照。
      *
-     * @param observerId 接收此快照的觀察者 UUID。
+     * @param observerId 接收此快照的觀察者 Uuid。
      * @param snapshot 要存入的快照實例。
      */
-    suspend fun setSnapshot(observerId: UUID, snapshot: RoomSnapshot)
+    suspend fun setSnapshot(observerId: Uuid, snapshot: RoomSnapshot)
 
     /**
      * 移除特定觀察者的房間快照。
      *
-     * @param roomId 房間的 UUID。
-     * @param observerId 觀察者的 UUID。
+     * @param roomId 房間的 Uuid。
+     * @param observerId 觀察者的 Uuid。
      */
-    suspend fun removeSnapshot(roomId: UUID, observerId: UUID)
+    suspend fun removeSnapshot(roomId: Uuid, observerId: Uuid)
 
     /**
-     * 獲取目前所有正在觀察該房間的所有觀察者 UUID 集合。
+     * 獲取目前所有正在觀察該房間的所有觀察者 Uuid 集合。
      *
-     * @param roomId 房間的 UUID。
-     * @return 觀察該房間的所有玩家 UUID 集合。
+     * @param roomId 房間的 Uuid。
+     * @return 觀察該房間的所有玩家 Uuid 集合。
      */
-    suspend fun getAllObservers(roomId: UUID): Set<UUID>
+    suspend fun getAllObservers(roomId: Uuid): Set<Uuid>
 }

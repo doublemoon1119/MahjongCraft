@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeR
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomNotificationService
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
-import java.util.*
+import kotlin.uuid.Uuid
 import kotlin.test.*
 
 /**
@@ -17,8 +17,8 @@ import kotlin.test.*
  */
 class ToggleReadyUseCaseTest {
 
-    private val roomId: UUID = UUID.randomUUID()
-    private val hostId: UUID = UUID.randomUUID()
+    private val roomId: Uuid = Uuid.random()
+    private val hostId: Uuid = Uuid.random()
     private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
 
     /**
@@ -31,7 +31,7 @@ class ToggleReadyUseCaseTest {
         val notificationService = FakeRoomNotificationService()
         val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo, notificationService)
 
-        val guestId = UUID.randomUUID()
+        val guestId = Uuid.random()
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
         roomRepo.setRoom(room)
 
@@ -63,7 +63,7 @@ class ToggleReadyUseCaseTest {
         val notificationService = FakeRoomNotificationService()
         val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo, notificationService)
 
-        val guestId = UUID.randomUUID()
+        val guestId = Uuid.random()
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
         roomRepo.setRoom(room)
 
@@ -116,7 +116,7 @@ class ToggleReadyUseCaseTest {
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
         roomRepo.setRoom(room)
 
-        val strangerId = UUID.randomUUID()
+        val strangerId = Uuid.random()
 
         // Act & Assert
         val result = useCase(roomId, strangerId)

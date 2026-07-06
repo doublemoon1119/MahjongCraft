@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.base
 
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
-import java.util.*
+import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -17,8 +17,8 @@ class IdentifiedTileTest {
     @Test
     fun `test identity equality with same tile type`() {
         val tileType = Tile.Numeric(Tile.Suit.Dot, 1)
-        val id1 = UUID.randomUUID()
-        val id2 = UUID.randomUUID()
+        val id1 = Uuid.random()
+        val id2 = Uuid.random()
 
         val identifiedTile1 = FakeIdentifiedTileFactory.create(id = id1, tile = tileType)
         val identifiedTile2 = FakeIdentifiedTileFactory.create(id = id2, tile = tileType)
@@ -34,7 +34,7 @@ class IdentifiedTileTest {
     @Test
     fun `test copy with new id`() {
         val original = FakeIdentifiedTileFactory.create(Tile.Honor.East)
-        val newId = UUID.randomUUID()
+        val newId = Uuid.random()
         val copied = original.copy(id = newId)
 
         assertEquals(newId, copied.id)

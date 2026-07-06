@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.base
 
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
-import java.util.*
+import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -19,7 +19,7 @@ class IdentifiedTileSnapshotTest {
     @Test
     fun `test toSnapshot with visible tile preserves tile info`() {
         val tile = Tile.Numeric(Tile.Suit.Dot, 5)
-        val id = UUID.randomUUID()
+        val id = Uuid.random()
         val identifiedTile = FakeIdentifiedTileFactory.create(tile = tile, id = id)
 
         val snapshot = identifiedTile.toSnapshot(isVisible = true)
@@ -34,7 +34,7 @@ class IdentifiedTileSnapshotTest {
     @Test
     fun `test toSnapshot with hidden tile sets tile to null`() {
         val tile = Tile.Honor.Red
-        val id = UUID.randomUUID()
+        val id = Uuid.random()
         val identifiedTile = FakeIdentifiedTileFactory.create(tile = tile, id = id)
 
         val snapshot = identifiedTile.toSnapshot(isVisible = false)
@@ -48,7 +48,7 @@ class IdentifiedTileSnapshotTest {
      */
     @Test
     fun `test snapshot always retains id regardless of visibility`() {
-        val id = UUID.randomUUID()
+        val id = Uuid.random()
         val identifiedTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3), id = id)
 
         val visibleSnapshot = identifiedTile.toSnapshot(isVisible = true)

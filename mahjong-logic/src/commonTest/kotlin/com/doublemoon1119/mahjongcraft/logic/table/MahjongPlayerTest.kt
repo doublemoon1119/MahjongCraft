@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction.KanType
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
-import java.util.*
+import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -23,7 +23,7 @@ class MahjongPlayerTest {
      */
     @Test
     fun `test player initialization and basic properties`() {
-        val uuid = UUID.randomUUID()
+        val uuid = Uuid.random()
         val seat = Wind.EAST
 
         // 使用工廠建立玩家，工廠會自動注入 FakeDiscardPile
@@ -73,12 +73,12 @@ class MahjongPlayerTest {
 
         // 記錄幾個動作
         player.recordAction(GameAction.Draw)
-        player.recordAction(GameAction.Discard(UUID.randomUUID()))
+        player.recordAction(GameAction.Discard(Uuid.random()))
         player.recordAction(
             GameAction.Kan(
                 KanType.OPEN_KAN,
-                UUID.randomUUID(),
-                listOf(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID())
+                Uuid.random(),
+                listOf(Uuid.random(), Uuid.random(), Uuid.random())
             )
         )
 

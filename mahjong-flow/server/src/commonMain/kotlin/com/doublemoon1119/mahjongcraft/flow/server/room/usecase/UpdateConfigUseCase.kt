@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 更新房間配置的應用層用例。
@@ -26,14 +26,14 @@ class UpdateConfigUseCase(
     /**
      * 執行更新配置邏輯。
      *
-     * @param roomId 房間 UUID。
-     * @param operatorId 發起請求的玩家 UUID（必須為房主）。
+     * @param roomId 房間 Uuid。
+     * @param operatorId 發起請求的玩家 Uuid（必須為房主）。
      * @param newConfig 新的規則配置。
      * @return 更新配置的結果，成功時為 [Unit]，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
-        roomId: UUID,
-        operatorId: UUID,
+        roomId: Uuid,
+        operatorId: Uuid,
         newConfig: MahjongRuleConfig
     ): Outcome<Unit, RoomError> {
         val room = roomRepository.getRoom(roomId)

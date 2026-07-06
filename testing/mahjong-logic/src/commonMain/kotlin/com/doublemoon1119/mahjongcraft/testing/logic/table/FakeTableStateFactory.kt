@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 用於單元測試的 [TableState] 工廠。
@@ -18,7 +18,7 @@ object FakeTableStateFactory {
      * 建立一個測試用的 [TableState]。
      */
     fun create(
-        id: UUID = UUID.randomUUID(),
+        id: Uuid = Uuid.random(),
         players: List<MahjongPlayer> = emptyList(),
         config: MahjongRuleConfig = FakeMahjongRuleConfig(),
         tileWall: TileWall = TileWall(emptyList()),

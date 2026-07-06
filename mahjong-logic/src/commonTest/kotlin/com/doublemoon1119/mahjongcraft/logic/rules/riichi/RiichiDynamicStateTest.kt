@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
-import java.util.*
+import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -192,7 +192,7 @@ class RiichiDynamicStateTest {
         val deadWallTiles = List(14) { i ->
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (i % 9) + 1))
         }
-        val observerId = UUID.randomUUID()
+        val observerId = Uuid.random()
         val observer = FakeMahjongPlayerFactory.create(id = observerId, initialSeat = Wind.EAST)
         val table = createTableStateWithWall(deadWallTiles, listOf(observer))
             .copy(dynamicRuleState = RiichiDynamicState())

@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 同步房間快照的應用層用例。
@@ -24,13 +24,13 @@ class SyncRoomSnapshotUseCase(
      *
      * 根據房間識別碼尋找權威實體，若存在則產出針對指定觀察者的快照並存入快照倉庫。
      *
-     * @param roomId 欲同步的房間 UUID。
-     * @param observerId 需要更新快照的觀察者 UUID。
+     * @param roomId 欲同步的房間 Uuid。
+     * @param observerId 需要更新快照的觀察者 Uuid。
      * @return 同步快照的結果，成功時為 [Unit]，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
-        roomId: UUID,
-        observerId: UUID
+        roomId: Uuid,
+        observerId: Uuid
     ): Outcome<Unit, RoomError> {
         val room = roomRepository.getRoom(roomId)
             ?: return Outcome.Error(RoomError.RoomNotFound(roomId))

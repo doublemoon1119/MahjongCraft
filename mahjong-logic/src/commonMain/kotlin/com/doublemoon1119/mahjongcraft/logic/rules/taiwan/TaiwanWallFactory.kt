@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 台灣麻將牌山生成工廠。
@@ -34,7 +34,7 @@ class TaiwanWallFactory(private val config: TaiwanRuleConfig) : TileWallFactory 
             for (value in 1..9) {
                 repeat(4) {
                     val tile = Tile.Numeric(suit, value, isRed = false)
-                    tiles.add(IdentifiedTile(UUID.randomUUID(), tile))
+                    tiles.add(IdentifiedTile(Uuid.random(), tile))
                 }
             }
         }
@@ -46,7 +46,7 @@ class TaiwanWallFactory(private val config: TaiwanRuleConfig) : TileWallFactory 
         )
         honors.forEach { honor ->
             repeat(4) {
-                tiles.add(IdentifiedTile(UUID.randomUUID(), honor))
+                tiles.add(IdentifiedTile(Uuid.random(), honor))
             }
         }
 
@@ -57,7 +57,7 @@ class TaiwanWallFactory(private val config: TaiwanRuleConfig) : TileWallFactory 
                 Tile.Flower.Plum, Tile.Flower.Orchid, Tile.Flower.Bamboo, Tile.Flower.Chrysanthemum
             )
             flowers.forEach { flower ->
-                tiles.add(IdentifiedTile(UUID.randomUUID(), flower))
+                tiles.add(IdentifiedTile(Uuid.random(), flower))
             }
         }
 

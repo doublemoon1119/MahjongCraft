@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.HandSnapshot
 import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * [MahjongPlayer] 的不可變快照，用於 Client 端渲染。
@@ -15,7 +15,7 @@ import java.util.*
  * @property score 當前分數
  */
 data class MahjongPlayerSnapshot(
-    val id: UUID,
+    val id: Uuid,
     val initialSeat: Wind,
     val hand: HandSnapshot,
     val discardPile: DiscardPile<*>,

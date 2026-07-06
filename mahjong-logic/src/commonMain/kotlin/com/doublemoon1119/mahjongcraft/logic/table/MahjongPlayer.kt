@@ -4,14 +4,14 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 代表一名麻將玩家及其持有的資源與基本狀態。
  *
  * 本類別作為玩家數據的載體，封裝了手牌、牌河、分數及方位。
  *
- * @property id 玩家的唯一識別碼（通常對應 Minecraft 玩家的 UUID）。
+ * @property id 玩家的唯一識別碼（通常對應 Minecraft 玩家的 Uuid）。
  * @property initialSeat 初始座位方位。
  * @property hand 該玩家的手牌實體。
  * @property discardPile 該玩家的牌河實體，其具體類型由遊戲規則決定。
@@ -19,7 +19,7 @@ import java.util.*
  *                          具體類型由各規則決定，例如 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState]。
  */
 class MahjongPlayer(
-    val id: UUID,
+    val id: Uuid,
     val initialSeat: Wind,
     val hand: Hand = Hand(),
     val discardPile: DiscardPile<*>,

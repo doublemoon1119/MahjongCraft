@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 用於單元測試的玩家實體工廠。
@@ -26,7 +26,7 @@ object FakeMahjongPlayerFactory {
      */
     fun create(
         initialSeat: Wind = Wind.EAST,
-        id: UUID = UUID.randomUUID(),
+        id: Uuid = Uuid.random(),
         hand: Hand = Hand(),
         discardPile: DiscardPile<*> = FakeDiscardPile(),
         playerRuleState: PlayerRuleState? = null

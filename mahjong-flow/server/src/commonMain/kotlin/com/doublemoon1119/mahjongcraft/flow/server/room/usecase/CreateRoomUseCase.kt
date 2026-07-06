@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 創建房間的實例化用例。
@@ -28,14 +28,14 @@ class CreateRoomUseCase(
     /**
      * 執行創建房間邏輯。
      *
-     * @param roomId 房間的唯一識別碼（通常對應 BlockEntity UUID）。
-     * @param hostId 房主的玩家 UUID。
+     * @param roomId 房間的唯一識別碼（通常對應 BlockEntity Uuid）。
+     * @param hostId 房主的玩家 Uuid。
      * @param config 房間採用的規則配置。
      * @return 創建結果，成功時包含 [Room] 實例，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
-        roomId: UUID,
-        hostId: UUID,
+        roomId: Uuid,
+        hostId: Uuid,
         config: MahjongRuleConfig
     ): Outcome<Room, RoomError> {
         // 1. 檢查房間是否已存在，避免重複創建

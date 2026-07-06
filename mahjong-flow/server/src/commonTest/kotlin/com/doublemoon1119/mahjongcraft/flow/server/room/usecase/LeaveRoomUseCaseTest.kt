@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeR
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomNotificationService
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
-import java.util.*
+import kotlin.uuid.Uuid
 import kotlin.test.*
 
 /**
@@ -19,8 +19,8 @@ import kotlin.test.*
  */
 class LeaveRoomUseCaseTest {
 
-    private val roomId: UUID = UUID.randomUUID()
-    private val hostId: UUID = UUID.randomUUID()
+    private val roomId: Uuid = Uuid.random()
+    private val hostId: Uuid = Uuid.random()
     private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
 
     /**
@@ -33,7 +33,7 @@ class LeaveRoomUseCaseTest {
         val service = FakeRoomNotificationService()
         val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo, service)
 
-        val guestId = UUID.randomUUID()
+        val guestId = Uuid.random()
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
         roomRepo.setRoom(room)
 
@@ -68,7 +68,7 @@ class LeaveRoomUseCaseTest {
         val service = FakeRoomNotificationService()
         val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo, service)
 
-        val guestId = UUID.randomUUID()
+        val guestId = Uuid.random()
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
         roomRepo.setRoom(room)
 

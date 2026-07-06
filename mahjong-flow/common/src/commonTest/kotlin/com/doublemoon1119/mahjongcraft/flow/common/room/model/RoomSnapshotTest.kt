@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.room.model
 
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
-import java.util.*
+import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -12,10 +12,10 @@ class RoomSnapshotTest {
     @Test
     fun `test toSnapshot identifies host correctly`() {
         val config = FakeMahjongRuleConfig()
-        val hostId = UUID.randomUUID()
-        val playerIds = setOf(hostId, UUID.randomUUID())
+        val hostId = Uuid.random()
+        val playerIds = setOf(hostId, Uuid.random())
         val room = Room(
-            id = UUID.randomUUID(),
+            id = Uuid.random(),
             hostId = hostId,
             config = config,
             playerIds = playerIds,
@@ -30,11 +30,11 @@ class RoomSnapshotTest {
     @Test
     fun `test toSnapshot identifies room member correctly`() {
         val config = FakeMahjongRuleConfig()
-        val hostId = UUID.randomUUID()
-        val memberId = UUID.randomUUID()
+        val hostId = Uuid.random()
+        val memberId = Uuid.random()
         val playerIds = setOf(hostId, memberId)
         val room = Room(
-            id = UUID.randomUUID(),
+            id = Uuid.random(),
             hostId = hostId,
             config = config,
             playerIds = playerIds,
@@ -50,12 +50,12 @@ class RoomSnapshotTest {
     @Test
     fun `test toSnapshot identifies external observer correctly`() {
         val config = FakeMahjongRuleConfig()
-        val hostId = UUID.randomUUID()
-        val memberId = UUID.randomUUID()
-        val externalId = UUID.randomUUID()
+        val hostId = Uuid.random()
+        val memberId = Uuid.random()
+        val externalId = Uuid.random()
         val playerIds = setOf(hostId, memberId)
         val room = Room(
-            id = UUID.randomUUID(),
+            id = Uuid.random(),
             hostId = hostId,
             config = config,
             playerIds = playerIds,
@@ -70,10 +70,10 @@ class RoomSnapshotTest {
 
     @Test
     fun `test toSnapshot contains ai player info`() {
-        val hostId = UUID.randomUUID()
-        val aiId = UUID.randomUUID()
+        val hostId = Uuid.random()
+        val aiId = Uuid.random()
         val room = Room(
-            id = UUID.randomUUID(),
+            id = Uuid.random(),
             hostId = hostId,
             config = FakeMahjongRuleConfig(),
             playerIds = setOf(hostId, aiId),

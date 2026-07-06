@@ -1,21 +1,21 @@
 package com.doublemoon1119.mahjongcraft.flow.common.room.model
 
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
-import java.util.*
+import kotlin.uuid.Uuid
 
 data class RoomSnapshot(
-    val id: UUID,
-    val hostId: UUID,
+    val id: Uuid,
+    val hostId: Uuid,
     val config: MahjongRuleConfig,
-    val playerIds: Set<UUID>,
-    val readyPlayerIds: Set<UUID>,
-    val aiPlayerIds: Set<UUID>,
+    val playerIds: Set<Uuid>,
+    val readyPlayerIds: Set<Uuid>,
+    val aiPlayerIds: Set<Uuid>,
     val canStart: Boolean,
     val isHost: Boolean,
     val isInRoom: Boolean
 )
 
-fun Room.toSnapshot(observerId: UUID): RoomSnapshot {
+fun Room.toSnapshot(observerId: Uuid): RoomSnapshot {
     return RoomSnapshot(
         id = id,
         hostId = hostId,

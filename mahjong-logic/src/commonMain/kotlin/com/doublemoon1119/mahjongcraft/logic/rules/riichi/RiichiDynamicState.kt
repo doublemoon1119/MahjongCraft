@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 日本麻將特有的動態桌況狀態。
@@ -16,9 +16,9 @@ data class RiichiDynamicState(
     var riichiStickCount: Int = 0
 ) : DynamicRuleState, TileWallRevealable {
     /**
-     * 取得「寶牌指示器」的 [UUID]
+     * 取得「寶牌指示器」的 [Uuid]
      */
-    override fun getVisibleTileIds(state: TableState): Set<UUID> {
+    override fun getVisibleTileIds(state: TableState): Set<Uuid> {
         return getDoraIndicators(state).first.map { it.id }.toSet()
     }
 

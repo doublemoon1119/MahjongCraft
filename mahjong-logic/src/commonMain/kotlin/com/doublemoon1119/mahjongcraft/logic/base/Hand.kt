@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.base
 
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 管理玩家具有唯一身份標識的手牌集合。
@@ -128,10 +128,10 @@ class Hand(
      * 如果捨棄的是剛摸到的牌（[lastDrawn]），則直接移除。
      * 如果捨棄的是手牌中的牌，則會將原本的 [lastDrawn] 加入手牌列表中，並移除目標牌。
      *
-     * @param id 欲捨棄牌的 UUID。
+     * @param id 欲捨棄牌的 Uuid。
      * @return 包含捨棄結果的 [DiscardResult]，若找不到則返回 null。
      */
-    fun discardById(id: UUID): DiscardResult? {
+    fun discardById(id: Uuid): DiscardResult? {
         // 1. 檢查是否為摸切
         if (lastDrawn?.id == id) {
             val tile = lastDrawn!!
@@ -159,7 +159,7 @@ class Hand(
     /**
      * 內部輔助方法：從手牌（立牌或摸牌）中移除指定 ID 的牌。
      */
-    private fun removeFromHand(id: UUID) {
+    private fun removeFromHand(id: Uuid) {
         if (lastDrawn?.id == id) {
             lastDrawn = null
         } else {

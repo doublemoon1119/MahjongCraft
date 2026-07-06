@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * 切換玩家準備狀態的應用層用例。
@@ -25,13 +25,13 @@ class ToggleReadyUseCase(
     /**
      * 執行準備狀態切換邏輯。
      *
-     * @param roomId 房間 UUID。
-     * @param playerId 發起請求的玩家 UUID。
+     * @param roomId 房間 Uuid。
+     * @param playerId 發起請求的玩家 Uuid。
      * @return 切換準備狀態的結果，成功時為 [Unit]，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
-        roomId: UUID,
-        playerId: UUID
+        roomId: Uuid,
+        playerId: Uuid
     ): Outcome<Unit, RoomError> {
         val room = roomRepository.getRoom(roomId)
             ?: return Outcome.Error(RoomError.RoomNotFound(roomId))
