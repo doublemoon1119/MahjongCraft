@@ -9,6 +9,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import org.koin.core.annotation.Factory
+import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
@@ -20,10 +22,11 @@ import kotlin.uuid.Uuid
  * @property snapshotRepository 房間快照數據倉庫。
  * @property notificationService 房間通知服務。
  */
+@Factory
 class CreateRoomUseCase(
     private val roomRepository: RoomRepository,
     private val snapshotRepository: RoomSnapshotRepository,
-    private val notificationService: RoomNotificationService
+    @Provided private val notificationService: RoomNotificationService
 ) {
     /**
      * 執行創建房間邏輯。

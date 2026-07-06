@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomNotificationService
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
+import org.koin.core.annotation.Factory
+import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
@@ -18,10 +20,11 @@ import kotlin.uuid.Uuid
  * @property snapshotRepository 房間快照數據倉庫。
  * @property notificationService 房間通知服務。
  */
+@Factory
 class LeaveRoomUseCase(
     private val roomRepository: RoomRepository,
     private val snapshotRepository: RoomSnapshotRepository,
-    private val notificationService: RoomNotificationService
+    @Provided private val notificationService: RoomNotificationService
 ) {
     /**
      * 執行離開房間邏輯。

@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import kotlin.uuid.Uuid
-
 /**
  * 房間事件通知服務。
  *
