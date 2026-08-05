@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.config.validate
 
 
 /**
@@ -29,4 +30,6 @@ data class TaiwanRuleConfig(
     override val deadTileCount: Int = 16
     override val minPlayers: Int = 4
     override val maxPlayers: Int = 4
+
+    init { validate() }
 }

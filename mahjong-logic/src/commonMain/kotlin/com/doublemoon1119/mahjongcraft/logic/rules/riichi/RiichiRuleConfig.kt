@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.config.validate
 
 
 /**
@@ -33,4 +34,6 @@ data class RiichiRuleConfig(
     override val deadTileCount: Int = 14
     override val minPlayers: Int = 4
     override val maxPlayers: Int = 4
+
+    init { validate() }
 }
