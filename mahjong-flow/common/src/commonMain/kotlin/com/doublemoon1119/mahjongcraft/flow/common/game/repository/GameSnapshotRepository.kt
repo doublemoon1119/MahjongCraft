@@ -37,8 +37,8 @@ interface GameSnapshotRepository {
     /**
      * 獲取目前所有正在觀察該遊戲的所有觀察者 Uuid 集合。
      *
-     * @param roomId 遊戲的唯一識別碼。
+     * @param gameId 遊戲的唯一識別碼。
      * @return 觀察該遊戲的所有玩家 Uuid 集合。
      */
-    suspend fun getAllObservers(roomId: Uuid): Set<Uuid>
+    suspend fun getAllObservers(gameId: Uuid): Set<Uuid>
 }

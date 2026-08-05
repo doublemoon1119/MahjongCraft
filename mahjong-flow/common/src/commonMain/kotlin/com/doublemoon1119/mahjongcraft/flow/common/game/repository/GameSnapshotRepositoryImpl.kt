@@ -22,6 +22,6 @@ class GameSnapshotRepositoryImpl : GameSnapshotRepository {
     override suspend fun removeSnapshot(gameId: Uuid, observerId: Uuid) =
         mutex.withLock { snapshots[gameId]?.remove(observerId); Unit }
 
-    override suspend fun getAllObservers(roomId: Uuid): Set<Uuid> =
-        mutex.withLock { snapshots[roomId]?.keys.orEmpty() }
+    override suspend fun getAllObservers(gameId: Uuid): Set<Uuid> =
+        mutex.withLock { snapshots[gameId]?.keys.orEmpty() }
 }
