@@ -9,6 +9,9 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  *
  * 繼承自 [MahjongRuleConfig] 並增加與日麻計分和道具相關的參數。
  *
+ * 本模組未直接對應到欄位的規則判定（例如包牌等結算規則），
+ * 以 [M League 公式競技規則](https://m-league.jp/about/) 為準。
+ *
  * @property redDoraCount 赤牌（五萬、五筒、五條）的總張數，預設為 3，常見配置為 3 張（五萬、五筒、五條各一）或 4 張 （五筒兩張，五萬、五條各一）。
  * @property allowOpenTanyao 是否允許食斷（斷么九鳴牌有效），預設為 true。
  * @property useLocalYaku 是否啟用古役（Local Yaku），預設為 false。

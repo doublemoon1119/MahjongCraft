@@ -93,12 +93,11 @@ class RiichiHandValueContextCalculator(
             isRobbingKan = isRobbingKan,
             isRinshanKaihou = if (actionHistory.size >= 2) {
                 // 嶺上花需要「槓牌 → 摸牌 → 自摸」的動作序列
+                // 依循 M League 公式競技規則（見 RiichiRuleConfig 的規則基準），
+                // 大明槓後槓上開花不採用包牌，直接視為一般自摸胡牌。
                 val lastTwoActions = actionHistory.takeLast(2)
                 val firstAction = lastTwoActions.first()
                 val secondAction = lastTwoActions.last()
-                // TODO: 包牌邏輯應獨立到另外的模組處理
-                //  當此役成立且為大明槓（OPEN_KAN）時，
-                //  應由觸發大明槓的玩家（丟牌者）全付點數
                 firstAction is GameAction.Kan && secondAction is GameAction.Draw && isTsumo
             } else {
                 false
