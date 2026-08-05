@@ -12,6 +12,9 @@ import kotlin.test.assertTrue
 /**
  * 針對 [MahjongPlayer] 的實體狀態與基礎邏輯進行單元測試。
  *
+ * [MahjongPlayer] 為不可變值物件，所有操作皆回傳反映變更後狀態的新實例，
+ * 因此測試中以 `player = player.xxx(...)` 的重新賦值方式驗證各項操作。
+ *
  * 驗證玩家物件的初始化屬性賦值，以及分數與方位等狀態的更新功能。
  */
 class MahjongPlayerTest {
@@ -44,18 +47,18 @@ class MahjongPlayerTest {
 
     /**
      * 驗證玩家狀態的可變動性。
-     * * 測試當分數變更或方位轉換（過莊/連莊）時，玩家物件是否能正確儲存新值。
+     * * 測試當分數變更或方位轉換（過莊/連莊）時，透過 copy() 產生的新實例是否正確反映新值。
      */
     @Test
     fun `test player state updates`() {
-        val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        var player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
 
         // 測試分數更新
-        player.score = 25000
+        player = player.copy(score = 25000)
         assertEquals(25000, player.score, "Player score should be updatable.")
 
         // 測試方位變更 (例如過莊)
-        player.currentWind = Wind.SOUTH
+        player = player.copy(currentWind = Wind.SOUTH)
         assertEquals(Wind.SOUTH, player.currentWind, "Player's current wind should be updatable.")
     }
 
@@ -66,15 +69,15 @@ class MahjongPlayerTest {
      */
     @Test
     fun `test action history recording`() {
-        val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        var player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
 
         // 驗證初始歷史為空
         assertTrue(player.actionHistory.isEmpty(), "Initial action history should be empty.")
 
         // 記錄幾個動作
-        player.recordAction(GameAction.Draw)
-        player.recordAction(GameAction.Discard(Uuid.random()))
-        player.recordAction(
+        player = player.recordAction(GameAction.Draw)
+        player = player.recordAction(GameAction.Discard(Uuid.random()))
+        player = player.recordAction(
             GameAction.Kan(
                 KanType.OPEN_KAN,
                 Uuid.random(),
@@ -96,17 +99,17 @@ class MahjongPlayerTest {
      */
     @Test
     fun `test action history clearing`() {
-        val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        var player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
 
         // 記錄動作
-        player.recordAction(GameAction.Draw)
-        player.recordAction(GameAction.Tsumo)
+        player = player.recordAction(GameAction.Draw)
+        player = player.recordAction(GameAction.Tsumo)
 
         // 驗證有記錄
         assertEquals(2, player.actionHistory.size, "Action history should contain 2 actions before clearing.")
 
         // 清除歷史
-        player.clearActionHistory()
+        player = player.clearActionHistory()
 
         // 驗證已清除
         assertTrue(player.actionHistory.isEmpty(), "Action history should be empty after clearing.")

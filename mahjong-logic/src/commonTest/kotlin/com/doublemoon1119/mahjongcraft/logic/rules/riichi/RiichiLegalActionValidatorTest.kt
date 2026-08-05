@@ -436,14 +436,12 @@ class RiichiLegalActionValidatorTest {
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            discardPile = FakeDiscardPile().apply {
-                discard(
-                    entry = FakeDiscardPile.FakeEntry(
-                        tile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
-                        isTaken = false
-                    )
+            discardPile = FakeDiscardPile().discard(
+                entry = FakeDiscardPile.FakeEntry(
+                    tile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    isTaken = false
                 )
-            },
+            ),
             playerRuleState = RiichiPlayerState()
         )
         val tableState = FakeTableStateFactory.create(
@@ -600,8 +598,7 @@ class RiichiLegalActionValidatorTest {
             discardPile = discardPile
         )
         // 建立其他玩家（每人只打1張以滿足第一巡條件）
-        val discardPile1 = FakeDiscardPile()
-        discardPile1.discard(
+        val discardPile1 = FakeDiscardPile().discard(
             FakeDiscardPile.FakeEntry(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
             )
@@ -611,8 +608,7 @@ class RiichiLegalActionValidatorTest {
             hand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))),
             discardPile = discardPile1
         )
-        val discardPile2 = FakeDiscardPile()
-        discardPile2.discard(
+        val discardPile2 = FakeDiscardPile().discard(
             FakeDiscardPile.FakeEntry(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2))
             )
@@ -622,8 +618,7 @@ class RiichiLegalActionValidatorTest {
             hand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Bamboo, 2))),
             discardPile = discardPile2
         )
-        val discardPile3 = FakeDiscardPile()
-        discardPile3.discard(
+        val discardPile3 = FakeDiscardPile().discard(
             FakeDiscardPile.FakeEntry(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3))
             )
@@ -680,8 +675,7 @@ class RiichiLegalActionValidatorTest {
             hand = playerHand,
             discardPile = FakeDiscardPile()
         )
-        val discardPile1 = FakeDiscardPile()
-        discardPile1.discard(
+        val discardPile1 = FakeDiscardPile().discard(
             FakeDiscardPile.FakeEntry(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
             )

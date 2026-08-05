@@ -39,9 +39,9 @@ class TableStateTest {
             players = players,
             config = config
         )
-        tableState.init()
+        val initializedTableState = tableState.init()
 
-        for (player in players) {
+        for (player in initializedTableState.players) {
             assertEquals(
                 initialScoreValue,
                 player.score,

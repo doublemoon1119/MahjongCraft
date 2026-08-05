@@ -9,11 +9,12 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
  *
  * 透過繼承 [DiscardEntry] 來定義測試用的捨牌紀錄實體，
  * 並實作 [DiscardPile] 介面以提供紀錄的存取與管理邏輯。
+ *
+ * 本類別為不可變值物件：[discard]、[takeLast] 皆不修改原實例，而是回傳新的 [FakeDiscardPile] 實例。
  */
-class FakeDiscardPile : DiscardPile<FakeDiscardPile.FakeEntry> {
-
-    /** 儲存模擬捨牌紀錄的可變列表。 */
-    private val _entries = mutableListOf<FakeEntry>()
+data class FakeDiscardPile(
+    private val _entries: List<FakeEntry> = emptyList()
+) : DiscardPile<FakeDiscardPile.FakeEntry> {
 
     /** 獲取目前牌河中所有的紀錄列表。 */
     override val entries: List<FakeEntry> get() = _entries
@@ -22,18 +23,18 @@ class FakeDiscardPile : DiscardPile<FakeDiscardPile.FakeEntry> {
      * 向模擬牌河添加一項捨牌紀錄。
      *
      * @param entry 測試用的捨牌紀錄實體。
+     * @return 加入該紀錄後的新 [FakeDiscardPile] 實例。
      */
-    override fun discard(entry: FakeEntry) {
-        _entries.add(entry)
-    }
+    override fun discard(entry: FakeEntry): FakeDiscardPile = copy(_entries = _entries + entry)
 
     /**
      * 標記最後一項紀錄已被取走。
+     *
+     * @return 標記後的新 [FakeDiscardPile] 實例；若牌河為空則回傳原實例。
      */
-    override fun takeLast() {
-        _entries.lastOrNull()?.let {
-            it.isTaken = true
-        }
+    override fun takeLast(): FakeDiscardPile {
+        val last = _entries.lastOrNull() ?: return this
+        return copy(_entries = _entries.dropLast(1) + last.withTaken())
     }
 
     /**
@@ -44,5 +45,7 @@ class FakeDiscardPile : DiscardPile<FakeDiscardPile.FakeEntry> {
     class FakeEntry(
         tile: IdentifiedTile,
         isTaken: Boolean = false
-    ) : DiscardPile.DiscardEntry(tile, isTaken)
+    ) : DiscardPile.DiscardEntry(tile, isTaken) {
+        override fun withTaken(): FakeEntry = FakeEntry(tile, isTaken = true)
+    }
 }

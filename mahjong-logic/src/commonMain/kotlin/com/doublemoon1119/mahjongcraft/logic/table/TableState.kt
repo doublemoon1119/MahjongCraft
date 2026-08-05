@@ -38,11 +38,13 @@ data class TableState(
 
     /**
      * 初始化對局。
-     * 將所有玩家的分數根據 [config] 設定為初始分數。
+     * 將所有玩家的分數根據 [config] 設定為初始分數，回傳套用後的新 [TableState] 實例。
+     *
+     * @return 所有玩家分數皆已初始化的新 [TableState] 實例。
      */
-    fun init(){
+    fun init(): TableState {
         val initialScore = config.scoreConfig.initialScore
-        players.forEach { it.score = initialScore }
+        return copy(players = players.map { it.copy(score = initialScore) })
     }
 
     /**

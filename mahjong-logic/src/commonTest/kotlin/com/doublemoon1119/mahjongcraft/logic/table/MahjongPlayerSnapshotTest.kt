@@ -76,8 +76,7 @@ class MahjongPlayerSnapshotTest {
             id = id,
             initialSeat = Wind.WEST,
             discardPile = discardPile
-        )
-        player.score = 25000
+        ).copy(score = 25000)
 
         val snapshot = player.toSnapshot(isVisible = true)
 

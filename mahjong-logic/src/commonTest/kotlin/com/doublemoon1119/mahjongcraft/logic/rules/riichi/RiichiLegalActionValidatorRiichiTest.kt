@@ -54,11 +54,10 @@ class RiichiLegalActionValidatorRiichiTest {
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand
-        )
+        ).copy(score = 1000)  // 點數剛好 1000
         val tableState = FakeTableStateFactory.create(
             players = listOf(player)
         )
-        player.score = 1000  // 點數剛好 1000（要在 TableState 建立後設定）
 
         // 執行
         val actions = validator.getLegalActions(
@@ -100,11 +99,10 @@ class RiichiLegalActionValidatorRiichiTest {
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand
-        )
+        ).copy(score = 2500)  // 點數超過 1000
         val tableState = FakeTableStateFactory.create(
             players = listOf(player)
         )
-        player.score = 2500  // 點數超過 1000（要在 TableState 建立後設定）
 
         // 執行
         val actions = validator.getLegalActions(
@@ -146,11 +144,10 @@ class RiichiLegalActionValidatorRiichiTest {
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand
-        )
+        ).copy(score = 500)  // 點數不足 1000
         val tableState = FakeTableStateFactory.create(
             players = listOf(player)
         )
-        player.score = 500  // 點數不足 1000（要在 TableState 建立後設定）
 
         // 執行
         val actions = validator.getLegalActions(
@@ -192,11 +189,10 @@ class RiichiLegalActionValidatorRiichiTest {
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand
-        )
+        ).copy(score = 0)  // 點數為 0
         val tableState = FakeTableStateFactory.create(
             players = listOf(player)
         )
-        player.score = 0  // 點數為 0（要在 TableState 建立後設定）
 
         // 執行
         val actions = validator.getLegalActions(

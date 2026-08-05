@@ -9,6 +9,9 @@ import kotlin.test.assertTrue
 
 /**
  * 針對 [RiichiDiscardPile] 及其特有邏輯進行單元測試。
+ *
+ * [RiichiDiscardPile] 為不可變值物件，`discard()`/`takeLast()` 皆回傳新的實例，
+ * 因此測試以 `pile = pile.xxx(...)` 的重新賦值方式驗證各項操作。
  */
 class RiichiDiscardPileTest {
 
@@ -17,12 +20,12 @@ class RiichiDiscardPileTest {
      */
     @Test
     fun `test riichi discard entry properties`() {
-        val pile = RiichiDiscardPile()
+        var pile = RiichiDiscardPile()
         val tile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
 
         // 建立並放入立直捨牌紀錄
         val entry = RiichiDiscardEntry(tile, isRiichi = true)
-        pile.discard(entry)
+        pile = pile.discard(entry)
 
         assertEquals(1, pile.entries.size)
         // 驗證泛型是否允許直接存取 RiichiDiscardEntry 特有屬性
@@ -35,15 +38,15 @@ class RiichiDiscardPileTest {
      */
     @Test
     fun `test riichi takeLast behavior`() {
-        val pile = RiichiDiscardPile()
+        var pile = RiichiDiscardPile()
         val tile1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val tile2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
 
-        pile.discard(RiichiDiscardEntry(tile1))
-        pile.discard(RiichiDiscardEntry(tile2))
+        pile = pile.discard(RiichiDiscardEntry(tile1))
+        pile = pile.discard(RiichiDiscardEntry(tile2))
 
         // 模擬第二張牌被鳴走
-        pile.takeLast()
+        pile = pile.takeLast()
 
         assertTrue(pile.entries[1].isTaken)
         assertFalse(pile.entries[0].isTaken)

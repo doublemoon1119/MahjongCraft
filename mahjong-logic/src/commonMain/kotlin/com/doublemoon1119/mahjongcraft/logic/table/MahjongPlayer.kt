@@ -11,85 +11,49 @@ import kotlin.uuid.Uuid
  *
  * 本類別作為玩家數據的載體，封裝了手牌、牌河、分數及方位。
  *
+ * 本類別為不可變值物件：所有會改變玩家狀態的操作皆不會修改原實例，
+ * 而是回傳一個反映變更後狀態的新 [MahjongPlayer] 實例。
+ *
  * @property id 玩家的唯一識別碼（通常對應 Minecraft 玩家的 Uuid）。
  * @property initialSeat 初始座位方位。
  * @property hand 該玩家的手牌實體。
  * @property discardPile 該玩家的牌河實體，其具體類型由遊戲規則決定。
  * @property playerRuleState 用於儲存規則特有的玩家狀態（如立直、振聽等）。
  *                          具體類型由各規則決定，例如 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState]。
+ * @property score 玩家目前的總分（持點）。其初始值通常由 [TableState] 根據規則配置進行初始化。
+ * @property currentWind 玩家目前的方位。隨連莊或過莊改變，用於判定當前局數中的親家/子家關係。
+ * @property passedTilesInRound 當前巡迴中玩家放過的牌（用於過水碰及同巡振聽判定）：
+ *                              放過碰牌機會 → 過水碰（之後不能碰）；放過榮和機會 → 同巡振聽（之後不能榮和）。
+ *                              當玩家摸牌時（新的巡迴開始）應清除此集合。
+ * @property actionHistory 記錄玩家執行的動作歷史，用於判斷特定的胡牌役（如嶺上開花需要「槓牌 → 摸牌」的動作序列）。
  */
-class MahjongPlayer(
+data class MahjongPlayer(
     val id: Uuid,
     val initialSeat: Wind,
     val hand: Hand = Hand(),
     val discardPile: DiscardPile<*>,
-    val playerRuleState: PlayerRuleState? = null
+    val playerRuleState: PlayerRuleState? = null,
+    val score: Int = 0,
+    val currentWind: Wind = initialSeat,
+    val passedTilesInRound: Set<Tile> = emptySet(),
+    val actionHistory: List<GameAction> = emptyList()
 ) {
-    /**
-     * 玩家目前的總分（持點）。
-     *
-     * 其初始值通常由 [TableState] 根據規則配置進行初始化。
-     */
-    var score: Int = 0
-
-    /**
-     * 玩家目前的方位。
-     *
-     * 隨連莊或過莊改變，用於判定當前局數中的親家/子家關係。
-     */
-    var currentWind: Wind = initialSeat
-
-    /**
-     * 當前巡迴中玩家放過的牌（用於過水碰及同巡振聽判定）。
-     *
-     * 記錄玩家在當前巡迴中放過的牌：
-     * - 放過碰牌機會 → 過水碰（之後不能碰）
-     * - 放過榮和機會 → 同巡振聽（之後不能榮和）
-     * 當玩家摸牌時（新的巡迴開始）應清除此集合。
-     */
-    private val _passedTilesInRound: MutableSet<Tile> = mutableSetOf()
-
-    /**
-     * 當前巡迴中玩家放過的牌集合（唯讀）。
-     */
-    val passedTilesInRound: Set<Tile> = _passedTilesInRound
-
     /**
      * 記錄玩家放過的牌（用於過水碰及同巡振聽判定）。
      *
      * @param tile 放過的牌（應為基礎類型，忽略赤寶牌屬性）。
+     * @return 記錄後的新 [MahjongPlayer] 實例。
      */
-    fun addPassedTile(tile: Tile) {
-        _passedTilesInRound.add(tile.withoutRed)
-    }
+    fun addPassedTile(tile: Tile): MahjongPlayer = copy(passedTilesInRound = passedTilesInRound + tile.withoutRed)
 
     /**
      * 清除當前巡迴中放過的牌。
      *
      * 通常在玩家摸牌（新的巡迴開始）時呼叫。
-     */
-    fun clearPassedTiles() {
-        _passedTilesInRound.clear()
-    }
-
-    /**
-     * 記錄玩家執行的動作歷史。
      *
-     * 用於記錄玩家在遊戲過程中執行的各項動作，如摸牌、捨牌、槓牌、胡牌等。
-     * 此歷史記錄可用於判斷特定的胡牌役（如嶺上开花需要「槓牌 → 摸牌」的动作序列）。
-     *
-     * @see recordAction
-     * @see clearActionHistory
+     * @return 清除後的新 [MahjongPlayer] 實例。
      */
-    private val _actionHistory: MutableList<GameAction> = mutableListOf()
-
-    /**
-     * 玩家動作歷史的唯讀列表。
-     *
-     * @see recordAction
-     * @see clearActionHistory
-     */
-    val actionHistory: List<GameAction> = _actionHistory
+    fun clearPassedTiles(): MahjongPlayer = copy(passedTilesInRound = emptySet())
 
     /**
      * 記錄玩家執行的動作。
@@ -97,22 +61,18 @@ class MahjongPlayer(
      * 將 [action] 加入動作歷史記錄中，用於後續判斷特定役種或其他遊戲邏輯。
      *
      * @param action 玩家執行的動作。
+     * @return 記錄後的新 [MahjongPlayer] 實例。
      * @see actionHistory
-     * @see clearActionHistory
      */
-    fun recordAction(action: GameAction) {
-        _actionHistory.add(action)
-    }
+    fun recordAction(action: GameAction): MahjongPlayer = copy(actionHistory = actionHistory + action)
 
     /**
      * 清除動作歷史記錄。
      *
      * 通常在一局結束時呼叫，以重置記錄避免與下一局資料混淆。
      *
+     * @return 清除後的新 [MahjongPlayer] 實例。
      * @see actionHistory
-     * @see recordAction
      */
-    fun clearActionHistory() {
-        _actionHistory.clear()
-    }
+    fun clearActionHistory(): MahjongPlayer = copy(actionHistory = emptyList())
 }

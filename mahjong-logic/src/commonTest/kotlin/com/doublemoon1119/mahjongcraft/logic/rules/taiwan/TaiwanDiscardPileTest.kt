@@ -9,6 +9,9 @@ import kotlin.test.assertTrue
 
 /**
  * 針對 [TaiwanDiscardPile] 及其基礎行為進行單元測試。
+ *
+ * [TaiwanDiscardPile] 為不可變值物件，`discard()`/`takeLast()` 皆回傳新的實例，
+ * 因此測試以 `pile = pile.xxx(...)` 的重新賦值方式驗證各項操作。
  */
 class TaiwanDiscardPileTest {
 
@@ -17,12 +20,12 @@ class TaiwanDiscardPileTest {
      */
     @Test
     fun `test taiwan discard pile basic storage`() {
-        val pile = TaiwanDiscardPile()
+        var pile = TaiwanDiscardPile()
         val tile = FakeIdentifiedTileFactory.create(Tile.Flower.Spring)
 
         // 台灣麻將僅使用基礎的 DiscardEntry
         val entry = DiscardPile.DiscardEntry(tile)
-        pile.discard(entry)
+        pile = pile.discard(entry)
 
         assertEquals(1, pile.entries.size)
         assertEquals(tile, pile.entries.first().tile)
@@ -33,13 +36,13 @@ class TaiwanDiscardPileTest {
      */
     @Test
     fun `test taiwan takeLast behavior`() {
-        val pile = TaiwanDiscardPile()
+        var pile = TaiwanDiscardPile()
         val tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
 
-        pile.discard(DiscardPile.DiscardEntry(tile))
+        pile = pile.discard(DiscardPile.DiscardEntry(tile))
 
         // 模擬被碰走
-        pile.takeLast()
+        pile = pile.takeLast()
 
         assertTrue(pile.entries.first().isTaken)
     }
@@ -51,7 +54,7 @@ class TaiwanDiscardPileTest {
     fun `test takeLast on empty taiwan pile`() {
         val pile = TaiwanDiscardPile()
         // 應安全執行
-        pile.takeLast()
-        assertEquals(0, pile.entries.size)
+        val updatedPile = pile.takeLast()
+        assertEquals(0, updatedPile.entries.size)
     }
 }

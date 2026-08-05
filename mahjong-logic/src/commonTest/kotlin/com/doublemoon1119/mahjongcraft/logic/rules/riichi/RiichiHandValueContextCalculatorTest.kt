@@ -628,15 +628,15 @@ class RiichiHandValueContextCalculatorTest {
 
         val kanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val riichiState = RiichiPlayerState(riichiTile = kanTile)
-        val player = createPlayer(hand, riichiState)
-        player.recordAction(
+        var player = createPlayer(hand, riichiState)
+        player = player.recordAction(
             GameAction.Kan(
                 type = GameAction.KanType.OPEN_KAN,
                 tileId = kanSourceTile.id,
                 withTiles = kanMeld.tiles.map { it.id },
             )
         )
-        player.recordAction(GameAction.Draw)
+        player = player.recordAction(GameAction.Draw)
 
         val wallTiles = (1..30).map {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
