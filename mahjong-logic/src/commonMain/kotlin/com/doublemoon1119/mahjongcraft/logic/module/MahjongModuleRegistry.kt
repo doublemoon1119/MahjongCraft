@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.module
 
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import kotlin.reflect.KClass
 
 /**
  * 麻將規則模組註冊中心介面。
@@ -15,7 +16,7 @@ interface MahjongModuleRegistry {
      * @param factory 工廠函數。
      */
     fun <T : MahjongRuleConfig> register(
-        configClass: Class<T>,
+        configClass: KClass<T>,
         id: String,
         factory: (T, id: String) -> MahjongRuleModule<T>
     )
@@ -33,5 +34,5 @@ interface MahjongModuleRegistry {
     /**
      * 根據 ID 獲取對應的配置類別。
      */
-    fun getConfigClass(id: String): Class<out MahjongRuleConfig>?
+    fun getConfigClass(id: String): KClass<out MahjongRuleConfig>?
 }
