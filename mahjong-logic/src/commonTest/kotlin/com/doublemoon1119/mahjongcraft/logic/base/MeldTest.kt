@@ -8,6 +8,9 @@ import kotlin.test.assertTrue
 
 /**
  * 針對 [Hand] 中的副露（鳴牌）相關邏輯進行單元測試。
+ *
+ * [Hand] 為不可變值物件，`call()`/`upgradeToAddedKan()` 皆回傳新的手牌實例，
+ * 因此測試以重新賦值的方式取得操作後的手牌狀態。
  */
 class MeldTest {
 
@@ -23,10 +26,10 @@ class MeldTest {
         // 上家打出 3萬 (source)
         val source = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3))
 
-        val hand = Hand(mutableListOf(t1, t2))
+        val hand = Hand(listOf(t1, t2))
 
         // 執行吃牌 (1,2,3萬)
-        hand.call(
+        val updatedHand = hand.call(
             type = MeldType.CHI,
             tiles = listOf(t1, t2, source),
             source = source,
@@ -34,12 +37,12 @@ class MeldTest {
         )
 
         // 驗證：立牌應該變空
-        assertTrue(hand.standingTiles.isEmpty())
+        assertTrue(updatedHand.standingTiles.isEmpty())
         // 驗證：副露列表應有一組吃
-        assertEquals(1, hand.exposedMelds.size)
-        assertEquals(MeldType.CHI, hand.exposedMelds[0].type)
-        assertEquals(3, hand.exposedMelds[0].tiles.size)
-        assertEquals(source, hand.exposedMelds[0].sourceTile)
+        assertEquals(1, updatedHand.exposedMelds.size)
+        assertEquals(MeldType.CHI, updatedHand.exposedMelds[0].type)
+        assertEquals(3, updatedHand.exposedMelds[0].tiles.size)
+        assertEquals(source, updatedHand.exposedMelds[0].sourceTile)
     }
 
     /**
@@ -55,11 +58,10 @@ class MeldTest {
         val t4 = FakeIdentifiedTileFactory.create(tileType)
 
         // 手牌三張，摸到第四張
-        val hand = Hand(mutableListOf(t1, t2, t3))
-        hand.lastDrawn = t4
+        val hand = Hand(tiles = listOf(t1, t2, t3), lastDrawn = t4)
 
         // 執行暗槓 (source 為 null)
-        hand.call(
+        val updatedHand = hand.call(
             type = MeldType.CLOSED_KAN,
             tiles = listOf(t1, t2, t3, t4),
             source = null,
@@ -67,10 +69,10 @@ class MeldTest {
         )
 
         // 驗證：立牌與摸牌區都應清空
-        assertTrue(hand.standingTiles.isEmpty())
-        assertNull(hand.lastDrawn)
-        assertEquals(1, hand.exposedMelds.size)
-        assertEquals(MeldType.CLOSED_KAN, hand.exposedMelds[0].type)
+        assertTrue(updatedHand.standingTiles.isEmpty())
+        assertNull(updatedHand.lastDrawn)
+        assertEquals(1, updatedHand.exposedMelds.size)
+        assertEquals(MeldType.CLOSED_KAN, updatedHand.exposedMelds[0].type)
     }
 
     /**
@@ -85,15 +87,14 @@ class MeldTest {
         val t3 = FakeIdentifiedTileFactory.create(tileType) // 來自他人的 source
         val t4 = FakeIdentifiedTileFactory.create(tileType) // 剛摸到的加槓牌
 
-        val hand = Hand()
         // 先建立一個碰 (PON)
-        hand.call(MeldType.PON, listOf(t1, t2, t3), t3, RelativeDirection.Across)
+        var hand = Hand().call(MeldType.PON, listOf(t1, t2, t3), t3, RelativeDirection.Across)
 
         // 摸到第四張
-        hand.lastDrawn = t4
+        hand = hand.copy(lastDrawn = t4)
 
         // 執行加槓 (索引 0 的副露)
-        hand.upgradeToAddedKan(t4, 0)
+        hand = hand.upgradeToAddedKan(t4, 0)
 
         // 驗證：摸牌區清空
         assertNull(hand.lastDrawn)

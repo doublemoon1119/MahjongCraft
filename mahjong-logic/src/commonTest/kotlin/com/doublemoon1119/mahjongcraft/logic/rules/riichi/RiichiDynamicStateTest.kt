@@ -90,14 +90,12 @@ class RiichiDynamicStateTest {
         }
         val playerWithKan = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.EAST,
-            hand = Hand().apply {
-                call(
-                    type = MeldType.OPEN_KAN,
-                    tiles = kanTiles,
-                    source = kanTiles[0],
-                    direction = RelativeDirection.Left
-                )
-            }
+            hand = Hand().call(
+                type = MeldType.OPEN_KAN,
+                tiles = kanTiles,
+                source = kanTiles[0],
+                direction = RelativeDirection.Left
+            )
         )
 
         val deadWallTiles = List(14) { i ->
@@ -125,13 +123,11 @@ class RiichiDynamicStateTest {
             }
             return FakeMahjongPlayerFactory.create(
                 initialSeat = seat,
-                hand = Hand().apply {
-                    call(
-                        type = MeldType.CLOSED_KAN,
-                        tiles = kanTiles,
-                        direction = RelativeDirection.Self
-                    )
-                }
+                hand = Hand().call(
+                    type = MeldType.CLOSED_KAN,
+                    tiles = kanTiles,
+                    direction = RelativeDirection.Self
+                )
             )
         }
 
