@@ -36,47 +36,49 @@ class ToggleReadyUseCase(
         roomId: Uuid,
         playerId: Uuid
     ): Outcome<Unit, RoomError> {
-        val room = roomRepository.getRoom(roomId)
-            ?: return Outcome.Error(RoomError.RoomNotFound(roomId))
-
-        // 1. 驗證玩家是否在房間內
-        if (!room.playerIds.contains(playerId)) {
-            return Outcome.Error(RoomError.PlayerNotInRoom(playerId, roomId))
+        // 1. 以原子方式讀取房間、切換準備狀態並寫回，避免並發切換請求互相覆蓋。
+        //    房主不參與準備狀態切換，此情境下回傳 Success(null) 代表無需任何後續處理。
+        val outcome = roomRepository.update(roomId) { room ->
+            when {
+                room == null -> room to Outcome.Error(RoomError.RoomNotFound(roomId))
+                !room.playerIds.contains(playerId) -> room to Outcome.Error(RoomError.PlayerNotInRoom(playerId, roomId))
+                playerId == room.hostId -> room to Outcome.Success(null)
+                else -> {
+                    val newReadyPlayerIds = if (room.readyPlayerIds.contains(playerId)) {
+                        room.readyPlayerIds - playerId
+                    } else {
+                        room.readyPlayerIds + playerId
+                    }
+                    val updatedRoom = room.copy(readyPlayerIds = newReadyPlayerIds)
+                    updatedRoom to Outcome.Success(updatedRoom)
+                }
+            }
         }
 
-        // 2. 房主不參與準備狀態切換（業務邏輯限制）
-        if (playerId == room.hostId) {
-            return Outcome.Success(Unit)
+        return when (outcome) {
+            is Outcome.Error -> outcome
+            is Outcome.Success -> {
+                val updatedRoom = outcome.value ?: return Outcome.Success(Unit)
+                val isNowReady = updatedRoom.readyPlayerIds.contains(playerId)
+
+                // 2. 向所有觀察者同步更新後的狀態
+                val observers = snapshotRepository.getAllObservers(roomId)
+                observers.forEach { observerId ->
+                    snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
+                }
+
+                // 3. 通知房間內的所有成員
+                updatedRoom.playerIds.forEach { memberId ->
+                    eventPublisher.publishReady(
+                        roomId = roomId,
+                        targetPlayerId = memberId,
+                        readyPlayerId = playerId,
+                        isReady = isNowReady
+                    )
+                }
+
+                Outcome.Success(Unit)
+            }
         }
-
-        // 3. 計算新的準備狀態集合
-        val isNowReady = !room.readyPlayerIds.contains(playerId)
-        val newReadyPlayerIds = if (isNowReady) {
-            room.readyPlayerIds + playerId
-        } else {
-            room.readyPlayerIds - playerId
-        }
-
-        // 4. 更新領域模型並持久化
-        val updatedRoom = room.copy(readyPlayerIds = newReadyPlayerIds)
-        roomRepository.setRoom(updatedRoom)
-
-        // 5. 向所有觀察者同步更新後的狀態
-        val observers = snapshotRepository.getAllObservers(roomId)
-        observers.forEach { observerId ->
-            snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
-        }
-
-        // 6. 通知房間內的所有成員
-        updatedRoom.playerIds.forEach { memberId ->
-            eventPublisher.publishReady(
-                roomId = roomId,
-                targetPlayerId = memberId,
-                readyPlayerId = playerId,
-                isReady = isNowReady
-            )
-        }
-
-        return Outcome.Success(Unit)
     }
 }

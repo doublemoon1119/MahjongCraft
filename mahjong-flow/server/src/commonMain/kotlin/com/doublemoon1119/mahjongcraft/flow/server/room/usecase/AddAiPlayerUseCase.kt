@@ -38,44 +38,48 @@ class AddAiPlayerUseCase(
         roomId: Uuid,
         operatorId: Uuid
     ): Outcome<Uuid, RoomError> {
-        val room = roomRepository.getRoom(roomId)
-            ?: return Outcome.Error(RoomError.RoomNotFound(roomId))
-
-        // 1. 權限驗證：僅限房主操作
-        if (operatorId != room.hostId) {
-            return Outcome.Error(RoomError.NotHost(operatorId))
+        // 1. 以原子方式讀取房間、驗證業務規則並寫回，避免與其他加入/踢出操作產生競態（如人數上限被同時突破）
+        val outcome = roomRepository.update(roomId) { room ->
+            when {
+                room == null -> room to Outcome.Error(RoomError.RoomNotFound(roomId))
+                operatorId != room.hostId -> room to Outcome.Error(RoomError.NotHost(operatorId))
+                room.isFull -> room to Outcome.Error(RoomError.RoomIsFull(roomId))
+                else -> {
+                    // 產生 AI 的 Uuid 並更新領域模型
+                    val aiId = Uuid.random()
+                    val updatedRoom = room.copy(
+                        playerIds = room.playerIds + aiId,
+                        aiPlayerIds = room.aiPlayerIds + aiId,
+                        readyPlayerIds = room.readyPlayerIds + aiId  // AI 會直接進入準備就緒狀態
+                    )
+                    updatedRoom to Outcome.Success(aiId to updatedRoom)
+                }
+            }
         }
 
-        // 2. 業務規則驗證：檢查人數上限
-        if (room.isFull) {
-            return Outcome.Error(RoomError.RoomIsFull(roomId))
+        return when (outcome) {
+            is Outcome.Error -> outcome
+            is Outcome.Success -> {
+                val (aiId, updatedRoom) = outcome.value
+
+                // 2. 同步給所有正在觀察的玩家
+                val observers = snapshotRepository.getAllObservers(roomId)
+                observers.forEach { observerId ->
+                    snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
+                }
+
+                // 3. 通知房間內所有成員
+                updatedRoom.playerIds.forEach { memberId ->
+                    eventPublisher.publishJoin(
+                        roomId = roomId,
+                        targetPlayerId = memberId,
+                        joinedPlayerId = aiId,
+                        reason = JoinReason.Joined
+                    )
+                }
+
+                Outcome.Success(aiId)
+            }
         }
-
-        // 3. 產生 AI 的 Uuid 並更新領域模型，並持久化
-        val aiId = Uuid.random()
-        val updatedRoom = room.copy(
-            playerIds = room.playerIds + aiId,
-            aiPlayerIds = room.aiPlayerIds + aiId,
-            readyPlayerIds = room.readyPlayerIds + aiId  // AI 會直接進入準備就緒狀態
-        )
-        roomRepository.setRoom(updatedRoom)
-
-        // 4. 同步給所有正在觀察的玩家
-        val observers = snapshotRepository.getAllObservers(roomId)
-        observers.forEach { observerId ->
-            snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
-        }
-
-        // 5. 通知房間內所有成員
-        updatedRoom.playerIds.forEach { memberId ->
-            eventPublisher.publishJoin(
-                roomId = roomId,
-                targetPlayerId = memberId,
-                joinedPlayerId = aiId,
-                reason = JoinReason.Joined
-            )
-        }
-
-        return Outcome.Success(aiId)
     }
 }

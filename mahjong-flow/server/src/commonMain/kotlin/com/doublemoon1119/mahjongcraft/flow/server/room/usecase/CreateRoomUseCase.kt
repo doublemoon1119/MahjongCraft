@@ -41,32 +41,36 @@ class CreateRoomUseCase(
         hostId: Uuid,
         config: MahjongRuleConfig
     ): Outcome<Room, RoomError> {
-        // 1. 檢查房間是否已存在，避免重複創建
-        if (roomRepository.getRoom(roomId) != null) {
-            return Outcome.Error(RoomError.RoomAlreadyExists(roomId))
+        // 1. 以原子方式檢查房間是否已存在並寫入，避免並發請求重複創建同一房間
+        val outcome = roomRepository.update(roomId) { existing ->
+            if (existing != null) {
+                existing to Outcome.Error(RoomError.RoomAlreadyExists(roomId))
+            } else {
+                // 初始化房間物件，房主預設加入且不預設準備
+                val newRoom = Room(
+                    id = roomId,
+                    hostId = hostId,
+                    config = config,
+                    playerIds = setOf(hostId),
+                    readyPlayerIds = emptySet()
+                )
+                newRoom to Outcome.Success(newRoom)
+            }
         }
 
-        // 2. 初始化房間物件，房主預設加入且不預設準備
-        val newRoom = Room(
-            id = roomId,
-            hostId = hostId,
-            config = config,
-            playerIds = setOf(hostId),
-            readyPlayerIds = emptySet()
-        )
+        if (outcome is Outcome.Success) {
+            val newRoom = outcome.value
 
-        // 3. 存入權威數據倉庫
-        roomRepository.setRoom(newRoom)
+            // 2. 同步給所有正在觀察的玩家
+            val observers = snapshotRepository.getAllObservers(roomId)
+            observers.forEach { observerId ->
+                snapshotRepository.setSnapshot(observerId, newRoom.toSnapshot(observerId))
+            }
 
-        // 4. 同步給所有正在觀察的玩家
-        val observers = snapshotRepository.getAllObservers(roomId)
-        observers.forEach { observerId ->
-            snapshotRepository.setSnapshot(observerId, newRoom.toSnapshot(observerId))
+            // 3. 發送創建房間通知
+            eventPublisher.publishJoin(roomId, hostId, hostId, JoinReason.Created)
         }
 
-        // 5. 發送創建房間通知
-        eventPublisher.publishJoin(roomId, hostId, hostId, JoinReason.Created)
-
-        return Outcome.Success(newRoom)
+        return outcome
     }
 }

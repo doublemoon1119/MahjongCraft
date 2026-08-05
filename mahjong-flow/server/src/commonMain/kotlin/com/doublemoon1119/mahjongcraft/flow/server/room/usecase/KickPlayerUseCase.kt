@@ -39,45 +39,46 @@ class KickPlayerUseCase(
         operatorId: Uuid,
         targetPlayerId: Uuid
     ): Outcome<Unit, RoomError> {
-        val room = roomRepository.getRoom(roomId)
-            ?: return Outcome.Error(RoomError.RoomNotFound(roomId))
-
-        // 1. 驗證發起者是否為房主
-        if (operatorId != room.hostId) {
-            return Outcome.Error(RoomError.NotHost(operatorId))
+        // 1. 以原子方式讀取房間、驗證業務規則並寫回，避免與其他房間操作（如玩家自行離開）產生競態
+        val outcome = roomRepository.update(roomId) { room ->
+            when {
+                room == null -> room to Outcome.Error(RoomError.RoomNotFound(roomId))
+                operatorId != room.hostId -> room to Outcome.Error(RoomError.NotHost(operatorId))
+                !room.playerIds.contains(targetPlayerId) -> room to Outcome.Error(RoomError.PlayerNotInRoom(targetPlayerId, roomId))
+                targetPlayerId == room.hostId -> room to Outcome.Error(RoomError.HostCannotKickSelf(targetPlayerId))
+                else -> {
+                    val updatedRoom = room.copy(
+                        playerIds = room.playerIds - targetPlayerId,
+                        readyPlayerIds = room.readyPlayerIds - targetPlayerId
+                    )
+                    updatedRoom to Outcome.Success(updatedRoom)
+                }
+            }
         }
 
-        // 2. 驗證目標是否在房間內且不是房主本人
-        if (!room.playerIds.contains(targetPlayerId)) {
-            return Outcome.Error(RoomError.PlayerNotInRoom(targetPlayerId, roomId))
-        }
-        if (targetPlayerId == room.hostId) {
-            return Outcome.Error(RoomError.HostCannotKickSelf(targetPlayerId))
-        }
+        return when (outcome) {
+            is Outcome.Error -> outcome
+            is Outcome.Success -> {
+                val updatedRoom = outcome.value
 
-        // 3. 更新房間資料並持久化
-        val updatedRoom = room.copy(
-            playerIds = room.playerIds - targetPlayerId,
-            readyPlayerIds = room.readyPlayerIds - targetPlayerId
-        )
-        roomRepository.setRoom(updatedRoom)
+                // 2. 同步新狀態給所有觀察者
+                val observers = snapshotRepository.getAllObservers(roomId)
+                observers.forEach { observerId ->
+                    snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
+                }
 
-        // 4. 同步新狀態給所有觀察者
-        val observers = snapshotRepository.getAllObservers(roomId)
-        observers.forEach { observerId ->
-            snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
+                // 3. 通知**原房間**內的所有玩家（含被剔除者本人，故需補回 targetPlayerId）
+                (updatedRoom.playerIds + targetPlayerId).forEach { memberId ->
+                    eventPublisher.publishLeave(
+                        roomId = roomId,
+                        targetPlayerId = memberId,
+                        leftPlayerId = targetPlayerId,
+                        reason = LeaveReason.Kicked
+                    )
+                }
+
+                Outcome.Success(Unit)
+            }
         }
-
-        // 5. 通知**原房間**內的所有玩家
-        room.playerIds.forEach { memberId ->
-            eventPublisher.publishLeave(
-                roomId = roomId,
-                targetPlayerId = memberId,
-                leftPlayerId = targetPlayerId,
-                reason = LeaveReason.Kicked
-            )
-        }
-
-        return Outcome.Success(Unit)
     }
 }

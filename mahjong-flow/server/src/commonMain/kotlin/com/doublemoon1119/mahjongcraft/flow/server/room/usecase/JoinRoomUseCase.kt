@@ -37,41 +37,42 @@ class JoinRoomUseCase(
         roomId: Uuid,
         playerId: Uuid
     ): Outcome<Unit, RoomError> {
-        val room = roomRepository.getRoom(roomId)
-            ?: return Outcome.Error(RoomError.RoomNotFound(roomId))
-
-        // 1. 驗證業務規則：檢查是否已經在房間內
-        if (room.playerIds.contains(playerId)) {
-            return Outcome.Error(RoomError.PlayerAlreadyInRoom(playerId, roomId))
+        // 1. 以原子方式讀取房間、驗證業務規則並寫回，避免並發加入請求互相覆蓋
+        val outcome = roomRepository.update(roomId) { room ->
+            when {
+                room == null -> room to Outcome.Error(RoomError.RoomNotFound(roomId))
+                room.playerIds.contains(playerId) -> room to Outcome.Error(RoomError.PlayerAlreadyInRoom(playerId, roomId))
+                room.isFull -> room to Outcome.Error(RoomError.RoomIsFull(roomId))
+                else -> {
+                    val updatedRoom = room.copy(playerIds = room.playerIds + playerId)
+                    updatedRoom to Outcome.Success(updatedRoom)
+                }
+            }
         }
 
-        // 2. 驗證業務規則：利用 Room 領域模型檢查是否已滿
-        if (room.isFull) {
-            return Outcome.Error(RoomError.RoomIsFull(roomId))
+        return when (outcome) {
+            is Outcome.Error -> outcome
+            is Outcome.Success -> {
+                val updatedRoom = outcome.value
+
+                // 2. 同步給所有正在觀察的玩家
+                val observers = snapshotRepository.getAllObservers(roomId)
+                observers.forEach { observerId ->
+                    snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
+                }
+
+                // 3. 通知房間內的所有玩家
+                updatedRoom.playerIds.forEach { memberId ->
+                    eventPublisher.publishJoin(
+                        roomId = roomId,
+                        targetPlayerId = memberId,
+                        joinedPlayerId = playerId,
+                        reason = JoinReason.Joined
+                    )
+                }
+
+                Outcome.Success(Unit)
+            }
         }
-
-        // 3. 更新領域模型並持久化
-        val updatedRoom = room.copy(
-            playerIds = room.playerIds + playerId
-        )
-        roomRepository.setRoom(updatedRoom)
-
-        // 4. 同步給所有正在觀察的玩家
-        val observers = snapshotRepository.getAllObservers(roomId)
-        observers.forEach { observerId ->
-            snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
-        }
-
-        // 5. 通知房間內的所有玩家
-        updatedRoom.playerIds.forEach { memberId ->
-            eventPublisher.publishJoin(
-                roomId = roomId,
-                targetPlayerId = memberId,
-                joinedPlayerId = playerId,
-                reason = JoinReason.Joined
-            )
-        }
-
-        return Outcome.Success(Unit)
     }
 }

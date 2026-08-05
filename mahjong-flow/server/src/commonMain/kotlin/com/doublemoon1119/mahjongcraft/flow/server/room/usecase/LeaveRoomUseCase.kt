@@ -37,50 +37,58 @@ class LeaveRoomUseCase(
         roomId: Uuid,
         playerId: Uuid
     ): Outcome<Unit, RoomError> {
-        val room = roomRepository.getRoom(roomId)
-            ?: return Outcome.Error(RoomError.RoomNotFound(roomId))
-
-        // 1. 若離開者為房主，則解散房間
-        if (playerId == room.hostId) {
-            roomRepository.removeRoom(roomId)
-            room.playerIds.forEach { memberId ->
-                // 通知房間內的所有玩家，並移除快照
-                eventPublisher.publishLeave(
-                    roomId = roomId,
-                    targetPlayerId = memberId,
-                    leftPlayerId = memberId,
-                    reason = LeaveReason.Dissolved
-                )
-                snapshotRepository.removeSnapshot(roomId, memberId)
+        // 1. 以原子方式讀取房間並決定「解散」或「移除單一玩家」，避免與其他房間操作產生競態。
+        //    解散情境下持久層寫回 null（移除房間），並將解散前的房間狀態帶出供後續通知使用。
+        val outcome = roomRepository.update(roomId) { room ->
+            when {
+                room == null -> room to Outcome.Error(RoomError.RoomNotFound(roomId))
+                playerId == room.hostId -> null to Outcome.Success(room)
+                else -> {
+                    val updatedRoom = room.copy(
+                        playerIds = room.playerIds - playerId,
+                        readyPlayerIds = room.readyPlayerIds - playerId
+                    )
+                    updatedRoom to Outcome.Success(updatedRoom)
+                }
             }
-            return Outcome.Success(Unit)
         }
 
-        // 2. 若為普通玩家，更新成員清單與準備狀態
-        val updatedRoom = room.copy(
-            playerIds = room.playerIds - playerId,
-            readyPlayerIds = room.readyPlayerIds - playerId
-        )
+        return when (outcome) {
+            is Outcome.Error -> outcome
+            is Outcome.Success -> {
+                val resultRoom = outcome.value
 
-        // 3. 儲存更新後的狀態
-        roomRepository.setRoom(updatedRoom)
+                if (playerId == resultRoom.hostId) {
+                    // 2a. 房主離開：房間已被移除，通知解散前的所有成員並清除其快照
+                    resultRoom.playerIds.forEach { memberId ->
+                        eventPublisher.publishLeave(
+                            roomId = roomId,
+                            targetPlayerId = memberId,
+                            leftPlayerId = memberId,
+                            reason = LeaveReason.Dissolved
+                        )
+                        snapshotRepository.removeSnapshot(roomId, memberId)
+                    }
+                } else {
+                    // 2b. 一般玩家離開：同步最新快照給所有觀察者
+                    val observers = snapshotRepository.getAllObservers(roomId)
+                    observers.forEach { observerId ->
+                        snapshotRepository.setSnapshot(observerId, resultRoom.toSnapshot(observerId))
+                    }
 
-        // 4. 同步最新快照給所有觀察者
-        val observers = snapshotRepository.getAllObservers(roomId)
-        observers.forEach { observerId ->
-            snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
+                    // 通知**原房間**內的所有玩家（含離開者本人，故需補回 playerId）
+                    (resultRoom.playerIds + playerId).forEach { memberId ->
+                        eventPublisher.publishLeave(
+                            roomId = roomId,
+                            targetPlayerId = memberId,
+                            leftPlayerId = playerId,
+                            reason = LeaveReason.Voluntary
+                        )
+                    }
+                }
+
+                Outcome.Success(Unit)
+            }
         }
-
-        // 5. 通知**原房間**內的所有玩家
-        room.playerIds.forEach { memberId ->
-            eventPublisher.publishLeave(
-                roomId = roomId,
-                targetPlayerId = memberId,
-                leftPlayerId = playerId,
-                reason = LeaveReason.Voluntary
-            )
-        }
-
-        return Outcome.Success(Unit)
     }
 }

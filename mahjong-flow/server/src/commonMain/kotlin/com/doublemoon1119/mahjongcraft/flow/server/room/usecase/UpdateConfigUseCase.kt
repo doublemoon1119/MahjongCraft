@@ -39,33 +39,40 @@ class UpdateConfigUseCase(
         operatorId: Uuid,
         newConfig: MahjongRuleConfig
     ): Outcome<Unit, RoomError> {
-        val room = roomRepository.getRoom(roomId)
-            ?: return Outcome.Error(RoomError.RoomNotFound(roomId))
-
-        // 1. 權限驗證：只有房主能修改配置
-        if (operatorId != room.hostId) {
-            return Outcome.Error(RoomError.NotHost(operatorId))
+        // 1. 以原子方式讀取房間、驗證權限並寫回，避免與其他房間操作產生競態
+        val outcome = roomRepository.update(roomId) { room ->
+            when {
+                room == null -> room to Outcome.Error(RoomError.RoomNotFound(roomId))
+                operatorId != room.hostId -> room to Outcome.Error(RoomError.NotHost(operatorId))
+                else -> {
+                    val updatedRoom = room.copy(config = newConfig)
+                    updatedRoom to Outcome.Success(updatedRoom)
+                }
+            }
         }
 
-        // 2. 更新領域模型並持久化
-        val updatedRoom = room.copy(config = newConfig)
-        roomRepository.setRoom(updatedRoom)
+        return when (outcome) {
+            is Outcome.Error -> outcome
+            is Outcome.Success -> {
+                val updatedRoom = outcome.value
 
-        // 3. 同步最新快照給所有觀察者
-        val observers = snapshotRepository.getAllObservers(roomId)
-        observers.forEach { observerId ->
-            snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
+                // 2. 同步最新快照給所有觀察者
+                val observers = snapshotRepository.getAllObservers(roomId)
+                observers.forEach { observerId ->
+                    snapshotRepository.setSnapshot(observerId, updatedRoom.toSnapshot(observerId))
+                }
+
+                // 3. 通知房間內的所有成員（用於顯示系統訊息或提示）
+                updatedRoom.playerIds.forEach { memberId ->
+                    eventPublisher.publishConfigChanged(
+                        roomId = roomId,
+                        targetPlayerId = memberId,
+                        newConfig = newConfig
+                    )
+                }
+
+                Outcome.Success(Unit)
+            }
         }
-
-        // 4. 通知房間內的所有成員（用於顯示系統訊息或提示）
-        updatedRoom.playerIds.forEach { memberId ->
-            eventPublisher.publishConfigChanged(
-                roomId = roomId,
-                targetPlayerId = memberId,
-                newConfig = newConfig
-            )
-        }
-
-        return Outcome.Success(Unit)
     }
 }
