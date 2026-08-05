@@ -9,6 +9,9 @@ import kotlin.test.assertNull
 
 /**
  * 針對 [TileWall] 進行單元測試。
+ *
+ * [TileWall] 為不可變值物件，[TileWall.draw]/[TileWall.drawLast] 皆透過 [TileWall.DrawResult]
+ * 回傳摸到的牌與新的牌山狀態，因此測試以 `wall = result.wall` 的重新賦值方式驗證。
  */
 class TileWallTest {
 
@@ -17,24 +20,28 @@ class TileWallTest {
      */
     @Test
     fun `test drawing from wall`() {
-        val tiles = mutableListOf(
+        val tiles = listOf(
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
         )
-        val wall = TileWall(tiles)
+        var wall = TileWall(tiles)
 
         assertEquals(2, wall.remainingCount)
 
         val firstDraw = wall.draw()
-        assertNotNull(firstDraw)
+        assertNotNull(firstDraw.tile)
+        wall = firstDraw.wall
         assertEquals(1, wall.remainingCount)
 
         val secondDraw = wall.draw()
-        assertNotNull(secondDraw)
+        assertNotNull(secondDraw.tile)
+        wall = secondDraw.wall
         assertEquals(0, wall.remainingCount)
 
-        // 牌山空了應返回 null
-        assertNull(wall.draw())
+        // 牌山空了應返回 null，且牌山狀態不變
+        val thirdDraw = wall.draw()
+        assertNull(thirdDraw.tile)
+        assertEquals(0, thirdDraw.wall.remainingCount)
     }
 
     /**
@@ -42,24 +49,26 @@ class TileWallTest {
      */
     @Test
     fun `test drawing last from wall`() {
-        val tiles = mutableListOf(
+        val tiles = listOf(
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
         )
-        val wall = TileWall(tiles)
+        var wall = TileWall(tiles)
 
         assertEquals(2, wall.remainingCount)
 
         val firstDraw = wall.drawLast()
-        assertNotNull(firstDraw)
+        assertNotNull(firstDraw.tile)
+        wall = firstDraw.wall
         assertEquals(1, wall.remainingCount)
 
         val secondDraw = wall.draw()
-        assertNotNull(secondDraw)
+        assertNotNull(secondDraw.tile)
+        wall = secondDraw.wall
         assertEquals(0, wall.remainingCount)
 
         // 牌山空了應返回 null
-        assertNull(wall.draw())
+        assertNull(wall.draw().tile)
     }
 
     /**
@@ -69,8 +78,7 @@ class TileWallTest {
     fun `test peeking from wall`() {
         val tile1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val tile2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
-        val tiles = mutableListOf(tile1, tile2)
-        val wall = TileWall(tiles)
+        val wall = TileWall(listOf(tile1, tile2))
 
         assertEquals(2, wall.remainingCount)
 
@@ -84,21 +92,19 @@ class TileWallTest {
     }
 
     /**
-     * 驗證獲取所有牌的列表是否為唯讀複製品。
+     * 驗證獲取所有牌的列表後，摸牌不會影響原本已取得的列表或原本的牌山實例。
      */
     @Test
     fun `test getAllTiles returns immutable list copy`() {
-        val tiles = mutableListOf(
-            FakeIdentifiedTileFactory.create(Tile.Honor.West)
-        )
-        val wall = TileWall(tiles)
+        val wall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Honor.West)))
 
         val allTiles = wall.getAllTiles()
         assertEquals(1, allTiles.size)
 
-        // 摸牌後，先前取得的 list 長度不應改變
-        wall.draw()
+        // 從新回傳的牌山實例摸牌，不應影響原本的 wall 或先前取得的 allTiles
+        val afterDraw = wall.draw().wall
         assertEquals(1, allTiles.size)
-        assertEquals(0, wall.remainingCount)
+        assertEquals(1, wall.remainingCount, "The original wall instance should remain unchanged.")
+        assertEquals(0, afterDraw.remainingCount)
     }
 }

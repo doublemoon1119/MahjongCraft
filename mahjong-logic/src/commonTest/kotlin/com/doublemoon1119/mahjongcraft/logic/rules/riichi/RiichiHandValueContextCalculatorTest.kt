@@ -30,6 +30,15 @@ class RiichiHandValueContextCalculatorTest {
         return RiichiHandValueContextCalculator(RiichiRuleConfig())
     }
 
+    /**
+     * 模擬從牌山尾端（嶺上）連續摸取 [times] 次，回傳摸牌後的新 [TileWall] 實例。
+     */
+    private fun TileWall.drawLastTimes(times: Int): TileWall {
+        var wall = this
+        repeat(times) { wall = wall.drawLast().wall }
+        return wall
+    }
+
     private fun createPlayer(hand: Hand, riichiState: RiichiPlayerState? = null): MahjongPlayer {
         return FakeMahjongPlayerFactory.create(
             hand = hand,
@@ -764,7 +773,7 @@ class RiichiHandValueContextCalculatorTest {
         )
         val tableState1Kan = FakeTableStateFactory.create(
             players = listOf(player1Kan),
-            tileWall = TileWall(wanPaiTiles).apply { repeat(1) { this.drawLast() } },
+            tileWall = TileWall(wanPaiTiles).drawLastTimes(1),
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
@@ -788,7 +797,7 @@ class RiichiHandValueContextCalculatorTest {
         )
         val tableState2Kan = FakeTableStateFactory.create(
             players = listOf(player2Kan),
-            tileWall = TileWall(wanPaiTiles).apply { repeat(2) { this.drawLast() } },
+            tileWall = TileWall(wanPaiTiles).drawLastTimes(2),
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
@@ -813,7 +822,7 @@ class RiichiHandValueContextCalculatorTest {
         )
         val tableState3Kan = FakeTableStateFactory.create(
             players = listOf(player3Kan),
-            tileWall = TileWall(wanPaiTiles).apply { repeat(3) { this.drawLast() } },
+            tileWall = TileWall(wanPaiTiles).drawLastTimes(3),
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
@@ -839,7 +848,7 @@ class RiichiHandValueContextCalculatorTest {
         )
         val tableState4Kan = FakeTableStateFactory.create(
             players = listOf(player4Kan),
-            tileWall = TileWall(wanPaiTiles).apply { repeat(4) { this.drawLast() } },
+            tileWall = TileWall(wanPaiTiles).drawLastTimes(4),
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState()
         )
