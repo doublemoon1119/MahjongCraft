@@ -57,7 +57,7 @@ class RiichiHandValueCalculator(
                         yakuResults = emptyList(),
                         totalHan = 0,
                         totalFu = 0,
-                        totalPoint = 0
+                        pointResult = RiichiPointResult.Ron(0)
                     )
                 }
 
@@ -70,16 +70,17 @@ class RiichiHandValueCalculator(
             // 若有任何役滿，則只計算役滿（役滿疊加）
             if (yakuResults.any { it.isYakuman }) {
                 val totalHan = HanCalculator.calculateTotalHan(yakuResults)
-                val totalPoint = PointCalculator.calculateYakumanPoint(
+                val pointResult = PointCalculator.calculateYakumanPoint(
                     yakumanMultiplier = abs(totalHan),  // 役滿總翻數為負數，這裡帶入絕對值
-                    isDealer = context.roundWind == context.seatWind
+                    isDealer = context.roundWind == context.seatWind,
+                    isTsumo = context.isTsumo
                 )
 
                 return@map RiichiHandValueResult(
                     yakuResults = yakuResults,
                     totalHan = totalHan,
                     totalFu = 0,
-                    totalPoint = totalPoint
+                    pointResult = pointResult
                 )
             }
 
@@ -135,17 +136,18 @@ class RiichiHandValueCalculator(
             }
 
             // 計算總點數
-            val totalPoint = PointCalculator.calculateNonYakumanPoint(
+            val pointResult = PointCalculator.calculateNonYakumanPoint(
                 han = totalHan,
                 fu = totalFu,
-                isDealer = context.roundWind == context.seatWind
+                isDealer = context.roundWind == context.seatWind,
+                isTsumo = context.isTsumo
             )
 
             return@map RiichiHandValueResult(
                 yakuResults = yakuResults,
                 totalHan = totalHan,
                 totalFu = totalFu,
-                totalPoint = totalPoint
+                pointResult = pointResult
             )
         }
 
@@ -159,7 +161,7 @@ class RiichiHandValueCalculator(
             yakuResults = emptyList(),
             totalHan = 0,
             totalFu = 0,
-            totalPoint = 0
+            pointResult = RiichiPointResult.Ron(0)
         )
     }
 
