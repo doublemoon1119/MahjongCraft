@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 
@@ -32,6 +33,7 @@ object FakeRiichiHandValueContextFactory {
      * @param isRobbingKan 是否為槍槓，預設為 false。
      * @param isRinshanKaihou 是否為嶺上開花，預設為 false。
      * @param isFirstTurn 是否為第一巡（用於判斷地和等），預設為 false。
+     * @param paoLiability 是否已成立包牌責任，預設為 null。
      */
     fun create(
         hand: Hand,
@@ -50,7 +52,8 @@ object FakeRiichiHandValueContextFactory {
         isLastDiscard: Boolean = false,
         isRobbingKan: Boolean = false,
         isRinshanKaihou: Boolean = false,
-        isFirstTurn: Boolean = false
+        isFirstTurn: Boolean = false,
+        paoLiability: PaoLiability? = null
     ): RiichiHandValueContext {
         return RiichiHandValueContext(
             hand = hand,
@@ -69,7 +72,8 @@ object FakeRiichiHandValueContextFactory {
             isLastDiscard = isLastDiscard,
             isRobbingKan = isRobbingKan,
             isRinshanKaihou = isRinshanKaihou,
-            isFirstTurn = isFirstTurn
+            isFirstTurn = isFirstTurn,
+            paoLiability = paoLiability
         )
     }
 }

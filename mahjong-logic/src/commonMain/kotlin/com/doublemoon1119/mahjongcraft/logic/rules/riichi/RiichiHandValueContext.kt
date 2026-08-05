@@ -27,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * @property isRobbingKan 是否為搶槓。
  * @property isRinshanKaihou 是否為嶺上花。
  * @property isFirstTurn 是否為第一巡。用於天和、地和的判定。
+ * @property paoLiability 本局是否已成立包牌責任（大三元／大四喜），若無則為 null。
  */
 data class RiichiHandValueContext(
     override val hand: Hand,
@@ -45,5 +46,6 @@ data class RiichiHandValueContext(
     val isLastDiscard: Boolean = false,
     val isRobbingKan: Boolean = false,
     val isRinshanKaihou: Boolean = false,
-    val isFirstTurn: Boolean = false
+    val isFirstTurn: Boolean = false,
+    val paoLiability: PaoLiability? = null
 ) : HandValueContext

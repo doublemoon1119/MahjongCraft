@@ -418,4 +418,81 @@ class PointCalculatorTest {
         assertEquals(RiichiPointResult.DealerTsumo(paymentPerNonDealer = 16000), result)
         assertEquals(48000, result.total)
     }
+
+    /**
+     * 測試包牌自摸（贏家為閒家）：包牌責任者一人支付全額 32000 點，
+     * 取代原本應由三家分攤的「8000/16000」。
+     */
+    @Test
+    fun `test pao tsumo for non-dealer winner`() {
+        val result = PointCalculator.calculateYakumanPoint(
+            yakumanMultiplier = 1,
+            isDealer = false,
+            isTsumo = true,
+            isPao = true
+        )
+        assertEquals(RiichiPointResult.PaoTsumo(32000), result)
+        assertEquals(32000, result.total)
+    }
+
+    /**
+     * 測試包牌自摸（贏家為莊家）：包牌責任者一人支付全額 48000 點，
+     * 取代原本應由三家分攤的「16000 all」。
+     */
+    @Test
+    fun `test pao tsumo for dealer winner`() {
+        val result = PointCalculator.calculateYakumanPoint(
+            yakumanMultiplier = 1,
+            isDealer = true,
+            isTsumo = true,
+            isPao = true
+        )
+        assertEquals(RiichiPointResult.PaoTsumo(48000), result)
+        assertEquals(48000, result.total)
+    }
+
+    /**
+     * 測試包牌榮和（贏家為閒家）：包牌責任者與實際放銃者平分總點數 32000，各付 16000。
+     */
+    @Test
+    fun `test pao ron for non-dealer winner`() {
+        val result = PointCalculator.calculateYakumanPoint(
+            yakumanMultiplier = 1,
+            isDealer = false,
+            isTsumo = false,
+            isPao = true
+        )
+        assertEquals(RiichiPointResult.PaoRon(16000), result)
+        assertEquals(32000, result.total)
+    }
+
+    /**
+     * 測試包牌榮和（贏家為莊家）：包牌責任者與實際放銃者平分總點數 48000，各付 24000。
+     */
+    @Test
+    fun `test pao ron for dealer winner`() {
+        val result = PointCalculator.calculateYakumanPoint(
+            yakumanMultiplier = 1,
+            isDealer = true,
+            isTsumo = false,
+            isPao = true
+        )
+        assertEquals(RiichiPointResult.PaoRon(24000), result)
+        assertEquals(48000, result.total)
+    }
+
+    /**
+     * 測試累計役滿（雙倍役滿）情境下的包牌榮和，確認平分邏輯在倍數疊加時依然正確。
+     */
+    @Test
+    fun `test pao ron with double yakuman multiplier`() {
+        val result = PointCalculator.calculateYakumanPoint(
+            yakumanMultiplier = 2,
+            isDealer = false,
+            isTsumo = false,
+            isPao = true
+        )
+        assertEquals(RiichiPointResult.PaoRon(32000), result)
+        assertEquals(64000, result.total)
+    }
 }

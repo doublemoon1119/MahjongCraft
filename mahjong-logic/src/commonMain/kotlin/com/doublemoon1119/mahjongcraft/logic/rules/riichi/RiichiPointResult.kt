@@ -42,4 +42,24 @@ sealed interface RiichiPointResult {
     ) : RiichiPointResult {
         override val total: Int get() = dealerPayment + otherNonDealerPayment * 2
     }
+
+    /**
+     * 自摸包牌：因包牌責任成立（大三元／大四喜由碰／明槓完成），
+     * 改由包牌責任者一人支付全額，取代原本應由三家或莊家/閒家分攤的自摸點數。
+     *
+     * 結果形狀與 [Ron] 相同（單一玩家支付全額），但實際付款人是包牌責任者而非放銃者，
+     * 由呼叫端依 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability.direction] 決定對象。
+     *
+     * @property total 包牌責任者支付的點數，亦即贏家獲得的總點數。
+     */
+    data class PaoTsumo(override val total: Int) : RiichiPointResult
+
+    /**
+     * 榮和包牌：因包牌責任成立，由包牌責任者與實際放銃者兩人平分點數。
+     *
+     * @property paymentEach 兩人各自支付的點數。
+     */
+    data class PaoRon(val paymentEach: Int) : RiichiPointResult {
+        override val total: Int get() = paymentEach * 2
+    }
 }

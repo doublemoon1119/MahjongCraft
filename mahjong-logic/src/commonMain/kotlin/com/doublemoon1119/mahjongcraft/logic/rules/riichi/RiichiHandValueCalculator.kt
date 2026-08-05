@@ -70,17 +70,29 @@ class RiichiHandValueCalculator(
             // 若有任何役滿，則只計算役滿（役滿疊加）
             if (yakuResults.any { it.isYakuman }) {
                 val totalHan = HanCalculator.calculateTotalHan(yakuResults)
+
+                // 包牌僅在「狀態上已成立包牌責任」且「本次胡牌實際包含對應役滿」兩者皆成立時才適用，
+                // 避免狀態成立後手牌卻演變成其他役滿（如濃厚牌型被打散重組）時誤套用包牌。
+                val pao = context.paoLiability?.takeIf { pao ->
+                    when (pao.yaku) {
+                        PaoYaku.Daisangen -> yakuResults.any { it.yaku == YakuType.Daisangen }
+                        PaoYaku.Daisuushii -> yakuResults.any { it.yaku == YakuType.Daisuushii }
+                    }
+                }
+
                 val pointResult = PointCalculator.calculateYakumanPoint(
                     yakumanMultiplier = abs(totalHan),  // 役滿總翻數為負數，這裡帶入絕對值
                     isDealer = context.roundWind == context.seatWind,
-                    isTsumo = context.isTsumo
+                    isTsumo = context.isTsumo,
+                    isPao = pao != null
                 )
 
                 return@map RiichiHandValueResult(
                     yakuResults = yakuResults,
                     totalHan = totalHan,
                     totalFu = 0,
-                    pointResult = pointResult
+                    pointResult = pointResult,
+                    paoLiability = pao
                 )
             }
 

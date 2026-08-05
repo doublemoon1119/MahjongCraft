@@ -104,7 +104,8 @@ class RiichiHandValueContextCalculator(
             },
             isFirstTurn = tableState.players.all { it.hand.exposedMelds.isEmpty() } &&
                     tableState.players.all { it.discardPile.entries.size <= 1 } &&
-                    player.discardPile.entries.isEmpty()
+                    player.discardPile.entries.isEmpty(),
+            paoLiability = riichiState?.paoLiability
         )
     }
 }

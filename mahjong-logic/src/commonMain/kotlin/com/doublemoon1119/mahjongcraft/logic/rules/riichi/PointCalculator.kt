@@ -15,11 +15,22 @@ object PointCalculator {
      * @param yakumanMultiplier 役滿倍數 (如 1, 2...)
      * @param isDealer 贏家是否為莊家。
      * @param isTsumo 是否為自摸。
-     * @return 依榮和/自摸區分的 [RiichiPointResult]。
+     * @param isPao 是否已成立包牌責任（僅大三元／大四喜適用，由呼叫端判斷後傳入）。
+     *              成立時會忽略一般自摸/榮和的分攤方式，改回傳 [RiichiPointResult.PaoTsumo]
+     *              或 [RiichiPointResult.PaoRon]。
+     * @return 依榮和/自摸（或包牌）區分的 [RiichiPointResult]。
      */
-    fun calculateYakumanPoint(yakumanMultiplier: Int, isDealer: Boolean, isTsumo: Boolean): RiichiPointResult {
+    fun calculateYakumanPoint(
+        yakumanMultiplier: Int,
+        isDealer: Boolean,
+        isTsumo: Boolean,
+        isPao: Boolean = false
+    ): RiichiPointResult {
         // 役滿的基本點固定為 8000，與非役滿點數表中的「數役滿」級距相同
         val basicPoint = 8000 * yakumanMultiplier
+        if (isPao) {
+            return buildPaoPointResult(basicPoint, isDealer, isTsumo)
+        }
         return buildPointResult(basicPoint, isDealer, isTsumo)
     }
 
@@ -87,6 +98,34 @@ object PointCalculator {
             val otherNonDealerPayment = ceilToHundred(basicPoint)
             RiichiPointResult.NonDealerTsumo(dealerPayment, otherNonDealerPayment)
         }
+    }
+
+    /**
+     * 依基本點、贏家身分與和牌方式，建立包牌情境下的 [RiichiPointResult]。
+     *
+     * 自摸包牌：包牌責任者一人支付全額，等同一般榮和的算法（基本點 * 身分倍率，一次性進位）。
+     * 榮和包牌：由包牌責任者與實際放銃者平分點數。
+     *
+     * 註：目前僅處理單一大三元／大四喜的情境。若手牌同時符合多種役滿（如大三元 + 四暗刻）疊加，
+     * 本函式會將整體役滿倍數（[yakumanMultiplier]）都視為包牌範圍計算，
+     * 尚未依 M League 規則細分「僅大三元部分適用包牌」的情境，屬已知簡化，
+     * 待實際遇到此類疊加役滿再另行確認並調整。
+     *
+     * @param basicPoint 基本點。
+     * @param isDealer 贏家是否為莊家。
+     * @param isTsumo 是否為自摸。
+     */
+    private fun buildPaoPointResult(basicPoint: Int, isDealer: Boolean, isTsumo: Boolean): RiichiPointResult {
+        val multiplier = if (isDealer) 6 else 4
+
+        if (isTsumo) {
+            return RiichiPointResult.PaoTsumo(ceilToHundred(basicPoint * multiplier))
+        }
+
+        // 榮和包牌：由包牌責任者與實際放銃者平分。
+        // 役滿基本點恆為 8000 的倍數，乘上倍率（4 或 6）後除以 2 必為整百數，不會產生獨立進位的疑慮。
+        val paymentEach = ceilToHundred(basicPoint * multiplier / 2)
+        return RiichiPointResult.PaoRon(paymentEach)
     }
 
     /**

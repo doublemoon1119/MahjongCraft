@@ -14,11 +14,14 @@ import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
  * @property riichiTile 玩家立直時打出的牌，若未立直則為 null。
  * @property doubleRiichiTile 玩家雙立直時打出的牌，若未雙立直則為 null。
  * @property isIppatsu 玩家立直時為 true，摸下一張牌之後或者期間有其他人鳴牌就會設為 false
+ * @property paoLiability 本局是否已成立包牌責任（[PaoDetector] 判定後寫入），若無則為 null。
+ *                        一旦成立即持續有效直到本局結束，胡牌結算時供 [RiichiHandValueContextCalculator] 讀取。
  */
 data class RiichiPlayerState(
     var riichiTile: IdentifiedTile? = null,
     var doubleRiichiTile: IdentifiedTile? = null,
-    var isIppatsu: Boolean = false
+    var isIppatsu: Boolean = false,
+    var paoLiability: PaoLiability? = null
 ) : PlayerRuleState {
 
     /**
