@@ -78,13 +78,8 @@ class RiichiShantenCalculator : ShantenCalculator {
             return ShantenResult.Complete
         }
 
-        // 檢查是否已胡牌（七對子）
-        if (exposedMeldsCount == 0 && calculateSevenPairsShanten(counts) == -1) {
-            return ShantenResult.Complete
-        }
-
-        // 檢查是否已胡牌（國士無雙）
-        if (exposedMeldsCount == 0 && calculateKokushiShanten(counts) == -1) {
+        // 檢查是否已胡牌（七對子／國士無雙），直接複用上方已算出的結果，避免重複計算
+        if (sevenPairsShanten == -1 || kokushiShanten == -1) {
             return ShantenResult.Complete
         }
 
