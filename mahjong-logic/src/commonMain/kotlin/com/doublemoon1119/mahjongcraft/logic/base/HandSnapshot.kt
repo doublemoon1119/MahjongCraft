@@ -5,7 +5,7 @@ package com.doublemoon1119.mahjongcraft.logic.base
  */
 data class HandSnapshot(
     val standingTiles: List<IdentifiedTileSnapshot>,
-    var lastDrawn: IdentifiedTileSnapshot? = null
+    val lastDrawn: IdentifiedTileSnapshot? = null
 )
 
 /**

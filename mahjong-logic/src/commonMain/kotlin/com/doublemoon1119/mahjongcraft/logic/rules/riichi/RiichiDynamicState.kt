@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  * @property riichiStickCount 場上存留的立直棒數量。
  */
 data class RiichiDynamicState(
-    var riichiStickCount: Int = 0
+    val riichiStickCount: Int = 0
 ) : DynamicRuleState, TileWallRevealable {
     /**
      * 取得「寶牌指示器」的 [Uuid]

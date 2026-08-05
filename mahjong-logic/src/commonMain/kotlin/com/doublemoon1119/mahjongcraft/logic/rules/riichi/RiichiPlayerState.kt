@@ -18,10 +18,10 @@ import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
  *                        一旦成立即持續有效直到本局結束，胡牌結算時供 [RiichiHandValueContextCalculator] 讀取。
  */
 data class RiichiPlayerState(
-    var riichiTile: IdentifiedTile? = null,
-    var doubleRiichiTile: IdentifiedTile? = null,
-    var isIppatsu: Boolean = false,
-    var paoLiability: PaoLiability? = null
+    val riichiTile: IdentifiedTile? = null,
+    val doubleRiichiTile: IdentifiedTile? = null,
+    val isIppatsu: Boolean = false,
+    val paoLiability: PaoLiability? = null
 ) : PlayerRuleState {
 
     /**

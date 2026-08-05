@@ -16,7 +16,8 @@ class RiichiTableStateTest {
     /**
      * 驗證日麻特有的立直棒（供託）計數功能。
      *
-     * 測試動態狀態在 [TableState] 中的屬性變動是否能正確透過引用反映。
+     * 測試透過 copy() 產生新的 [TableState] 時，動態狀態的變更能正確反映在新實例上，
+     * 且不影響原本的 [TableState]。
      */
     @Test
     fun `test riichi stick count in table state`() {
@@ -32,12 +33,19 @@ class RiichiTableStateTest {
         assertTrue(state is RiichiDynamicState, "The dynamic state should be an instance of RiichiDynamicState.")
         assertEquals(5, state.riichiStickCount)
 
-        riichiDynamic.riichiStickCount += 1
+        val updatedTable = table.copy(
+            dynamicRuleState = riichiDynamic.copy(riichiStickCount = riichiDynamic.riichiStickCount + 1)
+        )
 
         assertEquals(
             6,
-            table.dynamicRuleState.riichiStickCount,
-            "Changes to the dynamic state object should be reflected in TableState."
+            (updatedTable.dynamicRuleState as RiichiDynamicState).riichiStickCount,
+            "The new TableState instance should reflect the updated riichi stick count."
+        )
+        assertEquals(
+            5,
+            state.riichiStickCount,
+            "The original TableState instance should remain unchanged."
         )
     }
 }

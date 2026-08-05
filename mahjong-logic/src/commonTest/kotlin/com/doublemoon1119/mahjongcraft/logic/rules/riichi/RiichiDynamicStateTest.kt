@@ -173,15 +173,16 @@ class RiichiDynamicStateTest {
     }
 
     /**
-     * 驗證 RiichiDynamicState 的 riichiStickCount 初始值與變更。
+     * 驗證 RiichiDynamicState 的 riichiStickCount 初始值，以及透過 copy() 產生新狀態的行為。
      */
     @Test
     fun `test riichiStickCount default and modification`() {
         val dynamicState = RiichiDynamicState()
         assertEquals(0, dynamicState.riichiStickCount)
 
-        dynamicState.riichiStickCount = 3
-        assertEquals(3, dynamicState.riichiStickCount)
+        val updatedState = dynamicState.copy(riichiStickCount = 3)
+        assertEquals(3, updatedState.riichiStickCount)
+        assertEquals(0, dynamicState.riichiStickCount, "Original instance should remain unchanged.")
     }
 
     /**

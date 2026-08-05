@@ -24,10 +24,10 @@ data class TableState(
     val players: List<MahjongPlayer>,
     val config: MahjongRuleConfig,
     val tileWall: TileWall,
-    var prevalentWind: Wind = Wind.EAST,
-    var roundNumber: Int = 1,
-    var comboCount: Int = 0,
-    var currentPlayerIndex: Int = 0,
+    val prevalentWind: Wind = Wind.EAST,
+    val roundNumber: Int = 1,
+    val comboCount: Int = 0,
+    val currentPlayerIndex: Int = 0,
     val dynamicRuleState: DynamicRuleState? = null
 ) {
     /** 獲取參與遊戲的總人數。 */
