@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeScoreConfig
@@ -84,5 +85,59 @@ class TableStateTest {
         )
 
         assertEquals(dynamicState, table.dynamicRuleState, "TableState should hold the assigned dynamic rule state.")
+    }
+
+    /**
+     * 驗證 [TableState.relativeDirectionOf] 能依座位順序正確判斷上家/對家/下家/自己。
+     */
+    @Test
+    fun `test relativeDirectionOf resolves directions based on seating order`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+
+        val table = FakeTableStateFactory.create(players = listOf(p1, p2, p3, p4))
+
+        assertEquals(
+            RelativeDirection.Self,
+            table.relativeDirectionOf(p1.id, p1.id),
+            "A player relative to themselves should be Self."
+        )
+        assertEquals(
+            RelativeDirection.Right,
+            table.relativeDirectionOf(p1.id, p2.id),
+            "P2 comes right after P1 in seating order, so P2 is P1's shimocha (Right)."
+        )
+        assertEquals(
+            RelativeDirection.Across,
+            table.relativeDirectionOf(p1.id, p3.id),
+            "P3 sits directly across from P1."
+        )
+        assertEquals(
+            RelativeDirection.Left,
+            table.relativeDirectionOf(p1.id, p4.id),
+            "P4 comes right before P1 in seating order, so P4 is P1's kamicha (Left) — the only valid Chi source."
+        )
+    }
+
+    /**
+     * 驗證三人桌（無對家概念）時，[TableState.relativeDirectionOf] 仍能正確判斷上家/下家，
+     * 不會誤判為對家（三人桌中差值 2 同時等於 playerCount - 1，必須優先判定為上家）。
+     */
+    @Test
+    fun `test relativeDirectionOf on a three-player table has no across`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+
+        val table = FakeTableStateFactory.create(players = listOf(p1, p2, p3))
+
+        assertEquals(RelativeDirection.Right, table.relativeDirectionOf(p1.id, p2.id))
+        assertEquals(
+            RelativeDirection.Left,
+            table.relativeDirectionOf(p1.id, p3.id),
+            "In a three-player table, the only other seat besides your shimocha is your kamicha."
+        )
     }
 }
