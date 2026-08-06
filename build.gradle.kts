@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -36,7 +37,7 @@ allprojects {
         tasks.withType<KotlinCompile>().configureEach {
             compilerOptions {
                 jvmTarget.set(JvmTarget.fromTarget(jvmReleaseVersion.toString()))
-                freeCompilerArgs.add("-Xjvm-default=all")
+                jvmDefault.set(JvmDefaultMode.NO_COMPATIBILITY)
             }
         }
     }
