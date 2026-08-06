@@ -17,6 +17,5 @@ class FlowCommonModule {
      * 之後若要接 Koin，可直接 include 取得同一份綁定。
      */
     @Single
-    fun provideMahjongModuleRegistry(): MahjongModuleRegistry =
-        MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+    fun provideMahjongModuleRegistry(): MahjongModuleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
 }

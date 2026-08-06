@@ -7,5 +7,5 @@ import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
  */
 class FakeScoreConfig(
     override val initialScore: Int = 25000,
-    override val bustThreshold: Int? = 0
+    override val bustThreshold: Int? = 0,
 ) : ScoreConfig

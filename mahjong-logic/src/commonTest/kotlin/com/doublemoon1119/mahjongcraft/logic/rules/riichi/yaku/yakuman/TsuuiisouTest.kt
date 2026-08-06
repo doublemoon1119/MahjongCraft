@@ -53,8 +53,8 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.North,
                 Tile.Honor.North,
                 // 單張：白
-                Tile.Honor.White
-            )
+                Tile.Honor.White,
+            ),
         )
         // Winning: 白
         val winningTile = Tile.Honor.White
@@ -91,7 +91,7 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.North,
                 Tile.Honor.North,
                 // 單張：發
-                Tile.Honor.Green
+                Tile.Honor.Green,
             ),
             melds = listOf(
                 // 副露：東東東（碰）
@@ -100,11 +100,11 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.East)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         // Winning: 發
         val winningTile = Tile.Honor.Green
@@ -144,8 +144,8 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.White,
                 Tile.Honor.White,
                 // 對子：中
-                Tile.Honor.Red
-            )
+                Tile.Honor.Red,
+            ),
         )
         val winningTile = Tile.Honor.Red
 
@@ -174,8 +174,8 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.White,
                 Tile.Honor.Green,
                 Tile.Honor.Green,
-                Tile.Honor.Red
-            )
+                Tile.Honor.Red,
+            ),
         )
         // Winning: 中
         val winningTile = Tile.Honor.Red
@@ -212,7 +212,7 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.North,
                 Tile.Honor.North,
                 // 單張：發
-                Tile.Honor.Green
+                Tile.Honor.Green,
             ),
             melds = listOf(
                 // 副露：東東東（碰）
@@ -221,11 +221,11 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.East)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         // Winning: 發
         val winningTile = Tile.Honor.Green
@@ -234,7 +234,7 @@ class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
             hand = hand,
             winningTile = winningTile,
             isTsumo = true,
-            isMenzen = false // 有副露
+            isMenzen = false, // 有副露
         )
         val result = calculator.calculate(context)
 

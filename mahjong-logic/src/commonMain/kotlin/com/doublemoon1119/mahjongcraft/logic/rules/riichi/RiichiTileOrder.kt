@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 
-
 /**
  * 日本麻將 (Riichi) 標準排序策略。
  * 排序權重：
@@ -25,20 +24,20 @@ object RiichiTileOrder : TileOrder {
         is Tile.Numeric -> {
             val suitBase = when (tile.suit) {
                 Tile.Suit.Character -> 10.0 // 萬子基數
-                Tile.Suit.Dot       -> 20.0 // 筒子基數
-                Tile.Suit.Bamboo    -> 30.0 // 條子基數
+                Tile.Suit.Dot -> 20.0 // 筒子基數
+                Tile.Suit.Bamboo -> 30.0 // 條子基數
             }
             // 赤寶牌權重增加 0.1，使其排在同數值的普通牌之後
             suitBase + tile.value + (if (tile.isRed) 0.1 else 0.0)
         }
         is Tile.Honor -> when (tile) {
-            Tile.Honor.East  -> 41.0
+            Tile.Honor.East -> 41.0
             Tile.Honor.South -> 42.0
-            Tile.Honor.West  -> 43.0
+            Tile.Honor.West -> 43.0
             Tile.Honor.North -> 44.0
             Tile.Honor.White -> 45.0 // 日麻順序：白、發、中
             Tile.Honor.Green -> 46.0
-            Tile.Honor.Red   -> 47.0
+            Tile.Honor.Red -> 47.0
         }
         is Tile.Flower -> 100.0 // 花牌排最後 (沒有用到)
     }

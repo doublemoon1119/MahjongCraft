@@ -25,7 +25,7 @@ import kotlin.uuid.Uuid
 class AddAiPlayerUseCase(
     private val roomRepository: RoomRepository,
     private val snapshotRepository: RoomSnapshotRepository,
-    @Provided private val eventPublisher: RoomEventPublisher
+    @Provided private val eventPublisher: RoomEventPublisher,
 ) {
     /**
      * 執行新增 AI 玩家邏輯。
@@ -36,7 +36,7 @@ class AddAiPlayerUseCase(
      */
     suspend operator fun invoke(
         roomId: Uuid,
-        operatorId: Uuid
+        operatorId: Uuid,
     ): Outcome<Uuid, RoomError> {
         // 1. 以原子方式讀取房間、驗證業務規則並寫回，避免與其他加入/踢出操作產生競態（如人數上限被同時突破）
         val outcome = roomRepository.update(roomId) { room ->
@@ -50,7 +50,7 @@ class AddAiPlayerUseCase(
                     val updatedRoom = room.copy(
                         playerIds = room.playerIds + aiId,
                         aiPlayerIds = room.aiPlayerIds + aiId,
-                        readyPlayerIds = room.readyPlayerIds + aiId  // AI 會直接進入準備就緒狀態
+                        readyPlayerIds = room.readyPlayerIds + aiId, // AI 會直接進入準備就緒狀態
                     )
                     updatedRoom to Outcome.Success(aiId to updatedRoom)
                 }
@@ -74,7 +74,7 @@ class AddAiPlayerUseCase(
                         roomId = roomId,
                         targetPlayerId = memberId,
                         joinedPlayerId = aiId,
-                        reason = JoinReason.Joined
+                        reason = JoinReason.Joined,
                     )
                 }
 

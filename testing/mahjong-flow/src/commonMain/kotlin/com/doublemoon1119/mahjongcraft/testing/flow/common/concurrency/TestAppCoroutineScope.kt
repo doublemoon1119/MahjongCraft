@@ -13,5 +13,5 @@ import kotlinx.coroutines.CoroutineExceptionHandler
  */
 fun createTestAppCoroutineScope(
     dispatchers: CoroutineDispatchers = TestCoroutineDispatchers(),
-    exceptionHandler: CoroutineExceptionHandler? = null
+    exceptionHandler: CoroutineExceptionHandler? = null,
 ): AppCoroutineScope = AppCoroutineScopeImpl(dispatchers, exceptionHandler)

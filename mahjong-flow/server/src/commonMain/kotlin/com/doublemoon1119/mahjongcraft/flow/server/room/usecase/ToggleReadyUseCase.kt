@@ -23,7 +23,7 @@ import kotlin.uuid.Uuid
 class ToggleReadyUseCase(
     private val roomRepository: RoomRepository,
     private val snapshotRepository: RoomSnapshotRepository,
-    @Provided private val eventPublisher: RoomEventPublisher
+    @Provided private val eventPublisher: RoomEventPublisher,
 ) {
     /**
      * 執行準備狀態切換邏輯。
@@ -34,7 +34,7 @@ class ToggleReadyUseCase(
      */
     suspend operator fun invoke(
         roomId: Uuid,
-        playerId: Uuid
+        playerId: Uuid,
     ): Outcome<Unit, RoomError> {
         // 1. 以原子方式讀取房間、切換準備狀態並寫回，避免並發切換請求互相覆蓋。
         //    房主不參與準備狀態切換，此情境下回傳 Success(null) 代表無需任何後續處理。
@@ -73,7 +73,7 @@ class ToggleReadyUseCase(
                         roomId = roomId,
                         targetPlayerId = memberId,
                         readyPlayerId = playerId,
-                        isReady = isNowReady
+                        isReady = isNowReady,
                     )
                 }
 

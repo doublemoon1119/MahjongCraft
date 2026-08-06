@@ -37,8 +37,8 @@ class ToitoiTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
                 Tile.Honor.Red,
-                Tile.Honor.Red
-            )
+                Tile.Honor.Red,
+            ),
         )
         val winningTile = Tile.Honor.Red
 
@@ -70,7 +70,7 @@ class ToitoiTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
-                Tile.Honor.Red
+                Tile.Honor.Red,
             ),
             melds = listOf(
                 Meld(
@@ -78,11 +78,11 @@ class ToitoiTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.Red
 
@@ -114,7 +114,7 @@ class ToitoiTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
-                Tile.Honor.Red
+                Tile.Honor.Red,
             ),
             melds = listOf(
                 Meld(
@@ -123,11 +123,11 @@ class ToitoiTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.Red
 
@@ -160,8 +160,8 @@ class ToitoiTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 3),
                 Tile.Numeric(Tile.Suit.Bamboo, 3),
                 Tile.Numeric(Tile.Suit.Bamboo, 3),
-                Tile.Honor.Red
-            )
+                Tile.Honor.Red,
+            ),
         )
         val winningTile = Tile.Honor.Red
 

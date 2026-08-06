@@ -34,7 +34,7 @@ import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
  * @return 小四喜，大四喜結果，若不符合則返回 null。
  */
 fun calculateSuushii(
-    handStructure: HandStructure
+    handStructure: HandStructure,
 ): YakuResult? {
     val standard = handStructure as? HandStructure.Standard ?: return null
 
@@ -43,7 +43,7 @@ fun calculateSuushii(
         Tile.Honor.East,
         Tile.Honor.South,
         Tile.Honor.West,
-        Tile.Honor.North
+        Tile.Honor.North,
     )
 
     // 收集所有面子（手牌 + 副露）
@@ -51,11 +51,13 @@ fun calculateSuushii(
 
     // 計算所有風牌的刻子
     val windKotsuCount = allMentsus.count { mentsu ->
-        (mentsu is Mentsu.Kotsu ||
+        (
+            mentsu is Mentsu.Kotsu ||
                 mentsu is Mentsu.Ankan ||
                 mentsu is Mentsu.Minkan ||
-                mentsu is Mentsu.Kakan)
-                && mentsu.tiles.all { it.withoutRed in windTiles }
+                mentsu is Mentsu.Kakan
+            ) &&
+            mentsu.tiles.all { it.withoutRed in windTiles }
     }
 
     // 風牌刻子數量至少要 3 才有可能湊齊四喜

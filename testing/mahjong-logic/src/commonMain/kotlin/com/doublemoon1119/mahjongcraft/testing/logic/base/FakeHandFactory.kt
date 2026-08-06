@@ -20,12 +20,10 @@ object FakeHandFactory {
     fun create(
         tiles: List<Tile> = emptyList(),
         melds: List<Meld> = emptyList(),
-        lastDrawn: Tile? = null
-    ): Hand {
-        return Hand(
-            tiles = tiles.map { FakeIdentifiedTileFactory.create(it) }.toMutableList(),
-            melds = melds.toMutableList(),
-            lastDrawn = lastDrawn?.let { FakeIdentifiedTileFactory.create(it) }
-        )
-    }
+        lastDrawn: Tile? = null,
+    ): Hand = Hand(
+        tiles = tiles.map { FakeIdentifiedTileFactory.create(it) }.toMutableList(),
+        melds = melds.toMutableList(),
+        lastDrawn = lastDrawn?.let { FakeIdentifiedTileFactory.create(it) },
+    )
 }

@@ -40,8 +40,8 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.White,
                 Tile.Honor.White,
                 Tile.Honor.Green,
-                Tile.Honor.Green
-            )
+                Tile.Honor.Green,
+            ),
         )
         val winningTile = Tile.Honor.Green
 
@@ -73,8 +73,8 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.White,
                 Tile.Honor.White,
                 Tile.Honor.White,
-                Tile.Honor.Green
-            )
+                Tile.Honor.Green,
+            ),
         )
         val winningTile = Tile.Honor.Green
 
@@ -106,8 +106,8 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.East,
                 Tile.Honor.East,
                 Tile.Honor.West,
-                Tile.Honor.West
-            )
+                Tile.Honor.West,
+            ),
         )
         val winningTile = Tile.Honor.West
 
@@ -136,7 +136,7 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.West,
                 Tile.Honor.West,
                 Tile.Honor.West,
-                Tile.Honor.Green
+                Tile.Honor.Green,
             ),
             melds = listOf(
                 Meld(
@@ -144,11 +144,11 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.North),
                         FakeIdentifiedTileFactory.create(Tile.Honor.North),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.North)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.North),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.Green
 

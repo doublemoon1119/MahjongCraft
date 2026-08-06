@@ -40,8 +40,8 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 1),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 6)
         val doraIndicators = listOf(Tile.Numeric(Tile.Suit.Character, 5))
@@ -75,13 +75,13 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 1),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
         val doraIndicators = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
-            Tile.Numeric(Tile.Suit.Character, 3)
+            Tile.Numeric(Tile.Suit.Character, 3),
         )
 
         val context =
@@ -113,8 +113,8 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 1),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
         val doraIndicators = listOf(Tile.Numeric(Tile.Suit.Character, 9))
@@ -148,8 +148,8 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 1),
+            ),
         )
         val winningTile = Tile.Honor.South
         val doraIndicators = listOf(Tile.Honor.East)
@@ -183,8 +183,8 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 1),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
@@ -216,8 +216,8 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 3),
-                Tile.Numeric(Tile.Suit.Dot, 4)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 4),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)
 
@@ -249,8 +249,8 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 1),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 6)
         val doraIndicators = listOf(Tile.Numeric(Tile.Suit.Character, 5))
@@ -262,7 +262,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
             isTsumo = true,
             isRiichi = true,
             doraIndicators = doraIndicators,
-            uraDoraIndicators = uraDoraIndicators
+            uraDoraIndicators = uraDoraIndicators,
         )
         val result = calculator.calculate(context)
 
@@ -291,8 +291,8 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 1),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 6)
         val uraDoraIndicators = listOf(Tile.Numeric(Tile.Suit.Character, 5))
@@ -302,7 +302,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
             winningTile = winningTile,
             isTsumo = true,
             isRiichi = false,
-            uraDoraIndicators = uraDoraIndicators
+            uraDoraIndicators = uraDoraIndicators,
         )
         val result = calculator.calculate(context)
 
@@ -328,7 +328,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 1)
+                Tile.Numeric(Tile.Suit.Dot, 1),
             ),
             melds = listOf(
                 Meld(
@@ -336,11 +336,11 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5, isRed = true))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 5)
 
@@ -369,7 +369,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 8),
                 Tile.Numeric(Tile.Suit.Dot, 9),
                 Tile.Numeric(Tile.Suit.Bamboo, 3),
-                Tile.Numeric(Tile.Suit.Bamboo, 4)
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
             ),
             melds = listOf(
                 Meld(
@@ -377,11 +377,11 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 5, isRed = true)
 

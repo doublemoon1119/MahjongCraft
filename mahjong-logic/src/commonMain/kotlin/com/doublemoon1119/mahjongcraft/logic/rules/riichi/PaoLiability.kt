@@ -13,7 +13,7 @@ enum class PaoYaku {
     Daisangen,
 
     /** 大四喜。 */
-    Daisuushii
+    Daisuushii,
 }
 
 /**
@@ -28,5 +28,5 @@ enum class PaoYaku {
  */
 data class PaoLiability(
     val yaku: PaoYaku,
-    val direction: RelativeDirection
+    val direction: RelativeDirection,
 )

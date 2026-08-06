@@ -41,8 +41,13 @@ class TaiwanWallFactory(private val config: TaiwanRuleConfig) : TileWallFactory 
 
         // 2. 生成字牌
         val honors = listOf(
-            Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North,
-            Tile.Honor.Red, Tile.Honor.Green, Tile.Honor.White
+            Tile.Honor.East,
+            Tile.Honor.South,
+            Tile.Honor.West,
+            Tile.Honor.North,
+            Tile.Honor.Red,
+            Tile.Honor.Green,
+            Tile.Honor.White,
         )
         honors.forEach { honor ->
             repeat(4) {
@@ -53,8 +58,14 @@ class TaiwanWallFactory(private val config: TaiwanRuleConfig) : TileWallFactory 
         // 3. 根據配置決定是否加入花牌
         if (config.useFlowerTiles) {
             val flowers = listOf(
-                Tile.Flower.Spring, Tile.Flower.Summer, Tile.Flower.Autumn, Tile.Flower.Winter,
-                Tile.Flower.Plum, Tile.Flower.Orchid, Tile.Flower.Bamboo, Tile.Flower.Chrysanthemum
+                Tile.Flower.Spring,
+                Tile.Flower.Summer,
+                Tile.Flower.Autumn,
+                Tile.Flower.Winter,
+                Tile.Flower.Plum,
+                Tile.Flower.Orchid,
+                Tile.Flower.Bamboo,
+                Tile.Flower.Chrysanthemum,
             )
             flowers.forEach { flower ->
                 tiles.add(IdentifiedTile(Uuid.random(), flower))

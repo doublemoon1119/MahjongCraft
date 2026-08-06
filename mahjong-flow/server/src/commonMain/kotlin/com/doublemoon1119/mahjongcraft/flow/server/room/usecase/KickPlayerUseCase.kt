@@ -24,7 +24,7 @@ import kotlin.uuid.Uuid
 class KickPlayerUseCase(
     private val roomRepository: RoomRepository,
     private val snapshotRepository: RoomSnapshotRepository,
-    @Provided private val eventPublisher: RoomEventPublisher
+    @Provided private val eventPublisher: RoomEventPublisher,
 ) {
     /**
      * 執行剔除玩家邏輯。
@@ -37,7 +37,7 @@ class KickPlayerUseCase(
     suspend operator fun invoke(
         roomId: Uuid,
         operatorId: Uuid,
-        targetPlayerId: Uuid
+        targetPlayerId: Uuid,
     ): Outcome<Unit, RoomError> {
         // 1. 以原子方式讀取房間、驗證業務規則並寫回，避免與其他房間操作（如玩家自行離開）產生競態
         val outcome = roomRepository.update(roomId) { room ->
@@ -49,7 +49,7 @@ class KickPlayerUseCase(
                 else -> {
                     val updatedRoom = room.copy(
                         playerIds = room.playerIds - targetPlayerId,
-                        readyPlayerIds = room.readyPlayerIds - targetPlayerId
+                        readyPlayerIds = room.readyPlayerIds - targetPlayerId,
                     )
                     updatedRoom to Outcome.Success(updatedRoom)
                 }
@@ -73,7 +73,7 @@ class KickPlayerUseCase(
                         roomId = roomId,
                         targetPlayerId = memberId,
                         leftPlayerId = targetPlayerId,
-                        reason = LeaveReason.Kicked
+                        reason = LeaveReason.Kicked,
                     )
                 }
 

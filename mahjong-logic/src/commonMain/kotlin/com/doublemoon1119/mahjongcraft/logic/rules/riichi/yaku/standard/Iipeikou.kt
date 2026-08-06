@@ -19,7 +19,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  */
 fun calculateIipeikou(
     handStructure: HandStructure,
-    isMenzen: Boolean
+    isMenzen: Boolean,
 ): YakuResult? {
     val standard = handStructure as? HandStructure.Standard ?: return null
 

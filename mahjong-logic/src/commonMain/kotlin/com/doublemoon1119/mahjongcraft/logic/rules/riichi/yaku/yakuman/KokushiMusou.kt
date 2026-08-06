@@ -38,7 +38,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  */
 fun calculateKokushiMusou(
     handStructure: HandStructure,
-    winningTile: Tile
+    winningTile: Tile,
 ): YakuResult? {
     // 檢查是否為國士無雙牌型
     val kokushiMusou = handStructure as? HandStructure.KokushiMusou ?: return null

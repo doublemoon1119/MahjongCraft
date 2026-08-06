@@ -16,7 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  */
 fun calculateChiitoitsu(
     handStructure: HandStructure,
-    isMenzen: Boolean
+    isMenzen: Boolean,
 ): YakuResult? {
     if (handStructure !is HandStructure.Chiitoitsu) {
         return null

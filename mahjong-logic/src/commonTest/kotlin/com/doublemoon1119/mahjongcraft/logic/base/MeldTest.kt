@@ -33,7 +33,7 @@ class MeldTest {
             type = MeldType.CHI,
             tiles = listOf(t1, t2, source),
             source = source,
-            direction = RelativeDirection.Left
+            direction = RelativeDirection.Left,
         )
 
         // 驗證：立牌應該變空
@@ -65,7 +65,7 @@ class MeldTest {
             type = MeldType.CLOSED_KAN,
             tiles = listOf(t1, t2, t3, t4),
             source = null,
-            direction = RelativeDirection.Self
+            direction = RelativeDirection.Self,
         )
 
         // 驗證：立牌與摸牌區都應清空

@@ -57,7 +57,7 @@ interface DiscardPile<T : DiscardPile.DiscardEntry> {
      */
     open class DiscardEntry(
         val tile: IdentifiedTile,
-        val isTaken: Boolean = false
+        val isTaken: Boolean = false,
     ) {
         /**
          * 回傳一份 [isTaken] 為 true 的複本。

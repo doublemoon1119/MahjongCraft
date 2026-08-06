@@ -38,7 +38,7 @@ sealed interface RiichiPointResult {
      */
     data class NonDealerTsumo(
         val dealerPayment: Int,
-        val otherNonDealerPayment: Int
+        val otherNonDealerPayment: Int,
     ) : RiichiPointResult {
         override val total: Int get() = dealerPayment + otherNonDealerPayment * 2
     }

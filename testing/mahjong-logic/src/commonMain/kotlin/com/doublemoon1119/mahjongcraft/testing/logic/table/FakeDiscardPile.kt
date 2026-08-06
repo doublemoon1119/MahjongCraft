@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
  * 本類別為不可變值物件：[discard]、[takeLast] 皆不修改原實例，而是回傳新的 [FakeDiscardPile] 實例。
  */
 data class FakeDiscardPile(
-    private val _entries: List<FakeEntry> = emptyList()
+    private val _entries: List<FakeEntry> = emptyList(),
 ) : DiscardPile<FakeDiscardPile.FakeEntry> {
 
     /** 獲取目前牌河中所有的紀錄列表。 */
@@ -52,7 +52,7 @@ data class FakeDiscardPile(
      */
     class FakeEntry(
         tile: IdentifiedTile,
-        isTaken: Boolean = false
+        isTaken: Boolean = false,
     ) : DiscardPile.DiscardEntry(tile, isTaken) {
         override fun withTaken(): FakeEntry = FakeEntry(tile, isTaken = true)
     }

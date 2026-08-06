@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  */
 fun calculateAkaDora(
     hand: Hand,
-    winningTile: Tile
+    winningTile: Tile,
 ): YakuResult {
     var count = 0
 

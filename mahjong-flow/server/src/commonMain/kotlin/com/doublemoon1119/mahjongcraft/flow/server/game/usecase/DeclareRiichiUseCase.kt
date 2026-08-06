@@ -43,7 +43,7 @@ class DeclareRiichiUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val gameSnapshotRepository: GameSnapshotRepository,
-    @Provided private val eventPublisher: GameEventPublisher
+    @Provided private val eventPublisher: GameEventPublisher,
 ) {
     /**
      * 執行立直宣告邏輯。
@@ -71,7 +71,7 @@ class DeclareRiichiUseCase(
                         player = state.currentPlayer,
                         sourceAction = GameAction.Draw,
                         sourceDirection = RelativeDirection.Self,
-                        incomingTile = null
+                        incomingTile = null,
                     )
                     if (legalActions.none { it is GameAction.Riichi }) {
                         return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Riichi))
@@ -99,7 +99,7 @@ class DeclareRiichiUseCase(
                     val newState = state.copy(
                         players = updatedPlayers,
                         currentPlayerIndex = (state.currentPlayerIndex + 1) % state.playerCount,
-                        dynamicRuleState = declaration.dynamicRuleState
+                        dynamicRuleState = declaration.dynamicRuleState,
                     )
 
                     newState to Outcome.Success(newState)

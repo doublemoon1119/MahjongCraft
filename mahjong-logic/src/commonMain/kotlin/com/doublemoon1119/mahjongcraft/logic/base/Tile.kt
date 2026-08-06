@@ -19,7 +19,7 @@ sealed class Tile {
     data class Numeric(
         val suit: Suit,
         val value: Int,
-        val isRed: Boolean = false
+        val isRed: Boolean = false,
     ) : Tile() {
         init {
             require(value in 1..9) { "Numeric tile value must be between 1 and 9, current: $value" }
@@ -102,6 +102,6 @@ sealed class Tile {
         /** * 條子 (Bamboo)。
          * 日文：索子 (Sozu)。
          */
-        Bamboo
+        Bamboo,
     }
 }

@@ -24,7 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
  */
 fun calculateTsuuiisou(
     hand: Hand,
-    winningTile: Tile
+    winningTile: Tile,
 ): YakuResult? {
     // 取得所有牌
     val allTiles = hand.allTiles.map { it.tile.withoutRed } + winningTile.withoutRed

@@ -37,8 +37,8 @@ class SanshokuDoujunTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 4),
                 Tile.Numeric(Tile.Suit.Character, 4),
                 Tile.Numeric(Tile.Suit.Character, 5),
-                Tile.Numeric(Tile.Suit.Character, 7)
-            )
+                Tile.Numeric(Tile.Suit.Character, 7),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 6)
 
@@ -66,7 +66,7 @@ class SanshokuDoujunTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 4),
                 Tile.Numeric(Tile.Suit.Character, 4),
                 Tile.Numeric(Tile.Suit.Character, 5),
-                Tile.Numeric(Tile.Suit.Character, 6)
+                Tile.Numeric(Tile.Suit.Character, 6),
             ),
             melds = listOf(
                 Meld(
@@ -74,11 +74,11 @@ class SanshokuDoujunTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
 
@@ -108,8 +108,8 @@ class SanshokuDoujunTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 6),
                 Tile.Numeric(Tile.Suit.Bamboo, 7),
                 Tile.Numeric(Tile.Suit.Bamboo, 8),
-                Tile.Numeric(Tile.Suit.Bamboo, 9)
-            )
+                Tile.Numeric(Tile.Suit.Bamboo, 9),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 6)
 

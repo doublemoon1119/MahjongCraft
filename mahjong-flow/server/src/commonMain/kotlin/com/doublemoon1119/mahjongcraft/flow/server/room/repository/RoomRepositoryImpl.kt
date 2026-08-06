@@ -15,7 +15,10 @@ class RoomRepositoryImpl : RoomRepository {
 
     override suspend fun setRoom(room: Room) = mutex.withLock { rooms[room.id] = room }
 
-    override suspend fun removeRoom(id: Uuid) = mutex.withLock { rooms.remove(id); Unit }
+    override suspend fun removeRoom(id: Uuid) = mutex.withLock {
+        rooms.remove(id)
+        Unit
+    }
 
     override suspend fun <T> update(id: Uuid, block: suspend (Room?) -> Pair<Room?, T>): T = mutex.withLock {
         val (next, result) = block(rooms[id])

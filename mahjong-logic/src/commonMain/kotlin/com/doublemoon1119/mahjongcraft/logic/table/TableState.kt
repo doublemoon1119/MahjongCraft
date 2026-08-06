@@ -31,7 +31,7 @@ data class TableState(
     val comboCount: Int = 0,
     val currentPlayerIndex: Int = 0,
     val dynamicRuleState: DynamicRuleState? = null,
-    val pendingReaction: PendingReaction? = null
+    val pendingReaction: PendingReaction? = null,
 ) {
     /** 獲取參與遊戲的總人數。 */
     val playerCount: Int get() = players.size

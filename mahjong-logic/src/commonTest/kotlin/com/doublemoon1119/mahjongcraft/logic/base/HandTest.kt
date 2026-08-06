@@ -3,8 +3,12 @@ package com.doublemoon1119.mahjongcraft.logic.base
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTileOrder
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTileOrder
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
-import kotlin.test.*
 
 /**
  * 針對 [Hand] 的基礎功能進行單元測試。
@@ -90,7 +94,7 @@ class HandTest {
         assertNull(updatedHand.lastDrawn, "lastDrawn should be cleared because it was moved to standing tiles.")
         assertTrue(
             updatedHand.standingTiles.contains(tileLastDrawn),
-            "The last drawn tile should now be in the standing tiles list."
+            "The last drawn tile should now be in the standing tiles list.",
         )
         assertEquals(1, updatedHand.standingTiles.size)
     }

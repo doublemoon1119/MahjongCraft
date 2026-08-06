@@ -60,8 +60,8 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 2),
                 // 雙碰聽：東 東
                 Tile.Honor.East,
-                Tile.Honor.East
-            )
+                Tile.Honor.East,
+            ),
         )
         val winningTile = Tile.Honor.East
 
@@ -99,7 +99,7 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 2),
                 // 雙碰聽：東 東
                 Tile.Honor.East,
-                Tile.Honor.East
+                Tile.Honor.East,
             ),
             melds = listOf(
                 // 暗槓：5s 5s 5s 5s
@@ -109,11 +109,11 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                     ),
-                    sourceDirection = RelativeDirection.Self
-                )
-            )
+                    sourceDirection = RelativeDirection.Self,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.East
 
@@ -156,8 +156,8 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 2),
                 Tile.Numeric(Tile.Suit.Dot, 2),
                 // 雀頭：發（等待發）
-                Tile.Honor.Green
-            )
+                Tile.Honor.Green,
+            ),
         )
         // 胡牌：發（單騎）
         val winningTile = Tile.Honor.Green
@@ -192,7 +192,7 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 2),
                 // 雙碰聽：東 東
                 Tile.Honor.East,
-                Tile.Honor.East
+                Tile.Honor.East,
             ),
             melds = listOf(
                 // 副露（碰）：白 白 白
@@ -201,11 +201,11 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.White)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.East
 
@@ -215,7 +215,7 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
         assertTrue(result.yakuResults.none { it.yaku == YakuType.Suuankou }, "Should not have Suuankou with pon")
         assertTrue(
             result.yakuResults.none { it.yaku == YakuType.SuuankouTanki },
-            "Should not have Suuankou Tanki with pon"
+            "Should not have Suuankou Tanki with pon",
         )
     }
 
@@ -245,8 +245,8 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 3),
                 Tile.Numeric(Tile.Suit.Dot, 4),
                 // 單騎：發
-                Tile.Honor.Green
-            )
+                Tile.Honor.Green,
+            ),
         )
         val winningTile = Tile.Honor.Green
 
@@ -290,8 +290,8 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 2),
                 // 雙碰聽：東 東
                 Tile.Honor.East,
-                Tile.Honor.East
-            )
+                Tile.Honor.East,
+            ),
         )
         // 胡牌：東
         val winningTile = Tile.Honor.East

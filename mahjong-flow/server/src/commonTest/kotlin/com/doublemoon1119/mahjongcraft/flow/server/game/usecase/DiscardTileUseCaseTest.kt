@@ -57,7 +57,7 @@ class DiscardTileUseCaseTest {
         val currentPlayer = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
             initialSeat = Wind.EAST,
-            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile)
+            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
         )
         val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
         val table = FakeTableStateFactory.create(
@@ -65,7 +65,7 @@ class DiscardTileUseCaseTest {
             players = listOf(currentPlayer, otherPlayer),
             config = RiichiRuleConfig(),
             tileWall = TileWall(emptyList()),
-            currentPlayerIndex = 0
+            currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -94,14 +94,14 @@ class DiscardTileUseCaseTest {
         val currentPlayer = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
             initialSeat = Wind.EAST,
-            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile)
+            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer),
             config = RiichiRuleConfig(),
             tileWall = TileWall(emptyList()),
-            currentPlayerIndex = 0
+            currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -125,7 +125,7 @@ class DiscardTileUseCaseTest {
         val currentPlayer = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
             initialSeat = Wind.EAST,
-            hand = Hand(lastDrawn = discardedTile)
+            hand = Hand(lastDrawn = discardedTile),
         )
         // 另一位玩家手牌中有兩張東風，湊滿碰牌的條件
         val otherPlayer = FakeMahjongPlayerFactory.create(
@@ -134,16 +134,16 @@ class DiscardTileUseCaseTest {
             hand = Hand(
                 tiles = listOf(
                     FakeIdentifiedTileFactory.create(Tile.Honor.East),
-                    FakeIdentifiedTileFactory.create(Tile.Honor.East)
-                )
-            )
+                    FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                ),
+            ),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
             config = RiichiRuleConfig(),
             tileWall = TileWall(emptyList()),
-            currentPlayerIndex = 0
+            currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -170,7 +170,7 @@ class DiscardTileUseCaseTest {
         val currentPlayer = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
             initialSeat = Wind.EAST,
-            hand = Hand(lastDrawn = drawnTile)
+            hand = Hand(lastDrawn = drawnTile),
         )
         val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
         val table = FakeTableStateFactory.create(
@@ -178,7 +178,7 @@ class DiscardTileUseCaseTest {
             players = listOf(currentPlayer, otherPlayer),
             config = RiichiRuleConfig(),
             tileWall = TileWall(emptyList()),
-            currentPlayerIndex = 0
+            currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
         fixtures.snapshotRepo.setSnapshot(currentPlayerId, table.toSnapshot(currentPlayerId))
@@ -190,11 +190,11 @@ class DiscardTileUseCaseTest {
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, otherPlayerId))
         assertEquals(
             GameAction.Discard(drawnTile.id),
-            fixtures.eventPublisher.getNotifiedAction(gameId, currentPlayerId, currentPlayerId)
+            fixtures.eventPublisher.getNotifiedAction(gameId, currentPlayerId, currentPlayerId),
         )
         assertEquals(
             GameAction.Discard(drawnTile.id),
-            fixtures.eventPublisher.getNotifiedAction(gameId, otherPlayerId, currentPlayerId)
+            fixtures.eventPublisher.getNotifiedAction(gameId, otherPlayerId, currentPlayerId),
         )
     }
 
@@ -220,7 +220,7 @@ class DiscardTileUseCaseTest {
         val currentPlayer = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
             initialSeat = Wind.EAST,
-            hand = Hand(lastDrawn = drawnTile)
+            hand = Hand(lastDrawn = drawnTile),
         )
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(currentPlayer))
         fixtures.gameRepo.setTableState(table)
@@ -241,17 +241,17 @@ class DiscardTileUseCaseTest {
         val currentPlayer = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
             initialSeat = Wind.EAST,
-            hand = Hand(lastDrawn = drawnTile)
+            hand = Hand(lastDrawn = drawnTile),
         )
         val otherPlayer = FakeMahjongPlayerFactory.create(
             id = otherPlayerId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(lastDrawn = handTile)
+            hand = Hand(lastDrawn = handTile),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
-            currentPlayerIndex = 0
+            currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -270,7 +270,7 @@ class DiscardTileUseCaseTest {
         val currentPlayer = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
             initialSeat = Wind.EAST,
-            hand = Hand(tiles = listOf(handTile))
+            hand = Hand(tiles = listOf(handTile)),
         )
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(currentPlayer), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
@@ -280,7 +280,7 @@ class DiscardTileUseCaseTest {
         assertTrue(result is Outcome.Error)
         assertEquals(
             GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(handTile.id)),
-            result.error
+            result.error,
         )
     }
 
@@ -293,7 +293,7 @@ class DiscardTileUseCaseTest {
         val currentPlayer = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
             initialSeat = Wind.EAST,
-            hand = Hand(lastDrawn = drawnTile)
+            hand = Hand(lastDrawn = drawnTile),
         )
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(currentPlayer), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
@@ -304,7 +304,7 @@ class DiscardTileUseCaseTest {
         assertTrue(result is Outcome.Error)
         assertEquals(
             GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(unknownTileId)),
-            result.error
+            result.error,
         )
     }
 }

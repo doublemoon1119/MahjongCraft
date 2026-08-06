@@ -29,6 +29,6 @@ interface LegalActionValidator {
         player: MahjongPlayer,
         sourceAction: GameAction,
         sourceDirection: RelativeDirection,
-        incomingTile: IdentifiedTile? = null
+        incomingTile: IdentifiedTile? = null,
     ): List<GameAction>
 }

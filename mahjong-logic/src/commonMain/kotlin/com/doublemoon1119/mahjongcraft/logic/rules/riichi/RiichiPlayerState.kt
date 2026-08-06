@@ -21,7 +21,7 @@ data class RiichiPlayerState(
     val riichiTile: IdentifiedTile? = null,
     val doubleRiichiTile: IdentifiedTile? = null,
     val isIppatsu: Boolean = false,
-    val paoLiability: PaoLiability? = null
+    val paoLiability: PaoLiability? = null,
 ) : PlayerRuleState {
 
     /**
@@ -47,7 +47,7 @@ data class RiichiPlayerState(
      */
     fun getFuritenTiles(
         discardPile: DiscardPile<*>,
-        passedTilesInRound: Set<Tile>
+        passedTilesInRound: Set<Tile>,
     ): Set<Tile> {
         val discardedTiles = discardPile.entries
             .map { it.tile.tile.withoutRed }

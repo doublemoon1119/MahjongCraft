@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.validate
 
-
 /**
  * 台灣麻將特有的規則配置介面。
  *
@@ -24,12 +23,14 @@ data class TaiwanRuleConfig(
     override val minimumWinConstraint: Int = 0,
     override val scoreConfig: TaiwanScoreConfig = TaiwanScoreConfig(),
     override val gameLength: TaiwanGameLength = TaiwanGameLength.OneGame,
-    override val isSpectateAllowed: Boolean = true
+    override val isSpectateAllowed: Boolean = true,
 ) : MahjongRuleConfig {
     override val initialHandSize: Int = 16
     override val deadTileCount: Int = 16
     override val minPlayers: Int = 4
     override val maxPlayers: Int = 4
 
-    init { validate() }
+    init {
+        validate()
+    }
 }

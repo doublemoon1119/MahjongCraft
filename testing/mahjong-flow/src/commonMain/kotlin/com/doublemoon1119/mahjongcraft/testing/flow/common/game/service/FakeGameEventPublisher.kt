@@ -36,7 +36,7 @@ class FakeGameEventPublisher : GameEventPublisher {
     fun getNotifiedAction(
         gameId: Uuid,
         targetPlayerId: Uuid,
-        actorId: Uuid
+        actorId: Uuid,
     ): GameAction? = notifications[Triple(gameId, targetPlayerId, actorId)]?.lastOrNull()
 
     /**
@@ -50,6 +50,6 @@ class FakeGameEventPublisher : GameEventPublisher {
     fun getNotifiedActions(
         gameId: Uuid,
         targetPlayerId: Uuid,
-        actorId: Uuid
+        actorId: Uuid,
     ): List<GameAction> = notifications[Triple(gameId, targetPlayerId, actorId)].orEmpty()
 }

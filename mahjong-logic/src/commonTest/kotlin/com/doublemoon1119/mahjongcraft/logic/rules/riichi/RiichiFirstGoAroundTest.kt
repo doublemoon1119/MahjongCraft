@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
-import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -40,7 +39,7 @@ class RiichiFirstGoAroundTest {
         val player = FakeMahjongPlayerFactory.create()
         val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val otherPlayer = FakeMahjongPlayerFactory.create(
-            discardPile = FakeDiscardPile().discardTile(discardedTile)
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
         )
         val table = FakeTableStateFactory.create(players = listOf(player, otherPlayer))
 
@@ -54,7 +53,7 @@ class RiichiFirstGoAroundTest {
     fun `test is not first go around when player has already discarded`() {
         val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val player = FakeMahjongPlayerFactory.create(
-            discardPile = FakeDiscardPile().discardTile(discardedTile)
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
         )
         val table = FakeTableStateFactory.create(players = listOf(player))
 
@@ -88,8 +87,8 @@ class RiichiFirstGoAroundTest {
                 type = MeldType.PON,
                 tiles = List(3) { meldTile },
                 source = meldTile,
-                direction = RelativeDirection.Left
-            )
+                direction = RelativeDirection.Left,
+            ),
         )
         val table = FakeTableStateFactory.create(players = listOf(player, otherPlayer))
 

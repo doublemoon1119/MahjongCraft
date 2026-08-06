@@ -24,7 +24,7 @@ import kotlin.uuid.Uuid
 class JoinRoomUseCase(
     private val roomRepository: RoomRepository,
     private val snapshotRepository: RoomSnapshotRepository,
-    @Provided private val eventPublisher: RoomEventPublisher
+    @Provided private val eventPublisher: RoomEventPublisher,
 ) {
     /**
      * 執行加入房間邏輯。
@@ -35,7 +35,7 @@ class JoinRoomUseCase(
      */
     suspend operator fun invoke(
         roomId: Uuid,
-        playerId: Uuid
+        playerId: Uuid,
     ): Outcome<Unit, RoomError> {
         // 1. 以原子方式讀取房間、驗證業務規則並寫回，避免並發加入請求互相覆蓋
         val outcome = roomRepository.update(roomId) { room ->
@@ -67,7 +67,7 @@ class JoinRoomUseCase(
                         roomId = roomId,
                         targetPlayerId = memberId,
                         joinedPlayerId = playerId,
-                        reason = JoinReason.Joined
+                        reason = JoinReason.Joined,
                     )
                 }
 

@@ -26,7 +26,7 @@ data class TableStateSnapshot(
     val roundNumber: Int,
     val comboCount: Int,
     val currentPlayerIndex: Int,
-    val dynamicRuleState: DynamicRuleState?
+    val dynamicRuleState: DynamicRuleState?,
 )
 
 /**
@@ -50,6 +50,6 @@ fun TableState.toSnapshot(observerId: Uuid): TableStateSnapshot {
         roundNumber = this.roundNumber,
         comboCount = this.comboCount,
         currentPlayerIndex = this.currentPlayerIndex,
-        dynamicRuleState = this.dynamicRuleState
+        dynamicRuleState = this.dynamicRuleState,
     )
 }

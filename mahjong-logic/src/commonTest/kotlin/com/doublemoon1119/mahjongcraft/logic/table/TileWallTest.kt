@@ -22,7 +22,7 @@ class TileWallTest {
     fun `test drawing from wall`() {
         val tiles = listOf(
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2)),
         )
         var wall = TileWall(tiles)
 
@@ -51,7 +51,7 @@ class TileWallTest {
     fun `test drawing last from wall`() {
         val tiles = listOf(
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2)),
         )
         var wall = TileWall(tiles)
 

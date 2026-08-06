@@ -13,8 +13,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
  * @param player 欲判斷的玩家（通常是即將打牌的當前玩家）。
  * @return 是否仍在第一巡且無人鳴牌。
  */
-fun TableState.isFirstGoAround(player: MahjongPlayer): Boolean {
-    return players.all { it.hand.exposedMelds.isEmpty() } &&
-        players.all { it.discardPile.entries.size <= 1 } &&
-        player.discardPile.entries.isEmpty()
-}
+fun TableState.isFirstGoAround(player: MahjongPlayer): Boolean = players.all { it.hand.exposedMelds.isEmpty() } &&
+    players.all { it.discardPile.entries.size <= 1 } &&
+    player.discardPile.entries.isEmpty()

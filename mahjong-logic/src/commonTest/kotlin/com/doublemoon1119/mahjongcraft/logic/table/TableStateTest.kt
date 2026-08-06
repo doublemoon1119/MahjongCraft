@@ -29,16 +29,16 @@ class TableStateTest {
         val initialScoreValue = 30000
         // 透過傳入具備特定分數的 FakeScoreConfig 來達成測試需求
         val config = FakeMahjongRuleConfig(
-            scoreConfig = FakeScoreConfig(initialScore = initialScoreValue)
+            scoreConfig = FakeScoreConfig(initialScore = initialScoreValue),
         )
         val players = listOf(
             FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST),
-            FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
+            FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH),
         )
 
         val tableState = FakeTableStateFactory.create(
             players = players,
-            config = config
+            config = config,
         )
         val initializedTableState = tableState.init()
 
@@ -46,7 +46,7 @@ class TableStateTest {
             assertEquals(
                 initialScoreValue,
                 player.score,
-                "Player score should be initialized to the value defined in config."
+                "Player score should be initialized to the value defined in config.",
             )
         }
     }
@@ -61,7 +61,7 @@ class TableStateTest {
         val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
 
         val table = FakeTableStateFactory.create(
-            players = listOf(p1, p2, p3)
+            players = listOf(p1, p2, p3),
         )
 
         assertEquals(3, table.playerCount, "Table should correctly reflect the number of joined players.")
@@ -69,7 +69,7 @@ class TableStateTest {
         assertEquals(
             p1,
             table.getNextPlayer(p3),
-            "The next player of the last person (P3) should wrap back to the first person (P1)."
+            "The next player of the last person (P3) should wrap back to the first person (P1).",
         )
     }
 
@@ -81,7 +81,7 @@ class TableStateTest {
         val dynamicState = MockDynamicState()
         val table = FakeTableStateFactory.create(
             players = emptyList(),
-            dynamicRuleState = dynamicState
+            dynamicRuleState = dynamicState,
         )
 
         assertEquals(dynamicState, table.dynamicRuleState, "TableState should hold the assigned dynamic rule state.")
@@ -102,22 +102,22 @@ class TableStateTest {
         assertEquals(
             RelativeDirection.Self,
             table.relativeDirectionOf(p1.id, p1.id),
-            "A player relative to themselves should be Self."
+            "A player relative to themselves should be Self.",
         )
         assertEquals(
             RelativeDirection.Right,
             table.relativeDirectionOf(p1.id, p2.id),
-            "P2 comes right after P1 in seating order, so P2 is P1's shimocha (Right)."
+            "P2 comes right after P1 in seating order, so P2 is P1's shimocha (Right).",
         )
         assertEquals(
             RelativeDirection.Across,
             table.relativeDirectionOf(p1.id, p3.id),
-            "P3 sits directly across from P1."
+            "P3 sits directly across from P1.",
         )
         assertEquals(
             RelativeDirection.Left,
             table.relativeDirectionOf(p1.id, p4.id),
-            "P4 comes right before P1 in seating order, so P4 is P1's kamicha (Left) — the only valid Chi source."
+            "P4 comes right before P1 in seating order, so P4 is P1's kamicha (Left) — the only valid Chi source.",
         )
     }
 
@@ -137,7 +137,7 @@ class TableStateTest {
         assertEquals(
             RelativeDirection.Left,
             table.relativeDirectionOf(p1.id, p3.id),
-            "In a three-player table, the only other seat besides your shimocha is your kamicha."
+            "In a three-player table, the only other seat besides your shimocha is your kamicha.",
         )
     }
 }

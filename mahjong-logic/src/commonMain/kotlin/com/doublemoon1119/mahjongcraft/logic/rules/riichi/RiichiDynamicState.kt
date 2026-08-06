@@ -13,14 +13,13 @@ import kotlin.uuid.Uuid
  * @property riichiStickCount 場上存留的立直棒數量。
  */
 data class RiichiDynamicState(
-    val riichiStickCount: Int = 0
-) : DynamicRuleState, TileWallRevealable {
+    val riichiStickCount: Int = 0,
+) : DynamicRuleState,
+    TileWallRevealable {
     /**
      * 取得「寶牌指示器」的 [Uuid]
      */
-    override fun getVisibleTileIds(state: TableState): Set<Uuid> {
-        return getDoraIndicators(state).first.map { it.id }.toSet()
-    }
+    override fun getVisibleTileIds(state: TableState): Set<Uuid> = getDoraIndicators(state).first.map { it.id }.toSet()
 
     /**
      * 計算並取得寶牌、裏寶牌列表
@@ -44,7 +43,7 @@ data class RiichiDynamicState(
         // 取得王牌
         val wanPai = state.tileWall.getAllTiles()
             .takeLast(wanPaiCount)
-            .reversed()  // 反轉後索引 0 轉為嶺上位置，便於由左至右計算
+            .reversed() // 反轉後索引 0 轉為嶺上位置，便於由左至右計算
 
         // 根據槓數推算指示牌索引
         // 初始 0 槓 = 1 張 (索引 = (4 - kanCount))

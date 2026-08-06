@@ -51,9 +51,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Self
+                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 2：9m 9m 9m 9m
                 Meld(
@@ -62,9 +62,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                     ),
-                    sourceDirection = RelativeDirection.Self
+                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 3：5s 5s 5s 5s
                 Meld(
@@ -73,9 +73,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                     ),
-                    sourceDirection = RelativeDirection.Self
+                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 明槓 4：發 發 發 發
                 Meld(
@@ -84,11 +84,11 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Honor.Green),
                         FakeIdentifiedTileFactory.create(Tile.Honor.Green),
                         FakeIdentifiedTileFactory.create(Tile.Honor.Green),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.Green)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.East
 
@@ -113,7 +113,7 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
         val hand = FakeHandFactory.create(
             listOf(
                 // 單騎：東
-                Tile.Honor.East
+                Tile.Honor.East,
             ),
             melds = listOf(
                 // 暗槓 1：1m 1m 1m 1m
@@ -123,9 +123,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Self
+                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 2：9m 9m 9m 9m
                 Meld(
@@ -134,9 +134,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                     ),
-                    sourceDirection = RelativeDirection.Self
+                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 3：5s 5s 5s 5s
                 Meld(
@@ -145,9 +145,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                     ),
-                    sourceDirection = RelativeDirection.Self
+                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 4：發 發 發 發
                 Meld(
@@ -156,11 +156,11 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Honor.Green),
                         FakeIdentifiedTileFactory.create(Tile.Honor.Green),
                         FakeIdentifiedTileFactory.create(Tile.Honor.Green),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.Green)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green),
                     ),
-                    sourceDirection = RelativeDirection.Self
-                )
-            )
+                    sourceDirection = RelativeDirection.Self,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.East
 
@@ -185,7 +185,7 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 3),
                 Tile.Numeric(Tile.Suit.Dot, 4),
                 // 單騎：東
-                Tile.Honor.East
+                Tile.Honor.East,
             ),
             melds = listOf(
                 // 暗槓 1：1m 1m 1m 1m
@@ -195,9 +195,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Self
+                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 2：9m 9m 9m 9m
                 Meld(
@@ -206,9 +206,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                     ),
-                    sourceDirection = RelativeDirection.Self
+                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 3：5s 5s 5s 5s
                 Meld(
@@ -217,11 +217,11 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                     ),
-                    sourceDirection = RelativeDirection.Self
-                )
-            )
+                    sourceDirection = RelativeDirection.Self,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.East
 
@@ -230,7 +230,7 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
 
         assertNull(
             result.yakuResults.find { it.yaku == YakuType.Sukantsu },
-            "Should not have Sukantsu with only 3 kans"
+            "Should not have Sukantsu with only 3 kans",
         )
         assertTrue(result.yakuResults.any { it.yaku == YakuType.Sankantsu }, "Should have Sankantsu with 3 kans")
     }
@@ -249,7 +249,7 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 3),
                 Tile.Numeric(Tile.Suit.Dot, 4),
                 // 單騎：東
-                Tile.Honor.East
+                Tile.Honor.East,
             ),
             melds = listOf(
                 // 暗槓 1：1m 1m 1m 1m
@@ -259,9 +259,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Self
+                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 2：9m 9m 9m 9m
                 Meld(
@@ -270,9 +270,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                     ),
-                    sourceDirection = RelativeDirection.Self
+                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 明槓 3：發 發 發 發
                 Meld(
@@ -281,11 +281,11 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Honor.Green),
                         FakeIdentifiedTileFactory.create(Tile.Honor.Green),
                         FakeIdentifiedTileFactory.create(Tile.Honor.Green),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.Green)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Green),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.East
 
@@ -294,7 +294,7 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
 
         assertNull(
             result.yakuResults.find { it.yaku == YakuType.Sukantsu },
-            "Should not have Sukantsu with non-kan mentsu"
+            "Should not have Sukantsu with non-kan mentsu",
         )
     }
 }

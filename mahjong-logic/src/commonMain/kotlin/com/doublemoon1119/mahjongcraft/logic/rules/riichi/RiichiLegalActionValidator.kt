@@ -1,6 +1,12 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.logic.base.*
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
@@ -24,7 +30,7 @@ import kotlin.math.abs
 class RiichiLegalActionValidator(
     private val shantenCalculator: RiichiShantenCalculator,
     private val handValueCalculator: RiichiHandValueCalculator,
-    private val contextCalculator: RiichiHandValueContextCalculator
+    private val contextCalculator: RiichiHandValueContextCalculator,
 ) : LegalActionValidator {
 
     /**
@@ -42,7 +48,7 @@ class RiichiLegalActionValidator(
         player: MahjongPlayer,
         sourceAction: GameAction,
         sourceDirection: RelativeDirection,
-        incomingTile: IdentifiedTile?
+        incomingTile: IdentifiedTile?,
     ): List<GameAction> {
         val legalActions = mutableListOf<GameAction>()
         val hand = player.hand
@@ -60,8 +66,8 @@ class RiichiLegalActionValidator(
                 val result = shantenCalculator.calculate(
                     Hand(
                         player.hand.standingTiles.toMutableList(),
-                        player.hand.exposedMelds.toMutableList()
-                    )
+                        player.hand.exposedMelds.toMutableList(),
+                    ),
                 )
                 if (result is ShantenResult.Tenpai) {
                     legalActions.add(GameAction.Riichi)
@@ -80,7 +86,7 @@ class RiichiLegalActionValidator(
             // 1. 檢查是否可以自摸 (Tsumo)
             val tempHandTsumo = Hand(
                 (player.hand.standingTiles + incomingTile).toMutableList(),
-                player.hand.exposedMelds.toMutableList()
+                player.hand.exposedMelds.toMutableList(),
             )
             val tsumoResult = shantenCalculator.calculate(tempHandTsumo)
             if (tsumoResult is ShantenResult.Complete) {
@@ -88,7 +94,7 @@ class RiichiLegalActionValidator(
                         tableState = tableState,
                         player = player,
                         incomingTile = incomingTile,
-                        isTsumo = true
+                        isTsumo = true,
                     )
                 ) {
                     legalActions.add(GameAction.Tsumo)
@@ -125,7 +131,7 @@ class RiichiLegalActionValidator(
             // 4. 檢查是否可以宣告和局 (九種九牌)
             if (tableState.isFirstGoAround(player)) {
                 val isKyuushuKyuuhai = (player.hand.standingTiles + incomingTile)
-                    .filter { it.tile.isTerminal || it.tile.isHonor }  // 過濾么九牌
+                    .filter { it.tile.isTerminal || it.tile.isHonor } // 過濾么九牌
                     .map { it.tile.withoutRed }
                     .toSet().size >= 9
                 if (isKyuushuKyuuhai) {
@@ -137,7 +143,7 @@ class RiichiLegalActionValidator(
             // 1. 檢查是否可以榮和 (Ron)
             val tempHandRon = Hand(
                 (player.hand.standingTiles + incomingTile).toMutableList(),
-                player.hand.exposedMelds.toMutableList()
+                player.hand.exposedMelds.toMutableList(),
             )
             val ronResult = shantenCalculator.calculate(tempHandRon)
 
@@ -148,14 +154,14 @@ class RiichiLegalActionValidator(
                 val currentHandResult = shantenCalculator.calculate(
                     Hand(
                         player.hand.standingTiles.toMutableList(),
-                        player.hand.exposedMelds.toMutableList()
-                    )
+                        player.hand.exposedMelds.toMutableList(),
+                    ),
                 )
 
                 val isFuriten = if (currentHandResult is ShantenResult.Tenpai) {
                     val furitenTiles = riichiState?.getFuritenTiles(
                         discardPile = player.discardPile,
-                        passedTilesInRound = player.passedTilesInRound
+                        passedTilesInRound = player.passedTilesInRound,
                     ) ?: emptySet()
 
                     furitenTiles.contains(incomingBaseTile)
@@ -171,7 +177,7 @@ class RiichiLegalActionValidator(
                             incomingTile = incomingTile,
                             isTsumo = false,
                             isRobbingKan = sourceAction is GameAction.Kan && sourceAction.type == GameAction.KanType.ADDED_KAN,
-                            isRobbingClosedKan = sourceAction is GameAction.Kan && sourceAction.type == GameAction.KanType.CLOSED_KAN
+                            isRobbingClosedKan = sourceAction is GameAction.Kan && sourceAction.type == GameAction.KanType.CLOSED_KAN,
                         )
                     ) {
                         legalActions.add(GameAction.Ron(incomingTile.id))
@@ -265,7 +271,7 @@ class RiichiLegalActionValidator(
         incomingTile: IdentifiedTile,
         isTsumo: Boolean,
         isRobbingKan: Boolean = false,
-        isRobbingClosedKan: Boolean = false
+        isRobbingClosedKan: Boolean = false,
     ): Boolean {
         val minimumWinConstraint = tableState.config.minimumWinConstraint
         if (minimumWinConstraint <= 0) {
@@ -278,8 +284,8 @@ class RiichiLegalActionValidator(
                 player = player,
                 incomingTile = incomingTile,
                 isTsumo = isTsumo,
-                isRobbingKan = isRobbingKan
-            )
+                isRobbingKan = isRobbingKan,
+            ),
         )
 
         val result = handValueCalculator.calculate(context)
@@ -329,7 +335,7 @@ class RiichiLegalActionValidator(
         // 取得暗槓前的聽牌列表
         val currentHand = Hand(
             player.hand.standingTiles.toMutableList(),
-            player.hand.exposedMelds.toMutableList()
+            player.hand.exposedMelds.toMutableList(),
         )
         val beforeKanResult = shantenCalculator.calculate(currentHand)
 
@@ -350,7 +356,7 @@ class RiichiLegalActionValidator(
             type = MeldType.CLOSED_KAN,
             tiles = tilesToKan,
             sourceTile = null,
-            sourceDirection = RelativeDirection.Self
+            sourceDirection = RelativeDirection.Self,
         )
 
         // 建立新的 Hand，包含剩余立牌和新增的暗槓
@@ -390,8 +396,8 @@ class RiichiLegalActionValidator(
             val otherBase = it.tile.withoutRed as? Tile.Numeric? ?: return@any false
 
             otherBase.isNumeric &&
-                    otherBase.suit == kanBase.suit &&
-                    abs(otherBase.value - kanBase.value) <= 2
+                otherBase.suit == kanBase.suit &&
+                abs(otherBase.value - kanBase.value) <= 2
         }
     }
 }

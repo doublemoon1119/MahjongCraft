@@ -23,7 +23,7 @@ interface RoomEventPublisher {
         roomId: Uuid,
         targetPlayerId: Uuid,
         joinedPlayerId: Uuid,
-        reason: JoinReason
+        reason: JoinReason,
     )
 
     /**
@@ -38,7 +38,7 @@ interface RoomEventPublisher {
         roomId: Uuid,
         targetPlayerId: Uuid,
         leftPlayerId: Uuid,
-        reason: LeaveReason
+        reason: LeaveReason,
     )
 
     /**
@@ -53,7 +53,7 @@ interface RoomEventPublisher {
         roomId: Uuid,
         targetPlayerId: Uuid,
         readyPlayerId: Uuid,
-        isReady: Boolean
+        isReady: Boolean,
     )
 
     /**
@@ -66,6 +66,6 @@ interface RoomEventPublisher {
     suspend fun publishConfigChanged(
         roomId: Uuid,
         targetPlayerId: Uuid,
-        newConfig: MahjongRuleConfig
+        newConfig: MahjongRuleConfig,
     )
 }

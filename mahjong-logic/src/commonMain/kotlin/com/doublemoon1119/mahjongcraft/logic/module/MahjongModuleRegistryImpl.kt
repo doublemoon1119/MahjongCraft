@@ -18,7 +18,7 @@ class MahjongModuleRegistryImpl : MahjongModuleRegistry {
 
     private class Entry(
         val id: String,
-        val factory: (MahjongRuleConfig, String) -> MahjongRuleModule<*>
+        val factory: (MahjongRuleConfig, String) -> MahjongRuleModule<*>,
     )
 
     private val entriesByConfigClass = mutableMapOf<KClass<out MahjongRuleConfig>, Entry>()
@@ -26,7 +26,7 @@ class MahjongModuleRegistryImpl : MahjongModuleRegistry {
     override fun <T : MahjongRuleConfig> register(
         configClass: KClass<T>,
         id: String,
-        factory: (T, id: String) -> MahjongRuleModule<T>
+        factory: (T, id: String) -> MahjongRuleModule<T>,
     ) {
         @Suppress("UNCHECKED_CAST")
         entriesByConfigClass[configClass] = Entry(id, factory as (MahjongRuleConfig, String) -> MahjongRuleModule<*>)
@@ -42,6 +42,5 @@ class MahjongModuleRegistryImpl : MahjongModuleRegistry {
 
     override fun getAllModuleIds(): Set<String> = entriesByConfigClass.values.map { it.id }.toSet()
 
-    override fun getConfigClass(id: String): KClass<out MahjongRuleConfig>? =
-        entriesByConfigClass.entries.find { it.value.id == id }?.key
+    override fun getConfigClass(id: String): KClass<out MahjongRuleConfig>? = entriesByConfigClass.entries.find { it.value.id == id }?.key
 }

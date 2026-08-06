@@ -51,7 +51,7 @@ class AddAiPlayerUseCaseTest {
         // 驗證通知
         assertEquals(
             expected = JoinReason.Joined,
-            actual = service.getJoinReason(roomId, hostId, aiId)
+            actual = service.getJoinReason(roomId, hostId, aiId),
         )
     }
 

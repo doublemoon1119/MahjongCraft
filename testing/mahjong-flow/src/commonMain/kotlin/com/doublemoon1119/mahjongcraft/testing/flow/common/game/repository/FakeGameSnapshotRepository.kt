@@ -13,8 +13,7 @@ class FakeGameSnapshotRepository : GameSnapshotRepository {
     /** 儲存快照的映射表，鍵為對局 Uuid 與觀察者 Uuid 的組合。 */
     private val snapshots = mutableMapOf<Pair<Uuid, Uuid>, TableStateSnapshot>()
 
-    override suspend fun getSnapshot(gameId: Uuid, observerId: Uuid): TableStateSnapshot? =
-        snapshots[gameId to observerId]
+    override suspend fun getSnapshot(gameId: Uuid, observerId: Uuid): TableStateSnapshot? = snapshots[gameId to observerId]
 
     override suspend fun setSnapshot(observerId: Uuid, snapshot: TableStateSnapshot) {
         snapshots[snapshot.id to observerId] = snapshot
@@ -24,10 +23,8 @@ class FakeGameSnapshotRepository : GameSnapshotRepository {
         snapshots.remove(gameId to observerId)
     }
 
-    override suspend fun getAllObservers(gameId: Uuid): Set<Uuid> {
-        return snapshots.keys
-            .filter { it.first == gameId }
-            .map { it.second }
-            .toSet()
-    }
+    override suspend fun getAllObservers(gameId: Uuid): Set<Uuid> = snapshots.keys
+        .filter { it.first == gameId }
+        .map { it.second }
+        .toSet()
 }

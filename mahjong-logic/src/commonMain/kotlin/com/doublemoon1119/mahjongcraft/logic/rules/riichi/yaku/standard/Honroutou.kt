@@ -22,7 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
  */
 fun calculateHonroutou(
     hand: Hand,
-    winningTile: Tile
+    winningTile: Tile,
 ): YakuResult? {
     val allTiles = (hand.allTiles.map { it.tile } + winningTile)
         .map { it.withoutRed }

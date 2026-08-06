@@ -4,10 +4,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction.KanType
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
-import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /**
  * 針對 [MahjongPlayer] 的實體狀態與基礎邏輯進行單元測試。
@@ -32,7 +32,7 @@ class MahjongPlayerTest {
         // 使用工廠建立玩家，工廠會自動注入 FakeDiscardPile
         val player = FakeMahjongPlayerFactory.create(
             id = uuid,
-            initialSeat = seat
+            initialSeat = seat,
         )
 
         // 驗證屬性賦值
@@ -81,8 +81,8 @@ class MahjongPlayerTest {
             GameAction.Kan(
                 KanType.OPEN_KAN,
                 Uuid.random(),
-                listOf(Uuid.random(), Uuid.random(), Uuid.random())
-            )
+                listOf(Uuid.random(), Uuid.random(), Uuid.random()),
+            ),
         )
 
         // 驗證歷史記錄數量與內容

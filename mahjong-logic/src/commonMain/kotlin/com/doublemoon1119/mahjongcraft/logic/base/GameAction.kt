@@ -88,8 +88,8 @@ sealed class GameAction {
      * 槓牌的種類。
      */
     enum class KanType {
-        OPEN_KAN,       // 明槓 (大明槓)
-        CLOSED_KAN,     // 暗槓
-        ADDED_KAN       // 加槓 (小明槓)
+        OPEN_KAN, // 明槓 (大明槓)
+        CLOSED_KAN, // 暗槓
+        ADDED_KAN, // 加槓 (小明槓)
     }
 }

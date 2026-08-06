@@ -364,10 +364,10 @@ class RiichiShantenCalculator : ShantenCalculator {
     private fun calculateKokushiShanten(counts: IntArray): Int {
         // 么九牌的索引列表: 1,9m (0,8), 1,9p (9,17), 1,9s (18,26), z (27-33)
         val termIndices = intArrayOf(
-            0, 8,   // 1m, 9m
-            9, 17,  // 1p, 9p
+            0, 8, // 1m, 9m
+            9, 17, // 1p, 9p
             18, 26, // 1s, 9s
-            27, 28, 29, 30, 31, 32, 33 // 東南西北白發中
+            27, 28, 29, 30, 31, 32, 33, // 東南西北白發中
         )
 
         var yaochuTypes = 0

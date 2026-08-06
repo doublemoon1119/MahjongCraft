@@ -131,7 +131,7 @@ class JoinRoomUseCaseTest {
         // Assert: 純觀察者不應收到加入通知
         assertNull(
             actual = notificationService.getJoinReason(roomId, observerOnlyId, otherPlayerId),
-            message = "Non-player observer should not receive join notifications."
+            message = "Non-player observer should not receive join notifications.",
         )
     }
 }

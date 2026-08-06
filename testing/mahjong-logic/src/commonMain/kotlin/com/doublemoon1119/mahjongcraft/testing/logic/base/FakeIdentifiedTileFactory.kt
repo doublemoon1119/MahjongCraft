@@ -11,8 +11,6 @@ object FakeIdentifiedTileFactory {
      */
     fun create(
         tile: Tile,
-        id: Uuid = Uuid.random()
-    ): IdentifiedTile {
-        return IdentifiedTile(id, tile)
-    }
+        id: Uuid = Uuid.random(),
+    ): IdentifiedTile = IdentifiedTile(id, tile)
 }

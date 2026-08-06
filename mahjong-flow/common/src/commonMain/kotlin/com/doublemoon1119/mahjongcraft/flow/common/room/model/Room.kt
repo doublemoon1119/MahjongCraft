@@ -22,7 +22,7 @@ data class Room(
     val config: MahjongRuleConfig,
     val playerIds: Set<Uuid> = emptySet(),
     val readyPlayerIds: Set<Uuid> = emptySet(),
-    val aiPlayerIds: Set<Uuid> = emptySet()
+    val aiPlayerIds: Set<Uuid> = emptySet(),
 ) {
     /** 依規則配置換算出的合法玩家人數區間。 */
     private val allowedRange: IntRange get() = config.minPlayers..config.maxPlayers
@@ -42,7 +42,7 @@ data class Room(
             val otherPlayers = playerIds - hostId
 
             return readyPlayerIds.size == otherPlayers.size &&
-                    readyPlayerIds.containsAll(otherPlayers)
+                readyPlayerIds.containsAll(otherPlayers)
         }
 
     /** 排除 AI 後，房間內實際的人類玩家 Uuid 集合。 */

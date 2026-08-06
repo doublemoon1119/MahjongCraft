@@ -12,5 +12,5 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 data class Fuuro(
     val mentsu: Mentsu,
     val from: RelativeDirection,
-    val isOpen: Boolean = mentsu is Mentsu.Minkan || mentsu is Mentsu.Kakan
+    val isOpen: Boolean = mentsu is Mentsu.Minkan || mentsu is Mentsu.Kakan,
 )

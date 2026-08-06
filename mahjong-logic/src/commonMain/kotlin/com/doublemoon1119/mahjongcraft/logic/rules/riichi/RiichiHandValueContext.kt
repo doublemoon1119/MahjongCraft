@@ -47,5 +47,5 @@ data class RiichiHandValueContext(
     val isRobbingKan: Boolean = false,
     val isRinshanKaihou: Boolean = false,
     val isFirstTurn: Boolean = false,
-    val paoLiability: PaoLiability? = null
+    val paoLiability: PaoLiability? = null,
 ) : HandValueContext

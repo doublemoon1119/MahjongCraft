@@ -40,8 +40,8 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 2),
                 Tile.Numeric(Tile.Suit.Dot, 3),
                 Tile.Numeric(Tile.Suit.Dot, 4),
-                Tile.Numeric(Tile.Suit.Dot, 5)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 5),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
@@ -50,7 +50,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
             winningTile = winningTile,
             isTsumo = true,
             roundWind = Wind.EAST,
-            seatWind = Wind.SOUTH
+            seatWind = Wind.SOUTH,
         )
         val result = calculator.calculate(context)
 
@@ -79,8 +79,8 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 2),
                 Tile.Numeric(Tile.Suit.Dot, 3),
                 Tile.Numeric(Tile.Suit.Dot, 4),
-                Tile.Numeric(Tile.Suit.Dot, 5)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 5),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
@@ -89,7 +89,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
             winningTile = winningTile,
             isTsumo = true,
             roundWind = Wind.EAST,
-            seatWind = Wind.SOUTH
+            seatWind = Wind.SOUTH,
         )
         val result = calculator.calculate(context)
 
@@ -118,8 +118,8 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 2),
                 Tile.Numeric(Tile.Suit.Dot, 3),
                 Tile.Numeric(Tile.Suit.Dot, 4),
-                Tile.Numeric(Tile.Suit.Dot, 5)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 5),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
@@ -128,7 +128,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
             winningTile = winningTile,
             isTsumo = true,
             roundWind = Wind.EAST,
-            seatWind = Wind.SOUTH
+            seatWind = Wind.SOUTH,
         )
         val result = calculator.calculate(context)
 
@@ -158,8 +158,8 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 2),
                 Tile.Numeric(Tile.Suit.Dot, 3),
                 Tile.Numeric(Tile.Suit.Dot, 4),
-                Tile.Numeric(Tile.Suit.Dot, 5)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 5),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
@@ -168,7 +168,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
             winningTile = winningTile,
             isTsumo = true,
             roundWind = Wind.EAST,
-            seatWind = Wind.EAST
+            seatWind = Wind.EAST,
         )
         val result = calculator.calculate(context)
 
@@ -200,8 +200,8 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 3),
                 Tile.Numeric(Tile.Suit.Dot, 4),
                 Tile.Numeric(Tile.Suit.Dot, 5),
-                Tile.Numeric(Tile.Suit.Dot, 6)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 6),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
 
@@ -210,7 +210,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
             winningTile = winningTile,
             isTsumo = true,
             roundWind = Wind.EAST,
-            seatWind = Wind.SOUTH
+            seatWind = Wind.SOUTH,
         )
         val result = calculator.calculate(context)
 

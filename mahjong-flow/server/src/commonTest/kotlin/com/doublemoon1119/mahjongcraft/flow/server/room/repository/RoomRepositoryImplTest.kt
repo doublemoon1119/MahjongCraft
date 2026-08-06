@@ -51,7 +51,7 @@ class RoomRepositoryImplTest {
         assertEquals(
             expected = concurrency + 1, // + 1 為初始房主
             actual = finalRoom.playerIds.size,
-            message = "All concurrent updates should be reflected; none should be lost to a race condition."
+            message = "All concurrent updates should be reflected; none should be lost to a race condition.",
         )
     }
 }

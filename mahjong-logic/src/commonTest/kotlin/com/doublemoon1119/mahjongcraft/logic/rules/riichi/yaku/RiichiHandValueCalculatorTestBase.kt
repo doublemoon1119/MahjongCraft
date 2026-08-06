@@ -10,5 +10,4 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalcula
 abstract class RiichiHandValueCalculatorTestBase {
 
     protected val calculator = RiichiHandValueCalculator()
-
 }

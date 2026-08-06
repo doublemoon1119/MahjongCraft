@@ -26,7 +26,7 @@ class RiichiTableStateTest {
         val table = FakeTableStateFactory.create(
             players = emptyList(),
             config = RiichiRuleConfig(),
-            dynamicRuleState = riichiDynamic
+            dynamicRuleState = riichiDynamic,
         )
 
         val state = table.dynamicRuleState
@@ -34,18 +34,18 @@ class RiichiTableStateTest {
         assertEquals(5, state.riichiStickCount)
 
         val updatedTable = table.copy(
-            dynamicRuleState = riichiDynamic.copy(riichiStickCount = riichiDynamic.riichiStickCount + 1)
+            dynamicRuleState = riichiDynamic.copy(riichiStickCount = riichiDynamic.riichiStickCount + 1),
         )
 
         assertEquals(
             6,
             (updatedTable.dynamicRuleState as RiichiDynamicState).riichiStickCount,
-            "The new TableState instance should reflect the updated riichi stick count."
+            "The new TableState instance should reflect the updated riichi stick count.",
         )
         assertEquals(
             5,
             state.riichiStickCount,
-            "The original TableState instance should remain unchanged."
+            "The original TableState instance should remain unchanged.",
         )
     }
 }

@@ -14,5 +14,5 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
  */
 data class RiichiDeclarationResult(
     val player: MahjongPlayer,
-    val dynamicRuleState: DynamicRuleState
+    val dynamicRuleState: DynamicRuleState,
 )

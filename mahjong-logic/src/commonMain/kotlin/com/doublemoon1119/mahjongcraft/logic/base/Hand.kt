@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
 data class Hand(
     val tiles: List<IdentifiedTile> = emptyList(),
     val melds: List<Meld> = emptyList(),
-    val lastDrawn: IdentifiedTile? = null
+    val lastDrawn: IdentifiedTile? = null,
 ) {
     /**
      * 捨牌動作的結果封裝。
@@ -30,7 +30,7 @@ data class Hand(
     data class DiscardResult(
         val hand: Hand,
         val tile: IdentifiedTile,
-        val isDiscardedFromDraw: Boolean
+        val isDiscardedFromDraw: Boolean,
     )
 
     /**
@@ -93,7 +93,7 @@ data class Hand(
         type: MeldType,
         tiles: List<IdentifiedTile>,
         source: IdentifiedTile? = null,
-        direction: RelativeDirection
+        direction: RelativeDirection,
     ): Hand {
         // 遍歷組成副露的這些牌，將「不是從別家鳴取來的」（即原本就在自己手牌裡的）逐一移除
         var hand = this
@@ -153,7 +153,7 @@ data class Hand(
             return DiscardResult(
                 hand = copy(tiles = newTiles, lastDrawn = null),
                 tile = discardedTile,
-                isDiscardedFromDraw = false
+                isDiscardedFromDraw = false,
             )
         }
 
@@ -163,11 +163,9 @@ data class Hand(
     /**
      * 內部輔助方法：從手牌（立牌或摸牌）中移除指定 ID 的牌，回傳移除後的新 [Hand] 實例。
      */
-    private fun removeFromHand(id: Uuid): Hand {
-        return if (lastDrawn?.id == id) {
-            copy(lastDrawn = null)
-        } else {
-            copy(tiles = tiles.filterNot { it.id == id })
-        }
+    private fun removeFromHand(id: Uuid): Hand = if (lastDrawn?.id == id) {
+        copy(lastDrawn = null)
+    } else {
+        copy(tiles = tiles.filterNot { it.id == id })
     }
 }

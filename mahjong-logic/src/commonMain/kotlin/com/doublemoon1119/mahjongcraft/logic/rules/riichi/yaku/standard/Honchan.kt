@@ -22,7 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
  */
 fun calculateHonchan(
     handStructure: HandStructure,
-    isMenzen: Boolean
+    isMenzen: Boolean,
 ): YakuResult? {
     val standard = handStructure as? HandStructure.Standard ?: return null
 
@@ -58,7 +58,7 @@ fun calculateHonchan(
     }
 
     // 不包含任何字牌，是純全帶么九
-    if (allMentsus.none { it.tiles.any { tile -> tile is Tile.Honor } }){
+    if (allMentsus.none { it.tiles.any { tile -> tile is Tile.Honor } }) {
         return null
     }
 

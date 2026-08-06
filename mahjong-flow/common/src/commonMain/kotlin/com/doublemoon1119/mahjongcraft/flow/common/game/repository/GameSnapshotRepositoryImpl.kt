@@ -11,17 +11,16 @@ class GameSnapshotRepositoryImpl : GameSnapshotRepository {
     private val snapshots = mutableMapOf<Uuid, MutableMap<Uuid, TableStateSnapshot>>()
     private val mutex = Mutex()
 
-    override suspend fun getSnapshot(gameId: Uuid, observerId: Uuid): TableStateSnapshot? =
-        mutex.withLock { snapshots[gameId]?.get(observerId) }
+    override suspend fun getSnapshot(gameId: Uuid, observerId: Uuid): TableStateSnapshot? = mutex.withLock { snapshots[gameId]?.get(observerId) }
 
-    override suspend fun setSnapshot(observerId: Uuid, snapshot: TableStateSnapshot) =
-        mutex.withLock {
-            snapshots.getOrPut(snapshot.id) { mutableMapOf() }[observerId] = snapshot
-        }
+    override suspend fun setSnapshot(observerId: Uuid, snapshot: TableStateSnapshot) = mutex.withLock {
+        snapshots.getOrPut(snapshot.id) { mutableMapOf() }[observerId] = snapshot
+    }
 
-    override suspend fun removeSnapshot(gameId: Uuid, observerId: Uuid) =
-        mutex.withLock { snapshots[gameId]?.remove(observerId); Unit }
+    override suspend fun removeSnapshot(gameId: Uuid, observerId: Uuid) = mutex.withLock {
+        snapshots[gameId]?.remove(observerId)
+        Unit
+    }
 
-    override suspend fun getAllObservers(gameId: Uuid): Set<Uuid> =
-        mutex.withLock { snapshots[gameId]?.keys.orEmpty() }
+    override suspend fun getAllObservers(gameId: Uuid): Set<Uuid> = mutex.withLock { snapshots[gameId]?.keys.orEmpty() }
 }

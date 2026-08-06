@@ -82,7 +82,7 @@ class TaiwanLegalActionValidator : LegalActionValidator {
         player: MahjongPlayer,
         sourceAction: GameAction,
         sourceDirection: RelativeDirection,
-        incomingTile: IdentifiedTile?
+        incomingTile: IdentifiedTile?,
     ): List<GameAction> {
         // TODO: 實作台灣麻將的合法動作判定邏輯
         return emptyList()

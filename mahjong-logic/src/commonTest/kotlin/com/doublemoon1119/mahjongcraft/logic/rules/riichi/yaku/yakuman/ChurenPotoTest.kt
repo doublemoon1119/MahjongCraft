@@ -55,8 +55,8 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
                 // 999m (3)
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 9)
-            )
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
         )
         // 自摸 8m
         val winningTile2 = Tile.Numeric(Tile.Suit.Character, 8)
@@ -68,7 +68,6 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
         assertEquals(-2, result.totalHan, "Total han should be -2 for double yakuman")
         assertEquals(1, result.yakuResults.size, "Should have 1 yaku result")
         assertEquals(YakuType.ChurenPoto9, result.yakuResults[0].yaku, "Yaku should be ChurenPoto9")
-
     }
 
     /**
@@ -98,8 +97,8 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7),
-                Tile.Numeric(Tile.Suit.Character, 7)
-            )
+                Tile.Numeric(Tile.Suit.Character, 7),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 8)
 
@@ -132,7 +131,7 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
                 // 999m (3)
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 9)
+                Tile.Numeric(Tile.Suit.Character, 9),
             ),
             melds = listOf(
                 Meld(
@@ -140,11 +139,11 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 8)
 
@@ -181,8 +180,8 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
                 // 999m
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 9)
-            )
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 8)
 
@@ -217,8 +216,8 @@ class ChurenPotoTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 9)
-            )
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 

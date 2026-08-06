@@ -51,7 +51,7 @@ object PaoDetector {
         calledTile: Tile,
         group: Set<Tile>,
         yaku: PaoYaku,
-        sourceDirection: RelativeDirection
+        sourceDirection: RelativeDirection,
     ): PaoLiability? {
         val otherTiles = group - calledTile
 

@@ -22,7 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
  */
 fun calculateJunchan(
     handStructure: HandStructure,
-    isMenzen: Boolean
+    isMenzen: Boolean,
 ): YakuResult? {
     val standard = handStructure as? HandStructure.Standard ?: return null
 

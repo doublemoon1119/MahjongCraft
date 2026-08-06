@@ -13,8 +13,7 @@ class FakeRoomSnapshotRepository : RoomSnapshotRepository {
     /** 儲存快照的映射表，鍵為房間 Uuid 與觀察者 Uuid 的組合。 */
     private val snapshots = mutableMapOf<Pair<Uuid, Uuid>, RoomSnapshot>()
 
-    override suspend fun getSnapshot(roomId: Uuid, observerId: Uuid): RoomSnapshot? =
-        snapshots[roomId to observerId]
+    override suspend fun getSnapshot(roomId: Uuid, observerId: Uuid): RoomSnapshot? = snapshots[roomId to observerId]
 
     override suspend fun setSnapshot(observerId: Uuid, snapshot: RoomSnapshot) {
         snapshots[snapshot.id to observerId] = snapshot
@@ -24,10 +23,8 @@ class FakeRoomSnapshotRepository : RoomSnapshotRepository {
         snapshots.remove(roomId to observerId)
     }
 
-    override suspend fun getAllObservers(roomId: Uuid): Set<Uuid> {
-        return snapshots.keys
-            .filter { it.first == roomId }
-            .map { it.second }
-            .toSet()
-    }
+    override suspend fun getAllObservers(roomId: Uuid): Set<Uuid> = snapshots.keys
+        .filter { it.first == roomId }
+        .map { it.second }
+        .toSet()
 }

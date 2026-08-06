@@ -40,8 +40,8 @@ class IttuitsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
-                Tile.Numeric(Tile.Suit.Dot, 2)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 2),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 
@@ -70,7 +70,7 @@ class IttuitsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Dot, 2)
+                Tile.Numeric(Tile.Suit.Dot, 2),
             ),
             melds = listOf(
                 Meld(
@@ -78,11 +78,11 @@ class IttuitsuTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 2)
 

@@ -49,7 +49,7 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
             Tile.Honor.North,
             Tile.Honor.White,
             Tile.Honor.Green,
-            Tile.Honor.Red
+            Tile.Honor.Red,
         )
         // Winning: 9s != headTile(1m) → 一般國士無雙
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9).withoutRed
@@ -92,7 +92,7 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
             Tile.Honor.North,
             Tile.Honor.White,
             Tile.Honor.Green,
-            Tile.Honor.Red
+            Tile.Honor.Red,
         )
         // Winning: 1m == headTile(1m) → 十三面
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1).withoutRed
@@ -129,7 +129,7 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
             Tile.Honor.East,
             Tile.Honor.East,
             Tile.Honor.East,
-            Tile.Honor.White
+            Tile.Honor.White,
         )
         val winningTile = Tile.Honor.White
 
@@ -165,8 +165,8 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.North,
                 Tile.Honor.White,
                 Tile.Honor.Green,
-                Tile.Honor.Red
-            )
+                Tile.Honor.Red,
+            ),
         )
         // Winning: 9s != headTile(1m)
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9)
@@ -201,8 +201,8 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.North,
                 Tile.Honor.White,
                 Tile.Honor.Green,
-                Tile.Honor.Red
-            )
+                Tile.Honor.Red,
+            ),
         )
         // Winning: 1m == headTile → 十三面
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)

@@ -13,5 +13,5 @@ import kotlin.uuid.Uuid
  */
 data class IdentifiedTile(
     val id: Uuid,
-    val tile: Tile
+    val tile: Tile,
 )

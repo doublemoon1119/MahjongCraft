@@ -7,10 +7,10 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
-import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.uuid.Uuid
 
 /**
  * 針對 [TableStateSnapshot] 與 [TableState.toSnapshot] 進行單元測試。
@@ -33,16 +33,16 @@ class TableStateSnapshotTest {
         val observer = FakeMahjongPlayerFactory.create(
             id = observerId,
             initialSeat = Wind.EAST,
-            hand = Hand(mutableListOf(observerTile))
+            hand = Hand(mutableListOf(observerTile)),
         )
         val other = FakeMahjongPlayerFactory.create(
             id = otherId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(mutableListOf(otherTile))
+            hand = Hand(mutableListOf(otherTile)),
         )
 
         val table = FakeTableStateFactory.create(
-            players = listOf(observer, other)
+            players = listOf(observer, other),
         )
 
         val snapshot = table.toSnapshot(observerId)
@@ -66,7 +66,7 @@ class TableStateSnapshotTest {
             prevalentWind = Wind.SOUTH,
             roundNumber = 3,
             comboCount = 2,
-            currentPlayerIndex = 0
+            currentPlayerIndex = 0,
         )
 
         val snapshot = table.toSnapshot(player.id)
@@ -85,12 +85,12 @@ class TableStateSnapshotTest {
         val config = FakeMahjongRuleConfig(
             initialHandSize = 16,
             deadTileCount = 16,
-            minimumWinConstraint = 0
+            minimumWinConstraint = 0,
         )
         val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
         val table = FakeTableStateFactory.create(
             players = listOf(player),
-            config = config
+            config = config,
         )
 
         val snapshot = table.toSnapshot(player.id)
@@ -108,7 +108,7 @@ class TableStateSnapshotTest {
         val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
         val table = FakeTableStateFactory.create(
             players = listOf(player),
-            dynamicRuleState = null
+            dynamicRuleState = null,
         )
 
         val snapshot = table.toSnapshot(player.id)
@@ -125,7 +125,7 @@ class TableStateSnapshotTest {
         val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
         val table = FakeTableStateFactory.create(
             players = listOf(player),
-            dynamicRuleState = dynamicState
+            dynamicRuleState = dynamicState,
         )
 
         val snapshot = table.toSnapshot(player.id)
@@ -142,7 +142,7 @@ class TableStateSnapshotTest {
         val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
         val table = FakeTableStateFactory.create(
             id = tableId,
-            players = listOf(player)
+            players = listOf(player),
         )
 
         val snapshot = table.toSnapshot(player.id)

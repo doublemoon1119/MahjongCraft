@@ -42,12 +42,10 @@ object FuCalculator {
      * @param handStructure 手牌結構。
      * @return 總符數。
      */
-    fun calculateTotalFu(context: RiichiHandValueContext, handStructure: HandStructure): Int {
-        return when (handStructure) {
-            is HandStructure.Standard -> calculateFuForStandard(context, handStructure)
-            is HandStructure.Chiitoitsu -> 25  // 特殊牌型：七對子固定 25符
-            is HandStructure.KokushiMusou -> 0
-        }
+    fun calculateTotalFu(context: RiichiHandValueContext, handStructure: HandStructure): Int = when (handStructure) {
+        is HandStructure.Standard -> calculateFuForStandard(context, handStructure)
+        is HandStructure.Chiitoitsu -> 25 // 特殊牌型：七對子固定 25符
+        is HandStructure.KokushiMusou -> 0
     }
 
     /**
@@ -81,7 +79,8 @@ object FuCalculator {
         fu += when (structure.completionType) {
             is CompletionType.Tanki,
             is CompletionType.Kanchan,
-            is CompletionType.Penchan -> 2
+            is CompletionType.Penchan,
+            -> 2
 
             else -> 0
         }
@@ -118,7 +117,7 @@ object FuCalculator {
         if (!context.isMenzen && !context.isTsumo) {
             val pinfu = calculatePinfu(
                 handStructure = structure,
-                isMenzen = true,  // 這裡強制丟 true 讓 calculatePinfu 可以進行判斷
+                isMenzen = true, // 這裡強制丟 true 讓 calculatePinfu 可以進行判斷
                 roundWind = context.roundWind,
                 seatWind = context.seatWind,
             )
@@ -134,13 +133,13 @@ object FuCalculator {
      */
     private fun calculateMentsuAndJantoFu(
         context: HandValueContext,
-        structure: HandStructure.Standard
+        structure: HandStructure.Standard,
     ): Int {
         // 三元牌
         val dragonTiles = listOf(
             Tile.Honor.Red,
             Tile.Honor.Green,
-            Tile.Honor.White
+            Tile.Honor.White,
         )
 
         // 客風牌
@@ -148,9 +147,9 @@ object FuCalculator {
             Wind.EAST to Tile.Honor.East,
             Wind.SOUTH to Tile.Honor.South,
             Wind.WEST to Tile.Honor.West,
-            Wind.NORTH to Tile.Honor.North
+            Wind.NORTH to Tile.Honor.North,
         ).filterKeys { wind ->
-            wind != context.roundWind && wind != context.seatWind  // 不屬於場風牌和自風牌，視為客風牌
+            wind != context.roundWind && wind != context.seatWind // 不屬於場風牌和自風牌，視為客風牌
         }.values.toList()
 
         // 副露的符數
@@ -172,7 +171,8 @@ object FuCalculator {
 
             when (mentsu) {
                 is Mentsu.Minkan,
-                is Mentsu.Kakan -> when {
+                is Mentsu.Kakan,
+                -> when {
                     isSeatOrRoundWind || isDragon -> 16
                     isTerminalOrHonor || isKaze -> 16
                     else -> 8
@@ -236,7 +236,5 @@ object FuCalculator {
     /**
      * 向上進到 10 的倍數。
      */
-    private fun ceilToTen(value: Int): Int {
-        return if (value % 10 == 0) value else (value / 10 + 1) * 10
-    }
+    private fun ceilToTen(value: Int): Int = if (value % 10 == 0) value else (value / 10 + 1) * 10
 }

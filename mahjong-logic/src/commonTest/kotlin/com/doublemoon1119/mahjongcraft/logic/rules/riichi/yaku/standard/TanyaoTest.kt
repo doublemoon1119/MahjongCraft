@@ -41,8 +41,8 @@ class TanyaoTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 4),
                 Tile.Numeric(Tile.Suit.Dot, 5),
                 Tile.Numeric(Tile.Suit.Dot, 6),
-                Tile.Numeric(Tile.Suit.Dot, 7)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 7),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
 
@@ -74,8 +74,8 @@ class TanyaoTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 4),
                 Tile.Numeric(Tile.Suit.Dot, 5),
                 Tile.Numeric(Tile.Suit.Dot, 6),
-                Tile.Numeric(Tile.Suit.Dot, 7)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 7),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
 
@@ -107,8 +107,8 @@ class TanyaoTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 3),
                 Tile.Numeric(Tile.Suit.Dot, 4),
                 Tile.Numeric(Tile.Suit.Dot, 5),
-                Tile.Numeric(Tile.Suit.Dot, 6)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 6),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
 
@@ -141,7 +141,7 @@ class TanyaoTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 2),
-                Tile.Numeric(Tile.Suit.Character, 2)
+                Tile.Numeric(Tile.Suit.Character, 2),
             ),
             melds = listOf(
                 Meld(
@@ -149,11 +149,11 @@ class TanyaoTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 5)
 

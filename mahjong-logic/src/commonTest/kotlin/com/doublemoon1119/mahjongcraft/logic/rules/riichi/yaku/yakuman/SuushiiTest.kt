@@ -52,8 +52,8 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
                 // 順子
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
-                Tile.Numeric(Tile.Suit.Character, 3)
-            )
+                Tile.Numeric(Tile.Suit.Character, 3),
+            ),
         )
         val winningTile = Tile.Honor.South
 
@@ -63,7 +63,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Shousuushi },
-            "Should contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}"
+            "Should contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -90,7 +90,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
                 // 順子
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
-                Tile.Numeric(Tile.Suit.Character, 3)
+                Tile.Numeric(Tile.Suit.Character, 3),
             ),
             melds = listOf(
                 // 副露：東刻子
@@ -99,11 +99,11 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.East)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.North
 
@@ -113,7 +113,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Shousuushi },
-            "Should contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}"
+            "Should contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -144,8 +144,8 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
                 // 雀頭
                 Tile.Numeric(Tile.Suit.Character, 1),
-                Tile.Numeric(Tile.Suit.Character, 1)
-            )
+                Tile.Numeric(Tile.Suit.Character, 1),
+            ),
         )
         val winningTile = Tile.Honor.South
 
@@ -155,7 +155,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
         assertFalse(result.isYakuman, "Should not be yakuman")
         assertFalse(
             result.yakuResults.any { it.yaku == YakuType.Shousuushi },
-            "Should not contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}"
+            "Should not contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -187,7 +187,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
                 // 雀頭
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
-            )
+            ),
         )
         val winningTile = Tile.Honor.South
 
@@ -197,7 +197,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Daisuushii },
-            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}"
+            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -224,7 +224,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.West,
                 // 雀頭
                 Tile.Numeric(Tile.Suit.Character, 1),
-                Tile.Numeric(Tile.Suit.Character, 1)
+                Tile.Numeric(Tile.Suit.Character, 1),
             ),
             melds = listOf(
                 // 副露：東刻子
@@ -233,11 +233,11 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.East)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.North
 
@@ -247,7 +247,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
         assertTrue(result.isYakuman, "Should be double yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Daisuushii },
-            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}"
+            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -274,7 +274,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.West,
                 // 雀頭
                 Tile.Numeric(Tile.Suit.Character, 1),
-                Tile.Numeric(Tile.Suit.Character, 1)
+                Tile.Numeric(Tile.Suit.Character, 1),
             ),
             melds = listOf(
                 // 副露：東暗槓
@@ -284,11 +284,11 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.East)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
                     ),
-                    sourceDirection = RelativeDirection.Self
-                )
-            )
+                    sourceDirection = RelativeDirection.Self,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.North
 
@@ -298,7 +298,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
         assertTrue(result.isYakuman, "Should be double yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Daisuushii },
-            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}"
+            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -318,7 +318,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
             Tile.Honor.West, Tile.Honor.West, Tile.Honor.West,
             // 剩下的對子（雙碰聽牌對象）
             Tile.Honor.North, Tile.Honor.North,
-            Tile.Numeric(Tile.Suit.Character, 1), Tile.Numeric(Tile.Suit.Character, 1)
+            Tile.Numeric(Tile.Suit.Character, 1), Tile.Numeric(Tile.Suit.Character, 1),
         )
 
         // 情境 1：胡「北」 -> 變成 北刻子 + 1m雀頭 => 大四喜
@@ -329,7 +329,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(
             resultNorth.yakuResults.any { it.yaku == YakuType.Daisuushii },
-            "Winning North should be Daisuushii, but got: ${resultNorth.yakuResults.map { it.yaku }}"
+            "Winning North should be Daisuushii, but got: ${resultNorth.yakuResults.map { it.yaku }}",
         )
 
         // 情境 2：胡「1m」 -> 變成 1m刻子 + 北雀頭 => 小四喜
@@ -340,7 +340,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(
             result1m.yakuResults.any { it.yaku == YakuType.Shousuushi },
-            "Winning 1m should be Shousuushi, but got: ${result1m.yakuResults.map { it.yaku }}"
+            "Winning 1m should be Shousuushi, but got: ${result1m.yakuResults.map { it.yaku }}",
         )
     }
 }

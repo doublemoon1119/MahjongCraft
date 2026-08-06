@@ -34,8 +34,8 @@ class TaiwanShantenCalculatorTest {
                 Tile.Honor.South,
                 // 1 搭子
                 Tile.Numeric(Tile.Suit.Character, 8),
-                Tile.Numeric(Tile.Suit.Character, 8)
-            )
+                Tile.Numeric(Tile.Suit.Character, 8),
+            ),
         )
         val result = calculator.calculate(hand)
         assertTrue(result is ShantenResult.Tenpai, "Hand with 4 melds, 1 pair, 1 tatsu should be Tenpai.")
@@ -64,8 +64,8 @@ class TaiwanShantenCalculatorTest {
                 Tile.Honor.East,
                 Tile.Honor.East,
                 // 1 單張
-                Tile.Honor.South
-            )
+                Tile.Honor.South,
+            ),
         )
         val result = calculator.calculate(hand)
         assertTrue(result is ShantenResult.Tenpai, "Hand with 5 melds, 1 single should be Tenpai.")
@@ -93,14 +93,14 @@ class TaiwanShantenCalculatorTest {
                 Tile.Honor.East,
                 Tile.Honor.East,
                 Tile.Honor.South,
-                Tile.Honor.South
-            )
+                Tile.Honor.South,
+            ),
         )
         val result = calculator.calculate(hand)
         println("Result: $result")
         assertTrue(
             result is ShantenResult.Complete,
-            "Hand with 5 melds, 1 pair should be Complete (Agari), but was: $result"
+            "Hand with 5 melds, 1 pair should be Complete (Agari), but was: $result",
         )
     }
 }

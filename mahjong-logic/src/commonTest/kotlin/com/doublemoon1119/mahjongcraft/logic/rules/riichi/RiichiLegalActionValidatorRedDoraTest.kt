@@ -1,6 +1,11 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.logic.base.*
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -21,7 +26,7 @@ class RiichiLegalActionValidatorRedDoraTest {
     private val validator = RiichiLegalActionValidator(
         shantenCalculator = RiichiShantenCalculator(),
         handValueCalculator = RiichiHandValueCalculator(),
-        contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig())
+        contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig()),
     )
 
     /**
@@ -34,17 +39,17 @@ class RiichiLegalActionValidatorRedDoraTest {
         // 準備
         val playerHand = FakeHandFactory.create(
             listOf(
-                Tile.Numeric(Tile.Suit.Character, 5, isRed = false),  // 普通5萬
-                Tile.Numeric(Tile.Suit.Character, 5, isRed = false)   // 普通5萬
-            )
+                Tile.Numeric(Tile.Suit.Character, 5, isRed = false), // 普通5萬
+                Tile.Numeric(Tile.Suit.Character, 5, isRed = false), // 普通5萬
+            ),
         )
         val player = FakeMahjongPlayerFactory.create(
-            hand = playerHand
+            hand = playerHand,
         )
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
-        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))  // 赤5萬
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true)) // 赤5萬
 
         // 執行
         val actions = validator.getLegalActions(
@@ -52,7 +57,7 @@ class RiichiLegalActionValidatorRedDoraTest {
             player = player,
             sourceAction = GameAction.Discard(incomingTile.id),
             sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile
+            incomingTile = incomingTile,
         )
 
         // 驗證
@@ -69,18 +74,18 @@ class RiichiLegalActionValidatorRedDoraTest {
         // 準備
         val playerHand = FakeHandFactory.create(
             listOf(
-                Tile.Numeric(Tile.Suit.Character, 5, isRed = true),   // 赤5萬
-                Tile.Numeric(Tile.Suit.Character, 5, isRed = true)   // 赤5萬
-            )
+                Tile.Numeric(Tile.Suit.Character, 5, isRed = true), // 赤5萬
+                Tile.Numeric(Tile.Suit.Character, 5, isRed = true), // 赤5萬
+            ),
         )
         val player = FakeMahjongPlayerFactory.create(
-            hand = playerHand
+            hand = playerHand,
         )
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
         val incomingTile =
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = false))  // 普通5萬
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = false)) // 普通5萬
 
         // 執行
         val actions = validator.getLegalActions(
@@ -88,7 +93,7 @@ class RiichiLegalActionValidatorRedDoraTest {
             player = player,
             sourceAction = GameAction.Discard(incomingTile.id),
             sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile
+            incomingTile = incomingTile,
         )
 
         // 驗證
@@ -107,14 +112,14 @@ class RiichiLegalActionValidatorRedDoraTest {
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 5, isRed = false),
                 Tile.Numeric(Tile.Suit.Character, 5, isRed = false),
-                Tile.Numeric(Tile.Suit.Character, 5, isRed = false)
-            )
+                Tile.Numeric(Tile.Suit.Character, 5, isRed = false),
+            ),
         )
         val player = FakeMahjongPlayerFactory.create(
-            hand = playerHand
+            hand = playerHand,
         )
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
 
@@ -124,7 +129,7 @@ class RiichiLegalActionValidatorRedDoraTest {
             player = player,
             sourceAction = GameAction.Discard(incomingTile.id),
             sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile
+            incomingTile = incomingTile,
         )
 
         // 驗證
@@ -143,14 +148,14 @@ class RiichiLegalActionValidatorRedDoraTest {
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 5, isRed = false),
                 Tile.Numeric(Tile.Suit.Character, 5, isRed = false),
-                Tile.Numeric(Tile.Suit.Character, 5, isRed = false)
-            )
+                Tile.Numeric(Tile.Suit.Character, 5, isRed = false),
+            ),
         )
         val player = FakeMahjongPlayerFactory.create(
-            hand = playerHand
+            hand = playerHand,
         )
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
 
@@ -160,7 +165,7 @@ class RiichiLegalActionValidatorRedDoraTest {
             player = player,
             sourceAction = GameAction.Draw,
             sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile
+            incomingTile = incomingTile,
         )
 
         // 驗證
@@ -180,16 +185,16 @@ class RiichiLegalActionValidatorRedDoraTest {
             listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = false)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = false)),
-                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = false))
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = false)),
             ),
-            sourceDirection = RelativeDirection.Left
+            sourceDirection = RelativeDirection.Left,
         )
         val playerHand = Hand(melds = mutableListOf(ponMeld))
         val player = FakeMahjongPlayerFactory.create(
-            hand = playerHand
+            hand = playerHand,
         )
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
 
@@ -199,7 +204,7 @@ class RiichiLegalActionValidatorRedDoraTest {
             player = player,
             sourceAction = GameAction.Draw,
             sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile
+            incomingTile = incomingTile,
         )
 
         // 驗證
@@ -217,14 +222,14 @@ class RiichiLegalActionValidatorRedDoraTest {
         val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 4),
-                Tile.Numeric(Tile.Suit.Character, 6)
-            )
+                Tile.Numeric(Tile.Suit.Character, 6),
+            ),
         )
         val player = FakeMahjongPlayerFactory.create(
-            hand = playerHand
+            hand = playerHand,
         )
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
 
@@ -234,7 +239,7 @@ class RiichiLegalActionValidatorRedDoraTest {
             player = player,
             sourceAction = GameAction.Discard(incomingTile.id),
             sourceDirection = RelativeDirection.Left,
-            incomingTile = incomingTile
+            incomingTile = incomingTile,
         )
 
         // 驗證

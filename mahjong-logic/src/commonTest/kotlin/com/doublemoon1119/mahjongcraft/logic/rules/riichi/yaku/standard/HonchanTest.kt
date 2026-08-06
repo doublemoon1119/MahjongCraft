@@ -41,8 +41,8 @@ class HonchanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.East,
                 Tile.Honor.East,
                 Tile.Honor.East,
-                Tile.Honor.Green
-            )
+                Tile.Honor.Green,
+            ),
         )
         val winningTile = Tile.Honor.Green
 
@@ -70,7 +70,7 @@ class HonchanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 1),
                 Tile.Numeric(Tile.Suit.Bamboo, 1),
                 Tile.Numeric(Tile.Suit.Bamboo, 1),
-                Tile.Honor.Green
+                Tile.Honor.Green,
             ),
             melds = listOf(
                 Meld(
@@ -78,11 +78,11 @@ class HonchanTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.East)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.Green
 
@@ -112,8 +112,8 @@ class HonchanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
                 Tile.Numeric(Tile.Suit.Bamboo, 5),
                 Tile.Numeric(Tile.Suit.Bamboo, 6),
-                Tile.Honor.Red
-            )
+                Tile.Honor.Red,
+            ),
         )
         val winningTile = Tile.Honor.Red
 

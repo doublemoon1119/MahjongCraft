@@ -20,7 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  * @return 三杠子役種結果，若不符合則返回 null。
  */
 fun calculateSankantsu(
-    handStructure: HandStructure
+    handStructure: HandStructure,
 ): YakuResult? {
     val standard = handStructure as? HandStructure.Standard ?: return null
 
@@ -30,8 +30,8 @@ fun calculateSankantsu(
     // 計算槓的數量：暗槓 (Ankan) + 明槓 (Minkan) + 加槓 (Kakan)
     val kanCount = allMentsus.count { mentsu ->
         mentsu is Mentsu.Ankan ||
-                mentsu is Mentsu.Minkan ||
-                mentsu is Mentsu.Kakan
+            mentsu is Mentsu.Minkan ||
+            mentsu is Mentsu.Kakan
     }
 
     // 三杠子需要剛好 3 組槓

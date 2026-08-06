@@ -24,7 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 fun calculateDora(
     hand: Hand,
     winningTile: Tile,
-    doraIndicators: List<Tile>
+    doraIndicators: List<Tile>,
 ): YakuResult {
     val allTiles = hand.allTiles.map { it.tile } + winningTile
 
@@ -42,23 +42,21 @@ fun calculateDora(
  * @param indicator 寶牌指示牌。
  * @return 對應的寶牌。
  */
-internal fun getNextDora(indicator: Tile): Tile {
-    return when (indicator) {
-        // 數牌：循環 1-9
-        is Tile.Numeric -> {
-            val nextValue = if (indicator.value == 9) 1 else indicator.value + 1
-            Tile.Numeric(indicator.suit, nextValue, isRed = false)
-        }
-        // 字牌：東→南→西→北→東（循環）
-        is Tile.Honor.East -> Tile.Honor.South
-        is Tile.Honor.South -> Tile.Honor.West
-        is Tile.Honor.West -> Tile.Honor.North
-        is Tile.Honor.North -> Tile.Honor.East
-        // 三元牌：白→發→中→白（循環）
-        is Tile.Honor.White -> Tile.Honor.Green
-        is Tile.Honor.Green -> Tile.Honor.Red
-        is Tile.Honor.Red -> Tile.Honor.White
-        // 花牌在日麻中不作為寶牌指示牌
-        is Tile.Flower -> indicator
+internal fun getNextDora(indicator: Tile): Tile = when (indicator) {
+    // 數牌：循環 1-9
+    is Tile.Numeric -> {
+        val nextValue = if (indicator.value == 9) 1 else indicator.value + 1
+        Tile.Numeric(indicator.suit, nextValue, isRed = false)
     }
+    // 字牌：東→南→西→北→東（循環）
+    is Tile.Honor.East -> Tile.Honor.South
+    is Tile.Honor.South -> Tile.Honor.West
+    is Tile.Honor.West -> Tile.Honor.North
+    is Tile.Honor.North -> Tile.Honor.East
+    // 三元牌：白→發→中→白（循環）
+    is Tile.Honor.White -> Tile.Honor.Green
+    is Tile.Honor.Green -> Tile.Honor.Red
+    is Tile.Honor.Red -> Tile.Honor.White
+    // 花牌在日麻中不作為寶牌指示牌
+    is Tile.Flower -> indicator
 }

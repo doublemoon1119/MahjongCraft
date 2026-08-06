@@ -29,7 +29,7 @@ class CreateRoomUseCase(
     private val roomRepository: RoomRepository,
     private val gameRepository: GameRepository,
     private val snapshotRepository: RoomSnapshotRepository,
-    @Provided private val eventPublisher: RoomEventPublisher
+    @Provided private val eventPublisher: RoomEventPublisher,
 ) {
     /**
      * 執行創建房間邏輯。
@@ -42,7 +42,7 @@ class CreateRoomUseCase(
     suspend operator fun invoke(
         roomId: Uuid,
         hostId: Uuid,
-        config: MahjongRuleConfig
+        config: MahjongRuleConfig,
     ): Outcome<Room, RoomError> {
         // 1. 以原子方式檢查房間是否已存在並寫入，避免並發請求重複創建同一房間
         val outcome = roomRepository.update(roomId) { existing ->
@@ -58,7 +58,7 @@ class CreateRoomUseCase(
                         hostId = hostId,
                         config = config,
                         playerIds = setOf(hostId),
-                        readyPlayerIds = emptySet()
+                        readyPlayerIds = emptySet(),
                     )
                     newRoom to Outcome.Success(newRoom)
                 }

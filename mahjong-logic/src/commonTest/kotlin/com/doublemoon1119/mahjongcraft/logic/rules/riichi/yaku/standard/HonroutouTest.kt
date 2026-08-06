@@ -32,7 +32,7 @@ class HonroutouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Bamboo, 9),
-                Tile.Numeric(Tile.Suit.Bamboo, 9)
+                Tile.Numeric(Tile.Suit.Bamboo, 9),
             ),
             melds = listOf(
                 Meld(
@@ -40,29 +40,29 @@ class HonroutouTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.Red),
                         FakeIdentifiedTileFactory.create(Tile.Honor.Red),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Red),
                     ),
-                    sourceDirection = RelativeDirection.Left
+                    sourceDirection = RelativeDirection.Left,
                 ),
                 Meld(
                     type = MeldType.PON,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                     ),
-                    sourceDirection = RelativeDirection.Left
+                    sourceDirection = RelativeDirection.Left,
                 ),
                 Meld(
                     type = MeldType.PON,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9)
 
@@ -84,7 +84,7 @@ class HonroutouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Bamboo, 9),
-                Tile.Numeric(Tile.Suit.Bamboo, 9)
+                Tile.Numeric(Tile.Suit.Bamboo, 9),
             ),
             melds = listOf(
                 Meld(
@@ -92,29 +92,29 @@ class HonroutouTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.Red),
                         FakeIdentifiedTileFactory.create(Tile.Honor.Red),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Red),
                     ),
-                    sourceDirection = RelativeDirection.Left
+                    sourceDirection = RelativeDirection.Left,
                 ),
                 Meld(
                     type = MeldType.PON,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                     ),
-                    sourceDirection = RelativeDirection.Left
+                    sourceDirection = RelativeDirection.Left,
                 ),
                 Meld(
                     type = MeldType.PON,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9)
 

@@ -19,7 +19,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  * @return 三暗刻役種結果，若不符合則返回 null。
  */
 fun calculateSanankou(
-    handStructure: HandStructure
+    handStructure: HandStructure,
 ): YakuResult? {
     val standard = handStructure as? HandStructure.Standard ?: return null
 

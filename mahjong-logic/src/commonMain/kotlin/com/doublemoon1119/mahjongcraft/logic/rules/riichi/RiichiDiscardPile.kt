@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 class RiichiDiscardEntry(
     tile: IdentifiedTile,
     val isRiichi: Boolean = false,
-    isTaken: Boolean = false
+    isTaken: Boolean = false,
 ) : DiscardPile.DiscardEntry(tile, isTaken) {
     override fun withTaken(): RiichiDiscardEntry = RiichiDiscardEntry(tile, isRiichi, isTaken = true)
 }
@@ -28,7 +28,7 @@ class RiichiDiscardEntry(
  * 本類別為不可變值物件：[discard]、[takeLast] 皆不修改原實例，而是回傳新的 [RiichiDiscardPile] 實例。
  */
 data class RiichiDiscardPile(
-    private val _entries: List<RiichiDiscardEntry> = emptyList()
+    private val _entries: List<RiichiDiscardEntry> = emptyList(),
 ) : DiscardPile<RiichiDiscardEntry> {
 
     /**

@@ -60,7 +60,7 @@ class DrawTileUseCaseTest {
             players = listOf(currentPlayer, otherPlayer),
             config = RiichiRuleConfig(),
             tileWall = TileWall(listOf(drawnTile)),
-            currentPlayerIndex = 0
+            currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -89,15 +89,15 @@ class DrawTileUseCaseTest {
             initialSeat = Wind.EAST,
             playerRuleState = RiichiPlayerState(
                 riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
-                isIppatsu = true
-            )
+                isIppatsu = true,
+            ),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer),
             config = RiichiRuleConfig(),
             tileWall = TileWall(listOf(drawnTile)),
-            currentPlayerIndex = 0
+            currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -123,7 +123,7 @@ class DrawTileUseCaseTest {
             players = listOf(currentPlayer, otherPlayer),
             config = RiichiRuleConfig(),
             tileWall = TileWall(listOf(drawnTile)),
-            currentPlayerIndex = 0
+            currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
         fixtures.snapshotRepo.setSnapshot(currentPlayerId, table.toSnapshot(currentPlayerId))
@@ -135,7 +135,7 @@ class DrawTileUseCaseTest {
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, otherPlayerId))
         assertEquals(
             GameAction.Draw,
-            fixtures.eventPublisher.getNotifiedAction(gameId, currentPlayerId, currentPlayerId)
+            fixtures.eventPublisher.getNotifiedAction(gameId, currentPlayerId, currentPlayerId),
         )
         assertEquals(GameAction.Draw, fixtures.eventPublisher.getNotifiedAction(gameId, otherPlayerId, currentPlayerId))
     }
@@ -163,7 +163,7 @@ class DrawTileUseCaseTest {
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer),
-            tileWall = TileWall(listOf(drawnTile))
+            tileWall = TileWall(listOf(drawnTile)),
         )
         fixtures.gameRepo.setTableState(table)
         val strangerId = Uuid.random()
@@ -186,7 +186,7 @@ class DrawTileUseCaseTest {
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
             tileWall = TileWall(listOf(drawnTile)),
-            currentPlayerIndex = 0
+            currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -205,12 +205,12 @@ class DrawTileUseCaseTest {
         val currentPlayer = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
             initialSeat = Wind.EAST,
-            hand = Hand(lastDrawn = drawnTile)
+            hand = Hand(lastDrawn = drawnTile),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer),
-            tileWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))))
+            tileWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2)))),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -219,7 +219,7 @@ class DrawTileUseCaseTest {
         assertTrue(result is Outcome.Error)
         assertEquals(
             GameError.IllegalAction(currentPlayerId, gameId, GameAction.Draw),
-            result.error
+            result.error,
         )
     }
 
@@ -233,7 +233,7 @@ class DrawTileUseCaseTest {
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer),
-            tileWall = TileWall(emptyList())
+            tileWall = TileWall(emptyList()),
         )
         fixtures.gameRepo.setTableState(table)
 

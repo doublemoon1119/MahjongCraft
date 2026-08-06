@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.module
 
-import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
@@ -162,6 +162,6 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun applyPaoLiabilityIfTriggered(
         claimingPlayer: MahjongPlayer,
         calledTile: IdentifiedTile,
-        sourceDirection: RelativeDirection
+        sourceDirection: RelativeDirection,
     ): MahjongPlayer
 }

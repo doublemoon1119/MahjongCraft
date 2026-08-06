@@ -44,8 +44,8 @@ class PinfuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 5),
-                Tile.Numeric(Tile.Suit.Character, 5)
-            )
+                Tile.Numeric(Tile.Suit.Character, 5),
+            ),
         )
         // 自摸 4m，形成 234m 順子
         val winningTile = Tile.Numeric(Tile.Suit.Character, 4)
@@ -75,7 +75,7 @@ class PinfuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Dot, 2)
+                Tile.Numeric(Tile.Suit.Dot, 2),
             ),
             melds = listOf(
                 Meld(
@@ -83,11 +83,11 @@ class PinfuTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 

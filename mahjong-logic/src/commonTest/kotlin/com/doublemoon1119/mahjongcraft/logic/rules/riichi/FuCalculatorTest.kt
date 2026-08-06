@@ -29,29 +29,25 @@ class FuCalculatorTest {
         isMenzen: Boolean = true,
         isTsumo: Boolean = false,
         roundWind: Wind = Wind.EAST,
-        seatWind: Wind = Wind.EAST
-    ): RiichiHandValueContext {
-        return FakeRiichiHandValueContextFactory.create(
-            hand = FakeHandFactory.create(),
-            winningTile = Tile.Numeric(Tile.Suit.Character, 1),
-            isTsumo = isTsumo,
-            isMenzen = isMenzen,
-            roundWind = roundWind,
-            seatWind = seatWind
-        )
-    }
+        seatWind: Wind = Wind.EAST,
+    ): RiichiHandValueContext = FakeRiichiHandValueContextFactory.create(
+        hand = FakeHandFactory.create(),
+        winningTile = Tile.Numeric(Tile.Suit.Character, 1),
+        isTsumo = isTsumo,
+        isMenzen = isMenzen,
+        roundWind = roundWind,
+        seatWind = seatWind,
+    )
 
     private fun createStandardStructure(
         pair: Janto,
-        completionType: CompletionType = CompletionType.Ryanmen
-    ): HandStructure.Standard {
-        return HandStructure.Standard(
-            mentsus = emptyList(),
-            pair = pair,
-            fuuro = emptyList(),
-            completionType = completionType
-        )
-    }
+        completionType: CompletionType = CompletionType.Ryanmen,
+    ): HandStructure.Standard = HandStructure.Standard(
+        mentsus = emptyList(),
+        pair = pair,
+        fuuro = emptyList(),
+        completionType = completionType,
+    )
 
     /**
      * 測試七對子固定 25 符。
@@ -68,9 +64,9 @@ class FuCalculatorTest {
                     Janto(Tile.Numeric(Tile.Suit.Character, 9)),
                     Janto(Tile.Numeric(Tile.Suit.Bamboo, 9)),
                     Janto(Tile.Numeric(Tile.Suit.Dot, 9)),
-                    Janto(Tile.Honor.East)
-                )
-            )
+                    Janto(Tile.Honor.East),
+                ),
+            ),
         )
         assertEquals(25, result)
     }
@@ -84,7 +80,7 @@ class FuCalculatorTest {
         val context = createContext(isMenzen = true, isTsumo = false)
         val handStructure = createStandardStructure(
             pair = Janto(Tile.Numeric(Tile.Suit.Character, 5)),
-            completionType = CompletionType.Ryanmen
+            completionType = CompletionType.Ryanmen,
         )
         val result = FuCalculator.calculateTotalFu(context, handStructure)
         assertEquals(30, result)
@@ -99,7 +95,7 @@ class FuCalculatorTest {
         val context = createContext(isMenzen = false, isTsumo = true)
         val handStructure = createStandardStructure(
             pair = Janto(Tile.Numeric(Tile.Suit.Character, 5)),
-            completionType = CompletionType.Ryanmen
+            completionType = CompletionType.Ryanmen,
         )
         val result = FuCalculator.calculateTotalFu(context, handStructure)
         assertEquals(30, result)
@@ -115,7 +111,7 @@ class FuCalculatorTest {
         val context = createContext(isMenzen = true, isTsumo = true)
         val handStructure = createStandardStructure(
             pair = Janto(Tile.Honor.East), // 自風雀頭 +2，確保不符合平和
-            completionType = CompletionType.Tanki // 單騎 +2
+            completionType = CompletionType.Tanki, // 單騎 +2
         )
         // 20 + 2 (自摸) + 2 (雀頭) + 2 (單騎) = 26 → 30
         val result = FuCalculator.calculateTotalFu(context, handStructure)
@@ -131,7 +127,7 @@ class FuCalculatorTest {
         val context = createContext(isMenzen = false, isTsumo = false)
         val handStructure = createStandardStructure(
             pair = Janto(Tile.Numeric(Tile.Suit.Character, 5)),
-            completionType = CompletionType.Kanchan
+            completionType = CompletionType.Kanchan,
         )
         val result = FuCalculator.calculateTotalFu(context, handStructure)
         assertEquals(30, result)
@@ -145,7 +141,7 @@ class FuCalculatorTest {
         val context = createContext(isMenzen = false, isTsumo = false)
         val handStructure = createStandardStructure(
             pair = Janto(Tile.Numeric(Tile.Suit.Character, 5)),
-            completionType = CompletionType.Penchan
+            completionType = CompletionType.Penchan,
         )
         val result = FuCalculator.calculateTotalFu(context, handStructure)
         assertEquals(30, result)
@@ -159,7 +155,7 @@ class FuCalculatorTest {
         val context = createContext(isMenzen = false, isTsumo = false)
         val handStructure = createStandardStructure(
             pair = Janto(Tile.Numeric(Tile.Suit.Character, 5)),
-            completionType = CompletionType.Tanki
+            completionType = CompletionType.Tanki,
         )
         val result = FuCalculator.calculateTotalFu(context, handStructure)
         assertEquals(30, result)
@@ -173,7 +169,7 @@ class FuCalculatorTest {
         val context = createContext(isMenzen = false, isTsumo = false)
         val handStructure = createStandardStructure(
             pair = Janto(Tile.Numeric(Tile.Suit.Character, 5)),
-            completionType = CompletionType.Ryanmen
+            completionType = CompletionType.Ryanmen,
         )
         val result = FuCalculator.calculateTotalFu(context, handStructure)
         assertTrue(result >= 20)
@@ -188,7 +184,7 @@ class FuCalculatorTest {
         val context = createContext(isMenzen = false, isTsumo = false, seatWind = Wind.EAST)
         val handStructure = createStandardStructure(
             pair = Janto(Tile.Honor.East),
-            completionType = CompletionType.Ryanmen
+            completionType = CompletionType.Ryanmen,
         )
         val result = FuCalculator.calculateTotalFu(context, handStructure)
         assertEquals(30, result)
@@ -202,7 +198,7 @@ class FuCalculatorTest {
         val context = createContext(isMenzen = false, isTsumo = false, roundWind = Wind.SOUTH)
         val handStructure = createStandardStructure(
             pair = Janto(Tile.Honor.South),
-            completionType = CompletionType.Ryanmen
+            completionType = CompletionType.Ryanmen,
         )
         val result = FuCalculator.calculateTotalFu(context, handStructure)
         assertEquals(30, result)
@@ -216,7 +212,7 @@ class FuCalculatorTest {
         val context = createContext(isMenzen = false, isTsumo = false)
         val handStructure = createStandardStructure(
             pair = Janto(Tile.Honor.Red),
-            completionType = CompletionType.Ryanmen
+            completionType = CompletionType.Ryanmen,
         )
         val result = FuCalculator.calculateTotalFu(context, handStructure)
         assertEquals(30, result)
@@ -230,7 +226,7 @@ class FuCalculatorTest {
         val context = createContext(isMenzen = false, isTsumo = false)
         val handStructure = createStandardStructure(
             pair = Janto(Tile.Numeric(Tile.Suit.Character, 5)),
-            completionType = CompletionType.Ryanmen
+            completionType = CompletionType.Ryanmen,
         )
         val result = FuCalculator.calculateTotalFu(context, handStructure)
         assertTrue(result >= 20)

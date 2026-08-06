@@ -12,5 +12,5 @@ import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
 data class RiichiScoreConfig(
     override val initialScore: Int = 25000,
     override val bustThreshold: Int? = 0,
-    val minPointsToWin: Int = 30000
+    val minPointsToWin: Int = 30000,
 ) : ScoreConfig

@@ -24,7 +24,7 @@ object PointCalculator {
         yakumanMultiplier: Int,
         isDealer: Boolean,
         isTsumo: Boolean,
-        isPao: Boolean = false
+        isPao: Boolean = false,
     ): RiichiPointResult {
         // 役滿的基本點固定為 8000，與非役滿點數表中的「數役滿」級距相同
         val basicPoint = 8000 * yakumanMultiplier
@@ -49,12 +49,12 @@ object PointCalculator {
     fun calculateNonYakumanPoint(han: Int, fu: Int, isDealer: Boolean, isTsumo: Boolean): RiichiPointResult {
         // 1. 判定固定點數等級 (滿貫以上)
         val fixedBasicPoint = when {
-            han >= 13 -> 8000   // 數役滿
-            han >= 11 -> 6000   // 三倍滿
-            han >= 8 -> 4000    // 倍滿
-            han >= 6 -> 3000    // 跳滿
-            han == 5 -> 2000    // 滿貫
-            else -> null        // 滿貫以下，需要計算
+            han >= 13 -> 8000 // 數役滿
+            han >= 11 -> 6000 // 三倍滿
+            han >= 8 -> 4000 // 倍滿
+            han >= 6 -> 3000 // 跳滿
+            han == 5 -> 2000 // 滿貫
+            else -> null // 滿貫以下，需要計算
         }
 
         // 2. 計算基本點 (Basic Point)
@@ -134,7 +134,5 @@ object PointCalculator {
      * @param value 原始點數。
      * @return 進位後的點數。
      */
-    private fun ceilToHundred(value: Int): Int {
-        return if (value % 100 == 0) value else (value / 100 + 1) * 100
-    }
+    private fun ceilToHundred(value: Int): Int = if (value % 100 == 0) value else (value / 100 + 1) * 100
 }

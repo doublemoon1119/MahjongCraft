@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -36,7 +36,7 @@ class StartGameUseCaseTest {
         hostId = hostId,
         config = RiichiRuleConfig(),
         playerIds = (listOf(hostId) + guestIds).toSet(),
-        readyPlayerIds = guestIds.toSet()
+        readyPlayerIds = guestIds.toSet(),
     )
 
     private class Fixtures {
@@ -98,7 +98,7 @@ class StartGameUseCaseTest {
         (listOf(hostId) + guestIds).forEach { playerId ->
             assertEquals(
                 GameAction.GameStarted,
-                fixtures.eventPublisher.getNotifiedAction(roomId, playerId, hostId)
+                fixtures.eventPublisher.getNotifiedAction(roomId, playerId, hostId),
             )
         }
     }

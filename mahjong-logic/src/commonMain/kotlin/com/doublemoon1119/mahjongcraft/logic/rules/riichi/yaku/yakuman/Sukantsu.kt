@@ -24,7 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  * @return 四杠子役滿結果，若不符合則返回 null。
  */
 fun calculateSukantsu(
-    handStructure: HandStructure
+    handStructure: HandStructure,
 ): YakuResult? {
     val standard = handStructure as? HandStructure.Standard ?: return null
 
@@ -34,8 +34,8 @@ fun calculateSukantsu(
     // 計算槓的數量：暗槓 (Ankan) + 明槓 (Minkan) + 加槓 (Kakan)
     val kanCount = allMentsus.count { mentsu ->
         mentsu is Mentsu.Ankan ||
-                mentsu is Mentsu.Minkan ||
-                mentsu is Mentsu.Kakan
+            mentsu is Mentsu.Minkan ||
+            mentsu is Mentsu.Kakan
     }
 
     // 四杠子需要 4 個面子全部都是槓子

@@ -7,15 +7,13 @@ import kotlin.uuid.Uuid
  */
 data class IdentifiedTileSnapshot(
     val id: Uuid,
-    val tile: Tile?
+    val tile: Tile?,
 )
 
 /**
  * 產生一個 [IdentifiedTile] 的快照
  */
-fun IdentifiedTile.toSnapshot(isVisible: Boolean): IdentifiedTileSnapshot {
-    return IdentifiedTileSnapshot(
-        id = this.id,
-        tile = this.tile.takeIf { isVisible }
-    )
-}
+fun IdentifiedTile.toSnapshot(isVisible: Boolean): IdentifiedTileSnapshot = IdentifiedTileSnapshot(
+    id = this.id,
+    tile = this.tile.takeIf { isVisible },
+)

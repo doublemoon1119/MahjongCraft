@@ -36,7 +36,7 @@ class DiscardTileUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val gameSnapshotRepository: GameSnapshotRepository,
-    @Provided private val eventPublisher: GameEventPublisher
+    @Provided private val eventPublisher: GameEventPublisher,
 ) {
     /**
      * 執行捨牌邏輯。
@@ -66,7 +66,7 @@ class DiscardTileUseCase(
                         val updatedPlayer = state.currentPlayer
                             .copy(
                                 hand = discardResult.hand,
-                                discardPile = state.currentPlayer.discardPile.discardTile(discardedTile)
+                                discardPile = state.currentPlayer.discardPile.discardTile(discardedTile),
                             )
                             .recordAction(GameAction.Discard(tileId))
                         val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
@@ -82,7 +82,7 @@ class DiscardTileUseCase(
                                     player = otherPlayer,
                                     sourceAction = GameAction.Discard(tileId),
                                     sourceDirection = stateAfterDiscard.relativeDirectionOf(otherPlayer.id, playerId),
-                                    incomingTile = discardedTile
+                                    incomingTile = discardedTile,
                                 ).any { it is GameAction.Chi || it is GameAction.Pon || it is GameAction.Kan }
                             }
                             .map { it.id }
@@ -95,8 +95,8 @@ class DiscardTileUseCase(
                                 pendingReaction = PendingReaction(
                                     discarderId = playerId,
                                     tileId = discardedTile.id,
-                                    eligiblePlayerIds = eligiblePlayerIds
-                                )
+                                    eligiblePlayerIds = eligiblePlayerIds,
+                                ),
                             )
                         }
 

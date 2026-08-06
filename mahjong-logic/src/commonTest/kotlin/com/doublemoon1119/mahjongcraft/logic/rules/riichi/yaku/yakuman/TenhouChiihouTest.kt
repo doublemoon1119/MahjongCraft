@@ -34,7 +34,7 @@ class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
         Tile.Numeric(Tile.Suit.Character, 9),
         Tile.Numeric(Tile.Suit.Dot, 1),
         Tile.Numeric(Tile.Suit.Dot, 1),
-        Tile.Numeric(Tile.Suit.Dot, 1)
+        Tile.Numeric(Tile.Suit.Dot, 1),
     )
 
     /**
@@ -58,14 +58,14 @@ class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
             isTsumo = true,
             roundWind = Wind.EAST,
             seatWind = Wind.EAST,
-            isFirstTurn = true
+            isFirstTurn = true,
         )
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Tenhou },
-            "Should contain Tenhou, got: ${result.yakuResults.map { it.yaku }}"
+            "Should contain Tenhou, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -90,14 +90,14 @@ class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
             isTsumo = true,
             roundWind = Wind.EAST,
             seatWind = Wind.SOUTH,
-            isFirstTurn = true
+            isFirstTurn = true,
         )
         val result = calculator.calculate(context)
 
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Chiihou },
-            "Should contain Chiihou, got: ${result.yakuResults.map { it.yaku }}"
+            "Should contain Chiihou, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -122,13 +122,13 @@ class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
             isTsumo = true,
             roundWind = Wind.EAST,
             seatWind = Wind.EAST,
-            isFirstTurn = false
+            isFirstTurn = false,
         )
         val result = calculator.calculate(context)
 
         assertFalse(
             result.yakuResults.any { it.yaku == YakuType.Tenhou },
-            "Should not contain Tenhou when not first turn, got: ${result.yakuResults.map { it.yaku }}"
+            "Should not contain Tenhou when not first turn, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -153,13 +153,13 @@ class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
             isTsumo = false,
             roundWind = Wind.EAST,
             seatWind = Wind.SOUTH,
-            isFirstTurn = true
+            isFirstTurn = true,
         )
         val result = calculator.calculate(context)
 
         assertFalse(
             result.yakuResults.any { it.yaku == YakuType.Chiihou },
-            "Should not contain Chiihou for Ron, got: ${result.yakuResults.map { it.yaku }}"
+            "Should not contain Chiihou for Ron, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 }

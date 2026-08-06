@@ -28,7 +28,7 @@ data class RoomSnapshot(
     val aiPlayerIds: Set<Uuid>,
     val canStart: Boolean,
     val isHost: Boolean,
-    val isInRoom: Boolean
+    val isInRoom: Boolean,
 )
 
 /**
@@ -37,16 +37,14 @@ data class RoomSnapshot(
  * @param observerId 觀察此房間的玩家 Uuid，用於計算 [RoomSnapshot.isHost] 與 [RoomSnapshot.isInRoom]。
  * @return 針對該觀察者視角產生的房間快照。
  */
-fun Room.toSnapshot(observerId: Uuid): RoomSnapshot {
-    return RoomSnapshot(
-        id = id,
-        hostId = hostId,
-        config = config,
-        playerIds = playerIds,
-        readyPlayerIds = readyPlayerIds,
-        aiPlayerIds = aiPlayerIds,
-        canStart = canStart,
-        isHost = observerId == hostId,
-        isInRoom = playerIds.contains(observerId)
-    )
-}
+fun Room.toSnapshot(observerId: Uuid): RoomSnapshot = RoomSnapshot(
+    id = id,
+    hostId = hostId,
+    config = config,
+    playerIds = playerIds,
+    readyPlayerIds = readyPlayerIds,
+    aiPlayerIds = aiPlayerIds,
+    canStart = canStart,
+    isHost = observerId == hostId,
+    isInRoom = playerIds.contains(observerId),
+)

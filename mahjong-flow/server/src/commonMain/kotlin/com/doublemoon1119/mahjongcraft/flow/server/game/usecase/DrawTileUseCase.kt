@@ -27,7 +27,7 @@ class DrawTileUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val gameSnapshotRepository: GameSnapshotRepository,
-    @Provided private val eventPublisher: GameEventPublisher
+    @Provided private val eventPublisher: GameEventPublisher,
 ) {
     /**
      * 執行摸牌邏輯。
@@ -57,7 +57,7 @@ class DrawTileUseCase(
                             state.currentPlayer
                                 .copy(hand = state.currentPlayer.hand.copy(lastDrawn = tile))
                                 .clearPassedTiles()
-                                .recordAction(GameAction.Draw)
+                                .recordAction(GameAction.Draw),
                         )
                         val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
                         val newState = state.copy(tileWall = newWall, players = updatedPlayers)

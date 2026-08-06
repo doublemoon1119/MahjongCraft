@@ -73,7 +73,7 @@ class CreateRoomUseCaseTest {
         val existingRoom = Room(
             id = roomId,
             hostId = Uuid.random(),
-            config = config
+            config = config,
         )
         roomRepo.setRoom(existingRoom)
 
@@ -104,7 +104,7 @@ class CreateRoomUseCaseTest {
         assertEquals(
             expected = JoinReason.Created,
             actual = service.getJoinReason(roomId, hostId, hostId),
-            message = "Host should be notified with Created reason when opening a room."
+            message = "Host should be notified with Created reason when opening a room.",
         )
     }
 

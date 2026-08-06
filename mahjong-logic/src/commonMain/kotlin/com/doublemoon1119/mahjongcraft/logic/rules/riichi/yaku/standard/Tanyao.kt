@@ -22,7 +22,7 @@ fun calculateTanyao(
     hand: Hand,
     winningTile: Tile,
     isMenzen: Boolean,
-    allowOpenTanyao: Boolean
+    allowOpenTanyao: Boolean,
 ): YakuResult? {
     val allTiles = hand.allTiles.map { it.tile } + winningTile
 

@@ -36,8 +36,8 @@ class ChiitoitsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 5),
                 Tile.Numeric(Tile.Suit.Bamboo, 6),
                 Tile.Numeric(Tile.Suit.Bamboo, 6),
-                Tile.Numeric(Tile.Suit.Dot, 7)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 7),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 7)
 
@@ -71,7 +71,7 @@ class ChiitoitsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 6),
                 Tile.Numeric(Tile.Suit.Bamboo, 6),
                 Tile.Numeric(Tile.Suit.Dot, 7),
-                Tile.Numeric(Tile.Suit.Dot, 7)
+                Tile.Numeric(Tile.Suit.Dot, 7),
             ),
             melds = listOf(
                 Meld(
@@ -79,11 +79,11 @@ class ChiitoitsuTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
@@ -115,8 +115,8 @@ class ChiitoitsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 6),
                 Tile.Numeric(Tile.Suit.Bamboo, 7),
                 Tile.Numeric(Tile.Suit.Dot, 8),
-                Tile.Numeric(Tile.Suit.Dot, 9)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 9),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 

@@ -41,9 +41,7 @@ object HanCalculator {
      * @param results 非役滿的 YakuResult 列表
      * @return 總番數（正整數）
      */
-    fun calculateNonYakumanHan(results: List<YakuResult>): Int {
-        return results.filter { !it.isYakuman }.sumOf { it.han }
-    }
+    fun calculateNonYakumanHan(results: List<YakuResult>): Int = results.filter { !it.isYakuman }.sumOf { it.han }
 
     /**
      * 計算總番數。

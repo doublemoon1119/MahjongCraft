@@ -15,7 +15,7 @@ class TaiwanTileOrderTest {
      */
     @Test
     fun `test Taiwan style honor sorting`() {
-        val red = Tile.Honor.Red     // 中
+        val red = Tile.Honor.Red // 中
         val green = Tile.Honor.Green // 發
         val white = Tile.Honor.White // 白
 

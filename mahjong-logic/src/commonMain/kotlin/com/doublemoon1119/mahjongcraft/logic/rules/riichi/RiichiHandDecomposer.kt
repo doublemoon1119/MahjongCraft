@@ -1,7 +1,11 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.*
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.CompletionType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Fuuro
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Janto
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
 import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 
 /**
@@ -28,7 +32,7 @@ object RiichiHandDecomposer {
         Tile.Honor.North,
         Tile.Honor.Red,
         Tile.Honor.Green,
-        Tile.Honor.White
+        Tile.Honor.White,
     )
 
     /**
@@ -47,7 +51,7 @@ object RiichiHandDecomposer {
     fun decompose(
         handTiles: List<Tile>,
         winningTile: Tile,
-        fuuro: List<Fuuro> = emptyList()
+        fuuro: List<Fuuro> = emptyList(),
     ): List<HandStructure> {
         // 標準手牌（4 面子 + 1 雀頭）
         val standard = tryDecomposeStandard(handTiles, winningTile, fuuro)
@@ -80,7 +84,7 @@ object RiichiHandDecomposer {
     private fun tryDecomposeStandard(
         handTiles: List<Tile>,
         winningTile: Tile,
-        fuuro: List<Fuuro>
+        fuuro: List<Fuuro>,
     ): List<HandStructure.Standard> {
         val tiles = handTiles.map { it.withoutRed } + winningTile.withoutRed
 
@@ -89,8 +93,8 @@ object RiichiHandDecomposer {
         // 計算副露中的槓數量（暗槓、明槓、加槓均計為槓）
         val fuuroKanAmount = fuuro.count {
             it.mentsu is Mentsu.Ankan ||
-                    it.mentsu is Mentsu.Minkan ||
-                    it.mentsu is Mentsu.Kakan
+                it.mentsu is Mentsu.Minkan ||
+                it.mentsu is Mentsu.Kakan
         }
         // 當前手牌總張數（手牌 + 副露牌張）
         val currentHandSize = tiles.size + fuuroTilesAmount
@@ -105,9 +109,10 @@ object RiichiHandDecomposer {
         val sortedTiles = tiles.sortedWith(
             compareBy(
                 { it !is Tile.Numeric }, // 1. 數牌排在前面（false < true）
-                { (it as? Tile.Numeric)?.suit },    // 2. 數牌再按花色排序
-                { (it as? Tile.Numeric)?.value }    // 3. 數牌再按數值排序
-            ))
+                { (it as? Tile.Numeric)?.suit }, // 2. 數牌再按花色排序
+                { (it as? Tile.Numeric)?.value }, // 3. 數牌再按數值排序
+            ),
+        )
         val tileCounts = mutableMapOf<Tile, Int>()
         for (tile in sortedTiles) {
             tileCounts[tile] = (tileCounts[tile] ?: 0) + 1
@@ -146,8 +151,8 @@ object RiichiHandDecomposer {
                                     mentsus = mentsus,
                                     pair = Janto(pairTile),
                                     fuuro = fuuro,
-                                    completionType = CompletionType.Tanki
-                                )
+                                    completionType = CompletionType.Tanki,
+                                ),
                             )
                         }
                         continue
@@ -155,7 +160,7 @@ object RiichiHandDecomposer {
 
                     // 複製 remainingCounts 並移除 completionMentsu
                     val remainingCountsAfterCompletion = remainingCounts.toMutableMap()
-                    for (tile in completionMentsu.tiles){
+                    for (tile in completionMentsu.tiles) {
                         val count = remainingCountsAfterCompletion[tile] ?: continue
                         remainingCountsAfterCompletion[tile] = count - 1
                         if (remainingCountsAfterCompletion[tile] == 0) {
@@ -173,8 +178,8 @@ object RiichiHandDecomposer {
                                 mentsus = allMentsus,
                                 pair = Janto(pairTile),
                                 fuuro = fuuro,
-                                completionType = completionType
-                            )
+                                completionType = completionType,
+                            ),
                         )
                     }
                 }
@@ -201,7 +206,7 @@ object RiichiHandDecomposer {
         winTile: Tile,
         winTileCount: Int,
         pairTile: Tile,
-        tileCounts: Map<Tile, Int>
+        tileCounts: Map<Tile, Int>,
     ): List<Pair<CompletionType, Mentsu?>> {
         val completion = mutableListOf<Pair<CompletionType, Mentsu?>>()
 
@@ -287,7 +292,7 @@ object RiichiHandDecomposer {
     private fun tryFindMentsusFromCounts(
         tileCounts: Map<Tile, Int>,
         requiredMentsus: Int,
-        currentMentsus: MutableList<Mentsu> = mutableListOf()
+        currentMentsus: MutableList<Mentsu> = mutableListOf(),
     ): List<Mentsu>? {
         if (tileCounts.isEmpty() && currentMentsus.size == requiredMentsus) {
             return currentMentsus.toList()
@@ -350,7 +355,8 @@ object RiichiHandDecomposer {
                 val result = tryFindMentsusFromCounts(
                     newCounts,
                     requiredMentsus,
-                    currentMentsus.apply { add(Mentsu.Shuntsu(tile)) })
+                    currentMentsus.apply { add(Mentsu.Shuntsu(tile)) },
+                )
                 if (result != null) return result
                 currentMentsus.removeLast()
             }
@@ -365,7 +371,7 @@ object RiichiHandDecomposer {
     private fun tryDecomposeChiitoitsu(
         handTiles: List<Tile>,
         winningTile: Tile,
-        fuuro: List<Fuuro>
+        fuuro: List<Fuuro>,
     ): HandStructure.Chiitoitsu? {
         if (fuuro.isNotEmpty()) return null // 七對子不能有副露
 
@@ -400,7 +406,7 @@ object RiichiHandDecomposer {
     private fun tryDecomposeKokushiMusou(
         handTiles: List<Tile>,
         winningTile: Tile,
-        fuuro: List<Fuuro>
+        fuuro: List<Fuuro>,
     ): HandStructure.KokushiMusou? {
         if (fuuro.isNotEmpty()) return null // 國士無雙不能有副露
 
@@ -431,7 +437,7 @@ object RiichiHandDecomposer {
 
         return HandStructure.KokushiMusou(
             orphans = orphans,
-            headTile = headTile
+            headTile = headTile,
         )
     }
 }

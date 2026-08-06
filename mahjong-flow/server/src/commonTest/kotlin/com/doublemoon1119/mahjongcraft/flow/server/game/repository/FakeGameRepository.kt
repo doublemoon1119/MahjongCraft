@@ -9,8 +9,12 @@ import kotlin.uuid.Uuid
 class FakeGameRepository : GameRepository {
     private val games = mutableMapOf<Uuid, TableState>()
     override suspend fun getTableState(gameId: Uuid): TableState? = games[gameId]
-    override suspend fun setTableState(state: TableState) { games[state.id] = state }
-    override suspend fun removeTableState(gameId: Uuid) { games.remove(gameId) }
+    override suspend fun setTableState(state: TableState) {
+        games[state.id] = state
+    }
+    override suspend fun removeTableState(gameId: Uuid) {
+        games.remove(gameId)
+    }
 
     override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T {
         val (next, result) = block(games[gameId])

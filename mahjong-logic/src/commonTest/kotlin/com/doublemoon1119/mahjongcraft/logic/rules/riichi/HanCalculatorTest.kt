@@ -26,7 +26,7 @@ class HanCalculatorTest {
     fun `test regular yaku sum`() {
         val results = listOf(
             YakuResult.han(YakuType.Riichi, 1),
-            YakuResult.han(YakuType.Pinfu, 1)
+            YakuResult.han(YakuType.Pinfu, 1),
         )
         val result = HanCalculator.calculateTotalHan(results)
         assertEquals(2, result)
@@ -38,7 +38,7 @@ class HanCalculatorTest {
     @Test
     fun `test single yakuman returns -1`() {
         val results = listOf(
-            YakuResult.yakuman(YakuType.KokushiMusou)
+            YakuResult.yakuman(YakuType.KokushiMusou),
         )
         val result = HanCalculator.calculateTotalHan(results)
         assertEquals(-1, result)
@@ -50,7 +50,7 @@ class HanCalculatorTest {
     @Test
     fun `test double yakuman returns -2`() {
         val results = listOf(
-            YakuResult.doubleYakuman(YakuType.Daisuushii)
+            YakuResult.doubleYakuman(YakuType.Daisuushii),
         )
         val result = HanCalculator.calculateTotalHan(results)
         assertEquals(-2, result)
@@ -63,7 +63,7 @@ class HanCalculatorTest {
     fun `test combined yakuman returns -3`() {
         val results = listOf(
             YakuResult.yakuman(YakuType.KokushiMusou),
-            YakuResult.doubleYakuman(YakuType.Daisuushii)
+            YakuResult.doubleYakuman(YakuType.Daisuushii),
         )
         val result = HanCalculator.calculateTotalHan(results)
         assertEquals(-3, result)
@@ -78,7 +78,7 @@ class HanCalculatorTest {
     fun `test yakuman takes priority over regular yaku`() {
         val results = listOf(
             YakuResult.yakuman(YakuType.KokushiMusou),
-            YakuResult.han(YakuType.Riichi, 1)
+            YakuResult.han(YakuType.Riichi, 1),
         )
         val result = HanCalculator.calculateTotalHan(results)
         assertEquals(-1, result)
@@ -92,7 +92,7 @@ class HanCalculatorTest {
         val results = listOf(
             YakuResult.han(YakuType.Riichi, 1),
             YakuResult.han(YakuType.Pinfu, 1),
-            YakuResult.han(YakuType.Dora, 2)
+            YakuResult.han(YakuType.Dora, 2),
         )
         val result = HanCalculator.calculateTotalHan(results)
         assertEquals(4, result)
@@ -105,7 +105,7 @@ class HanCalculatorTest {
     fun `test calculate non yakuman han`() {
         val results = listOf(
             YakuResult.han(YakuType.Riichi, 1),
-            YakuResult.han(YakuType.Pinfu, 1)
+            YakuResult.han(YakuType.Pinfu, 1),
         )
         val result = HanCalculator.calculateNonYakumanHan(results)
         assertEquals(2, result)
@@ -119,7 +119,7 @@ class HanCalculatorTest {
         val results = listOf(
             YakuResult.yakuman(YakuType.KokushiMusou),
             YakuResult.han(YakuType.Riichi, 1),
-            YakuResult.han(YakuType.Pinfu, 1)
+            YakuResult.han(YakuType.Pinfu, 1),
         )
         val result = HanCalculator.calculateNonYakumanHan(results)
         assertEquals(2, result)
@@ -131,7 +131,7 @@ class HanCalculatorTest {
     @Test
     fun `test calculate yakuman multiplier single`() {
         val results = listOf(
-            YakuResult.yakuman(YakuType.KokushiMusou)
+            YakuResult.yakuman(YakuType.KokushiMusou),
         )
         val result = HanCalculator.calculateYakumanMultiplier(results)
         assertEquals(1, result)
@@ -143,7 +143,7 @@ class HanCalculatorTest {
     @Test
     fun `test calculate yakuman multiplier double`() {
         val results = listOf(
-            YakuResult.doubleYakuman(YakuType.Daisuushii)
+            YakuResult.doubleYakuman(YakuType.Daisuushii),
         )
         val result = HanCalculator.calculateYakumanMultiplier(results)
         assertEquals(2, result)
@@ -156,7 +156,7 @@ class HanCalculatorTest {
     fun `test calculate yakuman multiplier combined`() {
         val results = listOf(
             YakuResult.yakuman(YakuType.KokushiMusou),
-            YakuResult.doubleYakuman(YakuType.Daisuushii)
+            YakuResult.doubleYakuman(YakuType.Daisuushii),
         )
         val result = HanCalculator.calculateYakumanMultiplier(results)
         assertEquals(3, result)
@@ -169,7 +169,7 @@ class HanCalculatorTest {
     fun `test calculate yakuman multiplier multiple double`() {
         val results = listOf(
             YakuResult.doubleYakuman(YakuType.Daisuushii),
-            YakuResult.doubleYakuman(YakuType.ChurenPoto)
+            YakuResult.doubleYakuman(YakuType.ChurenPoto),
         )
         val result = HanCalculator.calculateYakumanMultiplier(results)
         assertEquals(4, result)
@@ -182,7 +182,7 @@ class HanCalculatorTest {
     fun `test calculate yakuman multiplier multiple normal`() {
         val results = listOf(
             YakuResult.yakuman(YakuType.KokushiMusou),
-            YakuResult.yakuman(YakuType.Tsuuiisou)
+            YakuResult.yakuman(YakuType.Tsuuiisou),
         )
         val result = HanCalculator.calculateYakumanMultiplier(results)
         assertEquals(2, result)

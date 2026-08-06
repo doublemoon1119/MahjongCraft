@@ -13,5 +13,5 @@ data class TaiwanScoreConfig(
     val baseScore: Int = 30,
     val pointPerTai: Int = 10,
     override val initialScore: Int = 0,
-    override val bustThreshold: Int? = null
+    override val bustThreshold: Int? = null,
 ) : ScoreConfig

@@ -22,9 +22,13 @@ class PaoDetectorTest {
     fun `test daisangen pao when calling third dragon with two concealed triplets`() {
         val hand = FakeHandFactory.create(
             listOf(
-                Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red,
-                Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green
-            )
+                Tile.Honor.Red,
+                Tile.Honor.Red,
+                Tile.Honor.Red,
+                Tile.Honor.Green,
+                Tile.Honor.Green,
+                Tile.Honor.Green,
+            ),
         )
 
         val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Left)
@@ -45,11 +49,11 @@ class PaoDetectorTest {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.Red),
                         FakeIdentifiedTileFactory.create(Tile.Honor.Red),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.Red),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
 
         val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Right)
@@ -63,7 +67,7 @@ class PaoDetectorTest {
     @Test
     fun `test no pao when only one other dragon group is complete`() {
         val hand = FakeHandFactory.create(
-            listOf(Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red)
+            listOf(Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red),
         )
 
         val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Left)
@@ -78,9 +82,12 @@ class PaoDetectorTest {
     fun `test no pao when other dragon group has fewer than three tiles`() {
         val hand = FakeHandFactory.create(
             listOf(
-                Tile.Honor.Red, Tile.Honor.Red,
-                Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green
-            )
+                Tile.Honor.Red,
+                Tile.Honor.Red,
+                Tile.Honor.Green,
+                Tile.Honor.Green,
+                Tile.Honor.Green,
+            ),
         )
 
         val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Left)
@@ -101,9 +108,9 @@ class PaoDetectorTest {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.East)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
                     ),
-                    sourceDirection = RelativeDirection.Left
+                    sourceDirection = RelativeDirection.Left,
                 ),
                 Meld(
                     type = MeldType.OPEN_KAN,
@@ -111,11 +118,11 @@ class PaoDetectorTest {
                         FakeIdentifiedTileFactory.create(Tile.Honor.South),
                         FakeIdentifiedTileFactory.create(Tile.Honor.South),
                         FakeIdentifiedTileFactory.create(Tile.Honor.South),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.South)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.South),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
 
         val result = PaoDetector.check(hand, Tile.Honor.North, RelativeDirection.Right)
@@ -130,15 +137,19 @@ class PaoDetectorTest {
     fun `test no pao when called tile is not dragon or wind`() {
         val hand = FakeHandFactory.create(
             listOf(
-                Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red,
-                Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green
-            )
+                Tile.Honor.Red,
+                Tile.Honor.Red,
+                Tile.Honor.Red,
+                Tile.Honor.Green,
+                Tile.Honor.Green,
+                Tile.Honor.Green,
+            ),
         )
 
         val result = PaoDetector.check(
             hand,
             Tile.Numeric(Tile.Suit.Character, 5),
-            RelativeDirection.Left
+            RelativeDirection.Left,
         )
 
         assertNull(result, "Non-honor tiles should never trigger pao")

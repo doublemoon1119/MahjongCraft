@@ -23,7 +23,7 @@ sealed class ShantenResult {
      * @property winningTiles 玩家可以胡的牌列表（即「聽牌」列表）。
      */
     data class Tenpai(
-        val winningTiles: List<Tile>
+        val winningTiles: List<Tile>,
     ) : ShantenResult()
 
     /**
@@ -33,6 +33,6 @@ sealed class ShantenResult {
      *                  例如：1 表示還差 1 張牌即可聽牌。
      */
     data class NotTenpai(
-        val shanten: Int
+        val shanten: Int,
     ) : ShantenResult()
 }

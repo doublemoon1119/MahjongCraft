@@ -9,8 +9,12 @@ import kotlin.uuid.Uuid
 class FakeRoomRepository : RoomRepository {
     private val rooms = mutableMapOf<Uuid, Room>()
     override suspend fun getRoom(id: Uuid): Room? = rooms[id]
-    override suspend fun setRoom(room: Room) { rooms[room.id] = room }
-    override suspend fun removeRoom(id: Uuid) { rooms.remove(id) }
+    override suspend fun setRoom(room: Room) {
+        rooms[room.id] = room
+    }
+    override suspend fun removeRoom(id: Uuid) {
+        rooms.remove(id)
+    }
 
     override suspend fun <T> update(id: Uuid, block: suspend (Room?) -> Pair<Room?, T>): T {
         val (next, result) = block(rooms[id])

@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.logic.base
 
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
-import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.uuid.Uuid
 
 /**
  * 針對 [IdentifiedTileSnapshot] 與 [IdentifiedTile.toSnapshot] 進行單元測試。

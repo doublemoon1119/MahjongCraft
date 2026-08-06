@@ -25,7 +25,7 @@ class RiichiLegalActionValidatorFuritenTest {
     private val validator = RiichiLegalActionValidator(
         shantenCalculator = RiichiShantenCalculator(),
         handValueCalculator = RiichiHandValueCalculator(),
-        contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig())
+        contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig()),
     )
 
     /**
@@ -46,29 +46,29 @@ class RiichiLegalActionValidatorFuritenTest {
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
-                Tile.Numeric(Tile.Suit.Character, 5, isRed = true),   // 赤5萬
+                Tile.Numeric(Tile.Suit.Character, 5, isRed = true), // 赤5萬
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 9)
-            )
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
         )
         // 模擬玩家已經打了赤5萬（振聽）
         val fakeDiscardPile = FakeDiscardPile().discard(
             FakeDiscardPile.FakeEntry(
-                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
-            )
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true)),
+            ),
         )
         val riichiState = RiichiPlayerState()
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
             discardPile = fakeDiscardPile,
-            playerRuleState = riichiState
+            playerRuleState = riichiState,
         )
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
         // 他家打普通5萬
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = false))
@@ -79,7 +79,7 @@ class RiichiLegalActionValidatorFuritenTest {
             player = player,
             sourceAction = GameAction.Discard(incomingTile.id),
             sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile
+            incomingTile = incomingTile,
         )
 
         // 驗證 - 因為打過赤5萬（視為同張牌），所以不可榮和
@@ -104,29 +104,29 @@ class RiichiLegalActionValidatorFuritenTest {
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
-                Tile.Numeric(Tile.Suit.Character, 5, isRed = false),   // 普通5萬
+                Tile.Numeric(Tile.Suit.Character, 5, isRed = false), // 普通5萬
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 9)
-            )
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
         )
         // 模擬玩家已經打了普通5萬（振聽）
         val fakeDiscardPile = FakeDiscardPile().discard(
             FakeDiscardPile.FakeEntry(
-                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = false))
-            )
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = false)),
+            ),
         )
         val riichiState = RiichiPlayerState()
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
             discardPile = fakeDiscardPile,
-            playerRuleState = riichiState
+            playerRuleState = riichiState,
         )
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
         // 他家打赤5萬
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
@@ -137,7 +137,7 @@ class RiichiLegalActionValidatorFuritenTest {
             player = player,
             sourceAction = GameAction.Discard(incomingTile.id),
             sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile
+            incomingTile = incomingTile,
         )
 
         // 驗證 - 因為打過普通5萬（視為同張牌），所以不可榮和
@@ -155,18 +155,18 @@ class RiichiLegalActionValidatorFuritenTest {
         val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 5),
-                Tile.Numeric(Tile.Suit.Character, 5)
-            )
+                Tile.Numeric(Tile.Suit.Character, 5),
+            ),
         )
 
         var player = FakeMahjongPlayerFactory.create(
-            hand = playerHand
+            hand = playerHand,
         )
         // 建立已放過5萬的狀態
         player = player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5))
 
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
         // 他家打5萬
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
@@ -177,7 +177,7 @@ class RiichiLegalActionValidatorFuritenTest {
             player = player,
             sourceAction = GameAction.Discard(incomingTile.id),
             sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile
+            incomingTile = incomingTile,
         )
 
         // 驗證 - 已經放過，不可碰
@@ -196,18 +196,18 @@ class RiichiLegalActionValidatorFuritenTest {
         val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 5),
-                Tile.Numeric(Tile.Suit.Character, 5)
-            )
+                Tile.Numeric(Tile.Suit.Character, 5),
+            ),
         )
 
         var player = FakeMahjongPlayerFactory.create(
-            hand = playerHand
+            hand = playerHand,
         )
         // 建立已放過5萬的狀態
         player = player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5))
 
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
 
         // 手動清除記錄（模擬 Use Case 層的行為）
@@ -220,7 +220,7 @@ class RiichiLegalActionValidatorFuritenTest {
             player = player,
             sourceAction = GameAction.Discard(incomingTile.id),
             sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile
+            incomingTile = incomingTile,
         )
 
         // 驗證 - 清除記錄後，可以碰
@@ -238,18 +238,18 @@ class RiichiLegalActionValidatorFuritenTest {
         val playerHand = FakeHandFactory.create(
             listOf(
                 Tile.Numeric(Tile.Suit.Character, 5),
-                Tile.Numeric(Tile.Suit.Character, 5)
-            )
+                Tile.Numeric(Tile.Suit.Character, 5),
+            ),
         )
 
         var player = FakeMahjongPlayerFactory.create(
-            hand = playerHand
+            hand = playerHand,
         )
         // 放過普通5萬
         player = player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5, isRed = false))
 
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
         // 他家打赤5萬
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
@@ -260,7 +260,7 @@ class RiichiLegalActionValidatorFuritenTest {
             player = player,
             sourceAction = GameAction.Discard(incomingTile.id),
             sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile
+            incomingTile = incomingTile,
         )
 
         // 驗證 - 放過普通5萬，赤5萬也不能碰

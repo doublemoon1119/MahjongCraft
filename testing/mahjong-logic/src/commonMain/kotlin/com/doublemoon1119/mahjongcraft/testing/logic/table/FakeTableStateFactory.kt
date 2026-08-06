@@ -28,19 +28,17 @@ object FakeTableStateFactory {
         comboCount: Int = 0,
         currentPlayerIndex: Int = 0,
         dynamicRuleState: DynamicRuleState? = null,
-        pendingReaction: PendingReaction? = null
-    ): TableState {
-        return TableState(
-            id = id,
-            players = players,
-            config = config,
-            tileWall = tileWall,
-            prevalentWind = prevalentWind,
-            roundNumber = roundNumber,
-            comboCount = comboCount,
-            currentPlayerIndex = currentPlayerIndex,
-            dynamicRuleState = dynamicRuleState,
-            pendingReaction = pendingReaction
-        )
-    }
+        pendingReaction: PendingReaction? = null,
+    ): TableState = TableState(
+        id = id,
+        players = players,
+        config = config,
+        tileWall = tileWall,
+        prevalentWind = prevalentWind,
+        roundNumber = roundNumber,
+        comboCount = comboCount,
+        currentPlayerIndex = currentPlayerIndex,
+        dynamicRuleState = dynamicRuleState,
+        pendingReaction = pendingReaction,
+    )
 }

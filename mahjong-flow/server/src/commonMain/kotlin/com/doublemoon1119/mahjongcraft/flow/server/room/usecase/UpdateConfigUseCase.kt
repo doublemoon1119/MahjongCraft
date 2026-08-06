@@ -24,7 +24,7 @@ import kotlin.uuid.Uuid
 class UpdateConfigUseCase(
     private val roomRepository: RoomRepository,
     private val snapshotRepository: RoomSnapshotRepository,
-    @Provided private val eventPublisher: RoomEventPublisher
+    @Provided private val eventPublisher: RoomEventPublisher,
 ) {
     /**
      * 執行更新配置邏輯。
@@ -37,7 +37,7 @@ class UpdateConfigUseCase(
     suspend operator fun invoke(
         roomId: Uuid,
         operatorId: Uuid,
-        newConfig: MahjongRuleConfig
+        newConfig: MahjongRuleConfig,
     ): Outcome<Unit, RoomError> {
         // 1. 以原子方式讀取房間、驗證權限並寫回，避免與其他房間操作產生競態
         val outcome = roomRepository.update(roomId) { room ->
@@ -67,7 +67,7 @@ class UpdateConfigUseCase(
                     eventPublisher.publishConfigChanged(
                         roomId = roomId,
                         targetPlayerId = memberId,
-                        newConfig = newConfig
+                        newConfig = newConfig,
                     )
                 }
 

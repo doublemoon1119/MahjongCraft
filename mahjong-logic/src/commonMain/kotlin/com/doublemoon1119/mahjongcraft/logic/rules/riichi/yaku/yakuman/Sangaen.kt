@@ -34,7 +34,7 @@ import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
  * @return 小三元或大三元結果，若不符合則返回 null。
  */
 fun calculateSangaen(
-    handStructure: HandStructure
+    handStructure: HandStructure,
 ): YakuResult? {
     val standard = handStructure as? HandStructure.Standard ?: return null
 
@@ -42,7 +42,7 @@ fun calculateSangaen(
     val dragonTiles = listOf(
         Tile.Honor.Red,
         Tile.Honor.Green,
-        Tile.Honor.White
+        Tile.Honor.White,
     )
 
     // 收集所有面子（手牌 + 副露）
@@ -50,11 +50,13 @@ fun calculateSangaen(
 
     // 計算所有三元牌的刻子
     val dragonKotsuCount = allMentsus.count { mentsu ->
-        (mentsu is Mentsu.Kotsu ||
+        (
+            mentsu is Mentsu.Kotsu ||
                 mentsu is Mentsu.Ankan ||
                 mentsu is Mentsu.Minkan ||
-                mentsu is Mentsu.Kakan)
-                && mentsu.tiles.all { it.withoutRed in dragonTiles }
+                mentsu is Mentsu.Kakan
+            ) &&
+            mentsu.tiles.all { it.withoutRed in dragonTiles }
     }
 
     // 三個三元牌刻子，必為大三元（役滿）

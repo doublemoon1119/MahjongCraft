@@ -15,7 +15,7 @@ data class Meld(
     val type: MeldType,
     val tiles: List<IdentifiedTile>,
     val sourceTile: IdentifiedTile? = null,
-    val sourceDirection: RelativeDirection
+    val sourceDirection: RelativeDirection,
 )
 
 /**
@@ -51,5 +51,5 @@ enum class MeldType {
      * 日文：加槓 (Kakan) / 小明槓。
      * 說明：在已有的碰 (PON) 基礎上，增加第四張相同的牌構成的槓子。
      */
-    ADDED_KAN
+    ADDED_KAN,
 }

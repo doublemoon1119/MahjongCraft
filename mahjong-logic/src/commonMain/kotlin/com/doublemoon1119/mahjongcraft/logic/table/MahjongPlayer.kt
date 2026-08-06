@@ -36,7 +36,7 @@ data class MahjongPlayer(
     val score: Int = 0,
     val currentWind: Wind = initialSeat,
     val passedTilesInRound: Set<Tile> = emptySet(),
-    val actionHistory: List<GameAction> = emptyList()
+    val actionHistory: List<GameAction> = emptyList(),
 ) {
     /**
      * 記錄玩家放過的牌（用於過水碰及同巡振聽判定）。

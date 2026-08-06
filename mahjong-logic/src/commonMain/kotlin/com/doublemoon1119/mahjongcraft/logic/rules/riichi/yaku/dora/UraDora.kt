@@ -20,7 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 fun calculateUraDora(
     hand: Hand,
     winningTile: Tile,
-    uraDoraIndicators: List<Tile>
+    uraDoraIndicators: List<Tile>,
 ): YakuResult {
     val allTiles = hand.allTiles.map { it.tile } + winningTile
 

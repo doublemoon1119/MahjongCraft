@@ -5,10 +5,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
-import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.uuid.Uuid
 
 /**
  * 針對 [MahjongPlayerSnapshot] 與 [MahjongPlayer.toSnapshot] 進行單元測試。
@@ -27,8 +27,8 @@ class MahjongPlayerSnapshotTest {
         val player = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.EAST,
             hand = Hand(
-                tiles = mutableListOf(tile1, tile2)
-            )
+                tiles = mutableListOf(tile1, tile2),
+            ),
         )
 
         val snapshot = player.toSnapshot(isVisible = true)
@@ -50,8 +50,8 @@ class MahjongPlayerSnapshotTest {
         val player = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.SOUTH,
             hand = Hand(
-                tiles = mutableListOf(tile1, tile2)
-            )
+                tiles = mutableListOf(tile1, tile2),
+            ),
         )
 
         val snapshot = player.toSnapshot(isVisible = false)
@@ -75,7 +75,7 @@ class MahjongPlayerSnapshotTest {
         val player = FakeMahjongPlayerFactory.create(
             id = id,
             initialSeat = Wind.WEST,
-            discardPile = discardPile
+            discardPile = discardPile,
         ).copy(score = 25000)
 
         val snapshot = player.toSnapshot(isVisible = true)

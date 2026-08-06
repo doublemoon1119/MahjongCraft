@@ -42,8 +42,8 @@ class SanankouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 4),
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 6),
-                Tile.Numeric(Tile.Suit.Character, 7)
-            )
+                Tile.Numeric(Tile.Suit.Character, 7),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
 
@@ -75,7 +75,7 @@ class SanankouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.Red,
                 Tile.Honor.Red,
                 Tile.Numeric(Tile.Suit.Bamboo, 5),
-                Tile.Numeric(Tile.Suit.Bamboo, 5)
+                Tile.Numeric(Tile.Suit.Bamboo, 5),
             ),
             melds = listOf(
                 Meld(
@@ -83,11 +83,11 @@ class SanankouTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 5)
 
@@ -120,7 +120,7 @@ class SanankouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.Red,
                 Tile.Honor.Red,
                 Tile.Honor.Green,
-                Tile.Honor.Green
+                Tile.Honor.Green,
             ),
             melds = listOf(
                 Meld(
@@ -129,11 +129,11 @@ class SanankouTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.Green
 
@@ -165,8 +165,8 @@ class SanankouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 3),
                 Tile.Honor.Red,
                 Tile.Honor.Red,
-                Tile.Numeric(Tile.Suit.Bamboo, 4)
-            )
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 4)
 

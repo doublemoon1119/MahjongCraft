@@ -12,7 +12,7 @@ data class YakuResult(
     val yaku: YakuType,
     val han: Int,
     val isYakuman: Boolean = han < 0,
-    val isDoubleYakuman: Boolean = han == -2
+    val isDoubleYakuman: Boolean = han == -2,
 ) {
     companion object {
         /** 一般役滿（1 倍） */

@@ -36,8 +36,8 @@ class RiichiHandValueCalculatorPaoTest : RiichiHandValueCalculatorTestBase() {
             Tile.Numeric(Tile.Suit.Character, 2),
             Tile.Numeric(Tile.Suit.Character, 3),
             Tile.Numeric(Tile.Suit.Dot, 5),
-            Tile.Numeric(Tile.Suit.Dot, 5)
-        )
+            Tile.Numeric(Tile.Suit.Dot, 5),
+        ),
     )
 
     /**
@@ -51,7 +51,7 @@ class RiichiHandValueCalculatorPaoTest : RiichiHandValueCalculatorTestBase() {
             winningTile = Tile.Honor.Red,
             isTsumo = true,
             seatWind = Wind.SOUTH,
-            paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)
+            paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left),
         )
 
         val result = calculator.calculate(context)
@@ -71,7 +71,7 @@ class RiichiHandValueCalculatorPaoTest : RiichiHandValueCalculatorTestBase() {
             winningTile = Tile.Honor.Red,
             isTsumo = false,
             seatWind = Wind.SOUTH,
-            paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Across)
+            paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Across),
         )
 
         val result = calculator.calculate(context)
@@ -94,7 +94,7 @@ class RiichiHandValueCalculatorPaoTest : RiichiHandValueCalculatorTestBase() {
             winningTile = Tile.Honor.Red,
             isTsumo = true,
             seatWind = Wind.SOUTH,
-            paoLiability = PaoLiability(PaoYaku.Daisuushii, RelativeDirection.Left)
+            paoLiability = PaoLiability(PaoYaku.Daisuushii, RelativeDirection.Left),
         )
 
         val result = calculator.calculate(context)
@@ -113,7 +113,7 @@ class RiichiHandValueCalculatorPaoTest : RiichiHandValueCalculatorTestBase() {
             hand = daisangenHand(),
             winningTile = Tile.Honor.Red,
             isTsumo = true,
-            seatWind = Wind.SOUTH
+            seatWind = Wind.SOUTH,
         )
 
         val result = calculator.calculate(context)

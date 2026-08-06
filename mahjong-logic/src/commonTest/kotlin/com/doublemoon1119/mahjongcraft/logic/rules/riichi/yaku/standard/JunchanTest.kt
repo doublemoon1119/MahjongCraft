@@ -41,8 +41,8 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Bamboo, 9)
-            )
+                Tile.Numeric(Tile.Suit.Bamboo, 9),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9)
 
@@ -70,7 +70,7 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Bamboo, 9)
+                Tile.Numeric(Tile.Suit.Bamboo, 9),
             ),
             melds = listOf(
                 Meld(
@@ -78,11 +78,11 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9)
 
@@ -108,7 +108,7 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Honor.Red,
-                Tile.Honor.Red
+                Tile.Honor.Red,
             ),
             melds = listOf(
                 Meld(
@@ -116,11 +116,11 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.Red
 

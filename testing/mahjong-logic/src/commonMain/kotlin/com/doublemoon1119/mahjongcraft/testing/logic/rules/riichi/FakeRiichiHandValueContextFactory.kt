@@ -53,27 +53,25 @@ object FakeRiichiHandValueContextFactory {
         isRobbingKan: Boolean = false,
         isRinshanKaihou: Boolean = false,
         isFirstTurn: Boolean = false,
-        paoLiability: PaoLiability? = null
-    ): RiichiHandValueContext {
-        return RiichiHandValueContext(
-            hand = hand,
-            winningTile = winningTile,
-            isTsumo = isTsumo,
-            isRiichi = isRiichi,
-            isIppatsu = isIppatsu,
-            isDoubleRiichi = isDoubleRiichi,
-            isMenzen = isMenzen,
-            allowOpenTanyao = allowOpenTanyao,
-            doraIndicators = doraIndicators,
-            uraDoraIndicators = uraDoraIndicators,
-            roundWind = roundWind,
-            seatWind = seatWind,
-            isLastDraw = isLastDraw,
-            isLastDiscard = isLastDiscard,
-            isRobbingKan = isRobbingKan,
-            isRinshanKaihou = isRinshanKaihou,
-            isFirstTurn = isFirstTurn,
-            paoLiability = paoLiability
-        )
-    }
+        paoLiability: PaoLiability? = null,
+    ): RiichiHandValueContext = RiichiHandValueContext(
+        hand = hand,
+        winningTile = winningTile,
+        isTsumo = isTsumo,
+        isRiichi = isRiichi,
+        isIppatsu = isIppatsu,
+        isDoubleRiichi = isDoubleRiichi,
+        isMenzen = isMenzen,
+        allowOpenTanyao = allowOpenTanyao,
+        doraIndicators = doraIndicators,
+        uraDoraIndicators = uraDoraIndicators,
+        roundWind = roundWind,
+        seatWind = seatWind,
+        isLastDraw = isLastDraw,
+        isLastDiscard = isLastDiscard,
+        isRobbingKan = isRobbingKan,
+        isRinshanKaihou = isRinshanKaihou,
+        isFirstTurn = isFirstTurn,
+        paoLiability = paoLiability,
+    )
 }

@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.validate
 
-
 /**
  * 日本麻將（Riichi Mahjong）特有的規則配置介面。
  *
@@ -38,5 +37,7 @@ data class RiichiRuleConfig(
     override val minPlayers: Int = 4
     override val maxPlayers: Int = 4
 
-    init { validate() }
+    init {
+        validate()
+    }
 }

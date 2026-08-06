@@ -20,7 +20,7 @@ data class RiichiHandValueResult(
     val totalFu: Int,
     val pointResult: RiichiPointResult,
     val isYakuman: Boolean = totalHan < 0,
-    val paoLiability: PaoLiability? = null
+    val paoLiability: PaoLiability? = null,
 ) : HandValueResult {
     /** 贏家實際獲得的點數總和，等同於 [pointResult] 的 [RiichiPointResult.total]。 */
     val totalPoint: Int get() = pointResult.total

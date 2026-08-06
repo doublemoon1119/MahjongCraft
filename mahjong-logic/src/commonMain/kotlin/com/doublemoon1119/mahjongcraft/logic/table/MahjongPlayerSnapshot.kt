@@ -20,7 +20,7 @@ data class MahjongPlayerSnapshot(
     val hand: HandSnapshot,
     val discardPile: DiscardPile<*>,
     val playerRuleState: PlayerRuleState?,
-    val score: Int
+    val score: Int,
 )
 
 /**
@@ -29,13 +29,11 @@ data class MahjongPlayerSnapshot(
  * @param isVisible 控制手牌是否可見。當值為 `false` 時，手牌中的牌張資訊將被隱藏，僅保留識別碼
  * @return 依據 [isVisible] 決定手牌可見性的玩家快照
  */
-fun MahjongPlayer.toSnapshot(isVisible: Boolean): MahjongPlayerSnapshot {
-    return MahjongPlayerSnapshot(
-        id = this.id,
-        initialSeat = this.initialSeat,
-        hand = this.hand.toSnapshot(isVisible),
-        discardPile = this.discardPile,
-        playerRuleState = this.playerRuleState,
-        score = this.score
-    )
-}
+fun MahjongPlayer.toSnapshot(isVisible: Boolean): MahjongPlayerSnapshot = MahjongPlayerSnapshot(
+    id = this.id,
+    initialSeat = this.initialSeat,
+    hand = this.hand.toSnapshot(isVisible),
+    discardPile = this.discardPile,
+    playerRuleState = this.playerRuleState,
+    score = this.score,
+)

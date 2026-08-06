@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-
 /**
  * 針對 [RiichiTileOrder] 進行單元測試。
  */
@@ -14,7 +13,7 @@ class RiichiTileOrderTest {
      */
     @Test
     fun `test Riichi style sorting`() {
-        val red = Tile.Honor.Red     // 中
+        val red = Tile.Honor.Red // 中
         val white = Tile.Honor.White // 白
 
         val list = listOf(red, white)

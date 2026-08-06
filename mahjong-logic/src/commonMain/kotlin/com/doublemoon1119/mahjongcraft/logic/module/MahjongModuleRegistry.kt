@@ -18,7 +18,7 @@ interface MahjongModuleRegistry {
     fun <T : MahjongRuleConfig> register(
         configClass: KClass<T>,
         id: String,
-        factory: (T, id: String) -> MahjongRuleModule<T>
+        factory: (T, id: String) -> MahjongRuleModule<T>,
     )
 
     /**

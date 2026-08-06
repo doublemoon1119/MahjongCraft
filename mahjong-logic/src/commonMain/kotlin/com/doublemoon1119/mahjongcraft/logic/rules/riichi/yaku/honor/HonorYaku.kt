@@ -24,7 +24,7 @@ fun calculateHonorYaku(
     handTiles: List<Tile>,
     fuuro: List<Fuuro>,
     roundWind: Wind,
-    seatWind: Wind
+    seatWind: Wind,
 ): List<YakuResult> {
     val results = mutableListOf<YakuResult>()
 

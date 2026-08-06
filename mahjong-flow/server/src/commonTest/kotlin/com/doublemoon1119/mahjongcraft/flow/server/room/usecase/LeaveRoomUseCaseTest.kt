@@ -11,7 +11,12 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeR
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /**
@@ -49,7 +54,7 @@ class LeaveRoomUseCaseTest {
         assertEquals(
             expected = LeaveReason.Voluntary,
             actual = service.getLeaveReason(roomId, guestId, guestId),
-            message = "The leaving guest should receive Voluntary reason."
+            message = "The leaving guest should receive Voluntary reason.",
         )
 
         // Assert: 檢查快照更新（房主應看到玩家已離開）
@@ -84,12 +89,12 @@ class LeaveRoomUseCaseTest {
         assertEquals(
             expected = LeaveReason.Dissolved,
             actual = service.getLeaveReason(roomId, hostId, hostId),
-            message = "Host should be notified of dissolution."
+            message = "Host should be notified of dissolution.",
         )
         assertEquals(
             expected = LeaveReason.Dissolved,
             actual = service.getLeaveReason(roomId, guestId, guestId),
-            message = "Guest should be notified of dissolution."
+            message = "Guest should be notified of dissolution.",
         )
 
         // Assert: 檢查快照是否已移除

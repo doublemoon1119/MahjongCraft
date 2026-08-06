@@ -24,7 +24,7 @@ import kotlin.uuid.Uuid
 class LeaveRoomUseCase(
     private val roomRepository: RoomRepository,
     private val snapshotRepository: RoomSnapshotRepository,
-    @Provided private val eventPublisher: RoomEventPublisher
+    @Provided private val eventPublisher: RoomEventPublisher,
 ) {
     /**
      * 執行離開房間邏輯。
@@ -35,7 +35,7 @@ class LeaveRoomUseCase(
      */
     suspend operator fun invoke(
         roomId: Uuid,
-        playerId: Uuid
+        playerId: Uuid,
     ): Outcome<Unit, RoomError> {
         // 1. 以原子方式讀取房間並決定「解散」或「移除單一玩家」，避免與其他房間操作產生競態。
         //    解散情境下持久層寫回 null（移除房間），並將解散前的房間狀態帶出供後續通知使用。
@@ -46,7 +46,7 @@ class LeaveRoomUseCase(
                 else -> {
                     val updatedRoom = room.copy(
                         playerIds = room.playerIds - playerId,
-                        readyPlayerIds = room.readyPlayerIds - playerId
+                        readyPlayerIds = room.readyPlayerIds - playerId,
                     )
                     updatedRoom to Outcome.Success(updatedRoom)
                 }
@@ -65,7 +65,7 @@ class LeaveRoomUseCase(
                             roomId = roomId,
                             targetPlayerId = memberId,
                             leftPlayerId = memberId,
-                            reason = LeaveReason.Dissolved
+                            reason = LeaveReason.Dissolved,
                         )
                         snapshotRepository.removeSnapshot(roomId, memberId)
                     }
@@ -82,7 +82,7 @@ class LeaveRoomUseCase(
                             roomId = roomId,
                             targetPlayerId = memberId,
                             leftPlayerId = playerId,
-                            reason = LeaveReason.Voluntary
+                            reason = LeaveReason.Voluntary,
                         )
                     }
                 }

@@ -29,14 +29,12 @@ object FakeMahjongPlayerFactory {
         id: Uuid = Uuid.random(),
         hand: Hand = Hand(),
         discardPile: DiscardPile<*> = FakeDiscardPile(),
-        playerRuleState: PlayerRuleState? = null
-    ): MahjongPlayer {
-        return MahjongPlayer(
-            id = id,
-            initialSeat = initialSeat,
-            hand = hand,
-            discardPile = discardPile,
-            playerRuleState = playerRuleState
-        )
-    }
+        playerRuleState: PlayerRuleState? = null,
+    ): MahjongPlayer = MahjongPlayer(
+        id = id,
+        initialSeat = initialSeat,
+        hand = hand,
+        discardPile = discardPile,
+        playerRuleState = playerRuleState,
+    )
 }

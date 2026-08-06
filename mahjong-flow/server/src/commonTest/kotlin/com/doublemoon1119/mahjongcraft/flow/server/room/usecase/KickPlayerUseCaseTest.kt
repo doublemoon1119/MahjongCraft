@@ -9,7 +9,11 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeR
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /**
@@ -37,7 +41,7 @@ class KickPlayerUseCaseTest {
             hostId = hostId,
             config = config,
             playerIds = setOf(hostId, targetId),
-            readyPlayerIds = setOf(targetId)
+            readyPlayerIds = setOf(targetId),
         )
         roomRepo.setRoom(room)
 
@@ -55,7 +59,7 @@ class KickPlayerUseCaseTest {
         assertEquals(
             expected = LeaveReason.Kicked,
             actual = service.getLeaveReason(roomId, targetId, targetId),
-            message = "The kicked player should receive Kicked reason via notification service."
+            message = "The kicked player should receive Kicked reason via notification service.",
         )
     }
 

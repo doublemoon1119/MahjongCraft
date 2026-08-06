@@ -39,7 +39,7 @@ object GameInitializer {
                 initialSeat = seats[index],
                 hand = Hand(tiles = tiles),
                 discardPile = module.createDiscardPile(),
-                playerRuleState = module.createInitialPlayerRuleState()
+                playerRuleState = module.createInitialPlayerRuleState(),
             )
         }
 
@@ -48,7 +48,7 @@ object GameInitializer {
             players = players,
             config = module.config,
             tileWall = wall,
-            dynamicRuleState = module.createInitialDynamicState()
+            dynamicRuleState = module.createInitialDynamicState(),
         ).init()
     }
 

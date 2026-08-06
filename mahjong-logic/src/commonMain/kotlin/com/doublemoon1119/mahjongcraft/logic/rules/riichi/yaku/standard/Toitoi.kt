@@ -19,7 +19,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  * @return 對對胡役種結果，若不符合則返回 null。
  */
 fun calculateToitoi(
-    handStructure: HandStructure
+    handStructure: HandStructure,
 ): YakuResult? {
     val standard = handStructure as? HandStructure.Standard ?: return null
 
@@ -29,9 +29,9 @@ fun calculateToitoi(
     // 計算刻子與槓的數量，需剛好 4 組
     val ponCount = allMentsus.count { mentsu ->
         mentsu is Mentsu.Kotsu ||
-                mentsu is Mentsu.Ankan ||
-                mentsu is Mentsu.Minkan ||
-                mentsu is Mentsu.Kakan
+            mentsu is Mentsu.Ankan ||
+            mentsu is Mentsu.Minkan ||
+            mentsu is Mentsu.Kakan
     }
 
     if (ponCount != 4) {

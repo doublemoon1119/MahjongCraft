@@ -45,8 +45,8 @@ class SanshokuDokokuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.Red,
                 Tile.Honor.Red,
                 Tile.Numeric(Tile.Suit.Character, 5),
-                Tile.Numeric(Tile.Suit.Character, 6)
-            )
+                Tile.Numeric(Tile.Suit.Character, 6),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
 
@@ -78,7 +78,7 @@ class SanshokuDokokuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.Red,
                 Tile.Honor.Red,
                 Tile.Honor.Green,
-                Tile.Honor.Green
+                Tile.Honor.Green,
             ),
             melds = listOf(
                 Meld(
@@ -86,11 +86,11 @@ class SanshokuDokokuTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Left
-                )
-            )
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.Green
 
@@ -124,8 +124,8 @@ class SanshokuDokokuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.Red,
                 Tile.Honor.Red,
                 Tile.Numeric(Tile.Suit.Bamboo, 6),
-                Tile.Numeric(Tile.Suit.Bamboo, 6)
-            )
+                Tile.Numeric(Tile.Suit.Bamboo, 6),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 6)
 

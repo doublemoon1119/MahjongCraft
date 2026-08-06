@@ -40,7 +40,7 @@ fun calculateChurenPoto(
     hand: Hand,
     winningTile: Tile,
     handStructure: HandStructure,
-    isMenzen: Boolean
+    isMenzen: Boolean,
 ): YakuResult? {
     // 必須為門前清
     if (!isMenzen) {
@@ -90,8 +90,9 @@ fun calculateChurenPoto(
     val oneCount13 = tileCounts13[Tile.Numeric(suit, 1)] ?: 0
     val nineCount13 = tileCounts13[Tile.Numeric(suit, 9)] ?: 0
 
-    val isChurenPoto9 = (oneCount13 == 3) && (nineCount13 == 3) &&
-            (2..8).all { tileCounts13[Tile.Numeric(suit, it)] == 1 }
+    val isChurenPoto9 = (oneCount13 == 3) &&
+        (nineCount13 == 3) &&
+        (2..8).all { tileCounts13[Tile.Numeric(suit, it)] == 1 }
 
     return if (isChurenPoto9) {
         // 九蓮寶燈九面 - 雙倍役滿

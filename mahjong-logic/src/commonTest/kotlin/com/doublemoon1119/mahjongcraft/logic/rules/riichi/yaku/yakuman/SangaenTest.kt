@@ -52,8 +52,8 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                 // 順子
                 Tile.Numeric(Tile.Suit.Dot, 4),
                 Tile.Numeric(Tile.Suit.Dot, 5),
-                Tile.Numeric(Tile.Suit.Dot, 6)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 6),
+            ),
         )
         val winningTile = Tile.Honor.Red
 
@@ -63,7 +63,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         assertFalse(result.isYakuman, "Should not be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Shousangen },
-            "Should contain Shousangen"
+            "Should contain Shousangen",
         )
     }
 
@@ -90,7 +90,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                 // 順子
                 Tile.Numeric(Tile.Suit.Dot, 4),
                 Tile.Numeric(Tile.Suit.Dot, 5),
-                Tile.Numeric(Tile.Suit.Dot, 6)
+                Tile.Numeric(Tile.Suit.Dot, 6),
             ),
             melds = listOf(
                 // 副露：白刻子
@@ -99,11 +99,11 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.White)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.Green
 
@@ -113,7 +113,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         assertFalse(result.isYakuman, "Should not be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Shousangen },
-            "Should contain Shousangen"
+            "Should contain Shousangen",
         )
     }
 
@@ -140,7 +140,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                 // 順子
                 Tile.Numeric(Tile.Suit.Dot, 4),
                 Tile.Numeric(Tile.Suit.Dot, 5),
-                Tile.Numeric(Tile.Suit.Dot, 6)
+                Tile.Numeric(Tile.Suit.Dot, 6),
             ),
             melds = listOf(
                 // 暗槓：白
@@ -150,11 +150,11 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.White)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
                     ),
-                    sourceDirection = RelativeDirection.Self
-                )
-            )
+                    sourceDirection = RelativeDirection.Self,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.Green
 
@@ -164,7 +164,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         assertFalse(result.isYakuman, "Should not be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Shousangen },
-            "Should contain Shousangen"
+            "Should contain Shousangen",
         )
     }
 
@@ -197,8 +197,8 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 3),
                 // 雀頭（數牌）
                 Tile.Numeric(Tile.Suit.Character, 1),
-                Tile.Numeric(Tile.Suit.Character, 1)
-            )
+                Tile.Numeric(Tile.Suit.Character, 1),
+            ),
         )
         val winningTile = Tile.Honor.Green
 
@@ -209,11 +209,11 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Daisangen },
-            "Should contain Daisangen, got: ${result.yakuResults.map { it.yaku }}"
+            "Should contain Daisangen, got: ${result.yakuResults.map { it.yaku }}",
         )
         assertFalse(
             result.yakuResults.any { it.yaku == YakuType.Shousangen },
-            "Should not contain Shousangen"
+            "Should not contain Shousangen",
         )
     }
 
@@ -244,8 +244,8 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 3),
                 // 雀頭
                 Tile.Numeric(Tile.Suit.Dot, 5),
-                Tile.Numeric(Tile.Suit.Dot, 5)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 5),
+            ),
         )
         val winningTile = Tile.Honor.Red
 
@@ -255,7 +255,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Daisangen },
-            "Should contain Daisangen, got: ${result.yakuResults.map { it.yaku }}"
+            "Should contain Daisangen, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -282,7 +282,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 3),
                 // 雀頭
                 Tile.Numeric(Tile.Suit.Dot, 5),
-                Tile.Numeric(Tile.Suit.Dot, 5)
+                Tile.Numeric(Tile.Suit.Dot, 5),
             ),
             melds = listOf(
                 // 副露：白刻子
@@ -291,11 +291,11 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.White)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.Green
 
@@ -305,7 +305,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Daisangen },
-            "Should contain Daisangen, got: ${result.yakuResults.map { it.yaku }}"
+            "Should contain Daisangen, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -332,7 +332,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 3),
                 // 雀頭
                 Tile.Numeric(Tile.Suit.Dot, 5),
-                Tile.Numeric(Tile.Suit.Dot, 5)
+                Tile.Numeric(Tile.Suit.Dot, 5),
             ),
             melds = listOf(
                 // 大明槓：白
@@ -342,11 +342,11 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.White)
+                        FakeIdentifiedTileFactory.create(Tile.Honor.White),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         val winningTile = Tile.Honor.Green
 
@@ -356,7 +356,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Daisangen },
-            "Should contain Daisangen, got: ${result.yakuResults.map { it.yaku }}"
+            "Should contain Daisangen, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -379,7 +379,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
             Tile.Numeric(Tile.Suit.Dot, 1),
             // 剩下的對子（雙碰聽牌對象）
             Tile.Honor.White, Tile.Honor.White,
-            Tile.Numeric(Tile.Suit.Character, 1), Tile.Numeric(Tile.Suit.Character, 1)
+            Tile.Numeric(Tile.Suit.Character, 1), Tile.Numeric(Tile.Suit.Character, 1),
         )
 
         // 情境 1：胡「白」 -> 變成 白刻子 + 1m雀頭 => 大三元
@@ -390,7 +390,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(
             resultWhite.yakuResults.any { it.yaku == YakuType.Daisangen },
-            "Winning White should be Daisangen, but got: ${resultWhite.yakuResults.map { it.yaku }}"
+            "Winning White should be Daisangen, but got: ${resultWhite.yakuResults.map { it.yaku }}",
         )
 
         // 情境 2：胡「1m」 -> 變成 1m刻子 + 白雀頭 => 小三元
@@ -401,7 +401,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(
             result1m.yakuResults.any { it.yaku == YakuType.Shousangen },
-            "Winning 1m should be Shousangen, but got: ${result1m.yakuResults.map { it.yaku }}"
+            "Winning 1m should be Shousangen, but got: ${result1m.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -434,8 +434,8 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 7),
                 // 雀頭
                 Tile.Numeric(Tile.Suit.Dot, 5),
-                Tile.Numeric(Tile.Suit.Dot, 5)
-            )
+                Tile.Numeric(Tile.Suit.Dot, 5),
+            ),
         )
         val winningTile = Tile.Honor.Red
 
@@ -444,11 +444,11 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
 
         assertFalse(
             result.yakuResults.any { it.yaku == YakuType.Daisangen },
-            "Should not contain Daisangen"
+            "Should not contain Daisangen",
         )
         assertFalse(
             result.yakuResults.any { it.yaku == YakuType.Shousangen },
-            "Should not contain Shousangen"
+            "Should not contain Shousangen",
         )
     }
 }

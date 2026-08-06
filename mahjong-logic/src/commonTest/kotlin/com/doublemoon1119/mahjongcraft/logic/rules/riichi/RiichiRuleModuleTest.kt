@@ -25,7 +25,7 @@ class RiichiRuleModuleTest {
 
     private val module: MahjongRuleModule<RiichiRuleConfig> = RiichiRuleModule(
         id = "mahjongcraft:riichi",
-        config = RiichiRuleConfig()
+        config = RiichiRuleConfig(),
     )
 
     /**
@@ -115,12 +115,12 @@ class RiichiRuleModuleTest {
         val player = FakeMahjongPlayerFactory.create(
             hand = hand,
             discardPile = priorDiscardPile,
-            playerRuleState = RiichiPlayerState()
+            playerRuleState = RiichiPlayerState(),
         ).copy(score = 25000)
         val table = FakeTableStateFactory.create(
             players = listOf(player),
             config = module.config,
-            dynamicRuleState = RiichiDynamicState()
+            dynamicRuleState = RiichiDynamicState(),
         )
 
         val result = module.declareRiichi(table, player, discardResult)
@@ -163,7 +163,7 @@ class RiichiRuleModuleTest {
         val player = FakeMahjongPlayerFactory.create(
             hand = hand,
             discardPile = FakeDiscardPile(),
-            playerRuleState = RiichiPlayerState()
+            playerRuleState = RiichiPlayerState(),
         )
         val table = FakeTableStateFactory.create(players = listOf(player), dynamicRuleState = RiichiDynamicState())
 
@@ -182,7 +182,7 @@ class RiichiRuleModuleTest {
         val player = FakeMahjongPlayerFactory.create(
             hand = hand,
             discardPile = RiichiDiscardPile(),
-            playerRuleState = RiichiPlayerState()
+            playerRuleState = RiichiPlayerState(),
         )
         val table = FakeTableStateFactory.create(players = listOf(player), dynamicRuleState = null)
 
@@ -195,7 +195,7 @@ class RiichiRuleModuleTest {
     @Test
     fun `test onPlayerDrew clears ippatsu when in ippatsu window`() {
         val player = FakeMahjongPlayerFactory.create(
-            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true)
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true),
         )
 
         val result = module.onPlayerDrew(player)
@@ -223,7 +223,7 @@ class RiichiRuleModuleTest {
     @Test
     fun `test onMeldClaimed clears ippatsu for all affected players`() {
         val ippatsuPlayer = FakeMahjongPlayerFactory.create(
-            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true)
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true),
         )
         val nonRiichiPlayer = FakeMahjongPlayerFactory.create(playerRuleState = null)
 
@@ -240,9 +240,13 @@ class RiichiRuleModuleTest {
     fun `test applyPaoLiabilityIfTriggered writes liability when triggered`() {
         val hand = FakeHandFactory.create(
             listOf(
-                Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red,
-                Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green
-            )
+                Tile.Honor.Red,
+                Tile.Honor.Red,
+                Tile.Honor.Red,
+                Tile.Honor.Green,
+                Tile.Honor.Green,
+                Tile.Honor.Green,
+            ),
         )
         val player = FakeMahjongPlayerFactory.create(hand = hand, playerRuleState = RiichiPlayerState())
         val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)

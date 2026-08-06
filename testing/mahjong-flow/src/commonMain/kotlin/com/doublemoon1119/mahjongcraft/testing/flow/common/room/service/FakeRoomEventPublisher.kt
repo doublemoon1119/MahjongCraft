@@ -44,7 +44,7 @@ class FakeRoomEventPublisher : RoomEventPublisher {
         roomId: Uuid,
         targetPlayerId: Uuid,
         joinedPlayerId: Uuid,
-        reason: JoinReason
+        reason: JoinReason,
     ) {
         joinNotifications[Triple(roomId, targetPlayerId, joinedPlayerId)] = reason
     }
@@ -53,7 +53,7 @@ class FakeRoomEventPublisher : RoomEventPublisher {
         roomId: Uuid,
         targetPlayerId: Uuid,
         leftPlayerId: Uuid,
-        reason: LeaveReason
+        reason: LeaveReason,
     ) {
         leaveNotifications[Triple(roomId, targetPlayerId, leftPlayerId)] = reason
     }
@@ -62,7 +62,7 @@ class FakeRoomEventPublisher : RoomEventPublisher {
         roomId: Uuid,
         targetPlayerId: Uuid,
         readyPlayerId: Uuid,
-        isReady: Boolean
+        isReady: Boolean,
     ) {
         readyNotifications[Triple(roomId, targetPlayerId, readyPlayerId)] = isReady
     }
@@ -70,7 +70,7 @@ class FakeRoomEventPublisher : RoomEventPublisher {
     override suspend fun publishConfigChanged(
         roomId: Uuid,
         targetPlayerId: Uuid,
-        newConfig: MahjongRuleConfig
+        newConfig: MahjongRuleConfig,
     ) {
         configChangeNotifications[roomId to targetPlayerId] = newConfig
     }
@@ -86,7 +86,7 @@ class FakeRoomEventPublisher : RoomEventPublisher {
     fun getJoinReason(
         roomId: Uuid,
         targetPlayerId: Uuid,
-        joinedPlayerId: Uuid
+        joinedPlayerId: Uuid,
     ): JoinReason? = joinNotifications[Triple(roomId, targetPlayerId, joinedPlayerId)]
 
     /**
@@ -100,7 +100,7 @@ class FakeRoomEventPublisher : RoomEventPublisher {
     fun getLeaveReason(
         roomId: Uuid,
         targetPlayerId: Uuid,
-        leftPlayerId: Uuid
+        leftPlayerId: Uuid,
     ): LeaveReason? = leaveNotifications[Triple(roomId, targetPlayerId, leftPlayerId)]
 
     /**
@@ -114,7 +114,7 @@ class FakeRoomEventPublisher : RoomEventPublisher {
     fun getReadyStatus(
         roomId: Uuid,
         targetPlayerId: Uuid,
-        readyPlayerId: Uuid
+        readyPlayerId: Uuid,
     ): Boolean? = readyNotifications[Triple(roomId, targetPlayerId, readyPlayerId)]
 
     /**
@@ -126,6 +126,6 @@ class FakeRoomEventPublisher : RoomEventPublisher {
      */
     fun getConfigChangedNotification(
         roomId: Uuid,
-        targetPlayerId: Uuid
+        targetPlayerId: Uuid,
     ): MahjongRuleConfig? = configChangeNotifications[roomId to targetPlayerId]
 }

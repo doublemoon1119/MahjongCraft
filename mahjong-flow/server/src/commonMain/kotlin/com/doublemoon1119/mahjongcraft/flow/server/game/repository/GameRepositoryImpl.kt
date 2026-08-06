@@ -15,7 +15,10 @@ class GameRepositoryImpl : GameRepository {
 
     override suspend fun setTableState(state: TableState) = mutex.withLock { tableStates[state.id] = state }
 
-    override suspend fun removeTableState(gameId: Uuid) = mutex.withLock { tableStates.remove(gameId); Unit }
+    override suspend fun removeTableState(gameId: Uuid) = mutex.withLock {
+        tableStates.remove(gameId)
+        Unit
+    }
 
     override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T = mutex.withLock {
         val (next, result) = block(tableStates[gameId])

@@ -19,7 +19,7 @@ data class PendingReaction(
     val discarderId: Uuid,
     val tileId: Uuid,
     val eligiblePlayerIds: Set<Uuid>,
-    val responses: Map<Uuid, GameAction> = emptyMap()
+    val responses: Map<Uuid, GameAction> = emptyMap(),
 ) {
     /** 是否所有有資格的玩家都已經回應。 */
     val isComplete: Boolean get() = responses.keys.containsAll(eligiblePlayerIds)

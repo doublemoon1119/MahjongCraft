@@ -22,7 +22,7 @@ sealed class HandStructure {
         val mentsus: List<Mentsu>,
         val pair: Janto,
         val fuuro: List<Fuuro> = emptyList(),
-        val completionType: CompletionType = CompletionType.Ryanmen
+        val completionType: CompletionType = CompletionType.Ryanmen,
     ) : HandStructure()
 
     /**
@@ -33,7 +33,7 @@ sealed class HandStructure {
      * @property pairs 七個對子。
      */
     data class Chiitoitsu(
-        val pairs: List<Janto>
+        val pairs: List<Janto>,
     ) : HandStructure()
 
     /**
@@ -44,6 +44,6 @@ sealed class HandStructure {
      */
     data class KokushiMusou(
         val orphans: List<Tile>,
-        val headTile: Tile
+        val headTile: Tile,
     ) : HandStructure()
 }

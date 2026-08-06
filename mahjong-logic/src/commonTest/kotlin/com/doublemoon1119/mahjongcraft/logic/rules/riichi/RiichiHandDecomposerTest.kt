@@ -27,7 +27,7 @@ class RiichiHandDecomposerTest {
         val handTiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 2),
-            Tile.Numeric(Tile.Suit.Character, 3)
+            Tile.Numeric(Tile.Suit.Character, 3),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
         val result = RiichiHandDecomposer.decompose(handTiles, winningTile)
@@ -42,7 +42,7 @@ class RiichiHandDecomposerTest {
     fun `test not 14 tiles returns empty hand structure`() {
         val handTiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
-            Tile.Numeric(Tile.Suit.Character, 1)
+            Tile.Numeric(Tile.Suit.Character, 1),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
         val result = RiichiHandDecomposer.decompose(handTiles, winningTile)
@@ -70,7 +70,7 @@ class RiichiHandDecomposerTest {
             Tile.Honor.North,
             Tile.Honor.Red,
             Tile.Honor.Green,
-            Tile.Honor.White
+            Tile.Honor.White,
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 2)
         val result = RiichiHandDecomposer.decompose(handTiles, winningTile)
@@ -98,14 +98,14 @@ class RiichiHandDecomposerTest {
             Tile.Numeric(Tile.Suit.Character, 5),
             Tile.Numeric(Tile.Suit.Character, 6),
             Tile.Numeric(Tile.Suit.Character, 6),
-            Tile.Numeric(Tile.Suit.Character, 7)
+            Tile.Numeric(Tile.Suit.Character, 7),
         )
 
         val fuuro = listOf(
             Fuuro(
                 mentsu = Mentsu.Kotsu(Tile.Numeric(Tile.Suit.Dot, 1)),
-                from = RelativeDirection.Left
-            )
+                from = RelativeDirection.Left,
+            ),
         )
 
         val winningTile = Tile.Numeric(Tile.Suit.Character, 7)
@@ -134,7 +134,7 @@ class RiichiHandDecomposerTest {
             Tile.Numeric(Tile.Suit.Dot, 6),
             Tile.Numeric(Tile.Suit.Bamboo, 7),
             Tile.Numeric(Tile.Suit.Bamboo, 7),
-            Tile.Numeric(Tile.Suit.Character, 9)
+            Tile.Numeric(Tile.Suit.Character, 9),
         )
 
         val winningTile = Tile.Numeric(Tile.Suit.Character, 9)
@@ -165,7 +165,7 @@ class RiichiHandDecomposerTest {
             Tile.Honor.Red,
             Tile.Honor.Red,
             Tile.Honor.Red,
-            Tile.Numeric(Tile.Suit.Character, 1)
+            Tile.Numeric(Tile.Suit.Character, 1),
         )
 
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
@@ -200,7 +200,7 @@ class RiichiHandDecomposerTest {
             Tile.Numeric(Tile.Suit.Character, 9),
             Tile.Honor.Red,
             Tile.Honor.Red,
-            Tile.Honor.Red
+            Tile.Honor.Red,
         )
 
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)

@@ -429,7 +429,7 @@ class PointCalculatorTest {
             yakumanMultiplier = 1,
             isDealer = false,
             isTsumo = true,
-            isPao = true
+            isPao = true,
         )
         assertEquals(RiichiPointResult.PaoTsumo(32000), result)
         assertEquals(32000, result.total)
@@ -445,7 +445,7 @@ class PointCalculatorTest {
             yakumanMultiplier = 1,
             isDealer = true,
             isTsumo = true,
-            isPao = true
+            isPao = true,
         )
         assertEquals(RiichiPointResult.PaoTsumo(48000), result)
         assertEquals(48000, result.total)
@@ -460,7 +460,7 @@ class PointCalculatorTest {
             yakumanMultiplier = 1,
             isDealer = false,
             isTsumo = false,
-            isPao = true
+            isPao = true,
         )
         assertEquals(RiichiPointResult.PaoRon(16000), result)
         assertEquals(32000, result.total)
@@ -475,7 +475,7 @@ class PointCalculatorTest {
             yakumanMultiplier = 1,
             isDealer = true,
             isTsumo = false,
-            isPao = true
+            isPao = true,
         )
         assertEquals(RiichiPointResult.PaoRon(24000), result)
         assertEquals(48000, result.total)
@@ -490,7 +490,7 @@ class PointCalculatorTest {
             yakumanMultiplier = 2,
             isDealer = false,
             isTsumo = false,
-            isPao = true
+            isPao = true,
         )
         assertEquals(RiichiPointResult.PaoRon(32000), result)
         assertEquals(64000, result.total)

@@ -7,5 +7,5 @@ import com.doublemoon1119.mahjongcraft.logic.config.GameLength
  */
 class FakeGameLength(
     override val totalRounds: Int = 4,
-    override val roundsOffset: Int = 0
+    override val roundsOffset: Int = 0,
 ) : GameLength

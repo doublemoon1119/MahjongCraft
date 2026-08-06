@@ -16,7 +16,7 @@ import kotlin.coroutines.EmptyCoroutineContext
  */
 class AppCoroutineScopeImpl(
     private val dispatchers: CoroutineDispatchers,
-    private val exceptionHandler: CoroutineExceptionHandler? = null
+    private val exceptionHandler: CoroutineExceptionHandler? = null,
 ) : AppCoroutineScope {
 
     /**

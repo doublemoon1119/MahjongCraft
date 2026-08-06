@@ -11,8 +11,31 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.calculateAka
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.calculateDora
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.calculateUraDora
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.honor.calculateHonorYaku
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.*
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.*
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateChiitoitsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateChinitsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateHonchan
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateHonitsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateHonroutou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateIipeikou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateIttuitsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateJunchan
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculatePinfu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateRyanpeikou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateSanankou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateSankantsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateSanshokuDokoku
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateSanshokuDoujun
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateTanyao
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateToitoi
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateChinroutou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateChurenPoto
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateKokushiMusou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateRyuuuiisou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateSangaen
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateSukantsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateSuuankou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateSuushii
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateTsuuiisou
 import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 import kotlin.math.abs
 
@@ -24,7 +47,7 @@ import kotlin.math.abs
  * @property useLocalYaku 是否啟用古役（Local Yaku）。TODO: 回頭實作古役邏輯。
  */
 class RiichiHandValueCalculator(
-    private val useLocalYaku: Boolean = false
+    private val useLocalYaku: Boolean = false,
 ) : HandValueCalculator<RiichiHandValueContext, RiichiHandValueResult> {
 
     override fun calculate(context: RiichiHandValueContext): RiichiHandValueResult {
@@ -43,7 +66,7 @@ class RiichiHandValueCalculator(
             }
             Fuuro(
                 mentsu = mentsu,
-                from = meld.sourceDirection
+                from = meld.sourceDirection,
             )
         }
 
@@ -57,7 +80,7 @@ class RiichiHandValueCalculator(
                         yakuResults = emptyList(),
                         totalHan = 0,
                         totalFu = 0,
-                        pointResult = RiichiPointResult.Ron(0)
+                        pointResult = RiichiPointResult.Ron(0),
                     )
                 }
 
@@ -81,10 +104,10 @@ class RiichiHandValueCalculator(
                 }
 
                 val pointResult = PointCalculator.calculateYakumanPoint(
-                    yakumanMultiplier = abs(totalHan),  // 役滿總翻數為負數，這裡帶入絕對值
+                    yakumanMultiplier = abs(totalHan), // 役滿總翻數為負數，這裡帶入絕對值
                     isDealer = context.roundWind == context.seatWind,
                     isTsumo = context.isTsumo,
-                    isPao = pao != null
+                    isPao = pao != null,
                 )
 
                 return@map RiichiHandValueResult(
@@ -92,7 +115,7 @@ class RiichiHandValueCalculator(
                     totalHan = totalHan,
                     totalFu = 0,
                     pointResult = pointResult,
-                    paoLiability = pao
+                    paoLiability = pao,
                 )
             }
 
@@ -101,7 +124,7 @@ class RiichiHandValueCalculator(
             val doraResult = calculateDora(
                 hand = context.hand,
                 winningTile = context.winningTile,
-                doraIndicators = context.doraIndicators
+                doraIndicators = context.doraIndicators,
             )
             if (doraResult.han > 0) {
                 yakuResults.add(doraResult)
@@ -112,7 +135,7 @@ class RiichiHandValueCalculator(
                 val uraDoraResult = calculateUraDora(
                     hand = context.hand,
                     winningTile = context.winningTile,
-                    uraDoraIndicators = context.uraDoraIndicators
+                    uraDoraIndicators = context.uraDoraIndicators,
                 )
                 if (uraDoraResult.han > 0) {
                     yakuResults.add(uraDoraResult)
@@ -122,7 +145,7 @@ class RiichiHandValueCalculator(
             // 計算赤寶牌
             val akaDoraResult = calculateAkaDora(
                 hand = context.hand,
-                winningTile = context.winningTile
+                winningTile = context.winningTile,
             )
             if (akaDoraResult.han > 0) {
                 yakuResults.add(akaDoraResult)
@@ -152,14 +175,14 @@ class RiichiHandValueCalculator(
                 han = totalHan,
                 fu = totalFu,
                 isDealer = context.roundWind == context.seatWind,
-                isTsumo = context.isTsumo
+                isTsumo = context.isTsumo,
             )
 
             return@map RiichiHandValueResult(
                 yakuResults = yakuResults,
                 totalHan = totalHan,
                 totalFu = totalFu,
-                pointResult = pointResult
+                pointResult = pointResult,
             )
         }
 
@@ -167,13 +190,13 @@ class RiichiHandValueCalculator(
         return handValueResults.maxWithOrNull(
             compareBy<RiichiHandValueResult> { it.totalPoint } // 1. 點數最高優先
                 .thenBy { it.isYakuman } // 2. 點數相同時，役滿役優先於數役滿 (避免`累計役滿`覆蓋掉`役滿`)
-                .thenBy { if (it.isYakuman) abs(it.totalHan) else it.totalHan }  // 3. 翻數次之 (如果是役滿，其翻數以負數表示，這裡取其絕對值)
-                .thenBy { it.totalFu } // 4. 最後才是符數
+                .thenBy { if (it.isYakuman) abs(it.totalHan) else it.totalHan } // 3. 翻數次之 (如果是役滿，其翻數以負數表示，這裡取其絕對值)
+                .thenBy { it.totalFu }, // 4. 最後才是符數
         ) ?: RiichiHandValueResult(
             yakuResults = emptyList(),
             totalHan = 0,
             totalFu = 0,
-            pointResult = RiichiPointResult.Ron(0)
+            pointResult = RiichiPointResult.Ron(0),
         )
     }
 
@@ -188,7 +211,7 @@ class RiichiHandValueCalculator(
     private fun calculateStandardYaku(
         context: RiichiHandValueContext,
         handStructure: HandStructure,
-        results: MutableList<YakuResult>
+        results: MutableList<YakuResult>,
     ) {
         val standardResults = mutableListOf<YakuResult>()
 
@@ -197,26 +220,26 @@ class RiichiHandValueCalculator(
             hand = context.hand,
             winningTile = context.winningTile,
             isMenzen = context.isMenzen,
-            allowOpenTanyao = context.allowOpenTanyao
+            allowOpenTanyao = context.allowOpenTanyao,
         )?.let { standardResults.add(it) }
 
         // 一氣通貫
         calculateIttuitsu(
             hand = context.hand,
             winningTile = context.winningTile,
-            isMenzen = context.isMenzen
+            isMenzen = context.isMenzen,
         )?.let { standardResults.add(it) }
 
         // 混一色與清一色
         val honitsu = calculateHonitsu(
             hand = context.hand,
             winningTile = context.winningTile,
-            isMenzen = context.isMenzen
+            isMenzen = context.isMenzen,
         )
         val chinitsu = calculateChinitsu(
             hand = context.hand,
             winningTile = context.winningTile,
-            isMenzen = context.isMenzen
+            isMenzen = context.isMenzen,
         )
         // 清一色優先於混一色
         if (chinitsu != null) {
@@ -228,15 +251,15 @@ class RiichiHandValueCalculator(
         // 計算一杯口、兩杯口、七對子
         val iipeikou = calculateIipeikou(
             handStructure = handStructure,
-            isMenzen = context.isMenzen
+            isMenzen = context.isMenzen,
         )
         val ryanpeikou = calculateRyanpeikou(
             handStructure = handStructure,
-            isMenzen = context.isMenzen
+            isMenzen = context.isMenzen,
         )
         val chiitoitsu = calculateChiitoitsu(
             handStructure = handStructure,
-            isMenzen = context.isMenzen
+            isMenzen = context.isMenzen,
         )
 
         // 處理七對子與一杯口、兩杯口的衝突
@@ -252,51 +275,51 @@ class RiichiHandValueCalculator(
             handStructure = handStructure,
             isMenzen = context.isMenzen,
             roundWind = context.roundWind,
-            seatWind = context.seatWind
+            seatWind = context.seatWind,
         )?.let { standardResults.add(it) }
 
         // 計算對對胡
         calculateToitoi(
-            handStructure = handStructure
+            handStructure = handStructure,
         )?.let { standardResults.add(it) }
 
         // 計算三暗刻
         calculateSanankou(
-            handStructure = handStructure
+            handStructure = handStructure,
         )?.let { standardResults.add(it) }
 
         // 計算三杠子
         calculateSankantsu(
-            handStructure = handStructure
+            handStructure = handStructure,
         )?.let { standardResults.add(it) }
 
         // 計算三色同刻
         calculateSanshokuDokoku(
-            handStructure = handStructure
+            handStructure = handStructure,
         )?.let { standardResults.add(it) }
 
         // 計算三色同順
         calculateSanshokuDoujun(
             handStructure = handStructure,
-            isMenzen = context.isMenzen
+            isMenzen = context.isMenzen,
         )?.let { standardResults.add(it) }
 
         // 計算混老頭
         calculateHonroutou(
             hand = context.hand,
-            winningTile = context.winningTile
+            winningTile = context.winningTile,
         )?.let { standardResults.add(it) }
 
         // 計算混全帶么九
         calculateHonchan(
             handStructure = handStructure,
-            isMenzen = context.isMenzen
+            isMenzen = context.isMenzen,
         )?.let { standardResults.add(it) }
 
         // 計算純全帶么九
         calculateJunchan(
             handStructure = handStructure,
-            isMenzen = context.isMenzen
+            isMenzen = context.isMenzen,
         )?.let { standardResults.add(it) }
 
         results.addAll(standardResults)
@@ -308,7 +331,7 @@ class RiichiHandValueCalculator(
     private fun calculateHonorYaku(
         context: RiichiHandValueContext,
         fuuro: List<Fuuro>,
-        results: MutableList<YakuResult>
+        results: MutableList<YakuResult>,
     ) {
         // 取得所有牌（去除赤寶牌標記）
         val handTiles = context.hand.standingTiles.map { it.tile.withoutRed }
@@ -318,7 +341,7 @@ class RiichiHandValueCalculator(
             handTiles = handTiles,
             fuuro = fuuro,
             roundWind = context.roundWind,
-            seatWind = context.seatWind
+            seatWind = context.seatWind,
         )
 
         results.addAll(honorResults)
@@ -330,9 +353,9 @@ class RiichiHandValueCalculator(
     private fun calculateSpecialYaku(context: RiichiHandValueContext, results: MutableList<YakuResult>) {
         // 立直 和 雙立直
         if (context.isMenzen) {
-            if (context.isDoubleRiichi) {  // 雙立直
+            if (context.isDoubleRiichi) { // 雙立直
                 results.add(YakuResult.han(YakuType.DoubleRiichi, 2))
-            } else if (context.isRiichi) {  // 立直
+            } else if (context.isRiichi) { // 立直
                 results.add(YakuResult.han(YakuType.Riichi, 1))
             }
         }
@@ -376,12 +399,12 @@ class RiichiHandValueCalculator(
     private fun calculateYakuman(
         context: RiichiHandValueContext,
         handStructure: HandStructure,
-        results: MutableList<YakuResult>
+        results: MutableList<YakuResult>,
     ) {
         // 計算國士無雙
         calculateKokushiMusou(
             handStructure = handStructure,
-            winningTile = context.winningTile
+            winningTile = context.winningTile,
         )?.let { results.add(it) }
 
         // 計算九蓮寶燈
@@ -389,47 +412,47 @@ class RiichiHandValueCalculator(
             hand = context.hand,
             winningTile = context.winningTile,
             handStructure = handStructure,
-            isMenzen = context.isMenzen
+            isMenzen = context.isMenzen,
         )?.let { results.add(it) }
 
         // 計算字一色
         calculateTsuuiisou(
             hand = context.hand,
-            winningTile = context.winningTile
+            winningTile = context.winningTile,
         )?.let { results.add(it) }
 
         // 計算綠一色
         calculateRyuuuiisou(
             hand = context.hand,
-            winningTile = context.winningTile
+            winningTile = context.winningTile,
         )?.let { results.add(it) }
 
         // 計算四暗刻
         calculateSuuankou(
             handStructure = handStructure,
             isMenzen = context.isMenzen,
-            isTsumo = context.isTsumo
+            isTsumo = context.isTsumo,
         )?.let { results.add(it) }
 
         // 計算四杠子
         calculateSukantsu(
-            handStructure = handStructure
+            handStructure = handStructure,
         )?.let { results.add(it) }
 
         // 計算四喜
         calculateSuushii(
-            handStructure = handStructure
+            handStructure = handStructure,
         )?.let { results.add(it) }
 
         // 計算三元
         calculateSangaen(
-            handStructure = handStructure
+            handStructure = handStructure,
         )?.let { results.add(it) }
 
         // 計算清老頭
         calculateChinroutou(
             hand = context.hand,
-            winningTile = context.winningTile
+            winningTile = context.winningTile,
         )?.let { results.add(it) }
 
         // 計算天和與地和

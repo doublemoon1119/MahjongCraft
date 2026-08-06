@@ -19,7 +19,7 @@ import kotlin.uuid.Uuid
 @Factory
 class SyncRoomSnapshotUseCase(
     private val roomRepository: RoomRepository,
-    private val snapshotRepository: RoomSnapshotRepository
+    private val snapshotRepository: RoomSnapshotRepository,
 ) {
     /**
      * 執行房間狀態的同步處理。
@@ -32,7 +32,7 @@ class SyncRoomSnapshotUseCase(
      */
     suspend operator fun invoke(
         roomId: Uuid,
-        observerId: Uuid
+        observerId: Uuid,
     ): Outcome<Unit, RoomError> {
         val room = roomRepository.getRoom(roomId)
             ?: return Outcome.Error(RoomError.RoomNotFound(roomId))

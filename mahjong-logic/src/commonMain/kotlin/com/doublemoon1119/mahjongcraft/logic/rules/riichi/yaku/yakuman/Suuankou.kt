@@ -57,7 +57,7 @@ fun calculateSuuankou(
     val isSuuuankou = if (isTankiWait) {
         concealedKotsuCount == 4
     } else {
-        isTsumo && concealedKotsuCount == 4  // 雙碰聽的時候，要自摸才算四暗刻
+        isTsumo && concealedKotsuCount == 4 // 雙碰聽的時候，要自摸才算四暗刻
     }
 
     return when {

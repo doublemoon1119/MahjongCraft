@@ -32,7 +32,7 @@ class StartGameUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val gameSnapshotRepository: GameSnapshotRepository,
-    @Provided private val eventPublisher: GameEventPublisher
+    @Provided private val eventPublisher: GameEventPublisher,
 ) {
     /**
      * 執行開始遊戲邏輯。

@@ -19,43 +19,35 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
  */
 class TaiwanRuleModule(
     override val id: String,
-    override val config: TaiwanRuleConfig
+    override val config: TaiwanRuleConfig,
 ) : MahjongRuleModule<TaiwanRuleConfig> {
     /**
      * 建立台灣麻將牌山工廠。
      *
      * @return [TaiwanWallFactory] 實體。
      */
-    override fun createWallFactory(): TaiwanWallFactory {
-        return TaiwanWallFactory(config)
-    }
+    override fun createWallFactory(): TaiwanWallFactory = TaiwanWallFactory(config)
 
     /**
      * 建立台灣麻將專用的牌河。
      *
      * @return [TaiwanDiscardPile] 實體。
      */
-    override fun createDiscardPile(): TaiwanDiscardPile {
-        return TaiwanDiscardPile()
-    }
+    override fun createDiscardPile(): TaiwanDiscardPile = TaiwanDiscardPile()
 
     /**
      * 建立台灣麻將的向聽數計算器。
      *
      * @return [TaiwanShantenCalculator] 實體。
      */
-    override fun createShantenCalculator(): TaiwanShantenCalculator {
-        return TaiwanShantenCalculator()
-    }
+    override fun createShantenCalculator(): TaiwanShantenCalculator = TaiwanShantenCalculator()
 
     /**
      * 建立台灣麻將的合法動作判定器。
      *
      * @return [TaiwanLegalActionValidator] 實體。
      */
-    override fun createLegalActionValidator(): TaiwanLegalActionValidator {
-        return TaiwanLegalActionValidator()
-    }
+    override fun createLegalActionValidator(): TaiwanLegalActionValidator = TaiwanLegalActionValidator()
 
     /**
      * 建立台灣麻將的手牌役種計算機。
@@ -99,7 +91,7 @@ class TaiwanRuleModule(
     override fun declareRiichi(
         tableState: TableState,
         player: MahjongPlayer,
-        discardResult: Hand.DiscardResult
+        discardResult: Hand.DiscardResult,
     ): RiichiDeclarationResult? = null
 
     /**
@@ -124,6 +116,6 @@ class TaiwanRuleModule(
     override fun applyPaoLiabilityIfTriggered(
         claimingPlayer: MahjongPlayer,
         calledTile: IdentifiedTile,
-        sourceDirection: RelativeDirection
+        sourceDirection: RelativeDirection,
     ): MahjongPlayer = claimingPlayer
 }

@@ -37,7 +37,7 @@ sealed class Mentsu {
                 return listOf(
                     headTile,
                     Tile.Numeric(numTile.suit, numTile.value + 1),
-                    Tile.Numeric(numTile.suit, numTile.value + 2)
+                    Tile.Numeric(numTile.suit, numTile.value + 2),
                 )
             }
     }

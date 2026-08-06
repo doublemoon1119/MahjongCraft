@@ -22,7 +22,7 @@ class TaiwanRuleModuleTest {
 
     private val module: MahjongRuleModule<TaiwanRuleConfig> = TaiwanRuleModule(
         id = "mahjongcraft:taiwan",
-        config = TaiwanRuleConfig()
+        config = TaiwanRuleConfig(),
     )
 
     /**

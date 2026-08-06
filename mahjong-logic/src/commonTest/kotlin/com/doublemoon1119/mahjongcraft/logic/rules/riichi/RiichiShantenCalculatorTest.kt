@@ -40,8 +40,8 @@ class RiichiShantenCalculatorTest {
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 9)
-            )
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
         )
         val result = calculator.calculate(hand)
         assertTrue(result is ShantenResult.Tenpai, "Tenpai hand should be Tenpai result")
@@ -70,8 +70,8 @@ class RiichiShantenCalculatorTest {
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7),
-                Tile.Numeric(Tile.Suit.Character, 7)
-            )
+                Tile.Numeric(Tile.Suit.Character, 7),
+            ),
         )
         val result = calculator.calculate(hand)
         assertTrue(result is ShantenResult.Complete, "Seven pairs complete hand should be Complete")
@@ -99,8 +99,8 @@ class RiichiShantenCalculatorTest {
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 6),
-                Tile.Numeric(Tile.Suit.Character, 7)
-            )
+                Tile.Numeric(Tile.Suit.Character, 7),
+            ),
         )
         val result = calculator.calculate(hand)
         assertTrue(result is ShantenResult.Tenpai, "Six pairs should be Tenpai for seven pairs")
@@ -135,8 +135,8 @@ class RiichiShantenCalculatorTest {
                 Tile.Honor.Green,
                 Tile.Honor.Red,
                 // 雀頭 (東)
-                Tile.Honor.East
-            )
+                Tile.Honor.East,
+            ),
         )
         val result = calculator.calculate(hand)
         assertTrue(result is ShantenResult.Complete, "Kokushi complete hand should be Complete")
@@ -169,8 +169,8 @@ class RiichiShantenCalculatorTest {
                 Tile.Honor.North,
                 Tile.Honor.White,
                 Tile.Honor.Green,
-                Tile.Honor.Red
-            )
+                Tile.Honor.Red,
+            ),
         )
         val result = calculator.calculate(hand)
         assertTrue(result is ShantenResult.Tenpai, "Kokushi tenpai hand should be Tenpai")
@@ -202,8 +202,8 @@ class RiichiShantenCalculatorTest {
                 Tile.Honor.West,
                 Tile.Honor.North,
                 Tile.Honor.White,
-                Tile.Honor.Green
-            )
+                Tile.Honor.Green,
+            ),
         )
         val result = calculator.calculate(hand)
         val notTenpaiResult = result as ShantenResult.NotTenpai

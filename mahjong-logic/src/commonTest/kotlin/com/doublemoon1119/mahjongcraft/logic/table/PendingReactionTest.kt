@@ -26,7 +26,7 @@ class PendingReactionTest {
         val pendingReaction = PendingReaction(
             discarderId = discarderId,
             tileId = tileId,
-            eligiblePlayerIds = setOf(playerAId, playerBId)
+            eligiblePlayerIds = setOf(playerAId, playerBId),
         )
 
         assertFalse(pendingReaction.isComplete)
@@ -41,7 +41,7 @@ class PendingReactionTest {
             discarderId = discarderId,
             tileId = tileId,
             eligiblePlayerIds = setOf(playerAId, playerBId),
-            responses = mapOf(playerAId to GameAction.Pass)
+            responses = mapOf(playerAId to GameAction.Pass),
         )
 
         assertFalse(pendingReaction.isComplete)
@@ -56,7 +56,7 @@ class PendingReactionTest {
             discarderId = discarderId,
             tileId = tileId,
             eligiblePlayerIds = setOf(playerAId, playerBId),
-            responses = mapOf(playerAId to GameAction.Pass, playerBId to GameAction.Pon(tileId))
+            responses = mapOf(playerAId to GameAction.Pass, playerBId to GameAction.Pon(tileId)),
         )
 
         assertTrue(pendingReaction.isComplete)
@@ -70,7 +70,7 @@ class PendingReactionTest {
         val pendingReaction = PendingReaction(
             discarderId = discarderId,
             tileId = tileId,
-            eligiblePlayerIds = emptySet()
+            eligiblePlayerIds = emptySet(),
         )
 
         assertTrue(pendingReaction.isComplete)

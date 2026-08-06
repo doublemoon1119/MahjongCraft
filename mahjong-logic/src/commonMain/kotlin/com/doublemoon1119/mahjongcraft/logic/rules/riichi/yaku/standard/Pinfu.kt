@@ -27,7 +27,7 @@ fun calculatePinfu(
     handStructure: HandStructure,
     isMenzen: Boolean,
     roundWind: Wind,
-    seatWind: Wind
+    seatWind: Wind,
 ): YakuResult? {
     val standard = handStructure as? HandStructure.Standard ?: return null
 
@@ -67,7 +67,7 @@ fun calculatePinfu(
 private fun isYakuhai(
     tile: Tile,
     roundWind: Wind,
-    seatWind: Wind
+    seatWind: Wind,
 ): Boolean {
     // 場風牌
     val roundWindTile = when (roundWind) {
@@ -91,7 +91,7 @@ private fun isYakuhai(
         Tile.Honor.Green,
         Tile.Honor.Red,
         roundWindTile,
-        seatWindTile
+        seatWindTile,
     )
     return tile in yakuTiles
 }

@@ -1,6 +1,10 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.logic.base.*
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -10,9 +14,9 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
-import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.uuid.Uuid
 
 /**
  * 針對 [RiichiDynamicState] 與 [TileWallRevealable] 進行單元測試。
@@ -26,18 +30,18 @@ class RiichiDynamicStateTest {
      */
     private fun createTableStateWithWall(
         deadWallTiles: List<IdentifiedTile>,
-        players: List<MahjongPlayer> = emptyList()
+        players: List<MahjongPlayer> = emptyList(),
     ): TableState {
         val allTiles = deadWallTiles.toMutableList()
         val tileWall = TileWall(allTiles)
         val config = FakeMahjongRuleConfig(
-            deadTileCount = deadWallTiles.size
+            deadTileCount = deadWallTiles.size,
         )
 
         return FakeTableStateFactory.create(
             players = players,
             config = config,
-            tileWall = tileWall
+            tileWall = tileWall,
         )
     }
 
@@ -51,7 +55,7 @@ class RiichiDynamicStateTest {
         }
         val players = listOf(
             FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST),
-            FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
+            FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH),
         )
         val table = createTableStateWithWall(deadWallTiles, players)
 
@@ -94,8 +98,8 @@ class RiichiDynamicStateTest {
                 type = MeldType.OPEN_KAN,
                 tiles = kanTiles,
                 source = kanTiles[0],
-                direction = RelativeDirection.Left
-            )
+                direction = RelativeDirection.Left,
+            ),
         )
 
         val deadWallTiles = List(14) { i ->
@@ -126,8 +130,8 @@ class RiichiDynamicStateTest {
                 hand = Hand().call(
                     type = MeldType.CLOSED_KAN,
                     tiles = kanTiles,
-                    direction = RelativeDirection.Self
-                )
+                    direction = RelativeDirection.Self,
+                ),
             )
         }
 
@@ -135,7 +139,7 @@ class RiichiDynamicStateTest {
             createPlayerWithKan(Wind.EAST),
             createPlayerWithKan(Wind.SOUTH),
             createPlayerWithKan(Wind.WEST),
-            createPlayerWithKan(Wind.NORTH)
+            createPlayerWithKan(Wind.NORTH),
         )
 
         val deadWallTiles = List(14) { i ->

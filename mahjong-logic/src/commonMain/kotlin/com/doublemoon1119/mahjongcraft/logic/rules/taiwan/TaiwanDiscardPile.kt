@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
  * 本類別為不可變值物件：[discard]、[takeLast] 皆不修改原實例，而是回傳新的 [TaiwanDiscardPile] 實例。
  */
 data class TaiwanDiscardPile(
-    private val _entries: List<DiscardPile.DiscardEntry> = emptyList()
+    private val _entries: List<DiscardPile.DiscardEntry> = emptyList(),
 ) : DiscardPile<DiscardPile.DiscardEntry> {
 
     /**

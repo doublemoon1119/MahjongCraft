@@ -53,8 +53,8 @@ class RyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 6),
                 // 對子：發 發
                 Tile.Honor.Green,
-                Tile.Honor.Green
-            )
+                Tile.Honor.Green,
+            ),
         )
         // 胡牌：發
         val winningTile = Tile.Honor.Green
@@ -91,7 +91,7 @@ class RyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 6),
                 // 對子：8s 8s
                 Tile.Numeric(Tile.Suit.Bamboo, 8),
-                Tile.Numeric(Tile.Suit.Bamboo, 8)
+                Tile.Numeric(Tile.Suit.Bamboo, 8),
             ),
             melds = listOf(
                 // 副露：2s 2s 2s（碰）
@@ -100,11 +100,11 @@ class RyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         // 胡牌：6s
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 6)
@@ -144,8 +144,8 @@ class RyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 6),
                 // 對子：1s 1s (非綠牌)
                 Tile.Numeric(Tile.Suit.Bamboo, 1),
-                Tile.Numeric(Tile.Suit.Bamboo, 1)
-            )
+                Tile.Numeric(Tile.Suit.Bamboo, 1),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 1)
 
@@ -182,8 +182,8 @@ class RyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.East,
                 // 對子：發 發
                 Tile.Honor.Green,
-                Tile.Honor.Green
-            )
+                Tile.Honor.Green,
+            ),
         )
         // 胡牌：東 (非綠牌)
         val winningTile = Tile.Honor.East
@@ -217,8 +217,8 @@ class RyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 6),
                 // 對子：8s 8s
                 Tile.Numeric(Tile.Suit.Bamboo, 8),
-                Tile.Numeric(Tile.Suit.Bamboo, 8)
-            )
+                Tile.Numeric(Tile.Suit.Bamboo, 8),
+            ),
         )
         // 胡牌：8s
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 8)
@@ -252,7 +252,7 @@ class RyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 6),
                 // 對子：8s 8s
                 Tile.Numeric(Tile.Suit.Bamboo, 8),
-                Tile.Numeric(Tile.Suit.Bamboo, 8)
+                Tile.Numeric(Tile.Suit.Bamboo, 8),
             ),
             melds = listOf(
                 // 副露：2s 2s 2s（碰）
@@ -261,11 +261,11 @@ class RyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         // 胡牌：6s
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 6)
@@ -274,7 +274,7 @@ class RyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
             hand = hand,
             winningTile = winningTile,
             isTsumo = true,
-            isMenzen = false // 有副露
+            isMenzen = false, // 有副露
         )
         val result = calculator.calculate(context)
 

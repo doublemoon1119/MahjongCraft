@@ -9,10 +9,13 @@ package com.doublemoon1119.mahjongcraft.logic.table
 enum class Wind {
     /** 東 (Ton) */
     EAST,
+
     /** 南 (Nan) */
     SOUTH,
+
     /** 西 (Sha) */
     WEST,
+
     /** 北 (Pei) */
-    NORTH
+    NORTH,
 }

@@ -19,7 +19,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
  * @param config 日本麻將規則配置。
  */
 class RiichiHandValueContextCalculator(
-    private val config: RiichiRuleConfig
+    private val config: RiichiRuleConfig,
 ) : HandValueContextCalculator<RiichiHandValueContext, RiichiHandValueContextCalculator.Input> {
 
     /**
@@ -30,7 +30,7 @@ class RiichiHandValueContextCalculator(
         val player: MahjongPlayer,
         val incomingTile: IdentifiedTile,
         val isTsumo: Boolean,
-        val isRobbingKan: Boolean = false
+        val isRobbingKan: Boolean = false,
     )
 
     override fun calculate(input: Input): RiichiHandValueContext {
@@ -103,9 +103,9 @@ class RiichiHandValueContextCalculator(
                 false
             },
             isFirstTurn = tableState.players.all { it.hand.exposedMelds.isEmpty() } &&
-                    tableState.players.all { it.discardPile.entries.size <= 1 } &&
-                    player.discardPile.entries.isEmpty(),
-            paoLiability = riichiState?.paoLiability
+                tableState.players.all { it.discardPile.entries.size <= 1 } &&
+                player.discardPile.entries.isEmpty(),
+            paoLiability = riichiState?.paoLiability,
         )
     }
 }

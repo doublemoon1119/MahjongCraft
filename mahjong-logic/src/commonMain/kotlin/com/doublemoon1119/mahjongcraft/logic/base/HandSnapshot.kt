@@ -5,15 +5,13 @@ package com.doublemoon1119.mahjongcraft.logic.base
  */
 data class HandSnapshot(
     val standingTiles: List<IdentifiedTileSnapshot>,
-    val lastDrawn: IdentifiedTileSnapshot? = null
+    val lastDrawn: IdentifiedTileSnapshot? = null,
 )
 
 /**
  * 產生一個 [Hand] 的快照
  */
-fun Hand.toSnapshot(isVisible: Boolean): HandSnapshot {
-    return HandSnapshot(
-        standingTiles = this.standingTiles.map { it.toSnapshot(isVisible) },
-        lastDrawn = this.lastDrawn?.toSnapshot(isVisible)
-    )
-}
+fun Hand.toSnapshot(isVisible: Boolean): HandSnapshot = HandSnapshot(
+    standingTiles = this.standingTiles.map { it.toSnapshot(isVisible) },
+    lastDrawn = this.lastDrawn?.toSnapshot(isVisible),
+)

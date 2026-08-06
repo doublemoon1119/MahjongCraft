@@ -46,8 +46,13 @@ class RiichiWallFactory(private val config: RiichiRuleConfig) : TileWallFactory 
 
         // 2. 生成字牌：風牌與三元牌 (各 4 張)
         val honors = listOf(
-            Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North,
-            Tile.Honor.White, Tile.Honor.Green, Tile.Honor.Red
+            Tile.Honor.East,
+            Tile.Honor.South,
+            Tile.Honor.West,
+            Tile.Honor.North,
+            Tile.Honor.White,
+            Tile.Honor.Green,
+            Tile.Honor.Red,
         )
         honors.forEach { honor ->
             repeat(4) {

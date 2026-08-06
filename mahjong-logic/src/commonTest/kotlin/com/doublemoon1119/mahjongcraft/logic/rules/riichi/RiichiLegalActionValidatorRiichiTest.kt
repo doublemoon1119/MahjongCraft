@@ -23,7 +23,7 @@ class RiichiLegalActionValidatorRiichiTest {
     private val validator = RiichiLegalActionValidator(
         shantenCalculator = RiichiShantenCalculator(),
         handValueCalculator = RiichiHandValueCalculator(),
-        contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig())
+        contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig()),
     )
 
     /**
@@ -49,14 +49,14 @@ class RiichiLegalActionValidatorRiichiTest {
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 9)
-            )
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
         )
         val player = FakeMahjongPlayerFactory.create(
-            hand = playerHand
-        ).copy(score = 1000)  // 點數剛好 1000
+            hand = playerHand,
+        ).copy(score = 1000) // 點數剛好 1000
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
 
         // 執行
@@ -65,7 +65,7 @@ class RiichiLegalActionValidatorRiichiTest {
             player = player,
             sourceAction = GameAction.Draw,
             sourceDirection = RelativeDirection.Self,
-            incomingTile = null
+            incomingTile = null,
         )
 
         // 驗證
@@ -94,14 +94,14 @@ class RiichiLegalActionValidatorRiichiTest {
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 9)
-            )
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
         )
         val player = FakeMahjongPlayerFactory.create(
-            hand = playerHand
-        ).copy(score = 2500)  // 點數超過 1000
+            hand = playerHand,
+        ).copy(score = 2500) // 點數超過 1000
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
 
         // 執行
@@ -110,7 +110,7 @@ class RiichiLegalActionValidatorRiichiTest {
             player = player,
             sourceAction = GameAction.Draw,
             sourceDirection = RelativeDirection.Self,
-            incomingTile = null
+            incomingTile = null,
         )
 
         // 驗證
@@ -139,14 +139,14 @@ class RiichiLegalActionValidatorRiichiTest {
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 9)
-            )
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
         )
         val player = FakeMahjongPlayerFactory.create(
-            hand = playerHand
-        ).copy(score = 500)  // 點數不足 1000
+            hand = playerHand,
+        ).copy(score = 500) // 點數不足 1000
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
 
         // 執行
@@ -155,7 +155,7 @@ class RiichiLegalActionValidatorRiichiTest {
             player = player,
             sourceAction = GameAction.Draw,
             sourceDirection = RelativeDirection.Self,
-            incomingTile = null
+            incomingTile = null,
         )
 
         // 驗證
@@ -184,14 +184,14 @@ class RiichiLegalActionValidatorRiichiTest {
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 9)
-            )
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
         )
         val player = FakeMahjongPlayerFactory.create(
-            hand = playerHand
-        ).copy(score = 0)  // 點數為 0
+            hand = playerHand,
+        ).copy(score = 0) // 點數為 0
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
 
         // 執行
@@ -200,7 +200,7 @@ class RiichiLegalActionValidatorRiichiTest {
             player = player,
             sourceAction = GameAction.Draw,
             sourceDirection = RelativeDirection.Self,
-            incomingTile = null
+            incomingTile = null,
         )
 
         // 驗證
@@ -231,19 +231,19 @@ class RiichiLegalActionValidatorRiichiTest {
                 Tile.Numeric(Tile.Suit.Bamboo, 2),
                 Tile.Numeric(Tile.Suit.Bamboo, 2),
                 Tile.Numeric(Tile.Suit.Character, 5),
-                Tile.Numeric(Tile.Suit.Character, 6)
-            )
+                Tile.Numeric(Tile.Suit.Character, 6),
+            ),
         )
 
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
             playerRuleState = RiichiPlayerState(
-                riichiTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
-            )
+                riichiTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
+            ),
         )
 
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
 
         // 摸到 1 餅（暗槓後改變聽牌）
@@ -255,7 +255,7 @@ class RiichiLegalActionValidatorRiichiTest {
             player = player,
             sourceAction = GameAction.Draw,
             sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile
+            incomingTile = incomingTile,
         )
 
         // 驗證：暗槓 1 餅會改變牌型，不可暗槓
@@ -288,19 +288,19 @@ class RiichiLegalActionValidatorRiichiTest {
                 Tile.Honor.East,
                 Tile.Honor.East,
                 Tile.Numeric(Tile.Suit.Character, 8),
-                Tile.Numeric(Tile.Suit.Character, 9)
-            )
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
         )
 
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
             playerRuleState = RiichiPlayerState(
-                riichiTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
-            )
+                riichiTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
+            ),
         )
 
         val tableState = FakeTableStateFactory.create(
-            players = listOf(player)
+            players = listOf(player),
         )
 
         // 摸到 1 萬（暗槓後聽牌不變，仍只聽 7 萬）
@@ -312,7 +312,7 @@ class RiichiLegalActionValidatorRiichiTest {
             player = player,
             sourceAction = GameAction.Draw,
             sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile
+            incomingTile = incomingTile,
         )
 
         // 驗證：暗槓 1 萬不影響聽牌（仍只聽 7 萬），可暗槓

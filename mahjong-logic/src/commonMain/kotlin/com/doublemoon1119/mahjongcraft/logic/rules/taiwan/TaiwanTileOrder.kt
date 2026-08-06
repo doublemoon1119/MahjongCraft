@@ -17,17 +17,17 @@ object TaiwanTileOrder : TileOrder {
         is Tile.Numeric -> {
             val suitBase = when (tile.suit) {
                 Tile.Suit.Character -> 10.0
-                Tile.Suit.Dot       -> 20.0
-                Tile.Suit.Bamboo    -> 30.0
+                Tile.Suit.Dot -> 20.0
+                Tile.Suit.Bamboo -> 30.0
             }
             suitBase + tile.value.toDouble()
         }
         is Tile.Honor -> when (tile) {
-            Tile.Honor.East  -> 41.0
+            Tile.Honor.East -> 41.0
             Tile.Honor.South -> 42.0
-            Tile.Honor.West  -> 43.0
+            Tile.Honor.West -> 43.0
             Tile.Honor.North -> 44.0
-            Tile.Honor.Red   -> 45.0 // 台麻順序：中
+            Tile.Honor.Red -> 45.0 // 台麻順序：中
             Tile.Honor.Green -> 46.0 // 發
             Tile.Honor.White -> 47.0 // 白
         }
@@ -36,7 +36,7 @@ object TaiwanTileOrder : TileOrder {
             Tile.Flower.Summer -> 82.0
             Tile.Flower.Autumn -> 83.0
             Tile.Flower.Winter -> 84.0
-            Tile.Flower.Plum   -> 85.0
+            Tile.Flower.Plum -> 85.0
             Tile.Flower.Orchid -> 86.0
             Tile.Flower.Bamboo -> 87.0
             Tile.Flower.Chrysanthemum -> 88.0

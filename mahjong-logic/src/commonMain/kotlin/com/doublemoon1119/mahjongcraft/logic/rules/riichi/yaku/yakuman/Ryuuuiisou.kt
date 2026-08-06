@@ -24,7 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
  */
 fun calculateRyuuuiisou(
     hand: Hand,
-    winningTile: Tile
+    winningTile: Tile,
 ): YakuResult? {
     /**
      * 綠牌的集合。
@@ -38,7 +38,7 @@ fun calculateRyuuuiisou(
         Tile.Numeric(Tile.Suit.Bamboo, 4),
         Tile.Numeric(Tile.Suit.Bamboo, 6),
         Tile.Numeric(Tile.Suit.Bamboo, 8),
-        Tile.Honor.Green
+        Tile.Honor.Green,
     )
 
     // 取得所有牌（去除赤寶牌標記）

@@ -42,7 +42,7 @@ class UpdateConfigUseCaseTest {
             id = roomId,
             hostId = hostId,
             config = initialConfig,
-            playerIds = setOf(hostId, guestId)
+            playerIds = setOf(hostId, guestId),
         )
         roomRepo.setRoom(room)
 
@@ -68,12 +68,12 @@ class UpdateConfigUseCaseTest {
         assertEquals(
             expected = newConfig,
             actual = notificationService.getConfigChangedNotification(roomId, hostId),
-            message = "Host should receive config changed notification."
+            message = "Host should receive config changed notification.",
         )
         assertEquals(
             expected = newConfig,
             actual = notificationService.getConfigChangedNotification(roomId, guestId),
-            message = "Guest should receive config changed notification."
+            message = "Guest should receive config changed notification.",
         )
     }
 

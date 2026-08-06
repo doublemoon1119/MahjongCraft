@@ -39,7 +39,7 @@ class RespondToDiscardUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val gameSnapshotRepository: GameSnapshotRepository,
-    @Provided private val eventPublisher: GameEventPublisher
+    @Provided private val eventPublisher: GameEventPublisher,
 ) {
     /**
      * 執行捨牌反應回應邏輯。
@@ -74,7 +74,7 @@ class RespondToDiscardUseCase(
                         player = responder,
                         sourceAction = GameAction.Discard(pendingReaction.tileId),
                         sourceDirection = state.relativeDirectionOf(playerId, pendingReaction.discarderId),
-                        incomingTile = discardedTile
+                        incomingTile = discardedTile,
                     )
                     if (action !in legalActions) {
                         return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
@@ -123,7 +123,7 @@ class RespondToDiscardUseCase(
         players: List<MahjongPlayer>,
         pendingReaction: PendingReaction,
         discardedTile: IdentifiedTile,
-        module: MahjongRuleModule<*>
+        module: MahjongRuleModule<*>,
     ): TableState {
         val winningEntry = pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Pon || it.value is GameAction.Kan }
             ?: pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Chi }
@@ -134,7 +134,7 @@ class RespondToDiscardUseCase(
             return state.copy(
                 players = players,
                 currentPlayerIndex = (discarderIndex + 1) % state.playerCount,
-                pendingReaction = null
+                pendingReaction = null,
             )
         }
 
@@ -152,9 +152,10 @@ class RespondToDiscardUseCase(
         val handTilesUsed: List<IdentifiedTile> = when (winnerAction) {
             is GameAction.Chi -> winnerAction.withTiles.mapNotNull { id -> winner.hand.standingTiles.find { it.id == id } }
             is GameAction.Kan -> winnerAction.withTiles.mapNotNull { id -> winner.hand.standingTiles.find { it.id == id } }
-            is GameAction.Pon -> winner.hand.standingTiles
-                .filter { it.tile.withoutRed == discardedTile.tile.withoutRed }
-                .take(2)
+            is GameAction.Pon ->
+                winner.hand.standingTiles
+                    .filter { it.tile.withoutRed == discardedTile.tile.withoutRed }
+                    .take(2)
         }
 
         val winnerWithPao = if (meldType == MeldType.PON || meldType == MeldType.OPEN_KAN) {
@@ -179,7 +180,7 @@ class RespondToDiscardUseCase(
         return state.copy(
             players = playersAfterMeldClaimed,
             currentPlayerIndex = winnerIndex,
-            pendingReaction = null
+            pendingReaction = null,
         )
     }
 }

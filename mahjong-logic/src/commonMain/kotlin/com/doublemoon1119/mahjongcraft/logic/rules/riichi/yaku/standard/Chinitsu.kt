@@ -20,7 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 fun calculateChinitsu(
     hand: Hand,
     winningTile: Tile,
-    isMenzen: Boolean
+    isMenzen: Boolean,
 ): YakuResult? {
     val allTiles = (hand.allTiles.map { it.tile } + winningTile)
         .map { it.withoutRed }

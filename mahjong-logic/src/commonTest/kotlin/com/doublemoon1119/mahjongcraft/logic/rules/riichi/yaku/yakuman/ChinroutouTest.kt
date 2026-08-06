@@ -53,8 +53,8 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 9),
                 Tile.Numeric(Tile.Suit.Bamboo, 9),
                 // 9m 雀頭
-                Tile.Numeric(Tile.Suit.Character, 9)
-            )
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 9)
 
@@ -64,7 +64,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Chinroutou },
-            "Should contain Chinroutou, got: ${result.yakuResults.map { it.yaku }}"
+            "Should contain Chinroutou, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -94,7 +94,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 1),
                 // 9s 等待牌
                 Tile.Numeric(Tile.Suit.Bamboo, 9),
-                Tile.Numeric(Tile.Suit.Bamboo, 9)
+                Tile.Numeric(Tile.Suit.Bamboo, 9),
             ),
             melds = listOf(
                 // 副露：1s 刻子
@@ -103,11 +103,11 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Across
-                )
-            )
+                    sourceDirection = RelativeDirection.Across,
+                ),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9)
 
@@ -117,7 +117,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Chinroutou },
-            "Should contain Chinroutou, got: ${result.yakuResults.map { it.yaku }}"
+            "Should contain Chinroutou, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -147,7 +147,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 1),
                 // 1m 雀頭
                 Tile.Numeric(Tile.Suit.Character, 1),
-                Tile.Numeric(Tile.Suit.Character, 1)
+                Tile.Numeric(Tile.Suit.Character, 1),
             ),
             melds = listOf(
                 // 暗槓：1p
@@ -157,11 +157,11 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Self
-                )
-            )
+                    sourceDirection = RelativeDirection.Self,
+                ),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Dot, 9)
 
@@ -171,7 +171,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Chinroutou },
-            "Should contain Chinroutou, got: ${result.yakuResults.map { it.yaku }}"
+            "Should contain Chinroutou, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -204,8 +204,8 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 1),
                 // 中 對子
                 Tile.Honor.Red,
-                Tile.Honor.Red
-            )
+                Tile.Honor.Red,
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
@@ -214,7 +214,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
 
         assertFalse(
             result.yakuResults.any { it.yaku == YakuType.Chinroutou },
-            "Should not contain Chinroutou when hand contains honor tiles, got: ${result.yakuResults.map { it.yaku }}"
+            "Should not contain Chinroutou when hand contains honor tiles, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -247,8 +247,8 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 9),
                 Tile.Numeric(Tile.Suit.Bamboo, 9),
                 // 9m 雀頭
-                Tile.Numeric(Tile.Suit.Character, 9)
-            )
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 9)
 
@@ -257,7 +257,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
 
         assertFalse(
             result.yakuResults.any { it.yaku == YakuType.Chinroutou },
-            "Should not contain Chinroutou when hand contains non-terminal tiles, got: ${result.yakuResults.map { it.yaku }}"
+            "Should not contain Chinroutou when hand contains non-terminal tiles, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -287,8 +287,8 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 9),
                 // 9m 雀頭
                 Tile.Numeric(Tile.Suit.Character, 9),
-                Tile.Numeric(Tile.Suit.Character, 9)
-            )
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Character, 9)
 
@@ -297,11 +297,11 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(
             result.yakuResults.any { it.yaku == YakuType.Chinroutou },
-            "Should contain Chinroutou"
+            "Should contain Chinroutou",
         )
         assertFalse(
             result.yakuResults.any { it.yaku == YakuType.Honroutou },
-            "Should not contain Honroutou when hand is Chinroutou"
+            "Should not contain Honroutou when hand is Chinroutou",
         )
     }
 }

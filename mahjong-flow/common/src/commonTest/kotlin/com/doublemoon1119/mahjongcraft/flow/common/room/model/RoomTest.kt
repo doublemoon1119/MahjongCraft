@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.flow.common.room.model
 
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
-import kotlin.uuid.Uuid
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 class RoomTest {
 
@@ -17,7 +17,7 @@ class RoomTest {
             id = Uuid.random(),
             hostId = playerIds.first(),
             config = config,
-            playerIds = playerIds
+            playerIds = playerIds,
         )
 
         assertTrue(room.isFull, "Room should be full when player count equals max capacity.")
@@ -31,7 +31,7 @@ class RoomTest {
             id = Uuid.random(),
             hostId = playerIds.first(),
             config = config,
-            playerIds = playerIds
+            playerIds = playerIds,
         )
 
         assertFalse(room.isFull, "Room should not be full when there is remaining capacity.")
@@ -52,7 +52,7 @@ class RoomTest {
             hostId = host,
             config = config,
             playerIds = playerIds,
-            readyPlayerIds = readyPlayerIds
+            readyPlayerIds = readyPlayerIds,
         )
 
         assertTrue(room.canStart, "Room should be able to start when all players except the host are ready.")
@@ -69,7 +69,7 @@ class RoomTest {
             hostId = host,
             config = config,
             playerIds = playerIds,
-            readyPlayerIds = emptySet()
+            readyPlayerIds = emptySet(),
         )
 
         assertFalse(room.canStart, "Room should not start if the number of players is below the minimum required.")
@@ -90,7 +90,7 @@ class RoomTest {
             hostId = host,
             config = config,
             playerIds = playerIds,
-            readyPlayerIds = readyPlayerIds
+            readyPlayerIds = readyPlayerIds,
         )
 
         assertFalse(room.canStart, "Room should not start if any player (other than host) is not ready.")
@@ -111,7 +111,7 @@ class RoomTest {
             hostId = host,
             config = config,
             playerIds = playerIds,
-            readyPlayerIds = readyPlayerIds
+            readyPlayerIds = readyPlayerIds,
         )
 
         assertFalse(room.canStart, "Room should not start if ready list contains players not present in the room.")
@@ -124,7 +124,7 @@ class RoomTest {
             id = Uuid.random(),
             hostId = Uuid.random(),
             config = FakeMahjongRuleConfig(),
-            aiPlayerIds = setOf(aiId)
+            aiPlayerIds = setOf(aiId),
         )
 
         assertTrue(room.isAi(aiId), "isAi should return true for ID in aiPlayerIds.")
@@ -142,7 +142,7 @@ class RoomTest {
             hostId = hostId,
             config = FakeMahjongRuleConfig(),
             playerIds = setOf(hostId, humanId, aiId),
-            aiPlayerIds = setOf(aiId)
+            aiPlayerIds = setOf(aiId),
         )
 
         val humanPlayers = room.humanPlayerIds
