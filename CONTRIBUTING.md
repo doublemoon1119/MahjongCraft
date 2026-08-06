@@ -17,7 +17,12 @@
 - Run a full recompile and check for compiler warnings, not just test results:
   `./gradlew clean compileKotlinJvm compileTestKotlinJvm`. A green `jvmTest` run does not fail on
   warnings (e.g. redundant casts, unused imports), so check compiler output explicitly.
-- Fix flagged warnings before committing, unless they are pre-existing and unrelated to the current change.
+- Run `./gradlew ktlintCheck` (or `./gradlew ktlintFormat` to auto-fix) to enforce formatting
+  (`intellij_idea` code style, configured in `.editorconfig`). This is a separate concern from the
+  compiler warning check above — ktlint only checks style/formatting, not compiler diagnostics, so
+  both checks are required, not either/or.
+- Fix flagged warnings/violations before committing, unless they are pre-existing and unrelated to
+  the current change.
 
 ## Git Commit Conventions
 
