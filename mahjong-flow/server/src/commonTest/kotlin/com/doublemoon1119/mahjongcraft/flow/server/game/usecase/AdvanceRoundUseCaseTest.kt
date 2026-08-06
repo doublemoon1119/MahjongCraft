@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -115,6 +116,81 @@ class AdvanceRoundUseCaseTest {
         assertEquals(0, newState.comboCount)
         assertEquals(2, newState.roundNumber)
         assertEquals(Wind.EAST, newState.prevalentWind)
+        assertEquals(
+            nextDealerId,
+            newState.players.first { it.currentWind == Wind.EAST }.id,
+            "P2 (South) should become the new dealer.",
+        )
+    }
+
+    /**
+     * 驗證莊家一般流局時聽牌（`actionHistory` 有 `ExhaustiveDraw`）：連莊、本場數 +1、莊家不變。
+     */
+    @Test
+    fun `test advance round repeats dealer when dealer was tenpai at exhaustive draw`() = runTest {
+        val fixtures = Fixtures()
+        val dealerId = Uuid.random()
+        val dealer = FakeMahjongPlayerFactory.create(Wind.EAST, id = dealerId)
+            .copy(actionHistory = listOf(GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.Normal)))
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, p2, p3, p4),
+            config = RiichiRuleConfig(),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        assertEquals(false, advanceResult.isMatchOver)
+        val newState = advanceResult.tableState
+        assertEquals(1, newState.comboCount)
+        assertEquals(1, newState.roundNumber)
+        assertEquals(
+            dealerId,
+            newState.players.first { it.currentWind == Wind.EAST }.id,
+            "Dealer should stay the same when tenpai at exhaustive draw.",
+        )
+    }
+
+    /**
+     * 驗證莊家一般流局時不聽（`actionHistory` 沒有 Tsumo/Ron/ExhaustiveDraw）：過莊、換下一位當莊家。
+     */
+    @Test
+    fun `test advance round rotates dealer when dealer was noten at exhaustive draw`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val nextDealerId = Uuid.random()
+        // 莊家不聽時 actionHistory 完全空白（DeclareExhaustiveDrawUseCase 只把 ExhaustiveDraw
+        // 記錄進聽牌玩家），p2 是否記錄跟這個判斷式無關，這裡刻意留空模擬「p2 也不聽」的情境。
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH, id = nextDealerId)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, p2, p3, p4),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            roundNumber = 1,
+            comboCount = 2,
+            prevalentWind = Wind.EAST,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        assertEquals(false, advanceResult.isMatchOver)
+        val newState = advanceResult.tableState
+        assertEquals(0, newState.comboCount)
+        assertEquals(2, newState.roundNumber)
         assertEquals(
             nextDealerId,
             newState.players.first { it.currentWind == Wind.EAST }.id,

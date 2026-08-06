@@ -4,11 +4,16 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.util.isHonor
+import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
 import kotlin.uuid.Uuid
 
 /**
@@ -263,5 +268,95 @@ class RiichiRuleModule(
     override fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>? {
         val riichiDynamicState = tableState.dynamicRuleState as? RiichiDynamicState ?: return null
         return riichiDynamicState.copy(riichiStickCount = 0) to riichiDynamicState.riichiStickCount * 1000
+    }
+
+    /**
+     * 計算一般流局（牌山摸盡）的點數結算：聽牌判定（[ShantenResult] 非 [ShantenResult.NotTenpai]
+     * 皆視為聽牌，`Complete` 理論上不會在流局判定時出現，僅作寬鬆處理）、流局滿貫偵測
+     * （牌河非空、且全部為么九牌、且沒有任何一張被鳴走），以及依兩者互斥決定的點數異動：
+     * 流局滿貫成立時視為自摸滿貫（見 [buildNagashiManganDeltas]），否則為不聽罰符
+     * （見 [buildNotenPenaltyDeltas]）。
+     */
+    override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult {
+        val shantenCalculator = createShantenCalculator()
+        val tenpaiIds = tableState.players
+            .filter { shantenCalculator.calculate(it.hand) !is ShantenResult.NotTenpai }
+            .map { it.id }
+            .toSet()
+
+        val nagashiManganIds = tableState.players
+            .filter { player ->
+                player.discardPile.entries.isNotEmpty() &&
+                    player.discardPile.entries.all { entry ->
+                        !entry.isTaken && (entry.tile.tile.isTerminal || entry.tile.tile.isHonor)
+                    }
+            }
+            .map { it.id }
+            .toSet()
+
+        val scoreDeltas = if (nagashiManganIds.isNotEmpty()) {
+            buildNagashiManganDeltas(tableState, nagashiManganIds)
+        } else {
+            buildNotenPenaltyDeltas(tableState, tenpaiIds)
+        }
+
+        return ExhaustiveDrawSettlementResult(
+            reason = RiichiExhaustiveDrawReason.Normal,
+            tenpaiPlayerIds = tenpaiIds + nagashiManganIds,
+            nagashiManganPlayerIds = nagashiManganIds,
+            scoreDeltas = scoreDeltas,
+        )
+    }
+
+    /**
+     * 流局滿貫視為自摸滿貫，重用既有的 [PointCalculator.calculateNonYakumanPoint]（`han = 5`
+     * 固定走滿貫的 `basicPoint = 2000` 分支，`fu` 不影響結果），依莊/閒身分換算成付款 map；
+     * 多位成立者時（罕見邊界情況）比照多家和的既有作法，把各自的付款加總到同一份 `scoreDeltas`
+     * （同一位玩家可能同時是多位成立者的付款對象）。
+     */
+    private fun buildNagashiManganDeltas(tableState: TableState, nagashiManganIds: Set<Uuid>): Map<Uuid, Int> {
+        val deltas = mutableMapOf<Uuid, Int>()
+        nagashiManganIds.forEach { achieverId ->
+            val achiever = tableState.players.first { it.id == achieverId }
+            val isDealer = achiever.currentWind == Wind.EAST
+            val pointResult = PointCalculator.calculateNonYakumanPoint(han = 5, fu = 0, isDealer = isDealer, isTsumo = true)
+            val payments: Map<Uuid, Int> = when (pointResult) {
+                is RiichiPointResult.DealerTsumo ->
+                    tableState.players
+                        .filter { it.id != achieverId }
+                        .associate { it.id to pointResult.paymentPerNonDealer }
+
+                is RiichiPointResult.NonDealerTsumo -> {
+                    val dealerId = tableState.players.first { it.currentWind == Wind.EAST }.id
+                    tableState.players
+                        .filter { it.id != achieverId }
+                        .associate { it.id to if (it.id == dealerId) pointResult.dealerPayment else pointResult.otherNonDealerPayment }
+                }
+
+                // calculateNonYakumanPoint(isTsumo = true) 理論上只會回傳上述兩種結果，僅作防呆。
+                is RiichiPointResult.Ron, is RiichiPointResult.PaoTsumo, is RiichiPointResult.PaoRon -> emptyMap()
+            }
+
+            deltas[achieverId] = (deltas[achieverId] ?: 0) + payments.values.sum()
+            payments.forEach { (payerId, amount) -> deltas[payerId] = (deltas[payerId] ?: 0) - amount }
+        }
+        return deltas
+    }
+
+    /**
+     * 不聽罰符：總額為「[RiichiScoreConfig.notenPenaltyUnit] * (對局人數 - 1)」（四人對局標準值
+     * 3000），由聽牌者均分收取、不聽者均分支付（皆為淨額，不需要逐筆算聽牌者與不聽者之間的
+     * 個別配對金額）。無人聽牌、全員聽牌、或（理論上不會發生的）無人不聽時，回傳空 map
+     * （沒有任何點數交換）。
+     */
+    private fun buildNotenPenaltyDeltas(tableState: TableState, tenpaiIds: Set<Uuid>): Map<Uuid, Int> {
+        val notenIds = tableState.players.map { it.id }.toSet() - tenpaiIds
+        if (tenpaiIds.isEmpty() || notenIds.isEmpty()) return emptyMap()
+
+        val total = config.scoreConfig.notenPenaltyUnit * (tableState.playerCount - 1)
+        val gainPerTenpai = total / tenpaiIds.size
+        val lossPerNoten = total / notenIds.size
+
+        return tenpaiIds.associateWith { gainPerTenpai } + notenIds.associateWith { -lossPerNoten }
     }
 }

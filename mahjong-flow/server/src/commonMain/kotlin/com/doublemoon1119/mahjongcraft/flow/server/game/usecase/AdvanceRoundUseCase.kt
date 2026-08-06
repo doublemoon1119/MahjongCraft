@@ -27,12 +27,14 @@ import kotlin.uuid.Uuid
  * 自動觸發，或由前端明確請求）是更外層（伺服器流程編排）的決定，不在這裡處理；呼叫前應確認本局
  * 已經結算完畢（沒有 `pendingReaction`）。
  *
- * 「莊家是否連莊」目前只能偵測「莊家胡牌」這條依據：[DeclareTsumoUseCase]/
- * [RespondToDiscardUseCase] 都會把 [GameAction.Tsumo]/[GameAction.Ron] 記錄進贏家的
- * `actionHistory`，且 [GameInitializer.startNextRound] 每次開新的一局都會把 `actionHistory`
- * 重置成空，所以「這局的 `actionHistory` 裡有沒有 Tsumo/Ron」可以直接拿來判斷「莊家這局是不是
- * 贏家之一」。「莊家流局聽牌」這條連莊依據依賴尚未實作的「流局判定」，目前偵測不到；等流局判定
- * 做出來後，需要回來擴充這裡的判斷式，`advanceRound` 本身的介面已經設計成不需要因此更動。
+ * 「莊家是否連莊」目前能偵測「莊家胡牌」與「莊家一般流局時聽牌（含流局滿貫）」兩條依據：
+ * [DeclareTsumoUseCase]/[RespondToDiscardUseCase] 會把 [GameAction.Tsumo]/[GameAction.Ron] 記錄進
+ * 贏家的 `actionHistory`；[DeclareExhaustiveDrawUseCase] 則只把 [GameAction.ExhaustiveDraw] 記錄進
+ * 聽牌玩家（含流局滿貫成立者）的 `actionHistory`，不聽的玩家不記錄。
+ * [GameInitializer.startNextRound] 每次開新的一局都會把 `actionHistory` 重置成空，所以「這局的
+ * `actionHistory` 裡有沒有 Tsumo/Ron/ExhaustiveDraw」可以直接拿來判斷「莊家這局是不是贏家之一，
+ * 或流局時是否聽牌」。九種九牌等途中流局的連莊依據（莊家固定連莊，不需要判斷聽牌與否）留給
+ * 對應子項擴充。
  *
  * 整場對局已結束（[com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult.isMatchOver]）
  * 時，本用例只誠實回報「已經結束」，不做任何額外收尾（房間清理、最終排名等留給未來獨立的單位）——
@@ -64,7 +66,9 @@ class AdvanceRoundUseCase(
                 else -> {
                     val module = moduleRegistry.getModule(state.config)
                     val dealer = state.players.first { it.currentWind == Wind.EAST }
-                    val dealerRepeats = dealer.actionHistory.any { it is GameAction.Tsumo || it is GameAction.Ron }
+                    val dealerRepeats = dealer.actionHistory.any {
+                        it is GameAction.Tsumo || it is GameAction.Ron || it is GameAction.ExhaustiveDraw
+                    }
                     val roundAdvancement = state.advanceRound(dealerRepeats)
 
                     if (roundAdvancement.isMatchOver) {

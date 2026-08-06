@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
+import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
@@ -146,4 +147,11 @@ class TaiwanRuleModule(
      * @return 固定回傳 null。
      */
     override fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>? = null
+
+    /**
+     * 台灣麻將目前沒有流局結算的實作。
+     *
+     * @return 固定回傳 null。
+     */
+    override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult? = null
 }

@@ -52,4 +52,16 @@ sealed interface GameError : ApplicationError {
      * @param gameId 對局 Uuid。
      */
     data class WallExhausted(val gameId: Uuid) : GameError
+
+    /**
+     * 該對局採用的規則模組不支援目前嘗試的系統性動作（無對應玩家發起者，例如流局結算）。
+     *
+     * 刻意不像 [IllegalAction] 一樣攜帶具體的 [GameAction]——系統性動作觸發此錯誤的時間點，
+     * 通常是規則模組的 `declare*` 系列鉤子直接回傳 null（例如此對局的規則根本不支援流局結算），
+     * 呼叫端此時尚未能建構出一個有意義的 [GameAction] 具體實例（那正是問題所在），
+     * 沒有 [GameAction] payload 也不影響呼叫端判斷錯誤類型。
+     *
+     * @param gameId 對局 Uuid。
+     */
+    data class UnsupportedAction(val gameId: Uuid) : GameError
 }

@@ -176,4 +176,14 @@ class TaiwanRuleModuleTest {
 
         assertNull(module.collectStickPot(table))
     }
+
+    /**
+     * 驗證台灣麻將目前沒有流局結算的實作，回傳 null。
+     */
+    @Test
+    fun `test declareExhaustiveDraw returns null`() {
+        val table = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create()))
+
+        assertNull(module.declareExhaustiveDraw(table))
+    }
 }

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -17,6 +18,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /**
  * 針對 [RiichiRuleModule] 進行的單元測試。
@@ -534,5 +536,246 @@ class RiichiRuleModuleTest {
         val result = module.collectStickPot(table)
 
         assertEquals(RiichiDynamicState(riichiStickCount = 0) to 0, result)
+    }
+
+    /**
+     * 聽牌手牌：1112345678999m（聽 1m 對倒），供 [declareExhaustiveDraw] 測試共用。
+     */
+    private fun tenpaiHand() = FakeHandFactory.create(
+        listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 2),
+            Tile.Numeric(Tile.Suit.Character, 3),
+            Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Character, 5),
+            Tile.Numeric(Tile.Suit.Character, 6),
+            Tile.Numeric(Tile.Suit.Character, 7),
+            Tile.Numeric(Tile.Suit.Character, 8),
+            Tile.Numeric(Tile.Suit.Character, 9),
+            Tile.Numeric(Tile.Suit.Character, 9),
+            Tile.Numeric(Tile.Suit.Character, 9),
+        ),
+    )
+
+    /**
+     * 明顯遠離聽牌的手牌（13 張互不相干的孤立牌），供 [declareExhaustiveDraw] 測試共用。
+     */
+    private fun notTenpaiHand() = FakeHandFactory.create(
+        listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Character, 7),
+            Tile.Numeric(Tile.Suit.Dot, 1),
+            Tile.Numeric(Tile.Suit.Dot, 4),
+            Tile.Numeric(Tile.Suit.Dot, 7),
+            Tile.Numeric(Tile.Suit.Bamboo, 1),
+            Tile.Numeric(Tile.Suit.Bamboo, 4),
+            Tile.Numeric(Tile.Suit.Bamboo, 7),
+            Tile.Honor.East,
+            Tile.Honor.South,
+            Tile.Honor.West,
+            Tile.Honor.North,
+        ),
+    )
+
+    /**
+     * 全為么九牌、皆未被鳴走的牌河，成立流局滿貫的必要條件，供 [declareExhaustiveDraw] 測試共用。
+     */
+    private fun allYaochuuDiscardPile() = RiichiDiscardPile()
+        .discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
+        .discardTile(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)))
+        .discardTile(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)))
+
+    /**
+     * 驗證無人聽牌時不進行任何點數交換。
+     */
+    @Test
+    fun `test declareExhaustiveDraw no exchange when nobody is tenpai`() {
+        val players = List(4) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(
+            ExhaustiveDrawSettlementResult(
+                reason = RiichiExhaustiveDrawReason.Normal,
+                tenpaiPlayerIds = emptySet(),
+                nagashiManganPlayerIds = emptySet(),
+                scoreDeltas = emptyMap(),
+            ),
+            result,
+        )
+    }
+
+    /**
+     * 驗證全員聽牌時不進行任何點數交換。
+     */
+    @Test
+    fun `test declareExhaustiveDraw no exchange when everyone is tenpai`() {
+        val players = List(4) { FakeMahjongPlayerFactory.create(hand = tenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(players.map { it.id }.toSet(), result?.tenpaiPlayerIds)
+        assertEquals(emptyMap<Uuid, Int>(), result?.scoreDeltas)
+    }
+
+    /**
+     * 驗證恰好一人聽牌時，聽牌者從其餘三家各收 1000 點（總額 3000）。
+     */
+    @Test
+    fun `test declareExhaustiveDraw single tenpai player collects from the other three`() {
+        val tenpaiPlayer = FakeMahjongPlayerFactory.create(hand = tenpaiHand())
+        val notenPlayers = List(3) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = listOf(tenpaiPlayer) + notenPlayers, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(setOf(tenpaiPlayer.id), result?.tenpaiPlayerIds)
+        val expectedDeltas = mapOf(tenpaiPlayer.id to 3000) + notenPlayers.associate { it.id to -1000 }
+        assertEquals(expectedDeltas, result?.scoreDeltas)
+    }
+
+    /**
+     * 驗證恰好兩人聽牌時，兩位不聽者各支付 1500 點，兩位聽牌者各收 1500 點。
+     */
+    @Test
+    fun `test declareExhaustiveDraw two tenpai players split evenly with two noten players`() {
+        val tenpaiPlayers = List(2) { FakeMahjongPlayerFactory.create(hand = tenpaiHand()) }
+        val notenPlayers = List(2) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = tenpaiPlayers + notenPlayers, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        val expectedDeltas = tenpaiPlayers.associate { it.id to 1500 } + notenPlayers.associate { it.id to -1500 }
+        assertEquals(expectedDeltas, result?.scoreDeltas)
+    }
+
+    /**
+     * 驗證恰好三人聽牌時，唯一不聽者支付 3000 點，由三位聽牌者各收 1000 點。
+     */
+    @Test
+    fun `test declareExhaustiveDraw three tenpai players collect from the single noten player`() {
+        val tenpaiPlayers = List(3) { FakeMahjongPlayerFactory.create(hand = tenpaiHand()) }
+        val notenPlayer = FakeMahjongPlayerFactory.create(hand = notTenpaiHand())
+        val table = FakeTableStateFactory.create(players = tenpaiPlayers + notenPlayer, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        val expectedDeltas = tenpaiPlayers.associate { it.id to 1000 } + mapOf(notenPlayer.id to -3000)
+        assertEquals(expectedDeltas, result?.scoreDeltas)
+    }
+
+    /**
+     * 驗證莊家成立流局滿貫時，視為自摸滿貫由其餘三家各付 4000 點（總額 12000），
+     * 且即使其他玩家不聽也不進行不聽罰符收授。
+     */
+    @Test
+    fun `test declareExhaustiveDraw dealer nagashi mangan charges 4000 from each of the other three`() {
+        val dealer = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = notTenpaiHand(),
+            discardPile = allYaochuuDiscardPile(),
+        )
+        val others = List(3) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = listOf(dealer) + others, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(setOf(dealer.id), result?.nagashiManganPlayerIds)
+        assertTrue(dealer.id in requireNotNull(result).tenpaiPlayerIds)
+        val expectedDeltas = mapOf(dealer.id to 12000) + others.associate { it.id to -4000 }
+        assertEquals(expectedDeltas, result.scoreDeltas)
+    }
+
+    /**
+     * 驗證閒家成立流局滿貫時，視為自摸滿貫，莊家付 4000 點、其餘兩位閒家各付 2000 點（總額 8000）。
+     */
+    @Test
+    fun `test declareExhaustiveDraw non-dealer nagashi mangan charges dealer double`() {
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, hand = notTenpaiHand())
+        val achiever = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = notTenpaiHand(),
+            discardPile = allYaochuuDiscardPile(),
+        )
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, hand = notTenpaiHand())
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, hand = notTenpaiHand())
+        val table = FakeTableStateFactory.create(players = listOf(dealer, achiever, west, north), config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(setOf(achiever.id), result?.nagashiManganPlayerIds)
+        val expectedDeltas = mapOf(achiever.id to 8000, dealer.id to -4000, west.id to -2000, north.id to -2000)
+        assertEquals(expectedDeltas, result?.scoreDeltas)
+    }
+
+    /**
+     * 驗證牌河中有一張么九牌被鳴走時，流局滿貫不成立，退回一般聽牌/不聽罰符路徑。
+     */
+    @Test
+    fun `test declareExhaustiveDraw nagashi mangan does not apply when a discard was taken`() {
+        val discardPile = allYaochuuDiscardPile().takeLast()
+        val player = FakeMahjongPlayerFactory.create(hand = tenpaiHand(), discardPile = discardPile)
+        val notenPlayers = List(3) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = listOf(player) + notenPlayers, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(emptySet<Uuid>(), result?.nagashiManganPlayerIds)
+        assertEquals(mapOf(player.id to 3000) + notenPlayers.associate { it.id to -1000 }, result?.scoreDeltas)
+    }
+
+    /**
+     * 驗證牌河中含有非么九牌時，流局滿貫不成立，退回一般聽牌/不聽罰符路徑。
+     */
+    @Test
+    fun `test declareExhaustiveDraw nagashi mangan does not apply when a non-yaochuu tile was discarded`() {
+        val discardPile = RiichiDiscardPile()
+            .discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
+            .discardTile(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)))
+        val player = FakeMahjongPlayerFactory.create(hand = tenpaiHand(), discardPile = discardPile)
+        val notenPlayers = List(3) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = listOf(player) + notenPlayers, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(emptySet<Uuid>(), result?.nagashiManganPlayerIds)
+        assertEquals(mapOf(player.id to 3000) + notenPlayers.associate { it.id to -1000 }, result?.scoreDeltas)
+    }
+
+    /**
+     * 驗證兩位非莊家同時成立流局滿貫時，各自的自摸滿貫結算會正確加總到同一份 `scoreDeltas`——
+     * 兩位成立者彼此之間互為對方結算裡的付款方，需要疊加而非互相覆蓋。
+     */
+    @Test
+    fun `test declareExhaustiveDraw aggregates deltas when multiple non-dealers achieve nagashi mangan`() {
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, hand = notTenpaiHand())
+        val south = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = notTenpaiHand(),
+            discardPile = allYaochuuDiscardPile(),
+        )
+        val west = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.WEST,
+            hand = notTenpaiHand(),
+            discardPile = allYaochuuDiscardPile(),
+        )
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, hand = notTenpaiHand())
+        val table = FakeTableStateFactory.create(players = listOf(dealer, south, west, north), config = module.config)
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(setOf(south.id, west.id), result?.nagashiManganPlayerIds)
+        val expectedDeltas = mapOf(
+            dealer.id to -8000,
+            south.id to 6000,
+            west.id to 6000,
+            north.id to -4000,
+        )
+        assertEquals(expectedDeltas, result?.scoreDeltas)
     }
 }

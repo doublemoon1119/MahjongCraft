@@ -226,4 +226,15 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 收下供託後應套用的動態桌況狀態，以及贏家因此獲得的點數；若此規則沒有供託機制則為 null。
      */
     fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>?
+
+    /**
+     * 計算一次一般流局（牌山摸盡）的點數結算：聽牌/不聽罰符的拆分，以及流局滿貫成立時
+     * 視為自摸滿貫的點數結算（兩者互斥，流局滿貫成立時不再進行不聽罰符收授）。
+     *
+     * 不支援一般流局結算的規則應回傳 null。
+     *
+     * @param tableState 目前的桌況（尚未套用本次流局結算，牌山應已摸盡）。
+     * @return 本次一般流局的結算結果，若此規則不支援則為 null。
+     */
+    fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult?
 }
