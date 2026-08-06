@@ -6,8 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublish
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
-import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -19,12 +18,14 @@ import kotlin.uuid.Uuid
  * 負責處理玩家的摸牌請求，包含回合驗證、牌山狀態更新以及快照與事件的同步。
  *
  * @property gameRepository 權威對局數據倉庫。
+ * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
  * @property gameSnapshotRepository 對局快照數據倉庫。
  * @property eventPublisher 對局通知服務。
  */
 @Factory
 class DrawTileUseCase(
     private val gameRepository: GameRepository,
+    private val moduleRegistry: MahjongModuleRegistry,
     private val gameSnapshotRepository: GameSnapshotRepository,
     @Provided private val eventPublisher: GameEventPublisher
 ) {
@@ -51,11 +52,13 @@ class DrawTileUseCase(
                     if (tile == null) {
                         state to Outcome.Error(GameError.WallExhausted(gameId))
                     } else {
-                        val updatedPlayer = state.currentPlayer
-                            .copy(hand = state.currentPlayer.hand.copy(lastDrawn = tile))
-                            .clearPassedTiles()
-                            .recordAction(GameAction.Draw)
-                            .clearIppatsuOnOwnDraw()
+                        val module = moduleRegistry.getModule(state.config)
+                        val updatedPlayer = module.onPlayerDrew(
+                            state.currentPlayer
+                                .copy(hand = state.currentPlayer.hand.copy(lastDrawn = tile))
+                                .clearPassedTiles()
+                                .recordAction(GameAction.Draw)
+                        )
                         val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
                         val newState = state.copy(tileWall = newWall, players = updatedPlayers)
 
@@ -80,17 +83,5 @@ class DrawTileUseCase(
         }
 
         return Outcome.Success(Unit)
-    }
-
-    /**
-     * 若玩家已立直且仍在一發窗口內，摸牌代表這個窗口已經結束（本巡未能胡牌），故清除一發資格。
-     *
-     * 只處理「自己摸牌」這個結束條件；「摸牌前有人鳴牌」也會讓一發失效，但那要等吃/碰/槓的
-     * use case 做出來後才能一併處理，目前是已知、尚未補上的部分。
-     */
-    private fun MahjongPlayer.clearIppatsuOnOwnDraw(): MahjongPlayer {
-        val riichiState = playerRuleState as? RiichiPlayerState ?: return this
-        if (!riichiState.isIppatsu) return this
-        return copy(playerRuleState = riichiState.copy(isIppatsu = false))
     }
 }

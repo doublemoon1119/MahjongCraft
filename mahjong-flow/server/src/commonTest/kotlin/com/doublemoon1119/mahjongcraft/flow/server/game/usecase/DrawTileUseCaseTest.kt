@@ -1,12 +1,15 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
@@ -35,9 +38,10 @@ class DrawTileUseCaseTest {
 
     private class Fixtures {
         val gameRepo = FakeGameRepository()
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
         val eventPublisher = FakeGameEventPublisher()
-        val useCase = DrawTileUseCase(gameRepo, snapshotRepo, eventPublisher)
+        val useCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher)
     }
 
     private val drawnTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
@@ -54,6 +58,7 @@ class DrawTileUseCaseTest {
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
             tileWall = TileWall(listOf(drawnTile)),
             currentPlayerIndex = 0
         )
@@ -90,6 +95,7 @@ class DrawTileUseCaseTest {
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer),
+            config = RiichiRuleConfig(),
             tileWall = TileWall(listOf(drawnTile)),
             currentPlayerIndex = 0
         )
@@ -115,6 +121,7 @@ class DrawTileUseCaseTest {
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
             tileWall = TileWall(listOf(drawnTile)),
             currentPlayerIndex = 0
         )
