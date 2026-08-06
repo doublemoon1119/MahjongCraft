@@ -43,5 +43,5 @@ interface RoomRepository {
      *              回傳的房間為 null 時代表該房間應被移除；若無需變更，回傳原本傳入的房間即可（等同無操作）。
      * @return [block] 計算出的結果。
      */
-    suspend fun <T> update(id: Uuid, block: (Room?) -> Pair<Room?, T>): T
+    suspend fun <T> update(id: Uuid, block: suspend (Room?) -> Pair<Room?, T>): T
 }

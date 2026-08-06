@@ -17,7 +17,7 @@ class GameRepositoryImpl : GameRepository {
 
     override suspend fun removeTableState(gameId: Uuid) = mutex.withLock { tableStates.remove(gameId); Unit }
 
-    override suspend fun <T> update(gameId: Uuid, block: (TableState?) -> Pair<TableState?, T>): T = mutex.withLock {
+    override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T = mutex.withLock {
         val (next, result) = block(tableStates[gameId])
         if (next == null) tableStates.remove(gameId) else tableStates[gameId] = next
         result

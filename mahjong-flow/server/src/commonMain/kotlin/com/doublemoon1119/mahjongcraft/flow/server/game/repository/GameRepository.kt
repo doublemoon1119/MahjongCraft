@@ -43,5 +43,5 @@ interface GameRepository {
      *              回傳的桌況為 null 時代表該遊戲應被移除；若無需變更，回傳原本傳入的桌況即可（等同無操作）。
      * @return [block] 計算出的結果。
      */
-    suspend fun <T> update(gameId: Uuid, block: (TableState?) -> Pair<TableState?, T>): T
+    suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T
 }
