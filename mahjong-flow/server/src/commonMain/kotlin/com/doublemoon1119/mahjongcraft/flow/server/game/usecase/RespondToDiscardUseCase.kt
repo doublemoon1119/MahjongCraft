@@ -24,10 +24,10 @@ import kotlin.uuid.Uuid
  *
  * 對應 [DiscardTileUseCase] 捨牌後開啟的 `TableState.pendingReaction`：每位有資格的玩家各自呼叫
  * 一次本用例記錄自己的回應，直到所有有資格的玩家都回應完畢，才會實際結算。結算時的優先權規則：
- * 榮和 > 碰/明槓 > 吃（榮和與碰/明槓兩者都不會同時有超過一位玩家符合資格——榮和的單一贏家保證見
- * [DiscardTileUseCase] 的一炮多響防呆，碰/明槓則是同一張牌結構上不可能被兩人同時碰/槓——故不需要
- * 更細緻的同類型排序）；若所有人都選擇過牌，則單純推進到下一位玩家，行為與捨牌時「無人可反應」的
- * 情況相同。
+ * 榮和 > 碰/明槓 > 吃（碰/明槓則是同一張牌結構上不可能被兩人同時碰/槓，故不需要更細緻的同類型排序；
+ * 榮和則可能同時有多位贏家——見 [DiscardTileUseCase] 依 `MultiRonPolicy` 決定的一炮多響資格判斷，
+ * 本用例只單純結算「這次收到幾筆榮和回應」，不重複判斷資格與人數限制）；若所有人都選擇過牌，
+ * 則單純推進到下一位玩家，行為與捨牌時「無人可反應」的情況相同。
  *
  * 榮和結算後手牌即結束：本用例刻意只改動分數與贏家的 `actionHistory`，`currentPlayerIndex` 維持
  * 原樣不動（不像碰/吃/槓那樣把回合交給得標玩家），連莊/過莊/開下一局等後續流程留給未來獨立的單位。
@@ -83,8 +83,11 @@ class RespondToDiscardUseCase(
                         return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
                     }
 
-                    // 過水碰：放過的當下若原本可以碰，記錄下來讓本巡之後不能再碰
-                    val updatedResponder = if (action == GameAction.Pass && legalActions.any { it is GameAction.Pon }) {
+                    // 過水：放過的當下若原本可以碰或榮和，記錄下來——碰用於本巡過水碰，
+                    // 榮和用於同巡振聽判定（見 MahjongPlayer.passedTilesInRound 的用途說明）
+                    val updatedResponder = if (action == GameAction.Pass &&
+                        legalActions.any { it is GameAction.Pon || it is GameAction.Ron }
+                    ) {
                         responder.addPassedTile(discardedTile.tile)
                     } else {
                         responder
@@ -128,9 +131,9 @@ class RespondToDiscardUseCase(
         discardedTile: IdentifiedTile,
         module: MahjongRuleModule<*>,
     ): TableState {
-        val ronEntry = pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Ron }
-        if (ronEntry != null) {
-            return resolveRon(state, players, pendingReaction, discardedTile, module, winnerId = ronEntry.key)
+        val ronWinnerIds = pendingReaction.responses.filterValues { it is GameAction.Ron }.keys
+        if (ronWinnerIds.isNotEmpty()) {
+            return resolveRon(state, players, pendingReaction, discardedTile, module, winnerIds = ronWinnerIds)
         }
 
         val winningEntry = pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Pon || it.value is GameAction.Kan }
@@ -193,9 +196,13 @@ class RespondToDiscardUseCase(
     }
 
     /**
-     * 套用榮和結算：更新贏家與放銃者（或包牌責任者）的分數、記錄贏家的 [GameAction.Ron] 動作歷史、
+     * 套用榮和結算：更新贏家與放銃者（或包牌責任者）的分數、記錄各贏家的 [GameAction.Ron] 動作歷史、
      * 清除反應視窗。手牌到此結束，不套用任何副露、不標記捨牌已被鳴走、不推進 `currentPlayerIndex`、
      * 不清除一發（一發是否失效在手牌已結束的情況下沒有意義）——這些皆與碰/吃/槓的結算路徑不同。
+     *
+     * [winnerIds] 可能不只一人（一炮多響、且規則設定為多家和時）：每位贏家各自呼叫
+     * [MahjongRuleModule.declareRon] 獨立結算，再把所有結算金額加總到同一份分數異動——同一位玩家
+     * 有可能同時是某人的贏家、又是另一人的包牌責任者，需要正確疊加而非互相覆蓋。
      */
     private fun resolveRon(
         state: TableState,
@@ -203,23 +210,31 @@ class RespondToDiscardUseCase(
         pendingReaction: PendingReaction,
         discardedTile: IdentifiedTile,
         module: MahjongRuleModule<*>,
-        winnerId: Uuid,
+        winnerIds: Set<Uuid>,
     ): TableState {
-        val winner = players.first { it.id == winnerId }
+        val settlements = winnerIds.associateWith { winnerId ->
+            val winner = players.first { it.id == winnerId }
+            module.declareRon(state, winner, discardedTile, pendingReaction.discarderId)
+        }
 
-        // 理論上不會發生：能走到這裡代表 invoke() 已經用 getLegalActions 重新驗證過 Ron 目前合法，
+        // 理論上不會發生：能走到這裡代表 invoke() 已經用 getLegalActions 重新驗證過每筆 Ron 目前合法，
         // 僅作防呆，維持反應視窗不變。
-        val settlement = module.declareRon(state, winner, discardedTile, pendingReaction.discarderId)
-            ?: return state.copy(players = players, pendingReaction = pendingReaction)
+        if (settlements.values.any { it == null }) {
+            return state.copy(players = players, pendingReaction = pendingReaction)
+        }
 
-        val updatedWinner = winner
-            .copy(score = winner.score + settlement.totalGained)
-            .recordAction(GameAction.Ron(discardedTile.id))
-        val updatedPlayers = players.map { p ->
-            when {
-                p.id == winnerId -> updatedWinner
-                else -> settlement.paymentsByPlayerId[p.id]?.let { payment -> p.copy(score = p.score - payment) } ?: p
+        val scoreDeltas = mutableMapOf<Uuid, Int>()
+        settlements.forEach { (winnerId, settlement) ->
+            checkNotNull(settlement)
+            scoreDeltas[winnerId] = (scoreDeltas[winnerId] ?: 0) + settlement.totalGained
+            settlement.paymentsByPlayerId.forEach { (payerId, amount) ->
+                scoreDeltas[payerId] = (scoreDeltas[payerId] ?: 0) - amount
             }
+        }
+
+        val updatedPlayers = players.map { p ->
+            val updated = p.copy(score = p.score + (scoreDeltas[p.id] ?: 0))
+            if (p.id in winnerIds) updated.recordAction(GameAction.Ron(discardedTile.id)) else updated
         }
 
         return state.copy(players = updatedPlayers, pendingReaction = null)

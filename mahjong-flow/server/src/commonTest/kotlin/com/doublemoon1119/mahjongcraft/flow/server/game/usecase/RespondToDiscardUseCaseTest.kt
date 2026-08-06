@@ -529,6 +529,185 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
+     * 驗證雙人同時榮和（多家和）時：兩位贏家各自獨立結算分數與 actionHistory，放銃者的分數扣除
+     * 兩者總和，且反應視窗要等到兩人都回應完畢才會結算。
+     */
+    @Test
+    fun `test double ron settles both winners independently`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.WEST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val dealerWinnerId = Uuid.random()
+        val dealerWinner = FakeMahjongPlayerFactory.create(
+            id = dealerWinnerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和/人和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val nonDealerWinner = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, dealerWinner, nonDealerWinner),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(dealerWinnerId, responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val firstResult = fixtures.useCase(gameId, dealerWinnerId, GameAction.Ron(discardedTile.id))
+        assertTrue(firstResult is Outcome.Success, "Expected Success but got $firstResult")
+        val stateAfterFirstRon = fixtures.gameRepo.getTableState(gameId)!!
+        assertNotNull(stateAfterFirstRon.pendingReaction, "Should still wait for the other winner to respond.")
+
+        val secondResult = fixtures.useCase(gameId, responderId, GameAction.Ron(discardedTile.id))
+        assertTrue(secondResult is Outcome.Success, "Expected Success but got $secondResult")
+
+        val finalState = fixtures.gameRepo.getTableState(gameId)!!
+        assertNull(finalState.pendingReaction)
+        assertEquals(0, finalState.currentPlayerIndex, "Ron ends the hand; currentPlayerIndex should stay untouched.")
+
+        val finalDealerWinner = finalState.players.first { it.id == dealerWinnerId }
+        assertEquals(48000, finalDealerWinner.score, "Dealer Ron on daisangen should be worth 48000 total.")
+        assertEquals(GameAction.Ron(discardedTile.id), finalDealerWinner.actionHistory.last())
+
+        val finalNonDealerWinner = finalState.players.first { it.id == responderId }
+        assertEquals(32000, finalNonDealerWinner.score, "Non-dealer Ron on daisangen should be worth 32000 total.")
+        assertEquals(GameAction.Ron(discardedTile.id), finalNonDealerWinner.actionHistory.last())
+
+        val finalDiscarder = finalState.players.first { it.id == discarderId }
+        assertEquals(-80000, finalDiscarder.score, "The discarder should pay the sum of both winners' totals.")
+    }
+
+    /**
+     * 驗證三人同時榮和時，三位贏家皆各自獨立結算，放銃者的分數扣除三者總和。
+     */
+    @Test
+    fun `test triple ron settles all three winners independently`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.NORTH,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val dealerWinnerId = Uuid.random()
+        val dealerWinner = FakeMahjongPlayerFactory.create(
+            id = dealerWinnerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val nonDealerWinner1 = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val nonDealerWinner2Id = Uuid.random()
+        val nonDealerWinner2 = FakeMahjongPlayerFactory.create(
+            id = nonDealerWinner2Id,
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, dealerWinner, nonDealerWinner1, nonDealerWinner2),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(
+                discarderId,
+                discardedTile.id,
+                setOf(dealerWinnerId, responderId, nonDealerWinner2Id),
+            ),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.useCase(gameId, dealerWinnerId, GameAction.Ron(discardedTile.id))
+        fixtures.useCase(gameId, responderId, GameAction.Ron(discardedTile.id))
+        val stateBeforeLastRon = fixtures.gameRepo.getTableState(gameId)!!
+        assertNotNull(stateBeforeLastRon.pendingReaction, "Should still wait for the third winner to respond.")
+
+        val lastResult = fixtures.useCase(gameId, nonDealerWinner2Id, GameAction.Ron(discardedTile.id))
+        assertTrue(lastResult is Outcome.Success, "Expected Success but got $lastResult")
+
+        val finalState = fixtures.gameRepo.getTableState(gameId)!!
+        assertNull(finalState.pendingReaction)
+
+        assertEquals(48000, finalState.players.first { it.id == dealerWinnerId }.score)
+        assertEquals(32000, finalState.players.first { it.id == responderId }.score)
+        assertEquals(32000, finalState.players.first { it.id == nonDealerWinner2Id }.score)
+        assertEquals(
+            -112000,
+            finalState.players.first { it.id == discarderId }.score,
+            "The discarder should pay the sum of all three winners' totals.",
+        )
+    }
+
+    /**
+     * 驗證放過原本可以榮和的牌時，也會記錄同巡振聽（不只放過碰牌需要記錄）。
+     */
+    @Test
+    fun `test pass on lone ron-eligible player records passed tile for furiten`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        // 役牌白＋役牌發已成立，單騎聽中，可榮和捨出的紅中
+        val responder = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(
+                tiles = listOf(
+                    Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
+                    Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+                    Tile.Numeric(Tile.Suit.Dot, 2), Tile.Numeric(Tile.Suit.Dot, 3), Tile.Numeric(Tile.Suit.Dot, 4),
+                    Tile.Numeric(Tile.Suit.Bamboo, 5), Tile.Numeric(Tile.Suit.Bamboo, 6), Tile.Numeric(Tile.Suit.Bamboo, 7),
+                    Tile.Honor.Red,
+                ).map { FakeIdentifiedTileFactory.create(it) },
+            ),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, responder),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, responderId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertNull(newState.pendingReaction, "Everyone eligible has responded, so the reaction window should close.")
+        val updatedResponder = newState.players.first { it.id == responderId }
+        assertTrue(
+            Tile.Honor.Red in updatedResponder.passedTilesInRound,
+            "Passing on an available Ron should be recorded for same-go-around furiten (同巡振聽).",
+        )
+    }
+
+    /**
      * 驗證振聽時榮和被擋下：玩家先前已經打過（或放過）等待的牌，重新驗證合法動作時 Ron 不會出現，
      * 直接回傳 [GameError.IllegalAction]（沿用既有的 getLegalActions 重新驗證機制，無需新程式碼）。
      */

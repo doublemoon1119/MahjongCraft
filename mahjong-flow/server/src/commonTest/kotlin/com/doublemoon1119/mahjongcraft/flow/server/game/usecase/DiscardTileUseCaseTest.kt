@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepos
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -218,11 +220,12 @@ class DiscardTileUseCaseTest {
     }
 
     /**
-     * 驗證同一張捨牌同時有兩位玩家可榮和時，本輪對所有人都不開放榮和資格（一炮多響防呆），
+     * 驗證雙響時規則設定為流局（[RonResolution.ABORTIVE_DRAW]）時，本輪對所有人都不開放榮和資格
+     * （真正讓本局流局的行為留給未來的流局判定 use case，這裡只驗證目前的過渡行為），
      * 但不影響其他玩家原有的碰牌資格判斷。
      */
     @Test
-    fun `test discard tile excludes ron eligibility entirely when two players can ron the same tile`() = runTest {
+    fun `test discard tile excludes ron eligibility entirely when double ron resolves to abortive draw`() = runTest {
         val fixtures = Fixtures()
         val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
         val currentPlayer = FakeMahjongPlayerFactory.create(
@@ -233,7 +236,7 @@ class DiscardTileUseCaseTest {
         val ronEligiblePlayerId1 = otherPlayerId
         val ronEligiblePlayerId2 = Uuid.random()
         val ponEligiblePlayerId = Uuid.random()
-        // 兩位玩家皆單騎聽中，同時可榮和捨出的紅中，觸發一炮多響防呆
+        // 兩位玩家皆單騎聽中，同時可榮和捨出的紅中
         val ronPlayer1 = FakeMahjongPlayerFactory.create(
             id = ronEligiblePlayerId1,
             initialSeat = Wind.SOUTH,
@@ -244,7 +247,7 @@ class DiscardTileUseCaseTest {
             initialSeat = Wind.WEST,
             hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
         )
-        // 手牌中有兩張紅中，湊滿碰牌的條件，驗證榮和防呆不影響碰牌資格
+        // 手牌中有兩張紅中，湊滿碰牌的條件，驗證流局判斷不影響碰牌資格
         val ponPlayer = FakeMahjongPlayerFactory.create(
             id = ponEligiblePlayerId,
             initialSeat = Wind.NORTH,
@@ -258,7 +261,12 @@ class DiscardTileUseCaseTest {
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer, ronPlayer1, ronPlayer2, ponPlayer),
-            config = RiichiRuleConfig(),
+            config = RiichiRuleConfig(
+                multiRonPolicy = MultiRonPolicy(
+                    doubleRonResolution = RonResolution.ABORTIVE_DRAW,
+                    tripleRonResolution = RonResolution.ABORTIVE_DRAW,
+                ),
+            ),
             tileWall = TileWall(emptyList()),
             currentPlayerIndex = 0,
         )
@@ -275,7 +283,212 @@ class DiscardTileUseCaseTest {
         assertEquals(
             setOf(ponEligiblePlayerId),
             pendingReaction.eligiblePlayerIds,
-            "Both ron-eligible players should be excluded, leaving only the pon-eligible player.",
+            "Both ron-eligible players should be excluded under ABORTIVE_DRAW, leaving only the pon-eligible player.",
+        )
+    }
+
+    /**
+     * 驗證雙響時規則設定為多家和（[RonResolution.ALL_WINNERS]，Riichi 預設）時，
+     * 兩位符合資格的玩家皆取得榮和資格。
+     */
+    @Test
+    fun `test discard tile grants ron eligibility to both players when double ron resolves to all winners`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val ronPlayer1Id = otherPlayerId
+        val ronPlayer2Id = Uuid.random()
+        val ronPlayer1 = FakeMahjongPlayerFactory.create(
+            id = ronPlayer1Id,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val ronPlayer2 = FakeMahjongPlayerFactory.create(
+            id = ronPlayer2Id,
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, ronPlayer1, ronPlayer2),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        val pendingReaction = newState.pendingReaction
+        assertNotNull(pendingReaction)
+        assertEquals(setOf(ronPlayer1Id, ronPlayer2Id), pendingReaction.eligiblePlayerIds)
+    }
+
+    /**
+     * 驗證雙響時規則設定為頭跳（[RonResolution.NEAREST_WINNER]，Taiwan 預設）時，
+     * 只有順位最接近放銃者下家的那一位玩家取得榮和資格。
+     */
+    @Test
+    fun `test discard tile grants ron eligibility to nearest player only when double ron resolves to nearest winner`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val nearestPlayerId = otherPlayerId
+        val fartherPlayerId = Uuid.random()
+        // nearestPlayer 坐在放銃者（currentPlayer）的下家，順位比 fartherPlayer 更靠前
+        val nearestPlayer = FakeMahjongPlayerFactory.create(
+            id = nearestPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val fartherPlayer = FakeMahjongPlayerFactory.create(
+            id = fartherPlayerId,
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, nearestPlayer, fartherPlayer),
+            config = RiichiRuleConfig(
+                multiRonPolicy = MultiRonPolicy(
+                    doubleRonResolution = RonResolution.NEAREST_WINNER,
+                    tripleRonResolution = RonResolution.NEAREST_WINNER,
+                ),
+            ),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        val pendingReaction = newState.pendingReaction
+        assertNotNull(pendingReaction)
+        assertEquals(setOf(nearestPlayerId), pendingReaction.eligiblePlayerIds)
+    }
+
+    /**
+     * 驗證三響時規則設定為多家和時，三位符合資格的玩家皆取得榮和資格。
+     */
+    @Test
+    fun `test discard tile grants ron eligibility to all three players when triple ron resolves to all winners`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val southId = otherPlayerId
+        val westId = Uuid.random()
+        val northId = Uuid.random()
+        val south = FakeMahjongPlayerFactory.create(
+            id = southId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val west = FakeMahjongPlayerFactory.create(
+            id = westId,
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val north = FakeMahjongPlayerFactory.create(
+            id = northId,
+            initialSeat = Wind.NORTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, south, west, north),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        val pendingReaction = newState.pendingReaction
+        assertNotNull(pendingReaction)
+        assertEquals(setOf(southId, westId, northId), pendingReaction.eligiblePlayerIds)
+    }
+
+    /**
+     * 驗證三響時規則設定為頭跳時，只有順位最接近放銃者下家的那一位玩家取得榮和資格。
+     */
+    @Test
+    fun `test discard tile grants ron eligibility to nearest player only when triple ron resolves to nearest winner`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val southId = otherPlayerId
+        val westId = Uuid.random()
+        val northId = Uuid.random()
+        val south = FakeMahjongPlayerFactory.create(
+            id = southId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val west = FakeMahjongPlayerFactory.create(
+            id = westId,
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val north = FakeMahjongPlayerFactory.create(
+            id = northId,
+            initialSeat = Wind.NORTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, south, west, north),
+            config = RiichiRuleConfig(
+                multiRonPolicy = MultiRonPolicy(
+                    doubleRonResolution = RonResolution.NEAREST_WINNER,
+                    tripleRonResolution = RonResolution.NEAREST_WINNER,
+                ),
+            ),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        val pendingReaction = newState.pendingReaction
+        assertNotNull(pendingReaction)
+        assertEquals(
+            setOf(southId),
+            pendingReaction.eligiblePlayerIds,
+            "South sits immediately after the discarder, so South should win under NEAREST_WINNER.",
         )
     }
 

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublish
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
@@ -22,9 +23,15 @@ import kotlin.uuid.Uuid
  * （與先前行為相同）；若有人有資格，則改為開啟 [PendingReaction] 反應視窗、暫緩推進回合，交由
  * [RespondToDiscardUseCase] 處理後續的回應與結算。
  *
- * 一炮多響（同一張捨牌同時被多位玩家榮和）本單位明確排除：若計算出有超過一位玩家可榮和這張牌，
- * 本輪對所有人都不開放榮和資格（吃/碰/槓資格不受影響，各自獨立判斷）——避免在缺乏完整多家和結算
- * 規則的情況下，任意挑其中一人視為「唯一贏家」而產生錯誤結算。多家和支援留給獨立的未來單位。
+ * 一炮多響（同一張捨牌同時被多位玩家榮和）依 [com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy]
+ * 決定實際開放給誰：恰有 2 人可榮和時查
+ * [com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy.doubleRonResolution]，3 人（含）以上
+ * 則查 [com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy.tripleRonResolution]——
+ * [RonResolution.ALL_WINNERS] 全部開放；[RonResolution.NEAREST_WINNER] 只開放依
+ * [com.doublemoon1119.mahjongcraft.logic.table.TableState.nearestPlayerInTurnOrder] 判定、
+ * 順位最接近放銃者下家的那一位（頭跳）；[RonResolution.ABORTIVE_DRAW] 目前僅暫時對所有人都不開放
+ * 榮和資格（吃/碰/槓資格不受影響）——真正讓本局流局的行為需要「流局判定」use case 才能正確處理，
+ * 留給獨立的未來單位，目前的內建規則模組（日麻/台麻）預設值都不會實際觸發到這個分支。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器。
@@ -96,12 +103,23 @@ class DiscardTileUseCase(
                             .filterValues { actions -> actions.any { it is GameAction.Chi || it is GameAction.Pon || it is GameAction.Kan } }
                             .keys
 
-                        // 一炮多響防呆：超過一人可榮和同一張牌時，本輪對所有人都不開放榮和資格。
-                        val eligiblePlayerIds = meldEligiblePlayerIds + if (ronEligiblePlayerIds.size == 1) {
-                            ronEligiblePlayerIds
-                        } else {
-                            emptySet()
+                        // 一炮多響：依規則設定決定實際開放榮和資格給誰（4 人對局扣除放銃者後最多
+                        // 同時有 3 人可榮和，故只需區分雙響／三響兩種情境）。
+                        val ronResolution = when (ronEligiblePlayerIds.size) {
+                            0, 1 -> null
+                            2 -> state.config.multiRonPolicy.doubleRonResolution
+                            else -> state.config.multiRonPolicy.tripleRonResolution
                         }
+                        val ronWinningPlayerIds = when (ronResolution) {
+                            null, RonResolution.ALL_WINNERS -> ronEligiblePlayerIds
+                            RonResolution.NEAREST_WINNER ->
+                                setOf(stateAfterDiscard.nearestPlayerInTurnOrder(playerId, ronEligiblePlayerIds))
+                            // 真正讓本局流局需要流局判定 use case，目前先沿用「不開放榮和資格」的
+                            // 過渡行為；內建規則模組的預設值都不會實際觸發到這個分支。
+                            RonResolution.ABORTIVE_DRAW -> emptySet()
+                        }
+
+                        val eligiblePlayerIds = meldEligiblePlayerIds + ronWinningPlayerIds
 
                         val newState = if (eligiblePlayerIds.isEmpty()) {
                             stateAfterDiscard.copy(currentPlayerIndex = (state.currentPlayerIndex + 1) % state.playerCount)
