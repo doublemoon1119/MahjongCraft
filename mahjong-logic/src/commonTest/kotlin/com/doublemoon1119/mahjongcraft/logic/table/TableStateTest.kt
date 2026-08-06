@@ -2,12 +2,15 @@ package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeGameLength
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeScoreConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * 測試用的模擬動態規則狀態實作。
@@ -190,6 +193,142 @@ class TableStateTest {
             p1.id,
             table.nearestPlayerInTurnOrder(p3.id, setOf(p1.id, p2.id)),
             "From P3, the turn order wraps back around to P1 first.",
+        )
+    }
+
+    /**
+     * 驗證 [TableState.advanceRound] 連莊時只推進本場數，其餘欄位（局數、場風、各玩家方位）
+     * 皆維持不變，且連莊永遠不會讓整場對局結束。
+     */
+    @Test
+    fun `test advanceRound with dealer repeats only increments combo count`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val table = FakeTableStateFactory.create(
+            players = listOf(p1, p2, p3, p4),
+            roundNumber = 2,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+        )
+
+        val result = table.advanceRound(dealerRepeats = true)
+
+        assertEquals(1, result.comboCount)
+        assertEquals(2, result.roundNumber, "Round number should not advance on a repeat.")
+        assertEquals(Wind.EAST, result.prevalentWind)
+        assertEquals(listOf(p1, p2, p3, p4), result.players, "No player's currentWind should change on a repeat.")
+        assertFalse(result.isMatchOver)
+    }
+
+    /**
+     * 驗證 [TableState.advanceRound] 過莊時（同一場風內）正確輪動各玩家的 `currentWind`、
+     * 本場數歸零、局數推進，且場風維持不變。
+     */
+    @Test
+    fun `test advanceRound without repeat rotates dealer within the same prevalent wind`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val table = FakeTableStateFactory.create(
+            players = listOf(p1, p2, p3, p4),
+            roundNumber = 1,
+            comboCount = 2,
+            prevalentWind = Wind.EAST,
+            config = FakeMahjongRuleConfig(gameLength = FakeGameLength(totalRounds = 8)),
+        )
+
+        val result = table.advanceRound(dealerRepeats = false)
+
+        assertEquals(0, result.comboCount)
+        assertEquals(2, result.roundNumber)
+        assertEquals(Wind.EAST, result.prevalentWind, "Still within the East wind after just one rotation.")
+        assertFalse(result.isMatchOver)
+        assertEquals(Wind.EAST, result.players.first { it.id == p2.id }.currentWind, "P2 (previously South) becomes the new dealer.")
+        assertEquals(Wind.SOUTH, result.players.first { it.id == p3.id }.currentWind)
+        assertEquals(Wind.WEST, result.players.first { it.id == p4.id }.currentWind)
+        assertEquals(Wind.NORTH, result.players.first { it.id == p1.id }.currentWind, "The old dealer rotates all the way to North.")
+    }
+
+    /**
+     * 驗證 [TableState.advanceRound] 過莊且輪完一輪莊家後，場風正確從東進位到南。
+     */
+    @Test
+    fun `test advanceRound crosses into the next prevalent wind after every seat has dealt`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(currentWind = Wind.EAST)
+        // p4 是本局莊家（第 4 局，東風的最後一位莊家）
+        val table = FakeTableStateFactory.create(
+            players = listOf(
+                p1.copy(currentWind = Wind.SOUTH),
+                p2.copy(currentWind = Wind.WEST),
+                p3.copy(currentWind = Wind.NORTH),
+                p4,
+            ),
+            roundNumber = 4,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            config = FakeMahjongRuleConfig(gameLength = FakeGameLength(totalRounds = 8)),
+        )
+
+        val result = table.advanceRound(dealerRepeats = false)
+
+        assertEquals(5, result.roundNumber)
+        assertEquals(Wind.SOUTH, result.prevalentWind, "Every seat has now dealt once, so the prevalent wind advances to South.")
+        assertFalse(result.isMatchOver)
+    }
+
+    /**
+     * 驗證 [TableState.advanceRound] 過莊且局數已達 `GameLength.totalRounds` 上限時，
+     * 正確標記整場對局已結束。
+     */
+    @Test
+    fun `test advanceRound flags match over when exceeding total rounds`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val table = FakeTableStateFactory.create(
+            players = listOf(p1, p2, p3, p4),
+            roundNumber = 4,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            config = FakeMahjongRuleConfig(gameLength = FakeGameLength(totalRounds = 4)),
+        )
+
+        val result = table.advanceRound(dealerRepeats = false)
+
+        assertEquals(5, result.roundNumber)
+        assertTrue(result.isMatchOver)
+    }
+
+    /**
+     * 驗證 [TableState.advanceRound] 在三人桌時，莊家輪動能正確 wraparound（從最後一位輪回第一位）。
+     */
+    @Test
+    fun `test advanceRound wraps dealer rotation on a three-player table`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST).copy(currentWind = Wind.EAST)
+        // p3 是本局莊家；p1、p2 的 currentWind 需要跟著調整成非莊家的方位，避免同時有兩位「東」
+        val table = FakeTableStateFactory.create(
+            players = listOf(p1.copy(currentWind = Wind.SOUTH), p2.copy(currentWind = Wind.WEST), p3),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            config = FakeMahjongRuleConfig(gameLength = FakeGameLength(totalRounds = 8)),
+        )
+
+        val result = table.advanceRound(dealerRepeats = false)
+
+        assertEquals(
+            Wind.EAST,
+            result.players.first { it.id == p1.id }.currentWind,
+            "The dealer wraps back around to P1 after P3.",
         )
     }
 }

@@ -116,4 +116,49 @@ data class TableState(
             (candidateIndex - fromIndex).mod(playerCount)
         }
     }
+
+    /**
+     * 依「莊家是否連莊」計算連莊/過莊後的局數、本場數、場風與各玩家方位，並判斷整場對局是否已結束。
+     *
+     * 連莊/過莊本身的判斷依據（莊家胡牌、或流局聽牌）由呼叫端決定，這裡只接受已經決定好的
+     * [dealerRepeats]，不在這裡重新判斷——流局聽牌的判斷依賴目前尚未實作的「流局判定」，呼叫端
+     * 目前只能傳入「莊家是否為本局贏家之一」，日後流局判定做好後再擴充呼叫端的判斷依據，這個函式
+     * 本身不需要跟著改。
+     *
+     * 莊家判定為 `players` 中 `currentWind == Wind.EAST` 的那一位；過莊時把莊家換成座位順序中的
+     * 下一位（[getNextPlayer] 方向），並重新指派所有玩家的 [MahjongPlayer.currentWind]。
+     *
+     * @param dealerRepeats 本局是否應該連莊。
+     * @return 套用連莊或過莊後的結果。
+     */
+    fun advanceRound(dealerRepeats: Boolean): RoundAdvancementResult {
+        if (dealerRepeats) {
+            return RoundAdvancementResult(
+                players = players,
+                roundNumber = roundNumber,
+                comboCount = comboCount + 1,
+                prevalentWind = prevalentWind,
+                isMatchOver = false,
+            )
+        }
+
+        val newRoundNumber = roundNumber + 1
+        val currentDealerIndex = players.indexOfFirst { it.currentWind == Wind.EAST }
+        val newDealerIndex = (currentDealerIndex + 1) % playerCount
+        val winds = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).take(playerCount)
+        val rotatedPlayers = players.mapIndexed { index, player ->
+            player.copy(currentWind = winds[(index - newDealerIndex).mod(playerCount)])
+        }
+        // 若 newRoundNumber 已經超過 totalRounds（isMatchOver = true），這裡算出的場風理論上
+        // 不會再被使用；coerceAtMost 純粹避免此時的陣列界外存取，屬防呆。
+        val windIndex = ((newRoundNumber - 1) / playerCount).coerceAtMost(winds.size - 1)
+
+        return RoundAdvancementResult(
+            players = rotatedPlayers,
+            roundNumber = newRoundNumber,
+            comboCount = 0,
+            prevalentWind = winds[windIndex],
+            isMatchOver = newRoundNumber > config.gameLength.totalRounds,
+        )
+    }
 }
