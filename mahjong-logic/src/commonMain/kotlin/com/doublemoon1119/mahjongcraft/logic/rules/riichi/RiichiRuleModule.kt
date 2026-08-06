@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
@@ -251,5 +252,16 @@ class RiichiRuleModule(
         }
 
         return WinSettlementResult(totalGained = result.totalPoint, paymentsByPlayerId = payments)
+    }
+
+    /**
+     * 收下場上所有立直棒：贏家獲得「立直棒數量 * 1000」點，收下後立直棒數量歸零。
+     *
+     * @return 若 [tableState] 的動態桌況狀態並非 [RiichiDynamicState]（理論上不會發生，僅作防呆），
+     *         則回傳 null。
+     */
+    override fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>? {
+        val riichiDynamicState = tableState.dynamicRuleState as? RiichiDynamicState ?: return null
+        return riichiDynamicState.copy(riichiStickCount = 0) to riichiDynamicState.riichiStickCount * 1000
     }
 }

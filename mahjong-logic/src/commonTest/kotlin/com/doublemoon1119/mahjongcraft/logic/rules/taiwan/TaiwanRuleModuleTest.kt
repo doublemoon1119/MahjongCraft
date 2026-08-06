@@ -166,4 +166,14 @@ class TaiwanRuleModuleTest {
 
         assertNull(module.declareRon(table, player, winningTile, discarderId = Uuid.random()))
     }
+
+    /**
+     * 驗證台灣麻將目前沒有立直/供託這個機制，回傳 null。
+     */
+    @Test
+    fun `test collectStickPot returns null`() {
+        val table = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create()))
+
+        assertNull(module.collectStickPot(table))
+    }
 }

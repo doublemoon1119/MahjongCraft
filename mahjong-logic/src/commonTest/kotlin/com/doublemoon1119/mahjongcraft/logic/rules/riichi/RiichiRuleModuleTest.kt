@@ -502,4 +502,37 @@ class RiichiRuleModuleTest {
             result,
         )
     }
+
+    /**
+     * 驗證場上有立直棒時，收供託會回傳正確金額（立直棒數 * 1000），且回傳的狀態立直棒數歸零。
+     */
+    @Test
+    fun `test collectStickPot returns amount and resets stick count when sticks are on the table`() {
+        val table = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create()),
+            config = module.config,
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 3),
+        )
+
+        val result = module.collectStickPot(table)
+
+        assertEquals(RiichiDynamicState(riichiStickCount = 0) to 3000, result)
+    }
+
+    /**
+     * 驗證場上沒有立直棒時，收供託仍回傳非 null（金額 0、狀態不變）——null 專門用來表示
+     * 「這個規則根本沒有供託機制」，不跟「目前沒有供託」混用。
+     */
+    @Test
+    fun `test collectStickPot returns zero amount when there are no sticks on the table`() {
+        val table = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create()),
+            config = module.config,
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 0),
+        )
+
+        val result = module.collectStickPot(table)
+
+        assertEquals(RiichiDynamicState(riichiStickCount = 0) to 0, result)
+    }
 }

@@ -209,4 +209,21 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 本次榮和的點數結算結果，若此規則不支援榮和結算則為 null。
      */
     fun declareRon(tableState: TableState, player: MahjongPlayer, winningTile: IdentifiedTile, discarderId: Uuid): WinSettlementResult?
+
+    /**
+     * 胡牌時，贏家收下場上供託（如立直棒）所增加的點數，以及收下後應套用的新動態桌況狀態。
+     *
+     * 不區分自摸／榮和／多家和——呼叫端決定「這次由誰收下」（自摸與單一贏家榮和是唯一贏家；
+     * 多家和則依頭跳順位由離放銃者最近的贏家收下，見
+     * [com.doublemoon1119.mahjongcraft.logic.table.TableState.nearestPlayerInTurnOrder]），
+     * 這裡只負責算出「收下後供託剩多少、贏家因此多拿了多少點數」。
+     *
+     * 不支援供託機制的規則應回傳 null；即使場上目前沒有供託可收（例如立直棒數量為 0），
+     * 只要規則本身有這個機制就應回傳非 null（金額為 0、狀態不變）——null 專門用來表示
+     * 「這個規則根本沒有供託機制」，不跟「目前沒有供託」混用。
+     *
+     * @param tableState 目前的桌況（尚未套用本次收供託的變化）。
+     * @return 收下供託後應套用的動態桌況狀態，以及贏家因此獲得的點數；若此規則沒有供託機制則為 null。
+     */
+    fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>?
 }

@@ -139,4 +139,11 @@ class TaiwanRuleModule(
         winningTile: IdentifiedTile,
         discarderId: Uuid,
     ): WinSettlementResult? = null
+
+    /**
+     * 台灣麻將目前沒有立直/供託這個機制。
+     *
+     * @return 固定回傳 null。
+     */
+    override fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>? = null
 }
