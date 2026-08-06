@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
-import com.doublemoon1119.mahjongcraft.logic.module.TsumoResult
+import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -153,7 +153,7 @@ class RiichiRuleModule(
      * @return 若 [player] 尚未摸牌，或計算結果並非自摸應有的點數結算形狀（理論上不會發生，僅作防呆），
      *         則回傳 null。
      */
-    override fun declareTsumo(tableState: TableState, player: MahjongPlayer): TsumoResult? {
+    override fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinSettlementResult? {
         val winningTile = player.hand.lastDrawn ?: return null
 
         // RiichiLegalActionValidator/RiichiHandDecomposer 的既有慣例是傳入的手牌「不含胡牌張」，
@@ -198,6 +198,58 @@ class RiichiRuleModule(
             is RiichiPointResult.Ron, is RiichiPointResult.PaoRon -> return null
         }
 
-        return TsumoResult(totalGained = result.totalPoint, paymentsByPlayerId = payments)
+        return WinSettlementResult(totalGained = result.totalPoint, paymentsByPlayerId = payments)
+    }
+
+    /**
+     * 計算日本麻將榮和的點數結算：透過 [RiichiHandValueContextCalculator] 與 [RiichiHandValueCalculator]
+     * 算出役種、番符與 [RiichiPointResult]，再依放銃者一人支付、或包牌責任成立時的分攤方式換算成
+     * 各玩家應付金額。
+     *
+     * @return 若計算結果並非榮和應有的點數結算形狀（理論上不會發生，僅作防呆），則回傳 null。
+     */
+    override fun declareRon(
+        tableState: TableState,
+        player: MahjongPlayer,
+        winningTile: IdentifiedTile,
+        discarderId: Uuid,
+    ): WinSettlementResult? {
+        // 榮和的胡牌張本來就不在贏家自己手上（是他家的捨牌），不像自摸的 lastDrawn 那樣有
+        // 重複計數的疑慮，這裡不需要額外剝離手牌。
+        val context = createHandValueContextCalculator().calculate(
+            RiichiHandValueContextCalculator.Input(
+                tableState = tableState,
+                player = player,
+                incomingTile = winningTile,
+                isTsumo = false,
+            ),
+        )
+        val result = createHandValueCalculator().calculate(context)
+
+        val payments: Map<Uuid, Int> = when (val pointResult = result.pointResult) {
+            is RiichiPointResult.Ron -> mapOf(discarderId to pointResult.total)
+
+            is RiichiPointResult.PaoRon -> {
+                // 理論上不會發生：RiichiHandValueCalculator 只在 paoLiability 非 null 時才會回傳 PaoRon。
+                val paoLiability = result.paoLiability ?: return null
+                val paoPlayerId = tableState.players
+                    .first { tableState.relativeDirectionOf(player.id, it.id) == paoLiability.direction }
+                    .id
+                // 包牌責任者剛好就是放銃者本人時，兩份「一半」其實是同一個人要付，直接歸戶成一筆
+                // 全額，避免兩筆同 key 的付款在合併時互相覆蓋掉一半金額。
+                if (paoPlayerId == discarderId) {
+                    mapOf(discarderId to pointResult.total)
+                } else {
+                    mapOf(discarderId to pointResult.paymentEach, paoPlayerId to pointResult.paymentEach)
+                }
+            }
+
+            // DealerTsumo/NonDealerTsumo/PaoTsumo 理論上不會出現在 isTsumo = false 的計算結果中。
+            // 若真的發生，視為此規則無法對這次榮和完成結算，回傳 null 讓呼叫端以 IllegalAction 處理，
+            // 而非產生錯誤的結算。
+            is RiichiPointResult.DealerTsumo, is RiichiPointResult.NonDealerTsumo, is RiichiPointResult.PaoTsumo -> return null
+        }
+
+        return WinSettlementResult(totalGained = result.totalPoint, paymentsByPlayerId = payments)
     }
 }

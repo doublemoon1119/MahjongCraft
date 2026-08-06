@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.module.TsumoResult
+import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -320,7 +320,7 @@ class RiichiRuleModuleTest {
         val result = module.declareTsumo(table, winner)
 
         assertEquals(
-            TsumoResult(
+            WinSettlementResult(
                 totalGained = 48000,
                 paymentsByPlayerId = mapOf(south.id to 16000, west.id to 16000, north.id to 16000),
             ),
@@ -349,7 +349,7 @@ class RiichiRuleModuleTest {
         val result = module.declareTsumo(table, winner)
 
         assertEquals(
-            TsumoResult(
+            WinSettlementResult(
                 totalGained = 32000,
                 paymentsByPlayerId = mapOf(dealer.id to 16000, west.id to 8000, north.id to 8000),
             ),
@@ -379,7 +379,7 @@ class RiichiRuleModuleTest {
 
         val result = module.declareTsumo(table, winner)
 
-        assertEquals(TsumoResult(totalGained = 32000, paymentsByPlayerId = mapOf(paoPlayer.id to 32000)), result)
+        assertEquals(WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(paoPlayer.id to 32000)), result)
     }
 
     /**
@@ -391,5 +391,115 @@ class RiichiRuleModuleTest {
         val table = FakeTableStateFactory.create(players = listOf(player), config = module.config)
 
         assertNull(module.declareTsumo(table, player))
+    }
+
+    /**
+     * 驗證莊家榮和大三元時，放銃者一人支付全額。
+     */
+    @Test
+    fun `test declareRon charges the discarder the full amount when winner is dealer`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(winner, discarder, west, north), config = module.config)
+
+        val result = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
+
+        assertEquals(
+            WinSettlementResult(totalGained = 48000, paymentsByPlayerId = mapOf(discarder.id to 48000)),
+            result,
+        )
+    }
+
+    /**
+     * 驗證閒家榮和大三元時，放銃者一人支付全額（金額比莊家榮和少）。
+     */
+    @Test
+    fun `test declareRon charges the discarder the full amount when winner is non-dealer`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(dealer, winner, discarder, north), config = module.config)
+
+        val result = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
+
+        assertEquals(
+            WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(discarder.id to 32000)),
+            result,
+        )
+    }
+
+    /**
+     * 驗證包牌責任已成立、且包牌責任者與放銃者是不同人時，兩人平分點數。
+     */
+    @Test
+    fun `test declareRon splits payment between discarder and pao-liable player`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val paoPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)),
+        )
+        val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        // paoPlayer 排在 winner 前一位（座位順序），故對 winner 而言方位為 Left，與上方宣告的包牌責任相符
+        val table = FakeTableStateFactory.create(players = listOf(paoPlayer, winner, discarder, other), config = module.config)
+
+        val result = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
+
+        assertEquals(
+            WinSettlementResult(
+                totalGained = 32000,
+                paymentsByPlayerId = mapOf(discarder.id to 16000, paoPlayer.id to 16000),
+            ),
+            result,
+        )
+    }
+
+    /**
+     * 驗證包牌責任者恰好就是放銃者本人時，歸戶成單一全額付款，而不是兩筆各半的付款
+     * （避免兩筆同 key 的付款在合併時互相覆蓋掉一半金額）。
+     */
+    @Test
+    fun `test declareRon collapses to a single full payment when pao-liable player is the discarder`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val paoPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)),
+        )
+        val other1 = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val other2 = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(paoPlayer, winner, other1, other2), config = module.config)
+
+        // 包牌責任者（paoPlayer）這次剛好也是放銃者本人
+        val result = module.declareRon(table, winner, winningTile, discarderId = paoPlayer.id)
+
+        assertEquals(
+            WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(paoPlayer.id to 32000)),
+            result,
+        )
     }
 }

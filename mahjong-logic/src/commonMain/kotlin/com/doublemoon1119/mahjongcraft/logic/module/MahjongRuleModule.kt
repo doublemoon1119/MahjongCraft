@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
+import kotlin.uuid.Uuid
 
 /**
  * 麻將規則模組介面。
@@ -184,5 +185,28 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @param player 宣告自摸的玩家（尚未套用本次自摸結算），其 `hand.lastDrawn` 即為胡牌張。
      * @return 本次自摸的點數結算結果，若此規則不支援自摸結算、或 [player] 尚未摸牌則為 null。
      */
-    fun declareTsumo(tableState: TableState, player: MahjongPlayer): TsumoResult?
+    fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinSettlementResult?
+
+    /**
+     * 計算一次榮和胡牌（[GameAction.Ron]）的點數結算：贏家實際獲得的點數，以及各應付款玩家
+     * 應支付的金額（一般情況下由放銃者一人支付全額；包牌責任成立時由包牌責任者與放銃者平分，
+     * 但若包牌責任者恰好就是放銃者本人，視為單一玩家支付全額）。
+     *
+     * 呼叫前應已確認 [GameAction.Ron] 目前合法（例如透過 [createLegalActionValidator]）——這是
+     * 規則無關的驗證，由呼叫端負責；這裡只處理規則特有的點數計算與分攤方式，因此呼叫端（如
+     * `:mahjong-flow` 的 use case）永遠不需要知道、也不需要轉型成任何規則專屬的具體型別。
+     *
+     * [player] 應為胡牌當下、尚未套用本次榮和任何變化的玩家實例，[winningTile] 為放銃者打出、
+     * 被榮和的那張牌。[RiichiPointResult] 這類規則特有的點數結果本身不帶玩家身分，因此需要呼叫端
+     * 額外透過 [discarderId] 告知放銃者是誰，實作才能把付款金額正確歸屬到實際玩家。
+     *
+     * 不支援榮和結算的規則應回傳 null。
+     *
+     * @param tableState 目前的桌況（尚未套用本次榮和結算）。
+     * @param player 宣告榮和的玩家（尚未套用本次榮和結算）。
+     * @param winningTile 被榮和的捨牌。
+     * @param discarderId 打出 [winningTile] 的玩家 Uuid。
+     * @return 本次榮和的點數結算結果，若此規則不支援榮和結算則為 null。
+     */
+    fun declareRon(tableState: TableState, player: MahjongPlayer, winningTile: IdentifiedTile, discarderId: Uuid): WinSettlementResult?
 }

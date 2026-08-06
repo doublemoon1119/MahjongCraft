@@ -12,6 +12,7 @@ import kotlin.test.Test
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /**
  * 針對 [TaiwanRuleModule] 進行的單元測試。
@@ -152,5 +153,17 @@ class TaiwanRuleModuleTest {
         val table = FakeTableStateFactory.create(players = listOf(player))
 
         assertNull(module.declareTsumo(table, player))
+    }
+
+    /**
+     * 驗證台灣麻將目前沒有榮和結算的實作，回傳 null。
+     */
+    @Test
+    fun `test declareRon returns null`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val player = FakeMahjongPlayerFactory.create()
+        val table = FakeTableStateFactory.create(players = listOf(player))
+
+        assertNull(module.declareRon(table, player, winningTile, discarderId = Uuid.random()))
     }
 }

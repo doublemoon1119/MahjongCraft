@@ -8,10 +8,11 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
-import com.doublemoon1119.mahjongcraft.logic.module.TsumoResult
+import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.uuid.Uuid
 
 /**
  * 台灣麻將規則模組實作。
@@ -125,5 +126,17 @@ class TaiwanRuleModule(
      *
      * @return 固定回傳 null。
      */
-    override fun declareTsumo(tableState: TableState, player: MahjongPlayer): TsumoResult? = null
+    override fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinSettlementResult? = null
+
+    /**
+     * 台灣麻將目前沒有榮和結算的實作。
+     *
+     * @return 固定回傳 null。
+     */
+    override fun declareRon(
+        tableState: TableState,
+        player: MahjongPlayer,
+        winningTile: IdentifiedTile,
+        discarderId: Uuid,
+    ): WinSettlementResult? = null
 }
