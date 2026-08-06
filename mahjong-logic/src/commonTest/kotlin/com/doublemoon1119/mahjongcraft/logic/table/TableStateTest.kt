@@ -140,4 +140,56 @@ class TableStateTest {
             "In a three-player table, the only other seat besides your shimocha is your kamicha.",
         )
     }
+
+    /**
+     * 驗證 [TableState.nearestPlayerInTurnOrder] 在候選人本身就是下家時，直接回傳該候選人。
+     */
+    @Test
+    fun `test nearestPlayerInTurnOrder returns the immediate next player when eligible`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+
+        val table = FakeTableStateFactory.create(players = listOf(p1, p2, p3, p4))
+
+        assertEquals(p2.id, table.nearestPlayerInTurnOrder(p1.id, setOf(p2.id, p3.id, p4.id)))
+    }
+
+    /**
+     * 驗證 [TableState.nearestPlayerInTurnOrder] 會跳過不在候選名單中的下家，找出順位次接近的候選人。
+     */
+    @Test
+    fun `test nearestPlayerInTurnOrder skips ineligible players in turn order`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+
+        val table = FakeTableStateFactory.create(players = listOf(p1, p2, p3, p4))
+
+        assertEquals(
+            p3.id,
+            table.nearestPlayerInTurnOrder(p1.id, setOf(p3.id, p4.id)),
+            "P2 is not a candidate, so the nearest eligible candidate should be P3.",
+        )
+    }
+
+    /**
+     * 驗證 [TableState.nearestPlayerInTurnOrder] 在三人桌時仍能正確依回合順序 wraparound 判斷。
+     */
+    @Test
+    fun `test nearestPlayerInTurnOrder wraps around on a three-player table`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+
+        val table = FakeTableStateFactory.create(players = listOf(p1, p2, p3))
+
+        assertEquals(
+            p1.id,
+            table.nearestPlayerInTurnOrder(p3.id, setOf(p1.id, p2.id)),
+            "From P3, the turn order wraps back around to P1 first.",
+        )
+    }
 }

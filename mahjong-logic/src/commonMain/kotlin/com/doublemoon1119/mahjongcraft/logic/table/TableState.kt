@@ -94,4 +94,26 @@ data class TableState(
             else -> RelativeDirection.Across
         }
     }
+
+    /**
+     * 依 [players] 的回合順序，從 [candidateIds] 中找出離 [fromPlayerId] 最近（依 [getNextPlayer] 方向、
+     * 即從下家開始算起）的玩家。用於頭跳（atama-hane）判定：同一張捨牌有多位玩家可反應時，
+     * 依序找出第一位符合資格的玩家。
+     *
+     * @param fromPlayerId 作為順位判斷基準的玩家 Uuid（例如放銃者）。
+     * @param candidateIds 候選玩家 Uuid 集合。
+     * @return [candidateIds] 中順位最接近 [fromPlayerId] 下家方向的玩家 Uuid。
+     * @throws IllegalArgumentException 當 [fromPlayerId] 不在桌上、[candidateIds] 為空、
+     *         或其中有玩家不在桌上時拋出。
+     */
+    fun nearestPlayerInTurnOrder(fromPlayerId: Uuid, candidateIds: Set<Uuid>): Uuid {
+        require(candidateIds.isNotEmpty()) { "candidateIds must not be empty" }
+        val fromIndex = players.indexOfFirst { it.id == fromPlayerId }
+        require(fromIndex != -1) { "Player not found in this table" }
+        return candidateIds.minBy { candidateId ->
+            val candidateIndex = players.indexOfFirst { it.id == candidateId }
+            require(candidateIndex != -1) { "Player not found in this table" }
+            (candidateIndex - fromIndex).mod(playerCount)
+        }
+    }
 }
