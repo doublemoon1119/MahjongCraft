@@ -21,7 +21,7 @@ import kotlin.uuid.Uuid
  * 立直宣告本質上是「打出一張牌，同時把這張牌標記成立直宣告牌」，前置驗證（回合、是否已摸牌）
  * 與 [DiscardTileUseCase] 相同。額外驗證的部分刻意不在這裡重新實作聽牌/門前清/點數等規則，
  * 而是直接問該規則模組自己的 `LegalActionValidator`：現在 [GameAction.Riichi] 是不是合法動作。
- * 這樣一來，若某個規則（如目前的台灣麻將）根本沒有立直這個概念，`GameAction.Riichi` 本來就
+ * 這樣一來，若某個規則根本沒有立直這個概念，`GameAction.Riichi` 本來就
  * 不會出現在合法動作清單中，這裡自然會回傳 [GameError.IllegalAction]，不需要額外判斷「這個
  * 規則支不支援立直」。
  *
@@ -87,7 +87,7 @@ class DeclareRiichiUseCase(
                         return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Riichi))
                     }
 
-                    // 這個規則不支援立直宣告（如台灣麻將）時 declareRiichi 回傳 null。理論上不會走到這裡，
+                    // 這個規則不支援立直宣告時 declareRiichi 回傳 null。理論上不會走到這裡，
                     // 因為上面的 legalActions 檢查已經先擋下了；僅作防呆。
                     val declaration = module.declareRiichi(state, state.currentPlayer, discardResult)
                         ?: return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Riichi))

@@ -372,7 +372,7 @@ class DeclareRiichiUseCaseTest {
     }
 
     /**
-     * 驗證不支援立直的規則（目前為台灣麻將）不會讓立直宣告成立。
+     * 驗證不支援立直的規則不會讓立直宣告成立。
      */
     @Test
     fun `test declare riichi fails for a ruleset without riichi`() = runTest {

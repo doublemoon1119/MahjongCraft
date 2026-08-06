@@ -22,9 +22,10 @@ import kotlin.uuid.Uuid
  * （與先前行為相同）；若有人有資格，則改為開啟 [PendingReaction] 反應視窗、暫緩推進回合，
  * 交由 [RespondToDiscardUseCase] 處理後續的回應與結算。
  *
- * 已知、刻意的簡化：本次反應視窗的資格判斷**不包含榮和（Ron）**，因為 Ron 需要完整的胡牌結算
- * 才能真正套用，屬於另一個尚未實作的 use case；這段期間若同時有玩家可榮和、也有人可碰，
- * 系統只會讓碰生效，這是已知、明確記錄的限制，詳見 `docs/temp/game-use-case-architecture.md`。
+ * TODO：本次反應視窗的資格判斷**不包含榮和（Ron）**，因為 Ron 需要完整的胡牌結算才能真正套用，
+ * 詳見 `docs/temp/game-use-case-architecture.md`。實作胡牌結算時需回頭把 Ron 加入這裡的資格判斷，
+ * 並補上「榮和 > 碰/槓 > 吃」的完整優先權；在那之前，若同時有玩家可榮和、也有人可碰，系統只會
+ * 讓碰生效。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器。

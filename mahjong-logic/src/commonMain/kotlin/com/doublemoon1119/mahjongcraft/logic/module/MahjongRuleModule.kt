@@ -91,7 +91,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 建立該規則的初始動態桌況狀態。
      *
      * 由 [com.doublemoon1119.mahjongcraft.logic.table.GameInitializer] 在開局時寫入 `TableState.dynamicRuleState`。
-     * 沒有動態狀態需求的規則（如目前的台灣麻將）可回傳 null。
+     * 沒有動態狀態需求的規則可回傳 null。
      *
      * @return 該規則的初始 [DynamicRuleState]，若無則為 null。
      */
@@ -101,7 +101,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 建立該規則的初始玩家規則狀態。
      *
      * 由 [com.doublemoon1119.mahjongcraft.logic.table.GameInitializer] 在開局時寫入每位 `MahjongPlayer.playerRuleState`。
-     * 沒有玩家規則狀態需求的規則（如目前的台灣麻將）可回傳 null。
+     * 沒有玩家規則狀態需求的規則可回傳 null。
      *
      * @return 該規則的初始 [PlayerRuleState]，若無則為 null。
      */
@@ -116,7 +116,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 這裡只處理套用規則特有狀態的部分，因此呼叫端（如 `:mahjong-flow` 的 use case）永遠
      * 不需要知道、也不需要轉型成任何規則專屬的具體型別。
      *
-     * 不支援立直宣告的規則（如目前的台灣麻將）應回傳 null。
+     * 不支援立直宣告的規則應回傳 null。
      *
      * @param tableState 目前的桌況（尚未套用本次宣告）。
      * @param player 宣告立直的玩家（尚未套用本次宣告）。
@@ -129,7 +129,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 因應「玩家摸牌」事件，套用規則特有的狀態清除。
      *
      * 例如日麻：摸牌代表一發窗口已經結束（本巡未能胡牌），需清除玩家的一發資格。
-     * 沒有對應狀態需求的規則（如目前的台灣麻將）應直接回傳 [player] 本身，不做任何事。
+     * 沒有對應狀態需求的規則應直接回傳 [player] 本身，不做任何事。
      *
      * @param player 剛完成摸牌的玩家（已套用摸牌本身造成的變化）。
      * @return 套用規則特有狀態清除後的新玩家實例。
@@ -140,7 +140,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 因應「有玩家完成一次鳴牌（吃/碰/槓）」事件，套用規則特有的狀態清除。
      *
      * 例如日麻：任何一次鳴牌都會讓場上所有玩家的一發資格失效（不只鳴牌的當事人）。
-     * 沒有對應狀態需求的規則（如目前的台灣麻將）應直接回傳 [players] 本身，不做任何事。
+     * 沒有對應狀態需求的規則應直接回傳 [players] 本身，不做任何事。
      *
      * @param players 鳴牌動作套用之後的完整玩家列表。
      * @return 套用規則特有狀態清除後的新玩家列表。
@@ -151,7 +151,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 檢查本次碰／明槓是否觸發包牌責任，若觸發則寫入 [claimingPlayer] 的規則狀態。
      *
      * 必須在鳴牌動作實際套用到 [claimingPlayer] 手牌「之前」呼叫，以取得鳴牌當下、
-     * 尚未加入新副露的手牌狀態。不支援包牌概念的規則（如目前的台灣麻將）應直接回傳
+     * 尚未加入新副露的手牌狀態。不支援包牌概念的規則應直接回傳
      * [claimingPlayer] 本身，不做任何事。
      *
      * @param claimingPlayer 執行碰／明槓的玩家（尚未套用本次鳴牌）。
