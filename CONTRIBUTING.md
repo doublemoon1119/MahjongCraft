@@ -12,6 +12,13 @@
 - **Test Framework**: **JUnit is strictly forbidden**. Only `kotlin.test.Test` is allowed.
 - **Test Naming**: Test method names must use backtick format, e.g., `` `test sorting with different regional orders` ``.
 
+## Before Committing
+
+- Run a full recompile and check for compiler warnings, not just test results:
+  `./gradlew clean compileKotlinJvm compileTestKotlinJvm`. A green `jvmTest` run does not fail on
+  warnings (e.g. redundant casts, unused imports), so check compiler output explicitly.
+- Fix flagged warnings before committing, unless they are pre-existing and unrelated to the current change.
+
 ## Git Commit Conventions
 
 - **Language**: All commit messages **must be written in English**.
