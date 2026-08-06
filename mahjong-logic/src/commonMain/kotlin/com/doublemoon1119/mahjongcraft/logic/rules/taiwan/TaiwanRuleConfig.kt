@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.config.validate
 
 /**
@@ -17,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * @property isSpectateAllowed 允許在遊戲外的玩家能否看到遊戲內玩家的手牌，在牌河或者副露的牌則不在此限，預設為 true。
  * @property minPlayers 該規則要求的最小玩家人數
  * @property maxPlayers 該規則允許的最大玩家人數
+ * @property multiRonPolicy 一炮多響時的結算方式，預設雙響、三響皆為頭跳。
  */
 data class TaiwanRuleConfig(
     val useFlowerTiles: Boolean = true,
@@ -24,6 +27,10 @@ data class TaiwanRuleConfig(
     override val scoreConfig: TaiwanScoreConfig = TaiwanScoreConfig(),
     override val gameLength: TaiwanGameLength = TaiwanGameLength.OneGame,
     override val isSpectateAllowed: Boolean = true,
+    override val multiRonPolicy: MultiRonPolicy = MultiRonPolicy(
+        doubleRonResolution = RonResolution.NEAREST_WINNER,
+        tripleRonResolution = RonResolution.NEAREST_WINNER,
+    ),
 ) : MahjongRuleConfig {
     override val initialHandSize: Int = 16
     override val deadTileCount: Int = 16

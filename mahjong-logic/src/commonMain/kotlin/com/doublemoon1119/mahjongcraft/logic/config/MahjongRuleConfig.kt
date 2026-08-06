@@ -40,6 +40,11 @@ interface MahjongRuleConfig {
      * 該規則允許的最大玩家人數。
      * */
     val maxPlayers: Int
+
+    /**
+     * 一炮多響（同一張捨牌同時被多位玩家榮和）時的結算方式。
+     */
+    val multiRonPolicy: MultiRonPolicy
 }
 
 /**

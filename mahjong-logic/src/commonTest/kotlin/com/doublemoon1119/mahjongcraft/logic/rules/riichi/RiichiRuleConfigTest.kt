@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -23,6 +25,10 @@ class RiichiRuleConfigTest {
         assertEquals(3, config.redDoraCount)
         assertEquals(true, config.allowOpenTanyao)
         assertEquals(false, config.useLocalYaku)
+        assertEquals(
+            MultiRonPolicy(doubleRonResolution = RonResolution.ALL_WINNERS, tripleRonResolution = RonResolution.ALL_WINNERS),
+            config.multiRonPolicy,
+        )
     }
 
     /**

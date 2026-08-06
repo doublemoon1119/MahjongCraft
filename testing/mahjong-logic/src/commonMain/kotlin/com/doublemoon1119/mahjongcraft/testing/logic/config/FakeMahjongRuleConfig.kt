@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.testing.logic.config
 
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
 
 /**
@@ -14,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
  * @property minimumWinConstraint 起胡限制。
  * @property scoreConfig 積分配置，預設使用 [FakeScoreConfig]。
  * @property gameLength 對局長度配置，預設使用 [FakeGameLength]。
+ * @property multiRonPolicy 一炮多響時的結算方式，預設雙響、三響皆為頭跳。
  */
 class FakeMahjongRuleConfig(
     override val initialHandSize: Int = 13,
@@ -24,4 +27,8 @@ class FakeMahjongRuleConfig(
     override val isSpectateAllowed: Boolean = true,
     override val minPlayers: Int = 4,
     override val maxPlayers: Int = 4,
+    override val multiRonPolicy: MultiRonPolicy = MultiRonPolicy(
+        doubleRonResolution = RonResolution.NEAREST_WINNER,
+        tripleRonResolution = RonResolution.NEAREST_WINNER,
+    ),
 ) : MahjongRuleConfig

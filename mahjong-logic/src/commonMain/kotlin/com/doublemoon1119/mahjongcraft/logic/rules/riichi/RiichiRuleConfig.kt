@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.config.validate
 
 /**
@@ -22,6 +24,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * @property isSpectateAllowed 允許在遊戲外的玩家能否看到遊戲內玩家的手牌，在牌河或者副露的牌則不在此限，預設為 true。
  * @property minPlayers 該規則要求的最小玩家人數
  * @property maxPlayers 該規則允許的最大玩家人數
+ * @property multiRonPolicy 一炮多響時的結算方式，預設雙響、三響皆為多家和。此欄位刻意不依循上述
+ *   M League 基準，預設採用多家和以貼近多數玩家熟悉的體驗，可依需求另行設定。
  */
 data class RiichiRuleConfig(
     val redDoraCount: Int = 3,
@@ -31,6 +35,10 @@ data class RiichiRuleConfig(
     override val scoreConfig: RiichiScoreConfig = RiichiScoreConfig(),
     override val gameLength: RiichiGameLength = RiichiGameLength.OneGame,
     override val isSpectateAllowed: Boolean = true,
+    override val multiRonPolicy: MultiRonPolicy = MultiRonPolicy(
+        doubleRonResolution = RonResolution.ALL_WINNERS,
+        tripleRonResolution = RonResolution.ALL_WINNERS,
+    ),
 ) : MahjongRuleConfig {
     override val initialHandSize: Int = 13
     override val deadTileCount: Int = 14
