@@ -1,13 +1,20 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -125,5 +132,200 @@ class GameInitializerTest {
         table.players.forEach { player ->
             assertIs<RiichiPlayerState>(player.playerRuleState)
         }
+    }
+
+    /**
+     * 驗證 [GameInitializer.startNextRound] 延續玩家分數，不像 [GameInitializer.initialize] 那樣重置。
+     */
+    @Test
+    fun `test startNextRound preserves player scores`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST).copy(score = 32000)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(score = 18000)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST).copy(score = 25000)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(score = 25000)
+        val roundAdvancement = RoundAdvancementResult(
+            players = listOf(p1, p2, p3, p4),
+            roundNumber = 2,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            isMatchOver = false,
+        )
+
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+
+        assertEquals(32000, table.players.first { it.id == p1.id }.score)
+        assertEquals(18000, table.players.first { it.id == p2.id }.score)
+        assertEquals(25000, table.players.first { it.id == p3.id }.score)
+        assertEquals(25000, table.players.first { it.id == p4.id }.score)
+    }
+
+    /**
+     * 驗證 [GameInitializer.startNextRound] 不會重新洗座位順序，維持 [RoundAdvancementResult.players] 傳入的順序。
+     */
+    @Test
+    fun `test startNextRound does not reshuffle seat order`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val roundAdvancement = RoundAdvancementResult(
+            players = listOf(p1, p2, p3, p4),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            isMatchOver = false,
+        )
+
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+
+        assertEquals(listOf(p1.id, p2.id, p3.id, p4.id), table.players.map { it.id })
+    }
+
+    /**
+     * 驗證 [GameInitializer.startNextRound] 正確套用連莊/過莊判定的局數、本場數、場風與各玩家方位。
+     */
+    @Test
+    fun `test startNextRound applies round advancement result`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST).copy(currentWind = Wind.NORTH)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(currentWind = Wind.EAST)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST).copy(currentWind = Wind.SOUTH)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(currentWind = Wind.WEST)
+        val roundAdvancement = RoundAdvancementResult(
+            players = listOf(p1, p2, p3, p4),
+            roundNumber = 3,
+            comboCount = 1,
+            prevalentWind = Wind.SOUTH,
+            isMatchOver = false,
+        )
+
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+
+        assertEquals(3, table.roundNumber)
+        assertEquals(1, table.comboCount)
+        assertEquals(Wind.SOUTH, table.prevalentWind)
+        assertEquals(Wind.NORTH, table.players.first { it.id == p1.id }.currentWind)
+        assertEquals(Wind.EAST, table.players.first { it.id == p2.id }.currentWind)
+        assertEquals(Wind.SOUTH, table.players.first { it.id == p3.id }.currentWind)
+        assertEquals(Wind.WEST, table.players.first { it.id == p4.id }.currentWind)
+    }
+
+    /**
+     * 驗證 [GameInitializer.startNextRound] 的 `currentPlayerIndex` 指向新莊家（`currentWind == EAST`）。
+     */
+    @Test
+    fun `test startNextRound sets currentPlayerIndex to the new dealer`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST).copy(currentWind = Wind.SOUTH)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(currentWind = Wind.WEST)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST).copy(currentWind = Wind.NORTH)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(currentWind = Wind.EAST)
+        val roundAdvancement = RoundAdvancementResult(
+            players = listOf(p1, p2, p3, p4),
+            roundNumber = 2,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            isMatchOver = false,
+        )
+
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+
+        assertEquals(3, table.currentPlayerIndex, "P4 (index 3) holds East, so they are the new dealer.")
+        assertEquals(p4.id, table.currentPlayer.id)
+    }
+
+    /**
+     * 驗證 [GameInitializer.startNextRound] 正確重置每局狀態：手牌重新發放、牌河清空、規則特有的
+     * 玩家狀態重新建立、當巡放過的牌與動作歷史皆清空——即使傳入的玩家先前帶有立直等「髒」狀態。
+     */
+    @Test
+    fun `test startNextRound resets per-hand player state`() {
+        val dirtyPlayer = FakeMahjongPlayerFactory.create(
+            Wind.EAST,
+            hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.East))),
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(isIppatsu = true),
+        ).copy(
+            passedTilesInRound = setOf(Tile.Honor.West),
+            actionHistory = listOf(GameAction.Draw),
+        )
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val roundAdvancement = RoundAdvancementResult(
+            players = listOf(dirtyPlayer, p2, p3, p4),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            isMatchOver = false,
+        )
+
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+
+        val updated = table.players.first { it.id == dirtyPlayer.id }
+        assertEquals(module.config.initialHandSize, updated.hand.tiles.size)
+        assertTrue(updated.discardPile.entries.isEmpty())
+        assertEquals(RiichiPlayerState(), updated.playerRuleState)
+        assertTrue(updated.passedTilesInRound.isEmpty())
+        assertTrue(updated.actionHistory.isEmpty())
+    }
+
+    /**
+     * 驗證 [GameInitializer.startNextRound] 單純延續傳入的動態桌況狀態，不會重置或另外處理
+     * （例如供託是否歸零，已經在胡牌結算階段決定好，這裡只負責套用）。
+     */
+    @Test
+    fun `test startNextRound carries over dynamic rule state unchanged`() {
+        val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(it) }
+        val roundAdvancement = RoundAdvancementResult(
+            players = players,
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            isMatchOver = false,
+        )
+        val carriedOverState = RiichiDynamicState(riichiStickCount = 2)
+
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, carriedOverState, module)
+
+        assertEquals(carriedOverState, table.dynamicRuleState)
+    }
+
+    /**
+     * 驗證 [GameInitializer.startNextRound] 產生的新一局沒有反應視窗。
+     */
+    @Test
+    fun `test startNextRound clears pending reaction`() {
+        val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(it) }
+        val roundAdvancement = RoundAdvancementResult(
+            players = players,
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            isMatchOver = false,
+        )
+
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+
+        assertNull(table.pendingReaction)
+    }
+
+    /**
+     * 驗證 [GameInitializer.startNextRound] 發牌後牌山剩餘數量正確扣除所有玩家的發牌數。
+     */
+    @Test
+    fun `test startNextRound leaves correct remaining wall count`() {
+        val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(it) }
+        val roundAdvancement = RoundAdvancementResult(
+            players = players,
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            isMatchOver = false,
+        )
+        val totalTileCount = module.createWallFactory().create().remainingCount
+
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+
+        val expectedRemaining = totalTileCount - players.size * module.config.initialHandSize
+        assertEquals(expectedRemaining, table.tileWall.remainingCount)
     }
 }
