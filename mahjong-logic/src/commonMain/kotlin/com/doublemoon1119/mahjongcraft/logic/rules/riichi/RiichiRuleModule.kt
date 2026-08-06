@@ -5,8 +5,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
+import com.doublemoon1119.mahjongcraft.logic.module.TsumoResult
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.uuid.Uuid
 
 /**
  * 日本麻將規則模組實作。
@@ -142,5 +144,60 @@ class RiichiRuleModule(
         val riichiState = claimingPlayer.playerRuleState as? RiichiPlayerState ?: return claimingPlayer
         val liability = PaoDetector.check(claimingPlayer.hand, calledTile.tile, sourceDirection) ?: return claimingPlayer
         return claimingPlayer.copy(playerRuleState = riichiState.copy(paoLiability = liability))
+    }
+
+    /**
+     * 計算日本麻將自摸的點數結算：透過 [RiichiHandValueContextCalculator] 與 [RiichiHandValueCalculator]
+     * 算出役種、番符與 [RiichiPointResult]，再依莊閒身分或包牌責任換算成各玩家應付金額。
+     *
+     * @return 若 [player] 尚未摸牌，或計算結果並非自摸應有的點數結算形狀（理論上不會發生，僅作防呆），
+     *         則回傳 null。
+     */
+    override fun declareTsumo(tableState: TableState, player: MahjongPlayer): TsumoResult? {
+        val winningTile = player.hand.lastDrawn ?: return null
+
+        // RiichiLegalActionValidator/RiichiHandDecomposer 的既有慣例是傳入的手牌「不含胡牌張」，
+        // 胡牌張只透過下方 incomingTile 參數單獨傳入；player.hand.standingTiles 此時已經把
+        // lastDrawn（即胡牌張）算進去了，這裡剝離避免重複計數。
+        val playerForCalculation = player.copy(hand = player.hand.copy(lastDrawn = null))
+
+        val context = createHandValueContextCalculator().calculate(
+            RiichiHandValueContextCalculator.Input(
+                tableState = tableState,
+                player = playerForCalculation,
+                incomingTile = winningTile,
+                isTsumo = true,
+            ),
+        )
+        val result = createHandValueCalculator().calculate(context)
+
+        val payments: Map<Uuid, Int> = when (val pointResult = result.pointResult) {
+            is RiichiPointResult.DealerTsumo ->
+                tableState.players
+                    .filter { it.id != player.id }
+                    .associate { it.id to pointResult.paymentPerNonDealer }
+
+            is RiichiPointResult.NonDealerTsumo -> {
+                val dealerId = tableState.players.first { it.currentWind == tableState.prevalentWind }.id
+                tableState.players
+                    .filter { it.id != player.id }
+                    .associate { it.id to if (it.id == dealerId) pointResult.dealerPayment else pointResult.otherNonDealerPayment }
+            }
+
+            is RiichiPointResult.PaoTsumo -> {
+                // 理論上不會發生：RiichiHandValueCalculator 只在 paoLiability 非 null 時才會回傳 PaoTsumo。
+                val paoLiability = result.paoLiability ?: return null
+                val paoPlayerId = tableState.players
+                    .first { tableState.relativeDirectionOf(player.id, it.id) == paoLiability.direction }
+                    .id
+                mapOf(paoPlayerId to pointResult.total)
+            }
+
+            // Ron / PaoRon 理論上不會出現在 isTsumo = true 的計算結果中。若真的發生，視為此規則
+            // 無法對這次自摸完成結算，回傳 null 讓呼叫端以 IllegalAction 處理，而非產生錯誤的結算。
+            is RiichiPointResult.Ron, is RiichiPointResult.PaoRon -> return null
+        }
+
+        return TsumoResult(totalGained = result.totalPoint, paymentsByPlayerId = payments)
     }
 }

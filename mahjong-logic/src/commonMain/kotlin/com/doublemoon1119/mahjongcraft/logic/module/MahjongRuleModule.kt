@@ -164,4 +164,25 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
         calledTile: IdentifiedTile,
         sourceDirection: RelativeDirection,
     ): MahjongPlayer
+
+    /**
+     * 計算一次自摸胡牌（[GameAction.Tsumo]）的點數結算：贏家實際獲得的點數，以及各應付款玩家
+     * 應支付的金額（依莊家/閒家身分、包牌責任等區分）。
+     *
+     * 呼叫前應已確認 [GameAction.Tsumo] 目前合法（例如透過 [createLegalActionValidator]）——這是
+     * 規則無關的驗證，由呼叫端負責；這裡只處理規則特有的點數計算與分攤方式，因此呼叫端（如
+     * `:mahjong-flow` 的 use case）永遠不需要知道、也不需要轉型成任何規則專屬的具體型別。
+     *
+     * [player] 應為胡牌當下、尚未套用本次自摸任何變化的玩家實例（即 [tableState] 中對應的
+     * `TableState.currentPlayer`），其 `Hand.lastDrawn` 即為胡牌張。實作內部需自行處理「胡牌張
+     * 同時存在於 `hand.lastDrawn`、又要餵給役種計算所需的胡牌張參數」這個潛在的重複計數問題，
+     * 呼叫端不需要、也不應該自行處理這個細節。
+     *
+     * 不支援自摸結算的規則應回傳 null。
+     *
+     * @param tableState 目前的桌況（尚未套用本次自摸結算）。
+     * @param player 宣告自摸的玩家（尚未套用本次自摸結算），其 `hand.lastDrawn` 即為胡牌張。
+     * @return 本次自摸的點數結算結果，若此規則不支援自摸結算、或 [player] 尚未摸牌則為 null。
+     */
+    fun declareTsumo(tableState: TableState, player: MahjongPlayer): TsumoResult?
 }

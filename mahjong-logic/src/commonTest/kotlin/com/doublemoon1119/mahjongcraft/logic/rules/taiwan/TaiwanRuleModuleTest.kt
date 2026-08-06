@@ -141,4 +141,16 @@ class TaiwanRuleModuleTest {
 
         assertSame(player, module.applyPaoLiabilityIfTriggered(player, calledTile, RelativeDirection.Left))
     }
+
+    /**
+     * 驗證台灣麻將目前沒有自摸結算的實作，回傳 null。
+     */
+    @Test
+    fun `test declareTsumo returns null`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val player = FakeMahjongPlayerFactory.create(hand = Hand(lastDrawn = winningTile))
+        val table = FakeTableStateFactory.create(players = listOf(player))
+
+        assertNull(module.declareTsumo(table, player))
+    }
 }

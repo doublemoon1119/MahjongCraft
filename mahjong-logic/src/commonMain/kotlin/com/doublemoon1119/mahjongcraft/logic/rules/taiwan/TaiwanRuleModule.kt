@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
+import com.doublemoon1119.mahjongcraft.logic.module.TsumoResult
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -118,4 +119,11 @@ class TaiwanRuleModule(
         calledTile: IdentifiedTile,
         sourceDirection: RelativeDirection,
     ): MahjongPlayer = claimingPlayer
+
+    /**
+     * 台灣麻將目前沒有自摸結算的實作。
+     *
+     * @return 固定回傳 null。
+     */
+    override fun declareTsumo(tableState: TableState, player: MahjongPlayer): TsumoResult? = null
 }

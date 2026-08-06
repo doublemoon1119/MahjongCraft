@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.TsumoResult
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
@@ -281,5 +283,113 @@ class RiichiRuleModuleTest {
         val result = module.applyPaoLiabilityIfTriggered(player, calledTile, RelativeDirection.Left)
 
         assertSame(player, result)
+    }
+
+    /**
+     * 手牌：中中、發發發、白白白、123m、55p（大三元役滿，13 張立牌），供自摸結算測試共用。
+     */
+    private fun daisangenTiles() = listOf(
+        Tile.Honor.Red, Tile.Honor.Red,
+        Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+        Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
+        Tile.Numeric(Tile.Suit.Character, 1),
+        Tile.Numeric(Tile.Suit.Character, 2),
+        Tile.Numeric(Tile.Suit.Character, 3),
+        Tile.Numeric(Tile.Suit.Dot, 5),
+        Tile.Numeric(Tile.Suit.Dot, 5),
+    )
+
+    /**
+     * 驗證莊家自摸大三元時，其餘三位閒家平均分攤點數。
+     */
+    @Test
+    fun `test declareTsumo splits payment evenly among three non-dealers when winner is dealer`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(winner, south, west, north), config = module.config)
+
+        val result = module.declareTsumo(table, winner)
+
+        assertEquals(
+            TsumoResult(
+                totalGained = 48000,
+                paymentsByPlayerId = mapOf(south.id to 16000, west.id to 16000, north.id to 16000),
+            ),
+            result,
+        )
+    }
+
+    /**
+     * 驗證閒家自摸大三元時，莊家與另外兩位閒家支付不同金額。
+     */
+    @Test
+    fun `test declareTsumo charges dealer more than the other two non-dealers when winner is non-dealer`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(dealer, winner, west, north), config = module.config)
+
+        val result = module.declareTsumo(table, winner)
+
+        assertEquals(
+            TsumoResult(
+                totalGained = 32000,
+                paymentsByPlayerId = mapOf(dealer.id to 16000, west.id to 8000, north.id to 8000),
+            ),
+            result,
+        )
+    }
+
+    /**
+     * 驗證包牌責任已成立時，只有包牌責任者（依 [PaoLiability.direction] 解析回實際玩家）付款，
+     * 其餘玩家完全不出現在結算結果中。
+     */
+    @Test
+    fun `test declareTsumo resolves pao payer via relative direction and no other player pays`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val paoPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)),
+        )
+        val other1 = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val other2 = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        // paoPlayer 排在 winner 前一位（座位順序），故對 winner 而言方位為 Left，與上方宣告的包牌責任相符
+        val table = FakeTableStateFactory.create(players = listOf(paoPlayer, winner, other1, other2), config = module.config)
+
+        val result = module.declareTsumo(table, winner)
+
+        assertEquals(TsumoResult(totalGained = 32000, paymentsByPlayerId = mapOf(paoPlayer.id to 32000)), result)
+    }
+
+    /**
+     * 驗證玩家尚未摸牌（hand.lastDrawn 為 null）時，自摸結算回傳 null（防呆）。
+     */
+    @Test
+    fun `test declareTsumo returns null when player has not drawn`() {
+        val player = FakeMahjongPlayerFactory.create(playerRuleState = RiichiPlayerState())
+        val table = FakeTableStateFactory.create(players = listOf(player), config = module.config)
+
+        assertNull(module.declareTsumo(table, player))
     }
 }
