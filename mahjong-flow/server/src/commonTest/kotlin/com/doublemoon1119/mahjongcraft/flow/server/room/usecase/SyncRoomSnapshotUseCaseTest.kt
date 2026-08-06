@@ -59,6 +59,6 @@ class SyncRoomSnapshotUseCaseTest {
 
         // Assert
         assertTrue(result is Outcome.Error, "Expected Error but got $result")
-        assertEquals(RoomError.RoomNotFound(roomId), (result as Outcome.Error).error)
+        assertEquals(RoomError.RoomNotFound(roomId), result.error)
     }
 }

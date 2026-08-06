@@ -143,7 +143,7 @@ class DrawTileUseCaseTest {
         val result = fixtures.useCase(gameId, currentPlayerId)
 
         assertTrue(result is Outcome.Error)
-        assertEquals(GameError.GameNotFound(gameId), (result as Outcome.Error).error)
+        assertEquals(GameError.GameNotFound(gameId), result.error)
     }
 
     /**
@@ -164,7 +164,7 @@ class DrawTileUseCaseTest {
         val result = fixtures.useCase(gameId, strangerId)
 
         assertTrue(result is Outcome.Error)
-        assertEquals(GameError.PlayerNotInGame(strangerId, gameId), (result as Outcome.Error).error)
+        assertEquals(GameError.PlayerNotInGame(strangerId, gameId), result.error)
     }
 
     /**
@@ -186,7 +186,7 @@ class DrawTileUseCaseTest {
         val result = fixtures.useCase(gameId, otherPlayerId)
 
         assertTrue(result is Outcome.Error)
-        assertEquals(GameError.NotPlayersTurn(otherPlayerId, gameId), (result as Outcome.Error).error)
+        assertEquals(GameError.NotPlayersTurn(otherPlayerId, gameId), result.error)
     }
 
     /**
@@ -212,7 +212,7 @@ class DrawTileUseCaseTest {
         assertTrue(result is Outcome.Error)
         assertEquals(
             GameError.IllegalAction(currentPlayerId, gameId, GameAction.Draw),
-            (result as Outcome.Error).error
+            result.error
         )
     }
 
@@ -233,6 +233,6 @@ class DrawTileUseCaseTest {
         val result = fixtures.useCase(gameId, currentPlayerId)
 
         assertTrue(result is Outcome.Error)
-        assertEquals(GameError.WallExhausted(gameId), (result as Outcome.Error).error)
+        assertEquals(GameError.WallExhausted(gameId), result.error)
     }
 }

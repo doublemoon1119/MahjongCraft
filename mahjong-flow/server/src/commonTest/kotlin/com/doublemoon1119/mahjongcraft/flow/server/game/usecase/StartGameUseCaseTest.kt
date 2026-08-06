@@ -59,7 +59,7 @@ class StartGameUseCaseTest {
         val result = fixtures.useCase(roomId, hostId)
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        assertEquals(roomId, (result as Outcome.Success).value)
+        assertEquals(roomId, result.value)
 
         assertNull(fixtures.roomRepo.getRoom(roomId), "Room should be removed once the game has started.")
         val tableState = fixtures.gameRepo.getTableState(roomId)
@@ -113,7 +113,7 @@ class StartGameUseCaseTest {
         val result = fixtures.useCase(roomId, hostId)
 
         assertTrue(result is Outcome.Error)
-        assertEquals(RoomError.RoomNotFound(roomId), (result as Outcome.Error).error)
+        assertEquals(RoomError.RoomNotFound(roomId), result.error)
     }
 
     /**
@@ -128,7 +128,7 @@ class StartGameUseCaseTest {
         val result = fixtures.useCase(roomId, impostor)
 
         assertTrue(result is Outcome.Error)
-        assertEquals(RoomError.NotHost(impostor), (result as Outcome.Error).error)
+        assertEquals(RoomError.NotHost(impostor), result.error)
         assertNotNull(fixtures.roomRepo.getRoom(roomId), "Room should not be consumed on a failed start attempt.")
     }
 
@@ -143,7 +143,7 @@ class StartGameUseCaseTest {
         val result = fixtures.useCase(roomId, hostId)
 
         assertTrue(result is Outcome.Error)
-        assertEquals(RoomError.RoomNotReadyToStart(roomId), (result as Outcome.Error).error)
+        assertEquals(RoomError.RoomNotReadyToStart(roomId), result.error)
     }
 
     /**
@@ -162,7 +162,7 @@ class StartGameUseCaseTest {
         val secondResult = fixtures.useCase(roomId, hostId)
 
         assertTrue(secondResult is Outcome.Error)
-        assertEquals(RoomError.RoomNotFound(roomId), (secondResult as Outcome.Error).error)
+        assertEquals(RoomError.RoomNotFound(roomId), secondResult.error)
         assertEquals(firstTableState, fixtures.gameRepo.getTableState(roomId), "The existing game should be untouched.")
     }
 }

@@ -79,7 +79,7 @@ class CreateRoomUseCaseTest {
 
         val result = useCase(roomId, hostId, config)
         assertTrue(result is Outcome.Error)
-        assertEquals(RoomError.RoomAlreadyExists(roomId), (result as Outcome.Error).error)
+        assertEquals(RoomError.RoomAlreadyExists(roomId), result.error)
     }
 
     /**
@@ -124,7 +124,7 @@ class CreateRoomUseCaseTest {
         val result = useCase(roomId, hostId, config)
 
         assertTrue(result is Outcome.Error)
-        assertEquals(RoomError.GameAlreadyInProgress(roomId), (result as Outcome.Error).error)
+        assertEquals(RoomError.GameAlreadyInProgress(roomId), result.error)
         assertEquals(null, roomRepo.getRoom(roomId), "No room should be created when a game is already in progress.")
     }
 }

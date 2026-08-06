@@ -153,7 +153,7 @@ class DiscardTileUseCaseTest {
         val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
 
         assertTrue(result is Outcome.Error)
-        assertEquals(GameError.GameNotFound(gameId), (result as Outcome.Error).error)
+        assertEquals(GameError.GameNotFound(gameId), result.error)
     }
 
     /**
@@ -174,7 +174,7 @@ class DiscardTileUseCaseTest {
         val result = fixtures.useCase(gameId, strangerId, drawnTile.id)
 
         assertTrue(result is Outcome.Error)
-        assertEquals(GameError.PlayerNotInGame(strangerId, gameId), (result as Outcome.Error).error)
+        assertEquals(GameError.PlayerNotInGame(strangerId, gameId), result.error)
     }
 
     /**
@@ -203,7 +203,7 @@ class DiscardTileUseCaseTest {
         val result = fixtures.useCase(gameId, otherPlayerId, handTile.id)
 
         assertTrue(result is Outcome.Error)
-        assertEquals(GameError.NotPlayersTurn(otherPlayerId, gameId), (result as Outcome.Error).error)
+        assertEquals(GameError.NotPlayersTurn(otherPlayerId, gameId), result.error)
     }
 
     /**
@@ -225,7 +225,7 @@ class DiscardTileUseCaseTest {
         assertTrue(result is Outcome.Error)
         assertEquals(
             GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(handTile.id)),
-            (result as Outcome.Error).error
+            result.error
         )
     }
 
@@ -249,7 +249,7 @@ class DiscardTileUseCaseTest {
         assertTrue(result is Outcome.Error)
         assertEquals(
             GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(unknownTileId)),
-            (result as Outcome.Error).error
+            result.error
         )
     }
 }
