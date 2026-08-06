@@ -36,6 +36,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculate
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateSuuankou
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateSuushii
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateTsuuiisou
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 import kotlin.math.abs
 
@@ -105,7 +106,9 @@ class RiichiHandValueCalculator(
 
                 val pointResult = PointCalculator.calculateYakumanPoint(
                     yakumanMultiplier = abs(totalHan), // 役滿總翻數為負數，這裡帶入絕對值
-                    isDealer = context.roundWind == context.seatWind,
+                    // 莊家的自風永遠是東，不會隨場風（圈風）轉南——不能直接比較 roundWind == seatWind，
+                    // 那算的是連風牌（雙東）是否成立，只有東場時才會跟「是否為莊家」剛好重合
+                    isDealer = context.seatWind == Wind.EAST,
                     isTsumo = context.isTsumo,
                     isPao = pao != null,
                 )
