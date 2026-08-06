@@ -9,6 +9,12 @@ import kotlin.uuid.Uuid
  */
 sealed class GameAction {
     /**
+     * 對局開始。
+     * 用於開局時對外廣播「本局已開始」事件，不代表任何玩家的主動操作。
+     */
+    data object GameStarted : GameAction()
+
+    /**
      * 摸牌動作。
      * 通常由系統自動執行，或在特定情況下由玩家觸發。
      */
