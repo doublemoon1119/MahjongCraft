@@ -15,6 +15,12 @@ sealed class GameAction {
     data object GameStarted : GameAction()
 
     /**
+     * 下一局已開始。
+     * 用於連莊/過莊後對外廣播「新的一局已開始」事件，不代表任何玩家的主動操作。
+     */
+    data object RoundStarted : GameAction()
+
+    /**
      * 摸牌動作。
      * 通常由系統自動執行，或在特定情況下由玩家觸發。
      */
