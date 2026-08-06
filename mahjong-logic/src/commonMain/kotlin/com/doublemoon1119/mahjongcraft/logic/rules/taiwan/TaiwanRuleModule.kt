@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
@@ -99,4 +101,29 @@ class TaiwanRuleModule(
         player: MahjongPlayer,
         discardResult: Hand.DiscardResult
     ): RiichiDeclarationResult? = null
+
+    /**
+     * 台灣麻將目前沒有摸牌後需要清除的規則特有狀態。
+     *
+     * @return 固定回傳 [player] 本身。
+     */
+    override fun onPlayerDrew(player: MahjongPlayer): MahjongPlayer = player
+
+    /**
+     * 台灣麻將目前沒有鳴牌後需要清除的規則特有狀態。
+     *
+     * @return 固定回傳 [players] 本身。
+     */
+    override fun onMeldClaimed(players: List<MahjongPlayer>): List<MahjongPlayer> = players
+
+    /**
+     * 台灣麻將目前沒有包牌這個機制。
+     *
+     * @return 固定回傳 [claimingPlayer] 本身。
+     */
+    override fun applyPaoLiabilityIfTriggered(
+        claimingPlayer: MahjongPlayer,
+        calledTile: IdentifiedTile,
+        sourceDirection: RelativeDirection
+    ): MahjongPlayer = claimingPlayer
 }

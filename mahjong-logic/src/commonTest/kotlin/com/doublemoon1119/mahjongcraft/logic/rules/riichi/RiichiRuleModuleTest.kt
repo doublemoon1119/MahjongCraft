@@ -1,15 +1,19 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /**
@@ -183,5 +187,95 @@ class RiichiRuleModuleTest {
         val table = FakeTableStateFactory.create(players = listOf(player), dynamicRuleState = null)
 
         assertNull(module.declareRiichi(table, player, discardResult))
+    }
+
+    /**
+     * 驗證玩家已立直且仍在一發窗口內時，摸牌會清除一發資格。
+     */
+    @Test
+    fun `test onPlayerDrew clears ippatsu when in ippatsu window`() {
+        val player = FakeMahjongPlayerFactory.create(
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true)
+        )
+
+        val result = module.onPlayerDrew(player)
+
+        val riichiState = result.playerRuleState as RiichiPlayerState
+        assertFalse(riichiState.isIppatsu)
+        assertTrue(riichiState.isRiichi, "Riichi itself should remain in effect.")
+    }
+
+    /**
+     * 驗證玩家不在一發窗口內（未立直或一發已失效）時，摸牌不應變動玩家實例。
+     */
+    @Test
+    fun `test onPlayerDrew is a no-op when not in ippatsu window`() {
+        val player = FakeMahjongPlayerFactory.create(playerRuleState = RiichiPlayerState())
+
+        val result = module.onPlayerDrew(player)
+
+        assertSame(player, result)
+    }
+
+    /**
+     * 驗證鳴牌事件會清除所有仍在一發窗口內的玩家的一發資格，不影響其他玩家。
+     */
+    @Test
+    fun `test onMeldClaimed clears ippatsu for all affected players`() {
+        val ippatsuPlayer = FakeMahjongPlayerFactory.create(
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true)
+        )
+        val nonRiichiPlayer = FakeMahjongPlayerFactory.create(playerRuleState = null)
+
+        val result = module.onMeldClaimed(listOf(ippatsuPlayer, nonRiichiPlayer))
+
+        assertFalse((result[0].playerRuleState as RiichiPlayerState).isIppatsu)
+        assertSame(nonRiichiPlayer, result[1])
+    }
+
+    /**
+     * 驗證碰第三組三元牌、湊齊大三元時，會將包牌責任寫入玩家的規則狀態。
+     */
+    @Test
+    fun `test applyPaoLiabilityIfTriggered writes liability when triggered`() {
+        val hand = FakeHandFactory.create(
+            listOf(
+                Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red,
+                Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green
+            )
+        )
+        val player = FakeMahjongPlayerFactory.create(hand = hand, playerRuleState = RiichiPlayerState())
+        val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+        val result = module.applyPaoLiabilityIfTriggered(player, calledTile, RelativeDirection.Left)
+
+        val riichiState = result.playerRuleState as RiichiPlayerState
+        assertEquals(PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left), riichiState.paoLiability)
+    }
+
+    /**
+     * 驗證未觸發包牌責任時，玩家實例不應變動。
+     */
+    @Test
+    fun `test applyPaoLiabilityIfTriggered is a no-op when not triggered`() {
+        val player = FakeMahjongPlayerFactory.create(playerRuleState = RiichiPlayerState())
+        val calledTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
+
+        val result = module.applyPaoLiabilityIfTriggered(player, calledTile, RelativeDirection.Left)
+
+        assertSame(player, result)
+    }
+
+    /**
+     * 驗證玩家的規則狀態不是 [RiichiPlayerState] 時，回傳玩家本身（防呆）。
+     */
+    @Test
+    fun `test applyPaoLiabilityIfTriggered is a no-op when player rule state is not riichi`() {
+        val player = FakeMahjongPlayerFactory.create(playerRuleState = null)
+        val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+        val result = module.applyPaoLiabilityIfTriggered(player, calledTile, RelativeDirection.Left)
+
+        assertSame(player, result)
     }
 }

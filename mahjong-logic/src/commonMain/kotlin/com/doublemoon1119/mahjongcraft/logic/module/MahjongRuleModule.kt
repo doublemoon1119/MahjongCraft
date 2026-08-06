@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.logic.module
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
@@ -122,4 +124,44 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 套用宣告後的新玩家實例與新的動態規則狀態，若此規則不支援立直宣告則為 null。
      */
     fun declareRiichi(tableState: TableState, player: MahjongPlayer, discardResult: Hand.DiscardResult): RiichiDeclarationResult?
+
+    /**
+     * 因應「玩家摸牌」事件，套用規則特有的狀態清除。
+     *
+     * 例如日麻：摸牌代表一發窗口已經結束（本巡未能胡牌），需清除玩家的一發資格。
+     * 沒有對應狀態需求的規則（如目前的台灣麻將）應直接回傳 [player] 本身，不做任何事。
+     *
+     * @param player 剛完成摸牌的玩家（已套用摸牌本身造成的變化）。
+     * @return 套用規則特有狀態清除後的新玩家實例。
+     */
+    fun onPlayerDrew(player: MahjongPlayer): MahjongPlayer
+
+    /**
+     * 因應「有玩家完成一次鳴牌（吃/碰/槓）」事件，套用規則特有的狀態清除。
+     *
+     * 例如日麻：任何一次鳴牌都會讓場上所有玩家的一發資格失效（不只鳴牌的當事人）。
+     * 沒有對應狀態需求的規則（如目前的台灣麻將）應直接回傳 [players] 本身，不做任何事。
+     *
+     * @param players 鳴牌動作套用之後的完整玩家列表。
+     * @return 套用規則特有狀態清除後的新玩家列表。
+     */
+    fun onMeldClaimed(players: List<MahjongPlayer>): List<MahjongPlayer>
+
+    /**
+     * 檢查本次碰／明槓是否觸發包牌責任，若觸發則寫入 [claimingPlayer] 的規則狀態。
+     *
+     * 必須在鳴牌動作實際套用到 [claimingPlayer] 手牌「之前」呼叫，以取得鳴牌當下、
+     * 尚未加入新副露的手牌狀態。不支援包牌概念的規則（如目前的台灣麻將）應直接回傳
+     * [claimingPlayer] 本身，不做任何事。
+     *
+     * @param claimingPlayer 執行碰／明槓的玩家（尚未套用本次鳴牌）。
+     * @param calledTile 本次鳴取的他家捨牌。
+     * @param sourceDirection 本次鳴取的來源相對方位。
+     * @return 套用包牌責任（若觸發）後的新玩家實例。
+     */
+    fun applyPaoLiabilityIfTriggered(
+        claimingPlayer: MahjongPlayer,
+        calledTile: IdentifiedTile,
+        sourceDirection: RelativeDirection
+    ): MahjongPlayer
 }

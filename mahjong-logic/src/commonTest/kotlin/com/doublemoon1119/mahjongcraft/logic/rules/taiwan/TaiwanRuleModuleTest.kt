@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -9,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /**
@@ -107,5 +109,36 @@ class TaiwanRuleModuleTest {
         val table = FakeTableStateFactory.create(players = listOf(player))
 
         assertNull(module.declareRiichi(table, player, discardResult))
+    }
+
+    /**
+     * 驗證台灣麻將目前沒有摸牌後需要清除的規則特有狀態，直接回傳玩家本身。
+     */
+    @Test
+    fun `test onPlayerDrew returns player as-is`() {
+        val player = FakeMahjongPlayerFactory.create()
+
+        assertSame(player, module.onPlayerDrew(player))
+    }
+
+    /**
+     * 驗證台灣麻將目前沒有鳴牌後需要清除的規則特有狀態，直接回傳玩家列表本身。
+     */
+    @Test
+    fun `test onMeldClaimed returns players as-is`() {
+        val players = listOf(FakeMahjongPlayerFactory.create(), FakeMahjongPlayerFactory.create())
+
+        assertSame(players, module.onMeldClaimed(players))
+    }
+
+    /**
+     * 驗證台灣麻將目前沒有包牌這個機制，直接回傳玩家本身。
+     */
+    @Test
+    fun `test applyPaoLiabilityIfTriggered returns player as-is`() {
+        val player = FakeMahjongPlayerFactory.create()
+        val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+        assertSame(player, module.applyPaoLiabilityIfTriggered(player, calledTile, RelativeDirection.Left))
     }
 }

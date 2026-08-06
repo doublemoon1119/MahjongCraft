@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -123,5 +125,38 @@ class RiichiRuleModule(
             player = updatedPlayer,
             dynamicRuleState = riichiDynamicState.copy(riichiStickCount = riichiDynamicState.riichiStickCount + 1)
         )
+    }
+
+    /**
+     * 若玩家已立直且仍在一發窗口內，摸牌代表這個窗口已經結束（本巡未能胡牌），故清除一發資格。
+     */
+    override fun onPlayerDrew(player: MahjongPlayer): MahjongPlayer {
+        val riichiState = player.playerRuleState as? RiichiPlayerState ?: return player
+        if (!riichiState.isIppatsu) return player
+        return player.copy(playerRuleState = riichiState.copy(isIppatsu = false))
+    }
+
+    /**
+     * 任何一次鳴牌都會讓場上所有玩家的一發資格失效。
+     */
+    override fun onMeldClaimed(players: List<MahjongPlayer>): List<MahjongPlayer> {
+        return players.map { player ->
+            val riichiState = player.playerRuleState as? RiichiPlayerState ?: return@map player
+            if (!riichiState.isIppatsu) return@map player
+            player.copy(playerRuleState = riichiState.copy(isIppatsu = false))
+        }
+    }
+
+    /**
+     * 檢查本次碰／明槓是否觸發大三元／大四喜的包牌責任，若觸發則寫入 [claimingPlayer] 的 [RiichiPlayerState]。
+     */
+    override fun applyPaoLiabilityIfTriggered(
+        claimingPlayer: MahjongPlayer,
+        calledTile: IdentifiedTile,
+        sourceDirection: RelativeDirection
+    ): MahjongPlayer {
+        val riichiState = claimingPlayer.playerRuleState as? RiichiPlayerState ?: return claimingPlayer
+        val liability = PaoDetector.check(claimingPlayer.hand, calledTile.tile, sourceDirection) ?: return claimingPlayer
+        return claimingPlayer.copy(playerRuleState = riichiState.copy(paoLiability = liability))
     }
 }
