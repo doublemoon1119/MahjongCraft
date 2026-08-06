@@ -64,4 +64,18 @@ sealed interface RoomError : ApplicationError {
      * @param playerId 房主玩家的 Uuid。
      */
     data class HostCannotKickSelf(val playerId: Uuid) : RoomError
+
+    /**
+     * 房間尚未準備好開始遊戲（對應 [com.doublemoon1119.mahjongcraft.flow.common.room.model.Room.canStart] 為 false）。
+     *
+     * @param roomId 房間 Uuid。
+     */
+    data class RoomNotReadyToStart(val roomId: Uuid) : RoomError
+
+    /**
+     * 該識別碼對應的遊戲已在進行中，無法建立新房間或重複開局。
+     *
+     * @param roomId 房間（同時也是對應遊戲）的 Uuid。
+     */
+    data class GameAlreadyInProgress(val roomId: Uuid) : RoomError
 }
