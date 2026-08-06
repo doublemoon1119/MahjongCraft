@@ -1,11 +1,14 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
@@ -18,13 +21,14 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /**
  * [DiscardTileUseCase] 的單元測試類別。
  *
- * 驗證捨牌的業務邏輯，包含回合驗證、手牌與牌河狀態更新、推進下一位玩家，
+ * 驗證捨牌的業務邏輯，包含回合驗證、手牌與牌河狀態更新、推進下一位玩家或開啟反應視窗，
  * 以及快照與事件的同步行為。
  */
 class DiscardTileUseCaseTest {
@@ -35,9 +39,10 @@ class DiscardTileUseCaseTest {
 
     private class Fixtures {
         val gameRepo = FakeGameRepository()
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
         val eventPublisher = FakeGameEventPublisher()
-        val useCase = DiscardTileUseCase(gameRepo, snapshotRepo, eventPublisher)
+        val useCase = DiscardTileUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher)
     }
 
     private val drawnTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
@@ -58,6 +63,7 @@ class DiscardTileUseCaseTest {
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
             tileWall = TileWall(emptyList()),
             currentPlayerIndex = 0
         )
@@ -76,6 +82,7 @@ class DiscardTileUseCaseTest {
         assertEquals(drawnTile, updatedPlayer.discardPile.entries.first().tile)
         assertTrue(updatedPlayer.actionHistory.last() is GameAction.Discard)
         assertEquals(1, newState.currentPlayerIndex, "Turn should advance to the next player.")
+        assertNull(newState.pendingReaction, "No one is eligible to react, so no reaction window should open.")
     }
 
     /**
@@ -92,6 +99,7 @@ class DiscardTileUseCaseTest {
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer),
+            config = RiichiRuleConfig(),
             tileWall = TileWall(emptyList()),
             currentPlayerIndex = 0
         )
@@ -105,6 +113,52 @@ class DiscardTileUseCaseTest {
         assertEquals(null, updatedPlayer.hand.lastDrawn)
         assertEquals(listOf(drawnTile), updatedPlayer.hand.tiles)
         assertEquals(handTile, updatedPlayer.discardPile.entries.first().tile)
+    }
+
+    /**
+     * 驗證捨出的牌讓其他玩家有資格碰牌時，不推進回合，改為開啟反應視窗。
+     */
+    @Test
+    fun `test discard tile opens pending reaction when someone is eligible to react`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = discardedTile)
+        )
+        // 另一位玩家手牌中有兩張東風，湊滿碰牌的條件
+        val otherPlayer = FakeMahjongPlayerFactory.create(
+            id = otherPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(
+                tiles = listOf(
+                    FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    FakeIdentifiedTileFactory.create(Tile.Honor.East)
+                )
+            )
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, discardedTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertEquals(0, newState.currentPlayerIndex, "Turn should not advance while a reaction is pending.")
+        val pendingReaction = newState.pendingReaction
+        assertNotNull(pendingReaction, "A reaction window should open since otherPlayer can Pon.")
+        assertEquals(currentPlayerId, pendingReaction.discarderId)
+        assertEquals(discardedTile.id, pendingReaction.tileId)
+        assertEquals(setOf(otherPlayerId), pendingReaction.eligiblePlayerIds)
     }
 
     /**
@@ -122,6 +176,7 @@ class DiscardTileUseCaseTest {
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
             tileWall = TileWall(emptyList()),
             currentPlayerIndex = 0
         )
