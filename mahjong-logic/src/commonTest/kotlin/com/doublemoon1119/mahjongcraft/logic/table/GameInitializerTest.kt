@@ -1,10 +1,13 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -95,6 +98,32 @@ class GameInitializerTest {
 
         assertFailsWith<IllegalArgumentException> {
             GameInitializer.initialize(Uuid.random(), tooFewPlayerIds, module)
+        }
+    }
+
+    /**
+     * 驗證開局時會透過規則模組建立初始動態桌況狀態，而不是維持預設的 null
+     * （否則寶牌指示器等依賴 dynamicRuleState 的功能會永遠無法顯示）。
+     */
+    @Test
+    fun `test initialize sets dynamic rule state from module`() {
+        val playerIds = List(4) { Uuid.random() }
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module)
+
+        assertIs<RiichiDynamicState>(table.dynamicRuleState)
+    }
+
+    /**
+     * 驗證開局時會透過規則模組為每位玩家建立初始玩家規則狀態，而不是維持預設的 null
+     * （否則立直宣告等需要寫入 playerRuleState 的功能會沒有初始狀態可以 copy）。
+     */
+    @Test
+    fun `test initialize sets player rule state from module for every player`() {
+        val playerIds = List(4) { Uuid.random() }
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module)
+
+        table.players.forEach { player ->
+            assertIs<RiichiPlayerState>(player.playerRuleState)
         }
     }
 }

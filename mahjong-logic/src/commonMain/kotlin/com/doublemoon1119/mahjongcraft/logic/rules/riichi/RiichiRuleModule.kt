@@ -1,6 +1,10 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
 /**
  * 日本麻將規則模組實作。
@@ -67,5 +71,57 @@ class RiichiRuleModule(
      */
     override fun createHandValueContextCalculator(): RiichiHandValueContextCalculator {
         return RiichiHandValueContextCalculator(config)
+    }
+
+    /**
+     * 建立日本麻將的初始動態桌況狀態。
+     *
+     * @return 全新的 [RiichiDynamicState]（立直棒數量為 0）。
+     */
+    override fun createInitialDynamicState(): RiichiDynamicState {
+        return RiichiDynamicState()
+    }
+
+    /**
+     * 建立日本麻將的初始玩家規則狀態。
+     *
+     * @return 全新的 [RiichiPlayerState]（尚未立直、無包牌責任）。
+     */
+    override fun createInitialPlayerRuleState(): RiichiPlayerState {
+        return RiichiPlayerState()
+    }
+
+    /**
+     * 套用日本麻將立直宣告的狀態變化：標記捨牌紀錄、更新立直/雙立直/一發狀態、立直棒 +1。
+     *
+     * @return 套用宣告後的新玩家實例與新的 [RiichiDynamicState]；若 [player]/[tableState] 缺少
+     *         日麻所需的規則狀態（理論上不會發生，僅作防呆）則回傳 null。
+     */
+    override fun declareRiichi(
+        tableState: TableState,
+        player: MahjongPlayer,
+        discardResult: Hand.DiscardResult
+    ): RiichiDeclarationResult? {
+        val riichiState = player.playerRuleState as? RiichiPlayerState ?: return null
+        val riichiDiscardPile = player.discardPile as? RiichiDiscardPile ?: return null
+        val riichiDynamicState = tableState.dynamicRuleState as? RiichiDynamicState ?: return null
+
+        val isDoubleRiichi = tableState.isFirstGoAround(player)
+        val updatedPlayerRuleState = riichiState.copy(
+            riichiTile = if (isDoubleRiichi) null else discardResult.tile,
+            doubleRiichiTile = if (isDoubleRiichi) discardResult.tile else null,
+            isIppatsu = true
+        )
+        val updatedPlayer = player.copy(
+            hand = discardResult.hand,
+            discardPile = riichiDiscardPile.discard(RiichiDiscardEntry(discardResult.tile, isRiichi = true)),
+            score = player.score - 1000,
+            playerRuleState = updatedPlayerRuleState
+        )
+
+        return RiichiDeclarationResult(
+            player = updatedPlayer,
+            dynamicRuleState = riichiDynamicState.copy(riichiStickCount = riichiDynamicState.riichiStickCount + 1)
+        )
     }
 }

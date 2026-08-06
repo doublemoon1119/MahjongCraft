@@ -38,11 +38,18 @@ object GameInitializer {
                 id = playerId,
                 initialSeat = seats[index],
                 hand = Hand(tiles = tiles),
-                discardPile = module.createDiscardPile()
+                discardPile = module.createDiscardPile(),
+                playerRuleState = module.createInitialPlayerRuleState()
             )
         }
 
-        return TableState(id = id, players = players, config = module.config, tileWall = wall).init()
+        return TableState(
+            id = id,
+            players = players,
+            config = module.config,
+            tileWall = wall,
+            dynamicRuleState = module.createInitialDynamicState()
+        ).init()
     }
 
     /**

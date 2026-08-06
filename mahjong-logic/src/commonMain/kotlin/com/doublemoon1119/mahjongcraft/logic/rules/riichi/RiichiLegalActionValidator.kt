@@ -123,10 +123,7 @@ class RiichiLegalActionValidator(
             }
 
             // 4. 檢查是否可以宣告和局 (九種九牌)
-            val isFirstTurn = tableState.players.all { it.hand.exposedMelds.isEmpty() } &&  // 場上沒人鳴牌（包含暗槓）
-                    tableState.players.all { it.discardPile.entries.size <= 1 } &&  // 每個人打出的牌都不能超過 1 張
-                    player.discardPile.entries.isEmpty()  // 自己還沒打過牌
-            if (isFirstTurn) {
+            if (tableState.isFirstGoAround(player)) {
                 val isKyuushuKyuuhai = (player.hand.standingTiles + incomingTile)
                     .filter { it.tile.isTerminal || it.tile.isHonor }  // 過濾么九牌
                     .map { it.tile.withoutRed }

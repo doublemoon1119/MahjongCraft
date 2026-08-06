@@ -1,8 +1,14 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
 /**
  * 台灣麻將規則模組實作。
@@ -68,4 +74,29 @@ class TaiwanRuleModule(
     override fun createHandValueContextCalculator(): HandValueContextCalculator<*, *> {
         TODO("TaiwanHandValueContextCalculator is not yet implemented")
     }
+
+    /**
+     * 台灣麻將目前沒有動態桌況狀態的需求。
+     *
+     * @return 固定回傳 null。
+     */
+    override fun createInitialDynamicState(): DynamicRuleState? = null
+
+    /**
+     * 台灣麻將目前沒有玩家規則狀態的需求。
+     *
+     * @return 固定回傳 null。
+     */
+    override fun createInitialPlayerRuleState(): PlayerRuleState? = null
+
+    /**
+     * 台灣麻將目前沒有立直宣告這個機制。
+     *
+     * @return 固定回傳 null。
+     */
+    override fun declareRiichi(
+        tableState: TableState,
+        player: MahjongPlayer,
+        discardResult: Hand.DiscardResult
+    ): RiichiDeclarationResult? = null
 }

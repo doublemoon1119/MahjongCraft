@@ -1,8 +1,14 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Ignore
 import kotlin.test.Test
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -71,5 +77,35 @@ class TaiwanRuleModuleTest {
     fun `test create hand value context calculator returns taiwan implementation`() {
         // val discardPile = module.createHandValueContextCalculator()
         // TODO: assertTrue(discardPile is TaiwanHandValueContextCalculator)
+    }
+
+    /**
+     * 驗證台灣麻將目前沒有動態桌況狀態的需求，回傳 null。
+     */
+    @Test
+    fun `test create initial dynamic state returns null`() {
+        assertNull(module.createInitialDynamicState())
+    }
+
+    /**
+     * 驗證台灣麻將目前沒有玩家規則狀態的需求，回傳 null。
+     */
+    @Test
+    fun `test create initial player rule state returns null`() {
+        assertNull(module.createInitialPlayerRuleState())
+    }
+
+    /**
+     * 驗證台灣麻將目前沒有立直宣告這個機制，回傳 null。
+     */
+    @Test
+    fun `test declareRiichi returns null`() {
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val hand = Hand(lastDrawn = discardedTile)
+        val discardResult = hand.discardById(discardedTile.id)!!
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val table = FakeTableStateFactory.create(players = listOf(player))
+
+        assertNull(module.declareRiichi(table, player, discardResult))
     }
 }
