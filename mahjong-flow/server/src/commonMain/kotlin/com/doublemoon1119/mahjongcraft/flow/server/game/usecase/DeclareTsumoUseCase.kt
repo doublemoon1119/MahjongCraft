@@ -1,0 +1,120 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import org.koin.core.annotation.Factory
+import org.koin.core.annotation.Provided
+import kotlin.uuid.Uuid
+
+/**
+ * 宣告自摸（Tsumo）胡牌的實例化用例。
+ *
+ * 這是「胡牌結算」系列 use case 中最先實作的一片：只處理自摸造成的點數異動與事件廣播，刻意不處理
+ * 榮和（含一炮多響），也不處理一局結束後的連莊/過莊/開新局等後續流程——那些留給未來各自獨立的
+ * use case 處理。因此本 use case 執行完成後，`TableState` 唯一被改變的部分只有玩家分數（與贏家的
+ * `actionHistory`）；`currentPlayerIndex`、`pendingReaction`、立直棒等動態規則狀態，都刻意維持原樣不動。
+ *
+ * 自摸是否合法（含最低番數限制）、贏家實際獲得多少點數、其他玩家各自要付多少點數，這些規則相關
+ * 的判斷完全交給 [com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule.declareTsumo]
+ * 處理——這裡刻意不轉型成任何規則專屬的具體型別，理由與 [DeclareRiichiUseCase] 相同。
+ *
+ * @property gameRepository 權威對局數據倉庫。
+ * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與點數結算邏輯。
+ * @property gameSnapshotRepository 對局快照數據倉庫。
+ * @property eventPublisher 對局通知服務。
+ */
+@Factory
+class DeclareTsumoUseCase(
+    private val gameRepository: GameRepository,
+    private val moduleRegistry: MahjongModuleRegistry,
+    private val gameSnapshotRepository: GameSnapshotRepository,
+    @Provided private val eventPublisher: GameEventPublisher,
+) {
+    /**
+     * 執行自摸宣告邏輯。
+     *
+     * @param gameId 對局 Uuid。
+     * @param playerId 發起自摸宣告的玩家 Uuid。
+     * @return 宣告結果，成功時為 [Unit]，失敗時為 [GameError]。
+     */
+    suspend operator fun invoke(gameId: Uuid, playerId: Uuid): Outcome<Unit, GameError> {
+        // 1. 以原子方式讀取桌況、驗證業務規則並寫回
+        val outcome = gameRepository.update(gameId) { state ->
+            when {
+                state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
+                state.players.none { it.id == playerId } ->
+                    state to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
+                state.currentPlayer.id != playerId ->
+                    state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
+                state.currentPlayer.hand.lastDrawn == null ->
+                    state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Tsumo))
+                else -> {
+                    val winningTile = state.currentPlayer.hand.lastDrawn
+                        ?: return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Tsumo))
+
+                    val module = moduleRegistry.getModule(state.config)
+
+                    // LegalActionValidator 的既有慣例是傳入的手牌「不含胡牌張」，胡牌張只透過
+                    // incomingTile 參數單獨傳入；currentPlayer.hand 此時 lastDrawn 已經是胡牌張，
+                    // 這裡剝離避免重複計數（否則手牌張數會對不上，導致自摸永遠被判定為不合法）。
+                    val playerForLegalCheck = state.currentPlayer.copy(
+                        hand = state.currentPlayer.hand.copy(lastDrawn = null),
+                    )
+                    val legalActions = module.createLegalActionValidator().getLegalActions(
+                        tableState = state,
+                        player = playerForLegalCheck,
+                        sourceAction = GameAction.Draw,
+                        sourceDirection = RelativeDirection.Self,
+                        incomingTile = winningTile,
+                    )
+                    if (legalActions.none { it is GameAction.Tsumo }) {
+                        return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Tsumo))
+                    }
+
+                    // 這個規則不支援自摸結算時 declareTsumo 回傳 null。理論上不會走到
+                    // 這裡，因為上面的 legalActions 檢查已經先擋下了；僅作防呆。
+                    val tsumoResult = module.declareTsumo(state, state.currentPlayer)
+                        ?: return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Tsumo))
+
+                    val updatedWinner = state.currentPlayer
+                        .copy(score = state.currentPlayer.score + tsumoResult.totalGained)
+                        .recordAction(GameAction.Tsumo)
+                    val updatedPlayers = state.players.map { p ->
+                        when {
+                            p.id == playerId -> updatedWinner
+                            else -> tsumoResult.paymentsByPlayerId[p.id]
+                                ?.let { payment -> p.copy(score = p.score - payment) }
+                                ?: p
+                        }
+                    }
+                    val newState = state.copy(players = updatedPlayers)
+
+                    newState to Outcome.Success(newState)
+                }
+            }
+        }
+
+        if (outcome is Outcome.Error) return outcome
+        val newState = (outcome as Outcome.Success).value
+
+        // 2. 同步快照給所有正在觀察的玩家
+        val observers = gameSnapshotRepository.getAllObservers(gameId)
+        observers.forEach { observerId ->
+            gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(observerId))
+        }
+
+        // 3. 通知對局內的所有玩家：廣播自摸事件
+        newState.players.forEach { player ->
+            eventPublisher.publish(gameId, player.id, playerId, GameAction.Tsumo)
+        }
+
+        return Outcome.Success(Unit)
+    }
+}
