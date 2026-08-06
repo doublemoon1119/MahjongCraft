@@ -38,6 +38,18 @@ interface DiscardPile<T : DiscardPile.DiscardEntry> {
     fun takeLast(): DiscardPile<T>
 
     /**
+     * 依據一張牌建立本規則預設（不含任何規則特有狀態，如立直）的捨牌紀錄，並加入牌河。
+     *
+     * 提供給 `:mahjong-flow` 這類不知道具體規則 [T] 為何的呼叫端使用，讓其能透過統一介面捨牌，
+     * 不需要知道每種規則各自的 [DiscardEntry] 子類別建構方式。規則特有的狀態（如立直宣告）
+     * 仍應由該規則專屬的 use case 直接呼叫 [discard] 並傳入完整建構的紀錄。
+     *
+     * @param tile 欲捨棄的牌。
+     * @return 加入該紀錄後的新 [DiscardPile] 實例。
+     */
+    fun discardTile(tile: IdentifiedTile): DiscardPile<T>
+
+    /**
      * 代表牌河中的單一紀錄實體基礎類別。
      *
      * @property tile 被打出的具有唯一標識的麻將牌。

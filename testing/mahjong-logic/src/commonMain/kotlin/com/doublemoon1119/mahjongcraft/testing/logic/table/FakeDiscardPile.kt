@@ -28,6 +28,14 @@ data class FakeDiscardPile(
     override fun discard(entry: FakeEntry): FakeDiscardPile = copy(_entries = _entries + entry)
 
     /**
+     * 建立一筆測試用的預設捨牌紀錄，並加入牌河。
+     *
+     * @param tile 欲捨棄的牌。
+     * @return 加入該紀錄後的新 [FakeDiscardPile] 實例。
+     */
+    override fun discardTile(tile: IdentifiedTile): FakeDiscardPile = discard(FakeEntry(tile))
+
+    /**
      * 標記最後一項紀錄已被取走。
      *
      * @return 標記後的新 [FakeDiscardPile] 實例；若牌河為空則回傳原實例。

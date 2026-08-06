@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 
@@ -26,6 +27,14 @@ data class TaiwanDiscardPile(
      * @return 加入該紀錄後的新 [TaiwanDiscardPile] 實例。
      */
     override fun discard(entry: DiscardPile.DiscardEntry): TaiwanDiscardPile = copy(_entries = _entries + entry)
+
+    /**
+     * 建立一筆基礎捨牌紀錄，並加入牌河。
+     *
+     * @param tile 欲捨棄的牌。
+     * @return 加入該紀錄後的新 [TaiwanDiscardPile] 實例。
+     */
+    override fun discardTile(tile: IdentifiedTile): TaiwanDiscardPile = discard(DiscardEntry(tile))
 
     /**
      * 標記最後一項紀錄已被取走。
