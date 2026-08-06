@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
@@ -657,6 +658,104 @@ class RespondToDiscardUseCaseTest {
             finalState.players.first { it.id == discarderId }.score,
             "The discarder should pay the sum of all three winners' totals.",
         )
+    }
+
+    /**
+     * 驗證單一贏家榮和時正確收下場上所有立直棒。
+     */
+    @Test
+    fun `test lone ron collects stick pot`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val winner = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, winner),
+            config = RiichiRuleConfig(),
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 3),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, responderId, GameAction.Ron(discardedTile.id))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(
+            32000 + 3000,
+            newState.players.first { it.id == responderId }.score,
+            "Winner's score should include both the Ron total and the 3 sticks (1000 each).",
+        )
+        assertEquals(0, (newState.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+    }
+
+    /**
+     * 驗證多家和時供託由頭跳順位最近的贏家收下，不是所有贏家均分。
+     */
+    @Test
+    fun `test multi-ron stick pot goes to the nearest winner only`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.WEST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val dealerWinnerId = Uuid.random()
+        val dealerWinner = FakeMahjongPlayerFactory.create(
+            id = dealerWinnerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val nonDealerWinner = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        )
+        // players 順序：discarder → dealerWinner → nonDealerWinner，故 dealerWinner 是離放銃者
+        // 最近的下家（頭跳順位最前）
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, dealerWinner, nonDealerWinner),
+            config = RiichiRuleConfig(),
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(dealerWinnerId, responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.useCase(gameId, dealerWinnerId, GameAction.Ron(discardedTile.id))
+        val result = fixtures.useCase(gameId, responderId, GameAction.Ron(discardedTile.id))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val finalState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(
+            48000 + 2000,
+            finalState.players.first { it.id == dealerWinnerId }.score,
+            "The nearest winner (immediately after the discarder) should collect the sticks.",
+        )
+        assertEquals(
+            32000,
+            finalState.players.first { it.id == responderId }.score,
+            "The farther winner should not receive any of the stick pot.",
+        )
+        assertEquals(0, (finalState.dynamicRuleState as RiichiDynamicState).riichiStickCount)
     }
 
     /**

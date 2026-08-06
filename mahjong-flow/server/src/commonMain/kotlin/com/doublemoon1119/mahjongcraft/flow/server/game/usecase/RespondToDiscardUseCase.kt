@@ -29,8 +29,9 @@ import kotlin.uuid.Uuid
  * 本用例只單純結算「這次收到幾筆榮和回應」，不重複判斷資格與人數限制）；若所有人都選擇過牌，
  * 則單純推進到下一位玩家，行為與捨牌時「無人可反應」的情況相同。
  *
- * 榮和結算後手牌即結束：本用例刻意只改動分數與贏家的 `actionHistory`，`currentPlayerIndex` 維持
- * 原樣不動（不像碰/吃/槓那樣把回合交給得標玩家），連莊/過莊/開下一局等後續流程留給未來獨立的單位。
+ * 榮和結算後手牌即結束：本用例刻意只改動分數、贏家的 `actionHistory`，以及供託相關的動態規則狀態，
+ * `currentPlayerIndex` 維持原樣不動（不像碰/吃/槓那樣把回合交給得標玩家），連莊/過莊/開下一局等
+ * 後續流程留給未來獨立的單位。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與規則特有邏輯。
@@ -203,6 +204,10 @@ class RespondToDiscardUseCase(
      * [winnerIds] 可能不只一人（一炮多響、且規則設定為多家和時）：每位贏家各自呼叫
      * [MahjongRuleModule.declareRon] 獨立結算，再把所有結算金額加總到同一份分數異動——同一位玩家
      * 有可能同時是某人的贏家、又是另一人的包牌責任者，需要正確疊加而非互相覆蓋。
+     *
+     * 場上供託（如立直棒）由其中一位贏家收下：只有單一贏家時就是那位贏家；多家和時依頭跳順位
+     * （[TableState.nearestPlayerInTurnOrder]，以放銃者為起點）由離放銃者最近的贏家收下，
+     * 不是所有贏家均分。
      */
     private fun resolveRon(
         state: TableState,
@@ -232,11 +237,27 @@ class RespondToDiscardUseCase(
             }
         }
 
+        // 場上供託由其中一位贏家收下：單一贏家時就是那位贏家，多家和時依頭跳順位由離放銃者最近的
+        // 贏家收下，不支援此機制的規則回傳 null
+        val stickPot = module.collectStickPot(state)
+        if (stickPot != null) {
+            val collectorId = if (winnerIds.size == 1) {
+                winnerIds.first()
+            } else {
+                state.nearestPlayerInTurnOrder(pendingReaction.discarderId, winnerIds)
+            }
+            scoreDeltas[collectorId] = (scoreDeltas[collectorId] ?: 0) + stickPot.second
+        }
+
         val updatedPlayers = players.map { p ->
             val updated = p.copy(score = p.score + (scoreDeltas[p.id] ?: 0))
             if (p.id in winnerIds) updated.recordAction(GameAction.Ron(discardedTile.id)) else updated
         }
 
-        return state.copy(players = updatedPlayers, pendingReaction = null)
+        return state.copy(
+            players = updatedPlayers,
+            pendingReaction = null,
+            dynamicRuleState = stickPot?.first ?: state.dynamicRuleState,
+        )
     }
 }

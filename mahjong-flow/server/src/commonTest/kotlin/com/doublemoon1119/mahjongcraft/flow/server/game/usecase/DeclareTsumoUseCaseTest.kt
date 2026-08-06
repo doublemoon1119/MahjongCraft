@@ -202,11 +202,11 @@ class DeclareTsumoUseCaseTest {
     }
 
     /**
-     * 驗證這次自摸結算的範圍——不動 currentPlayerIndex、pendingReaction、動態規則狀態，
-     * 這些留給後續（連莊/過莊/開新局）的 use case 處理。
+     * 驗證自摸贏家收下場上所有立直棒（分數含供託金額、riichiStickCount 歸零），但不動
+     * currentPlayerIndex、pendingReaction，這些留給後續（連莊/過莊/開新局）的 use case 處理。
      */
     @Test
-    fun `test declare tsumo does not change currentPlayerIndex, pendingReaction, or dynamic rule state`() = runTest {
+    fun `test declare tsumo collects stick pot but does not change currentPlayerIndex or pendingReaction`() = runTest {
         val fixtures = Fixtures()
         val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
         val winner = FakeMahjongPlayerFactory.create(
@@ -233,7 +233,12 @@ class DeclareTsumoUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(1, newState.currentPlayerIndex, "currentPlayerIndex should be left untouched by this unit's scope.")
         assertNull(newState.pendingReaction)
-        assertEquals(2, (newState.dynamicRuleState as RiichiDynamicState).riichiStickCount, "Riichi stick collection is out of scope for this unit.")
+        assertEquals(0, (newState.dynamicRuleState as RiichiDynamicState).riichiStickCount, "The winner should collect all sticks on the table.")
+        assertEquals(
+            32000 + 2000,
+            newState.players.first { it.id == winnerId }.score,
+            "Winner's score should include both the tsumo total and the 2 sticks (1000 each).",
+        )
     }
 
     /**

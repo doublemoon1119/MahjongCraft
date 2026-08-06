@@ -16,10 +16,11 @@ import kotlin.uuid.Uuid
 /**
  * 宣告自摸（Tsumo）胡牌的實例化用例。
  *
- * 這是「胡牌結算」系列 use case 中最先實作的一片：只處理自摸造成的點數異動與事件廣播，刻意不處理
- * 榮和（含一炮多響），也不處理一局結束後的連莊/過莊/開新局等後續流程——那些留給未來各自獨立的
- * use case 處理。因此本 use case 執行完成後，`TableState` 唯一被改變的部分只有玩家分數（與贏家的
- * `actionHistory`）；`currentPlayerIndex`、`pendingReaction`、立直棒等動態規則狀態，都刻意維持原樣不動。
+ * 這是「胡牌結算」系列 use case 中最先實作的一片：只處理自摸造成的點數異動、供託（如立直棒）歸屬
+ * 與事件廣播，刻意不處理榮和（含一炮多響），也不處理一局結束後的連莊/過莊/開新局等後續流程——
+ * 那些留給未來各自獨立的 use case 處理。因此本 use case 執行完成後，`TableState` 被改變的部分只有
+ * 玩家分數（與贏家的 `actionHistory`）以及供託相關的動態規則狀態；`currentPlayerIndex`、
+ * `pendingReaction` 則刻意維持原樣不動。
  *
  * 自摸是否合法（含最低番數限制）、贏家實際獲得多少點數、其他玩家各自要付多少點數，這些規則相關
  * 的判斷完全交給 [com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule.declareTsumo]
@@ -83,8 +84,11 @@ class DeclareTsumoUseCase(
                     val tsumoResult = module.declareTsumo(state, state.currentPlayer)
                         ?: return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Tsumo))
 
+                    // 贏家同時收下場上所有供託（如立直棒），不支援此機制的規則回傳 null
+                    val stickPot = module.collectStickPot(state)
+
                     val updatedWinner = state.currentPlayer
-                        .copy(score = state.currentPlayer.score + tsumoResult.totalGained)
+                        .copy(score = state.currentPlayer.score + tsumoResult.totalGained + (stickPot?.second ?: 0))
                         .recordAction(GameAction.Tsumo)
                     val updatedPlayers = state.players.map { p ->
                         when {
@@ -94,7 +98,10 @@ class DeclareTsumoUseCase(
                                 ?: p
                         }
                     }
-                    val newState = state.copy(players = updatedPlayers)
+                    val newState = state.copy(
+                        players = updatedPlayers,
+                        dynamicRuleState = stickPot?.first ?: state.dynamicRuleState,
+                    )
 
                     newState to Outcome.Success(newState)
                 }
