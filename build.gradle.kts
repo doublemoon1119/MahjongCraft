@@ -2,10 +2,12 @@ import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jlleitschuh.gradle.ktlint.KtlintExtension
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.koin.compiler) apply false
+    alias(libs.plugins.ktlint) apply false
 }
 
 allprojects {
@@ -23,6 +25,14 @@ allprojects {
     plugins.withId("org.jetbrains.kotlin.multiplatform") {
         extensions.configure<KotlinMultiplatformExtension> {
             jvmToolchain(jvmToolchainVersion)
+        }
+
+        // 統一套用 Ktlint，排除 KSP（Koin annotations）產生的程式碼
+        apply(plugin = "org.jlleitschuh.gradle.ktlint")
+        extensions.configure<KtlintExtension> {
+            filter {
+                exclude("**/generated/**")
+            }
         }
     }
 
