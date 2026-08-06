@@ -18,14 +18,13 @@ import kotlin.uuid.Uuid
  *
  * 負責處理玩家的捨牌請求，包含回合驗證、手牌與牌河狀態更新，以及快照與事件的同步。
  *
- * 捨牌後會計算其他玩家是否有資格吃/碰/明槓這張牌：若沒有任何人有資格，直接推進到下一位玩家
- * （與先前行為相同）；若有人有資格，則改為開啟 [PendingReaction] 反應視窗、暫緩推進回合，
- * 交由 [RespondToDiscardUseCase] 處理後續的回應與結算。
+ * 捨牌後會計算其他玩家是否有資格吃/碰/槓，或榮和這張牌：若沒有任何人有資格，直接推進到下一位玩家
+ * （與先前行為相同）；若有人有資格，則改為開啟 [PendingReaction] 反應視窗、暫緩推進回合，交由
+ * [RespondToDiscardUseCase] 處理後續的回應與結算。
  *
- * TODO：本次反應視窗的資格判斷**不包含榮和（Ron）**，因為 Ron 需要完整的胡牌結算才能真正套用，
- * 詳見 `docs/temp/game-use-case-architecture.md`。實作胡牌結算時需回頭把 Ron 加入這裡的資格判斷，
- * 並補上「榮和 > 碰/槓 > 吃」的完整優先權；在那之前，若同時有玩家可榮和、也有人可碰，系統只會
- * 讓碰生效。
+ * 一炮多響（同一張捨牌同時被多位玩家榮和）本單位明確排除：若計算出有超過一位玩家可榮和這張牌，
+ * 本輪對所有人都不開放榮和資格（吃/碰/槓資格不受影響，各自獨立判斷）——避免在缺乏完整多家和結算
+ * 規則的情況下，任意挑其中一人視為「唯一贏家」而產生錯誤結算。多家和支援留給獨立的未來單位。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器。
@@ -75,19 +74,34 @@ class DiscardTileUseCase(
 
                         val module = moduleRegistry.getModule(state.config)
                         val validator = module.createLegalActionValidator()
-                        val eligiblePlayerIds = updatedPlayers
+
+                        // 先為每位其他玩家各算一次合法動作清單，因為榮和資格需要「先看過全部人」才能
+                        // 判斷是否為一炮多響，不能像吃/碰/槓一樣邊算邊篩。
+                        val legalActionsByOtherPlayer = updatedPlayers
                             .filter { it.id != playerId }
-                            .filter { otherPlayer ->
-                                validator.getLegalActions(
+                            .associate { otherPlayer ->
+                                otherPlayer.id to validator.getLegalActions(
                                     tableState = stateAfterDiscard,
                                     player = otherPlayer,
                                     sourceAction = GameAction.Discard(tileId),
                                     sourceDirection = stateAfterDiscard.relativeDirectionOf(otherPlayer.id, playerId),
                                     incomingTile = discardedTile,
-                                ).any { it is GameAction.Chi || it is GameAction.Pon || it is GameAction.Kan }
+                                )
                             }
-                            .map { it.id }
-                            .toSet()
+
+                        val ronEligiblePlayerIds = legalActionsByOtherPlayer
+                            .filterValues { actions -> actions.any { it is GameAction.Ron } }
+                            .keys
+                        val meldEligiblePlayerIds = legalActionsByOtherPlayer
+                            .filterValues { actions -> actions.any { it is GameAction.Chi || it is GameAction.Pon || it is GameAction.Kan } }
+                            .keys
+
+                        // 一炮多響防呆：超過一人可榮和同一張牌時，本輪對所有人都不開放榮和資格。
+                        val eligiblePlayerIds = meldEligiblePlayerIds + if (ronEligiblePlayerIds.size == 1) {
+                            ronEligiblePlayerIds
+                        } else {
+                            emptySet()
+                        }
 
                         val newState = if (eligiblePlayerIds.isEmpty()) {
                             stateAfterDiscard.copy(currentPlayerIndex = (state.currentPlayerIndex + 1) % state.playerCount)

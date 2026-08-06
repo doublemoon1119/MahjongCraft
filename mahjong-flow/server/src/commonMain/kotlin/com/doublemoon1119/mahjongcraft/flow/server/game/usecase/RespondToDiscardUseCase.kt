@@ -24,10 +24,13 @@ import kotlin.uuid.Uuid
  *
  * 對應 [DiscardTileUseCase] 捨牌後開啟的 `TableState.pendingReaction`：每位有資格的玩家各自呼叫
  * 一次本用例記錄自己的回應，直到所有有資格的玩家都回應完畢，才會實際結算。結算時的優先權規則：
- * 碰/明槓 > 吃（兩者不會同時有超過一位玩家符合資格，故不需要更細緻的同玩家間排序）；若所有人都選擇
- * 過牌，則單純推進到下一位玩家，行為與捨牌時「無人可反應」的情況相同。
+ * 榮和 > 碰/明槓 > 吃（榮和與碰/明槓兩者都不會同時有超過一位玩家符合資格——榮和的單一贏家保證見
+ * [DiscardTileUseCase] 的一炮多響防呆，碰/明槓則是同一張牌結構上不可能被兩人同時碰/槓——故不需要
+ * 更細緻的同類型排序）；若所有人都選擇過牌，則單純推進到下一位玩家，行為與捨牌時「無人可反應」的
+ * 情況相同。
  *
- * 已知、刻意的簡化：本次不支援榮和（Ron）——理由與 [DiscardTileUseCase] 相同。
+ * 榮和結算後手牌即結束：本用例刻意只改動分數與贏家的 `actionHistory`，`currentPlayerIndex` 維持
+ * 原樣不動（不像碰/吃/槓那樣把回合交給得標玩家），連莊/過莊/開下一局等後續流程留給未來獨立的單位。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與規則特有邏輯。
@@ -125,6 +128,11 @@ class RespondToDiscardUseCase(
         discardedTile: IdentifiedTile,
         module: MahjongRuleModule<*>,
     ): TableState {
+        val ronEntry = pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Ron }
+        if (ronEntry != null) {
+            return resolveRon(state, players, pendingReaction, discardedTile, module, winnerId = ronEntry.key)
+        }
+
         val winningEntry = pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Pon || it.value is GameAction.Kan }
             ?: pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Chi }
 
@@ -182,5 +190,38 @@ class RespondToDiscardUseCase(
             currentPlayerIndex = winnerIndex,
             pendingReaction = null,
         )
+    }
+
+    /**
+     * 套用榮和結算：更新贏家與放銃者（或包牌責任者）的分數、記錄贏家的 [GameAction.Ron] 動作歷史、
+     * 清除反應視窗。手牌到此結束，不套用任何副露、不標記捨牌已被鳴走、不推進 `currentPlayerIndex`、
+     * 不清除一發（一發是否失效在手牌已結束的情況下沒有意義）——這些皆與碰/吃/槓的結算路徑不同。
+     */
+    private fun resolveRon(
+        state: TableState,
+        players: List<MahjongPlayer>,
+        pendingReaction: PendingReaction,
+        discardedTile: IdentifiedTile,
+        module: MahjongRuleModule<*>,
+        winnerId: Uuid,
+    ): TableState {
+        val winner = players.first { it.id == winnerId }
+
+        // 理論上不會發生：能走到這裡代表 invoke() 已經用 getLegalActions 重新驗證過 Ron 目前合法，
+        // 僅作防呆，維持反應視窗不變。
+        val settlement = module.declareRon(state, winner, discardedTile, pendingReaction.discarderId)
+            ?: return state.copy(players = players, pendingReaction = pendingReaction)
+
+        val updatedWinner = winner
+            .copy(score = winner.score + settlement.totalGained)
+            .recordAction(GameAction.Ron(discardedTile.id))
+        val updatedPlayers = players.map { p ->
+            when {
+                p.id == winnerId -> updatedWinner
+                else -> settlement.paymentsByPlayerId[p.id]?.let { payment -> p.copy(score = p.score - payment) } ?: p
+            }
+        }
+
+        return state.copy(players = updatedPlayers, pendingReaction = null)
     }
 }

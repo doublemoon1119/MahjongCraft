@@ -162,6 +162,124 @@ class DiscardTileUseCaseTest {
     }
 
     /**
+     * 手牌：白白白、發發發、234p、567s，加上單張中（役牌白＋役牌發已成立，單騎聽中）,
+     * 供榮和資格測試共用。刻意採用單騎聽牌（聽的牌手牌中只有 1 張），而非碰/槓聽牌那種
+     * 手牌中已有 2 張的形狀，避免榮和資格意外與碰牌資格重疊，干擾測試判斷。
+     */
+    private fun ronTankiWaitTiles() = listOf(
+        Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
+        Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+        Tile.Numeric(Tile.Suit.Dot, 2),
+        Tile.Numeric(Tile.Suit.Dot, 3),
+        Tile.Numeric(Tile.Suit.Dot, 4),
+        Tile.Numeric(Tile.Suit.Bamboo, 5),
+        Tile.Numeric(Tile.Suit.Bamboo, 6),
+        Tile.Numeric(Tile.Suit.Bamboo, 7),
+        Tile.Honor.Red,
+    )
+
+    /**
+     * 驗證捨出的牌讓唯一一位其他玩家有資格榮和時，正確開啟反應視窗並給予榮和資格。
+     */
+    @Test
+    fun `test discard tile opens ron eligibility when exactly one player can ron`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        // 役牌白＋役牌發已成立，單騎聽中，捨出的紅中即可榮和
+        val otherPlayer = FakeMahjongPlayerFactory.create(
+            id = otherPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertEquals(0, newState.currentPlayerIndex, "Turn should not advance while a reaction is pending.")
+        val pendingReaction = newState.pendingReaction
+        assertNotNull(pendingReaction, "A reaction window should open since otherPlayer can Ron.")
+        assertEquals(setOf(otherPlayerId), pendingReaction.eligiblePlayerIds)
+    }
+
+    /**
+     * 驗證同一張捨牌同時有兩位玩家可榮和時，本輪對所有人都不開放榮和資格（一炮多響防呆），
+     * 但不影響其他玩家原有的碰牌資格判斷。
+     */
+    @Test
+    fun `test discard tile excludes ron eligibility entirely when two players can ron the same tile`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val ronEligiblePlayerId1 = otherPlayerId
+        val ronEligiblePlayerId2 = Uuid.random()
+        val ponEligiblePlayerId = Uuid.random()
+        // 兩位玩家皆單騎聽中，同時可榮和捨出的紅中，觸發一炮多響防呆
+        val ronPlayer1 = FakeMahjongPlayerFactory.create(
+            id = ronEligiblePlayerId1,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val ronPlayer2 = FakeMahjongPlayerFactory.create(
+            id = ronEligiblePlayerId2,
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        // 手牌中有兩張紅中，湊滿碰牌的條件，驗證榮和防呆不影響碰牌資格
+        val ponPlayer = FakeMahjongPlayerFactory.create(
+            id = ponEligiblePlayerId,
+            initialSeat = Wind.NORTH,
+            hand = Hand(
+                tiles = listOf(
+                    FakeIdentifiedTileFactory.create(Tile.Honor.Red),
+                    FakeIdentifiedTileFactory.create(Tile.Honor.Red),
+                ),
+            ),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, ronPlayer1, ronPlayer2, ponPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        val pendingReaction = newState.pendingReaction
+        assertNotNull(pendingReaction, "A reaction window should still open since ponPlayer can Pon.")
+        assertEquals(
+            setOf(ponEligiblePlayerId),
+            pendingReaction.eligiblePlayerIds,
+            "Both ron-eligible players should be excluded, leaving only the pon-eligible player.",
+        )
+    }
+
+    /**
      * 驗證捨牌後所有觀察者的快照皆同步更新，且所有玩家皆收到 Discard 事件通知。
      */
     @Test
