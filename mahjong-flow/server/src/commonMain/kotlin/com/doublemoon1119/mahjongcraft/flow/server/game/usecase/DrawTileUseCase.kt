@@ -6,6 +6,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublish
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -53,6 +55,7 @@ class DrawTileUseCase(
                             .copy(hand = state.currentPlayer.hand.copy(lastDrawn = tile))
                             .clearPassedTiles()
                             .recordAction(GameAction.Draw)
+                            .clearIppatsuOnOwnDraw()
                         val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
                         val newState = state.copy(tileWall = newWall, players = updatedPlayers)
 
@@ -77,5 +80,17 @@ class DrawTileUseCase(
         }
 
         return Outcome.Success(Unit)
+    }
+
+    /**
+     * 若玩家已立直且仍在一發窗口內，摸牌代表這個窗口已經結束（本巡未能胡牌），故清除一發資格。
+     *
+     * 只處理「自己摸牌」這個結束條件；「摸牌前有人鳴牌」也會讓一發失效，但那要等吃/碰/槓的
+     * use case 做出來後才能一併處理，目前是已知、尚未補上的部分。
+     */
+    private fun MahjongPlayer.clearIppatsuOnOwnDraw(): MahjongPlayer {
+        val riichiState = playerRuleState as? RiichiPlayerState ?: return this
+        if (!riichiState.isIppatsu) return this
+        return copy(playerRuleState = riichiState.copy(isIppatsu = false))
     }
 }

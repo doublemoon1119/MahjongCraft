@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepos
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
@@ -18,7 +19,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -73,6 +73,38 @@ class DrawTileUseCaseTest {
     }
 
     /**
+     * 驗證已立直且仍在一發窗口內的玩家摸牌後，一發資格會被清除
+     * （代表這個窗口已經結束，本巡未能胡牌）。
+     */
+    @Test
+    fun `test draw tile clears ippatsu for a riichi player`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            playerRuleState = RiichiPlayerState(
+                riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                isIppatsu = true
+            )
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer),
+            tileWall = TileWall(listOf(drawnTile)),
+            currentPlayerIndex = 0
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val updatedPlayer = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == currentPlayerId }
+        val riichiState = updatedPlayer.playerRuleState as RiichiPlayerState
+        assertEquals(false, riichiState.isIppatsu, "Drawing again should end the ippatsu window.")
+        assertTrue(riichiState.isRiichi, "Riichi itself should remain in effect.")
+    }
+
+    /**
      * 驗證摸牌後所有觀察者的快照皆同步更新，且所有玩家皆收到 Draw 事件通知。
      */
     @Test
@@ -94,7 +126,10 @@ class DrawTileUseCaseTest {
 
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, currentPlayerId))
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, otherPlayerId))
-        assertEquals(GameAction.Draw, fixtures.eventPublisher.getNotifiedAction(gameId, currentPlayerId, currentPlayerId))
+        assertEquals(
+            GameAction.Draw,
+            fixtures.eventPublisher.getNotifiedAction(gameId, currentPlayerId, currentPlayerId)
+        )
         assertEquals(GameAction.Draw, fixtures.eventPublisher.getNotifiedAction(gameId, otherPlayerId, currentPlayerId))
     }
 
