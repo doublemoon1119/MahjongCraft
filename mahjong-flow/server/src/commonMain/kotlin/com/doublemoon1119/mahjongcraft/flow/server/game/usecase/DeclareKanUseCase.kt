@@ -5,8 +5,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -24,7 +26,11 @@ import kotlin.uuid.Uuid
  * （[GameAction.Kan.type] 為 [GameAction.KanType.ADDED_KAN] 時常見；暗槓只有國士無雙能搶，見
  * [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValidator] 既有邏輯）：
  * 有人可以搶時開一次反應視窗（[TableState.pendingChankan]，副露暫緩套用，交給
- * [RespondToChankanUseCase] 解析）；沒人可以搶時直接套用（[KanDeclarationApplier]）。
+ * [RespondToChankanUseCase] 解析）；沒人可以搶時直接套用（[KanDeclarationApplier]）。多位玩家同時
+ * 可搶時（罕見），依
+ * [com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig.multiRonPolicy] 決定實際開放
+ * 給誰，與一般捨牌榮和共用同一套判定（見 [DiscardReactionResolver]）；判定為途中流局時，這次
+ * 加槓視為未成立，不開反應視窗、不套用副露。
  *
  * 套用副露後依序記錄 [GameAction.Kan] → 從死牌區
  * （[com.doublemoon1119.mahjongcraft.logic.table.TileWall.drawLast]）補摸嶺上牌並記錄
@@ -101,7 +107,7 @@ class DeclareKanUseCase(
                     // 搶槓資格：這張牌尚未套用進副露，其他玩家只需要各自問一次 getLegalActions
                     // 就能判斷是否能榮和它，不需要先套用副露。「反應」分支不分辨 sourceAction 種類，
                     // 會一併算出 Pon/Chi/OpenKan 資格，但搶槓情境下這些都不合法，只看 Ron。
-                    val robbablePlayerIds = state.players
+                    val ronEligiblePlayerIds = state.players
                         .filter { it.id != playerId }
                         .filter { candidate ->
                             module.createLegalActionValidator().getLegalActions(
@@ -115,9 +121,40 @@ class DeclareKanUseCase(
                         .map { it.id }
                         .toSet()
 
-                    if (robbablePlayerIds.isNotEmpty()) {
+                    // 搶槓多響（罕見：多位玩家同時可搶同一次加槓）依 MultiRonPolicy 決定實際開放給誰，
+                    // 跟一般捨牌榮和共用同一套判定（見 DiscardReactionResolver）——搶槓本質上就是
+                    // 「榮和一張牌，只是牌的來源是加槓而非捨牌」，沒有理由用不同規則。
+                    val ronResolution = when (ronEligiblePlayerIds.size) {
+                        0, 1 -> null
+                        2 -> state.config.multiRonPolicy.doubleRonResolution
+                        else -> state.config.multiRonPolicy.tripleRonResolution
+                    }
+                    val ronWinningPlayerIds = when (ronResolution) {
+                        null, RonResolution.ALL_WINNERS -> ronEligiblePlayerIds
+                        RonResolution.NEAREST_WINNER -> setOf(state.nearestPlayerInTurnOrder(playerId, ronEligiblePlayerIds))
+                        RonResolution.ABORTIVE_DRAW -> emptySet()
+                    }
+                    val abortiveDrawReason = if (ronResolution == RonResolution.ABORTIVE_DRAW) {
+                        module.resolveMultiRonAbortiveDraw()
+                    } else {
+                        null
+                    }
+
+                    if (abortiveDrawReason != null) {
+                        // 多響流局：這次加槓視為未成立（比照 RespondToChankanUseCase 既有的「搶槓
+                        // 成功時，暗槓/加槓視為未成立」原則），不套用 KanDeclarationApplier、不補
+                        // 嶺上牌，直接記錄流局。
                         val newState = state.copy(
-                            pendingChankan = PendingChankanReaction(playerId, kanAction, incomingTile, robbablePlayerIds),
+                            players = state.players.map { it.recordAction(GameAction.ExhaustiveDraw(abortiveDrawReason)) },
+                        )
+                        return@update newState to Outcome.Success(
+                            KanResult(newState, kanAction, drawHappened = false, abortiveDrawReason = abortiveDrawReason),
+                        )
+                    }
+
+                    if (ronWinningPlayerIds.isNotEmpty()) {
+                        val newState = state.copy(
+                            pendingChankan = PendingChankanReaction(playerId, kanAction, incomingTile, ronWinningPlayerIds),
                         )
                         return@update newState to Outcome.Success(KanResult(newState, kanAction, drawHappened = false))
                     }
@@ -141,11 +178,15 @@ class DeclareKanUseCase(
             gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(observerId))
         }
 
-        // 3. 廣播槓牌宣告；若無人可搶槓、副露已直接套用，依序再廣播補摸嶺上牌事件
+        // 3. 廣播槓牌宣告；若無人可搶槓、副露已直接套用，依序再廣播補摸嶺上牌事件；若搶槓多響
+        //    依規則設定判定為流局，則改廣播流局事件（此時副露未套用，不會有補摸嶺上牌事件）
         newState.players.forEach { player ->
             eventPublisher.publish(gameId, player.id, playerId, result.kanAction)
             if (result.drawHappened) {
                 eventPublisher.publish(gameId, player.id, playerId, GameAction.Draw)
+            }
+            result.abortiveDrawReason?.let { reason ->
+                eventPublisher.publish(gameId, player.id, playerId, GameAction.ExhaustiveDraw(reason))
             }
         }
 
@@ -153,9 +194,16 @@ class DeclareKanUseCase(
     }
 
     /**
-     * `update` 區塊內部使用的中繼結果，讓 [kanAction]/[drawHappened] 能跟著 [tableState] 一起帶出
-     * `gameRepository.update` 的作用域，供廣播事件時使用。[drawHappened] 為 false 代表這次宣告
-     * 開啟了搶槓反應視窗，副露與嶺上摸牌皆尚未套用，不應廣播 [GameAction.Draw]。
+     * `update` 區塊內部使用的中繼結果，讓 [kanAction]/[drawHappened]/[abortiveDrawReason] 能跟著
+     * [tableState] 一起帶出 `gameRepository.update` 的作用域，供廣播事件時使用。[drawHappened] 為
+     * false 代表這次宣告開啟了搶槓反應視窗、或搶槓多響判定為流局，副露與嶺上摸牌皆尚未套用，不應
+     * 廣播 [GameAction.Draw]。[abortiveDrawReason] 非 null 代表搶槓多響依規則設定判定為流局，這次
+     * 加槓視為未成立。
      */
-    private data class KanResult(val tableState: TableState, val kanAction: GameAction.Kan, val drawHappened: Boolean)
+    private data class KanResult(
+        val tableState: TableState,
+        val kanAction: GameAction.Kan,
+        val drawHappened: Boolean,
+        val abortiveDrawReason: ExhaustiveDrawReason? = null,
+    )
 }

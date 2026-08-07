@@ -10,9 +10,13 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -412,6 +416,170 @@ class DeclareKanUseCaseTest {
             listOf(expectedKan),
             fixtures.eventPublisher.getNotifiedActions(gameId, robberId, playerId),
             "Only the Kan declaration should be broadcast; Draw hasn't happened yet.",
+        )
+    }
+
+    /**
+     * 建立一位對 [robbedTile]（役牌發 1 翻 + 單騎聽）有資格搶槓的玩家，供多響搶槓測試共用——
+     * 手牌結構與既有的單一搶槓測試相同，只是每次呼叫都用全新的牌實例，讓多位搶槓者可以並存。
+     */
+    private fun createChankanRobber(id: Uuid, initialSeat: Wind, robbedTileType: Tile): MahjongPlayer {
+        val tanki = FakeIdentifiedTileFactory.create(robbedTileType)
+        return FakeMahjongPlayerFactory.create(
+            id = id,
+            initialSeat = initialSeat,
+            hand = Hand(
+                tiles = listOf(
+                    Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+                    Tile.Numeric(Tile.Suit.Character, 2), Tile.Numeric(Tile.Suit.Character, 3), Tile.Numeric(Tile.Suit.Character, 4),
+                    Tile.Numeric(Tile.Suit.Dot, 5), Tile.Numeric(Tile.Suit.Dot, 6), Tile.Numeric(Tile.Suit.Dot, 7),
+                    Tile.Numeric(Tile.Suit.Bamboo, 6), Tile.Numeric(Tile.Suit.Bamboo, 7), Tile.Numeric(Tile.Suit.Bamboo, 8),
+                ).map { FakeIdentifiedTileFactory.create(it) } + tanki,
+            ),
+            playerRuleState = RiichiPlayerState(),
+        )
+    }
+
+    /**
+     * 驗證雙人同時可搶槓、規則設定為多家和（預設值）時，兩位都留在 `eligiblePlayerIds` 裡——
+     * 確認套用 `MultiRonPolicy` 判定後，預設行為與過去（全部開放）維持一致，沒有回歸。
+     */
+    @Test
+    fun `test double chankan opens window for both robbers under default all-winners policy`() = runTest {
+        val fixtures = Fixtures()
+        val white1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left)
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(melds = listOf(existingPon), lastDrawn = white4),
+        )
+        val robber1Id = Uuid.random()
+        val robber1 = createChankanRobber(robber1Id, Wind.SOUTH, Tile.Honor.White)
+        val robber2Id = Uuid.random()
+        val robber2 = createChankanRobber(robber2Id, Wind.WEST, Tile.Honor.White)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer, robber1, robber2),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(listOf(rinshanTile)),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.ADDED_KAN, white4.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val pending = fixtures.gameRepo.getTableState(gameId)!!.pendingChankan
+        assertNotNull(pending)
+        assertEquals(setOf(robber1Id, robber2Id), pending.eligiblePlayerIds)
+    }
+
+    /**
+     * 驗證雙人同時可搶槓、規則設定為頭跳時，只留下順位最接近宣告者下家的那一位。
+     */
+    @Test
+    fun `test double chankan keeps only nearest winner under nearest-winner policy`() = runTest {
+        val fixtures = Fixtures()
+        val white1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left)
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(melds = listOf(existingPon), lastDrawn = white4),
+        )
+        // 座位順序：declarer(EAST) → robber1(SOUTH) → robber2(WEST)，robber1 是離宣告者下家最近者
+        val robber1Id = Uuid.random()
+        val robber1 = createChankanRobber(robber1Id, Wind.SOUTH, Tile.Honor.White)
+        val robber2Id = Uuid.random()
+        val robber2 = createChankanRobber(robber2Id, Wind.WEST, Tile.Honor.White)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer, robber1, robber2),
+            config = RiichiRuleConfig(
+                multiRonPolicy = MultiRonPolicy(
+                    doubleRonResolution = RonResolution.NEAREST_WINNER,
+                    tripleRonResolution = RonResolution.NEAREST_WINNER,
+                ),
+            ),
+            tileWall = TileWall(listOf(rinshanTile)),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.ADDED_KAN, white4.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val pending = fixtures.gameRepo.getTableState(gameId)!!.pendingChankan
+        assertNotNull(pending)
+        assertEquals(setOf(robber1Id), pending.eligiblePlayerIds, "Only the nearest robber should remain eligible.")
+    }
+
+    /**
+     * 驗證雙人同時可搶槓、規則設定為途中流局時：不開反應視窗、加槓視為未成立（副露維持原本的
+     * PON，未升級為 ADDED_KAN，牌山也未被抽取），全員的 `actionHistory` 記錄
+     * `ExhaustiveDraw(SanchaHou)`，且事件依序廣播 Kan 再廣播 ExhaustiveDraw。
+     */
+    @Test
+    fun `test double chankan aborts as a draw under abortive-draw policy`() = runTest {
+        val fixtures = Fixtures()
+        val white1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left)
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(melds = listOf(existingPon), lastDrawn = white4),
+        )
+        val robber1Id = Uuid.random()
+        val robber1 = createChankanRobber(robber1Id, Wind.SOUTH, Tile.Honor.White)
+        val robber2Id = Uuid.random()
+        val robber2 = createChankanRobber(robber2Id, Wind.WEST, Tile.Honor.White)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer, robber1, robber2),
+            config = RiichiRuleConfig(
+                multiRonPolicy = MultiRonPolicy(
+                    doubleRonResolution = RonResolution.ABORTIVE_DRAW,
+                    tripleRonResolution = RonResolution.ABORTIVE_DRAW,
+                ),
+            ),
+            tileWall = TileWall(listOf(rinshanTile)),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val expectedKan = GameAction.Kan(GameAction.KanType.ADDED_KAN, white4.id, emptyList())
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.ADDED_KAN, white4.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(null, newState.pendingChankan, "The multi-ron abortive draw should resolve immediately, not open a window.")
+        assertEquals(1, newState.tileWall.remainingCount, "No rinshan tile should be drawn; the kan is voided.")
+
+        val unchangedDeclarer = newState.players.first { it.id == playerId }
+        assertEquals(MeldType.PON, unchangedDeclarer.hand.melds.single().type, "The added kan must not be applied.")
+        assertEquals(white4, unchangedDeclarer.hand.lastDrawn)
+
+        newState.players.forEach { player ->
+            assertEquals(
+                GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou),
+                player.actionHistory.last(),
+                "Every player should have the abortive draw recorded.",
+            )
+        }
+
+        assertEquals(
+            listOf(expectedKan, GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)),
+            fixtures.eventPublisher.getNotifiedActions(gameId, robber1Id, playerId),
         )
     }
 
