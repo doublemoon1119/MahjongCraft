@@ -140,6 +140,7 @@ class TaiwanRuleModule(
         player: MahjongPlayer,
         winningTile: IdentifiedTile,
         discarderId: Uuid,
+        isRobbingKan: Boolean,
     ): WinSettlementResult? = null
 
     /**

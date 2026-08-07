@@ -201,15 +201,26 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 被榮和的那張牌。[RiichiPointResult] 這類規則特有的點數結果本身不帶玩家身分，因此需要呼叫端
      * 額外透過 [discarderId] 告知放銃者是誰，實作才能把付款金額正確歸屬到實際玩家。
      *
+     * [isRobbingKan] 為 `true` 時代表這次榮和是搶槓（[GameAction.KanType.ADDED_KAN] 被搶），
+     * 支援搶槓役種加成的規則應在此時額外計入（例如日麻的搶槓 1 翻）；預設 `false`，一般捨牌榮和
+     * 不需要呼叫端額外傳入。
+     *
      * 不支援榮和結算的規則應回傳 null。
      *
      * @param tableState 目前的桌況（尚未套用本次榮和結算）。
      * @param player 宣告榮和的玩家（尚未套用本次榮和結算）。
      * @param winningTile 被榮和的捨牌。
      * @param discarderId 打出 [winningTile] 的玩家 Uuid。
+     * @param isRobbingKan 這次榮和是否為搶槓（搶加槓）。
      * @return 本次榮和的點數結算結果，若此規則不支援榮和結算則為 null。
      */
-    fun declareRon(tableState: TableState, player: MahjongPlayer, winningTile: IdentifiedTile, discarderId: Uuid): WinSettlementResult?
+    fun declareRon(
+        tableState: TableState,
+        player: MahjongPlayer,
+        winningTile: IdentifiedTile,
+        discarderId: Uuid,
+        isRobbingKan: Boolean = false,
+    ): WinSettlementResult?
 
     /**
      * 胡牌時，贏家收下場上供託（如立直棒）所增加的點數，以及收下後應套用的新動態桌況狀態。

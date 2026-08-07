@@ -6,12 +6,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublish
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -21,7 +20,13 @@ import kotlin.uuid.Uuid
  *
  * 是否合法完全交給該規則模組自己的 `LegalActionValidator`——這裡不重新實作暗槓/加槓的偵測邏輯
  * （含立直後暗槓「不能改變聽牌」的限制），理由與 [DeclareRiichiUseCase]、
- * [DeclareKyuushuKyuuhaiUseCase] 相同。套用副露後依序記錄 [GameAction.Kan] → 從死牌區
+ * [DeclareKyuushuKyuuhaiUseCase] 相同。合法性確認後，先檢查有沒有其他玩家可以搶槓
+ * （[GameAction.Kan.type] 為 [GameAction.KanType.ADDED_KAN] 時常見；暗槓只有國士無雙能搶，見
+ * [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValidator] 既有邏輯）：
+ * 有人可以搶時開一次反應視窗（[TableState.pendingChankan]，副露暫緩套用，交給
+ * [RespondToChankanUseCase] 解析）；沒人可以搶時直接套用（[KanDeclarationApplier]）。
+ *
+ * 套用副露後依序記錄 [GameAction.Kan] → 從死牌區
  * （[com.doublemoon1119.mahjongcraft.logic.table.TileWall.drawLast]）補摸嶺上牌並記錄
  * [GameAction.Draw]，讓
  * [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueContextCalculator] 既有的
@@ -65,6 +70,10 @@ class DeclareKanUseCase(
                     state to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
                 state.currentPlayer.id != playerId ->
                     state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
+                state.pendingChankan != null ->
+                    state to Outcome.Error(
+                        GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
+                    )
                 else -> {
                     val incomingTile = state.currentPlayer.hand.lastDrawn?.takeIf { it.id == tileId }
                         ?: return@update state to Outcome.Error(
@@ -89,42 +98,35 @@ class DeclareKanUseCase(
                             GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
                         )
 
-                    val handAfterMeld = when (kanType) {
-                        GameAction.KanType.CLOSED_KAN -> {
-                            val kanTiles = kanAction.withTiles.mapNotNull { id ->
-                                state.currentPlayer.hand.standingTiles.find { it.id == id }
-                            } + incomingTile
-                            state.currentPlayer.hand.call(MeldType.CLOSED_KAN, kanTiles, source = null, direction = RelativeDirection.Self)
+                    // 搶槓資格：這張牌尚未套用進副露，其他玩家只需要各自問一次 getLegalActions
+                    // 就能判斷是否能榮和它，不需要先套用副露。「反應」分支不分辨 sourceAction 種類，
+                    // 會一併算出 Pon/Chi/OpenKan 資格，但搶槓情境下這些都不合法，只看 Ron。
+                    val robbablePlayerIds = state.players
+                        .filter { it.id != playerId }
+                        .filter { candidate ->
+                            module.createLegalActionValidator().getLegalActions(
+                                tableState = state,
+                                player = candidate,
+                                sourceAction = kanAction,
+                                sourceDirection = state.relativeDirectionOf(candidate.id, playerId),
+                                incomingTile = incomingTile,
+                            ).any { it is GameAction.Ron }
                         }
+                        .map { it.id }
+                        .toSet()
 
-                        GameAction.KanType.ADDED_KAN -> {
-                            val targetMeldIndex = state.currentPlayer.hand.exposedMelds.indexOfFirst {
-                                it.type == MeldType.PON && it.tiles.first().tile.withoutRed == incomingTile.tile.withoutRed
-                            }
-                            state.currentPlayer.hand.upgradeToAddedKan(incomingTile, targetMeldIndex)
-                        }
-
-                        GameAction.KanType.OPEN_KAN ->
-                            return@update state to Outcome.Error(
-                                GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
-                            )
+                    if (robbablePlayerIds.isNotEmpty()) {
+                        val newState = state.copy(
+                            pendingChankan = PendingChankanReaction(playerId, kanAction, incomingTile, robbablePlayerIds),
+                        )
+                        return@update newState to Outcome.Success(KanResult(newState, kanAction, drawHappened = false))
                     }
 
-                    val (rinshanTile, newWall) = state.tileWall.drawLast()
-                    if (rinshanTile == null) {
+                    val applied = KanDeclarationApplier.apply(state, playerId, kanAction, incomingTile, module)
+                    if (applied.rinshanTile == null) {
                         return@update state to Outcome.Error(GameError.WallExhausted(gameId))
                     }
-
-                    val playerAfterMeld = state.currentPlayer.copy(hand = handAfterMeld).recordAction(kanAction)
-                    val playerAfterDraw = playerAfterMeld
-                        .copy(hand = playerAfterMeld.hand.copy(lastDrawn = rinshanTile))
-                        .clearPassedTiles()
-                        .recordAction(GameAction.Draw)
-                    val playersAfterMeld = state.players.map { if (it.id == playerId) playerAfterDraw else it }
-                    val playersAfterMeldClaimed = module.onMeldClaimed(playersAfterMeld)
-
-                    val newState = state.copy(players = playersAfterMeldClaimed, tileWall = newWall)
-                    newState to Outcome.Success(KanResult(newState, kanAction))
+                    applied.tableState to Outcome.Success(KanResult(applied.tableState, kanAction, drawHappened = true))
                 }
             }
         }
@@ -139,18 +141,21 @@ class DeclareKanUseCase(
             gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(observerId))
         }
 
-        // 3. 依序廣播槓牌與補摸嶺上牌事件
+        // 3. 廣播槓牌宣告；若無人可搶槓、副露已直接套用，依序再廣播補摸嶺上牌事件
         newState.players.forEach { player ->
             eventPublisher.publish(gameId, player.id, playerId, result.kanAction)
-            eventPublisher.publish(gameId, player.id, playerId, GameAction.Draw)
+            if (result.drawHappened) {
+                eventPublisher.publish(gameId, player.id, playerId, GameAction.Draw)
+            }
         }
 
         return Outcome.Success(Unit)
     }
 
     /**
-     * `update` 區塊內部使用的中繼結果，讓 [kanAction] 能跟著 [tableState] 一起帶出
-     * `gameRepository.update` 的作用域，供廣播事件時使用。
+     * `update` 區塊內部使用的中繼結果，讓 [kanAction]/[drawHappened] 能跟著 [tableState] 一起帶出
+     * `gameRepository.update` 的作用域，供廣播事件時使用。[drawHappened] 為 false 代表這次宣告
+     * 開啟了搶槓反應視窗，副露與嶺上摸牌皆尚未套用，不應廣播 [GameAction.Draw]。
      */
-    private data class KanResult(val tableState: TableState, val kanAction: GameAction.Kan)
+    private data class KanResult(val tableState: TableState, val kanAction: GameAction.Kan, val drawHappened: Boolean)
 }

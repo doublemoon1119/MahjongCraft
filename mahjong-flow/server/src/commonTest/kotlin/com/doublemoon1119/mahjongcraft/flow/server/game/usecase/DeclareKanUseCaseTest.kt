@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
@@ -343,6 +344,102 @@ class DeclareKanUseCaseTest {
         assertEquals(
             listOf(expectedKan, GameAction.Draw),
             fixtures.eventPublisher.getNotifiedActions(gameId, otherId, playerId),
+        )
+    }
+
+    /**
+     * 驗證加槓時若有其他玩家可以搶槓：開啟 `pendingChankan` 反應視窗，副露**未**套用（宣告者手牌
+     * 維持原樣、`lastDrawn` 不變）、牌山**未**縮減、只廣播 `Kan`（不廣播 `Draw`，因為嶺上摸牌
+     * 尚未真正發生）。
+     */
+    @Test
+    fun `test declare added kan opens chankan window when another player can rob it`() = runTest {
+        val fixtures = Fixtures()
+        val white1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left)
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(melds = listOf(existingPon), lastDrawn = white4),
+        )
+        // 役牌發已成立（1 翻），單騎聽白（搶槓的那張牌），有資格搶槓
+        val robberId = Uuid.random()
+        val robberTanki = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val robber = FakeMahjongPlayerFactory.create(
+            id = robberId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(
+                tiles = listOf(
+                    Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+                    Tile.Numeric(Tile.Suit.Character, 2), Tile.Numeric(Tile.Suit.Character, 3), Tile.Numeric(Tile.Suit.Character, 4),
+                    Tile.Numeric(Tile.Suit.Dot, 5), Tile.Numeric(Tile.Suit.Dot, 6), Tile.Numeric(Tile.Suit.Dot, 7),
+                    Tile.Numeric(Tile.Suit.Bamboo, 6), Tile.Numeric(Tile.Suit.Bamboo, 7), Tile.Numeric(Tile.Suit.Bamboo, 8),
+                ).map { FakeIdentifiedTileFactory.create(it) } + robberTanki,
+            ),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer, robber),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(listOf(rinshanTile)),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.ADDED_KAN, white4.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        val pending = newState.pendingChankan
+        assertNotNull(pending, "A chankan reaction window should have opened.")
+        assertEquals(playerId, pending.declarerId)
+        assertEquals(GameAction.Kan(GameAction.KanType.ADDED_KAN, white4.id, emptyList()), pending.kanAction)
+        assertEquals(white4, pending.robbedTile)
+        assertEquals(setOf(robberId), pending.eligiblePlayerIds)
+
+        val unchangedDeclarer = newState.players.first { it.id == playerId }
+        assertEquals(MeldType.PON, unchangedDeclarer.hand.melds.single().type, "The meld must not be upgraded to ADDED_KAN yet.")
+        assertEquals(white4, unchangedDeclarer.hand.lastDrawn, "The declarer's hand should be untouched while the window is open.")
+        assertEquals(1, newState.tileWall.remainingCount, "The dead wall should not be drawn from yet.")
+
+        val expectedKan = GameAction.Kan(GameAction.KanType.ADDED_KAN, white4.id, emptyList())
+        assertEquals(
+            listOf(expectedKan),
+            fixtures.eventPublisher.getNotifiedActions(gameId, robberId, playerId),
+            "Only the Kan declaration should be broadcast; Draw hasn't happened yet.",
+        )
+    }
+
+    /**
+     * 驗證同一位玩家在搶槓反應視窗開啟期間重複提交宣告（例如雙擊/重試）時回傳
+     * [GameError.IllegalAction]，不會覆蓋掉既有的視窗。
+     */
+    @Test
+    fun `test declare kan fails when a chankan window is already pending`() = runTest {
+        val fixtures = Fixtures()
+        val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val declarer = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST, hand = Hand(lastDrawn = lastDrawn))
+        val existingPending = PendingChankanReaction(
+            declarerId = playerId,
+            kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, Uuid.random(), emptyList()),
+            robbedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White),
+            eligiblePlayerIds = setOf(Uuid.random()),
+        )
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(declarer), config = RiichiRuleConfig(), currentPlayerIndex = 0)
+            .copy(pendingChankan = existingPending)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, lastDrawn.id)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(
+            GameError.IllegalAction(playerId, gameId, GameAction.Kan(GameAction.KanType.CLOSED_KAN, lastDrawn.id, emptyList())),
+            result.error,
         )
     }
 }

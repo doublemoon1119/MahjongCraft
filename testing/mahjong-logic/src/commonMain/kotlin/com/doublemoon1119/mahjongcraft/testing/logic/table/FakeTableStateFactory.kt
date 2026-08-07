@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.testing.logic.table
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -29,6 +30,7 @@ object FakeTableStateFactory {
         currentPlayerIndex: Int = 0,
         dynamicRuleState: DynamicRuleState? = null,
         pendingReaction: PendingReaction? = null,
+        pendingChankan: PendingChankanReaction? = null,
     ): TableState = TableState(
         id = id,
         players = players,
@@ -40,5 +42,6 @@ object FakeTableStateFactory {
         currentPlayerIndex = currentPlayerIndex,
         dynamicRuleState = dynamicRuleState,
         pendingReaction = pendingReaction,
+        pendingChankan = pendingChankan,
     )
 }

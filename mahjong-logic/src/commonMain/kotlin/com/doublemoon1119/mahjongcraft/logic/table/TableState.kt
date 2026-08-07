@@ -20,6 +20,7 @@ import kotlin.uuid.Uuid
  * @property currentPlayerIndex 目前輪到執行動作的玩家索引。
  * @property dynamicRuleState 規則特有的動態狀態實體（如日麻的立直棒、供託）。
  * @property pendingReaction 目前尚待其他玩家回應（吃/碰/槓/過）的捨牌反應視窗，若無則為 null。
+ * @property pendingChankan 目前尚待其他玩家回應（搶槓/過）的暗槓/加槓反應視窗，若無則為 null。
  */
 data class TableState(
     val id: Uuid,
@@ -32,6 +33,7 @@ data class TableState(
     val currentPlayerIndex: Int = 0,
     val dynamicRuleState: DynamicRuleState? = null,
     val pendingReaction: PendingReaction? = null,
+    val pendingChankan: PendingChankanReaction? = null,
 ) {
     /** 獲取參與遊戲的總人數。 */
     val playerCount: Int get() = players.size
@@ -87,10 +89,10 @@ data class TableState(
         require(toIndex != -1) { "Player not found in this table" }
 
         val diff = (toIndex - fromIndex).mod(playerCount)
-        return when {
-            diff == 0 -> RelativeDirection.Self
-            diff == playerCount - 1 -> RelativeDirection.Left
-            diff == 1 -> RelativeDirection.Right
+        return when (diff) {
+            0 -> RelativeDirection.Self
+            playerCount - 1 -> RelativeDirection.Left
+            1 -> RelativeDirection.Right
             else -> RelativeDirection.Across
         }
     }

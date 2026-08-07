@@ -221,6 +221,7 @@ class RiichiRuleModule(
         player: MahjongPlayer,
         winningTile: IdentifiedTile,
         discarderId: Uuid,
+        isRobbingKan: Boolean,
     ): WinSettlementResult? {
         // 榮和的胡牌張本來就不在贏家自己手上（是他家的捨牌），不像自摸的 lastDrawn 那樣有
         // 重複計數的疑慮，這裡不需要額外剝離手牌。
@@ -230,6 +231,7 @@ class RiichiRuleModule(
                 player = player,
                 incomingTile = winningTile,
                 isTsumo = false,
+                isRobbingKan = isRobbingKan,
             ),
         )
         val result = createHandValueCalculator().calculate(context)

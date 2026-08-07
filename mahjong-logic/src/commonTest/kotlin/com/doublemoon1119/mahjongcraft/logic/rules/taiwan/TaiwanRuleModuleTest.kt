@@ -168,6 +168,18 @@ class TaiwanRuleModuleTest {
     }
 
     /**
+     * 驗證台灣麻將目前沒有榮和結算的實作，即使 isRobbingKan = true（搶槓）也一樣固定回傳 null。
+     */
+    @Test
+    fun `test declareRon returns null even when isRobbingKan is true`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val player = FakeMahjongPlayerFactory.create()
+        val table = FakeTableStateFactory.create(players = listOf(player))
+
+        assertNull(module.declareRon(table, player, winningTile, discarderId = Uuid.random(), isRobbingKan = true))
+    }
+
+    /**
      * 驗證台灣麻將目前沒有立直/供託這個機制，回傳 null。
      */
     @Test

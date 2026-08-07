@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -504,6 +505,44 @@ class RiichiRuleModuleTest {
         assertEquals(
             WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(paoPlayer.id to 32000)),
             result,
+        )
+    }
+
+    // 手牌：白白白（役牌刻子，1 翻）、234m、567p、89s（等 7s）、99p，供搶槓（isRobbingKan）測試共用。
+    // 刻意只有單一役牌（而非 daisangenTiles 那種役滿），讓搶槓多算的 1 翻能真正反映在點數差異上。
+    private fun singleYakuhaiTiles() = listOf(
+        Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
+        Tile.Numeric(Tile.Suit.Character, 2), Tile.Numeric(Tile.Suit.Character, 3), Tile.Numeric(Tile.Suit.Character, 4),
+        Tile.Numeric(Tile.Suit.Dot, 5), Tile.Numeric(Tile.Suit.Dot, 6), Tile.Numeric(Tile.Suit.Dot, 7),
+        Tile.Numeric(Tile.Suit.Bamboo, 8), Tile.Numeric(Tile.Suit.Bamboo, 9),
+        Tile.Numeric(Tile.Suit.Dot, 9), Tile.Numeric(Tile.Suit.Dot, 9),
+    )
+
+    /**
+     * 驗證 `isRobbingKan = true` 時，搶槓（[YakuType.Chankan]）1 翻會被計入榮和結算，
+     * 點數比 `isRobbingKan = false`（預設值）的同一手牌更高。
+     */
+    @Test
+    fun `test declareRon includes chankan yaku when isRobbingKan is true`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 7))
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = singleYakuhaiTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸人和
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val table = FakeTableStateFactory.create(players = listOf(winner, discarder), config = module.config)
+
+        val withoutChankan = module.declareRon(table, winner, winningTile, discarderId = discarder.id, isRobbingKan = false)
+        val withChankan = module.declareRon(table, winner, winningTile, discarderId = discarder.id, isRobbingKan = true)
+
+        assertNotNull(withoutChankan)
+        assertNotNull(withChankan)
+        assertTrue(
+            withChankan.totalGained > withoutChankan.totalGained,
+            "Chankan should add an extra han on top of the existing yakuhai, worth more points.",
         )
     }
 
