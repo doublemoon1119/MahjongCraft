@@ -10,6 +10,7 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines)
             implementation(project(":mahjong-logic"))
+            implementation(project(":mahjong-ai"))
             implementation(project(":mahjong-flow:mahjong-flow-common"))
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)

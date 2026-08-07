@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
+import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
@@ -14,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNag
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToChankanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -71,6 +73,8 @@ class GameFlowCoordinatorTest {
             respondToChankanUseCase = RespondToChankanUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
             declareKyuushuKyuuhaiUseCase = DeclareKyuushuKyuuhaiUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
         )
+        val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
+        val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, RandomAiStrategy())
         val coordinator = GameFlowCoordinator(
             gameActionRouter = router,
             gameRepository = gameRepo,
@@ -78,6 +82,7 @@ class GameFlowCoordinatorTest {
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
             declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
             advanceRoundUseCase = AdvanceRoundUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
+            aiTurnDriver = aiTurnDriver,
         )
     }
 
@@ -566,5 +571,86 @@ class GameFlowCoordinatorTest {
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.NotPlayersTurn(otherPlayerId, gameId), result.error)
         assertEquals(table, fixtures.gameRepo.getTableState(gameId))
+    }
+
+    // ---- AI 自動出手 ----
+
+    /**
+     * 驗證人類捨牌後、輪到的下一位是 AI 且無人可反應時：同一次 `coordinator(...)` 呼叫內，AI
+     * 已經自動摸牌並捨牌，回合正確推回人類——不需要呼叫端再送出任何命令。
+     */
+    @Test
+    fun `test ai automatically draws and discards after human discard advances turn to it`() = runTest {
+        val fixtures = Fixtures()
+        val humanId = Uuid.random()
+        val aiId = Uuid.random()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val human = FakeMahjongPlayerFactory.create(id = humanId, initialSeat = Wind.EAST, hand = Hand(lastDrawn = discardedTile))
+        // 全是條子，跟人類打出的餅牌無關，確保不會意外開啟反應視窗
+        val aiHandTiles = (1..13).map { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, ((it - 1) % 9) + 1)) }
+        val ai = FakeMahjongPlayerFactory.create(
+            id = aiId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = aiHandTiles),
+            isAi = true,
+            playerRuleState = RiichiPlayerState(),
+        )
+        val drawnTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(human, ai),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            tileWall = TileWall(listOf(drawnTile)),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator(gameId, humanId, GameCommand.Discard(discardedTile.id))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        val updatedAi = newState.players.first { it.id == aiId }
+        assertEquals(1, updatedAi.discardPile.entries.size, "The AI should have automatically drawn and discarded.")
+        assertEquals(0, newState.currentPlayerIndex, "Turn should have advanced back to the human.")
+    }
+
+    /**
+     * 驗證人類捨牌開啟反應視窗、視窗裡唯一有資格者是 AI 時：同一次呼叫內 AI 自動回應，視窗正確
+     * 關閉，不需要呼叫端再送出任何命令。
+     */
+    @Test
+    fun `test ai automatically resolves a reaction window it is the sole eligible responder for`() = runTest {
+        val fixtures = Fixtures()
+        val humanId = Uuid.random()
+        val aiId = Uuid.random()
+        val southTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val human = FakeMahjongPlayerFactory.create(id = humanId, initialSeat = Wind.EAST, hand = Hand(lastDrawn = southTile))
+        val southTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val southTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val filler = (1..10).map { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, (it % 9) + 1)) }
+        val ai = FakeMahjongPlayerFactory.create(
+            id = aiId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = listOf(southTile1, southTile2) + filler),
+            isAi = true,
+            playerRuleState = RiichiPlayerState(),
+        )
+        // 若 AI 選擇過牌（而非碰），輪到的下一位就是它自己、需要先摸牌——牌山至少要有 1 張牌，
+        // 否則會撞上牌山摸盡 → 一般流局 → 連莊/過莊判定，讓這個測試意外變成在測完全不同的情境。
+        val nextDrawTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9))
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(human, ai),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            tileWall = TileWall(listOf(nextDrawTile)),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator(gameId, humanId, GameCommand.Discard(southTile.id))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(null, newState.pendingReaction, "The AI should have automatically resolved the reaction window.")
     }
 }

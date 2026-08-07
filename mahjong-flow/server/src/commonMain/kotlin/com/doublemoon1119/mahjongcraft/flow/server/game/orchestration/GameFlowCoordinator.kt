@@ -41,12 +41,17 @@ import kotlin.uuid.Uuid
  * 銜接呼叫皆為 best-effort：若銜接呼叫本身失敗，不會覆蓋原始命令的執行結果——玩家自己那次操作
  * 是否成功，跟後續系統銜接是否成功，是兩件事。
  *
+ * 每次 [invoke] 執行完畢，還會額外透過 [aiTurnDriver] 讓所有輪到自己、或有資格回應且尚未回應的
+ * AI 玩家依序自動行動，直到沒有任何 AI 需要行動為止——AI 背後沒有真人會主動送出命令，這一步
+ * 讓加入房間的 AI 玩家真的能在牌局裡自動出手。詳見 [driveAiPlayers]。
+ *
  * @property gameActionRouter 玩家發起命令的路由入口。
  * @property gameRepository 權威對局數據倉庫，用於判斷是否需要銜接。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析四槓散了判定。
  * @property declareExhaustiveDrawUseCase 一般流局結算用例。
  * @property declareSuukanNagareUseCase 四槓散了結算用例。
  * @property advanceRoundUseCase 連莊/過莊/開下一局用例。
+ * @property aiTurnDriver 找出下一個該行動的 AI 玩家與其命令。
  */
 @Factory
 class GameFlowCoordinator(
@@ -56,9 +61,11 @@ class GameFlowCoordinator(
     private val declareExhaustiveDrawUseCase: DeclareExhaustiveDrawUseCase,
     private val declareSuukanNagareUseCase: DeclareSuukanNagareUseCase,
     private val advanceRoundUseCase: AdvanceRoundUseCase,
+    private val aiTurnDriver: AiTurnDriver,
 ) {
     /**
-     * 分派 [command] 並自動銜接對應的系統觸發 use case。
+     * 分派 [command] 並自動銜接對應的系統觸發 use case，完成後接著驅動所有需要行動的 AI 玩家
+     * （見 [driveAiPlayers]）。
      *
      * @param gameId 對局 Uuid。
      * @param playerId 發起操作的玩家 Uuid。
@@ -70,6 +77,39 @@ class GameFlowCoordinator(
         playerId: Uuid,
         command: GameCommand,
     ): Outcome<Unit, GameError> {
+        val result = dispatchAndChain(gameId, playerId, command)
+        driveAiPlayers(gameId)
+        return result
+    }
+
+    /**
+     * 讓所有輪到自己、或有資格回應且尚未回應的 AI 玩家依序自動行動，直到沒有任何 AI 需要行動為止。
+     *
+     * [invoke] 每次執行完畢都會自動呼叫這個方法；額外公開讓呼叫端能在其他時機主動觸發——例如
+     * `StartGameUseCase` 成功後，若第一位莊家恰好是 AI，需要有人「踢動」它，那次呼叫完全在
+     * [GameFlowCoordinator] 之外發生，不會自動觸發這個迴圈（由誰、在什麼時機呼叫，留給更外層決定）。
+     *
+     * 有上限保護（[MAX_ITERATIONS]）：整場對局已經結束（`AdvanceRoundUseCase` 回傳
+     * `isMatchOver = true`）時，`TableState` 會刻意維持呼叫前的樣子不變（見該用例的既有邊界），
+     * 若此時當前玩家恰好是 AI 且 `lastDrawn == null`，[AiTurnDriver] 會不斷判斷「該幫它摸牌」，
+     * 但摸牌會因為牌山已空再次回傳 `WallExhausted`、再次觸發流局銜接、再次嘗試推進、再次因
+     * `isMatchOver` 而維持不變——桌況不會有任何進展，若不設上限會無限迴圈（曾在測試中實際卡死，
+     * 靠 thread dump 抓出來）。正常情況下，一次呼叫最多需要驅動的 AI 動作數遠低於這個上限。
+     *
+     * @param gameId 對局 Uuid。
+     */
+    suspend fun driveAiPlayers(gameId: Uuid) {
+        repeat(MAX_ITERATIONS) {
+            val (aiPlayerId, aiCommand) = aiTurnDriver.resolveNextAction(gameId) ?: return
+            dispatchAndChain(gameId, aiPlayerId, aiCommand)
+        }
+    }
+
+    /**
+     * 分派 [command] 並自動銜接對應的系統觸發 use case。抽出成獨立方法讓 [driveAiPlayers] 能
+     * 直接呼叫——AI 送出的命令也必須經過同一套四槓散了攔截與系統銜接邏輯，不能繞過去。
+     */
+    private suspend fun dispatchAndChain(gameId: Uuid, playerId: Uuid, command: GameCommand): Outcome<Unit, GameError> {
         if (command is GameCommand.Discard || command is GameCommand.Riichi) {
             redirectToSuukanNagareIfPending(gameId, playerId)?.let { return it }
         }
@@ -124,5 +164,10 @@ class GameFlowCoordinator(
             } == true
         }
         else -> false
+    }
+
+    private companion object {
+        /** [driveAiPlayers] 的最大迭代次數，避免對局已結束但桌況卡住不變時無限迴圈。 */
+        const val MAX_ITERATIONS = 100
     }
 }
