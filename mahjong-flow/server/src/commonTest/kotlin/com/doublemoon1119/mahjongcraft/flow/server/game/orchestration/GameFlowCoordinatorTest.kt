@@ -1,0 +1,569 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
+
+import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKyuushuKyuuhaiUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNagareUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToChankanUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/**
+ * [GameFlowCoordinator] 的單元測試類別。
+ *
+ * 驗證三種自動銜接時機：一般流局（[GameError.WallExhausted]）、四槓散了（攔截
+ * [GameCommand.Discard]/[GameCommand.Riichi]）、連莊/過莊（是否結束本局的判斷），
+ * 以及不該誤觸發的一般路徑與錯誤原樣傳遞。
+ */
+class GameFlowCoordinatorTest {
+
+    private val gameId = Uuid.random()
+
+    private class Fixtures {
+        val gameRepo = FakeGameRepository()
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+        val snapshotRepo = FakeGameSnapshotRepository()
+        val eventPublisher = FakeGameEventPublisher()
+        val router = GameActionRouter(
+            drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
+            discardTileUseCase = DiscardTileUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
+            declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
+            declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
+            declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
+            respondToDiscardUseCase = RespondToDiscardUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
+            respondToChankanUseCase = RespondToChankanUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
+            declareKyuushuKyuuhaiUseCase = DeclareKyuushuKyuuhaiUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
+        )
+        val coordinator = GameFlowCoordinator(
+            gameActionRouter = router,
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
+            declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
+            advanceRoundUseCase = AdvanceRoundUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
+        )
+    }
+
+    // ---- 一般流局：WallExhausted 銜接 ----
+
+    /**
+     * 驗證任一命令回傳 [GameError.WallExhausted] 時，立即銜接一般流局並接著開下一局：
+     * 呼叫端仍然看到原始的 `WallExhausted` 錯誤，但桌況已經自動流局、重新發牌。
+     */
+    @Test
+    fun `test wall exhausted chains exhaustive draw and advance round`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(player),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator(gameId, playerId, GameCommand.Draw)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.WallExhausted(gameId), result.error)
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertTrue(newState.tileWall.remainingCount > 0, "The wall should have been rebuilt for the next hand.")
+        assertTrue(newState.players.first { it.id == playerId }.actionHistory.isEmpty(), "A fresh hand's actionHistory should be empty.")
+    }
+
+    /**
+     * 驗證規則不支援一般流局結算時（`declareExhaustiveDraw` 回傳 null），不會誤觸發
+     * `AdvanceRoundUseCase`——桌況除了 `WallExhausted` 錯誤本身以外完全不變。
+     */
+    @Test
+    fun `test wall exhausted does not chain advance round when exhaustive draw is unsupported`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(player),
+            config = TaiwanRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator(gameId, playerId, GameCommand.Draw)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.WallExhausted(gameId), result.error)
+        assertEquals(table, fixtures.gameRepo.getTableState(gameId))
+    }
+
+    // ---- 四槓散了：攔截 Discard/Riichi ----
+
+    private fun kanMeldsOf(vararg tileValues: Tile): List<Meld> = tileValues.map { tile ->
+        val tiles = List(4) { FakeIdentifiedTileFactory.create(tile) }
+        Meld(MeldType.CLOSED_KAN, tiles, sourceTile = null, sourceDirection = RelativeDirection.Self)
+    }
+
+    private fun suukanNagareTable(dealerId: Uuid, otherId: Uuid, dealerLastDrawn: IdentifiedTile): TableState {
+        val dealer = FakeMahjongPlayerFactory.create(
+            id = dealerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(melds = kanMeldsOf(Tile.Honor.East, Tile.Honor.South), lastDrawn = dealerLastDrawn),
+        )
+        val other = FakeMahjongPlayerFactory.create(
+            id = otherId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(melds = kanMeldsOf(Tile.Honor.West, Tile.Honor.North)),
+        )
+        return FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, other),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            currentPlayerIndex = 0,
+        )
+    }
+
+    /**
+     * 驗證四槓散了成立（4 個槓子分屬不同玩家）時，[GameCommand.Discard] 會被攔截、改觸發四槓散了
+     * 流局並接著開下一局——原本要打出的牌不會真的進牌河（副露被重置就是證明，正常捨牌不會清空
+     * 既有的槓子副露）；莊家固定連莊（`comboCount + 1`、莊家方位不變）。
+     */
+    @Test
+    fun `test discard command is redirected to suukan nagare when pending`() = runTest {
+        val fixtures = Fixtures()
+        val dealerId = Uuid.random()
+        val otherId = Uuid.random()
+        val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        fixtures.gameRepo.setTableState(suukanNagareTable(dealerId, otherId, lastDrawn))
+
+        val result = fixtures.coordinator(gameId, dealerId, GameCommand.Discard(lastDrawn.id))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(1, newState.comboCount, "Suukan nagare is an abortive draw; the dealer always repeats.")
+        assertEquals(Wind.EAST, newState.players.first { it.id == dealerId }.currentWind)
+        assertTrue(newState.players.first { it.id == dealerId }.hand.melds.isEmpty(), "A fresh hand should have no melds left over.")
+    }
+
+    /**
+     * 驗證同樣的攔截也適用於 [GameCommand.Riichi]（立直宣告本身就包含打出一張牌）。
+     */
+    @Test
+    fun `test riichi command is redirected to suukan nagare when pending`() = runTest {
+        val fixtures = Fixtures()
+        val dealerId = Uuid.random()
+        val otherId = Uuid.random()
+        val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        fixtures.gameRepo.setTableState(suukanNagareTable(dealerId, otherId, lastDrawn))
+
+        val result = fixtures.coordinator(gameId, dealerId, GameCommand.Riichi(lastDrawn.id))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(1, newState.comboCount)
+        assertTrue(newState.players.first { it.id == dealerId }.hand.melds.isEmpty())
+    }
+
+    /**
+     * 驗證槓子總數未滿 4 個時，四槓散了不成立，[GameCommand.Discard] 正常執行（不被攔截）。
+     */
+    @Test
+    fun `test discard command proceeds normally when suukan nagare is not pending`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST, hand = Hand(lastDrawn = lastDrawn))
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(player), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator(gameId, playerId, GameCommand.Discard(lastDrawn.id))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(0, newState.comboCount, "No hand-ending event occurred; the round should not have advanced.")
+        assertEquals(lastDrawn, newState.players.first { it.id == playerId }.discardPile.entries.single().tile)
+    }
+
+    // ---- 連莊/過莊：一定結束本局的命令 ----
+
+    // 中中、發發發、白白白、123m、55p（大三元役滿，13 張立牌）
+    private val daisangenTiles = listOf(
+        Tile.Honor.Red, Tile.Honor.Red,
+        Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+        Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
+        Tile.Numeric(Tile.Suit.Character, 1),
+        Tile.Numeric(Tile.Suit.Character, 2),
+        Tile.Numeric(Tile.Suit.Character, 3),
+        Tile.Numeric(Tile.Suit.Dot, 5),
+        Tile.Numeric(Tile.Suit.Dot, 5),
+    )
+
+    /**
+     * 驗證自摸成功一定結束本局，`AdvanceRoundUseCase` 會被銜接（新的一手牌已重新發好、
+     * `actionHistory` 已重置）。
+     */
+    @Test
+    fun `test tsumo command chains advance round`() = runTest {
+        val fixtures = Fixtures()
+        val winnerId = Uuid.random()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = daisangenTiles.map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
+            discardPile = FakeDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        ).copy(score = 25000)
+        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState()).copy(score = 25000)
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(winner, other), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator(gameId, winnerId, GameCommand.Tsumo)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertTrue(newState.players.first { it.id == winnerId }.actionHistory.isEmpty(), "A fresh hand's actionHistory should be empty.")
+        assertEquals(1, newState.comboCount, "The winner is the dealer, so the dealer should repeat.")
+    }
+
+    /**
+     * 驗證九種九牌宣告成功一定結束本局，`AdvanceRoundUseCase` 會被銜接。
+     */
+    @Test
+    fun `test kyuushu kyuuhai command chains advance round`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        // 9 種以上么九牌：1m/9m/1p/9p/1s/9s/東/南/西
+        val kyuushuTiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 1), Tile.Numeric(Tile.Suit.Character, 9),
+            Tile.Numeric(Tile.Suit.Dot, 1), Tile.Numeric(Tile.Suit.Dot, 9),
+            Tile.Numeric(Tile.Suit.Bamboo, 1), Tile.Numeric(Tile.Suit.Bamboo, 9),
+            Tile.Honor.East, Tile.Honor.South, Tile.Honor.West,
+            Tile.Numeric(Tile.Suit.Character, 2), Tile.Numeric(Tile.Suit.Character, 3),
+            Tile.Numeric(Tile.Suit.Character, 4), Tile.Numeric(Tile.Suit.Character, 5),
+        )
+        val drawn = FakeIdentifiedTileFactory.create(Tile.Honor.North)
+        val player = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = kyuushuTiles.map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = drawn),
+        )
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(player), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator(gameId, playerId, GameCommand.KyuushuKyuuhai)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertTrue(newState.players.first { it.id == playerId }.actionHistory.isEmpty())
+        assertEquals(1, newState.comboCount, "Kyuushu kyuuhai is an abortive draw; the dealer always repeats.")
+    }
+
+    // ---- 連莊/過莊：視分支結果的命令 ----
+
+    /**
+     * 驗證一般捨牌、無人反應時不會結束本局，`AdvanceRoundUseCase` 不會被誤觸發。
+     */
+    @Test
+    fun `test ordinary discard does not chain advance round`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val bystanderId = Uuid.random()
+        val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST, hand = Hand(lastDrawn = lastDrawn))
+        val bystander = FakeMahjongPlayerFactory.create(id = bystanderId, initialSeat = Wind.SOUTH)
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(player, bystander), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator(gameId, playerId, GameCommand.Discard(lastDrawn.id))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(0, newState.comboCount)
+        assertEquals(GameAction.Discard(lastDrawn.id), newState.players.first { it.id == playerId }.actionHistory.last())
+    }
+
+    /**
+     * 驗證捨牌觸發內嵌的四風連打時，`AdvanceRoundUseCase` 會被銜接。
+     */
+    @Test
+    fun `test discard triggering suufon renda chains advance round`() = runTest {
+        val fixtures = Fixtures()
+        val p1Id = Uuid.random()
+        val p2Id = Uuid.random()
+        val p1FirstDiscard = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val p2LastDrawn = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val p1 = FakeMahjongPlayerFactory.create(
+            id = p1Id,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(p1FirstDiscard),
+        )
+        val p2 = FakeMahjongPlayerFactory.create(
+            id = p2Id,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(lastDrawn = p2LastDrawn),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(p1, p2), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 1)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator(gameId, p2Id, GameCommand.Discard(p2LastDrawn.id))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertTrue(newState.players.first { it.id == p2Id }.actionHistory.isEmpty())
+        assertEquals(1, newState.comboCount, "Suufon renda is an abortive draw; the dealer always repeats.")
+    }
+
+    private fun discardReactionTable(discarderId: Uuid, respondentId: Uuid, respondentHand: Hand): TableState {
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val respondent = FakeMahjongPlayerFactory.create(id = respondentId, initialSeat = Wind.SOUTH, hand = respondentHand, playerRuleState = RiichiPlayerState())
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, respondent),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(respondentId)),
+        )
+        return table
+    }
+
+    // 役牌發已成立（1 翻）、單騎聽白（欲榮和的那張牌）
+    private fun ronReadyHand(): Hand = Hand(
+        tiles = listOf(
+            Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+            Tile.Numeric(Tile.Suit.Character, 2), Tile.Numeric(Tile.Suit.Character, 3), Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Dot, 5), Tile.Numeric(Tile.Suit.Dot, 6), Tile.Numeric(Tile.Suit.Dot, 7),
+            Tile.Numeric(Tile.Suit.Bamboo, 6), Tile.Numeric(Tile.Suit.Bamboo, 7), Tile.Numeric(Tile.Suit.Bamboo, 8),
+        ).map { FakeIdentifiedTileFactory.create(it) } + FakeIdentifiedTileFactory.create(Tile.Honor.White),
+    )
+
+    /**
+     * 驗證 [RespondToDiscardUseCase] 解析為榮和時，`AdvanceRoundUseCase` 會被銜接。
+     */
+    @Test
+    fun `test respond to discard resolving as ron chains advance round`() = runTest {
+        val fixtures = Fixtures()
+        val discarderId = Uuid.random()
+        val respondentId = Uuid.random()
+        val table = discardReactionTable(discarderId, respondentId, ronReadyHand())
+        fixtures.gameRepo.setTableState(table)
+        val whiteTileId = table.pendingReaction!!.tileId
+
+        val result = fixtures.coordinator(gameId, respondentId, GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId)))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertTrue(newState.players.first { it.id == respondentId }.actionHistory.isEmpty())
+    }
+
+    /**
+     * 驗證 [RespondToDiscardUseCase] 解析為碰（未結束本局）時，`AdvanceRoundUseCase` 不會被誤觸發。
+     */
+    @Test
+    fun `test respond to discard resolving as pon does not chain advance round`() = runTest {
+        val fixtures = Fixtures()
+        val discarderId = Uuid.random()
+        val respondentId = Uuid.random()
+        val whiteTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val filler = (1..10).map { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, (it % 9) + 1)) }
+        val table = discardReactionTable(discarderId, respondentId, Hand(tiles = listOf(whiteTile1, whiteTile2) + filler))
+        fixtures.gameRepo.setTableState(table)
+        val whiteTileId = table.pendingReaction!!.tileId
+
+        val result = fixtures.coordinator(gameId, respondentId, GameCommand.RespondToDiscard(GameAction.Pon(whiteTileId)))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(0, newState.comboCount)
+        assertEquals(GameAction.Pon(whiteTileId), newState.players.first { it.id == respondentId }.actionHistory.last())
+    }
+
+    private fun chankanTable(declarerId: Uuid, robberId: Uuid, tileWall: TileWall, robberHand: Hand): TableState {
+        val whiteTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val whiteTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val robbedWhiteTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val existingPon = Meld(MeldType.PON, listOf(whiteTile1, whiteTile2, whiteTile3), sourceTile = whiteTile3, sourceDirection = RelativeDirection.Left)
+        val kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedWhiteTile.id, emptyList())
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = declarerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(melds = listOf(existingPon), lastDrawn = robbedWhiteTile),
+        )
+        val robber = FakeMahjongPlayerFactory.create(id = robberId, initialSeat = Wind.SOUTH, hand = robberHand, playerRuleState = RiichiPlayerState())
+        return FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer, robber),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            tileWall = tileWall,
+            currentPlayerIndex = 0,
+            pendingChankan = PendingChankanReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
+        )
+    }
+
+    /**
+     * 驗證 [RespondToChankanUseCase] 解析為榮和時，`AdvanceRoundUseCase` 會被銜接。
+     */
+    @Test
+    fun `test respond to chankan resolving as ron chains advance round`() = runTest {
+        val fixtures = Fixtures()
+        val declarerId = Uuid.random()
+        val robberId = Uuid.random()
+        val table = chankanTable(declarerId, robberId, TileWall(emptyList()), ronReadyHand())
+        fixtures.gameRepo.setTableState(table)
+        val robbedTileId = table.pendingChankan!!.robbedTile.id
+
+        val result = fixtures.coordinator(gameId, robberId, GameCommand.RespondToChankan(GameAction.Ron(robbedTileId)))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertTrue(newState.players.first { it.id == robberId }.actionHistory.isEmpty())
+    }
+
+    /**
+     * 驗證 [RespondToChankanUseCase] 全員放過、補做套用副露（未結束本局）時，`AdvanceRoundUseCase`
+     * 不會被誤觸發。
+     */
+    @Test
+    fun `test respond to chankan resolving as all pass does not chain advance round`() = runTest {
+        val fixtures = Fixtures()
+        val declarerId = Uuid.random()
+        val robberId = Uuid.random()
+        val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val table = chankanTable(declarerId, robberId, TileWall(listOf(rinshanTile)), ronReadyHand())
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator(gameId, robberId, GameCommand.RespondToChankan(GameAction.Pass))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(0, newState.comboCount)
+        val declarer = newState.players.first { it.id == declarerId }
+        assertEquals(MeldType.ADDED_KAN, declarer.hand.melds.single().type, "The all-pass resume should have applied the kan.")
+        assertTrue(declarer.actionHistory.isNotEmpty(), "The kan/draw should still be recorded; the hand did not end.")
+    }
+
+    // ---- 一般路徑：不該誤觸發 ----
+
+    /**
+     * 驗證一般摸牌成功（無牌山摸盡）不會觸發任何銜接。
+     */
+    @Test
+    fun `test ordinary draw does not chain anything`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val drawnTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(player),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            tileWall = TileWall(listOf(drawnTile)),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator(gameId, playerId, GameCommand.Draw)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(0, newState.comboCount)
+        assertEquals(drawnTile, newState.players.first { it.id == playerId }.hand.lastDrawn)
+    }
+
+    /**
+     * 驗證一般槓牌成功（無搶槓視窗開啟）不會觸發任何銜接。
+     */
+    @Test
+    fun `test ordinary kan does not chain anything`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val east1 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east2 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east3 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east4 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST, hand = Hand(tiles = listOf(east1, east2, east3), lastDrawn = east4))
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(player),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            tileWall = TileWall(listOf(rinshanTile)),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator(gameId, playerId, GameCommand.Kan(GameAction.KanType.CLOSED_KAN, east4.id))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(0, newState.comboCount)
+        assertEquals(MeldType.CLOSED_KAN, newState.players.first { it.id == playerId }.hand.melds.single().type)
+    }
+
+    // ---- 錯誤原樣傳遞 ----
+
+    /**
+     * 驗證非 `WallExhausted` 的錯誤原樣回傳，不觸發任何銜接呼叫，桌況完全不變。
+     */
+    @Test
+    fun `test non wall exhausted errors pass through untouched`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayerId = Uuid.random()
+        val otherPlayerId = Uuid.random()
+        val currentPlayer = FakeMahjongPlayerFactory.create(id = currentPlayerId, initialSeat = Wind.EAST)
+        val other = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(currentPlayer, other), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator(gameId, otherPlayerId, GameCommand.Draw)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.NotPlayersTurn(otherPlayerId, gameId), result.error)
+        assertEquals(table, fixtures.gameRepo.getTableState(gameId))
+    }
+}
