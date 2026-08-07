@@ -1,0 +1,348 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
+
+import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
+
+/**
+ * [DeclareKanUseCase] 的單元測試類別。
+ *
+ * 驗證暗槓/加槓宣告的合法性驗證（交給 `LegalActionValidator`）、套用副露後正確依序記錄
+ * `Kan` → `Draw`、從死牌區補摸嶺上牌、牌山摸盡時的 all-or-nothing 行為，以及快照與事件的同步行為。
+ */
+class DeclareKanUseCaseTest {
+
+    private val gameId = Uuid.random()
+    private val playerId = Uuid.random()
+
+    private class Fixtures {
+        val gameRepo = FakeGameRepository()
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+        val snapshotRepo = FakeGameSnapshotRepository()
+        val eventPublisher = FakeGameEventPublisher()
+        val useCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher)
+    }
+
+    private val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+
+    /**
+     * 驗證暗槓成功宣告：手牌 3 張 + 摸到第 4 張同種牌 → 副露正確加入 `exposedMelds`、
+     * 手牌對應 4 張牌被移除、`actionHistory` 依序記錄 `Kan` → `Draw`、`lastDrawn` 為補摸的嶺上牌、
+     * 牌山正確縮減 1 張。
+     */
+    @Test
+    fun `test closed kan success applies meld and draws replacement tile`() = runTest {
+        val fixtures = Fixtures()
+        val east1 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east2 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east3 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east4 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(east1, east2, east3), lastDrawn = east4),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(listOf(rinshanTile)),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, east4.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        val updated = newState.players.first { it.id == playerId }
+        assertTrue(updated.hand.tiles.isEmpty(), "All 4 tiles forming the kan should be removed from standing tiles.")
+        val meld = updated.hand.melds.single()
+        assertEquals(MeldType.CLOSED_KAN, meld.type)
+        assertEquals(setOf(east1, east2, east3, east4), meld.tiles.toSet())
+        assertEquals(rinshanTile, updated.hand.lastDrawn, "Should have drawn a replacement tile from the dead wall.")
+        assertEquals(
+            listOf(GameAction.Kan(GameAction.KanType.CLOSED_KAN, east4.id, listOf(east1.id, east2.id, east3.id)), GameAction.Draw),
+            updated.actionHistory.takeLast(2),
+            "Kan must be recorded before Draw for rinshan kaihou detection to work.",
+        )
+        assertEquals(0, newState.tileWall.remainingCount)
+    }
+
+    /**
+     * 驗證加槓成功宣告：已有 PON 副露、摸到第 4 張同種牌 → 副露原地升級為 ADDED_KAN，
+     * 保留原本的 sourceTile/sourceDirection。
+     */
+    @Test
+    fun `test added kan success upgrades existing pon meld and preserves source`() = runTest {
+        val fixtures = Fixtures()
+        val south1 = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val south2 = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val south3 = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val south4 = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val existingPon = Meld(MeldType.PON, listOf(south1, south2, south3), sourceTile = south3, sourceDirection = RelativeDirection.Left)
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(melds = listOf(existingPon), lastDrawn = south4),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(listOf(rinshanTile)),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.ADDED_KAN, south4.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        val updated = newState.players.first { it.id == playerId }
+        val meld = updated.hand.melds.single()
+        assertEquals(MeldType.ADDED_KAN, meld.type)
+        assertEquals(setOf(south1, south2, south3, south4), meld.tiles.toSet())
+        assertEquals(south3, meld.sourceTile, "Added kan should preserve the original Pon's source tile.")
+        assertEquals(RelativeDirection.Left, meld.sourceDirection, "Added kan should preserve the original Pon's source direction.")
+        assertEquals(rinshanTile, updated.hand.lastDrawn)
+        assertEquals(
+            listOf(GameAction.Kan(GameAction.KanType.ADDED_KAN, south4.id, emptyList()), GameAction.Draw),
+            updated.actionHistory.takeLast(2),
+        )
+    }
+
+    /**
+     * 驗證立直後暗槓會改變面子結構時（`isMeldStructureChanged`：手牌中有與槓牌同花色、數字距離
+     * 2 以內的牌，代表這組刻子與其他牌具有組成順子的「血緣關係」）不合法，不需要驗證聽牌本身
+     * 是否改變——`checkClosedKanAfterRiichi` 會先做這個結構檢查，成立就直接擋下。
+     */
+    @Test
+    fun `test closed kan fails after riichi when it would change meld structure`() = runTest {
+        val fixtures = Fixtures()
+        val fifthMan1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
+        val fifthMan2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
+        val fifthMan3 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
+        val fifthMan4 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
+        // 4 萬與 5 萬數字距離為 1（<= 2），觸發 isMeldStructureChanged
+        val adjacentTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4))
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(fifthMan1, fifthMan2, fifthMan3, adjacentTile), lastDrawn = fifthMan4),
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.North)),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(listOf(rinshanTile)),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, fifthMan4.id)
+
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
+        assertEquals(
+            GameError.IllegalAction(
+                playerId,
+                gameId,
+                GameAction.Kan(GameAction.KanType.CLOSED_KAN, fifthMan4.id, emptyList()),
+            ),
+            result.error,
+        )
+    }
+
+    /**
+     * 驗證 `tileId` 與 `lastDrawn.id` 不符時回傳 [GameError.IllegalAction]。
+     */
+    @Test
+    fun `test declare kan fails when tileId does not match lastDrawn`() = runTest {
+        val fixtures = Fixtures()
+        val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val otherTileId = Uuid.random()
+        val declarer = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST, hand = Hand(lastDrawn = lastDrawn))
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(declarer), config = RiichiRuleConfig(), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, otherTileId)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(
+            GameError.IllegalAction(playerId, gameId, GameAction.Kan(GameAction.KanType.CLOSED_KAN, otherTileId, emptyList())),
+            result.error,
+        )
+    }
+
+    /**
+     * 驗證牌山恰好在補摸嶺上牌時摸盡，回傳 [GameError.WallExhausted]，且桌況維持宣告前的樣子不變
+     * （all-or-nothing：`gameRepository.update` 回傳原始 `state`，不會半套用副露）。
+     */
+    @Test
+    fun `test declare kan fails with wall exhausted and does not partially apply the meld`() = runTest {
+        val fixtures = Fixtures()
+        val east1 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east2 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east3 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east4 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(east1, east2, east3), lastDrawn = east4),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, east4.id)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.WallExhausted(gameId), result.error)
+        val unchangedState = fixtures.gameRepo.getTableState(gameId)!!
+        val unchangedPlayer = unchangedState.players.first { it.id == playerId }
+        assertTrue(unchangedPlayer.hand.melds.isEmpty(), "The meld should not be applied when the replacement draw fails.")
+        assertEquals(east4, unchangedPlayer.hand.lastDrawn, "The player's hand should remain exactly as it was before the declaration.")
+        assertEquals(0, unchangedState.tileWall.remainingCount)
+    }
+
+    /**
+     * 驗證宣告 [GameAction.KanType.OPEN_KAN]（走 [RespondToDiscardUseCase] 的種類）時提早擋下，
+     * 回傳 [GameError.IllegalAction]。
+     */
+    @Test
+    fun `test declare kan fails for open kan type`() = runTest {
+        val fixtures = Fixtures()
+        val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val declarer = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST, hand = Hand(lastDrawn = lastDrawn))
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(declarer), config = RiichiRuleConfig(), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.OPEN_KAN, lastDrawn.id)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(
+            GameError.IllegalAction(playerId, gameId, GameAction.Kan(GameAction.KanType.OPEN_KAN, lastDrawn.id, emptyList())),
+            result.error,
+        )
+    }
+
+    /**
+     * 驗證非當前回合玩家嘗試宣告時回傳 [GameError.NotPlayersTurn]。
+     */
+    @Test
+    fun `test declare kan fails when not players turn`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val declarer = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.SOUTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, declarer),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, Uuid.random())
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.NotPlayersTurn(playerId, gameId), result.error)
+    }
+
+    /**
+     * 驗證發起請求的玩家不在該對局中時回傳 [GameError.PlayerNotInGame]。
+     */
+    @Test
+    fun `test declare kan fails when player not in game`() = runTest {
+        val fixtures = Fixtures()
+        val declarer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(declarer), config = RiichiRuleConfig())
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, Uuid.random())
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.PlayerNotInGame(playerId, gameId), result.error)
+    }
+
+    /**
+     * 驗證對局不存在時回傳 [GameError.GameNotFound]。
+     */
+    @Test
+    fun `test declare kan fails when game not found`() = runTest {
+        val fixtures = Fixtures()
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, Uuid.random())
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.GameNotFound(gameId), result.error)
+    }
+
+    /**
+     * 驗證宣告成功後所有觀察者的快照皆同步更新，且所有玩家皆依序收到 Kan、Draw 事件通知。
+     */
+    @Test
+    fun `test declare kan syncs snapshot and notifies all players in order`() = runTest {
+        val fixtures = Fixtures()
+        val east1 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east2 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east3 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east4 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(east1, east2, east3), lastDrawn = east4),
+        )
+        val otherId = Uuid.random()
+        val other = FakeMahjongPlayerFactory.create(id = otherId, initialSeat = Wind.SOUTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer, other),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(listOf(rinshanTile)),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+        fixtures.snapshotRepo.setSnapshot(playerId, table.toSnapshot(playerId))
+        fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(otherId))
+
+        fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, east4.id)
+
+        assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, playerId))
+        assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, otherId))
+        val expectedKan = GameAction.Kan(GameAction.KanType.CLOSED_KAN, east4.id, listOf(east1.id, east2.id, east3.id))
+        assertEquals(
+            listOf(expectedKan, GameAction.Draw),
+            fixtures.eventPublisher.getNotifiedActions(gameId, otherId, playerId),
+        )
+    }
+}

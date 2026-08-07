@@ -1,9 +1,12 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.CompletionType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Fuuro
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Janto
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.FakeRiichiHandValueContextFactory
@@ -230,5 +233,101 @@ class FuCalculatorTest {
         )
         val result = FuCalculator.calculateTotalFu(context, handStructure)
         assertTrue(result >= 20)
+    }
+
+    // 雀頭固定用三元牌（白），確保 calculatePinfu 不會因為役牌雀頭而誤判為平和；順帶避開一個
+    // 探查到但不在本次範圍內的既有 bug——calculatePinfu 只檢查 structure.mentsus 是否全為順子，
+    // 完全沒有檢查 structure.fuuro（副露），導致帶有槓子/碰的副露卻只把面子放進 fuuro（而非
+    // mentsus）時，會被誤判為平和。用役牌雀頭讓 isYakuhai 提早擋下，不受這個既有 bug 影響。
+    // 三元牌雀頭固定 +2 符，已經算進下方每個測試案例的預期總符數。
+    private fun createStructureWithFuuro(mentsu: Mentsu): HandStructure.Standard = HandStructure.Standard(
+        mentsus = emptyList(),
+        pair = Janto(Tile.Honor.White),
+        fuuro = listOf(Fuuro(mentsu, from = RelativeDirection.Left)),
+        completionType = CompletionType.Ryanmen,
+    )
+
+    /**
+     * 測試暗槓（中張牌）+16 符。
+     * 符底 20 + 暗槓中張 16 + 三元牌雀頭 2 = 38 → 40
+     */
+    @Test
+    fun `test ankan of simple tile adds 16 fu`() {
+        val context = createContext(isMenzen = false, isTsumo = false)
+        val handStructure = createStructureWithFuuro(Mentsu.Ankan(Tile.Numeric(Tile.Suit.Character, 3)))
+        val result = FuCalculator.calculateTotalFu(context, handStructure)
+        assertEquals(40, result)
+    }
+
+    /**
+     * 測試暗槓（么九牌）+32 符。
+     * 符底 20 + 暗槓么九 32 + 三元牌雀頭 2 = 54 → 60
+     */
+    @Test
+    fun `test ankan of terminal tile adds 32 fu`() {
+        val context = createContext(isMenzen = false, isTsumo = false)
+        val handStructure = createStructureWithFuuro(Mentsu.Ankan(Tile.Numeric(Tile.Suit.Character, 1)))
+        val result = FuCalculator.calculateTotalFu(context, handStructure)
+        assertEquals(60, result)
+    }
+
+    /**
+     * 測試暗槓（三元牌）+32 符（三元牌與么九牌同級距）。
+     * 符底 20 + 暗槓三元 32 + 三元牌雀頭 2 = 54 → 60
+     */
+    @Test
+    fun `test ankan of dragon tile adds 32 fu`() {
+        val context = createContext(isMenzen = false, isTsumo = false)
+        val handStructure = createStructureWithFuuro(Mentsu.Ankan(Tile.Honor.Red))
+        val result = FuCalculator.calculateTotalFu(context, handStructure)
+        assertEquals(60, result)
+    }
+
+    /**
+     * 測試明槓（中張牌）+8 符。
+     * 符底 20 + 明槓中張 8 + 三元牌雀頭 2 = 30 → 30
+     */
+    @Test
+    fun `test minkan of simple tile adds 8 fu`() {
+        val context = createContext(isMenzen = false, isTsumo = false)
+        val handStructure = createStructureWithFuuro(Mentsu.Minkan(Tile.Numeric(Tile.Suit.Character, 3)))
+        val result = FuCalculator.calculateTotalFu(context, handStructure)
+        assertEquals(30, result)
+    }
+
+    /**
+     * 測試明槓（么九牌）+16 符。
+     * 符底 20 + 明槓么九 16 + 三元牌雀頭 2 = 38 → 40
+     */
+    @Test
+    fun `test minkan of terminal tile adds 16 fu`() {
+        val context = createContext(isMenzen = false, isTsumo = false)
+        val handStructure = createStructureWithFuuro(Mentsu.Minkan(Tile.Numeric(Tile.Suit.Character, 9)))
+        val result = FuCalculator.calculateTotalFu(context, handStructure)
+        assertEquals(40, result)
+    }
+
+    /**
+     * 測試加槓（中張牌）+8 符，與明槓同級距（[FuCalculator] 的 `when` 分支將 Minkan/Kakan 視為同一類）。
+     * 符底 20 + 加槓中張 8 + 三元牌雀頭 2 = 30 → 30
+     */
+    @Test
+    fun `test kakan of simple tile adds 8 fu`() {
+        val context = createContext(isMenzen = false, isTsumo = false)
+        val handStructure = createStructureWithFuuro(Mentsu.Kakan(Tile.Numeric(Tile.Suit.Character, 3)))
+        val result = FuCalculator.calculateTotalFu(context, handStructure)
+        assertEquals(30, result)
+    }
+
+    /**
+     * 測試加槓（客風牌）+16 符。
+     * 符底 20 + 加槓客風 16 + 三元牌雀頭 2 = 38 → 40
+     */
+    @Test
+    fun `test kakan of guest wind tile adds 16 fu`() {
+        val context = createContext(isMenzen = false, isTsumo = false, roundWind = Wind.EAST, seatWind = Wind.EAST)
+        val handStructure = createStructureWithFuuro(Mentsu.Kakan(Tile.Honor.South))
+        val result = FuCalculator.calculateTotalFu(context, handStructure)
+        assertEquals(40, result)
     }
 }

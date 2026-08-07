@@ -189,10 +189,36 @@ class RespondToDiscardUseCase(
         val playersAfterMeldClaimed = module.onMeldClaimed(playersAfterMeld)
         val winnerIndex = playersAfterMeldClaimed.indexOfFirst { it.id == winnerId }
 
+        if (meldType != MeldType.OPEN_KAN) {
+            return state.copy(
+                players = playersAfterMeldClaimed,
+                currentPlayerIndex = winnerIndex,
+                pendingReaction = null,
+            )
+        }
+
+        // 明槓比照暗槓/加槓，得標後立即從死牌區補摸嶺上牌，取代原本依賴得標玩家事後另外呼叫
+        // DrawTileUseCase（那是從牌山前端摸牌，摸錯位置）的既有錯誤行為。若牌山恰好在此刻摸盡
+        // （極端邊界情況），這裡沒有 Outcome 通道可回報錯誤（本方法回傳單純 TableState），
+        // 已知簡化：讓 lastDrawn 維持空，不中斷已經套用完成的副露結果。
+        val (rinshanTile, newWall) = state.tileWall.drawLast()
+        val playersWithRinshanDraw = if (rinshanTile == null) {
+            playersAfterMeldClaimed
+        } else {
+            playersAfterMeldClaimed.map { player ->
+                if (player.id == winnerId) {
+                    player.copy(hand = player.hand.copy(lastDrawn = rinshanTile)).clearPassedTiles().recordAction(GameAction.Draw)
+                } else {
+                    player
+                }
+            }
+        }
+
         return state.copy(
-            players = playersAfterMeldClaimed,
+            players = playersWithRinshanDraw,
             currentPlayerIndex = winnerIndex,
             pendingReaction = null,
+            tileWall = if (rinshanTile == null) state.tileWall else newWall,
         )
     }
 

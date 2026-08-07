@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -175,6 +176,106 @@ class RespondToDiscardUseCaseTest {
         assertEquals(MeldType.CHI, meld.type)
         assertEquals(setOf(handTile4, handTile6, discardedTile), meld.tiles.toSet())
         assertEquals(1, newState.currentPlayerIndex)
+    }
+
+    /**
+     * 驗證明槓（大明槓）得標後：正確套用副露、標記捨牌已被鳴走、且立即從死牌區補摸嶺上牌
+     * （取代過去依賴得標玩家事後另外呼叫 `DrawTileUseCase`、從牌山前端摸錯位置的既有缺口）——
+     * `lastDrawn` 為嶺上牌、`actionHistory` 依序記錄 `Kan` → `Draw`、牌山正確縮減 1 張。
+     */
+    @Test
+    fun `test open kan success applies meld and draws replacement tile from dead wall`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val handTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val handTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val handTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val responder = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = listOf(handTile1, handTile2, handTile3)),
+        )
+        val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, responder),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(listOf(rinshanTile)),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val kanAction = GameAction.Kan(GameAction.KanType.OPEN_KAN, discardedTile.id, listOf(handTile1.id, handTile2.id, handTile3.id))
+        val result = fixtures.useCase(gameId, responderId, kanAction)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertNull(newState.pendingReaction)
+        assertEquals(1, newState.currentPlayerIndex, "Turn should move to the player who claimed the meld.")
+        assertEquals(0, newState.tileWall.remainingCount, "The replacement tile should be drawn from the dead wall.")
+
+        val winner = newState.players.first { it.id == responderId }
+        val meld = winner.hand.melds.single()
+        assertEquals(MeldType.OPEN_KAN, meld.type)
+        assertEquals(setOf(handTile1, handTile2, handTile3, discardedTile), meld.tiles.toSet())
+        assertEquals(rinshanTile, winner.hand.lastDrawn, "Should have drawn a replacement tile from the dead wall, not the front of the wall.")
+        assertEquals(
+            listOf(kanAction, GameAction.Draw),
+            winner.actionHistory.takeLast(2),
+            "Kan must be recorded before Draw for rinshan kaihou detection to work.",
+        )
+
+        val newDiscarder = newState.players.first { it.id == discarderId }
+        assertTrue(newDiscarder.discardPile.entries.last().isTaken, "The claimed discard should be marked as taken.")
+    }
+
+    /**
+     * 驗證明槓得標時牌山恰好摸盡（極端邊界情況）：副露仍正確套用，但 `lastDrawn` 維持空
+     * （已知簡化，見規劃紀錄——`resolvePendingReaction` 回傳單純 `TableState`，沒有 `Outcome`
+     * 通道可以回報 `WallExhausted`）。
+     */
+    @Test
+    fun `test open kan with exhausted wall still applies meld but leaves lastDrawn empty`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val handTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val handTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val handTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val responder = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = listOf(handTile1, handTile2, handTile3)),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, responder),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val kanAction = GameAction.Kan(GameAction.KanType.OPEN_KAN, discardedTile.id, listOf(handTile1.id, handTile2.id, handTile3.id))
+        val result = fixtures.useCase(gameId, responderId, kanAction)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        val winner = newState.players.first { it.id == responderId }
+        assertEquals(MeldType.OPEN_KAN, winner.hand.melds.single().type, "The meld itself should still be applied.")
+        assertNull(winner.hand.lastDrawn, "No replacement tile is available; lastDrawn should remain empty.")
+        assertEquals(0, newState.tileWall.remainingCount)
     }
 
     /**
