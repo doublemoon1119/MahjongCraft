@@ -1,11 +1,13 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -785,5 +787,111 @@ class RiichiRuleModuleTest {
     @Test
     fun `test resolveMultiRonAbortiveDraw returns SanchaHou`() {
         assertEquals(RiichiExhaustiveDrawReason.SanchaHou, module.resolveMultiRonAbortiveDraw())
+    }
+
+    /**
+     * 建立一份「全員恰好都打過一張牌」的桌況，供 [resolveSuufonRenda] 測試共用。
+     *
+     * @param discards 依座位順序（東南西北）各自的第一張捨牌。
+     */
+    private fun tableWithFirstDiscards(discards: List<Tile>): TableState {
+        val winds = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH)
+        val players = winds.zip(discards).map { (wind, tile) ->
+            FakeMahjongPlayerFactory.create(
+                initialSeat = wind,
+                discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(tile)),
+            )
+        }
+        return FakeTableStateFactory.create(players = players, config = module.config)
+    }
+
+    /**
+     * 驗證第一巡全員的第一張捨牌皆為同一種風牌時，成立四風連打。
+     */
+    @Test
+    fun `test resolveSuufonRenda returns SuufonRenda when all first discards are the same wind`() {
+        val table = tableWithFirstDiscards(List(4) { Tile.Honor.East })
+
+        assertEquals(RiichiExhaustiveDrawReason.SuufonRenda, module.resolveSuufonRenda(table))
+    }
+
+    /**
+     * 驗證第一張捨牌種類不同時，不成立四風連打。
+     */
+    @Test
+    fun `test resolveSuufonRenda returns null when first discards differ`() {
+        val table = tableWithFirstDiscards(listOf(Tile.Honor.East, Tile.Honor.East, Tile.Honor.South, Tile.Honor.East))
+
+        assertNull(module.resolveSuufonRenda(table))
+    }
+
+    /**
+     * 驗證還沒全員都打過牌時，不成立四風連打。
+     */
+    @Test
+    fun `test resolveSuufonRenda returns null when not everyone has discarded yet`() {
+        val players = listOf(
+            FakeMahjongPlayerFactory.create(
+                initialSeat = Wind.EAST,
+                discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            ),
+            FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, discardPile = RiichiDiscardPile()),
+        )
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertNull(module.resolveSuufonRenda(table))
+    }
+
+    /**
+     * 驗證已經有玩家鳴牌（不是第一巡）時，不成立四風連打。
+     */
+    @Test
+    fun `test resolveSuufonRenda returns null when someone has already melded`() {
+        val meldTiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
+        val meldedHand = Hand().call(type = MeldType.PON, tiles = meldTiles, source = meldTiles[0], direction = RelativeDirection.Left)
+        val players = listOf(
+            FakeMahjongPlayerFactory.create(
+                initialSeat = Wind.EAST,
+                hand = meldedHand,
+                discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            ),
+            FakeMahjongPlayerFactory.create(
+                initialSeat = Wind.SOUTH,
+                discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            ),
+        )
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertNull(module.resolveSuufonRenda(table))
+    }
+
+    /**
+     * 驗證全員皆已宣告立直時，成立四家立直。
+     */
+    @Test
+    fun `test resolveSuuchaRiichi returns SuuchaRiichi when everyone is riichi`() {
+        val players = List(4) {
+            FakeMahjongPlayerFactory.create(
+                playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            )
+        }
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertEquals(RiichiExhaustiveDrawReason.SuuchaRiichi, module.resolveSuuchaRiichi(table))
+    }
+
+    /**
+     * 驗證仍有玩家未立直時，不成立四家立直。
+     */
+    @Test
+    fun `test resolveSuuchaRiichi returns null when not everyone is riichi`() {
+        val players = List(3) {
+            FakeMahjongPlayerFactory.create(
+                playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            )
+        } + FakeMahjongPlayerFactory.create(playerRuleState = RiichiPlayerState())
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertNull(module.resolveSuuchaRiichi(table))
     }
 }

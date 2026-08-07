@@ -33,6 +33,11 @@ import kotlin.uuid.Uuid
  * 這裡刻意不轉型成任何規則專屬的具體型別（如 `RiichiPlayerState`），否則會綁死在單一實作上，
  * 之後若有其他規則也想支援類似立直的宣告機制、卻使用自己的一套狀態型別，這裡就會誤判失敗。
  *
+ * 立直宣告牌打出後，其他玩家是否有資格吃/碰/槓/榮和這張牌（含一炮多響判定為流局的情況）交給
+ * [DiscardReactionResolver] 處理，與 [DiscardTileUseCase] 共用同一套邏輯。沒有人可以反應時，
+ * 還會額外檢查是否構成四家立直
+ * （[com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule.resolveSuuchaRiichi]）。
+ *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與向聽數計算器。
  * @property gameSnapshotRepository 對局快照數據倉庫。
@@ -96,19 +101,38 @@ class DeclareRiichiUseCase(
                         .recordAction(GameAction.Riichi)
                         .recordAction(GameAction.Discard(discardResult.tile.id))
                     val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
-                    val newState = state.copy(
+                    val stateAfterDeclaration = state.copy(
                         players = updatedPlayers,
-                        currentPlayerIndex = (state.currentPlayerIndex + 1) % state.playerCount,
                         dynamicRuleState = declaration.dynamicRuleState,
                     )
 
-                    newState to Outcome.Success(newState)
+                    val resolved = DiscardReactionResolver.resolve(state, stateAfterDeclaration, module, playerId, discardResult.tile)
+
+                    // 沒有觸發一炮多響流局、也沒有人可反應時，額外檢查是否構成四家立直。
+                    val suuchaReason = if (resolved.abortiveDrawReason == null && resolved.tableState.pendingReaction == null) {
+                        module.resolveSuuchaRiichi(resolved.tableState)
+                    } else {
+                        null
+                    }
+                    val finalResult = if (suuchaReason != null) {
+                        resolved.copy(
+                            tableState = resolved.tableState.copy(
+                                players = resolved.tableState.players.map { it.recordAction(GameAction.ExhaustiveDraw(suuchaReason)) },
+                            ),
+                            abortiveDrawReason = suuchaReason,
+                        )
+                    } else {
+                        resolved
+                    }
+
+                    finalResult.tableState to Outcome.Success(finalResult)
                 }
             }
         }
 
         if (outcome is Outcome.Error) return outcome
-        val newState = (outcome as Outcome.Success).value
+        val result = (outcome as Outcome.Success).value
+        val newState = result.tableState
 
         // 2. 同步快照給所有正在觀察的玩家
         val observers = gameSnapshotRepository.getAllObservers(gameId)
@@ -116,10 +140,13 @@ class DeclareRiichiUseCase(
             gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(observerId))
         }
 
-        // 3. 通知對局內的所有玩家：先廣播立直宣告，再廣播這張牌的捨牌事件
+        // 3. 通知對局內的所有玩家：先廣播立直宣告，再廣播這張牌的捨牌事件，流局有觸發時接著廣播流局事件
         newState.players.forEach { player ->
             eventPublisher.publish(gameId, player.id, playerId, GameAction.Riichi)
             eventPublisher.publish(gameId, player.id, playerId, GameAction.Discard(tileId))
+            result.abortiveDrawReason?.let { reason ->
+                eventPublisher.publish(gameId, player.id, playerId, GameAction.ExhaustiveDraw(reason))
+            }
         }
 
         return Outcome.Success(Unit)

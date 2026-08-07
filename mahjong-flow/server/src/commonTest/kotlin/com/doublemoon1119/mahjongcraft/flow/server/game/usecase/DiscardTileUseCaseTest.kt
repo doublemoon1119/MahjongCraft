@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -734,5 +735,125 @@ class DiscardTileUseCaseTest {
             GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(unknownTileId)),
             result.error,
         )
+    }
+
+    /**
+     * 驗證第一巡全員的第一張捨牌皆為同一種風牌時，觸發四風連打：不開反應視窗、全員記錄
+     * `ExhaustiveDraw(SuufonRenda)`、不結算任何點數。
+     */
+    @Test
+    fun `test discard tile triggers SuufonRenda when all first discards are the same wind`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val alreadyDiscardedEast = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
+        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, discardPile = alreadyDiscardedEast).copy(score = 25000)
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, discardPile = alreadyDiscardedEast).copy(score = 25000)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, discardPile = alreadyDiscardedEast).copy(score = 25000)
+        val north = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.NORTH,
+            hand = Hand(lastDrawn = winningTile),
+        ).copy(score = 25000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(east, south, west, north),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 3,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNull(newState.pendingReaction)
+        val expectedAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SuufonRenda)
+        newState.players.forEach { player ->
+            assertEquals(expectedAction, player.actionHistory.last())
+            assertEquals(25000, player.score, "Suufon renda is an abortive draw and should not exchange any points.")
+        }
+    }
+
+    /**
+     * 驗證第一張捨牌種類不同時，不觸發四風連打，正常推進到下一位玩家。
+     */
+    @Test
+    fun `test discard tile does not trigger SuufonRenda when first discards differ`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val alreadyDiscardedEast = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
+        val alreadyDiscardedSouth = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South))
+        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, discardPile = alreadyDiscardedEast)
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, discardPile = alreadyDiscardedSouth)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, discardPile = alreadyDiscardedEast)
+        val north = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.NORTH,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(east, south, west, north),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 3,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNull(newState.pendingReaction)
+        assertEquals(0, newState.currentPlayerIndex, "Turn should advance normally to the next player.")
+        newState.players.forEach { player -> assertTrue(player.actionHistory.none { it is GameAction.ExhaustiveDraw }) }
+    }
+
+    /**
+     * 驗證即使四家第一張捨牌皆同風牌，只要有玩家可以碰這張牌，就不會觸發四風連打——改為正常開啟
+     * 反應視窗，因為「這張牌可能被鳴走」已經不是「無人反應」的情境。
+     */
+    @Test
+    fun `test discard tile does not trigger SuufonRenda when someone can pon`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val alreadyDiscardedEast = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
+        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, discardPile = alreadyDiscardedEast)
+        // 手牌中有兩張東風，湊滿碰牌的條件
+        val south = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            discardPile = alreadyDiscardedEast,
+            hand = Hand(
+                tiles = listOf(
+                    FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                ),
+            ),
+        )
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, discardPile = alreadyDiscardedEast)
+        val north = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.NORTH,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(east, south, west, north),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 3,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNotNull(newState.pendingReaction, "A reaction window should open since south can pon.")
+        newState.players.forEach { player -> assertTrue(player.actionHistory.none { it is GameAction.ExhaustiveDraw }) }
     }
 }

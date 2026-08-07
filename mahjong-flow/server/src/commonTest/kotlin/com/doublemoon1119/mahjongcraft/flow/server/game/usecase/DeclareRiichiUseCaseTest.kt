@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -396,5 +397,141 @@ class DeclareRiichiUseCaseTest {
             GameError.IllegalAction(currentPlayerId, gameId, GameAction.Riichi),
             result.error,
         )
+    }
+
+    /**
+     * 驗證立直宣告牌打出後，若其他玩家可以碰這張牌，會開啟反應視窗、暫緩推進回合——修正過去
+     * `DeclareRiichiUseCase` 完全沒有開反應視窗的缺口。
+     */
+    @Test
+    fun `test declare riichi opens reaction window when someone can pon the declaration tile`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = createRiichiPlayer()
+        // 手牌中有兩張北風，湊滿碰牌的條件（drawnTile 為北風）
+        val otherPlayer = FakeMahjongPlayerFactory.create(
+            id = otherPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(
+                tiles = listOf(
+                    FakeIdentifiedTileFactory.create(Tile.Honor.North),
+                    FakeIdentifiedTileFactory.create(Tile.Honor.North),
+                ),
+            ),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            dynamicRuleState = RiichiDynamicState(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        val pendingReaction = newState.pendingReaction
+        assertNotNull(pendingReaction, "A reaction window should open since otherPlayer can pon.")
+        assertEquals(setOf(otherPlayerId), pendingReaction.eligiblePlayerIds)
+        assertEquals(0, newState.currentPlayerIndex, "Turn should not advance while a reaction window is open.")
+    }
+
+    /**
+     * 驗證第四位玩家宣告立直、其餘三家皆已立直時，觸發四家立直：不開反應視窗、全員記錄
+     * `ExhaustiveDraw(SuuchaRiichi)`。
+     */
+    @Test
+    fun `test declare riichi triggers SuuchaRiichi when all four players end up riichi`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = createRiichiPlayer()
+        val alreadyRiichiState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East))
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, playerRuleState = alreadyRiichiState)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, playerRuleState = alreadyRiichiState)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, playerRuleState = alreadyRiichiState)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, south, west, north),
+            config = RiichiRuleConfig(),
+            dynamicRuleState = RiichiDynamicState(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNull(newState.pendingReaction)
+        val expectedAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SuuchaRiichi)
+        newState.players.forEach { player -> assertEquals(expectedAction, player.actionHistory.last()) }
+    }
+
+    /**
+     * 驗證即使其餘三家皆已立直，只要有玩家可以榮和這張立直宣告牌，就不會觸發四家立直——改為正常
+     * 開啟反應視窗，交由 [RespondToDiscardUseCase] 處理。
+     */
+    @Test
+    fun `test declare riichi does not trigger SuuchaRiichi when someone can ron the declaration tile`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = createRiichiPlayer()
+        val alreadyRiichiState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East))
+        // 單騎聽北風，可以榮和 drawnTile
+        val ronReadyHand = Hand(
+            tiles = listOf(
+                Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red,
+                Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+                Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
+                Tile.Numeric(Tile.Suit.Character, 1), Tile.Numeric(Tile.Suit.Character, 2), Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Honor.North,
+            ).map { FakeIdentifiedTileFactory.create(it) },
+        )
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, hand = ronReadyHand, playerRuleState = alreadyRiichiState)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, playerRuleState = alreadyRiichiState)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, playerRuleState = alreadyRiichiState)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, south, west, north),
+            config = RiichiRuleConfig(),
+            dynamicRuleState = RiichiDynamicState(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNotNull(newState.pendingReaction, "A reaction window should open since south can ron.")
+        newState.players.forEach { player -> assertTrue(player.actionHistory.none { it is GameAction.ExhaustiveDraw }) }
+    }
+
+    /**
+     * 驗證還有玩家未立直時，不會觸發四家立直。
+     */
+    @Test
+    fun `test declare riichi does not trigger SuuchaRiichi when not everyone is riichi yet`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = createRiichiPlayer()
+        val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState())
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            dynamicRuleState = RiichiDynamicState(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertEquals(1, newState.currentPlayerIndex, "Turn should advance normally to the next player.")
+        newState.players.forEach { player -> assertTrue(player.actionHistory.none { it is GameAction.ExhaustiveDraw }) }
     }
 }

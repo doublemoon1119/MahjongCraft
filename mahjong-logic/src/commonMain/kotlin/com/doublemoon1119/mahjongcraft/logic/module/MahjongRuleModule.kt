@@ -249,4 +249,26 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 該規則對應的流局原因，若此規則不支援則為 null。
      */
     fun resolveMultiRonAbortiveDraw(): ExhaustiveDrawReason?
+
+    /**
+     * 這次捨牌後，是否構成四風連打（第一巡、全員的第一張捨牌皆為同一種風牌，且都沒人反應）。
+     *
+     * 只應在確定這次捨牌沒有任何人可以吃/碰/槓/榮和之後才呼叫。
+     *
+     * @param tableStateAfterDiscard 捨牌且確定無人反應後的桌況。
+     * @return 若構成四風連打則為對應的流局原因，否則為 null；不支援此流局類型的規則固定回傳 null。
+     */
+    fun resolveSuufonRenda(tableStateAfterDiscard: TableState): ExhaustiveDrawReason?
+
+    /**
+     * 這次立直宣告後，是否構成四家立直（全員皆已宣告立直，且這張立直宣告牌沒人反應）。
+     *
+     * 只應在「剛套用完一次立直宣告」且確定這張宣告牌沒有任何人可以吃/碰/槓/榮和之後才呼叫——
+     * 只有立直宣告的呼叫端會呼叫這個方法，一般捨牌不會（否則同一副立直保持到底的牌局，往後每次
+     * 捨牌都會被誤判成四家立直）。
+     *
+     * @param tableStateAfterDeclaration 立直宣告且確定無人反應後的桌況。
+     * @return 若構成四家立直則為對應的流局原因，否則為 null；不支援此流局類型的規則固定回傳 null。
+     */
+    fun resolveSuuchaRiichi(tableStateAfterDeclaration: TableState): ExhaustiveDrawReason?
 }

@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
 import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
+import com.doublemoon1119.mahjongcraft.logic.util.isWind
 import kotlin.uuid.Uuid
 
 /**
@@ -365,4 +366,25 @@ class RiichiRuleModule(
      * 多家和判定為流局時，日本麻將對應的具體流局原因固定為三家和了。
      */
     override fun resolveMultiRonAbortiveDraw(): ExhaustiveDrawReason = RiichiExhaustiveDrawReason.SanchaHou
+
+    /**
+     * 四風連打：全場尚未有人鳴牌，且全員恰好都打過一張牌（`entries.singleOrNull()` 只有在這個
+     * 情境下才會全員非 null），這些第一張捨牌若皆為同一種風牌則成立。
+     */
+    override fun resolveSuufonRenda(tableStateAfterDiscard: TableState): ExhaustiveDrawReason? {
+        if (tableStateAfterDiscard.players.any { it.hand.exposedMelds.isNotEmpty() }) return null
+        val firstDiscards = tableStateAfterDiscard.players.map { it.discardPile.entries.singleOrNull()?.tile?.tile }
+        if (firstDiscards.any { it == null || !it.isWind }) return null
+        return if (firstDiscards.toSet().size == 1) RiichiExhaustiveDrawReason.SuufonRenda else null
+    }
+
+    /**
+     * 四家立直：全員皆已宣告立直則成立。呼叫端只在剛套用完一次立直宣告、且確定沒人反應時才會
+     * 呼叫這個方法，所以「全員皆立直」這個條件只可能在恰好完成的那次宣告變成 true
+     * （玩家只能宣告立直一次，見 [declareRiichi] 的 `!isRiichi` 合法性檢查）。
+     */
+    override fun resolveSuuchaRiichi(tableStateAfterDeclaration: TableState): ExhaustiveDrawReason? {
+        val allRiichi = tableStateAfterDeclaration.players.all { (it.playerRuleState as? RiichiPlayerState)?.isRiichi == true }
+        return if (allRiichi) RiichiExhaustiveDrawReason.SuuchaRiichi else null
+    }
 }

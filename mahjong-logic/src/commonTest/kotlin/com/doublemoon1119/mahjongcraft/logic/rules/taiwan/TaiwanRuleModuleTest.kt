@@ -194,4 +194,24 @@ class TaiwanRuleModuleTest {
     fun `test resolveMultiRonAbortiveDraw returns null`() {
         assertNull(module.resolveMultiRonAbortiveDraw())
     }
+
+    /**
+     * 驗證台灣麻將目前沒有四風連打這個機制，回傳 null。
+     */
+    @Test
+    fun `test resolveSuufonRenda returns null`() {
+        val table = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create()))
+
+        assertNull(module.resolveSuufonRenda(table))
+    }
+
+    /**
+     * 驗證台灣麻將目前沒有立直、也就沒有四家立直這個機制，回傳 null。
+     */
+    @Test
+    fun `test resolveSuuchaRiichi returns null`() {
+        val table = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create()))
+
+        assertNull(module.resolveSuuchaRiichi(table))
+    }
 }

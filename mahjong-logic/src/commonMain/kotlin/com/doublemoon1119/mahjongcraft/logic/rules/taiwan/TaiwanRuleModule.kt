@@ -162,4 +162,18 @@ class TaiwanRuleModule(
      * @return 固定回傳 null。
      */
     override fun resolveMultiRonAbortiveDraw(): ExhaustiveDrawReason? = null
+
+    /**
+     * 台灣麻將目前沒有四風連打這個機制的具體流局原因型別。
+     *
+     * @return 固定回傳 null。
+     */
+    override fun resolveSuufonRenda(tableStateAfterDiscard: TableState): ExhaustiveDrawReason? = null
+
+    /**
+     * 台灣麻將目前沒有立直、也就沒有四家立直這個機制。
+     *
+     * @return 固定回傳 null。
+     */
+    override fun resolveSuuchaRiichi(tableStateAfterDeclaration: TableState): ExhaustiveDrawReason? = null
 }
