@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -932,5 +933,58 @@ class RiichiRuleModuleTest {
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
         assertNull(module.resolveSuuchaRiichi(table))
+    }
+
+    private fun kanMeld(type: MeldType): Meld {
+        val tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+        return Meld(type, listOf(tile, tile, tile, tile), sourceDirection = RelativeDirection.Self)
+    }
+
+    private fun playerWithKans(count: Int) = FakeMahjongPlayerFactory.create(
+        hand = Hand(melds = List(count) { kanMeld(MeldType.CLOSED_KAN) }),
+    )
+
+    /**
+     * 驗證全場合計槓了 4 次、且分屬不同玩家時，成立四槓散了。
+     */
+    @Test
+    fun `test resolveSuukanNagare returns SuukanNagare when 4 kans belong to different players`() {
+        val players = List(4) { playerWithKans(count = 1) }
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertEquals(RiichiExhaustiveDrawReason.SuukanNagare, module.resolveSuukanNagare(table))
+    }
+
+    /**
+     * 驗證全場合計槓了 4 次以上（5 次）、且分屬不同玩家時，仍成立四槓散了。
+     */
+    @Test
+    fun `test resolveSuukanNagare returns SuukanNagare when more than 4 kans belong to different players`() {
+        val players = listOf(playerWithKans(count = 2)) + List(3) { playerWithKans(count = 1) }
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertEquals(RiichiExhaustiveDrawReason.SuukanNagare, module.resolveSuukanNagare(table))
+    }
+
+    /**
+     * 驗證 4 個槓子都由同一位玩家達成時，不成立四槓散了（該玩家可能正在做四槓子役滿）。
+     */
+    @Test
+    fun `test resolveSuukanNagare returns null when all 4 kans belong to a single player`() {
+        val players = listOf(playerWithKans(count = 4)) + List(3) { FakeMahjongPlayerFactory.create() }
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertNull(module.resolveSuukanNagare(table))
+    }
+
+    /**
+     * 驗證全場合計未滿 4 個槓子時，不成立四槓散了。
+     */
+    @Test
+    fun `test resolveSuukanNagare returns null when fewer than 4 kans total`() {
+        val players = List(3) { playerWithKans(count = 1) } + FakeMahjongPlayerFactory.create()
+        val table = FakeTableStateFactory.create(players = players, config = module.config)
+
+        assertNull(module.resolveSuukanNagare(table))
     }
 }

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
@@ -388,5 +389,23 @@ class RiichiRuleModule(
     override fun resolveSuuchaRiichi(tableStateAfterDeclaration: TableState): ExhaustiveDrawReason? {
         val allRiichi = tableStateAfterDeclaration.players.all { (it.playerRuleState as? RiichiPlayerState)?.isRiichi == true }
         return if (allRiichi) RiichiExhaustiveDrawReason.SuuchaRiichi else null
+    }
+
+    /**
+     * 四槓散了：逐玩家算出各自的槓子數（明槓/暗槓/加槓皆算）加總得到全場總數，未滿 4 個不成立；
+     * 達到 4 個（含）以上時，若其中有一位玩家的槓子數就等於全場總數，代表全部槓子都是他一人
+     * 達成（該玩家可能正在做四槓子役滿），此時不成立。
+     */
+    override fun resolveSuukanNagare(tableState: TableState): ExhaustiveDrawReason? {
+        val kanCountsByPlayer = tableState.players.map { player ->
+            player.hand.exposedMelds.count {
+                it.type == MeldType.OPEN_KAN || it.type == MeldType.ADDED_KAN || it.type == MeldType.CLOSED_KAN
+            }
+        }
+        val totalKans = kanCountsByPlayer.sum()
+        if (totalKans < 4) return null
+
+        val isSinglePlayerAllKans = kanCountsByPlayer.any { it == totalKans }
+        return if (isSinglePlayerAllKans) null else RiichiExhaustiveDrawReason.SuukanNagare
     }
 }

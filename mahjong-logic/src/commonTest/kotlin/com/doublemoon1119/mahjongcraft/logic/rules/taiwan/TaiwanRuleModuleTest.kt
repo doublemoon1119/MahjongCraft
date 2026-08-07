@@ -226,4 +226,14 @@ class TaiwanRuleModuleTest {
 
         assertNull(module.resolveSuuchaRiichi(table))
     }
+
+    /**
+     * 驗證台灣麻將目前沒有四槓散了這個機制，回傳 null。
+     */
+    @Test
+    fun `test resolveSuukanNagare returns null`() {
+        val table = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create()))
+
+        assertNull(module.resolveSuukanNagare(table))
+    }
 }

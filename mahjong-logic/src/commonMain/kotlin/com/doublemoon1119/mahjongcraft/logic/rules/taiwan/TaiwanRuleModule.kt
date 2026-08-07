@@ -177,4 +177,11 @@ class TaiwanRuleModule(
      * @return 固定回傳 null。
      */
     override fun resolveSuuchaRiichi(tableStateAfterDeclaration: TableState): ExhaustiveDrawReason? = null
+
+    /**
+     * 台灣麻將目前沒有四槓散了這個機制的具體流局原因型別。
+     *
+     * @return 固定回傳 null。
+     */
+    override fun resolveSuukanNagare(tableState: TableState): ExhaustiveDrawReason? = null
 }

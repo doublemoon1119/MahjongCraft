@@ -282,4 +282,15 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 若構成四家立直則為對應的流局原因，否則為 null；不支援此流局類型的規則固定回傳 null。
      */
     fun resolveSuuchaRiichi(tableStateAfterDeclaration: TableState): ExhaustiveDrawReason?
+
+    /**
+     * 全場玩家合計是否已槓了 4 次（明槓、暗槓、加槓皆算），且並非全部由同一人達成
+     * （若全部由同一人達成，該玩家可能正在做「四槓子」役滿，不觸發流局）。
+     *
+     * 只應在確定某次槓牌的嶺上摸牌已經處理完畢（例如玩家已經有機會嘗試嶺上開花自摸）之後才呼叫。
+     *
+     * @param tableState 目前的桌況。
+     * @return 若構成四槓散了則為對應的流局原因，否則為 null；不支援此流局類型的規則固定回傳 null。
+     */
+    fun resolveSuukanNagare(tableState: TableState): ExhaustiveDrawReason?
 }
