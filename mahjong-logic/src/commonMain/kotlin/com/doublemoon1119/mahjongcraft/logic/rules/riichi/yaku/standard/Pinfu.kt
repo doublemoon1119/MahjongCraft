@@ -36,8 +36,10 @@ fun calculatePinfu(
         return null
     }
 
-    // 檢查所有面子是否都是順子
-    for (mentsu in standard.mentsus) {
+    // 檢查所有面子是否都是順子（含副露：FuCalculator 的副露平和形檢查會刻意把 isMenzen 蓋成
+    // true 來借用這個判斷式檢查「若門前清是否為平和形」，此時上面的 isMenzen 提早擋下並不會生效，
+    // 副露裡若混有刻子/槓，必須靠這裡才能擋下）
+    for (mentsu in standard.mentsus + standard.fuuro.map { it.mentsu }) {
         if (mentsu !is Mentsu.Shuntsu) {
             return null
         }
