@@ -778,4 +778,12 @@ class RiichiRuleModuleTest {
         )
         assertEquals(expectedDeltas, result?.scoreDeltas)
     }
+
+    /**
+     * 驗證多家和判定為流局時，日本麻將對應的具體流局原因固定為三家和了。
+     */
+    @Test
+    fun `test resolveMultiRonAbortiveDraw returns SanchaHou`() {
+        assertEquals(RiichiExhaustiveDrawReason.SanchaHou, module.resolveMultiRonAbortiveDraw())
+    }
 }

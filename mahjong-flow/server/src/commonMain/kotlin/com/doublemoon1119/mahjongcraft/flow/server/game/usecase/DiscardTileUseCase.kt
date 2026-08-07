@@ -5,10 +5,12 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -29,9 +31,10 @@ import kotlin.uuid.Uuid
  * 則查 [com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy.tripleRonResolution]——
  * [RonResolution.ALL_WINNERS] 全部開放；[RonResolution.NEAREST_WINNER] 只開放依
  * [com.doublemoon1119.mahjongcraft.logic.table.TableState.nearestPlayerInTurnOrder] 判定、
- * 順位最接近放銃者下家的那一位（頭跳）；[RonResolution.ABORTIVE_DRAW] 目前僅暫時對所有人都不開放
- * 榮和資格（吃/碰/槓資格不受影響）——真正讓本局流局的行為需要「流局判定」use case 才能正確處理，
- * 留給獨立的未來單位，目前的內建規則模組（日麻/台麻）預設值都不會實際觸發到這個分支。
+ * 順位最接近放銃者下家的那一位（頭跳）；[RonResolution.ABORTIVE_DRAW] 這張捨牌會讓本局直接結束
+ * （途中流局），吃/碰/槓資格一併作廢、不開反應視窗，把 [GameAction.ExhaustiveDraw] 記錄進全員
+ * 的 `actionHistory`，讓 [AdvanceRoundUseCase] 既有的連莊判斷式自動得出正確結果，不結算任何點數
+ * （供託延續到下一局）。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器。
@@ -114,33 +117,47 @@ class DiscardTileUseCase(
                             null, RonResolution.ALL_WINNERS -> ronEligiblePlayerIds
                             RonResolution.NEAREST_WINNER ->
                                 setOf(stateAfterDiscard.nearestPlayerInTurnOrder(playerId, ronEligiblePlayerIds))
-                            // 真正讓本局流局需要流局判定 use case，目前先沿用「不開放榮和資格」的
-                            // 過渡行為；內建規則模組的預設值都不會實際觸發到這個分支。
                             RonResolution.ABORTIVE_DRAW -> emptySet()
                         }
 
-                        val eligiblePlayerIds = meldEligiblePlayerIds + ronWinningPlayerIds
-
-                        val newState = if (eligiblePlayerIds.isEmpty()) {
-                            stateAfterDiscard.copy(currentPlayerIndex = (state.currentPlayerIndex + 1) % state.playerCount)
+                        val abortiveDrawReason = if (ronResolution == RonResolution.ABORTIVE_DRAW) {
+                            module.resolveMultiRonAbortiveDraw()
                         } else {
-                            stateAfterDiscard.copy(
-                                pendingReaction = PendingReaction(
-                                    discarderId = playerId,
-                                    tileId = discardedTile.id,
-                                    eligiblePlayerIds = eligiblePlayerIds,
-                                ),
-                            )
+                            null
                         }
 
-                        newState to Outcome.Success(newState)
+                        val newState = if (abortiveDrawReason != null) {
+                            // 三家和了流局（途中流局）：這張捨牌已經讓本局結束，吃/碰/槓資格一併作廢
+                            // （不開反應視窗）、不結算任何點數，供託延續到下一局。把 ExhaustiveDraw
+                            // 記錄進全員的 actionHistory，讓 AdvanceRoundUseCase 既有的判斷式自動
+                            // 得出「連莊」的結果，不需要額外分支。
+                            stateAfterDiscard.copy(
+                                players = stateAfterDiscard.players.map { it.recordAction(GameAction.ExhaustiveDraw(abortiveDrawReason)) },
+                            )
+                        } else {
+                            val eligiblePlayerIds = meldEligiblePlayerIds + ronWinningPlayerIds
+                            if (eligiblePlayerIds.isEmpty()) {
+                                stateAfterDiscard.copy(currentPlayerIndex = (state.currentPlayerIndex + 1) % state.playerCount)
+                            } else {
+                                stateAfterDiscard.copy(
+                                    pendingReaction = PendingReaction(
+                                        discarderId = playerId,
+                                        tileId = discardedTile.id,
+                                        eligiblePlayerIds = eligiblePlayerIds,
+                                    ),
+                                )
+                            }
+                        }
+
+                        newState to Outcome.Success(DiscardOutcome(newState, abortiveDrawReason))
                     }
                 }
             }
         }
 
         if (outcome is Outcome.Error) return outcome
-        val newState = (outcome as Outcome.Success).value
+        val result = (outcome as Outcome.Success).value
+        val newState = result.tableState
 
         // 2. 同步快照給所有正在觀察的玩家
         val observers = gameSnapshotRepository.getAllObservers(gameId)
@@ -148,11 +165,21 @@ class DiscardTileUseCase(
             gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(observerId))
         }
 
-        // 3. 通知對局內的所有玩家
+        // 3. 通知對局內的所有玩家；流局有觸發時，先廣播捨牌事件、再接著廣播流局事件
         newState.players.forEach { player ->
             eventPublisher.publish(gameId, player.id, playerId, GameAction.Discard(tileId))
+            result.abortiveDrawReason?.let { reason ->
+                eventPublisher.publish(gameId, player.id, playerId, GameAction.ExhaustiveDraw(reason))
+            }
         }
 
         return Outcome.Success(Unit)
     }
+
+    /**
+     * `update` 區塊內部使用的中繼結果，讓 [abortiveDrawReason] 能跟著 [tableState] 一起帶出
+     * `gameRepository.update` 的作用域，供廣播事件時使用（[abortiveDrawReason] 不是 [TableState]
+     * 的欄位，無法在作用域外從 [tableState] 反推）。
+     */
+    private data class DiscardOutcome(val tableState: TableState, val abortiveDrawReason: ExhaustiveDrawReason?)
 }

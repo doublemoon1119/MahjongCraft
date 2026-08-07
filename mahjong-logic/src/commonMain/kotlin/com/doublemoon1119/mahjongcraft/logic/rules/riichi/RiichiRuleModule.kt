@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
@@ -359,4 +360,9 @@ class RiichiRuleModule(
 
         return tenpaiIds.associateWith { gainPerTenpai } + notenIds.associateWith { -lossPerNoten }
     }
+
+    /**
+     * 多家和判定為流局時，日本麻將對應的具體流局原因固定為三家和了。
+     */
+    override fun resolveMultiRonAbortiveDraw(): ExhaustiveDrawReason = RiichiExhaustiveDrawReason.SanchaHou
 }

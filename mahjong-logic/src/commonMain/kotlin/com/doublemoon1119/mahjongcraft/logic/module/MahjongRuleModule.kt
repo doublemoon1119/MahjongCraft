@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.module
 
+import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -237,4 +238,15 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 本次一般流局的結算結果，若此規則不支援則為 null。
      */
     fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult?
+
+    /**
+     * 多家和依 [MahjongRuleConfig.multiRonPolicy] 判定為流局
+     * （[com.doublemoon1119.mahjongcraft.logic.config.RonResolution.ABORTIVE_DRAW]）時，
+     * 該規則對應的具體流局原因。
+     *
+     * 不支援此流局類型的規則應回傳 null。
+     *
+     * @return 該規則對應的流局原因，若此規則不支援則為 null。
+     */
+    fun resolveMultiRonAbortiveDraw(): ExhaustiveDrawReason?
 }

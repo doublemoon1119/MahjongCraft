@@ -186,4 +186,12 @@ class TaiwanRuleModuleTest {
 
         assertNull(module.declareExhaustiveDraw(table))
     }
+
+    /**
+     * 驗證台灣麻將目前沒有多家和判定為流局這個機制的具體流局原因型別，回傳 null。
+     */
+    @Test
+    fun `test resolveMultiRonAbortiveDraw returns null`() {
+        assertNull(module.resolveMultiRonAbortiveDraw())
+    }
 }

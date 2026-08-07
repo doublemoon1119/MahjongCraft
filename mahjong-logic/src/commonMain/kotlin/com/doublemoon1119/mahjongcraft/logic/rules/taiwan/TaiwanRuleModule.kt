@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
+import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
@@ -154,4 +155,11 @@ class TaiwanRuleModule(
      * @return 固定回傳 null。
      */
     override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult? = null
+
+    /**
+     * 台灣麻將目前沒有多家和判定為流局這個機制的具體流局原因型別。
+     *
+     * @return 固定回傳 null。
+     */
+    override fun resolveMultiRonAbortiveDraw(): ExhaustiveDrawReason? = null
 }

@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -220,19 +221,19 @@ class DiscardTileUseCaseTest {
     }
 
     /**
-     * 驗證雙響時規則設定為流局（[RonResolution.ABORTIVE_DRAW]）時，本輪對所有人都不開放榮和資格
-     * （真正讓本局流局的行為留給未來的流局判定 use case，這裡只驗證目前的過渡行為），
-     * 但不影響其他玩家原有的碰牌資格判斷。
+     * 驗證雙響時規則設定為流局（[RonResolution.ABORTIVE_DRAW]）時，這張捨牌會讓本局直接結束
+     * （途中流局）：不開反應視窗（連原本可以碰的玩家也一併作廢）、全員 `actionHistory` 皆記錄
+     * `ExhaustiveDraw(SanchaHou)`、`currentPlayerIndex` 不變、不結算任何點數。
      */
     @Test
-    fun `test discard tile excludes ron eligibility entirely when double ron resolves to abortive draw`() = runTest {
+    fun `test discard tile triggers abortive draw when double ron resolves to ABORTIVE_DRAW`() = runTest {
         val fixtures = Fixtures()
         val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
         val currentPlayer = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
             initialSeat = Wind.EAST,
             hand = Hand(lastDrawn = winningTile),
-        )
+        ).copy(score = 25000)
         val ronEligiblePlayerId1 = otherPlayerId
         val ronEligiblePlayerId2 = Uuid.random()
         val ponEligiblePlayerId = Uuid.random()
@@ -241,13 +242,13 @@ class DiscardTileUseCaseTest {
             id = ronEligiblePlayerId1,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
-        )
+        ).copy(score = 25000)
         val ronPlayer2 = FakeMahjongPlayerFactory.create(
             id = ronEligiblePlayerId2,
             initialSeat = Wind.WEST,
             hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
-        )
-        // 手牌中有兩張紅中，湊滿碰牌的條件，驗證流局判斷不影響碰牌資格
+        ).copy(score = 25000)
+        // 手牌中有兩張紅中，湊滿碰牌的條件，驗證流局判斷會讓這個碰牌資格一併作廢
         val ponPlayer = FakeMahjongPlayerFactory.create(
             id = ponEligiblePlayerId,
             initialSeat = Wind.NORTH,
@@ -257,7 +258,7 @@ class DiscardTileUseCaseTest {
                     FakeIdentifiedTileFactory.create(Tile.Honor.Red),
                 ),
             ),
-        )
+        ).copy(score = 25000)
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer, ronPlayer1, ronPlayer2, ponPlayer),
@@ -278,12 +279,108 @@ class DiscardTileUseCaseTest {
 
         val newState = fixtures.gameRepo.getTableState(gameId)
         assertNotNull(newState)
-        val pendingReaction = newState.pendingReaction
-        assertNotNull(pendingReaction, "A reaction window should still open since ponPlayer can Pon.")
+        assertNull(newState.pendingReaction, "The hand already ended via the abortive draw; no reaction window should open, not even for ponPlayer.")
+        assertEquals(0, newState.currentPlayerIndex, "Turn advancement is left to AdvanceRoundUseCase.")
+        val expectedAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)
+        newState.players.forEach { player ->
+            assertEquals(expectedAction, player.actionHistory.last(), "Every player should have ExhaustiveDraw recorded.")
+            assertEquals(25000, player.score, "An abortive draw should not exchange any points.")
+        }
+    }
+
+    /**
+     * 驗證三響（三家和了本義）時規則設定為流局時，同樣正確觸發途中流局。
+     */
+    @Test
+    fun `test discard tile triggers abortive draw when triple ron resolves to ABORTIVE_DRAW`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val ronPlayer1 = FakeMahjongPlayerFactory.create(
+            id = otherPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val ronPlayer2 = FakeMahjongPlayerFactory.create(
+            id = Uuid.random(),
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val ronPlayer3 = FakeMahjongPlayerFactory.create(
+            id = Uuid.random(),
+            initialSeat = Wind.NORTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, ronPlayer1, ronPlayer2, ronPlayer3),
+            config = RiichiRuleConfig(
+                multiRonPolicy = MultiRonPolicy(
+                    doubleRonResolution = RonResolution.ALL_WINNERS,
+                    tripleRonResolution = RonResolution.ABORTIVE_DRAW,
+                ),
+            ),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNull(newState.pendingReaction)
+        val expectedAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)
+        newState.players.forEach { player -> assertEquals(expectedAction, player.actionHistory.last()) }
+    }
+
+    /**
+     * 驗證流局觸發時，所有玩家皆先收到捨牌事件、再收到流局事件（依序廣播）。
+     */
+    @Test
+    fun `test discard tile broadcasts Discard then ExhaustiveDraw when abortive draw is triggered`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val ronPlayer1 = FakeMahjongPlayerFactory.create(
+            id = otherPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val ronPlayer2 = FakeMahjongPlayerFactory.create(
+            id = Uuid.random(),
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, ronPlayer1, ronPlayer2),
+            config = RiichiRuleConfig(
+                multiRonPolicy = MultiRonPolicy(
+                    doubleRonResolution = RonResolution.ABORTIVE_DRAW,
+                    tripleRonResolution = RonResolution.ABORTIVE_DRAW,
+                ),
+            ),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        val notifiedActions = fixtures.eventPublisher.getNotifiedActions(gameId, currentPlayerId, currentPlayerId)
         assertEquals(
-            setOf(ponEligiblePlayerId),
-            pendingReaction.eligiblePlayerIds,
-            "Both ron-eligible players should be excluded under ABORTIVE_DRAW, leaving only the pon-eligible player.",
+            listOf(GameAction.Discard(winningTile.id), GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)),
+            notifiedActions,
         )
     }
 
