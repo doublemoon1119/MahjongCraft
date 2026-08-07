@@ -236,6 +236,49 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
+     * 驗證明槓得標且成功補到嶺上牌時，事件流完整廣播 [GameAction.Kan] 再廣播 [GameAction.Draw]——
+     * 過去只廣播了 Kan，狀態雖然正確同步但事件流不完整。
+     */
+    @Test
+    fun `test open kan success broadcasts kan then draw event`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val handTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val handTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val handTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val responder = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = listOf(handTile1, handTile2, handTile3)),
+        )
+        val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, responder),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(listOf(rinshanTile)),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val kanAction = GameAction.Kan(GameAction.KanType.OPEN_KAN, discardedTile.id, listOf(handTile1.id, handTile2.id, handTile3.id))
+        val result = fixtures.useCase(gameId, responderId, kanAction)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertEquals(
+            listOf(kanAction, GameAction.Draw),
+            fixtures.eventPublisher.getNotifiedActions(gameId, responderId, responderId),
+            "Both the Kan declaration and the rinshan draw should be broadcast, in that order.",
+        )
+    }
+
+    /**
      * 驗證明槓得標時牌山恰好摸盡（極端邊界情況）：副露仍正確套用，但 `lastDrawn` 維持空
      * （已知簡化，見規劃紀錄——`resolvePendingReaction` 回傳單純 `TableState`，沒有 `Outcome`
      * 通道可以回報 `WallExhausted`）。
@@ -276,6 +319,11 @@ class RespondToDiscardUseCaseTest {
         assertEquals(MeldType.OPEN_KAN, winner.hand.melds.single().type, "The meld itself should still be applied.")
         assertNull(winner.hand.lastDrawn, "No replacement tile is available; lastDrawn should remain empty.")
         assertEquals(0, newState.tileWall.remainingCount)
+        assertEquals(
+            listOf(kanAction),
+            fixtures.eventPublisher.getNotifiedActions(gameId, responderId, responderId),
+            "No rinshan tile was drawn, so no Draw event should be broadcast.",
+        )
     }
 
     /**

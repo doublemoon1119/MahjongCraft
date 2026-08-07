@@ -96,19 +96,20 @@ class RespondToDiscardUseCase(
                     val playersAfterResponse = state.players.map { if (it.id == playerId) updatedResponder else it }
                     val newPendingReaction = pendingReaction.copy(responses = pendingReaction.responses + (playerId to action))
 
-                    val newState = if (!newPendingReaction.isComplete) {
-                        state.copy(players = playersAfterResponse, pendingReaction = newPendingReaction)
+                    val result = if (!newPendingReaction.isComplete) {
+                        RespondResult(state.copy(players = playersAfterResponse, pendingReaction = newPendingReaction))
                     } else {
                         resolvePendingReaction(state, playersAfterResponse, newPendingReaction, discardedTile, module)
                     }
 
-                    newState to Outcome.Success(newState)
+                    result.tableState to Outcome.Success(result)
                 }
             }
         }
 
         if (outcome is Outcome.Error) return outcome
-        val newState = (outcome as Outcome.Success).value
+        val result = (outcome as Outcome.Success).value
+        val newState = result.tableState
 
         val observers = gameSnapshotRepository.getAllObservers(gameId)
         observers.forEach { observerId ->
@@ -117,10 +118,20 @@ class RespondToDiscardUseCase(
 
         newState.players.forEach { player ->
             eventPublisher.publish(gameId, player.id, playerId, action)
+            if (result.rinshanDrawHappened) {
+                eventPublisher.publish(gameId, player.id, playerId, GameAction.Draw)
+            }
         }
 
         return Outcome.Success(Unit)
     }
+
+    /**
+     * `update` 區塊內部使用的中繼結果，讓 [rinshanDrawHappened] 能跟著 [tableState] 一起帶出
+     * `gameRepository.update` 的作用域，供廣播事件時使用。[rinshanDrawHappened] 為 true 代表明槓
+     * 得標後成功補到嶺上牌，需要額外廣播 [GameAction.Draw]。
+     */
+    private data class RespondResult(val tableState: TableState, val rinshanDrawHappened: Boolean = false)
 
     /**
      * 所有有資格的玩家皆已回應，進行結算：找出優先權最高的非過牌回應套用鳴牌，或在全員過牌時單純推進回合。
@@ -131,7 +142,7 @@ class RespondToDiscardUseCase(
         pendingReaction: PendingReaction,
         discardedTile: IdentifiedTile,
         module: MahjongRuleModule<*>,
-    ): TableState {
+    ): RespondResult {
         val ronWinnerIds = pendingReaction.responses.filterValues { it is GameAction.Ron }.keys
         if (ronWinnerIds.isNotEmpty()) {
             val resolved = RonSettlementResolver.resolve(
@@ -142,8 +153,10 @@ class RespondToDiscardUseCase(
                 module = module,
                 winnerIds = ronWinnerIds,
             )
-            return resolved?.copy(pendingReaction = null)
-                ?: state.copy(players = players, pendingReaction = pendingReaction)
+            return RespondResult(
+                resolved?.copy(pendingReaction = null)
+                    ?: state.copy(players = players, pendingReaction = pendingReaction),
+            )
         }
 
         val winningEntry = pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Pon || it.value is GameAction.Kan }
@@ -152,10 +165,12 @@ class RespondToDiscardUseCase(
         if (winningEntry == null) {
             // 所有人皆過牌：行為與捨牌時「無人可反應」相同，直接推進到下一位玩家
             val discarderIndex = players.indexOfFirst { it.id == pendingReaction.discarderId }
-            return state.copy(
-                players = players,
-                currentPlayerIndex = (discarderIndex + 1) % state.playerCount,
-                pendingReaction = null,
+            return RespondResult(
+                state.copy(
+                    players = players,
+                    currentPlayerIndex = (discarderIndex + 1) % state.playerCount,
+                    pendingReaction = null,
+                ),
             )
         }
 
@@ -199,10 +214,12 @@ class RespondToDiscardUseCase(
         val winnerIndex = playersAfterMeldClaimed.indexOfFirst { it.id == winnerId }
 
         if (meldType != MeldType.OPEN_KAN) {
-            return state.copy(
-                players = playersAfterMeldClaimed,
-                currentPlayerIndex = winnerIndex,
-                pendingReaction = null,
+            return RespondResult(
+                state.copy(
+                    players = playersAfterMeldClaimed,
+                    currentPlayerIndex = winnerIndex,
+                    pendingReaction = null,
+                ),
             )
         }
 
@@ -223,11 +240,14 @@ class RespondToDiscardUseCase(
             }
         }
 
-        return state.copy(
-            players = playersWithRinshanDraw,
-            currentPlayerIndex = winnerIndex,
-            pendingReaction = null,
-            tileWall = if (rinshanTile == null) state.tileWall else newWall,
+        return RespondResult(
+            tableState = state.copy(
+                players = playersWithRinshanDraw,
+                currentPlayerIndex = winnerIndex,
+                pendingReaction = null,
+                tileWall = if (rinshanTile == null) state.tileWall else newWall,
+            ),
+            rinshanDrawHappened = rinshanTile != null,
         )
     }
 }
