@@ -656,4 +656,42 @@ class GameFlowCoordinatorTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(null, newState.pendingReaction, "The AI should have automatically resolved the reaction window.")
     }
+
+    /**
+     * 驗證整場對局已經結束（下一次過莊判定就會讓 isMatchOver 成立）、且當前玩家恰好是 AI 且尚未
+     * 摸牌時，`driveAiPlayers` 能偵測到桌況沒有任何進展（摸牌因牌山已空觸發 WallExhausted →
+     * 流局銜接 → 推進嘗試因 isMatchOver 而維持桌況不變）並提前跳出迴圈，而不是跑滿 100 次的迭代
+     * 上限——改用「偵測沒有進展」取代單純固定次數上限，取代過去（僅靠 100 次上限）的做法。
+     */
+    @Test
+    fun `test driveAiPlayers stops early when table state makes no progress`() = runTest {
+        val fixtures = Fixtures()
+        val aiId = Uuid.random()
+        val ai = FakeMahjongPlayerFactory.create(
+            id = aiId,
+            initialSeat = Wind.EAST,
+            aiStrategyKey = RandomAiStrategy.KEY,
+            playerRuleState = RiichiPlayerState(),
+        )
+        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
+        // 一局制（OneGame，totalRounds = 1）且已經是 roundNumber = 1，下一次過莊判定就會讓
+        // isMatchOver 成立；牌山已空，AI 輪到自己回合但尚未摸牌，會不斷被判斷「該幫它摸牌」。
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(ai, other),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.OneGame),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+            roundNumber = 1,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.coordinator.driveAiPlayers(gameId)
+
+        assertTrue(
+            fixtures.gameRepo.getTableStateCallCount < 20,
+            "Should stop after detecting no progress on the first iteration, not loop anywhere near the " +
+                "100-iteration cap (actual call count: ${fixtures.gameRepo.getTableStateCallCount}).",
+        )
+    }
 }

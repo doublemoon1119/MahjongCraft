@@ -8,7 +8,15 @@ import kotlin.uuid.Uuid
  */
 class FakeGameRepository : GameRepository {
     private val games = mutableMapOf<Uuid, TableState>()
-    override suspend fun getTableState(gameId: Uuid): TableState? = games[gameId]
+
+    /** 累計 [getTableState] 被呼叫的次數，供驗證迴圈是否提前跳出（而非跑到迭代上限）等測試使用。 */
+    var getTableStateCallCount: Int = 0
+        private set
+
+    override suspend fun getTableState(gameId: Uuid): TableState? {
+        getTableStateCallCount++
+        return games[gameId]
+    }
     override suspend fun setTableState(state: TableState) {
         games[state.id] = state
     }

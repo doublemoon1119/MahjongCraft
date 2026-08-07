@@ -89,19 +89,24 @@ class GameFlowCoordinator(
      * `StartGameUseCase` 成功後，若第一位莊家恰好是 AI，需要有人「踢動」它，那次呼叫完全在
      * [GameFlowCoordinator] 之外發生，不會自動觸發這個迴圈（由誰、在什麼時機呼叫，留給更外層決定）。
      *
-     * 有上限保護（[MAX_ITERATIONS]）：整場對局已經結束（`AdvanceRoundUseCase` 回傳
-     * `isMatchOver = true`）時，`TableState` 會刻意維持呼叫前的樣子不變（見該用例的既有邊界），
-     * 若此時當前玩家恰好是 AI 且 `lastDrawn == null`，[AiTurnDriver] 會不斷判斷「該幫它摸牌」，
-     * 但摸牌會因為牌山已空再次回傳 `WallExhausted`、再次觸發流局銜接、再次嘗試推進、再次因
-     * `isMatchOver` 而維持不變——桌況不會有任何進展，若不設上限會無限迴圈（曾在測試中實際卡死，
-     * 靠 thread dump 抓出來）。正常情況下，一次呼叫最多需要驅動的 AI 動作數遠低於這個上限。
+     * 有兩層終止保護：(1) 每次迭代前後比較 `TableState` 是否有變化，沒有變化就代表桌況卡住了，
+     * 立即跳出——例如整場對局已經結束（`AdvanceRoundUseCase` 回傳 `isMatchOver = true`）時，
+     * `TableState` 會刻意維持呼叫前的樣子不變（見該用例的既有邊界），若此時當前玩家恰好是 AI 且
+     * `lastDrawn == null`，[AiTurnDriver] 會不斷判斷「該幫它摸牌」，但摸牌會因為牌山已空再次回傳
+     * `WallExhausted`、再次觸發流局銜接、再次嘗試推進、再次因 `isMatchOver` 而維持不變——這種
+     * 情況下第一次偵測到桌況沒有變化就會直接跳出，不需要真的迭代到上限。(2) 固定迭代次數上限
+     * [MAX_ITERATIONS] 作為最外層防呆（曾在沒有 (1) 這層偵測時，於測試中實際卡死無限迴圈，靠
+     * thread dump 抓出來）。正常情況下，一次呼叫最多需要驅動的 AI 動作數遠低於這個上限。
      *
      * @param gameId 對局 Uuid。
      */
     suspend fun driveAiPlayers(gameId: Uuid) {
         repeat(MAX_ITERATIONS) {
             val (aiPlayerId, aiCommand) = aiTurnDriver.resolveNextAction(gameId) ?: return
+            val stateBefore = gameRepository.getTableState(gameId)
             dispatchAndChain(gameId, aiPlayerId, aiCommand)
+            val stateAfter = gameRepository.getTableState(gameId)
+            if (stateBefore == stateAfter) return
         }
     }
 
