@@ -153,6 +153,55 @@ class DeclareExhaustiveDrawUseCaseTest {
     }
 
     /**
+     * 驗證兩位玩家同時成立流局滿貫時，供託由頭跳（座位順序最接近莊家）的一人全拿，另一位成立者
+     * 不收供託——與這個專案處理一般榮和多家和供託分配的既有做法一致（見
+     * [RonSettlementResolver.resolve]），取代過去「整除分配、餘數給座位最前位」的簡化算法。
+     * 兩位成立者各自的流局滿貫（自摸滿貫）結算彼此獨立、正確加總到同一份分數異動。
+     */
+    @Test
+    fun `test declare exhaustive draw gives stick pot entirely to the nearest achiever among multiple`() = runTest {
+        val fixtures = Fixtures()
+        // 莊家自己也是成立者，順位距離莊家為 0，理應是頭跳的那一位
+        val dealerAchiever = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = notTenpaiHand(),
+            discardPile = allYaochuuDiscardPile(),
+        ).copy(score = 25000)
+        val otherAchiever = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = notTenpaiHand(),
+            discardPile = allYaochuuDiscardPile(),
+        ).copy(score = 25000)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, hand = notTenpaiHand()).copy(score = 25000)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, hand = notTenpaiHand()).copy(score = 25000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealerAchiever, otherAchiever, west, north),
+            config = RiichiRuleConfig(),
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(
+            35000,
+            newState.players.first { it.id == dealerAchiever.id }.score,
+            "Dealer achiever should collect its own mangan (net +8000 after paying into the other achiever's pot) plus the full stick pot (2000).",
+        )
+        assertEquals(
+            29000,
+            newState.players.first { it.id == otherAchiever.id }.score,
+            "The farther achiever should collect its own mangan (net +4000) but none of the stick pot.",
+        )
+        assertEquals(19000, newState.players.first { it.id == west.id }.score, "Should pay into both achievers' pots.")
+        assertEquals(19000, newState.players.first { it.id == north.id }.score, "Should pay into both achievers' pots.")
+        assertEquals(0, (newState.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+    }
+
+    /**
      * 驗證無人聽牌、無人流局滿貫時，不進行任何點數交換，也不記錄任何 `ExhaustiveDraw`。
      */
     @Test

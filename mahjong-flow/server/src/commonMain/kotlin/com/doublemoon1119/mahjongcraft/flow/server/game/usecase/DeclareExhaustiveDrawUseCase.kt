@@ -115,23 +115,21 @@ class DeclareExhaustiveDrawUseCase(
     }
 
     /**
-     * 把供託金額依收下供託的玩家人數整除分配（餘數給座位順序中最前面的玩家）。
+     * 決定供託由誰收下：多位玩家同時該收下供託時（例如日麻的流局滿貫同時多位成立，機率極低），
+     * 頭跳——供託全數由座位順序最接近莊家的一人取得，其餘成立者不收供託。與這個專案在一般榮和
+     * 多家和時處理供託分配的既有做法一致（見 [RonSettlementResolver.resolve]：多位贏家時供託由
+     * [TableState.nearestPlayerInTurnOrder] 判定的那位收下，不是均分），榮和沒有「放銃者」可用
+     * 來判斷順位，改以莊家為基準。
      *
-     * 多位玩家同時該收下供託的機率極低（例如日麻的流局滿貫同時多位成立），且未查證到明確的
-     * 標準規則可循，先採用這個簡單決定，待實際遇到需求再調整。
-     *
-     * @return 各玩家應得的供託金額；無人該收下（或供託金額為 0）時回傳空 map。
+     * @return 收下者應得的供託金額（單一 entry 的 map）；無人該收下（或供託金額為 0）時回傳空 map。
      */
     private fun distributeStickPot(state: TableState, stickPotCollectorPlayerIds: Set<Uuid>, stickPotAmount: Int): Map<Uuid, Int> {
         if (stickPotCollectorPlayerIds.isEmpty() || stickPotAmount == 0) return emptyMap()
+        if (stickPotCollectorPlayerIds.size == 1) return mapOf(stickPotCollectorPlayerIds.first() to stickPotAmount)
 
-        val achieversInSeatOrder = state.players.map { it.id }.filter { it in stickPotCollectorPlayerIds }
-        val share = stickPotAmount / achieversInSeatOrder.size
-        val remainder = stickPotAmount % achieversInSeatOrder.size
-
-        return achieversInSeatOrder.mapIndexed { index, id ->
-            id to (share + if (index == 0) remainder else 0)
-        }.toMap()
+        val dealerId = state.players.first { it.currentWind == Wind.EAST }.id
+        val collectorId = state.nearestPlayerInTurnOrder(dealerId, stickPotCollectorPlayerIds)
+        return mapOf(collectorId to stickPotAmount)
     }
 
     /**
