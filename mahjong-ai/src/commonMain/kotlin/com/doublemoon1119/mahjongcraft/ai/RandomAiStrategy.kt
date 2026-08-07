@@ -18,6 +18,11 @@ import kotlin.random.Random
  * @property random 用於所有隨機選擇的亂數來源，測試時可注入固定種子的實例讓行為可預期。
  */
 class RandomAiStrategy(private val random: Random = Random.Default) : MahjongAiStrategy {
+    companion object {
+        /** 這個策略在 [MahjongAiStrategyRegistry] 裡登記的 key。 */
+        const val KEY = "random"
+    }
+
     override suspend fun decide(context: AiDecisionContext): GameCommand = when (context.phase) {
         AiDecisionPhase.RespondingToDiscard ->
             GameCommand.RespondToDiscard(context.legalActions.randomOrNull(random) ?: GameAction.Pass)

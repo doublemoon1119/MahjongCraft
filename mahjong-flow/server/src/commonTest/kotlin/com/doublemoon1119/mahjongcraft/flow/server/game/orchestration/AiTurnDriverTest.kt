@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
@@ -49,11 +50,15 @@ class AiTurnDriverTest {
         }
     }
 
+    /** 每局 AI 玩家測試共用的策略 key，對應到 [Fixtures] 裡註冊的假策略。 */
+    private val strategyKey = "fake"
+
     private class Fixtures(strategyCommand: GameCommand = GameCommand.Draw) {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val strategy = FakeMahjongAiStrategy(strategyCommand)
-        val driver = AiTurnDriver(gameRepo, GetLegalActionsUseCase(gameRepo, moduleRegistry), strategy)
+        val strategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = "fake").apply { register("fake") { strategy } }
+        val driver = AiTurnDriver(gameRepo, GetLegalActionsUseCase(gameRepo, moduleRegistry), strategyRegistry)
     }
 
     // ---- 搶槓反應 ----
@@ -70,7 +75,7 @@ class AiTurnDriverTest {
         val robbedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedTile.id, emptyList())
         val declarer = FakeMahjongPlayerFactory.create(id = declarerId, initialSeat = Wind.EAST)
-        val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.SOUTH, isAi = true, playerRuleState = RiichiPlayerState())
+        val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.SOUTH, aiStrategyKey = strategyKey, playerRuleState = RiichiPlayerState())
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(declarer, ai),
@@ -125,7 +130,7 @@ class AiTurnDriverTest {
         val robbedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedTile.id, emptyList())
         val declarer = FakeMahjongPlayerFactory.create(id = declarerId, initialSeat = Wind.EAST)
-        val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.SOUTH, isAi = true)
+        val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.SOUTH, aiStrategyKey = strategyKey)
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(declarer, ai),
@@ -163,7 +168,7 @@ class AiTurnDriverTest {
             initialSeat = Wind.EAST,
             discardPile = FakeDiscardPile().discardTile(discardedTile),
         )
-        val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.SOUTH, isAi = true, playerRuleState = RiichiPlayerState())
+        val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.SOUTH, aiStrategyKey = strategyKey, playerRuleState = RiichiPlayerState())
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(discarder, ai),
@@ -218,7 +223,7 @@ class AiTurnDriverTest {
     fun `test own turn ai without last drawn returns draw and does not call strategy`() = runTest {
         val fixtures = Fixtures()
         val aiId = Uuid.random()
-        val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.EAST, isAi = true)
+        val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.EAST, aiStrategyKey = strategyKey)
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(ai), config = RiichiRuleConfig(), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
 
@@ -241,7 +246,7 @@ class AiTurnDriverTest {
             id = aiId,
             initialSeat = Wind.EAST,
             hand = Hand(lastDrawn = lastDrawn),
-            isAi = true,
+            aiStrategyKey = strategyKey,
             playerRuleState = RiichiPlayerState(),
         )
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(ai), config = RiichiRuleConfig(), currentPlayerIndex = 0)
@@ -264,7 +269,7 @@ class AiTurnDriverTest {
         val fixtures = Fixtures(strategyCommand = strategyCommand)
         val aiId = Uuid.random()
         val remainingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
-        val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.EAST, hand = Hand(tiles = listOf(remainingTile)), isAi = true)
+        val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.EAST, hand = Hand(tiles = listOf(remainingTile)), aiStrategyKey = strategyKey)
             .recordAction(GameAction.Pon(Uuid.random()))
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(ai), config = RiichiRuleConfig(), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)

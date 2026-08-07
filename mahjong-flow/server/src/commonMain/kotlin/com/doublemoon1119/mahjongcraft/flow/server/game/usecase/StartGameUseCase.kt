@@ -60,7 +60,7 @@ class StartGameUseCase(
                         id = roomId,
                         playerIds = room.playerIds.toList(),
                         module = module,
-                        aiPlayerIds = room.aiPlayerIds,
+                        aiPlayerStrategyKeys = room.aiPlayerStrategyKeys,
                     )
 
                     // 先寫入 GameRepository，確認成功後才回傳 null 移除 Room，

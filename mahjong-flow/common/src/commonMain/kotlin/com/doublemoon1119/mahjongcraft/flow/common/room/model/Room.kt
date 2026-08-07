@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  * @property config 該房間採用的麻將規則配置。
  * @property playerIds 目前房間內所有玩家（含房主與 AI）的 Uuid 集合。
  * @property readyPlayerIds 已標記為「準備完成」的玩家 Uuid 集合（房主不計入此集合）。
- * @property aiPlayerIds 由房主新增的 AI 玩家 Uuid 集合。
+ * @property aiPlayerStrategyKeys 由房主新增的 AI 玩家 Uuid 對應到其 AI 策略登記 key 的映射。
  */
 data class Room(
     val id: Uuid,
@@ -22,10 +22,13 @@ data class Room(
     val config: MahjongRuleConfig,
     val playerIds: Set<Uuid> = emptySet(),
     val readyPlayerIds: Set<Uuid> = emptySet(),
-    val aiPlayerIds: Set<Uuid> = emptySet(),
+    val aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
 ) {
     /** 依規則配置換算出的合法玩家人數區間。 */
     private val allowedRange: IntRange get() = config.minPlayers..config.maxPlayers
+
+    /** 由房主新增的 AI 玩家 Uuid 集合。 */
+    val aiPlayerIds: Set<Uuid> get() = aiPlayerStrategyKeys.keys
 
     /** 房間人數是否已達規則配置的上限。 */
     val isFull: Boolean get() = playerIds.size >= config.maxPlayers

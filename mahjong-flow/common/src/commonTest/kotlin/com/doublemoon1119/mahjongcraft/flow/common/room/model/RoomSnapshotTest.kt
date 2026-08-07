@@ -77,7 +77,7 @@ class RoomSnapshotTest {
             hostId = hostId,
             config = FakeMahjongRuleConfig(),
             playerIds = setOf(hostId, aiId),
-            aiPlayerIds = setOf(aiId),
+            aiPlayerStrategyKeys = mapOf(aiId to "random"),
         )
 
         val snapshot = room.toSnapshot(hostId)

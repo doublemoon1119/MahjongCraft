@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
@@ -32,12 +33,18 @@ class AddAiPlayerUseCase(
      *
      * @param roomId 房間 Uuid。
      * @param operatorId 發起請求的玩家 Uuid（必須為房主）。
+     * @param strategyKey 該 AI 玩家使用的策略登記 key；不傳時預設為 [RandomAiStrategy.KEY]。是否
+     *        為有效 key 這裡不驗證——交給 `:mahjong-ai` 的 `MahjongAiStrategyRegistry` 在真正決策
+     *        時優雅退回預設策略，維持這個 use case 的單純。
      * @return 新增 AI 的結果，成功時包含新產生的 AI 玩家 Uuid，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
         roomId: Uuid,
         operatorId: Uuid,
+        strategyKey: String? = null,
     ): Outcome<Uuid, RoomError> {
+        val resolvedStrategyKey = strategyKey ?: RandomAiStrategy.KEY
+
         // 1. 以原子方式讀取房間、驗證業務規則並寫回，避免與其他加入/踢出操作產生競態（如人數上限被同時突破）
         val outcome = roomRepository.update(roomId) { room ->
             when {
@@ -49,7 +56,7 @@ class AddAiPlayerUseCase(
                     val aiId = Uuid.random()
                     val updatedRoom = room.copy(
                         playerIds = room.playerIds + aiId,
-                        aiPlayerIds = room.aiPlayerIds + aiId,
+                        aiPlayerStrategyKeys = room.aiPlayerStrategyKeys + (aiId to resolvedStrategyKey),
                         readyPlayerIds = room.readyPlayerIds + aiId, // AI 會直接進入準備就緒狀態
                     )
                     updatedRoom to Outcome.Success(aiId to updatedRoom)

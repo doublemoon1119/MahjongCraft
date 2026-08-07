@@ -14,9 +14,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
  * [AiDecisionContext.legalActions] 裡），AI 選完合法動作後還要自己決定「打哪張牌」，這個轉換
  * 本身就是策略的一部分，不能交給呼叫端做。
  *
- * 介面方法刻意標成 `suspend`：目前唯一的實作（[RandomAiStrategy]）用不到非同步，但這是為未來
- * 可能引入的 LLM 型策略（例如透過 Koog 呼叫語言模型）預留的空間——真正呼叫遠端模型本來就需要
- * 非同步等待，現在就把介面定成 `suspend`，未來新增那樣的實作不需要更動這個介面。
+ * 介面方法刻意標成 `suspend`：是為未來可能引入的 LLM 型策略（例如透過 Koog 呼叫語言模型）預留
+ * 的空間——真正呼叫遠端模型本來就需要非同步等待，現在就把介面定成 `suspend`，未來新增那樣的實作
+ * 不需要更動這個介面。
  */
 interface MahjongAiStrategy {
     /**

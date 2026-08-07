@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
@@ -53,6 +54,50 @@ class AddAiPlayerUseCaseTest {
             expected = JoinReason.Joined,
             actual = service.getJoinReason(roomId, hostId, aiId),
         )
+    }
+
+    /**
+     * 驗證不傳 strategyKey 時，預設存入 [RandomAiStrategy.KEY]。
+     */
+    @Test
+    fun `test add ai without strategyKey defaults to RandomAiStrategy KEY`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomEventPublisher()
+        val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service)
+
+        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
+        roomRepo.setRoom(room)
+
+        val result = useCase(roomId, hostId)
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val aiId = result.value
+
+        val updatedRoom = roomRepo.getRoom(roomId)
+        assertNotNull(updatedRoom)
+        assertEquals(RandomAiStrategy.KEY, updatedRoom.aiPlayerStrategyKeys[aiId])
+    }
+
+    /**
+     * 驗證明確傳入的 strategyKey 會原樣存入 aiPlayerStrategyKeys。
+     */
+    @Test
+    fun `test add ai with explicit strategyKey stores it as-is`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomEventPublisher()
+        val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service)
+
+        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
+        roomRepo.setRoom(room)
+
+        val result = useCase(roomId, hostId, strategyKey = "mymod:hard")
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val aiId = result.value
+
+        val updatedRoom = roomRepo.getRoom(roomId)
+        assertNotNull(updatedRoom)
+        assertEquals("mymod:hard", updatedRoom.aiPlayerStrategyKeys[aiId])
     }
 
     /**

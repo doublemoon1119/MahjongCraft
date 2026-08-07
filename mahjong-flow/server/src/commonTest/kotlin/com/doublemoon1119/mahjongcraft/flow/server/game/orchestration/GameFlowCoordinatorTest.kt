@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
@@ -74,7 +76,8 @@ class GameFlowCoordinatorTest {
             declareKyuushuKyuuhaiUseCase = DeclareKyuushuKyuuhaiUseCase(gameRepo, moduleRegistry, snapshotRepo, eventPublisher),
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
-        val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, RandomAiStrategy())
+        val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply { registerBuiltInAiStrategies() }
+        val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry)
         val coordinator = GameFlowCoordinator(
             gameActionRouter = router,
             gameRepository = gameRepo,
@@ -592,7 +595,7 @@ class GameFlowCoordinatorTest {
             id = aiId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = aiHandTiles),
-            isAi = true,
+            aiStrategyKey = RandomAiStrategy.KEY,
             playerRuleState = RiichiPlayerState(),
         )
         val drawnTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
@@ -632,7 +635,7 @@ class GameFlowCoordinatorTest {
             id = aiId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = listOf(southTile1, southTile2) + filler),
-            isAi = true,
+            aiStrategyKey = RandomAiStrategy.KEY,
             playerRuleState = RiichiPlayerState(),
         )
         // 若 AI 選擇過牌（而非碰），輪到的下一位就是它自己、需要先摸牌——牌山至少要有 1 張牌，
