@@ -644,7 +644,7 @@ class RiichiRuleModuleTest {
             ExhaustiveDrawSettlementResult(
                 reason = RiichiExhaustiveDrawReason.Normal,
                 tenpaiPlayerIds = emptySet(),
-                nagashiManganPlayerIds = emptySet(),
+                stickPotCollectorPlayerIds = emptySet(),
                 scoreDeltas = emptyMap(),
             ),
             result,
@@ -727,7 +727,7 @@ class RiichiRuleModuleTest {
 
         val result = module.declareExhaustiveDraw(table)
 
-        assertEquals(setOf(dealer.id), result?.nagashiManganPlayerIds)
+        assertEquals(setOf(dealer.id), result?.stickPotCollectorPlayerIds)
         assertTrue(dealer.id in requireNotNull(result).tenpaiPlayerIds)
         val expectedDeltas = mapOf(dealer.id to 12000) + others.associate { it.id to -4000 }
         assertEquals(expectedDeltas, result.scoreDeltas)
@@ -750,7 +750,7 @@ class RiichiRuleModuleTest {
 
         val result = module.declareExhaustiveDraw(table)
 
-        assertEquals(setOf(achiever.id), result?.nagashiManganPlayerIds)
+        assertEquals(setOf(achiever.id), result?.stickPotCollectorPlayerIds)
         val expectedDeltas = mapOf(achiever.id to 8000, dealer.id to -4000, west.id to -2000, north.id to -2000)
         assertEquals(expectedDeltas, result?.scoreDeltas)
     }
@@ -767,7 +767,7 @@ class RiichiRuleModuleTest {
 
         val result = module.declareExhaustiveDraw(table)
 
-        assertEquals(emptySet<Uuid>(), result?.nagashiManganPlayerIds)
+        assertEquals(emptySet<Uuid>(), result?.stickPotCollectorPlayerIds)
         assertEquals(mapOf(player.id to 3000) + notenPlayers.associate { it.id to -1000 }, result?.scoreDeltas)
     }
 
@@ -785,7 +785,7 @@ class RiichiRuleModuleTest {
 
         val result = module.declareExhaustiveDraw(table)
 
-        assertEquals(emptySet<Uuid>(), result?.nagashiManganPlayerIds)
+        assertEquals(emptySet<Uuid>(), result?.stickPotCollectorPlayerIds)
         assertEquals(mapOf(player.id to 3000) + notenPlayers.associate { it.id to -1000 }, result?.scoreDeltas)
     }
 
@@ -811,7 +811,7 @@ class RiichiRuleModuleTest {
 
         val result = module.declareExhaustiveDraw(table)
 
-        assertEquals(setOf(south.id, west.id), result?.nagashiManganPlayerIds)
+        assertEquals(setOf(south.id, west.id), result?.stickPotCollectorPlayerIds)
         val expectedDeltas = mapOf(
             dealer.id to -8000,
             south.id to 6000,

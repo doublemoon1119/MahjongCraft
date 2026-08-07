@@ -308,7 +308,7 @@ class RiichiRuleModule(
         return ExhaustiveDrawSettlementResult(
             reason = RiichiExhaustiveDrawReason.Normal,
             tenpaiPlayerIds = tenpaiIds + nagashiManganIds,
-            nagashiManganPlayerIds = nagashiManganIds,
+            stickPotCollectorPlayerIds = nagashiManganIds,
             scoreDeltas = scoreDeltas,
         )
     }

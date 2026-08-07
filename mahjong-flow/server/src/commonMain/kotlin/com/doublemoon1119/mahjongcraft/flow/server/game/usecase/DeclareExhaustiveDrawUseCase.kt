@@ -64,13 +64,14 @@ class DeclareExhaustiveDrawUseCase(
                     val settlement = module.declareExhaustiveDraw(state)
                         ?: return@update state to Outcome.Error(GameError.UnsupportedAction(gameId))
 
-                    // 流局滿貫成立者同時收下場上所有供託（如立直棒），不支援此機制的規則回傳 null
-                    val stickPot = if (settlement.nagashiManganPlayerIds.isNotEmpty()) {
+                    // 這次流局若有玩家該收下場上所有供託（如立直棒，例如日麻的流局滿貫成立者），
+                    // 不支援供託機制的規則回傳 null
+                    val stickPot = if (settlement.stickPotCollectorPlayerIds.isNotEmpty()) {
                         module.collectStickPot(state)
                     } else {
                         null
                     }
-                    val stickPotDeltas = distributeStickPot(state, settlement.nagashiManganPlayerIds, stickPot?.second ?: 0)
+                    val stickPotDeltas = distributeStickPot(state, settlement.stickPotCollectorPlayerIds, stickPot?.second ?: 0)
 
                     val finalDeltas = (settlement.scoreDeltas.keys + stickPotDeltas.keys).associateWith { id ->
                         (settlement.scoreDeltas[id] ?: 0) + (stickPotDeltas[id] ?: 0)
@@ -114,17 +115,17 @@ class DeclareExhaustiveDrawUseCase(
     }
 
     /**
-     * 把供託金額依流局滿貫成立者人數整除分配（餘數給座位順序中最前面的成立者）。
+     * 把供託金額依收下供託的玩家人數整除分配（餘數給座位順序中最前面的玩家）。
      *
-     * 多位流局滿貫同時成立的機率極低，且未查證到明確的標準規則可循，先採用這個簡單決定，
-     * 待實際遇到需求再調整。
+     * 多位玩家同時該收下供託的機率極低（例如日麻的流局滿貫同時多位成立），且未查證到明確的
+     * 標準規則可循，先採用這個簡單決定，待實際遇到需求再調整。
      *
-     * @return 各成立者應得的供託金額；無成立者（或供託金額為 0）時回傳空 map。
+     * @return 各玩家應得的供託金額；無人該收下（或供託金額為 0）時回傳空 map。
      */
-    private fun distributeStickPot(state: TableState, nagashiManganPlayerIds: Set<Uuid>, stickPotAmount: Int): Map<Uuid, Int> {
-        if (nagashiManganPlayerIds.isEmpty() || stickPotAmount == 0) return emptyMap()
+    private fun distributeStickPot(state: TableState, stickPotCollectorPlayerIds: Set<Uuid>, stickPotAmount: Int): Map<Uuid, Int> {
+        if (stickPotCollectorPlayerIds.isEmpty() || stickPotAmount == 0) return emptyMap()
 
-        val achieversInSeatOrder = state.players.map { it.id }.filter { it in nagashiManganPlayerIds }
+        val achieversInSeatOrder = state.players.map { it.id }.filter { it in stickPotCollectorPlayerIds }
         val share = stickPotAmount / achieversInSeatOrder.size
         val remainder = stickPotAmount % achieversInSeatOrder.size
 
