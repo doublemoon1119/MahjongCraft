@@ -10,11 +10,4 @@ interface GameLength {
      * 預計進行的總局數。
      * */
     val totalRounds: Int
-
-    /**
-     * 局數的偏移。
-     *
-     * 比如南風戰的偏移會是 4
-     * */
-    val roundsOffset: Int
 }

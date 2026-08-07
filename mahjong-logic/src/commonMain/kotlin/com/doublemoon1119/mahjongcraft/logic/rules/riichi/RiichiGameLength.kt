@@ -11,7 +11,6 @@ sealed interface RiichiGameLength : GameLength {
      */
     data object OneGame : RiichiGameLength {
         override val totalRounds: Int = 1
-        override val roundsOffset: Int = 0
     }
 
     /**
@@ -19,7 +18,6 @@ sealed interface RiichiGameLength : GameLength {
      */
     data object East : RiichiGameLength {
         override val totalRounds: Int = 4
-        override val roundsOffset: Int = 0
     }
 
     /**
@@ -27,6 +25,5 @@ sealed interface RiichiGameLength : GameLength {
      */
     data object TwoWinds : RiichiGameLength {
         override val totalRounds: Int = 8
-        override val roundsOffset: Int = 0
     }
 }

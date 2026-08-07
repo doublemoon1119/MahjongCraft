@@ -11,7 +11,6 @@ sealed interface TaiwanGameLength : GameLength {
      */
     data object OneGame : TaiwanGameLength {
         override val totalRounds: Int = 1
-        override val roundsOffset: Int = 0
     }
 
     /**
@@ -19,7 +18,6 @@ sealed interface TaiwanGameLength : GameLength {
      */
     data object East : TaiwanGameLength {
         override val totalRounds: Int = 4
-        override val roundsOffset: Int = 0
     }
 
     /**
@@ -27,7 +25,6 @@ sealed interface TaiwanGameLength : GameLength {
      */
     data object TwoWinds : TaiwanGameLength {
         override val totalRounds: Int = 8
-        override val roundsOffset: Int = 0
     }
 
     /**
@@ -35,6 +32,5 @@ sealed interface TaiwanGameLength : GameLength {
      */
     data object FourWinds : TaiwanGameLength {
         override val totalRounds: Int = 16
-        override val roundsOffset: Int = 0
     }
 }
