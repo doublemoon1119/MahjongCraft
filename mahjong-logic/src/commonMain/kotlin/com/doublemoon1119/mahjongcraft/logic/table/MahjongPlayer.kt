@@ -21,6 +21,8 @@ import kotlin.uuid.Uuid
  * @property playerRuleState 用於儲存規則特有的玩家狀態（如立直、振聽等）。
  *                          具體類型由各規則決定，例如 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState]。
  * @property score 玩家目前的總分（持點）。其初始值通常由 [TableState] 根據規則配置進行初始化。
+ * @property isAi 該玩家是否由電腦（AI）操控。由 [com.doublemoon1119.mahjongcraft.logic.table.GameInitializer.initialize]
+ *                依開局時的 AI 玩家名單標記，此後隨玩家實例透過既有的 `.copy()` 機制自然延續。
  * @property currentWind 玩家目前的方位。隨連莊或過莊改變，用於判定當前局數中的親家/子家關係。
  * @property passedTilesInRound 當前巡迴中玩家放過的牌（用於過水碰及同巡振聽判定）：
  *                              放過碰牌機會 → 過水碰（之後不能碰）；放過榮和機會 → 同巡振聽（之後不能榮和）。
@@ -34,6 +36,7 @@ data class MahjongPlayer(
     val discardPile: DiscardPile<*>,
     val playerRuleState: PlayerRuleState? = null,
     val score: Int = 0,
+    val isAi: Boolean = false,
     val currentWind: Wind = initialSeat,
     val passedTilesInRound: Set<Tile> = emptySet(),
     val actionHistory: List<GameAction> = emptyList(),

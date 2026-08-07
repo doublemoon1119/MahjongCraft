@@ -13,6 +13,7 @@ dependencyResolutionManagement {
 
 // 預設始終加載的核心模組
 include(":mahjong-logic")
+include(":mahjong-ai")
 
 // 透過重新命名 Gradle 專案物件（Project Name），解決不同層級下同名模組（如 :common）
 // 導致的 Artifact ID 衝突與循環依賴，同時維持實體目錄結構的整潔。

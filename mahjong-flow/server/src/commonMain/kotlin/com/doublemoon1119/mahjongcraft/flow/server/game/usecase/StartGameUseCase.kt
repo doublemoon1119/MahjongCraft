@@ -56,7 +56,12 @@ class StartGameUseCase(
                 !room.canStart -> room to Outcome.Error(RoomError.RoomNotReadyToStart(roomId))
                 else -> {
                     val module = moduleRegistry.getModule(room.config)
-                    val tableState = GameInitializer.initialize(roomId, room.playerIds.toList(), module)
+                    val tableState = GameInitializer.initialize(
+                        id = roomId,
+                        playerIds = room.playerIds.toList(),
+                        module = module,
+                        aiPlayerIds = room.aiPlayerIds,
+                    )
 
                     // 先寫入 GameRepository，確認成功後才回傳 null 移除 Room，
                     // 避免「Room 已刪除但 Game 未寫入」的資料遺失窗口。

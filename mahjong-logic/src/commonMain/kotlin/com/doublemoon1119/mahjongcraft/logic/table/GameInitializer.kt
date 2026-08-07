@@ -19,10 +19,18 @@ object GameInitializer {
      * @param id 對局的唯一識別碼（沿用房間的 Uuid）。
      * @param playerIds 參與對局的玩家 Uuid 列表（尚未分配座位，內部會隨機排序）。
      * @param module 該對局採用的規則模組，提供牌山工廠、牌河實作與規則配置。
+     * @param aiPlayerIds 由 AI 操控的玩家 Uuid 子集合（須為 [playerIds] 的子集）。開局後
+     *        `Room` 記錄即被刪除，這是「這個玩家是不是 AI」這項資訊唯一的搬家管道，之後隨
+     *        [MahjongPlayer] 實例透過既有的 `.copy()` 機制自然延續，不需要另外維護。
      * @return 已完成洗牌、發牌、分數初始化的新 [TableState]。
      * @throws IllegalArgumentException 當玩家人數不在該規則允許的範圍內時拋出。
      */
-    fun initialize(id: Uuid, playerIds: List<Uuid>, module: MahjongRuleModule<*>): TableState {
+    fun initialize(
+        id: Uuid,
+        playerIds: List<Uuid>,
+        module: MahjongRuleModule<*>,
+        aiPlayerIds: Set<Uuid> = emptySet(),
+    ): TableState {
         require(playerIds.size in module.config.minPlayers..module.config.maxPlayers) {
             "Player count ${playerIds.size} out of range for this rule config " +
                 "(${module.config.minPlayers}..${module.config.maxPlayers})"
@@ -41,6 +49,7 @@ object GameInitializer {
                 hand = Hand(tiles = tiles),
                 discardPile = module.createDiscardPile(),
                 playerRuleState = module.createInitialPlayerRuleState(),
+                isAi = playerId in aiPlayerIds,
             )
         }
 

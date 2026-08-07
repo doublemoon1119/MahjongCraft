@@ -22,6 +22,7 @@ object FakeMahjongPlayerFactory {
      * @param hand 初始手牌，預設建立新的空 [Hand]。
      * @param discardPile 該玩家的牌河實體，預設為 [FakeDiscardPile]。
      * @param playerRuleState 用於儲存規則特有的玩家狀態（如立直、振聽等）。
+     * @param isAi 該玩家是否由電腦（AI）操控，預設為 false。
      * @return 具備模擬牌河的 [MahjongPlayer] 實體。
      */
     fun create(
@@ -30,11 +31,13 @@ object FakeMahjongPlayerFactory {
         hand: Hand = Hand(),
         discardPile: DiscardPile<*> = FakeDiscardPile(),
         playerRuleState: PlayerRuleState? = null,
+        isAi: Boolean = false,
     ): MahjongPlayer = MahjongPlayer(
         id = id,
         initialSeat = initialSeat,
         hand = hand,
         discardPile = discardPile,
         playerRuleState = playerRuleState,
+        isAi = isAi,
     )
 }
