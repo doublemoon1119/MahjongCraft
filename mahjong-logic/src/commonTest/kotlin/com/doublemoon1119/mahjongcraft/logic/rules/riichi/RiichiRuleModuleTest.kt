@@ -509,6 +509,129 @@ class RiichiRuleModuleTest {
         )
     }
 
+    /**
+     * 手牌：中中中、發發發、白白（役滿：三組三元牌刻子，缺最後一張白）、東東東、南南——湊齊後
+     * 同時成立大三元（三元牌三組刻子）與字一色（全牌皆為字牌），供包牌疊加役滿測試共用。
+     */
+    private fun daisangenPlusTsuuiisouTiles() = listOf(
+        Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red,
+        Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+        Tile.Honor.White, Tile.Honor.White,
+        Tile.Honor.East, Tile.Honor.East, Tile.Honor.East,
+        Tile.Honor.South, Tile.Honor.South,
+    )
+
+    /**
+     * 驗證包牌責任成立、且和了同時疊加其他役滿時：包牌責任者只承擔 1 倍役滿（基本點 8000）的自摸
+     * 金額，超出包牌範圍的疊加役滿部分改由正常自摸結算的對象（莊家與其餘閒家）支付——不是把整體
+     * 役滿倍數都算進包牌範圍。
+     *
+     * 這次自摸完成的是大三元最後一組（白）刻子，四組刻子（中/發/白/東）皆為自摸完成、視為暗刻，
+     * 疊加成立四暗刻；加上字一色（全牌皆為字牌），役滿倍數共 3 倍（與 `declareRon` 版本的姊妹
+     * 測試不同——榮和完成的那組刻子不算暗刻，四暗刻不成立，只疊加大三元 + 字一色共 2 倍）。
+     */
+    @Test
+    fun `test declareTsumo splits pao payment from stacked yakuman remainder`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val paoPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenPlusTsuuiisouTiles().map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
+            playerRuleState = RiichiPlayerState(paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)),
+        )
+        // paoPlayer（東家）恰好也是莊家，故正常結算的「莊家份」與包牌份會疊加到同一人身上
+        val other1 = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val other2 = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(paoPlayer, winner, other1, other2), config = module.config)
+
+        val result = module.declareTsumo(table, winner)
+
+        assertEquals(
+            WinSettlementResult(
+                totalGained = 96000,
+                paymentsByPlayerId = mapOf(paoPlayer.id to 64000, other1.id to 16000, other2.id to 16000),
+            ),
+            result,
+        )
+    }
+
+    /**
+     * 驗證包牌責任成立、且和了同時疊加另一個役滿時，榮和情境下包牌責任者與放銃者平分的只有 1 倍
+     * 役滿部分，超出包牌範圍的疊加役滿部分改由放銃者全額支付（正常榮和結算）。
+     */
+    @Test
+    fun `test declareRon splits pao payment from stacked yakuman remainder`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val paoPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenPlusTsuuiisouTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
+            playerRuleState = RiichiPlayerState(paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)),
+        )
+        val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(paoPlayer, winner, discarder, other), config = module.config)
+
+        val result = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
+
+        assertEquals(
+            WinSettlementResult(
+                totalGained = 64000,
+                paymentsByPlayerId = mapOf(discarder.id to 48000, paoPlayer.id to 16000),
+            ),
+            result,
+        )
+    }
+
+    /**
+     * 手牌：東東東、南南南、西西西、北北（大四喜：四組風牌刻子，缺最後一張北）、五五筒（雀頭），
+     * 供大四喜包牌測試共用。
+     */
+    private fun daisuushiiTiles() = listOf(
+        Tile.Honor.East, Tile.Honor.East, Tile.Honor.East,
+        Tile.Honor.South, Tile.Honor.South, Tile.Honor.South,
+        Tile.Honor.West, Tile.Honor.West, Tile.Honor.West,
+        Tile.Honor.North, Tile.Honor.North,
+        Tile.Numeric(Tile.Suit.Dot, 5), Tile.Numeric(Tile.Suit.Dot, 5),
+    )
+
+    /**
+     * 驗證大四喜（雙倍役滿）觸發包牌責任時，包牌責任者承擔的是大四喜本身的 2 倍，不是大三元那種
+     * 1 倍——大三元與大四喜彼此互斥，過去若把包牌範圍寫死成 1 倍役滿，大四喜包牌會少算一半。
+     * 刻意用榮和（而非自摸）完成最後一組風牌刻子，避免意外疊加四暗刻（自摸完成的刻子視為暗刻，
+     * 會讓四組刻子都變成暗刻），讓役滿倍數維持乾淨的 2 倍、不受疊加役滿干擾。
+     */
+    @Test
+    fun `test declareRon charges the full daisuushii multiplier for pao`() {
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.North)
+        val paoPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisuushiiTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.Red)),
+            playerRuleState = RiichiPlayerState(paoLiability = PaoLiability(PaoYaku.Daisuushii, RelativeDirection.Left)),
+        )
+        val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
+        val table = FakeTableStateFactory.create(players = listOf(paoPlayer, winner, discarder, other), config = module.config)
+
+        val result = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
+
+        // 大四喜榮和、贏家為閒家：基本點 8000 * 2 倍 = 16000，非莊家倍率 4 → 64000，
+        // 包牌雙方各付一半 32000；沒有疊加其他役滿，totalGained 與過去簡化算法巧合相同。
+        assertEquals(
+            WinSettlementResult(
+                totalGained = 64000,
+                paymentsByPlayerId = mapOf(discarder.id to 32000, paoPlayer.id to 32000),
+            ),
+            result,
+        )
+    }
+
     // 手牌：白白白（役牌刻子，1 翻）、234m、567p、89s（等 7s）、99p，供搶槓（isRobbingKan）測試共用。
     // 刻意只有單一役牌（而非 daisangenTiles 那種役滿），讓搶槓多算的 1 翻能真正反映在點數差異上。
     private fun singleYakuhaiTiles() = listOf(

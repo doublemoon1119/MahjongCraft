@@ -199,7 +199,7 @@ class RiichiRuleModule(
                 val paoPlayerId = tableState.players
                     .first { tableState.relativeDirectionOf(player.id, it.id) == paoLiability.direction }
                     .id
-                mapOf(paoPlayerId to pointResult.total)
+                mergeTsumoRemainder(tableState, player.id, mapOf(paoPlayerId to pointResult.paoPayment), pointResult.remainder)
             }
 
             // Ron / PaoRon 理論上不會出現在 isTsumo = true 的計算結果中。若真的發生，視為此規則
@@ -248,11 +248,12 @@ class RiichiRuleModule(
                     .id
                 // 包牌責任者剛好就是放銃者本人時，兩份「一半」其實是同一個人要付，直接歸戶成一筆
                 // 全額，避免兩筆同 key 的付款在合併時互相覆蓋掉一半金額。
-                if (paoPlayerId == discarderId) {
-                    mapOf(discarderId to pointResult.total)
+                val paoPayments = if (paoPlayerId == discarderId) {
+                    mapOf(discarderId to pointResult.paymentEach * 2)
                 } else {
                     mapOf(discarderId to pointResult.paymentEach, paoPlayerId to pointResult.paymentEach)
                 }
+                mergeRonRemainder(discarderId, paoPayments, pointResult.remainder)
             }
 
             // DealerTsumo/NonDealerTsumo/PaoTsumo 理論上不會出現在 isTsumo = false 的計算結果中。
@@ -262,6 +263,47 @@ class RiichiRuleModule(
         }
 
         return WinSettlementResult(totalGained = result.totalPoint, paymentsByPlayerId = payments)
+    }
+
+    /**
+     * 把包牌疊加役滿時的 [remainder]（正常自摸結算部分）疊加進 [basePayments]（包牌部分的付款），
+     * 同一位玩家同時是兩種付款人時金額相加，不互相覆蓋。[remainder] 為 null（沒有疊加役滿）時原樣
+     * 回傳 [basePayments]。
+     */
+    private fun mergeTsumoRemainder(
+        tableState: TableState,
+        winnerId: Uuid,
+        basePayments: Map<Uuid, Int>,
+        remainder: RiichiPointResult?,
+    ): Map<Uuid, Int> {
+        val remainderPayments: Map<Uuid, Int> = when (remainder) {
+            null -> return basePayments
+            is RiichiPointResult.DealerTsumo ->
+                tableState.players.filter { it.id != winnerId }.associate { it.id to remainder.paymentPerNonDealer }
+            is RiichiPointResult.NonDealerTsumo -> {
+                val dealerId = tableState.players.first { it.currentWind == tableState.prevalentWind }.id
+                tableState.players.filter { it.id != winnerId }
+                    .associate { it.id to if (it.id == dealerId) remainder.dealerPayment else remainder.otherNonDealerPayment }
+            }
+            // buildPaoPointResult 的 remainder 在自摸情境下一律經由 buildPointResult(isTsumo = true)
+            // 產生，只會是 DealerTsumo/NonDealerTsumo，僅作防呆。
+            is RiichiPointResult.Ron, is RiichiPointResult.PaoTsumo, is RiichiPointResult.PaoRon -> return basePayments
+        }
+        return (basePayments.keys + remainderPayments.keys).associateWith { id ->
+            (basePayments[id] ?: 0) + (remainderPayments[id] ?: 0)
+        }
+    }
+
+    /**
+     * 把包牌疊加役滿時的 [remainder]（正常榮和結算部分，恆由 [discarderId] 全額支付）疊加進
+     * [basePayments]（包牌部分的付款），同一位玩家同時是兩種付款人時金額相加，不互相覆蓋。
+     * [remainder] 為 null（沒有疊加役滿）時原樣回傳 [basePayments]。
+     */
+    private fun mergeRonRemainder(discarderId: Uuid, basePayments: Map<Uuid, Int>, remainder: RiichiPointResult?): Map<Uuid, Int> {
+        // buildPaoPointResult 的 remainder 在榮和情境下一律經由 buildPointResult(isTsumo = false)
+        // 產生，只會是 Ron，僅作防呆。
+        val remainderAmount = (remainder as? RiichiPointResult.Ron)?.total ?: return basePayments
+        return basePayments + (discarderId to (basePayments[discarderId] ?: 0) + remainderAmount)
     }
 
     /**

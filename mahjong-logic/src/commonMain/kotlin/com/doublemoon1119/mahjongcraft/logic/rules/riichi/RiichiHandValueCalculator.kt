@@ -97,12 +97,14 @@ class RiichiHandValueCalculator(
 
                 // 包牌僅在「狀態上已成立包牌責任」且「本次胡牌實際包含對應役滿」兩者皆成立時才適用，
                 // 避免狀態成立後手牌卻演變成其他役滿（如濃厚牌型被打散重組）時誤套用包牌。
-                val pao = context.paoLiability?.takeIf { pao ->
+                val paoYakuType = context.paoLiability?.let { pao ->
                     when (pao.yaku) {
-                        PaoYaku.Daisangen -> yakuResults.any { it.yaku == YakuType.Daisangen }
-                        PaoYaku.Daisuushii -> yakuResults.any { it.yaku == YakuType.Daisuushii }
+                        PaoYaku.Daisangen -> YakuType.Daisangen
+                        PaoYaku.Daisuushii -> YakuType.Daisuushii
                     }
                 }
+                val paoYakuResult = paoYakuType?.let { type -> yakuResults.firstOrNull { it.yaku == type } }
+                val pao = context.paoLiability?.takeIf { paoYakuResult != null }
 
                 val pointResult = PointCalculator.calculateYakumanPoint(
                     yakumanMultiplier = abs(totalHan), // 役滿總翻數為負數，這裡帶入絕對值
@@ -111,6 +113,10 @@ class RiichiHandValueCalculator(
                     isDealer = context.seatWind == Wind.EAST,
                     isTsumo = context.isTsumo,
                     isPao = pao != null,
+                    // 包牌責任只承擔「觸發包牌的那個役滿本身」的倍數，不是整體役滿倍數：大三元是
+                    // 1 倍役滿，但大四喜是雙倍役滿（見 YakuResult.doubleYakuman(Daisuushii)），兩者
+                    // 包牌範圍不同，必須讀該役種自己的 han 而非寫死 1 倍。
+                    paoYakuMultiplier = paoYakuResult?.let { abs(it.han) } ?: 1,
                 )
 
                 return@map RiichiHandValueResult(

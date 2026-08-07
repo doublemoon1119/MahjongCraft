@@ -482,17 +482,84 @@ class PointCalculatorTest {
     }
 
     /**
-     * 測試累計役滿（雙倍役滿）情境下的包牌榮和，確認平分邏輯在倍數疊加時依然正確。
+     * 測試包牌疊加役滿（雙倍役滿）情境下的榮和：包牌部分永遠固定 1 倍役滿（8000 基本點），
+     * 平分為兩人各付 16000；超出包牌範圍的另 1 倍役滿改走正常榮和結算（放銃者全額支付 32000），
+     * 附加在 `remainder` 上。總點數（64000）與過去「整體倍數都算包牌」的簡化算法巧合相同，但實際
+     * 由誰支付哪一部分不同——這正是這個測試要驗證的地方。
      */
     @Test
-    fun `test pao ron with double yakuman multiplier`() {
+    fun `test pao ron with double yakuman multiplier splits pao portion from remainder`() {
         val result = PointCalculator.calculateYakumanPoint(
             yakumanMultiplier = 2,
             isDealer = false,
             isTsumo = false,
             isPao = true,
         )
-        assertEquals(RiichiPointResult.PaoRon(32000), result)
+        assertEquals(RiichiPointResult.PaoRon(paymentEach = 16000, remainder = RiichiPointResult.Ron(32000)), result)
         assertEquals(64000, result.total)
+    }
+
+    /**
+     * 測試包牌疊加役滿（雙倍役滿）情境下的自摸：包牌部分固定 1 倍役滿由包牌責任者一人支付，
+     * 超出包牌範圍的另 1 倍役滿改走正常自摸結算（其餘三家依身分分攤），附加在 `remainder` 上。
+     */
+    @Test
+    fun `test pao tsumo with double yakuman multiplier splits pao portion from remainder`() {
+        val result = PointCalculator.calculateYakumanPoint(
+            yakumanMultiplier = 2,
+            isDealer = false,
+            isTsumo = true,
+            isPao = true,
+        )
+        assertEquals(
+            RiichiPointResult.PaoTsumo(
+                paoPayment = 32000,
+                remainder = RiichiPointResult.NonDealerTsumo(dealerPayment = 16000, otherNonDealerPayment = 8000),
+            ),
+            result,
+        )
+        assertEquals(64000, result.total)
+    }
+
+    /**
+     * 測試大四喜（雙倍役滿）觸發的包牌、沒有疊加其他役滿時：包牌責任者承擔的是「大四喜本身的
+     * 2 倍」，不是寫死的 1 倍——這是與大三元（1 倍役滿）包牌唯一的差異來源。沒有疊加役滿，
+     * `remainder` 為 null。
+     */
+    @Test
+    fun `test pao tsumo for daisuushii charges the full double-yakuman multiplier`() {
+        val result = PointCalculator.calculateYakumanPoint(
+            yakumanMultiplier = 2,
+            isDealer = false,
+            isTsumo = true,
+            isPao = true,
+            paoYakuMultiplier = 2,
+        )
+        assertEquals(RiichiPointResult.PaoTsumo(paoPayment = 64000, remainder = null), result)
+        assertEquals(64000, result.total)
+    }
+
+    /**
+     * 測試大四喜包牌、同時疊加另一個役滿（役滿倍數共 3 倍）時：包牌責任者只承擔大四喜本身的
+     * 2 倍，超出的 1 倍疊加役滿改走正常自摸結算，附加在 `remainder` 上——驗證 `paoYakuMultiplier`
+     * 與 `yakumanMultiplier` 各自獨立運作，不會因為總倍數變高就多算或少算包牌部分。
+     */
+    @Test
+    fun `test pao tsumo for daisuushii with stacked yakuman splits pao portion from remainder`() {
+        val result = PointCalculator.calculateYakumanPoint(
+            yakumanMultiplier = 3,
+            isDealer = false,
+            isTsumo = true,
+            isPao = true,
+            paoYakuMultiplier = 2,
+        )
+        assertEquals(
+            RiichiPointResult.PaoTsumo(
+                paoPayment = 64000,
+                remainder = RiichiPointResult.NonDealerTsumo(dealerPayment = 16000, otherNonDealerPayment = 8000),
+            ),
+            result,
+        )
+        assertEquals(96000, result.total)
     }
 }

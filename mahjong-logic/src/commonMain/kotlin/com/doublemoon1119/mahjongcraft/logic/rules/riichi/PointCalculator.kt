@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PointCalculator.buildPointResult
 import kotlin.math.pow
 
 /**
@@ -18,6 +19,9 @@ object PointCalculator {
      * @param isPao 是否已成立包牌責任（僅大三元／大四喜適用，由呼叫端判斷後傳入）。
      *              成立時會忽略一般自摸/榮和的分攤方式，改回傳 [RiichiPointResult.PaoTsumo]
      *              或 [RiichiPointResult.PaoRon]。
+     * @param paoYakuMultiplier 觸發包牌責任的那個役滿本身的倍數（大三元 1 倍、大四喜 2 倍——見
+     *        [com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult.doubleYakuman]），
+     *        僅在 [isPao] 為 true 時使用，決定包牌責任者實際承擔的倍數；預設 1。
      * @return 依榮和/自摸（或包牌）區分的 [RiichiPointResult]。
      */
     fun calculateYakumanPoint(
@@ -25,12 +29,13 @@ object PointCalculator {
         isDealer: Boolean,
         isTsumo: Boolean,
         isPao: Boolean = false,
+        paoYakuMultiplier: Int = 1,
     ): RiichiPointResult {
+        if (isPao) {
+            return buildPaoPointResult(yakumanMultiplier, paoYakuMultiplier, isDealer, isTsumo)
+        }
         // 役滿的基本點固定為 8000，與非役滿點數表中的「數役滿」級距相同
         val basicPoint = 8000 * yakumanMultiplier
-        if (isPao) {
-            return buildPaoPointResult(basicPoint, isDealer, isTsumo)
-        }
         return buildPointResult(basicPoint, isDealer, isTsumo)
     }
 
@@ -101,31 +106,43 @@ object PointCalculator {
     }
 
     /**
-     * 依基本點、贏家身分與和牌方式，建立包牌情境下的 [RiichiPointResult]。
+     * 依役滿倍數、贏家身分與和牌方式，建立包牌情境下的 [RiichiPointResult]。
      *
-     * 自摸包牌：包牌責任者一人支付全額，等同一般榮和的算法（基本點 * 身分倍率，一次性進位）。
-     * 榮和包牌：由包牌責任者與實際放銃者平分點數。
+     * 包牌部分以 [paoYakuMultiplier] 倍役滿計算——大三元是 1 倍役滿，大四喜是雙倍役滿（見
+     * [com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult.doubleYakuman]），
+     * 包牌責任者只承擔「觸發包牌的那個役滿本身」的倍數，不是寫死 1 倍。自摸包牌：包牌責任者一人
+     * 支付包牌部分全額，等同一般榮和的算法（基本點 * 身分倍率，一次性進位）。榮和包牌：由包牌
+     * 責任者與實際放銃者平分包牌部分。
      *
-     * 註：目前僅處理單一大三元／大四喜的情境。若手牌同時符合多種役滿（如大三元 + 四暗刻）疊加，
-     * 本函式會將整體役滿倍數（[yakumanMultiplier]）都視為包牌範圍計算，
-     * 尚未依 M League 規則細分「僅大三元部分適用包牌」的情境，屬已知簡化，
-     * 待實際遇到此類疊加役滿再另行確認並調整。
+     * 若 [yakumanMultiplier] 大於 [paoYakuMultiplier]（和了同時疊加其他役滿，例如大四喜 + 四暗刻），
+     * 超出包牌範圍的 `(yakumanMultiplier - paoYakuMultiplier)` 倍改呼叫 [buildPointResult] 走正常
+     * 結算路徑，附加在回傳結果的 `remainder` 上，由呼叫端疊加進正常付款對象。
      *
-     * @param basicPoint 基本點。
+     * @param yakumanMultiplier 役滿倍數（如 1, 2...）。
+     * @param paoYakuMultiplier 觸發包牌責任的那個役滿本身的倍數（大三元 1、大四喜 2）。
      * @param isDealer 贏家是否為莊家。
      * @param isTsumo 是否為自摸。
      */
-    private fun buildPaoPointResult(basicPoint: Int, isDealer: Boolean, isTsumo: Boolean): RiichiPointResult {
+    private fun buildPaoPointResult(
+        yakumanMultiplier: Int,
+        paoYakuMultiplier: Int,
+        isDealer: Boolean,
+        isTsumo: Boolean,
+    ): RiichiPointResult {
         val multiplier = if (isDealer) 6 else 4
+        val paoBasicPoint = 8000 * paoYakuMultiplier
+        val remainder = (yakumanMultiplier - paoYakuMultiplier).takeIf { it > 0 }?.let {
+            buildPointResult(8000 * it, isDealer, isTsumo)
+        }
 
         if (isTsumo) {
-            return RiichiPointResult.PaoTsumo(ceilToHundred(basicPoint * multiplier))
+            return RiichiPointResult.PaoTsumo(ceilToHundred(paoBasicPoint * multiplier), remainder)
         }
 
         // 榮和包牌：由包牌責任者與實際放銃者平分。
-        // 役滿基本點恆為 8000 的倍數，乘上倍率（4 或 6）後除以 2 必為整百數，不會產生獨立進位的疑慮。
-        val paymentEach = ceilToHundred(basicPoint * multiplier / 2)
-        return RiichiPointResult.PaoRon(paymentEach)
+        // 包牌基本點恆為 8000 的倍數，乘上倍率（4 或 6）後除以 2 必為整百數，不會產生獨立進位的疑慮。
+        val paymentEach = ceilToHundred(paoBasicPoint * multiplier / 2)
+        return RiichiPointResult.PaoRon(paymentEach, remainder)
     }
 
     /**
