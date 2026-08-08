@@ -1,11 +1,13 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
+    alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.koin.compiler) apply false
     alias(libs.plugins.ktlint) apply false
 }
@@ -28,6 +30,21 @@ allprojects {
         }
 
         // 統一套用 Ktlint，排除 KSP（Koin annotations）產生的程式碼
+        apply(plugin = "org.jlleitschuh.gradle.ktlint")
+        extensions.configure<KtlintExtension> {
+            filter {
+                exclude("**/generated/**")
+            }
+        }
+    }
+
+    // Minecraft 平台模組（例如 Fabric Loom）用的是純 org.jetbrains.kotlin.jvm，不是 Kotlin Multiplatform，
+    // 需要另外套用同一套 jvmToolchain/Ktlint 設定，才能跟其他模組維持一致
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        extensions.configure<KotlinJvmProjectExtension> {
+            jvmToolchain(jvmToolchainVersion)
+        }
+
         apply(plugin = "org.jlleitschuh.gradle.ktlint")
         extensions.configure<KtlintExtension> {
             filter {

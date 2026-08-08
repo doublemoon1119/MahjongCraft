@@ -8,6 +8,16 @@ ktlint-gradle = "14.2.0"
 jvm-toolchain = "21"
 jvm-release = "17"
 
+# Minecraft v1.20.1 + Fabric 平台模組
+# 版本號帶數字結尾的 key 刻意不用 dash 分段（例如 minecraft1201 而非 minecraft-v1-20-1），
+# 避免 Gradle 版本目錄的巢狀 accessor 產生器在數字開頭的區段上產生無法預期的命名
+fabric-loom = "1.17.19"
+minecraft1201 = "1.20.1"
+yarnMappings1201 = "1.20.1+build.10"
+fabric-loader = "0.19.3"
+fabricApi1201 = "0.92.11+1.20.1"
+fabric-language-kotlin = "1.13.12+kotlin.2.4.0"
+
 [libraries]
 kotlinx-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
@@ -15,7 +25,14 @@ koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
 koin-core = { module = "io.insert-koin:koin-core" }
 koin-annotations = { module = "io.insert-koin:koin-annotations" }
 
+minecraft1201 = { group = "com.mojang", name = "minecraft", version.ref = "minecraft1201" }
+fabric-loader = { group = "net.fabricmc", name = "fabric-loader", version.ref = "fabric-loader" }
+fabricApi1201 = { group = "net.fabricmc.fabric-api", name = "fabric-api", version.ref = "fabricApi1201" }
+fabric-language-kotlin = { group = "net.fabricmc", name = "fabric-language-kotlin", version.ref = "fabric-language-kotlin" }
+
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 koin-compiler = { id = "io.insert-koin.compiler.plugin", version.ref = "koin-plugin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
+fabric-loom = { id = "fabric-loom", version.ref = "fabric-loom" }

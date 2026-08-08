@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "mahjongcraft",
+  "version": "${version}",
+  "name": "MahjongCraft",
+  "description": "Play Japanese (Riichi) Mahjong with your friends.",
+  "authors": [
+    "doublemoon1119"
+  ],
+  "contact": {
+    "homepage": "https://github.com/doublemoon1119/MahjongCraft",
+    "sources": "https://github.com/doublemoon1119/MahjongCraft",
+    "issues": "https://github.com/doublemoon1119/MahjongCraft/issues"
+  },
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "com.doublemoon1119.mahjongcraft.platform.fabric.MahjongCraftMod"
+      }
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "fabric": "*",
+    "minecraft": "1.20.1",
+    "fabric-language-kotlin": "*"
+  }
+}

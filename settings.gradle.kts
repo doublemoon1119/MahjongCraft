@@ -1,13 +1,29 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        // Fabric Loom 外掛只發布在 Fabric 官方 Maven，不在 Gradle Plugin Portal 上
+        maven("https://maven.fabricmc.net/")
+    }
+}
+
 rootProject.name = "MahjongCraft"
 
 /**
  * 集中化依賴管理與倉庫配置
  */
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // Fabric Loom 會在套用它的模組上自動注入好幾個它自己需要的 repo（Mojang 官方函式庫、
+    // 依專案動態產生路徑的本地重映射 mod jar 快取等），後者的路徑是動態算出來的，本來就無法在這裡
+    // 集中宣告。FAIL_ON_PROJECT_REPOS 會直接讓建置失敗，PREFER_SETTINGS 則會把這些 repo 整組忽略
+    // （包含無法預先宣告的本地快取 repo），兩者都會讓 Loom 模組壞掉，因此對這個專案只能用預設的
+    // PREFER_PROJECT——其他模組仍然只用這裡宣告的 repo，只有 Loom 這種会自行注入必要 repo 的外掛
+    // 才會用到專案層級的 repo。
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
     repositories {
         mavenCentral()
         gradlePluginPortal()
+        // Minecraft/Fabric API/Fabric Language Kotlin 等產物只發布在 Fabric 官方 Maven，不在 Maven Central 上
+        maven("https://maven.fabricmc.net/")
     }
 }
 
