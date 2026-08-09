@@ -76,9 +76,21 @@ allprojects {
         }
     }
 
-    // 統一處理資源替換
+    // 統一處理資源替換：mod 中繼資料（id/name/description/license/作者/聯絡資訊）不分版本、
+    // 不分 loader 都是同一份，集中在這裡宣告一次，每個 fabric.mod.json/neoforge.mods.toml
+    // 只需要用 ${...} 佔位字串引用，不必每個平台模組各自重複填一份、之後改資訊要改 N 個地方
     tasks.withType<ProcessResources>().configureEach {
-        val props = mapOf("version" to project.version)
+        val props = mapOf(
+            "version" to project.version,
+            "id" to "mahjongcraft",
+            "name" to "MahjongCraft",
+            "description" to "Play Japanese (Riichi) Mahjong with your friends.",
+            "license" to "MIT",
+            "author" to "doublemoon1119",
+            "homepage" to "https://github.com/doublemoon1119/MahjongCraft",
+            "sources" to "https://github.com/doublemoon1119/MahjongCraft",
+            "issues" to "https://github.com/doublemoon1119/MahjongCraft/issues",
+        )
         inputs.properties(props)
         filesMatching(listOf("fabric.mod.json", "META-INF/neoforge.mods.toml")) {
             expand(props)

@@ -4,4 +4,14 @@ plugins {
 
 kotlin {
     jvm()
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":mahjong-logic"))
+        }
+
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+    }
 }
