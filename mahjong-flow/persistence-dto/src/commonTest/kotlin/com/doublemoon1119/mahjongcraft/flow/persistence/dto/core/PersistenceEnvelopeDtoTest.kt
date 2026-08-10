@@ -10,7 +10,7 @@ import kotlin.test.assertEquals
 
 /** 驗證權威存檔 envelope 的 encoded round-trip。 */
 class PersistenceEnvelopeDtoTest {
-    /** 驗證 schema version 與世界級權威狀態通過 JSON 編解碼後不失真。 */
+    /** 驗證 schema version 與伺服器權威狀態通過 JSON 編解碼後不失真。 */
     @Test
     fun `persistence envelope round-trips through encoded JSON`() {
         val envelope = PersistenceEnvelopeDto(

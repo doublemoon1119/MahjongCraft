@@ -7,8 +7,8 @@ fun interface PersistenceMigration {
     /**
      * 轉換指定舊版權威狀態。
      *
-     * @param state 來源 schema version 的世界級權威狀態。
-     * @return 下一個 schema version 的世界級權威狀態。
+     * @param state 來源 schema version 的伺服器權威狀態。
+     * @return 下一個 schema version 的伺服器權威狀態。
      */
     fun migrate(state: JsonObject): JsonObject
 }
