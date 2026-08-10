@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.concurrency
 
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -10,7 +9,6 @@ import kotlin.test.assertEquals
 /**
  * 驗證 [CoroutineDispatchers] 介面與其測試實作 [TestCoroutineDispatchers] 的整合情況。
  */
-@OptIn(ExperimentalCoroutinesApi::class)
 class CoroutineDispatchersTest {
 
     /**
