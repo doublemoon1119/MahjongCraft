@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCo
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.platform.fabric.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftApp
+import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.player.DisconnectedPlayerLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
@@ -55,7 +56,7 @@ class MahjongCraftMod : ModInitializer {
         registerGameCommandReceiver(koin)
         registerPlayerConnectionEvents(koin)
 
-        logger.info("MahjongCraft (Fabric, Minecraft 1.20.1) initialized.")
+        logger.info(koin.get<FabricRuntimeMetadata>().initializationMessage())
     }
 
     /** 將 Fabric 玩家連線事件轉送給可測試的斷線政策執行器。 */
