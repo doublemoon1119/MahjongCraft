@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.buildMahjongDtoSerializersModule
-import com.doublemoon1119.mahjongcraft.flow.network.dto.toDomain
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
+import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels

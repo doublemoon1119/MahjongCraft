@@ -4,9 +4,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
-import com.doublemoon1119.mahjongcraft.flow.network.dto.RoomUpdateEventDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.RoomUpdatePayloadDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder

@@ -2,8 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.event
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
-import com.doublemoon1119.mahjongcraft.flow.network.dto.GameUpdatePayloadDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder

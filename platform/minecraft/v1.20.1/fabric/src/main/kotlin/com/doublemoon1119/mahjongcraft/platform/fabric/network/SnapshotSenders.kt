@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.network
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
-import com.doublemoon1119.mahjongcraft.flow.network.dto.GameSnapshotSyncPayloadDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.RoomSnapshotSyncPayloadDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSyncPayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Single
