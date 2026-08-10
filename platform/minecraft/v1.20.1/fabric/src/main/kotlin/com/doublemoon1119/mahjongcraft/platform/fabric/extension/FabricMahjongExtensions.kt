@@ -4,9 +4,8 @@ import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.loader.api.FabricLoader
@@ -25,16 +24,16 @@ object FabricMahjongExtensions {
     /** Fabric extension discovery 與註冊結果使用的 logger。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
-    /** runtime persistence registry；初始化完成後供 persistence adapter 使用。 */
-    lateinit var persistenceRegistries: PersistenceRegistries
-        private set
-
     /** 透過 [FabricLoader] 發現 entrypoint，完成一次 runtime registry 初始化。 */
-    fun initialize(moduleRegistry: MahjongModuleRegistry) {
+    fun initialize(
+        moduleRegistry: MahjongModuleRegistry,
+        networkRegistries: NetworkDtoRegistries,
+        persistenceRegistries: PersistenceRegistries,
+    ) {
         try {
             val extensions = FabricLoader.getInstance()
                 .getEntrypoints(MAHJONG_EXTENSION_ENTRYPOINT, MahjongExtension::class.java)
-            initialize(moduleRegistry, extensions)
+            initialize(moduleRegistry, networkRegistries, persistenceRegistries, extensions)
             logger.info("Registered {} Mahjong extension(s)", extensions.size)
         } catch (cause: Exception) {
             logger.error("Failed to initialize Mahjong extensions", cause)
@@ -45,18 +44,18 @@ object FabricMahjongExtensions {
     /** 使用明確提供的 [extensions] 初始化，供平台測試驗證組裝順序。 */
     internal fun initialize(
         moduleRegistry: MahjongModuleRegistry,
+        networkRegistries: NetworkDtoRegistries,
+        persistenceRegistries: PersistenceRegistries,
         extensions: Iterable<MahjongExtension>,
     ) {
         moduleRegistry.registerBuiltInRuleModules()
-        registerBuiltInRuleConfigDtos()
-        val persistence = buildBuiltInPersistenceRegistries()
+        networkRegistries.registerBuiltInRuleConfigDtos()
 
         MahjongExtensionRegistrar.registerAndFreeze(
             extensions = extensions,
             moduleRegistry = moduleRegistry,
-            networkRegistries = MahjongRuleDtoRegistries,
-            persistenceRegistries = persistence,
+            networkRegistries = networkRegistries,
+            persistenceRegistries = persistenceRegistries,
         )
-        persistenceRegistries = persistence
     }
 }

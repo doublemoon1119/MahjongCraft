@@ -15,7 +15,7 @@ import kotlinx.serialization.modules.polymorphic
 /**
  * [MahjongRuleConfig] 的網路 DTO——刻意維持開放介面（不是 sealed），對應領域層本身就是開放介面、
  * 讓第三方能透過 [com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry] 註冊自己
- * 的規則模組這件事。序列化用的多型清單改用 [MahjongRuleDtoRegistries] 動態組成，不是編譯期窮舉；
+ * 的規則模組這件事。序列化用的多型清單改用 [NetworkDtoRegistries] 動態組成，不是編譯期窮舉；
  * `@Polymorphic` 標記在介面上，讓任何用到這個型別的欄位都自動走 `SerializersModule` 查表，
  * 不需要在每個使用處各自標註。
  */
@@ -79,7 +79,7 @@ interface NetworkDtoRegistries {
 }
 
 /** MahjongCraft runtime 目前使用的 network DTO registry 集合。 */
-object MahjongRuleDtoRegistries : NetworkDtoRegistries {
+class DefaultNetworkDtoRegistries : NetworkDtoRegistries {
     override val ruleConfig = DtoRegistry<MahjongRuleConfig, MahjongRuleConfigDto>()
     override val scoreConfig = DtoRegistry<ScoreConfig, ScoreConfigDto>()
     override val gameLength = DtoRegistry<GameLength, GameLengthDto>()
@@ -100,37 +100,38 @@ object MahjongRuleDtoRegistries : NetworkDtoRegistries {
 }
 
 /**
- * 依 [MahjongRuleDtoRegistries] 目前已註冊的內容動態組成的 `SerializersModule`——每次
+ * 依 [registries] 目前已註冊的內容動態組成 `SerializersModule`——每次
  * `register(...)` 之後都要重新取得（呼叫端通常在 [registerBuiltInRuleConfigDtos] 執行完、
  * 所有第三方規則模組也註冊完畢後，才建構真正要用的 `Json` 實例）。
  */
-fun buildMahjongDtoSerializersModule(): SerializersModule = SerializersModule {
-    polymorphic(MahjongRuleConfigDto::class) { MahjongRuleDtoRegistries.ruleConfig.registerSubclasses(this) }
-    polymorphic(ScoreConfigDto::class) { MahjongRuleDtoRegistries.scoreConfig.registerSubclasses(this) }
-    polymorphic(GameLengthDto::class) { MahjongRuleDtoRegistries.gameLength.registerSubclasses(this) }
-    polymorphic(DynamicRuleStateDto::class) { MahjongRuleDtoRegistries.dynamicRuleState.registerSubclasses(this) }
-    polymorphic(PlayerRuleStateDto::class) { MahjongRuleDtoRegistries.playerRuleState.registerSubclasses(this) }
-    polymorphic(DiscardPileDto::class) { MahjongRuleDtoRegistries.discardPile.registerSubclasses(this) }
-    polymorphic(ExhaustiveDrawReasonDto::class) { MahjongRuleDtoRegistries.exhaustiveDrawReason.registerSubclasses(this) }
+fun buildMahjongDtoSerializersModule(registries: NetworkDtoRegistries): SerializersModule = SerializersModule {
+    polymorphic(MahjongRuleConfigDto::class) { registries.ruleConfig.registerSubclasses(this) }
+    polymorphic(ScoreConfigDto::class) { registries.scoreConfig.registerSubclasses(this) }
+    polymorphic(GameLengthDto::class) { registries.gameLength.registerSubclasses(this) }
+    polymorphic(DynamicRuleStateDto::class) { registries.dynamicRuleState.registerSubclasses(this) }
+    polymorphic(PlayerRuleStateDto::class) { registries.playerRuleState.registerSubclasses(this) }
+    polymorphic(DiscardPileDto::class) { registries.discardPile.registerSubclasses(this) }
+    polymorphic(ExhaustiveDrawReasonDto::class) { registries.exhaustiveDrawReason.registerSubclasses(this) }
 }
 
-fun MahjongRuleConfig.toDto(): MahjongRuleConfigDto = MahjongRuleDtoRegistries.ruleConfig.toDto(this)
-fun MahjongRuleConfigDto.toDomain(): MahjongRuleConfig = MahjongRuleDtoRegistries.ruleConfig.toDomain(this)
+fun MahjongRuleConfig.toDto(registries: NetworkDtoRegistries): MahjongRuleConfigDto = registries.ruleConfig.toDto(this)
+fun MahjongRuleConfigDto.toDomain(registries: NetworkDtoRegistries): MahjongRuleConfig = registries.ruleConfig.toDomain(this)
 
-fun ScoreConfig.toDto(): ScoreConfigDto = MahjongRuleDtoRegistries.scoreConfig.toDto(this)
-fun ScoreConfigDto.toDomain(): ScoreConfig = MahjongRuleDtoRegistries.scoreConfig.toDomain(this)
+fun ScoreConfig.toDto(registries: NetworkDtoRegistries): ScoreConfigDto = registries.scoreConfig.toDto(this)
+fun ScoreConfigDto.toDomain(registries: NetworkDtoRegistries): ScoreConfig = registries.scoreConfig.toDomain(this)
 
-fun GameLength.toDto(): GameLengthDto = MahjongRuleDtoRegistries.gameLength.toDto(this)
-fun GameLengthDto.toDomain(): GameLength = MahjongRuleDtoRegistries.gameLength.toDomain(this)
+fun GameLength.toDto(registries: NetworkDtoRegistries): GameLengthDto = registries.gameLength.toDto(this)
+fun GameLengthDto.toDomain(registries: NetworkDtoRegistries): GameLength = registries.gameLength.toDomain(this)
 
-fun DynamicRuleState.toDto(): DynamicRuleStateDto = MahjongRuleDtoRegistries.dynamicRuleState.toDto(this)
-fun DynamicRuleStateDto.toDomain(): DynamicRuleState = MahjongRuleDtoRegistries.dynamicRuleState.toDomain(this)
+fun DynamicRuleState.toDto(registries: NetworkDtoRegistries): DynamicRuleStateDto = registries.dynamicRuleState.toDto(this)
+fun DynamicRuleStateDto.toDomain(registries: NetworkDtoRegistries): DynamicRuleState = registries.dynamicRuleState.toDomain(this)
 
-fun PlayerRuleState.toDto(): PlayerRuleStateDto = MahjongRuleDtoRegistries.playerRuleState.toDto(this)
-fun PlayerRuleStateDto.toDomain(): PlayerRuleState = MahjongRuleDtoRegistries.playerRuleState.toDomain(this)
+fun PlayerRuleState.toDto(registries: NetworkDtoRegistries): PlayerRuleStateDto = registries.playerRuleState.toDto(this)
+fun PlayerRuleStateDto.toDomain(registries: NetworkDtoRegistries): PlayerRuleState = registries.playerRuleState.toDomain(this)
 
-fun DiscardPile<*>.toDto(): DiscardPileDto = MahjongRuleDtoRegistries.discardPile.toDto(this)
-fun DiscardPileDto.toDomain(): DiscardPile<*> = MahjongRuleDtoRegistries.discardPile.toDomain(this)
+fun DiscardPile<*>.toDto(registries: NetworkDtoRegistries): DiscardPileDto = registries.discardPile.toDto(this)
+fun DiscardPileDto.toDomain(registries: NetworkDtoRegistries): DiscardPile<*> = registries.discardPile.toDomain(this)
 
-fun ExhaustiveDrawReason.toDto(): ExhaustiveDrawReasonDto = MahjongRuleDtoRegistries.exhaustiveDrawReason.toDto(this)
-fun ExhaustiveDrawReasonDto.toDomain(): ExhaustiveDrawReason = MahjongRuleDtoRegistries.exhaustiveDrawReason.toDomain(this)
+fun ExhaustiveDrawReason.toDto(registries: NetworkDtoRegistries): ExhaustiveDrawReasonDto = registries.exhaustiveDrawReason.toDto(this)
+
+fun ExhaustiveDrawReasonDto.toDomain(registries: NetworkDtoRegistries): ExhaustiveDrawReason = registries.exhaustiveDrawReason.toDomain(this)

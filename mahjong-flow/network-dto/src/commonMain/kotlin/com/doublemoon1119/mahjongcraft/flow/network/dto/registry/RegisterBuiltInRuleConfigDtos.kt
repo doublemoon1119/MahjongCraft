@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.registry
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiDiscardPileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiDynamicStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiExhaustiveDrawReasonDto
@@ -28,42 +28,37 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanScoreConfig
 
-/** 目前 runtime 是否已完成內建 network DTO mapper 註冊。 */
-private var builtInRuleConfigDtosRegistered = false
-
 /**
  * 註冊 `:mahjong-flow-network-dto` 內建支援的規則模組（日麻、台麻）的 DTO 對照。
  *
  * 比照 `:mahjong-flow-common` 的 `registerBuiltInRuleModules()`：註冊方式與第三方規則相同，皆透過
- * [MahjongRuleDtoRegistries] 底下各個 `DtoRegistry.register(...)`，不具特權；第三方規則要支援
+ * [NetworkDtoRegistries] 底下各個 `DtoRegistry.register(...)`，不具特權；第三方規則要支援
  * 序列化，可在各自的組裝處另行呼叫對應 registry 的 `register(...)`。
  */
-fun registerBuiltInRuleConfigDtos() {
-    if (builtInRuleConfigDtosRegistered) return
-
-    MahjongRuleDtoRegistries.ruleConfig.register(
+fun NetworkDtoRegistries.registerBuiltInRuleConfigDtos() {
+    this.ruleConfig.register(
         RiichiRuleConfig::class,
         RiichiRuleConfigDto::class,
         RiichiRuleConfigDto.serializer(),
-        RiichiRuleConfig::toRiichiDto,
-        RiichiRuleConfigDto::toDomain,
+        { it.toRiichiDto(this) },
+        { it.toDomain(this) },
     )
-    MahjongRuleDtoRegistries.ruleConfig.register(
+    this.ruleConfig.register(
         TaiwanRuleConfig::class,
         TaiwanRuleConfigDto::class,
         TaiwanRuleConfigDto.serializer(),
-        TaiwanRuleConfig::toTaiwanDto,
-        TaiwanRuleConfigDto::toDomain,
+        { it.toTaiwanDto(this) },
+        { it.toDomain(this) },
     )
 
-    MahjongRuleDtoRegistries.scoreConfig.register(
+    this.scoreConfig.register(
         RiichiScoreConfig::class,
         RiichiScoreConfigDto::class,
         RiichiScoreConfigDto.serializer(),
         RiichiScoreConfig::toRiichiDto,
         RiichiScoreConfigDto::toDomain,
     )
-    MahjongRuleDtoRegistries.scoreConfig.register(
+    this.scoreConfig.register(
         TaiwanScoreConfig::class,
         TaiwanScoreConfigDto::class,
         TaiwanScoreConfigDto.serializer(),
@@ -71,49 +66,49 @@ fun registerBuiltInRuleConfigDtos() {
         TaiwanScoreConfigDto::toDomain,
     )
 
-    MahjongRuleDtoRegistries.gameLength.register(
+    this.gameLength.register(
         RiichiGameLength.OneGame::class,
         RiichiGameLengthDto.OneGame::class,
         RiichiGameLengthDto.OneGame.serializer(),
         { RiichiGameLengthDto.OneGame },
         { RiichiGameLength.OneGame },
     )
-    MahjongRuleDtoRegistries.gameLength.register(
+    this.gameLength.register(
         RiichiGameLength.East::class,
         RiichiGameLengthDto.East::class,
         RiichiGameLengthDto.East.serializer(),
         { RiichiGameLengthDto.East },
         { RiichiGameLength.East },
     )
-    MahjongRuleDtoRegistries.gameLength.register(
+    this.gameLength.register(
         RiichiGameLength.TwoWinds::class,
         RiichiGameLengthDto.TwoWinds::class,
         RiichiGameLengthDto.TwoWinds.serializer(),
         { RiichiGameLengthDto.TwoWinds },
         { RiichiGameLength.TwoWinds },
     )
-    MahjongRuleDtoRegistries.gameLength.register(
+    this.gameLength.register(
         TaiwanGameLength.OneGame::class,
         TaiwanGameLengthDto.OneGame::class,
         TaiwanGameLengthDto.OneGame.serializer(),
         { TaiwanGameLengthDto.OneGame },
         { TaiwanGameLength.OneGame },
     )
-    MahjongRuleDtoRegistries.gameLength.register(
+    this.gameLength.register(
         TaiwanGameLength.East::class,
         TaiwanGameLengthDto.East::class,
         TaiwanGameLengthDto.East.serializer(),
         { TaiwanGameLengthDto.East },
         { TaiwanGameLength.East },
     )
-    MahjongRuleDtoRegistries.gameLength.register(
+    this.gameLength.register(
         TaiwanGameLength.TwoWinds::class,
         TaiwanGameLengthDto.TwoWinds::class,
         TaiwanGameLengthDto.TwoWinds.serializer(),
         { TaiwanGameLengthDto.TwoWinds },
         { TaiwanGameLength.TwoWinds },
     )
-    MahjongRuleDtoRegistries.gameLength.register(
+    this.gameLength.register(
         TaiwanGameLength.FourWinds::class,
         TaiwanGameLengthDto.FourWinds::class,
         TaiwanGameLengthDto.FourWinds.serializer(),
@@ -121,7 +116,7 @@ fun registerBuiltInRuleConfigDtos() {
         { TaiwanGameLength.FourWinds },
     )
 
-    MahjongRuleDtoRegistries.dynamicRuleState.register(
+    this.dynamicRuleState.register(
         RiichiDynamicState::class,
         RiichiDynamicStateDto::class,
         RiichiDynamicStateDto.serializer(),
@@ -129,7 +124,7 @@ fun registerBuiltInRuleConfigDtos() {
         RiichiDynamicStateDto::toDomain,
     )
 
-    MahjongRuleDtoRegistries.playerRuleState.register(
+    this.playerRuleState.register(
         RiichiPlayerState::class,
         RiichiPlayerStateDto::class,
         RiichiPlayerStateDto.serializer(),
@@ -137,14 +132,14 @@ fun registerBuiltInRuleConfigDtos() {
         RiichiPlayerStateDto::toDomain,
     )
 
-    MahjongRuleDtoRegistries.discardPile.register(
+    this.discardPile.register(
         RiichiDiscardPile::class,
         RiichiDiscardPileDto::class,
         RiichiDiscardPileDto.serializer(),
         RiichiDiscardPile::toRiichiDto,
         RiichiDiscardPileDto::toDomain,
     )
-    MahjongRuleDtoRegistries.discardPile.register(
+    this.discardPile.register(
         TaiwanDiscardPile::class,
         TaiwanDiscardPileDto::class,
         TaiwanDiscardPileDto.serializer(),
@@ -152,47 +147,46 @@ fun registerBuiltInRuleConfigDtos() {
         TaiwanDiscardPileDto::toDomain,
     )
 
-    MahjongRuleDtoRegistries.exhaustiveDrawReason.register(
+    this.exhaustiveDrawReason.register(
         RiichiExhaustiveDrawReason.Normal::class,
         RiichiExhaustiveDrawReasonDto.Normal::class,
         RiichiExhaustiveDrawReasonDto.Normal.serializer(),
         { RiichiExhaustiveDrawReasonDto.Normal },
         { RiichiExhaustiveDrawReason.Normal },
     )
-    MahjongRuleDtoRegistries.exhaustiveDrawReason.register(
+    this.exhaustiveDrawReason.register(
         RiichiExhaustiveDrawReason.KyuushuKyuuhai::class,
         RiichiExhaustiveDrawReasonDto.KyuushuKyuuhai::class,
         RiichiExhaustiveDrawReasonDto.KyuushuKyuuhai.serializer(),
         { RiichiExhaustiveDrawReasonDto.KyuushuKyuuhai },
         { RiichiExhaustiveDrawReason.KyuushuKyuuhai },
     )
-    MahjongRuleDtoRegistries.exhaustiveDrawReason.register(
+    this.exhaustiveDrawReason.register(
         RiichiExhaustiveDrawReason.SuufonRenda::class,
         RiichiExhaustiveDrawReasonDto.SuufonRenda::class,
         RiichiExhaustiveDrawReasonDto.SuufonRenda.serializer(),
         { RiichiExhaustiveDrawReasonDto.SuufonRenda },
         { RiichiExhaustiveDrawReason.SuufonRenda },
     )
-    MahjongRuleDtoRegistries.exhaustiveDrawReason.register(
+    this.exhaustiveDrawReason.register(
         RiichiExhaustiveDrawReason.SuukanNagare::class,
         RiichiExhaustiveDrawReasonDto.SuukanNagare::class,
         RiichiExhaustiveDrawReasonDto.SuukanNagare.serializer(),
         { RiichiExhaustiveDrawReasonDto.SuukanNagare },
         { RiichiExhaustiveDrawReason.SuukanNagare },
     )
-    MahjongRuleDtoRegistries.exhaustiveDrawReason.register(
+    this.exhaustiveDrawReason.register(
         RiichiExhaustiveDrawReason.SuuchaRiichi::class,
         RiichiExhaustiveDrawReasonDto.SuuchaRiichi::class,
         RiichiExhaustiveDrawReasonDto.SuuchaRiichi.serializer(),
         { RiichiExhaustiveDrawReasonDto.SuuchaRiichi },
         { RiichiExhaustiveDrawReason.SuuchaRiichi },
     )
-    MahjongRuleDtoRegistries.exhaustiveDrawReason.register(
+    this.exhaustiveDrawReason.register(
         RiichiExhaustiveDrawReason.SanchaHou::class,
         RiichiExhaustiveDrawReasonDto.SanchaHou::class,
         RiichiExhaustiveDrawReasonDto.SanchaHou.serializer(),
         { RiichiExhaustiveDrawReasonDto.SanchaHou },
         { RiichiExhaustiveDrawReason.SanchaHou },
     )
-    builtInRuleConfigDtosRegistered = true
 }

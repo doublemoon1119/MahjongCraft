@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublish
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
@@ -26,6 +27,7 @@ class RoomEventPublisherImpl(
     private val roomSnapshotRepository: RoomSnapshotRepository,
     private val serverHolder: FabricServerHolder,
     private val json: Json,
+    private val networkRegistries: NetworkDtoRegistries,
 ) : RoomEventPublisher {
     override suspend fun publishJoin(roomId: Uuid, targetPlayerId: Uuid, joinedPlayerId: Uuid, reason: JoinReason) {
         send(roomId, targetPlayerId, RoomUpdateEventDto.Join(joinedPlayerId.toString(), reason.toDto()))
@@ -40,13 +42,17 @@ class RoomEventPublisherImpl(
     }
 
     override suspend fun publishConfigChanged(roomId: Uuid, targetPlayerId: Uuid, newConfig: MahjongRuleConfig) {
-        send(roomId, targetPlayerId, RoomUpdateEventDto.ConfigChanged(newConfig.toDto()))
+        send(roomId, targetPlayerId, RoomUpdateEventDto.ConfigChanged(newConfig.toDto(networkRegistries)))
     }
 
     private suspend fun send(roomId: Uuid, targetPlayerId: Uuid, event: RoomUpdateEventDto) {
         val player = serverHolder.findPlayer(targetPlayerId) ?: return
         val snapshot = roomSnapshotRepository.getSnapshot(roomId, targetPlayerId) ?: return
-        val payload = RoomUpdatePayloadDto(roomId = roomId.toString(), event = event, snapshot = snapshot.toDto())
+        val payload = RoomUpdatePayloadDto(
+            roomId = roomId.toString(),
+            event = event,
+            snapshot = snapshot.toDto(networkRegistries),
+        )
         MahjongChannels.roomUpdate.sendTo(player, json, payload)
     }
 }

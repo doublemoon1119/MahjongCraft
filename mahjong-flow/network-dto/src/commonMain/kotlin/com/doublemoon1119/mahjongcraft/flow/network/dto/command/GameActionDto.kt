@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.command
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExhaustiveDrawReasonDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -41,7 +42,7 @@ sealed interface GameActionDto {
 @Serializable
 enum class KanTypeDto { OPEN_KAN, CLOSED_KAN, ADDED_KAN }
 
-fun GameAction.toDto(): GameActionDto = when (this) {
+fun GameAction.toDto(registries: NetworkDtoRegistries): GameActionDto = when (this) {
     GameAction.GameStarted -> GameActionDto.GameStarted
     GameAction.RoundStarted -> GameActionDto.RoundStarted
     GameAction.Draw -> GameActionDto.Draw
@@ -53,10 +54,10 @@ fun GameAction.toDto(): GameActionDto = when (this) {
     GameAction.Tsumo -> GameActionDto.Tsumo
     GameAction.Riichi -> GameActionDto.Riichi
     GameAction.Pass -> GameActionDto.Pass
-    is GameAction.ExhaustiveDraw -> GameActionDto.ExhaustiveDraw(reason.toDto())
+    is GameAction.ExhaustiveDraw -> GameActionDto.ExhaustiveDraw(reason.toDto(registries))
 }
 
-fun GameActionDto.toDomain(): GameAction = when (this) {
+fun GameActionDto.toDomain(registries: NetworkDtoRegistries): GameAction = when (this) {
     GameActionDto.GameStarted -> GameAction.GameStarted
     GameActionDto.RoundStarted -> GameAction.RoundStarted
     GameActionDto.Draw -> GameAction.Draw
@@ -68,7 +69,7 @@ fun GameActionDto.toDomain(): GameAction = when (this) {
     GameActionDto.Tsumo -> GameAction.Tsumo
     GameActionDto.Riichi -> GameAction.Riichi
     GameActionDto.Pass -> GameAction.Pass
-    is GameActionDto.ExhaustiveDraw -> GameAction.ExhaustiveDraw(reason.toDomain())
+    is GameActionDto.ExhaustiveDraw -> GameAction.ExhaustiveDraw(reason.toDomain(registries))
 }
 
 fun GameAction.KanType.toDto(): KanTypeDto = when (this) {

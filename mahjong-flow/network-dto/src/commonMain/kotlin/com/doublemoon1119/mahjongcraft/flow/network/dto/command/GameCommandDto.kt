@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.command
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
@@ -29,24 +30,24 @@ sealed interface GameCommandDto {
     @Serializable data object KyuushuKyuuhai : GameCommandDto
 }
 
-fun GameCommand.toDto(): GameCommandDto = when (this) {
+fun GameCommand.toDto(registries: NetworkDtoRegistries): GameCommandDto = when (this) {
     GameCommand.Draw -> GameCommandDto.Draw
     is GameCommand.Discard -> GameCommandDto.Discard(tileId.toString())
     is GameCommand.Riichi -> GameCommandDto.Riichi(tileId.toString())
     GameCommand.Tsumo -> GameCommandDto.Tsumo
     is GameCommand.Kan -> GameCommandDto.Kan(type.toDto(), tileId.toString())
-    is GameCommand.RespondToDiscard -> GameCommandDto.RespondToDiscard(action.toDto())
-    is GameCommand.RespondToChankan -> GameCommandDto.RespondToChankan(action.toDto())
+    is GameCommand.RespondToDiscard -> GameCommandDto.RespondToDiscard(action.toDto(registries))
+    is GameCommand.RespondToChankan -> GameCommandDto.RespondToChankan(action.toDto(registries))
     GameCommand.KyuushuKyuuhai -> GameCommandDto.KyuushuKyuuhai
 }
 
-fun GameCommandDto.toDomain(): GameCommand = when (this) {
+fun GameCommandDto.toDomain(registries: NetworkDtoRegistries): GameCommand = when (this) {
     GameCommandDto.Draw -> GameCommand.Draw
     is GameCommandDto.Discard -> GameCommand.Discard(Uuid.parse(tileId))
     is GameCommandDto.Riichi -> GameCommand.Riichi(Uuid.parse(tileId))
     GameCommandDto.Tsumo -> GameCommand.Tsumo
     is GameCommandDto.Kan -> GameCommand.Kan(kanType.toDomain(), Uuid.parse(tileId))
-    is GameCommandDto.RespondToDiscard -> GameCommand.RespondToDiscard(action.toDomain())
-    is GameCommandDto.RespondToChankan -> GameCommand.RespondToChankan(action.toDomain())
+    is GameCommandDto.RespondToDiscard -> GameCommand.RespondToDiscard(action.toDomain(registries))
+    is GameCommandDto.RespondToChankan -> GameCommand.RespondToChankan(action.toDomain(registries))
     GameCommandDto.KyuushuKyuuhai -> GameCommand.KyuushuKyuuhai
 }

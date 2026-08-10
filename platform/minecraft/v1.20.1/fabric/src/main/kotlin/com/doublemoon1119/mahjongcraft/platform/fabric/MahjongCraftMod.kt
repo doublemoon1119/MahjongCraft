@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -35,7 +37,11 @@ class MahjongCraftMod : ModInitializer {
     override fun onInitialize() {
         val koin = startKoin<MahjongCraftApp>().koin
         // Koin single 建立後，必須先於 Json 與遊戲流程服務第一次被解析前完成。
-        FabricMahjongExtensions.initialize(koin.get<MahjongModuleRegistry>())
+        FabricMahjongExtensions.initialize(
+            moduleRegistry = koin.get<MahjongModuleRegistry>(),
+            networkRegistries = koin.get<NetworkDtoRegistries>(),
+            persistenceRegistries = koin.get<PersistenceRegistries>(),
+        )
 
         ModItems.register()
         ModBlocks.register(koin.get<MahjongTableRoomService>())
@@ -78,13 +84,14 @@ class MahjongCraftMod : ModInitializer {
      */
     private fun registerGameCommandReceiver(koin: Koin) {
         val json = koin.get<Json>()
+        val networkRegistries = koin.get<NetworkDtoRegistries>()
         val scope = koin.get<AppCoroutineScope>()
         MahjongChannels.gameCommand.registerServerReceiver(json) { _, player, envelope ->
             scope.launch {
                 koin.get<GameFlowCoordinator>().invoke(
                     gameId = Uuid.parse(envelope.gameId),
                     playerId = player.uuid.toKotlinUuid(),
-                    command = envelope.command.toDomain(),
+                    command = envelope.command.toDomain(networkRegistries),
                 )
             }
         }

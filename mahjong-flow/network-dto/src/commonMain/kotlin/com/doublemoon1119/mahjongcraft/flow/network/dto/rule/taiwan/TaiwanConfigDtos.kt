@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DiscardPileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.GameLengthDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MultiRonPolicyDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ScoreConfigDto
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
@@ -34,11 +35,11 @@ data class TaiwanRuleConfigDto(
     val useFlowerTiles: Boolean,
 ) : MahjongRuleConfigDto
 
-fun TaiwanRuleConfig.toTaiwanDto(): TaiwanRuleConfigDto = TaiwanRuleConfigDto(
+fun TaiwanRuleConfig.toTaiwanDto(registries: NetworkDtoRegistries): TaiwanRuleConfigDto = TaiwanRuleConfigDto(
     initialHandSize = initialHandSize,
     deadTileCount = deadTileCount,
     scoreConfig = scoreConfig.toTaiwanDto(),
-    gameLength = gameLength.toRuleDto(),
+    gameLength = gameLength.toRuleDto(registries),
     minimumWinConstraint = minimumWinConstraint,
     isSpectateAllowed = isSpectateAllowed,
     minPlayers = minPlayers,
@@ -47,11 +48,11 @@ fun TaiwanRuleConfig.toTaiwanDto(): TaiwanRuleConfigDto = TaiwanRuleConfigDto(
     useFlowerTiles = useFlowerTiles,
 )
 
-fun TaiwanRuleConfigDto.toDomain(): TaiwanRuleConfig = TaiwanRuleConfig(
+fun TaiwanRuleConfigDto.toDomain(registries: NetworkDtoRegistries): TaiwanRuleConfig = TaiwanRuleConfig(
     useFlowerTiles = useFlowerTiles,
     minimumWinConstraint = minimumWinConstraint,
     scoreConfig = scoreConfig.toDomain(),
-    gameLength = gameLength.toRuleDomain() as TaiwanGameLength,
+    gameLength = gameLength.toRuleDomain(registries) as TaiwanGameLength,
     isSpectateAllowed = isSpectateAllowed,
     multiRonPolicy = multiRonPolicy.toRuleDomain(),
 )

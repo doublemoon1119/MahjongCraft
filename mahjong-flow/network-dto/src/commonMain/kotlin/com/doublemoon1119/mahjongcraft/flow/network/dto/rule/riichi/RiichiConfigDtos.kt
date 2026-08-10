@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExhaustiveDrawReaso
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.GameLengthDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MultiRonPolicyDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.PlayerRuleStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ScoreConfigDto
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
@@ -44,11 +45,11 @@ data class RiichiRuleConfigDto(
     val useLocalYaku: Boolean,
 ) : MahjongRuleConfigDto
 
-fun RiichiRuleConfig.toRiichiDto(): RiichiRuleConfigDto = RiichiRuleConfigDto(
+fun RiichiRuleConfig.toRiichiDto(registries: NetworkDtoRegistries): RiichiRuleConfigDto = RiichiRuleConfigDto(
     initialHandSize = initialHandSize,
     deadTileCount = deadTileCount,
     scoreConfig = scoreConfig.toRiichiDto(),
-    gameLength = gameLength.toRuleDto(),
+    gameLength = gameLength.toRuleDto(registries),
     minimumWinConstraint = minimumWinConstraint,
     isSpectateAllowed = isSpectateAllowed,
     minPlayers = minPlayers,
@@ -59,13 +60,13 @@ fun RiichiRuleConfig.toRiichiDto(): RiichiRuleConfigDto = RiichiRuleConfigDto(
     useLocalYaku = useLocalYaku,
 )
 
-fun RiichiRuleConfigDto.toDomain(): RiichiRuleConfig = RiichiRuleConfig(
+fun RiichiRuleConfigDto.toDomain(registries: NetworkDtoRegistries): RiichiRuleConfig = RiichiRuleConfig(
     redDoraCount = redDoraCount,
     allowOpenTanyao = allowOpenTanyao,
     useLocalYaku = useLocalYaku,
     minimumWinConstraint = minimumWinConstraint,
     scoreConfig = scoreConfig.toDomain(),
-    gameLength = gameLength.toRuleDomain() as RiichiGameLength,
+    gameLength = gameLength.toRuleDomain(registries) as RiichiGameLength,
     isSpectateAllowed = isSpectateAllowed,
     multiRonPolicy = multiRonPolicy.toRuleDomain(),
 )

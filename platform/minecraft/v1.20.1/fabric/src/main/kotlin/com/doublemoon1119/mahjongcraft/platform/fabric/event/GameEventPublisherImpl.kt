@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -23,6 +24,7 @@ class GameEventPublisherImpl(
     private val gameSnapshotRepository: GameSnapshotRepository,
     private val serverHolder: FabricServerHolder,
     private val json: Json,
+    private val networkRegistries: NetworkDtoRegistries,
 ) : GameEventPublisher {
     override suspend fun publish(gameId: Uuid, targetPlayerId: Uuid, actorId: Uuid, action: GameAction) {
         val player = serverHolder.findPlayer(targetPlayerId) ?: return
@@ -30,8 +32,8 @@ class GameEventPublisherImpl(
         val payload = GameUpdatePayloadDto(
             gameId = gameId.toString(),
             actorId = actorId.toString(),
-            action = action.toDto(),
-            snapshot = snapshot.toDto(),
+            action = action.toDto(networkRegistries),
+            snapshot = snapshot.toDto(networkRegistries),
         )
         MahjongChannels.gameUpdate.sendTo(player, json, payload)
     }

@@ -3,12 +3,17 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
+import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /** Fabric client 主執行緒持有的最新房間與遊戲 read-side 狀態，供後續 GUI／渲染讀取。 */
-object ClientMahjongStateStore {
+@Single
+class ClientMahjongStateStore(
+    private val networkRegistries: NetworkDtoRegistries,
+) {
     /** 目前已同步的房間快照；尚未進入房間時為 null。 */
     var roomSnapshot: RoomSnapshot? = null
         private set
@@ -19,12 +24,12 @@ object ClientMahjongStateStore {
 
     /** 接收帶事件的房間更新並保存其最新快照。 */
     fun apply(payload: RoomUpdatePayloadDto) {
-        roomSnapshot = payload.snapshot.toDomain()
+        roomSnapshot = payload.snapshot.toDomain(networkRegistries)
     }
 
     /** 接收帶動作的遊戲更新並保存其最新快照。 */
     fun apply(payload: GameUpdatePayloadDto) {
-        gameSnapshot = payload.snapshot.toDomain()
+        gameSnapshot = payload.snapshot.toDomain(networkRegistries)
         roomSnapshot = null
     }
 

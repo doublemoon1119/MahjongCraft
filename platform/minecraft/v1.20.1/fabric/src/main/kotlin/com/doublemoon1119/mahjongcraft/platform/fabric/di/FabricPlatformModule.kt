@@ -5,7 +5,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.common.di.FlowCommonModule
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.di.FlowServerModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import kotlinx.serialization.json.Json
@@ -36,12 +40,22 @@ class FabricPlatformModule {
     @Single
     fun provideMinecraftServerConfig(): MinecraftServerConfig = MinecraftServerConfig()
 
+    /** 建立供 extension 註冊與 persistence adapter 共用的 runtime registry single。 */
+    @Single
+    fun providePersistenceRegistries(): PersistenceRegistries = buildBuiltInPersistenceRegistries()
+
+    /** 建立供 extension 註冊、DTO 轉換與 network Json 共用的 runtime registry single。 */
+    @Single
+    fun provideNetworkDtoRegistries(): NetworkDtoRegistries = DefaultNetworkDtoRegistries()
+
     /**
-     * [buildMahjongDtoSerializersModule] 讀到的 `MahjongRuleDtoRegistries` 必須已經在
-     * [com.doublemoon1119.mahjongcraft.platform.fabric.MahjongCraftMod.onInitialize] 呼叫過
-     * `registerBuiltInRuleConfigDtos()`——Koin `single` 是 lazy 的，只要在第一次 `get<Json>()`
-     * 之前完成註冊即可。
+     * [registries] 必須已由
+     * [com.doublemoon1119.mahjongcraft.platform.fabric.MahjongCraftMod.onInitialize] 交給 extension
+     * bootstrap 完成內建及第三方 mapper 註冊；Koin `single` 是 lazy 的，只要在第一次解析 [Json]
+     * 前完成即可。
      */
     @Single
-    fun provideJson(): Json = Json { serializersModule = buildMahjongDtoSerializersModule() }
+    fun provideJson(registries: NetworkDtoRegistries): Json = Json {
+        serializersModule = buildMahjongDtoSerializersModule(registries)
+    }
 }

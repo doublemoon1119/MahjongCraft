@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot
 
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import kotlinx.serialization.Serializable
@@ -21,10 +22,10 @@ data class RoomSnapshotDto(
     val isInRoom: Boolean,
 )
 
-fun RoomSnapshot.toDto(): RoomSnapshotDto = RoomSnapshotDto(
+fun RoomSnapshot.toDto(registries: NetworkDtoRegistries): RoomSnapshotDto = RoomSnapshotDto(
     id = id.toString(),
     hostId = hostId.toString(),
-    config = config.toDto(),
+    config = config.toDto(registries),
     playerIds = playerIds.map { it.toString() }.toSet(),
     readyPlayerIds = readyPlayerIds.map { it.toString() }.toSet(),
     aiPlayerIds = aiPlayerIds.map { it.toString() }.toSet(),
@@ -33,10 +34,10 @@ fun RoomSnapshot.toDto(): RoomSnapshotDto = RoomSnapshotDto(
     isInRoom = isInRoom,
 )
 
-fun RoomSnapshotDto.toDomain(): RoomSnapshot = RoomSnapshot(
+fun RoomSnapshotDto.toDomain(registries: NetworkDtoRegistries): RoomSnapshot = RoomSnapshot(
     id = Uuid.parse(id),
     hostId = Uuid.parse(hostId),
-    config = config.toDomain(),
+    config = config.toDomain(registries),
     playerIds = playerIds.map { Uuid.parse(it) }.toSet(),
     readyPlayerIds = readyPlayerIds.map { Uuid.parse(it) }.toSet(),
     aiPlayerIds = aiPlayerIds.map { Uuid.parse(it) }.toSet(),

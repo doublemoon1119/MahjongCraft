@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import kotlinx.serialization.json.Json
@@ -16,6 +17,7 @@ class RoomSnapshotSender(
     private val snapshots: RoomSnapshotRepository,
     private val serverHolder: FabricServerHolder,
     private val json: Json,
+    private val networkRegistries: NetworkDtoRegistries,
 ) {
     /** 若玩家在線且快照存在，送出一份不伴隨房間事件的同步 payload。 */
     suspend fun send(roomId: Uuid, playerId: Uuid) {
@@ -24,7 +26,7 @@ class RoomSnapshotSender(
         MahjongChannels.roomSnapshot.sendTo(
             player,
             json,
-            RoomSnapshotSyncPayloadDto(roomId.toString(), snapshot.toDto()),
+            RoomSnapshotSyncPayloadDto(roomId.toString(), snapshot.toDto(networkRegistries)),
         )
     }
 }
@@ -35,6 +37,7 @@ class GameSnapshotSender(
     private val snapshots: GameSnapshotRepository,
     private val serverHolder: FabricServerHolder,
     private val json: Json,
+    private val networkRegistries: NetworkDtoRegistries,
 ) {
     /** 若玩家在線且快照存在，送出一份不伴隨遊戲動作的同步 payload。 */
     suspend fun send(gameId: Uuid, playerId: Uuid) {
@@ -43,7 +46,7 @@ class GameSnapshotSender(
         MahjongChannels.gameSnapshot.sendTo(
             player,
             json,
-            GameSnapshotSyncPayloadDto(gameId.toString(), snapshot.toDto()),
+            GameSnapshotSyncPayloadDto(gameId.toString(), snapshot.toDto(networkRegistries)),
         )
     }
 }

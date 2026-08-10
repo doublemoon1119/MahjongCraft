@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.di
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.di.FlowServerModule
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
@@ -33,9 +35,13 @@ class FabricPlatformModuleTest {
     fun `Koin graph resolves gameplay publishers and table room lifecycle services`() {
         val koin = startKoin<MahjongCraftApp>().koin
         val moduleRegistry = koin.get<MahjongModuleRegistry>()
-        FabricMahjongExtensions.initialize(moduleRegistry, emptyList())
+        val networkRegistries = koin.get<NetworkDtoRegistries>()
+        val persistenceRegistries = koin.get<PersistenceRegistries>()
+        FabricMahjongExtensions.initialize(moduleRegistry, networkRegistries, persistenceRegistries, emptyList())
 
         assertSame(moduleRegistry, koin.get<MahjongModuleRegistry>())
+        assertSame(networkRegistries, koin.get<NetworkDtoRegistries>())
+        assertSame(persistenceRegistries, koin.get<PersistenceRegistries>())
         koin.get<GameFlowCoordinator>()
         koin.get<GameEventPublisher>()
         koin.get<RoomEventPublisher>()

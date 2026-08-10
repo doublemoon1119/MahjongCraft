@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DynamicRuleStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
@@ -25,26 +26,26 @@ data class TableStateSnapshotDto(
     val dynamicRuleState: DynamicRuleStateDto?,
 )
 
-fun TableStateSnapshot.toDto(): TableStateSnapshotDto = TableStateSnapshotDto(
+fun TableStateSnapshot.toDto(registries: NetworkDtoRegistries): TableStateSnapshotDto = TableStateSnapshotDto(
     id = id.toString(),
-    players = players.map { it.toDto() },
-    config = config.toDto(),
+    players = players.map { it.toDto(registries) },
+    config = config.toDto(registries),
     tileWall = tileWall.toDto(),
     prevalentWind = prevalentWind.toDto(),
     roundNumber = roundNumber,
     comboCount = comboCount,
     currentPlayerIndex = currentPlayerIndex,
-    dynamicRuleState = dynamicRuleState?.toDto(),
+    dynamicRuleState = dynamicRuleState?.toDto(registries),
 )
 
-fun TableStateSnapshotDto.toDomain(): TableStateSnapshot = TableStateSnapshot(
+fun TableStateSnapshotDto.toDomain(registries: NetworkDtoRegistries): TableStateSnapshot = TableStateSnapshot(
     id = Uuid.parse(id),
-    players = players.map { it.toDomain() },
-    config = config.toDomain(),
+    players = players.map { it.toDomain(registries) },
+    config = config.toDomain(registries),
     tileWall = tileWall.toDomain(),
     prevalentWind = prevalentWind.toDomain(),
     roundNumber = roundNumber,
     comboCount = comboCount,
     currentPlayerIndex = currentPlayerIndex,
-    dynamicRuleState = dynamicRuleState?.toDomain(),
+    dynamicRuleState = dynamicRuleState?.toDomain(registries),
 )

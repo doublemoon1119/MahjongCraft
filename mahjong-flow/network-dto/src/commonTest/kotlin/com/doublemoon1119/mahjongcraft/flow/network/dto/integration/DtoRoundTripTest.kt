@@ -18,8 +18,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.LeaveReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
@@ -64,16 +65,17 @@ import kotlin.uuid.Uuid
  * 刻意全部使用真正的 [RiichiRuleConfig]/[TaiwanRuleConfig] 等規則實作建構測試資料，不使用
  * `testing/mahjong-logic` 裡的 `FakeMahjongRuleConfig`/`FakeGameLength`/`FakeScoreConfig`/
  * `FakeDiscardPile`——那些是測試專用型別，本來就不會（也不該）註冊進正式的
- * [MahjongRuleDtoRegistries]。
+ * [NetworkDtoRegistries]。
  */
 class DtoRoundTripTest {
 
     private lateinit var json: Json
+    private lateinit var registries: NetworkDtoRegistries
 
     @BeforeTest
     fun setUp() {
-        registerBuiltInRuleConfigDtos()
-        json = Json { serializersModule = buildMahjongDtoSerializersModule() }
+        registries = DefaultNetworkDtoRegistries().apply { registerBuiltInRuleConfigDtos() }
+        json = Json { serializersModule = buildMahjongDtoSerializersModule(registries) }
     }
 
     @Test
@@ -91,8 +93,8 @@ class DtoRoundTripTest {
         )
 
         commands.forEach { command ->
-            val encoded = json.encodeToString(GameCommandDto.serializer(), command.toDto())
-            val decoded = json.decodeFromString(GameCommandDto.serializer(), encoded).toDomain()
+            val encoded = json.encodeToString(GameCommandDto.serializer(), command.toDto(registries))
+            val decoded = json.decodeFromString(GameCommandDto.serializer(), encoded).toDomain(registries)
             assertEquals(command, decoded, "GameCommand round-trip failed for $command")
         }
     }
@@ -122,8 +124,8 @@ class DtoRoundTripTest {
         )
 
         actions.forEach { action ->
-            val encoded = json.encodeToString(GameActionDto.serializer(), action.toDto())
-            val decoded = json.decodeFromString(GameActionDto.serializer(), encoded).toDomain()
+            val encoded = json.encodeToString(GameActionDto.serializer(), action.toDto(registries))
+            val decoded = json.decodeFromString(GameActionDto.serializer(), encoded).toDomain(registries)
             assertEquals(action, decoded, "GameAction round-trip failed for $action")
         }
     }
@@ -147,7 +149,7 @@ class DtoRoundTripTest {
             dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
         )
         val snapshot = tableState.toSnapshot(riichiPlayer.id)
-        val snapshotDto = snapshot.toDto()
+        val snapshotDto = snapshot.toDto(registries)
 
         val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), snapshotDto)
         val decodedDto = json.decodeFromString(TableStateSnapshotDto.serializer(), encoded)
@@ -168,7 +170,7 @@ class DtoRoundTripTest {
             config = TaiwanRuleConfig(),
         )
         val snapshot = tableState.toSnapshot(taiwanPlayer.id)
-        val snapshotDto = snapshot.toDto()
+        val snapshotDto = snapshot.toDto(registries)
 
         val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), snapshotDto)
         val decodedDto = json.decodeFromString(TableStateSnapshotDto.serializer(), encoded)
@@ -190,8 +192,8 @@ class DtoRoundTripTest {
             isInRoom = true,
         )
 
-        val encoded = json.encodeToString(RoomSnapshotDto.serializer(), snapshot.toDto())
-        val decoded = json.decodeFromString(RoomSnapshotDto.serializer(), encoded).toDomain()
+        val encoded = json.encodeToString(RoomSnapshotDto.serializer(), snapshot.toDto(registries))
+        val decoded = json.decodeFromString(RoomSnapshotDto.serializer(), encoded).toDomain(registries)
         assertEquals(snapshot, decoded)
     }
 
@@ -215,8 +217,8 @@ class DtoRoundTripTest {
         val gamePayload = GameUpdatePayloadDto(
             gameId = Uuid.random().toString(),
             actorId = player.id.toString(),
-            action = GameAction.Draw.toDto(),
-            snapshot = snapshot.toDto(),
+            action = GameAction.Draw.toDto(registries),
+            snapshot = snapshot.toDto(registries),
         )
         val encodedGame = json.encodeToString(GameUpdatePayloadDto.serializer(), gamePayload)
         assertEquals(gamePayload, json.decodeFromString(GameUpdatePayloadDto.serializer(), encodedGame))
@@ -235,7 +237,7 @@ class DtoRoundTripTest {
         val roomPayload = RoomUpdatePayloadDto(
             roomId = Uuid.random().toString(),
             event = RoomUpdateEventDto.Join(player.id.toString(), JoinReason.Created.toDto()),
-            snapshot = roomSnapshot.toDto(),
+            snapshot = roomSnapshot.toDto(registries),
         )
         val encodedRoom = json.encodeToString(RoomUpdatePayloadDto.serializer(), roomPayload)
         assertEquals(roomPayload, json.decodeFromString(RoomUpdatePayloadDto.serializer(), encodedRoom))
@@ -248,7 +250,7 @@ class DtoRoundTripTest {
             .toSnapshot(player.id)
         val gamePayload = GameSnapshotSyncPayloadDto(
             gameId = gameSnapshot.id.toString(),
-            snapshot = gameSnapshot.toDto(),
+            snapshot = gameSnapshot.toDto(registries),
         )
         val encodedGame = json.encodeToString(GameSnapshotSyncPayloadDto.serializer(), gamePayload)
         assertEquals(gamePayload, json.decodeFromString(GameSnapshotSyncPayloadDto.serializer(), encodedGame))
@@ -266,7 +268,7 @@ class DtoRoundTripTest {
         )
         val roomPayload = RoomSnapshotSyncPayloadDto(
             roomId = roomSnapshot.id.toString(),
-            snapshot = roomSnapshot.toDto(),
+            snapshot = roomSnapshot.toDto(registries),
         )
         val encodedRoom = json.encodeToString(RoomSnapshotSyncPayloadDto.serializer(), roomPayload)
         assertEquals(roomPayload, json.decodeFromString(RoomSnapshotSyncPayloadDto.serializer(), encodedRoom))
@@ -274,7 +276,7 @@ class DtoRoundTripTest {
 
     @Test
     fun `test a third-party MahjongRuleConfig can register itself and round-trip without touching this module`() {
-        MahjongRuleDtoRegistries.ruleConfig.register(
+        registries.ruleConfig.register(
             ThirdPartyRuleConfig::class,
             ThirdPartyRuleConfigDto::class,
             ThirdPartyRuleConfigDto.serializer(),
@@ -282,9 +284,9 @@ class DtoRoundTripTest {
             { it.toThirdPartyDomain() },
         )
 
-        val thirdPartyJson = Json { serializersModule = buildMahjongDtoSerializersModule() }
+        val thirdPartyJson = Json { serializersModule = buildMahjongDtoSerializersModule(registries) }
         val config: MahjongRuleConfig = ThirdPartyRuleConfig()
-        val configDto = config.toDto()
+        val configDto = config.toDto(registries)
 
         // ThirdPartyRuleConfig.scoreConfig/gameLength 預設為匿名物件（沒有 equals()），改比對
         // 來回前後的 DTO，不比對還原後的領域物件。
@@ -295,7 +297,7 @@ class DtoRoundTripTest {
 }
 
 /**
- * 假裝是第三方規則模組的最小 [MahjongRuleConfig] 實作，只用於驗證 [MahjongRuleDtoRegistries] 真的
+ * 假裝是第三方規則模組的最小 [MahjongRuleConfig] 實作，只用於驗證 [NetworkDtoRegistries] 真的
  * 對外開放，不是名義上開放、實際上寫死日麻/台麻兩種。
  */
 private data class ThirdPartyRuleConfig(
