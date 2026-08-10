@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
@@ -33,7 +34,7 @@ class KickPlayerUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = KickPlayerUseCase(roomRepo, snapshotRepo, service)
+        val useCase = KickPlayerUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         val targetId = Uuid.random()
         val room = Room(
@@ -71,7 +72,7 @@ class KickPlayerUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = KickPlayerUseCase(roomRepo, snapshotRepo, service)
+        val useCase = KickPlayerUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
         roomRepo.setRoom(room)
@@ -88,7 +89,7 @@ class KickPlayerUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = KickPlayerUseCase(roomRepo, snapshotRepo, service)
+        val useCase = KickPlayerUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         val guestId = Uuid.random()
         val targetId = Uuid.random()

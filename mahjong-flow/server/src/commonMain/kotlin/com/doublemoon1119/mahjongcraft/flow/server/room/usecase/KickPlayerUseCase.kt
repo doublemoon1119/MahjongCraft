@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -17,12 +18,14 @@ import kotlin.uuid.Uuid
  * 驗證房主權限後移除目標玩家，並明確標記移除原因為被剔除。
  *
  * @property roomRepository 權威房間數據倉庫。
+ * @property membershipRepository 玩家唯一麻將桌歸屬倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
  * @property eventPublisher 房間通知服務。
  */
 @Factory
 class KickPlayerUseCase(
     private val roomRepository: RoomRepository,
+    private val membershipRepository: PlayerMembershipRepository,
     private val snapshotRepository: RoomSnapshotRepository,
     @Provided private val eventPublisher: RoomEventPublisher,
 ) {
@@ -60,6 +63,7 @@ class KickPlayerUseCase(
             is Outcome.Error -> outcome
             is Outcome.Success -> {
                 val updatedRoom = outcome.value
+                membershipRepository.release(targetPlayerId, roomId)
 
                 // 2. 同步新狀態給所有觀察者
                 val observers = snapshotRepository.getAllObservers(roomId)

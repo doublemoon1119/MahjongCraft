@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
@@ -37,7 +38,7 @@ class JoinRoomUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = JoinRoomUseCase(roomRepo, snapshotRepo, service)
+        val useCase = JoinRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         val initialRoom = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
         roomRepo.setRoom(initialRoom)
@@ -72,7 +73,7 @@ class JoinRoomUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = JoinRoomUseCase(roomRepo, snapshotRepo, service)
+        val useCase = JoinRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         val fullPlayerIds = (1..4).map { Uuid.random() }.toSet()
         val fullRoom = Room(id = roomId, hostId = fullPlayerIds.first(), config = config, playerIds = fullPlayerIds)
@@ -90,7 +91,7 @@ class JoinRoomUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = JoinRoomUseCase(roomRepo, snapshotRepo, service)
+        val useCase = JoinRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
         roomRepo.setRoom(room)
@@ -111,7 +112,7 @@ class JoinRoomUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val notificationService = FakeRoomEventPublisher()
-        val useCase = JoinRoomUseCase(roomRepo, snapshotRepo, notificationService)
+        val useCase = JoinRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, notificationService)
 
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
         roomRepo.setRoom(room)

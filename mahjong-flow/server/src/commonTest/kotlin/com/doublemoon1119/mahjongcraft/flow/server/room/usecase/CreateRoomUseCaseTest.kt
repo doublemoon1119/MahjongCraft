@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
@@ -39,7 +40,7 @@ class CreateRoomUseCaseTest {
         val gameRepo = FakeGameRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = CreateRoomUseCase(roomRepo, gameRepo, snapshotRepo, service)
+        val useCase = CreateRoomUseCase(roomRepo, gameRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         // 模擬房主已經是該位置的觀察者
         val roomSnapshot = Room(id = roomId, hostId = hostId, config = config).toSnapshot(hostId)
@@ -68,7 +69,7 @@ class CreateRoomUseCaseTest {
         val gameRepo = FakeGameRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = CreateRoomUseCase(roomRepo, gameRepo, snapshotRepo, service)
+        val useCase = CreateRoomUseCase(roomRepo, gameRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         val existingRoom = Room(
             id = roomId,
@@ -91,7 +92,7 @@ class CreateRoomUseCaseTest {
         val gameRepo = FakeGameRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = CreateRoomUseCase(roomRepo, gameRepo, snapshotRepo, service)
+        val useCase = CreateRoomUseCase(roomRepo, gameRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         // Act
         val result = useCase(roomId, hostId, config)
@@ -117,7 +118,7 @@ class CreateRoomUseCaseTest {
         val gameRepo = FakeGameRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = CreateRoomUseCase(roomRepo, gameRepo, snapshotRepo, service)
+        val useCase = CreateRoomUseCase(roomRepo, gameRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         gameRepo.setTableState(FakeTableStateFactory.create(id = roomId))
 
@@ -126,5 +127,28 @@ class CreateRoomUseCaseTest {
         assertTrue(result is Outcome.Error)
         assertEquals(RoomError.GameAlreadyInProgress(roomId), result.error)
         assertEquals(null, roomRepo.getRoom(roomId), "No room should be created when a game is already in progress.")
+    }
+
+    /** 玩家已占用其他麻將桌時不得建立第二個房間。 */
+    @Test
+    fun `test create room fails when host belongs to another table`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val gameRepo = FakeGameRepository()
+        val memberships = PlayerMembershipRepositoryImpl()
+        val otherTableId = Uuid.random()
+        memberships.claim(hostId, otherTableId)
+        val useCase = CreateRoomUseCase(
+            roomRepo,
+            gameRepo,
+            memberships,
+            FakeRoomSnapshotRepository(),
+            FakeRoomEventPublisher(),
+        )
+
+        val result = useCase(roomId, hostId, config)
+
+        assertEquals(Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(hostId, otherTableId)), result)
+        assertEquals(null, roomRepo.getRoom(roomId))
+        assertEquals(otherTableId, memberships.getTableId(hostId))
     }
 }

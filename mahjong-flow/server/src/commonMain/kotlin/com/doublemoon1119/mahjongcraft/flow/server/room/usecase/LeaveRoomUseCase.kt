@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -17,12 +18,14 @@ import kotlin.uuid.Uuid
  * 負責處理玩家主動退出或斷線時的房間狀態更新。若房主離開，則執行房間解散邏輯。
  *
  * @property roomRepository 權威房間數據倉庫。
+ * @property membershipRepository 玩家唯一麻將桌歸屬倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
  * @property eventPublisher 房間通知服務。
  */
 @Factory
 class LeaveRoomUseCase(
     private val roomRepository: RoomRepository,
+    private val membershipRepository: PlayerMembershipRepository,
     private val snapshotRepository: RoomSnapshotRepository,
     @Provided private val eventPublisher: RoomEventPublisher,
 ) {
@@ -61,6 +64,7 @@ class LeaveRoomUseCase(
                 if (playerId == resultRoom.hostId) {
                     // 2a. 房主離開：房間已被移除，通知解散前的所有成員並清除其快照
                     resultRoom.playerIds.forEach { memberId ->
+                        membershipRepository.release(memberId, roomId)
                         eventPublisher.publishLeave(
                             roomId = roomId,
                             targetPlayerId = memberId,
@@ -70,6 +74,8 @@ class LeaveRoomUseCase(
                         snapshotRepository.removeSnapshot(roomId, memberId)
                     }
                 } else {
+                    membershipRepository.release(playerId, roomId)
+
                     // 2b. 一般玩家離開：同步最新快照給所有觀察者
                     val observers = snapshotRepository.getAllObservers(roomId)
                     observers.forEach { observerId ->

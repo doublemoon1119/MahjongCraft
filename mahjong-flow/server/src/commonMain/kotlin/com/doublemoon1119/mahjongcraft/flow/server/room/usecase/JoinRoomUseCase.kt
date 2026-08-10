@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -17,12 +18,14 @@ import kotlin.uuid.Uuid
  * 負責處理玩家請求進入特定房間的邏輯，包含房間狀態檢查、人數限制驗證以及全體成員的狀態同步。
  *
  * @property roomRepository 權威房間數據倉庫。
+ * @property membershipRepository 玩家唯一麻將桌歸屬倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
  * @property eventPublisher 房間通知服務。
  */
 @Factory
 class JoinRoomUseCase(
     private val roomRepository: RoomRepository,
+    private val membershipRepository: PlayerMembershipRepository,
     private val snapshotRepository: RoomSnapshotRepository,
     @Provided private val eventPublisher: RoomEventPublisher,
 ) {
@@ -37,6 +40,15 @@ class JoinRoomUseCase(
         roomId: Uuid,
         playerId: Uuid,
     ): Outcome<Unit, RoomError> {
+        val existingTableId = membershipRepository.getTableId(playerId)
+        if (existingTableId != null && existingTableId != roomId) {
+            return Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(playerId, existingTableId))
+        }
+        if (!membershipRepository.claim(playerId, roomId)) {
+            val occupiedTableId = checkNotNull(membershipRepository.getTableId(playerId))
+            return Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(playerId, occupiedTableId))
+        }
+
         // 1. 以原子方式讀取房間、驗證業務規則並寫回，避免並發加入請求互相覆蓋
         val outcome = roomRepository.update(roomId) { room ->
             when {
@@ -48,6 +60,10 @@ class JoinRoomUseCase(
                     updatedRoom to Outcome.Success(updatedRoom)
                 }
             }
+        }
+
+        if (outcome is Outcome.Error && existingTableId == null) {
+            membershipRepository.release(playerId, roomId)
         }
 
         return when (outcome) {

@@ -3,5 +3,6 @@
   "mahjongcraft.message.game_created": "Mahjong game created",
   "mahjongcraft.message.game_joined": "Joined the mahjong game",
   "mahjongcraft.message.game_already_started": "This mahjong game has already started",
+  "mahjongcraft.message.player_already_in_game": "You have already joined another mahjong game",
   "mahjongcraft.message.game_join_failed": "Could not join this mahjong game"
 }

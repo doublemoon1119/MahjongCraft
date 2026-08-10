@@ -3,5 +3,6 @@
   "mahjongcraft.message.game_created": "已创建麻将游戏",
   "mahjongcraft.message.game_joined": "已加入麻将游戏",
   "mahjongcraft.message.game_already_started": "这场麻将对局已经开始",
+  "mahjongcraft.message.player_already_in_game": "你已经加入另一场麻将游戏",
   "mahjongcraft.message.game_join_failed": "无法加入这场麻将游戏"
 }

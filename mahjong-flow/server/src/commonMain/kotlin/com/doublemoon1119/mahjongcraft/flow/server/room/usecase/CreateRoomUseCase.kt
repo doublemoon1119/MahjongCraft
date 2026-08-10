@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import org.koin.core.annotation.Factory
@@ -21,6 +22,7 @@ import kotlin.uuid.Uuid
  *
  * @property roomRepository 權威房間數據倉庫。
  * @property gameRepository 權威對局數據倉庫，用於檢查該識別碼是否已有進行中的對局。
+ * @property membershipRepository 玩家唯一麻將桌歸屬倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
  * @property eventPublisher 房間通知服務。
  */
@@ -28,6 +30,7 @@ import kotlin.uuid.Uuid
 class CreateRoomUseCase(
     private val roomRepository: RoomRepository,
     private val gameRepository: GameRepository,
+    private val membershipRepository: PlayerMembershipRepository,
     private val snapshotRepository: RoomSnapshotRepository,
     @Provided private val eventPublisher: RoomEventPublisher,
 ) {
@@ -44,6 +47,15 @@ class CreateRoomUseCase(
         hostId: Uuid,
         config: MahjongRuleConfig,
     ): Outcome<Room, RoomError> {
+        val existingTableId = membershipRepository.getTableId(hostId)
+        if (existingTableId != null && existingTableId != roomId) {
+            return Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(hostId, existingTableId))
+        }
+        if (!membershipRepository.claim(hostId, roomId)) {
+            val occupiedTableId = checkNotNull(membershipRepository.getTableId(hostId))
+            return Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(hostId, occupiedTableId))
+        }
+
         // 1. 以原子方式檢查房間是否已存在並寫入，避免並發請求重複創建同一房間
         val outcome = roomRepository.update(roomId) { existing ->
             when {
@@ -63,6 +75,10 @@ class CreateRoomUseCase(
                     newRoom to Outcome.Success(newRoom)
                 }
             }
+        }
+
+        if (outcome is Outcome.Error && existingTableId == null) {
+            membershipRepository.release(hostId, roomId)
         }
 
         if (outcome is Outcome.Success) {

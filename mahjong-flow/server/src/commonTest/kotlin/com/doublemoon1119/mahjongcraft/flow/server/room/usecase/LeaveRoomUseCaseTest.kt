@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
@@ -36,7 +37,7 @@ class LeaveRoomUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo, service)
+        val useCase = LeaveRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         val guestId = Uuid.random()
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
@@ -71,7 +72,7 @@ class LeaveRoomUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo, service)
+        val useCase = LeaveRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         val guestId = Uuid.random()
         val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
@@ -110,10 +111,31 @@ class LeaveRoomUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = LeaveRoomUseCase(roomRepo, snapshotRepo, service)
+        val useCase = LeaveRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         val result = useCase(roomId, hostId)
         assertTrue(result is Outcome.Error, "Expected Error but got $result")
         assertEquals(RoomError.RoomNotFound(roomId), result.error)
+    }
+
+    /** 玩家成功離開後應釋放麻將桌歸屬。 */
+    @Test
+    fun `test leaving room releases player membership`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val memberships = PlayerMembershipRepositoryImpl()
+        val guestId = Uuid.random()
+        roomRepo.setRoom(Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId)))
+        memberships.claim(guestId, roomId)
+        val useCase = LeaveRoomUseCase(
+            roomRepo,
+            memberships,
+            FakeRoomSnapshotRepository(),
+            FakeRoomEventPublisher(),
+        )
+
+        val result = useCase(roomId, guestId)
+
+        assertTrue(result is Outcome.Success)
+        assertNull(memberships.getTableId(guestId))
     }
 }

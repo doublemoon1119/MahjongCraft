@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
@@ -49,13 +50,13 @@ class MahjongTableRoomService(
 
             val room = roomRepository.getRoom(tableId)
             if (room == null) {
-                when (createRoom(tableId, playerId, RiichiRuleConfig())) {
+                when (val result = createRoom(tableId, playerId, RiichiRuleConfig())) {
                     is Outcome.Success -> {
                         syncRoom(tableId, playerId)
                         roomSnapshotSender.send(tableId, playerId)
                         sendMessage(player, "mahjongcraft.message.game_created")
                     }
-                    is Outcome.Error -> sendMessage(player, "mahjongcraft.message.game_join_failed")
+                    is Outcome.Error -> sendRoomError(player, result.error)
                 }
                 return@launch
             }
@@ -69,9 +70,9 @@ class MahjongTableRoomService(
             // 先建立 observer snapshot，讓 JoinRoomUseCase 更新 observer 後，RoomEventPublisher 能把
             // 加入事件與正確的 isInRoom=true 快照一併送給新玩家。
             syncRoom(tableId, playerId)
-            when (joinRoom(tableId, playerId)) {
+            when (val result = joinRoom(tableId, playerId)) {
                 is Outcome.Success -> sendMessage(player, "mahjongcraft.message.game_joined")
-                is Outcome.Error -> sendMessage(player, "mahjongcraft.message.game_join_failed")
+                is Outcome.Error -> sendRoomError(player, result.error)
             }
         }
     }
@@ -79,5 +80,14 @@ class MahjongTableRoomService(
     /** 把訊息切回 Minecraft server thread 後送給玩家。 */
     private fun sendMessage(player: ServerPlayerEntity, translationKey: String) {
         player.server.execute { player.sendMessage(Text.translatable(translationKey)) }
+    }
+
+    /** 將可辨識的房間錯誤映射成玩家訊息，其餘錯誤暫時使用通用加入失敗提示。 */
+    private fun sendRoomError(player: ServerPlayerEntity, error: RoomError) {
+        val translationKey = when (error) {
+            is RoomError.PlayerAlreadyInAnotherGame -> "mahjongcraft.message.player_already_in_game"
+            else -> "mahjongcraft.message.game_join_failed"
+        }
+        sendMessage(player, translationKey)
     }
 }
