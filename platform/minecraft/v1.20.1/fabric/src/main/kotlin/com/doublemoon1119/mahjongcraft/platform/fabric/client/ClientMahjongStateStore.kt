@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client
 
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
-import com.doublemoon1119.mahjongcraft.flow.dto.GameUpdatePayloadDto
-import com.doublemoon1119.mahjongcraft.flow.dto.RoomUpdatePayloadDto
-import com.doublemoon1119.mahjongcraft.flow.dto.toDomain
+import com.doublemoon1119.mahjongcraft.flow.network.dto.GameUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.RoomUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.toDomain
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import kotlin.uuid.Uuid
 

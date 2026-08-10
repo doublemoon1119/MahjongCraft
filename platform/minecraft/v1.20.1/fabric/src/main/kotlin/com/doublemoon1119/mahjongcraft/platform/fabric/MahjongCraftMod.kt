@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
-import com.doublemoon1119.mahjongcraft.flow.dto.registerBuiltInRuleConfigDtos
-import com.doublemoon1119.mahjongcraft.flow.dto.toDomain
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registerBuiltInRuleConfigDtos
+import com.doublemoon1119.mahjongcraft.flow.network.dto.toDomain
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.platform.fabric.concurrency.FabricAppCoroutineScope

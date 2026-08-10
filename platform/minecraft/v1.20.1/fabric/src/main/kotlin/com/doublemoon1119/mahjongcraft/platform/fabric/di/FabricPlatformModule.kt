@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.common.di.FlowCommonModule
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
-import com.doublemoon1119.mahjongcraft.flow.dto.buildMahjongDtoSerializersModule
+import com.doublemoon1119.mahjongcraft.flow.network.dto.buildMahjongDtoSerializersModule
 import com.doublemoon1119.mahjongcraft.flow.server.di.FlowServerModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import kotlinx.serialization.json.Json

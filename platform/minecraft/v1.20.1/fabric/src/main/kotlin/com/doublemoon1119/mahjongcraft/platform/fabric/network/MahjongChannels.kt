@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.network
 
-import com.doublemoon1119.mahjongcraft.flow.dto.GameCommandEnvelopeDto
-import com.doublemoon1119.mahjongcraft.flow.dto.GameSnapshotSyncPayloadDto
-import com.doublemoon1119.mahjongcraft.flow.dto.GameUpdatePayloadDto
-import com.doublemoon1119.mahjongcraft.flow.dto.RoomSnapshotSyncPayloadDto
-import com.doublemoon1119.mahjongcraft.flow.dto.RoomUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.GameCommandEnvelopeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.GameSnapshotSyncPayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.GameUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.RoomSnapshotSyncPayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.RoomUpdatePayloadDto
 
 /** `mahjongcraft:` 命名空間下實際使用的命令、事件更新與主動快照同步頻道。 */
 object MahjongChannels {
