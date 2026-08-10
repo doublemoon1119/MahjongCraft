@@ -45,6 +45,8 @@ project(":testing:mahjong-flow").name = "testing-mahjong-flow"
 include(":mahjong-flow")
 include(":mahjong-flow:common")
 project(":mahjong-flow:common").name = "mahjong-flow-common"
+include(":mahjong-flow:dto")
+project(":mahjong-flow:dto").name = "mahjong-flow-dto"
 include(":mahjong-flow:server")
 project(":mahjong-flow:server").name = "mahjong-flow-server"
 include(":mahjong-flow:client")

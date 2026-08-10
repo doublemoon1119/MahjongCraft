@@ -5,6 +5,7 @@ coroutines = "1.11.0"
 koin-bom = "4.2.2"
 koin-plugin = "1.0.1"
 ktlint-gradle = "14.2.0"
+kotlinx-serialization = "1.11.0"
 jvm-toolchain = "21"
 jvm-release = "17"
 
@@ -21,6 +22,7 @@ fabric-language-kotlin = "1.13.12+kotlin.2.4.0"
 [libraries]
 kotlinx-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
 koin-core = { module = "io.insert-koin:koin-core" }
 koin-annotations = { module = "io.insert-koin:koin-annotations" }
@@ -33,6 +35,7 @@ fabric-language-kotlin = { group = "net.fabricmc", name = "fabric-language-kotli
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 koin-compiler = { id = "io.insert-koin.compiler.plugin", version.ref = "koin-plugin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
 fabric-loom = { id = "fabric-loom", version.ref = "fabric-loom" }
