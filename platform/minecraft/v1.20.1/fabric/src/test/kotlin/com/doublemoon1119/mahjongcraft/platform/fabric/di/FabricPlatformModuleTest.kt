@@ -5,6 +5,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublish
 import com.doublemoon1119.mahjongcraft.flow.dto.registerBuiltInRuleConfigDtos
 import com.doublemoon1119.mahjongcraft.flow.server.di.FlowServerModule
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
+import com.doublemoon1119.mahjongcraft.platform.fabric.concurrency.FabricAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.platform.fabric.network.GameSnapshotSender
+import com.doublemoon1119.mahjongcraft.platform.fabric.network.RoomSnapshotSender
+import com.doublemoon1119.mahjongcraft.platform.fabric.room.MahjongTableRoomService
 import org.koin.core.context.stopKoin
 import org.koin.plugin.module.dsl.startKoin
 import kotlin.test.AfterTest
@@ -23,12 +28,17 @@ class FabricPlatformModuleTest {
     }
 
     @Test
-    fun `Koin graph resolves GameFlowCoordinator, GameEventPublisher and RoomEventPublisher`() {
+    fun `Koin graph resolves gameplay publishers and table room lifecycle services`() {
         registerBuiltInRuleConfigDtos()
         val koin = startKoin<MahjongCraftApp>().koin
 
         koin.get<GameFlowCoordinator>()
         koin.get<GameEventPublisher>()
         koin.get<RoomEventPublisher>()
+        koin.get<MahjongTableRoomService>()
+        koin.get<RoomSnapshotSender>()
+        koin.get<GameSnapshotSender>()
+        koin.get<ServerSessionStateCleaner>()
+        koin.get<FabricAppCoroutineScope>()
     }
 }

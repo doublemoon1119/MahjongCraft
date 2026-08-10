@@ -42,4 +42,7 @@ interface RoomSnapshotRepository {
      * @return 觀察該房間的所有玩家 Uuid 集合。
      */
     suspend fun getAllObservers(roomId: Uuid): Set<Uuid>
+
+    /** 清除目前 server session 的所有房間 observer 快照。 */
+    suspend fun clearAll()
 }

@@ -1,0 +1,44 @@
+package com.doublemoon1119.mahjongcraft.platform.fabric.block
+
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.room.MahjongTableRoomService
+import net.minecraft.block.BlockRenderType
+import net.minecraft.block.BlockState
+import net.minecraft.block.BlockWithEntity
+import net.minecraft.block.entity.BlockEntity
+import net.minecraft.entity.player.PlayerEntity
+import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.util.ActionResult
+import net.minecraft.util.Hand
+import net.minecraft.util.hit.BlockHitResult
+import net.minecraft.util.math.BlockPos
+import net.minecraft.world.World
+
+/** 第 4 階段使用的最小單方塊麻將桌；完整多方塊外觀與 3D 渲染留待後續里程碑。 */
+class MahjongTableBlock(
+    settings: Settings,
+    private val roomService: MahjongTableRoomService,
+) : BlockWithEntity(settings) {
+    /** 只為中央麻將桌方塊建立保存穩定 UUID 的方塊實體。 */
+    override fun createBlockEntity(pos: BlockPos, state: BlockState): BlockEntity = MahjongTableBlockEntity(pos, state)
+
+    /** 使用一般方塊模型顯示目前的最小佔位外觀。 */
+    override fun getRenderType(state: BlockState): BlockRenderType = BlockRenderType.MODEL
+
+    /** 在伺服器端把右鍵互動交給正式房間生命週期服務。 */
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun onUse(
+        state: BlockState,
+        world: World,
+        pos: BlockPos,
+        player: PlayerEntity,
+        hand: Hand,
+        hit: BlockHitResult,
+    ): ActionResult {
+        if (!world.isClient) {
+            val table = world.getBlockEntity(pos) as? MahjongTableBlockEntity ?: return ActionResult.FAIL
+            roomService.interact(table, player as ServerPlayerEntity)
+        }
+        return ActionResult.SUCCESS
+    }
+}

@@ -82,7 +82,7 @@ class GetLegalActionsUseCaseTest {
         val result = fixtures.useCase(gameId, playerId)
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        val actions = (result as Outcome.Success).value
+        val actions = result.value
         assertTrue(actions.any { it is GameAction.Riichi }, "Riichi should be legal from the incomingTile=null query.")
         assertTrue(
             actions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN },
@@ -104,7 +104,7 @@ class GetLegalActionsUseCaseTest {
         val result = fixtures.useCase(gameId, playerId)
 
         assertTrue(result is Outcome.Success)
-        assertEquals(emptyList(), (result as Outcome.Success).value)
+        assertEquals(emptyList(), result.value)
     }
 
     /**
@@ -151,7 +151,7 @@ class GetLegalActionsUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         assertEquals(
             listOf(GameAction.Ron(robbedWhiteTile.id), GameAction.Pass),
-            (result as Outcome.Success).value,
+            result.value,
         )
     }
 
@@ -185,7 +185,7 @@ class GetLegalActionsUseCaseTest {
         val result = fixtures.useCase(gameId, robberId)
 
         assertTrue(result is Outcome.Success)
-        assertEquals(emptyList(), (result as Outcome.Success).value)
+        assertEquals(emptyList(), result.value)
     }
 
     /**
@@ -225,7 +225,7 @@ class GetLegalActionsUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         assertEquals(
             listOf(GameAction.Pon(discardedSouthTile.id), GameAction.Pass),
-            (result as Outcome.Success).value,
+            result.value,
         )
     }
 
@@ -261,7 +261,7 @@ class GetLegalActionsUseCaseTest {
         val result = fixtures.useCase(gameId, respondentId)
 
         assertTrue(result is Outcome.Success)
-        assertEquals(emptyList(), (result as Outcome.Success).value)
+        assertEquals(emptyList(), result.value)
     }
 
     /**
@@ -284,7 +284,7 @@ class GetLegalActionsUseCaseTest {
         val result = fixtures.useCase(gameId, bystanderId)
 
         assertTrue(result is Outcome.Success)
-        assertEquals(emptyList(), (result as Outcome.Success).value)
+        assertEquals(emptyList(), result.value)
     }
 
     /**

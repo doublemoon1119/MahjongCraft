@@ -23,6 +23,9 @@ class FakeGameRepository : GameRepository {
     override suspend fun removeTableState(gameId: Uuid) {
         games.remove(gameId)
     }
+    override suspend fun clearAll() {
+        games.clear()
+    }
 
     override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T {
         val (next, result) = block(games[gameId])

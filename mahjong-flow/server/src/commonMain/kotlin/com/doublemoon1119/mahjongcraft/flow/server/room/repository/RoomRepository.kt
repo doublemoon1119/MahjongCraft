@@ -31,6 +31,9 @@ interface RoomRepository {
      */
     suspend fun removeRoom(id: Uuid)
 
+    /** 清除目前 server session 中的所有房間；平台停止或切換世界時使用。 */
+    suspend fun clearAll()
+
     /**
      * 以原子方式讀取並更新指定房間，確保「讀取現況、驗證業務規則、寫回」整個流程不被其他並發呼叫插入。
      *

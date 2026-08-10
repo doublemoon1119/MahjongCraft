@@ -20,6 +20,8 @@ class RoomRepositoryImpl : RoomRepository {
         Unit
     }
 
+    override suspend fun clearAll() = mutex.withLock { rooms.clear() }
+
     override suspend fun <T> update(id: Uuid, block: suspend (Room?) -> Pair<Room?, T>): T = mutex.withLock {
         val (next, result) = block(rooms[id])
         if (next == null) rooms.remove(id) else rooms[id] = next

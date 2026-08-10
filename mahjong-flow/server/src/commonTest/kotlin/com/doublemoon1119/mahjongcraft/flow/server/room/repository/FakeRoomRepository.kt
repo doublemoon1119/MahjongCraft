@@ -15,6 +15,9 @@ class FakeRoomRepository : RoomRepository {
     override suspend fun removeRoom(id: Uuid) {
         rooms.remove(id)
     }
+    override suspend fun clearAll() {
+        rooms.clear()
+    }
 
     override suspend fun <T> update(id: Uuid, block: suspend (Room?) -> Pair<Room?, T>): T {
         val (next, result) = block(rooms[id])

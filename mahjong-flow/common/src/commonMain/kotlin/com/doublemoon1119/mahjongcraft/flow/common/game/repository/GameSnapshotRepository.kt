@@ -41,4 +41,7 @@ interface GameSnapshotRepository {
      * @return 觀察該遊戲的所有玩家 Uuid 集合。
      */
     suspend fun getAllObservers(gameId: Uuid): Set<Uuid>
+
+    /** 清除目前 server session 的所有遊戲 observer 快照。 */
+    suspend fun clearAll()
 }

@@ -20,6 +20,8 @@ class GameRepositoryImpl : GameRepository {
         Unit
     }
 
+    override suspend fun clearAll() = mutex.withLock { tableStates.clear() }
+
     override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T = mutex.withLock {
         val (next, result) = block(tableStates[gameId])
         if (next == null) tableStates.remove(gameId) else tableStates[gameId] = next

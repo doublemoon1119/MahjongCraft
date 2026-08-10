@@ -27,4 +27,8 @@ class FakeRoomSnapshotRepository : RoomSnapshotRepository {
         .filter { it.first == roomId }
         .map { it.second }
         .toSet()
+
+    override suspend fun clearAll() {
+        snapshots.clear()
+    }
 }

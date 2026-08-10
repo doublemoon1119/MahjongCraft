@@ -219,6 +219,37 @@ class DtoRoundTripTest {
     }
 
     @Test
+    fun `test explicit room and game snapshot sync payloads round-trip`() {
+        val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
+        val gameSnapshot = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+            .toSnapshot(player.id)
+        val gamePayload = GameSnapshotSyncPayloadDto(
+            gameId = gameSnapshot.id.toString(),
+            snapshot = gameSnapshot.toDto(),
+        )
+        val encodedGame = json.encodeToString(GameSnapshotSyncPayloadDto.serializer(), gamePayload)
+        assertEquals(gamePayload, json.decodeFromString(GameSnapshotSyncPayloadDto.serializer(), encodedGame))
+
+        val roomSnapshot = RoomSnapshot(
+            id = Uuid.random(),
+            hostId = player.id,
+            config = RiichiRuleConfig(),
+            playerIds = setOf(player.id),
+            readyPlayerIds = emptySet(),
+            aiPlayerIds = emptySet(),
+            canStart = false,
+            isHost = true,
+            isInRoom = true,
+        )
+        val roomPayload = RoomSnapshotSyncPayloadDto(
+            roomId = roomSnapshot.id.toString(),
+            snapshot = roomSnapshot.toDto(),
+        )
+        val encodedRoom = json.encodeToString(RoomSnapshotSyncPayloadDto.serializer(), roomPayload)
+        assertEquals(roomPayload, json.decodeFromString(RoomSnapshotSyncPayloadDto.serializer(), encodedRoom))
+    }
+
+    @Test
     fun `test a third-party MahjongRuleConfig can register itself and round-trip without touching this module`() {
         MahjongRuleDtoRegistries.ruleConfig.register(
             ThirdPartyRuleConfig::class,

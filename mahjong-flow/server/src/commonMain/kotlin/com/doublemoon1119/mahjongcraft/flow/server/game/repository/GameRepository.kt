@@ -31,6 +31,9 @@ interface GameRepository {
      */
     suspend fun removeTableState(gameId: Uuid)
 
+    /** 清除目前 server session 中的所有遊戲狀態；平台停止或切換世界時使用。 */
+    suspend fun clearAll()
+
     /**
      * 以原子方式讀取並更新指定遊戲的桌況，確保「讀取現況、驗證業務規則、寫回」整個流程不被其他並發呼叫插入。
      *

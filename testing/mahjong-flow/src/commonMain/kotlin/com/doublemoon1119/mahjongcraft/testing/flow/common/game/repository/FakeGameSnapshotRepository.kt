@@ -27,4 +27,8 @@ class FakeGameSnapshotRepository : GameSnapshotRepository {
         .filter { it.first == gameId }
         .map { it.second }
         .toSet()
+
+    override suspend fun clearAll() {
+        snapshots.clear()
+    }
 }

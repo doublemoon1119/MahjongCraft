@@ -4,15 +4,18 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.dto.registerBuiltInRuleConfigDtos
 import com.doublemoon1119.mahjongcraft.flow.dto.toDomain
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
-import com.doublemoon1119.mahjongcraft.platform.fabric.command.registerMahjongTestCommand
+import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
+import com.doublemoon1119.mahjongcraft.platform.fabric.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.fabric.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import net.fabricmc.api.ModInitializer
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import org.koin.core.Koin
 import org.koin.plugin.module.dsl.startKoin
@@ -25,20 +28,29 @@ class MahjongCraftMod : ModInitializer {
     private val logger = LoggerFactory.getLogger("mahjongcraft")
 
     override fun onInitialize() {
-        ModItems.register()
-
         // 必須先於 fabricPlatformModule 裡的 Json single 第一次被解析之前完成，見
         // FabricPlatformModule.kt 的說明。
         registerBuiltInRuleConfigDtos()
 
         val koin = startKoin<MahjongCraftApp>().koin
 
+        ModItems.register()
+        ModBlocks.register(koin.get<MahjongTableRoomService>())
+
         val serverHolder = koin.get<FabricServerHolder>()
-        ServerLifecycleEvents.SERVER_STARTED.register { server -> serverHolder.set(server) }
-        ServerLifecycleEvents.SERVER_STOPPING.register { serverHolder.clear() }
+        val appScope = koin.get<FabricAppCoroutineScope>()
+        val stateCleaner = koin.get<ServerSessionStateCleaner>()
+        ServerLifecycleEvents.SERVER_STARTED.register { server ->
+            serverHolder.set(server)
+            appScope.startSession()
+        }
+        ServerLifecycleEvents.SERVER_STOPPING.register {
+            appScope.cancel()
+            runBlocking { stateCleaner.clear() }
+            serverHolder.clear()
+        }
 
         registerGameCommandReceiver(koin)
-        CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> registerMahjongTestCommand(dispatcher, koin) }
 
         logger.info("MahjongCraft (Fabric, Minecraft 1.20.1) initialized.")
     }
