@@ -4,8 +4,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
-import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -40,12 +41,13 @@ class StartGameUseCaseTest {
     )
 
     private class Fixtures {
-        val roomRepo = FakeRoomRepository()
-        val gameRepo = FakeGameRepository()
+        val store = AuthoritativeStateStore()
+        val roomRepo = RoomRepositoryImpl(store)
+        val gameRepo = GameRepositoryImpl(store)
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
         val eventPublisher = FakeGameEventPublisher()
-        val useCase = StartGameUseCase(roomRepo, gameRepo, moduleRegistry, snapshotRepo, eventPublisher)
+        val useCase = StartGameUseCase(store, moduleRegistry, snapshotRepo, eventPublisher)
     }
 
     /**

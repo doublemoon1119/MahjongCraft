@@ -1,30 +1,32 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.repository
 
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 @Single(binds = [GameRepository::class])
-class GameRepositoryImpl : GameRepository {
-    private val tableStates = mutableMapOf<Uuid, TableState>()
-    private val mutex = Mutex()
+class GameRepositoryImpl(
+    private val store: AuthoritativeStateStore,
+) : GameRepository {
+    override suspend fun getTableState(gameId: Uuid): TableState? = store.getGame(gameId)
 
-    override suspend fun getTableState(gameId: Uuid): TableState? = mutex.withLock { tableStates[gameId] }
-
-    override suspend fun setTableState(state: TableState) = mutex.withLock { tableStates[state.id] = state }
-
-    override suspend fun removeTableState(gameId: Uuid) = mutex.withLock {
-        tableStates.remove(gameId)
-        Unit
+    override suspend fun setTableState(state: TableState) = store.update { current ->
+        AuthoritativeStateUpdate(current.copy(games = current.games + (state.id to state)), Unit)
     }
 
-    override suspend fun clearAll() = mutex.withLock { tableStates.clear() }
+    override suspend fun removeTableState(gameId: Uuid) = store.update { state ->
+        AuthoritativeStateUpdate(state.copy(games = state.games - gameId), Unit)
+    }
 
-    override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T = mutex.withLock {
-        val (next, result) = block(tableStates[gameId])
-        if (next == null) tableStates.remove(gameId) else tableStates[gameId] = next
-        result
+    override suspend fun clearAll() = store.update { state ->
+        AuthoritativeStateUpdate(state.copy(games = emptyMap()), Unit)
+    }
+
+    override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T = store.update { state ->
+        val (next, result) = block(state.games[gameId])
+        val games = if (next == null) state.games - gameId else state.games + (gameId to next)
+        AuthoritativeStateUpdate(state.copy(games = games), result)
     }
 }

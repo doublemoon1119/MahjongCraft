@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPlayerPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
@@ -87,6 +88,7 @@ class DisconnectedPlayerLifecycleServiceTest {
     @Test
     fun `test active game always keeps disconnected player membership`() = runTest {
         val fixture = createFixture(DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY)
+        fixture.roomRepository.removeRoom(fixture.tableId)
         fixture.gameRepository.setTableState(FakeTableStateFactory.create(id = fixture.tableId))
 
         fixture.service.onDisconnected(fixture.playerId)
@@ -114,8 +116,9 @@ class DisconnectedPlayerLifecycleServiceTest {
     ): Fixture {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val scope = createTestAppCoroutineScope(TestCoroutineDispatchers(dispatcher, dispatcher, dispatcher))
-        val roomRepository = RoomRepositoryImpl()
-        val gameRepository = GameRepositoryImpl()
+        val store = AuthoritativeStateStore()
+        val roomRepository = RoomRepositoryImpl(store)
+        val gameRepository = GameRepositoryImpl(store)
         val memberships = PlayerMembershipRepositoryImpl()
         val tableId = Uuid.random()
         val hostId = Uuid.random()

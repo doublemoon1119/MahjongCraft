@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.repository
 
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -25,7 +26,7 @@ class RoomRepositoryImplTest {
      */
     @Test
     fun `test update serializes concurrent mutations without losing updates`() = runTest {
-        val repository = RoomRepositoryImpl()
+        val repository = RoomRepositoryImpl(AuthoritativeStateStore())
         val roomId = Uuid.random()
         val hostId = Uuid.random()
         val config = FakeMahjongRuleConfig()

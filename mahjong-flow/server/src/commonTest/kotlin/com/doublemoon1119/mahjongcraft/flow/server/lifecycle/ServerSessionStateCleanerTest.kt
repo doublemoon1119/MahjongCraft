@@ -7,11 +7,13 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
@@ -21,12 +23,13 @@ class ServerSessionStateCleanerTest {
     /** 切換 server session 後所有 repository 都不得殘留前一個世界的資料。 */
     @Test
     fun `test clear removes room game and observer snapshots from the previous server session`() = runTest {
-        val roomRepository = RoomRepositoryImpl()
-        val gameRepository = GameRepositoryImpl()
+        val store = AuthoritativeStateStore()
+        val roomRepository = RoomRepositoryImpl(store)
+        val gameRepository = GameRepositoryImpl(store)
         val roomSnapshots = RoomSnapshotRepositoryImpl()
         val gameSnapshots = GameSnapshotRepositoryImpl()
         val memberships = PlayerMembershipRepositoryImpl()
-        val cleaner = ServerSessionStateCleaner(roomRepository, gameRepository, roomSnapshots, gameSnapshots, memberships)
+        val cleaner = ServerSessionStateCleaner(store, roomSnapshots, gameSnapshots, memberships)
         val observerId = Uuid.random()
 
         val room = Room(
@@ -51,5 +54,6 @@ class ServerSessionStateCleanerTest {
         assertTrue(roomSnapshots.getAllObservers(room.id).isEmpty())
         assertTrue(gameSnapshots.getAllObservers(game.id).isEmpty())
         assertNull(memberships.getTableId(observerId))
+        assertFalse(store.isDirty())
     }
 }
