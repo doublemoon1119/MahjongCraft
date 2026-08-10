@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -28,7 +29,7 @@ import kotlin.uuid.toKotlinUuid
 
 class MahjongCraftMod : ModInitializer {
 
-    private val logger = LoggerFactory.getLogger("mahjongcraft")
+    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
     override fun onInitialize() {
         // 必須先於 fabricPlatformModule 裡的 Json single 第一次被解析之前完成，見

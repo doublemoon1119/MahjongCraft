@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.network
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
@@ -17,7 +18,7 @@ private const val MAX_PAYLOAD_LENGTH = 1 shl 20
  * （[net.minecraft.network.PacketByteBuf]）送給單一玩家。
  */
 class S2CChannel<T>(id: String, private val serializer: KSerializer<T>) {
-    val channelId: Identifier = Identifier("mahjongcraft", id)
+    val channelId: Identifier = Identifier(MinecraftModMetadata.MOD_ID, id)
 
     fun sendTo(player: ServerPlayerEntity, json: Json, value: T) {
         val buf = PacketByteBufs.create()
@@ -40,7 +41,7 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>) {
  * 的 [ServerPlayerEntity] 自己的 UUID，不信任封包內容宣稱的身分。
  */
 class C2SChannel<T>(id: String, private val serializer: KSerializer<T>) {
-    val channelId: Identifier = Identifier("mahjongcraft", id)
+    val channelId: Identifier = Identifier(MinecraftModMetadata.MOD_ID, id)
 
     /** 只能在 client entrypoint 呼叫。 */
     fun sendToServer(json: Json, value: T) {

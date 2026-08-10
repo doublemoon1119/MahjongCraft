@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.room.MahjongTableRoomService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.fabric.api.`object`.builder.v1.block.entity.FabricBlockEntityTypeBuilder
 import net.minecraft.block.AbstractBlock
 import net.minecraft.block.Block
@@ -26,7 +27,7 @@ object ModBlocks {
 
     /** 註冊麻將桌方塊、對應物品與方塊實體型別。 */
     fun register(roomService: MahjongTableRoomService) {
-        val id = Identifier("mahjongcraft", "mahjong_table")
+        val id = Identifier(MinecraftModMetadata.MOD_ID, "mahjong_table")
         mahjongTable = Registry.register(
             Registries.BLOCK,
             id,

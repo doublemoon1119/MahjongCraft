@@ -12,11 +12,14 @@ plugins {
     alias(libs.plugins.ktlint) apply false
 }
 
+val modId = "mahjongcraft"
+val modName = "MahjongCraft"
+extra["mahjongcraftModId"] = modId
+extra["mahjongcraftModName"] = modName
+
 allprojects {
     group = "com.doublemoon1119.mahjongcraft"
     version = rootProject.libs.versions.project.version.get()
-
-    val modId = "mahjongcraft"
 
     // 必須先套用 base 插件，才能存取 base.archivesName
     apply(plugin = "base")
@@ -99,7 +102,7 @@ allprojects {
         val props = mapOf(
             "version" to project.version,
             "id" to modId,
-            "name" to "MahjongCraft",
+            "name" to modName,
             "description" to "Play Japanese (Riichi) Mahjong with your friends.",
             "license" to "MIT",
             "author" to "doublemoon1119",
