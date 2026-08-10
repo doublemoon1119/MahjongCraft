@@ -48,6 +48,10 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
+
+        jvmTest.dependencies {
+            implementation(libs.kotlinx.serialization.json)
+        }
     }
 }
 
