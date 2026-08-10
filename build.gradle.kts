@@ -16,6 +16,8 @@ allprojects {
     group = "com.doublemoon1119.mahjongcraft"
     version = rootProject.libs.versions.project.version.get()
 
+    val modId = "mahjongcraft"
+
     // 必須先套用 base 插件，才能存取 base.archivesName
     apply(plugin = "base")
 
@@ -53,6 +55,20 @@ allprojects {
         }
     }
 
+    // Minecraft loader 模組（Fabric Loom／未來的 NeoForge）的最終產物檔名改用
+    // <modid>-<loader>-<mcVersion>，符合玩家熟悉的 mod 命名慣例（modid-loader-mcversion-modversion），
+    // 不直接沿用 Gradle 專案名稱本身（minecraft_v1.20.1_fabric 那種底線拼接是給 settings.gradle.kts 內部用的，
+    // 不該直接外露成使用者看到的檔名）。mcVersion/loader 從 projectDir 路徑推回來
+    // （settings.gradle.kts 把 projectDir 指到 platform/minecraft/<version>/<loader>），
+    // 之後複製到其他版本/loader 不需要在這裡另外加設定。
+    plugins.withId("fabric-loom") {
+        val loader = projectDir.name
+        val mcVersion = projectDir.parentFile.name.removePrefix("v")
+        extensions.configure<BasePluginExtension> {
+            archivesName.set("$modId-$loader-$mcVersion")
+        }
+    }
+
     afterEvaluate {
         // Java 編譯選項
         tasks.withType<JavaCompile>().configureEach {
@@ -82,7 +98,7 @@ allprojects {
     tasks.withType<ProcessResources>().configureEach {
         val props = mapOf(
             "version" to project.version,
-            "id" to "mahjongcraft",
+            "id" to modId,
             "name" to "MahjongCraft",
             "description" to "Play Japanese (Riichi) Mahjong with your friends.",
             "license" to "MIT",
