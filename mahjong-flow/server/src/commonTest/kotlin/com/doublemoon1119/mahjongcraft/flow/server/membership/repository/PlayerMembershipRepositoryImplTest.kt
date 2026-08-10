@@ -41,4 +41,19 @@ class PlayerMembershipRepositoryImplTest {
         repository.clearAll()
         assertNull(repository.getTableId(playerId))
     }
+
+    /** 完整替換歸屬時應移除舊 session 的索引並載入新索引。 */
+    @Test
+    fun `test replace all swaps the complete membership index`() = runTest {
+        val repository = PlayerMembershipRepositoryImpl()
+        val oldPlayerId = Uuid.random()
+        val newPlayerId = Uuid.random()
+        val newTableId = Uuid.random()
+        repository.claim(oldPlayerId, Uuid.random())
+
+        repository.replaceAll(mapOf(newPlayerId to newTableId))
+
+        assertNull(repository.getTableId(oldPlayerId))
+        assertEquals(newTableId, repository.getTableId(newPlayerId))
+    }
 }

@@ -25,5 +25,10 @@ class PlayerMembershipRepositoryImpl : PlayerMembershipRepository {
         Unit
     }
 
+    override suspend fun replaceAll(tableIdsByPlayerId: Map<Uuid, Uuid>) = mutex.withLock {
+        this.tableIdsByPlayerId.clear()
+        this.tableIdsByPlayerId.putAll(tableIdsByPlayerId)
+    }
+
     override suspend fun clearAll() = mutex.withLock { tableIdsByPlayerId.clear() }
 }

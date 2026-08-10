@@ -48,6 +48,10 @@ class MahjongTableRoomService(
                     sendMessage(player, MinecraftMessageKeys.GAME_ALREADY_STARTED)
                     return@launch
                 }
+                if (!membershipRepository.claim(playerId, tableId)) {
+                    sendMessage(player, MinecraftMessageKeys.PLAYER_ALREADY_IN_GAME)
+                    return@launch
+                }
                 syncGame(tableId, playerId)
                 gameSnapshotSender.send(tableId, playerId)
                 return@launch
@@ -67,6 +71,10 @@ class MahjongTableRoomService(
             }
 
             if (playerId in room.playerIds) {
+                if (!membershipRepository.claim(playerId, tableId)) {
+                    sendMessage(player, MinecraftMessageKeys.PLAYER_ALREADY_IN_GAME)
+                    return@launch
+                }
                 syncRoom(tableId, playerId)
                 roomSnapshotSender.send(tableId, playerId)
                 return@launch

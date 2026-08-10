@@ -54,7 +54,7 @@ class AuthoritativeStateStore {
     private var dirty = false
 
     /** 狀態實際變更時通知平台 adapter 的非阻塞 callback。 */
-    private var dirtyListener: () -> Unit = {}
+    private var dirtyListener: (AuthoritativeStateSnapshot) -> Unit = {}
 
     /** 取得目前完整狀態的不可變快照。 */
     suspend fun snapshot(): AuthoritativeStateSnapshot = mutex.withLock { currentState }
@@ -76,7 +76,9 @@ class AuthoritativeStateStore {
      *
      * callback 在 store mutex 內同步執行，不得阻塞或再次呼叫 store。
      */
-    suspend fun setDirtyListener(listener: () -> Unit) = mutex.withLock { dirtyListener = listener }
+    suspend fun setDirtyListener(listener: (AuthoritativeStateSnapshot) -> Unit) = mutex.withLock {
+        dirtyListener = listener
+    }
 
     /**
      * 載入已保存的完整狀態並視為乾淨；不觸發 dirty callback。
@@ -100,7 +102,7 @@ class AuthoritativeStateStore {
         if (update.state != currentState) {
             currentState = update.state
             dirty = true
-            dirtyListener()
+            dirtyListener(currentState)
         }
         update.result
     }

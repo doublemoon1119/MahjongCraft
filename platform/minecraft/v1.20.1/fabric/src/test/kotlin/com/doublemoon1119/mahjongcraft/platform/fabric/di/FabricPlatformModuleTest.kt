@@ -4,14 +4,17 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublish
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.di.FlowServerModule
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
+import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.RoomSnapshotSender
+import com.doublemoon1119.mahjongcraft.platform.fabric.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.room.MahjongTableRoomService
 import org.koin.core.context.stopKoin
 import org.koin.plugin.module.dsl.startKoin
@@ -49,6 +52,9 @@ class FabricPlatformModuleTest {
         koin.get<RoomSnapshotSender>()
         koin.get<GameSnapshotSender>()
         koin.get<ServerSessionStateCleaner>()
+        koin.get<ServerSessionStateRestorer>()
+        koin.get<AuthoritativeStatePersistenceCodec>()
+        koin.get<FabricAuthoritativeStatePersistence>()
         koin.get<FabricAppCoroutineScope>()
     }
 }

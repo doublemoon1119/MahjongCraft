@@ -7,9 +7,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
-import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -20,16 +20,14 @@ import kotlin.uuid.Uuid
  *
  * 負責處理玩家發起的開房請求，初始化房間狀態並同步至相關觀察者。
  *
- * @property roomRepository 權威房間數據倉庫。
- * @property gameRepository 權威對局數據倉庫，用於檢查該識別碼是否已有進行中的對局。
+ * @property authoritativeStateStore Room 與 Game 共用的權威狀態儲存。
  * @property membershipRepository 玩家唯一麻將桌歸屬倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
  * @property eventPublisher 房間通知服務。
  */
 @Factory
 class CreateRoomUseCase(
-    private val roomRepository: RoomRepository,
-    private val gameRepository: GameRepository,
+    private val authoritativeStateStore: AuthoritativeStateStore,
     private val membershipRepository: PlayerMembershipRepository,
     private val snapshotRepository: RoomSnapshotRepository,
     @Provided private val eventPublisher: RoomEventPublisher,
@@ -56,13 +54,13 @@ class CreateRoomUseCase(
             return Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(hostId, occupiedTableId))
         }
 
-        // 1. 以原子方式檢查房間是否已存在並寫入，避免並發請求重複創建同一房間
-        val outcome = roomRepository.update(roomId) { existing ->
+        // 1. 在同一筆 store 交易中檢查 Room／Game 並建立 Room，避免巢狀 repository 鎖與競態條件。
+        val outcome = authoritativeStateStore.update { state ->
             when {
-                existing != null -> existing to Outcome.Error(RoomError.RoomAlreadyExists(roomId))
-                // 同一識別碼已有進行中的對局時拒絕建立，避免蓋掉該 BlockEntity 現有的遊戲狀態
-                gameRepository.getTableState(roomId) != null ->
-                    existing to Outcome.Error(RoomError.GameAlreadyInProgress(roomId))
+                state.rooms[roomId] != null ->
+                    AuthoritativeStateUpdate(state, Outcome.Error(RoomError.RoomAlreadyExists(roomId)))
+                state.games[roomId] != null ->
+                    AuthoritativeStateUpdate(state, Outcome.Error(RoomError.GameAlreadyInProgress(roomId)))
                 else -> {
                     // 初始化房間物件，房主預設加入且不預設準備
                     val newRoom = Room(
@@ -72,7 +70,10 @@ class CreateRoomUseCase(
                         playerIds = setOf(hostId),
                         readyPlayerIds = emptySet(),
                     )
-                    newRoom to Outcome.Success(newRoom)
+                    AuthoritativeStateUpdate(
+                        state.copy(rooms = state.rooms + (roomId to newRoom)),
+                        Outcome.Success(newRoom),
+                    )
                 }
             }
         }

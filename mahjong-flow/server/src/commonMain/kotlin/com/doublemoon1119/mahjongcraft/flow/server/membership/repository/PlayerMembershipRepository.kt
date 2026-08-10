@@ -17,6 +17,9 @@ interface PlayerMembershipRepository {
     /** 僅在玩家仍占用指定桌時釋放歸屬，避免舊流程誤刪新的歸屬。 */
     suspend fun release(playerId: Uuid, tableId: Uuid)
 
+    /** 以已驗證的完整內容取代目前 server session 的所有玩家歸屬。 */
+    suspend fun replaceAll(tableIdsByPlayerId: Map<Uuid, Uuid>)
+
     /** 清除目前 server session 的所有玩家歸屬。 */
     suspend fun clearAll()
 }

@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.di.FlowServerModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import kotlinx.serialization.json.Json
@@ -43,6 +44,12 @@ class FabricPlatformModule {
     /** 建立供 extension 註冊與 persistence adapter 共用的 runtime registry single。 */
     @Single
     fun providePersistenceRegistries(): PersistenceRegistries = buildBuiltInPersistenceRegistries()
+
+    /** 建立使用 runtime persistence registries 的權威狀態 codec。 */
+    @Single
+    fun provideAuthoritativeStatePersistenceCodec(
+        registries: PersistenceRegistries,
+    ): AuthoritativeStatePersistenceCodec = AuthoritativeStatePersistenceCodec(registries)
 
     /** 建立供 extension 註冊、DTO 轉換與 network Json 共用的 runtime registry single。 */
     @Single

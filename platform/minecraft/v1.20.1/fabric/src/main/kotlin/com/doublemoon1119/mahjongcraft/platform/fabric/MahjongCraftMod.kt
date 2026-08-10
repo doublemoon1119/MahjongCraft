@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.fabric.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.player.DisconnectedPlayerLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
@@ -49,13 +50,18 @@ class MahjongCraftMod : ModInitializer {
         val serverHolder = koin.get<FabricServerHolder>()
         val appScope = koin.get<FabricAppCoroutineScope>()
         val stateCleaner = koin.get<ServerSessionStateCleaner>()
+        val statePersistence = koin.get<FabricAuthoritativeStatePersistence>()
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
+            runBlocking { statePersistence.attach(server) }
             serverHolder.set(server)
             appScope.startSession()
         }
         ServerLifecycleEvents.SERVER_STOPPING.register {
             appScope.cancel()
-            runBlocking { stateCleaner.clear() }
+            runBlocking {
+                statePersistence.detach()
+                stateCleaner.clear()
+            }
             serverHolder.clear()
         }
 
