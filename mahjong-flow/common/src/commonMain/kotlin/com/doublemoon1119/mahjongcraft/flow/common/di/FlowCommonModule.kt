@@ -10,12 +10,11 @@ import org.koin.core.annotation.Single
 @ComponentScan("com.doublemoon1119.mahjongcraft.flow.common")
 class FlowCommonModule {
     /**
-     * 綁定 [MahjongModuleRegistry] 介面到其預設實作，並註冊內建規則模組。
+     * 建立由 Koin 管理的 runtime [MahjongModuleRegistry]。
      *
-     * `:mahjong-logic` 不依賴 Koin，故無法直接為 [MahjongModuleRegistryImpl] 標註 `@Single`，
-     * 綁定交由此處負責。放在 `FlowCommonModule` 而非 `FlowServerModule`，讓 `:mahjong-flow-client`
-     * 之後若要接 Koin，可直接 include 取得同一份綁定。
+     * 平台啟動 Koin 後必須先取得此 single，完成內建規則與第三方 extension 註冊並凍結，才能解析
+     * 依賴此 registry 的遊戲流程服務。
      */
     @Single
-    fun provideMahjongModuleRegistry(): MahjongModuleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+    fun provideMahjongModuleRegistry(): MahjongModuleRegistry = MahjongModuleRegistryImpl()
 }

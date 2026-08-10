@@ -82,6 +82,24 @@ class MahjongExtensionRegistrarTest {
 
         assertTrue(error.message.orEmpty().contains("example:broken"))
     }
+
+    /** 驗證相同 extension ID 不會形成無法判斷來源的部分註冊結果。 */
+    @Test
+    fun `duplicate extension id fails registration`() {
+        val extension = RecordingExtension(mutableListOf())
+
+        val error = assertFailsWith<MahjongExtensionRegistrationException> {
+            MahjongExtensionRegistrar.registerAndFreeze(
+                listOf(extension, extension),
+                MahjongModuleRegistryImpl(),
+                TestNetworkDtoRegistries(),
+                buildBuiltInPersistenceRegistries(),
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains(extension.id))
+        assertTrue(error.cause?.message.orEmpty().contains("Duplicate"))
+    }
 }
 
 /** 記錄 registrar 呼叫順序並登記一個可解析規則的測試 extension。 */

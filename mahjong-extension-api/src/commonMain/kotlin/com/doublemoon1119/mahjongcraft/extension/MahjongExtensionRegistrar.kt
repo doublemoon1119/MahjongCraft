@@ -19,7 +19,14 @@ object MahjongExtensionRegistrar {
         networkRegistries: NetworkDtoRegistries,
         persistenceRegistries: PersistenceRegistries,
     ) {
+        val registeredExtensionIds = mutableSetOf<String>()
         extensions.forEach { extension ->
+            if (!registeredExtensionIds.add(extension.id)) {
+                throw MahjongExtensionRegistrationException(
+                    extension.id,
+                    IllegalArgumentException("Duplicate Mahjong extension id: ${extension.id}"),
+                )
+            }
             try {
                 extension.registerRuleModules(moduleRegistry)
                 extension.registerNetworkDtos(networkRegistries)

@@ -2,11 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.di
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
-import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
 import com.doublemoon1119.mahjongcraft.flow.server.di.FlowServerModule
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.concurrency.FabricAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.RoomSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.room.MahjongTableRoomService
@@ -14,6 +15,7 @@ import org.koin.core.context.stopKoin
 import org.koin.plugin.module.dsl.startKoin
 import kotlin.test.AfterTest
 import kotlin.test.Test
+import kotlin.test.assertSame
 
 /**
  * Smoke test：確認 [MahjongCraftApp]（也就是 [com.doublemoon1119.mahjongcraft.platform.fabric.MahjongCraftMod]
@@ -29,9 +31,11 @@ class FabricPlatformModuleTest {
 
     @Test
     fun `Koin graph resolves gameplay publishers and table room lifecycle services`() {
-        registerBuiltInRuleConfigDtos()
         val koin = startKoin<MahjongCraftApp>().koin
+        val moduleRegistry = koin.get<MahjongModuleRegistry>()
+        FabricMahjongExtensions.initialize(moduleRegistry, emptyList())
 
+        assertSame(moduleRegistry, koin.get<MahjongModuleRegistry>())
         koin.get<GameFlowCoordinator>()
         koin.get<GameEventPublisher>()
         koin.get<RoomEventPublisher>()

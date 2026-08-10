@@ -44,6 +44,8 @@ dependencies {
     implementation(project(":mahjong-flow:mahjong-flow-common"))
     implementation(project(":mahjong-flow:mahjong-flow-server"))
     implementation(project(":mahjong-flow:mahjong-flow-network-dto"))
+    implementation(project(":mahjong-flow:mahjong-flow-persistence-dto"))
+    implementation(project(":mahjong-extension-api"))
     implementation(project.dependencies.platform(libs.koin.bom))
     implementation(libs.koin.core)
     implementation(libs.koin.annotations)
@@ -57,6 +59,8 @@ dependencies {
     include(project(":mahjong-flow:mahjong-flow-common"), excludeFlkBundledKotlinx)
     include(project(":mahjong-flow:mahjong-flow-server"), excludeFlkBundledKotlinx)
     include(project(":mahjong-flow:mahjong-flow-network-dto"), excludeFlkBundledKotlinx)
+    include(project(":mahjong-flow:mahjong-flow-persistence-dto"), excludeFlkBundledKotlinx)
+    include(project(":mahjong-extension-api"), excludeFlkBundledKotlinx)
     include(project.dependencies.platform(libs.koin.bom))
     include(libs.koin.core)
 

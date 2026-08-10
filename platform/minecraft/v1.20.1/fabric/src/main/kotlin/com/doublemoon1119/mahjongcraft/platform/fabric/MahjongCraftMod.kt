@@ -2,11 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftApp
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.player.DisconnectedPlayerLifecycleService
@@ -32,11 +33,9 @@ class MahjongCraftMod : ModInitializer {
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
     override fun onInitialize() {
-        // 必須先於 fabricPlatformModule 裡的 Json single 第一次被解析之前完成，見
-        // FabricPlatformModule.kt 的說明。
-        registerBuiltInRuleConfigDtos()
-
         val koin = startKoin<MahjongCraftApp>().koin
+        // Koin single 建立後，必須先於 Json 與遊戲流程服務第一次被解析前完成。
+        FabricMahjongExtensions.initialize(koin.get<MahjongModuleRegistry>())
 
         ModItems.register()
         ModBlocks.register(koin.get<MahjongTableRoomService>())
