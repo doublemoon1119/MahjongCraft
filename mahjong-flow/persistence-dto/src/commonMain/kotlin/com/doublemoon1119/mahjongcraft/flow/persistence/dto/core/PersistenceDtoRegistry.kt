@@ -31,6 +31,9 @@ class PersistenceDtoRegistry<Domain : Any> {
     /** 以穩定 type key 索引的註冊項目。 */
     private val byTypeKey = mutableMapOf<String, Entry<*, *>>()
 
+    /** 是否已禁止後續註冊。 */
+    private var frozen = false
+
     /**
      * 註冊一組具體領域型別與 persistence DTO 的雙向轉換。
      *
@@ -43,6 +46,7 @@ class PersistenceDtoRegistry<Domain : Any> {
         toDto: (D) -> T,
         toDomain: (T) -> D,
     ) {
+        check(!frozen) { "Persistence DTO registry is frozen" }
         require(typeKey.isNotBlank()) { "Persistence type key must not be blank" }
         require(domainClass !in byDomainClass) { "Persistence DTO already registered for $domainClass" }
         require(typeKey !in byTypeKey) { "Persistence type key already registered: $typeKey" }
@@ -50,6 +54,11 @@ class PersistenceDtoRegistry<Domain : Any> {
         val entry = Entry(serializer, toDto, toDomain)
         byDomainClass[domainClass] = typeKey to entry
         byTypeKey[typeKey] = entry
+    }
+
+    /** 凍結註冊表；凍結後不得新增 persistence mapper。 */
+    fun freeze() {
+        frozen = true
     }
 
     /** 將已註冊的領域物件轉換成帶 type key 的 persistence DTO。 */

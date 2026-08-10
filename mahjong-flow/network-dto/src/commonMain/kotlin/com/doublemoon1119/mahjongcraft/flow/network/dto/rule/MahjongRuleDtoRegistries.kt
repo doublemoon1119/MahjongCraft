@@ -52,14 +52,51 @@ interface ExhaustiveDrawReasonDto
  * [registerBuiltInRuleConfigDtos] 把日麻/台麻已有的實作註冊進來，第三方規則模組要支援序列化，
  * 一樣呼叫對應 registry 的 `register(...)`，不需要修改這個檔案。
  */
-object MahjongRuleDtoRegistries {
-    val ruleConfig = DtoRegistry<MahjongRuleConfig, MahjongRuleConfigDto>()
-    val scoreConfig = DtoRegistry<ScoreConfig, ScoreConfigDto>()
-    val gameLength = DtoRegistry<GameLength, GameLengthDto>()
-    val dynamicRuleState = DtoRegistry<DynamicRuleState, DynamicRuleStateDto>()
-    val playerRuleState = DtoRegistry<PlayerRuleState, PlayerRuleStateDto>()
-    val discardPile = DtoRegistry<DiscardPile<*>, DiscardPileDto>()
-    val exhaustiveDrawReason = DtoRegistry<ExhaustiveDrawReason, ExhaustiveDrawReasonDto>()
+interface NetworkDtoRegistries {
+    /** 規則配置 DTO registry。 */
+    val ruleConfig: DtoRegistry<MahjongRuleConfig, MahjongRuleConfigDto>
+
+    /** 計分配置 DTO registry。 */
+    val scoreConfig: DtoRegistry<ScoreConfig, ScoreConfigDto>
+
+    /** 遊戲長度 DTO registry。 */
+    val gameLength: DtoRegistry<GameLength, GameLengthDto>
+
+    /** 動態牌桌狀態 DTO registry。 */
+    val dynamicRuleState: DtoRegistry<DynamicRuleState, DynamicRuleStateDto>
+
+    /** 玩家規則狀態 DTO registry。 */
+    val playerRuleState: DtoRegistry<PlayerRuleState, PlayerRuleStateDto>
+
+    /** 牌河 DTO registry。 */
+    val discardPile: DtoRegistry<DiscardPile<*>, DiscardPileDto>
+
+    /** 流局原因 DTO registry。 */
+    val exhaustiveDrawReason: DtoRegistry<ExhaustiveDrawReason, ExhaustiveDrawReasonDto>
+
+    /** 凍結所有 registry；凍結後不得新增或覆寫 mapper。 */
+    fun freeze()
+}
+
+/** MahjongCraft runtime 目前使用的 network DTO registry 集合。 */
+object MahjongRuleDtoRegistries : NetworkDtoRegistries {
+    override val ruleConfig = DtoRegistry<MahjongRuleConfig, MahjongRuleConfigDto>()
+    override val scoreConfig = DtoRegistry<ScoreConfig, ScoreConfigDto>()
+    override val gameLength = DtoRegistry<GameLength, GameLengthDto>()
+    override val dynamicRuleState = DtoRegistry<DynamicRuleState, DynamicRuleStateDto>()
+    override val playerRuleState = DtoRegistry<PlayerRuleState, PlayerRuleStateDto>()
+    override val discardPile = DtoRegistry<DiscardPile<*>, DiscardPileDto>()
+    override val exhaustiveDrawReason = DtoRegistry<ExhaustiveDrawReason, ExhaustiveDrawReasonDto>()
+
+    override fun freeze() {
+        ruleConfig.freeze()
+        scoreConfig.freeze()
+        gameLength.freeze()
+        dynamicRuleState.freeze()
+        playerRuleState.freeze()
+        discardPile.freeze()
+        exhaustiveDrawReason.freeze()
+    }
 }
 
 /**

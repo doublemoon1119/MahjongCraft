@@ -40,6 +40,9 @@ class DtoRegistry<Domain : Any, Dto : Any> {
     private val byDomainClass = mutableMapOf<KClass<out Domain>, Entry<*, *>>()
     private val byDtoClass = mutableMapOf<KClass<out Dto>, Entry<*, *>>()
 
+    /** 是否已禁止後續註冊。 */
+    private var frozen = false
+
     /**
      * 註冊一組領域型別 ↔ DTO 的對應關係。
      *
@@ -56,9 +59,17 @@ class DtoRegistry<Domain : Any, Dto : Any> {
         toDto: (D) -> T,
         toDomain: (T) -> D,
     ) {
+        check(!frozen) { "Network DTO registry is frozen" }
+        require(domainClass !in byDomainClass) { "Network DTO already registered for $domainClass" }
+        require(dtoClass !in byDtoClass) { "Network domain mapping already registered for $dtoClass" }
         val entry = Entry(dtoClass, serializer, toDto, toDomain)
         byDomainClass[domainClass] = entry
         byDtoClass[dtoClass] = entry
+    }
+
+    /** 凍結註冊表；凍結後不得新增或覆寫 DTO mapper。 */
+    fun freeze() {
+        frozen = true
     }
 
     /**

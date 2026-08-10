@@ -28,6 +28,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanScoreConfig
 
+/** 目前 runtime 是否已完成內建 network DTO mapper 註冊。 */
+private var builtInRuleConfigDtosRegistered = false
+
 /**
  * 註冊 `:mahjong-flow-network-dto` 內建支援的規則模組（日麻、台麻）的 DTO 對照。
  *
@@ -36,6 +39,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanScoreConfig
  * 序列化，可在各自的組裝處另行呼叫對應 registry 的 `register(...)`。
  */
 fun registerBuiltInRuleConfigDtos() {
+    if (builtInRuleConfigDtosRegistered) return
+
     MahjongRuleDtoRegistries.ruleConfig.register(
         RiichiRuleConfig::class,
         RiichiRuleConfigDto::class,
@@ -189,4 +194,5 @@ fun registerBuiltInRuleConfigDtos() {
         { RiichiExhaustiveDrawReasonDto.SanchaHou },
         { RiichiExhaustiveDrawReason.SanchaHou },
     )
+    builtInRuleConfigDtosRegistered = true
 }

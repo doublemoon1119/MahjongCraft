@@ -23,13 +23,23 @@ class MahjongModuleRegistryImpl : MahjongModuleRegistry {
 
     private val entriesByConfigClass = mutableMapOf<KClass<out MahjongRuleConfig>, Entry>()
 
+    /** 是否已禁止後續註冊。 */
+    private var frozen = false
+
     override fun <T : MahjongRuleConfig> register(
         configClass: KClass<T>,
         id: String,
         factory: (T, id: String) -> MahjongRuleModule<T>,
     ) {
+        check(!frozen) { "Mahjong module registry is frozen" }
+        require(configClass !in entriesByConfigClass) { "Mahjong module already registered for $configClass" }
+        require(entriesByConfigClass.values.none { it.id == id }) { "Mahjong module ID already registered: $id" }
         @Suppress("UNCHECKED_CAST")
         entriesByConfigClass[configClass] = Entry(id, factory as (MahjongRuleConfig, String) -> MahjongRuleModule<*>)
+    }
+
+    override fun freeze() {
+        frozen = true
     }
 
     override fun <T : MahjongRuleConfig> getModule(config: T): MahjongRuleModule<T> {

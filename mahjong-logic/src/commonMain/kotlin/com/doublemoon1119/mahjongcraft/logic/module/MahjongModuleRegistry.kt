@@ -21,6 +21,9 @@ interface MahjongModuleRegistry {
         factory: (T, id: String) -> MahjongRuleModule<T>,
     )
 
+    /** 凍結註冊表；凍結後不得再新增或覆寫規則模組。 */
+    fun freeze()
+
     /**
      * 根據傳入的配置獲取已綁定該配置的規則模組實例。
      */
