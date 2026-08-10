@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateC
 import com.doublemoon1119.mahjongcraft.platform.fabric.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.fabric.player.DisconnectedPlayerLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.room.MahjongTableRoomService
@@ -17,6 +18,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import org.koin.core.Koin
 import org.koin.plugin.module.dsl.startKoin
 import org.slf4j.LoggerFactory
@@ -51,8 +53,20 @@ class MahjongCraftMod : ModInitializer {
         }
 
         registerGameCommandReceiver(koin)
+        registerPlayerConnectionEvents(koin)
 
         logger.info("MahjongCraft (Fabric, Minecraft 1.20.1) initialized.")
+    }
+
+    /** 將 Fabric 玩家連線事件轉送給可測試的斷線政策執行器。 */
+    private fun registerPlayerConnectionEvents(koin: Koin) {
+        val lifecycleService = koin.get<DisconnectedPlayerLifecycleService>()
+        ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
+            lifecycleService.onConnected(handler.player.uuid.toKotlinUuid())
+        }
+        ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
+            lifecycleService.onDisconnected(handler.player.uuid.toKotlinUuid())
+        }
     }
 
     /**

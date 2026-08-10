@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublish
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.dto.buildMahjongDtoSerializersModule
 import com.doublemoon1119.mahjongcraft.flow.server.di.FlowServerModule
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
@@ -31,6 +32,10 @@ import org.koin.core.annotation.Single
 @Module(includes = [FlowCommonModule::class, FlowServerModule::class])
 @ComponentScan("com.doublemoon1119.mahjongcraft.platform.fabric")
 class FabricPlatformModule {
+    /** 提供目前使用預設值的伺服器政策；後續由磁碟 config adapter 取代。 */
+    @Single
+    fun provideMinecraftServerConfig(): MinecraftServerConfig = MinecraftServerConfig()
+
     /**
      * [buildMahjongDtoSerializersModule] 讀到的 `MahjongRuleDtoRegistries` 必須已經在
      * [com.doublemoon1119.mahjongcraft.platform.fabric.MahjongCraftMod.onInitialize] 呼叫過
