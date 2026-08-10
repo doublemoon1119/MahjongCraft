@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import kotlinx.serialization.Serializable
 
 /**
- * [Tile] 的線路 DTO。日麻不使用花牌，但 [Flower] 分支仍原樣鏡射，供未來台灣麻將規則使用。
+ * [Tile] 的網路 DTO。日麻不使用花牌，但 [Flower] 分支仍原樣鏡射，供未來台灣麻將規則使用。
  */
 @Serializable
 sealed interface TileDto {
@@ -48,6 +48,7 @@ sealed interface TileDto {
     }
 }
 
+/** [Tile.Suit] 的網路 DTO。 */
 @Serializable
 enum class SuitDto { CHARACTER, DOT, BAMBOO }
 

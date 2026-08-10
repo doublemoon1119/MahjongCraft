@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import kotlinx.serialization.Serializable
 
+/** [RelativeDirection] 的網路 DTO。 */
 @Serializable
 sealed interface RelativeDirectionDto {
     @Serializable data object Left : RelativeDirectionDto

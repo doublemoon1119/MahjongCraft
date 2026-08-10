@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
+/** [RoomSnapshot] 的 observer-specific 網路 DTO。 */
 @Serializable
 data class RoomSnapshotDto(
     val id: String,

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
+/** [TableStateSnapshot] 的 observer-specific 網路 DTO。 */
 @Serializable
 data class TableStateSnapshotDto(
     val id: String,

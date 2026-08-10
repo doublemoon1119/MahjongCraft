@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
 /**
- * [GameCommand] 的線路 DTO。跟 [GameActionDto] 一樣獨立鏡射成一份 DTO，而不是直接讓
+ * [GameCommand] 的網路 DTO。跟 [GameActionDto] 一樣獨立鏡射成一份 DTO，而不是直接讓
  * `GameCommand` 本身標 `@Serializable`——這個型別樹裡凡是會上線的型別風格一律統一走顯式 DTO +
  * mapper，不要「有些欄位是 DTO、有些欄位是領域型別」的混搭（即使 `:mahjong-flow-common` 本身已經
  * 依賴 Koin、不是「純」模組，這裡仍刻意不直接標註）。

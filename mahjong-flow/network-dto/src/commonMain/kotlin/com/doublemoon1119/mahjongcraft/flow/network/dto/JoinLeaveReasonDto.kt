@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
 import kotlinx.serialization.Serializable
 
+/** [JoinReason] 的網路 DTO。 */
 @Serializable
 sealed interface JoinReasonDto {
     @Serializable data object Created : JoinReasonDto
@@ -21,6 +22,7 @@ fun JoinReasonDto.toDomain(): JoinReason = when (this) {
     JoinReasonDto.Joined -> JoinReason.Joined
 }
 
+/** [LeaveReason] 的網路 DTO。 */
 @Serializable
 sealed interface LeaveReasonDto {
     @Serializable data object Voluntary : LeaveReasonDto

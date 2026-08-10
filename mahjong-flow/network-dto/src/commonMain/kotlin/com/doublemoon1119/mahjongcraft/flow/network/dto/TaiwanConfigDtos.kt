@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
 
 // ── MahjongRuleConfigDto ──────────────────────────────────────────────────
 
+/** [TaiwanRuleConfig] 的完整網路 DTO。 */
 @Serializable
 data class TaiwanRuleConfigDto(
     val initialHandSize: Int,
@@ -47,6 +48,7 @@ fun TaiwanRuleConfigDto.toDomain(): TaiwanRuleConfig = TaiwanRuleConfig(
 
 // ── ScoreConfigDto ─────────────────────────────────────────────────────────
 
+/** [TaiwanScoreConfig] 的網路 DTO。 */
 @Serializable
 data class TaiwanScoreConfigDto(
     val baseScore: Int,
@@ -71,6 +73,7 @@ fun TaiwanScoreConfigDto.toDomain(): TaiwanScoreConfig = TaiwanScoreConfig(
 
 // ── GameLengthDto ──────────────────────────────────────────────────────────
 
+/** [TaiwanGameLength] 的網路 DTO。 */
 @Serializable
 sealed interface TaiwanGameLengthDto : GameLengthDto {
     @Serializable data object OneGame : TaiwanGameLengthDto
@@ -88,6 +91,7 @@ sealed interface TaiwanGameLengthDto : GameLengthDto {
 @Serializable
 data class DiscardEntryDto(val tile: IdentifiedTileDto, val isTaken: Boolean)
 
+/** [TaiwanDiscardPile] 的網路 DTO。 */
 @Serializable
 data class TaiwanDiscardPileDto(val entries: List<DiscardEntryDto>) : DiscardPileDto
 

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
+/** [MahjongPlayerSnapshot] 的網路 DTO。 */
 @Serializable
 data class MahjongPlayerSnapshotDto(
     val id: String,

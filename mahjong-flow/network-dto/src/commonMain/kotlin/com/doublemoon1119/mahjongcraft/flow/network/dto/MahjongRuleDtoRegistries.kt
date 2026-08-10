@@ -12,7 +12,7 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 
 /**
- * [MahjongRuleConfig] 的線路 DTO——刻意維持開放介面（不是 sealed），對應領域層本身就是開放介面、
+ * [MahjongRuleConfig] 的網路 DTO——刻意維持開放介面（不是 sealed），對應領域層本身就是開放介面、
  * 讓第三方能透過 [com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry] 註冊自己
  * 的規則模組這件事。序列化用的多型清單改用 [MahjongRuleDtoRegistries] 動態組成，不是編譯期窮舉；
  * `@Polymorphic` 標記在介面上，讓任何用到這個型別的欄位都自動走 `SerializersModule` 查表，
@@ -21,27 +21,27 @@ import kotlinx.serialization.modules.polymorphic
 @Polymorphic
 interface MahjongRuleConfigDto
 
-/** 見 [MahjongRuleConfigDto] 的說明，[ScoreConfig] 的線路 DTO。 */
+/** 見 [MahjongRuleConfigDto] 的說明，[ScoreConfig] 的網路 DTO。 */
 @Polymorphic
 interface ScoreConfigDto
 
-/** 見 [MahjongRuleConfigDto] 的說明，[GameLength] 的線路 DTO。 */
+/** 見 [MahjongRuleConfigDto] 的說明，[GameLength] 的網路 DTO。 */
 @Polymorphic
 interface GameLengthDto
 
-/** 見 [MahjongRuleConfigDto] 的說明，[DynamicRuleState] 的線路 DTO。 */
+/** 見 [MahjongRuleConfigDto] 的說明，[DynamicRuleState] 的網路 DTO。 */
 @Polymorphic
 interface DynamicRuleStateDto
 
-/** 見 [MahjongRuleConfigDto] 的說明，[PlayerRuleState] 的線路 DTO。 */
+/** 見 [MahjongRuleConfigDto] 的說明，[PlayerRuleState] 的網路 DTO。 */
 @Polymorphic
 interface PlayerRuleStateDto
 
-/** 見 [MahjongRuleConfigDto] 的說明，[DiscardPile] 的線路 DTO。 */
+/** 見 [MahjongRuleConfigDto] 的說明，[DiscardPile] 的網路 DTO。 */
 @Polymorphic
 interface DiscardPileDto
 
-/** 見 [MahjongRuleConfigDto] 的說明，[ExhaustiveDrawReason] 的線路 DTO。 */
+/** 見 [MahjongRuleConfigDto] 的說明，[ExhaustiveDrawReason] 的網路 DTO。 */
 @Polymorphic
 interface ExhaustiveDrawReasonDto
 

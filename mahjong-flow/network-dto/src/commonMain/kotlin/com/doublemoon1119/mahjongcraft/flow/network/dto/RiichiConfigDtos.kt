@@ -13,6 +13,7 @@ import kotlinx.serialization.Serializable
 
 // ── MahjongRuleConfigDto ──────────────────────────────────────────────────
 
+/** [RiichiRuleConfig] 的完整網路 DTO。 */
 @Serializable
 data class RiichiRuleConfigDto(
     val initialHandSize: Int,
@@ -57,6 +58,7 @@ fun RiichiRuleConfigDto.toDomain(): RiichiRuleConfig = RiichiRuleConfig(
 
 // ── ScoreConfigDto ─────────────────────────────────────────────────────────
 
+/** [RiichiScoreConfig] 的網路 DTO。 */
 @Serializable
 data class RiichiScoreConfigDto(
     val initialScore: Int,
@@ -81,6 +83,7 @@ fun RiichiScoreConfigDto.toDomain(): RiichiScoreConfig = RiichiScoreConfig(
 
 // ── GameLengthDto ──────────────────────────────────────────────────────────
 
+/** [RiichiGameLength] 的網路 DTO。 */
 @Serializable
 sealed interface RiichiGameLengthDto : GameLengthDto {
     @Serializable data object OneGame : RiichiGameLengthDto
@@ -92,6 +95,7 @@ sealed interface RiichiGameLengthDto : GameLengthDto {
 
 // ── DynamicRuleStateDto ────────────────────────────────────────────────────
 
+/** [RiichiDynamicState] 的網路 DTO。 */
 @Serializable
 data class RiichiDynamicStateDto(val riichiStickCount: Int) : DynamicRuleStateDto
 
@@ -100,9 +104,11 @@ fun RiichiDynamicStateDto.toDomain(): RiichiDynamicState = RiichiDynamicState(ri
 
 // ── PlayerRuleStateDto ─────────────────────────────────────────────────────
 
+/** [PaoYaku] 的網路 DTO。 */
 @Serializable
 enum class PaoYakuDto { Daisangen, Daisuushii }
 
+/** [PaoLiability] 的網路 DTO。 */
 @Serializable
 data class PaoLiabilityDto(val yaku: PaoYakuDto, val direction: RelativeDirectionDto)
 
@@ -122,6 +128,7 @@ fun PaoLiabilityDto.toDomain(): PaoLiability = PaoLiability(
     direction = direction.toDomain(),
 )
 
+/** [RiichiPlayerState] 的網路 DTO。 */
 @Serializable
 data class RiichiPlayerStateDto(
     val riichiTile: IdentifiedTileDto?,
@@ -146,9 +153,11 @@ fun RiichiPlayerStateDto.toDomain(): RiichiPlayerState = RiichiPlayerState(
 
 // ── DiscardPileDto ─────────────────────────────────────────────────────────
 
+/** [RiichiDiscardEntry] 的網路 DTO。 */
 @Serializable
 data class RiichiDiscardEntryDto(val tile: IdentifiedTileDto, val isRiichi: Boolean, val isTaken: Boolean)
 
+/** [RiichiDiscardPile] 的網路 DTO。 */
 @Serializable
 data class RiichiDiscardPileDto(val entries: List<RiichiDiscardEntryDto>) : DiscardPileDto
 
@@ -162,6 +171,7 @@ fun RiichiDiscardPileDto.toDomain(): RiichiDiscardPile = RiichiDiscardPile(
 
 // ── ExhaustiveDrawReasonDto ────────────────────────────────────────────────
 
+/** [RiichiExhaustiveDrawReason] 的網路 DTO。 */
 @Serializable
 sealed interface RiichiExhaustiveDrawReasonDto : ExhaustiveDrawReasonDto {
     @Serializable data object Normal : RiichiExhaustiveDrawReasonDto

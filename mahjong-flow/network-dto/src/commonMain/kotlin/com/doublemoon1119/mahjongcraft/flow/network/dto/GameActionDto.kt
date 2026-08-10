@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
 /**
- * [GameAction] 的線路 DTO。[ExhaustiveDraw.reason] 是開放型別
+ * [GameAction] 的網路 DTO。[ExhaustiveDraw.reason] 是開放型別
  * （見 [ExhaustiveDrawReasonDto]），透過 registry 轉換，不是窮舉 `when`。
  */
 @Serializable
