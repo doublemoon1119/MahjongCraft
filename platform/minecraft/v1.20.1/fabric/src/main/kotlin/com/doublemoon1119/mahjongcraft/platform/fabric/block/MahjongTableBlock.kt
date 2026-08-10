@@ -25,7 +25,7 @@ class MahjongTableBlock(
     /** 使用一般方塊模型顯示目前的最小佔位外觀。 */
     override fun getRenderType(state: BlockState): BlockRenderType = BlockRenderType.MODEL
 
-    /** 在伺服器端把右鍵互動交給正式房間生命週期服務。 */
+    /** 在伺服器端把右鍵交給進場服務；蹲下右鍵則嘗試離開等待中的遊戲。 */
     @Suppress("OVERRIDE_DEPRECATION")
     override fun onUse(
         state: BlockState,
@@ -37,7 +37,8 @@ class MahjongTableBlock(
     ): ActionResult {
         if (!world.isClient) {
             val table = world.getBlockEntity(pos) as? MahjongTableBlockEntity ?: return ActionResult.FAIL
-            roomService.interact(table, player as ServerPlayerEntity)
+            val serverPlayer = player as ServerPlayerEntity
+            if (player.isSneaking) roomService.leave(table, serverPlayer) else roomService.interact(table, serverPlayer)
         }
         return ActionResult.SUCCESS
     }

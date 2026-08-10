@@ -4,5 +4,10 @@
   "mahjongcraft.message.game_joined": "已加入麻将游戏",
   "mahjongcraft.message.game_already_started": "这场麻将对局已经开始",
   "mahjongcraft.message.player_already_in_game": "你已经加入另一场麻将游戏",
-  "mahjongcraft.message.game_join_failed": "无法加入这场麻将游戏"
+  "mahjongcraft.message.game_join_failed": "无法加入这场麻将游戏",
+  "mahjongcraft.message.player_not_in_game": "你不在这场麻将游戏中",
+  "mahjongcraft.message.game_leave_denied_while_playing": "麻将对局进行中无法离开",
+  "mahjongcraft.message.game_left": "已离开麻将游戏",
+  "mahjongcraft.message.game_dissolved": "已解散麻将游戏",
+  "mahjongcraft.message.game_leave_failed": "无法离开这场麻将游戏"
 }

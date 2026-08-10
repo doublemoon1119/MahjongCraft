@@ -5,9 +5,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshotUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.CreateRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.JoinRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
@@ -25,8 +27,10 @@ class MahjongTableRoomService(
     private val scope: AppCoroutineScope,
     private val roomRepository: RoomRepository,
     private val gameRepository: GameRepository,
+    private val membershipRepository: PlayerMembershipRepository,
     private val createRoom: CreateRoomUseCase,
     private val joinRoom: JoinRoomUseCase,
+    private val leaveRoom: LeaveRoomUseCase,
     private val syncRoom: SyncRoomSnapshotUseCase,
     private val syncGame: SyncGameSnapshotUseCase,
     private val roomSnapshotSender: RoomSnapshotSender,
@@ -73,6 +77,36 @@ class MahjongTableRoomService(
             when (val result = joinRoom(tableId, playerId)) {
                 is Outcome.Success -> sendMessage(player, "mahjongcraft.message.game_joined")
                 is Outcome.Error -> sendRoomError(player, result.error)
+            }
+        }
+    }
+
+    /** 讓玩家以蹲下右鍵離開目前麻將桌的等待階段；進行中的對局暫時禁止離開。 */
+    fun leave(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
+        val tableId = table.tableId
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            if (membershipRepository.getTableId(playerId) != tableId) {
+                sendMessage(player, "mahjongcraft.message.player_not_in_game")
+                return@launch
+            }
+            if (gameRepository.getTableState(tableId) != null) {
+                sendMessage(player, "mahjongcraft.message.game_leave_denied_while_playing")
+                return@launch
+            }
+
+            val room = roomRepository.getRoom(tableId)
+            if (room == null || playerId !in room.playerIds) {
+                sendMessage(player, "mahjongcraft.message.player_not_in_game")
+                return@launch
+            }
+            val wasHost = room.hostId == playerId
+            when (leaveRoom(tableId, playerId)) {
+                is Outcome.Success -> sendMessage(
+                    player,
+                    if (wasHost) "mahjongcraft.message.game_dissolved" else "mahjongcraft.message.game_left",
+                )
+                is Outcome.Error -> sendMessage(player, "mahjongcraft.message.game_leave_failed")
             }
         }
     }

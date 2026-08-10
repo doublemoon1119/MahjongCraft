@@ -4,5 +4,10 @@
   "mahjongcraft.message.game_joined": "Joined the mahjong game",
   "mahjongcraft.message.game_already_started": "This mahjong game has already started",
   "mahjongcraft.message.player_already_in_game": "You have already joined another mahjong game",
-  "mahjongcraft.message.game_join_failed": "Could not join this mahjong game"
+  "mahjongcraft.message.game_join_failed": "Could not join this mahjong game",
+  "mahjongcraft.message.player_not_in_game": "You are not part of this mahjong game",
+  "mahjongcraft.message.game_leave_denied_while_playing": "You cannot leave while the mahjong game is in progress",
+  "mahjongcraft.message.game_left": "Left the mahjong game",
+  "mahjongcraft.message.game_dissolved": "Mahjong game dissolved",
+  "mahjongcraft.message.game_leave_failed": "Could not leave this mahjong game"
 }

@@ -4,5 +4,10 @@
   "mahjongcraft.message.game_joined": "麻雀ゲームに参加しました",
   "mahjongcraft.message.game_already_started": "この麻雀対局はすでに開始しています",
   "mahjongcraft.message.player_already_in_game": "すでに別の麻雀ゲームに参加しています",
-  "mahjongcraft.message.game_join_failed": "この麻雀ゲームに参加できません"
+  "mahjongcraft.message.game_join_failed": "この麻雀ゲームに参加できません",
+  "mahjongcraft.message.player_not_in_game": "この麻雀ゲームには参加していません",
+  "mahjongcraft.message.game_leave_denied_while_playing": "麻雀対局の進行中は退出できません",
+  "mahjongcraft.message.game_left": "麻雀ゲームから退出しました",
+  "mahjongcraft.message.game_dissolved": "麻雀ゲームを解散しました",
+  "mahjongcraft.message.game_leave_failed": "この麻雀ゲームから退出できません"
 }
