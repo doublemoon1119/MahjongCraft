@@ -1,17 +1,20 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.di
 
+import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.state.AuthoritativeStatePersistenceCodec
-import com.doublemoon1119.mahjongcraft.flow.server.di.FlowServerModule
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.fabric.game.FabricDecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.RoomSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.persistence.FabricAuthoritativeStatePersistence
@@ -25,23 +28,22 @@ import org.koin.core.context.stopKoin
 import org.koin.plugin.module.dsl.startKoin
 import kotlin.test.AfterTest
 import kotlin.test.Test
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 
 /**
- * Smoke test：確認 [MahjongCraftApp]（也就是 [com.doublemoon1119.mahjongcraft.platform.fabric.MahjongCraftMod]
- * 實際啟動 Koin 時用的那個 `@KoinApplication` 組合——[FlowServerModule]，連同它 `includes` 進來的
- * `com.doublemoon1119.mahjongcraft.flow.common.di.FlowCommonModule`，再加上 [FabricPlatformModule]）
- * 解得出對局流程真正會用到的三個型別，不缺任何綁定。
+ * Smoke test：確認 dedicated server 與 Minecraft client 使用的 Koin application 各自具有完整且隔離的
+ * 依賴圖。
  */
-class FabricPlatformModuleTest {
+class FabricApplicationModuleTest {
     @AfterTest
     fun tearDown() {
         stopKoin()
     }
 
     @Test
-    fun `Koin graph resolves gameplay publishers and table room lifecycle services`() {
-        val koin = startKoin<MahjongCraftApp>().koin
+    fun `server graph resolves gameplay services without client stores`() {
+        val koin = startKoin<MahjongCraftServerApp>().koin
         val moduleRegistry = koin.get<MahjongModuleRegistry>()
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val persistenceRegistries = koin.get<PersistenceRegistries>()
@@ -52,6 +54,7 @@ class FabricPlatformModuleTest {
         assertSame(persistenceRegistries, koin.get<PersistenceRegistries>())
         koin.get<GameFlowCoordinator>()
         koin.get<GameEventPublisher>()
+        koin.get<DecisionTimerUpdatePublisher>()
         koin.get<RoomEventPublisher>()
         koin.get<MahjongTableRoomService>()
         koin.get<RoomSnapshotSender>()
@@ -66,5 +69,17 @@ class FabricPlatformModuleTest {
         koin.get<FabricTableLifecycleService>()
         koin.get<FabricTableLocationValidationService>()
         koin.get<FabricAppCoroutineScope>()
+        koin.get<FabricDecisionTimerScheduler>()
+        assertNull(koin.getOrNull<ClientMahjongStateStore>())
+        assertNull(koin.getOrNull<ClientDecisionTimerStateStore>())
+    }
+
+    @Test
+    fun `client graph resolves integrated server services and client stores`() {
+        val koin = startKoin<MahjongCraftClientApp>().koin
+
+        koin.get<GameFlowCoordinator>()
+        koin.get<ClientMahjongStateStore>()
+        koin.get<ClientDecisionTimerStateStore>()
     }
 }

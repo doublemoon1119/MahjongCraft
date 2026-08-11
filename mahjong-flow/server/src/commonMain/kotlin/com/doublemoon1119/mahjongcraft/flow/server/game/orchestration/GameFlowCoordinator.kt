@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -55,6 +56,7 @@ import kotlin.uuid.Uuid
  * @property aiTurnDriver 找出下一個該行動的 AI 玩家與其命令。
  * @property forcedAutoPlayDriver 找出下一個必須由伺服器固定操作的真人玩家與命令。
  * @property decisionTimerManager 在每次命令完成後結算並調整玩家決策計時器。
+ * @property decisionTimerSynchronizationService 立即同步命令完成後的權威計時與停止狀態。
  */
 @Factory
 class GameFlowCoordinator(
@@ -67,6 +69,7 @@ class GameFlowCoordinator(
     private val aiTurnDriver: AiTurnDriver,
     private val forcedAutoPlayDriver: ForcedAutoPlayDriver,
     private val decisionTimerManager: GameDecisionTimerManager,
+    private val decisionTimerSynchronizationService: DecisionTimerSynchronizationService,
 ) {
     /**
      * 分派 [command] 並自動銜接對應的系統觸發 use case，完成後接著驅動所有需要行動的 AI 玩家
@@ -124,10 +127,11 @@ class GameFlowCoordinator(
         command: GameCommand,
     ): Outcome<Unit, GameError> {
         val result = dispatchAndChain(gameId, playerId, command)
-        decisionTimerManager.reconcile(
+        val statuses = decisionTimerManager.reconcile(
             gameId = gameId,
             completedPlayerId = playerId.takeIf { result is Outcome.Success },
         )
+        decisionTimerSynchronizationService.synchronize(gameId, statuses)
         return result
     }
 

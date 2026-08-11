@@ -128,6 +128,12 @@ class GameDecisionTimerManager(
         statusesAt(activeTimers[gameId].orEmpty(), clock.nowMillis())
     }
 
+    /** 取得目前所有遊戲及決策者的權威時間狀態。 */
+    suspend fun getAllStatuses(): Map<Uuid, Map<Uuid, ActivePlayerDecisionStatus>> = mutex.withLock {
+        val nowMillis = clock.nowMillis()
+        activeTimers.mapValues { (_, timers) -> statusesAt(timers, nowMillis) }
+    }
+
     /**
      * 取得並標記目前所有完整逾時的玩家，確保同一次逾時只交給 scheduler 處理一次。
      *

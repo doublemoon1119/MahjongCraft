@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.lifecycle
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
@@ -16,10 +17,12 @@ class ServerSessionStateCleaner(
     private val gameSnapshots: GameSnapshotRepository,
     private val membershipRepository: PlayerMembershipRepository,
     private val decisionTimerManager: GameDecisionTimerManager,
+    private val decisionTimerSynchronizationService: DecisionTimerSynchronizationService,
 ) {
     /** 清除 session 狀態；持久化完成後應先 flush，再呼叫本方法釋放記憶體且不標記 dirty。 */
     suspend fun clear() {
         decisionTimerManager.clearAll()
+        decisionTimerSynchronizationService.clear()
         authoritativeStateStore.load(AuthoritativeStateSnapshot())
         roomSnapshots.clearAll()
         gameSnapshots.clearAll()

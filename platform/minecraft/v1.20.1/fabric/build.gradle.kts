@@ -42,6 +42,7 @@ dependencies {
     // 透傳給下游，這裡要實作對應介面/使用對應型別，必須直接宣告依賴才看得到 symbol。
     implementation(project(":mahjong-logic"))
     implementation(project(":mahjong-flow:mahjong-flow-common"))
+    implementation(project(":mahjong-flow:mahjong-flow-client"))
     implementation(project(":mahjong-flow:mahjong-flow-server"))
     implementation(project(":mahjong-flow:mahjong-flow-network-dto"))
     implementation(project(":mahjong-flow:mahjong-flow-persistence-dto"))
@@ -57,6 +58,7 @@ dependencies {
     include(project(":mahjong-logic"))
     include(project(":mahjong-ai"))
     include(project(":mahjong-flow:mahjong-flow-common"), excludeFlkBundledKotlinx)
+    include(project(":mahjong-flow:mahjong-flow-client"), excludeFlkBundledKotlinx)
     include(project(":mahjong-flow:mahjong-flow-server"), excludeFlkBundledKotlinx)
     include(project(":mahjong-flow:mahjong-flow-network-dto"), excludeFlkBundledKotlinx)
     include(project(":mahjong-flow:mahjong-flow-persistence-dto"), excludeFlkBundledKotlinx)

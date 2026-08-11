@@ -9,9 +9,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTime
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.concurrency.FabricAppCoroutineScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftApp
+import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftClientApp
+import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftServerApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
-import com.doublemoon1119.mahjongcraft.platform.fabric.game.FabricDecisionTimeoutScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.game.FabricDecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.persistence.FabricAuthoritativeStatePersistence
@@ -27,9 +28,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import net.fabricmc.api.EnvType
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
+import net.fabricmc.loader.api.FabricLoader
 import org.koin.core.Koin
 import org.koin.plugin.module.dsl.startKoin
 import org.slf4j.LoggerFactory
@@ -41,7 +44,7 @@ class MahjongCraftMod : ModInitializer {
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
     override fun onInitialize() {
-        val koin = startKoin<MahjongCraftApp>().koin
+        val koin = startDependencyInjection()
         // Koin single 建立後，必須先於 Json 與遊戲流程服務第一次被解析前完成。
         FabricMahjongExtensions.initialize(
             moduleRegistry = koin.get<MahjongModuleRegistry>(),
@@ -55,7 +58,7 @@ class MahjongCraftMod : ModInitializer {
         ModBlocks.register(koin.get<MahjongTableRoomService>(), tableLifecycleService)
         tableLifecycleService.registerEvents()
         tableLocationValidation.registerEvents()
-        koin.get<FabricDecisionTimeoutScheduler>().registerEvents()
+        koin.get<FabricDecisionTimerScheduler>().registerEvents()
 
         val serverHolder = koin.get<FabricServerHolder>()
         val appScope = koin.get<FabricAppCoroutineScope>()
@@ -86,6 +89,13 @@ class MahjongCraftMod : ModInitializer {
         registerPlayerConnectionEvents(koin)
 
         logger.info(koin.get<FabricRuntimeMetadata>().initializationMessage())
+    }
+
+    /** 依目前 Fabric environment 啟動 dedicated-server 或 client/integrated-server graph。 */
+    private fun startDependencyInjection(): Koin = if (FabricLoader.getInstance().environmentType == EnvType.CLIENT) {
+        startKoin<MahjongCraftClientApp>().koin
+    } else {
+        startKoin<MahjongCraftServerApp>().koin
     }
 
     /** 將 Fabric 玩家連線事件轉送給可測試的斷線政策執行器。 */
