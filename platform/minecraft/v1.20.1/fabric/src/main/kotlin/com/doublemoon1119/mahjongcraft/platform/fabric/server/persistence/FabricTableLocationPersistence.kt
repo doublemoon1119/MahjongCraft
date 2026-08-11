@@ -28,6 +28,7 @@ class FabricTableLocationPersistence(
         registry.load(state.entries)
         registry.setDirtyListener(state::update)
         persistentState = state
+        logger.debug("Attached table location persistence with {} saved location(s)", state.entries.size)
 
         val availableDimensions = server.worlds.map { it.registryKey.value.toString() }.toSet()
         registry.snapshot().values
@@ -41,8 +42,10 @@ class FabricTableLocationPersistence(
 
     /** 解除 dirty listener 並清除目前 session 的位置索引記憶體。 */
     fun detach() {
+        val locationCount = registry.snapshot().size
         registry.setDirtyListener {}
         registry.clear()
         persistentState = null
+        logger.debug("Detached table location persistence and cleared {} location(s)", locationCount)
     }
 }

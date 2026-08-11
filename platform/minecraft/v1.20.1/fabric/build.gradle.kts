@@ -4,6 +4,18 @@ plugins {
     alias(libs.plugins.koin.compiler)
 }
 
+loom {
+    runs {
+        named("client") {
+            // 分離 client 與 server 的 log、設定及世界資料，避免同時測試時互相覆寫。
+            runDirectory.set(layout.projectDirectory.dir("run/client"))
+        }
+        named("server") {
+            runDirectory.set(layout.projectDirectory.dir("run/server"))
+        }
+    }
+}
+
 // assets/mahjongcraft 底下的貼圖/模型/語言檔實體上放在 :minecraft_common（跨版本、跨 loader 共用，
 // 避免每個版本/loader 模組各自留一份重複的素材），這裡只是把那個目錄多接一條 srcDir 進本模組的
 // resources，讓既有的 processResources/打包流程照樣把它們收進最終的 mod jar，不需要額外的複製 task。

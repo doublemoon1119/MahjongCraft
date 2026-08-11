@@ -60,10 +60,14 @@ class FabricTableLocationValidationService(
     /** 啟用指定 server session 並保留啟動期間已排入的載入事件。 */
     fun startSession(server: MinecraftServer) {
         activeServer = server
+        logger.debug("Started Mahjong table location validation for the current server session")
     }
 
     /** 停止處理並清除所有屬於舊 session 的延遲工作。 */
     fun stopSession() {
+        val pendingRequestCount = nextTableLoads.size + readyTableLoads.size +
+            nextChunkLoads.size + readyChunkLoads.size +
+            nextMissingConfirmations.size + readyMissingConfirmations.size
         activeServer = null
         nextTableLoads.clear()
         readyTableLoads.clear()
@@ -71,6 +75,7 @@ class FabricTableLocationValidationService(
         readyChunkLoads.clear()
         nextMissingConfirmations.clear()
         readyMissingConfirmations.clear()
+        logger.debug("Stopped Mahjong table location validation and cleared {} pending request(s)", pendingRequestCount)
     }
 
     /** 在明確 tick 邊界處理上一輪工作，再把本輪事件移到下一輪。 */
@@ -120,6 +125,11 @@ class FabricTableLocationValidationService(
         if (!isUsable(request.world, location.chunkX, location.chunkZ)) return
         if (locations.get(request.entry.tableId) != request.entry) return
         if (matchesExpectedTable(request.world, request.entry)) return
+        logger.debug(
+            "Confirmed missing Mahjong table {} at {}; applying orphan cleanup",
+            request.entry.tableId,
+            request.entry.location,
+        )
         runBlocking { cleanupService.cleanupMissing(request.entry.tableId, request.entry.revision) }
     }
 

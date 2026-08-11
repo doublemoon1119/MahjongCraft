@@ -24,27 +24,39 @@ class FabricAuthoritativeStatePersistence(
     /** 載入 [server] 所屬世界的權威狀態，並開始轉送後續 dirty snapshot。 */
     suspend fun attach(server: MinecraftServer) {
         check(persistentState == null) { "Authoritative persistence is already attached to a server session" }
-        val state = server.overworld.persistentStateManager.getOrCreate(
-            { nbt -> MahjongAuthoritativePersistentState.fromNbt(nbt, codec) },
-            { MahjongAuthoritativePersistentState.create(codec) },
-            MahjongAuthoritativePersistentState.STORAGE_KEY,
-        )
-        store.load(state.snapshot)
-        val restoreResult = stateRestorer.restore(state.snapshot)
-        restoreResult.membershipConflicts.forEach { conflict ->
-            logger.warn(
-                "Skipped restoring membership for player {} because saved state references multiple tables: {}",
-                conflict.playerId,
-                conflict.tableIds,
+        try {
+            val state = server.overworld.persistentStateManager.getOrCreate(
+                { nbt -> MahjongAuthoritativePersistentState.fromNbt(nbt, codec) },
+                { MahjongAuthoritativePersistentState.create(codec) },
+                MahjongAuthoritativePersistentState.STORAGE_KEY,
             )
+            store.load(state.snapshot)
+            val restoreResult = stateRestorer.restore(state.snapshot)
+            restoreResult.membershipConflicts.forEach { conflict ->
+                logger.warn(
+                    "Skipped restoring membership for player {} because saved state references multiple tables: {}",
+                    conflict.playerId,
+                    conflict.tableIds,
+                )
+            }
+            store.setDirtyListener(state::update)
+            persistentState = state
+            logger.debug(
+                "Attached authoritative persistence with {} room(s), {} game(s), and {} membership conflict(s)",
+                state.snapshot.rooms.size,
+                state.snapshot.games.size,
+                restoreResult.membershipConflicts.size,
+            )
+        } catch (exception: Exception) {
+            logger.error("Failed to attach authoritative persistence for the current server session", exception)
+            throw exception
         }
-        store.setDirtyListener(state::update)
-        persistentState = state
     }
 
     /** 停止 dirty 轉送；Minecraft 仍持有 state，會在既有世界保存流程中寫入磁碟。 */
     suspend fun detach() {
         store.setDirtyListener {}
         persistentState = null
+        logger.debug("Detached authoritative persistence from the current server session")
     }
 }

@@ -105,12 +105,16 @@ class OrphanedTableCleanupService(
             gameSnapshots.removeSnapshot(tableId, playerId)
         }
         locations.remove(tableId, expectedRevision)
-        logger.warn(
-            "Cleaned orphaned Mahjong table {} at {} with result {}",
-            tableId,
-            entry.location,
-            decision.result,
-        )
+        if (decision.result == OrphanedTableCleanupResult.REMOVED_LOCATION) {
+            logger.debug("Removed stale Mahjong table location {} at {}", tableId, entry.location)
+        } else {
+            logger.warn(
+                "Cleaned orphaned Mahjong table {} at {} with result {}",
+                tableId,
+                entry.location,
+                decision.result,
+            )
+        }
         return decision.result
     }
 
