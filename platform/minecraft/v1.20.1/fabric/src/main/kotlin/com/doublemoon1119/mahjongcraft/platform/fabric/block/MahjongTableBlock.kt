@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.room.MahjongTableRoomService
-import com.doublemoon1119.mahjongcraft.platform.fabric.table.FabricTableLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import net.minecraft.block.BlockRenderType
 import net.minecraft.block.BlockState
 import net.minecraft.block.BlockWithEntity
