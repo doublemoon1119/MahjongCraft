@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.migration.PersistenceMigrationRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.migration.buildBuiltInPersistenceMigrationRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
@@ -30,7 +31,7 @@ data class DecodedAuthoritativeState(
  */
 class AuthoritativeStatePersistenceCodec(
     private val registries: PersistenceRegistries,
-    private val migrationRegistry: PersistenceMigrationRegistry = PersistenceMigrationRegistry(),
+    private val migrationRegistry: PersistenceMigrationRegistry = buildBuiltInPersistenceMigrationRegistry(),
     private val json: Json = Json,
 ) {
     /** 將完整 Room／Game 狀態編碼成帶目前 schema version 的 JSON 字串。 */

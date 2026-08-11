@@ -1,13 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.migration
 
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceEnvelopeDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.migration.InvalidPersistenceSchemaVersionException
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.migration.MissingPersistenceMigrationException
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.migration.PersistenceMigration
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.migration.PersistenceMigrationRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.migration.UnsupportedPersistenceSchemaVersionException
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -39,6 +36,48 @@ class PersistenceMigrationRegistryTest {
 
         assertEquals(3, migrated.schemaVersion)
         assertEquals(buildJsonObject { put("step2", "value") }, migrated.state)
+    }
+
+    /** 驗證 migration 可在反序列化當前 DTO 前集中改寫 Room 與 Game JSON。 */
+    @Test
+    fun `migration transforms room and game state before current DTO decoding`() {
+        val defaultFlowConfig = buildJsonObject { put("spectatingPolicy", "ENABLED") }
+        val registry = PersistenceMigrationRegistry(
+            currentVersion = 2,
+            migrations = mapOf(
+                1 to PersistenceMigration { state ->
+                    val migratedRooms = state.getValue("rooms").jsonObject.mapValues { (_, roomElement) ->
+                        buildJsonObject {
+                            roomElement.jsonObject.forEach(::put)
+                            put("flowConfig", defaultFlowConfig)
+                        }
+                    }
+                    val gameFlowConfigs = state.getValue("games").jsonObject.keys.associateWith { defaultFlowConfig }
+                    buildJsonObject {
+                        state.forEach(::put)
+                        put("rooms", buildJsonObject { migratedRooms.forEach(::put) })
+                        put("gameFlowConfigs", buildJsonObject { gameFlowConfigs.forEach(::put) })
+                    }
+                },
+            ),
+        )
+        val oldState = buildJsonObject {
+            putJsonObject("rooms") {
+                putJsonObject("room-1") { put("config", "rule") }
+            }
+            putJsonObject("games") {
+                putJsonObject("game-1") { put("config", "rule") }
+            }
+        }
+
+        val migrated = registry.migrate(PersistenceEnvelopeDto(schemaVersion = 1, state = oldState))
+
+        assertEquals(2, migrated.schemaVersion)
+        assertEquals(
+            defaultFlowConfig,
+            migrated.state.getValue("rooms").jsonObject.getValue("room-1").jsonObject["flowConfig"]
+        )
+        assertEquals(defaultFlowConfig, migrated.state.getValue("gameFlowConfigs").jsonObject["game-1"])
     }
 
     /** 驗證未知的未來 schema version 會明確失敗。 */
