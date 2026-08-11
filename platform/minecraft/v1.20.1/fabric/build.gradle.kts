@@ -16,6 +16,15 @@ loom {
     }
 }
 
+tasks.withType<Test>().configureEach {
+    // 將測試期間由 Minecraft logging 建立的相對檔案限制在可由 clean 移除的 build 目錄。
+    val testRunDirectory = layout.buildDirectory.dir("test-runs/$name")
+    workingDir(testRunDirectory)
+    doFirst {
+        testRunDirectory.get().asFile.mkdirs()
+    }
+}
+
 // assets/mahjongcraft 底下的貼圖/模型/語言檔實體上放在 :minecraft_common（跨版本、跨 loader 共用，
 // 避免每個版本/loader 模組各自留一份重複的素材），這裡只是把那個目錄多接一條 srcDir 進本模組的
 // resources，讓既有的 processResources/打包流程照樣把它們收進最終的 mod jar，不需要額外的複製 task。
