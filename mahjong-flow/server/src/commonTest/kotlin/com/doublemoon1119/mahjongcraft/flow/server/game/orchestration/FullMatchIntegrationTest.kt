@@ -44,7 +44,7 @@ import kotlin.uuid.Uuid
  *
  * 目的是驗證編排層本身（[GameFlowCoordinator]/[AiTurnDriver]/連莊過莊自動銜接）撐得住一整場對局，
  * 不會卡住、分數守恆——這是目前完全空缺的一層測試：既有測試都只針對單一 use case 的窄範圍驗證，
- * 從沒有一個測試證明整條編排鏈路真的能把一整場牌局打完。`driveAiPlayers` 先前的無限迴圈 bug
+ * 從沒有一個測試證明整條編排鏈路真的能把一整場牌局打完。`driveAutomatedPlayers` 先前的無限迴圈 bug
  * 正是在接近這種整合情境時才被發現的。
  *
  * 刻意用 [FakeAiStrategy]（見下方）而非 [com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy]：
@@ -89,6 +89,7 @@ class FullMatchIntegrationTest {
             declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             advanceRoundUseCase = AdvanceRoundUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             aiTurnDriver = aiTurnDriver,
+            forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo),
             decisionTimerManager = decisionTimerManager,
         )
     }
@@ -96,9 +97,9 @@ class FullMatchIntegrationTest {
     /**
      * 驗證 4 位 AI 玩家能把整場東風戰（4 局，含可能的連莊）打完，不會卡住、分數守恆。
      *
-     * 判斷「整場對局真的打完了」的方式：重複呼叫 [GameFlowCoordinator.driveAiPlayers]
+     * 判斷「整場對局真的打完了」的方式：重複呼叫 [GameFlowCoordinator.driveAutomatedPlayers]
      * 足夠多次後，再多呼叫一次不應該再讓桌況產生任何變化（沒有變化代表沒有任何 AI 還需要行動、
-     * 也沒有任何系統銜接還能推進——這與 `driveAiPlayers` 內部判斷「沒有進展」的機制完全一致）；
+     * 也沒有任何系統銜接還能推進——這與 `driveAutomatedPlayers` 內部判斷「沒有進展」的機制完全一致）；
      * 若桌況在這麼多次呼叫後仍持續變化，代表迴圈次數不夠或編排邏輯卡在某處，測試會直接失敗。
      */
     @Test
@@ -116,14 +117,14 @@ class FullMatchIntegrationTest {
         )
         fixtures.gameRepo.setTableState(initialState)
 
-        // 東風戰 4 局（含可能的連莊）粗估最多需要幾千步 AI 動作；driveAiPlayers 單次呼叫有
+        // 東風戰 4 局（含可能的連莊）粗估最多需要幾千步 AI 動作；driveAutomatedPlayers 單次呼叫有
         // repeat(100) 上限，這裡從外層重複呼叫足夠多次，讓內部的迭代預算加總起來遠超過實際需求。
         repeat(40) {
-            fixtures.coordinator.driveAiPlayers(gameId)
+            fixtures.coordinator.driveAutomatedPlayers(gameId)
         }
 
         val stateBeforeFinalCall = fixtures.gameRepo.getTableState(gameId)
-        fixtures.coordinator.driveAiPlayers(gameId)
+        fixtures.coordinator.driveAutomatedPlayers(gameId)
         val finalState = fixtures.gameRepo.getTableState(gameId)
 
         assertEquals(

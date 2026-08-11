@@ -175,6 +175,53 @@ class AuthoritativeStatePersistenceDtoTest {
         }
     }
 
+    /** 驗證強制自動操作狀態會隨權威遊戲保存及恢復。 */
+    @Test
+    fun `forced auto play players round-trip`() {
+        val tableState = createGame()
+        val playerId = tableState.players.single().id
+        val game = Game(
+            tableState = tableState,
+            flowConfig = GameFlowConfig(),
+            forcedAutoPlayPlayerIds = setOf(playerId),
+        )
+        val state = createAuthoritativeStatePersistenceDto(
+            rooms = emptyList(),
+            games = listOf(game),
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            playerRuleStateRegistry = playerRuleStateRegistry,
+            dynamicRuleStateRegistry = dynamicRuleStateRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            json = json,
+        )
+
+        val restored = state.toGames(
+            ruleConfigRegistry,
+            discardPileRegistry,
+            playerRuleStateRegistry,
+            dynamicRuleStateRegistry,
+            exhaustiveDrawReasonRegistry,
+            json,
+        ).getValue(game.id)
+
+        assertEquals(setOf(playerId), restored.forcedAutoPlayPlayerIds)
+    }
+
+    /** 驗證強制自動操作索引不得包含遊戲以外的玩家。 */
+    @Test
+    fun `unknown forced auto play player is rejected`() {
+        val state = createState(emptyList(), listOf(createGame()))
+        val gameId = state.games.keys.single()
+        val invalidRuntimeState = state.gameRuntimeStates.getValue(gameId).copy(
+            forcedAutoPlayPlayerIds = setOf(Uuid.random().toString()),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            state.copy(gameRuntimeStates = mapOf(gameId to invalidRuntimeState))
+        }
+    }
+
     /** 建立使用台麻規則的等待階段 Room。 */
     private fun createRoom(id: Uuid = Uuid.random()): Room {
         val hostId = Uuid.random()

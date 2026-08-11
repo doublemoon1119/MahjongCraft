@@ -28,6 +28,19 @@ data class ActivePlayerDecisionStatus(
 )
 
 /**
+ * scheduler 已取得處理權的一次完整逾時決策。
+ *
+ * @property gameId 發生逾時的遊戲。
+ * @property playerId 耗盡全部思考時間的玩家。
+ * @property phase 發生逾時時的決策階段。
+ */
+data class TimedOutPlayerDecision(
+    val gameId: Uuid,
+    val playerId: Uuid,
+    val phase: PlayerDecisionPhase,
+)
+
+/**
  * 管理目前 server session 中所有遊戲的玩家決策計時器。
  *
  * runtime timer 不會寫入 persistence。每次 [reconcile] 會保留仍處於相同決策階段的計時器，並將已完成、
@@ -113,6 +126,39 @@ class GameDecisionTimerManager(
      */
     suspend fun getStatuses(gameId: Uuid): Map<Uuid, ActivePlayerDecisionStatus> = mutex.withLock {
         statusesAt(activeTimers[gameId].orEmpty(), clock.nowMillis())
+    }
+
+    /**
+     * 取得並標記目前所有完整逾時的玩家，確保同一次逾時只交給 scheduler 處理一次。
+     *
+     * 玩家會在同一個 repository 交易中耗盡保留思考時間並進入強制自動操作；對應 runtime timer
+     * 隨即移除，後續決策由自動操作 driver 直接處理，不再建立新的思考計時器。
+     */
+    suspend fun claimTimedOutDecisions(): List<TimedOutPlayerDecision> = mutex.withLock {
+        val nowMillis = clock.nowMillis()
+        val claimed = mutableListOf<TimedOutPlayerDecision>()
+        activeTimers.toMap().forEach { (gameId, timers) ->
+            val timedOut = timers.filterValues { it.timer.statusAt(nowMillis).isTimedOut }
+            if (timedOut.isEmpty()) return@forEach
+
+            gameRepository.updateGame(gameId) { currentGame ->
+                if (currentGame == null) return@updateGame null to Unit
+                val timedOutPlayerIds = timedOut.keys.intersect(currentGame.remainingReserveMillisByPlayerId.keys)
+                val remainingReserveMillisByPlayerId = currentGame.remainingReserveMillisByPlayerId.toMutableMap()
+                timedOutPlayerIds.forEach { remainingReserveMillisByPlayerId[it] = 0L }
+                currentGame.copy(
+                    remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId,
+                    forcedAutoPlayPlayerIds = currentGame.forcedAutoPlayPlayerIds + timedOutPlayerIds,
+                ) to Unit
+            }
+
+            claimed += timedOut.map { (playerId, activeTimer) ->
+                TimedOutPlayerDecision(gameId, playerId, activeTimer.phase)
+            }
+            val remainingTimers = timers - timedOut.keys
+            if (remainingTimers.isEmpty()) activeTimers.remove(gameId) else activeTimers[gameId] = remainingTimers
+        }
+        claimed
     }
 
     /**

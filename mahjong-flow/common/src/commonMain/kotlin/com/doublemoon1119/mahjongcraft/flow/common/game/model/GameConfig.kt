@@ -17,14 +17,22 @@ data class GameConfig(
  * 與麻將規則無關的遊戲流程設定。
  *
  * @property timeControl 玩家動作採用的基本思考時間與保留思考時間。
+ * @property decisionTimeoutPolicy 玩家耗盡全部思考時間後採用的流程政策。
  * @property spectatingPolicy 外部玩家是否可以旁觀進行中的遊戲。
  * @property spectatorHandVisibility 旁觀者可見的手牌範圍。
  */
 data class GameFlowConfig(
     val timeControl: ActionTimeControl = ActionTimeControl.Normal,
+    val decisionTimeoutPolicy: DecisionTimeoutPolicy = DecisionTimeoutPolicy.FORCED_AUTO_PLAY,
     val spectatingPolicy: SpectatingPolicy = SpectatingPolicy.ENABLED,
     val spectatorHandVisibility: SpectatorHandVisibility = SpectatorHandVisibility.REVEALED,
 )
+
+/** 玩家耗盡基本思考時間與保留思考時間後採用的流程政策。 */
+enum class DecisionTimeoutPolicy {
+    /** 停止接受玩家手動操作，並由伺服器自動摸切及跳過所有反應至遊戲結束。 */
+    FORCED_AUTO_PLAY,
+}
 
 /**
  * 玩家每次動作使用的基本思考時間與保留思考時間設定。

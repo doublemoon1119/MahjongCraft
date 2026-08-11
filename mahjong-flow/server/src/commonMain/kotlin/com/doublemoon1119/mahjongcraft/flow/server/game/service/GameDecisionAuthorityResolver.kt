@@ -23,11 +23,13 @@ class GameDecisionAuthorityResolver {
         state.pendingChankan?.let { pending ->
             return pending.eligiblePlayerIds
                 .filterNot { it in pending.responses }
+                .filterNot { it in game.forcedAutoPlayPlayerIds }
                 .associateWith { PlayerDecisionPhase.CHANKAN_REACTION }
         }
         state.pendingReaction?.let { pending ->
             return pending.eligiblePlayerIds
                 .filterNot { it in pending.responses }
+                .filterNot { it in game.forcedAutoPlayPlayerIds }
                 .associateWith { PlayerDecisionPhase.DISCARD_REACTION }
         }
 
@@ -35,7 +37,10 @@ class GameDecisionAuthorityResolver {
         val justClaimedMeld = currentPlayer.actionHistory.lastOrNull().let { action ->
             action is GameAction.Chi || action is GameAction.Pon
         }
-        return if (currentPlayer.hand.lastDrawn != null || justClaimedMeld) {
+        return if (
+            currentPlayer.id !in game.forcedAutoPlayPlayerIds &&
+            (currentPlayer.hand.lastDrawn != null || justClaimedMeld)
+        ) {
             mapOf(currentPlayer.id to PlayerDecisionPhase.OWN_TURN)
         } else {
             emptyMap()

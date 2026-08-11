@@ -93,6 +93,23 @@ class GameDecisionAuthorityResolverTest {
         assertEquals(emptyMap(), GameDecisionAuthorityResolver().resolve(game))
     }
 
+    /** 驗證強制自動操作玩家不再建立新的思考計時器。 */
+    @Test
+    fun `test forced auto play player is excluded from decisions`() {
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            hand = Hand(lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.East)),
+        )
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(player)),
+            flowConfig = GameFlowConfig(),
+            forcedAutoPlayPlayerIds = setOf(playerId),
+        )
+
+        assertEquals(emptyMap(), GameDecisionAuthorityResolver().resolve(game))
+    }
+
     /** 建立指定玩家及捨牌反應視窗的權威遊戲。 */
     private fun game(
         playerIds: List<Uuid>,

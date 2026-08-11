@@ -12,6 +12,7 @@ import kotlin.uuid.Uuid
  * @property tableState 麻將規則運算使用的完整桌況。
  * @property flowConfig 不影響麻將規則的流程與觀看設定。
  * @property remainingReserveMillisByPlayerId 每位玩家在整場遊戲中尚未使用的保留思考時間毫秒數。
+ * @property forcedAutoPlayPlayerIds 已耗盡思考時間且必須由伺服器自動操作至遊戲結束的玩家。
  */
 data class Game(
     val tableState: TableState,
@@ -19,6 +20,7 @@ data class Game(
     val remainingReserveMillisByPlayerId: Map<Uuid, Long> = tableState.players.associate {
         it.id to flowConfig.timeControl.reserveSeconds * 1_000L
     },
+    val forcedAutoPlayPlayerIds: Set<Uuid> = emptySet(),
 ) {
     init {
         val playerIds = tableState.players.mapTo(mutableSetOf()) { it.id }
@@ -27,6 +29,9 @@ data class Game(
         }
         require(remainingReserveMillisByPlayerId.values.all { it >= 0L }) {
             "Remaining reserve time must not be negative"
+        }
+        require(forcedAutoPlayPlayerIds.all { it in playerIds }) {
+            "Forced auto-play players must belong to the game"
         }
     }
 

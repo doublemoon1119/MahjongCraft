@@ -44,7 +44,7 @@ import kotlin.uuid.Uuid
  *
  * 每次 [invoke] 執行完畢，還會額外透過 [aiTurnDriver] 讓所有輪到自己、或有資格回應且尚未回應的
  * AI 玩家依序自動行動，直到沒有任何 AI 需要行動為止——AI 背後沒有真人會主動送出命令，這一步
- * 讓加入房間的 AI 玩家真的能在牌局裡自動出手。詳見 [driveAiPlayers]。
+ * 讓加入房間的 AI 玩家真的能在牌局裡自動出手。詳見 [driveAutomatedPlayers]。
  *
  * @property gameActionRouter 玩家發起命令的路由入口。
  * @property gameRepository 權威對局數據倉庫，用於判斷是否需要銜接。
@@ -53,6 +53,7 @@ import kotlin.uuid.Uuid
  * @property declareSuukanNagareUseCase 四槓散了結算用例。
  * @property advanceRoundUseCase 連莊/過莊/開下一局用例。
  * @property aiTurnDriver 找出下一個該行動的 AI 玩家與其命令。
+ * @property forcedAutoPlayDriver 找出下一個必須由伺服器固定操作的真人玩家與命令。
  * @property decisionTimerManager 在每次命令完成後結算並調整玩家決策計時器。
  */
 @Factory
@@ -64,11 +65,12 @@ class GameFlowCoordinator(
     private val declareSuukanNagareUseCase: DeclareSuukanNagareUseCase,
     private val advanceRoundUseCase: AdvanceRoundUseCase,
     private val aiTurnDriver: AiTurnDriver,
+    private val forcedAutoPlayDriver: ForcedAutoPlayDriver,
     private val decisionTimerManager: GameDecisionTimerManager,
 ) {
     /**
      * 分派 [command] 並自動銜接對應的系統觸發 use case，完成後接著驅動所有需要行動的 AI 玩家
-     * （見 [driveAiPlayers]）。
+     * （見 [driveAutomatedPlayers]）。
      *
      * @param gameId 對局 Uuid。
      * @param playerId 發起操作的玩家 Uuid。
@@ -80,34 +82,31 @@ class GameFlowCoordinator(
         playerId: Uuid,
         command: GameCommand,
     ): Outcome<Unit, GameError> {
+        val game = gameRepository.getGame(gameId)
+            ?: return Outcome.Error(GameError.GameNotFound(gameId))
+        if (playerId in game.forcedAutoPlayPlayerIds) {
+            return Outcome.Error(GameError.ForcedAutoPlayActive(playerId, gameId))
+        }
         val result = dispatchAndReconcile(gameId, playerId, command)
-        driveAiPlayers(gameId)
+        driveAutomatedPlayers(gameId)
         return result
     }
 
     /**
-     * 讓所有輪到自己、或有資格回應且尚未回應的 AI 玩家依序自動行動，直到沒有任何 AI 需要行動為止。
+     * 依序驅動強制自動操作玩家與 AI，直到目前沒有任何自動決策需要執行。
      *
-     * [invoke] 每次執行完畢都會自動呼叫這個方法；額外公開讓呼叫端能在其他時機主動觸發——例如
-     * `StartGameUseCase` 成功後，若第一位莊家恰好是 AI，需要有人「踢動」它，那次呼叫完全在
-     * [GameFlowCoordinator] 之外發生，不會自動觸發這個迴圈（由誰、在什麼時機呼叫，留給更外層決定）。
+     * 每次迭代前後比較 `TableState`；若命令未造成進展便立即停止，另以 [MAX_ITERATIONS] 防止異常
+     * 狀態形成無限迴圈。可由開局與逾時流程主動呼叫，確保沒有真人送出封包時仍能推進自動操作。
      *
-     * 有兩層終止保護：(1) 每次迭代前後比較 `TableState` 是否有變化，沒有變化就代表桌況卡住了，
-     * 立即跳出——例如整場對局已經結束（`AdvanceRoundUseCase` 回傳 `isMatchOver = true`）時，
-     * `TableState` 會刻意維持呼叫前的樣子不變（見該用例的既有邊界），若此時當前玩家恰好是 AI 且
-     * `lastDrawn == null`，[AiTurnDriver] 會不斷判斷「該幫它摸牌」，但摸牌會因為牌山已空再次回傳
-     * `WallExhausted`、再次觸發流局銜接、再次嘗試推進、再次因 `isMatchOver` 而維持不變——這種
-     * 情況下第一次偵測到桌況沒有變化就會直接跳出，不需要真的迭代到上限。(2) 固定迭代次數上限
-     * [MAX_ITERATIONS] 作為最外層防呆（曾在沒有 (1) 這層偵測時，於測試中實際卡死無限迴圈，靠
-     * thread dump 抓出來）。正常情況下，一次呼叫最多需要驅動的 AI 動作數遠低於這個上限。
-     *
-     * @param gameId 對局 Uuid。
+     * @param gameId 欲推進的遊戲。
      */
-    suspend fun driveAiPlayers(gameId: Uuid) {
+    suspend fun driveAutomatedPlayers(gameId: Uuid) {
         repeat(MAX_ITERATIONS) {
-            val (aiPlayerId, aiCommand) = aiTurnDriver.resolveNextAction(gameId) ?: return
+            val (playerId, command) = forcedAutoPlayDriver.resolveNextAction(gameId)
+                ?: aiTurnDriver.resolveNextAction(gameId)
+                ?: return
             val stateBefore = gameRepository.getTableState(gameId)
-            dispatchAndReconcile(gameId, aiPlayerId, aiCommand)
+            dispatchAndReconcile(gameId, playerId, command)
             val stateAfter = gameRepository.getTableState(gameId)
             if (stateBefore == stateAfter) return
         }
@@ -133,7 +132,7 @@ class GameFlowCoordinator(
     }
 
     /**
-     * 分派 [command] 並自動銜接對應的系統觸發 use case。抽出成獨立方法讓 [driveAiPlayers] 能
+     * 分派 [command] 並自動銜接對應的系統觸發 use case。抽出成獨立方法讓 [driveAutomatedPlayers] 能
      * 直接呼叫——AI 送出的命令也必須經過同一套四槓散了攔截與系統銜接邏輯，不能繞過去。
      */
     private suspend fun dispatchAndChain(gameId: Uuid, playerId: Uuid, command: GameCommand): Outcome<Unit, GameError> {
@@ -194,7 +193,7 @@ class GameFlowCoordinator(
     }
 
     private companion object {
-        /** [driveAiPlayers] 的最大迭代次數，避免對局已結束但桌況卡住不變時無限迴圈。 */
+        /** [driveAutomatedPlayers] 的最大迭代次數，避免對局已結束但桌況卡住不變時無限迴圈。 */
         const val MAX_ITERATIONS = 100
     }
 }

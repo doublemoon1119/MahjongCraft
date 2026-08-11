@@ -30,6 +30,14 @@ sealed interface GameError : ApplicationError {
     data class PlayerNotInGame(val playerId: Uuid, val gameId: Uuid) : GameError
 
     /**
+     * 玩家已耗盡思考時間，後續操作必須由伺服器自動執行。
+     *
+     * @param playerId 嘗試手動操作的玩家 Uuid。
+     * @param gameId 對局 Uuid。
+     */
+    data class ForcedAutoPlayActive(val playerId: Uuid, val gameId: Uuid) : GameError
+
+    /**
      * 尚未輪到該玩家的回合。
      *
      * @param playerId 發起操作的玩家 Uuid。

@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceSche
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.GameRuntimeStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.TableStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toDomain
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toForcedAutoPlayPlayerIds
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toRemainingReserveMillisByPlayerId
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toRuntimeStatePersistenceDto
@@ -55,6 +56,9 @@ data class AuthoritativeStatePersistenceDto(
             }
             require(gameRuntimeStates.getValue(gameId).remainingReserveMillisByPlayerId.values.all { it >= 0L }) {
                 "Remaining reserve time must not be negative"
+            }
+            require(gameRuntimeStates.getValue(gameId).forcedAutoPlayPlayerIds.all { it in playerIds }) {
+                "Forced auto-play players must belong to the game"
             }
         }
         require(rooms.keys.intersect(games.keys).isEmpty()) {
@@ -124,6 +128,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
         flowConfig = gameFlowConfigs.getValue(id.toString()).toDomain(),
         remainingReserveMillisByPlayerId = gameRuntimeStates.getValue(id.toString())
             .toRemainingReserveMillisByPlayerId(),
+        forcedAutoPlayPlayerIds = gameRuntimeStates.getValue(id.toString()).toForcedAutoPlayPlayerIds(),
     )
 }
 

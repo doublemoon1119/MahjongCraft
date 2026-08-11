@@ -4,8 +4,10 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
@@ -101,8 +103,33 @@ class GameFlowCoordinatorTest {
             declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             advanceRoundUseCase = AdvanceRoundUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             aiTurnDriver = aiTurnDriver,
+            forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo),
             decisionTimerManager = decisionTimerManager,
         )
+    }
+
+    /** 驗證進入強制自動操作後不再接受玩家手動命令。 */
+    @Test
+    fun `test forced auto play player command is rejected`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val game = Game(
+            tableState = FakeTableStateFactory.create(
+                id = gameId,
+                players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
+            ),
+            flowConfig = GameFlowConfig(),
+            forcedAutoPlayPlayerIds = setOf(playerId),
+        )
+        fixtures.gameRepo.setGame(game)
+
+        val result = fixtures.coordinator(gameId, playerId, GameCommand.Draw)
+
+        assertEquals(
+            Outcome.Error(GameError.ForcedAutoPlayActive(playerId, gameId)),
+            result,
+        )
+        assertEquals(game.tableState, fixtures.gameRepo.getTableState(gameId))
     }
 
     // ---- 一般流局：WallExhausted 銜接 ----
@@ -711,12 +738,12 @@ class GameFlowCoordinatorTest {
 
     /**
      * 驗證整場對局已經結束（下一次過莊判定就會讓 isMatchOver 成立）、且當前玩家恰好是 AI 且尚未
-     * 摸牌時，`driveAiPlayers` 能偵測到桌況沒有任何進展（摸牌因牌山已空觸發 WallExhausted →
+     * 摸牌時，`driveAutomatedPlayers` 能偵測到桌況沒有任何進展（摸牌因牌山已空觸發 WallExhausted →
      * 流局銜接 → 推進嘗試因 isMatchOver 而維持桌況不變）並提前跳出迴圈，而不是跑滿 100 次的迭代
      * 上限——改用「偵測沒有進展」取代單純固定次數上限，取代過去（僅靠 100 次上限）的做法。
      */
     @Test
-    fun `test driveAiPlayers stops early when table state makes no progress`() = runTest {
+    fun `test driveAutomatedPlayers stops early when table state makes no progress`() = runTest {
         val fixtures = Fixtures()
         val aiId = Uuid.random()
         val ai = FakeMahjongPlayerFactory.create(
@@ -738,7 +765,7 @@ class GameFlowCoordinatorTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        fixtures.coordinator.driveAiPlayers(gameId)
+        fixtures.coordinator.driveAutomatedPlayers(gameId)
 
         assertTrue(
             fixtures.gameRepo.getTableStateCallCount < 20,

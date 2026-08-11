@@ -124,6 +124,28 @@ class GameDecisionTimerManagerTest {
         assertTrue(fixtures.manager.getStatuses(game.id).isEmpty())
     }
 
+    /** 驗證完整逾時只會被取得一次，並持久標記玩家進入強制自動操作。 */
+    @Test
+    fun `test timed out decision activates forced auto play once`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val game = fixtures.reactionGame(playerId)
+        fixtures.repository.setGame(game)
+        fixtures.manager.reconcile(game.id)
+        fixtures.clock.nowMillis = 25_000L
+
+        val claimed = fixtures.manager.claimTimedOutDecisions()
+
+        assertEquals(
+            listOf(TimedOutPlayerDecision(game.id, playerId, PlayerDecisionPhase.DISCARD_REACTION)),
+            claimed,
+        )
+        val updatedGame = fixtures.repository.getGame(game.id)!!
+        assertEquals(0L, updatedGame.remainingReserveMillisByPlayerId.getValue(playerId))
+        assertEquals(setOf(playerId), updatedGame.forcedAutoPlayPlayerIds)
+        assertTrue(fixtures.manager.claimTimedOutDecisions().isEmpty())
+    }
+
     /** 提供可控時間、repository 與 manager 的測試組合。 */
     private class Fixtures {
         /** 測試用權威遊戲倉庫。 */
