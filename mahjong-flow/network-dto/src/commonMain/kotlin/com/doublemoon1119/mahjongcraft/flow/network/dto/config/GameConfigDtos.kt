@@ -54,7 +54,7 @@ private fun GameFlowConfig.toDto(): GameFlowConfigDto = GameFlowConfigDto(
 
 /** 將 [GameFlowConfigDto] 還原成 [GameFlowConfig]。 */
 private fun GameFlowConfigDto.toDomain(): GameFlowConfig = GameFlowConfig(
-    timeControl = ActionTimeControl(timeControl.actionSeconds, timeControl.reserveSeconds),
+    timeControl = ActionTimeControl.from(timeControl.actionSeconds, timeControl.reserveSeconds),
     spectatingPolicy = spectatingPolicy,
     spectatorHandVisibility = spectatorHandVisibility,
 )

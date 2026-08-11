@@ -17,7 +17,7 @@ class GameTest {
             tableState = FakeTableStateFactory.create(
                 players = playerIds.map { FakeMahjongPlayerFactory.create(id = it) },
             ),
-            flowConfig = GameFlowConfig(timeControl = ActionTimeControl(reserveSeconds = 37)),
+            flowConfig = GameFlowConfig(timeControl = ActionTimeControl.Custom(actionSeconds = 5, reserveSeconds = 37)),
         )
 
         assertEquals(playerIds.associateWith { 37_000L }, game.remainingReserveMillisByPlayerId)

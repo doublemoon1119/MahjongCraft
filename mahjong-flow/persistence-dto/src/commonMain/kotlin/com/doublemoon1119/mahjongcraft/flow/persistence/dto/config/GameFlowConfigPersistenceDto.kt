@@ -9,8 +9,8 @@ import kotlinx.serialization.Serializable
 /** [GameFlowConfig] 的完整 persistence DTO。 */
 @Serializable
 data class GameFlowConfigPersistenceDto(
-    val actionSeconds: Int = 5,
-    val reserveSeconds: Int = 20,
+    val actionSeconds: Int = ActionTimeControl.Normal.actionSeconds,
+    val reserveSeconds: Int = ActionTimeControl.Normal.reserveSeconds,
     val spectatingPolicy: SpectatingPolicy = SpectatingPolicy.ENABLED,
     val spectatorHandVisibility: SpectatorHandVisibility = SpectatorHandVisibility.REVEALED,
 )
@@ -25,7 +25,7 @@ fun GameFlowConfig.toPersistenceDto(): GameFlowConfigPersistenceDto = GameFlowCo
 
 /** 將 [GameFlowConfigPersistenceDto] 還原成 [GameFlowConfig]。 */
 fun GameFlowConfigPersistenceDto.toDomain(): GameFlowConfig = GameFlowConfig(
-    timeControl = ActionTimeControl(actionSeconds, reserveSeconds),
+    timeControl = ActionTimeControl.from(actionSeconds, reserveSeconds),
     spectatingPolicy = spectatingPolicy,
     spectatorHandVisibility = spectatorHandVisibility,
 )

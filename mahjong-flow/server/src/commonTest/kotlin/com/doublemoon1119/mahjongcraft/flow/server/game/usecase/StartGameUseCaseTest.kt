@@ -84,7 +84,9 @@ class StartGameUseCaseTest {
             readyRoom(
                 GameConfig(
                     RiichiRuleConfig(),
-                    GameFlowConfig(timeControl = ActionTimeControl(reserveSeconds = 37)),
+                    GameFlowConfig(
+                        timeControl = ActionTimeControl.Custom(actionSeconds = 5, reserveSeconds = 37),
+                    ),
                 ),
             ),
         )

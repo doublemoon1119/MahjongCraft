@@ -21,7 +21,7 @@ data class GameConfig(
  * @property spectatorHandVisibility 旁觀者可見的手牌範圍。
  */
 data class GameFlowConfig(
-    val timeControl: ActionTimeControl = ActionTimeControl(),
+    val timeControl: ActionTimeControl = ActionTimeControl.Normal,
     val spectatingPolicy: SpectatingPolicy = SpectatingPolicy.ENABLED,
     val spectatorHandVisibility: SpectatorHandVisibility = SpectatorHandVisibility.REVEALED,
 )
@@ -31,17 +31,87 @@ data class GameFlowConfig(
  *
  * A 會在每次動作重新取得；A 用完後才消耗該玩家整場共用的 B。
  *
- * @property actionSeconds 每次動作重新取得的基本思考秒數。
- * @property reserveSeconds 每位玩家開局時取得的共用保留秒數。
+ * 內建組合沿用既有遊戲提供的五種選項；不符合內建組合的設定使用 [Custom]。
  */
-data class ActionTimeControl(
-    val actionSeconds: Int = 5,
-    val reserveSeconds: Int = 20,
-) {
-    init {
-        require(actionSeconds >= 0) { "Action time must not be negative" }
-        require(reserveSeconds >= 0) { "Reserve time must not be negative" }
-        require(actionSeconds > 0 || reserveSeconds > 0) { "Action and reserve time must not both be zero" }
+sealed interface ActionTimeControl {
+    /** 每次動作重新取得的基本思考秒數。 */
+    val actionSeconds: Int
+
+    /** 每位玩家開局時取得的共用保留秒數。 */
+    val reserveSeconds: Int
+
+    /** 三秒 A 與五秒 B 的內建組合。 */
+    data object VeryShort : ActionTimeControl {
+        override val actionSeconds: Int = 3
+        override val reserveSeconds: Int = 5
+    }
+
+    /** 五秒 A 與十秒 B 的內建組合。 */
+    data object Short : ActionTimeControl {
+        override val actionSeconds: Int = 5
+        override val reserveSeconds: Int = 10
+    }
+
+    /** 五秒 A 與二十秒 B 的預設組合。 */
+    data object Normal : ActionTimeControl {
+        override val actionSeconds: Int = 5
+        override val reserveSeconds: Int = 20
+    }
+
+    /** 六十秒 A 且不提供 B 的內建組合。 */
+    data object Long : ActionTimeControl {
+        override val actionSeconds: Int = 60
+        override val reserveSeconds: Int = 0
+    }
+
+    /** 三百秒 A 且不提供 B 的內建組合。 */
+    data object VeryLong : ActionTimeControl {
+        override val actionSeconds: Int = 300
+        override val reserveSeconds: Int = 0
+    }
+
+    /**
+     * 不符合內建組合的自訂 A+B 設定。
+     *
+     * @property actionSeconds 每次動作重新取得的基本思考秒數。
+     * @property reserveSeconds 每位玩家開局時取得的共用保留秒數。
+     */
+    data class Custom(
+        override val actionSeconds: Int,
+        override val reserveSeconds: Int,
+    ) : ActionTimeControl {
+        init {
+            validate(actionSeconds, reserveSeconds)
+        }
+    }
+
+    /** 建立與正規化 [ActionTimeControl] 的集中入口。 */
+    companion object {
+        /**
+         * 將 A+B 秒數正規化成內建組合或 [Custom]。
+         *
+         * @param actionSeconds 每次動作重新取得的基本思考秒數。
+         * @param reserveSeconds 每位玩家開局時取得的共用保留秒數。
+         * @return 數值符合內建組合時回傳對應 singleton，否則回傳 [Custom]。
+         */
+        fun from(actionSeconds: Int, reserveSeconds: Int): ActionTimeControl {
+            validate(actionSeconds, reserveSeconds)
+            return when (actionSeconds to reserveSeconds) {
+                VeryShort.actionSeconds to VeryShort.reserveSeconds -> VeryShort
+                Short.actionSeconds to Short.reserveSeconds -> Short
+                Normal.actionSeconds to Normal.reserveSeconds -> Normal
+                Long.actionSeconds to Long.reserveSeconds -> Long
+                VeryLong.actionSeconds to VeryLong.reserveSeconds -> VeryLong
+                else -> Custom(actionSeconds, reserveSeconds)
+            }
+        }
+
+        /** 驗證 A+B 秒數可用於決策計時。 */
+        private fun validate(actionSeconds: Int, reserveSeconds: Int) {
+            require(actionSeconds >= 0) { "Action time must not be negative" }
+            require(reserveSeconds >= 0) { "Reserve time must not be negative" }
+            require(actionSeconds > 0 || reserveSeconds > 0) { "Action and reserve time must not both be zero" }
+        }
     }
 }
 
