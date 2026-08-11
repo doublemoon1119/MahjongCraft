@@ -2,11 +2,16 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceDtoRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceEnvelopeDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.migration.UnsupportedPersistenceSchemaVersionException
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 import net.minecraft.nbt.NbtCompound
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -66,6 +71,37 @@ class MahjongAuthoritativePersistentStateTest {
 
         assertFailsWith<SerializationException> {
             MahjongAuthoritativePersistentState.fromNbt(nbt, codec)
+        }
+    }
+
+    /** 驗證 NBT 內較新的未知 schema 不會被 adapter 當成空狀態。 */
+    @Test
+    fun `newer schema fails through NBT adapter`() {
+        val encoded = codec.encode(emptyList(), emptyList())
+        val envelope = Json.decodeFromString(PersistenceEnvelopeDto.serializer(), encoded)
+            .copy(schemaVersion = Int.MAX_VALUE)
+        val nbt = NbtCompound().apply {
+            putString("state", Json.encodeToString(PersistenceEnvelopeDto.serializer(), envelope))
+        }
+
+        assertFailsWith<UnsupportedPersistenceSchemaVersionException> {
+            MahjongAuthoritativePersistentState.fromNbt(nbt, codec)
+        }
+    }
+
+    /** 驗證恢復端缺少規則 mapper 時，NBT adapter 會保留 codec 的明確失敗。 */
+    @Test
+    fun `missing persistence mapper fails through NBT adapter`() {
+        val room = createRoom()
+        val encoded = codec.encode(listOf(room), emptyList())
+        val registriesWithoutRules = buildBuiltInPersistenceRegistries().copy(
+            ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig>(),
+        )
+        val codecWithoutRules = AuthoritativeStatePersistenceCodec(registriesWithoutRules)
+        val nbt = NbtCompound().apply { putString("state", encoded) }
+
+        assertFailsWith<IllegalStateException> {
+            MahjongAuthoritativePersistentState.fromNbt(nbt, codecWithoutRules)
         }
     }
 

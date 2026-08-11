@@ -12,6 +12,7 @@ import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.minecraft.server.world.ServerWorld
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
+import kotlin.uuid.Uuid
 
 /** 套用玩家破壞政策，並在成功破壞後同步清理桌子狀態。 */
 @Single
@@ -32,7 +33,7 @@ class FabricTableLifecycleService(
         }
         PlayerBlockBreakEvents.AFTER.register { _, _, _, _, blockEntity ->
             val table = blockEntity as? MahjongTableBlockEntity ?: return@register
-            onPlayerBroken(table)
+            runBlocking { cleanupPlayerBroken(table.tableId) }
         }
     }
 
@@ -55,16 +56,17 @@ class FabricTableLifecycleService(
     }
 
     /** 玩家成功破壞後，不受 orphan policy 保留選項影響地清理已允許移除的桌子。 */
-    private fun onPlayerBroken(table: MahjongTableBlockEntity) {
-        val entry = locations.get(table.tableId)
+    internal suspend fun cleanupPlayerBroken(tableId: Uuid): OrphanedTableCleanupResult? {
+        val entry = locations.get(tableId)
         if (entry == null) {
             logger.debug(
                 "Skipped player-broken cleanup for Mahjong table {} because block replacement already removed its location",
-                table.tableId,
+                tableId,
             )
-            return
+            return null
         }
-        val result = runBlocking { cleanupService.cleanupPlayerBroken(table.tableId, entry.revision) }
-        logger.debug("Handled player-broken Mahjong table {} with cleanup result {}", table.tableId, result)
+        val result = cleanupService.cleanupPlayerBroken(tableId, entry.revision)
+        logger.debug("Handled player-broken Mahjong table {} with cleanup result {}", tableId, result)
+        return result
     }
 }

@@ -28,23 +28,14 @@ class FabricTableLocationValidationService(
     /** 目前允許處理延遲工作的 server session。 */
     private var activeServer: MinecraftServer? = null
 
+    /** 管理 chunk 載入後的延遲缺失確認。 */
+    private val validationQueue = TableLocationValidationQueue<MinecraftServer, ServerWorld>()
+
     /** 下一個 tick 邊界才可處理的 BlockEntity 載入工作。 */
     private var nextTableLoads = mutableListOf<PendingTableLoad>()
 
     /** 本次 tick 邊界要處理的 BlockEntity 載入工作。 */
     private var readyTableLoads = mutableListOf<PendingTableLoad>()
-
-    /** 下一個 tick 邊界才可處理的 chunk 載入工作。 */
-    private var nextChunkLoads = mutableListOf<PendingChunkLoad>()
-
-    /** 本次 tick 邊界要處理的 chunk 載入工作。 */
-    private var readyChunkLoads = mutableListOf<PendingChunkLoad>()
-
-    /** 下一個 tick 邊界再次確認的缺失位置。 */
-    private var nextMissingConfirmations = mutableListOf<PendingMissingConfirmation>()
-
-    /** 本次 tick 邊界要再次確認的缺失位置。 */
-    private var readyMissingConfirmations = mutableListOf<PendingMissingConfirmation>()
 
     /** 註冊 Fabric BlockEntity、chunk 與 server tick 事件。 */
     fun registerEvents() {
@@ -52,7 +43,7 @@ class FabricTableLocationValidationService(
             if (blockEntity is MahjongTableBlockEntity) nextTableLoads.add(PendingTableLoad(world, blockEntity.pos))
         }
         ServerChunkEvents.CHUNK_LOAD.register { world, chunk ->
-            nextChunkLoads.add(PendingChunkLoad(world, chunk.pos.x, chunk.pos.z))
+            validationQueue.enqueueChunk(world, chunk.pos.x, chunk.pos.z)
         }
         ServerTickEvents.END_SERVER_TICK.register(::onEndServerTick)
     }
@@ -60,21 +51,17 @@ class FabricTableLocationValidationService(
     /** 啟用指定 server session 並保留啟動期間已排入的載入事件。 */
     fun startSession(server: MinecraftServer) {
         activeServer = server
+        validationQueue.startSession(server)
         logger.debug("Started Mahjong table location validation for the current server session")
     }
 
     /** 停止處理並清除所有屬於舊 session 的延遲工作。 */
     fun stopSession() {
-        val pendingRequestCount = nextTableLoads.size + readyTableLoads.size +
-            nextChunkLoads.size + readyChunkLoads.size +
-            nextMissingConfirmations.size + readyMissingConfirmations.size
+        val pendingRequestCount = nextTableLoads.size + readyTableLoads.size + validationQueue.pendingCount
         activeServer = null
         nextTableLoads.clear()
         readyTableLoads.clear()
-        nextChunkLoads.clear()
-        readyChunkLoads.clear()
-        nextMissingConfirmations.clear()
-        readyMissingConfirmations.clear()
+        validationQueue.stopSession()
         logger.debug("Stopped Mahjong table location validation and cleared {} pending request(s)", pendingRequestCount)
     }
 
@@ -83,12 +70,18 @@ class FabricTableLocationValidationService(
         if (activeServer !== server) return
 
         readyTableLoads.forEach(::processTableLoad)
-        readyChunkLoads.forEach(::processChunkLoad)
-        readyMissingConfirmations.forEach(::processMissingConfirmation)
+        runBlocking {
+            validationQueue.advance(
+                session = server,
+                isChunkUsable = ::isUsable,
+                entriesForChunk = ::entriesForChunk,
+                isEntryCurrent = { entry -> locations.get(entry.tableId) == entry },
+                matchesExpectedTable = ::matchesExpectedTable,
+                cleanup = ::cleanupMissing,
+            )
+        }
 
         readyTableLoads = nextTableLoads.also { nextTableLoads = mutableListOf() }
-        readyChunkLoads = nextChunkLoads.also { nextChunkLoads = mutableListOf() }
-        readyMissingConfirmations = nextMissingConfirmations.also { nextMissingConfirmations = mutableListOf() }
     }
 
     /** 在 BlockEntity NBT 完成載入後登記目前 UUID 與位置。 */
@@ -108,29 +101,20 @@ class FabricTableLocationValidationService(
         }
     }
 
-    /** 取得該 chunk 的預期位置並進行第一次定點檢查。 */
-    private fun processChunkLoad(request: PendingChunkLoad) {
-        if (!isUsable(request.world, request.chunkX, request.chunkZ)) return
-        val key = DimensionChunkKey(request.world.registryKey.value.toString(), request.chunkX, request.chunkZ)
-        locations.getByChunk(key).forEach { entry ->
-            if (!matchesExpectedTable(request.world, entry)) {
-                nextMissingConfirmations.add(PendingMissingConfirmation(request.world, entry))
-            }
-        }
+    /** 取得指定 chunk 的目前位置索引。 */
+    private fun entriesForChunk(world: ServerWorld, chunkX: Int, chunkZ: Int): Collection<TableLocationEntry> {
+        val key = DimensionChunkKey(world.registryKey.value.toString(), chunkX, chunkZ)
+        return locations.getByChunk(key)
     }
 
-    /** 第二次確認請求仍有效且桌子仍缺失後，才執行 orphan cleanup。 */
-    private fun processMissingConfirmation(request: PendingMissingConfirmation) {
-        val location = request.entry.location
-        if (!isUsable(request.world, location.chunkX, location.chunkZ)) return
-        if (locations.get(request.entry.tableId) != request.entry) return
-        if (matchesExpectedTable(request.world, request.entry)) return
+    /** 第二次確認仍缺失後套用 orphan cleanup。 */
+    private suspend fun cleanupMissing(entry: TableLocationEntry) {
         logger.debug(
             "Confirmed missing Mahjong table {} at {}; applying orphan cleanup",
-            request.entry.tableId,
-            request.entry.location,
+            entry.tableId,
+            entry.location,
         )
-        runBlocking { cleanupService.cleanupMissing(request.entry.tableId, request.entry.revision) }
+        cleanupService.cleanupMissing(entry.tableId, entry.revision)
     }
 
     /** 確認 request 仍屬於目前 session 且 chunk 仍已載入。 */
@@ -150,23 +134,5 @@ class FabricTableLocationValidationService(
         val world: ServerWorld,
         /** BlockEntity 所在座標。 */
         val pos: BlockPos,
-    )
-
-    /** 尚待查詢預期位置的已載入 chunk。 */
-    private data class PendingChunkLoad(
-        /** Chunk 所在世界。 */
-        val world: ServerWorld,
-        /** Chunk X 座標。 */
-        val chunkX: Int,
-        /** Chunk Z 座標。 */
-        val chunkZ: Int,
-    )
-
-    /** 第一次檢查缺失、等待下一個 tick 再確認的位置。 */
-    private data class PendingMissingConfirmation(
-        /** 預期位置所在世界。 */
-        val world: ServerWorld,
-        /** 排程時的位置與 revision。 */
-        val entry: TableLocationEntry,
     )
 }

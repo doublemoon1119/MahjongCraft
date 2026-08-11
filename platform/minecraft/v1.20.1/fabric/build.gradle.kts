@@ -91,6 +91,7 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(project(":mahjong-ai"))
     testImplementation(project(":testing:testing-mahjong-logic"))
     testImplementation(project(":testing:testing-mahjong-flow"))
 }
