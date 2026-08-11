@@ -75,7 +75,7 @@ class PersistenceMigrationRegistryTest {
         assertEquals(2, migrated.schemaVersion)
         assertEquals(
             defaultFlowConfig,
-            migrated.state.getValue("rooms").jsonObject.getValue("room-1").jsonObject["flowConfig"]
+            migrated.state.getValue("rooms").jsonObject.getValue("room-1").jsonObject["flowConfig"],
         )
         assertEquals(defaultFlowConfig, migrated.state.getValue("gameFlowConfigs").jsonObject["game-1"])
     }

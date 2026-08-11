@@ -6,8 +6,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -26,9 +29,15 @@ class ServerSessionStateRestorerTest {
         val roomSnapshots = RoomSnapshotRepositoryImpl()
         val gameSnapshots = GameSnapshotRepositoryImpl()
         val memberships = PlayerMembershipRepositoryImpl()
-        val restorer = ServerSessionStateRestorer(roomSnapshots, gameSnapshots, memberships)
+        val restorer = ServerSessionStateRestorer(
+            roomSnapshots,
+            gameSnapshots,
+            memberships,
+            GameVisibilityPolicyImpl(),
+        )
         val roomPlayerId = Uuid.random()
         val gamePlayerId = Uuid.random()
+        val otherGamePlayerId = Uuid.random()
         val room = Room(
             id = Uuid.random(),
             hostId = roomPlayerId,
@@ -36,7 +45,12 @@ class ServerSessionStateRestorerTest {
             playerIds = setOf(roomPlayerId),
         )
         val game = FakeTableStateFactory.create(
-            players = listOf(FakeMahjongPlayerFactory.create(id = gamePlayerId)),
+            players = listOf(gamePlayerId, otherGamePlayerId).map { playerId ->
+                FakeMahjongPlayerFactory.create(
+                    id = playerId,
+                    hand = FakeHandFactory.create(listOf(Tile.Honor.East)),
+                )
+            },
         )
 
         restorer.restore(
@@ -48,8 +62,11 @@ class ServerSessionStateRestorerTest {
 
         assertEquals(room.id, memberships.getTableId(roomPlayerId))
         assertEquals(game.id, memberships.getTableId(gamePlayerId))
+        assertEquals(game.id, memberships.getTableId(otherGamePlayerId))
         assertNotNull(roomSnapshots.getSnapshot(room.id, roomPlayerId))
-        assertNotNull(gameSnapshots.getSnapshot(game.id, gamePlayerId))
+        val gamePlayerSnapshot = assertNotNull(gameSnapshots.getSnapshot(game.id, gamePlayerId))
+        assertNotNull(gamePlayerSnapshot.players.single { it.id == gamePlayerId }.hand.standingTiles.single().tile)
+        assertNull(gamePlayerSnapshot.players.single { it.id == otherGamePlayerId }.hand.standingTiles.single().tile)
     }
 
     /** 同一玩家跨桌重複時應回報衝突、略過 membership，並保留各桌 observer snapshot。 */
@@ -58,7 +75,12 @@ class ServerSessionStateRestorerTest {
         val roomSnapshots = RoomSnapshotRepositoryImpl()
         val gameSnapshots = GameSnapshotRepositoryImpl()
         val memberships = PlayerMembershipRepositoryImpl()
-        val restorer = ServerSessionStateRestorer(roomSnapshots, gameSnapshots, memberships)
+        val restorer = ServerSessionStateRestorer(
+            roomSnapshots,
+            gameSnapshots,
+            memberships,
+            GameVisibilityPolicyImpl(),
+        )
         val playerId = Uuid.random()
         val existingTableId = Uuid.random()
         memberships.claim(playerId, existingTableId)

@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
-import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
@@ -21,8 +20,7 @@ class GameSnapshotSynchronizer(
      */
     suspend fun sync(gameId: Uuid, observerId: Uuid): Boolean {
         val game = gameRepository.getGame(gameId) ?: return false
-        val visibleHandPlayerIds = visibilityPolicy.resolveVisibleHandPlayerIds(game, observerId)
-        snapshotRepository.setSnapshot(observerId, game.tableState.toSnapshot(visibleHandPlayerIds))
+        snapshotRepository.setSnapshot(observerId, visibilityPolicy.snapshotFor(game, observerId))
         return true
     }
 

@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
-import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -13,7 +13,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -35,14 +34,14 @@ import kotlin.uuid.Uuid
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與規則特有邏輯。
- * @property gameSnapshotRepository 對局快照數據倉庫。
+ * @property snapshotSynchronizer 對局快照同步服務。
  * @property eventPublisher 對局通知服務。
  */
 @Factory
 class RespondToDiscardUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
-    private val gameSnapshotRepository: GameSnapshotRepository,
+    private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
 ) {
     /**
@@ -111,10 +110,7 @@ class RespondToDiscardUseCase(
         val result = (outcome as Outcome.Success).value
         val newState = result.tableState
 
-        val observers = gameSnapshotRepository.getAllObservers(gameId)
-        observers.forEach { observerId ->
-            gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(setOf(observerId)))
-        }
+        snapshotSynchronizer.syncAll(gameId)
 
         newState.players.forEach { player ->
             eventPublisher.publish(gameId, player.id, playerId, action)

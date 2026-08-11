@@ -4,10 +4,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisibility
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.uuid.Uuid
 
 /** [GameVisibilityPolicyImpl] 的觀看權限與手牌可見範圍測試。 */
@@ -19,7 +23,10 @@ class GameVisibilityPolicyTest {
         val otherPlayerId = Uuid.random()
         val game = createGame(playerId, otherPlayerId)
 
-        assertEquals(setOf(playerId), GameVisibilityPolicyImpl().resolveVisibleHandPlayerIds(game, playerId))
+        val snapshot = GameVisibilityPolicyImpl().snapshotFor(game, playerId)
+
+        assertNotNull(snapshot.players.single { it.id == playerId }.hand.standingTiles.single().tile)
+        assertNull(snapshot.players.single { it.id == otherPlayerId }.hand.standingTiles.single().tile)
     }
 
     /** 公開旁觀手牌時，外部觀看者可以看見所有玩家手牌。 */
@@ -30,7 +37,9 @@ class GameVisibilityPolicyTest {
 
         assertEquals(
             playerIds.toSet(),
-            GameVisibilityPolicyImpl().resolveVisibleHandPlayerIds(game, Uuid.random()),
+            GameVisibilityPolicyImpl().snapshotFor(game, Uuid.random()).players
+                .filter { it.hand.standingTiles.single().tile != null }
+                .mapTo(mutableSetOf()) { it.id },
         )
     }
 
@@ -42,7 +51,11 @@ class GameVisibilityPolicyTest {
             flowConfig = GameFlowConfig(spectatorHandVisibility = SpectatorHandVisibility.HIDDEN),
         )
 
-        assertEquals(emptySet(), GameVisibilityPolicyImpl().resolveVisibleHandPlayerIds(game, Uuid.random()))
+        assertEquals(
+            emptyList(),
+            GameVisibilityPolicyImpl().snapshotFor(game, Uuid.random()).players
+                .filter { it.hand.standingTiles.single().tile != null },
+        )
     }
 
     /** 禁止旁觀時，外部讀取者仍可取得隱藏所有手牌的公開快照。 */
@@ -53,7 +66,11 @@ class GameVisibilityPolicyTest {
             flowConfig = GameFlowConfig(spectatingPolicy = SpectatingPolicy.DISABLED),
         )
 
-        assertEquals(emptySet(), GameVisibilityPolicyImpl().resolveVisibleHandPlayerIds(game, Uuid.random()))
+        assertEquals(
+            emptyList(),
+            GameVisibilityPolicyImpl().snapshotFor(game, Uuid.random()).players
+                .filter { it.hand.standingTiles.single().tile != null },
+        )
     }
 
     /** 建立指定玩家與流程設定的測試遊戲。 */
@@ -62,7 +79,12 @@ class GameVisibilityPolicyTest {
         flowConfig: GameFlowConfig = GameFlowConfig(),
     ): Game = Game(
         tableState = FakeTableStateFactory.create(
-            players = playerIds.map { FakeMahjongPlayerFactory.create(id = it) },
+            players = playerIds.map {
+                FakeMahjongPlayerFactory.create(
+                    id = it,
+                    hand = FakeHandFactory.create(listOf(Tile.Honor.East)),
+                )
+            },
         ),
         flowConfig = flowConfig,
     )

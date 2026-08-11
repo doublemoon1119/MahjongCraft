@@ -1,16 +1,15 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
-import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -40,14 +39,14 @@ import kotlin.uuid.Uuid
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與向聽數計算器。
- * @property gameSnapshotRepository 對局快照數據倉庫。
+ * @property snapshotSynchronizer 對局快照同步服務。
  * @property eventPublisher 對局通知服務。
  */
 @Factory
 class DeclareRiichiUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
-    private val gameSnapshotRepository: GameSnapshotRepository,
+    private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
 ) {
     /**
@@ -135,10 +134,7 @@ class DeclareRiichiUseCase(
         val newState = result.tableState
 
         // 2. 同步快照給所有正在觀察的玩家
-        val observers = gameSnapshotRepository.getAllObservers(gameId)
-        observers.forEach { observerId ->
-            gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(setOf(observerId)))
-        }
+        snapshotSynchronizer.syncAll(gameId)
 
         // 3. 通知對局內的所有玩家：先廣播立直宣告，再廣播這張牌的捨牌事件，流局有觸發時接著廣播流局事件
         newState.players.forEach { player ->

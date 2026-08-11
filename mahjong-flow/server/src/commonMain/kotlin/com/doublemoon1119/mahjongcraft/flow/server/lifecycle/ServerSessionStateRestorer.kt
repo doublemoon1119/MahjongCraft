@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.flow.server.lifecycle
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
-import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
@@ -26,6 +26,7 @@ class ServerSessionStateRestorer(
     private val roomSnapshots: RoomSnapshotRepository,
     private val gameSnapshots: GameSnapshotRepository,
     private val memberships: PlayerMembershipRepository,
+    private val gameVisibilityPolicy: GameVisibilityPolicy,
 ) {
     /**
      * 依 [state] 完整取代目前的衍生狀態。
@@ -45,7 +46,7 @@ class ServerSessionStateRestorer(
         }
         state.games.values.forEach { game ->
             game.tableState.players.filter { it.aiStrategyKey == null }.forEach { player ->
-                gameSnapshots.setSnapshot(player.id, game.tableState.toSnapshot(setOf(player.id)))
+                gameSnapshots.setSnapshot(player.id, gameVisibilityPolicy.snapshotFor(game, player.id))
             }
         }
         return ServerSessionStateRestoreResult(conflicts)

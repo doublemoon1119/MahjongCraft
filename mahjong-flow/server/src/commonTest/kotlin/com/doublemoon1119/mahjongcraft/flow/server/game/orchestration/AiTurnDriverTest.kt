@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -24,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.uuid.Uuid
 
@@ -58,7 +60,12 @@ class AiTurnDriverTest {
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val strategy = FakeMahjongAiStrategy(strategyCommand)
         val strategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = "fake").apply { register("fake") { strategy } }
-        val driver = AiTurnDriver(gameRepo, GetLegalActionsUseCase(gameRepo, moduleRegistry), strategyRegistry)
+        val driver = AiTurnDriver(
+            gameRepo,
+            GetLegalActionsUseCase(gameRepo, moduleRegistry),
+            strategyRegistry,
+            GameVisibilityPolicyImpl(),
+        )
     }
 
     // ---- 搶槓反應 ----
@@ -74,8 +81,18 @@ class AiTurnDriverTest {
         val aiId = Uuid.random()
         val robbedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedTile.id, emptyList())
-        val declarer = FakeMahjongPlayerFactory.create(id = declarerId, initialSeat = Wind.EAST)
-        val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.SOUTH, aiStrategyKey = strategyKey, playerRuleState = RiichiPlayerState())
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = declarerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.East))),
+        )
+        val ai = FakeMahjongPlayerFactory.create(
+            id = aiId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.South))),
+            aiStrategyKey = strategyKey,
+            playerRuleState = RiichiPlayerState(),
+        )
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(declarer, ai),
@@ -90,6 +107,9 @@ class AiTurnDriverTest {
         assertEquals(aiId to GameCommand.RespondToChankan(GameAction.Pass), result)
         assertEquals(AiDecisionPhase.RespondingToChankan, fixtures.strategy.lastContext?.phase)
         assertEquals(aiId, fixtures.strategy.lastContext?.selfId)
+        val snapshot = assertNotNull(fixtures.strategy.lastContext?.snapshot)
+        assertNotNull(snapshot.players.single { it.id == aiId }.hand.standingTiles.single().tile)
+        assertNull(snapshot.players.single { it.id == declarerId }.hand.standingTiles.single().tile)
     }
 
     /**

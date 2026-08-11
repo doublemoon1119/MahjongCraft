@@ -3,13 +3,14 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
@@ -24,12 +25,14 @@ import kotlin.uuid.Uuid
  * @property getLegalActionsUseCase 查詢玩家目前合法動作清單的用例，直接重用，不重新實作規則判斷。
  * @property aiStrategyRegistry AI 策略登記中心，依每位 AI 玩家自己的 `aiStrategyKey` 解析出實際
  *           要問的策略——每局、每個 AI 玩家可以各自使用不同策略，不是全伺服器共用一個。
+ * @property visibilityPolicy 依 AI 玩家視角建立決策用快照的觀看政策。
  */
 @Factory
 class AiTurnDriver(
     private val gameRepository: GameRepository,
     private val getLegalActionsUseCase: GetLegalActionsUseCase,
     private val aiStrategyRegistry: MahjongAiStrategyRegistry,
+    private val visibilityPolicy: GameVisibilityPolicy,
 ) {
     /**
      * 找出目前桌況下下一個該行動的 AI 玩家與其命令；若沒有任何 AI 需要行動則回傳 null。
@@ -42,18 +45,19 @@ class AiTurnDriver(
      * @return 下一個該行動的 AI 玩家 Uuid 與其命令；沒有 AI 需要行動、或對局不存在時為 null。
      */
     suspend fun resolveNextAction(gameId: Uuid): Pair<Uuid, GameCommand>? {
-        val state = gameRepository.getTableState(gameId) ?: return null
+        val game = gameRepository.getGame(gameId) ?: return null
+        val state = game.tableState
 
         val pendingChankan = state.pendingChankan
         if (pendingChankan != null) {
             val aiId = findEligibleAi(state, pendingChankan.eligiblePlayerIds, pendingChankan.responses.keys)
-            if (aiId != null) return aiId to decide(gameId, state, aiId, AiDecisionPhase.RespondingToChankan)
+            if (aiId != null) return aiId to decide(gameId, game, aiId, AiDecisionPhase.RespondingToChankan)
         }
 
         val pendingReaction = state.pendingReaction
         if (pendingReaction != null) {
             val aiId = findEligibleAi(state, pendingReaction.eligiblePlayerIds, pendingReaction.responses.keys)
-            if (aiId != null) return aiId to decide(gameId, state, aiId, AiDecisionPhase.RespondingToDiscard)
+            if (aiId != null) return aiId to decide(gameId, game, aiId, AiDecisionPhase.RespondingToDiscard)
         }
 
         if (pendingChankan == null && pendingReaction == null) {
@@ -67,7 +71,7 @@ class AiTurnDriver(
                 return if (current.hand.lastDrawn == null && !justClaimedMeld) {
                     current.id to GameCommand.Draw
                 } else {
-                    current.id to decide(gameId, state, current.id, AiDecisionPhase.OwnTurn)
+                    current.id to decide(gameId, game, current.id, AiDecisionPhase.OwnTurn)
                 }
             }
         }
@@ -84,12 +88,18 @@ class AiTurnDriver(
      * 依 [aiId] 自己的 `aiStrategyKey` 從 [aiStrategyRegistry] 解析出策略，組出 [AiDecisionContext]
      * 並問它該怎麼行動。
      */
-    private suspend fun decide(gameId: Uuid, state: TableState, aiId: Uuid, phase: AiDecisionPhase): GameCommand {
+    private suspend fun decide(
+        gameId: Uuid,
+        game: Game,
+        aiId: Uuid,
+        phase: AiDecisionPhase,
+    ): GameCommand {
+        val state = game.tableState
         val legalActionsResult = getLegalActionsUseCase(gameId, aiId)
         val legalActions = (legalActionsResult as? Outcome.Success)?.value ?: emptyList()
         val strategyKey = state.players.first { it.id == aiId }.aiStrategyKey
         val context = AiDecisionContext(
-            snapshot = state.toSnapshot(setOf(aiId)),
+            snapshot = visibilityPolicy.snapshotFor(game, aiId),
             selfId = aiId,
             phase = phase,
             legalActions = legalActions,

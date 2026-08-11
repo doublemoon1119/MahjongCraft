@@ -1,16 +1,15 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
-import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
-import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -23,14 +22,14 @@ import kotlin.uuid.Uuid
  *
  * @property authoritativeStateStore Room 與 Game 共用的權威狀態儲存。
  * @property moduleRegistry 麻將規則模組註冊中心，用於依房間配置解析對應的規則模組。
- * @property gameSnapshotRepository 對局快照數據倉庫。
+ * @property snapshotSynchronizer 對局快照同步服務。
  * @property eventPublisher 對局通知服務。
  */
 @Factory
 class StartGameUseCase(
     private val authoritativeStateStore: AuthoritativeStateStore,
     private val moduleRegistry: MahjongModuleRegistry,
-    private val gameSnapshotRepository: GameSnapshotRepository,
+    private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
 ) {
     /**
@@ -78,7 +77,7 @@ class StartGameUseCase(
 
         // 2. 為每位玩家同步一份對局快照
         tableState.players.forEach { player ->
-            gameSnapshotRepository.setSnapshot(player.id, tableState.toSnapshot(setOf(player.id)))
+            snapshotSynchronizer.sync(roomId, player.id)
         }
 
         // 3. 廣播「對局已開始」事件
