@@ -2,7 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.TableBreakPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.allowsTableBreak
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.coroutines.runBlocking
@@ -16,7 +17,7 @@ class FabricTableLifecycleService(
     private val store: AuthoritativeStateStore,
     private val locations: TableLocationRegistry,
     private val cleanupService: OrphanedTableCleanupService,
-    private val config: MinecraftServerConfig,
+    private val configState: MinecraftServerConfigState,
 ) {
     /** 註冊 Fabric 玩家破壞前後事件。 */
     fun registerEvents() {
@@ -37,12 +38,12 @@ class FabricTableLifecycleService(
         runBlocking { cleanupService.cleanupMissing(table.tableId, entry.revision) }
     }
 
-    /** 依目前 Room／Game 與 [TableBreakPolicy] 判斷玩家能否破壞桌子。 */
+    /** 依目前 Room／Game 與最新 [TableBreakPolicy] 判斷玩家能否破壞桌子。 */
     private suspend fun canBreak(table: MahjongTableBlockEntity): Boolean {
         val state = store.snapshot()
         val hasRoom = state.rooms.containsKey(table.tableId)
         val hasGame = state.games.containsKey(table.tableId)
-        return config.tableBreakPolicy.allowsTableBreak(hasRoom, hasGame)
+        return configState.current.tableBreakPolicy.allowsTableBreak(hasRoom, hasGame)
     }
 
     /** 玩家成功破壞後，不受 orphan policy 保留選項影響地清理已允許移除的桌子。 */

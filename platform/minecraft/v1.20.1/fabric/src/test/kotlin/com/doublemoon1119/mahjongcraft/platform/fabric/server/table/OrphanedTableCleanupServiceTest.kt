@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -129,6 +130,20 @@ class OrphanedTableCleanupServiceTest {
         assertNotNull(fixture.locations.get(fixture.tableId))
     }
 
+    /** 後續缺失桌子清理應讀取熱重載後的政策。 */
+    @Test
+    fun `test cleanup uses replaced config`() = runTest {
+        val fixture = Fixture(OrphanedTablePolicy.KEEP_AND_WARN)
+        fixture.roomRepository.setRoom(
+            Room(fixture.tableId, Uuid.random(), GameConfig(FakeMahjongRuleConfig())),
+        )
+        fixture.configState.replace(MinecraftServerConfig(orphanedTablePolicy = OrphanedTablePolicy.REMOVE_ALL))
+
+        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+
+        assertEquals(OrphanedTableCleanupResult.REMOVED_ROOM, result)
+    }
+
     /** 建立單一政策測試所需的共用 repository 與位置。 */
     private class Fixture(policy: OrphanedTablePolicy) {
         /** 測試桌子 UUID。 */
@@ -155,6 +170,9 @@ class OrphanedTableCleanupServiceTest {
         /** 桌子位置索引。 */
         val locations = TableLocationRegistry()
 
+        /** 可在測試中模擬熱重載的設定 state。 */
+        val configState = MinecraftServerConfigState(MinecraftServerConfig(orphanedTablePolicy = policy))
+
         /** 初始位置 revision。 */
         val entryRevision: Long = locations.put(
             tableId,
@@ -168,7 +186,7 @@ class OrphanedTableCleanupServiceTest {
             roomSnapshots,
             gameSnapshots,
             locations,
-            MinecraftServerConfig(orphanedTablePolicy = policy),
+            configState,
         )
     }
 }

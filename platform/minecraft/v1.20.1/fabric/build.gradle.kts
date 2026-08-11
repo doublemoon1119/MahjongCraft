@@ -54,6 +54,8 @@ dependencies {
     // 這幾個都是一般 JVM 專案，不是 Fabric mod，玩家的 classpath 上不會自動有它們，
     // 必須透過 Loom 的 include() 把它們打進最終 mod jar
     include(project(":minecraft_common"))
+    include(libs.ktoml.core)
+    include(libs.kotlinx.datetime)
     include(project(":minecraft_v1.20.1_common"))
     include(project(":mahjong-logic"))
     include(project(":mahjong-ai"))

@@ -6,6 +6,8 @@ koin-bom = "4.2.2"
 koin-plugin = "1.0.1"
 ktlint-gradle = "14.2.0"
 kotlinx-serialization = "1.11.0"
+ktoml = "0.7.1"
+kotlinx-datetime = "0.7.1-0.6.x-compat"
 jvm-toolchain = "21"
 jvm-release = "17"
 
@@ -23,6 +25,8 @@ fabric-language-kotlin = "1.13.12+kotlin.2.4.0"
 kotlinx-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+ktoml-core = { group = "com.akuleshov7", name = "ktoml-core", version.ref = "ktoml" }
+kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinx-datetime" }
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
 koin-core = { module = "io.insert-koin:koin-core" }
 koin-annotations = { module = "io.insert-koin:koin-annotations" }

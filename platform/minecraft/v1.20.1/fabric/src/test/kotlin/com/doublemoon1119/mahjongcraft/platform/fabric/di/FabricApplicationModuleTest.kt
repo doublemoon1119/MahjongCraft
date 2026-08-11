@@ -14,6 +14,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
@@ -23,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableR
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTableCleanupService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import org.koin.core.context.stopKoin
 import org.koin.plugin.module.dsl.startKoin
@@ -70,6 +73,9 @@ class FabricApplicationModuleTest {
         koin.get<FabricTableLocationValidationService>()
         koin.get<FabricAppCoroutineScope>()
         koin.get<FabricDecisionTimerScheduler>()
+        koin.get<MinecraftServerConfigState>()
+        koin.get<FabricServerConfigManager>()
+        koin.get<FabricServerConfigCommand>()
         assertNull(koin.getOrNull<ClientMahjongStateStore>())
         assertNull(koin.getOrNull<ClientDecisionTimerStateStore>())
     }

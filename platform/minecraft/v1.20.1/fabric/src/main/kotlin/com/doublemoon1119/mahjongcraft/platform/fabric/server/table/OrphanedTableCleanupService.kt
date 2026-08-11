@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
-import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -39,16 +39,16 @@ class OrphanedTableCleanupService(
     private val roomSnapshots: RoomSnapshotRepository,
     private val gameSnapshots: GameSnapshotRepository,
     private val locations: TableLocationRegistry,
-    private val config: MinecraftServerConfig,
+    private val configState: MinecraftServerConfigState,
 ) {
     /** 用於記錄缺失桌子與實際採取的清理政策。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
-    /** 依 [MinecraftServerConfig.orphanedTablePolicy] 處理已確認缺失的桌子。 */
+    /** 依目前有效設定的 orphan policy 處理已確認缺失的桌子。 */
     suspend fun cleanupMissing(tableId: Uuid, expectedRevision: Long): OrphanedTableCleanupResult = cleanup(
         tableId,
         expectedRevision,
-        config.orphanedTablePolicy,
+        configState.current.orphanedTablePolicy,
     )
 
     /** 玩家政策已允許破壞時，移除該桌子的任何 Room／Game。 */

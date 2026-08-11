@@ -17,6 +17,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
@@ -24,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.Disconnecte
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -51,7 +54,6 @@ class MahjongCraftMod : ModInitializer {
             networkRegistries = koin.get<NetworkDtoRegistries>(),
             persistenceRegistries = koin.get<PersistenceRegistries>(),
         )
-
         ModItems.register()
         val tableLifecycleService = koin.get<FabricTableLifecycleService>()
         val tableLocationValidation = koin.get<FabricTableLocationValidationService>()
@@ -66,7 +68,9 @@ class MahjongCraftMod : ModInitializer {
         val statePersistence = koin.get<FabricAuthoritativeStatePersistence>()
         val decisionTimerManager = koin.get<GameDecisionTimerManager>()
         val tableLocationPersistence = koin.get<FabricTableLocationPersistence>()
+        val configManager = koin.get<FabricServerConfigManager>()
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
+            initializeServerConfig(configManager, server)
             runBlocking { statePersistence.attach(server) }
             tableLocationPersistence.attach(server)
             tableLocationValidation.startSession(server)
@@ -82,11 +86,13 @@ class MahjongCraftMod : ModInitializer {
                 statePersistence.detach()
                 stateCleaner.clear()
             }
+            configManager.detach()
             serverHolder.clear()
         }
 
         registerGameCommandReceiver(koin)
         registerPlayerConnectionEvents(koin)
+        koin.get<FabricServerConfigCommand>().register()
 
         logger.info(koin.get<FabricRuntimeMetadata>().initializationMessage())
     }
@@ -96,6 +102,23 @@ class MahjongCraftMod : ModInitializer {
         startKoin<MahjongCraftClientApp>().koin
     } else {
         startKoin<MahjongCraftServerApp>().koin
+    }
+
+    /** 載入 server TOML；失敗時 manager 會保留程式預設值並記錄詳細錯誤。 */
+    private fun initializeServerConfig(configManager: FabricServerConfigManager, server: net.minecraft.server.MinecraftServer) {
+        when (val result = configManager.attach(server)) {
+            is MinecraftServerConfigUpdateResult.Success -> {
+                // 使用 SLF4J 參數化訊息，避免對應 log level 關閉時先建立字串。
+                if (result.createdDefaultFile) {
+                    logger.info("Created and loaded default server config at {}", configManager.path)
+                } else {
+                    logger.info("Loaded server config from {}", configManager.path)
+                }
+            }
+            is MinecraftServerConfigUpdateResult.Failure -> logger.warn(
+                "Using built-in MahjongCraft server config defaults because loading failed",
+            )
+        }
     }
 
     /** 將 Fabric 玩家連線事件轉送給可測試的斷線政策執行器。 */

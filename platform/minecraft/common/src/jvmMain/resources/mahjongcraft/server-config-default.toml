@@ -1,0 +1,40 @@
+# MahjongCraft server configuration.
+# Run `/mahjongcraft config reload` after editing this file. A server restart is not required.
+#
+# Configuration location:
+# - Singleplayer: <world save>/serverconfig/mahjongcraft.toml
+# - Dedicated server: <server directory>/config/mahjongcraft/server.toml
+#
+# Singleplayer worlds use separate configuration files.
+# Dedicated servers keep this configuration across world changes.
+
+[player-disconnection]
+
+# Controls what happens to a player's seat after disconnecting from a game that has not started.
+# Available values:
+# - "keep_seat": Keep the seat and wait for the player to reconnect.
+# - "leave_immediately": Remove the player from the waiting game immediately.
+# - "leave_after_timeout": Keep the seat until the timeout expires; reconnecting cancels the removal.
+# Games that have already started always keep the disconnected player's seat for now.
+policy = "leave_immediately"
+
+# Time in seconds before removing a disconnected player when policy is "leave_after_timeout".
+# This value is ignored by the other policies.
+# Allowed range: 1 to 3600 (1 hour).
+timeout-seconds = 30
+
+[table]
+
+# Controls what happens when a player attempts to break a mahjong table.
+# Available values:
+# - "deny_while_occupied": Deny breaking while a waiting game or active game uses the table.
+# - "allow_waiting_room_only": Allow breaking and dissolve a waiting game, but deny active games.
+# - "allow_and_terminate": Allow breaking and remove the related waiting or active game without settlement.
+break-policy = "deny_while_occupied"
+
+# Controls cleanup when a loaded chunk does not contain the expected table block entity or table UUID.
+# Available values:
+# - "keep_and_warn": Keep the game and location index, and write a warning to the server log.
+# - "remove_waiting_room": Remove a waiting game but preserve an active game.
+# - "remove_all": Remove the related waiting or active game and its location index.
+orphaned-policy = "remove_all"

@@ -6,18 +6,19 @@ import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerM
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPlayerPolicy
-import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.Single
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** 依伺服器政策處理玩家離線、逾時離開與重連取消。 */
 @Single
 class DisconnectedPlayerLifecycleService(
     private val scope: AppCoroutineScope,
-    private val config: MinecraftServerConfig,
+    private val configState: MinecraftServerConfigState,
     private val membershipRepository: PlayerMembershipRepository,
     private val roomRepository: RoomRepository,
     private val gameRepository: GameRepository,
@@ -34,17 +35,21 @@ class DisconnectedPlayerLifecycleService(
     /** 玩家斷線時依政策保留座位、立即離開或安排逾時離開。 */
     fun onDisconnected(playerId: Uuid) {
         onConnected(playerId)
+        val config = configState.current
         when (config.disconnectedPlayerPolicy) {
             DisconnectedPlayerPolicy.KEEP_SEAT -> Unit
             DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY -> scope.launch { leaveWaitingRoom(playerId) }
-            DisconnectedPlayerPolicy.LEAVE_AFTER_TIMEOUT -> scheduleTimeout(playerId)
+            DisconnectedPlayerPolicy.LEAVE_AFTER_TIMEOUT -> scheduleTimeout(
+                playerId,
+                config.disconnectedPlayerTimeoutSeconds,
+            )
         }
     }
 
     /** 依設定秒數安排離開工作，完成或取消後移除工作索引。 */
-    private fun scheduleTimeout(playerId: Uuid) {
+    private fun scheduleTimeout(playerId: Uuid, timeoutSeconds: Long) {
         val job = scope.launch {
-            delay(config.disconnectedPlayerTimeoutSeconds * 1_000)
+            delay(timeoutSeconds.seconds)
             leaveWaitingRoom(playerId)
         }
         synchronized(pendingLeaveJobsLock) { pendingLeaveJobs[playerId] = job }
