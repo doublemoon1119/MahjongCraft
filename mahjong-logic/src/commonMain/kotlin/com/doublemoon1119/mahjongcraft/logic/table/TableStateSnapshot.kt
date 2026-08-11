@@ -32,10 +32,10 @@ data class TableStateSnapshot(
 /**
  * 產生一個相對於指定觀察者可見範圍的 [TableState] 不可變快照。
  *
- * @param observerId 觀察者的玩家識別碼，用於判斷手牌與牌山的可見範圍
- * @return 依據 [observerId] 計算可見範圍的桌局快照
+ * @param visibleHandPlayerIds 可以顯示完整手牌的玩家識別碼集合。
+ * @return 依據明確可見範圍產生的桌局快照。
  */
-fun TableState.toSnapshot(observerId: Uuid): TableStateSnapshot {
+fun TableState.toSnapshot(visibleHandPlayerIds: Set<Uuid>): TableStateSnapshot {
     // 若規則實作 TileWallRevealable，則計算牌山中應公開可見的牌張 Uuid
     val visibleTileIds = (dynamicRuleState as? TileWallRevealable)
         ?.getVisibleTileIds(this)
@@ -43,7 +43,7 @@ fun TableState.toSnapshot(observerId: Uuid): TableStateSnapshot {
 
     return TableStateSnapshot(
         id = this.id,
-        players = this.players.map { it.toSnapshot(isVisible = it.id == observerId) },
+        players = this.players.map { it.toSnapshot(isVisible = it.id in visibleHandPlayerIds) },
         config = this.config,
         tileWall = this.tileWall.toSnapshot(visibleTileIds = visibleTileIds),
         prevalentWind = this.prevalentWind,

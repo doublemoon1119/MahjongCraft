@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
@@ -32,7 +33,7 @@ class SyncRoomSnapshotUseCaseTest {
         val snapshotRepo = FakeRoomSnapshotRepository()
         val useCase = SyncRoomSnapshotUseCase(roomRepo, snapshotRepo)
 
-        val room = Room(id = roomId, hostId = hostId, config = config)
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config))
         roomRepo.setRoom(room)
 
         // Act

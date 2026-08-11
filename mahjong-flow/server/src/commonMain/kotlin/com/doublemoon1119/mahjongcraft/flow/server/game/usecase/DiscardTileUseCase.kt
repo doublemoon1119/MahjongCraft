@@ -104,7 +104,7 @@ class DiscardTileUseCase(
         // 2. 同步快照給所有正在觀察的玩家
         val observers = gameSnapshotRepository.getAllObservers(gameId)
         observers.forEach { observerId ->
-            gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(observerId))
+            gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(setOf(observerId)))
         }
 
         // 3. 通知對局內的所有玩家；流局有觸發時，先廣播捨牌事件、再接著廣播流局事件

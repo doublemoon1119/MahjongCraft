@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
@@ -34,7 +35,7 @@ class AddAiPlayerUseCaseTest {
         val service = FakeRoomEventPublisher()
         val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service)
 
-        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId))
         roomRepo.setRoom(room)
 
         // Act
@@ -66,7 +67,7 @@ class AddAiPlayerUseCaseTest {
         val service = FakeRoomEventPublisher()
         val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service)
 
-        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId))
         roomRepo.setRoom(room)
 
         val result = useCase(roomId, hostId)
@@ -88,7 +89,7 @@ class AddAiPlayerUseCaseTest {
         val service = FakeRoomEventPublisher()
         val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service)
 
-        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId))
         roomRepo.setRoom(room)
 
         val result = useCase(roomId, hostId, strategyKey = "mymod:hard")
@@ -112,7 +113,7 @@ class AddAiPlayerUseCaseTest {
 
         // 創建一個只有 1 人的房間配置，並填滿它
         val fullConfig = FakeMahjongRuleConfig(maxPlayers = 1)
-        val room = Room(id = roomId, hostId = hostId, config = fullConfig, playerIds = setOf(hostId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(fullConfig), playerIds = setOf(hostId))
         roomRepo.setRoom(room)
 
         val result = useCase(roomId, hostId)
@@ -130,7 +131,7 @@ class AddAiPlayerUseCaseTest {
         val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service)
 
         val guestId = Uuid.random()
-        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId, guestId))
         roomRepo.setRoom(room)
 
         val result = useCase(roomId, guestId)

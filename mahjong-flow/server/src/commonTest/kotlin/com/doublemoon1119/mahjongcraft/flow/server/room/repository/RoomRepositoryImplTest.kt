@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.repository
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
@@ -30,7 +31,7 @@ class RoomRepositoryImplTest {
         val roomId = Uuid.random()
         val hostId = Uuid.random()
         val config = FakeMahjongRuleConfig()
-        repository.setRoom(Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId)))
+        repository.setRoom(Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId)))
 
         val concurrency = 200
 

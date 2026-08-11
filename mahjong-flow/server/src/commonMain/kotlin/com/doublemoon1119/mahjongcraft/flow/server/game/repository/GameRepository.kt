@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.repository
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
@@ -9,6 +10,9 @@ import kotlin.uuid.Uuid
  * 負責管理伺服器運行期間遊戲狀態的存取與追蹤。
  */
 interface GameRepository {
+    /** 取得包含流程設定的完整權威 [Game]。 */
+    suspend fun getGame(gameId: Uuid): Game?
+
     /**
      * 獲取指定遊戲 ID 的 [TableState]。
      *

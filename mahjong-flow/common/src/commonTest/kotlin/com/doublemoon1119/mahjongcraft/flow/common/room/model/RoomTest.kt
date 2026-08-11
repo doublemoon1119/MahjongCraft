@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.room.model
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,7 +17,7 @@ class RoomTest {
         val room = Room(
             id = Uuid.random(),
             hostId = playerIds.first(),
-            config = config,
+            gameConfig = GameConfig(config),
             playerIds = playerIds,
         )
 
@@ -30,7 +31,7 @@ class RoomTest {
         val room = Room(
             id = Uuid.random(),
             hostId = playerIds.first(),
-            config = config,
+            gameConfig = GameConfig(config),
             playerIds = playerIds,
         )
 
@@ -50,7 +51,7 @@ class RoomTest {
         val room = Room(
             id = Uuid.random(),
             hostId = host,
-            config = config,
+            gameConfig = GameConfig(config),
             playerIds = playerIds,
             readyPlayerIds = readyPlayerIds,
         )
@@ -67,7 +68,7 @@ class RoomTest {
         val room = Room(
             id = Uuid.random(),
             hostId = host,
-            config = config,
+            gameConfig = GameConfig(config),
             playerIds = playerIds,
             readyPlayerIds = emptySet(),
         )
@@ -88,7 +89,7 @@ class RoomTest {
         val room = Room(
             id = Uuid.random(),
             hostId = host,
-            config = config,
+            gameConfig = GameConfig(config),
             playerIds = playerIds,
             readyPlayerIds = readyPlayerIds,
         )
@@ -109,7 +110,7 @@ class RoomTest {
         val room = Room(
             id = Uuid.random(),
             hostId = host,
-            config = config,
+            gameConfig = GameConfig(config),
             playerIds = playerIds,
             readyPlayerIds = readyPlayerIds,
         )
@@ -123,7 +124,7 @@ class RoomTest {
         val room = Room(
             id = Uuid.random(),
             hostId = Uuid.random(),
-            config = FakeMahjongRuleConfig(),
+            gameConfig = GameConfig(FakeMahjongRuleConfig()),
             aiPlayerStrategyKeys = mapOf(aiId to "random"),
         )
 
@@ -140,7 +141,7 @@ class RoomTest {
         val room = Room(
             id = Uuid.random(),
             hostId = hostId,
-            config = FakeMahjongRuleConfig(),
+            gameConfig = GameConfig(FakeMahjongRuleConfig()),
             playerIds = setOf(hostId, humanId, aiId),
             aiPlayerStrategyKeys = mapOf(aiId to "random"),
         )

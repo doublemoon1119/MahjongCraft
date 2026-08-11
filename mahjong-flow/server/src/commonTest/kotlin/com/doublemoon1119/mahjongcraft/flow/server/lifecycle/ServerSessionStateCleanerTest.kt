@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.server.lifecycle
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
@@ -35,14 +38,18 @@ class ServerSessionStateCleanerTest {
         val room = Room(
             id = Uuid.random(),
             hostId = observerId,
-            config = FakeMahjongRuleConfig(),
+            gameConfig = GameConfig(FakeMahjongRuleConfig()),
             playerIds = setOf(observerId),
         )
         val game = FakeTableStateFactory.create()
-        roomRepository.setRoom(room)
-        gameRepository.setTableState(game)
+        store.load(
+            com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot(
+                rooms = mapOf(room.id to room),
+                games = mapOf(game.id to Game(game, GameFlowConfig())),
+            ),
+        )
         roomSnapshots.setSnapshot(observerId, room.toSnapshot(observerId))
-        gameSnapshots.setSnapshot(observerId, game.toSnapshot(observerId))
+        gameSnapshots.setSnapshot(observerId, game.toSnapshot(setOf(observerId)))
         memberships.claim(observerId, room.id)
 
         cleaner.clear()

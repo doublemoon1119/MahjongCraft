@@ -175,7 +175,7 @@ class DeclareKanUseCase(
         // 2. 同步快照給所有正在觀察的玩家
         val observers = gameSnapshotRepository.getAllObservers(gameId)
         observers.forEach { observerId ->
-            gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(observerId))
+            gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(setOf(observerId)))
         }
 
         // 3. 廣播槓牌宣告；若無人可搶槓、副露已直接套用，依序再廣播補摸嶺上牌事件；若搶槓多響

@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.state
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.migration.PersistenceMigrationRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
-import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 
@@ -16,7 +16,7 @@ import kotlin.uuid.Uuid
  */
 data class DecodedAuthoritativeState(
     val rooms: Map<Uuid, Room>,
-    val games: Map<Uuid, TableState>,
+    val games: Map<Uuid, Game>,
 )
 
 /**
@@ -36,7 +36,7 @@ class AuthoritativeStatePersistenceCodec(
     /** 將完整 Room／Game 狀態編碼成帶目前 schema version 的 JSON 字串。 */
     fun encode(
         rooms: Collection<Room>,
-        games: Collection<TableState>,
+        games: Collection<Game>,
     ): String {
         val state = createAuthoritativeStatePersistenceDto(
             rooms = rooms,

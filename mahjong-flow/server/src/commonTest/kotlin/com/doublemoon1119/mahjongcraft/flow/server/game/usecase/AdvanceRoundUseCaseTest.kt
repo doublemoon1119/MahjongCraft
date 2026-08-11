@@ -246,8 +246,8 @@ class AdvanceRoundUseCaseTest {
             config = RiichiRuleConfig(),
         )
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(dealerId, table.toSnapshot(dealerId))
-        fixtures.snapshotRepo.setSnapshot(p2.id, table.toSnapshot(p2.id))
+        fixtures.snapshotRepo.setSnapshot(dealerId, table.toSnapshot(setOf(dealerId)))
+        fixtures.snapshotRepo.setSnapshot(p2.id, table.toSnapshot(setOf(p2.id)))
 
         fixtures.useCase(gameId)
 

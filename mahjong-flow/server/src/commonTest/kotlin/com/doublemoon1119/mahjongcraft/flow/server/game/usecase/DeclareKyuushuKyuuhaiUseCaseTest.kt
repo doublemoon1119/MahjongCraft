@@ -238,8 +238,8 @@ class DeclareKyuushuKyuuhaiUseCaseTest {
         val other = FakeMahjongPlayerFactory.create(id = otherId, initialSeat = Wind.SOUTH, discardPile = RiichiDiscardPile())
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(declarer, other), config = RiichiRuleConfig(), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(playerId, table.toSnapshot(playerId))
-        fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(otherId))
+        fixtures.snapshotRepo.setSnapshot(playerId, table.toSnapshot(setOf(playerId)))
+        fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(setOf(otherId)))
 
         fixtures.useCase(gameId, playerId)
 

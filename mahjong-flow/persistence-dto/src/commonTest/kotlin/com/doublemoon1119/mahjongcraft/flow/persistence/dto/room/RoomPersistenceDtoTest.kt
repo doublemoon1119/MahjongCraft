@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.room
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.room.RoomPersistenceDto
@@ -35,7 +36,6 @@ class RoomPersistenceDtoTest {
             minimumWinConstraint = 2,
             scoreConfig = RiichiScoreConfig(30000, -100, 35000, 1500),
             gameLength = RiichiGameLength.TwoWinds,
-            isSpectateAllowed = false,
             multiRonPolicy = MultiRonPolicy(RonResolution.NEAREST_WINNER, RonResolution.ABORTIVE_DRAW),
         )
         assertRoomRoundTrip(config)
@@ -49,7 +49,6 @@ class RoomPersistenceDtoTest {
             minimumWinConstraint = 3,
             scoreConfig = TaiwanScoreConfig(100, 20, 1000, -1),
             gameLength = TaiwanGameLength.FourWinds,
-            isSpectateAllowed = false,
             multiRonPolicy = MultiRonPolicy(RonResolution.ALL_WINNERS, RonResolution.NEAREST_WINNER),
         )
         assertRoomRoundTrip(config)
@@ -103,7 +102,7 @@ class RoomPersistenceDtoTest {
         return Room(
             id = Uuid.random(),
             hostId = hostId,
-            config = config,
+            gameConfig = GameConfig(config),
             playerIds = setOf(hostId, humanId, aiId),
             readyPlayerIds = setOf(humanId, aiId),
             aiPlayerStrategyKeys = mapOf(aiId to "random"),
@@ -119,7 +118,6 @@ private data class ThirdPartyRuleConfig(
     override val scoreConfig: RiichiScoreConfig = RiichiScoreConfig(),
     override val gameLength: RiichiGameLength = RiichiGameLength.OneGame,
     override val minimumWinConstraint: Int = 0,
-    override val isSpectateAllowed: Boolean = true,
     override val minPlayers: Int = 1,
     override val maxPlayers: Int = 4,
     override val multiRonPolicy: MultiRonPolicy = MultiRonPolicy(

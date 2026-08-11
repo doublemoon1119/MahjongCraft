@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.state
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceEnvelopeDto
@@ -42,19 +45,19 @@ class AuthoritativeStatePersistenceCodecTest {
     @Test
     fun `mixed rooms and games round-trip through codec`() {
         val rooms = listOf(createRoom(), createRoom())
-        val games = listOf(createGame(), createGame())
+        val games = listOf(Game(createGame(), GameFlowConfig()), Game(createGame(), GameFlowConfig()))
 
         val decoded = codec.decode(codec.encode(rooms, games))
 
         assertEquals(rooms.associateBy(Room::id), decoded.rooms)
-        assertEquals(games.associateBy(TableState::id), decoded.games)
+        assertEquals(games.associateBy(Game::id), decoded.games)
     }
 
     /** 驗證 Room → Game 後的 payload 只包含同 ID Game。 */
     @Test
     fun `room to game transition encodes only game state`() {
         val tableId = Uuid.random()
-        val game = createGame(tableId)
+        val game = Game(createGame(tableId), GameFlowConfig())
 
         val decoded = codec.decode(codec.encode(emptyList(), listOf(game)))
 
@@ -111,7 +114,7 @@ class AuthoritativeStatePersistenceCodecTest {
         return Room(
             id = id,
             hostId = hostId,
-            config = TaiwanRuleConfig(),
+            gameConfig = GameConfig(TaiwanRuleConfig()),
             playerIds = setOf(hostId),
         )
     }

@@ -102,7 +102,7 @@ class DeclareExhaustiveDrawUseCase(
         // 2. 同步快照給所有正在觀察的玩家
         val observers = gameSnapshotRepository.getAllObservers(gameId)
         observers.forEach { observerId ->
-            gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(observerId))
+            gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(setOf(observerId)))
         }
 
         // 3. 廣播流局事件；跟 GameAction.RoundStarted 一樣沒有實際執行者，比照既有慣例填入莊家 Uuid

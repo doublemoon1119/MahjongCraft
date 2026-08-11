@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.integration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
@@ -148,7 +149,7 @@ class DtoRoundTripTest {
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
         )
-        val snapshot = tableState.toSnapshot(riichiPlayer.id)
+        val snapshot = tableState.toSnapshot(setOf(riichiPlayer.id))
         val snapshotDto = snapshot.toDto(registries)
 
         val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), snapshotDto)
@@ -169,7 +170,7 @@ class DtoRoundTripTest {
             players = listOf(taiwanPlayer),
             config = TaiwanRuleConfig(),
         )
-        val snapshot = tableState.toSnapshot(taiwanPlayer.id)
+        val snapshot = tableState.toSnapshot(setOf(taiwanPlayer.id))
         val snapshotDto = snapshot.toDto(registries)
 
         val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), snapshotDto)
@@ -183,7 +184,7 @@ class DtoRoundTripTest {
         val snapshot = RoomSnapshot(
             id = Uuid.random(),
             hostId = hostId,
-            config = RiichiRuleConfig(),
+            gameConfig = GameConfig(RiichiRuleConfig()),
             playerIds = setOf(hostId, Uuid.random()),
             readyPlayerIds = setOf(hostId),
             aiPlayerIds = emptySet(),
@@ -213,7 +214,7 @@ class DtoRoundTripTest {
     fun `test GameUpdatePayload and RoomUpdatePayload round-trip`() {
         val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
         val snapshot = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
-            .toSnapshot(player.id)
+            .toSnapshot(setOf(player.id))
         val gamePayload = GameUpdatePayloadDto(
             gameId = Uuid.random().toString(),
             actorId = player.id.toString(),
@@ -226,7 +227,7 @@ class DtoRoundTripTest {
         val roomSnapshot = RoomSnapshot(
             id = Uuid.random(),
             hostId = player.id,
-            config = RiichiRuleConfig(),
+            gameConfig = GameConfig(RiichiRuleConfig()),
             playerIds = setOf(player.id),
             readyPlayerIds = emptySet(),
             aiPlayerIds = emptySet(),
@@ -247,7 +248,7 @@ class DtoRoundTripTest {
     fun `test explicit room and game snapshot sync payloads round-trip`() {
         val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
         val gameSnapshot = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
-            .toSnapshot(player.id)
+            .toSnapshot(setOf(player.id))
         val gamePayload = GameSnapshotSyncPayloadDto(
             gameId = gameSnapshot.id.toString(),
             snapshot = gameSnapshot.toDto(registries),
@@ -258,7 +259,7 @@ class DtoRoundTripTest {
         val roomSnapshot = RoomSnapshot(
             id = Uuid.random(),
             hostId = player.id,
-            config = RiichiRuleConfig(),
+            gameConfig = GameConfig(RiichiRuleConfig()),
             playerIds = setOf(player.id),
             readyPlayerIds = emptySet(),
             aiPlayerIds = emptySet(),
@@ -311,7 +312,6 @@ private data class ThirdPartyRuleConfig(
         override val totalRounds: Int = 1
     },
     override val minimumWinConstraint: Int = 0,
-    override val isSpectateAllowed: Boolean = true,
     override val minPlayers: Int = 2,
     override val maxPlayers: Int = 2,
     override val multiRonPolicy: MultiRonPolicy = MultiRonPolicy(RonResolution.ALL_WINNERS, RonResolution.ALL_WINNERS),
@@ -322,7 +322,6 @@ private data class ThirdPartyRuleConfigDto(
     val initialHandSize: Int,
     val deadTileCount: Int,
     val minimumWinConstraint: Int,
-    val isSpectateAllowed: Boolean,
     val minPlayers: Int,
     val maxPlayers: Int,
 ) : MahjongRuleConfigDto
@@ -331,7 +330,6 @@ private fun ThirdPartyRuleConfig.toThirdPartyDto() = ThirdPartyRuleConfigDto(
     initialHandSize = initialHandSize,
     deadTileCount = deadTileCount,
     minimumWinConstraint = minimumWinConstraint,
-    isSpectateAllowed = isSpectateAllowed,
     minPlayers = minPlayers,
     maxPlayers = maxPlayers,
 )
@@ -340,7 +338,6 @@ private fun ThirdPartyRuleConfigDto.toThirdPartyDomain() = ThirdPartyRuleConfig(
     initialHandSize = initialHandSize,
     deadTileCount = deadTileCount,
     minimumWinConstraint = minimumWinConstraint,
-    isSpectateAllowed = isSpectateAllowed,
     minPlayers = minPlayers,
     maxPlayers = maxPlayers,
 )

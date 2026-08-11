@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.state
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildDiscardPilePersistenceRegistry
@@ -92,17 +95,26 @@ class AuthoritativeStatePersistenceDtoTest {
         val roomDto = createState(listOf(createRoom()), emptyList()).rooms.values.single()
 
         assertFailsWith<IllegalArgumentException> {
-            AuthoritativeStatePersistenceDto(mapOf(Uuid.random().toString() to roomDto), emptyMap())
+            AuthoritativeStatePersistenceDto(
+                rooms = mapOf(Uuid.random().toString() to roomDto),
+                games = emptyMap(),
+                gameFlowConfigs = emptyMap(),
+            )
         }
     }
 
     /** 驗證索引 key 與 Game DTO 內部 ID 不一致時拒絕資料。 */
     @Test
     fun `mismatched game index is rejected`() {
-        val gameDto = createState(emptyList(), listOf(createGame())).games.values.single()
+        val state = createState(emptyList(), listOf(createGame()))
+        val gameDto = state.games.values.single()
 
         assertFailsWith<IllegalArgumentException> {
-            AuthoritativeStatePersistenceDto(emptyMap(), mapOf(Uuid.random().toString() to gameDto))
+            AuthoritativeStatePersistenceDto(
+                rooms = emptyMap(),
+                games = mapOf(Uuid.random().toString() to gameDto),
+                gameFlowConfigs = state.gameFlowConfigs,
+            )
         }
     }
 
@@ -111,12 +123,14 @@ class AuthoritativeStatePersistenceDtoTest {
     fun `same table ID cannot be both room and game`() {
         val tableId = Uuid.random()
         val roomDto = createState(listOf(createRoom(tableId)), emptyList()).rooms.getValue(tableId.toString())
-        val gameDto = createState(emptyList(), listOf(createGame(tableId))).games.getValue(tableId.toString())
+        val gameState = createState(emptyList(), listOf(createGame(tableId)))
+        val gameDto = gameState.games.getValue(tableId.toString())
 
         assertFailsWith<IllegalArgumentException> {
             AuthoritativeStatePersistenceDto(
                 rooms = mapOf(tableId.toString() to roomDto),
                 games = mapOf(tableId.toString() to gameDto),
+                gameFlowConfigs = gameState.gameFlowConfigs,
             )
         }
     }
@@ -127,7 +141,7 @@ class AuthoritativeStatePersistenceDtoTest {
         return Room(
             id = id,
             hostId = hostId,
-            config = TaiwanRuleConfig(),
+            gameConfig = GameConfig(TaiwanRuleConfig()),
             playerIds = setOf(hostId),
         )
     }
@@ -152,7 +166,7 @@ class AuthoritativeStatePersistenceDtoTest {
         games: Collection<TableState>,
     ): AuthoritativeStatePersistenceDto = createAuthoritativeStatePersistenceDto(
         rooms,
-        games,
+        games.map { Game(it, GameFlowConfig()) },
         ruleConfigRegistry,
         discardPileRegistry,
         playerRuleStateRegistry,
@@ -169,5 +183,5 @@ class AuthoritativeStatePersistenceDtoTest {
         dynamicRuleStateRegistry,
         exhaustiveDrawReasonRegistry,
         json,
-    )
+    ).mapValues { it.value.tableState }
 }

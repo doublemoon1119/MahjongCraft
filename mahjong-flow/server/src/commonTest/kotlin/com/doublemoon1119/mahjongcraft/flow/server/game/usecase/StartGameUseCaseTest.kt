@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
@@ -35,7 +36,7 @@ class StartGameUseCaseTest {
     private fun readyRoom(): Room = Room(
         id = roomId,
         hostId = hostId,
-        config = RiichiRuleConfig(),
+        gameConfig = GameConfig(RiichiRuleConfig()),
         playerIds = (listOf(hostId) + guestIds).toSet(),
         readyPlayerIds = guestIds.toSet(),
     )

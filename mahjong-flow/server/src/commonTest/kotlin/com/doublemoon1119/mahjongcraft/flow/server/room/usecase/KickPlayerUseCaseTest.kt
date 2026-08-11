@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
@@ -40,7 +41,7 @@ class KickPlayerUseCaseTest {
         val room = Room(
             id = roomId,
             hostId = hostId,
-            config = config,
+            gameConfig = GameConfig(config),
             playerIds = setOf(hostId, targetId),
             readyPlayerIds = setOf(targetId),
         )
@@ -74,7 +75,7 @@ class KickPlayerUseCaseTest {
         val service = FakeRoomEventPublisher()
         val useCase = KickPlayerUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
-        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId))
         roomRepo.setRoom(room)
 
         val result = useCase(roomId, hostId, hostId)
@@ -93,7 +94,7 @@ class KickPlayerUseCaseTest {
 
         val guestId = Uuid.random()
         val targetId = Uuid.random()
-        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId, targetId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId, guestId, targetId))
         roomRepo.setRoom(room)
 
         val result = useCase(roomId, guestId, targetId)

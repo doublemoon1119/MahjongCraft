@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
@@ -40,7 +41,7 @@ class JoinRoomUseCaseTest {
         val service = FakeRoomEventPublisher()
         val useCase = JoinRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
-        val initialRoom = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
+        val initialRoom = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId))
         roomRepo.setRoom(initialRoom)
 
         // 模擬房主與新玩家都已經是該位置的觀察者
@@ -76,7 +77,7 @@ class JoinRoomUseCaseTest {
         val useCase = JoinRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         val fullPlayerIds = (1..4).map { Uuid.random() }.toSet()
-        val fullRoom = Room(id = roomId, hostId = fullPlayerIds.first(), config = config, playerIds = fullPlayerIds)
+        val fullRoom = Room(id = roomId, hostId = fullPlayerIds.first(), gameConfig = GameConfig(config), playerIds = fullPlayerIds)
         roomRepo.setRoom(fullRoom)
 
         val result = useCase(roomId, otherPlayerId)
@@ -93,7 +94,7 @@ class JoinRoomUseCaseTest {
         val service = FakeRoomEventPublisher()
         val useCase = JoinRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
-        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId))
         roomRepo.setRoom(room)
 
         val result = useCase(roomId, hostId)
@@ -114,7 +115,7 @@ class JoinRoomUseCaseTest {
         val notificationService = FakeRoomEventPublisher()
         val useCase = JoinRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, notificationService)
 
-        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId))
         roomRepo.setRoom(room)
 
         // 模擬兩個人在觀察：房主與一個純觀察者

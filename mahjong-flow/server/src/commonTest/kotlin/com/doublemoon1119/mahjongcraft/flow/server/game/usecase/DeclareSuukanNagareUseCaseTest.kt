@@ -156,8 +156,8 @@ class DeclareSuukanNagareUseCaseTest {
         )
         val table = FakeTableStateFactory.create(id = gameId, players = players, config = RiichiRuleConfig())
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(dealerId, table.toSnapshot(dealerId))
-        fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(otherId))
+        fixtures.snapshotRepo.setSnapshot(dealerId, table.toSnapshot(setOf(dealerId)))
+        fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(setOf(otherId)))
 
         fixtures.useCase(gameId)
 

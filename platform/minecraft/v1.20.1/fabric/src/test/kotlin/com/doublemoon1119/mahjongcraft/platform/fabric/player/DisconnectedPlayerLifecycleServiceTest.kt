@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.player
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
@@ -127,7 +128,7 @@ class DisconnectedPlayerLifecycleServiceTest {
             Room(
                 id = tableId,
                 hostId = hostId,
-                config = FakeMahjongRuleConfig(),
+                gameConfig = GameConfig(FakeMahjongRuleConfig()),
                 playerIds = setOf(hostId, playerId),
             ),
         )

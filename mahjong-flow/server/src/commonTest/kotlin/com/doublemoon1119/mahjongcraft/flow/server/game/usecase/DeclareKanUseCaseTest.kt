@@ -337,8 +337,8 @@ class DeclareKanUseCaseTest {
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(playerId, table.toSnapshot(playerId))
-        fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(otherId))
+        fixtures.snapshotRepo.setSnapshot(playerId, table.toSnapshot(setOf(playerId)))
+        fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(setOf(otherId)))
 
         fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, east4.id)
 

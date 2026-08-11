@@ -16,7 +16,6 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * @property minimumWinConstraint 起胡番數限制，預設為 0。
  * @property scoreConfig 積分配置，預設為 [TaiwanScoreConfig]。
  * @property gameLength 遊戲長度配置，預設使用 [TaiwanGameLength.OneGame]。
- * @property isSpectateAllowed 允許在遊戲外的玩家能否看到遊戲內玩家的手牌，在牌河或者副露的牌則不在此限，預設為 true。
  * @property minPlayers 該規則要求的最小玩家人數
  * @property maxPlayers 該規則允許的最大玩家人數
  * @property multiRonPolicy 一炮多響時的結算方式，預設雙響、三響皆為頭跳。
@@ -26,7 +25,6 @@ data class TaiwanRuleConfig(
     override val minimumWinConstraint: Int = 0,
     override val scoreConfig: TaiwanScoreConfig = TaiwanScoreConfig(),
     override val gameLength: TaiwanGameLength = TaiwanGameLength.OneGame,
-    override val isSpectateAllowed: Boolean = true,
     override val multiRonPolicy: MultiRonPolicy = MultiRonPolicy(
         doubleRonResolution = RonResolution.NEAREST_WINNER,
         tripleRonResolution = RonResolution.NEAREST_WINNER,

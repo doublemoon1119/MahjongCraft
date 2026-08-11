@@ -21,7 +21,6 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * @property minimumWinConstraint 起胡番數限制（通常為 1 番），預設為 1。
  * @property scoreConfig 日本麻將專屬的積分配置。
  * @property gameLength 遊戲長度配置，預設為 [RiichiGameLength.OneGame]。
- * @property isSpectateAllowed 允許在遊戲外的玩家能否看到遊戲內玩家的手牌，在牌河或者副露的牌則不在此限，預設為 true。
  * @property minPlayers 該規則要求的最小玩家人數
  * @property maxPlayers 該規則允許的最大玩家人數
  * @property multiRonPolicy 一炮多響時的結算方式，預設雙響、三響皆為多家和。此欄位刻意不依循上述
@@ -34,7 +33,6 @@ data class RiichiRuleConfig(
     override val minimumWinConstraint: Int = 1,
     override val scoreConfig: RiichiScoreConfig = RiichiScoreConfig(),
     override val gameLength: RiichiGameLength = RiichiGameLength.OneGame,
-    override val isSpectateAllowed: Boolean = true,
     override val multiRonPolicy: MultiRonPolicy = MultiRonPolicy(
         doubleRonResolution = RonResolution.ALL_WINNERS,
         tripleRonResolution = RonResolution.ALL_WINNERS,

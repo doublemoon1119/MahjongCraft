@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
@@ -10,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublish
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
-import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -33,17 +33,17 @@ class CreateRoomUseCase(
     @Provided private val eventPublisher: RoomEventPublisher,
 ) {
     /**
-     * 執行創建房間邏輯。
+     * 使用完整規則與流程設定建立房間。
      *
-     * @param roomId 房間的唯一識別碼（通常對應 BlockEntity Uuid）。
+     * @param roomId 房間的唯一識別碼。
      * @param hostId 房主的玩家 Uuid。
-     * @param config 房間採用的規則配置。
+     * @param gameConfig 房間開局時採用的完整遊戲設定。
      * @return 創建結果，成功時包含 [Room] 實例，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
         roomId: Uuid,
         hostId: Uuid,
-        config: MahjongRuleConfig,
+        gameConfig: GameConfig,
     ): Outcome<Room, RoomError> {
         val existingTableId = membershipRepository.getTableId(hostId)
         if (existingTableId != null && existingTableId != roomId) {
@@ -66,7 +66,7 @@ class CreateRoomUseCase(
                     val newRoom = Room(
                         id = roomId,
                         hostId = hostId,
-                        config = config,
+                        gameConfig = gameConfig,
                         playerIds = setOf(hostId),
                         readyPlayerIds = emptySet(),
                     )

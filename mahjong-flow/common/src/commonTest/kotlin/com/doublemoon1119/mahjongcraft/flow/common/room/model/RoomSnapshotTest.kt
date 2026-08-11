@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.room.model
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -17,7 +18,7 @@ class RoomSnapshotTest {
         val room = Room(
             id = Uuid.random(),
             hostId = hostId,
-            config = config,
+            gameConfig = GameConfig(config),
             playerIds = playerIds,
             readyPlayerIds = playerIds,
         )
@@ -36,7 +37,7 @@ class RoomSnapshotTest {
         val room = Room(
             id = Uuid.random(),
             hostId = hostId,
-            config = config,
+            gameConfig = GameConfig(config),
             playerIds = playerIds,
             readyPlayerIds = playerIds,
         )
@@ -57,7 +58,7 @@ class RoomSnapshotTest {
         val room = Room(
             id = Uuid.random(),
             hostId = hostId,
-            config = config,
+            gameConfig = GameConfig(config),
             playerIds = playerIds,
             readyPlayerIds = playerIds,
         )
@@ -75,7 +76,7 @@ class RoomSnapshotTest {
         val room = Room(
             id = Uuid.random(),
             hostId = hostId,
-            config = FakeMahjongRuleConfig(),
+            gameConfig = GameConfig(FakeMahjongRuleConfig()),
             playerIds = setOf(hostId, aiId),
             aiPlayerStrategyKeys = mapOf(aiId to "random"),
         )

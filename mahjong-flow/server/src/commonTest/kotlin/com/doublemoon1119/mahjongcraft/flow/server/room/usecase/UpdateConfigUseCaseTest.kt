@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
@@ -41,7 +42,7 @@ class UpdateConfigUseCaseTest {
         val room = Room(
             id = roomId,
             hostId = hostId,
-            config = initialConfig,
+            gameConfig = GameConfig(initialConfig),
             playerIds = setOf(hostId, guestId),
         )
         roomRepo.setRoom(room)
@@ -51,18 +52,18 @@ class UpdateConfigUseCaseTest {
         snapshotRepo.setSnapshot(guestId, room.toSnapshot(guestId))
 
         // Act: 房主發起配置更新
-        val result = useCase(roomId, hostId, newConfig)
+        val result = useCase(roomId, hostId, GameConfig(newConfig))
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
 
         // Assert: 檢查持久化數據是否更新
         val updatedRoom = roomRepo.getRoom(roomId)
         assertNotNull(updatedRoom)
-        assertEquals(newConfig, updatedRoom.config, "Room config in repository should be updated.")
+        assertEquals(newConfig, updatedRoom.gameConfig.ruleConfig, "Room config in repository should be updated.")
 
         // Assert: 檢查快照是否同步更新（以客場玩家為例）
         val guestSnapshot = snapshotRepo.getSnapshot(roomId, guestId)
         assertNotNull(guestSnapshot)
-        assertEquals(newConfig, guestSnapshot.config, "Guest snapshot should reflect the new config.")
+        assertEquals(newConfig, guestSnapshot.gameConfig.ruleConfig, "Guest snapshot should reflect the new config.")
 
         // Assert: 檢查房間成員是否都收到配置變更通知
         assertEquals(
@@ -88,16 +89,16 @@ class UpdateConfigUseCaseTest {
         val useCase = UpdateConfigUseCase(roomRepo, snapshotRepo, notificationService)
 
         val guestId = Uuid.random()
-        val room = Room(id = roomId, hostId = hostId, config = initialConfig, playerIds = setOf(hostId, guestId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(initialConfig), playerIds = setOf(hostId, guestId))
         roomRepo.setRoom(room)
 
         // Act & Assert: 客場玩家嘗試修改配置
-        val result = useCase(roomId, guestId, newConfig)
+        val result = useCase(roomId, guestId, GameConfig(newConfig))
         assertTrue(result is Outcome.Error, "Expected Error but got $result")
 
         // 驗證配置維持原樣
         val roomInRepo = roomRepo.getRoom(roomId)
-        assertEquals(initialConfig, roomInRepo?.config, "Config should remain unchanged after failed update.")
+        assertEquals(initialConfig, roomInRepo?.gameConfig?.ruleConfig, "Config should remain unchanged after failed update.")
     }
 
     /**
@@ -111,7 +112,7 @@ class UpdateConfigUseCaseTest {
         val useCase = UpdateConfigUseCase(roomRepo, snapshotRepo, notificationService)
 
         // Act & Assert
-        val result = useCase(roomId, hostId, newConfig)
+        val result = useCase(roomId, hostId, GameConfig(newConfig))
         assertTrue(result is Outcome.Error, "Expected Error but got $result")
     }
 }

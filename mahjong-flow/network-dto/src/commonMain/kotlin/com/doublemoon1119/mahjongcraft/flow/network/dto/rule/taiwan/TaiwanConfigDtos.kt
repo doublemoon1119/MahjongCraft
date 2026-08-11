@@ -28,7 +28,6 @@ data class TaiwanRuleConfigDto(
     val scoreConfig: TaiwanScoreConfigDto,
     val gameLength: GameLengthDto,
     val minimumWinConstraint: Int,
-    val isSpectateAllowed: Boolean,
     val minPlayers: Int,
     val maxPlayers: Int,
     val multiRonPolicy: MultiRonPolicyDto,
@@ -41,7 +40,6 @@ fun TaiwanRuleConfig.toTaiwanDto(registries: NetworkDtoRegistries): TaiwanRuleCo
     scoreConfig = scoreConfig.toTaiwanDto(),
     gameLength = gameLength.toRuleDto(registries),
     minimumWinConstraint = minimumWinConstraint,
-    isSpectateAllowed = isSpectateAllowed,
     minPlayers = minPlayers,
     maxPlayers = maxPlayers,
     multiRonPolicy = multiRonPolicy.toRuleDto(),
@@ -53,7 +51,6 @@ fun TaiwanRuleConfigDto.toDomain(registries: NetworkDtoRegistries): TaiwanRuleCo
     minimumWinConstraint = minimumWinConstraint,
     scoreConfig = scoreConfig.toDomain(),
     gameLength = gameLength.toRuleDomain(registries) as TaiwanGameLength,
-    isSpectateAllowed = isSpectateAllowed,
     multiRonPolicy = multiRonPolicy.toRuleDomain(),
 )
 

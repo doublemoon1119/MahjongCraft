@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.persistence
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.state.AuthoritativeStatePersistenceCodec
@@ -74,7 +75,7 @@ class MahjongAuthoritativePersistentStateTest {
         return Room(
             id = Uuid.random(),
             hostId = hostId,
-            config = RiichiRuleConfig(),
+            gameConfig = GameConfig(RiichiRuleConfig()),
             playerIds = setOf(hostId),
         )
     }

@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.server.state
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
@@ -85,14 +88,14 @@ class AuthoritativeStateStoreTest {
         store.load(
             AuthoritativeStateSnapshot(
                 rooms = mapOf(loadedRoom.id to loadedRoom),
-                games = mapOf(loadedGame.id to loadedGame),
+                games = mapOf(loadedGame.id to Game(loadedGame, GameFlowConfig())),
             ),
         )
 
         assertFalse(store.isDirty())
         assertNull(store.getRoom(oldRoom.id))
         assertEquals(loadedRoom, store.getRoom(loadedRoom.id))
-        assertEquals(loadedGame, store.getGame(loadedGame.id))
+        assertEquals(loadedGame, store.getGame(loadedGame.id)?.tableState)
     }
 
     /** 驗證 Room → Game 能在單次交易中完成且只通知一次。 */
@@ -101,7 +104,8 @@ class AuthoritativeStateStoreTest {
         val store = AuthoritativeStateStore()
         val room = createRoom()
         store.load(AuthoritativeStateSnapshot(rooms = mapOf(room.id to room)))
-        val game = FakeTableStateFactory.create(id = room.id)
+        val tableState = FakeTableStateFactory.create(id = room.id)
+        val game = Game(tableState, GameFlowConfig())
         var notifications = 0
         store.setDirtyListener { notifications++ }
 
@@ -139,7 +143,7 @@ class AuthoritativeStateStoreTest {
         return Room(
             id = Uuid.random(),
             hostId = hostId,
-            config = FakeMahjongRuleConfig(),
+            gameConfig = GameConfig(FakeMahjongRuleConfig()),
             playerIds = setOf(hostId),
         )
     }

@@ -57,7 +57,6 @@ data class RiichiRuleConfigPersistenceDto(
     val minPointsToWin: Int,
     val notenPenaltyUnit: Int,
     val gameLength: RiichiGameLengthPersistenceDto,
-    val isSpectateAllowed: Boolean,
     val multiRonPolicy: MultiRonPolicyPersistenceDto,
 )
 
@@ -87,7 +86,6 @@ data class TaiwanRuleConfigPersistenceDto(
     val initialScore: Int,
     val bustThreshold: Int?,
     val gameLength: TaiwanGameLengthPersistenceDto,
-    val isSpectateAllowed: Boolean,
     val multiRonPolicy: MultiRonPolicyPersistenceDto,
 )
 
@@ -121,7 +119,6 @@ private fun RiichiRuleConfig.toPersistenceDto(): RiichiRuleConfigPersistenceDto 
     minPointsToWin = scoreConfig.minPointsToWin,
     notenPenaltyUnit = scoreConfig.notenPenaltyUnit,
     gameLength = gameLength.toPersistenceDto(),
-    isSpectateAllowed = isSpectateAllowed,
     multiRonPolicy = multiRonPolicy.toPersistenceDto(),
 )
 
@@ -133,7 +130,6 @@ private fun RiichiRuleConfigPersistenceDto.toDomain(): RiichiRuleConfig = Riichi
     minimumWinConstraint = minimumWinConstraint,
     scoreConfig = RiichiScoreConfig(initialScore, bustThreshold, minPointsToWin, notenPenaltyUnit),
     gameLength = gameLength.toDomain(),
-    isSpectateAllowed = isSpectateAllowed,
     multiRonPolicy = multiRonPolicy.toDomain(),
 )
 
@@ -146,7 +142,6 @@ private fun TaiwanRuleConfig.toPersistenceDto(): TaiwanRuleConfigPersistenceDto 
     initialScore = scoreConfig.initialScore,
     bustThreshold = scoreConfig.bustThreshold,
     gameLength = gameLength.toPersistenceDto(),
-    isSpectateAllowed = isSpectateAllowed,
     multiRonPolicy = multiRonPolicy.toPersistenceDto(),
 )
 
@@ -156,7 +151,6 @@ private fun TaiwanRuleConfigPersistenceDto.toDomain(): TaiwanRuleConfig = Taiwan
     minimumWinConstraint = minimumWinConstraint,
     scoreConfig = TaiwanScoreConfig(baseScore, pointPerTai, initialScore, bustThreshold),
     gameLength = gameLength.toDomain(),
-    isSpectateAllowed = isSpectateAllowed,
     multiRonPolicy = multiRonPolicy.toDomain(),
 )
 

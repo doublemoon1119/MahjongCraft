@@ -82,7 +82,7 @@ class OrphanedTableCleanupService(
                 )
                 else -> AuthoritativeStateUpdate(
                     state.copy(games = state.games - tableId),
-                    CleanupDecision.removeGame(checkNotNull(game).players.map { it.id }.toSet()),
+                    CleanupDecision.removeGame(checkNotNull(game).tableState.players.map { it.id }.toSet()),
                 )
             }
         }

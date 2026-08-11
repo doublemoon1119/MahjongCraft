@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.state
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
-import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.koin.core.annotation.Single
@@ -15,7 +15,7 @@ import kotlin.uuid.Uuid
  */
 data class AuthoritativeStateSnapshot(
     val rooms: Map<Uuid, Room> = emptyMap(),
-    val games: Map<Uuid, TableState> = emptyMap(),
+    val games: Map<Uuid, Game> = emptyMap(),
 ) {
     init {
         require(rooms.all { (id, room) -> id == room.id }) { "Room index must match its state ID" }
@@ -63,7 +63,7 @@ class AuthoritativeStateStore {
     suspend fun getRoom(id: Uuid): Room? = mutex.withLock { currentState.rooms[id] }
 
     /** 取得指定 Game；純讀取不會改變 dirty 狀態。 */
-    suspend fun getGame(id: Uuid): TableState? = mutex.withLock { currentState.games[id] }
+    suspend fun getGame(id: Uuid): Game? = mutex.withLock { currentState.games[id] }
 
     /** 目前是否存在尚未保存的狀態變更。 */
     suspend fun isDirty(): Boolean = mutex.withLock { dirty }

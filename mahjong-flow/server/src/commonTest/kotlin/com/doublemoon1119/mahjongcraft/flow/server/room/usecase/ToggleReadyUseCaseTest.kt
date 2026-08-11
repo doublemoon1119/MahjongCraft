@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
@@ -36,7 +37,7 @@ class ToggleReadyUseCaseTest {
         val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo, notificationService)
 
         val guestId = Uuid.random()
-        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId, guestId))
         roomRepo.setRoom(room)
 
         // 模擬房主正在觀察房間
@@ -68,7 +69,7 @@ class ToggleReadyUseCaseTest {
         val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo, notificationService)
 
         val guestId = Uuid.random()
-        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId, guestId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId, guestId))
         roomRepo.setRoom(room)
 
         // Act: 客場玩家切換準備（從未準備變更為已準備）
@@ -94,7 +95,7 @@ class ToggleReadyUseCaseTest {
         val notificationService = FakeRoomEventPublisher()
         val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo, notificationService)
 
-        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId))
         roomRepo.setRoom(room)
 
         // Act
@@ -117,7 +118,7 @@ class ToggleReadyUseCaseTest {
         val notificationService = FakeRoomEventPublisher()
         val useCase = ToggleReadyUseCase(roomRepo, snapshotRepo, notificationService)
 
-        val room = Room(id = roomId, hostId = hostId, config = config, playerIds = setOf(hostId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId))
         roomRepo.setRoom(room)
 
         val strangerId = Uuid.random()

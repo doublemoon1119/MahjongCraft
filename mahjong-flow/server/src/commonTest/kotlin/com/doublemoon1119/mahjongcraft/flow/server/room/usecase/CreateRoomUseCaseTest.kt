@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
@@ -41,10 +42,10 @@ class CreateRoomUseCaseTest {
         val service = FakeRoomEventPublisher()
         val useCase = CreateRoomUseCase(store, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
-        val roomSnapshot = Room(id = roomId, hostId = hostId, config = config).toSnapshot(hostId)
+        val roomSnapshot = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config)).toSnapshot(hostId)
         snapshotRepo.setSnapshot(hostId, roomSnapshot)
 
-        val result = useCase(roomId, hostId, config)
+        val result = useCase(roomId, hostId, GameConfig(config))
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
 
         val savedRoom = roomRepo.getRoom(roomId)
@@ -67,11 +68,11 @@ class CreateRoomUseCaseTest {
         val existingRoom = Room(
             id = roomId,
             hostId = Uuid.random(),
-            config = config,
+            gameConfig = GameConfig(config),
         )
         roomRepo.setRoom(existingRoom)
 
-        val result = useCase(roomId, hostId, config)
+        val result = useCase(roomId, hostId, GameConfig(config))
         assertTrue(result is Outcome.Error)
         assertEquals(RoomError.RoomAlreadyExists(roomId), result.error)
     }
@@ -85,7 +86,7 @@ class CreateRoomUseCaseTest {
         val service = FakeRoomEventPublisher()
         val useCase = CreateRoomUseCase(store, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
-        val result = useCase(roomId, hostId, config)
+        val result = useCase(roomId, hostId, GameConfig(config))
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
 
         assertNotNull(roomRepo.getRoom(roomId))
@@ -108,7 +109,7 @@ class CreateRoomUseCaseTest {
 
         gameRepo.setTableState(FakeTableStateFactory.create(id = roomId))
 
-        val result = useCase(roomId, hostId, config)
+        val result = useCase(roomId, hostId, GameConfig(config))
 
         assertTrue(result is Outcome.Error)
         assertEquals(RoomError.GameAlreadyInProgress(roomId), result.error)
@@ -130,7 +131,7 @@ class CreateRoomUseCaseTest {
             FakeRoomEventPublisher(),
         )
 
-        val result = useCase(roomId, hostId, config)
+        val result = useCase(roomId, hostId, GameConfig(config))
 
         assertEquals(Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(hostId, otherTableId)), result)
         assertEquals(null, roomRepo.getRoom(roomId))

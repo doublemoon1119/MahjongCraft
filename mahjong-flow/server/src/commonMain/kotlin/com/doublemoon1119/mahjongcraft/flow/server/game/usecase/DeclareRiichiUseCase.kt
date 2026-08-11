@@ -137,7 +137,7 @@ class DeclareRiichiUseCase(
         // 2. 同步快照給所有正在觀察的玩家
         val observers = gameSnapshotRepository.getAllObservers(gameId)
         observers.forEach { observerId ->
-            gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(observerId))
+            gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(setOf(observerId)))
         }
 
         // 3. 通知對局內的所有玩家：先廣播立直宣告，再廣播這張牌的捨牌事件，流局有觸發時接著廣播流局事件

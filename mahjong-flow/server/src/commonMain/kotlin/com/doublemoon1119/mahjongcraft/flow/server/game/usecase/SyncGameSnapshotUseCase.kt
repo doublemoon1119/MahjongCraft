@@ -1,10 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
-import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
-import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
@@ -14,13 +12,11 @@ import kotlin.uuid.Uuid
  * 負責處理特定觀察者的同步請求，從權威數據倉庫獲取對局狀態，並針對請求者的身分生成對應的視角快照。
  * 結構完全比照 [com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase]。
  *
- * @property gameRepository 權威對局數據倉庫。
- * @property gameSnapshotRepository 對局快照數據倉庫。
+ * @property snapshotSynchronizer 套用觀看政策並更新 read-side 快照的同步器。
  */
 @Factory
 class SyncGameSnapshotUseCase(
-    private val gameRepository: GameRepository,
-    private val gameSnapshotRepository: GameSnapshotRepository,
+    private val snapshotSynchronizer: GameSnapshotSynchronizer,
 ) {
     /**
      * 執行對局狀態的同步處理。
@@ -32,10 +28,9 @@ class SyncGameSnapshotUseCase(
      * @return 同步快照的結果，成功時為 [Unit]，失敗時為 [GameError]。
      */
     suspend operator fun invoke(gameId: Uuid, observerId: Uuid): Outcome<Unit, GameError> {
-        val state = gameRepository.getTableState(gameId)
-            ?: return Outcome.Error(GameError.GameNotFound(gameId))
-
-        gameSnapshotRepository.setSnapshot(observerId, state.toSnapshot(observerId))
+        if (!snapshotSynchronizer.sync(gameId, observerId)) {
+            return Outcome.Error(GameError.GameNotFound(gameId))
+        }
 
         return Outcome.Success(Unit)
     }

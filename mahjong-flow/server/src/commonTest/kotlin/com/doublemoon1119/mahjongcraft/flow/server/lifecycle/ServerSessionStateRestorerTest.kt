@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.server.lifecycle
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepositoryImpl
@@ -29,7 +32,7 @@ class ServerSessionStateRestorerTest {
         val room = Room(
             id = Uuid.random(),
             hostId = roomPlayerId,
-            config = FakeMahjongRuleConfig(),
+            gameConfig = GameConfig(FakeMahjongRuleConfig()),
             playerIds = setOf(roomPlayerId),
         )
         val game = FakeTableStateFactory.create(
@@ -39,7 +42,7 @@ class ServerSessionStateRestorerTest {
         restorer.restore(
             AuthoritativeStateSnapshot(
                 rooms = mapOf(room.id to room),
-                games = mapOf(game.id to game),
+                games = mapOf(game.id to Game(game, GameFlowConfig())),
             ),
         )
 
@@ -59,8 +62,8 @@ class ServerSessionStateRestorerTest {
         val playerId = Uuid.random()
         val existingTableId = Uuid.random()
         memberships.claim(playerId, existingTableId)
-        val firstRoom = Room(Uuid.random(), playerId, FakeMahjongRuleConfig(), setOf(playerId))
-        val secondRoom = Room(Uuid.random(), playerId, FakeMahjongRuleConfig(), setOf(playerId))
+        val firstRoom = Room(Uuid.random(), playerId, GameConfig(FakeMahjongRuleConfig()), setOf(playerId))
+        val secondRoom = Room(Uuid.random(), playerId, GameConfig(FakeMahjongRuleConfig()), setOf(playerId))
 
         val result = restorer.restore(
             AuthoritativeStateSnapshot(

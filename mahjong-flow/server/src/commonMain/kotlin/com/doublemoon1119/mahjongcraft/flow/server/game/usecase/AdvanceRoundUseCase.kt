@@ -94,7 +94,7 @@ class AdvanceRoundUseCase(
         // 2. 同步快照給所有正在觀察的玩家
         val observers = gameSnapshotRepository.getAllObservers(gameId)
         observers.forEach { observerId ->
-            gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(observerId))
+            gameSnapshotRepository.setSnapshot(observerId, newState.toSnapshot(setOf(observerId)))
         }
 
         // 3. 廣播「下一局已開始」事件；RoundStarted 沒有實際執行者，比照 GameStarted 的既有慣例，

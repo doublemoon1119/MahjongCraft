@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.table
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
@@ -34,7 +35,7 @@ class OrphanedTableCleanupServiceTest {
         val room = Room(
             id = fixture.tableId,
             hostId = playerId,
-            config = FakeMahjongRuleConfig(),
+            gameConfig = GameConfig(FakeMahjongRuleConfig()),
             playerIds = setOf(playerId),
         )
         fixture.roomRepository.setRoom(room)
@@ -60,7 +61,7 @@ class OrphanedTableCleanupServiceTest {
         val game = FakeTableStateFactory.create(id = fixture.tableId, players = listOf(player))
         fixture.gameRepository.setTableState(game)
         fixture.memberships.claim(player.id, fixture.tableId)
-        fixture.gameSnapshots.setSnapshot(player.id, game.toSnapshot(player.id))
+        fixture.gameSnapshots.setSnapshot(player.id, game.toSnapshot(setOf(player.id)))
 
         val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
 
@@ -89,7 +90,7 @@ class OrphanedTableCleanupServiceTest {
     @Test
     fun `test remove waiting room clears room`() = runTest {
         val fixture = Fixture(OrphanedTablePolicy.REMOVE_WAITING_ROOM)
-        val room = Room(fixture.tableId, Uuid.random(), FakeMahjongRuleConfig())
+        val room = Room(fixture.tableId, Uuid.random(), GameConfig(FakeMahjongRuleConfig()))
         fixture.roomRepository.setRoom(room)
 
         val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
@@ -118,7 +119,7 @@ class OrphanedTableCleanupServiceTest {
         val fixture = Fixture(OrphanedTablePolicy.REMOVE_ALL)
         val oldRevision = fixture.entryRevision
         fixture.locations.put(fixture.tableId, TableLocation("minecraft:overworld", 32, 64, 0))
-        val room = Room(fixture.tableId, Uuid.random(), FakeMahjongRuleConfig())
+        val room = Room(fixture.tableId, Uuid.random(), GameConfig(FakeMahjongRuleConfig()))
         fixture.roomRepository.setRoom(room)
 
         val result = fixture.service.cleanupMissing(fixture.tableId, oldRevision)

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -59,7 +60,7 @@ class MahjongTableRoomService(
 
             val room = roomRepository.getRoom(tableId)
             if (room == null) {
-                when (val result = createRoom(tableId, playerId, RiichiRuleConfig())) {
+                when (val result = createRoom(tableId, playerId, GameConfig(RiichiRuleConfig()))) {
                     is Outcome.Success -> {
                         syncRoom(tableId, playerId)
                         roomSnapshotSender.send(tableId, playerId)

@@ -234,8 +234,8 @@ class DeclareExhaustiveDrawUseCaseTest {
         val south = FakeMahjongPlayerFactory.create(id = southId, initialSeat = Wind.SOUTH, hand = notTenpaiHand())
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(dealer, south), config = RiichiRuleConfig())
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(dealer.id, table.toSnapshot(dealer.id))
-        fixtures.snapshotRepo.setSnapshot(southId, table.toSnapshot(southId))
+        fixtures.snapshotRepo.setSnapshot(dealer.id, table.toSnapshot(setOf(dealer.id)))
+        fixtures.snapshotRepo.setSnapshot(southId, table.toSnapshot(setOf(southId)))
 
         fixtures.useCase(gameId)
 

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.room.model
 
-import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import kotlin.uuid.Uuid
 
 /**
@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
  *
  * @property id 房間的唯一識別碼。
  * @property hostId 房主的玩家 Uuid。
- * @property config 該房間採用的麻將規則配置。
+ * @property gameConfig 該房間開局時採用的完整遊戲設定。
  * @property playerIds 目前房間內所有玩家（含房主與 AI）的 Uuid 集合。
  * @property readyPlayerIds 已標記為「準備完成」的玩家 Uuid 集合（房主不計入此集合）。
  * @property aiPlayerStrategyKeys 由房主新增的 AI 玩家 Uuid 對應到其 AI 策略登記 key 的映射。
@@ -19,19 +19,19 @@ import kotlin.uuid.Uuid
 data class Room(
     val id: Uuid,
     val hostId: Uuid,
-    val config: MahjongRuleConfig,
+    val gameConfig: GameConfig,
     val playerIds: Set<Uuid> = emptySet(),
     val readyPlayerIds: Set<Uuid> = emptySet(),
     val aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
 ) {
     /** 依規則配置換算出的合法玩家人數區間。 */
-    private val allowedRange: IntRange get() = config.minPlayers..config.maxPlayers
+    private val allowedRange: IntRange get() = gameConfig.ruleConfig.minPlayers..gameConfig.ruleConfig.maxPlayers
 
     /** 由房主新增的 AI 玩家 Uuid 集合。 */
     val aiPlayerIds: Set<Uuid> get() = aiPlayerStrategyKeys.keys
 
     /** 房間人數是否已達規則配置的上限。 */
-    val isFull: Boolean get() = playerIds.size >= config.maxPlayers
+    val isFull: Boolean get() = playerIds.size >= gameConfig.ruleConfig.maxPlayers
 
     /**
      * 房間是否符合開局條件。

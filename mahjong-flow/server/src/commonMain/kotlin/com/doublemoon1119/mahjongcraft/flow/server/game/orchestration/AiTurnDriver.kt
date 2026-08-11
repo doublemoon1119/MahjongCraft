@@ -89,7 +89,7 @@ class AiTurnDriver(
         val legalActions = (legalActionsResult as? Outcome.Success)?.value ?: emptyList()
         val strategyKey = state.players.first { it.id == aiId }.aiStrategyKey
         val context = AiDecisionContext(
-            snapshot = state.toSnapshot(aiId),
+            snapshot = state.toSnapshot(setOf(aiId)),
             selfId = aiId,
             phase = phase,
             legalActions = legalActions,

@@ -263,8 +263,8 @@ class DeclareTsumoUseCaseTest {
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(winnerId, table.toSnapshot(winnerId))
-        fixtures.snapshotRepo.setSnapshot(otherPlayerId, table.toSnapshot(otherPlayerId))
+        fixtures.snapshotRepo.setSnapshot(winnerId, table.toSnapshot(setOf(winnerId)))
+        fixtures.snapshotRepo.setSnapshot(otherPlayerId, table.toSnapshot(setOf(otherPlayerId)))
 
         fixtures.useCase(gameId, winnerId)
 

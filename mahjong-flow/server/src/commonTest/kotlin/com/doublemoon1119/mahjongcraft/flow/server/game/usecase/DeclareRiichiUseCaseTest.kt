@@ -170,8 +170,8 @@ class DeclareRiichiUseCaseTest {
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(currentPlayerId, table.toSnapshot(currentPlayerId))
-        fixtures.snapshotRepo.setSnapshot(otherPlayerId, table.toSnapshot(otherPlayerId))
+        fixtures.snapshotRepo.setSnapshot(currentPlayerId, table.toSnapshot(setOf(currentPlayerId)))
+        fixtures.snapshotRepo.setSnapshot(otherPlayerId, table.toSnapshot(setOf(otherPlayerId)))
 
         fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
 

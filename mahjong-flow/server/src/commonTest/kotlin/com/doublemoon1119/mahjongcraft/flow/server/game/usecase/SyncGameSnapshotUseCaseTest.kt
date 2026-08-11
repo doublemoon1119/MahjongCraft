@@ -1,8 +1,13 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -30,7 +35,9 @@ class SyncGameSnapshotUseCaseTest {
     fun `test sync game snapshot for player correctly`() = runTest {
         val gameRepo = FakeGameRepository()
         val snapshotRepo = FakeGameSnapshotRepository()
-        val useCase = SyncGameSnapshotUseCase(gameRepo, snapshotRepo)
+        val useCase = SyncGameSnapshotUseCase(
+            GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl()),
+        )
 
         val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(player), config = RiichiRuleConfig(), currentPlayerIndex = 0)
@@ -52,11 +59,35 @@ class SyncGameSnapshotUseCaseTest {
     fun `test sync game snapshot fails when game not exists`() = runTest {
         val gameRepo = FakeGameRepository()
         val snapshotRepo = FakeGameSnapshotRepository()
-        val useCase = SyncGameSnapshotUseCase(gameRepo, snapshotRepo)
+        val useCase = SyncGameSnapshotUseCase(
+            GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl()),
+        )
 
         val result = useCase(gameId, playerId)
 
         assertTrue(result is Outcome.Error, "Expected Error but got $result")
         assertEquals(GameError.GameNotFound(gameId), result.error)
+    }
+
+    /** 測試禁止旁觀時，外部讀取者仍可取得隱藏手牌的快照。 */
+    @Test
+    fun `test external observer receives redacted snapshot when spectating is disabled`() = runTest {
+        val gameRepo = FakeGameRepository()
+        val snapshotRepo = FakeGameSnapshotRepository()
+        val useCase = SyncGameSnapshotUseCase(
+            GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl()),
+        )
+        val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(player))
+        val observerId = Uuid.random()
+        gameRepo.setGame(
+            Game(
+                tableState = table,
+                flowConfig = GameFlowConfig(spectatingPolicy = SpectatingPolicy.DISABLED),
+            ),
+        )
+
+        assertTrue(useCase(gameId, observerId) is Outcome.Success)
+        assertNotNull(snapshotRepo.getSnapshot(gameId, observerId))
     }
 }

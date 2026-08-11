@@ -1,12 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
-import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -27,17 +27,24 @@ class UpdateConfigUseCase(
     @Provided private val eventPublisher: RoomEventPublisher,
 ) {
     /**
-     * 執行更新配置邏輯。
+     * 更新房間完整遊戲設定。
      *
      * @param roomId 房間 Uuid。
-     * @param operatorId 發起請求的玩家 Uuid（必須為房主）。
-     * @param newConfig 新的規則配置。
+     * @param operatorId 發起請求的玩家 Uuid。
+     * @param newConfig 新的規則與流程設定。
      * @return 更新配置的結果，成功時為 [Unit]，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
         roomId: Uuid,
         operatorId: Uuid,
-        newConfig: MahjongRuleConfig,
+        newConfig: GameConfig,
+    ): Outcome<Unit, RoomError> = update(roomId, operatorId, newConfig)
+
+    /** 以單次 repository 交易更新設定並同步 read side。 */
+    private suspend fun update(
+        roomId: Uuid,
+        operatorId: Uuid,
+        newConfig: GameConfig,
     ): Outcome<Unit, RoomError> {
         // 1. 以原子方式讀取房間、驗證權限並寫回，避免與其他房間操作產生競態
         val outcome = roomRepository.update(roomId) { room ->
@@ -45,7 +52,7 @@ class UpdateConfigUseCase(
                 room == null -> room to Outcome.Error(RoomError.RoomNotFound(roomId))
                 operatorId != room.hostId -> room to Outcome.Error(RoomError.NotHost(operatorId))
                 else -> {
-                    val updatedRoom = room.copy(config = newConfig)
+                    val updatedRoom = room.copy(gameConfig = newConfig)
                     updatedRoom to Outcome.Success(updatedRoom)
                 }
             }
@@ -67,7 +74,7 @@ class UpdateConfigUseCase(
                     eventPublisher.publishConfigChanged(
                         roomId = roomId,
                         targetPlayerId = memberId,
-                        newConfig = newConfig,
+                        newConfig = updatedRoom.gameConfig.ruleConfig,
                     )
                 }
 

@@ -35,7 +35,7 @@ class RandomAiStrategyTest {
         val self = FakeMahjongPlayerFactory.create(id = selfId, hand = hand)
         val table = FakeTableStateFactory.create(players = listOf(self))
         return AiDecisionContext(
-            snapshot = table.toSnapshot(selfId),
+            snapshot = table.toSnapshot(setOf(selfId)),
             selfId = selfId,
             phase = phase,
             legalActions = legalActions,

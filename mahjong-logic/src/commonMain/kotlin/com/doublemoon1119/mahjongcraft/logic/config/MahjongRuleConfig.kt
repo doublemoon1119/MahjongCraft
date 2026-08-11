@@ -25,13 +25,6 @@ interface MahjongRuleConfig {
     val minimumWinConstraint: Int
 
     /**
-     * 是否允許旁觀
-     *
-     * 在遊戲外的玩家能否看到遊戲內玩家的手牌，在牌河或者副露的牌則不在此限
-     * */
-    val isSpectateAllowed: Boolean
-
-    /**
      * 該規則要求的最小玩家人數。
      * */
     val minPlayers: Int

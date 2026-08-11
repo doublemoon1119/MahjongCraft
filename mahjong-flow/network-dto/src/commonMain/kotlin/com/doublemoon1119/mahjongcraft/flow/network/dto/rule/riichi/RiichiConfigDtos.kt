@@ -36,7 +36,6 @@ data class RiichiRuleConfigDto(
     val scoreConfig: RiichiScoreConfigDto,
     val gameLength: GameLengthDto,
     val minimumWinConstraint: Int,
-    val isSpectateAllowed: Boolean,
     val minPlayers: Int,
     val maxPlayers: Int,
     val multiRonPolicy: MultiRonPolicyDto,
@@ -51,7 +50,6 @@ fun RiichiRuleConfig.toRiichiDto(registries: NetworkDtoRegistries): RiichiRuleCo
     scoreConfig = scoreConfig.toRiichiDto(),
     gameLength = gameLength.toRuleDto(registries),
     minimumWinConstraint = minimumWinConstraint,
-    isSpectateAllowed = isSpectateAllowed,
     minPlayers = minPlayers,
     maxPlayers = maxPlayers,
     multiRonPolicy = multiRonPolicy.toRuleDto(),
@@ -67,7 +65,6 @@ fun RiichiRuleConfigDto.toDomain(registries: NetworkDtoRegistries): RiichiRuleCo
     minimumWinConstraint = minimumWinConstraint,
     scoreConfig = scoreConfig.toDomain(),
     gameLength = gameLength.toRuleDomain(registries) as RiichiGameLength,
-    isSpectateAllowed = isSpectateAllowed,
     multiRonPolicy = multiRonPolicy.toRuleDomain(),
 )
 

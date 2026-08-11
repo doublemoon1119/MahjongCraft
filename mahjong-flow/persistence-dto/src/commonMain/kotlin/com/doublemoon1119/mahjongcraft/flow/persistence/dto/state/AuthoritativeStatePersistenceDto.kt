@@ -1,6 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.state
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.config.GameFlowConfigPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.config.toDomain
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.config.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceSchema
@@ -15,7 +19,6 @@ import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
-import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -26,16 +29,19 @@ import kotlin.uuid.Uuid
  *
  * @property rooms 以 Room UUID 字串索引的等待階段狀態。
  * @property games 以 Game UUID 字串索引的進行中狀態。
+ * @property gameFlowConfigs 以 Game UUID 字串索引的流程與觀看設定。
  * @throws IllegalArgumentException 若索引與 DTO 內部 ID 不一致，或相同 ID 同時存在於 Room 與 Game。
  */
 @Serializable
 data class AuthoritativeStatePersistenceDto(
     val rooms: Map<String, RoomPersistenceDto>,
     val games: Map<String, TableStatePersistenceDto>,
+    val gameFlowConfigs: Map<String, GameFlowConfigPersistenceDto>,
 ) {
     init {
         require(rooms.all { (id, room) -> id == room.id }) { "Room persistence index must match its DTO ID" }
         require(games.all { (id, game) -> id == game.id }) { "Game persistence index must match its DTO ID" }
+        require(games.keys == gameFlowConfigs.keys) { "Every game must have exactly one flow config" }
         require(rooms.keys.intersect(games.keys).isEmpty()) {
             "The same table ID must not exist as both a room and a game"
         }
@@ -45,7 +51,7 @@ data class AuthoritativeStatePersistenceDto(
 /** 將 Room 與 Game 集合轉換成同批提交的伺服器權威狀態 DTO。 */
 fun createAuthoritativeStatePersistenceDto(
     rooms: Collection<Room>,
-    games: Collection<TableState>,
+    games: Collection<Game>,
     ruleConfigRegistry: PersistenceDtoRegistry<MahjongRuleConfig>,
     discardPileRegistry: PersistenceDtoRegistry<DiscardPile<*>>,
     playerRuleStateRegistry: PersistenceDtoRegistry<PlayerRuleState>,
@@ -54,14 +60,14 @@ fun createAuthoritativeStatePersistenceDto(
     json: Json = Json,
 ): AuthoritativeStatePersistenceDto {
     require(rooms.map(Room::id).distinct().size == rooms.size) { "Room IDs must be unique" }
-    require(games.map(TableState::id).distinct().size == games.size) { "Game IDs must be unique" }
+    require(games.map(Game::id).distinct().size == games.size) { "Game IDs must be unique" }
 
     return AuthoritativeStatePersistenceDto(
         rooms = rooms.associate { room ->
             room.id.toString() to room.toPersistenceDto(ruleConfigRegistry, json)
         },
         games = games.associate { game ->
-            game.id.toString() to game.toPersistenceDto(
+            game.id.toString() to game.tableState.toPersistenceDto(
                 ruleConfigRegistry,
                 discardPileRegistry,
                 playerRuleStateRegistry,
@@ -70,6 +76,7 @@ fun createAuthoritativeStatePersistenceDto(
                 json,
             )
         },
+        gameFlowConfigs = games.associate { game -> game.id.toString() to game.flowConfig.toPersistenceDto() },
     )
 }
 
@@ -87,14 +94,18 @@ fun AuthoritativeStatePersistenceDto.toGames(
     dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     json: Json = Json,
-): Map<Uuid, TableState> = games.values.associate { game ->
-    Uuid.parse(game.id) to game.toDomain(
-        ruleConfigRegistry,
-        discardPileRegistry,
-        playerRuleStateRegistry,
-        dynamicRuleStateRegistry,
-        exhaustiveDrawReasonRegistry,
-        json,
+): Map<Uuid, Game> = games.values.associate { game ->
+    val id = Uuid.parse(game.id)
+    id to Game(
+        tableState = game.toDomain(
+            ruleConfigRegistry,
+            discardPileRegistry,
+            playerRuleStateRegistry,
+            dynamicRuleStateRegistry,
+            exhaustiveDrawReasonRegistry,
+            json,
+        ),
+        flowConfig = gameFlowConfigs.getValue(id.toString()).toDomain(),
     )
 }
 

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.repository
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -10,10 +12,13 @@ import kotlin.uuid.Uuid
 class GameRepositoryImpl(
     private val store: AuthoritativeStateStore,
 ) : GameRepository {
-    override suspend fun getTableState(gameId: Uuid): TableState? = store.getGame(gameId)
+    override suspend fun getGame(gameId: Uuid) = store.getGame(gameId)
+
+    override suspend fun getTableState(gameId: Uuid): TableState? = store.getGame(gameId)?.tableState
 
     override suspend fun setTableState(state: TableState) = store.update { current ->
-        AuthoritativeStateUpdate(current.copy(games = current.games + (state.id to state)), Unit)
+        val game = current.games[state.id]?.copy(tableState = state) ?: Game(state, GameFlowConfig())
+        AuthoritativeStateUpdate(current.copy(games = current.games + (state.id to game)), Unit)
     }
 
     override suspend fun removeTableState(gameId: Uuid) = store.update { state ->
@@ -25,8 +30,13 @@ class GameRepositoryImpl(
     }
 
     override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T = store.update { state ->
-        val (next, result) = block(state.games[gameId])
-        val games = if (next == null) state.games - gameId else state.games + (gameId to next)
+        val currentGame = state.games[gameId]
+        val (next, result) = block(currentGame?.tableState)
+        val games = when {
+            next == null -> state.games - gameId
+            currentGame == null -> state.games + (gameId to Game(next, GameFlowConfig()))
+            else -> state.games + (gameId to currentGame.copy(tableState = next))
+        }
         AuthoritativeStateUpdate(state.copy(games = games), result)
     }
 }

@@ -45,7 +45,7 @@ class TableStateSnapshotTest {
             players = listOf(observer, other),
         )
 
-        val snapshot = table.toSnapshot(observerId)
+        val snapshot = table.toSnapshot(setOf(observerId))
 
         val observerSnapshot = snapshot.players.find { it.id == observerId }!!
         val otherSnapshot = snapshot.players.find { it.id == otherId }!!
@@ -69,7 +69,7 @@ class TableStateSnapshotTest {
             currentPlayerIndex = 0,
         )
 
-        val snapshot = table.toSnapshot(player.id)
+        val snapshot = table.toSnapshot(setOf(player.id))
 
         assertEquals(Wind.SOUTH, snapshot.prevalentWind)
         assertEquals(3, snapshot.roundNumber)
@@ -93,7 +93,7 @@ class TableStateSnapshotTest {
             config = config,
         )
 
-        val snapshot = table.toSnapshot(player.id)
+        val snapshot = table.toSnapshot(setOf(player.id))
 
         assertEquals(config, snapshot.config)
         assertEquals(16, snapshot.config.initialHandSize)
@@ -111,7 +111,7 @@ class TableStateSnapshotTest {
             dynamicRuleState = null,
         )
 
-        val snapshot = table.toSnapshot(player.id)
+        val snapshot = table.toSnapshot(setOf(player.id))
 
         assertNull(snapshot.dynamicRuleState)
     }
@@ -128,7 +128,7 @@ class TableStateSnapshotTest {
             dynamicRuleState = dynamicState,
         )
 
-        val snapshot = table.toSnapshot(player.id)
+        val snapshot = table.toSnapshot(setOf(player.id))
 
         assertEquals(dynamicState, snapshot.dynamicRuleState)
     }
@@ -145,7 +145,7 @@ class TableStateSnapshotTest {
             players = listOf(player),
         )
 
-        val snapshot = table.toSnapshot(player.id)
+        val snapshot = table.toSnapshot(setOf(player.id))
 
         assertEquals(tableId, snapshot.id)
     }

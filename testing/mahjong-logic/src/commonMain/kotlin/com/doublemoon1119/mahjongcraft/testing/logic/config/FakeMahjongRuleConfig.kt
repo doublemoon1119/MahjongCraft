@@ -24,7 +24,6 @@ class FakeMahjongRuleConfig(
     override val minimumWinConstraint: Int = 1,
     override val scoreConfig: ScoreConfig = FakeScoreConfig(),
     override val gameLength: GameLength = FakeGameLength(),
-    override val isSpectateAllowed: Boolean = true,
     override val minPlayers: Int = 4,
     override val maxPlayers: Int = 4,
     override val multiRonPolicy: MultiRonPolicy = MultiRonPolicy(
