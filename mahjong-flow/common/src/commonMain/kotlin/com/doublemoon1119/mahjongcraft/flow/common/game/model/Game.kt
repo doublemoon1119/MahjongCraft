@@ -11,11 +11,25 @@ import kotlin.uuid.Uuid
  *
  * @property tableState 麻將規則運算使用的完整桌況。
  * @property flowConfig 不影響麻將規則的流程與觀看設定。
+ * @property remainingReserveMillisByPlayerId 每位玩家在整場遊戲中尚未使用的 B 時間毫秒數。
  */
 data class Game(
     val tableState: TableState,
     val flowConfig: GameFlowConfig,
+    val remainingReserveMillisByPlayerId: Map<Uuid, Long> = tableState.players.associate {
+        it.id to flowConfig.timeControl.reserveSeconds * 1_000L
+    },
 ) {
+    init {
+        val playerIds = tableState.players.mapTo(mutableSetOf()) { it.id }
+        require(remainingReserveMillisByPlayerId.keys == playerIds) {
+            "Remaining reserve time must contain exactly the game players"
+        }
+        require(remainingReserveMillisByPlayerId.values.all { it >= 0L }) {
+            "Remaining reserve time must not be negative"
+        }
+    }
+
     /** 與實體麻將桌及 [TableState] 共用的穩定識別碼。 */
     val id: Uuid get() = tableState.id
 }

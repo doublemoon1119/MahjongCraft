@@ -29,14 +29,22 @@ class GameRepositoryImpl(
         AuthoritativeStateUpdate(state.copy(games = emptyMap()), Unit)
     }
 
-    override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T = store.update { state ->
-        val currentGame = state.games[gameId]
-        val (next, result) = block(currentGame?.tableState)
+    override suspend fun <T> updateGame(gameId: Uuid, block: suspend (Game?) -> Pair<Game?, T>): T = store.update { state ->
+        val (next, result) = block(state.games[gameId])
         val games = when {
             next == null -> state.games - gameId
-            currentGame == null -> state.games + (gameId to Game(next, GameFlowConfig()))
-            else -> state.games + (gameId to currentGame.copy(tableState = next))
+            else -> state.games + (gameId to next)
         }
         AuthoritativeStateUpdate(state.copy(games = games), result)
+    }
+
+    override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T = updateGame(gameId) { currentGame ->
+        val (nextTableState, result) = block(currentGame?.tableState)
+        val nextGame = when {
+            nextTableState == null -> null
+            currentGame == null -> Game(nextTableState, GameFlowConfig())
+            else -> currentGame.copy(tableState = nextTableState)
+        }
+        nextGame to result
     }
 }

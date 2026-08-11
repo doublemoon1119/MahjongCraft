@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -135,6 +136,24 @@ class AuthoritativeStateStoreTest {
         assertFailsWith<IllegalArgumentException> {
             GameRepositoryImpl(store).setTableState(FakeTableStateFactory.create(id = room.id))
         }
+    }
+
+    /** 驗證 repository 可原子更新完整 Game 的流程 runtime 狀態。 */
+    @Test
+    fun `game repository updates remaining reserve time atomically`() = runTest {
+        val store = AuthoritativeStateStore()
+        val repository = GameRepositoryImpl(store)
+        val playerId = Uuid.random()
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
+        )
+        repository.setTableState(tableState)
+
+        repository.updateGame(tableState.id) { game ->
+            game?.copy(remainingReserveMillisByPlayerId = mapOf(playerId to 12_345L)) to Unit
+        }
+
+        assertEquals(12_345L, repository.getGame(tableState.id)?.remainingReserveMillisByPlayerId?.get(playerId))
     }
 
     /** 建立最小等待階段 Room。 */

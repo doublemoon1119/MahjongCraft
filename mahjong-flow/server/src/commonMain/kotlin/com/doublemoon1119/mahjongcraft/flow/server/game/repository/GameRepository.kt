@@ -39,6 +39,16 @@ interface GameRepository {
     suspend fun clearAll()
 
     /**
+     * 以原子方式讀取並更新包含桌況與流程 runtime 狀態的完整 [Game]。
+     *
+     * @param T 呼叫端自訂的回傳型別。
+     * @param gameId 欲更新的遊戲唯一識別碼。
+     * @param block 根據目前完整遊戲計算欲寫入的遊戲與回傳結果；遊戲為 null 時代表移除。
+     * @return [block] 計算出的結果。
+     */
+    suspend fun <T> updateGame(gameId: Uuid, block: suspend (Game?) -> Pair<Game?, T>): T
+
+    /**
      * 以原子方式讀取並更新指定遊戲的桌況，確保「讀取現況、驗證業務規則、寫回」整個流程不被其他並發呼叫插入。
      *
      * 用於取代「先 [getTableState] 再 [setTableState]」的寫法，避免多個請求同時操作同一遊戲時，

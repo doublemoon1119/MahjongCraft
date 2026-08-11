@@ -8,9 +8,12 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.config.toPersistence
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceSchema
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.GameRuntimeStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.TableStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toRemainingReserveMillisByPlayerId
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toRuntimeStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.room.RoomPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.room.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.room.toPersistenceDto
@@ -30,6 +33,7 @@ import kotlin.uuid.Uuid
  * @property rooms 以 Room UUID 字串索引的等待階段狀態。
  * @property games 以 Game UUID 字串索引的進行中狀態。
  * @property gameFlowConfigs 以 Game UUID 字串索引的流程與觀看設定。
+ * @property gameRuntimeStates 以 Game UUID 字串索引的流程 runtime 狀態。
  * @throws IllegalArgumentException 若索引與 DTO 內部 ID 不一致，或相同 ID 同時存在於 Room 與 Game。
  */
 @Serializable
@@ -37,11 +41,22 @@ data class AuthoritativeStatePersistenceDto(
     val rooms: Map<String, RoomPersistenceDto>,
     val games: Map<String, TableStatePersistenceDto>,
     val gameFlowConfigs: Map<String, GameFlowConfigPersistenceDto>,
+    val gameRuntimeStates: Map<String, GameRuntimeStatePersistenceDto>,
 ) {
     init {
         require(rooms.all { (id, room) -> id == room.id }) { "Room persistence index must match its DTO ID" }
         require(games.all { (id, game) -> id == game.id }) { "Game persistence index must match its DTO ID" }
         require(games.keys == gameFlowConfigs.keys) { "Every game must have exactly one flow config" }
+        require(games.keys == gameRuntimeStates.keys) { "Every game must have exactly one runtime state" }
+        games.forEach { (gameId, game) ->
+            val playerIds = game.players.mapTo(mutableSetOf()) { it.id }
+            require(gameRuntimeStates.getValue(gameId).remainingReserveMillisByPlayerId.keys == playerIds) {
+                "Game runtime state must contain exactly the game players"
+            }
+            require(gameRuntimeStates.getValue(gameId).remainingReserveMillisByPlayerId.values.all { it >= 0L }) {
+                "Remaining reserve time must not be negative"
+            }
+        }
         require(rooms.keys.intersect(games.keys).isEmpty()) {
             "The same table ID must not exist as both a room and a game"
         }
@@ -77,6 +92,7 @@ fun createAuthoritativeStatePersistenceDto(
             )
         },
         gameFlowConfigs = games.associate { game -> game.id.toString() to game.flowConfig.toPersistenceDto() },
+        gameRuntimeStates = games.associate { game -> game.id.toString() to game.toRuntimeStatePersistenceDto() },
     )
 }
 
@@ -106,6 +122,8 @@ fun AuthoritativeStatePersistenceDto.toGames(
             json,
         ),
         flowConfig = gameFlowConfigs.getValue(id.toString()).toDomain(),
+        remainingReserveMillisByPlayerId = gameRuntimeStates.getValue(id.toString())
+            .toRemainingReserveMillisByPlayerId(),
     )
 }
 

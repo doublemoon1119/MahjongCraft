@@ -99,6 +99,7 @@ class AuthoritativeStatePersistenceDtoTest {
                 rooms = mapOf(Uuid.random().toString() to roomDto),
                 games = emptyMap(),
                 gameFlowConfigs = emptyMap(),
+                gameRuntimeStates = emptyMap(),
             )
         }
     }
@@ -114,6 +115,7 @@ class AuthoritativeStatePersistenceDtoTest {
                 rooms = emptyMap(),
                 games = mapOf(Uuid.random().toString() to gameDto),
                 gameFlowConfigs = state.gameFlowConfigs,
+                gameRuntimeStates = state.gameRuntimeStates,
             )
         }
     }
@@ -131,7 +133,45 @@ class AuthoritativeStatePersistenceDtoTest {
                 rooms = mapOf(tableId.toString() to roomDto),
                 games = mapOf(tableId.toString() to gameDto),
                 gameFlowConfigs = gameState.gameFlowConfigs,
+                gameRuntimeStates = gameState.gameRuntimeStates,
             )
+        }
+    }
+
+    /** 驗證每個 Game 都必須具有對應的 runtime 狀態。 */
+    @Test
+    fun `missing game runtime state is rejected`() {
+        val state = createState(emptyList(), listOf(createGame()))
+
+        assertFailsWith<IllegalArgumentException> { state.copy(gameRuntimeStates = emptyMap()) }
+    }
+
+    /** 驗證 runtime 狀態中的玩家索引必須與 Game 玩家完全一致。 */
+    @Test
+    fun `mismatched runtime player IDs are rejected`() {
+        val state = createState(emptyList(), listOf(createGame()))
+        val gameId = state.games.keys.single()
+        val invalidRuntimeState = state.gameRuntimeStates.getValue(gameId).copy(
+            remainingReserveMillisByPlayerId = mapOf(Uuid.random().toString() to 1L),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            state.copy(gameRuntimeStates = mapOf(gameId to invalidRuntimeState))
+        }
+    }
+
+    /** 驗證 persistence runtime 狀態不接受負數的剩餘 B 時間。 */
+    @Test
+    fun `negative persisted reserve time is rejected`() {
+        val state = createState(emptyList(), listOf(createGame()))
+        val gameId = state.games.keys.single()
+        val playerId = state.games.getValue(gameId).players.single().id
+        val invalidRuntimeState = state.gameRuntimeStates.getValue(gameId).copy(
+            remainingReserveMillisByPlayerId = mapOf(playerId to -1L),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            state.copy(gameRuntimeStates = mapOf(gameId to invalidRuntimeState))
         }
     }
 

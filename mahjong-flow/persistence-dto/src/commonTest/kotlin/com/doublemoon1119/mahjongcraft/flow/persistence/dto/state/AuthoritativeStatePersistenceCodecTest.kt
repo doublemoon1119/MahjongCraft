@@ -45,7 +45,13 @@ class AuthoritativeStatePersistenceCodecTest {
     @Test
     fun `mixed rooms and games round-trip through codec`() {
         val rooms = listOf(createRoom(), createRoom())
-        val games = listOf(Game(createGame(), GameFlowConfig()), Game(createGame(), GameFlowConfig()))
+        val games = listOf(Game(createGame(), GameFlowConfig()), Game(createGame(), GameFlowConfig())).map { game ->
+            game.copy(
+                remainingReserveMillisByPlayerId = game.tableState.players.associate { player ->
+                    player.id to 12_345L
+                },
+            )
+        }
 
         val decoded = codec.decode(codec.encode(rooms, games))
 

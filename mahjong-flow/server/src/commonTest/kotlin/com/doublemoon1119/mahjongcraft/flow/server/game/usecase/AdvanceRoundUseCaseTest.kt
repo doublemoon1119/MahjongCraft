@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
@@ -56,16 +58,24 @@ class AdvanceRoundUseCaseTest {
         val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
         val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
         val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val players = listOf(dealer, p2, p3, p4)
         val config = RiichiRuleConfig()
         val table = FakeTableStateFactory.create(
             id = gameId,
-            players = listOf(dealer, p2, p3, p4),
+            players = players,
             config = config,
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
         )
-        fixtures.gameRepo.setTableState(table)
+        val remainingReserveMillisByPlayerId = players.associate { it.id to 12_345L }
+        fixtures.gameRepo.setGame(
+            Game(
+                tableState = table,
+                flowConfig = GameFlowConfig(),
+                remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId,
+            ),
+        )
 
         val result = fixtures.useCase(gameId)
 
@@ -76,6 +86,7 @@ class AdvanceRoundUseCaseTest {
         assertEquals(1, newState.comboCount)
         assertEquals(1, newState.roundNumber)
         assertEquals(Wind.EAST, newState.prevalentWind)
+        assertEquals(remainingReserveMillisByPlayerId, fixtures.gameRepo.getGame(gameId)?.remainingReserveMillisByPlayerId)
         assertEquals(
             dealerId,
             newState.players.first { it.currentWind == Wind.EAST }.id,

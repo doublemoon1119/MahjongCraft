@@ -36,10 +36,19 @@ class FakeGameRepository : GameRepository {
         games.clear()
     }
 
-    override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T {
-        val current = games[gameId]
-        val (next, result) = block(current?.tableState)
-        if (next == null) games.remove(gameId) else games[gameId] = current?.copy(tableState = next) ?: Game(next, GameFlowConfig())
+    override suspend fun <T> updateGame(gameId: Uuid, block: suspend (Game?) -> Pair<Game?, T>): T {
+        val (next, result) = block(games[gameId])
+        if (next == null) games.remove(gameId) else games[gameId] = next
         return result
+    }
+
+    override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T = updateGame(gameId) { current ->
+        val (nextTableState, result) = block(current?.tableState)
+        val nextGame = when {
+            nextTableState == null -> null
+            current == null -> Game(nextTableState, GameFlowConfig())
+            else -> current.copy(tableState = nextTableState)
+        }
+        nextGame to result
     }
 }

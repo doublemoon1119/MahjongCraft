@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
@@ -35,10 +37,10 @@ class StartGameUseCaseTest {
     private val guestIds = List(3) { Uuid.random() }
     private val roomId = Uuid.random()
 
-    private fun readyRoom(): Room = Room(
+    private fun readyRoom(gameConfig: GameConfig = GameConfig(RiichiRuleConfig())): Room = Room(
         id = roomId,
         hostId = hostId,
-        gameConfig = GameConfig(RiichiRuleConfig()),
+        gameConfig = gameConfig,
         playerIds = (listOf(hostId) + guestIds).toSet(),
         readyPlayerIds = guestIds.toSet(),
     )
@@ -72,6 +74,25 @@ class StartGameUseCaseTest {
         assertNotNull(tableState, "A TableState should be created at the same id as the room.")
         assertEquals(roomId, tableState.id)
         assertEquals(setOf(hostId) + guestIds.toSet(), tableState.players.map { it.id }.toSet())
+    }
+
+    /** 驗證開局時依流程設定為所有玩家初始化整場共用的剩餘 B 時間。 */
+    @Test
+    fun `test start game initializes reserve time for all players`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.roomRepo.setRoom(
+            readyRoom(
+                GameConfig(
+                    RiichiRuleConfig(),
+                    GameFlowConfig(timeControl = ActionTimeControl(reserveSeconds = 37)),
+                ),
+            ),
+        )
+
+        assertTrue(fixtures.useCase(roomId, hostId) is Outcome.Success)
+
+        val game = assertNotNull(fixtures.gameRepo.getGame(roomId))
+        assertEquals(game.tableState.players.associate { it.id to 37_000L }, game.remainingReserveMillisByPlayerId)
     }
 
     /**
