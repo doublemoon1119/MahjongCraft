@@ -8,7 +8,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
@@ -21,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToChankanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.time.MonotonicClockImpl
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
@@ -70,6 +74,13 @@ class FullMatchIntegrationTest {
             register(FakeAiStrategy.KEY) { FakeAiStrategy() }
         }
         val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl())
+        val clock = MonotonicClockImpl()
+        val decisionTimerManager = GameDecisionTimerManager(
+            gameRepository = gameRepo,
+            authorityResolver = GameDecisionAuthorityResolver(),
+            timerFactory = PlayerDecisionTimerFactory(clock),
+            clock = clock,
+        )
         val coordinator = GameFlowCoordinator(
             gameActionRouter = router,
             gameRepository = gameRepo,
@@ -78,6 +89,7 @@ class FullMatchIntegrationTest {
             declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             advanceRoundUseCase = AdvanceRoundUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             aiTurnDriver = aiTurnDriver,
+            decisionTimerManager = decisionTimerManager,
         )
     }
 

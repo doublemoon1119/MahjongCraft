@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
  *
  * @property tableState 麻將規則運算使用的完整桌況。
  * @property flowConfig 不影響麻將規則的流程與觀看設定。
- * @property remainingReserveMillisByPlayerId 每位玩家在整場遊戲中尚未使用的 B 時間毫秒數。
+ * @property remainingReserveMillisByPlayerId 每位玩家在整場遊戲中尚未使用的保留思考時間毫秒數。
  */
 data class Game(
     val tableState: TableState,

@@ -7,7 +7,7 @@ import kotlin.uuid.Uuid
 /**
  * [Game] 中不屬於麻將規則桌況的可變 runtime 狀態。
  *
- * @property remainingReserveMillisByPlayerId 以玩家 UUID 字串索引的剩餘 B 時間毫秒數。
+ * @property remainingReserveMillisByPlayerId 以玩家 UUID 字串索引的剩餘保留思考時間毫秒數。
  */
 @Serializable
 data class GameRuntimeStatePersistenceDto(
@@ -19,5 +19,5 @@ fun Game.toRuntimeStatePersistenceDto(): GameRuntimeStatePersistenceDto = GameRu
     remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId.mapKeys { (playerId, _) -> playerId.toString() },
 )
 
-/** 將 persistence DTO 中的剩餘 B 時間還原成以玩家 UUID 索引的資料。 */
+/** 將 persistence DTO 中的剩餘保留思考時間還原成以玩家 UUID 索引的資料。 */
 fun GameRuntimeStatePersistenceDto.toRemainingReserveMillisByPlayerId(): Map<Uuid, Long> = remainingReserveMillisByPlayerId.mapKeys { (playerId, _) -> Uuid.parse(playerId) }

@@ -160,7 +160,7 @@ class AuthoritativeStatePersistenceDtoTest {
         }
     }
 
-    /** 驗證 persistence runtime 狀態不接受負數的剩餘 B 時間。 */
+    /** 驗證 persistence runtime 狀態不接受負數的剩餘保留思考時間。 */
     @Test
     fun `negative persisted reserve time is rejected`() {
         val state = createState(emptyList(), listOf(createGame()))

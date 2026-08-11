@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNagareUseCase
@@ -52,6 +53,7 @@ import kotlin.uuid.Uuid
  * @property declareSuukanNagareUseCase 四槓散了結算用例。
  * @property advanceRoundUseCase 連莊/過莊/開下一局用例。
  * @property aiTurnDriver 找出下一個該行動的 AI 玩家與其命令。
+ * @property decisionTimerManager 在每次命令完成後結算並調整玩家決策計時器。
  */
 @Factory
 class GameFlowCoordinator(
@@ -62,6 +64,7 @@ class GameFlowCoordinator(
     private val declareSuukanNagareUseCase: DeclareSuukanNagareUseCase,
     private val advanceRoundUseCase: AdvanceRoundUseCase,
     private val aiTurnDriver: AiTurnDriver,
+    private val decisionTimerManager: GameDecisionTimerManager,
 ) {
     /**
      * 分派 [command] 並自動銜接對應的系統觸發 use case，完成後接著驅動所有需要行動的 AI 玩家
@@ -77,7 +80,7 @@ class GameFlowCoordinator(
         playerId: Uuid,
         command: GameCommand,
     ): Outcome<Unit, GameError> {
-        val result = dispatchAndChain(gameId, playerId, command)
+        val result = dispatchAndReconcile(gameId, playerId, command)
         driveAiPlayers(gameId)
         return result
     }
@@ -104,10 +107,29 @@ class GameFlowCoordinator(
         repeat(MAX_ITERATIONS) {
             val (aiPlayerId, aiCommand) = aiTurnDriver.resolveNextAction(gameId) ?: return
             val stateBefore = gameRepository.getTableState(gameId)
-            dispatchAndChain(gameId, aiPlayerId, aiCommand)
+            dispatchAndReconcile(gameId, aiPlayerId, aiCommand)
             val stateAfter = gameRepository.getTableState(gameId)
             if (stateBefore == stateAfter) return
         }
+    }
+
+    /**
+     * 分派命令與系統銜接完成後，依最終權威桌況調整決策計時器。
+     *
+     * 成功命令會將 [playerId] 視為完成一次決策，結算舊 timer；失敗命令只進行狀態校正，不重設該玩家
+     * 已存在的基本思考時間。機械摸牌成功前沒有 timer，但完成後仍會透過相同流程建立自己回合的新 timer。
+     */
+    private suspend fun dispatchAndReconcile(
+        gameId: Uuid,
+        playerId: Uuid,
+        command: GameCommand,
+    ): Outcome<Unit, GameError> {
+        val result = dispatchAndChain(gameId, playerId, command)
+        decisionTimerManager.reconcile(
+            gameId = gameId,
+            completedPlayerId = playerId.takeIf { result is Outcome.Success },
+        )
+        return result
     }
 
     /**

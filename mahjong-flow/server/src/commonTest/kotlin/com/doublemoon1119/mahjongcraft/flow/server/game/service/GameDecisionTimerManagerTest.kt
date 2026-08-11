@@ -17,7 +17,7 @@ import kotlin.uuid.Uuid
 
 /** [GameDecisionTimerManager] 的決策保留與 B 結算測試。 */
 class GameDecisionTimerManagerTest {
-    /** 驗證一位玩家回應時保留其他 reaction timer，並只結算已完成玩家的 B。 */
+    /** 驗證一位玩家回應時保留其他 reaction timer，並只結算已完成玩家的保留思考時間。 */
     @Test
     fun `test completed reaction preserves other player timer`() = runTest {
         val fixtures = Fixtures()
@@ -40,14 +40,14 @@ class GameDecisionTimerManagerTest {
 
         assertEquals(setOf(secondId), statuses.keys)
         assertEquals(PlayerDecisionPhase.DISCARD_REACTION, statuses.getValue(secondId).phase)
-        assertEquals(0L, statuses.getValue(secondId).time.actionRemainingMillis)
+        assertEquals(0L, statuses.getValue(secondId).time.baseRemainingMillis)
         assertEquals(17_000L, statuses.getValue(secondId).time.reserveRemainingMillis)
         val updatedGame = fixtures.repository.getGame(game.id)!!
         assertEquals(17_000L, updatedGame.remainingReserveMillisByPlayerId.getValue(firstId))
         assertEquals(20_000L, updatedGame.remainingReserveMillisByPlayerId.getValue(secondId))
     }
 
-    /** 驗證失去決策權的 timer 會結算 B 並從 runtime 索引移除。 */
+    /** 驗證失去決策權的 timer 會結算保留思考時間 並從 runtime 索引移除。 */
     @Test
     fun `test removed decision settles reserve time`() = runTest {
         val fixtures = Fixtures()
@@ -69,7 +69,7 @@ class GameDecisionTimerManagerTest {
         )
     }
 
-    /** 驗證同一玩家完成舊決策後再次取得決策權會重新取得 A 並保留已扣除的 B。 */
+    /** 驗證同一玩家完成舊決策後再次取得決策權會重新取得基本思考時間 並保留已扣除的保留思考時間。 */
     @Test
     fun `test completed player receives fresh action time for next decision`() = runTest {
         val fixtures = Fixtures()
@@ -97,12 +97,31 @@ class GameDecisionTimerManagerTest {
         val status = fixtures.manager.reconcile(game.id, completedPlayerId = playerId).getValue(playerId)
 
         assertEquals(PlayerDecisionPhase.OWN_TURN, status.phase)
-        assertEquals(5_000L, status.time.actionRemainingMillis)
+        assertEquals(5_000L, status.time.baseRemainingMillis)
         assertEquals(17_000L, status.time.reserveRemainingMillis)
         assertEquals(
             17_000L,
             fixtures.repository.getGame(game.id)!!.remainingReserveMillisByPlayerId.getValue(playerId),
         )
+    }
+
+    /** 驗證 session 停止時一次結算所有有效 timer 並清除 runtime 狀態。 */
+    @Test
+    fun `test settle all persists every active reserve and clears timers`() = runTest {
+        val fixtures = Fixtures()
+        val firstId = Uuid.random()
+        val secondId = Uuid.random()
+        val game = fixtures.reactionGame(firstId, secondId)
+        fixtures.repository.setGame(game)
+        fixtures.manager.reconcile(game.id)
+        fixtures.clock.nowMillis = 8_000L
+
+        fixtures.manager.settleAll()
+
+        val updatedGame = fixtures.repository.getGame(game.id)!!
+        assertEquals(17_000L, updatedGame.remainingReserveMillisByPlayerId.getValue(firstId))
+        assertEquals(17_000L, updatedGame.remainingReserveMillisByPlayerId.getValue(secondId))
+        assertTrue(fixtures.manager.getStatuses(game.id).isEmpty())
     }
 
     /** 提供可控時間、repository 與 manager 的測試組合。 */

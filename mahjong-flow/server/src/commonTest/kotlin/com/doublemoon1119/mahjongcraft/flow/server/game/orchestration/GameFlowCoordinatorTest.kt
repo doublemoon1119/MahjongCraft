@@ -6,10 +6,15 @@ import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
@@ -81,6 +86,13 @@ class GameFlowCoordinatorTest {
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply { registerBuiltInAiStrategies() }
         val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl())
+        val clock = MutableMonotonicClock()
+        val decisionTimerManager = GameDecisionTimerManager(
+            gameRepository = gameRepo,
+            authorityResolver = GameDecisionAuthorityResolver(),
+            timerFactory = PlayerDecisionTimerFactory(clock),
+            clock = clock,
+        )
         val coordinator = GameFlowCoordinator(
             gameActionRouter = router,
             gameRepository = gameRepo,
@@ -89,6 +101,7 @@ class GameFlowCoordinatorTest {
             declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             advanceRoundUseCase = AdvanceRoundUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             aiTurnDriver = aiTurnDriver,
+            decisionTimerManager = decisionTimerManager,
         )
     }
 
@@ -525,6 +538,10 @@ class GameFlowCoordinatorTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(0, newState.comboCount)
         assertEquals(drawnTile, newState.players.first { it.id == playerId }.hand.lastDrawn)
+        assertEquals(
+            PlayerDecisionPhase.OWN_TURN,
+            fixtures.decisionTimerManager.getStatuses(gameId).getValue(playerId).phase,
+        )
     }
 
     /**
@@ -577,6 +594,38 @@ class GameFlowCoordinatorTest {
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.NotPlayersTurn(otherPlayerId, gameId), result.error)
         assertEquals(table, fixtures.gameRepo.getTableState(gameId))
+    }
+
+    /** 驗證失敗命令只校正決策狀態，不會重新開始目前玩家已存在的基本思考時間。 */
+    @Test
+    fun `test failed command does not reset active decision timer`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayerId = Uuid.random()
+        val otherPlayerId = Uuid.random()
+        val drawnTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = drawnTile),
+        )
+        val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
+        fixtures.gameRepo.setTableState(
+            FakeTableStateFactory.create(
+                id = gameId,
+                players = listOf(currentPlayer, otherPlayer),
+                config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            ),
+        )
+        fixtures.decisionTimerManager.reconcile(gameId)
+        fixtures.clock.nowMillis = 2_000L
+
+        val result = fixtures.coordinator(gameId, otherPlayerId, GameCommand.Draw)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(
+            3_000L,
+            fixtures.decisionTimerManager.getStatuses(gameId).getValue(currentPlayerId).time.baseRemainingMillis,
+        )
     }
 
     // ---- AI 自動出手 ----
@@ -697,4 +746,13 @@ class GameFlowCoordinatorTest {
                 "100-iteration cap (actual call count: ${fixtures.gameRepo.getTableStateCallCount}).",
         )
     }
+}
+
+/** coordinator 計時整合測試使用的可控單調時間來源。 */
+private class MutableMonotonicClock : MonotonicClock {
+    /** 目前回傳的單調時間毫秒數。 */
+    var nowMillis: Long = 0L
+
+    /** 回傳測試指定的單調時間。 */
+    override fun nowMillis(): Long = nowMillis
 }

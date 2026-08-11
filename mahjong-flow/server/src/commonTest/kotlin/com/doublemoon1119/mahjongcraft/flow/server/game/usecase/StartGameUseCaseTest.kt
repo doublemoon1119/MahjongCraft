@@ -76,7 +76,7 @@ class StartGameUseCaseTest {
         assertEquals(setOf(hostId) + guestIds.toSet(), tableState.players.map { it.id }.toSet())
     }
 
-    /** 驗證開局時依流程設定為所有玩家初始化整場共用的剩餘 B 時間。 */
+    /** 驗證開局時依流程設定為所有玩家初始化整場共用的剩餘保留思考時間。 */
     @Test
     fun `test start game initializes reserve time for all players`() = runTest {
         val fixtures = Fixtures()
@@ -85,7 +85,7 @@ class StartGameUseCaseTest {
                 GameConfig(
                     RiichiRuleConfig(),
                     GameFlowConfig(
-                        timeControl = ActionTimeControl.Custom(actionSeconds = 5, reserveSeconds = 37),
+                        timeControl = ActionTimeControl.Custom(baseSeconds = 5, reserveSeconds = 37),
                     ),
                 ),
             ),

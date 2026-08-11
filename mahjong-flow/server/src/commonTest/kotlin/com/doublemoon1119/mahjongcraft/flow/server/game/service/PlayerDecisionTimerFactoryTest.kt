@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
 
 /** [PlayerDecisionTimerFactory] 的單元測試。 */
 class PlayerDecisionTimerFactoryTest {
-    /** 驗證 factory 使用目前時間、流程設定與權威剩餘 B 建立計時器。 */
+    /** 驗證 factory 使用目前時間、流程設定與權威剩餘保留思考時間 建立計時器。 */
     @Test
     fun `test factory creates timer from authoritative game state`() {
         val playerId = Uuid.random()
@@ -28,7 +28,7 @@ class PlayerDecisionTimerFactoryTest {
                 players = players,
             ),
             flowConfig = GameFlowConfig(
-                timeControl = ActionTimeControl.Custom(actionSeconds = 7, reserveSeconds = 30),
+                timeControl = ActionTimeControl.Custom(baseSeconds = 7, reserveSeconds = 30),
             ),
             remainingReserveMillisByPlayerId = players.associate { player ->
                 player.id to if (player.id == playerId) 12_345L else 30_000L
@@ -40,7 +40,7 @@ class PlayerDecisionTimerFactoryTest {
 
         assertEquals(playerId, timer.playerId)
         assertEquals(98_765L, timer.startedAtMillis)
-        assertEquals(7_000L, timer.actionDurationMillis)
+        assertEquals(7_000L, timer.baseDurationMillis)
         assertEquals(12_345L, timer.reserveAtStartMillis)
     }
 }

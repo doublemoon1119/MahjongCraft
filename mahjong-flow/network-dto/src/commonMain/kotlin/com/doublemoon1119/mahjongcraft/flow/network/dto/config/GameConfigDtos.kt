@@ -14,7 +14,7 @@ import kotlinx.serialization.Serializable
 /** [ActionTimeControl] 的網路 DTO。 */
 @Serializable
 data class ActionTimeControlDto(
-    val actionSeconds: Int,
+    val baseSeconds: Int,
     val reserveSeconds: Int,
 )
 
@@ -47,14 +47,14 @@ fun GameConfigDto.toDomain(registries: NetworkDtoRegistries): GameConfig = GameC
 
 /** 將 [GameFlowConfig] 轉換成網路 DTO。 */
 private fun GameFlowConfig.toDto(): GameFlowConfigDto = GameFlowConfigDto(
-    timeControl = ActionTimeControlDto(timeControl.actionSeconds, timeControl.reserveSeconds),
+    timeControl = ActionTimeControlDto(timeControl.baseSeconds, timeControl.reserveSeconds),
     spectatingPolicy = spectatingPolicy,
     spectatorHandVisibility = spectatorHandVisibility,
 )
 
 /** 將 [GameFlowConfigDto] 還原成 [GameFlowConfig]。 */
 private fun GameFlowConfigDto.toDomain(): GameFlowConfig = GameFlowConfig(
-    timeControl = ActionTimeControl.from(timeControl.actionSeconds, timeControl.reserveSeconds),
+    timeControl = ActionTimeControl.from(timeControl.baseSeconds, timeControl.reserveSeconds),
     spectatingPolicy = spectatingPolicy,
     spectatorHandVisibility = spectatorHandVisibility,
 )

@@ -8,7 +8,7 @@ import kotlin.test.assertSame
 
 /** [ActionTimeControl] 內建組合、正規化與驗證的單元測試。 */
 class ActionTimeControlTest {
-    /** 驗證內建組合沿用既有的五種 A+B 數值。 */
+    /** 驗證內建組合沿用既有的五種 基本思考時間與保留思考時間數值。 */
     @Test
     fun `test built in controls use expected time combinations`() {
         assertEquals(3 to 5, ActionTimeControl.VeryShort.asPair())
@@ -29,7 +29,7 @@ class ActionTimeControlTest {
     fun `test unknown combination is normalized to custom control`() {
         val control = assertIs<ActionTimeControl.Custom>(ActionTimeControl.from(7, 30))
 
-        assertEquals(7, control.actionSeconds)
+        assertEquals(7, control.baseSeconds)
         assertEquals(30, control.reserveSeconds)
     }
 
@@ -41,6 +41,6 @@ class ActionTimeControlTest {
         assertFailsWith<IllegalArgumentException> { ActionTimeControl.from(0, 0) }
     }
 
-    /** 將控制設定轉成便於比對的 A+B 數值。 */
-    private fun ActionTimeControl.asPair(): Pair<Int, Int> = actionSeconds to reserveSeconds
+    /** 將控制設定轉成便於比對的基本思考時間與保留思考時間數值。 */
+    private fun ActionTimeControl.asPair(): Pair<Int, Int> = baseSeconds to reserveSeconds
 }

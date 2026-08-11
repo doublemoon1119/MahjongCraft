@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.concurrency.FabricAppCoroutineScope
@@ -58,6 +59,7 @@ class MahjongCraftMod : ModInitializer {
         val appScope = koin.get<FabricAppCoroutineScope>()
         val stateCleaner = koin.get<ServerSessionStateCleaner>()
         val statePersistence = koin.get<FabricAuthoritativeStatePersistence>()
+        val decisionTimerManager = koin.get<GameDecisionTimerManager>()
         val tableLocationPersistence = koin.get<FabricTableLocationPersistence>()
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             runBlocking { statePersistence.attach(server) }
@@ -71,6 +73,7 @@ class MahjongCraftMod : ModInitializer {
             tableLocationValidation.stopSession()
             tableLocationPersistence.detach()
             runBlocking {
+                decisionTimerManager.settleAll()
                 statePersistence.detach()
                 stateCleaner.clear()
             }

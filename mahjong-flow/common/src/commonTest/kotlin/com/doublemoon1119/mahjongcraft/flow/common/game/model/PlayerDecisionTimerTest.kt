@@ -9,14 +9,14 @@ import kotlin.uuid.Uuid
 
 /** [PlayerDecisionTimer] 的單元測試。 */
 class PlayerDecisionTimerTest {
-    /** 驗證 A 尚未用完時不會消耗 B。 */
+    /** 驗證基本思考時間尚未用完時不會消耗保留思考時間。 */
     @Test
     fun `test action time is consumed before reserve time`() {
         val timer = timer(startedAtMillis = 1_000L)
 
         assertEquals(
             DecisionTimeStatus(
-                actionRemainingMillis = 3_000L,
+                baseRemainingMillis = 3_000L,
                 reserveRemainingMillis = 20_000L,
                 isTimedOut = false,
             ),
@@ -31,7 +31,7 @@ class PlayerDecisionTimerTest {
 
         assertEquals(
             DecisionTimeStatus(
-                actionRemainingMillis = 0L,
+                baseRemainingMillis = 0L,
                 reserveRemainingMillis = 18_000L,
                 isTimedOut = false,
             ),
@@ -39,22 +39,22 @@ class PlayerDecisionTimerTest {
         )
     }
 
-    /** 驗證 A 與 B 剛好耗盡時即視為逾時。 */
+    /** 驗證基本思考時間與保留思考時間剛好耗盡時即視為逾時。 */
     @Test
     fun `test decision times out when action and reserve time are exhausted`() {
         val timer = timer(startedAtMillis = 1_000L)
 
         val status = timer.statusAt(26_000L)
 
-        assertEquals(0L, status.actionRemainingMillis)
+        assertEquals(0L, status.baseRemainingMillis)
         assertEquals(0L, status.reserveRemainingMillis)
         assertTrue(status.isTimedOut)
     }
 
-    /** 驗證零 A 設定會從決策開始立即消耗 B。 */
+    /** 驗證零基本思考時間設定會從決策開始立即消耗保留思考時間。 */
     @Test
     fun `test zero action time immediately consumes reserve time`() {
-        val timer = ActionTimeControl.Custom(actionSeconds = 0, reserveSeconds = 20).startDecisionTimer(
+        val timer = ActionTimeControl.Custom(baseSeconds = 0, reserveSeconds = 20).startDecisionTimer(
             playerId = Uuid.random(),
             remainingReserveMillis = 20_000L,
             startedAtMillis = 1_000L,
@@ -62,19 +62,19 @@ class PlayerDecisionTimerTest {
 
         val status = timer.statusAt(2_500L)
 
-        assertEquals(0L, status.actionRemainingMillis)
+        assertEquals(0L, status.baseRemainingMillis)
         assertEquals(18_500L, status.reserveRemainingMillis)
         assertFalse(status.isTimedOut)
     }
 
-    /** 驗證早於開始點的時間不會增加 A 或消耗 B。 */
+    /** 驗證早於開始點的時間不會增加基本思考時間或消耗保留思考時間。 */
     @Test
     fun `test time before decision start is clamped to zero elapsed time`() {
         val timer = timer(startedAtMillis = 1_000L)
 
         assertEquals(
             DecisionTimeStatus(
-                actionRemainingMillis = 5_000L,
+                baseRemainingMillis = 5_000L,
                 reserveRemainingMillis = 20_000L,
                 isTimedOut = false,
             ),
@@ -89,7 +89,7 @@ class PlayerDecisionTimerTest {
             PlayerDecisionTimer(
                 playerId = Uuid.random(),
                 startedAtMillis = -1L,
-                actionDurationMillis = 5_000L,
+                baseDurationMillis = 5_000L,
                 reserveAtStartMillis = 20_000L,
             )
         }
@@ -98,9 +98,9 @@ class PlayerDecisionTimerTest {
         }
     }
 
-    /** 建立使用五秒 A 與二十秒 B 的測試計時器。 */
+    /** 建立使用五秒基本思考時間與二十秒保留思考時間的測試計時器。 */
     private fun timer(startedAtMillis: Long): PlayerDecisionTimer = ActionTimeControl.Custom(
-        actionSeconds = 5,
+        baseSeconds = 5,
         reserveSeconds = 20,
     ).startDecisionTimer(
         playerId = Uuid.random(),

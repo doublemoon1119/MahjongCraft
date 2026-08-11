@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import org.koin.core.annotation.Single
@@ -27,6 +28,7 @@ class ServerSessionStateRestorer(
     private val gameSnapshots: GameSnapshotRepository,
     private val memberships: PlayerMembershipRepository,
     private val gameVisibilityPolicy: GameVisibilityPolicy,
+    private val decisionTimerManager: GameDecisionTimerManager,
 ) {
     /**
      * 依 [state] 完整取代目前的衍生狀態。
@@ -37,6 +39,7 @@ class ServerSessionStateRestorer(
     suspend fun restore(state: AuthoritativeStateSnapshot): ServerSessionStateRestoreResult {
         val (tableIdsByPlayerId, conflicts) = buildMemberships(state)
 
+        decisionTimerManager.clearAll()
         memberships.replaceAll(tableIdsByPlayerId)
         roomSnapshots.clearAll()
         gameSnapshots.clearAll()
@@ -48,6 +51,7 @@ class ServerSessionStateRestorer(
             game.tableState.players.filter { it.aiStrategyKey == null }.forEach { player ->
                 gameSnapshots.setSnapshot(player.id, gameVisibilityPolicy.snapshotFor(game, player.id))
             }
+            decisionTimerManager.reconcile(game.id)
         }
         return ServerSessionStateRestoreResult(conflicts)
     }

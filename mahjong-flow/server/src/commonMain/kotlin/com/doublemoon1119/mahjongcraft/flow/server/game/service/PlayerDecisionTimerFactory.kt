@@ -17,9 +17,9 @@ class PlayerDecisionTimerFactory(
     private val clock: MonotonicClock,
 ) {
     /**
-     * 為 [playerId] 建立一次新的 A+B 決策計時器。
+     * 為 [playerId] 建立一次新的基本思考時間與保留思考時間決策計時器。
      *
-     * @param game 包含流程設定與玩家剩餘 B 的權威遊戲狀態。
+     * @param game 包含流程設定與玩家剩餘保留思考時間的權威遊戲狀態。
      * @param playerId 目前取得決策權的玩家。
      * @return 以目前時間開始的 [PlayerDecisionTimer]。
      */

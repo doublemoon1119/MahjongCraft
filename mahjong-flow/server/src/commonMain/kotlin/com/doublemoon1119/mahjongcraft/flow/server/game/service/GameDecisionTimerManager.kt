@@ -19,7 +19,7 @@ import kotlin.uuid.Uuid
  *
  * @property playerId 目前具有決策權的玩家。
  * @property phase 玩家目前所處的決策階段。
- * @property time 此次決策在查詢時間點的 A+B 狀態。
+ * @property time 此次決策在查詢時間點的基本思考時間與保留思考時間狀態。
  */
 data class ActivePlayerDecisionStatus(
     val playerId: Uuid,
@@ -31,11 +31,11 @@ data class ActivePlayerDecisionStatus(
  * 管理目前 server session 中所有遊戲的玩家決策計時器。
  *
  * runtime timer 不會寫入 persistence。每次 [reconcile] 會保留仍處於相同決策階段的計時器，並將已完成、
- * 階段改變或失去決策權的計時器所消耗的 B 原子寫回 [GameRepository]。
+ * 階段改變或失去決策權的計時器所消耗的保留思考時間原子寫回 [GameRepository]。
  *
  * @property gameRepository 權威遊戲狀態倉庫。
  * @property authorityResolver 解析目前具有決策權的玩家與階段。
- * @property timerFactory 依權威剩餘 B 建立新的決策計時器。
+ * @property timerFactory 依權威剩餘保留思考時間建立新的決策計時器。
  * @property clock 提供計算與結算使用的單調時間。
  */
 @Single
@@ -54,8 +54,9 @@ class GameDecisionTimerManager(
     /**
      * 依目前權威遊戲狀態調整決策計時器。
      *
-     * [completedPlayerId] 的既有計時器必定先結算；若狀態轉移後該玩家再次取得決策權，會以結算後的 B
-     * 建立新計時器並重新取得 A。其他仍處於相同 decision phase 的玩家不會重設。
+     * [completedPlayerId] 的既有計時器必定先結算；若狀態轉移後該玩家再次取得決策權，會以結算後的
+     * 保留思考時間
+     * 建立新計時器並重新取得基本思考時間。其他仍處於相同 decision phase 的玩家不會重設。
      *
      * @param gameId 欲調整計時器的遊戲識別碼。
      * @param completedPlayerId 剛完成一次決策的玩家；純狀態恢復或首次建立時為 null。
@@ -114,6 +115,32 @@ class GameDecisionTimerManager(
         statusesAt(activeTimers[gameId].orEmpty(), clock.nowMillis())
     }
 
+    /**
+     * 結算目前 session 的所有決策計時器並清除 runtime 索引。
+     *
+     * 平台停止 server session 時必須先停止新的遊戲命令，再呼叫本方法，最後才解除 persistence dirty
+     * listener；如此最後使用的保留思考時間才會進入平台已快取的權威存檔快照。每場遊戲各自以一次 repository
+     * 交易寫回所有玩家的剩餘保留思考時間。
+     */
+    suspend fun settleAll() = mutex.withLock {
+        val settledAtMillis = clock.nowMillis()
+        activeTimers.forEach { (gameId, timers) ->
+            gameRepository.updateGame(gameId) { currentGame ->
+                if (currentGame == null) return@updateGame null to Unit
+                val remainingReserveMillisByPlayerId = currentGame.remainingReserveMillisByPlayerId.toMutableMap()
+                timers.forEach { (playerId, activeTimer) ->
+                    remainingReserveMillisByPlayerId[playerId] = activeTimer.timer
+                        .statusAt(settledAtMillis)
+                        .reserveRemainingMillis
+                }
+                currentGame.copy(
+                    remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId,
+                ) to Unit
+            }
+        }
+        activeTimers.clear()
+    }
+
     /** 清除目前 session 的所有 runtime timer，不修改已保存的權威遊戲狀態。 */
     suspend fun clearAll() = mutex.withLock {
         activeTimers.clear()
@@ -147,7 +174,7 @@ class GameDecisionTimerManager(
      * runtime 中單一玩家目前的決策階段與計時器。
      *
      * @property phase 玩家目前所處的決策階段。
-     * @property timer 該次決策的 A+B 計時器。
+     * @property timer 該次決策的基本思考時間與保留思考時間計時器。
      */
     private data class ActiveDecisionTimer(
         val phase: PlayerDecisionPhase,
