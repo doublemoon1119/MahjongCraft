@@ -1,0 +1,107 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.service
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.uuid.Uuid
+
+/** [GameDecisionAuthorityResolver] 的單元測試。 */
+class GameDecisionAuthorityResolverTest {
+    /** 驗證捨牌反應只包含仍未回應的合資格玩家。 */
+    @Test
+    fun `test discard reaction resolves only unanswered eligible players`() {
+        val firstId = Uuid.random()
+        val secondId = Uuid.random()
+        val game = game(
+            playerIds = listOf(firstId, secondId),
+            pendingReaction = PendingReaction(
+                discarderId = Uuid.random(),
+                tileId = Uuid.random(),
+                eligiblePlayerIds = setOf(firstId, secondId),
+                responses = mapOf(firstId to GameAction.Pass),
+            ),
+        )
+
+        assertEquals(
+            mapOf(secondId to PlayerDecisionPhase.DISCARD_REACTION),
+            GameDecisionAuthorityResolver().resolve(game),
+        )
+    }
+
+    /** 驗證搶槓視窗優先解析，且只包含尚未回應的玩家。 */
+    @Test
+    fun `test chankan reaction resolves unanswered eligible players`() {
+        val playerId = Uuid.random()
+        val robbedTile = IdentifiedTile(Uuid.random(), Tile.Honor.White)
+        val game = Game(
+            tableState = FakeTableStateFactory.create(
+                players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
+                pendingChankan = PendingChankanReaction(
+                    declarerId = Uuid.random(),
+                    kanAction = GameAction.Kan(
+                        type = GameAction.KanType.ADDED_KAN,
+                        tileId = robbedTile.id,
+                        withTiles = emptyList(),
+                    ),
+                    robbedTile = robbedTile,
+                    eligiblePlayerIds = setOf(playerId),
+                ),
+            ),
+            flowConfig = GameFlowConfig(),
+        )
+
+        assertEquals(
+            mapOf(playerId to PlayerDecisionPhase.CHANKAN_REACTION),
+            GameDecisionAuthorityResolver().resolve(game),
+        )
+    }
+
+    /** 驗證目前玩家摸牌後取得自己回合的決策權。 */
+    @Test
+    fun `test drawn current player resolves own turn decision`() {
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            hand = Hand(lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.East)),
+        )
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(player)),
+            flowConfig = GameFlowConfig(),
+        )
+
+        assertEquals(
+            mapOf(playerId to PlayerDecisionPhase.OWN_TURN),
+            GameDecisionAuthorityResolver().resolve(game),
+        )
+    }
+
+    /** 驗證尚未摸牌的機械回合動作不會建立思考計時。 */
+    @Test
+    fun `test current player without draw or claimed meld has no decision`() {
+        val game = game(listOf(Uuid.random()))
+
+        assertEquals(emptyMap(), GameDecisionAuthorityResolver().resolve(game))
+    }
+
+    /** 建立指定玩家及捨牌反應視窗的權威遊戲。 */
+    private fun game(
+        playerIds: List<Uuid>,
+        pendingReaction: PendingReaction? = null,
+    ): Game = Game(
+        tableState = FakeTableStateFactory.create(
+            players = playerIds.map { FakeMahjongPlayerFactory.create(id = it) },
+            pendingReaction = pendingReaction,
+        ),
+        flowConfig = GameFlowConfig(),
+    )
+}

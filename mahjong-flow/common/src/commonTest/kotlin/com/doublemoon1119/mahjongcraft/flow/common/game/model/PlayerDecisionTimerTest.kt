@@ -15,7 +15,7 @@ class PlayerDecisionTimerTest {
         val timer = timer(startedAtMillis = 1_000L)
 
         assertEquals(
-            PlayerDecisionTimeStatus(
+            DecisionTimeStatus(
                 actionRemainingMillis = 3_000L,
                 reserveRemainingMillis = 20_000L,
                 isTimedOut = false,
@@ -30,7 +30,7 @@ class PlayerDecisionTimerTest {
         val timer = timer(startedAtMillis = 1_000L)
 
         assertEquals(
-            PlayerDecisionTimeStatus(
+            DecisionTimeStatus(
                 actionRemainingMillis = 0L,
                 reserveRemainingMillis = 18_000L,
                 isTimedOut = false,
@@ -73,7 +73,7 @@ class PlayerDecisionTimerTest {
         val timer = timer(startedAtMillis = 1_000L)
 
         assertEquals(
-            PlayerDecisionTimeStatus(
+            DecisionTimeStatus(
                 actionRemainingMillis = 5_000L,
                 reserveRemainingMillis = 20_000L,
                 isTimedOut = false,

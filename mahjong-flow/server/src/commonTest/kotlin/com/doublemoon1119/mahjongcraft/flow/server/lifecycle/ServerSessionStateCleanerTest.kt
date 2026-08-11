@@ -7,7 +7,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
@@ -32,7 +36,20 @@ class ServerSessionStateCleanerTest {
         val roomSnapshots = RoomSnapshotRepositoryImpl()
         val gameSnapshots = GameSnapshotRepositoryImpl()
         val memberships = PlayerMembershipRepositoryImpl()
-        val cleaner = ServerSessionStateCleaner(store, roomSnapshots, gameSnapshots, memberships)
+        val clock = FixedMonotonicClock()
+        val decisionTimerManager = GameDecisionTimerManager(
+            gameRepository = gameRepository,
+            authorityResolver = GameDecisionAuthorityResolver(),
+            timerFactory = PlayerDecisionTimerFactory(clock),
+            clock = clock,
+        )
+        val cleaner = ServerSessionStateCleaner(
+            store,
+            roomSnapshots,
+            gameSnapshots,
+            memberships,
+            decisionTimerManager,
+        )
         val observerId = Uuid.random()
 
         val room = Room(
@@ -63,4 +80,10 @@ class ServerSessionStateCleanerTest {
         assertNull(memberships.getTableId(observerId))
         assertFalse(store.isDirty())
     }
+}
+
+/** session cleanup 測試使用的固定單調時間來源。 */
+private class FixedMonotonicClock : MonotonicClock {
+    /** 固定回傳 session 起點。 */
+    override fun nowMillis(): Long = 0L
 }

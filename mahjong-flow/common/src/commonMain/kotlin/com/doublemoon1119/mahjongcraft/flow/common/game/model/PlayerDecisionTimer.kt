@@ -35,15 +35,15 @@ data class PlayerDecisionTimer(
      * 若時間來源短暫回傳早於 [startedAtMillis] 的值，已經過時間會限制為零，避免倒數增加。
      *
      * @param nowMillis 同一個單調時間軸上的目前時間。
-     * @return 此次決策在指定時間的 [PlayerDecisionTimeStatus]。
+     * @return 此次決策在指定時間的 [DecisionTimeStatus]。
      */
-    fun statusAt(nowMillis: Long): PlayerDecisionTimeStatus {
+    fun statusAt(nowMillis: Long): DecisionTimeStatus {
         require(nowMillis >= 0L) { "Current time must not be negative" }
         val elapsedMillis = (nowMillis - startedAtMillis).coerceAtLeast(0L)
         val actionRemainingMillis = (actionDurationMillis - elapsedMillis).coerceAtLeast(0L)
         val reserveConsumedMillis = (elapsedMillis - actionDurationMillis).coerceAtLeast(0L)
         val reserveRemainingMillis = (reserveAtStartMillis - reserveConsumedMillis).coerceAtLeast(0L)
-        return PlayerDecisionTimeStatus(
+        return DecisionTimeStatus(
             actionRemainingMillis = actionRemainingMillis,
             reserveRemainingMillis = reserveRemainingMillis,
             isTimedOut = elapsedMillis >= actionDurationMillis && reserveConsumedMillis >= reserveAtStartMillis,
@@ -54,11 +54,16 @@ data class PlayerDecisionTimer(
 /**
  * 玩家一次決策在指定時間點的權威 A+B 計時結果。
  *
+ * 此型別只描述 [PlayerDecisionTimer.statusAt] 的純時間計算，不包含玩家身分或決策階段，也不代表
+ * manager 中仍然有效的決策。server manager 會另以
+ * `com.doublemoon1119.mahjongcraft.flow.server.game.service.ActivePlayerDecisionStatus` 組合玩家、階段與此狀態。
+ * 本型別不直接寫入 persistence 或作為網路 DTO。
+ *
  * @property actionRemainingMillis 尚未使用的 A 時間毫秒數。
  * @property reserveRemainingMillis 玩家整場共用的剩餘 B 時間毫秒數。
  * @property isTimedOut A 與 B 是否都已耗盡。
  */
-data class PlayerDecisionTimeStatus(
+data class DecisionTimeStatus(
     val actionRemainingMillis: Long,
     val reserveRemainingMillis: Long,
     val isTimedOut: Boolean,
