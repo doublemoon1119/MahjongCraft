@@ -15,7 +15,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongEx
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.RoomSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.persistence.FabricAuthoritativeStatePersistence
+import com.doublemoon1119.mahjongcraft.platform.fabric.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.room.MahjongTableRoomService
+import com.doublemoon1119.mahjongcraft.platform.fabric.table.FabricTableLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.fabric.table.FabricTableLocationValidationService
+import com.doublemoon1119.mahjongcraft.platform.fabric.table.OrphanedTableCleanupService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import org.koin.core.context.stopKoin
 import org.koin.plugin.module.dsl.startKoin
 import kotlin.test.AfterTest
@@ -55,6 +60,11 @@ class FabricPlatformModuleTest {
         koin.get<ServerSessionStateRestorer>()
         koin.get<AuthoritativeStatePersistenceCodec>()
         koin.get<FabricAuthoritativeStatePersistence>()
+        koin.get<TableLocationRegistry>()
+        koin.get<FabricTableLocationPersistence>()
+        koin.get<OrphanedTableCleanupService>()
+        koin.get<FabricTableLifecycleService>()
+        koin.get<FabricTableLocationValidationService>()
         koin.get<FabricAppCoroutineScope>()
     }
 }

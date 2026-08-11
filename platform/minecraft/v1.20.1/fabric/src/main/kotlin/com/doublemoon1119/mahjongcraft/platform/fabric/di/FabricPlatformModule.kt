@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltI
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.di.FlowServerModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
@@ -40,6 +41,10 @@ class FabricPlatformModule {
     /** 提供目前使用預設值的伺服器政策；後續由磁碟 config adapter 取代。 */
     @Single
     fun provideMinecraftServerConfig(): MinecraftServerConfig = MinecraftServerConfig()
+
+    /** 建立目前 server session 使用的桌子位置索引。 */
+    @Single
+    fun provideTableLocationRegistry(): TableLocationRegistry = TableLocationRegistry()
 
     /** 建立供 extension 註冊與 persistence adapter 共用的 runtime registry single。 */
     @Single

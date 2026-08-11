@@ -13,11 +13,14 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongEx
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.persistence.FabricAuthoritativeStatePersistence
+import com.doublemoon1119.mahjongcraft.platform.fabric.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.player.DisconnectedPlayerLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.table.FabricTableLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.fabric.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -45,19 +48,28 @@ class MahjongCraftMod : ModInitializer {
         )
 
         ModItems.register()
-        ModBlocks.register(koin.get<MahjongTableRoomService>())
+        val tableLifecycleService = koin.get<FabricTableLifecycleService>()
+        val tableLocationValidation = koin.get<FabricTableLocationValidationService>()
+        ModBlocks.register(koin.get<MahjongTableRoomService>(), tableLifecycleService)
+        tableLifecycleService.registerEvents()
+        tableLocationValidation.registerEvents()
 
         val serverHolder = koin.get<FabricServerHolder>()
         val appScope = koin.get<FabricAppCoroutineScope>()
         val stateCleaner = koin.get<ServerSessionStateCleaner>()
         val statePersistence = koin.get<FabricAuthoritativeStatePersistence>()
+        val tableLocationPersistence = koin.get<FabricTableLocationPersistence>()
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             runBlocking { statePersistence.attach(server) }
+            tableLocationPersistence.attach(server)
+            tableLocationValidation.startSession(server)
             serverHolder.set(server)
             appScope.startSession()
         }
         ServerLifecycleEvents.SERVER_STOPPING.register {
             appScope.cancel()
+            tableLocationValidation.stopSession()
+            tableLocationPersistence.detach()
             runBlocking {
                 statePersistence.detach()
                 stateCleaner.clear()
