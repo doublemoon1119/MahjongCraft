@@ -10,6 +10,7 @@ import net.minecraft.block.AbstractBlock
 import net.minecraft.block.Block
 import net.minecraft.block.Blocks
 import net.minecraft.block.entity.BlockEntityType
+import net.minecraft.block.piston.PistonBehavior
 import net.minecraft.item.BlockItem
 import net.minecraft.item.Item
 import net.minecraft.registry.Registries
@@ -36,7 +37,7 @@ object ModBlocks {
             Registries.BLOCK,
             id,
             MahjongTableBlock(
-                AbstractBlock.Settings.copy(Blocks.OAK_PLANKS).strength(2.5f),
+                AbstractBlock.Settings.copy(Blocks.OAK_PLANKS).strength(2.5f).pistonBehavior(PistonBehavior.BLOCK),
                 roomService,
                 tableLifecycleService,
             ),

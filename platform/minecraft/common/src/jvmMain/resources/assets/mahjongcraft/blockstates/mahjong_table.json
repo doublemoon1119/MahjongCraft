@@ -1,7 +1,9 @@
 {
-  "variants": {
-    "": {
-      "model": "mahjongcraft:block/mahjong_table"
+  "multipart": [
+    {
+      "apply": {
+        "model": "mahjongcraft:block/mahjong_table"
+      }
     }
-  }
+  ]
 }

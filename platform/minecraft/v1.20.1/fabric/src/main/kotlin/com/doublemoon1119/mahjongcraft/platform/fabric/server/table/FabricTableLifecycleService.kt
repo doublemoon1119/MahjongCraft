@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.TableBreakPolicy
@@ -9,7 +10,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.coroutines.runBlocking
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
+import net.minecraft.block.BlockState
 import net.minecraft.server.world.ServerWorld
+import net.minecraft.util.math.BlockPos
+import net.minecraft.world.WorldAccess
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
@@ -27,9 +31,8 @@ class FabricTableLifecycleService(
 
     /** 註冊 Fabric 玩家破壞前後事件。 */
     fun registerEvents() {
-        PlayerBlockBreakEvents.BEFORE.register { _, _, _, _, blockEntity ->
-            val table = blockEntity as? MahjongTableBlockEntity ?: return@register true
-            runBlocking { canBreak(table) }
+        PlayerBlockBreakEvents.BEFORE.register { world, _, pos, state, _ ->
+            canBreak(world, pos, state)
         }
         PlayerBlockBreakEvents.AFTER.register { _, _, _, _, blockEntity ->
             val table = blockEntity as? MahjongTableBlockEntity ?: return@register
@@ -42,6 +45,17 @@ class FabricTableLifecycleService(
         val entry = locations.put(table.tableId, world.toTableLocation(table.pos))
         val result = runBlocking { cleanupService.cleanupMissing(table.tableId, entry.revision) }
         logger.debug("Handled replaced Mahjong table {} with cleanup result {}", table.tableId, result)
+    }
+
+    /** 由任意麻將桌 part 判斷玩家破壞是否可依目前政策執行。 */
+    internal fun canBreak(world: WorldAccess, pos: BlockPos, state: BlockState): Boolean {
+        val block = state.block as? MahjongTableBlock ?: return true
+        val table = block.resolveController(world, pos, state)
+        if (table == null) {
+            logger.warn("Allowed removal of incomplete Mahjong table part at {} because its controller is missing", pos)
+            return true
+        }
+        return runBlocking { canBreak(table) }
     }
 
     /** 依目前 Room／Game 與最新 [TableBreakPolicy] 判斷玩家能否破壞桌子。 */

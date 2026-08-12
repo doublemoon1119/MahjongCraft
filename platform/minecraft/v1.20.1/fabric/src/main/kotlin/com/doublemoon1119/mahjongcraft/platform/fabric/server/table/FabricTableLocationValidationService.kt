@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
@@ -125,7 +126,11 @@ class FabricTableLocationValidationService(
     private fun matchesExpectedTable(world: ServerWorld, entry: TableLocationEntry): Boolean {
         val location: TableLocation = entry.location
         val table = world.getBlockEntity(BlockPos(location.x, location.y, location.z)) as? MahjongTableBlockEntity
-        return table?.tableId == entry.tableId
+        if (table?.tableId != entry.tableId) return false
+        val block = table.cachedState.block as? MahjongTableBlock ?: return false
+        val complete = block.isComplete(world, table.pos, table.cachedState)
+        if (!complete) logger.warn("Found incomplete Mahjong table {} at {}", table.tableId, entry.location)
+        return complete
     }
 
     /** 尚待 BlockEntity NBT 完成載入的位置。 */
