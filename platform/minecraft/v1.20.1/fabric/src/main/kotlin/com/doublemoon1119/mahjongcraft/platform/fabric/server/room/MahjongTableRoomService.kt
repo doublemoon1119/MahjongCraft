@@ -16,11 +16,12 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import kotlinx.coroutines.launch
 import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
 import org.koin.core.annotation.Single
+import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
 /** 把 Minecraft 麻將桌右鍵互動路由到既有 Room／Game use case 的正式平台進場服務。 */
@@ -37,6 +38,7 @@ class MahjongTableRoomService(
     private val syncGame: SyncGameSnapshotUseCase,
     private val roomSnapshotSender: RoomSnapshotSender,
     private val gameSnapshotSender: GameSnapshotSender,
+    private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
 ) {
     /** 依麻將桌目前處於空桌、等待室或遊戲階段，建立、加入或重新同步玩家狀態。 */
     fun interact(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
@@ -46,11 +48,11 @@ class MahjongTableRoomService(
             val game = gameRepository.getTableState(tableId)
             if (game != null) {
                 if (game.players.none { it.id == playerId }) {
-                    sendMessage(player, MinecraftMessageKeys.GAME_ALREADY_STARTED)
+                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameAlreadyStarted)
                     return@launch
                 }
                 if (!membershipRepository.claim(playerId, tableId)) {
-                    sendMessage(player, MinecraftMessageKeys.PLAYER_ALREADY_IN_GAME)
+                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerAlreadyInGame)
                     return@launch
                 }
                 syncGame(tableId, playerId)
@@ -64,16 +66,16 @@ class MahjongTableRoomService(
                     is Outcome.Success -> {
                         syncRoom(tableId, playerId)
                         roomSnapshotSender.send(tableId, playerId)
-                        sendMessage(player, MinecraftMessageKeys.GAME_CREATED)
+                        feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameCreated)
                     }
-                    is Outcome.Error -> sendRoomError(player, result.error)
+                    is Outcome.Error -> publishRoomError(playerId, result.error)
                 }
                 return@launch
             }
 
             if (playerId in room.playerIds) {
                 if (!membershipRepository.claim(playerId, tableId)) {
-                    sendMessage(player, MinecraftMessageKeys.PLAYER_ALREADY_IN_GAME)
+                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerAlreadyInGame)
                     return@launch
                 }
                 syncRoom(tableId, playerId)
@@ -85,8 +87,8 @@ class MahjongTableRoomService(
             // 加入事件與正確的 isInRoom=true 快照一併送給新玩家。
             syncRoom(tableId, playerId)
             when (val result = joinRoom(tableId, playerId)) {
-                is Outcome.Success -> sendMessage(player, MinecraftMessageKeys.GAME_JOINED)
-                is Outcome.Error -> sendRoomError(player, result.error)
+                is Outcome.Success -> feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameJoined)
+                is Outcome.Error -> publishRoomError(playerId, result.error)
             }
         }
     }
@@ -97,41 +99,38 @@ class MahjongTableRoomService(
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             if (membershipRepository.getTableId(playerId) != tableId) {
-                sendMessage(player, MinecraftMessageKeys.PLAYER_NOT_IN_GAME)
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
             }
             if (gameRepository.getTableState(tableId) != null) {
-                sendMessage(player, MinecraftMessageKeys.GAME_LEAVE_DENIED_WHILE_PLAYING)
+                feedbackPublisher.publish(
+                    playerId,
+                    MinecraftPlayerFeedback.GameLeaveDeniedWhilePlaying,
+                )
                 return@launch
             }
 
             val room = roomRepository.getRoom(tableId)
             if (room == null || playerId !in room.playerIds) {
-                sendMessage(player, MinecraftMessageKeys.PLAYER_NOT_IN_GAME)
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
             }
             val wasHost = room.hostId == playerId
             when (leaveRoom(tableId, playerId)) {
-                is Outcome.Success -> sendMessage(
-                    player,
-                    if (wasHost) MinecraftMessageKeys.GAME_DISSOLVED else MinecraftMessageKeys.GAME_LEFT,
+                is Outcome.Success -> feedbackPublisher.publish(
+                    playerId,
+                    MinecraftRoomFeedbackResolver.successfulLeave(wasHost),
                 )
-                is Outcome.Error -> sendMessage(player, MinecraftMessageKeys.GAME_LEAVE_FAILED)
+                is Outcome.Error -> feedbackPublisher.publish(
+                    playerId,
+                    MinecraftPlayerFeedback.GameLeaveFailed,
+                )
             }
         }
     }
 
-    /** 把訊息切回 Minecraft server thread 後送給玩家。 */
-    private fun sendMessage(player: ServerPlayerEntity, translationKey: String) {
-        player.server.execute { player.sendMessage(Text.translatable(translationKey)) }
-    }
-
-    /** 將可辨識的房間錯誤映射成玩家訊息，其餘錯誤暫時使用通用加入失敗提示。 */
-    private fun sendRoomError(player: ServerPlayerEntity, error: RoomError) {
-        val translationKey = when (error) {
-            is RoomError.PlayerAlreadyInAnotherGame -> MinecraftMessageKeys.PLAYER_ALREADY_IN_GAME
-            else -> MinecraftMessageKeys.GAME_JOIN_FAILED
-        }
-        sendMessage(player, translationKey)
+    /** 將可辨識的房間錯誤映射成結構化回饋，其餘錯誤使用通用加入失敗提示。 */
+    private fun publishRoomError(playerId: Uuid, error: RoomError) {
+        feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.joinError(error))
     }
 }

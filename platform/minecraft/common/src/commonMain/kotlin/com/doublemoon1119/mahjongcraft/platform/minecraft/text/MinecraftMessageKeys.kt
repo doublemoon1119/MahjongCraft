@@ -37,7 +37,7 @@ object MinecraftMessageKeys {
     /** 加入麻將遊戲失敗。 */
     const val GAME_JOIN_FAILED = PREFIX + "game_join_failed"
 
-    /** 所有必須由語系檔提供翻譯的玩家訊息 key。 */
+    /** Minecraft 語系資源必須提供的全部玩家回饋 key。 */
     val ALL: Set<String> = setOf(
         GAME_ALREADY_STARTED,
         GAME_CREATED,

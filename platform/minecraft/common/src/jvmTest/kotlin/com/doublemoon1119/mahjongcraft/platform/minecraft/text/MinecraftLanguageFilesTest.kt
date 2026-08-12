@@ -39,7 +39,11 @@ class MinecraftLanguageFilesTest {
         locales.forEach { locale ->
             val messageKeys = loadTranslations(locale).keys.filterTo(mutableSetOf()) { it.startsWith(messagePrefix) }
 
-            assertEquals(MinecraftMessageKeys.ALL, messageKeys, "$locale message keys do not match the production schema")
+            assertEquals(
+                MinecraftMessageKeys.ALL,
+                messageKeys,
+                "$locale message keys do not match the production message schema",
+            )
         }
     }
 
