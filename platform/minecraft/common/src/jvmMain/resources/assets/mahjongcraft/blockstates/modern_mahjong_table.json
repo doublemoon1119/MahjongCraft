@@ -1,0 +1,9 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "mahjongcraft:block/modern_mahjong_table"
+      }
+    }
+  ]
+}

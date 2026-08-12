@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableDesign
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
@@ -19,8 +20,12 @@ import net.minecraft.util.Identifier
 
 /** MahjongCraft Fabric 方塊與方塊實體的集中註冊點。 */
 object ModBlocks {
-    /** 最小可互動麻將桌方塊；由 [register] 初始化。 */
-    lateinit var mahjongTable: Block
+    /** 統一木製外觀、深綠桌面與四腳碰撞 profile 的麻將桌；由 [register] 初始化。 */
+    lateinit var woodenMahjongTable: Block
+        private set
+
+    /** 統一現代外觀、深綠桌面與中央柱碰撞 profile 的麻將桌；由 [register] 初始化。 */
+    lateinit var modernMahjongTable: Block
         private set
 
     /** 麻將桌方塊實體型別；由 [register] 初始化。 */
@@ -32,21 +37,54 @@ object ModBlocks {
         roomService: MahjongTableRoomService,
         tableLifecycleService: FabricTableLifecycleService,
     ) {
-        val id = Identifier(MinecraftModMetadata.MOD_ID, "mahjong_table")
-        mahjongTable = Registry.register(
+        woodenMahjongTable = registerTable(
+            path = "wooden_mahjong_table",
+            design = MahjongTableDesign.FOUR_LEG,
+            baseBlock = Blocks.OAK_PLANKS,
+            roomService = roomService,
+            tableLifecycleService = tableLifecycleService,
+        )
+        modernMahjongTable = registerTable(
+            path = "modern_mahjong_table",
+            design = MahjongTableDesign.PEDESTAL,
+            baseBlock = Blocks.GRAY_CONCRETE,
+            roomService = roomService,
+            tableLifecycleService = tableLifecycleService,
+        )
+        val blockEntityId = Identifier(MinecraftModMetadata.MOD_ID, "mahjong_table")
+        mahjongTableBlockEntity = Registry.register(
+            Registries.BLOCK_ENTITY_TYPE,
+            blockEntityId,
+            FabricBlockEntityTypeBuilder.create(
+                ::MahjongTableBlockEntity,
+                woodenMahjongTable,
+                modernMahjongTable,
+            ).build(),
+        )
+    }
+
+    /** 註冊具有指定 ID 與碰撞 profile 的麻將桌方塊及 BlockItem。 */
+    private fun registerTable(
+        path: String,
+        design: MahjongTableDesign,
+        baseBlock: Block,
+        roomService: MahjongTableRoomService,
+        tableLifecycleService: FabricTableLifecycleService,
+    ): Block {
+        val id = Identifier(MinecraftModMetadata.MOD_ID, path)
+        val block = Registry.register(
             Registries.BLOCK,
             id,
             MahjongTableBlock(
-                AbstractBlock.Settings.copy(Blocks.OAK_PLANKS).strength(2.5f).pistonBehavior(PistonBehavior.BLOCK),
-                roomService,
-                tableLifecycleService,
+                settings = AbstractBlock.Settings.copy(baseBlock)
+                    .strength(2.5f)
+                    .pistonBehavior(PistonBehavior.BLOCK),
+                design = design,
+                roomService = roomService,
+                tableLifecycleService = tableLifecycleService,
             ),
         )
-        Registry.register(Registries.ITEM, id, BlockItem(mahjongTable, Item.Settings()))
-        mahjongTableBlockEntity = Registry.register(
-            Registries.BLOCK_ENTITY_TYPE,
-            id,
-            FabricBlockEntityTypeBuilder.create(::MahjongTableBlockEntity, mahjongTable).build(),
-        )
+        Registry.register(Registries.ITEM, id, BlockItem(block, Item.Settings()))
+        return block
     }
 }

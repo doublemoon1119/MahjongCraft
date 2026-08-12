@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "mahjongcraft:mahjong_table"
+          "name": "mahjongcraft:modern_mahjong_table"
         }
       ],
       "conditions": [

@@ -1,5 +1,6 @@
 {
-  "block.mahjongcraft.mahjong_table": "麻雀テーブル",
+  "block.mahjongcraft.wooden_mahjong_table": "木製麻雀テーブル",
+  "block.mahjongcraft.modern_mahjong_table": "モダン麻雀テーブル",
   "mahjongcraft.message.game_created": "麻雀ゲームを作成しました",
   "mahjongcraft.message.game_joined": "麻雀ゲームに参加しました",
   "mahjongcraft.message.game_already_started": "この麻雀対局はすでに開始しています",

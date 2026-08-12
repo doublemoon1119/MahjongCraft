@@ -1,5 +1,6 @@
 {
-  "block.mahjongcraft.mahjong_table": "Mahjong Table",
+  "block.mahjongcraft.wooden_mahjong_table": "Wooden Mahjong Table",
+  "block.mahjongcraft.modern_mahjong_table": "Modern Mahjong Table",
   "mahjongcraft.message.game_created": "Mahjong game created",
   "mahjongcraft.message.game_joined": "Joined the mahjong game",
   "mahjongcraft.message.game_already_started": "This mahjong game has already started",

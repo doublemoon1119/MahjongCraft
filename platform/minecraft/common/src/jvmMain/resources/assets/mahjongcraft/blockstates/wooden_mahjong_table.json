@@ -2,7 +2,7 @@
   "multipart": [
     {
       "apply": {
-        "model": "mahjongcraft:block/mahjong_table"
+        "model": "mahjongcraft:block/wooden_mahjong_table"
       }
     }
   ]

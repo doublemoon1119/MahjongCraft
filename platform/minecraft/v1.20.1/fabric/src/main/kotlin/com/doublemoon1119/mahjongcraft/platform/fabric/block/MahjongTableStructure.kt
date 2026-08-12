@@ -9,8 +9,7 @@ object MahjongTableStructure {
     const val PART_COUNT: Int = 18
 
     /** 取得指定朝向下所有 part 的世界座標。 */
-    fun placements(controllerPos: BlockPos, facing: Direction): Map<MahjongTablePart, BlockPos> =
-        MahjongTablePart.entries.associateWith { part -> position(controllerPos, part, facing) }
+    fun placements(controllerPos: BlockPos, facing: Direction): Map<MahjongTablePart, BlockPos> = MahjongTablePart.entries.associateWith { part -> position(controllerPos, part, facing) }
 
     /** 將指定 part 的相對座標旋轉至 [facing] 並轉成世界座標。 */
     fun position(controllerPos: BlockPos, part: MahjongTablePart, facing: Direction): BlockPos {

@@ -8,6 +8,7 @@ import net.minecraft.block.Block
 import net.minecraft.block.BlockRenderType
 import net.minecraft.block.BlockState
 import net.minecraft.block.BlockWithEntity
+import net.minecraft.block.ShapeContext
 import net.minecraft.block.entity.BlockEntity
 import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.player.PlayerEntity
@@ -23,6 +24,8 @@ import net.minecraft.util.Hand
 import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Direction
+import net.minecraft.util.shape.VoxelShape
+import net.minecraft.world.BlockView
 import net.minecraft.world.World
 import net.minecraft.world.WorldAccess
 import org.slf4j.LoggerFactory
@@ -33,9 +36,12 @@ import org.slf4j.LoggerFactory
  * 所有 parts 共用同一個方塊 registry ID，透過 [PART] 與 [Properties.HORIZONTAL_FACING] 保存結構位置。
  * 只有 [MahjongTablePart.BOTTOM_CENTER] 建立 [MahjongTableBlockEntity]；其餘 parts 的互動與生命週期皆
  * 先反查 controller。
+ *
+ * @property design 此方塊 registry ID 對應的固定桌型。
  */
 class MahjongTableBlock(
     settings: Settings,
+    internal val design: MahjongTableDesign,
     private val roomService: MahjongTableRoomService,
     private val tableLifecycleService: FabricTableLifecycleService,
 ) : BlockWithEntity(settings) {
@@ -53,11 +59,28 @@ class MahjongTableBlock(
     }
 
     /** 只為 controller part 建立保存穩定 UUID 的方塊實體。 */
-    override fun createBlockEntity(pos: BlockPos, state: BlockState): BlockEntity? =
-        if (state.get(PART) == MahjongTablePart.BOTTOM_CENTER) MahjongTableBlockEntity(pos, state) else null
+    override fun createBlockEntity(pos: BlockPos, state: BlockState): BlockEntity? = if (state.get(PART) == MahjongTablePart.BOTTOM_CENTER) MahjongTableBlockEntity(pos, state) else null
 
     /** 使用普通 block model 顯示目前的多方塊佔位外觀。 */
     override fun getRenderType(state: BlockState): BlockRenderType = BlockRenderType.MODEL
+
+    /** 依桌型、part 與朝向回傳 server 權威碰撞。 */
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun getCollisionShape(
+        state: BlockState,
+        world: BlockView,
+        pos: BlockPos,
+        context: ShapeContext,
+    ): VoxelShape = design.collisionShape(state.get(PART), state.get(Properties.HORIZONTAL_FACING))
+
+    /** 回傳主要幾何的選取框；無碰撞的上層中央仍可被選取並轉交互動。 */
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun getOutlineShape(
+        state: BlockState,
+        world: BlockView,
+        pos: BlockPos,
+        context: ShapeContext,
+    ): VoxelShape = design.outlineShape(state.get(PART), state.get(Properties.HORIZONTAL_FACING))
 
     /** 註冊結構 part 與水平朝向 blockstate properties。 */
     override fun appendProperties(builder: StateManager.Builder<Block, BlockState>) {
@@ -152,7 +175,8 @@ class MahjongTableBlock(
             state.get(PART),
             state.get(Properties.HORIZONTAL_FACING),
         )
-        return world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity
+        val table = world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity ?: return null
+        return table.takeIf { controller -> controller.cachedState.block === this }
     }
 
     /** 確認 controller 對應的 18 個位置都具有相同朝向及預期 part。 */
@@ -162,8 +186,8 @@ class MahjongTableBlock(
         return MahjongTableStructure.placements(controllerPos, facing).all { (expectedPart, partPos) ->
             val partState = world.getBlockState(partPos)
             partState.block === this &&
-                    partState.get(PART) == expectedPart &&
-                    partState.get(Properties.HORIZONTAL_FACING) == facing
+                partState.get(PART) == expectedPart &&
+                partState.get(Properties.HORIZONTAL_FACING) == facing
         }
     }
 
