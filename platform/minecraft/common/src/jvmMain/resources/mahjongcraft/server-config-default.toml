@@ -38,3 +38,10 @@ break-policy = "deny_while_occupied"
 # - "remove_waiting_room": Remove a waiting game but preserve an active game.
 # - "remove_all": Remove the related waiting or active game and its location index.
 orphaned-policy = "remove_all"
+
+[mahjong-tile]
+
+# Controls whether mahjong tile entities physically block players and other non-tile entities.
+# Mahjong tiles never physically collide with other mahjong tiles.
+# Raycasting, right-click interaction, rendering, saving, and HUD targeting remain available when disabled.
+physical-collision-enabled = true

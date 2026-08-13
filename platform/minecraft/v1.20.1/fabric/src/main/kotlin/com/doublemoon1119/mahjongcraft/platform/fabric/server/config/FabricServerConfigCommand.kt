@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
@@ -15,6 +16,7 @@ import org.slf4j.LoggerFactory
 @Single
 class FabricServerConfigCommand(
     private val configManager: FabricServerConfigManager,
+    private val mahjongTileCollisionService: MahjongTileCollisionService,
 ) {
     /** 記錄 config 指令執行者與結果。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -37,6 +39,7 @@ class FabricServerConfigCommand(
     /** 重新載入設定並向執行者回報結果。 */
     private fun reload(source: ServerCommandSource): Int = when (val result = configManager.reload()) {
         is MinecraftServerConfigUpdateResult.Success -> {
+            mahjongTileCollisionService.applyToLoaded(source.server, result.config)
             logger.info("Server config reloaded by {}", source.name)
             source.sendFeedback({ prefixed("Server config reloaded", Formatting.GREEN) }, false)
             COMMAND_SUCCESS

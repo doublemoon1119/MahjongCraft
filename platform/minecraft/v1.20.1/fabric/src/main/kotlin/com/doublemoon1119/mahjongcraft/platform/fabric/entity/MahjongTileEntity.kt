@@ -40,12 +40,22 @@ class MahjongTileEntity(
         get() = MahjongTilePose.fromOrdinalOrDefault(dataTracker[TILE_POSE])
         set(value) = dataTracker.set(TILE_POSE, value.ordinal)
 
+    /** 是否阻擋玩家及其他非麻將牌 entity；由目前 server config 同步，不寫入世界存檔。 */
+    var physicalCollisionEnabled: Boolean
+        get() = dataTracker[PHYSICAL_COLLISION_ENABLED]
+        set(value) = dataTracker.set(PHYSICAL_COLLISION_ENABLED, value)
+
     init {
         setNoGravity(true)
     }
 
-    /** 麻將牌保留物理碰撞；可由 raycast 選取的能力由 [isAttackable] 另行保留。 */
-    override fun isCollidable(): Boolean = true
+    /** 依 server policy 決定是否提供物理阻擋；raycast 選取能力由 [canHit] 獨立保留。 */
+    override fun isCollidable(): Boolean = physicalCollisionEnabled
+
+    /** 麻將牌彼此永遠不產生物理碰撞，其他 entity 則依目前 server policy 與原版規則處理。 */
+    override fun collidesWith(other: Entity): Boolean = physicalCollisionEnabled &&
+        other !is MahjongTileEntity &&
+        super.collidesWith(other)
 
     /** 麻將牌固定不動，不參與一般 entity 推擠。 */
     override fun isPushable(): Boolean = false
@@ -99,6 +109,7 @@ class MahjongTileEntity(
     override fun initDataTracker() {
         dataTracker.startTracking(TILE_ASSET_KEY, UNKNOWN_TILE_ASSET_KEY)
         dataTracker.startTracking(TILE_POSE, MahjongTilePose.STANDING.ordinal)
+        dataTracker.startTracking(PHYSICAL_COLLISION_ENABLED, true)
     }
 
     /** 從世界存檔還原牌面與姿態，非法值使用安全預設。 */
@@ -139,5 +150,9 @@ class MahjongTileEntity(
         /** 同步姿態 ordinal；持久化仍使用名稱以避免 enum 重排影響存檔。 */
         private val TILE_POSE: TrackedData<Int> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
+
+        /** 同步目前 server policy 決定的物理碰撞開關。 */
+        private val PHYSICAL_COLLISION_ENABLED: TrackedData<Boolean> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
     }
 }

@@ -49,12 +49,15 @@ class MinecraftServerConfigTomlCodec {
  *
  * @property playerDisconnection 尚未開始的遊戲之玩家斷線設定。
  * @property table 麻將桌破壞與缺失資料設定。
+ * @property mahjongTile 麻將牌世界呈現設定。
  */
 @Serializable
 private data class MinecraftServerConfigTomlDto(
     @SerialName("player-disconnection")
     val playerDisconnection: PlayerDisconnectionTomlDto = PlayerDisconnectionTomlDto(),
     val table: TablePolicyTomlDto = TablePolicyTomlDto(),
+    @SerialName("mahjong-tile")
+    val mahjongTile: MahjongTileTomlDto = MahjongTileTomlDto(),
 ) {
     /** 將字串欄位驗證並轉成 runtime config。 */
     fun toConfig(): MinecraftServerConfig = MinecraftServerConfig(
@@ -87,6 +90,7 @@ private data class MinecraftServerConfigTomlDto(
             values = OrphanedTablePolicy.entries,
             configValue = OrphanedTablePolicy::configValue,
         ),
+        mahjongTilePhysicalCollisionEnabled = mahjongTile.physicalCollisionEnabled,
     )
 
     /** 建立反映目前 runtime config 的完整 TOML DTO。 */
@@ -100,6 +104,9 @@ private data class MinecraftServerConfigTomlDto(
             table = TablePolicyTomlDto(
                 breakPolicy = config.tableBreakPolicy.configValue,
                 orphanedPolicy = config.orphanedTablePolicy.configValue,
+            ),
+            mahjongTile = MahjongTileTomlDto(
+                physicalCollisionEnabled = config.mahjongTilePhysicalCollisionEnabled,
             ),
         )
     }
@@ -130,6 +137,17 @@ private data class TablePolicyTomlDto(
     val breakPolicy: String = TableBreakPolicy.DENY_WHILE_OCCUPIED.configValue,
     @SerialName("orphaned-policy")
     val orphanedPolicy: String = OrphanedTablePolicy.REMOVE_ALL.configValue,
+)
+
+/**
+ * 麻將牌世界呈現 TOML 欄位。
+ *
+ * @property physicalCollisionEnabled 麻將牌是否阻擋玩家及其他非麻將牌 entity。
+ */
+@Serializable
+private data class MahjongTileTomlDto(
+    @SerialName("physical-collision-enabled")
+    val physicalCollisionEnabled: Boolean = true,
 )
 
 /** 將 config 字串驗證並映射到 enum。 */

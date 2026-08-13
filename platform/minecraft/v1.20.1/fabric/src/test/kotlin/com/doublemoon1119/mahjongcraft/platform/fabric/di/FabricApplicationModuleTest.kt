@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongEx
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
@@ -73,6 +74,7 @@ class FabricApplicationModuleTest {
         koin.get<FabricTableLocationValidationService>()
         koin.get<FabricAppCoroutineScope>()
         koin.get<FabricDecisionTimerScheduler>()
+        koin.get<MahjongTileCollisionService>()
         koin.get<MinecraftServerConfigState>()
         koin.get<FabricServerConfigManager>()
         koin.get<FabricServerConfigCommand>()

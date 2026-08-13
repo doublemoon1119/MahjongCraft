@@ -46,7 +46,8 @@ class MahjongTileItem(settings: Settings) : Item(settings) {
             val hitPos = context.hitPos
             refreshPositionAndAngles(hitPos.x, hitPos.y, hitPos.z, context.playerYaw + 180.0f, 0.0f)
         }
-        if (!world.isSpaceEmpty(entity) || !world.spawnEntity(entity)) return ActionResult.FAIL
+        val intersectsBlock = world.getBlockCollisions(entity, entity.boundingBox).iterator().hasNext()
+        if (intersectsBlock || !world.spawnEntity(entity)) return ActionResult.FAIL
 
         if (!player.abilities.creativeMode) context.stack.decrement(1)
         return ActionResult.CONSUME

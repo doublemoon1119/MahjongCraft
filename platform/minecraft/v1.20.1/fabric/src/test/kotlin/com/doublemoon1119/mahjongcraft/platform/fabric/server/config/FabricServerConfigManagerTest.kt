@@ -31,6 +31,9 @@ class FabricServerConfigManagerTest {
         assertTrue(content.contains("Games that have already started always keep"))
         assertTrue(content.contains("allow_and_terminate"))
         assertTrue(content.contains("remove_waiting_room"))
+        assertTrue(content.contains("[mahjong-tile]"))
+        assertTrue(content.contains("physical-collision-enabled = true"))
+        assertTrue(content.contains("Raycasting, right-click interaction, rendering, saving, and HUD targeting"))
         assertEquals(MinecraftServerConfig(), fixture.state.current)
     }
 
@@ -48,14 +51,19 @@ class FabricServerConfigManagerTest {
             [table]
             break-policy = "allow_waiting_room_only"
             orphaned-policy = "keep_and_warn"
+
+            [mahjong-tile]
+            physical-collision-enabled = false
             """.trimIndent(),
         )
 
         val result = assertIs<MinecraftServerConfigUpdateResult.Success>(fixture.manager.reload())
 
         assertEquals(DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY, result.config.disconnectedPlayerPolicy)
+        assertEquals(false, result.config.mahjongTilePhysicalCollisionEnabled)
         assertEquals(result.config, fixture.state.current)
         assertTrue(fixture.manager.formattedCurrentToml().contains("policy = \"leave_immediately\""))
+        assertTrue(fixture.manager.formattedCurrentToml().contains("physical-collision-enabled = false"))
         assertFalse(fixture.manager.formattedCurrentToml().contains("#"))
     }
 

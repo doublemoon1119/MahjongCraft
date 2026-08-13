@@ -22,6 +22,9 @@ class MinecraftServerConfigTomlCodecTest {
             [table]
             break-policy = "allow_waiting_room_only"
             orphaned-policy = "keep_and_warn"
+
+            [mahjong-tile]
+            physical-collision-enabled = false
             """.trimIndent(),
         )
 
@@ -29,6 +32,7 @@ class MinecraftServerConfigTomlCodecTest {
         assertEquals(45, config.disconnectedPlayerTimeoutSeconds)
         assertEquals(TableBreakPolicy.ALLOW_WAITING_ROOM_ONLY, config.tableBreakPolicy)
         assertEquals(OrphanedTablePolicy.KEEP_AND_WARN, config.orphanedTablePolicy)
+        assertEquals(false, config.mahjongTilePhysicalCollisionEnabled)
     }
 
     /** 缺少可選 section 或欄位時應使用程式預設值。 */
@@ -45,6 +49,7 @@ class MinecraftServerConfigTomlCodecTest {
         assertEquals(MinecraftServerConfig.DEFAULT_DISCONNECTED_PLAYER_TIMEOUT_SECONDS, config.disconnectedPlayerTimeoutSeconds)
         assertEquals(TableBreakPolicy.DENY_WHILE_OCCUPIED, config.tableBreakPolicy)
         assertEquals(OrphanedTablePolicy.REMOVE_ALL, config.orphanedTablePolicy)
+        assertEquals(true, config.mahjongTilePhysicalCollisionEnabled)
     }
 
     /** 未知欄位不得被忽略。 */
@@ -112,6 +117,7 @@ class MinecraftServerConfigTomlCodecTest {
             disconnectedPlayerTimeoutSeconds = 90,
             tableBreakPolicy = TableBreakPolicy.ALLOW_AND_TERMINATE,
             orphanedTablePolicy = OrphanedTablePolicy.REMOVE_WAITING_ROOM,
+            mahjongTilePhysicalCollisionEnabled = false,
         )
 
         val encoded = codec.encode(expected)
