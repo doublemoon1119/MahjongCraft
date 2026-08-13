@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftItemGroupKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_RIICHI_TILE_ASSET_KEYS
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup
 import net.minecraft.item.ItemStack
 import net.minecraft.registry.Registries
@@ -19,6 +21,11 @@ object ModItemGroups {
             .entries { _, entries ->
                 entries.add(ModBlocks.woodenMahjongTable)
                 entries.add(ModBlocks.modernMahjongTable)
+                entries.add(
+                    ItemStack(ModItems.MAHJONG_TILE).also {
+                        MahjongTileItem.writeTileAssetKey(it, ALL_RIICHI_TILE_ASSET_KEYS.first())
+                    },
+                )
             }
             .build()
         Registry.register(

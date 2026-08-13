@@ -40,4 +40,21 @@ class TileAssetKeysTest {
         )
         assertEquals(UNKNOWN_TILE_ASSET_KEY, ALL_RIICHI_TILE_ASSET_KEYS.last())
     }
+
+    /** 驗證合法 key 保持不變，缺失及非法 key 回退至 unknown。 */
+    @Test
+    fun `normalization preserves valid keys and rejects unsupported values`() {
+        assertEquals("m5_red", "m5_red".normalizedTileAssetKey())
+        assertEquals(UNKNOWN_TILE_ASSET_KEY, "flower_spring".normalizedTileAssetKey())
+        assertEquals(UNKNOWN_TILE_ASSET_KEY, null.normalizedTileAssetKey())
+    }
+
+    /** 驗證循環涵蓋完整清單，並讓缺失或非法 key 從第一張重新開始。 */
+    @Test
+    fun `next asset key cycles and invalid values restart at first tile`() {
+        assertEquals(ALL_RIICHI_TILE_ASSET_KEYS[1], ALL_RIICHI_TILE_ASSET_KEYS.first().nextTileAssetKey())
+        assertEquals(ALL_RIICHI_TILE_ASSET_KEYS.first(), ALL_RIICHI_TILE_ASSET_KEYS.last().nextTileAssetKey())
+        assertEquals(ALL_RIICHI_TILE_ASSET_KEYS.first(), "invalid".nextTileAssetKey())
+        assertEquals(ALL_RIICHI_TILE_ASSET_KEYS.first(), null.nextTileAssetKey())
+    }
 }

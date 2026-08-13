@@ -5,13 +5,16 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhas
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_RIICHI_TILE_ASSET_KEYS
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
+import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
 import net.minecraft.client.item.ModelPredicateProviderRegistry
 import net.minecraft.util.Identifier
 import org.koin.core.context.GlobalContext
@@ -46,6 +49,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 payload.snapshot.toDomain(networkRegistries),
             )
         }
+        EntityRendererRegistry.register(ModEntities.mahjongTile, ::MahjongTileEntityRenderer)
         MahjongChannels.decisionTimerUpdate.registerClientReceiver(json) { payload ->
             val gameId = Uuid.parse(payload.gameId)
             val status = payload.status

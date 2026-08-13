@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongEx
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
+import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItemGroups
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
@@ -56,6 +57,7 @@ class MahjongCraftMod : ModInitializer {
             persistenceRegistries = koin.get<PersistenceRegistries>(),
         )
         ModItems.register()
+        ModEntities.register()
         val tableLifecycleService = koin.get<FabricTableLifecycleService>()
         val tableLocationValidation = koin.get<FabricTableLocationValidationService>()
         ModBlocks.register(koin.get<MahjongTableRoomService>(), tableLifecycleService)

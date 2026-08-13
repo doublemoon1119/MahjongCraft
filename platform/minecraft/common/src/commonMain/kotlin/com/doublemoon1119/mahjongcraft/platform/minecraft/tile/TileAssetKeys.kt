@@ -62,3 +62,17 @@ val ALL_RIICHI_TILE_ASSET_KEYS: List<String> = buildList {
     add(Tile.Honor.White.toAssetKey())
     add(UNKNOWN_TILE_ASSET_KEY)
 }
+
+/** 將外部讀取的素材 key 正規化；不在支援清單中的值一律回退至 [UNKNOWN_TILE_ASSET_KEY]。 */
+fun String?.normalizedTileAssetKey(): String = this?.takeIf(ALL_RIICHI_TILE_ASSET_KEYS::contains)
+    ?: UNKNOWN_TILE_ASSET_KEY
+
+/**
+ * 取得循環順序中的下一個素材 key。
+ *
+ * 無效或缺失值視為尚未選擇牌面，因此回到第一張 `m1`，而不是從 `unknown` 繼續循環。
+ */
+fun String?.nextTileAssetKey(): String {
+    val currentIndex = this?.let(ALL_RIICHI_TILE_ASSET_KEYS::indexOf) ?: -1
+    return ALL_RIICHI_TILE_ASSET_KEYS[(currentIndex + 1) % ALL_RIICHI_TILE_ASSET_KEYS.size]
+}
