@@ -1,6 +1,7 @@
 {
   "block.mahjongcraft.wooden_mahjong_table": "木製麻將桌",
   "block.mahjongcraft.modern_mahjong_table": "現代麻將桌",
+  "item_group.mahjongcraft.main": "MahjongCraft",
   "mahjongcraft.message.game_created": "已建立麻將遊戲",
   "mahjongcraft.message.game_joined": "已加入麻將遊戲",
   "mahjongcraft.message.game_already_started": "這場麻將對局已經開始",

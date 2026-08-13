@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " C ",
+    "MMM",
+    " M "
+  ],
+  "key": {
+    "M": {
+      "tag": "mahjongcraft:concretes"
+    },
+    "C": {
+      "tag": "minecraft:wool_carpets"
+    }
+  },
+  "result": {
+    "item": "mahjongcraft:modern_mahjong_table",
+    "count": 1
+  }
+}

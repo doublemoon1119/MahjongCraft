@@ -47,6 +47,17 @@ class MinecraftLanguageFilesTest {
         }
     }
 
+    /** 驗證所有語系檔都提供主要創造模式物品分類的顯示名稱。 */
+    @Test
+    fun `all language files contain the main item group translation`() {
+        locales.forEach { locale ->
+            assertTrue(
+                MinecraftItemGroupKeys.MAIN in loadTranslations(locale),
+                "$locale language file does not contain the main item group translation",
+            )
+        }
+    }
+
     /** 從測試 classpath 載入並解析指定 Minecraft 語系資源。 */
     private fun loadTranslations(locale: String): JsonObject {
         val resourcePath = "/assets/mahjongcraft/lang/$locale.json"

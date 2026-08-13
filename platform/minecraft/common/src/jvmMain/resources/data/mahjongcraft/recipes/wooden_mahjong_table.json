@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " C ",
+    "PPP",
+    "P P"
+  ],
+  "key": {
+    "P": {
+      "tag": "minecraft:planks"
+    },
+    "C": {
+      "tag": "minecraft:wool_carpets"
+    }
+  },
+  "result": {
+    "item": "mahjongcraft:wooden_mahjong_table",
+    "count": 1
+  }
+}
