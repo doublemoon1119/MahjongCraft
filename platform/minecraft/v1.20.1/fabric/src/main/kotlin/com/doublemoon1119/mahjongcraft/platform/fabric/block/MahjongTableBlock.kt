@@ -87,12 +87,19 @@ class MahjongTableBlock(
         builder.add(PART, Properties.HORIZONTAL_FACING)
     }
 
-    /** 僅在 18 個目標位置皆可替換時允許放置 controller。 */
+    /**
+     * 僅在 18 個目標位置皆可替換、且都沒有實體佔用其碰撞範圍時允許放置 controller。
+     *
+     * 沒有碰撞的 part（例如 [MahjongTablePart.TOP_CENTER]）交給 [net.minecraft.world.World.canPlace]
+     * 自然放行——沒有形狀就不會與任何實體衝突，跟站在地毯／絆線上面同一套邏輯。
+     */
     override fun getPlacementState(context: ItemPlacementContext): BlockState? {
         val controllerPos = context.blockPos
         val facing = context.horizontalPlayerFacing.opposite
         val canPlace = MahjongTableStructure.placements(controllerPos, facing).all { (part, pos) ->
-            part == MahjongTablePart.BOTTOM_CENTER || context.world.getBlockState(pos).isReplaceable
+            val replaceable = part == MahjongTablePart.BOTTOM_CENTER || context.world.getBlockState(pos).isReplaceable
+            val candidateState = defaultState.with(PART, part).with(Properties.HORIZONTAL_FACING, facing)
+            replaceable && context.world.canPlace(candidateState, pos, ShapeContext.absent())
         }
         return if (canPlace) {
             defaultState
