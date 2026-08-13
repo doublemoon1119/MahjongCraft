@@ -19,10 +19,10 @@ enum class MahjongDicePoint(
     THREE(3, 90.0f, 90.0f),
 
     /** 四點朝上。 */
-    FOUR(4, -90.0f, 0.0f),
+    FOUR(4, 90.0f, -90.0f),
 
     /** 五點朝上。 */
-    FIVE(5, 90.0f, -90.0f),
+    FIVE(5, -90.0f, 0.0f),
 
     /** 六點朝上。 */
     SIX(6, 180.0f, 0.0f),

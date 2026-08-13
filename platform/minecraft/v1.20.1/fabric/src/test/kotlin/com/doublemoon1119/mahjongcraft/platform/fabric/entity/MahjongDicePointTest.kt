@@ -27,8 +27,21 @@ class MahjongDicePointTest {
     /** 驗證標準相反面點數總和皆為七。 */
     @Test
     fun `opposite faces follow standard dice pairs`() {
-        assertEquals(7, MahjongDicePoint.ONE.value + MahjongDicePoint.SIX.value)
-        assertEquals(7, MahjongDicePoint.TWO.value + MahjongDicePoint.FIVE.value)
-        assertEquals(7, MahjongDicePoint.THREE.value + MahjongDicePoint.FOUR.value)
+        assertEquals(
+            setOf(MahjongDicePoint.ONE, MahjongDicePoint.SIX),
+            MahjongDicePoint.entries.filterTo(mutableSetOf()) {
+                it.yRotationDegrees == 0.0f && it.xRotationDegrees % 180.0f == 0.0f
+            },
+        )
+        assertEquals(
+            setOf(MahjongDicePoint.TWO, MahjongDicePoint.FIVE),
+            MahjongDicePoint.entries.filterTo(mutableSetOf()) {
+                it.yRotationDegrees == 0.0f && it.xRotationDegrees % 180.0f != 0.0f
+            },
+        )
+        assertEquals(
+            setOf(MahjongDicePoint.THREE, MahjongDicePoint.FOUR),
+            MahjongDicePoint.entries.filterTo(mutableSetOf()) { it.yRotationDegrees != 0.0f },
+        )
     }
 }
