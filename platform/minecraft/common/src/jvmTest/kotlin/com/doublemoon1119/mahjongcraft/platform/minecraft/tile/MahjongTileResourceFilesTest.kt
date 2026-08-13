@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import javax.imageio.ImageIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -41,6 +42,26 @@ class MahjongTileResourceFilesTest {
                 "Missing texture for tile asset key: $assetKey",
             )
         }
+    }
+
+    /** 驗證牌面及共用牌體貼圖維持模型 UV 所依賴的像素尺寸。 */
+    @Test
+    fun `tile textures retain dimensions required by the base model`() {
+        ALL_RIICHI_TILE_ASSET_KEYS.forEach { assetKey ->
+            val path = "/assets/mahjongcraft/textures/item/mahjong_tile/mahjong_tile_$assetKey.png"
+            val image = checkNotNull(javaClass.getResourceAsStream(path)) {
+                "Texture resource not found: $path"
+            }.use(ImageIO::read)
+            assertEquals(48, image.width, "Unexpected texture width for tile asset key: $assetKey")
+            assertEquals(64, image.height, "Unexpected texture height for tile asset key: $assetKey")
+        }
+
+        val coverPath = "/assets/mahjongcraft/textures/item/mahjong_tile/mahjong_tile_cover.png"
+        val cover = checkNotNull(javaClass.getResourceAsStream(coverPath)) {
+            "Texture resource not found: $coverPath"
+        }.use(ImageIO::read)
+        assertEquals(256, cover.width, "Unexpected Mahjong tile cover texture width")
+        assertEquals(256, cover.height, "Unexpected Mahjong tile cover texture height")
     }
 
     /** 從測試 classpath 載入指定 JSON object。 */

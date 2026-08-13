@@ -13,19 +13,18 @@ import net.minecraft.util.Identifier
 
 /** MahjongCraft Fabric 創造模式物品分類的集中註冊點。 */
 object ModItemGroups {
-    /** 註冊以木製麻將桌為圖示、收納目前可取得麻將桌的主要物品分類。 */
+    /** 註冊以一萬麻將牌為圖示、收納目前可取得物品與方塊的主要物品分類。 */
     fun register() {
+        val iconStack = ItemStack(ModItems.MAHJONG_TILE).also {
+            MahjongTileItem.writeTileAssetKey(it, ALL_RIICHI_TILE_ASSET_KEYS.first())
+        }
         val group = FabricItemGroup.builder()
-            .icon { ItemStack(ModBlocks.woodenMahjongTable) }
+            .icon(iconStack::copy)
             .displayName(Text.translatable(MinecraftItemGroupKeys.MAIN))
             .entries { _, entries ->
+                entries.add(iconStack.copy())
                 entries.add(ModBlocks.woodenMahjongTable)
                 entries.add(ModBlocks.modernMahjongTable)
-                entries.add(
-                    ItemStack(ModItems.MAHJONG_TILE).also {
-                        MahjongTileItem.writeTileAssetKey(it, ALL_RIICHI_TILE_ASSET_KEYS.first())
-                    },
-                )
             }
             .build()
         Registry.register(
