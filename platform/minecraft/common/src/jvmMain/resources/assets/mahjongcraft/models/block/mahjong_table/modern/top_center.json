@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "minecraft:block/gray_concrete",
+    "frame": "minecraft:block/gray_concrete",
+    "frame_end": "minecraft:block/gray_concrete",
+    "surface": "mahjongcraft:block/mahjong_table/table_surface"
+  }
+}

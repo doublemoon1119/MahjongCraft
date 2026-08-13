@@ -29,8 +29,14 @@ enum class MahjongTableDesign {
         return rotateFromNorth(northFacingShape, facing)
     }
 
-    /** 取得可選取範圍；上層中央雖無碰撞，仍保留選取與互動入口。 */
-    fun outlineShape(part: MahjongTablePart, facing: Direction): VoxelShape = if (part == MahjongTablePart.TOP_CENTER) VoxelShapes.fullCube() else collisionShape(part, facing)
+    /**
+     * 取得可選取範圍：只涵蓋實際渲染出來的幾何。
+     *
+     * 上層中央沒有靜態模型，因此不提供選取框，否則玩家會在桌面上方看到一個內部空無一物的整格線框。
+     * 該位置的互動與拆除改由正下方的 controller 承接——桌面是底層方塊最上緣，射線穿過空的上層中央
+     * 後會直接命中桌面。空間本身仍由不可替換的 part 佔用，其他方塊放不進來。
+     */
+    fun outlineShape(part: MahjongTablePart, facing: Direction): VoxelShape = collisionShape(part, facing)
 
     /** 取得上層桌緣碰撞；中央保留空間沒有碰撞。 */
     private fun topCollisionShape(part: MahjongTablePart): VoxelShape {

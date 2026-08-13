@@ -31,15 +31,26 @@ class MahjongTableDesignTest {
         }
     }
 
-    /** 無碰撞的上層中央仍應具有完整方塊選取框。 */
+    /** 沒有靜態模型的上層中央不應提供選取框，避免桌面上方出現空的整格線框。 */
     @Test
-    fun `top center remains selectable without collision`() {
+    fun `top center has no outline because it renders nothing`() {
         MahjongTableDesign.entries.forEach { design ->
-            val outline = design.outlineShape(MahjongTablePart.TOP_CENTER, Direction.NORTH)
+            assertTrue(design.outlineShape(MahjongTablePart.TOP_CENTER, Direction.NORTH).isEmpty)
+        }
+    }
 
-            assertEquals(1.0, outline.boundingBox.maxX)
-            assertEquals(1.0, outline.boundingBox.maxY)
-            assertEquals(1.0, outline.boundingBox.maxZ)
+    /** 其餘 parts 的選取框應貼合實際渲染的幾何，也就是與碰撞一致。 */
+    @Test
+    fun `outline matches rendered geometry for parts with models`() {
+        MahjongTableDesign.entries.forEach { design ->
+            MahjongTablePart.entries.filter { part -> part != MahjongTablePart.TOP_CENTER }.forEach { part ->
+                Direction.Type.HORIZONTAL.forEach { facing ->
+                    assertEquals(
+                        design.collisionShape(part, facing).boundingBoxes,
+                        design.outlineShape(part, facing).boundingBoxes,
+                    )
+                }
+            }
         }
     }
 

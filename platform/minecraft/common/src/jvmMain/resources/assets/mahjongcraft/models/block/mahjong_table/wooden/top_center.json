@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "minecraft:block/stripped_oak_log",
+    "frame": "minecraft:block/stripped_oak_log",
+    "frame_end": "minecraft:block/stripped_oak_log_top",
+    "surface": "mahjongcraft:block/mahjong_table/table_surface"
+  }
+}
