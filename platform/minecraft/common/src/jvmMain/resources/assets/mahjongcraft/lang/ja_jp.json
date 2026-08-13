@@ -1,6 +1,8 @@
 {
   "block.mahjongcraft.wooden_mahjong_table": "木製麻雀テーブル",
-  "block.mahjongcraft.modern_mahjong_table": "モダン麻雀テーブル",
+  "block.mahjongcraft.concrete_mahjong_table": "コンクリート麻雀テーブル",
+  "block.mahjongcraft.wooden_mahjong_stool": "木製麻雀スツール",
+  "block.mahjongcraft.plastic_mahjong_stool": "赤いプラスチック麻雀スツール",
   "item_group.mahjongcraft.main": "MahjongCraft",
   "item.mahjongcraft.mahjong_tile": "麻雀牌",
   "mahjongcraft.message.game_created": "麻雀ゲームを作成しました",

@@ -1,6 +1,8 @@
 {
   "block.mahjongcraft.wooden_mahjong_table": "木制麻将桌",
-  "block.mahjongcraft.modern_mahjong_table": "现代麻将桌",
+  "block.mahjongcraft.concrete_mahjong_table": "混凝土麻将桌",
+  "block.mahjongcraft.wooden_mahjong_stool": "木制麻将凳",
+  "block.mahjongcraft.plastic_mahjong_stool": "红色塑料麻将凳",
   "item_group.mahjongcraft.main": "MahjongCraft",
   "item.mahjongcraft.mahjong_tile": "麻将牌",
   "mahjongcraft.message.game_created": "已创建麻将游戏",

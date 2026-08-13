@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "mahjongcraft:modern_mahjong_table"
+          "name": "mahjongcraft:wooden_mahjong_stool"
         }
       ],
       "conditions": [

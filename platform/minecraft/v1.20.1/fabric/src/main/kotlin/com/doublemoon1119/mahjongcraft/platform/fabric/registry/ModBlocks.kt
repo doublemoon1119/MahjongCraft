@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolDesign
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableDesign
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
@@ -10,12 +12,14 @@ import net.fabricmc.fabric.api.`object`.builder.v1.block.entity.FabricBlockEntit
 import net.minecraft.block.AbstractBlock
 import net.minecraft.block.Block
 import net.minecraft.block.Blocks
+import net.minecraft.block.MapColor
 import net.minecraft.block.entity.BlockEntityType
 import net.minecraft.block.piston.PistonBehavior
 import net.minecraft.item.BlockItem
 import net.minecraft.item.Item
 import net.minecraft.registry.Registries
 import net.minecraft.registry.Registry
+import net.minecraft.sound.BlockSoundGroup
 import net.minecraft.util.Identifier
 
 /** MahjongCraft Fabric 方塊與方塊實體的集中註冊點。 */
@@ -24,8 +28,16 @@ object ModBlocks {
     lateinit var woodenMahjongTable: Block
         private set
 
-    /** 統一現代外觀、深綠桌面與中央柱碰撞 profile 的麻將桌；由 [register] 初始化。 */
-    lateinit var modernMahjongTable: Block
+    /** 統一混凝土外觀、深綠桌面與中央柱碰撞 profile 的麻將桌；由 [register] 初始化。 */
+    lateinit var concreteMahjongTable: Block
+        private set
+
+    /** 狹長剝皮橡木外觀、外張斜腳與完整支架碰撞的麻將凳；由 [register] 初始化。 */
+    lateinit var woodenMahjongStool: Block
+        private set
+
+    /** 亮紅塑膠外觀、鏤空側面與完整外框碰撞的麻將凳；由 [register] 初始化。 */
+    lateinit var plasticMahjongStool: Block
         private set
 
     /** 麻將桌方塊實體型別；由 [register] 初始化。 */
@@ -44,12 +56,28 @@ object ModBlocks {
             roomService = roomService,
             tableLifecycleService = tableLifecycleService,
         )
-        modernMahjongTable = registerTable(
-            path = "modern_mahjong_table",
+        concreteMahjongTable = registerTable(
+            path = "concrete_mahjong_table",
             design = MahjongTableDesign.PEDESTAL,
             baseBlock = Blocks.GRAY_CONCRETE,
             roomService = roomService,
             tableLifecycleService = tableLifecycleService,
+        )
+        woodenMahjongStool = registerStool(
+            path = "wooden_mahjong_stool",
+            design = MahjongStoolDesign.WOODEN,
+            settings = AbstractBlock.Settings.create()
+                .mapColor(MapColor.OAK_TAN)
+                .strength(0.0f)
+                .sounds(BlockSoundGroup.WOOD),
+        )
+        plasticMahjongStool = registerStool(
+            path = "plastic_mahjong_stool",
+            design = MahjongStoolDesign.PLASTIC,
+            settings = AbstractBlock.Settings.create()
+                .mapColor(MapColor.BRIGHT_RED)
+                .strength(0.0f)
+                .sounds(BlockSoundGroup.SCAFFOLDING),
         )
         val blockEntityId = Identifier(MinecraftModMetadata.MOD_ID, "mahjong_table")
         mahjongTableBlockEntity = Registry.register(
@@ -58,7 +86,7 @@ object ModBlocks {
             FabricBlockEntityTypeBuilder.create(
                 ::MahjongTableBlockEntity,
                 woodenMahjongTable,
-                modernMahjongTable,
+                concreteMahjongTable,
             ).build(),
         )
     }
@@ -82,6 +110,25 @@ object ModBlocks {
                 design = design,
                 roomService = roomService,
                 tableLifecycleService = tableLifecycleService,
+            ),
+        )
+        Registry.register(Registries.ITEM, id, BlockItem(block, Item.Settings()))
+        return block
+    }
+
+    /** 註冊具有指定固定款式的單方塊麻將凳及 BlockItem。 */
+    private fun registerStool(
+        path: String,
+        design: MahjongStoolDesign,
+        settings: AbstractBlock.Settings,
+    ): Block {
+        val id = Identifier(MinecraftModMetadata.MOD_ID, path)
+        val block = Registry.register(
+            Registries.BLOCK,
+            id,
+            MahjongStoolBlock(
+                settings = settings,
+                design = design,
             ),
         )
         Registry.register(Registries.ITEM, id, BlockItem(block, Item.Settings()))

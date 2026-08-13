@@ -24,7 +24,9 @@ object ModItemGroups {
             .entries { _, entries ->
                 entries.add(iconStack.copy())
                 entries.add(ModBlocks.woodenMahjongTable)
-                entries.add(ModBlocks.modernMahjongTable)
+                entries.add(ModBlocks.concreteMahjongTable)
+                entries.add(ModBlocks.woodenMahjongStool)
+                entries.add(ModBlocks.plasticMahjongStool)
             }
             .build()
         Registry.register(

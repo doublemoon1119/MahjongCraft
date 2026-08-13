@@ -42,14 +42,14 @@ class MahjongTableResourceFilesTest {
         assertEquals("mahjongcraft:wooden_mahjong_table", recipe.resultItem())
     }
 
-    /** 驗證現代款使用專用混凝土 tag，且輸出固定現代麻將桌。 */
+    /** 驗證混凝土款使用專用混凝土 tag，且輸出固定混凝土麻將桌。 */
     @Test
-    fun `modern table recipe uses the MahjongCraft concretes tag`() {
-        val recipe = loadJson("/data/mahjongcraft/recipes/modern_mahjong_table.json")
+    fun `concrete table recipe uses the MahjongCraft concretes tag`() {
+        val recipe = loadJson("/data/mahjongcraft/recipes/concrete_mahjong_table.json")
 
         assertEquals("mahjongcraft:concretes", recipe.keyEntry("M")["tag"]?.jsonPrimitive?.content)
         assertEquals("minecraft:wool_carpets", recipe.keyEntry("C")["tag"]?.jsonPrimitive?.content)
-        assertEquals("mahjongcraft:modern_mahjong_table", recipe.resultItem())
+        assertEquals("mahjongcraft:concrete_mahjong_table", recipe.resultItem())
     }
 
     /** 驗證專用 tag 完整列出 16 種 Vanilla 混凝土。 */

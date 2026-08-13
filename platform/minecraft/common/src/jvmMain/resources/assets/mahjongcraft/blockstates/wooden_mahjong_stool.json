@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "mahjongcraft:block/mahjong_stool/wooden"
+    },
+    "facing=east": {
+      "model": "mahjongcraft:block/mahjong_stool/wooden",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "mahjongcraft:block/mahjong_stool/wooden",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "mahjongcraft:block/mahjong_stool/wooden",
+      "y": 270
+    }
+  }
+}
