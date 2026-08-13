@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.nextTileAssetKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAssetKey
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityDimensions
@@ -87,22 +88,34 @@ class MahjongTileEntity(
         }
     }
 
-    /** 非蹲下右鍵循環姿態；蹲下右鍵回收保留牌面的物品。 */
+    /** 普通右鍵循環牌面；蹲下右鍵循環姿態。 */
     override fun interact(player: PlayerEntity, hand: Hand): ActionResult {
         if (world.isClient) return ActionResult.SUCCESS
 
         if (player.isSneaking) {
-            val stack = ItemStack(ModItems.MAHJONG_TILE)
-            MahjongTileItem.writeTileAssetKey(stack, tileAssetKey)
-            if (!player.inventory.insertStack(stack)) {
-                player.dropItem(stack, false)
+            tilePose = tilePose.next()
+        } else {
+            tileAssetKey = tileAssetKey.nextTileAssetKey()
+        }
+        return ActionResult.CONSUME
+    }
+
+    /** 玩家左鍵攻擊時回收牌張；生存模式掉落保留牌面的物品，創造模式只移除 entity。 */
+    override fun handleAttack(attacker: Entity): Boolean {
+        val player = attacker as? PlayerEntity ?: return false
+        if (!world.isClient) {
+            if (!player.abilities.creativeMode) {
+                dropStack(asItemStack())
             }
             playSound(SoundEvents.ENTITY_ITEM_PICKUP, 1.0f, 1.0f)
             discard()
-        } else {
-            tilePose = tilePose.next()
         }
-        return ActionResult.CONSUME
+        return true
+    }
+
+    /** 建立保留目前牌面 asset key 的麻將牌物品。 */
+    private fun asItemStack(): ItemStack = ItemStack(ModItems.MAHJONG_TILE).also {
+        MahjongTileItem.writeTileAssetKey(it, tileAssetKey)
     }
 
     /** 初始化 client/server 同步的牌面與姿態。 */

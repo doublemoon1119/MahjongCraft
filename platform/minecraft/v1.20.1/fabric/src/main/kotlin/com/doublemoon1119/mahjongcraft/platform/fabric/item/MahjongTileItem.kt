@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.item
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_RIICHI_TILE_ASSET_KEYS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.nextTileAssetKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAssetKey
 import net.minecraft.entity.player.PlayerEntity
@@ -57,20 +58,20 @@ class MahjongTileItem(settings: Settings) : Item(settings) {
         /** ItemStack 自訂資料內保存牌面 asset key 的名稱。 */
         const val NBT_KEY_TILE = "tile"
 
-        /** 讀取並正規化 item 保存的牌面；缺失或非法值回退為 `unknown`。 */
-        fun readTileAssetKey(stack: ItemStack): String = stack.nbt
-            ?.getString(NBT_KEY_TILE)
-            .normalizedTileAssetKey()
+        /** 讀取並正規化 item 保存的牌面；缺失值使用配方預設 `m1`，非法值回退為 `unknown`。 */
+        fun readTileAssetKey(stack: ItemStack): String {
+            val storedKey = stack.nbt?.takeIf { it.contains(NBT_KEY_TILE) }?.getString(NBT_KEY_TILE)
+            return storedKey?.normalizedTileAssetKey() ?: ALL_RIICHI_TILE_ASSET_KEYS.first()
+        }
 
         /** 寫入經正規化的牌面 asset key。 */
         fun writeTileAssetKey(stack: ItemStack, assetKey: String) {
             stack.orCreateNbt.putString(NBT_KEY_TILE, assetKey.normalizedTileAssetKey())
         }
 
-        /** 將 item 循環至下一個牌面，非法或缺失值從 `m1` 開始。 */
+        /** 將 item 循環至下一個牌面；無自訂資料的配方產物以目前顯示的 `m1` 為起點。 */
         fun advanceTileAssetKey(stack: ItemStack) {
-            val storedKey = stack.nbt?.getString(NBT_KEY_TILE)
-            writeTileAssetKey(stack, storedKey.nextTileAssetKey())
+            writeTileAssetKey(stack, readTileAssetKey(stack).nextTileAssetKey())
         }
     }
 }

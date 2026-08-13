@@ -25,6 +25,7 @@ object ModEntities {
                 .dimensions(EntityDimensions.fixed(MahjongTileEntity.TILE_WIDTH, MahjongTileEntity.TILE_HEIGHT))
                 .trackRangeBlocks(16)
                 .trackedUpdateRate(10)
+                .fireImmune()
                 .build(),
         )
     }

@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " WG",
+    "DWG",
+    " WG"
+  ],
+  "key": {
+    "W": {
+      "item": "minecraft:white_concrete"
+    },
+    "G": {
+      "tag": "mahjongcraft:mahjong_tile_back_concretes"
+    },
+    "D": {
+      "tag": "mahjongcraft:dyes"
+    }
+  },
+  "result": {
+    "item": "mahjongcraft:mahjong_tile",
+    "count": 32
+  }
+}
