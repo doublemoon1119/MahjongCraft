@@ -4,6 +4,7 @@
   "block.mahjongcraft.wooden_mahjong_stool": "Wooden Mahjong Stool",
   "block.mahjongcraft.plastic_mahjong_stool": "Red Plastic Mahjong Stool",
   "item_group.mahjongcraft.main": "MahjongCraft",
+  "item.mahjongcraft.mahjong_dice": "Mahjong Dice",
   "item.mahjongcraft.mahjong_tile": "Mahjong Tile",
   "mahjongcraft.message.game_created": "Mahjong game created",
   "mahjongcraft.message.game_joined": "Joined the mahjong game",

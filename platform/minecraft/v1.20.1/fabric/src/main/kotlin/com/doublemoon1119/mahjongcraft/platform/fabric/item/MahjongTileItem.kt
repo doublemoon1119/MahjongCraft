@@ -10,6 +10,7 @@ import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
 import net.minecraft.item.ItemUsageContext
 import net.minecraft.server.world.ServerWorld
+import net.minecraft.sound.SoundEvents
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import net.minecraft.util.TypedActionResult
@@ -51,6 +52,7 @@ class MahjongTileItem(settings: Settings) : Item(settings) {
         if (intersectsBlock || !world.spawnEntity(entity)) return ActionResult.FAIL
 
         if (!player.abilities.creativeMode) context.stack.decrement(1)
+        entity.playSound(SoundEvents.ENTITY_ITEM_FRAME_PLACE, 1.0f, 1.0f)
         return ActionResult.CONSUME
     }
 

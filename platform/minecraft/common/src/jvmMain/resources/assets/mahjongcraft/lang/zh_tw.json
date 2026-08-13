@@ -4,6 +4,7 @@
   "block.mahjongcraft.wooden_mahjong_stool": "木製麻將凳",
   "block.mahjongcraft.plastic_mahjong_stool": "紅色塑膠麻將凳",
   "item_group.mahjongcraft.main": "MahjongCraft",
+  "item.mahjongcraft.mahjong_dice": "麻將骰子",
   "item.mahjongcraft.mahjong_tile": "麻將牌",
   "mahjongcraft.message.game_created": "已建立麻將遊戲",
   "mahjongcraft.message.game_joined": "已加入麻將遊戲",

@@ -107,7 +107,7 @@ class MahjongTileEntity(
             if (!player.abilities.creativeMode) {
                 dropStack(asItemStack())
             }
-            playSound(SoundEvents.ENTITY_ITEM_PICKUP, 1.0f, 1.0f)
+            playSound(SoundEvents.ENTITY_ITEM_FRAME_BREAK, 1.0f, 1.0f)
             discard()
         }
         return true
