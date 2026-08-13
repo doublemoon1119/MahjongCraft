@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimation
 import net.minecraft.client.render.OverlayTexture
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRenderer
@@ -11,6 +12,7 @@ import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.item.ItemStack
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.RotationAxis
+import org.joml.Quaternionf
 
 /** 使用單一骰子 item model 呈現指定朝上點數的 client renderer。 */
 class MahjongDiceEntityRenderer(
@@ -29,9 +31,27 @@ class MahjongDiceEntityRenderer(
         light: Int,
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
+        val animationFrame = if (entity.rolling) {
+            ROLL_ANIMATION.frame(
+                seed = entity.animationSeed,
+                elapsedTicks = entity.world.time.toDouble() + tickDelta - entity.animationStartGameTime,
+                startOffset = entity.animationStartOffset,
+            )
+        } else {
+            null
+        }
         matrices.push()
+        if (animationFrame != null) {
+            matrices.translate(animationFrame.offset.x, animationFrame.offset.y, animationFrame.offset.z)
+        }
         matrices.translate(0.0, MahjongDiceEntity.SIZE / 2.0, 0.0)
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-entity.yaw + 180.0f))
+        if (animationFrame != null) {
+            val rotation = animationFrame.rotation
+            matrices.multiply(
+                Quaternionf(rotation.x.toFloat(), rotation.y.toFloat(), rotation.z.toFloat(), rotation.w.toFloat()),
+            )
+        }
         matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(entity.point.xRotationDegrees))
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(entity.point.yRotationDegrees))
         matrices.scale(DICE_MODEL_SCALE, DICE_MODEL_SCALE, DICE_MODEL_SCALE)
@@ -61,5 +81,8 @@ class MahjongDiceEntityRenderer(
 
         /** 供所有骰子 entity 共用的渲染 stack。 */
         private val DICE_STACK = ItemStack(ModItems.MAHJONG_DICE)
+
+        /** 所有骰子共用的確定性動畫計算器。 */
+        private val ROLL_ANIMATION = DiceRollAnimation()
     }
 }

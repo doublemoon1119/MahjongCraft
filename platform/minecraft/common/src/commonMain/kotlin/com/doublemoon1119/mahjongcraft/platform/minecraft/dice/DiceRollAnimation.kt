@@ -6,7 +6,7 @@ import kotlin.math.sin
 /** 一次骰子翻滾動畫的可調整參數。 */
 data class DiceRollAnimationSpec(
     /** 動畫總長度，以 server ticks 表示。 */
-    val durationTicks: Int = 30,
+    val durationTicks: Int = DEFAULT_DURATION_TICKS,
     /** 畫面起點相對最終落點的 X 偏移。 */
     val startOffsetX: Double = -0.65,
     /** 畫面起點相對最終落點的 Y 偏移。 */
@@ -28,6 +28,11 @@ data class DiceRollAnimationSpec(
             "secondBounceHeight must be between zero and firstBounceHeight"
         }
     }
+
+    companion object {
+        /** 預設動畫總長度，約為正常 TPS 下的 1.5 秒。 */
+        const val DEFAULT_DURATION_TICKS = 30
+    }
 }
 
 /** renderer 在指定時間需要套用的視覺位移與額外旋轉。 */
@@ -48,7 +53,15 @@ class DiceRollAnimation(
     private val spec: DiceRollAnimationSpec = DiceRollAnimationSpec(),
 ) {
     /** 計算指定經過 ticks 的視覺 frame。 */
-    fun frame(seed: Long, elapsedTicks: Double): DiceRollAnimationFrame {
+    fun frame(
+        seed: Long,
+        elapsedTicks: Double,
+        startOffset: DiceAnimationVector = DiceAnimationVector(
+            spec.startOffsetX,
+            spec.startOffsetY,
+            spec.startOffsetZ,
+        ),
+    ): DiceRollAnimationFrame {
         val progress = (elapsedTicks / spec.durationTicks).coerceIn(0.0, 1.0)
         if (progress >= 1.0) {
             return DiceRollAnimationFrame(
@@ -68,7 +81,7 @@ class DiceRollAnimation(
         ).normalized()
         val spinTurns = MIN_SPIN_TURNS + random.nextDouble() * SPIN_TURN_VARIATION
         return DiceRollAnimationFrame(
-            offset = calculateOffset(progress, lateralDirection),
+            offset = calculateOffset(progress, lateralDirection, startOffset),
             rotation = calculateRotation(progress, spinAxis, spinTurns),
             progress = progress,
             completed = false,
@@ -76,13 +89,17 @@ class DiceRollAnimation(
     }
 
     /** 計算拋出、兩次彈跳及最後靜止階段的位移。 */
-    private fun calculateOffset(progress: Double, lateralDirection: Double): DiceAnimationVector = when {
+    private fun calculateOffset(
+        progress: Double,
+        lateralDirection: Double,
+        startOffset: DiceAnimationVector,
+    ): DiceAnimationVector = when {
         progress < FLIGHT_END -> {
             val local = progress / FLIGHT_END
             DiceAnimationVector(
-                x = spec.startOffsetX * (1.0 - local),
-                y = spec.startOffsetY * (1.0 - local) + sin(PI * local) * spec.tossHeight,
-                z = spec.startOffsetZ * (1.0 - local) + sin(PI * local) * LATERAL_OFFSET * lateralDirection,
+                x = startOffset.x * (1.0 - local),
+                y = startOffset.y * (1.0 - local) + sin(PI * local) * spec.tossHeight,
+                z = startOffset.z * (1.0 - local) + sin(PI * local) * LATERAL_OFFSET * lateralDirection,
             )
         }
         progress < FIRST_BOUNCE_END -> DiceAnimationVector(

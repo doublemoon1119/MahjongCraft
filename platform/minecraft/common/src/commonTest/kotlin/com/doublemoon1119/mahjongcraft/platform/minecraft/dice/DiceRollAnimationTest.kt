@@ -32,6 +32,15 @@ class DiceRollAnimationTest {
         assertFalse(frame.completed)
     }
 
+    /** 驗證每次投擲可使用同步的玩家手部相對位移覆寫預設起點。 */
+    @Test
+    fun `animation accepts a synchronized per-roll start offset`() {
+        val startOffset = DiceAnimationVector(1.25, 0.75, -0.5)
+        val frame = animation.frame(seed = 42L, elapsedTicks = 0.0, startOffset = startOffset)
+
+        assertVectorEquals(startOffset, frame.offset)
+    }
+
     /** 驗證拋出中段同時具有水平移動、側向弧線與高度。 */
     @Test
     fun `flight midpoint is elevated and moving toward landing point`() {

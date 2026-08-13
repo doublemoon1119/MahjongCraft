@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker
@@ -30,6 +32,27 @@ class MahjongDiceEntity(
         get() = dataTracker[MANAGED_BY_GAME]
         set(value) = dataTracker.set(MANAGED_BY_GAME, value)
 
+    /** 是否正在播放由伺服器啟動的投擲動畫。 */
+    var rolling: Boolean
+        get() = dataTracker[ROLLING]
+        private set(value) = dataTracker.set(ROLLING, value)
+
+    /** 用來確定性重建動畫路徑與翻滾軸的 seed。 */
+    val animationSeed: Long
+        get() = dataTracker[ANIMATION_SEED]
+
+    /** 動畫開始時的 server game time。 */
+    val animationStartGameTime: Long
+        get() = dataTracker[ANIMATION_START_GAME_TIME]
+
+    /** 玩家手部附近起點相對 entity 最終落點的向量。 */
+    val animationStartOffset: DiceAnimationVector
+        get() = DiceAnimationVector(
+            x = dataTracker[ANIMATION_START_OFFSET_X].toDouble(),
+            y = dataTracker[ANIMATION_START_OFFSET_Y].toDouble(),
+            z = dataTracker[ANIMATION_START_OFFSET_Z].toDouble(),
+        )
+
     init {
         setNoGravity(true)
     }
@@ -44,11 +67,11 @@ class MahjongDiceEntity(
     override fun canHit(): Boolean = !isRemoved
 
     /** 允許自由放置骰子成為左鍵回收目標。 */
-    override fun isAttackable(): Boolean = !isRemoved && !managedByGame
+    override fun isAttackable(): Boolean = !isRemoved && !managedByGame && !rolling
 
     /** 右鍵自由放置骰子時循環朝上點數。 */
     override fun interact(player: PlayerEntity, hand: Hand): ActionResult {
-        if (managedByGame) return ActionResult.PASS
+        if (managedByGame || rolling) return ActionResult.PASS
         if (!world.isClient) point = point.next()
         return if (world.isClient) ActionResult.SUCCESS else ActionResult.CONSUME
     }
@@ -56,7 +79,7 @@ class MahjongDiceEntity(
     /** 左鍵回收自由放置骰子；創造模式只移除 entity。 */
     override fun handleAttack(attacker: Entity): Boolean {
         val player = attacker as? PlayerEntity ?: return false
-        if (managedByGame) return false
+        if (managedByGame || rolling) return false
         if (!world.isClient) {
             if (!player.abilities.creativeMode) dropStack(ItemStack(ModItems.MAHJONG_DICE))
             playSound(SoundEvents.ENTITY_ITEM_FRAME_BREAK, 1.0f, 1.0f)
@@ -65,16 +88,54 @@ class MahjongDiceEntity(
         return true
     }
 
+    /** 啟動一次已由伺服器決定結果的投擲動畫。 */
+    fun startRoll(
+        finalPoint: MahjongDicePoint,
+        seed: Long,
+        startGameTime: Long,
+        startOffset: DiceAnimationVector,
+    ) {
+        check(!world.isClient) { "Dice rolls must be started by the server" }
+        point = finalPoint
+        dataTracker.set(ANIMATION_SEED, seed)
+        dataTracker.set(ANIMATION_START_GAME_TIME, startGameTime)
+        dataTracker.set(ANIMATION_START_OFFSET_X, startOffset.x.toFloat())
+        dataTracker.set(ANIMATION_START_OFFSET_Y, startOffset.y.toFloat())
+        dataTracker.set(ANIMATION_START_OFFSET_Z, startOffset.z.toFloat())
+        rolling = true
+    }
+
+    /** 由 server game time 結束動畫；client 只呈現同步狀態。 */
+    override fun tick() {
+        super.tick()
+        if (!world.isClient && rolling) {
+            val elapsedTicks = world.time - animationStartGameTime
+            if (elapsedTicks == FIRST_LANDING_TICK) {
+                playSound(SoundEvents.ENTITY_ITEM_FRAME_PLACE, 1.0f, 1.0f)
+            }
+            if (elapsedTicks >= DiceRollAnimationSpec.DEFAULT_DURATION_TICKS) {
+                rolling = false
+            }
+        }
+    }
+
     /** 初始化 client/server 同步的點數與管理狀態。 */
     override fun initDataTracker() {
         dataTracker.startTracking(POINT, MahjongDicePoint.ONE.value)
         dataTracker.startTracking(MANAGED_BY_GAME, false)
+        dataTracker.startTracking(ROLLING, false)
+        dataTracker.startTracking(ANIMATION_SEED, 0L)
+        dataTracker.startTracking(ANIMATION_START_GAME_TIME, 0L)
+        dataTracker.startTracking(ANIMATION_START_OFFSET_X, 0.0f)
+        dataTracker.startTracking(ANIMATION_START_OFFSET_Y, 0.0f)
+        dataTracker.startTracking(ANIMATION_START_OFFSET_Z, 0.0f)
     }
 
     /** 從世界存檔還原點數及管理狀態；無效點數使用一點。 */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
         point = MahjongDicePoint.fromValueOrDefault(nbt.getInt(NBT_KEY_POINT))
         managedByGame = nbt.getBoolean(NBT_KEY_MANAGED_BY_GAME)
+        rolling = false
     }
 
     /** 將點數及管理狀態寫入世界存檔。 */
@@ -93,6 +154,9 @@ class MahjongDiceEntity(
         /** 正式牌局管理狀態世界存檔 key。 */
         private const val NBT_KEY_MANAGED_BY_GAME = "ManagedByGame"
 
+        /** 拋物線第一次抵達落點的 server tick。 */
+        private const val FIRST_LANDING_TICK = 17L
+
         /** 同步目前朝上的點數值。 */
         private val POINT: TrackedData<Int> =
             DataTracker.registerData(MahjongDiceEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
@@ -100,5 +164,29 @@ class MahjongDiceEntity(
         /** 同步是否由正式牌局管理。 */
         private val MANAGED_BY_GAME: TrackedData<Boolean> =
             DataTracker.registerData(MahjongDiceEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+
+        /** 同步目前是否正在播放投擲動畫。 */
+        private val ROLLING: TrackedData<Boolean> =
+            DataTracker.registerData(MahjongDiceEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+
+        /** 同步確定性動畫 seed。 */
+        private val ANIMATION_SEED: TrackedData<Long> =
+            DataTracker.registerData(MahjongDiceEntity::class.java, TrackedDataHandlerRegistry.LONG)
+
+        /** 同步動畫開始的 server game time。 */
+        private val ANIMATION_START_GAME_TIME: TrackedData<Long> =
+            DataTracker.registerData(MahjongDiceEntity::class.java, TrackedDataHandlerRegistry.LONG)
+
+        /** 同步動畫起點相對落點的 X 偏移。 */
+        private val ANIMATION_START_OFFSET_X: TrackedData<Float> =
+            DataTracker.registerData(MahjongDiceEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+
+        /** 同步動畫起點相對落點的 Y 偏移。 */
+        private val ANIMATION_START_OFFSET_Y: TrackedData<Float> =
+            DataTracker.registerData(MahjongDiceEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+
+        /** 同步動畫起點相對落點的 Z 偏移。 */
+        private val ANIMATION_START_OFFSET_Z: TrackedData<Float> =
+            DataTracker.registerData(MahjongDiceEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
     }
 }
