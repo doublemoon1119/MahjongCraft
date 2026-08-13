@@ -10,6 +10,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentationResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
@@ -94,7 +97,17 @@ class FabricTableLifecycleServiceTest {
         )
 
         /** 受測 Fabric lifecycle 服務。 */
-        val lifecycleService = FabricTableLifecycleService(store, locations, cleanupService, configState)
+        /** 記錄清理呼叫的骰子 presenter fake。 */
+        private val diceRollPresenter = RecordingDiceRollPresenter()
+
+        /** 受測生命週期服務。 */
+        val lifecycleService = FabricTableLifecycleService(
+            store,
+            locations,
+            cleanupService,
+            configState,
+            diceRollPresenter,
+        )
 
         /** 建立包含測試 Room 與 membership 的初始狀態。 */
         suspend fun initialize() {
@@ -107,5 +120,14 @@ class FabricTableLifecycleServiceTest {
             store.load(AuthoritativeStateSnapshot(rooms = mapOf(tableId to room)))
             memberships.claim(playerId, tableId)
         }
+    }
+
+    /** 只記錄正式骰子清理參數的測試 presenter。 */
+    private class RecordingDiceRollPresenter : MahjongDiceRollPresenter {
+        /** 此測試不使用正式骰子呈現。 */
+        override fun present(presentation: MahjongDiceRollPresentation): MahjongDiceRollPresentationResult = MahjongDiceRollPresentationResult.PRESENTED
+
+        /** 記錄清理請求並回報沒有已載入骰子。 */
+        override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
     }
 }

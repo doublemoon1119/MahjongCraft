@@ -27,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableL
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTableCleanupService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import org.koin.core.context.stopKoin
 import org.koin.plugin.module.dsl.startKoin
@@ -75,6 +76,7 @@ class FabricApplicationModuleTest {
         koin.get<FabricAppCoroutineScope>()
         koin.get<FabricDecisionTimerScheduler>()
         koin.get<MahjongTileCollisionService>()
+        koin.get<MahjongDiceRollPresenter>()
         koin.get<MinecraftServerConfigState>()
         koin.get<FabricServerConfigManager>()
         koin.get<FabricServerConfigCommand>()

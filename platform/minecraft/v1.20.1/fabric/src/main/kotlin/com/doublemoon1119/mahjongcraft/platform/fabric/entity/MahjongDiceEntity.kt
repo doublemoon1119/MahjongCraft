@@ -16,6 +16,7 @@ import net.minecraft.sound.SoundEvents
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import net.minecraft.world.World
+import kotlin.uuid.Uuid
 
 /** 可自由放置並保存朝上點數的麻將骰子 entity。 */
 class MahjongDiceEntity(
@@ -31,6 +32,13 @@ class MahjongDiceEntity(
     var managedByGame: Boolean
         get() = dataTracker[MANAGED_BY_GAME]
         set(value) = dataTracker.set(MANAGED_BY_GAME, value)
+
+    /** 正式骰子所屬麻將桌；自由放置骰子為 null。 */
+    var managedTableId: Uuid?
+        get() = dataTracker[MANAGED_TABLE_ID]
+            .takeIf(String::isNotBlank)
+            ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
+        private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
     /** 是否正在播放由伺服器啟動的投擲動畫。 */
     var rolling: Boolean
@@ -105,6 +113,13 @@ class MahjongDiceEntity(
         rolling = true
     }
 
+    /** 將骰子標記為指定正式牌局桌子管理。 */
+    fun assignToTable(tableId: Uuid) {
+        check(!world.isClient) { "Managed dice must be assigned by the server" }
+        managedByGame = true
+        managedTableId = tableId
+    }
+
     /** 由 server game time 結束動畫；client 只呈現同步狀態。 */
     override fun tick() {
         super.tick()
@@ -123,6 +138,7 @@ class MahjongDiceEntity(
     override fun initDataTracker() {
         dataTracker.startTracking(POINT, MahjongDicePoint.ONE.value)
         dataTracker.startTracking(MANAGED_BY_GAME, false)
+        dataTracker.startTracking(MANAGED_TABLE_ID, "")
         dataTracker.startTracking(ROLLING, false)
         dataTracker.startTracking(ANIMATION_SEED, 0L)
         dataTracker.startTracking(ANIMATION_START_GAME_TIME, 0L)
@@ -135,6 +151,9 @@ class MahjongDiceEntity(
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
         point = MahjongDicePoint.fromValueOrDefault(nbt.getInt(NBT_KEY_POINT))
         managedByGame = nbt.getBoolean(NBT_KEY_MANAGED_BY_GAME)
+        managedTableId = nbt.getString(NBT_KEY_MANAGED_TABLE_ID)
+            .takeIf(String::isNotBlank)
+            ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
         rolling = false
     }
 
@@ -142,6 +161,7 @@ class MahjongDiceEntity(
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         nbt.putInt(NBT_KEY_POINT, point.value)
         nbt.putBoolean(NBT_KEY_MANAGED_BY_GAME, managedByGame)
+        managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
     }
 
     companion object {
@@ -154,6 +174,9 @@ class MahjongDiceEntity(
         /** 正式牌局管理狀態世界存檔 key。 */
         private const val NBT_KEY_MANAGED_BY_GAME = "ManagedByGame"
 
+        /** 正式骰子所屬桌子 UUID 的世界存檔 key。 */
+        private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
+
         /** 拋物線第一次抵達落點的 server tick。 */
         private const val FIRST_LANDING_TICK = 17L
 
@@ -164,6 +187,10 @@ class MahjongDiceEntity(
         /** 同步是否由正式牌局管理。 */
         private val MANAGED_BY_GAME: TrackedData<Boolean> =
             DataTracker.registerData(MahjongDiceEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+
+        /** 同步正式骰子所屬麻將桌 UUID；空字串表示自由放置。 */
+        private val MANAGED_TABLE_ID: TrackedData<String> =
+            DataTracker.registerData(MahjongDiceEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
         /** 同步目前是否正在播放投擲動畫。 */
         private val ROLLING: TrackedData<Boolean> =

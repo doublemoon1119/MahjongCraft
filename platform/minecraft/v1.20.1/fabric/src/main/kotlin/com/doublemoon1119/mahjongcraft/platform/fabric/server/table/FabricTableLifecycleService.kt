@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.TableBreakPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.allowsTableBreak
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.coroutines.runBlocking
@@ -25,6 +26,7 @@ class FabricTableLifecycleService(
     private val locations: TableLocationRegistry,
     private val cleanupService: OrphanedTableCleanupService,
     private val configState: MinecraftServerConfigState,
+    private val diceRollPresenter: MahjongDiceRollPresenter,
 ) {
     /** 記錄麻將桌破壞政策判斷與清理入口。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -42,9 +44,16 @@ class FabricTableLifecycleService(
 
     /** 非玩家來源替換麻將桌方塊時，依 orphan policy 清理相關資料。 */
     fun onBlockReplaced(world: ServerWorld, table: MahjongTableBlockEntity) {
-        val entry = locations.put(table.tableId, world.toTableLocation(table.pos))
+        val tableLocation = world.toTableLocation(table.pos)
+        val removedDiceCount = diceRollPresenter.clear(table.tableId, tableLocation)
+        val entry = locations.put(table.tableId, tableLocation)
         val result = runBlocking { cleanupService.cleanupMissing(table.tableId, entry.revision) }
-        logger.debug("Handled replaced Mahjong table {} with cleanup result {}", table.tableId, result)
+        logger.debug(
+            "Handled replaced Mahjong table {} with cleanup result {} and removed {} managed dice",
+            table.tableId,
+            result,
+            removedDiceCount,
+        )
     }
 
     /** 由任意麻將桌 part 判斷玩家破壞是否可依目前政策執行。 */
