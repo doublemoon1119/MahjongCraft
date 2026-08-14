@@ -16,8 +16,12 @@
   "mahjongcraft.message.game_left": "麻雀ゲームから退出しました",
   "mahjongcraft.message.game_dissolved": "麻雀ゲームを解散しました",
   "mahjongcraft.message.game_leave_failed": "この麻雀ゲームから退出できません",
-  "mahjongcraft.message.ready_toggled": "準備状態を切り替えました",
+  "mahjongcraft.message.ready_toggle_prefix": "準備状態を切り替えました：",
+  "mahjongcraft.message.ready_state_ready": "準備完了",
+  "mahjongcraft.message.ready_state_not_ready": "未準備",
+  "mahjongcraft.message.host_ready_not_required": "ゲームマネージャーは準備の必要がありません。そのまま対局を開始してください",
   "mahjongcraft.message.not_game_host": "ゲームマネージャーのみがゲームを開始できます",
+  "mahjongcraft.message.invalid_player_count": "現在の人数がルールで定められた範囲内にありません",
   "mahjongcraft.message.not_all_players_ready": "まだ準備ができていないプレイヤーがいます",
   "mahjongcraft.message.game_start_failed": "この麻雀ゲームを開始できません",
   "mahjongcraft.message.table_not_reachable": "そのテーブルが見つからないか、操作できる範囲外です"

@@ -60,6 +60,37 @@ class RoomTest {
     }
 
     @Test
+    fun `test isPlayerCountValid returns false when player count is below minimum`() {
+        val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 4)
+        val host = Uuid.random()
+
+        val room = Room(
+            id = Uuid.random(),
+            hostId = host,
+            gameConfig = GameConfig(config),
+            playerIds = setOf(host),
+        )
+
+        assertFalse(room.isPlayerCountValid, "Player count should be invalid when below the configured minimum.")
+    }
+
+    @Test
+    fun `test isPlayerCountValid returns true when player count is within range`() {
+        val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 4)
+        val host = Uuid.random()
+        val playerIds = setOf(host, Uuid.random())
+
+        val room = Room(
+            id = Uuid.random(),
+            hostId = host,
+            gameConfig = GameConfig(config),
+            playerIds = playerIds,
+        )
+
+        assertTrue(room.isPlayerCountValid, "Player count should be valid when within the configured range.")
+    }
+
+    @Test
     fun `test canStart returns false when player count is below minimum`() {
         val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 4)
         val host = Uuid.random()

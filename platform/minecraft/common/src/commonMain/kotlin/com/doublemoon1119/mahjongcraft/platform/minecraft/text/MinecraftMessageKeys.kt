@@ -37,11 +37,23 @@ object MinecraftMessageKeys {
     /** 加入麻將遊戲失敗。 */
     const val GAME_JOIN_FAILED = PREFIX + "game_join_failed"
 
-    /** 已切換準備狀態。 */
-    const val READY_TOGGLED = PREFIX + "ready_toggled"
+    /** 準備狀態切換訊息的前綴，後面接切換前後的準備狀態文字。 */
+    const val READY_TOGGLE_PREFIX = PREFIX + "ready_toggle_prefix"
+
+    /** 「準備」狀態文字，用於準備狀態切換訊息中上色顯示。 */
+    const val READY_STATE_READY = PREFIX + "ready_state_ready"
+
+    /** 「尚未準備」狀態文字，用於準備狀態切換訊息中上色顯示。 */
+    const val READY_STATE_NOT_READY = PREFIX + "ready_state_not_ready"
+
+    /** 遊戲主持人不參與準備機制。 */
+    const val HOST_READY_NOT_REQUIRED = PREFIX + "host_ready_not_required"
 
     /** 只有遊戲主持人可以開始對局。 */
     const val NOT_GAME_HOST = PREFIX + "not_game_host"
+
+    /** 目前人數不符合規則限制的人數區間，無法開始對局。 */
+    const val INVALID_PLAYER_COUNT = PREFIX + "invalid_player_count"
 
     /** 還有玩家尚未準備好，無法開始對局。 */
     const val NOT_ALL_PLAYERS_READY = PREFIX + "not_all_players_ready"
@@ -64,8 +76,12 @@ object MinecraftMessageKeys {
         GAME_LEAVE_FAILED,
         PLAYER_ALREADY_IN_GAME,
         GAME_JOIN_FAILED,
-        READY_TOGGLED,
+        READY_TOGGLE_PREFIX,
+        READY_STATE_READY,
+        READY_STATE_NOT_READY,
+        HOST_READY_NOT_REQUIRED,
         NOT_GAME_HOST,
+        INVALID_PLAYER_COUNT,
         NOT_ALL_PLAYERS_READY,
         GAME_START_FAILED,
         TABLE_NOT_REACHABLE,

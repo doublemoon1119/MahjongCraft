@@ -1,21 +1,23 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+
 /**
  * Minecraft 玩家完成麻將操作後收到的一次性回饋語意。
  *
  * 此模型只描述發生的結果與呈現該結果所需的資料，不攜帶 translation key、重要程度或 chat、title、
  * HUD 等顯示位置。這些資訊會限制不同 Minecraft 版本能採用的呈現能力，因此由各版本 adapter 自行
- * 映射。例如 1.20.1 可以將 [GameCreated] 顯示於 chat，未來版本則可針對同一回饋同時顯示新版 bar
- * 並播放音效，而 Room／Game 呼叫端不需要改動：
+ * 映射。例如 1.20.1 可以將 [GameAlreadyStarted] 顯示於 chat，未來版本則可針對同一回饋同時顯示新版
+ * bar 並播放音效，而 Room／Game 呼叫端不需要改動：
  *
  * ```kotlin
- * feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameCreated)
+ * feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameAlreadyStarted)
  *
  * // 1.20.1 adapter
- * GameCreated -> player.sendMessage(Text.translatable(GAME_CREATED_KEY))
+ * GameAlreadyStarted -> player.sendMessage(Text.translatable(GAME_ALREADY_STARTED_KEY), true)
  *
  * // future-version adapter
- * GameCreated -> {
+ * GameAlreadyStarted -> {
  *     player.showNewBar(localizedText)
  *     player.playConfirmationSound()
  * }
@@ -28,8 +30,13 @@ sealed interface MinecraftPlayerFeedback {
     /** 對局已開始，玩家無法中途加入。 */
     data object GameAlreadyStarted : MinecraftPlayerFeedback
 
-    /** 已建立麻將遊戲。 */
-    data object GameCreated : MinecraftPlayerFeedback
+    /**
+     * 已建立麻將遊戲。
+     *
+     * @property location 麻將桌所在位置；理論上一定查得到，查不到時（例如位置索引與方塊實體出現
+     *   競態）呈現端會退回不含位置的純文字訊息，不影響「已建立」這件事本身的通知。
+     */
+    data class GameCreated(val location: TableLocation?) : MinecraftPlayerFeedback
 
     /** 已加入麻將遊戲。 */
     data object GameJoined : MinecraftPlayerFeedback
@@ -55,11 +62,21 @@ sealed interface MinecraftPlayerFeedback {
     /** 加入麻將遊戲失敗。 */
     data object GameJoinFailed : MinecraftPlayerFeedback
 
-    /** 已切換準備狀態。 */
-    data object ReadyToggled : MinecraftPlayerFeedback
+    /**
+     * 已切換準備狀態。
+     *
+     * @property isReady 切換後是否為已準備。
+     */
+    data class ReadyToggled(val isReady: Boolean) : MinecraftPlayerFeedback
+
+    /** 遊戲主持人不參與準備機制，開局請直接使用開始對局的操作。 */
+    data object HostReadyNotRequired : MinecraftPlayerFeedback
 
     /** 只有遊戲主持人可以開始對局。 */
     data object NotGameHost : MinecraftPlayerFeedback
+
+    /** 目前人數不符合規則限制的人數區間，無法開始對局。 */
+    data object InvalidPlayerCount : MinecraftPlayerFeedback
 
     /** 還有玩家尚未準備好，無法開始對局。 */
     data object NotAllPlayersReady : MinecraftPlayerFeedback

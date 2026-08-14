@@ -33,20 +33,22 @@ data class Room(
     /** 房間人數是否已達規則配置的上限。 */
     val isFull: Boolean get() = playerIds.size >= gameConfig.ruleConfig.maxPlayers
 
+    /** 目前人數是否落在規則配置允許的區間內。 */
+    val isPlayerCountValid: Boolean get() = playerIds.size in allowedRange
+
+    /** 除房主外的所有玩家是否皆已準備完成。 */
+    private val allOthersReady: Boolean
+        get() {
+            val otherPlayers = playerIds - hostId
+            return readyPlayerIds.size == otherPlayers.size && readyPlayerIds.containsAll(otherPlayers)
+        }
+
     /**
      * 房間是否符合開局條件。
      *
      * 需同時滿足：目前人數落在規則允許的區間內，且除房主外的所有玩家皆已準備完成。
      */
-    val canStart: Boolean
-        get() {
-            if (playerIds.size !in allowedRange) return false
-
-            val otherPlayers = playerIds - hostId
-
-            return readyPlayerIds.size == otherPlayers.size &&
-                readyPlayerIds.containsAll(otherPlayers)
-        }
+    val canStart: Boolean get() = isPlayerCountValid && allOthersReady
 
     /** 排除 AI 後，房間內實際的人類玩家 Uuid 集合。 */
     val humanPlayerIds: Set<Uuid> get() = playerIds - aiPlayerIds

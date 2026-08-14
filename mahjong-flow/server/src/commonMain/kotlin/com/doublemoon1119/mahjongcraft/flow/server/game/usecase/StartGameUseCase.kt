@@ -49,6 +49,7 @@ class StartGameUseCase(
             when {
                 room == null -> AuthoritativeStateUpdate(state, Outcome.Error(RoomError.RoomNotFound(roomId)))
                 room.hostId != operatorId -> AuthoritativeStateUpdate(state, Outcome.Error(RoomError.NotHost(operatorId)))
+                !room.isPlayerCountValid -> AuthoritativeStateUpdate(state, Outcome.Error(RoomError.RoomPlayerCountInvalid(roomId)))
                 !room.canStart -> AuthoritativeStateUpdate(state, Outcome.Error(RoomError.RoomNotReadyToStart(roomId)))
                 else -> {
                     val module = moduleRegistry.getModule(room.gameConfig.ruleConfig)

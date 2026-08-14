@@ -30,12 +30,12 @@ class ToggleReadyUseCase(
      *
      * @param roomId 房間 Uuid。
      * @param playerId 發起請求的玩家 Uuid。
-     * @return 切換準備狀態的結果，成功時為 [Unit]，失敗時為 [RoomError]。
+     * @return 切換準備狀態的結果，成功時為切換後是否為已準備，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
         roomId: Uuid,
         playerId: Uuid,
-    ): Outcome<Unit, RoomError> {
+    ): Outcome<Boolean, RoomError> {
         // 1. 以原子方式讀取房間、切換準備狀態並寫回，避免並發切換請求互相覆蓋。
         //    房主不參與準備狀態切換，此情境下回傳 Success(null) 代表無需任何後續處理。
         val outcome = roomRepository.update(roomId) { room ->
@@ -58,7 +58,8 @@ class ToggleReadyUseCase(
         return when (outcome) {
             is Outcome.Error -> outcome
             is Outcome.Success -> {
-                val updatedRoom = outcome.value ?: return Outcome.Success(Unit)
+                // 房主不參與準備狀態切換，room 為 null 代表命中上方的房主分支，一律視為未準備。
+                val updatedRoom = outcome.value ?: return Outcome.Success(false)
                 val isNowReady = updatedRoom.readyPlayerIds.contains(playerId)
 
                 // 2. 向所有觀察者同步更新後的狀態
@@ -77,7 +78,7 @@ class ToggleReadyUseCase(
                     )
                 }
 
-                Outcome.Success(Unit)
+                Outcome.Success(isNowReady)
             }
         }
     }

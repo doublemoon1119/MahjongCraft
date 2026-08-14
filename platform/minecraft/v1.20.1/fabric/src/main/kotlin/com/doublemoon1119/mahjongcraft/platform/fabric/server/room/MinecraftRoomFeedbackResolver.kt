@@ -27,6 +27,7 @@ internal object MinecraftRoomFeedbackResolver {
     /** 將開始遊戲的 [error] 轉成可呈現的回饋。 */
     fun startError(error: RoomError): MinecraftPlayerFeedback = when (error) {
         is RoomError.NotHost -> MinecraftPlayerFeedback.NotGameHost
+        is RoomError.RoomPlayerCountInvalid -> MinecraftPlayerFeedback.InvalidPlayerCount
         is RoomError.RoomNotReadyToStart -> MinecraftPlayerFeedback.NotAllPlayersReady
         else -> MinecraftPlayerFeedback.GameStartFailed
     }

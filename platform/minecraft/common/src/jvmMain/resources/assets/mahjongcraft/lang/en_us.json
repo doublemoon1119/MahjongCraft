@@ -16,8 +16,12 @@
   "mahjongcraft.message.game_left": "Left the mahjong game",
   "mahjongcraft.message.game_dissolved": "Mahjong game dissolved",
   "mahjongcraft.message.game_leave_failed": "Could not leave this mahjong game",
-  "mahjongcraft.message.ready_toggled": "Ready state toggled",
+  "mahjongcraft.message.ready_toggle_prefix": "Ready state toggled: ",
+  "mahjongcraft.message.ready_state_ready": "Ready",
+  "mahjongcraft.message.ready_state_not_ready": "Not ready",
+  "mahjongcraft.message.host_ready_not_required": "The host does not need to ready up, just start the game directly",
   "mahjongcraft.message.not_game_host": "Only the game host can start the game",
+  "mahjongcraft.message.invalid_player_count": "The current player count does not meet the rule requirements",
   "mahjongcraft.message.not_all_players_ready": "Not everyone is ready yet",
   "mahjongcraft.message.game_start_failed": "Could not start this mahjong game",
   "mahjongcraft.message.table_not_reachable": "That table does not exist or is out of reach"

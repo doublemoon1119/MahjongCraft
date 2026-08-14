@@ -193,6 +193,25 @@ class StartGameUseCaseTest {
     }
 
     /**
+     * 驗證人數不在規則允許區間內時回傳 [RoomError.RoomPlayerCountInvalid]，而不是與「還有人未準備」
+     * 混用同一個錯誤——即使所有目前在場的玩家都已經準備好，人數不足時仍然不能開局。
+     */
+    @Test
+    fun `test start game fails when player count invalid`() = runTest {
+        val fixtures = Fixtures()
+        val understaffedRoom = readyRoom().let { room ->
+            val remainingGuest = guestIds.first()
+            room.copy(playerIds = setOf(hostId, remainingGuest), readyPlayerIds = setOf(remainingGuest))
+        }
+        fixtures.roomRepo.setRoom(understaffedRoom)
+
+        val result = fixtures.useCase(roomId, hostId)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(RoomError.RoomPlayerCountInvalid(roomId), result.error)
+    }
+
+    /**
      * 驗證開局成功後，同一房間 id 再次嘗試開局會因為 Room 已被移除而回傳 RoomNotFound，
      * 而非重複初始化出另一場對局。
      */

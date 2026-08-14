@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import kotlinx.coroutines.launch
@@ -49,6 +50,7 @@ class MahjongTableRoomService(
     private val roomSnapshotSender: RoomSnapshotSender,
     private val gameSnapshotSender: GameSnapshotSender,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
+    private val tableLocationRegistry: TableLocationRegistry,
 ) {
     /** 依麻將桌目前處於空桌、等待室或遊戲階段，建立、加入或重新同步玩家狀態。 */
     fun interact(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
@@ -76,7 +78,8 @@ class MahjongTableRoomService(
                     is Outcome.Success -> {
                         syncRoom(tableId, playerId)
                         roomSnapshotSender.send(tableId, playerId)
-                        feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameCreated)
+                        val location = tableLocationRegistry.get(tableId)?.location
+                        feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameCreated(location))
                     }
                     is Outcome.Error -> publishRoomError(playerId, result.error)
                 }
@@ -142,6 +145,9 @@ class MahjongTableRoomService(
     /**
      * 切換玩家在房間等待階段的準備狀態。以玩家目前的房間歸屬（[PlayerMembershipRepository]）解析
      * 目標房間，不需要玩家實際站在桌子附近——呼叫端（指令或未來的 HUD）自行決定要不要額外檢查距離。
+     *
+     * 房主不參與準備機制（開局用 [start]），這裡先擋在呼叫 [toggleReady] 之前給出專屬回饋，避免
+     * [ToggleReadyUseCase] 內部對房主的無操作分支被誤讀成一次真正的狀態切換。
      */
     fun ready(player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
@@ -151,8 +157,13 @@ class MahjongTableRoomService(
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
             }
+            val room = roomRepository.getRoom(tableId)
+            if (room != null && room.hostId == playerId) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.HostReadyNotRequired)
+                return@launch
+            }
             when (val result = toggleReady(tableId, playerId)) {
-                is Outcome.Success -> feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.ReadyToggled)
+                is Outcome.Success -> feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.ReadyToggled(result.value))
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.readyError(result.error))
             }
         }

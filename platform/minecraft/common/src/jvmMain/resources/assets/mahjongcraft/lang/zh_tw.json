@@ -16,8 +16,12 @@
   "mahjongcraft.message.game_left": "已離開麻將遊戲",
   "mahjongcraft.message.game_dissolved": "已解散麻將遊戲",
   "mahjongcraft.message.game_leave_failed": "無法離開這場麻將遊戲",
-  "mahjongcraft.message.ready_toggled": "已切換準備狀態",
+  "mahjongcraft.message.ready_toggle_prefix": "已將準備狀態切換為：",
+  "mahjongcraft.message.ready_state_ready": "準備",
+  "mahjongcraft.message.ready_state_not_ready": "尚未準備",
+  "mahjongcraft.message.host_ready_not_required": "遊戲主持人不需要準備，請直接開始對局",
   "mahjongcraft.message.not_game_host": "只有遊戲主持人可以開始對局",
+  "mahjongcraft.message.invalid_player_count": "目前人數不符合規則限制",
   "mahjongcraft.message.not_all_players_ready": "還有玩家尚未準備好",
   "mahjongcraft.message.game_start_failed": "無法開始這場麻將對局",
   "mahjongcraft.message.table_not_reachable": "找不到那張麻將桌，或距離太遠無法互動"
