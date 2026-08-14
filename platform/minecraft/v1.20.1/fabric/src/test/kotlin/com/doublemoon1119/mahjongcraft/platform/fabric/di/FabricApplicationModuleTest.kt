@@ -32,6 +32,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTabl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import org.koin.core.context.stopKoin
 import org.koin.plugin.module.dsl.startKoin
 import kotlin.test.AfterTest
@@ -39,6 +40,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 /**
  * Smoke test：確認 dedicated server 與 Minecraft client 使用的 Koin application 各自具有完整且隔離的
@@ -57,11 +59,13 @@ class FabricApplicationModuleTest {
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val persistenceRegistries = koin.get<PersistenceRegistries>()
         val tileTypeRegistry = koin.get<TileTypeRegistry>()
+        val minecraftTileAssetRegistry = koin.get<MinecraftTileAssetRegistry>()
         FabricMahjongExtensions.initialize(
             moduleRegistry,
             tileTypeRegistry,
             networkRegistries,
             persistenceRegistries,
+            minecraftTileAssetRegistry,
             emptyList(),
         )
 
@@ -69,7 +73,9 @@ class FabricApplicationModuleTest {
         assertSame(networkRegistries, koin.get<NetworkDtoRegistries>())
         assertSame(persistenceRegistries, koin.get<PersistenceRegistries>())
         assertSame(tileTypeRegistry, koin.get<TileTypeRegistry>())
+        assertSame(minecraftTileAssetRegistry, koin.get<MinecraftTileAssetRegistry>())
         assertEquals(RiichiTileTypes.ALL + TaiwanTileTypes.ALL, tileTypeRegistry.getAll().map { it.id })
+        assertTrue(minecraftTileAssetRegistry.isFrozen)
         koin.get<GameFlowCoordinator>()
         koin.get<GameEventPublisher>()
         koin.get<DecisionTimerUpdatePublisher>()

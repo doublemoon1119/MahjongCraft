@@ -9,7 +9,10 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import net.fabricmc.loader.api.FabricLoader
 import org.slf4j.LoggerFactory
 
@@ -32,11 +35,19 @@ object FabricMahjongExtensions {
         tileTypeRegistry: TileTypeRegistry,
         networkRegistries: NetworkDtoRegistries,
         persistenceRegistries: PersistenceRegistries,
+        minecraftTileAssetRegistry: MinecraftTileAssetRegistry,
     ) {
         try {
             val extensions = FabricLoader.getInstance()
                 .getEntrypoints(MAHJONG_EXTENSION_ENTRYPOINT, MahjongExtension::class.java)
-            initialize(moduleRegistry, tileTypeRegistry, networkRegistries, persistenceRegistries, extensions)
+            initialize(
+                moduleRegistry,
+                tileTypeRegistry,
+                networkRegistries,
+                persistenceRegistries,
+                minecraftTileAssetRegistry,
+                extensions,
+            )
             logger.info("Registered {} Mahjong extension(s)", extensions.size)
         } catch (cause: Exception) {
             logger.error("Failed to initialize Mahjong extensions", cause)
@@ -50,6 +61,7 @@ object FabricMahjongExtensions {
         tileTypeRegistry: TileTypeRegistry,
         networkRegistries: NetworkDtoRegistries,
         persistenceRegistries: PersistenceRegistries,
+        minecraftTileAssetRegistry: MinecraftTileAssetRegistry,
         extensions: Iterable<MahjongExtension>,
     ) {
         moduleRegistry.registerBuiltInRuleModules()
@@ -62,6 +74,13 @@ object FabricMahjongExtensions {
             tileTypeRegistry = tileTypeRegistry,
             networkRegistries = networkRegistries,
             persistenceRegistries = persistenceRegistries,
+        )
+
+        // 同一個第三方類別可同時實作 MahjongExtension 與 MinecraftMahjongExtension，
+        // 不需要在 fabric.mod.json 額外宣告第二個 entrypoint。
+        MinecraftMahjongExtensionRegistrar.registerAndFreeze(
+            extensions = extensions.filterIsInstance<MinecraftMahjongExtension>(),
+            registry = minecraftTileAssetRegistry,
         )
     }
 }

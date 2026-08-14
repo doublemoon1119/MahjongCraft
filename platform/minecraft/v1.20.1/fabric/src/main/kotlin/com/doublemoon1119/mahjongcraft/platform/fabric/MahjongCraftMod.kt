@@ -33,6 +33,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableL
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -59,6 +60,7 @@ class MahjongCraftMod : ModInitializer {
             tileTypeRegistry = koin.get<TileTypeRegistry>(),
             networkRegistries = koin.get<NetworkDtoRegistries>(),
             persistenceRegistries = koin.get<PersistenceRegistries>(),
+            minecraftTileAssetRegistry = koin.get<MinecraftTileAssetRegistry>(),
         )
         ModItems.register()
         ModEntities.register()
