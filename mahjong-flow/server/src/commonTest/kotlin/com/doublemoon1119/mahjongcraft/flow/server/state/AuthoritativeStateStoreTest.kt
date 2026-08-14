@@ -163,7 +163,7 @@ class AuthoritativeStateStoreTest {
             id = Uuid.random(),
             hostId = hostId,
             gameConfig = GameConfig(FakeMahjongRuleConfig()),
-            playerIds = setOf(hostId),
+            playerIds = listOf(hostId),
         )
     }
 }

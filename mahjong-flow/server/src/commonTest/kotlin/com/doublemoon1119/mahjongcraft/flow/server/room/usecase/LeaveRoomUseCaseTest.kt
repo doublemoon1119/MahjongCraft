@@ -41,7 +41,7 @@ class LeaveRoomUseCaseTest {
         val useCase = LeaveRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         val guestId = Uuid.random()
-        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId, guestId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId, guestId))
         roomRepo.setRoom(room)
 
         // 模擬兩位玩家都在觀察
@@ -76,7 +76,7 @@ class LeaveRoomUseCaseTest {
         val useCase = LeaveRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
         val guestId = Uuid.random()
-        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId, guestId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId, guestId))
         roomRepo.setRoom(room)
 
         // 模擬房主與客場玩家都在觀察該房間
@@ -125,7 +125,7 @@ class LeaveRoomUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val memberships = PlayerMembershipRepositoryImpl()
         val guestId = Uuid.random()
-        roomRepo.setRoom(Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId, guestId)))
+        roomRepo.setRoom(Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId, guestId)))
         memberships.claim(guestId, roomId)
         val useCase = LeaveRoomUseCase(
             roomRepo,

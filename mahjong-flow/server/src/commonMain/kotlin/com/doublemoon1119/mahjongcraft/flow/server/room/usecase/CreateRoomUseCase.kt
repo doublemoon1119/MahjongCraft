@@ -67,8 +67,8 @@ class CreateRoomUseCase(
                         id = roomId,
                         hostId = hostId,
                         gameConfig = gameConfig,
-                        playerIds = setOf(hostId),
-                        readyPlayerIds = emptySet(),
+                        playerIds = listOf(hostId),
+                        readyPlayerIds = emptyList(),
                     )
                     AuthoritativeStateUpdate(
                         state.copy(rooms = state.rooms + (roomId to newRoom)),

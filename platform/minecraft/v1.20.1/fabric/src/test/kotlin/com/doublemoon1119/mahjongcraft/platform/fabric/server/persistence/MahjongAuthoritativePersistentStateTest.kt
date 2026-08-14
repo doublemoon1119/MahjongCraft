@@ -112,7 +112,7 @@ class MahjongAuthoritativePersistentStateTest {
             id = Uuid.random(),
             hostId = hostId,
             gameConfig = GameConfig(RiichiRuleConfig()),
-            playerIds = setOf(hostId),
+            playerIds = listOf(hostId),
         )
     }
 }

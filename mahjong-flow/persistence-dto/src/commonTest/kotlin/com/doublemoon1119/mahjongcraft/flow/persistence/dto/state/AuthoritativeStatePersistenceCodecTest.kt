@@ -121,7 +121,7 @@ class AuthoritativeStatePersistenceCodecTest {
             id = id,
             hostId = hostId,
             gameConfig = GameConfig(TaiwanRuleConfig()),
-            playerIds = setOf(hostId),
+            playerIds = listOf(hostId),
         )
     }
 

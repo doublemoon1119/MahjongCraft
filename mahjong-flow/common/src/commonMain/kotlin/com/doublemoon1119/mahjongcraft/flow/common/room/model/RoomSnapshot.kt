@@ -12,9 +12,9 @@ import kotlin.uuid.Uuid
  * @property id 房間的唯一識別碼。
  * @property hostId 房主的玩家 Uuid。
  * @property gameConfig 該房間開局時採用的完整遊戲設定。
- * @property playerIds 目前房間內所有玩家（含房主與 AI）的 Uuid 集合。
- * @property readyPlayerIds 已標記為「準備完成」的玩家 Uuid 集合。
- * @property aiPlayerIds 由房主新增的 AI 玩家 Uuid 集合。
+ * @property playerIds 目前房間內所有玩家（含房主與 AI）的 Uuid，依加入房間的順序排列。
+ * @property readyPlayerIds 已標記為「準備完成」的玩家 Uuid。
+ * @property aiPlayerIds 由房主新增的 AI 玩家 Uuid，依加入房間的順序排列。
  * @property canStart 房間是否符合開局條件。
  * @property isHost 此快照的觀察者是否為房主。
  * @property isInRoom 此快照的觀察者目前是否身處該房間內。
@@ -23,9 +23,9 @@ data class RoomSnapshot(
     val id: Uuid,
     val hostId: Uuid,
     val gameConfig: GameConfig,
-    val playerIds: Set<Uuid>,
-    val readyPlayerIds: Set<Uuid>,
-    val aiPlayerIds: Set<Uuid>,
+    val playerIds: List<Uuid>,
+    val readyPlayerIds: List<Uuid>,
+    val aiPlayerIds: List<Uuid>,
     val canStart: Boolean,
     val isHost: Boolean,
     val isInRoom: Boolean,

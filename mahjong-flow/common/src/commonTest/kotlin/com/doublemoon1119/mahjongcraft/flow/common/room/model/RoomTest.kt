@@ -13,7 +13,7 @@ class RoomTest {
     @Test
     fun `test isFull returns true when players reach max capacity`() {
         val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 3)
-        val playerIds = setOf(Uuid.random(), Uuid.random(), Uuid.random())
+        val playerIds = listOf(Uuid.random(), Uuid.random(), Uuid.random())
         val room = Room(
             id = Uuid.random(),
             hostId = playerIds.first(),
@@ -27,7 +27,7 @@ class RoomTest {
     @Test
     fun `test isFull returns false when room has space`() {
         val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 4)
-        val playerIds = setOf(Uuid.random(), Uuid.random())
+        val playerIds = listOf(Uuid.random(), Uuid.random())
         val room = Room(
             id = Uuid.random(),
             hostId = playerIds.first(),
@@ -45,8 +45,8 @@ class RoomTest {
         val player2 = Uuid.random()
         val player3 = Uuid.random()
 
-        val playerIds = setOf(host, player2, player3)
-        val readyPlayerIds = setOf(player2, player3)
+        val playerIds = listOf(host, player2, player3)
+        val readyPlayerIds = listOf(player2, player3)
 
         val room = Room(
             id = Uuid.random(),
@@ -68,7 +68,7 @@ class RoomTest {
             id = Uuid.random(),
             hostId = host,
             gameConfig = GameConfig(config),
-            playerIds = setOf(host),
+            playerIds = listOf(host),
         )
 
         assertFalse(room.isPlayerCountValid, "Player count should be invalid when below the configured minimum.")
@@ -78,7 +78,7 @@ class RoomTest {
     fun `test isPlayerCountValid returns true when player count is within range`() {
         val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 4)
         val host = Uuid.random()
-        val playerIds = setOf(host, Uuid.random())
+        val playerIds = listOf(host, Uuid.random())
 
         val room = Room(
             id = Uuid.random(),
@@ -94,14 +94,14 @@ class RoomTest {
     fun `test canStart returns false when player count is below minimum`() {
         val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 4)
         val host = Uuid.random()
-        val playerIds = setOf(host)
+        val playerIds = listOf(host)
 
         val room = Room(
             id = Uuid.random(),
             hostId = host,
             gameConfig = GameConfig(config),
             playerIds = playerIds,
-            readyPlayerIds = emptySet(),
+            readyPlayerIds = emptyList(),
         )
 
         assertFalse(room.canStart, "Room should not start if the number of players is below the minimum required.")
@@ -114,8 +114,8 @@ class RoomTest {
         val player2 = Uuid.random()
         val player3 = Uuid.random()
 
-        val playerIds = setOf(host, player2, player3)
-        val readyPlayerIds = setOf(player2)
+        val playerIds = listOf(host, player2, player3)
+        val readyPlayerIds = listOf(player2)
 
         val room = Room(
             id = Uuid.random(),
@@ -135,8 +135,8 @@ class RoomTest {
         val player2 = Uuid.random()
         val externalPlayer = Uuid.random()
 
-        val playerIds = setOf(host, player2)
-        val readyPlayerIds = setOf(player2, externalPlayer)
+        val playerIds = listOf(host, player2)
+        val readyPlayerIds = listOf(player2, externalPlayer)
 
         val room = Room(
             id = Uuid.random(),
@@ -173,7 +173,7 @@ class RoomTest {
             id = Uuid.random(),
             hostId = hostId,
             gameConfig = GameConfig(FakeMahjongRuleConfig()),
-            playerIds = setOf(hostId, humanId, aiId),
+            playerIds = listOf(hostId, humanId, aiId),
             aiPlayerStrategyKeys = mapOf(aiId to "random"),
         )
 

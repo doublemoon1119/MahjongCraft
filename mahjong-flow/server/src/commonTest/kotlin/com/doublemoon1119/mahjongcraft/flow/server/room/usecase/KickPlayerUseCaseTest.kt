@@ -42,8 +42,8 @@ class KickPlayerUseCaseTest {
             id = roomId,
             hostId = hostId,
             gameConfig = GameConfig(config),
-            playerIds = setOf(hostId, targetId),
-            readyPlayerIds = setOf(targetId),
+            playerIds = listOf(hostId, targetId),
+            readyPlayerIds = listOf(targetId),
         )
         roomRepo.setRoom(room)
 
@@ -66,6 +66,39 @@ class KickPlayerUseCaseTest {
     }
 
     /**
+     * 驗證剔除 AI 玩家時，[com.doublemoon1119.mahjongcraft.flow.common.room.model.Room.aiPlayerStrategyKeys]
+     * 裡對應的項目也會一併清除，不會留下指向不存在成員的殘留資料。
+     */
+    @Test
+    fun `test kicking ai player also removes its strategy key`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val service = FakeRoomEventPublisher()
+        val useCase = KickPlayerUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
+
+        val aiId = Uuid.random()
+        val room = Room(
+            id = roomId,
+            hostId = hostId,
+            gameConfig = GameConfig(config),
+            playerIds = listOf(hostId, aiId),
+            readyPlayerIds = listOf(aiId),
+            aiPlayerStrategyKeys = mapOf(aiId to "random"),
+        )
+        roomRepo.setRoom(room)
+
+        val result = useCase(roomId, hostId, aiId)
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val updatedRoom = roomRepo.getRoom(roomId)
+        assertNotNull(updatedRoom)
+        assertFalse(
+            updatedRoom.aiPlayerStrategyKeys.containsKey(aiId),
+            "Kicked AI's strategy key should be removed, not left dangling.",
+        )
+    }
+
+    /**
      * 測試當房主試圖剔除自己時應拋出異常。
      */
     @Test
@@ -75,7 +108,7 @@ class KickPlayerUseCaseTest {
         val service = FakeRoomEventPublisher()
         val useCase = KickPlayerUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
-        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId))
         roomRepo.setRoom(room)
 
         val result = useCase(roomId, hostId, hostId)
@@ -94,7 +127,7 @@ class KickPlayerUseCaseTest {
 
         val guestId = Uuid.random()
         val targetId = Uuid.random()
-        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId, guestId, targetId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId, guestId, targetId))
         roomRepo.setRoom(room)
 
         val result = useCase(roomId, guestId, targetId)

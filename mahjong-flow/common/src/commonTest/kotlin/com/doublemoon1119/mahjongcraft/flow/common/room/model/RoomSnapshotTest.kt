@@ -14,7 +14,7 @@ class RoomSnapshotTest {
     fun `test toSnapshot identifies host correctly`() {
         val config = FakeMahjongRuleConfig()
         val hostId = Uuid.random()
-        val playerIds = setOf(hostId, Uuid.random())
+        val playerIds = listOf(hostId, Uuid.random())
         val room = Room(
             id = Uuid.random(),
             hostId = hostId,
@@ -33,7 +33,7 @@ class RoomSnapshotTest {
         val config = FakeMahjongRuleConfig()
         val hostId = Uuid.random()
         val memberId = Uuid.random()
-        val playerIds = setOf(hostId, memberId)
+        val playerIds = listOf(hostId, memberId)
         val room = Room(
             id = Uuid.random(),
             hostId = hostId,
@@ -54,7 +54,7 @@ class RoomSnapshotTest {
         val hostId = Uuid.random()
         val memberId = Uuid.random()
         val externalId = Uuid.random()
-        val playerIds = setOf(hostId, memberId)
+        val playerIds = listOf(hostId, memberId)
         val room = Room(
             id = Uuid.random(),
             hostId = hostId,
@@ -77,7 +77,7 @@ class RoomSnapshotTest {
             id = Uuid.random(),
             hostId = hostId,
             gameConfig = GameConfig(FakeMahjongRuleConfig()),
-            playerIds = setOf(hostId, aiId),
+            playerIds = listOf(hostId, aiId),
             aiPlayerStrategyKeys = mapOf(aiId to "random"),
         )
 

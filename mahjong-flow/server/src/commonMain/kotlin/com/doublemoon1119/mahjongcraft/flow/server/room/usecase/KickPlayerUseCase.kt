@@ -53,6 +53,7 @@ class KickPlayerUseCase(
                     val updatedRoom = room.copy(
                         playerIds = room.playerIds - targetPlayerId,
                         readyPlayerIds = room.readyPlayerIds - targetPlayerId,
+                        aiPlayerStrategyKeys = room.aiPlayerStrategyKeys - targetPlayerId,
                     )
                     updatedRoom to Outcome.Success(updatedRoom)
                 }

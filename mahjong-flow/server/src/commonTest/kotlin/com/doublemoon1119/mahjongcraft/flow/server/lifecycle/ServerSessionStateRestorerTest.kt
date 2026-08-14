@@ -58,7 +58,7 @@ class ServerSessionStateRestorerTest {
             id = Uuid.random(),
             hostId = roomPlayerId,
             gameConfig = GameConfig(FakeMahjongRuleConfig()),
-            playerIds = setOf(roomPlayerId),
+            playerIds = listOf(roomPlayerId),
         )
         val game = FakeTableStateFactory.create(
             players = listOf(gamePlayerId, otherGamePlayerId).map { playerId ->
@@ -116,8 +116,8 @@ class ServerSessionStateRestorerTest {
         val playerId = Uuid.random()
         val existingTableId = Uuid.random()
         memberships.claim(playerId, existingTableId)
-        val firstRoom = Room(Uuid.random(), playerId, GameConfig(FakeMahjongRuleConfig()), setOf(playerId))
-        val secondRoom = Room(Uuid.random(), playerId, GameConfig(FakeMahjongRuleConfig()), setOf(playerId))
+        val firstRoom = Room(Uuid.random(), playerId, GameConfig(FakeMahjongRuleConfig()), listOf(playerId))
+        val secondRoom = Room(Uuid.random(), playerId, GameConfig(FakeMahjongRuleConfig()), listOf(playerId))
 
         val state = AuthoritativeStateSnapshot(
             rooms = mapOf(firstRoom.id to firstRoom, secondRoom.id to secondRoom),

@@ -12,23 +12,23 @@ import kotlin.uuid.Uuid
  * @property id 房間的唯一識別碼。
  * @property hostId 房主的玩家 Uuid。
  * @property gameConfig 該房間開局時採用的完整遊戲設定。
- * @property playerIds 目前房間內所有玩家（含房主與 AI）的 Uuid 集合。
- * @property readyPlayerIds 已標記為「準備完成」的玩家 Uuid 集合（房主不計入此集合）。
+ * @property playerIds 目前房間內所有玩家（含房主與 AI）的 Uuid，依加入房間的順序排列，不會重複。
+ * @property readyPlayerIds 已標記為「準備完成」的玩家 Uuid（房主不計入此集合），不會重複。
  * @property aiPlayerStrategyKeys 由房主新增的 AI 玩家 Uuid 對應到其 AI 策略登記 key 的映射。
  */
 data class Room(
     val id: Uuid,
     val hostId: Uuid,
     val gameConfig: GameConfig,
-    val playerIds: Set<Uuid> = emptySet(),
-    val readyPlayerIds: Set<Uuid> = emptySet(),
+    val playerIds: List<Uuid> = emptyList(),
+    val readyPlayerIds: List<Uuid> = emptyList(),
     val aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
 ) {
     /** 依規則配置換算出的合法玩家人數區間。 */
     private val allowedRange: IntRange get() = gameConfig.ruleConfig.minPlayers..gameConfig.ruleConfig.maxPlayers
 
-    /** 由房主新增的 AI 玩家 Uuid 集合。 */
-    val aiPlayerIds: Set<Uuid> get() = aiPlayerStrategyKeys.keys
+    /** 由房主新增的 AI 玩家 Uuid，依 [playerIds] 的加入順序排列。 */
+    val aiPlayerIds: List<Uuid> get() = playerIds.filter { it in aiPlayerStrategyKeys }
 
     /** 房間人數是否已達規則配置的上限。 */
     val isFull: Boolean get() = playerIds.size >= gameConfig.ruleConfig.maxPlayers
@@ -50,8 +50,8 @@ data class Room(
      */
     val canStart: Boolean get() = isPlayerCountValid && allOthersReady
 
-    /** 排除 AI 後，房間內實際的人類玩家 Uuid 集合。 */
-    val humanPlayerIds: Set<Uuid> get() = playerIds - aiPlayerIds
+    /** 排除 AI 後，房間內實際的人類玩家 Uuid，依 [playerIds] 的加入順序排列。 */
+    val humanPlayerIds: List<Uuid> get() = playerIds - aiPlayerIds
 
     /**
      * 判斷指定玩家是否為 AI。
@@ -59,5 +59,5 @@ data class Room(
      * @param playerId 欲檢查的玩家 Uuid。
      * @return 若該 Uuid 屬於 [aiPlayerIds] 則回傳 true。
      */
-    fun isAi(playerId: Uuid): Boolean = aiPlayerIds.contains(playerId)
+    fun isAi(playerId: Uuid): Boolean = aiPlayerStrategyKeys.containsKey(playerId)
 }

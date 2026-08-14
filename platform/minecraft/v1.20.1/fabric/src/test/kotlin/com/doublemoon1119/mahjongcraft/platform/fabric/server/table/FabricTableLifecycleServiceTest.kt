@@ -115,7 +115,7 @@ class FabricTableLifecycleServiceTest {
                 id = tableId,
                 hostId = playerId,
                 gameConfig = GameConfig(FakeMahjongRuleConfig()),
-                playerIds = setOf(playerId),
+                playerIds = listOf(playerId),
             )
             store.load(AuthoritativeStateSnapshot(rooms = mapOf(tableId to room)))
             memberships.claim(playerId, tableId)

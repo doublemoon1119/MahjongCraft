@@ -78,7 +78,7 @@ class OrphanedTableCleanupService(
                     AuthoritativeStateUpdate(state, CleanupDecision.retain())
                 room != null -> AuthoritativeStateUpdate(
                     state.copy(rooms = state.rooms - tableId),
-                    CleanupDecision.removeRoom(room.playerIds),
+                    CleanupDecision.removeRoom(room.playerIds.toSet()),
                 )
                 else -> AuthoritativeStateUpdate(
                     state.copy(games = state.games - tableId),

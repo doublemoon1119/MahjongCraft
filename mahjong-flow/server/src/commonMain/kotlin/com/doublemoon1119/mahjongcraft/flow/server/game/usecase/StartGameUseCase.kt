@@ -55,7 +55,7 @@ class StartGameUseCase(
                     val module = moduleRegistry.getModule(room.gameConfig.ruleConfig)
                     val initializationResult = GameInitializer.initialize(
                         id = roomId,
-                        playerIds = room.playerIds.toList(),
+                        playerIds = room.playerIds,
                         module = module,
                         aiPlayerStrategyKeys = room.aiPlayerStrategyKeys,
                     )

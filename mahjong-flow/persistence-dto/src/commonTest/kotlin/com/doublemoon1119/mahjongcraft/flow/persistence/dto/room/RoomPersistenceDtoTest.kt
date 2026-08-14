@@ -103,8 +103,8 @@ class RoomPersistenceDtoTest {
             id = Uuid.random(),
             hostId = hostId,
             gameConfig = GameConfig(config),
-            playerIds = setOf(hostId, humanId, aiId),
-            readyPlayerIds = setOf(humanId, aiId),
+            playerIds = listOf(hostId, humanId, aiId),
+            readyPlayerIds = listOf(humanId, aiId),
             aiPlayerStrategyKeys = mapOf(aiId to "random"),
         )
     }

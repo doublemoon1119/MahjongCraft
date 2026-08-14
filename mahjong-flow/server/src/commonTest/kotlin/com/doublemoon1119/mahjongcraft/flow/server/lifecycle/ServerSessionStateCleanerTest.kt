@@ -63,7 +63,7 @@ class ServerSessionStateCleanerTest {
             id = Uuid.random(),
             hostId = observerId,
             gameConfig = GameConfig(FakeMahjongRuleConfig()),
-            playerIds = setOf(observerId),
+            playerIds = listOf(observerId),
         )
         val game = FakeTableStateFactory.create()
         store.load(

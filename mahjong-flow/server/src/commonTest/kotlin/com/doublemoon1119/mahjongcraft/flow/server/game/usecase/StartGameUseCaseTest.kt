@@ -42,8 +42,8 @@ class StartGameUseCaseTest {
         id = roomId,
         hostId = hostId,
         gameConfig = gameConfig,
-        playerIds = (listOf(hostId) + guestIds).toSet(),
-        readyPlayerIds = guestIds.toSet(),
+        playerIds = listOf(hostId) + guestIds,
+        readyPlayerIds = guestIds,
     )
 
     private class Fixtures {
@@ -184,7 +184,7 @@ class StartGameUseCaseTest {
     @Test
     fun `test start game fails when room not ready to start`() = runTest {
         val fixtures = Fixtures()
-        fixtures.roomRepo.setRoom(readyRoom().copy(readyPlayerIds = emptySet()))
+        fixtures.roomRepo.setRoom(readyRoom().copy(readyPlayerIds = emptyList()))
 
         val result = fixtures.useCase(roomId, hostId)
 
@@ -201,7 +201,7 @@ class StartGameUseCaseTest {
         val fixtures = Fixtures()
         val understaffedRoom = readyRoom().let { room ->
             val remainingGuest = guestIds.first()
-            room.copy(playerIds = setOf(hostId, remainingGuest), readyPlayerIds = setOf(remainingGuest))
+            room.copy(playerIds = listOf(hostId, remainingGuest), readyPlayerIds = listOf(remainingGuest))
         }
         fixtures.roomRepo.setRoom(understaffedRoom)
 

@@ -41,7 +41,7 @@ class JoinRoomUseCaseTest {
         val service = FakeRoomEventPublisher()
         val useCase = JoinRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
-        val initialRoom = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId))
+        val initialRoom = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId))
         roomRepo.setRoom(initialRoom)
 
         // 模擬房主與新玩家都已經是該位置的觀察者
@@ -76,7 +76,7 @@ class JoinRoomUseCaseTest {
         val service = FakeRoomEventPublisher()
         val useCase = JoinRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
-        val fullPlayerIds = (1..4).map { Uuid.random() }.toSet()
+        val fullPlayerIds = (1..4).map { Uuid.random() }
         val fullRoom = Room(id = roomId, hostId = fullPlayerIds.first(), gameConfig = GameConfig(config), playerIds = fullPlayerIds)
         roomRepo.setRoom(fullRoom)
 
@@ -94,7 +94,7 @@ class JoinRoomUseCaseTest {
         val service = FakeRoomEventPublisher()
         val useCase = JoinRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, service)
 
-        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId))
         roomRepo.setRoom(room)
 
         val result = useCase(roomId, hostId)
@@ -115,7 +115,7 @@ class JoinRoomUseCaseTest {
         val notificationService = FakeRoomEventPublisher()
         val useCase = JoinRoomUseCase(roomRepo, PlayerMembershipRepositoryImpl(), snapshotRepo, notificationService)
 
-        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId))
         roomRepo.setRoom(room)
 
         // 模擬兩個人在觀察：房主與一個純觀察者

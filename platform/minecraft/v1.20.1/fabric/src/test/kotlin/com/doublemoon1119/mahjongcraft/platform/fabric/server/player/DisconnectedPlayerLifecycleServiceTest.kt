@@ -165,7 +165,7 @@ class DisconnectedPlayerLifecycleServiceTest {
                 id = tableId,
                 hostId = hostId,
                 gameConfig = GameConfig(FakeMahjongRuleConfig()),
-                playerIds = setOf(hostId, playerId),
+                playerIds = listOf(hostId, playerId),
             ),
         )
         memberships.claim(playerId, tableId)

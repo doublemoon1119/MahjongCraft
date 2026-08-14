@@ -37,7 +37,7 @@ class OrphanedTableCleanupServiceTest {
             id = fixture.tableId,
             hostId = playerId,
             gameConfig = GameConfig(FakeMahjongRuleConfig()),
-            playerIds = setOf(playerId),
+            playerIds = listOf(playerId),
         )
         fixture.roomRepository.setRoom(room)
         fixture.memberships.claim(playerId, fixture.tableId)

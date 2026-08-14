@@ -68,7 +68,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             id = Uuid.random(),
             hostId = hostId,
             gameConfig = GameConfig(RiichiRuleConfig()),
-            playerIds = setOf(hostId, existingPlayerId),
+            playerIds = listOf(hostId, existingPlayerId),
         )
 
         runtime.restore(AuthoritativeStateSnapshot(rooms = mapOf(room.id to room)))

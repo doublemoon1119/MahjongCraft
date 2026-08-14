@@ -43,7 +43,7 @@ class UpdateConfigUseCaseTest {
             id = roomId,
             hostId = hostId,
             gameConfig = GameConfig(initialConfig),
-            playerIds = setOf(hostId, guestId),
+            playerIds = listOf(hostId, guestId),
         )
         roomRepo.setRoom(room)
 
@@ -89,7 +89,7 @@ class UpdateConfigUseCaseTest {
         val useCase = UpdateConfigUseCase(roomRepo, snapshotRepo, notificationService)
 
         val guestId = Uuid.random()
-        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(initialConfig), playerIds = setOf(hostId, guestId))
+        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(initialConfig), playerIds = listOf(hostId, guestId))
         roomRepo.setRoom(room)
 
         // Act & Assert: 客場玩家嘗試修改配置

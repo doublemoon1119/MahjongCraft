@@ -19,7 +19,7 @@ import kotlin.uuid.Uuid
  * @property hostId 房主玩家 UUID。
  * @property config 完整且帶穩定 type key 的規則配置。
  * @property flowConfig 不影響麻將規則的流程與觀看設定。
- * @property playerIds Room 內所有人類與 AI 玩家 UUID。
+ * @property playerIds Room 內所有人類與 AI 玩家 UUID，依加入順序排列。
  * @property readyPlayerIds 已準備玩家 UUID。
  * @property aiPlayerStrategyKeys AI 玩家 UUID 與策略登記 key。
  */
@@ -29,8 +29,8 @@ data class RoomPersistenceDto(
     val hostId: String,
     val config: TypedPersistenceDto,
     val flowConfig: GameFlowConfigPersistenceDto,
-    val playerIds: Set<String>,
-    val readyPlayerIds: Set<String>,
+    val playerIds: List<String>,
+    val readyPlayerIds: List<String>,
     val aiPlayerStrategyKeys: Map<String, String>,
 )
 
@@ -43,8 +43,8 @@ fun Room.toPersistenceDto(
     hostId = hostId.toString(),
     config = ruleConfigRegistry.encode(gameConfig.ruleConfig, json),
     flowConfig = gameConfig.flowConfig.toPersistenceDto(),
-    playerIds = playerIds.mapTo(linkedSetOf(), Uuid::toString),
-    readyPlayerIds = readyPlayerIds.mapTo(linkedSetOf(), Uuid::toString),
+    playerIds = playerIds.map(Uuid::toString),
+    readyPlayerIds = readyPlayerIds.map(Uuid::toString),
     aiPlayerStrategyKeys = aiPlayerStrategyKeys.mapKeys { it.key.toString() },
 )
 
@@ -59,7 +59,7 @@ fun RoomPersistenceDto.toDomain(
         ruleConfig = ruleConfigRegistry.decode(config, json),
         flowConfig = flowConfig.toDomain(),
     ),
-    playerIds = playerIds.mapTo(linkedSetOf(), Uuid::parse),
-    readyPlayerIds = readyPlayerIds.mapTo(linkedSetOf(), Uuid::parse),
+    playerIds = playerIds.map(Uuid::parse),
+    readyPlayerIds = readyPlayerIds.map(Uuid::parse),
     aiPlayerStrategyKeys = aiPlayerStrategyKeys.mapKeys { Uuid.parse(it.key) },
 )

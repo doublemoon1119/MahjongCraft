@@ -31,7 +31,7 @@ class RoomRepositoryImplTest {
         val roomId = Uuid.random()
         val hostId = Uuid.random()
         val config = FakeMahjongRuleConfig()
-        repository.setRoom(Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = setOf(hostId)))
+        repository.setRoom(Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId)))
 
         val concurrency = 200
 
