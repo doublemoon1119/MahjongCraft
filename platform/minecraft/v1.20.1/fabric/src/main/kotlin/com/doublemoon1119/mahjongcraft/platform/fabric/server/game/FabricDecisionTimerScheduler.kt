@@ -15,6 +15,7 @@ import org.koin.core.annotation.Single
  * @property dispatchers 確保計時工作在 server thread 執行。
  * @property timeoutService 執行與平台無關的逾時政策。
  * @property synchronizationService 每秒同步一次所有真人決策者的權威時間。
+ * @property autoDrawService 對逾時推進過的對局補做真人玩家的自動摸牌檢查。
  */
 @Single
 class FabricDecisionTimerScheduler(
@@ -22,6 +23,7 @@ class FabricDecisionTimerScheduler(
     private val dispatchers: CoroutineDispatchers,
     private val timeoutService: GameDecisionTimeoutService,
     private val synchronizationService: DecisionTimerSynchronizationService,
+    private val autoDrawService: MahjongAutoDrawService,
 ) {
     /** 距離上次處理已經過的 server tick 數。 */
     private var elapsedTicks = 0
@@ -38,7 +40,8 @@ class FabricDecisionTimerScheduler(
             isProcessing = true
             appScope.launch(dispatchers.main) {
                 try {
-                    timeoutService.processExpiredDecisions()
+                    val affectedGameIds = timeoutService.processExpiredDecisions()
+                    affectedGameIds.forEach { gameId -> autoDrawService.checkAndAutoDraw(gameId) }
                     synchronizationService.synchronizeAll()
                 } finally {
                     isProcessing = false
