@@ -35,7 +35,7 @@ class GameInitializerTest {
         val playerIds = List(4) { Uuid.random() }
         val gameId = Uuid.random()
 
-        val table = GameInitializer.initialize(gameId, playerIds, module)
+        val table = GameInitializer.initialize(gameId, playerIds, module).tableState
 
         assertEquals(4, table.players.size)
         assertEquals(setOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH), table.players.map { it.initialSeat }.toSet())
@@ -48,7 +48,7 @@ class GameInitializerTest {
     @Test
     fun `test initialize deals initial hand size per rule config`() {
         val playerIds = List(4) { Uuid.random() }
-        val table = GameInitializer.initialize(Uuid.random(), playerIds, module)
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
 
         table.players.forEach { player ->
             assertEquals(module.config.initialHandSize, player.hand.tiles.size)
@@ -63,7 +63,7 @@ class GameInitializerTest {
     fun `test initialize leaves correct remaining wall count`() {
         val playerIds = List(4) { Uuid.random() }
         val totalTileCount = module.createWallFactory().create().remainingCount
-        val table = GameInitializer.initialize(Uuid.random(), playerIds, module)
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
 
         val expectedRemaining = totalTileCount - module.config.deadTileCount - playerIds.size * module.config.initialHandSize
         assertEquals(expectedRemaining, table.tileWall.remainingCount)
@@ -76,7 +76,7 @@ class GameInitializerTest {
     @Test
     fun `test initialize resolves wall opening and dead wall for a rule that supports it`() {
         val playerIds = List(4) { Uuid.random() }
-        val table = GameInitializer.initialize(Uuid.random(), playerIds, module)
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
 
         assertTrue(table.wallOpening != null, "Riichi supports wall opening, wallOpening should not be null")
         assertEquals(module.config.deadTileCount, table.initialDeadWall.size)
@@ -90,7 +90,7 @@ class GameInitializerTest {
     fun `test initialize accounts for every tile across hands, remaining wall, and dead wall`() {
         val playerIds = List(4) { Uuid.random() }
         val totalTileCount = module.createWallFactory().create().remainingCount
-        val table = GameInitializer.initialize(Uuid.random(), playerIds, module)
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
 
         val dealtTileIds = table.players.flatMap { it.hand.tiles }.map { it.id }
         val remainingTileIds = table.tileWall.getAllTiles().map { it.id }
@@ -107,7 +107,7 @@ class GameInitializerTest {
     @Test
     fun `test initialize sets initial score from config`() {
         val playerIds = List(4) { Uuid.random() }
-        val table = GameInitializer.initialize(Uuid.random(), playerIds, module)
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
 
         table.players.forEach { player ->
             assertEquals(module.config.scoreConfig.initialScore, player.score)
@@ -123,7 +123,7 @@ class GameInitializerTest {
 
         val firstPlayerSeats = List(20) {
             GameInitializer.initialize(Uuid.random(), playerIds, module)
-                .players.first { it.id == playerIds[0] }.initialSeat
+                .tableState.players.first { it.id == playerIds[0] }.initialSeat
         }
 
         assertTrue(firstPlayerSeats.toSet().size > 1, "Seat assignment should vary across multiple initializations.")
@@ -148,7 +148,7 @@ class GameInitializerTest {
     @Test
     fun `test initialize sets dynamic rule state from module`() {
         val playerIds = List(4) { Uuid.random() }
-        val table = GameInitializer.initialize(Uuid.random(), playerIds, module)
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
 
         assertIs<RiichiDynamicState>(table.dynamicRuleState)
     }
@@ -160,7 +160,7 @@ class GameInitializerTest {
     @Test
     fun `test initialize sets player rule state from module for every player`() {
         val playerIds = List(4) { Uuid.random() }
-        val table = GameInitializer.initialize(Uuid.random(), playerIds, module)
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
 
         table.players.forEach { player ->
             assertIs<RiichiPlayerState>(player.playerRuleState)
@@ -184,7 +184,7 @@ class GameInitializerTest {
             isMatchOver = false,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
 
         assertEquals(32000, table.players.first { it.id == p1.id }.score)
         assertEquals(18000, table.players.first { it.id == p2.id }.score)
@@ -209,7 +209,7 @@ class GameInitializerTest {
             isMatchOver = false,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
 
         assertEquals(listOf(p1.id, p2.id, p3.id, p4.id), table.players.map { it.id })
     }
@@ -231,7 +231,7 @@ class GameInitializerTest {
             isMatchOver = false,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
 
         assertEquals(3, table.roundNumber)
         assertEquals(1, table.comboCount)
@@ -259,7 +259,7 @@ class GameInitializerTest {
             isMatchOver = false,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
 
         assertEquals(3, table.currentPlayerIndex, "P4 (index 3) holds East, so they are the new dealer.")
         assertEquals(p4.id, table.currentPlayer.id)
@@ -291,7 +291,7 @@ class GameInitializerTest {
             isMatchOver = false,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
 
         val updated = table.players.first { it.id == dirtyPlayer.id }
         assertEquals(module.config.initialHandSize, updated.hand.tiles.size)
@@ -317,7 +317,7 @@ class GameInitializerTest {
         )
         val carriedOverState = RiichiDynamicState(riichiStickCount = 2)
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, carriedOverState, module)
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, carriedOverState, module).tableState
 
         assertEquals(carriedOverState, table.dynamicRuleState)
     }
@@ -336,7 +336,7 @@ class GameInitializerTest {
             isMatchOver = false,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
 
         assertNull(table.pendingReaction)
     }
@@ -357,7 +357,7 @@ class GameInitializerTest {
         )
         val totalTileCount = module.createWallFactory().create().remainingCount
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
 
         val expectedRemaining = totalTileCount - module.config.deadTileCount - players.size * module.config.initialHandSize
         assertEquals(expectedRemaining, table.tileWall.remainingCount)
@@ -378,7 +378,7 @@ class GameInitializerTest {
             isMatchOver = false,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
 
         assertTrue(table.wallOpening != null, "Riichi supports wall opening, wallOpening should not be null")
         assertEquals(module.config.deadTileCount, table.initialDeadWall.size)

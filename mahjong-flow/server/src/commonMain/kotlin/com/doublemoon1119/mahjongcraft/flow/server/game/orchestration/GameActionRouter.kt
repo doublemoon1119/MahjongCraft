@@ -23,8 +23,7 @@ import kotlin.uuid.Uuid
  * 不需要自己維護一份「哪個操作對應哪個 use case」的對照表。
  *
  * 系統觸發的 3 個 use case（`DeclareExhaustiveDrawUseCase`、`DeclareSuukanNagareUseCase`、
- * `AdvanceRoundUseCase`）不在這裡——它們沒有 `playerId`，呼叫時機由其他機制決定，見
- * `docs/temp/game-orchestration-design.md` 子項 3。
+ * `AdvanceRoundUseCase`）不在這裡——它們沒有 `playerId`，呼叫時機由 [GameFlowCoordinator] 決定。
  *
  * @property drawTileUseCase 摸牌用例。
  * @property discardTileUseCase 捨牌用例。

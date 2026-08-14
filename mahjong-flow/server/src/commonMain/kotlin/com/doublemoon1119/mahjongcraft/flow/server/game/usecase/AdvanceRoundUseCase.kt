@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -10,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -43,6 +46,7 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property eventPublisher 對局通知服務。
+ * @property presentationPublisher 對局 in-process 呈現觸發器。
  */
 @Factory
 class AdvanceRoundUseCase(
@@ -50,6 +54,7 @@ class AdvanceRoundUseCase(
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
+    @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 執行連莊/過莊、開下一局邏輯。
@@ -71,22 +76,34 @@ class AdvanceRoundUseCase(
                     val roundAdvancement = state.advanceRound(dealerRepeats)
 
                     if (roundAdvancement.isMatchOver) {
-                        state to Outcome.Success(AdvanceRoundResult(state, isMatchOver = true))
+                        val advanceOutcome = AdvanceRoundOutcome(
+                            result = AdvanceRoundResult(state, isMatchOver = true),
+                            diceRoll = null,
+                            wallStructure = null,
+                        )
+                        state to Outcome.Success(advanceOutcome)
                     } else {
-                        val newState = GameInitializer.startNextRound(
+                        val initializationResult = GameInitializer.startNextRound(
                             gameId = gameId,
                             roundAdvancement = roundAdvancement,
                             previousDynamicRuleState = state.dynamicRuleState,
                             module = module,
                         )
-                        newState to Outcome.Success(AdvanceRoundResult(newState, isMatchOver = false))
+                        val newState = initializationResult.tableState
+                        val advanceOutcome = AdvanceRoundOutcome(
+                            result = AdvanceRoundResult(newState, isMatchOver = false),
+                            diceRoll = initializationResult.diceRoll,
+                            wallStructure = initializationResult.wallStructure,
+                        )
+                        newState to Outcome.Success(advanceOutcome)
                     }
                 }
             }
         }
 
         if (outcome is Outcome.Error) return outcome
-        val result = (outcome as Outcome.Success).value
+        val advanceOutcome = (outcome as Outcome.Success).value
+        val result = advanceOutcome.result
         if (result.isMatchOver) return Outcome.Success(result)
         val newState = result.tableState
 
@@ -100,6 +117,10 @@ class AdvanceRoundUseCase(
             eventPublisher.publish(gameId, player.id, newDealerId, GameAction.RoundStarted)
         }
 
+        // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過
+        advanceOutcome.diceRoll?.let { presentationPublisher.publishDiceRoll(gameId, it) }
+        advanceOutcome.wallStructure?.let { presentationPublisher.publishWallStructure(gameId, it) }
+
         return Outcome.Success(result)
     }
 
@@ -111,4 +132,15 @@ class AdvanceRoundUseCase(
      * @property isMatchOver 整場對局是否已依規則的 `GameLength` 結束。
      */
     data class AdvanceRoundResult(val tableState: TableState, val isMatchOver: Boolean)
+
+    /**
+     * [invoke] 內部使用的中介結果，把只有平台呈現層需要的一次性擲骰／牌牆結構資料，跟對外公開的
+     * [AdvanceRoundResult] 分開夾帶，避免污染既有呼叫端（例如 `GameFlowCoordinator`）只關心的
+     * 對外回傳形狀。
+     */
+    private data class AdvanceRoundOutcome(
+        val result: AdvanceRoundResult,
+        val diceRoll: DiceRollResult?,
+        val wallStructure: Map<Uuid, TileWallPosition>?,
+    )
 }

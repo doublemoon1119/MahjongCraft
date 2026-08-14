@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlin.uuid.Uuid
@@ -25,7 +26,8 @@ object GameInitializer {
      *        [playerIds] 的子集）。開局後 `Room` 記錄即被刪除，這是「這個玩家是不是 AI、用哪個
      *        策略」這項資訊唯一的搬家管道，之後隨 [MahjongPlayer] 實例透過既有的 `.copy()` 機制
      *        自然延續，不需要另外維護。
-     * @return 已完成洗牌、（若規則支援）擲骰開門、發牌、分數初始化的新 [TableState]。
+     * @return 已完成洗牌、（若規則支援）擲骰開門、發牌、分數初始化的新結果，含權威 [TableState] 與
+     * 只有平台呈現層需要的一次性擲骰／牌牆結構資料。
      * @throws IllegalArgumentException 當玩家人數不在該規則允許的範圍內時拋出。
      */
     fun initialize(
@@ -33,7 +35,7 @@ object GameInitializer {
         playerIds: List<Uuid>,
         module: MahjongRuleModule<*>,
         aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
-    ): TableState {
+    ): GameInitializationResult {
         require(playerIds.size in module.config.minPlayers..module.config.maxPlayers) {
             "Player count ${playerIds.size} out of range for this rule config " +
                 "(${module.config.minPlayers}..${module.config.maxPlayers})"
@@ -57,7 +59,7 @@ object GameInitializer {
             )
         }
 
-        return TableState(
+        val tableState = TableState(
             id = id,
             players = players,
             config = module.config,
@@ -66,6 +68,12 @@ object GameInitializer {
             wallOpening = openedWall.wallOpening,
             initialDeadWall = openedWall.initialDeadWall,
         ).init()
+
+        return GameInitializationResult(
+            tableState = tableState,
+            diceRoll = openedWall.diceRoll,
+            wallStructure = openedWall.structure,
+        )
     }
 
     /**
@@ -85,15 +93,15 @@ object GameInitializer {
      *        玩家列表（含已重新指派的座位方位）、局數、本場數、場風。
      * @param previousDynamicRuleState 上一局結束時的動態桌況狀態（例如供託／立直棒數量）。
      * @param module 該對局採用的規則模組。
-     * @return 已完成重新擲骰開門、重新建牌山、發牌，並套用連莊/過莊結果的新 [TableState]，代表下一局
-     * 的起始狀態。
+     * @return 已完成重新擲骰開門、重新建牌山、發牌，並套用連莊/過莊結果的新結果，代表下一局的起始
+     * 狀態，含權威 [TableState] 與只有平台呈現層需要的一次性擲骰／牌牆結構資料。
      */
     fun startNextRound(
         gameId: Uuid,
         roundAdvancement: RoundAdvancementResult,
         previousDynamicRuleState: DynamicRuleState?,
         module: MahjongRuleModule<*>,
-    ): TableState {
+    ): GameInitializationResult {
         val openedWall = module.buildOpenedWall()
         var wall = openedWall.wall
         val players = roundAdvancement.players.map { player ->
@@ -109,7 +117,7 @@ object GameInitializer {
         }
         val dealerIndex = players.indexOfFirst { it.currentWind == Wind.EAST }
 
-        return TableState(
+        val tableState = TableState(
             id = gameId,
             players = players,
             config = module.config,
@@ -121,6 +129,12 @@ object GameInitializer {
             dynamicRuleState = previousDynamicRuleState,
             wallOpening = openedWall.wallOpening,
             initialDeadWall = openedWall.initialDeadWall,
+        )
+
+        return GameInitializationResult(
+            tableState = tableState,
+            diceRoll = openedWall.diceRoll,
+            wallStructure = openedWall.structure,
         )
     }
 
@@ -135,7 +149,13 @@ object GameInitializer {
         val openingPolicy = createWallOpeningPolicy()
         val layout = createWallLayout()
         if (openingPolicy == null || layout == null) {
-            return OpenedWall(wall = shuffledWall, wallOpening = null, initialDeadWall = emptyList())
+            return OpenedWall(
+                wall = shuffledWall,
+                wallOpening = null,
+                initialDeadWall = emptyList(),
+                diceRoll = null,
+                structure = null,
+            )
         }
 
         val diceRoll = DiceRollResult.of(List(openingPolicy.diceCount) { (1..DICE_FACES).random() })
@@ -146,14 +166,21 @@ object GameInitializer {
             wall = TileWall(layoutResult.drawOrder),
             wallOpening = wallOpening,
             initialDeadWall = layoutResult.initialDeadWall,
+            diceRoll = diceRoll,
+            structure = layoutResult.structure,
         )
     }
 
-    /** [buildOpenedWall] 的結果：已套用（或未套用）開門結果的牌山，與對應的開門位置及王牌快照。 */
+    /**
+     * [buildOpenedWall] 的結果：已套用（或未套用）開門結果的牌山、對應的開門位置及王牌快照，以及只有
+     * 平台呈現層需要的權威擲骰結果與牌牆結構座標。
+     */
     private data class OpenedWall(
         val wall: TileWall,
         val wallOpening: WallOpening?,
         val initialDeadWall: List<IdentifiedTile>,
+        val diceRoll: DiceRollResult?,
+        val structure: Map<Uuid, TileWallPosition>?,
     )
 
     /** 六面骰的點數上限。 */

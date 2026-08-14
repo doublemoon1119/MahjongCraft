@@ -283,7 +283,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             playerIds = playerIds,
             module = moduleRegistry.getModule(RiichiRuleConfig()),
             aiPlayerStrategyKeys = aiPlayerStrategyKeys,
-        )
+        ).tableState
 
         /** 將單一 [state] 包裝成權威 snapshot。 */
         fun snapshotWith(state: TableState): AuthoritativeStateSnapshot = AuthoritativeStateSnapshot(

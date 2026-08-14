@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -24,6 +25,7 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 麻將規則模組註冊中心，用於依房間配置解析對應的規則模組。
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property eventPublisher 對局通知服務。
+ * @property presentationPublisher 對局 in-process 呈現觸發器。
  */
 @Factory
 class StartGameUseCase(
@@ -31,6 +33,7 @@ class StartGameUseCase(
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
+    @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 執行開始遊戲邏輯。
@@ -49,12 +52,13 @@ class StartGameUseCase(
                 !room.canStart -> AuthoritativeStateUpdate(state, Outcome.Error(RoomError.RoomNotReadyToStart(roomId)))
                 else -> {
                     val module = moduleRegistry.getModule(room.gameConfig.ruleConfig)
-                    val tableState = GameInitializer.initialize(
+                    val initializationResult = GameInitializer.initialize(
                         id = roomId,
                         playerIds = room.playerIds.toList(),
                         module = module,
                         aiPlayerStrategyKeys = room.aiPlayerStrategyKeys,
                     )
+                    val tableState = initializationResult.tableState
 
                     AuthoritativeStateUpdate(
                         state = state.copy(
@@ -66,14 +70,15 @@ class StartGameUseCase(
                                 )
                                 ),
                         ),
-                        result = Outcome.Success(tableState),
+                        result = Outcome.Success(initializationResult),
                     )
                 }
             }
         }
 
         if (outcome is Outcome.Error) return outcome
-        val tableState = (outcome as Outcome.Success).value
+        val initializationResult = (outcome as Outcome.Success).value
+        val tableState = initializationResult.tableState
 
         // 2. 為每位玩家同步一份對局快照
         tableState.players.forEach { player ->
@@ -84,6 +89,10 @@ class StartGameUseCase(
         tableState.players.forEach { player ->
             eventPublisher.publish(roomId, player.id, operatorId, GameAction.GameStarted)
         }
+
+        // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過
+        initializationResult.diceRoll?.let { presentationPublisher.publishDiceRoll(roomId, it) }
+        initializationResult.wallStructure?.let { presentationPublisher.publishWallStructure(roomId, it) }
 
         return Outcome.Success(roomId)
     }

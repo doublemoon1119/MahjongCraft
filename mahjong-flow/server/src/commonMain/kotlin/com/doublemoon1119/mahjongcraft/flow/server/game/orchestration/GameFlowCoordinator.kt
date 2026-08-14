@@ -22,7 +22,7 @@ import kotlin.uuid.Uuid
  * 未來真正的呼叫端（例如 Minecraft 平台層）應該呼叫這裡，而不是直接呼叫 [GameActionRouter]——
  * 後者只做單純分派，不含這裡的自動銜接邏輯。
  *
- * 三種銜接時機（詳見 `docs/temp/game-orchestration-design.md` 子項 3 的設計討論）：
+ * 三種銜接時機：
  * 1. **一般流局**：任一命令的結果為 [GameError.WallExhausted] 時，立即呼叫
  *    [declareExhaustiveDrawUseCase]（不開任何等待窗口——`WallExhausted` 代表玩家根本沒摸到牌，
  *    不存在「先讓玩家自摸」的中間狀態）。
