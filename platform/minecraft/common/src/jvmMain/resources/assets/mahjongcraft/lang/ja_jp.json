@@ -15,5 +15,10 @@
   "mahjongcraft.message.game_leave_denied_while_playing": "麻雀対局の進行中は退出できません",
   "mahjongcraft.message.game_left": "麻雀ゲームから退出しました",
   "mahjongcraft.message.game_dissolved": "麻雀ゲームを解散しました",
-  "mahjongcraft.message.game_leave_failed": "この麻雀ゲームから退出できません"
+  "mahjongcraft.message.game_leave_failed": "この麻雀ゲームから退出できません",
+  "mahjongcraft.message.ready_toggled": "準備状態を切り替えました",
+  "mahjongcraft.message.not_game_host": "ゲームマネージャーのみがゲームを開始できます",
+  "mahjongcraft.message.not_all_players_ready": "まだ準備ができていないプレイヤーがいます",
+  "mahjongcraft.message.game_start_failed": "この麻雀ゲームを開始できません",
+  "mahjongcraft.message.table_not_reachable": "そのテーブルが見つからないか、操作できる範囲外です"
 }

@@ -46,6 +46,16 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.PLAYER_ALREADY_IN_GAME), true)
                 MinecraftPlayerFeedback.GameJoinFailed ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_JOIN_FAILED), true)
+                MinecraftPlayerFeedback.ReadyToggled ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.READY_TOGGLED))
+                MinecraftPlayerFeedback.NotGameHost ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.NOT_GAME_HOST), true)
+                MinecraftPlayerFeedback.NotAllPlayersReady ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.NOT_ALL_PLAYERS_READY), true)
+                MinecraftPlayerFeedback.GameStartFailed ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_START_FAILED), true)
+                MinecraftPlayerFeedback.TableNotReachable ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.TABLE_NOT_REACHABLE), true)
             }
         }
     }

@@ -15,5 +15,10 @@
   "mahjongcraft.message.game_leave_denied_while_playing": "麻将对局进行中无法离开",
   "mahjongcraft.message.game_left": "已离开麻将游戏",
   "mahjongcraft.message.game_dissolved": "已解散麻将游戏",
-  "mahjongcraft.message.game_leave_failed": "无法离开这场麻将游戏"
+  "mahjongcraft.message.game_leave_failed": "无法离开这场麻将游戏",
+  "mahjongcraft.message.ready_toggled": "已切换准备状态",
+  "mahjongcraft.message.not_game_host": "只有游戏主持人可以开始对局",
+  "mahjongcraft.message.not_all_players_ready": "还有玩家尚未准备好",
+  "mahjongcraft.message.game_start_failed": "无法开始这场麻将对局",
+  "mahjongcraft.message.table_not_reachable": "找不到那张麻将桌，或距离太远无法互动"
 }

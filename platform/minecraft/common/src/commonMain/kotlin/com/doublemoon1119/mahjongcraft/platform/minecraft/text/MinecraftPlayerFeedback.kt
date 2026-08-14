@@ -54,4 +54,19 @@ sealed interface MinecraftPlayerFeedback {
 
     /** 加入麻將遊戲失敗。 */
     data object GameJoinFailed : MinecraftPlayerFeedback
+
+    /** 已切換準備狀態。 */
+    data object ReadyToggled : MinecraftPlayerFeedback
+
+    /** 只有遊戲主持人可以開始對局。 */
+    data object NotGameHost : MinecraftPlayerFeedback
+
+    /** 還有玩家尚未準備好，無法開始對局。 */
+    data object NotAllPlayersReady : MinecraftPlayerFeedback
+
+    /** 開始遊戲失敗。 */
+    data object GameStartFailed : MinecraftPlayerFeedback
+
+    /** 指定的麻將桌不存在，或已超出目前可互動的範圍。 */
+    data object TableNotReachable : MinecraftPlayerFeedback
 }

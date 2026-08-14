@@ -21,14 +21,20 @@ class FabricServerConfigCommand(
     /** 記錄 config 指令執行者與結果。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
-    /** 將 `/mahjongcraft config reload|show` 加入 Fabric command dispatcher。 */
+    /**
+     * 將 `/mahjongcraft config reload|show` 加入 Fabric command dispatcher。
+     *
+     * 權限限制掛在 `config` 子節點而非 `mahjongcraft` 根節點，讓其他不需要管理員權限的
+     * `/mahjongcraft` 子指令（例如房間階段的玩家指令）可以共用同一個根節點註冊，不受這裡的權限
+     * 要求影響。
+     */
     fun register() {
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
             dispatcher.register(
                 literal(MinecraftModMetadata.MOD_ID)
-                    .requires { source -> source.hasPermissionLevel(REQUIRED_PERMISSION_LEVEL) }
                     .then(
                         literal("config")
+                            .requires { source -> source.hasPermissionLevel(REQUIRED_PERMISSION_LEVEL) }
                             .then(literal("reload").executes { context -> reload(context.source) })
                             .then(literal("show").executes { context -> show(context.source) }),
                     ),

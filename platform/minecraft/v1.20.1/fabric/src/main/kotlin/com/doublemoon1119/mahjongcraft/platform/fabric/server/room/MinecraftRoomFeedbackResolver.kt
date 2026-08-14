@@ -17,4 +17,17 @@ internal object MinecraftRoomFeedbackResolver {
     } else {
         MinecraftPlayerFeedback.GameLeft
     }
+
+    /** 將切換準備狀態的 [error] 轉成可呈現的回饋。 */
+    fun readyError(error: RoomError): MinecraftPlayerFeedback = when (error) {
+        is RoomError.RoomNotFound, is RoomError.PlayerNotInRoom -> MinecraftPlayerFeedback.PlayerNotInGame
+        else -> MinecraftPlayerFeedback.GameJoinFailed
+    }
+
+    /** 將開始遊戲的 [error] 轉成可呈現的回饋。 */
+    fun startError(error: RoomError): MinecraftPlayerFeedback = when (error) {
+        is RoomError.NotHost -> MinecraftPlayerFeedback.NotGameHost
+        is RoomError.RoomNotReadyToStart -> MinecraftPlayerFeedback.NotAllPlayersReady
+        else -> MinecraftPlayerFeedback.GameStartFailed
+    }
 }

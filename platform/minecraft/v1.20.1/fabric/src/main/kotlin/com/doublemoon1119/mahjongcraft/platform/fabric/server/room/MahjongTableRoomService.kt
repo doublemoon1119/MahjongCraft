@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
@@ -12,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.CreateRoomUseCas
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.JoinRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.ToggleReadyUseCase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
@@ -24,7 +26,13 @@ import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
-/** 把 Minecraft 麻將桌右鍵互動路由到既有 Room／Game use case 的正式平台進場服務。 */
+/**
+ * 把 Minecraft 麻將桌互動路由到既有 Room／Game use case 的正式平台進場服務。
+ *
+ * 目前由右鍵／蹲下右鍵桌子（[interact]／[leave]）與 `/mahjongcraft` 玩家指令
+ * （[ready]／[start]）共用；日後若互動方式改成懸浮 HUD 等其他觸發，只需要新增呼叫端，這裡的方法
+ * 本身不需要更動。
+ */
 @Single
 class MahjongTableRoomService(
     private val scope: AppCoroutineScope,
@@ -34,6 +42,8 @@ class MahjongTableRoomService(
     private val createRoom: CreateRoomUseCase,
     private val joinRoom: JoinRoomUseCase,
     private val leaveRoom: LeaveRoomUseCase,
+    private val toggleReady: ToggleReadyUseCase,
+    private val startGame: StartGameUseCase,
     private val syncRoom: SyncRoomSnapshotUseCase,
     private val syncGame: SyncGameSnapshotUseCase,
     private val roomSnapshotSender: RoomSnapshotSender,
@@ -125,6 +135,44 @@ class MahjongTableRoomService(
                     playerId,
                     MinecraftPlayerFeedback.GameLeaveFailed,
                 )
+            }
+        }
+    }
+
+    /**
+     * 切換玩家在房間等待階段的準備狀態。以玩家目前的房間歸屬（[PlayerMembershipRepository]）解析
+     * 目標房間，不需要玩家實際站在桌子附近——呼叫端（指令或未來的 HUD）自行決定要不要額外檢查距離。
+     */
+    fun ready(player: ServerPlayerEntity) {
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            val tableId = membershipRepository.getTableId(playerId)
+            if (tableId == null) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
+                return@launch
+            }
+            when (val result = toggleReady(tableId, playerId)) {
+                is Outcome.Success -> feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.ReadyToggled)
+                is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.readyError(result.error))
+            }
+        }
+    }
+
+    /**
+     * 讓房主在所有人皆已準備完成時開始遊戲。同樣以玩家目前的房間歸屬解析目標房間；成功時的座位
+     * 傳送與其他呈現已經由 `StartGameUseCase` 內部觸發，這裡不需要額外處理。
+     */
+    fun start(player: ServerPlayerEntity) {
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            val tableId = membershipRepository.getTableId(playerId)
+            if (tableId == null) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
+                return@launch
+            }
+            when (val result = startGame(tableId, playerId)) {
+                is Outcome.Success -> Unit
+                is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.startError(result.error))
             }
         }
     }

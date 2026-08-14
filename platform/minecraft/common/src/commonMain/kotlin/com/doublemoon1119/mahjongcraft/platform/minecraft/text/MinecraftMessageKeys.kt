@@ -37,6 +37,21 @@ object MinecraftMessageKeys {
     /** 加入麻將遊戲失敗。 */
     const val GAME_JOIN_FAILED = PREFIX + "game_join_failed"
 
+    /** 已切換準備狀態。 */
+    const val READY_TOGGLED = PREFIX + "ready_toggled"
+
+    /** 只有遊戲主持人可以開始對局。 */
+    const val NOT_GAME_HOST = PREFIX + "not_game_host"
+
+    /** 還有玩家尚未準備好，無法開始對局。 */
+    const val NOT_ALL_PLAYERS_READY = PREFIX + "not_all_players_ready"
+
+    /** 開始遊戲失敗。 */
+    const val GAME_START_FAILED = PREFIX + "game_start_failed"
+
+    /** 指定的麻將桌不存在，或已超出目前可互動的範圍。 */
+    const val TABLE_NOT_REACHABLE = PREFIX + "table_not_reachable"
+
     /** Minecraft 語系資源必須提供的全部玩家回饋 key。 */
     val ALL: Set<String> = setOf(
         GAME_ALREADY_STARTED,
@@ -49,5 +64,10 @@ object MinecraftMessageKeys {
         GAME_LEAVE_FAILED,
         PLAYER_ALREADY_IN_GAME,
         GAME_JOIN_FAILED,
+        READY_TOGGLED,
+        NOT_GAME_HOST,
+        NOT_ALL_PLAYERS_READY,
+        GAME_START_FAILED,
+        TABLE_NOT_REACHABLE,
     )
 }
