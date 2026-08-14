@@ -93,6 +93,7 @@ class StartGameUseCase(
         // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過
         initializationResult.diceRoll?.let { presentationPublisher.publishDiceRoll(roomId, it) }
         initializationResult.wallStructure?.let { presentationPublisher.publishWallStructure(roomId, it) }
+        presentationPublisher.publishGameStarted(roomId, tableState.players.map { it.id })
 
         return Outcome.Success(roomId)
     }

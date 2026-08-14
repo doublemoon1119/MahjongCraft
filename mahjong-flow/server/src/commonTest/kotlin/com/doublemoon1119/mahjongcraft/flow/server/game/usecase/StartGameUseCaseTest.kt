@@ -135,6 +135,21 @@ class StartGameUseCaseTest {
     }
 
     /**
+     * 驗證開局後座位傳送呈現收到依 `TableState.players` 固定座位順序排列的完整玩家清單。
+     */
+    @Test
+    fun `test start game publishes game started seating in seat order`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.roomRepo.setRoom(readyRoom())
+
+        fixtures.useCase(roomId, hostId)
+
+        val tableState = assertNotNull(fixtures.gameRepo.getTableState(roomId))
+        val seating = fixtures.presentationPublisher.getPublishedGameStartedSeating(roomId)
+        assertEquals(tableState.players.map { it.id }, seating)
+    }
+
+    /**
      * 驗證房間不存在時回傳 [RoomError.RoomNotFound]。
      */
     @Test

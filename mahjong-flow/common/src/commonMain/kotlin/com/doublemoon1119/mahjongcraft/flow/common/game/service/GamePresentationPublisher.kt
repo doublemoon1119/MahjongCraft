@@ -33,4 +33,13 @@ interface GamePresentationPublisher {
      * [com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile.id]。
      */
     fun publishWallStructure(gameId: Uuid, structure: Map<Uuid, TileWallPosition>)
+
+    /**
+     * 通知平台呈現層本局開局座位傳送。只在開局時呼叫一次，之後連莊/過莊開新局不會再次呼叫——風位
+     * 輪轉純粹是規則概念，玩家在平台世界裡的物理位置整場對局固定不變。
+     *
+     * @param gameId 對局 Uuid。
+     * @param seatedPlayerIds 依 `TableState.players` 固定座位順序排列的玩家 Uuid 清單。
+     */
+    fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>)
 }
