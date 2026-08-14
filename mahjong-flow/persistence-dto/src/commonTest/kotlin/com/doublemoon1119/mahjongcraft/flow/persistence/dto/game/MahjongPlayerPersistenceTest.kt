@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawRe
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -83,7 +84,7 @@ class MahjongPlayerPersistenceTest {
     /** 驗證沒有玩家規則狀態的台麻玩家仍能完整還原。 */
     @Test
     fun `taiwan player round-trips without player rule state`() {
-        val discard = identified(Tile.Flower.Plum)
+        val discard = identified(Tile.Extension(TaiwanTileTypes.PLUM))
         val player = MahjongPlayer(
             id = Uuid.random(),
             initialSeat = Wind.EAST,

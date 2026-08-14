@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventD
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.JoinReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.LeaveReasonDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
@@ -49,6 +50,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -162,6 +164,7 @@ class DtoRoundTripTest {
     @Test
     fun `test TableStateSnapshot round-trips with a real TaiwanRuleConfig`() {
         val taiwanPlayer = FakeMahjongPlayerFactory.create(
+            hand = Hand(tiles = TaiwanTileTypes.createAll().map { IdentifiedTile(Uuid.random(), it) }),
             discardPile = TaiwanDiscardPile(
                 listOf(DiscardPile.DiscardEntry(IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Dot, 3)))),
             ),
@@ -176,6 +179,17 @@ class DtoRoundTripTest {
         val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), snapshotDto)
         val decodedDto = json.decodeFromString(TableStateSnapshotDto.serializer(), encoded)
         assertEquals(snapshotDto, decodedDto)
+    }
+
+    /** 驗證八張台灣花牌皆以穩定 Extension ID 通過網路 DTO 往返。 */
+    @Test
+    fun `test Taiwanese flower extensions round-trip through network DTOs`() {
+        TaiwanTileTypes.createAll().forEach { flower ->
+            val encoded = json.encodeToString(TileDto.serializer(), flower.toDto())
+            val restored = json.decodeFromString(TileDto.serializer(), encoded).toDomain()
+
+            assertEquals(flower, restored)
+        }
     }
 
     @Test
