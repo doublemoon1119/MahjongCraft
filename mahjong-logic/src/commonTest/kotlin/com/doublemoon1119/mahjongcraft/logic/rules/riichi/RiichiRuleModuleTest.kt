@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -51,6 +52,12 @@ class RiichiRuleModuleTest {
     @Test
     fun `test create wall opening policy returns riichi implementation`() {
         assertSame(RiichiWallOpeningPolicy, module.createWallOpeningPolicy())
+    }
+
+    /** 驗證規則模組提供四人日本麻將固定 136 張的牌牆布局。 */
+    @Test
+    fun `test create wall layout returns riichi implementation`() {
+        assertSame(RiichiWallLayout, module.createWallLayout())
     }
 
     /** 驗證規則模組提供日麻赤五的牌面解讀 policy。 */

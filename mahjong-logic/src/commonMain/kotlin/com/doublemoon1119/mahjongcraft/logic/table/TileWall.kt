@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.table
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 
 /**
- * 代表一場遊戲中的牌山。
+ * 代表一場遊戲中摸牌所用的線性牌堆。[TileWall] 就是牌山、牌牆的意思，中文語境下兩者皆可指稱此概念。
  *
  * 內部存儲 [IdentifiedTile]，確保每一張牌在遊戲進程中都具有可追蹤的唯一性。
  *
@@ -36,7 +36,11 @@ data class TileWall(private val tiles: List<IdentifiedTile> = emptyList()) {
     }
 
     /**
-     * 從牌山最後方摸取一張牌 (嶺上)。
+     * 從牌山最後方摸取一張牌。
+     *
+     * 這是中性的資料結構操作，不代表任何特定規則語意；例如日麻的嶺上摸牌、部分規則從活牌尾端
+     * 補牌進王牌等行為，皆由呼叫端（規則自身的 runtime 狀態或流程）決定何時呼叫、如何解讀取得的牌，
+     * 不由 [TileWall] 本身賦予意義。
      *
      * @return 包含摸到的牌與新牌山狀態的 [DrawResult]；若牌山已空，[DrawResult.tile] 為 null 且牌山維持不變。
      */
