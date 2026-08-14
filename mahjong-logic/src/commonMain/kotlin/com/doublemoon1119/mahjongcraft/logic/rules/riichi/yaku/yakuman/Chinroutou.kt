@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 
 /**
  * 清老頭役滿檢測器。
@@ -24,7 +24,7 @@ fun calculateChinroutou(
     winningTile: Tile,
 ): YakuResult? {
     val allTiles = (hand.allTiles.map { it.tile } + winningTile)
-        .map { it.withoutRed }
+        .map { it.riichiCanonical }
 
     // 全部都是老頭牌（1、9 數牌），是清老頭
     if (allTiles.all { it.isTerminal }) {

@@ -1,5 +1,4 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.game
-
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.HandPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.TileWallPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -8,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -21,7 +21,7 @@ class AuthoritativeTileStatePersistenceTest {
     fun `hand round-trips with complete authoritative tile state`() {
         val source = tile(Tile.Honor.East)
         val hand = Hand(
-            tiles = listOf(tile(Tile.Numeric(Tile.Suit.Character, 5, isRed = true)), tile(Tile.Flower.Plum)),
+            tiles = listOf(tile(RiichiTileTypes.redFive(Tile.Suit.Character)), tile(Tile.Flower.Plum)),
             melds = listOf(
                 Meld(
                     type = MeldType.PON,

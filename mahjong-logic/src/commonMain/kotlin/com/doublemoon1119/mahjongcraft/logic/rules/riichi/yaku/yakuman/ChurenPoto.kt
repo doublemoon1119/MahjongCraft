@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 
 /**
  * 九蓮寶燈 (Churen Poto) 役滿檢測器。
@@ -51,7 +51,7 @@ fun calculateChurenPoto(
     if (handStructure !is HandStructure.Standard) return null
 
     // 取得所有牌
-    val allTiles = hand.allTiles.map { it.tile.withoutRed } + winningTile.withoutRed
+    val allTiles = hand.allTiles.map { it.tile.riichiCanonical } + winningTile.riichiCanonical
 
     if (allTiles.size != 14) {
         return null
@@ -85,7 +85,7 @@ fun calculateChurenPoto(
 
     // 判斷是否為九蓮寶燈九面
     // 九面：手牌 13 張牌的分布為 1:3, 9:3, 2-8:各1
-    val handTile13 = hand.allTiles.map { it.tile.withoutRed }
+    val handTile13 = hand.allTiles.map { it.tile.riichiCanonical }
     val tileCounts13 = handTile13.groupingBy { it }.eachCount()
     val oneCount13 = tileCounts13[Tile.Numeric(suit, 1)] ?: 0
     val nineCount13 = tileCounts13[Tile.Numeric(suit, 9)] ?: 0

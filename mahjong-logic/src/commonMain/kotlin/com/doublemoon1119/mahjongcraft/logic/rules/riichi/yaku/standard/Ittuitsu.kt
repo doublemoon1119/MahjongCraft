@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 
 /**
  * 一氣通貫 (Ittuitsu) 役種檢測器。
@@ -23,7 +23,7 @@ fun calculateIttuitsu(
     isMenzen: Boolean,
 ): YakuResult? {
     val allTiles = (hand.allTiles.map { it.tile } + winningTile)
-        .map { it.withoutRed }
+        .map { it.riichiCanonical }
 
     for (suit in listOf(Tile.Suit.Character, Tile.Suit.Dot, Tile.Suit.Bamboo)) {
         val suitTiles = allTiles.filter { it is Tile.Numeric && it.suit == suit }

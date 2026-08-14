@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 
 /**
  * 寶牌 (Dora) 役種檢測器。
@@ -30,7 +30,7 @@ fun calculateDora(
 
     val doraCount = doraIndicators.sumOf { indicator ->
         val doraTile = getNextDora(indicator)
-        allTiles.count { it.withoutRed == doraTile }
+        allTiles.count { it.riichiCanonical == doraTile }
     }
 
     return YakuResult.han(YakuType.Dora, doraCount)
@@ -46,7 +46,7 @@ internal fun getNextDora(indicator: Tile): Tile = when (indicator) {
     // 數牌：循環 1-9
     is Tile.Numeric -> {
         val nextValue = if (indicator.value == 9) 1 else indicator.value + 1
-        Tile.Numeric(indicator.suit, nextValue, isRed = false)
+        Tile.Numeric(indicator.suit, nextValue)
     }
     // 字牌：東→南→西→北→東（循環）
     is Tile.Honor.East -> Tile.Honor.South

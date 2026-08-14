@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
-
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
@@ -46,7 +46,7 @@ class RiichiLegalActionValidatorFuritenTest {
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
-                Tile.Numeric(Tile.Suit.Character, 5, isRed = true), // 赤5萬
+                RiichiTileTypes.redFive(Tile.Suit.Character), // 赤5萬
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
@@ -58,7 +58,7 @@ class RiichiLegalActionValidatorFuritenTest {
         // 模擬玩家已經打了赤5萬（振聽）
         val fakeDiscardPile = FakeDiscardPile().discard(
             FakeDiscardPile.FakeEntry(
-                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true)),
+                FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character)),
             ),
         )
         val riichiState = RiichiPlayerState()
@@ -71,7 +71,7 @@ class RiichiLegalActionValidatorFuritenTest {
             players = listOf(player),
         )
         // 他家打普通5萬
-        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = false))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -104,7 +104,7 @@ class RiichiLegalActionValidatorFuritenTest {
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
-                Tile.Numeric(Tile.Suit.Character, 5, isRed = false), // 普通5萬
+                Tile.Numeric(Tile.Suit.Character, 5), // 普通5萬
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
@@ -116,7 +116,7 @@ class RiichiLegalActionValidatorFuritenTest {
         // 模擬玩家已經打了普通5萬（振聽）
         val fakeDiscardPile = FakeDiscardPile().discard(
             FakeDiscardPile.FakeEntry(
-                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = false)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),
             ),
         )
         val riichiState = RiichiPlayerState()
@@ -129,7 +129,7 @@ class RiichiLegalActionValidatorFuritenTest {
             players = listOf(player),
         )
         // 他家打赤5萬
-        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
+        val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
 
         // 執行
         val actions = validator.getLegalActions(
@@ -246,13 +246,13 @@ class RiichiLegalActionValidatorFuritenTest {
             hand = playerHand,
         )
         // 放過普通5萬
-        player = player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5, isRed = false))
+        player = player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5))
 
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
         )
         // 他家打赤5萬
-        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
+        val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
 
         // 執行
         val actions = validator.getLegalActions(

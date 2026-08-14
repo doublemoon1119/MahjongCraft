@@ -46,7 +46,7 @@ class TaiwanShantenCalculator : ShantenCalculator {
             // 台麻通常不使用赤寶牌，若有也視為普通牌
             // 忽略花牌 (Flower)
             val tileKey = when (val tile = identifiedTile.tile) {
-                is Tile.Numeric -> tile.copy(isRed = false)
+                is Tile.Numeric -> tile
                 is Tile.Flower -> return@forEach // 跳過花牌
                 else -> tile
             }

@@ -2,13 +2,14 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 
 /**
  * 赤寶牌 (Aka Dora) 役種檢測器。
  *
- * 赤寶牌為帶有 [Tile.Numeric.isRed] 標記的牌（5 萬、5 筒、5 條）。
+ * 赤寶牌為日麻規則註冊的赤五擴充牌（5 萬、5 筒、5 條）。
  * 每一張赤寶牌額外提供 1 翻。
  *
  * @param hand 玩家手牌（包含立牌與副露）。
@@ -25,7 +26,7 @@ fun calculateAkaDora(
     val allTiles = hand.allTiles.map { it.tile } + winningTile
 
     allTiles.forEach { tile ->
-        if (tile is Tile.Numeric && tile.isRed) {
+        if (RiichiTileInterpretationPolicy.isRedDora(tile)) {
             count++
         }
     }

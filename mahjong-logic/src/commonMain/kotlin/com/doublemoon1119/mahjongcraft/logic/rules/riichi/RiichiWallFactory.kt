@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
 import kotlin.uuid.Uuid
@@ -37,8 +38,11 @@ class RiichiWallFactory(private val config: RiichiRuleConfig) : TileWallFactory 
             for (value in 1..9) {
                 repeat(4) { count ->
                     // 僅有 5 號牌可能是赤牌
-                    val isRed = value == 5 && count < redInThisSuit
-                    val tile = Tile.Numeric(suit, value, isRed)
+                    val tile = if (value == 5 && count < redInThisSuit) {
+                        RiichiTileTypes.redFive(suit)
+                    } else {
+                        Tile.Numeric(suit, value)
+                    }
                     tiles.add(IdentifiedTile(Uuid.random(), tile))
                 }
             }

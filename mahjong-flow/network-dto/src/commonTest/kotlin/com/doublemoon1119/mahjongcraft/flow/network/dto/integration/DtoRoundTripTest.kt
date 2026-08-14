@@ -1,5 +1,4 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.integration
-
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
@@ -47,6 +46,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
@@ -134,7 +134,7 @@ class DtoRoundTripTest {
     @Test
     fun `test TableStateSnapshot round-trips with a real RiichiRuleConfig`() {
         val riichiPlayer = FakeMahjongPlayerFactory.create(
-            hand = Hand(tiles = listOf(IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Character, 5, isRed = true)))),
+            hand = Hand(tiles = listOf(IdentifiedTile(Uuid.random(), RiichiTileTypes.redFive(Tile.Suit.Character)))),
             discardPile = RiichiDiscardPile(
                 listOf(RiichiDiscardEntry(IdentifiedTile(Uuid.random(), Tile.Honor.East), isRiichi = true)),
             ),

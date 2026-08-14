@@ -5,11 +5,11 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContext
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.CompletionType
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculatePinfu
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
 import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 
 /**
  * 日本麻將符數計算機。
@@ -155,7 +155,7 @@ object FuCalculator {
         // 副露的符數
         val fuuroFu = structure.fuuro.sumOf { fuuro ->
             val mentsu = fuuro.mentsu
-            val tile = mentsu.tiles.first().withoutRed
+            val tile = mentsu.tiles.first().riichiCanonical
 
             // 是否為么九牌
             val isTerminalOrHonor = tile.isTerminal || tile.isHonor
@@ -196,7 +196,7 @@ object FuCalculator {
 
         // 手牌中面子的符數
         val handFu = structure.mentsus.sumOf { mentsu ->
-            val tile = mentsu.tiles.first().withoutRed
+            val tile = mentsu.tiles.first().riichiCanonical
 
             // 是否為么九牌
             val isTerminalOrHonor = tile.isTerminal || tile.isHonor
@@ -223,7 +223,7 @@ object FuCalculator {
         }
 
         // 雀頭符數
-        val jantoTile = structure.pair.tile.withoutRed
+        val jantoTile = structure.pair.tile.riichiCanonical
         val isJantoDragon = jantoTile in dragonTiles
         val isJantoKaze = jantoTile in kazeTiles
         val isJantoSeatOrRoundWind = jantoTile.isHonor && !isJantoDragon && !isJantoKaze

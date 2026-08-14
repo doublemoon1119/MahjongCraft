@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 
 /**
  * 裏寶牌 (Ura Dora) 役種檢測器。
@@ -26,7 +26,7 @@ fun calculateUraDora(
 
     val uraDoraCount = uraDoraIndicators.sumOf { indicator ->
         val doraTile = getNextDora(indicator)
-        allTiles.count { it.withoutRed == doraTile }
+        allTiles.count { it.riichiCanonical == doraTile }
     }
 
     return YakuResult.han(YakuType.UraDora, uraDoraCount)

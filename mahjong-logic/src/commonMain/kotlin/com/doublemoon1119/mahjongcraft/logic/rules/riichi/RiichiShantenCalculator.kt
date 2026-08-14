@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import kotlin.math.max
 import kotlin.math.min
 
@@ -43,10 +44,7 @@ class RiichiShantenCalculator : ShantenCalculator {
         val counts = IntArray(34)
         hand.standingTiles.forEach { identifiedTile ->
             // 忽略赤寶牌標記，將其視為普通牌處理
-            val tileKey = when (val tile = identifiedTile.tile) {
-                is Tile.Numeric -> tile.copy(isRed = false)
-                else -> tile
-            }
+            val tileKey = identifiedTile.tile.riichiCanonical
             tileMap[tileKey]?.let { index ->
                 counts[index]++
             }

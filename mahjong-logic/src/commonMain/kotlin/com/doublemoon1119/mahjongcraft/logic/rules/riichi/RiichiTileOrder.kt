@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
 
 /**
  * 日本麻將 (Riichi) 標準排序策略。
@@ -28,7 +29,7 @@ object RiichiTileOrder : TileOrder {
                 Tile.Suit.Bamboo -> 30.0 // 條子基數
             }
             // 赤寶牌權重增加 0.1，使其排在同數值的普通牌之後
-            suitBase + tile.value + (if (tile.isRed) 0.1 else 0.0)
+            suitBase + tile.value
         }
         is Tile.Honor -> when (tile) {
             Tile.Honor.East -> 41.0
@@ -40,6 +41,10 @@ object RiichiTileOrder : TileOrder {
             Tile.Honor.Red -> 47.0
         }
         is Tile.Flower -> 100.0 // 花牌排最後 (沒有用到)
-        is Tile.Extension -> 100.0 // 日麻目前不解讀擴充牌的規則排序
+        is Tile.Extension -> if (RiichiTileInterpretationPolicy.isRedDora(tile)) {
+            getWeight(RiichiTileInterpretationPolicy.canonicalize(tile)) + 0.1
+        } else {
+            100.0
+        }
     }
 }

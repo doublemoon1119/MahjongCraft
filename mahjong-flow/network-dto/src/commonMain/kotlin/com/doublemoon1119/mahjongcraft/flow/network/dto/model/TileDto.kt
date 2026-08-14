@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.model
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import kotlinx.serialization.Serializable
 
 /**
@@ -9,7 +10,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed interface TileDto {
     @Serializable
-    data class Numeric(val suit: SuitDto, val value: Int, val isRed: Boolean = false) : TileDto
+    data class Numeric(val suit: SuitDto, val value: Int) : TileDto
+
+    /** [Tile.Extension] 的網路 DTO。 */
+    @Serializable
+    data class Extension(val typeId: String) : TileDto
 
     @Serializable
     sealed interface Honor : TileDto {
@@ -53,7 +58,7 @@ sealed interface TileDto {
 enum class SuitDto { CHARACTER, DOT, BAMBOO }
 
 fun Tile.toDto(): TileDto = when (this) {
-    is Tile.Numeric -> TileDto.Numeric(suit.toDto(), value, isRed)
+    is Tile.Numeric -> TileDto.Numeric(suit.toDto(), value)
     Tile.Honor.East -> TileDto.Honor.East
     Tile.Honor.South -> TileDto.Honor.South
     Tile.Honor.West -> TileDto.Honor.West
@@ -69,13 +74,12 @@ fun Tile.toDto(): TileDto = when (this) {
     Tile.Flower.Orchid -> TileDto.Flower.Orchid
     Tile.Flower.Bamboo -> TileDto.Flower.Bamboo
     Tile.Flower.Chrysanthemum -> TileDto.Flower.Chrysanthemum
-    is Tile.Extension -> throw UnsupportedOperationException(
-        "Extension tile network DTO is not implemented yet: $typeId",
-    )
+    is Tile.Extension -> TileDto.Extension(typeId.toString())
 }
 
 fun TileDto.toDomain(): Tile = when (this) {
-    is TileDto.Numeric -> Tile.Numeric(suit.toDomain(), value, isRed)
+    is TileDto.Numeric -> Tile.Numeric(suit.toDomain(), value)
+    is TileDto.Extension -> Tile.Extension(TileTypeId.parse(typeId))
     TileDto.Honor.East -> Tile.Honor.East
     TileDto.Honor.South -> Tile.Honor.South
     TileDto.Honor.West -> Tile.Honor.West

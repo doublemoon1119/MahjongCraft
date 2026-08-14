@@ -33,7 +33,7 @@ class TaiwanWallFactory(private val config: TaiwanRuleConfig) : TileWallFactory 
         Tile.Suit.entries.forEach { suit ->
             for (value in 1..9) {
                 repeat(4) {
-                    val tile = Tile.Numeric(suit, value, isRed = false)
+                    val tile = Tile.Numeric(suit, value)
                     tiles.add(IdentifiedTile(Uuid.random(), tile))
                 }
             }

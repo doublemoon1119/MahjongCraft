@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.logic.table
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 import kotlin.uuid.Uuid
 
 /**
@@ -50,10 +49,10 @@ data class MahjongPlayer(
     /**
      * 記錄玩家放過的牌（用於過水碰及同巡振聽判定）。
      *
-     * @param tile 放過的牌（應為基礎類型，忽略赤寶牌屬性）。
+     * @param tile 放過的原始牌；規則特有的等價轉換由規則層處理。
      * @return 記錄後的新 [MahjongPlayer] 實例。
      */
-    fun addPassedTile(tile: Tile): MahjongPlayer = copy(passedTilesInRound = passedTilesInRound + tile.withoutRed)
+    fun addPassedTile(tile: Tile): MahjongPlayer = copy(passedTilesInRound = passedTilesInRound + tile)
 
     /**
      * 清除當前巡迴中放過的牌。

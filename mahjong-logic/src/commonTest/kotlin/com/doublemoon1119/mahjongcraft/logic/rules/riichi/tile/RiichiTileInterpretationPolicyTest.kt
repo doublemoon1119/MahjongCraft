@@ -14,12 +14,8 @@ class RiichiTileInterpretationPolicyTest {
     fun `red fives canonicalize to regular fives`() {
         Tile.Suit.entries.forEach { suit ->
             val redFive = RiichiTileTypes.redFive(suit)
-            val legacyRedFive = Tile.Numeric(suit, 5, isRed = true)
-
             assertEquals(Tile.Numeric(suit, 5), RiichiTileInterpretationPolicy.canonicalize(redFive))
-            assertEquals(Tile.Numeric(suit, 5), RiichiTileInterpretationPolicy.canonicalize(legacyRedFive))
             assertTrue(RiichiTileInterpretationPolicy.isRedDora(redFive))
-            assertTrue(RiichiTileInterpretationPolicy.isRedDora(legacyRedFive))
         }
     }
 

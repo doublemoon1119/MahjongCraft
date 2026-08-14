@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.FakeRiichiHandValueContextFactory
 import kotlin.test.Test
@@ -52,9 +52,9 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
             Tile.Honor.Red,
         )
         // Winning: 9s != headTile(1m) → 一般國士無雙
-        val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9).withoutRed
+        val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 9).riichiCanonical
 
-        val handTiles = tiles.map { it.withoutRed }
+        val handTiles = tiles.map { it.riichiCanonical }
         val handStructures = RiichiHandDecomposer.decompose(handTiles, winningTile)
 
         val result = handStructures.mapNotNull { handStructure ->
@@ -95,9 +95,9 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
             Tile.Honor.Red,
         )
         // Winning: 1m == headTile(1m) → 十三面
-        val winningTile = Tile.Numeric(Tile.Suit.Character, 1).withoutRed
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 1).riichiCanonical
 
-        val handTiles = tiles.map { it.withoutRed }
+        val handTiles = tiles.map { it.riichiCanonical }
         val handStructures = RiichiHandDecomposer.decompose(handTiles, winningTile)
 
         val result = handStructures.mapNotNull { handStructure ->
@@ -133,7 +133,7 @@ class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
         )
         val winningTile = Tile.Honor.White
 
-        val handTiles = tiles.map { it.withoutRed }
+        val handTiles = tiles.map { it.riichiCanonical }
         val handStructures = RiichiHandDecomposer.decompose(handTiles, winningTile)
 
         val result = handStructures.mapNotNull { handStructure ->

@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora
-
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
@@ -175,7 +175,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
-                Tile.Numeric(Tile.Suit.Character, 5, isRed = true),
+                RiichiTileTypes.redFive(Tile.Suit.Character),
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 9),
@@ -219,7 +219,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 4),
             ),
         )
-        val winningTile = Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)
+        val winningTile = RiichiTileTypes.redFive(Tile.Suit.Dot)
 
         val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)
@@ -334,9 +334,9 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.PON,
                     tiles = listOf(
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)),
+                        FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Dot)),
+                        FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Dot)),
+                        FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Dot)),
                     ),
                     sourceDirection = RelativeDirection.Left,
                 ),
@@ -363,8 +363,8 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
-                Tile.Numeric(Tile.Suit.Dot, 5, isRed = true),
-                Tile.Numeric(Tile.Suit.Dot, 5, isRed = true),
+                RiichiTileTypes.redFive(Tile.Suit.Dot),
+                RiichiTileTypes.redFive(Tile.Suit.Dot),
                 Tile.Numeric(Tile.Suit.Dot, 7),
                 Tile.Numeric(Tile.Suit.Dot, 8),
                 Tile.Numeric(Tile.Suit.Dot, 9),
@@ -375,15 +375,15 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Meld(
                     type = MeldType.PON,
                     tiles = listOf(
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true)),
-                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true)),
+                        FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character)),
+                        FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character)),
+                        FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character)),
                     ),
                     sourceDirection = RelativeDirection.Left,
                 ),
             ),
         )
-        val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 5, isRed = true)
+        val winningTile = RiichiTileTypes.redFive(Tile.Suit.Bamboo)
 
         val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
         val result = calculator.calculate(context)

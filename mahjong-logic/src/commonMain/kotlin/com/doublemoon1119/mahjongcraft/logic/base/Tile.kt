@@ -22,13 +22,11 @@ sealed class Tile {
      *
      * @property suit 數牌的花色類型，參考 [Suit]。
      * @property value 牌面數值，限定於 1 至 9 之間。
-     * @property isRed 是否為赤寶牌 (Aka Dora)。主要應用於日本麻將規則。
      * @throws IllegalArgumentException 當數值不在 1..9 範圍內時拋出。
      */
     data class Numeric(
         val suit: Suit,
         val value: Int,
-        val isRed: Boolean = false,
     ) : Tile() {
         init {
             require(value in 1..9) { "Numeric tile value must be between 1 and 9, current: $value" }

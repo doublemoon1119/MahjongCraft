@@ -1,5 +1,4 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.game
-
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildDiscardPilePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildDynamicRuleStatePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildExhaustiveDrawReasonPersistenceRegistry
@@ -14,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
@@ -77,7 +77,7 @@ class TableStatePersistenceTest {
         val state = createTableState()
         val declarerId = state.players.first().id
         val responderId = state.players.last().id
-        val robbedTile = identified(Tile.Numeric(Tile.Suit.Dot, 5, isRed = true))
+        val robbedTile = identified(RiichiTileTypes.redFive(Tile.Suit.Dot))
         val kanAction = GameAction.Kan(
             type = GameAction.KanType.ADDED_KAN,
             tileId = robbedTile.id,
@@ -129,7 +129,7 @@ class TableStatePersistenceTest {
             tileWall = TileWall(
                 listOf(
                     identified(Tile.Honor.Red),
-                    identified(Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)),
+                    identified(RiichiTileTypes.redFive(Tile.Suit.Dot)),
                 ),
             ),
             prevalentWind = Wind.SOUTH,

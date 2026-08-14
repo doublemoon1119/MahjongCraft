@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 
 /**
  * 未知/佔位牌（正面朝下、無法辨識）在 Minecraft 資源裡使用的素材識別字串。
@@ -16,11 +17,7 @@ const val UNKNOWN_TILE_ASSET_KEY = "unknown"
  * @throws UnsupportedOperationException 若為尚未建立 Minecraft 資源映射的花牌或擴充牌。
  */
 fun Tile.toAssetKey(): String = when (this) {
-    is Tile.Numeric -> buildString {
-        append(suit.assetPrefix)
-        append(value)
-        if (isRed) append("_red")
-    }
+    is Tile.Numeric -> "${suit.assetPrefix}$value"
     Tile.Honor.East -> "east"
     Tile.Honor.South -> "south"
     Tile.Honor.West -> "west"
@@ -31,9 +28,12 @@ fun Tile.toAssetKey(): String = when (this) {
     is Tile.Flower -> throw UnsupportedOperationException(
         "Flower tiles have no Minecraft asset key yet: $this",
     )
-    is Tile.Extension -> throw UnsupportedOperationException(
-        "Extension tile has no Minecraft asset key mapping yet: ${this.typeId}",
-    )
+    is Tile.Extension -> when (typeId) {
+        RiichiTileTypes.RED_FIVE_CHARACTER -> "m5_red"
+        RiichiTileTypes.RED_FIVE_DOT -> "p5_red"
+        RiichiTileTypes.RED_FIVE_BAMBOO -> "s5_red"
+        else -> throw UnsupportedOperationException("Extension tile has no Minecraft asset key mapping yet: $typeId")
+    }
 }
 
 private val Tile.Suit.assetPrefix: Char
@@ -53,7 +53,7 @@ val ALL_RIICHI_TILE_ASSET_KEYS: List<String> = buildList {
     for (suit in Tile.Suit.entries) {
         for (value in 1..9) {
             add(Tile.Numeric(suit, value).toAssetKey())
-            if (value == 5) add(Tile.Numeric(suit, value, isRed = true).toAssetKey())
+            if (value == 5) add(RiichiTileTypes.redFive(suit).toAssetKey())
         }
     }
     add(Tile.Honor.East.toAssetKey())

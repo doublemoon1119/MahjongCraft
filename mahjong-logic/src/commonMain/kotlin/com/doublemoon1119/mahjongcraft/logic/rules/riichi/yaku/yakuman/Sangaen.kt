@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 
 /**
  * 小三元與大三元役滿檢測器。
@@ -56,7 +56,7 @@ fun calculateSangaen(
                 mentsu is Mentsu.Minkan ||
                 mentsu is Mentsu.Kakan
             ) &&
-            mentsu.tiles.all { it.withoutRed in dragonTiles }
+            mentsu.tiles.all { it.riichiCanonical in dragonTiles }
     }
 
     // 三個三元牌刻子，必為大三元（役滿）
@@ -65,7 +65,7 @@ fun calculateSangaen(
     }
 
     // 兩個三元牌刻子，且雀頭為三元牌是為小三元（2 番）
-    if (dragonKotsuCount == 2 && standard.pair.tile.withoutRed in dragonTiles) {
+    if (dragonKotsuCount == 2 && standard.pair.tile.riichiCanonical in dragonTiles) {
         return YakuResult.han(YakuType.Shousangen, 2)
     }
 

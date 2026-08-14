@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Fuuro
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.calculateAkaDora
@@ -37,7 +38,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculate
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateSuushii
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman.calculateTsuuiisou
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 import kotlin.math.abs
 
 /**
@@ -53,11 +53,11 @@ class RiichiHandValueCalculator(
 
     override fun calculate(context: RiichiHandValueContext): RiichiHandValueResult {
         // 嘗試分解手牌（用於需要手牌結構的役種）
-        val handTiles = context.hand.standingTiles.map { it.tile.withoutRed }
-        val winningTile = context.winningTile.withoutRed
+        val handTiles = context.hand.standingTiles.map { it.tile.riichiCanonical }
+        val winningTile = context.winningTile.riichiCanonical
         val fuuro = context.hand.exposedMelds.map { meld ->
             // 將 base.Meld 轉換為 structure.Fuuro
-            val tile = meld.tiles.first().tile.withoutRed
+            val tile = meld.tiles.first().tile.riichiCanonical
             val mentsu = when (meld.type) {
                 MeldType.PON -> Mentsu.Kotsu(tile)
                 MeldType.CHI -> Mentsu.Shuntsu(headTile = tile)
@@ -343,7 +343,7 @@ class RiichiHandValueCalculator(
         results: MutableList<YakuResult>,
     ) {
         // 取得所有牌（去除赤寶牌標記）
-        val handTiles = context.hand.standingTiles.map { it.tile.withoutRed }
+        val handTiles = context.hand.standingTiles.map { it.tile.riichiCanonical }
 
         // 計算字牌役
         val honorResults = calculateHonorYaku(

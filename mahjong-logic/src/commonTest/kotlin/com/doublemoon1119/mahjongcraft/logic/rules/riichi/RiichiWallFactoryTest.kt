@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -25,11 +27,11 @@ class RiichiWallFactoryTest {
         assertEquals(136, wall.remainingCount)
 
         val allTiles = wall.getAllTiles()
-        val redCount = allTiles.count { (it.tile as? Tile.Numeric)?.isRed == true }
+        val redCount = allTiles.count { RiichiTileInterpretationPolicy.isRedDora(it.tile) }
         assertEquals(3, redCount)
 
-        val redBySuit = allTiles.filter { (it.tile as? Tile.Numeric)?.isRed == true }
-            .groupBy { (it.tile as Tile.Numeric).suit }
+        val redBySuit = allTiles.filter { RiichiTileInterpretationPolicy.isRedDora(it.tile) }
+            .groupBy { (it.tile.riichiCanonical as Tile.Numeric).suit }
 
         redBySuit.forEach { (_, tiles) ->
             assertEquals(1, tiles.size)
@@ -46,8 +48,8 @@ class RiichiWallFactoryTest {
         val wall = factory.create()
 
         val allTiles = wall.getAllTiles()
-        val redBySuit = allTiles.filter { (it.tile as? Tile.Numeric)?.isRed == true }
-            .groupBy { (it.tile as Tile.Numeric).suit }
+        val redBySuit = allTiles.filter { RiichiTileInterpretationPolicy.isRedDora(it.tile) }
+            .groupBy { (it.tile.riichiCanonical as Tile.Numeric).suit }
 
         // 驗證筒子 (Dot) 應有兩張赤牌
         assertEquals(2, redBySuit[Tile.Suit.Dot]?.size)

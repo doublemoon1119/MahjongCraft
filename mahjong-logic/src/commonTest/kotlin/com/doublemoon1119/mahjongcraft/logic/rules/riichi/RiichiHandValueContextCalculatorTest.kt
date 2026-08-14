@@ -1,5 +1,4 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
-
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -7,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
@@ -742,7 +742,7 @@ class RiichiHandValueContextCalculatorTest {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)), // wanPai[3]
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)), // wanPai[2]
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)), // wanPai[1]
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5, isRed = true)), // wanPai[0]
+            FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character)), // wanPai[0]
         )
         val tileWall = TileWall(wanPaiTiles)
 

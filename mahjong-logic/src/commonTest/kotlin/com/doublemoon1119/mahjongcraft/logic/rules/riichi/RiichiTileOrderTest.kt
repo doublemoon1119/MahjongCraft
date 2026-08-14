@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
-
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -28,8 +28,8 @@ class RiichiTileOrderTest {
      */
     @Test
     fun `test sorting with red five`() {
-        val normalFive = Tile.Numeric(Tile.Suit.Dot, 5, isRed = false)
-        val redFive = Tile.Numeric(Tile.Suit.Dot, 5, isRed = true)
+        val normalFive = Tile.Numeric(Tile.Suit.Dot, 5)
+        val redFive = RiichiTileTypes.redFive(Tile.Suit.Dot)
         val sixDot = Tile.Numeric(Tile.Suit.Dot, 6)
 
         val list = listOf(sixDot, redFive, normalFive)

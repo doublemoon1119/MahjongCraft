@@ -3,17 +3,6 @@ package com.doublemoon1119.mahjongcraft.logic.util
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 
 /**
- * 移除赤寶牌標記，將赤寶牌視為普通牌。
- *
- * @return 去除赤寶牌標記後的牌。
- */
-val Tile.withoutRed: Tile
-    get() = when (this) {
-        is Tile.Numeric -> this.copy(isRed = false)
-        else -> this
-    }
-
-/**
  * 檢查是否為老頭牌（1 或 9 的數牌）。
  */
 val Tile.isTerminal: Boolean

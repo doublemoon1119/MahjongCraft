@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.game
-
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildExhaustiveDrawReasonPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import kotlinx.serialization.builtins.ListSerializer
@@ -83,7 +83,7 @@ class PendingReactionPersistenceTest {
         val declarerId = Uuid.random()
         val responderA = Uuid.random()
         val responderB = Uuid.random()
-        val robbedTile = IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Dot, 5, isRed = true))
+        val robbedTile = IdentifiedTile(Uuid.random(), RiichiTileTypes.redFive(Tile.Suit.Dot))
         val kanAction = GameAction.Kan(
             type = GameAction.KanType.CLOSED_KAN,
             tileId = robbedTile.id,

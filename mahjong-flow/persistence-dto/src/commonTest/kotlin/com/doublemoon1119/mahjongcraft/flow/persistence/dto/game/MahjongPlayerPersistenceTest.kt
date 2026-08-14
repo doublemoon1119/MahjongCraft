@@ -1,5 +1,4 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.game
-
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildDiscardPilePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildExhaustiveDrawReasonPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildPlayerRuleStatePersistenceRegistry
@@ -14,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -42,7 +42,7 @@ class MahjongPlayerPersistenceTest {
     /** 驗證日麻玩家的隱藏狀態、牌河與動作歷史皆能完整還原。 */
     @Test
     fun `riichi player round-trips with all authoritative state`() {
-        val standingTile = identified(Tile.Numeric(Tile.Suit.Character, 5, isRed = true))
+        val standingTile = identified(RiichiTileTypes.redFive(Tile.Suit.Character))
         val lastDrawn = identified(Tile.Honor.Red)
         val riichiTile = identified(Tile.Numeric(Tile.Suit.Dot, 3))
         val takenDiscard = identified(Tile.Numeric(Tile.Suit.Bamboo, 7))

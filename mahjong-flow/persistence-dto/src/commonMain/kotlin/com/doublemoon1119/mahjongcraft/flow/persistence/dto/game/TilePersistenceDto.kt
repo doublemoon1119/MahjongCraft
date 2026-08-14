@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.game
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import kotlinx.serialization.Serializable
 
 /** [Tile] 的完整 persistence DTO。 */
@@ -11,8 +12,11 @@ sealed interface TilePersistenceDto {
     data class Numeric(
         val suit: SuitPersistenceDto,
         val value: Int,
-        val isRed: Boolean,
     ) : TilePersistenceDto
+
+    /** [Tile.Extension] 的 persistence DTO。 */
+    @Serializable
+    data class Extension(val typeId: String) : TilePersistenceDto
 
     /** [Tile.Honor] 的 persistence DTO。 */
     @Serializable
@@ -37,7 +41,7 @@ enum class FlowerPersistenceValue { SPRING, SUMMER, AUTUMN, WINTER, PLUM, ORCHID
 
 /** 將 [Tile] 轉換成 persistence DTO。 */
 fun Tile.toPersistenceDto(): TilePersistenceDto = when (this) {
-    is Tile.Numeric -> TilePersistenceDto.Numeric(suit.toPersistenceDto(), value, isRed)
+    is Tile.Numeric -> TilePersistenceDto.Numeric(suit.toPersistenceDto(), value)
     Tile.Honor.East -> TilePersistenceDto.Honor(HonorPersistenceValue.EAST)
     Tile.Honor.South -> TilePersistenceDto.Honor(HonorPersistenceValue.SOUTH)
     Tile.Honor.West -> TilePersistenceDto.Honor(HonorPersistenceValue.WEST)
@@ -53,14 +57,13 @@ fun Tile.toPersistenceDto(): TilePersistenceDto = when (this) {
     Tile.Flower.Orchid -> TilePersistenceDto.Flower(FlowerPersistenceValue.ORCHID)
     Tile.Flower.Bamboo -> TilePersistenceDto.Flower(FlowerPersistenceValue.BAMBOO)
     Tile.Flower.Chrysanthemum -> TilePersistenceDto.Flower(FlowerPersistenceValue.CHRYSANTHEMUM)
-    is Tile.Extension -> throw UnsupportedOperationException(
-        "Extension tile persistence DTO is not implemented yet: $typeId",
-    )
+    is Tile.Extension -> TilePersistenceDto.Extension(typeId.toString())
 }
 
 /** 將 [TilePersistenceDto] 還原成 [Tile]。 */
 fun TilePersistenceDto.toDomain(): Tile = when (this) {
-    is TilePersistenceDto.Numeric -> Tile.Numeric(suit.toDomain(), value, isRed)
+    is TilePersistenceDto.Numeric -> Tile.Numeric(suit.toDomain(), value)
+    is TilePersistenceDto.Extension -> Tile.Extension(TileTypeId.parse(typeId))
     is TilePersistenceDto.Honor -> value.toDomain()
     is TilePersistenceDto.Flower -> value.toDomain()
 }

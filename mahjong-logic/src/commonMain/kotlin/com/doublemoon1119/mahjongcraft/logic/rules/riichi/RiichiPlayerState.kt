@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 
 /**
  * 日本麻將特有的玩家狀態。
@@ -50,9 +50,9 @@ data class RiichiPlayerState(
         passedTilesInRound: Set<Tile>,
     ): Set<Tile> {
         val discardedTiles = discardPile.entries
-            .map { it.tile.tile.withoutRed }
+            .map { it.tile.tile.riichiCanonical }
             .toSet()
 
-        return discardedTiles + passedTilesInRound
+        return discardedTiles + passedTilesInRound.map { it.riichiCanonical }
     }
 }

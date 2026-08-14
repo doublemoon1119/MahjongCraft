@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 
 /**
  * 包牌（責任払い）觸發判定器。
@@ -32,7 +32,7 @@ object PaoDetector {
      * @return 若此次鳴牌觸發包牌責任，回傳對應的 [PaoLiability]；否則回傳 null。
      */
     fun check(hand: Hand, calledTile: Tile, sourceDirection: RelativeDirection): PaoLiability? {
-        val baseTile = calledTile.withoutRed
+        val baseTile = calledTile.riichiCanonical
         return when (baseTile) {
             in dragons -> checkGroup(hand, baseTile, dragons, PaoYaku.Daisangen, sourceDirection)
             in winds -> checkGroup(hand, baseTile, winds, PaoYaku.Daisuushii, sourceDirection)
@@ -56,11 +56,11 @@ object PaoDetector {
         val otherTiles = group - calledTile
 
         val exposedGroupTiles = hand.exposedMelds
-            .mapNotNull { it.tiles.firstOrNull()?.tile?.withoutRed }
+            .mapNotNull { it.tiles.firstOrNull()?.tile?.riichiCanonical }
             .toSet()
 
         val standingCounts = hand.standingTiles
-            .map { it.tile.withoutRed }
+            .map { it.tile.riichiCanonical }
             .groupingBy { it }
             .eachCount()
 

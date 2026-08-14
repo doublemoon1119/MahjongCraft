@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
-
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -16,7 +16,7 @@ class TileAssetKeysTest {
 
     @Test
     fun `test toAssetKey appends a red suffix for red fives`() {
-        assertEquals("m5_red", Tile.Numeric(Tile.Suit.Character, 5, isRed = true).toAssetKey())
+        assertEquals("m5_red", RiichiTileTypes.redFive(Tile.Suit.Character).toAssetKey())
     }
 
     @Test

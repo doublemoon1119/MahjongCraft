@@ -87,7 +87,7 @@ class RespondToDiscardUseCase(
                     val updatedResponder = if (action == GameAction.Pass &&
                         legalActions.any { it is GameAction.Pon || it is GameAction.Ron }
                     ) {
-                        responder.addPassedTile(discardedTile.tile)
+                        responder.addPassedTile(module.createTileInterpretationPolicy().canonicalize(discardedTile.tile))
                     } else {
                         responder
                     }
