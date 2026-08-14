@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ScoreConfigDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
@@ -24,6 +25,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
+import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeDefinition
+import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
+import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistryImpl
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -37,22 +41,31 @@ class MahjongExtensionRegistrarTest {
         val moduleRegistry = MahjongModuleRegistryImpl()
         val networkRegistries = TestNetworkDtoRegistries()
         val persistenceRegistries = buildBuiltInPersistenceRegistries()
+        val tileTypeRegistry = TileTypeRegistryImpl()
         val calls = mutableListOf<String>()
         val extension = RecordingExtension(calls)
 
         MahjongExtensionRegistrar.registerAndFreeze(
             listOf(extension),
             moduleRegistry,
+            tileTypeRegistry,
             networkRegistries,
             persistenceRegistries,
         )
 
-        assertEquals(listOf("rule", "network", "persistence"), calls)
+        assertEquals(listOf("rule", "tile", "network", "persistence"), calls)
         assertTrue(moduleRegistry.getModule(RiichiRuleConfig()) is RiichiRuleModule)
+        assertEquals(
+            TileTypeId.parse("example:flower/spring"),
+            tileTypeRegistry.require(TileTypeId.parse("example:flower/spring")).id,
+        )
         assertFailsWith<IllegalStateException> {
             moduleRegistry.register(TaiwanRuleConfig::class, "example:taiwan") { config, id ->
                 TaiwanRuleModule(id, config)
             }
+        }
+        assertFailsWith<IllegalStateException> {
+            tileTypeRegistry.register(TileTypeDefinition(TileTypeId.parse("example:late")))
         }
     }
 
@@ -75,6 +88,7 @@ class MahjongExtensionRegistrarTest {
             MahjongExtensionRegistrar.registerAndFreeze(
                 listOf(extension),
                 MahjongModuleRegistryImpl(),
+                TileTypeRegistryImpl(),
                 TestNetworkDtoRegistries(),
                 buildBuiltInPersistenceRegistries(),
             )
@@ -92,6 +106,7 @@ class MahjongExtensionRegistrarTest {
             MahjongExtensionRegistrar.registerAndFreeze(
                 listOf(extension, extension),
                 MahjongModuleRegistryImpl(),
+                TileTypeRegistryImpl(),
                 TestNetworkDtoRegistries(),
                 buildBuiltInPersistenceRegistries(),
             )
@@ -111,6 +126,11 @@ private class RecordingExtension(
     override fun registerRuleModules(registry: MahjongModuleRegistry) {
         calls += "rule"
         registry.register(RiichiRuleConfig::class, "example:riichi") { config, id -> RiichiRuleModule(id, config) }
+    }
+
+    override fun registerTileTypes(registry: TileTypeRegistry) {
+        calls += "tile"
+        registry.register(TileTypeDefinition(TileTypeId.parse("example:flower/spring")))
     }
 
     override fun registerNetworkDtos(registries: NetworkDtoRegistries) {

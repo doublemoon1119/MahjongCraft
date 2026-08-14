@@ -4,9 +4,18 @@ package com.doublemoon1119.mahjongcraft.logic.base
  * 定義麻將牌的基本模型。
  *
  * 採用密封類別 (Sealed Class) 結構以確保型別安全，並支持編譯時的窮舉檢查。
- * 包含數牌 (Numeric)、字牌 (Honor) 以及花牌 (Flower) 三大類別。
+ * 包含數牌 (Numeric)、字牌 (Honor)、既有花牌 (Flower) 以及由 registry 識別的擴充牌 (Extension)。
  */
 sealed class Tile {
+
+    /**
+     * 代表由內建規則或第三方 extension 註冊的非共用牌種。
+     *
+     * 權威狀態只保存 [typeId]；實際張數、排序與特殊行為由目前規則解析，不由此值物件推論。
+     *
+     * @property typeId 指向 runtime [com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry] 的穩定 ID。
+     */
+    data class Extension(val typeId: TileTypeId) : Tile()
 
     /**
      * 代表萬、筒、條等具有數值的有序牌。

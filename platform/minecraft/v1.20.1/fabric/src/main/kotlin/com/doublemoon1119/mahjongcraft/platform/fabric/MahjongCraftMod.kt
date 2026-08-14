@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftClientApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftServerApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
@@ -55,6 +56,7 @@ class MahjongCraftMod : ModInitializer {
         // Koin single 建立後，必須先於 Json 與遊戲流程服務第一次被解析前完成。
         FabricMahjongExtensions.initialize(
             moduleRegistry = koin.get<MahjongModuleRegistry>(),
+            tileTypeRegistry = koin.get<TileTypeRegistry>(),
             networkRegistries = koin.get<NetworkDtoRegistries>(),
             persistenceRegistries = koin.get<PersistenceRegistries>(),
         )

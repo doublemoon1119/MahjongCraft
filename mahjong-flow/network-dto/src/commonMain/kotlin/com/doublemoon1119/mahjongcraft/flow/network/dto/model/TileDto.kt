@@ -69,6 +69,9 @@ fun Tile.toDto(): TileDto = when (this) {
     Tile.Flower.Orchid -> TileDto.Flower.Orchid
     Tile.Flower.Bamboo -> TileDto.Flower.Bamboo
     Tile.Flower.Chrysanthemum -> TileDto.Flower.Chrysanthemum
+    is Tile.Extension -> throw UnsupportedOperationException(
+        "Extension tile network DTO is not implemented yet: $typeId",
+    )
 }
 
 fun TileDto.toDomain(): Tile = when (this) {

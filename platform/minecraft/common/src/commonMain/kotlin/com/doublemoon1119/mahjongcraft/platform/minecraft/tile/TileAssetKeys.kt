@@ -13,7 +13,7 @@ const val UNKNOWN_TILE_ASSET_KEY = "unknown"
  * 數牌格式為 `{花色字母}{數值}`，紅五額外加上 `_red` 後綴（例如 `m5_red`）；字牌則各自對應到固定的
  * 英文名稱（例如 `east`、`white_dragon`）。
  *
- * @throws UnsupportedOperationException 若為花牌——目前沒有對應素材。
+ * @throws UnsupportedOperationException 若為尚未建立 Minecraft 資源映射的花牌或擴充牌。
  */
 fun Tile.toAssetKey(): String = when (this) {
     is Tile.Numeric -> buildString {
@@ -30,6 +30,9 @@ fun Tile.toAssetKey(): String = when (this) {
     Tile.Honor.White -> "white_dragon"
     is Tile.Flower -> throw UnsupportedOperationException(
         "Flower tiles have no Minecraft asset key yet: $this",
+    )
+    is Tile.Extension -> throw UnsupportedOperationException(
+        "Extension tile has no Minecraft asset key mapping yet: ${this.typeId}",
     )
 }
 

@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
  * 1. 數牌：萬 (10+) > 筒 (20+) > 條 (30+)。
  * 2. 字牌：風牌 (41-44) > 三元牌 (45-47，順序為中、發、白)。
  * 3. 花牌：四季 (81-84) > 四君子 (85-88)。
+ * 4. 尚未由台灣規則定義排序的擴充牌暫列於既有花牌之後。
  */
 object TaiwanTileOrder : TileOrder {
     override fun compare(t1: Tile, t2: Tile): Int = getWeight(t1).compareTo(getWeight(t2))
@@ -41,5 +42,6 @@ object TaiwanTileOrder : TileOrder {
             Tile.Flower.Bamboo -> 87.0
             Tile.Flower.Chrysanthemum -> 88.0
         }
+        is Tile.Extension -> 100.0
     }
 }

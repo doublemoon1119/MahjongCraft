@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltIn
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.loader.api.FabricLoader
 import org.slf4j.LoggerFactory
@@ -27,13 +28,14 @@ object FabricMahjongExtensions {
     /** 透過 [FabricLoader] 發現 entrypoint，完成一次 runtime registry 初始化。 */
     fun initialize(
         moduleRegistry: MahjongModuleRegistry,
+        tileTypeRegistry: TileTypeRegistry,
         networkRegistries: NetworkDtoRegistries,
         persistenceRegistries: PersistenceRegistries,
     ) {
         try {
             val extensions = FabricLoader.getInstance()
                 .getEntrypoints(MAHJONG_EXTENSION_ENTRYPOINT, MahjongExtension::class.java)
-            initialize(moduleRegistry, networkRegistries, persistenceRegistries, extensions)
+            initialize(moduleRegistry, tileTypeRegistry, networkRegistries, persistenceRegistries, extensions)
             logger.info("Registered {} Mahjong extension(s)", extensions.size)
         } catch (cause: Exception) {
             logger.error("Failed to initialize Mahjong extensions", cause)
@@ -44,6 +46,7 @@ object FabricMahjongExtensions {
     /** 使用明確提供的 [extensions] 初始化，供平台測試驗證組裝順序。 */
     internal fun initialize(
         moduleRegistry: MahjongModuleRegistry,
+        tileTypeRegistry: TileTypeRegistry,
         networkRegistries: NetworkDtoRegistries,
         persistenceRegistries: PersistenceRegistries,
         extensions: Iterable<MahjongExtension>,
@@ -54,6 +57,7 @@ object FabricMahjongExtensions {
         MahjongExtensionRegistrar.registerAndFreeze(
             extensions = extensions,
             moduleRegistry = moduleRegistry,
+            tileTypeRegistry = tileTypeRegistry,
             networkRegistries = networkRegistries,
             persistenceRegistries = persistenceRegistries,
         )

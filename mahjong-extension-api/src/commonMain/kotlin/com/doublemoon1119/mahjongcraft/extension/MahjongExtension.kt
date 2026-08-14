@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.extension
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 
 /**
  * 第三方麻將規則在 MahjongCraft runtime 啟動前登記所有必要整合的共用契約。
@@ -16,6 +17,13 @@ interface MahjongExtension {
 
     /** 登記規則配置與 [com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule] factory。 */
     fun registerRuleModules(registry: MahjongModuleRegistry)
+
+    /**
+     * 登記第三方規則使用的擴充牌種。
+     *
+     * 預設不註冊任何牌，使只提供既有 Numeric／Honor 規則的 extension 不必加入空實作。
+     */
+    fun registerTileTypes(registry: TileTypeRegistry) = Unit
 
     /** 登記所有第三方規則需要的 network DTO mapper。 */
     fun registerNetworkDtos(registries: NetworkDtoRegistries)

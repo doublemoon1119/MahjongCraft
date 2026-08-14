@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCo
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
@@ -52,11 +53,19 @@ class FabricApplicationModuleTest {
         val moduleRegistry = koin.get<MahjongModuleRegistry>()
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val persistenceRegistries = koin.get<PersistenceRegistries>()
-        FabricMahjongExtensions.initialize(moduleRegistry, networkRegistries, persistenceRegistries, emptyList())
+        val tileTypeRegistry = koin.get<TileTypeRegistry>()
+        FabricMahjongExtensions.initialize(
+            moduleRegistry,
+            tileTypeRegistry,
+            networkRegistries,
+            persistenceRegistries,
+            emptyList(),
+        )
 
         assertSame(moduleRegistry, koin.get<MahjongModuleRegistry>())
         assertSame(networkRegistries, koin.get<NetworkDtoRegistries>())
         assertSame(persistenceRegistries, koin.get<PersistenceRegistries>())
+        assertSame(tileTypeRegistry, koin.get<TileTypeRegistry>())
         koin.get<GameFlowCoordinator>()
         koin.get<GameEventPublisher>()
         koin.get<DecisionTimerUpdatePublisher>()

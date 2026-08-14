@@ -53,6 +53,9 @@ fun Tile.toPersistenceDto(): TilePersistenceDto = when (this) {
     Tile.Flower.Orchid -> TilePersistenceDto.Flower(FlowerPersistenceValue.ORCHID)
     Tile.Flower.Bamboo -> TilePersistenceDto.Flower(FlowerPersistenceValue.BAMBOO)
     Tile.Flower.Chrysanthemum -> TilePersistenceDto.Flower(FlowerPersistenceValue.CHRYSANTHEMUM)
+    is Tile.Extension -> throw UnsupportedOperationException(
+        "Extension tile persistence DTO is not implemented yet: $typeId",
+    )
 }
 
 /** 將 [TilePersistenceDto] 還原成 [Tile]。 */

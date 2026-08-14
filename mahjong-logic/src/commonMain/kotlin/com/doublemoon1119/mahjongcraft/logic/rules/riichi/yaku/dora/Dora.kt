@@ -59,4 +59,6 @@ internal fun getNextDora(indicator: Tile): Tile = when (indicator) {
     is Tile.Honor.Red -> Tile.Honor.White
     // 花牌在日麻中不作為寶牌指示牌
     is Tile.Flower -> indicator
+    // 未由日麻規則明確定義的擴充牌不作為寶牌指示牌
+    is Tile.Extension -> indicator
 }

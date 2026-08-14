@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.extension
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 
 /**
  * 將平台發現的第三方 extension 登記至 runtime 實際使用的 registry，完成後凍結所有 registry。
@@ -16,6 +17,7 @@ object MahjongExtensionRegistrar {
     fun registerAndFreeze(
         extensions: Iterable<MahjongExtension>,
         moduleRegistry: MahjongModuleRegistry,
+        tileTypeRegistry: TileTypeRegistry,
         networkRegistries: NetworkDtoRegistries,
         persistenceRegistries: PersistenceRegistries,
     ) {
@@ -29,6 +31,7 @@ object MahjongExtensionRegistrar {
             }
             try {
                 extension.registerRuleModules(moduleRegistry)
+                extension.registerTileTypes(tileTypeRegistry)
                 extension.registerNetworkDtos(networkRegistries)
                 extension.registerPersistenceDtos(persistenceRegistries)
             } catch (cause: Exception) {
@@ -37,6 +40,7 @@ object MahjongExtensionRegistrar {
         }
 
         moduleRegistry.freeze()
+        tileTypeRegistry.freeze()
         networkRegistries.freeze()
         persistenceRegistries.freeze()
     }

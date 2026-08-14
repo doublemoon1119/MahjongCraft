@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
  * 排序權重：
  * 1. 數牌 (萬 > 筒 > 條)，同數值時「普通牌」在「赤寶牌」之前。
  * 2. 字牌 (東南西北 > 白發中)。
- * 3. 花牌 (若存在，排在最後)。
+ * 3. 花牌與尚未由日麻規則解讀的擴充牌 (若存在，排在最後)。
  */
 object RiichiTileOrder : TileOrder {
     override fun compare(t1: Tile, t2: Tile): Int = getWeight(t1).compareTo(getWeight(t2))
@@ -40,5 +40,6 @@ object RiichiTileOrder : TileOrder {
             Tile.Honor.Red -> 47.0
         }
         is Tile.Flower -> 100.0 // 花牌排最後 (沒有用到)
+        is Tile.Extension -> 100.0 // 日麻目前不解讀擴充牌的規則排序
     }
 }
