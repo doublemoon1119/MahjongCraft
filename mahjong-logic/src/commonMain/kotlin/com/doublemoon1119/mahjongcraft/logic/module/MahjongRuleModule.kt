@@ -17,6 +17,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpeningPolicy
+import com.doublemoon1119.mahjongcraft.logic.tile.IdentityTileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
 import kotlin.uuid.Uuid
 
 /**
@@ -54,6 +56,13 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 此規則的 [WallOpeningPolicy]，若尚未支援權威開門流程則為 null。
      */
     fun createWallOpeningPolicy(): WallOpeningPolicy? = null
+
+    /**
+     * 建立目前規則用於一般牌面比較的解讀 policy。
+     *
+     * 沒有規則特有等價牌面的模組可使用預設原樣實作；共用流程不得自行判斷特定 extension ID。
+     */
+    fun createTileInterpretationPolicy(): TileInterpretationPolicy = IdentityTileInterpretationPolicy
 
     /**
      * 建立適用於該規則的捨牌堆（牌河）實作。

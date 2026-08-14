@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResu
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
@@ -50,6 +51,12 @@ class RiichiRuleModuleTest {
     @Test
     fun `test create wall opening policy returns riichi implementation`() {
         assertSame(RiichiWallOpeningPolicy, module.createWallOpeningPolicy())
+    }
+
+    /** 驗證規則模組提供日麻赤五的牌面解讀 policy。 */
+    @Test
+    fun `test create tile interpretation policy returns riichi implementation`() {
+        assertSame(RiichiTileInterpretationPolicy, module.createTileInterpretationPolicy())
     }
 
     /**

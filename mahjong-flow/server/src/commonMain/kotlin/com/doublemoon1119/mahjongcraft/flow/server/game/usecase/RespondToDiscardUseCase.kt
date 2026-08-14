@@ -13,7 +13,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -174,6 +173,7 @@ class RespondToDiscardUseCase(
         val winnerAction = winningEntry.value
         val winner = players.first { it.id == winnerId }
         val winnerDirection = state.relativeDirectionOf(winnerId, pendingReaction.discarderId)
+        val tileInterpretation = module.createTileInterpretationPolicy()
 
         val meldType = when (winnerAction) {
             is GameAction.Chi -> MeldType.CHI
@@ -186,7 +186,9 @@ class RespondToDiscardUseCase(
             is GameAction.Kan -> winnerAction.withTiles.mapNotNull { id -> winner.hand.standingTiles.find { it.id == id } }
             is GameAction.Pon ->
                 winner.hand.standingTiles
-                    .filter { it.tile.withoutRed == discardedTile.tile.withoutRed }
+                    .filter {
+                        tileInterpretation.canonicalize(it.tile) == tileInterpretation.canonicalize(discardedTile.tile)
+                    }
                     .take(2)
         }
 

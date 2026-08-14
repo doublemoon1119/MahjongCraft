@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.util.withoutRed
 import kotlin.uuid.Uuid
 
 /**
@@ -53,8 +52,11 @@ internal object KanDeclarationApplier {
             }
 
             GameAction.KanType.ADDED_KAN -> {
+                val tileInterpretation = module.createTileInterpretationPolicy()
                 val targetMeldIndex = declarer.hand.exposedMelds.indexOfFirst {
-                    it.type == MeldType.PON && it.tiles.first().tile.withoutRed == incomingTile.tile.withoutRed
+                    it.type == MeldType.PON &&
+                        tileInterpretation.canonicalize(it.tiles.first().tile) ==
+                        tileInterpretation.canonicalize(incomingTile.tile)
                 }
                 declarer.hand.upgradeToAddedKan(incomingTile, targetMeldIndex)
             }

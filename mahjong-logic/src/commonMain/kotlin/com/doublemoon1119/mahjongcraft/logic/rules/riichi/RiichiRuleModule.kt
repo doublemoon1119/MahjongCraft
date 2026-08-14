@@ -12,9 +12,11 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
 import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
 import com.doublemoon1119.mahjongcraft.logic.util.isWind
@@ -38,6 +40,9 @@ class RiichiRuleModule(
 
     /** 建立四人日本麻將的雙骰牌牆開門 policy。 */
     override fun createWallOpeningPolicy(): RiichiWallOpeningPolicy = RiichiWallOpeningPolicy
+
+    /** 建立將日麻赤五解讀為普通五的牌面 policy。 */
+    override fun createTileInterpretationPolicy(): TileInterpretationPolicy = RiichiTileInterpretationPolicy
 
     /**
      * 建立日本麻將專用的牌河。

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInTileTypes
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
@@ -52,6 +53,7 @@ object FabricMahjongExtensions {
         extensions: Iterable<MahjongExtension>,
     ) {
         moduleRegistry.registerBuiltInRuleModules()
+        tileTypeRegistry.registerBuiltInTileTypes()
         networkRegistries.registerBuiltInRuleConfigDtos()
 
         MahjongExtensionRegistrar.registerAndFreeze(

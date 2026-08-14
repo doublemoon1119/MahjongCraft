@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCo
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
@@ -34,6 +35,7 @@ import org.koin.core.context.stopKoin
 import org.koin.plugin.module.dsl.startKoin
 import kotlin.test.AfterTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 
@@ -66,6 +68,7 @@ class FabricApplicationModuleTest {
         assertSame(networkRegistries, koin.get<NetworkDtoRegistries>())
         assertSame(persistenceRegistries, koin.get<PersistenceRegistries>())
         assertSame(tileTypeRegistry, koin.get<TileTypeRegistry>())
+        assertEquals(RiichiTileTypes.ALL, tileTypeRegistry.getAll().map { it.id })
         koin.get<GameFlowCoordinator>()
         koin.get<GameEventPublisher>()
         koin.get<DecisionTimerUpdatePublisher>()
