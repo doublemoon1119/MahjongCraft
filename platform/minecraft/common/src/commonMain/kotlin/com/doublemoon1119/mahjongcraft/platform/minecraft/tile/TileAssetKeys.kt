@@ -40,9 +40,6 @@ private val Tile.Suit.assetPrefix: Char
 
 /**
  * 只完成內建映射並已凍結的 registry，只供 [ALL_TILE_ASSET_KEYS] 建立固定清單使用。
- *
- * 第三方註冊的 asset key 不會出現在這份清單，因為 Fabric `mahjong_tile.json` 的 item model
- * override 目前仍是依此固定順序產生的靜態清單，尚未支援第三方動態模型註冊。
  */
 private val builtInTileAssetRegistry: MinecraftTileAssetRegistry = MinecraftTileAssetRegistryImpl().apply {
     registerBuiltInTileAssets()
@@ -50,8 +47,9 @@ private val builtInTileAssetRegistry: MinecraftTileAssetRegistry = MinecraftTile
 }
 
 /**
- * 目前內建牌種使用的全部素材識別字串，順序固定——`platform/minecraft/v1.20.1/fabric` 的
- * `mahjong_tile.json` item model override 清單依這個順序產生，兩者必須保持同步。
+ * 目前內建牌種使用的全部素材識別字串，順序固定。各 loader adapter 依此清單得知哪些 asset key
+ * 一定有對應材質與模型，作為循環換牌、NBT 正規化與內建模型註冊的依據；第三方註冊的 asset key
+ * 不在此清單內。
  *
  * 包含日麻牌、台灣花牌與結尾的 [UNKNOWN_TILE_ASSET_KEY] 佔位牌。
  */

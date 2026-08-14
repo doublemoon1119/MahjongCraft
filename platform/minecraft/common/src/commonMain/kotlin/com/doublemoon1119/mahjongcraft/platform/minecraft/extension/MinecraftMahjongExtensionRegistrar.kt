@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
+import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTileAssets
 
@@ -14,13 +15,17 @@ object MinecraftMahjongExtensionRegistrar {
     /**
      * 先註冊內建映射，再依 [extensions] 順序登記第三方映射，全部成功後凍結 [registry]。
      *
+     * @return 依 [extensions] 順序登記的第三方 asset key，不含內建映射，供呼叫端記錄診斷資訊。
      * @throws MinecraftMahjongExtensionRegistrationException 若任一 extension 註冊失敗。
      */
     fun registerAndFreeze(
         extensions: Iterable<MinecraftMahjongExtension>,
         registry: MinecraftTileAssetRegistry,
-    ) {
+    ): List<String> {
         registry.registerBuiltInTileAssets()
+
+        val thirdPartyAssetKeys = mutableListOf<String>()
+        val recordingRegistry = RecordingMinecraftTileAssetRegistry(registry, thirdPartyAssetKeys)
 
         val registeredExtensionIds = mutableSetOf<String>()
         extensions.forEach { extension ->
@@ -31,13 +36,14 @@ object MinecraftMahjongExtensionRegistrar {
                 )
             }
             try {
-                extension.registerTileAssets(registry)
+                extension.registerTileAssets(recordingRegistry)
             } catch (cause: Exception) {
                 throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
             }
         }
 
         registry.freeze()
+        return thirdPartyAssetKeys
     }
 }
 
@@ -46,3 +52,20 @@ class MinecraftMahjongExtensionRegistrationException(
     extensionId: String,
     cause: Throwable,
 ) : IllegalStateException("Failed to register Minecraft Mahjong extension: $extensionId", cause)
+
+/** 轉發至 [delegate]，並額外把第三方註冊的 asset key 記錄進 [recorded]，供診斷用途。 */
+private class RecordingMinecraftTileAssetRegistry(
+    private val delegate: MinecraftTileAssetRegistry,
+    private val recorded: MutableList<String>,
+) : MinecraftTileAssetRegistry {
+    override val isFrozen: Boolean get() = delegate.isFrozen
+
+    override fun register(typeId: TileTypeId, assetKey: String) {
+        delegate.register(typeId, assetKey)
+        recorded += assetKey
+    }
+
+    override fun freeze() = delegate.freeze()
+
+    override fun find(typeId: TileTypeId): String? = delegate.find(typeId)
+}

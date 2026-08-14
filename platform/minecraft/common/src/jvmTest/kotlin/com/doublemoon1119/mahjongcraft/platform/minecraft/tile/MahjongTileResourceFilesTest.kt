@@ -34,21 +34,16 @@ class MahjongTileResourceFilesTest {
         "minecraft:black_dye",
     )
 
-    /** 驗證主 item model 的 predicate 順序及目標模型與 production asset keys 一致。 */
+    /**
+     * 驗證主 item model 是 `builtin/entity` marker，實際牌面由 [MahjongTileItemRenderer]
+     * （`platform/minecraft/<version>/<loader>`）依 asset key 動態解析，不再依賴固定 predicate
+     * override 清單。
+     */
     @Test
-    fun `item model overrides match every tile asset key in order`() {
+    fun `item model is a builtin entity marker`() {
         val model = loadJson("/assets/mahjongcraft/models/item/mahjong_tile.json")
-        val overrides = model.getValue("overrides") as JsonArray
 
-        assertEquals(ALL_TILE_ASSET_KEYS.size, overrides.size)
-        overrides.zip(ALL_TILE_ASSET_KEYS).forEachIndexed { index, (element, assetKey) ->
-            val override = element.jsonObject
-            assertEquals(index / 100.0, override.getValue("predicate").jsonObject.getValue("tile").jsonPrimitive.content.toDouble())
-            assertEquals(
-                "mahjongcraft:item/mahjong_tile/mahjong_tile_$assetKey",
-                override.getValue("model").jsonPrimitive.content,
-            )
-        }
+        assertEquals("builtin/entity", model.getValue("parent").jsonPrimitive.content)
     }
 
     /** 驗證每個 asset key 都具有可載入的子模型及 PNG 貼圖。 */

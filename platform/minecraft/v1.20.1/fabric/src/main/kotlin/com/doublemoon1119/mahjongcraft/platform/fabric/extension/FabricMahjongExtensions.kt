@@ -40,7 +40,7 @@ object FabricMahjongExtensions {
         try {
             val extensions = FabricLoader.getInstance()
                 .getEntrypoints(MAHJONG_EXTENSION_ENTRYPOINT, MahjongExtension::class.java)
-            initialize(
+            val thirdPartyAssetKeys = initialize(
                 moduleRegistry,
                 tileTypeRegistry,
                 networkRegistries,
@@ -48,14 +48,28 @@ object FabricMahjongExtensions {
                 minecraftTileAssetRegistry,
                 extensions,
             )
-            logger.info("Registered {} Mahjong extension(s)", extensions.size)
+            val extensionIds = extensions.map { it.id }
+            logger.info(
+                "Registered {} third-party Mahjong extension(s): {}",
+                extensionIds.size,
+                extensionIds,
+            )
+            logger.info(
+                "Registered {} third-party Minecraft tile asset(s): {}",
+                thirdPartyAssetKeys.size,
+                thirdPartyAssetKeys,
+            )
         } catch (cause: Exception) {
             logger.error("Failed to initialize Mahjong extensions", cause)
             throw cause
         }
     }
 
-    /** 使用明確提供的 [extensions] 初始化，供平台測試驗證組裝順序。 */
+    /**
+     * 使用明確提供的 [extensions] 初始化，供平台測試驗證組裝順序。
+     *
+     * @return 依 [extensions] 順序登記的第三方 Minecraft tile asset key，供呼叫端記錄診斷資訊。
+     */
     internal fun initialize(
         moduleRegistry: MahjongModuleRegistry,
         tileTypeRegistry: TileTypeRegistry,
@@ -63,7 +77,7 @@ object FabricMahjongExtensions {
         persistenceRegistries: PersistenceRegistries,
         minecraftTileAssetRegistry: MinecraftTileAssetRegistry,
         extensions: Iterable<MahjongExtension>,
-    ) {
+    ): List<String> {
         moduleRegistry.registerBuiltInRuleModules()
         tileTypeRegistry.registerBuiltInTileTypes()
         networkRegistries.registerBuiltInRuleConfigDtos()
@@ -78,7 +92,7 @@ object FabricMahjongExtensions {
 
         // 同一個第三方類別可同時實作 MahjongExtension 與 MinecraftMahjongExtension，
         // 不需要在 fabric.mod.json 額外宣告第二個 entrypoint。
-        MinecraftMahjongExtensionRegistrar.registerAndFreeze(
+        return MinecraftMahjongExtensionRegistrar.registerAndFreeze(
             extensions = extensions.filterIsInstance<MinecraftMahjongExtension>(),
             registry = minecraftTileAssetRegistry,
         )

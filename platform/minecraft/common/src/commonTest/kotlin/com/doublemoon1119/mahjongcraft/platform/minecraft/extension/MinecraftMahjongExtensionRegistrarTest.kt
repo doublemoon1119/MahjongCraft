@@ -27,10 +27,11 @@ class MinecraftMahjongExtensionRegistrarTest {
             }
         }
 
-        MinecraftMahjongExtensionRegistrar.registerAndFreeze(listOf(extension), registry)
+        val thirdPartyAssetKeys = MinecraftMahjongExtensionRegistrar.registerAndFreeze(listOf(extension), registry)
 
         assertEquals("m5_red", registry.find(RiichiTileTypes.RED_FIVE_CHARACTER))
         assertEquals("animal_cat", registry.find(thirdPartyId))
+        assertEquals(listOf("animal_cat"), thirdPartyAssetKeys)
         assertTrue(registry.isFrozen)
         assertFailsWith<IllegalStateException> {
             registry.register(TileTypeId.parse("example:late"), "late_key")

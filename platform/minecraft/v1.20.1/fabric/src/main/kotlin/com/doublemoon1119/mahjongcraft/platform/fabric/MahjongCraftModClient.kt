@@ -5,20 +5,19 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhas
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongDiceEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAssetKey
 import net.fabricmc.api.ClientModInitializer
+import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
+import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
-import net.minecraft.client.item.ModelPredicateProviderRegistry
-import net.minecraft.util.Identifier
 import org.koin.core.context.GlobalContext
 import kotlin.uuid.Uuid
 
@@ -27,11 +26,8 @@ class MahjongCraftModClient : ClientModInitializer {
     override fun onInitializeClient() {
         val koin = GlobalContext.get()
 
-        ModelPredicateProviderRegistry.register(ModItems.MAHJONG_TILE, Identifier("tile")) { stack, _, _, _ ->
-            val storedKey = stack.nbt?.getString(MahjongTileItem.NBT_KEY_TILE)
-            val assetKey = storedKey?.normalizedTileAssetKey() ?: ALL_TILE_ASSET_KEYS.first()
-            ALL_TILE_ASSET_KEYS.indexOf(assetKey) / 100f
-        }
+        ModelLoadingPlugin.register(MahjongTileModelLoadingPlugin)
+        BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAHJONG_TILE, MahjongTileItemRenderer)
 
         val json = koin.get<kotlinx.serialization.json.Json>()
         val networkRegistries = koin.get<NetworkDtoRegistries>()
