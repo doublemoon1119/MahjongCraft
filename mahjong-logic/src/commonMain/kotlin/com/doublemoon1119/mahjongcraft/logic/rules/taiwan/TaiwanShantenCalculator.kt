@@ -46,7 +46,6 @@ class TaiwanShantenCalculator : ShantenCalculator {
         hand.standingTiles.forEach { identifiedTile ->
             val tileKey = when (val tile = identifiedTile.tile) {
                 is Tile.Numeric -> tile
-                is Tile.Flower -> return@forEach // 跳過花牌
                 is Tile.Extension -> if (TaiwanTileTypes.isFlower(tile)) return@forEach else tile
                 else -> tile
             }

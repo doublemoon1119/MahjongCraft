@@ -40,7 +40,6 @@ object RiichiTileOrder : TileOrder {
             Tile.Honor.Green -> 46.0
             Tile.Honor.Red -> 47.0
         }
-        is Tile.Flower -> 100.0 // 花牌排最後 (沒有用到)
         is Tile.Extension -> if (RiichiTileInterpretationPolicy.isRedDora(tile)) {
             getWeight(RiichiTileInterpretationPolicy.canonicalize(tile)) + 0.1
         } else {

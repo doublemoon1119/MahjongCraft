@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import kotlinx.serialization.Serializable
 
 /**
- * [Tile] 的網路 DTO。日麻不使用花牌，但 [Flower] 分支仍原樣鏡射，供未來台灣麻將規則使用。
+ * [Tile] 的網路 DTO。地區限定牌種（如花牌）一律以 [Extension] 承載穩定牌種 ID。
  */
 @Serializable
 sealed interface TileDto {
@@ -32,25 +32,6 @@ sealed interface TileDto {
 
         @Serializable data object White : Honor
     }
-
-    @Serializable
-    sealed interface Flower : TileDto {
-        @Serializable data object Spring : Flower
-
-        @Serializable data object Summer : Flower
-
-        @Serializable data object Autumn : Flower
-
-        @Serializable data object Winter : Flower
-
-        @Serializable data object Plum : Flower
-
-        @Serializable data object Orchid : Flower
-
-        @Serializable data object Bamboo : Flower
-
-        @Serializable data object Chrysanthemum : Flower
-    }
 }
 
 /** [Tile.Suit] 的網路 DTO。 */
@@ -66,14 +47,6 @@ fun Tile.toDto(): TileDto = when (this) {
     Tile.Honor.Red -> TileDto.Honor.Red
     Tile.Honor.Green -> TileDto.Honor.Green
     Tile.Honor.White -> TileDto.Honor.White
-    Tile.Flower.Spring -> TileDto.Flower.Spring
-    Tile.Flower.Summer -> TileDto.Flower.Summer
-    Tile.Flower.Autumn -> TileDto.Flower.Autumn
-    Tile.Flower.Winter -> TileDto.Flower.Winter
-    Tile.Flower.Plum -> TileDto.Flower.Plum
-    Tile.Flower.Orchid -> TileDto.Flower.Orchid
-    Tile.Flower.Bamboo -> TileDto.Flower.Bamboo
-    Tile.Flower.Chrysanthemum -> TileDto.Flower.Chrysanthemum
     is Tile.Extension -> TileDto.Extension(typeId.toString())
 }
 
@@ -87,14 +60,6 @@ fun TileDto.toDomain(): Tile = when (this) {
     TileDto.Honor.Red -> Tile.Honor.Red
     TileDto.Honor.Green -> Tile.Honor.Green
     TileDto.Honor.White -> Tile.Honor.White
-    TileDto.Flower.Spring -> Tile.Flower.Spring
-    TileDto.Flower.Summer -> Tile.Flower.Summer
-    TileDto.Flower.Autumn -> Tile.Flower.Autumn
-    TileDto.Flower.Winter -> Tile.Flower.Winter
-    TileDto.Flower.Plum -> Tile.Flower.Plum
-    TileDto.Flower.Orchid -> Tile.Flower.Orchid
-    TileDto.Flower.Bamboo -> Tile.Flower.Bamboo
-    TileDto.Flower.Chrysanthemum -> Tile.Flower.Chrysanthemum
 }
 
 fun Tile.Suit.toDto(): SuitDto = when (this) {

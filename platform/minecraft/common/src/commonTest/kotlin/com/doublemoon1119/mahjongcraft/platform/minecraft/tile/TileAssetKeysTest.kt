@@ -43,10 +43,9 @@ class TileAssetKeysTest {
         assertEquals(UNKNOWN_TILE_ASSET_KEY, ALL_TILE_ASSET_KEYS.last())
     }
 
-    /** 驗證舊花牌與未知 Extension 都安全回退至 unknown。 */
+    /** 驗證未知 Extension 安全回退至 unknown。 */
     @Test
-    fun `unsupported tile types fall back to unknown`() {
-        assertEquals(UNKNOWN_TILE_ASSET_KEY, Tile.Flower.Spring.toAssetKey())
+    fun `unsupported extension tile types fall back to unknown`() {
         assertEquals(
             UNKNOWN_TILE_ASSET_KEY,
             Tile.Extension(TileTypeId.parse("example:missing")).toAssetKey(),

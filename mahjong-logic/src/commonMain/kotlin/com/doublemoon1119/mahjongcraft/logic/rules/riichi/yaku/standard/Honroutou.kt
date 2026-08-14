@@ -39,10 +39,6 @@ fun calculateHonroutou(
             is Tile.Honor -> {
                 // 字牌允許
             }
-            is Tile.Flower -> {
-                // 花牌不允許（麻將中不使用花牌）
-                return null
-            }
             is Tile.Extension -> {
                 // 未由日麻規則定義的擴充牌不屬於老頭牌或字牌
                 return null

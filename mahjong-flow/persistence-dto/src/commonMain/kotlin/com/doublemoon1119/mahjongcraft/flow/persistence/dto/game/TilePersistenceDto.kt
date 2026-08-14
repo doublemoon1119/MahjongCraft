@@ -21,10 +21,6 @@ sealed interface TilePersistenceDto {
     /** [Tile.Honor] 的 persistence DTO。 */
     @Serializable
     data class Honor(val value: HonorPersistenceValue) : TilePersistenceDto
-
-    /** [Tile.Flower] 的 persistence DTO。 */
-    @Serializable
-    data class Flower(val value: FlowerPersistenceValue) : TilePersistenceDto
 }
 
 /** [Tile.Suit] 的 persistence DTO。 */
@@ -34,10 +30,6 @@ enum class SuitPersistenceDto { CHARACTER, DOT, BAMBOO }
 /** [Tile.Honor] 種類的 persistence 值。 */
 @Serializable
 enum class HonorPersistenceValue { EAST, SOUTH, WEST, NORTH, RED, GREEN, WHITE }
-
-/** [Tile.Flower] 種類的 persistence 值。 */
-@Serializable
-enum class FlowerPersistenceValue { SPRING, SUMMER, AUTUMN, WINTER, PLUM, ORCHID, BAMBOO, CHRYSANTHEMUM }
 
 /** 將 [Tile] 轉換成 persistence DTO。 */
 fun Tile.toPersistenceDto(): TilePersistenceDto = when (this) {
@@ -49,14 +41,6 @@ fun Tile.toPersistenceDto(): TilePersistenceDto = when (this) {
     Tile.Honor.Red -> TilePersistenceDto.Honor(HonorPersistenceValue.RED)
     Tile.Honor.Green -> TilePersistenceDto.Honor(HonorPersistenceValue.GREEN)
     Tile.Honor.White -> TilePersistenceDto.Honor(HonorPersistenceValue.WHITE)
-    Tile.Flower.Spring -> TilePersistenceDto.Flower(FlowerPersistenceValue.SPRING)
-    Tile.Flower.Summer -> TilePersistenceDto.Flower(FlowerPersistenceValue.SUMMER)
-    Tile.Flower.Autumn -> TilePersistenceDto.Flower(FlowerPersistenceValue.AUTUMN)
-    Tile.Flower.Winter -> TilePersistenceDto.Flower(FlowerPersistenceValue.WINTER)
-    Tile.Flower.Plum -> TilePersistenceDto.Flower(FlowerPersistenceValue.PLUM)
-    Tile.Flower.Orchid -> TilePersistenceDto.Flower(FlowerPersistenceValue.ORCHID)
-    Tile.Flower.Bamboo -> TilePersistenceDto.Flower(FlowerPersistenceValue.BAMBOO)
-    Tile.Flower.Chrysanthemum -> TilePersistenceDto.Flower(FlowerPersistenceValue.CHRYSANTHEMUM)
     is Tile.Extension -> TilePersistenceDto.Extension(typeId.toString())
 }
 
@@ -65,7 +49,6 @@ fun TilePersistenceDto.toDomain(): Tile = when (this) {
     is TilePersistenceDto.Numeric -> Tile.Numeric(suit.toDomain(), value)
     is TilePersistenceDto.Extension -> Tile.Extension(TileTypeId.parse(typeId))
     is TilePersistenceDto.Honor -> value.toDomain()
-    is TilePersistenceDto.Flower -> value.toDomain()
 }
 
 /** 將 [Tile.Suit] 轉換成 persistence DTO。 */
@@ -91,16 +74,4 @@ private fun HonorPersistenceValue.toDomain(): Tile.Honor = when (this) {
     HonorPersistenceValue.RED -> Tile.Honor.Red
     HonorPersistenceValue.GREEN -> Tile.Honor.Green
     HonorPersistenceValue.WHITE -> Tile.Honor.White
-}
-
-/** 將 [FlowerPersistenceValue] 還原成 [Tile.Flower]。 */
-private fun FlowerPersistenceValue.toDomain(): Tile.Flower = when (this) {
-    FlowerPersistenceValue.SPRING -> Tile.Flower.Spring
-    FlowerPersistenceValue.SUMMER -> Tile.Flower.Summer
-    FlowerPersistenceValue.AUTUMN -> Tile.Flower.Autumn
-    FlowerPersistenceValue.WINTER -> Tile.Flower.Winter
-    FlowerPersistenceValue.PLUM -> Tile.Flower.Plum
-    FlowerPersistenceValue.ORCHID -> Tile.Flower.Orchid
-    FlowerPersistenceValue.BAMBOO -> Tile.Flower.Bamboo
-    FlowerPersistenceValue.CHRYSANTHEMUM -> Tile.Flower.Chrysanthemum
 }

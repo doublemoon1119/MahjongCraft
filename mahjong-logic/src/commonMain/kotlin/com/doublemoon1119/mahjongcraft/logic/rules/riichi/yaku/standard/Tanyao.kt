@@ -26,8 +26,6 @@ fun calculateTanyao(
 ): YakuResult? {
     val allTiles = hand.allTiles.map { it.tile } + winningTile
 
-    check(allTiles.none { it is Tile.Flower }) { "Flower tiles should not exist in Riichi Mahjong" }
-
     val hasTerminalOrHonor = allTiles.any { tile ->
         when (tile) {
             is Tile.Numeric -> tile.isTerminal

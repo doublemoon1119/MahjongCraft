@@ -4,7 +4,8 @@ package com.doublemoon1119.mahjongcraft.logic.base
  * 定義麻將牌的基本模型。
  *
  * 採用密封類別 (Sealed Class) 結構以確保型別安全，並支持編譯時的窮舉檢查。
- * 包含數牌 (Numeric)、字牌 (Honor)、既有花牌 (Flower) 以及由 registry 識別的擴充牌 (Extension)。
+ * 包含數牌 (Numeric)、字牌 (Honor) 以及由 registry 識別的擴充牌 (Extension)，花牌等地區限定牌種
+ * 一律以 [Extension] 表示。
  */
 sealed class Tile {
 
@@ -58,36 +59,6 @@ sealed class Tile {
 
         /** 白 (Haku / 白板) */
         data object White : Honor()
-    }
-
-    /**
-     * 代表花牌與四季牌。
-     * 主要應用於台灣麻將、廣東麻將等規則，日本麻將則不使用此類別。
-     */
-    sealed class Flower : Tile() {
-        /** 春 (Spring) */
-        data object Spring : Flower()
-
-        /** 夏 (Summer) */
-        data object Summer : Flower()
-
-        /** 秋 (Autumn) */
-        data object Autumn : Flower()
-
-        /** 冬 (Winter) */
-        data object Winter : Flower()
-
-        /** 梅 (Plum) */
-        data object Plum : Flower()
-
-        /** 蘭 (Orchid) */
-        data object Orchid : Flower()
-
-        /** 竹 (Bamboo) */
-        data object Bamboo : Flower()
-
-        /** 菊 (Chrysanthemum) */
-        data object Chrysanthemum : Flower()
     }
 
     /**

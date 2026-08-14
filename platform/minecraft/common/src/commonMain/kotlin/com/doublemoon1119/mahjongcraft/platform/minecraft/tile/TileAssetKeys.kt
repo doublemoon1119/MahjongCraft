@@ -27,7 +27,6 @@ fun Tile.toAssetKey(): String = when (this) {
     Tile.Honor.Red -> "red_dragon"
     Tile.Honor.Green -> "green_dragon"
     Tile.Honor.White -> "white_dragon"
-    is Tile.Flower -> UNKNOWN_TILE_ASSET_KEY
     is Tile.Extension -> when (typeId) {
         RiichiTileTypes.RED_FIVE_CHARACTER -> "m5_red"
         RiichiTileTypes.RED_FIVE_DOT -> "p5_red"

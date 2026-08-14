@@ -33,16 +33,6 @@ object TaiwanTileOrder : TileOrder {
             Tile.Honor.Green -> 46.0 // 發
             Tile.Honor.White -> 47.0 // 白
         }
-        is Tile.Flower -> when (tile) {
-            Tile.Flower.Spring -> 81.0
-            Tile.Flower.Summer -> 82.0
-            Tile.Flower.Autumn -> 83.0
-            Tile.Flower.Winter -> 84.0
-            Tile.Flower.Plum -> 85.0
-            Tile.Flower.Orchid -> 86.0
-            Tile.Flower.Bamboo -> 87.0
-            Tile.Flower.Chrysanthemum -> 88.0
-        }
         is Tile.Extension -> TaiwanTileTypes.orderIndex(tile)?.let { 81.0 + it } ?: 100.0
     }
 }

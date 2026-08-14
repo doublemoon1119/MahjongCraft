@@ -21,7 +21,7 @@ class TaiwanDiscardPileTest {
     @Test
     fun `test taiwan discard pile basic storage`() {
         var pile = TaiwanDiscardPile()
-        val tile = FakeIdentifiedTileFactory.create(Tile.Flower.Spring)
+        val tile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
 
         // 台灣麻將僅使用基礎的 DiscardEntry
         val entry = DiscardPile.DiscardEntry(tile)
