@@ -15,10 +15,11 @@ const val UNKNOWN_TILE_ASSET_KEY = "unknown"
  * 數牌格式為 `{花色字母}{數值}`，紅五額外加上 `_red` 後綴（例如 `m5_red`）；字牌則各自對應到固定的
  * 英文名稱（例如 `east`、`white_dragon`）。
  *
- * 無法解析的舊牌型或 Extension ID 會回退至 [UNKNOWN_TILE_ASSET_KEY]，讓物品與 entity 使用相同的
- * 佔位外觀；此 fallback 不會改寫權威狀態保存的原始牌種 ID。
+ * @param registry 保存 [Tile.Extension] 對應 asset key 的 runtime registry；內建與第三方牌種共用
+ * 同一份查詢流程。無法解析的 Extension ID 會回退至 [UNKNOWN_TILE_ASSET_KEY]，讓物品與 entity 使用
+ * 相同的佔位外觀；此 fallback 不會改寫權威狀態保存的原始牌種 ID。
  */
-fun Tile.toAssetKey(): String = when (this) {
+fun Tile.toAssetKey(registry: MinecraftTileAssetRegistry): String = when (this) {
     is Tile.Numeric -> "${suit.assetPrefix}$value"
     Tile.Honor.East -> "east"
     Tile.Honor.South -> "south"
@@ -27,20 +28,7 @@ fun Tile.toAssetKey(): String = when (this) {
     Tile.Honor.Red -> "red_dragon"
     Tile.Honor.Green -> "green_dragon"
     Tile.Honor.White -> "white_dragon"
-    is Tile.Extension -> when (typeId) {
-        RiichiTileTypes.RED_FIVE_CHARACTER -> "m5_red"
-        RiichiTileTypes.RED_FIVE_DOT -> "p5_red"
-        RiichiTileTypes.RED_FIVE_BAMBOO -> "s5_red"
-        TaiwanTileTypes.SPRING -> "flower_spring"
-        TaiwanTileTypes.SUMMER -> "flower_summer"
-        TaiwanTileTypes.AUTUMN -> "flower_autumn"
-        TaiwanTileTypes.WINTER -> "flower_winter"
-        TaiwanTileTypes.PLUM -> "flower_plum"
-        TaiwanTileTypes.ORCHID -> "flower_orchid"
-        TaiwanTileTypes.BAMBOO -> "flower_bamboo"
-        TaiwanTileTypes.CHRYSANTHEMUM -> "flower_chrysanthemum"
-        else -> UNKNOWN_TILE_ASSET_KEY
-    }
+    is Tile.Extension -> registry.find(typeId) ?: UNKNOWN_TILE_ASSET_KEY
 }
 
 private val Tile.Suit.assetPrefix: Char
@@ -51,6 +39,17 @@ private val Tile.Suit.assetPrefix: Char
     }
 
 /**
+ * 只完成內建映射並已凍結的 registry，只供 [ALL_TILE_ASSET_KEYS] 建立固定清單使用。
+ *
+ * 第三方註冊的 asset key 不會出現在這份清單，因為 Fabric `mahjong_tile.json` 的 item model
+ * override 目前仍是依此固定順序產生的靜態清單，尚未支援第三方動態模型註冊。
+ */
+private val builtInTileAssetRegistry: MinecraftTileAssetRegistry = MinecraftTileAssetRegistryImpl().apply {
+    registerBuiltInTileAssets()
+    freeze()
+}
+
+/**
  * 目前內建牌種使用的全部素材識別字串，順序固定——`platform/minecraft/v1.20.1/fabric` 的
  * `mahjong_tile.json` item model override 清單依這個順序產生，兩者必須保持同步。
  *
@@ -59,18 +58,18 @@ private val Tile.Suit.assetPrefix: Char
 val ALL_TILE_ASSET_KEYS: List<String> = buildList {
     for (suit in Tile.Suit.entries) {
         for (value in 1..9) {
-            add(Tile.Numeric(suit, value).toAssetKey())
-            if (value == 5) add(RiichiTileTypes.redFive(suit).toAssetKey())
+            add(Tile.Numeric(suit, value).toAssetKey(builtInTileAssetRegistry))
+            if (value == 5) add(RiichiTileTypes.redFive(suit).toAssetKey(builtInTileAssetRegistry))
         }
     }
-    add(Tile.Honor.East.toAssetKey())
-    add(Tile.Honor.South.toAssetKey())
-    add(Tile.Honor.West.toAssetKey())
-    add(Tile.Honor.North.toAssetKey())
-    add(Tile.Honor.Red.toAssetKey())
-    add(Tile.Honor.Green.toAssetKey())
-    add(Tile.Honor.White.toAssetKey())
-    TaiwanTileTypes.createAll().forEach { add(it.toAssetKey()) }
+    add(Tile.Honor.East.toAssetKey(builtInTileAssetRegistry))
+    add(Tile.Honor.South.toAssetKey(builtInTileAssetRegistry))
+    add(Tile.Honor.West.toAssetKey(builtInTileAssetRegistry))
+    add(Tile.Honor.North.toAssetKey(builtInTileAssetRegistry))
+    add(Tile.Honor.Red.toAssetKey(builtInTileAssetRegistry))
+    add(Tile.Honor.Green.toAssetKey(builtInTileAssetRegistry))
+    add(Tile.Honor.White.toAssetKey(builtInTileAssetRegistry))
+    TaiwanTileTypes.createAll().forEach { add(it.toAssetKey(builtInTileAssetRegistry)) }
     add(UNKNOWN_TILE_ASSET_KEY)
 }
 

@@ -8,28 +8,34 @@ import kotlin.test.assertEquals
 
 class TileAssetKeysTest {
 
+    /** 只完成內建映射並凍結的 registry；供本檔所有測試共用。 */
+    private val registry: MinecraftTileAssetRegistry = MinecraftTileAssetRegistryImpl().apply {
+        registerBuiltInTileAssets()
+        freeze()
+    }
+
     @Test
     fun `test toAssetKey maps a plain numeric tile to suit letter plus value`() {
-        assertEquals("m1", Tile.Numeric(Tile.Suit.Character, 1).toAssetKey())
-        assertEquals("p9", Tile.Numeric(Tile.Suit.Dot, 9).toAssetKey())
-        assertEquals("s5", Tile.Numeric(Tile.Suit.Bamboo, 5).toAssetKey())
+        assertEquals("m1", Tile.Numeric(Tile.Suit.Character, 1).toAssetKey(registry))
+        assertEquals("p9", Tile.Numeric(Tile.Suit.Dot, 9).toAssetKey(registry))
+        assertEquals("s5", Tile.Numeric(Tile.Suit.Bamboo, 5).toAssetKey(registry))
     }
 
     @Test
     fun `test toAssetKey appends a red suffix for red fives`() {
-        assertEquals("m5_red", RiichiTileTypes.redFive(Tile.Suit.Character).toAssetKey())
+        assertEquals("m5_red", RiichiTileTypes.redFive(Tile.Suit.Character).toAssetKey(registry))
     }
 
     @Test
     fun `test toAssetKey maps honor tiles to their fixed English names`() {
-        assertEquals("east", Tile.Honor.East.toAssetKey())
-        assertEquals("white_dragon", Tile.Honor.White.toAssetKey())
+        assertEquals("east", Tile.Honor.East.toAssetKey(registry))
+        assertEquals("white_dragon", Tile.Honor.White.toAssetKey(registry))
     }
 
     @Test
     fun `test toAssetKey maps Taiwanese flower extensions`() {
-        assertEquals("flower_spring", Tile.Extension(TaiwanTileTypes.SPRING).toAssetKey())
-        assertEquals("flower_chrysanthemum", Tile.Extension(TaiwanTileTypes.CHRYSANTHEMUM).toAssetKey())
+        assertEquals("flower_spring", Tile.Extension(TaiwanTileTypes.SPRING).toAssetKey(registry))
+        assertEquals("flower_chrysanthemum", Tile.Extension(TaiwanTileTypes.CHRYSANTHEMUM).toAssetKey(registry))
     }
 
     @Test
@@ -48,8 +54,20 @@ class TileAssetKeysTest {
     fun `unsupported extension tile types fall back to unknown`() {
         assertEquals(
             UNKNOWN_TILE_ASSET_KEY,
-            Tile.Extension(TileTypeId.parse("example:missing")).toAssetKey(),
+            Tile.Extension(TileTypeId.parse("example:missing")).toAssetKey(registry),
         )
+    }
+
+    /** 驗證已在 registry 註冊但不屬於固定內建清單的第三方 asset key 仍可正確解析。 */
+    @Test
+    fun `third-party registered extension resolves through the provided registry`() {
+        val thirdPartyId = TileTypeId.parse("example:animal/cat")
+        val thirdPartyRegistry = MinecraftTileAssetRegistryImpl().apply {
+            registerBuiltInTileAssets()
+            register(thirdPartyId, "animal_cat")
+        }
+
+        assertEquals("animal_cat", Tile.Extension(thirdPartyId).toAssetKey(thirdPartyRegistry))
     }
 
     /** 驗證合法 key 保持不變，缺失及非法 key 回退至 unknown。 */
