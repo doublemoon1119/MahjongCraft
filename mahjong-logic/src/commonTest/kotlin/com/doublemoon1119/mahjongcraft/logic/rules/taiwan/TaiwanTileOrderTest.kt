@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -32,8 +33,8 @@ class TaiwanTileOrderTest {
      */
     @Test
     fun `test Taiwan style flower sorting`() {
-        val spring = Tile.Flower.Spring
-        val autumn = Tile.Flower.Autumn
+        val spring = Tile.Extension(TaiwanTileTypes.SPRING)
+        val autumn = Tile.Extension(TaiwanTileTypes.AUTUMN)
         val east = Tile.Honor.East
         val nineDot = Tile.Numeric(Tile.Suit.Dot, 9)
 

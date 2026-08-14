@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -27,8 +27,9 @@ class TaiwanWallFactoryTest {
         assertEquals(144, wall.remainingCount)
 
         val allTiles = wall.getAllTiles()
-        val flowerCount = allTiles.count { it.tile is Tile.Flower }
-        assertEquals(8, flowerCount)
+        val flowers = allTiles.map { it.tile }.filter(TaiwanTileTypes::isFlower)
+        assertEquals(TaiwanTileTypes.createAll().toSet(), flowers.toSet())
+        assertEquals(8, flowers.size)
     }
 
     /**
@@ -44,6 +45,6 @@ class TaiwanWallFactoryTest {
 
         // 僅 136 張基礎牌
         assertEquals(136, wall.remainingCount)
-        assertTrue(wall.getAllTiles().none { it.tile is Tile.Flower })
+        assertTrue(wall.getAllTiles().none { TaiwanTileTypes.isFlower(it.tile) })
     }
 }

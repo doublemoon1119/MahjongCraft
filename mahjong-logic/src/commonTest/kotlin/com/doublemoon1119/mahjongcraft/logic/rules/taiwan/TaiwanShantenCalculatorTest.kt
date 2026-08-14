@@ -2,8 +2,10 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class TaiwanShantenCalculatorTest {
@@ -102,5 +104,14 @@ class TaiwanShantenCalculatorTest {
             result is ShantenResult.Complete,
             "Hand with 5 melds, 1 pair should be Complete (Agari), but was: $result",
         )
+    }
+
+    /** 驗證台灣花牌 Extension 不會參與向聽數計算。 */
+    @Test
+    fun `test taiwan flower extensions are ignored`() {
+        val emptyHand = FakeHandFactory.create(emptyList())
+        val flowerHand = FakeHandFactory.create(TaiwanTileTypes.createAll())
+
+        assertEquals(calculator.calculate(emptyHand), calculator.calculate(flowerHand))
     }
 }

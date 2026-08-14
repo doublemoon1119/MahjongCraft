@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 
 /**
  * 台灣麻將標準排序策略。
@@ -42,6 +43,6 @@ object TaiwanTileOrder : TileOrder {
             Tile.Flower.Bamboo -> 87.0
             Tile.Flower.Chrysanthemum -> 88.0
         }
-        is Tile.Extension -> 100.0
+        is Tile.Extension -> TaiwanTileTypes.orderIndex(tile)?.let { 81.0 + it } ?: 100.0
     }
 }

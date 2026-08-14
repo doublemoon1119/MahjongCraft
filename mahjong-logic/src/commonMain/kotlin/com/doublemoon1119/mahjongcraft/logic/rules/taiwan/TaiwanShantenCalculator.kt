@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import kotlin.math.max
 import kotlin.math.min
 
@@ -43,11 +44,10 @@ class TaiwanShantenCalculator : ShantenCalculator {
         // 統計手牌中每種牌的數量
         val counts = IntArray(34)
         hand.standingTiles.forEach { identifiedTile ->
-            // 台麻通常不使用赤寶牌，若有也視為普通牌
-            // 忽略花牌 (Flower)
             val tileKey = when (val tile = identifiedTile.tile) {
                 is Tile.Numeric -> tile
                 is Tile.Flower -> return@forEach // 跳過花牌
+                is Tile.Extension -> if (TaiwanTileTypes.isFlower(tile)) return@forEach else tile
                 else -> tile
             }
             tileMap[tileKey]?.let { index ->

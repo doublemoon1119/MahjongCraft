@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.di
 
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeDefinition
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 
@@ -11,4 +12,5 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
  */
 fun TileTypeRegistry.registerBuiltInTileTypes() {
     RiichiTileTypes.ALL.forEach { id -> register(TileTypeDefinition(id)) }
+    TaiwanTileTypes.ALL.forEach { id -> register(TileTypeDefinition(id)) }
 }

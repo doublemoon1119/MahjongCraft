@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
 import kotlin.uuid.Uuid
@@ -57,17 +58,7 @@ class TaiwanWallFactory(private val config: TaiwanRuleConfig) : TileWallFactory 
 
         // 3. 根據配置決定是否加入花牌
         if (config.useFlowerTiles) {
-            val flowers = listOf(
-                Tile.Flower.Spring,
-                Tile.Flower.Summer,
-                Tile.Flower.Autumn,
-                Tile.Flower.Winter,
-                Tile.Flower.Plum,
-                Tile.Flower.Orchid,
-                Tile.Flower.Bamboo,
-                Tile.Flower.Chrysanthemum,
-            )
-            flowers.forEach { flower ->
+            TaiwanTileTypes.createAll().forEach { flower ->
                 tiles.add(IdentifiedTile(Uuid.random(), flower))
             }
         }
