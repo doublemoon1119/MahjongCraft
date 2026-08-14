@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -13,6 +14,9 @@ import kotlin.test.assertTrue
 /** 驗證四人日本麻將固定 136 張的牌牆布局。 */
 class RiichiWallLayoutTest {
 
+    /** 使用預設 [RiichiRuleConfig]（王牌 14 張）的布局實例。 */
+    private val layout = RiichiWallLayout(RiichiRuleConfig())
+
     /** 建立 136 張互不相同（依 [IdentifiedTile.id] 區分）的測試牌，牌面本身無關緊要。 */
     private fun buildShuffledTiles(): List<IdentifiedTile> = List(136) {
         FakeIdentifiedTileFactory.create(Tile.Honor.East)
@@ -22,7 +26,7 @@ class RiichiWallLayoutTest {
     @Test
     fun `resolve splits the wall into 122 live tiles and 14 dead wall tiles covering every input tile`() {
         val tiles = buildShuffledTiles()
-        val result = RiichiWallLayout.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 3, stacksFromRight = 8))
+        val result = layout.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 3, stacksFromRight = 8))
 
         assertEquals(122, result.drawOrder.size)
         assertEquals(14, result.initialDeadWall.size)
@@ -34,7 +38,7 @@ class RiichiWallLayoutTest {
     @Test
     fun `structure assigns a unique valid position to every tile`() {
         val tiles = buildShuffledTiles()
-        val result = RiichiWallLayout.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 1))
+        val result = layout.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 1))
 
         assertEquals(136, result.structure.size)
         assertEquals(tiles.map { it.id }.toSet(), result.structure.keys)
@@ -51,7 +55,7 @@ class RiichiWallLayoutTest {
     fun `dead wall sits immediately to the right of the break and live wall fills the rest`() {
         val tiles = buildShuffledTiles()
         val opening = WallOpening(wallSideOffsetFromDealer = 1, stacksFromRight = 5)
-        val result = RiichiWallLayout.resolve(tiles, opening)
+        val result = layout.resolve(tiles, opening)
 
         val deadWallPositions = result.initialDeadWall.map { result.structure.getValue(it.id) }.toSet()
         val liveWallPositions = result.drawOrder.map { result.structure.getValue(it.id) }.toSet()
@@ -69,10 +73,10 @@ class RiichiWallLayoutTest {
     @Test
     fun `resolve rejects a tile list that is not exactly 136 tiles`() {
         assertFailsWith<IllegalArgumentException> {
-            RiichiWallLayout.resolve(buildShuffledTiles().drop(1), WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 1))
+            layout.resolve(buildShuffledTiles().drop(1), WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 1))
         }
         assertFailsWith<IllegalArgumentException> {
-            RiichiWallLayout.resolve(buildShuffledTiles() + buildShuffledTiles().first(), WallOpening(0, 1))
+            layout.resolve(buildShuffledTiles() + buildShuffledTiles().first(), WallOpening(0, 1))
         }
     }
 
@@ -82,10 +86,10 @@ class RiichiWallLayoutTest {
         val tiles = buildShuffledTiles()
 
         assertFailsWith<IllegalArgumentException> {
-            RiichiWallLayout.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 4, stacksFromRight = 1))
+            layout.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 4, stacksFromRight = 1))
         }
         assertFailsWith<IllegalArgumentException> {
-            RiichiWallLayout.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 18))
+            layout.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 18))
         }
     }
 }

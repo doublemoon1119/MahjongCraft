@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanWallLayout
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -33,6 +35,18 @@ class TaiwanRuleModuleTest {
     fun `test create wall factory returns taiwan implementation`() {
         val factory = module.createWallFactory()
         assertTrue(factory is TaiwanWallFactory)
+    }
+
+    /** 驗證規則模組提供四人台灣麻將的三骰開門 policy。 */
+    @Test
+    fun `test create wall opening policy returns taiwan implementation`() {
+        assertSame(TaiwanWallOpeningPolicy, module.createWallOpeningPolicy())
+    }
+
+    /** 驗證規則模組提供台灣麻將的牌牆布局。 */
+    @Test
+    fun `test create wall layout returns taiwan implementation`() {
+        assertTrue(module.createWallLayout() is TaiwanWallLayout)
     }
 
     /**

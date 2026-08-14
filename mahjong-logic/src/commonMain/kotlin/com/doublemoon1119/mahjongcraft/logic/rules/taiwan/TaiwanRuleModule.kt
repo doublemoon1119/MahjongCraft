@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResu
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanWallLayout
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -31,6 +33,12 @@ class TaiwanRuleModule(
      * @return [TaiwanWallFactory] 實體。
      */
     override fun createWallFactory(): TaiwanWallFactory = TaiwanWallFactory(config)
+
+    /** 建立四人台灣麻將的三骰牌牆開門 policy。 */
+    override fun createWallOpeningPolicy(): TaiwanWallOpeningPolicy = TaiwanWallOpeningPolicy
+
+    /** 建立台灣麻將的牌牆布局，依 [TaiwanRuleConfig.useFlowerTiles] 支援 136 或 144 張。 */
+    override fun createWallLayout(): TaiwanWallLayout = TaiwanWallLayout(config)
 
     /**
      * 建立台灣麻將專用的牌河。

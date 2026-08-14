@@ -57,7 +57,7 @@ class RiichiRuleModuleTest {
     /** 驗證規則模組提供四人日本麻將固定 136 張的牌牆布局。 */
     @Test
     fun `test create wall layout returns riichi implementation`() {
-        assertSame(RiichiWallLayout, module.createWallLayout())
+        assertTrue(module.createWallLayout() is RiichiWallLayout)
     }
 
     /** 驗證規則模組提供日麻赤五的牌面解讀 policy。 */

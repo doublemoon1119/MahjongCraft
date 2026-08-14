@@ -43,7 +43,7 @@ class RiichiRuleModule(
     override fun createWallOpeningPolicy(): RiichiWallOpeningPolicy = RiichiWallOpeningPolicy
 
     /** 建立四人日本麻將固定 136 張的牌牆布局。 */
-    override fun createWallLayout(): RiichiWallLayout = RiichiWallLayout
+    override fun createWallLayout(): RiichiWallLayout = RiichiWallLayout(config)
 
     /** 建立將日麻赤五解讀為普通五的牌面 policy。 */
     override fun createTileInterpretationPolicy(): TileInterpretationPolicy = RiichiTileInterpretationPolicy
