@@ -62,6 +62,7 @@ dependencies {
     // api），不會透過它把這兩個模組的公開型別（GameAction、MahjongRuleConfig、GameEventPublisher…）
     // 透傳給下游，這裡要實作對應介面/使用對應型別，必須直接宣告依賴才看得到 symbol。
     implementation(project(":mahjong-logic"))
+    implementation(project(":mahjong-ai"))
     implementation(project(":mahjong-flow:mahjong-flow-common"))
     implementation(project(":mahjong-flow:mahjong-flow-client"))
     implementation(project(":mahjong-flow:mahjong-flow-server"))

@@ -36,13 +36,13 @@ class AddAiPlayerUseCase(
      * @param strategyKey 該 AI 玩家使用的策略登記 key；不傳時預設為 [RandomAiStrategy.KEY]。是否
      *        為有效 key 這裡不驗證——交給 `:mahjong-ai` 的 `MahjongAiStrategyRegistry` 在真正決策
      *        時優雅退回預設策略，維持這個 use case 的單純。
-     * @return 新增 AI 的結果，成功時包含新產生的 AI 玩家 Uuid，失敗時為 [RoomError]。
+     * @return 新增 AI 的結果，成功時包含 [AddAiPlayerResult]，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
         roomId: Uuid,
         operatorId: Uuid,
         strategyKey: String? = null,
-    ): Outcome<Uuid, RoomError> {
+    ): Outcome<AddAiPlayerResult, RoomError> {
         val resolvedStrategyKey = strategyKey ?: RandomAiStrategy.KEY
 
         // 1. 以原子方式讀取房間、驗證業務規則並寫回，避免與其他加入/踢出操作產生競態（如人數上限被同時突破）
@@ -85,8 +85,16 @@ class AddAiPlayerUseCase(
                     )
                 }
 
-                Outcome.Success(aiId)
+                Outcome.Success(AddAiPlayerResult(aiId, resolvedStrategyKey))
             }
         }
     }
 }
+
+/**
+ * [AddAiPlayerUseCase] 成功新增 AI 玩家後的結果。
+ *
+ * @property aiId 新產生的 AI 玩家 Uuid。
+ * @property strategyKey 該 AI 實際使用的策略登記 key（已套用預設值解析，不會是 `null`）。
+ */
+data class AddAiPlayerResult(val aiId: Uuid, val strategyKey: String)

@@ -24,5 +24,14 @@
   "mahjongcraft.message.invalid_player_count": "現在の人数がルールで定められた範囲内にありません",
   "mahjongcraft.message.not_all_players_ready": "まだ準備ができていないプレイヤーがいます",
   "mahjongcraft.message.game_start_failed": "この麻雀ゲームを開始できません",
-  "mahjongcraft.message.table_not_reachable": "そのテーブルが見つからないか、操作できる範囲外です"
+  "mahjongcraft.message.table_not_reachable": "そのテーブルが見つからないか、操作できる範囲外です",
+  "mahjongcraft.message.ai_added": "麻雀AIプレイヤーを追加しました（%s）",
+  "mahjongcraft.message.add_ai_failed": "AIプレイヤーを追加できません",
+  "mahjongcraft.message.game_full": "満員のためAIプレイヤーを追加できません",
+  "mahjongcraft.message.player_kicked": "そのプレイヤーをゲームから追放しました",
+  "mahjongcraft.message.kicked_from_game": "ゲームマネージャーによってゲームから追放されました",
+  "mahjongcraft.message.cannot_kick_self": "自分自身を追放することはできません",
+  "mahjongcraft.message.kick_failed": "そのプレイヤーを追放できません",
+  "mahjongcraft.message.kick_candidate_ai_label": "麻雀AIプレイヤー %s（%s）",
+  "mahjongcraft.message.ai_strategy_random": "ランダムに打牌"
 }

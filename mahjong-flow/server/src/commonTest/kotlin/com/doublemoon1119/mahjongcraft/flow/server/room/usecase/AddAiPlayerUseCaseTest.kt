@@ -41,7 +41,7 @@ class AddAiPlayerUseCaseTest {
         // Act
         val result = useCase(roomId, hostId)
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        val aiId = result.value
+        val aiId = result.value.aiId
 
         // Assert
         val updatedRoom = roomRepo.getRoom(roomId)
@@ -72,8 +72,9 @@ class AddAiPlayerUseCaseTest {
 
         val result = useCase(roomId, hostId)
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        val aiId = result.value
+        val aiId = result.value.aiId
 
+        assertEquals(RandomAiStrategy.KEY, result.value.strategyKey)
         val updatedRoom = roomRepo.getRoom(roomId)
         assertNotNull(updatedRoom)
         assertEquals(RandomAiStrategy.KEY, updatedRoom.aiPlayerStrategyKeys[aiId])
@@ -94,8 +95,9 @@ class AddAiPlayerUseCaseTest {
 
         val result = useCase(roomId, hostId, strategyKey = "mymod:hard")
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        val aiId = result.value
+        val aiId = result.value.aiId
 
+        assertEquals("mymod:hard", result.value.strategyKey)
         val updatedRoom = roomRepo.getRoom(roomId)
         assertNotNull(updatedRoom)
         assertEquals("mymod:hard", updatedRoom.aiPlayerStrategyKeys[aiId])

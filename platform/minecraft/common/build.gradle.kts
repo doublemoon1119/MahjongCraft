@@ -44,6 +44,7 @@ kotlin {
             kotlin.srcDir(generatedModMetadataDir)
             dependencies {
                 implementation(project(":mahjong-logic"))
+                implementation(project(":mahjong-ai"))
                 implementation(project.dependencies.platform(libs.koin.bom))
                 implementation(libs.koin.core)
                 implementation(libs.koin.annotations)

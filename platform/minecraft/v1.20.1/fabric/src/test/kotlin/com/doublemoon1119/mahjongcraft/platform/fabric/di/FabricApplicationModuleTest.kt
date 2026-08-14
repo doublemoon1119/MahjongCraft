@@ -29,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableR
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTableCleanupService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -60,12 +61,14 @@ class FabricApplicationModuleTest {
         val persistenceRegistries = koin.get<PersistenceRegistries>()
         val tileTypeRegistry = koin.get<TileTypeRegistry>()
         val minecraftTileAssetRegistry = koin.get<MinecraftTileAssetRegistry>()
+        val aiStrategyDisplayNameRegistry = koin.get<AiStrategyDisplayNameRegistry>()
         FabricMahjongExtensions.initialize(
             moduleRegistry,
             tileTypeRegistry,
             networkRegistries,
             persistenceRegistries,
             minecraftTileAssetRegistry,
+            aiStrategyDisplayNameRegistry,
             emptyList(),
         )
 
@@ -74,8 +77,10 @@ class FabricApplicationModuleTest {
         assertSame(persistenceRegistries, koin.get<PersistenceRegistries>())
         assertSame(tileTypeRegistry, koin.get<TileTypeRegistry>())
         assertSame(minecraftTileAssetRegistry, koin.get<MinecraftTileAssetRegistry>())
+        assertSame(aiStrategyDisplayNameRegistry, koin.get<AiStrategyDisplayNameRegistry>())
         assertEquals(RiichiTileTypes.ALL + TaiwanTileTypes.ALL, tileTypeRegistry.getAll().map { it.id })
         assertTrue(minecraftTileAssetRegistry.isFrozen)
+        assertTrue(aiStrategyDisplayNameRegistry.isFrozen)
         koin.get<GameFlowCoordinator>()
         koin.get<GameEventPublisher>()
         koin.get<DecisionTimerUpdatePublisher>()

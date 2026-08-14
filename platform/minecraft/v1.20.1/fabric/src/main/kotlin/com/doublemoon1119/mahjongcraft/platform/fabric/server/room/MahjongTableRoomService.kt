@@ -9,8 +9,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.AddAiPlayerUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.CreateRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.JoinRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.KickPlayerUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.ToggleReadyUseCase
@@ -45,6 +47,8 @@ class MahjongTableRoomService(
     private val leaveRoom: LeaveRoomUseCase,
     private val toggleReady: ToggleReadyUseCase,
     private val startGame: StartGameUseCase,
+    private val addAiPlayer: AddAiPlayerUseCase,
+    private val kickPlayer: KickPlayerUseCase,
     private val syncRoom: SyncRoomSnapshotUseCase,
     private val syncGame: SyncGameSnapshotUseCase,
     private val roomSnapshotSender: RoomSnapshotSender,
@@ -184,6 +188,51 @@ class MahjongTableRoomService(
             when (val result = startGame(tableId, playerId)) {
                 is Outcome.Success -> Unit
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.startError(result.error))
+            }
+        }
+    }
+
+    /**
+     * 讓房主替房間新增一名 AI 玩家。同樣以玩家目前的房間歸屬解析目標房間。
+     *
+     * @param strategyKey AI 使用的策略登記 key；不傳時使用 [AddAiPlayerUseCase] 的預設策略。
+     */
+    fun addAi(player: ServerPlayerEntity, strategyKey: String?) {
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            val tableId = membershipRepository.getTableId(playerId)
+            if (tableId == null) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
+                return@launch
+            }
+            when (val result = addAiPlayer(tableId, playerId, strategyKey)) {
+                is Outcome.Success -> feedbackPublisher.publish(
+                    playerId,
+                    MinecraftPlayerFeedback.AiAdded(result.value.strategyKey),
+                )
+                is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.addAiError(result.error))
+            }
+        }
+    }
+
+    /**
+     * 讓房主將指定玩家（含 AI）移出房間。同樣以玩家目前的房間歸屬解析目標房間。成功時被踢者與房主
+     * 各自收到專屬回饋。
+     */
+    fun kick(player: ServerPlayerEntity, targetPlayerId: Uuid) {
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            val tableId = membershipRepository.getTableId(playerId)
+            if (tableId == null) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
+                return@launch
+            }
+            when (val result = kickPlayer(tableId, playerId, targetPlayerId)) {
+                is Outcome.Success -> {
+                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerKicked)
+                    feedbackPublisher.publish(targetPlayerId, MinecraftPlayerFeedback.KickedFromGame)
+                }
+                is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.kickError(result.error))
             }
         }
     }

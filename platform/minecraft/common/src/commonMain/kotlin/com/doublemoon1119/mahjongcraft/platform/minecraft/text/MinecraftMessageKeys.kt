@@ -64,6 +64,41 @@ object MinecraftMessageKeys {
     /** 指定的麻將桌不存在，或已超出目前可互動的範圍。 */
     const val TABLE_NOT_REACHABLE = PREFIX + "table_not_reachable"
 
+    /** 已新增 AI 玩家，帶策略顯示名稱參數（`%s`），措辭比照 [KICK_CANDIDATE_AI_LABEL] 的機器人稱呼。 */
+    const val AI_ADDED = PREFIX + "ai_added"
+
+    /** 新增 AI 玩家失敗。 */
+    const val ADD_AI_FAILED = PREFIX + "add_ai_failed"
+
+    /** 遊戲人數已滿，無法再新增 AI 玩家。 */
+    const val GAME_FULL = PREFIX + "game_full"
+
+    /** 已將指定玩家移出遊戲（房主視角）。 */
+    const val PLAYER_KICKED = PREFIX + "player_kicked"
+
+    /** 已被遊戲主持人移出遊戲（被踢玩家視角）。 */
+    const val KICKED_FROM_GAME = PREFIX + "kicked_from_game"
+
+    /** 房主不能將自己移出遊戲。 */
+    const val CANNOT_KICK_SELF = PREFIX + "cannot_kick_self"
+
+    /** 將玩家移出遊戲失敗。 */
+    const val KICK_FAILED = PREFIX + "kick_failed"
+
+    /**
+     * `kick` 指令 Tab 補全時，AI 候選項目的 tooltip 文字，依序帶序號與策略顯示名稱兩個參數（各一個
+     * `%s`）。與其他 key 不同：其他 key 都是玩家操作「結果」的一次性回饋，這個 key 是指令輸入階段
+     * 候選項目的說明文字。
+     */
+    const val KICK_CANDIDATE_AI_LABEL = PREFIX + "kick_candidate_ai_label"
+
+    /**
+     * 內建隨機出牌 AI 策略的顯示名稱。刻意不直接叫「隨機」——容易讓人誤以為是「難度隨機」，而非
+     * 「出牌動作隨機」。與 [KICK_CANDIDATE_AI_LABEL] 同樣不是操作結果回饋，是候選項目說明文字用的
+     * 顯示名稱；只涵蓋內建策略，未登記顯示名稱的第三方策略 key 直接顯示原始字串。
+     */
+    const val AI_STRATEGY_RANDOM = PREFIX + "ai_strategy_random"
+
     /** Minecraft 語系資源必須提供的全部玩家回饋 key。 */
     val ALL: Set<String> = setOf(
         GAME_ALREADY_STARTED,
@@ -85,5 +120,14 @@ object MinecraftMessageKeys {
         NOT_ALL_PLAYERS_READY,
         GAME_START_FAILED,
         TABLE_NOT_REACHABLE,
+        AI_ADDED,
+        ADD_AI_FAILED,
+        GAME_FULL,
+        PLAYER_KICKED,
+        KICKED_FROM_GAME,
+        CANNOT_KICK_SELF,
+        KICK_FAILED,
+        KICK_CANDIDATE_AI_LABEL,
+        AI_STRATEGY_RANDOM,
     )
 }

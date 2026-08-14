@@ -86,4 +86,29 @@ sealed interface MinecraftPlayerFeedback {
 
     /** 指定的麻將桌不存在，或已超出目前可互動的範圍。 */
     data object TableNotReachable : MinecraftPlayerFeedback
+
+    /**
+     * 已新增 AI 玩家。
+     *
+     * @property strategyKey 該 AI 實際使用的策略登記 key，供呈現端顯示策略名稱。
+     */
+    data class AiAdded(val strategyKey: String) : MinecraftPlayerFeedback
+
+    /** 新增 AI 玩家失敗。 */
+    data object AddAiFailed : MinecraftPlayerFeedback
+
+    /** 遊戲人數已滿，無法再新增 AI 玩家。 */
+    data object GameFull : MinecraftPlayerFeedback
+
+    /** 已將指定玩家移出遊戲（房主視角）。 */
+    data object PlayerKicked : MinecraftPlayerFeedback
+
+    /** 已被遊戲主持人移出遊戲（被踢玩家視角）。 */
+    data object KickedFromGame : MinecraftPlayerFeedback
+
+    /** 房主不能將自己移出遊戲。 */
+    data object CannotKickSelf : MinecraftPlayerFeedback
+
+    /** 將玩家移出遊戲失敗。 */
+    data object KickFailed : MinecraftPlayerFeedback
 }

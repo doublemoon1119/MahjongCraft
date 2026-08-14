@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.notification
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.resolveDisplayText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
@@ -23,6 +25,7 @@ import kotlin.uuid.Uuid
 @Single(binds = [MinecraftPlayerFeedbackPublisher::class])
 class FabricPlayerFeedbackPublisher(
     private val serverHolder: FabricServerHolder,
+    private val aiStrategyDisplayNames: AiStrategyDisplayNameRegistry,
 ) : MinecraftPlayerFeedbackPublisher {
     /** 切換至 server thread，並在玩家仍在線時傳送目前版本選定的回饋。 */
     override fun publish(playerId: Uuid, feedback: MinecraftPlayerFeedback) {
@@ -64,6 +67,20 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_START_FAILED), true)
                 MinecraftPlayerFeedback.TableNotReachable ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.TABLE_NOT_REACHABLE), true)
+                is MinecraftPlayerFeedback.AiAdded ->
+                    player.sendMessage(aiAddedMessage(feedback.strategyKey))
+                MinecraftPlayerFeedback.AddAiFailed ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.ADD_AI_FAILED), true)
+                MinecraftPlayerFeedback.GameFull ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_FULL), true)
+                MinecraftPlayerFeedback.PlayerKicked ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.PLAYER_KICKED))
+                MinecraftPlayerFeedback.KickedFromGame ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.KICKED_FROM_GAME), true)
+                MinecraftPlayerFeedback.CannotKickSelf ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.CANNOT_KICK_SELF), true)
+                MinecraftPlayerFeedback.KickFailed ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.KICK_FAILED), true)
             }
         }
     }
@@ -82,6 +99,12 @@ class FabricPlayerFeedbackPublisher(
         }
         return message.styled { it.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverText)) }
     }
+
+    /** 建立「已新增麻將機器人」訊息，策略名稱與 `kick` 補全 tooltip 使用同一套顯示名稱解析。 */
+    private fun aiAddedMessage(strategyKey: String): MutableText = Text.translatable(
+        MinecraftMessageKeys.AI_ADDED,
+        aiStrategyDisplayNames.resolveDisplayText(strategyKey),
+    )
 
     /** 組合準備狀態切換訊息：前綴 + 切換前狀態 → 切換後狀態，「準備」亮綠、「尚未準備」亮紅。 */
     private fun readyToggledMessage(isReady: Boolean): MutableText {

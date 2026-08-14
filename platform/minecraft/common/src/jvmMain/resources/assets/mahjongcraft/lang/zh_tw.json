@@ -24,5 +24,14 @@
   "mahjongcraft.message.invalid_player_count": "目前人數不符合規則限制",
   "mahjongcraft.message.not_all_players_ready": "還有玩家尚未準備好",
   "mahjongcraft.message.game_start_failed": "無法開始這場麻將對局",
-  "mahjongcraft.message.table_not_reachable": "找不到那張麻將桌，或距離太遠無法互動"
+  "mahjongcraft.message.table_not_reachable": "找不到那張麻將桌，或距離太遠無法互動",
+  "mahjongcraft.message.ai_added": "已新增麻將機器人（%s）",
+  "mahjongcraft.message.add_ai_failed": "無法新增 AI 玩家",
+  "mahjongcraft.message.game_full": "遊戲人數已滿，無法再新增 AI 玩家",
+  "mahjongcraft.message.player_kicked": "已將該玩家移出遊戲",
+  "mahjongcraft.message.kicked_from_game": "你已被遊戲主持人移出遊戲",
+  "mahjongcraft.message.cannot_kick_self": "不能將自己移出遊戲",
+  "mahjongcraft.message.kick_failed": "無法將該玩家移出遊戲",
+  "mahjongcraft.message.kick_candidate_ai_label": "麻將機器人 %s（%s）",
+  "mahjongcraft.message.ai_strategy_random": "隨機出牌"
 }

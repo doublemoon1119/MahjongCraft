@@ -31,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricRoomCom
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
@@ -62,6 +63,7 @@ class MahjongCraftMod : ModInitializer {
             networkRegistries = koin.get<NetworkDtoRegistries>(),
             persistenceRegistries = koin.get<PersistenceRegistries>(),
             minecraftTileAssetRegistry = koin.get<MinecraftTileAssetRegistry>(),
+            aiStrategyDisplayNameRegistry = koin.get<AiStrategyDisplayNameRegistry>(),
         )
         ModItems.register()
         ModEntities.register()

@@ -9,8 +9,10 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import net.fabricmc.loader.api.FabricLoader
@@ -36,16 +38,18 @@ object FabricMahjongExtensions {
         networkRegistries: NetworkDtoRegistries,
         persistenceRegistries: PersistenceRegistries,
         minecraftTileAssetRegistry: MinecraftTileAssetRegistry,
+        aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
     ) {
         try {
             val extensions = FabricLoader.getInstance()
                 .getEntrypoints(MAHJONG_EXTENSION_ENTRYPOINT, MahjongExtension::class.java)
-            val thirdPartyAssetKeys = initialize(
+            val result = initialize(
                 moduleRegistry,
                 tileTypeRegistry,
                 networkRegistries,
                 persistenceRegistries,
                 minecraftTileAssetRegistry,
+                aiStrategyDisplayNameRegistry,
                 extensions,
             )
             val extensionIds = extensions.map { it.id }
@@ -56,8 +60,13 @@ object FabricMahjongExtensions {
             )
             logger.info(
                 "Registered {} third-party Minecraft tile asset(s): {}",
-                thirdPartyAssetKeys.size,
-                thirdPartyAssetKeys,
+                result.thirdPartyTileAssetKeys.size,
+                result.thirdPartyTileAssetKeys,
+            )
+            logger.info(
+                "Registered {} third-party AI strategy display name(s): {}",
+                result.thirdPartyAiStrategyKeys.size,
+                result.thirdPartyAiStrategyKeys,
             )
         } catch (cause: Exception) {
             logger.error("Failed to initialize Mahjong extensions", cause)
@@ -68,7 +77,7 @@ object FabricMahjongExtensions {
     /**
      * 使用明確提供的 [extensions] 初始化，供平台測試驗證組裝順序。
      *
-     * @return 依 [extensions] 順序登記的第三方 Minecraft tile asset key，供呼叫端記錄診斷資訊。
+     * @return [MinecraftMahjongExtensionRegistrar.registerAndFreeze] 的登記結果，供呼叫端記錄診斷資訊。
      */
     internal fun initialize(
         moduleRegistry: MahjongModuleRegistry,
@@ -76,8 +85,9 @@ object FabricMahjongExtensions {
         networkRegistries: NetworkDtoRegistries,
         persistenceRegistries: PersistenceRegistries,
         minecraftTileAssetRegistry: MinecraftTileAssetRegistry,
+        aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
         extensions: Iterable<MahjongExtension>,
-    ): List<String> {
+    ): MinecraftMahjongExtensionRegistrationResult {
         moduleRegistry.registerBuiltInRuleModules()
         tileTypeRegistry.registerBuiltInTileTypes()
         networkRegistries.registerBuiltInRuleConfigDtos()
@@ -94,7 +104,8 @@ object FabricMahjongExtensions {
         // 不需要在 fabric.mod.json 額外宣告第二個 entrypoint。
         return MinecraftMahjongExtensionRegistrar.registerAndFreeze(
             extensions = extensions.filterIsInstance<MinecraftMahjongExtension>(),
-            registry = minecraftTileAssetRegistry,
+            tileAssetRegistry = minecraftTileAssetRegistry,
+            aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
         )
     }
 }

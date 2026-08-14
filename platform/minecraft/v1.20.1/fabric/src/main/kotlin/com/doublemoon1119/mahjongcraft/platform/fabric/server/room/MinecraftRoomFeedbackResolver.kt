@@ -31,4 +31,19 @@ internal object MinecraftRoomFeedbackResolver {
         is RoomError.RoomNotReadyToStart -> MinecraftPlayerFeedback.NotAllPlayersReady
         else -> MinecraftPlayerFeedback.GameStartFailed
     }
+
+    /** 將新增 AI 玩家的 [error] 轉成可呈現的回饋。 */
+    fun addAiError(error: RoomError): MinecraftPlayerFeedback = when (error) {
+        is RoomError.NotHost -> MinecraftPlayerFeedback.NotGameHost
+        is RoomError.RoomIsFull -> MinecraftPlayerFeedback.GameFull
+        else -> MinecraftPlayerFeedback.AddAiFailed
+    }
+
+    /** 將剔除玩家的 [error] 轉成可呈現的回饋。 */
+    fun kickError(error: RoomError): MinecraftPlayerFeedback = when (error) {
+        is RoomError.NotHost -> MinecraftPlayerFeedback.NotGameHost
+        is RoomError.PlayerNotInRoom -> MinecraftPlayerFeedback.PlayerNotInGame
+        is RoomError.HostCannotKickSelf -> MinecraftPlayerFeedback.CannotKickSelf
+        else -> MinecraftPlayerFeedback.KickFailed
+    }
 }
