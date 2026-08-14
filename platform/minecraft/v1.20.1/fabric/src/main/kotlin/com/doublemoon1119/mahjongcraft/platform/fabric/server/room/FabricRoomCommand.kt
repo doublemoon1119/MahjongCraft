@@ -188,13 +188,16 @@ class FabricRoomCommand(
         return builder.buildFuture()
     }
 
-    /** 列出目前已註冊的 AI 策略 key，作為 `ai add <strategy>` 引數的 Tab 補全建議。 */
+    /**
+     * 列出目前已註冊的 AI 策略 key，作為 `ai add <strategy>` 引數的 Tab 補全建議；tooltip 顯示該策略
+     * 翻譯後的顯示名稱，與 [suggestKickTargets] 對 AI 候選項目的呈現方式一致。
+     */
     private fun suggestAiStrategies(
         context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
         aiStrategyRegistry.getAllStrategyKeys().forEach { key ->
-            builder.suggest(StringArgumentType.escapeIfRequired(key))
+            builder.suggest(StringArgumentType.escapeIfRequired(key), aiStrategyDisplayNames.resolveDisplayText(key))
         }
         return builder.buildFuture()
     }
