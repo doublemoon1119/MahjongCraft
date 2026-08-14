@@ -27,6 +27,8 @@ import kotlin.uuid.Uuid
  * @property dynamicRuleState 規則專屬牌桌狀態；沒有狀態時為 null。
  * @property pendingReaction 尚未完成的捨牌反應視窗。
  * @property pendingChankan 尚未完成的搶槓反應視窗。
+ * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
+ * @property initialDeadWall 開局瞬間的王牌快照；規則尚未支援開門流程時為空清單。
  */
 @Serializable
 data class TableStatePersistenceDto(
@@ -41,6 +43,8 @@ data class TableStatePersistenceDto(
     val dynamicRuleState: TypedPersistenceDto?,
     val pendingReaction: PendingReactionPersistenceDto?,
     val pendingChankan: PendingChankanReactionPersistenceDto?,
+    val wallOpening: WallOpeningPersistenceDto?,
+    val initialDeadWall: List<IdentifiedTilePersistenceDto>,
 )
 
 /** 將 [TableState] 轉換成完整權威 persistence DTO。 */
@@ -65,6 +69,8 @@ fun TableState.toPersistenceDto(
     dynamicRuleState = dynamicRuleState?.let { dynamicRuleStateRegistry.encode(it, json) },
     pendingReaction = pendingReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, json),
     pendingChankan = pendingChankan?.toPersistenceDto(exhaustiveDrawReasonRegistry, json),
+    wallOpening = wallOpening?.toPersistenceDto(),
+    initialDeadWall = initialDeadWall.map { it.toPersistenceDto() },
 )
 
 /** 將 [TableStatePersistenceDto] 驗證並還原成完整權威 [TableState]。 */
@@ -89,4 +95,6 @@ fun TableStatePersistenceDto.toDomain(
     dynamicRuleState = dynamicRuleState?.let { dynamicRuleStateRegistry.decode(it, json) },
     pendingReaction = pendingReaction?.toDomain(exhaustiveDrawReasonRegistry, json),
     pendingChankan = pendingChankan?.toDomain(exhaustiveDrawReasonRegistry, json),
+    wallOpening = wallOpening?.toDomain(),
+    initialDeadWall = initialDeadWall.map { it.toDomain() },
 )

@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -93,6 +94,19 @@ class TableStatePersistenceTest {
                     eligiblePlayerIds = setOf(responderId),
                     responses = mapOf(responderId to GameAction.Pass),
                 ),
+            ),
+        )
+    }
+
+    /** 驗證已擲骰開門的牌局保留開門位置與王牌初始快照。 */
+    @Test
+    fun `resolved wall opening and dead wall round-trip in complete game state`() {
+        val state = createTableState()
+
+        assertEncodedRoundTrip(
+            state.copy(
+                wallOpening = WallOpening(wallSideOffsetFromDealer = 2, stacksFromRight = 7),
+                initialDeadWall = listOf(identified(Tile.Honor.White), identified(Tile.Honor.Green)),
             ),
         )
     }

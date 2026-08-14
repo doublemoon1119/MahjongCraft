@@ -56,7 +56,8 @@ class GameInitializerTest {
     }
 
     /**
-     * 驗證發牌後牌山剩餘數量等於總牌數扣除所有玩家已發出的手牌。
+     * 驗證發牌後牌山剩餘數量等於「總牌數扣除王牌」再扣除所有玩家已發出的手牌——日麻已支援開門
+     * 流程，發牌用的牌山不包含王牌。
      */
     @Test
     fun `test initialize leaves correct remaining wall count`() {
@@ -64,8 +65,40 @@ class GameInitializerTest {
         val totalTileCount = module.createWallFactory().create().remainingCount
         val table = GameInitializer.initialize(Uuid.random(), playerIds, module)
 
-        val expectedRemaining = totalTileCount - playerIds.size * module.config.initialHandSize
+        val expectedRemaining = totalTileCount - module.config.deadTileCount - playerIds.size * module.config.initialHandSize
         assertEquals(expectedRemaining, table.tileWall.remainingCount)
+    }
+
+    /**
+     * 驗證支援開門流程的規則（如日麻）開局時會產生非 null 的 [TableState.wallOpening]，且
+     * [TableState.initialDeadWall] 張數等於規則配置的王牌張數。
+     */
+    @Test
+    fun `test initialize resolves wall opening and dead wall for a rule that supports it`() {
+        val playerIds = List(4) { Uuid.random() }
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module)
+
+        assertTrue(table.wallOpening != null, "Riichi supports wall opening, wallOpening should not be null")
+        assertEquals(module.config.deadTileCount, table.initialDeadWall.size)
+    }
+
+    /**
+     * 驗證活牌摸牌堆、已發出的手牌、王牌三者互不重疊，且合計等於牌山總張數——確認開門重排沒有
+     * 遺失或重複任何一張牌。
+     */
+    @Test
+    fun `test initialize accounts for every tile across hands, remaining wall, and dead wall`() {
+        val playerIds = List(4) { Uuid.random() }
+        val totalTileCount = module.createWallFactory().create().remainingCount
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module)
+
+        val dealtTileIds = table.players.flatMap { it.hand.tiles }.map { it.id }
+        val remainingTileIds = table.tileWall.getAllTiles().map { it.id }
+        val deadWallTileIds = table.initialDeadWall.map { it.id }
+        val allTileIds = dealtTileIds + remainingTileIds + deadWallTileIds
+
+        assertEquals(totalTileCount, allTileIds.size)
+        assertEquals(totalTileCount, allTileIds.toSet().size)
     }
 
     /**
@@ -309,7 +342,8 @@ class GameInitializerTest {
     }
 
     /**
-     * 驗證 [GameInitializer.startNextRound] 發牌後牌山剩餘數量正確扣除所有玩家的發牌數。
+     * 驗證 [GameInitializer.startNextRound] 發牌後牌山剩餘數量等於「總牌數扣除王牌」再扣除所有
+     * 玩家的發牌數——日麻已支援開門流程，發牌用的牌山不包含王牌。
      */
     @Test
     fun `test startNextRound leaves correct remaining wall count`() {
@@ -325,7 +359,28 @@ class GameInitializerTest {
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
 
-        val expectedRemaining = totalTileCount - players.size * module.config.initialHandSize
+        val expectedRemaining = totalTileCount - module.config.deadTileCount - players.size * module.config.initialHandSize
         assertEquals(expectedRemaining, table.tileWall.remainingCount)
+    }
+
+    /**
+     * 驗證 [GameInitializer.startNextRound] 連莊仍會重新擲骰開門，產生非 null 的
+     * [TableState.wallOpening] 與符合規則配置張數的 [TableState.initialDeadWall]。
+     */
+    @Test
+    fun `test startNextRound resolves a fresh wall opening and dead wall`() {
+        val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(it) }
+        val roundAdvancement = RoundAdvancementResult(
+            players = players,
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            isMatchOver = false,
+        )
+
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module)
+
+        assertTrue(table.wallOpening != null, "Riichi supports wall opening, wallOpening should not be null")
+        assertEquals(module.config.deadTileCount, table.initialDeadWall.size)
     }
 }
