@@ -38,6 +38,14 @@
     { "predicate": { "tile": 0.34 }, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_red_dragon" },
     { "predicate": { "tile": 0.35 }, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_green_dragon" },
     { "predicate": { "tile": 0.36 }, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_white_dragon" },
-    { "predicate": { "tile": 0.37 }, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_unknown" }
+    { "predicate": { "tile": 0.37 }, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_flower_spring" },
+    { "predicate": { "tile": 0.38 }, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_flower_summer" },
+    { "predicate": { "tile": 0.39 }, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_flower_autumn" },
+    { "predicate": { "tile": 0.40 }, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_flower_winter" },
+    { "predicate": { "tile": 0.41 }, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_flower_plum" },
+    { "predicate": { "tile": 0.42 }, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_flower_orchid" },
+    { "predicate": { "tile": 0.43 }, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_flower_bamboo" },
+    { "predicate": { "tile": 0.44 }, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_flower_chrysanthemum" },
+    { "predicate": { "tile": 0.45 }, "model": "mahjongcraft:item/mahjong_tile/mahjong_tile_unknown" }
   ]
 }

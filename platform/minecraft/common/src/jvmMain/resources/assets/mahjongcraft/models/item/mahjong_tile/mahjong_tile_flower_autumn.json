@@ -1,0 +1,4 @@
+{
+  "parent": "mahjongcraft:item/mahjong_tile_base",
+  "textures": { "0": "mahjongcraft:item/mahjong_tile/mahjong_tile_flower_autumn" }
+}

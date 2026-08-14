@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftItemGroupKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_RIICHI_TILE_ASSET_KEYS
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup
 import net.minecraft.item.ItemStack
 import net.minecraft.registry.Registries
@@ -16,7 +16,7 @@ object ModItemGroups {
     /** 註冊以一萬麻將牌為圖示、收納目前可取得物品與方塊的主要物品分類。 */
     fun register() {
         val iconStack = ItemStack(ModItems.MAHJONG_TILE).also {
-            MahjongTileItem.writeTileAssetKey(it, ALL_RIICHI_TILE_ASSET_KEYS.first())
+            MahjongTileItem.writeTileAssetKey(it, ALL_TILE_ASSET_KEYS.first())
         }
         val group = FabricItemGroup.builder()
             .icon(iconStack::copy)

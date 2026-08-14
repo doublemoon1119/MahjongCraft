@@ -40,8 +40,8 @@ class MahjongTileResourceFilesTest {
         val model = loadJson("/assets/mahjongcraft/models/item/mahjong_tile.json")
         val overrides = model.getValue("overrides") as JsonArray
 
-        assertEquals(ALL_RIICHI_TILE_ASSET_KEYS.size, overrides.size)
-        overrides.zip(ALL_RIICHI_TILE_ASSET_KEYS).forEachIndexed { index, (element, assetKey) ->
+        assertEquals(ALL_TILE_ASSET_KEYS.size, overrides.size)
+        overrides.zip(ALL_TILE_ASSET_KEYS).forEachIndexed { index, (element, assetKey) ->
             val override = element.jsonObject
             assertEquals(index / 100.0, override.getValue("predicate").jsonObject.getValue("tile").jsonPrimitive.content.toDouble())
             assertEquals(
@@ -54,7 +54,7 @@ class MahjongTileResourceFilesTest {
     /** 驗證每個 asset key 都具有可載入的子模型及 PNG 貼圖。 */
     @Test
     fun `every tile asset key has a model and texture resource`() {
-        ALL_RIICHI_TILE_ASSET_KEYS.forEach { assetKey ->
+        ALL_TILE_ASSET_KEYS.forEach { assetKey ->
             assertNotNull(
                 javaClass.getResource("/assets/mahjongcraft/models/item/mahjong_tile/mahjong_tile_$assetKey.json"),
                 "Missing item model for tile asset key: $assetKey",
@@ -69,7 +69,7 @@ class MahjongTileResourceFilesTest {
     /** 驗證牌面及共用牌體貼圖維持模型 UV 所依賴的像素尺寸。 */
     @Test
     fun `tile textures retain dimensions required by the base model`() {
-        ALL_RIICHI_TILE_ASSET_KEYS.forEach { assetKey ->
+        ALL_TILE_ASSET_KEYS.forEach { assetKey ->
             val path = "/assets/mahjongcraft/textures/item/mahjong_tile/mahjong_tile_$assetKey.png"
             val image = checkNotNull(javaClass.getResourceAsStream(path)) {
                 "Texture resource not found: $path"

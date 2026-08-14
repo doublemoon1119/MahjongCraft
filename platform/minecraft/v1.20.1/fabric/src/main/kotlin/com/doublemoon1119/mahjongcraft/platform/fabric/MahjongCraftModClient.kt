@@ -12,7 +12,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_RIICHI_TILE_ASSET_KEYS
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAssetKey
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
@@ -28,8 +29,8 @@ class MahjongCraftModClient : ClientModInitializer {
 
         ModelPredicateProviderRegistry.register(ModItems.MAHJONG_TILE, Identifier("tile")) { stack, _, _, _ ->
             val storedKey = stack.nbt?.getString(MahjongTileItem.NBT_KEY_TILE)
-            val index = storedKey?.let { ALL_RIICHI_TILE_ASSET_KEYS.indexOf(it) } ?: -1
-            (if (index >= 0) index else 0) / 100f
+            val assetKey = storedKey?.normalizedTileAssetKey() ?: ALL_TILE_ASSET_KEYS.first()
+            ALL_TILE_ASSET_KEYS.indexOf(assetKey) / 100f
         }
 
         val json = koin.get<kotlinx.serialization.json.Json>()
