@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResu
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -34,6 +35,9 @@ class RiichiRuleModule(
      * @return [RiichiWallFactory] 實體。
      */
     override fun createWallFactory(): RiichiWallFactory = RiichiWallFactory(config)
+
+    /** 建立四人日本麻將的雙骰牌牆開門 policy。 */
+    override fun createWallOpeningPolicy(): RiichiWallOpeningPolicy = RiichiWallOpeningPolicy
 
     /**
      * 建立日本麻將專用的牌河。

@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
@@ -43,6 +44,12 @@ class RiichiRuleModuleTest {
     fun `test create wall factory returns riichi implementation`() {
         val factory = module.createWallFactory()
         assertTrue(factory is RiichiWallFactory)
+    }
+
+    /** 驗證規則模組提供四人日本麻將的雙骰開門 policy。 */
+    @Test
+    fun `test create wall opening policy returns riichi implementation`() {
+        assertSame(RiichiWallOpeningPolicy, module.createWallOpeningPolicy())
     }
 
     /**

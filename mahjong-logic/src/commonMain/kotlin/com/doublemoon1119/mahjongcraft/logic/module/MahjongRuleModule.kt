@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
+import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpeningPolicy
 import kotlin.uuid.Uuid
 
 /**
@@ -44,6 +45,15 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 實作了 [TileWallFactory] 的工廠物件。
      */
     fun createWallFactory(): TileWallFactory
+
+    /**
+     * 建立適用於該規則的牌牆開門 policy。
+     *
+     * 尚未定義骰子開門規則的模組可使用預設的 null；通用初始化流程不得自行套用其他玩法的公式。
+     *
+     * @return 此規則的 [WallOpeningPolicy]，若尚未支援權威開門流程則為 null。
+     */
+    fun createWallOpeningPolicy(): WallOpeningPolicy? = null
 
     /**
      * 建立適用於該規則的捨牌堆（牌河）實作。
