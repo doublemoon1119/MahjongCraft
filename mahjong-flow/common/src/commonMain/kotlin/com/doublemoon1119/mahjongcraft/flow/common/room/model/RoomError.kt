@@ -93,4 +93,12 @@ sealed interface RoomError : ApplicationError {
      * @param roomId 房間（同時也是對應遊戲）的 Uuid。
      */
     data class GameAlreadyInProgress(val roomId: Uuid) : RoomError
+
+    /**
+     * 目標玩家在房間內，但不是 AI，無法變更 AI 策略。
+     *
+     * @param playerId 目標玩家 Uuid。
+     * @param roomId 房間 Uuid。
+     */
+    data class NotAiPlayer(val playerId: Uuid, val roomId: Uuid) : RoomError
 }

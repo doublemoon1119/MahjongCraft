@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.AddAiPlayerUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.ChangeAiStrategyUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.CreateRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.JoinRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.KickPlayerUseCase
@@ -48,6 +49,7 @@ class MahjongTableRoomService(
     private val toggleReady: ToggleReadyUseCase,
     private val startGame: StartGameUseCase,
     private val addAiPlayer: AddAiPlayerUseCase,
+    private val changeAiStrategy: ChangeAiStrategyUseCase,
     private val kickPlayer: KickPlayerUseCase,
     private val syncRoom: SyncRoomSnapshotUseCase,
     private val syncGame: SyncGameSnapshotUseCase,
@@ -55,6 +57,7 @@ class MahjongTableRoomService(
     private val gameSnapshotSender: GameSnapshotSender,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val tableLocationRegistry: TableLocationRegistry,
+    private val memberCandidateResolver: RoomMemberCandidateResolver,
 ) {
     /** 依麻將桌目前處於空桌、等待室或遊戲階段，建立、加入或重新同步玩家狀態。 */
     fun interact(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
@@ -233,6 +236,38 @@ class MahjongTableRoomService(
                     feedbackPublisher.publish(targetPlayerId, MinecraftPlayerFeedback.KickedFromGame)
                 }
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.kickError(result.error))
+            }
+        }
+    }
+
+    /**
+     * 讓房主替房間內既有的 AI 玩家更換策略。同樣以玩家目前的房間歸屬解析目標房間。
+     *
+     * @param targetAiId 欲更換策略的 AI 玩家 Uuid，必須是房間內的 AI。
+     * @param strategyKey 新的策略登記 key。
+     */
+    fun changeAiStrategy(player: ServerPlayerEntity, targetAiId: Uuid, strategyKey: String) {
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            val tableId = membershipRepository.getTableId(playerId)
+            if (tableId == null) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
+                return@launch
+            }
+            when (val result = changeAiStrategy(tableId, playerId, targetAiId, strategyKey)) {
+                is Outcome.Success -> {
+                    // 換策略成功後 targetAiId 一定還在房間裡，序號查不到理論上不會發生，仍優雅退回 0。
+                    val aiSequence = memberCandidateResolver.listAiCandidates(playerId)
+                        .firstOrNull { it.playerId == targetAiId }
+                        ?.aiSequence
+                        ?: 0
+                    feedbackPublisher.publish(
+                        playerId,
+                        MinecraftPlayerFeedback.AiStrategyChanged(aiSequence, result.value, strategyKey),
+                    )
+                }
+                is Outcome.Error ->
+                    feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.changeAiStrategyError(result.error))
             }
         }
     }

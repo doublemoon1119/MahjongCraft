@@ -32,6 +32,10 @@
   "mahjongcraft.message.kicked_from_game": "ゲームマネージャーによってゲームから追放されました",
   "mahjongcraft.message.cannot_kick_self": "自分自身を追放することはできません",
   "mahjongcraft.message.kick_failed": "そのプレイヤーを追放できません",
+  "mahjongcraft.message.ai_strategy_changed": "麻雀AIプレイヤー %s の戦略を変更しました：%s → %s",
+  "mahjongcraft.message.ai_strategy_unchanged": "AIプレイヤー %s はすでに「%s」の戦略です",
+  "mahjongcraft.message.target_not_ai": "そのプレイヤーはAIではないため、戦略を変更できません",
+  "mahjongcraft.message.change_ai_strategy_failed": "そのAIの戦略を変更できません",
   "mahjongcraft.message.kick_candidate_ai_label": "麻雀AIプレイヤー %s（%s）",
   "mahjongcraft.message.ai_strategy_random": "ランダムに打牌"
 }

@@ -111,4 +111,23 @@ sealed interface MinecraftPlayerFeedback {
 
     /** 將玩家移出遊戲失敗。 */
     data object KickFailed : MinecraftPlayerFeedback
+
+    /**
+     * 已更換 AI 策略。
+     *
+     * @property aiSequence 該 AI 目前在房間內的顯示序號，供呈現端指出換的是哪一個 AI。
+     * @property oldStrategyKey 更換前的策略登記 key。
+     * @property newStrategyKey 更換後的策略登記 key。
+     */
+    data class AiStrategyChanged(
+        val aiSequence: Int,
+        val oldStrategyKey: String,
+        val newStrategyKey: String,
+    ) : MinecraftPlayerFeedback
+
+    /** 目標玩家不是 AI，無法更換策略。 */
+    data object TargetNotAi : MinecraftPlayerFeedback
+
+    /** 更換 AI 策略失敗。 */
+    data object ChangeAiStrategyFailed : MinecraftPlayerFeedback
 }

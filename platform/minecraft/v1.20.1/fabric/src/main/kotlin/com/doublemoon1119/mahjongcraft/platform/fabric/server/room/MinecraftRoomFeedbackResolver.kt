@@ -46,4 +46,12 @@ internal object MinecraftRoomFeedbackResolver {
         is RoomError.HostCannotKickSelf -> MinecraftPlayerFeedback.CannotKickSelf
         else -> MinecraftPlayerFeedback.KickFailed
     }
+
+    /** 將更換 AI 策略的 [error] 轉成可呈現的回饋。 */
+    fun changeAiStrategyError(error: RoomError): MinecraftPlayerFeedback = when (error) {
+        is RoomError.NotHost -> MinecraftPlayerFeedback.NotGameHost
+        is RoomError.PlayerNotInRoom -> MinecraftPlayerFeedback.PlayerNotInGame
+        is RoomError.NotAiPlayer -> MinecraftPlayerFeedback.TargetNotAi
+        else -> MinecraftPlayerFeedback.ChangeAiStrategyFailed
+    }
 }

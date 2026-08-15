@@ -81,6 +81,12 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.CANNOT_KICK_SELF), true)
                 MinecraftPlayerFeedback.KickFailed ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.KICK_FAILED), true)
+                is MinecraftPlayerFeedback.AiStrategyChanged ->
+                    player.sendMessage(aiStrategyChangedMessage(feedback))
+                MinecraftPlayerFeedback.TargetNotAi ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.TARGET_NOT_AI), true)
+                MinecraftPlayerFeedback.ChangeAiStrategyFailed ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.CHANGE_AI_STRATEGY_FAILED), true)
             }
         }
     }
@@ -100,11 +106,32 @@ class FabricPlayerFeedbackPublisher(
         return message.styled { it.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverText)) }
     }
 
-    /** 建立「已新增麻將機器人」訊息，策略名稱與 `kick` 補全 tooltip 使用同一套顯示名稱解析。 */
+    /** 建立「已新增 AI 玩家」訊息，策略名稱與 `kick` 補全 tooltip 使用同一套顯示名稱解析。 */
     private fun aiAddedMessage(strategyKey: String): MutableText = Text.translatable(
         MinecraftMessageKeys.AI_ADDED,
         aiStrategyDisplayNames.resolveDisplayText(strategyKey),
     )
+
+    /**
+     * 建立「已更換 AI 策略」訊息，格式比照 [readyToggledMessage] 的「舊狀態 → 新狀態」呈現方式。新舊
+     * 策略相同時改用 [MinecraftMessageKeys.AI_STRATEGY_UNCHANGED]——這個操作本身仍是成功的冪等操作，
+     * 只是換一句不會出現「同一個策略 → 同一個策略」這種容易讓人誤以為系統異常的說法。
+     */
+    private fun aiStrategyChangedMessage(feedback: MinecraftPlayerFeedback.AiStrategyChanged): MutableText {
+        if (feedback.oldStrategyKey == feedback.newStrategyKey) {
+            return Text.translatable(
+                MinecraftMessageKeys.AI_STRATEGY_UNCHANGED,
+                feedback.aiSequence,
+                aiStrategyDisplayNames.resolveDisplayText(feedback.newStrategyKey),
+            )
+        }
+        return Text.translatable(
+            MinecraftMessageKeys.AI_STRATEGY_CHANGED,
+            feedback.aiSequence,
+            aiStrategyDisplayNames.resolveDisplayText(feedback.oldStrategyKey),
+            aiStrategyDisplayNames.resolveDisplayText(feedback.newStrategyKey),
+        )
+    }
 
     /** 組合準備狀態切換訊息：前綴 + 切換前狀態 → 切換後狀態，「準備」亮綠、「尚未準備」亮紅。 */
     private fun readyToggledMessage(isReady: Boolean): MutableText {

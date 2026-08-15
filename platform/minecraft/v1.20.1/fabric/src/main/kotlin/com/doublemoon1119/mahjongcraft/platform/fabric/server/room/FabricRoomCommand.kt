@@ -21,11 +21,12 @@ import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 import org.koin.core.annotation.Single
 import java.util.concurrent.CompletableFuture
+import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
 /**
- * `/mahjongcraft room` 底下的房間與對局階段玩家指令：`join`、`leave`、`ready`、`start`、`ai add`、
- * `kick`。
+ * `/mahjongcraft room` 底下的房間與對局階段玩家指令：`join`、`leave`、`ready`、`start`、
+ * `ai add`、`ai strategy`、`kick`。
  *
  * 右鍵／蹲下右鍵桌子已經是既有的建房／加入／離開互動方式，這裡提供功能相同的指令版本，作為與手勢
  * 並存的另一種操作方式，不是暫時的除錯工具，日後也不會被移除。集中在 `room` 子分類下，是因為對局
@@ -33,22 +34,23 @@ import kotlin.uuid.toKotlinUuid
  *
  * [join]／[leave] 需要玩家明確指定目標桌子（[TableCoordinateArgument]），不會自動選最近的一張；
  * Tab 補全只會列出玩家目前實際可互動範圍內的桌子（[ReachableMahjongTableResolver]），與右鍵桌子
- * 能生效的範圍一致。[ready]／[start]／[addAi] 改用玩家目前的房間歸屬解析目標房間，不需要玩家人在
- * 桌子附近——開局本身就會把玩家傳送到座位，先天不需要距離限制。
+ * 能生效的範圍一致。[ready]／[start]／[addAi]／[changeAiStrategy] 改用玩家目前的房間歸屬解析目標
+ * 房間，不需要玩家人在桌子附近——開局本身就會把玩家傳送到座位，先天不需要距離限制。
  *
- * [kick] 的目標引數與 [addAi] 的策略引數都用 [StringArgumentType.string]（而非
- * [StringArgumentType.word]），因為策略 key 慣用的命名空間冒號在未加引號的字串引數中不合法，
- * Tab 補全時改用 [StringArgumentType.escapeIfRequired] 視需要自動加上引號。[kick] 補全 AI 候選項目
- * 時，打進聊天框的實際文字固定是語言無關的技術代號（見 [RoomKickCandidate.token]），因為伺服器端在
- * 1.20.1 無法得知玩家客戶端語言；真正依語言顯示的「麻將機器人 N」文字是透過
- * [com.mojang.brigadier.suggestion.SuggestionsBuilder.suggest] 的 tooltip 參數（[Text.translatable]）
- * 呈現，由客戶端依玩家自己的語言設定解析。
+ * [kick]、[changeAiStrategy] 的目標引數與 [addAi]／[changeAiStrategy] 的策略引數都用
+ * [StringArgumentType.string]（而非 [StringArgumentType.word]），因為策略 key 慣用的命名空間冒號
+ * 在未加引號的字串引數中不合法，Tab 補全時改用 [StringArgumentType.escapeIfRequired] 視需要自動加上
+ * 引號。補全 AI 候選項目時，打進聊天框的實際文字固定是語言無關的技術代號（見
+ * [RoomMemberCandidate.token]），因為伺服器端在 1.20.1 無法得知玩家客戶端語言；真正依語言顯示的
+ * 「AI 玩家 N」文字是透過 [com.mojang.brigadier.suggestion.SuggestionsBuilder.suggest] 的 tooltip
+ * 參數（[Text.translatable]）呈現，由客戶端依玩家自己的語言設定解析。
  *
  * @property tableResolver 依玩家可互動範圍找出候選麻將桌。
- * @property kickCandidateResolver 依玩家目前房間列出可踢除的候選成員。
- * @property aiStrategyRegistry 目前已註冊的 AI 策略 key，供 `ai add` 的策略引數 Tab 補全。
- * @property aiStrategyDisplayNames 將 AI 策略 key 解析成可翻譯的顯示名稱，供 `kick` 補全 AI 候選項目
- *   的 tooltip 使用。
+ * @property memberCandidateResolver 依玩家目前房間列出可踢除或可更換策略的候選成員。
+ * @property aiStrategyRegistry 目前已註冊的 AI 策略 key，供 `ai add`／`ai strategy` 的策略引數 Tab
+ *   補全。
+ * @property aiStrategyDisplayNames 將 AI 策略 key 解析成可翻譯的顯示名稱，供 AI 候選項目與策略候選
+ *   項目的 tooltip 使用。
  * @property roomService 實際執行房間／對局動作的既有服務。
  * @property feedbackPublisher 找不到指定桌子或候選目標時的回饋。
  * @property scope 橋接 suggestion provider 內部 suspend 查詢與 Brigadier 同步 API 的協程 scope。
@@ -56,7 +58,7 @@ import kotlin.uuid.toKotlinUuid
 @Single
 class FabricRoomCommand(
     private val tableResolver: ReachableMahjongTableResolver,
-    private val kickCandidateResolver: RoomKickCandidateResolver,
+    private val memberCandidateResolver: RoomMemberCandidateResolver,
     private val aiStrategyRegistry: MahjongAiStrategyRegistry,
     private val aiStrategyDisplayNames: AiStrategyDisplayNameRegistry,
     private val roomService: MahjongTableRoomService,
@@ -89,23 +91,39 @@ class FabricRoomCommand(
                             .then(literal("ready").executes { context -> ready(context.source) })
                             .then(literal("start").executes { context -> start(context.source) })
                             .then(
-                                literal("ai").then(
-                                    literal("add")
-                                        .executes { context -> addAi(context.source, strategyKey = null) }
-                                        .then(
-                                            argument(STRATEGY_ARGUMENT, StringArgumentType.string())
-                                                .suggests(::suggestAiStrategies)
-                                                .executes { context ->
-                                                    addAi(context.source, StringArgumentType.getString(context, STRATEGY_ARGUMENT))
-                                                },
-                                        ),
-                                ),
+                                literal("ai")
+                                    .then(
+                                        literal("add")
+                                            .executes { context -> addAi(context.source, strategyKey = null) }
+                                            .then(
+                                                argument(STRATEGY_ARGUMENT, StringArgumentType.string())
+                                                    .suggests(::suggestAiStrategies)
+                                                    .executes { context ->
+                                                        addAi(
+                                                            context.source,
+                                                            StringArgumentType.getString(context, STRATEGY_ARGUMENT),
+                                                        )
+                                                    },
+                                            ),
+                                    )
+                                    .then(
+                                        literal("strategy")
+                                            .then(
+                                                argument(TARGET_ARGUMENT, StringArgumentType.string())
+                                                    .suggests(::suggestAiTargets)
+                                                    .then(
+                                                        argument(STRATEGY_ARGUMENT, StringArgumentType.string())
+                                                            .suggests(::suggestAiStrategies)
+                                                            .executes { context -> changeAiStrategy(context) },
+                                                    ),
+                                            ),
+                                    ),
                             )
                             .then(
                                 literal("kick")
                                     .then(
                                         argument(TARGET_ARGUMENT, StringArgumentType.string())
-                                            .suggests(::suggestKickTargets)
+                                            .suggests(::suggestAllTargets)
                                             .executes { context -> kick(context) },
                                     ),
                             ),
@@ -144,12 +162,27 @@ class FabricRoomCommand(
         val label = StringArgumentType.getString(context, TARGET_ARGUMENT)
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
-            val targetId = kickCandidateResolver.resolve(playerId, label)
+            val targetId = memberCandidateResolver.resolve(playerId, label)
             if (targetId == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.KickFailed)
                 return@launch
             }
             roomService.kick(player, targetId)
+        }
+    }
+
+    /** 房主替目前所在房間內的某個 AI 更換策略。 */
+    private fun changeAiStrategy(context: CommandContext<ServerCommandSource>): Int = withPlayer(context.source) { player ->
+        val label = StringArgumentType.getString(context, TARGET_ARGUMENT)
+        val strategyKey = StringArgumentType.getString(context, STRATEGY_ARGUMENT)
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            val targetId = memberCandidateResolver.resolve(playerId, label)
+            if (targetId == null) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.ChangeAiStrategyFailed)
+                return@launch
+            }
+            roomService.changeAiStrategy(player, targetId, strategyKey)
         }
     }
 
@@ -189,8 +222,8 @@ class FabricRoomCommand(
     }
 
     /**
-     * 列出目前已註冊的 AI 策略 key，作為 `ai add <strategy>` 引數的 Tab 補全建議；tooltip 顯示該策略
-     * 翻譯後的顯示名稱，與 [suggestKickTargets] 對 AI 候選項目的呈現方式一致。
+     * 列出目前已註冊的 AI 策略 key，作為 `ai add`／`ai strategy` 的策略引數 Tab 補全建議；tooltip
+     * 顯示該策略翻譯後的顯示名稱，與 AI 候選項目的呈現方式一致。
      */
     private fun suggestAiStrategies(
         context: CommandContext<ServerCommandSource>,
@@ -202,16 +235,34 @@ class FabricRoomCommand(
         return builder.buildFuture()
     }
 
-    /**
-     * 列出執行指令玩家目前所在房間內可踢除的候選成員標籤，作為 `kick <target>` 引數的 Tab 補全建議。
-     *
-     * 候選清單來自 [RoomKickCandidateResolver.listCandidates]，是一次 suspend 查詢，這裡用
-     * [CompletableFuture] 手動橋接：[SuggestionsBuilder.build] 本身是同步、立即可用的操作，協程完成
-     * 查詢後直接呼叫它並完成回傳的 future，不需要額外的執行緒切換或阻塞等待。
-     */
-    private fun suggestKickTargets(
+    /** 列出執行指令玩家目前所在房間內所有候選成員（含真人與 AI），作為 `kick <target>` 引數的建議。 */
+    private fun suggestAllTargets(
         context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
+    ): CompletableFuture<Suggestions> = suggestTargets(context, builder) { playerId ->
+        memberCandidateResolver.listCandidates(playerId)
+    }
+
+    /** 列出執行指令玩家目前所在房間內的 AI 候選成員，作為 `ai strategy <target>` 引數的建議。 */
+    private fun suggestAiTargets(
+        context: CommandContext<ServerCommandSource>,
+        builder: SuggestionsBuilder,
+    ): CompletableFuture<Suggestions> = suggestTargets(context, builder) { playerId ->
+        memberCandidateResolver.listAiCandidates(playerId)
+    }
+
+    /**
+     * 依 [listCandidates] 列出候選成員 tooltip 補全建議的共用邏輯；真人只顯示使用者名稱，AI 額外帶上
+     * 序號與策略顯示名稱的 tooltip。
+     *
+     * 候選清單是一次 suspend 查詢，這裡用 [CompletableFuture] 手動橋接：[SuggestionsBuilder.build]
+     * 本身是同步、立即可用的操作，協程完成查詢後直接呼叫它並完成回傳的 future，不需要額外的執行緒
+     * 切換或阻塞等待。
+     */
+    private fun suggestTargets(
+        context: CommandContext<ServerCommandSource>,
+        builder: SuggestionsBuilder,
+        listCandidates: suspend (Uuid) -> List<RoomMemberCandidate>,
     ): CompletableFuture<Suggestions> {
         val future = CompletableFuture<Suggestions>()
         val player = context.source.player
@@ -220,7 +271,7 @@ class FabricRoomCommand(
             return future
         }
         scope.launch {
-            kickCandidateResolver.listCandidates(player.uuid.toKotlinUuid()).forEach { candidate ->
+            listCandidates(player.uuid.toKotlinUuid()).forEach { candidate ->
                 val token = StringArgumentType.escapeIfRequired(candidate.token)
                 if (candidate.aiSequence != null) {
                     val strategyName = candidate.strategyKey
@@ -248,7 +299,7 @@ class FabricRoomCommand(
         /** AI 策略引數名稱。 */
         const val STRATEGY_ARGUMENT: String = "strategy"
 
-        /** 踢除目標引數名稱。 */
+        /** 踢除或更換策略目標引數名稱。 */
         const val TARGET_ARGUMENT: String = "target"
 
         /** Brigadier 成功回傳值。 */

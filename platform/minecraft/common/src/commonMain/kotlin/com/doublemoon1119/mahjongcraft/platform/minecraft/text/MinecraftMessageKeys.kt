@@ -64,7 +64,7 @@ object MinecraftMessageKeys {
     /** 指定的麻將桌不存在，或已超出目前可互動的範圍。 */
     const val TABLE_NOT_REACHABLE = PREFIX + "table_not_reachable"
 
-    /** 已新增 AI 玩家，帶策略顯示名稱參數（`%s`），措辭比照 [KICK_CANDIDATE_AI_LABEL] 的機器人稱呼。 */
+    /** 已新增 AI 玩家，帶策略顯示名稱參數（`%s`），措辭比照 [KICK_CANDIDATE_AI_LABEL] 的稱呼方式。 */
     const val AI_ADDED = PREFIX + "ai_added"
 
     /** 新增 AI 玩家失敗。 */
@@ -84,6 +84,24 @@ object MinecraftMessageKeys {
 
     /** 將玩家移出遊戲失敗。 */
     const val KICK_FAILED = PREFIX + "kick_failed"
+
+    /**
+     * 已更換 AI 策略，依序帶序號、舊策略顯示名稱、新策略顯示名稱三個參數（各一個 `%s`），措辭比照
+     * [READY_TOGGLE_PREFIX] 準備狀態切換訊息的「舊狀態 → 新狀態」呈現方式。
+     */
+    const val AI_STRATEGY_CHANGED = PREFIX + "ai_strategy_changed"
+
+    /**
+     * 指定的新策略與目前策略相同，操作本身仍算成功（冪等），只是換一句不會出現「同一個策略 → 同一個
+     * 策略」這種容易讓人誤以為系統異常的呈現方式。依序帶序號、策略顯示名稱兩個參數（各一個 `%s`）。
+     */
+    const val AI_STRATEGY_UNCHANGED = PREFIX + "ai_strategy_unchanged"
+
+    /** 目標玩家不是 AI，無法更換策略。 */
+    const val TARGET_NOT_AI = PREFIX + "target_not_ai"
+
+    /** 更換 AI 策略失敗。 */
+    const val CHANGE_AI_STRATEGY_FAILED = PREFIX + "change_ai_strategy_failed"
 
     /**
      * `kick` 指令 Tab 補全時，AI 候選項目的 tooltip 文字，依序帶序號與策略顯示名稱兩個參數（各一個
@@ -129,5 +147,9 @@ object MinecraftMessageKeys {
         KICK_FAILED,
         KICK_CANDIDATE_AI_LABEL,
         AI_STRATEGY_RANDOM,
+        AI_STRATEGY_CHANGED,
+        AI_STRATEGY_UNCHANGED,
+        TARGET_NOT_AI,
+        CHANGE_AI_STRATEGY_FAILED,
     )
 }
