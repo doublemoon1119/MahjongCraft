@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
@@ -38,6 +39,7 @@ import kotlin.uuid.toKotlinUuid
  * @property gameActionService 實際執行對局動作的服務。
  * @property feedbackPublisher 候選 token 無法解析時的回饋。
  * @property tileDisplayNameRegistry 解析候選 tooltip 用的牌面顯示名稱。
+ * @property tileAssetRegistry 解析候選 tooltip 牌面 emoji 用的 asset key。
  * @property scope 橋接 suggestion provider 內部 suspend 查詢與 Brigadier 同步 API 的協程 scope。
  */
 @Single
@@ -46,6 +48,7 @@ class FabricGameCommand(
     private val gameActionService: MahjongTableGameActionService,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val tileDisplayNameRegistry: TileDisplayNameRegistry,
+    private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val scope: AppCoroutineScope,
 ) {
     /** 將 `/mahjongcraft game hand|discard|riichi|action` 加入 Fabric command dispatcher。 */
@@ -154,7 +157,7 @@ class FabricGameCommand(
             candidateResolver.listHandTileCandidates(player.uuid.toKotlinUuid()).forEach { candidate ->
                 builder.suggest(
                     StringArgumentType.escapeIfRequired(candidate.token),
-                    candidate.tile.toDisplayText(tileDisplayNameRegistry),
+                    candidate.tile.toDisplayText(tileDisplayNameRegistry, tileAssetRegistry),
                 )
             }
             future.complete(builder.build())
@@ -177,7 +180,7 @@ class FabricGameCommand(
             candidateResolver.listActionCandidates(player.uuid.toKotlinUuid()).forEach { candidate ->
                 builder.suggest(
                     StringArgumentType.escapeIfRequired(candidate.token),
-                    candidate.action.toDisplayText(candidate.referenceTile, tileDisplayNameRegistry),
+                    candidate.action.toDisplayText(candidate.referenceTile, tileDisplayNameRegistry, tileAssetRegistry),
                 )
             }
             future.complete(builder.build())

@@ -2,7 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.text
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.assetKeyToEmoji
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import net.minecraft.text.Text
 
 /**
@@ -15,19 +18,27 @@ import net.minecraft.text.Text
  *
  * [Tile.Extension] 查 [displayNameRegistry]（內建日麻赤五已登記，第三方規則模組可自行登記自己的擴充
  * 牌種）；查不到時 fallback 顯示原始 [com.doublemoon1119.mahjongcraft.logic.base.TileTypeId] 字串。
+ *
+ * 翻譯文字前面會依 [tileAssetRegistry] 解出的 asset key 加上對應的牌面 emoji 字元（透過
+ * `assets/minecraft/font/default.json` 的自訂字型渲染成貼圖）；查不到對應 emoji（例如未登記的第三方
+ * 牌種）時只顯示純文字，不強行湊一個不存在的圖案。
  */
-fun Tile.toDisplayText(displayNameRegistry: TileDisplayNameRegistry): Text = when (this) {
-    is Tile.Numeric -> Text.translatable(suit.toMessageKey(), value)
-    Tile.Honor.East -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_EAST)
-    Tile.Honor.South -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_SOUTH)
-    Tile.Honor.West -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_WEST)
-    Tile.Honor.North -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_NORTH)
-    Tile.Honor.Red -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_RED)
-    Tile.Honor.Green -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_GREEN)
-    Tile.Honor.White -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_WHITE)
-    is Tile.Extension -> displayNameRegistry.find(typeId)
-        ?.let(Text::translatable)
-        ?: Text.literal(typeId.toString())
+fun Tile.toDisplayText(displayNameRegistry: TileDisplayNameRegistry, tileAssetRegistry: MinecraftTileAssetRegistry): Text {
+    val text = when (this) {
+        is Tile.Numeric -> Text.translatable(suit.toMessageKey(), value)
+        Tile.Honor.East -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_EAST)
+        Tile.Honor.South -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_SOUTH)
+        Tile.Honor.West -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_WEST)
+        Tile.Honor.North -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_NORTH)
+        Tile.Honor.Red -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_RED)
+        Tile.Honor.Green -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_GREEN)
+        Tile.Honor.White -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_WHITE)
+        is Tile.Extension -> displayNameRegistry.find(typeId)
+            ?.let(Text::translatable)
+            ?: Text.literal(typeId.toString())
+    }
+    val emoji = assetKeyToEmoji(toAssetKey(tileAssetRegistry)) ?: return text
+    return Text.literal("$emoji ").append(text)
 }
 
 /** 將數牌花色映射到對應的翻譯 key。 */

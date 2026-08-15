@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -40,6 +41,7 @@ class FabricPlayerFeedbackPublisher(
     private val serverHolder: FabricServerHolder,
     private val aiStrategyDisplayNames: AiStrategyDisplayNameRegistry,
     private val tileDisplayNames: TileDisplayNameRegistry,
+    private val tileAssetRegistry: MinecraftTileAssetRegistry,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) : MinecraftPlayerFeedbackPublisher {
@@ -133,7 +135,10 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(showHandMessage(feedback))
                 is MinecraftPlayerFeedback.YourTurn ->
                     player.sendMessage(
-                        Text.translatable(MinecraftMessageKeys.YOUR_TURN, feedback.drawnTile.toDisplayText(tileDisplayNames)),
+                        Text.translatable(
+                            MinecraftMessageKeys.YOUR_TURN,
+                            feedback.drawnTile.toDisplayText(tileDisplayNames, tileAssetRegistry),
+                        ),
                     )
             }
         }
@@ -262,7 +267,7 @@ class FabricPlayerFeedbackPublisher(
     /** 建立「已執行對局動作」訊息，例如「已執行：打出 五筒」。 */
     private fun gameActionPerformedMessage(feedback: MinecraftPlayerFeedback.GameActionPerformed): MutableText = Text.translatable(
         MinecraftMessageKeys.GAME_ACTION_PERFORMED,
-        feedback.action.toDisplayText(feedback.referenceTile, tileDisplayNames),
+        feedback.action.toDisplayText(feedback.referenceTile, tileDisplayNames, tileAssetRegistry),
     )
 
     /**
@@ -272,7 +277,7 @@ class FabricPlayerFeedbackPublisher(
     private fun showHandMessage(feedback: MinecraftPlayerFeedback.ShowHand): MutableText {
         val message = Text.translatable(MinecraftMessageKeys.HAND_TITLE)
         feedback.standingTiles.forEach { tile ->
-            message.append(Text.literal(" ")).append(tile.toDisplayText(tileDisplayNames))
+            message.append(Text.literal(" ")).append(tile.toDisplayText(tileDisplayNames, tileAssetRegistry))
         }
 
         if (feedback.melds.isNotEmpty()) {
@@ -281,7 +286,7 @@ class FabricPlayerFeedbackPublisher(
                 message.append(Text.literal(" ["))
                 meld.tiles.forEachIndexed { index, tile ->
                     if (index > 0) message.append(Text.literal(" "))
-                    message.append(tile.tile.toDisplayText(tileDisplayNames))
+                    message.append(tile.tile.toDisplayText(tileDisplayNames, tileAssetRegistry))
                 }
                 message.append(Text.literal("]"))
             }
@@ -298,7 +303,7 @@ class FabricPlayerFeedbackPublisher(
         } else {
             feedback.legalActions.forEachIndexed { index, (action, referenceTile) ->
                 message.append(Text.literal(" ${index + 1}:"))
-                    .append(action.toDisplayText(referenceTile, tileDisplayNames))
+                    .append(action.toDisplayText(referenceTile, tileDisplayNames, tileAssetRegistry))
             }
         }
         return message
