@@ -54,4 +54,10 @@ internal object MinecraftRoomFeedbackResolver {
         is RoomError.NotAiPlayer -> MinecraftPlayerFeedback.TargetNotAi
         else -> MinecraftPlayerFeedback.ChangeAiStrategyFailed
     }
+
+    /** 將變更遊戲設定的 [error] 轉成可呈現的回饋。 */
+    fun updateConfigError(error: RoomError): MinecraftPlayerFeedback = when (error) {
+        is RoomError.NotHost -> MinecraftPlayerFeedback.NotGameHost
+        else -> MinecraftPlayerFeedback.ChangeGameConfigFailed
+    }
 }

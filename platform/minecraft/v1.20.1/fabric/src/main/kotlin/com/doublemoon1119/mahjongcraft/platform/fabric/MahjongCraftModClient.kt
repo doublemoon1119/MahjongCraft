@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileM
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongDiceEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
@@ -28,6 +29,7 @@ class MahjongCraftModClient : ClientModInitializer {
 
         ModelLoadingPlugin.register(MahjongTileModelLoadingPlugin)
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAHJONG_TILE, MahjongTileItemRenderer)
+        koin.get<FabricOpenConfigScreenCommand>().register()
 
         val json = koin.get<kotlinx.serialization.json.Json>()
         val networkRegistries = koin.get<NetworkDtoRegistries>()

@@ -106,6 +106,7 @@ class MahjongCraftMod : ModInitializer {
         }
 
         registerGameCommandReceiver(koin)
+        registerUpdateGameConfigReceiver(koin)
         registerPlayerConnectionEvents(koin)
         koin.get<FabricServerConfigCommand>().register()
         koin.get<FabricRoomCommand>().register()
@@ -172,6 +173,17 @@ class MahjongCraftMod : ModInitializer {
                     command = envelope.command.toDomain(networkRegistries),
                 )
             }
+        }
+    }
+
+    /**
+     * 接收設定編輯畫面送出的原始 JSON 字串，直接轉呼叫既有的 [MahjongTableRoomService.updateConfig]
+     * （內部已自行 launch 協程，這裡不需要額外包一層）。
+     */
+    private fun registerUpdateGameConfigReceiver(koin: Koin) {
+        val json = koin.get<Json>()
+        MahjongChannels.updateGameConfig.registerServerReceiver(json) { _, player, configJson ->
+            koin.get<MahjongTableRoomService>().updateConfig(player, configJson)
         }
     }
 }

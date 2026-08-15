@@ -7,6 +7,7 @@
   "item.mahjongcraft.mahjong_dice": "麻將骰子",
   "item.mahjongcraft.mahjong_tile": "麻將牌",
   "mahjongcraft.message.game_created": "已建立麻將遊戲",
+  "mahjongcraft.message.game_created_location_label": "位置",
   "mahjongcraft.message.game_joined": "已加入麻將遊戲",
   "mahjongcraft.message.game_already_started": "這場麻將對局已經開始",
   "mahjongcraft.message.player_already_in_game": "你已經加入另一場麻將遊戲",
@@ -37,5 +38,14 @@
   "mahjongcraft.message.target_not_ai": "該玩家不是 AI 玩家，無法更換策略",
   "mahjongcraft.message.change_ai_strategy_failed": "無法更換該 AI 玩家的策略",
   "mahjongcraft.message.kick_candidate_ai_label": "AI 玩家 %s（%s）",
-  "mahjongcraft.message.ai_strategy_random": "隨機出牌"
+  "mahjongcraft.message.ai_strategy_random": "隨機出牌",
+  "mahjongcraft.message.game_config_changed": "已將遊戲規則變更為：%s → %s",
+  "mahjongcraft.message.game_config_unchanged": "目前的遊戲規則已經是：%s",
+  "mahjongcraft.message.invalid_game_config": "提供的 JSON 無法解析成合法的遊戲規則",
+  "mahjongcraft.message.change_game_config_failed": "無法變更遊戲規則",
+  "mahjongcraft.message.game_config_label": "設定內容",
+  "mahjongcraft.message.show_game_config": "所在麻將遊戲的 %s",
+  "mahjongcraft.message.game_config_screen_title": "麻將遊戲規則設定",
+  "mahjongcraft.message.game_config_screen_apply": "套用",
+  "mahjongcraft.message.game_config_screen_confirm": "確認"
 }

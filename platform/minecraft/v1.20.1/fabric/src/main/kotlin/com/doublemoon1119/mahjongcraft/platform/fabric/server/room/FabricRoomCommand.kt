@@ -26,7 +26,7 @@ import kotlin.uuid.toKotlinUuid
 
 /**
  * `/mahjongcraft room` 底下的房間與對局階段玩家指令：`join`、`leave`、`ready`、`start`、
- * `ai add`、`ai strategy`、`kick`。
+ * `ai add`、`ai strategy`、`kick`、`config`。
  *
  * 右鍵／蹲下右鍵桌子已經是既有的建房／加入／離開互動方式，這裡提供功能相同的指令版本，作為與手勢
  * 並存的另一種操作方式，不是暫時的除錯工具，日後也不會被移除。集中在 `room` 子分類下，是因為對局
@@ -34,8 +34,13 @@ import kotlin.uuid.toKotlinUuid
  *
  * [join]／[leave] 需要玩家明確指定目標桌子（[TableCoordinateArgument]），不會自動選最近的一張；
  * Tab 補全只會列出玩家目前實際可互動範圍內的桌子（[ReachableMahjongTableResolver]），與右鍵桌子
- * 能生效的範圍一致。[ready]／[start]／[addAi]／[changeAiStrategy] 改用玩家目前的房間歸屬解析目標
- * 房間，不需要玩家人在桌子附近——開局本身就會把玩家傳送到座位，先天不需要距離限制。
+ * 能生效的範圍一致。[ready]／[start]／[addAi]／[changeAiStrategy]／[showConfig] 改用玩家目前的房間
+ * 歸屬解析目標房間，不需要玩家人在桌子附近——開局本身就會把玩家傳送到座位，先天不需要距離限制。
+ *
+ * [showConfig] 不帶參數，只負責印出目前設定；訊息裡的可互動文字點擊後會觸發另一個純 client-only
+ * 指令（`mahjongcraft_open_config_screen`，見
+ * [com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenConfigScreenCommand]）開啟
+ * 設定編輯畫面，實際送出新設定走的是獨立的網路頻道，不經過這個伺服器指令。
  *
  * [kick]、[changeAiStrategy] 的目標引數與 [addAi]／[changeAiStrategy] 的策略引數都用
  * [StringArgumentType.string]（而非 [StringArgumentType.word]），因為策略 key 慣用的命名空間冒號
@@ -126,7 +131,8 @@ class FabricRoomCommand(
                                             .suggests(::suggestAllTargets)
                                             .executes { context -> kick(context) },
                                     ),
-                            ),
+                            )
+                            .then(literal("config").executes { context -> showConfig(context.source) }),
                     ),
             )
         }
@@ -184,6 +190,11 @@ class FabricRoomCommand(
             }
             roomService.changeAiStrategy(player, targetId, strategyKey)
         }
+    }
+
+    /** 顯示玩家目前所在房間的完整遊戲設定，訊息本身可點擊開啟編輯畫面。 */
+    private fun showConfig(source: ServerCommandSource): Int = withPlayer(source) { player ->
+        roomService.showConfig(player)
     }
 
     /** 解析指令帶入的座標引數，找不到對應且可互動的桌子時回報原因並中止。 */

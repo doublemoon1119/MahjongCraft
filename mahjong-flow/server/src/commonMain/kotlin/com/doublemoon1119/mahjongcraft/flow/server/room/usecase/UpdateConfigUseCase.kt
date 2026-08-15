@@ -32,20 +32,20 @@ class UpdateConfigUseCase(
      * @param roomId 房間 Uuid。
      * @param operatorId 發起請求的玩家 Uuid。
      * @param newConfig 新的規則與流程設定。
-     * @return 更新配置的結果，成功時為 [Unit]，失敗時為 [RoomError]。
+     * @return 更新配置的結果，成功時為更新後的完整設定，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
         roomId: Uuid,
         operatorId: Uuid,
         newConfig: GameConfig,
-    ): Outcome<Unit, RoomError> = update(roomId, operatorId, newConfig)
+    ): Outcome<GameConfig, RoomError> = update(roomId, operatorId, newConfig)
 
     /** 以單次 repository 交易更新設定並同步 read side。 */
     private suspend fun update(
         roomId: Uuid,
         operatorId: Uuid,
         newConfig: GameConfig,
-    ): Outcome<Unit, RoomError> {
+    ): Outcome<GameConfig, RoomError> {
         // 1. 以原子方式讀取房間、驗證權限並寫回，避免與其他房間操作產生競態
         val outcome = roomRepository.update(roomId) { room ->
             when {
@@ -78,7 +78,7 @@ class UpdateConfigUseCase(
                     )
                 }
 
-                Outcome.Success(Unit)
+                Outcome.Success(updatedRoom.gameConfig)
             }
         }
     }

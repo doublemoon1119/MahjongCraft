@@ -7,6 +7,7 @@
   "item.mahjongcraft.mahjong_dice": "麻雀サイコロ",
   "item.mahjongcraft.mahjong_tile": "麻雀牌",
   "mahjongcraft.message.game_created": "麻雀ゲームを作成しました",
+  "mahjongcraft.message.game_created_location_label": "座標",
   "mahjongcraft.message.game_joined": "麻雀ゲームに参加しました",
   "mahjongcraft.message.game_already_started": "この麻雀対局はすでに開始しています",
   "mahjongcraft.message.player_already_in_game": "すでに別の麻雀ゲームに参加しています",
@@ -37,5 +38,14 @@
   "mahjongcraft.message.target_not_ai": "そのプレイヤーはAIではないため、戦略を変更できません",
   "mahjongcraft.message.change_ai_strategy_failed": "そのAIの戦略を変更できません",
   "mahjongcraft.message.kick_candidate_ai_label": "麻雀AIプレイヤー %s（%s）",
-  "mahjongcraft.message.ai_strategy_random": "ランダムに打牌"
+  "mahjongcraft.message.ai_strategy_random": "ランダムに打牌",
+  "mahjongcraft.message.game_config_changed": "ゲームルールを変更しました：%s → %s",
+  "mahjongcraft.message.game_config_unchanged": "現在のゲームルールはすでに：%s",
+  "mahjongcraft.message.invalid_game_config": "指定されたJSONを有効なゲームルールとして解析できません",
+  "mahjongcraft.message.change_game_config_failed": "ゲームルールを変更できません",
+  "mahjongcraft.message.game_config_label": "設定内容",
+  "mahjongcraft.message.show_game_config": "この麻雀ゲームのルール：%s",
+  "mahjongcraft.message.game_config_screen_title": "麻雀ゲームルール設定",
+  "mahjongcraft.message.game_config_screen_apply": "適用",
+  "mahjongcraft.message.game_config_screen_confirm": "確定"
 }

@@ -7,6 +7,7 @@
   "item.mahjongcraft.mahjong_dice": "Mahjong Dice",
   "item.mahjongcraft.mahjong_tile": "Mahjong Tile",
   "mahjongcraft.message.game_created": "Mahjong game created",
+  "mahjongcraft.message.game_created_location_label": "Location",
   "mahjongcraft.message.game_joined": "Joined the mahjong game",
   "mahjongcraft.message.game_already_started": "This mahjong game has already started",
   "mahjongcraft.message.player_already_in_game": "You have already joined another mahjong game",
@@ -37,5 +38,14 @@
   "mahjongcraft.message.target_not_ai": "That player is not an AI player, cannot change its strategy",
   "mahjongcraft.message.change_ai_strategy_failed": "Could not change that AI player's strategy",
   "mahjongcraft.message.kick_candidate_ai_label": "AI player %s (%s)",
-  "mahjongcraft.message.ai_strategy_random": "Plays Randomly"
+  "mahjongcraft.message.ai_strategy_random": "Plays Randomly",
+  "mahjongcraft.message.game_config_changed": "Game rules changed: %s → %s",
+  "mahjongcraft.message.game_config_unchanged": "The game rules are already: %s",
+  "mahjongcraft.message.invalid_game_config": "The provided JSON could not be parsed into valid game rules",
+  "mahjongcraft.message.change_game_config_failed": "Could not change the game rules",
+  "mahjongcraft.message.game_config_label": "View config",
+  "mahjongcraft.message.show_game_config": "Current mahjong game rules: %s",
+  "mahjongcraft.message.game_config_screen_title": "Mahjong Game Rules",
+  "mahjongcraft.message.game_config_screen_apply": "Apply",
+  "mahjongcraft.message.game_config_screen_confirm": "Confirm"
 }

@@ -13,6 +13,9 @@ object MinecraftMessageKeys {
     /** 已建立麻將遊戲。 */
     const val GAME_CREATED = PREFIX + "game_created"
 
+    /** [GAME_CREATED] 訊息句尾可 hover 顯示座標的 `[位置]` 標籤文字。 */
+    const val GAME_CREATED_LOCATION_LABEL = PREFIX + "game_created_location_label"
+
     /** 已加入麻將遊戲。 */
     const val GAME_JOINED = PREFIX + "game_joined"
 
@@ -117,10 +120,47 @@ object MinecraftMessageKeys {
      */
     const val AI_STRATEGY_RANDOM = PREFIX + "ai_strategy_random"
 
+    /**
+     * 已變更遊戲設定，依序帶舊設定、新設定兩個可互動文字參數（各一個 `%s`），措辭比照
+     * [READY_TOGGLE_PREFIX] 準備狀態切換訊息的「舊狀態 → 新狀態」呈現方式。
+     */
+    const val GAME_CONFIG_CHANGED = PREFIX + "game_config_changed"
+
+    /**
+     * 提供的新設定與目前設定相同，操作本身仍算成功（冪等）。帶一個目前設定的可互動文字參數（一個
+     * `%s`），比照 [AI_STRATEGY_UNCHANGED] 不呈現成容易誤解的「同一設定 → 同一設定」。
+     */
+    const val GAME_CONFIG_UNCHANGED = PREFIX + "game_config_unchanged"
+
+    /** 提供的 JSON 無法解析成合法的遊戲設定。 */
+    const val INVALID_GAME_CONFIG = PREFIX + "invalid_game_config"
+
+    /** 變更遊戲設定失敗。 */
+    const val CHANGE_GAME_CONFIG_FAILED = PREFIX + "change_game_config_failed"
+
+    /** [GAME_CONFIG_CHANGED]／[GAME_CONFIG_UNCHANGED]／[SHOW_GAME_CONFIG] 中可互動文字本身顯示的簡短標籤。 */
+    const val GAME_CONFIG_LABEL = PREFIX + "game_config_label"
+
+    /**
+     * 顯示所在麻將遊戲目前設定，帶一個可互動文字參數（一個 `%s`，見 [GAME_CONFIG_LABEL]）；點擊該文字
+     * 會開啟設定編輯畫面。
+     */
+    const val SHOW_GAME_CONFIG = PREFIX + "show_game_config"
+
+    /** 設定編輯畫面的標題。 */
+    const val GAME_CONFIG_SCREEN_TITLE = PREFIX + "game_config_screen_title"
+
+    /** 設定編輯畫面「套用」按鈕：送出後畫面保持開啟。 */
+    const val GAME_CONFIG_SCREEN_APPLY = PREFIX + "game_config_screen_apply"
+
+    /** 設定編輯畫面「確認」按鈕：送出後關閉畫面。 */
+    const val GAME_CONFIG_SCREEN_CONFIRM = PREFIX + "game_config_screen_confirm"
+
     /** Minecraft 語系資源必須提供的全部玩家回饋 key。 */
     val ALL: Set<String> = setOf(
         GAME_ALREADY_STARTED,
         GAME_CREATED,
+        GAME_CREATED_LOCATION_LABEL,
         GAME_JOINED,
         PLAYER_NOT_IN_GAME,
         GAME_LEAVE_DENIED_WHILE_PLAYING,
@@ -151,5 +191,14 @@ object MinecraftMessageKeys {
         AI_STRATEGY_UNCHANGED,
         TARGET_NOT_AI,
         CHANGE_AI_STRATEGY_FAILED,
+        GAME_CONFIG_CHANGED,
+        GAME_CONFIG_UNCHANGED,
+        INVALID_GAME_CONFIG,
+        CHANGE_GAME_CONFIG_FAILED,
+        GAME_CONFIG_LABEL,
+        SHOW_GAME_CONFIG,
+        GAME_CONFIG_SCREEN_TITLE,
+        GAME_CONFIG_SCREEN_APPLY,
+        GAME_CONFIG_SCREEN_CONFIRM,
     )
 }

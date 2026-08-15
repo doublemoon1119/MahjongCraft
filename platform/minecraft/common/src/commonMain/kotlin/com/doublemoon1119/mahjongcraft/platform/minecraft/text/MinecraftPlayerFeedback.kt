@@ -130,4 +130,35 @@ sealed interface MinecraftPlayerFeedback {
 
     /** 更換 AI 策略失敗。 */
     data object ChangeAiStrategyFailed : MinecraftPlayerFeedback
+
+    /**
+     * 已變更遊戲設定。呈現端可以將 [oldConfigJson]／[newConfigJson] 解析、轉換成 hover 顯示 TOML、
+     * 點擊複製 JSON 的可互動文字；攜帶已序列化字串而非設定領域物件，是因為序列化需要的
+     * `NetworkDtoRegistries`／`Json` 屬於 network-dto 層，這個模組不依賴該層。
+     *
+     * @property oldConfigJson 變更前設定的 JSON 序列化文字。
+     * @property newConfigJson 變更後設定的 JSON 序列化文字。
+     */
+    data class GameConfigChanged(val oldConfigJson: String, val newConfigJson: String) : MinecraftPlayerFeedback
+
+    /**
+     * 提供的新設定與目前設定相同，操作本身仍算成功（冪等），呈現端不應顯示成「舊設定 → 新設定」。
+     *
+     * @property configJson 目前設定的 JSON 序列化文字。
+     */
+    data class GameConfigUnchanged(val configJson: String) : MinecraftPlayerFeedback
+
+    /** 提供的 JSON 無法解析成合法的遊戲設定。 */
+    data object InvalidGameConfig : MinecraftPlayerFeedback
+
+    /** 變更遊戲設定失敗。 */
+    data object ChangeGameConfigFailed : MinecraftPlayerFeedback
+
+    /**
+     * 顯示所在麻將遊戲目前的設定；呈現端可將 [configJson] 組成可 hover 顯示 TOML、點擊開啟設定編輯
+     * 畫面的可互動文字。
+     *
+     * @property configJson 目前設定的 JSON 序列化文字。
+     */
+    data class ShowGameConfig(val configJson: String) : MinecraftPlayerFeedback
 }

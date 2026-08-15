@@ -54,6 +54,7 @@ class UpdateConfigUseCaseTest {
         // Act: 房主發起配置更新
         val result = useCase(roomId, hostId, GameConfig(newConfig))
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertEquals(newConfig, result.value.ruleConfig, "Should return the config that was applied.")
 
         // Assert: 檢查持久化數據是否更新
         val updatedRoom = roomRepo.getRoom(roomId)

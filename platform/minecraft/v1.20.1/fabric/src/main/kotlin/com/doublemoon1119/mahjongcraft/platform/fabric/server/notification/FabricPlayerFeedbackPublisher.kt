@@ -1,5 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.notification
 
+import com.akuleshov7.ktoml.Toml
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.resolveDisplayText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
@@ -7,10 +11,16 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import net.minecraft.text.ClickEvent
 import net.minecraft.text.HoverEvent
 import net.minecraft.text.MutableText
+import net.minecraft.text.Style
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
+import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
@@ -26,7 +36,13 @@ import kotlin.uuid.Uuid
 class FabricPlayerFeedbackPublisher(
     private val serverHolder: FabricServerHolder,
     private val aiStrategyDisplayNames: AiStrategyDisplayNameRegistry,
+    @Provided private val json: Json,
+    @Provided private val networkRegistries: NetworkDtoRegistries,
 ) : MinecraftPlayerFeedbackPublisher {
+
+    /** 用來把設定 hover 顯示成 TOML 的 codec；序列化模組須與 [json] 共用，才認得到多型規則設定。 */
+    private val toml = Toml(serializersModule = buildMahjongDtoSerializersModule(networkRegistries))
+
     /** 切換至 server thread，並在玩家仍在線時傳送目前版本選定的回饋。 */
     override fun publish(playerId: Uuid, feedback: MinecraftPlayerFeedback) {
         val server = serverHolder.current() ?: return
@@ -87,13 +103,23 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.TARGET_NOT_AI), true)
                 MinecraftPlayerFeedback.ChangeAiStrategyFailed ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.CHANGE_AI_STRATEGY_FAILED), true)
+                is MinecraftPlayerFeedback.GameConfigChanged ->
+                    player.sendMessage(gameConfigChangedMessage(feedback))
+                is MinecraftPlayerFeedback.GameConfigUnchanged ->
+                    player.sendMessage(gameConfigUnchangedMessage(feedback))
+                MinecraftPlayerFeedback.InvalidGameConfig ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.INVALID_GAME_CONFIG), true)
+                MinecraftPlayerFeedback.ChangeGameConfigFailed ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.CHANGE_GAME_CONFIG_FAILED), true)
+                is MinecraftPlayerFeedback.ShowGameConfig ->
+                    player.sendMessage(showGameConfigMessage(feedback))
             }
         }
     }
 
     /**
-     * 建立「已建立麻將遊戲」訊息；[location] 存在時整句可以 hover 顯示座標，主世界以外的維度會
-     * 額外多顯示一行維度 ID（多數桌子都在主世界，省略維度可以維持提示簡潔）。
+     * 建立「已建立麻將遊戲」訊息；[location] 存在時句尾附上可 hover 顯示座標的 `[位置]` 標籤，主世界
+     * 以外的維度會額外多顯示一行維度 ID（多數桌子都在主世界，省略維度可以維持提示簡潔）。
      */
     private fun gameCreatedMessage(location: TableLocation?): MutableText {
         val message = Text.translatable(MinecraftMessageKeys.GAME_CREATED)
@@ -103,7 +129,8 @@ class FabricPlayerFeedbackPublisher(
         if (location.dimensionId != OVERWORLD_DIMENSION_ID) {
             hoverText = hoverText.append("\n").append(Text.literal(location.dimensionId))
         }
-        return message.styled { it.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverText)) }
+        return message.append(Text.literal(" "))
+            .append(bracketedInteractiveLabel(MinecraftMessageKeys.GAME_CREATED_LOCATION_LABEL, hoverText))
     }
 
     /** 建立「已新增 AI 玩家」訊息，策略名稱與 `kick` 補全 tooltip 使用同一套顯示名稱解析。 */
@@ -113,9 +140,10 @@ class FabricPlayerFeedbackPublisher(
     )
 
     /**
-     * 建立「已更換 AI 策略」訊息，格式比照 [readyToggledMessage] 的「舊狀態 → 新狀態」呈現方式。新舊
-     * 策略相同時改用 [MinecraftMessageKeys.AI_STRATEGY_UNCHANGED]——這個操作本身仍是成功的冪等操作，
-     * 只是換一句不會出現「同一個策略 → 同一個策略」這種容易讓人誤以為系統異常的說法。
+     * 建立「已更換 AI 策略」訊息，格式為「舊策略 → 新策略」，比照使用者對「舊 → 新」類訊息的配色慣例：
+     * 舊值紅色、新值綠色。新舊策略相同時改用 [MinecraftMessageKeys.AI_STRATEGY_UNCHANGED]——這個操作
+     * 本身仍是成功的冪等操作，只是換一句不會出現「同一個策略 → 同一個策略」這種容易讓人誤以為系統
+     * 異常的說法，此時維持無色。
      */
     private fun aiStrategyChangedMessage(feedback: MinecraftPlayerFeedback.AiStrategyChanged): MutableText {
         if (feedback.oldStrategyKey == feedback.newStrategyKey) {
@@ -128,9 +156,85 @@ class FabricPlayerFeedbackPublisher(
         return Text.translatable(
             MinecraftMessageKeys.AI_STRATEGY_CHANGED,
             feedback.aiSequence,
-            aiStrategyDisplayNames.resolveDisplayText(feedback.oldStrategyKey),
-            aiStrategyDisplayNames.resolveDisplayText(feedback.newStrategyKey),
+            aiStrategyDisplayNames.resolveDisplayText(feedback.oldStrategyKey).copy().formatted(Formatting.RED),
+            aiStrategyDisplayNames.resolveDisplayText(feedback.newStrategyKey).copy().formatted(Formatting.GREEN),
         )
+    }
+
+    /** 建立「已變更遊戲設定」訊息，格式比照 [aiStrategyChangedMessage] 的「舊設定 → 新設定」配色慣例。 */
+    private fun gameConfigChangedMessage(feedback: MinecraftPlayerFeedback.GameConfigChanged): MutableText = Text.translatable(
+        MinecraftMessageKeys.GAME_CONFIG_CHANGED,
+        gameConfigText(feedback.oldConfigJson, Formatting.RED),
+        gameConfigText(feedback.newConfigJson, Formatting.GREEN),
+    )
+
+    /** 建立「新設定與目前設定相同」訊息，比照 [aiStrategyChangedMessage] 對新舊相同時的特殊處理，維持無色。 */
+    private fun gameConfigUnchangedMessage(feedback: MinecraftPlayerFeedback.GameConfigUnchanged): MutableText = Text.translatable(
+        MinecraftMessageKeys.GAME_CONFIG_UNCHANGED,
+        gameConfigText(feedback.configJson),
+    )
+
+    /**
+     * 建立「顯示目前遊戲設定」訊息；可互動文字點擊後透過 [ClickEvent.Action.RUN_COMMAND] 觸發
+     * client-only 指令開啟設定編輯畫面（見
+     * [com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenConfigScreenCommand]），
+     * 不是複製 JSON。
+     */
+    private fun showGameConfigMessage(feedback: MinecraftPlayerFeedback.ShowGameConfig): MutableText = Text.translatable(
+        MinecraftMessageKeys.SHOW_GAME_CONFIG,
+        bracketedInteractiveLabel(
+            MinecraftMessageKeys.GAME_CONFIG_LABEL,
+            gameConfigHoverText(feedback.configJson),
+            ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_CONFIG_SCREEN_COMMAND),
+        ),
+    )
+
+    /**
+     * 將一段設定 JSON 轉成可互動文字：點擊把原始 JSON 複製到剪貼簿（可以直接貼回設定編輯畫面），這
+     * 部分已經定案不會再變。hover 顯示的 TOML 版本則只是暫時方案，見 [gameConfigHoverText]。[color]
+     * 預設沿用一般可互動文字的 AQUA；「舊 → 新」類訊息才需要另外指定綠／紅。
+     */
+    private fun gameConfigText(configJson: String, color: Formatting = Formatting.AQUA): MutableText = bracketedInteractiveLabel(
+        MinecraftMessageKeys.GAME_CONFIG_LABEL,
+        gameConfigHoverText(configJson),
+        ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, configJson),
+        color,
+    )
+
+    /**
+     * 依 vanilla「中括號 + 顏色 = 可 hover／可點擊」的慣例（例如成就、物品連結訊息），把 [labelKey]
+     * 包成 `[標籤]`。中括號本身與翻譯文字套用同一個 [Style]，確保滑鼠移到中括號上也會觸發 hover，不會
+     * 只有文字本身才有效果；[clickEvent] 省略時只有 hover，沒有點擊行為（例如 [gameCreatedMessage] 的
+     * 座標標籤）；[color] 預設 AQUA，作為一般可互動文字的配色。
+     */
+    private fun bracketedInteractiveLabel(
+        labelKey: String,
+        hoverText: Text,
+        clickEvent: ClickEvent? = null,
+        color: Formatting = Formatting.AQUA,
+    ): MutableText {
+        var style = Style.EMPTY.withColor(color).withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverText))
+        if (clickEvent != null) {
+            style = style.withClickEvent(clickEvent)
+        }
+        return Text.literal("[").setStyle(style)
+            .append(Text.translatable(labelKey).setStyle(style))
+            .append(Text.literal("]").setStyle(style))
+    }
+
+    /**
+     * 將一段設定 JSON 轉成 hover 顯示用的 TOML 版本（較適合人眼閱讀），供 [gameConfigText] 與
+     * [showGameConfigMessage] 共用。目前是原始欄位名稱（例如 `baseSeconds`），不是「起始點數」這種對
+     * 玩家友善的顯示名稱；TOML 轉換失敗時（理論上不會發生，因為這段 JSON 本來就是同一份程式碼序列化
+     * 出來的）退回顯示原始 JSON。
+     *
+     * TODO: 這部分還會再調整——需要一套「設定欄位 → 翻譯後顯示名稱」的對照（GUI 顯示設定時也會用到
+     *   同一套對照），屆時應該抽成共用元件，不要各自複製一份。
+     */
+    private fun gameConfigHoverText(configJson: String): MutableText = try {
+        Text.literal(toml.encodeToString(json.decodeFromString<GameConfigDto>(configJson)))
+    } catch (_: Exception) {
+        Text.literal(configJson)
     }
 
     /** 組合準備狀態切換訊息：前綴 + 切換前狀態 → 切換後狀態，「準備」亮綠、「尚未準備」亮紅。 */
@@ -149,5 +253,13 @@ class FabricPlayerFeedbackPublisher(
     private companion object {
         /** 主世界的 dimension registry identifier；hover 顯示位置時，這個維度不額外標示。 */
         const val OVERWORLD_DIMENSION_ID: String = "minecraft:overworld"
+
+        /**
+         * 開啟設定編輯畫面的 client-only 指令；純粹當點擊觸發器用，不是給玩家手動輸入。根節點用麻將牌
+         * 字元 `🀇` 而非英文字串的理由見
+         * [com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenConfigScreenCommand]
+         * 的類別 KDoc。
+         */
+        const val OPEN_CONFIG_SCREEN_COMMAND: String = "/🀇 open_config_screen"
     }
 }

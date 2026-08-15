@@ -72,6 +72,9 @@ dependencies {
     implementation(project.dependencies.platform(libs.koin.bom))
     implementation(libs.koin.core)
     implementation(libs.koin.annotations)
+    // 遊戲設定變更訊息直接用 ktoml 組 hover 顯示文字（見 FabricPlayerFeedbackPublisher），
+    // :minecraft_common 對它只宣告 implementation，不會透傳，這裡需要直接依賴才看得到 Toml symbol。
+    implementation(libs.ktoml.core)
 
     // 這幾個都是一般 JVM 專案，不是 Fabric mod，玩家的 classpath 上不會自動有它們，
     // 必須透過 Loom 的 include() 把它們打進最終 mod jar

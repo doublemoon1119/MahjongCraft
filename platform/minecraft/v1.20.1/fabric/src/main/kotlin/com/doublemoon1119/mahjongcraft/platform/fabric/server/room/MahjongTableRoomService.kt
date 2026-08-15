@@ -4,6 +4,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshotUseCase
@@ -17,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.KickPlayerUseCas
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.ToggleReadyUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.UpdateConfigUseCase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
@@ -25,7 +30,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import kotlinx.coroutines.launch
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
+import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -51,6 +60,7 @@ class MahjongTableRoomService(
     private val addAiPlayer: AddAiPlayerUseCase,
     private val changeAiStrategy: ChangeAiStrategyUseCase,
     private val kickPlayer: KickPlayerUseCase,
+    private val updateConfig: UpdateConfigUseCase,
     private val syncRoom: SyncRoomSnapshotUseCase,
     private val syncGame: SyncGameSnapshotUseCase,
     private val roomSnapshotSender: RoomSnapshotSender,
@@ -58,6 +68,8 @@ class MahjongTableRoomService(
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val tableLocationRegistry: TableLocationRegistry,
     private val memberCandidateResolver: RoomMemberCandidateResolver,
+    @Provided private val json: Json,
+    @Provided private val networkRegistries: NetworkDtoRegistries,
 ) {
     /** 依麻將桌目前處於空桌、等待室或遊戲階段，建立、加入或重新同步玩家狀態。 */
     fun interact(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
@@ -268,6 +280,68 @@ class MahjongTableRoomService(
                 }
                 is Outcome.Error ->
                     feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.changeAiStrategyError(result.error))
+            }
+        }
+    }
+
+    /**
+     * 顯示玩家目前所在房間的完整遊戲設定，供指令印出可 hover／可點擊開啟編輯畫面的訊息。同樣以玩家
+     * 目前的房間歸屬解析目標房間；沒有房主限制，任何在房間內的玩家都能查看目前設定。
+     */
+    fun showConfig(player: ServerPlayerEntity) {
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            val tableId = membershipRepository.getTableId(playerId)
+            val room = tableId?.let { roomRepository.getRoom(it) }
+            if (room == null) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
+                return@launch
+            }
+            val configJson = json.encodeToString(room.gameConfig.toDto(networkRegistries))
+            feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.ShowGameConfig(configJson))
+        }
+    }
+
+    /**
+     * 讓房主以 JSON 字串更新目前所在房間的完整遊戲設定。同樣以玩家目前的房間歸屬解析目標房間。
+     *
+     * @param configJson 玩家輸入的 JSON 字串，須能解析成 [GameConfigDto]。
+     */
+    fun updateConfig(player: ServerPlayerEntity, configJson: String) {
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            val tableId = membershipRepository.getTableId(playerId)
+            if (tableId == null) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
+                return@launch
+            }
+            val newConfig = try {
+                json.decodeFromString<GameConfigDto>(configJson).toDomain(networkRegistries)
+            } catch (_: Exception) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.InvalidGameConfig)
+                return@launch
+            }
+            val room = roomRepository.getRoom(tableId)
+            if (room == null) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
+                return@launch
+            }
+            val oldConfig = room.gameConfig
+            when (val result = updateConfig(tableId, playerId, newConfig)) {
+                is Outcome.Success -> {
+                    val newConfigJson = json.encodeToString(result.value.toDto(networkRegistries))
+                    if (oldConfig == result.value) {
+                        feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameConfigUnchanged(newConfigJson))
+                    } else {
+                        val oldConfigJson = json.encodeToString(oldConfig.toDto(networkRegistries))
+                        feedbackPublisher.publish(
+                            playerId,
+                            MinecraftPlayerFeedback.GameConfigChanged(oldConfigJson, newConfigJson),
+                        )
+                    }
+                }
+                is Outcome.Error ->
+                    feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.updateConfigError(result.error))
             }
         }
     }
