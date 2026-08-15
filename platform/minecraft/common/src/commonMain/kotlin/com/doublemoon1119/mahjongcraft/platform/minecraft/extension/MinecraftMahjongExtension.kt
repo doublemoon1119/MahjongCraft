@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 
 /**
  * 第三方 Minecraft mod 在 MahjongCraft runtime 啟動前登記 Minecraft 專屬整合的共用契約。
@@ -45,4 +46,13 @@ interface MinecraftMahjongExtension {
      * 預設不註冊任何映射，使不提供自訂規則模組顯示名稱的 extension 不必加入空實作。
      */
     fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistry) = Unit
+
+    /**
+     * 登記第三方牌種 asset key 對應的顯示 emoji 字元。
+     *
+     * 預設不註冊任何映射，使不提供自訂牌面 emoji 的 extension 不必加入空實作。字元本身要能顯示成
+     * 貼圖，還需要第三方 mod／資源包另外提供對應的 `assets/minecraft/font/default.json` bitmap
+     * provider；這個 registry 只負責保存字元對照，不管字型檔案。
+     */
+    fun registerTileEmojis(registry: TileEmojiRegistry) = Unit
 }

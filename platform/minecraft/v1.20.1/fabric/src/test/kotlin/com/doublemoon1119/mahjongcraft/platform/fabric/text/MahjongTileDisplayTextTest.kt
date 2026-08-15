@@ -5,8 +5,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTileAssets
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTileDisplayNames
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTileEmojis
 import net.minecraft.text.LiteralTextContent
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
@@ -18,11 +20,12 @@ class MahjongTileDisplayTextTest {
 
     private val displayNameRegistry = TileDisplayNameRegistryImpl().apply { registerBuiltInTileDisplayNames() }
     private val assetRegistry = MinecraftTileAssetRegistryImpl().apply { registerBuiltInTileAssets() }
+    private val emojiRegistry = TileEmojiRegistryImpl().apply { registerBuiltInTileEmojis() }
 
     /** 驗證數牌顯示成「牌面 emoji + 數值/花色」翻譯文字，帶正確的翻譯 key 與 emoji 前綴。 */
     @Test
     fun `numeric tile translates with suit key and emoji prefix`() {
-        val text = Tile.Numeric(Tile.Suit.Dot, 3).toDisplayText(displayNameRegistry, assetRegistry)
+        val text = Tile.Numeric(Tile.Suit.Dot, 3).toDisplayText(displayNameRegistry, assetRegistry, emojiRegistry)
         assertEquals("🀛 ", (text.content as LiteralTextContent).string())
         val translatable = text.siblings.single().content as TranslatableTextContent
         assertEquals("mahjongcraft.message.tile_suit_dot", translatable.key)
@@ -31,7 +34,7 @@ class MahjongTileDisplayTextTest {
     /** 驗證字牌顯示成對應的固定翻譯 key，並帶對應的 emoji 前綴。 */
     @Test
     fun `honor tile translates to its own key with emoji prefix`() {
-        val text = Tile.Honor.Red.toDisplayText(displayNameRegistry, assetRegistry)
+        val text = Tile.Honor.Red.toDisplayText(displayNameRegistry, assetRegistry, emojiRegistry)
         assertEquals("🀄 ", (text.content as LiteralTextContent).string())
         val translatable = text.siblings.single().content as TranslatableTextContent
         assertEquals("mahjongcraft.message.tile_honor_red", translatable.key)
@@ -40,7 +43,7 @@ class MahjongTileDisplayTextTest {
     /** 驗證已登記的內建赤五能查到對應翻譯 key，並帶赤五專屬的 emoji 前綴。 */
     @Test
     fun `registered extension tile resolves translation key with emoji prefix`() {
-        val text = Tile.Extension(RiichiTileTypes.RED_FIVE_CHARACTER).toDisplayText(displayNameRegistry, assetRegistry)
+        val text = Tile.Extension(RiichiTileTypes.RED_FIVE_CHARACTER).toDisplayText(displayNameRegistry, assetRegistry, emojiRegistry)
         assertEquals("🀬 ", (text.content as LiteralTextContent).string())
         val translatable = text.siblings.single().content as TranslatableTextContent
         assertEquals("mahjongcraft.message.tile_red_five_character", translatable.key)
@@ -50,13 +53,13 @@ class MahjongTileDisplayTextTest {
     @Test
     fun `unregistered extension tile falls back to raw type id with unknown emoji prefix`() {
         val typeId = TileTypeId.parse("example:unregistered")
-        val text = Tile.Extension(typeId).toDisplayText(displayNameRegistry, assetRegistry)
+        val text = Tile.Extension(typeId).toDisplayText(displayNameRegistry, assetRegistry, emojiRegistry)
         assertEquals("🀯 ", (text.content as LiteralTextContent).string())
         val fallback = text.siblings.single().content as LiteralTextContent
         assertEquals("example:unregistered", fallback.string())
     }
 
-    /** 驗證 asset key 沒有對應 emoji（例如未登記到素材 registry 的第三方牌種）時不強行湊前綴。 */
+    /** 驗證 asset key 沒有對應 emoji（例如未登記到 emoji registry 的第三方牌種）時不強行湊前綴。 */
     @Test
     fun `tile with unmapped asset key has no emoji prefix`() {
         val typeId = TileTypeId.parse("example:custom")
@@ -65,7 +68,7 @@ class MahjongTileDisplayTextTest {
             register(typeId, "custom_third_party_key")
         }
 
-        val text = Tile.Extension(typeId).toDisplayText(displayNameRegistry, registryWithCustomAsset)
+        val text = Tile.Extension(typeId).toDisplayText(displayNameRegistry, registryWithCustomAsset, emojiRegistry)
         assertTrue(text.siblings.isEmpty())
         assertEquals("example:custom", (text.content as LiteralTextContent).string())
     }

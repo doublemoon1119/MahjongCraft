@@ -36,6 +36,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import org.koin.core.context.stopKoin
 import org.koin.plugin.module.dsl.startKoin
 import kotlin.test.AfterTest
@@ -66,6 +67,7 @@ class FabricApplicationModuleTest {
         val aiStrategyDisplayNameRegistry = koin.get<AiStrategyDisplayNameRegistry>()
         val tileDisplayNameRegistry = koin.get<TileDisplayNameRegistry>()
         val ruleModuleDisplayNameRegistry = koin.get<RuleModuleDisplayNameRegistry>()
+        val tileEmojiRegistry = koin.get<TileEmojiRegistry>()
         FabricMahjongExtensions.initialize(
             moduleRegistry,
             tileTypeRegistry,
@@ -75,6 +77,7 @@ class FabricApplicationModuleTest {
             aiStrategyDisplayNameRegistry,
             tileDisplayNameRegistry,
             ruleModuleDisplayNameRegistry,
+            tileEmojiRegistry,
             emptyList(),
         )
 
@@ -86,11 +89,13 @@ class FabricApplicationModuleTest {
         assertSame(aiStrategyDisplayNameRegistry, koin.get<AiStrategyDisplayNameRegistry>())
         assertSame(tileDisplayNameRegistry, koin.get<TileDisplayNameRegistry>())
         assertSame(ruleModuleDisplayNameRegistry, koin.get<RuleModuleDisplayNameRegistry>())
+        assertSame(tileEmojiRegistry, koin.get<TileEmojiRegistry>())
         assertEquals(RiichiTileTypes.ALL + TaiwanTileTypes.ALL, tileTypeRegistry.getAll().map { it.id })
         assertTrue(minecraftTileAssetRegistry.isFrozen)
         assertTrue(aiStrategyDisplayNameRegistry.isFrozen)
         assertTrue(tileDisplayNameRegistry.isFrozen)
         assertTrue(ruleModuleDisplayNameRegistry.isFrozen)
+        assertTrue(tileEmojiRegistry.isFrozen)
         koin.get<GameFlowCoordinator>()
         koin.get<GameEventPublisher>()
         koin.get<DecisionTimerUpdatePublisher>()

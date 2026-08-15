@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import net.fabricmc.loader.api.FabricLoader
 import org.slf4j.LoggerFactory
 
@@ -43,6 +44,7 @@ object FabricMahjongExtensions {
         aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
         tileDisplayNameRegistry: TileDisplayNameRegistry,
         ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
+        tileEmojiRegistry: TileEmojiRegistry,
     ) {
         try {
             val extensions = FabricLoader.getInstance()
@@ -56,6 +58,7 @@ object FabricMahjongExtensions {
                 aiStrategyDisplayNameRegistry,
                 tileDisplayNameRegistry,
                 ruleModuleDisplayNameRegistry,
+                tileEmojiRegistry,
                 extensions,
             )
             val extensionIds = extensions.map { it.id }
@@ -84,6 +87,11 @@ object FabricMahjongExtensions {
                 result.thirdPartyRuleModuleDisplayNameKeys.size,
                 result.thirdPartyRuleModuleDisplayNameKeys,
             )
+            logger.info(
+                "Registered {} third-party tile emoji(s): {}",
+                result.thirdPartyTileEmojiKeys.size,
+                result.thirdPartyTileEmojiKeys,
+            )
         } catch (cause: Exception) {
             logger.error("Failed to initialize Mahjong extensions", cause)
             throw cause
@@ -104,6 +112,7 @@ object FabricMahjongExtensions {
         aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
         tileDisplayNameRegistry: TileDisplayNameRegistry,
         ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
+        tileEmojiRegistry: TileEmojiRegistry,
         extensions: Iterable<MahjongExtension>,
     ): MinecraftMahjongExtensionRegistrationResult {
         moduleRegistry.registerBuiltInRuleModules()
@@ -126,6 +135,7 @@ object FabricMahjongExtensions {
             aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
             tileDisplayNameRegistry = tileDisplayNameRegistry,
             ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
+            tileEmojiRegistry = tileEmojiRegistry,
         )
     }
 }
