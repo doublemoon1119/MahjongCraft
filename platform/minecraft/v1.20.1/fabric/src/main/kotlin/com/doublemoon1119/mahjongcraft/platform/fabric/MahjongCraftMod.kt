@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServe
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricGameCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.DisconnectedPlayerLifecycleService
@@ -110,6 +111,7 @@ class MahjongCraftMod : ModInitializer {
         registerPlayerConnectionEvents(koin)
         koin.get<FabricServerConfigCommand>().register()
         koin.get<FabricRoomCommand>().register()
+        koin.get<FabricGameCommand>().register()
 
         logger.info(koin.get<FabricRuntimeMetadata>().initializationMessage())
     }

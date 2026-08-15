@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 
 /**
@@ -25,6 +28,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
  *
  * 持續存在的 HUD 狀態應由 snapshot／client store 驅動；需要玩家回答的動作詢問應使用具備識別碼、
  * 合法動作與逾時資訊的 request／response 協議，兩者都不屬於此一次性回饋模型。
+ *
+ * TODO: 目前 1.20.1 Fabric adapter 一律轉成 chat 訊息，是等對應 GUI／HUD 做出來之前的暫時方案，
+ *   不是最終呈現方式；屆時這裡的回饋語意不需要更動，只需要改 adapter 端怎麼呈現：
+ *   - 房間階段的回饋（[GameCreated]／[ReadyToggled]／[AiAdded]／[PlayerKicked]／
+ *     [AiStrategyChanged]／[ShowGameConfig]／[GameConfigChanged] 等）將由「房間等待室 GUI」取代。
+ *   - 對局階段的回饋（[GameActionPerformed]／[ShowHand]／[YourTurn]／[NotYourTurn] 等）將由
+ *     「遊戲桌面 GUI」與思考時間 HUD 取代／補強。
+ *   單純的操作失敗提示（例如 [GameJoinFailed]／[KickFailed]）預期即使有了 GUI 仍會保留 chat 或類似
+ *   的一次性錯誤提示，不在此列。
  */
 sealed interface MinecraftPlayerFeedback {
     /** 對局已開始，玩家無法中途加入。 */
@@ -161,4 +173,61 @@ sealed interface MinecraftPlayerFeedback {
      * @property configJson 目前設定的 JSON 序列化文字。
      */
     data class ShowGameConfig(val configJson: String) : MinecraftPlayerFeedback
+
+    /**
+     * 已成功執行一次對局操作。
+     *
+     * @property action 實際執行的動作。
+     * @property referenceTile 該動作涉及的牌面（例如捨牌／吃／碰／槓/榮和的目標牌），呈現端組訊息用；
+     *   [GameAction.Tsumo]／[GameAction.Pass]／[GameAction.ExhaustiveDraw] 等不涉及特定牌面的動作
+     *   為 null。
+     */
+    data class GameActionPerformed(val action: GameAction, val referenceTile: Tile?) : MinecraftPlayerFeedback
+
+    /** 還沒輪到該玩家的回合。 */
+    data object NotYourTurn : MinecraftPlayerFeedback
+
+    /** 玩家已逾時，後續操作交由伺服器自動處理。 */
+    data object ForcedAutoPlayActive : MinecraftPlayerFeedback
+
+    /** 該動作在目前桌況下不合法。 */
+    data object IllegalGameAction : MinecraftPlayerFeedback
+
+    /** 牌山已摸盡。 */
+    data object WallExhausted : MinecraftPlayerFeedback
+
+    /** 目前規則不支援這個動作。 */
+    data object UnsupportedGameAction : MinecraftPlayerFeedback
+
+    /**
+     * 顯示玩家目前的手牌、副露與可執行的特殊動作，供 `/mahjongcraft game hand` 使用。
+     *
+     * @property standingTiles 立牌（含剛摸到的牌）。
+     * @property melds 副露列表。
+     * @property turnStatus 目前是否輪到自己／有資格回應／純粹等待，決定 [legalActions] 為空時要顯示
+     *   哪一種提示（例如區分「輪到你但沒有特殊動作」與「還沒輪到你」，避免誤導玩家以為隨時都能
+     *   `discard`）。
+     * @property legalActions 目前可執行的特殊動作清單（不含永遠合法的捨牌），與
+     *   [com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator] 既有的「空清單不代表
+     *   不能捨牌」慣例一致；每個項目額外帶上該動作涉及的牌面（可能為 null），且與
+     *   `/mahjongcraft game action` 指令 Tab 補全候選項目使用同一份查詢結果、同一個順序。
+     */
+    data class ShowHand(
+        val standingTiles: List<Tile>,
+        val melds: List<Meld>,
+        val turnStatus: GameTurnStatus,
+        val legalActions: List<Pair<GameAction, Tile?>>,
+    ) : MinecraftPlayerFeedback
+
+    /**
+     * 輪到自己回合，伺服器已代為摸牌完成。真人玩家的摸牌是全自動觸發（見
+     * `MahjongAutoDrawService`），沒有這則主動通知的話玩家完全不會知道輪到自己了，只能自己反覆查詢
+     * `/mahjongcraft game hand`。
+     *
+     * TODO: 目前刻意只做一次性 chat 訊息，不是持續顯示的倒數計時；之後只對目前決策玩家顯示的思考
+     *   時間 HUD 會取代／補強這裡，現在不需要為了倒數顯示另外設計機制。
+     *
+     * @property drawnTile 這次自動摸到的牌。
+     */
+    data class YourTurn(val drawnTile: Tile) : MinecraftPlayerFeedback
 }

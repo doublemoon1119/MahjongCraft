@@ -156,6 +156,125 @@ object MinecraftMessageKeys {
     /** 設定編輯畫面「確認」按鈕：送出後關閉畫面。 */
     const val GAME_CONFIG_SCREEN_CONFIRM = PREFIX + "game_config_screen_confirm"
 
+    // ── 麻將牌顯示文字（見 MahjongTileDisplayText.kt） ──────────────────────
+
+    /** 萬子數牌顯示文字，帶一個數值參數（一個 `%s`）。 */
+    const val TILE_SUIT_CHARACTER = PREFIX + "tile_suit_character"
+
+    /** 筒子數牌顯示文字，帶一個數值參數（一個 `%s`）。 */
+    const val TILE_SUIT_DOT = PREFIX + "tile_suit_dot"
+
+    /** 條子數牌顯示文字，帶一個數值參數（一個 `%s`）。 */
+    const val TILE_SUIT_BAMBOO = PREFIX + "tile_suit_bamboo"
+
+    /** 東風牌顯示文字。 */
+    const val TILE_HONOR_EAST = PREFIX + "tile_honor_east"
+
+    /** 南風牌顯示文字。 */
+    const val TILE_HONOR_SOUTH = PREFIX + "tile_honor_south"
+
+    /** 西風牌顯示文字。 */
+    const val TILE_HONOR_WEST = PREFIX + "tile_honor_west"
+
+    /** 北風牌顯示文字。 */
+    const val TILE_HONOR_NORTH = PREFIX + "tile_honor_north"
+
+    /** 中（紅中）顯示文字。 */
+    const val TILE_HONOR_RED = PREFIX + "tile_honor_red"
+
+    /** 發（發財）顯示文字。 */
+    const val TILE_HONOR_GREEN = PREFIX + "tile_honor_green"
+
+    /** 白（白板）顯示文字。 */
+    const val TILE_HONOR_WHITE = PREFIX + "tile_honor_white"
+
+    /** 內建日麻赤五的「赤」前綴，接在對應花色的 5 前面（例如「赤5萬」）。 */
+    const val TILE_RED_FIVE_PREFIX = PREFIX + "tile_red_five_prefix"
+
+    // ── 對局動作顯示文字（見 GameActionDisplayText.kt） ──────────────────────
+
+    /** 打出，帶一個牌面顯示文字參數（一個 `%s`）。 */
+    const val GAME_ACTION_DISCARD = PREFIX + "game_action_discard"
+
+    /** 立直，不帶參數（實際捨牌另外顯示，見 [GAME_ACTION_DISCARD]）。 */
+    const val GAME_ACTION_RIICHI = PREFIX + "game_action_riichi"
+
+    /** 自摸，不帶參數。 */
+    const val GAME_ACTION_TSUMO = PREFIX + "game_action_tsumo"
+
+    /** 吃，帶一個牌面顯示文字參數（一個 `%s`）。 */
+    const val GAME_ACTION_CHI = PREFIX + "game_action_chi"
+
+    /** 碰，帶一個牌面顯示文字參數（一個 `%s`）。 */
+    const val GAME_ACTION_PON = PREFIX + "game_action_pon"
+
+    /** 明槓（大明槓），帶一個牌面顯示文字參數（一個 `%s`）。 */
+    const val GAME_ACTION_KAN_OPEN = PREFIX + "game_action_kan_open"
+
+    /** 暗槓，帶一個牌面顯示文字參數（一個 `%s`）。 */
+    const val GAME_ACTION_KAN_CLOSED = PREFIX + "game_action_kan_closed"
+
+    /** 加槓（小明槓），帶一個牌面顯示文字參數（一個 `%s`）。 */
+    const val GAME_ACTION_KAN_ADDED = PREFIX + "game_action_kan_added"
+
+    /** 榮和，帶一個牌面顯示文字參數（一個 `%s`）。 */
+    const val GAME_ACTION_RON = PREFIX + "game_action_ron"
+
+    /** 過（不執行任何鳴牌或胡牌動作），不帶參數。 */
+    const val GAME_ACTION_PASS = PREFIX + "game_action_pass"
+
+    /** 九種九牌，不帶參數。 */
+    const val GAME_ACTION_KYUUSHU_KYUUHAI = PREFIX + "game_action_kyuushu_kyuuhai"
+
+    /** 其他規則專屬流局原因的通用 fallback 顯示文字，不帶參數。 */
+    const val GAME_ACTION_EXHAUSTIVE_DRAW = PREFIX + "game_action_exhaustive_draw"
+
+    // ── 對局階段指令回饋 ──────────────────────────────────────────────────
+
+    /** 已成功執行對局操作，帶一個動作顯示文字參數（一個 `%s`，見上方 `GAME_ACTION_*`）。 */
+    const val GAME_ACTION_PERFORMED = PREFIX + "game_action_performed"
+
+    /** 還沒輪到該玩家的回合。 */
+    const val NOT_YOUR_TURN = PREFIX + "not_your_turn"
+
+    /** 玩家已逾時，後續操作交由伺服器自動處理。 */
+    const val FORCED_AUTO_PLAY_ACTIVE = PREFIX + "forced_auto_play_active"
+
+    /** 該動作在目前桌況下不合法。 */
+    const val ILLEGAL_GAME_ACTION = PREFIX + "illegal_game_action"
+
+    /** 牌山已摸盡。 */
+    const val WALL_EXHAUSTED = PREFIX + "wall_exhausted"
+
+    /** 目前規則不支援這個動作。 */
+    const val UNSUPPORTED_GAME_ACTION = PREFIX + "unsupported_game_action"
+
+    // ── 手牌查詢指令（`/mahjongcraft game hand`） ──────────────────────────
+
+    /** 手牌列表標題。 */
+    const val HAND_TITLE = PREFIX + "hand_title"
+
+    /** 副露列表標題。 */
+    const val HAND_MELDS_TITLE = PREFIX + "hand_melds_title"
+
+    /** 目前可執行的特殊動作列表標題。 */
+    const val HAND_LEGAL_ACTIONS_TITLE = PREFIX + "hand_legal_actions_title"
+
+    /** 輪到自己回合、已摸牌，但沒有特殊動作可用時的提示，指引玩家改用 `discard`。 */
+    const val HAND_NO_LEGAL_ACTIONS = PREFIX + "hand_no_legal_actions"
+
+    /** 有資格回應捨牌／搶槓、但實際上沒有任何合法回應（連過牌都不需要）時的提示。 */
+    const val HAND_NO_RESPONSE_AVAILABLE = PREFIX + "hand_no_response_available"
+
+    /** 還沒輪到自己、也沒有資格回應時的提示，避免誤以為隨時都能 `discard`。 */
+    const val HAND_WAITING = PREFIX + "hand_waiting"
+
+    /**
+     * 輪到自己回合、伺服器已代為摸牌的主動通知，帶一個摸到的牌面顯示文字參數（一個 `%s`）——沒有這則
+     * 訊息玩家不會知道輪到自己了。
+     */
+    const val YOUR_TURN = PREFIX + "your_turn"
+
     /** Minecraft 語系資源必須提供的全部玩家回饋 key。 */
     val ALL: Set<String> = setOf(
         GAME_ALREADY_STARTED,
@@ -200,5 +319,41 @@ object MinecraftMessageKeys {
         GAME_CONFIG_SCREEN_TITLE,
         GAME_CONFIG_SCREEN_APPLY,
         GAME_CONFIG_SCREEN_CONFIRM,
+        TILE_SUIT_CHARACTER,
+        TILE_SUIT_DOT,
+        TILE_SUIT_BAMBOO,
+        TILE_HONOR_EAST,
+        TILE_HONOR_SOUTH,
+        TILE_HONOR_WEST,
+        TILE_HONOR_NORTH,
+        TILE_HONOR_RED,
+        TILE_HONOR_GREEN,
+        TILE_HONOR_WHITE,
+        TILE_RED_FIVE_PREFIX,
+        GAME_ACTION_DISCARD,
+        GAME_ACTION_RIICHI,
+        GAME_ACTION_TSUMO,
+        GAME_ACTION_CHI,
+        GAME_ACTION_PON,
+        GAME_ACTION_KAN_OPEN,
+        GAME_ACTION_KAN_CLOSED,
+        GAME_ACTION_KAN_ADDED,
+        GAME_ACTION_RON,
+        GAME_ACTION_PASS,
+        GAME_ACTION_KYUUSHU_KYUUHAI,
+        GAME_ACTION_EXHAUSTIVE_DRAW,
+        GAME_ACTION_PERFORMED,
+        NOT_YOUR_TURN,
+        FORCED_AUTO_PLAY_ACTIVE,
+        ILLEGAL_GAME_ACTION,
+        WALL_EXHAUSTED,
+        UNSUPPORTED_GAME_ACTION,
+        HAND_TITLE,
+        HAND_MELDS_TITLE,
+        HAND_LEGAL_ACTIONS_TITLE,
+        HAND_NO_LEGAL_ACTIONS,
+        HAND_NO_RESPONSE_AVAILABLE,
+        HAND_WAITING,
+        YOUR_TURN,
     )
 }

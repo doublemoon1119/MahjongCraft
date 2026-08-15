@@ -6,8 +6,10 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.resolveDisplayText
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
@@ -113,6 +115,22 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.CHANGE_GAME_CONFIG_FAILED), true)
                 is MinecraftPlayerFeedback.ShowGameConfig ->
                     player.sendMessage(showGameConfigMessage(feedback))
+                is MinecraftPlayerFeedback.GameActionPerformed ->
+                    player.sendMessage(gameActionPerformedMessage(feedback))
+                MinecraftPlayerFeedback.NotYourTurn ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.NOT_YOUR_TURN), true)
+                MinecraftPlayerFeedback.ForcedAutoPlayActive ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.FORCED_AUTO_PLAY_ACTIVE), true)
+                MinecraftPlayerFeedback.IllegalGameAction ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.ILLEGAL_GAME_ACTION), true)
+                MinecraftPlayerFeedback.WallExhausted ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.WALL_EXHAUSTED), true)
+                MinecraftPlayerFeedback.UnsupportedGameAction ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.UNSUPPORTED_GAME_ACTION), true)
+                is MinecraftPlayerFeedback.ShowHand ->
+                    player.sendMessage(showHandMessage(feedback))
+                is MinecraftPlayerFeedback.YourTurn ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.YOUR_TURN, feedback.drawnTile.toDisplayText()))
             }
         }
     }
@@ -235,6 +253,49 @@ class FabricPlayerFeedbackPublisher(
         Text.literal(toml.encodeToString(json.decodeFromString<GameConfigDto>(configJson)))
     } catch (_: Exception) {
         Text.literal(configJson)
+    }
+
+    /** 建立「已執行對局動作」訊息，例如「已執行：打出 五筒」。 */
+    private fun gameActionPerformedMessage(feedback: MinecraftPlayerFeedback.GameActionPerformed): MutableText = Text.translatable(
+        MinecraftMessageKeys.GAME_ACTION_PERFORMED,
+        feedback.action.toDisplayText(feedback.referenceTile),
+    )
+
+    /**
+     * 建立 `/mahjongcraft game hand` 的手牌畫面：手牌列表、副露（有的話）、目前可執行的特殊動作
+     * （沒有的話顯示 [MinecraftMessageKeys.HAND_NO_LEGAL_ACTIONS] 提示玩家改用 `discard`）。
+     */
+    private fun showHandMessage(feedback: MinecraftPlayerFeedback.ShowHand): MutableText {
+        val message = Text.translatable(MinecraftMessageKeys.HAND_TITLE)
+        feedback.standingTiles.forEach { tile -> message.append(Text.literal(" ")).append(tile.toDisplayText()) }
+
+        if (feedback.melds.isNotEmpty()) {
+            message.append(Text.literal("\n")).append(Text.translatable(MinecraftMessageKeys.HAND_MELDS_TITLE))
+            feedback.melds.forEach { meld ->
+                message.append(Text.literal(" ["))
+                meld.tiles.forEachIndexed { index, tile ->
+                    if (index > 0) message.append(Text.literal(" "))
+                    message.append(tile.tile.toDisplayText())
+                }
+                message.append(Text.literal("]"))
+            }
+        }
+
+        message.append(Text.literal("\n")).append(Text.translatable(MinecraftMessageKeys.HAND_LEGAL_ACTIONS_TITLE))
+        if (feedback.legalActions.isEmpty()) {
+            val emptyKey = when (feedback.turnStatus) {
+                GameTurnStatus.OWN_TURN -> MinecraftMessageKeys.HAND_NO_LEGAL_ACTIONS
+                GameTurnStatus.AWAITING_RESPONSE -> MinecraftMessageKeys.HAND_NO_RESPONSE_AVAILABLE
+                GameTurnStatus.WAITING -> MinecraftMessageKeys.HAND_WAITING
+            }
+            message.append(Text.literal(" ")).append(Text.translatable(emptyKey))
+        } else {
+            feedback.legalActions.forEachIndexed { index, (action, referenceTile) ->
+                message.append(Text.literal(" ${index + 1}:"))
+                    .append(action.toDisplayText(referenceTile))
+            }
+        }
+        return message
     }
 
     /** 組合準備狀態切換訊息：前綴 + 切換前狀態 → 切換後狀態，「準備」亮綠、「尚未準備」亮紅。 */

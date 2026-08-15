@@ -32,6 +32,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -39,6 +41,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGame
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.uuid.Uuid
@@ -95,12 +98,22 @@ class MahjongAutoDrawServiceTest {
                 FakeDecisionTimerUpdatePublisher(),
             ),
         )
-        val autoDrawService = MahjongAutoDrawService(gameRepo, coordinator)
+        val feedbackPublisher = FakeMinecraftPlayerFeedbackPublisher()
+        val autoDrawService = MahjongAutoDrawService(gameRepo, coordinator, feedbackPublisher)
     }
 
     /** 提供固定時間的假時鐘，避免測試依賴真實系統時間。 */
     private class MutableMonotonicClock : MonotonicClock {
         override fun nowMillis(): Long = 0L
+    }
+
+    /** 記錄每次 [publish] 呼叫，供測試驗證 [MahjongAutoDrawService] 是否正確發布輪到自己的通知。 */
+    private class FakeMinecraftPlayerFeedbackPublisher : MinecraftPlayerFeedbackPublisher {
+        val published = mutableListOf<Pair<Uuid, MinecraftPlayerFeedback>>()
+
+        override fun publish(playerId: Uuid, feedback: MinecraftPlayerFeedback) {
+            published += playerId to feedback
+        }
     }
 
     /** 建立一場已開局、尚未有任何玩家摸牌的真局；莊家（東家）維持真人。 */
@@ -118,7 +131,10 @@ class MahjongAutoDrawServiceTest {
         return gameId
     }
 
-    /** 驗證真人莊家尚未摸牌時，`checkAndAutoDraw` 會實際幫他摸到一張牌。 */
+    /**
+     * 驗證真人莊家尚未摸牌時，`checkAndAutoDraw` 會實際幫他摸到一張牌，並發布
+     * [MinecraftPlayerFeedback.YourTurn] 通知他輪到自己了。
+     */
     @Test
     fun `test checkAndAutoDraw draws for human player who has not drawn yet`() = runTest {
         val fixtures = Fixtures()
@@ -128,7 +144,13 @@ class MahjongAutoDrawServiceTest {
 
         val state = fixtures.gameRepo.getTableState(gameId)
         assertNotNull(state)
-        assertNotNull(state.currentPlayer.hand.lastDrawn, "Human dealer should have been auto-drawn a tile.")
+        val drawnTile = state.currentPlayer.hand.lastDrawn
+        assertNotNull(drawnTile, "Human dealer should have been auto-drawn a tile.")
+
+        val (notifiedPlayerId, feedback) = fixtures.feedbackPublisher.published.single()
+        assertEquals(state.currentPlayer.id, notifiedPlayerId)
+        val yourTurn = assertIs<MinecraftPlayerFeedback.YourTurn>(feedback)
+        assertEquals(drawnTile.tile, yourTurn.drawnTile)
     }
 
     /** 驗證目前玩家是 AI 時，`checkAndAutoDraw` 不會介入（交給 `driveAutomatedPlayers` 處理）。 */
