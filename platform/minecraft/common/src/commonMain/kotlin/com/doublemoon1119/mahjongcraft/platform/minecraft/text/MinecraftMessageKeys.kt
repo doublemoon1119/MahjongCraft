@@ -188,8 +188,20 @@ object MinecraftMessageKeys {
     /** 白（白板）顯示文字。 */
     const val TILE_HONOR_WHITE = PREFIX + "tile_honor_white"
 
-    /** 內建日麻赤五的「赤」前綴，接在對應花色的 5 前面（例如「赤5萬」）。 */
-    const val TILE_RED_FIVE_PREFIX = PREFIX + "tile_red_five_prefix"
+    /** 赤五萬完整顯示文字，供 `TileDisplayNameRegistry` 內建登記使用。 */
+    const val TILE_RED_FIVE_CHARACTER = PREFIX + "tile_red_five_character"
+
+    /** 赤五筒完整顯示文字，供 `TileDisplayNameRegistry` 內建登記使用。 */
+    const val TILE_RED_FIVE_DOT = PREFIX + "tile_red_five_dot"
+
+    /** 赤五條完整顯示文字，供 `TileDisplayNameRegistry` 內建登記使用。 */
+    const val TILE_RED_FIVE_BAMBOO = PREFIX + "tile_red_five_bamboo"
+
+    /** 日本麻將規則模組顯示名稱，供 `RuleModuleDisplayNameRegistry` 內建登記使用。 */
+    const val RULE_MODULE_RIICHI = PREFIX + "rule_module_riichi"
+
+    /** 台灣麻將規則模組顯示名稱，供 `RuleModuleDisplayNameRegistry` 內建登記使用。 */
+    const val RULE_MODULE_TAIWAN = PREFIX + "rule_module_taiwan"
 
     // ── 對局動作顯示文字（見 GameActionDisplayText.kt） ──────────────────────
 
@@ -329,7 +341,11 @@ object MinecraftMessageKeys {
         TILE_HONOR_RED,
         TILE_HONOR_GREEN,
         TILE_HONOR_WHITE,
-        TILE_RED_FIVE_PREFIX,
+        TILE_RED_FIVE_CHARACTER,
+        TILE_RED_FIVE_DOT,
+        TILE_RED_FIVE_BAMBOO,
+        RULE_MODULE_RIICHI,
+        RULE_MODULE_TAIWAN,
         GAME_ACTION_DISCARD,
         GAME_ACTION_RIICHI,
         GAME_ACTION_TSUMO,

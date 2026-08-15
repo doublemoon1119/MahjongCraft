@@ -14,7 +14,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMah
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import net.fabricmc.loader.api.FabricLoader
 import org.slf4j.LoggerFactory
 
@@ -39,6 +41,8 @@ object FabricMahjongExtensions {
         persistenceRegistries: PersistenceRegistries,
         minecraftTileAssetRegistry: MinecraftTileAssetRegistry,
         aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
+        tileDisplayNameRegistry: TileDisplayNameRegistry,
+        ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
     ) {
         try {
             val extensions = FabricLoader.getInstance()
@@ -50,6 +54,8 @@ object FabricMahjongExtensions {
                 persistenceRegistries,
                 minecraftTileAssetRegistry,
                 aiStrategyDisplayNameRegistry,
+                tileDisplayNameRegistry,
+                ruleModuleDisplayNameRegistry,
                 extensions,
             )
             val extensionIds = extensions.map { it.id }
@@ -67,6 +73,16 @@ object FabricMahjongExtensions {
                 "Registered {} third-party AI strategy display name(s): {}",
                 result.thirdPartyAiStrategyKeys.size,
                 result.thirdPartyAiStrategyKeys,
+            )
+            logger.info(
+                "Registered {} third-party tile display name(s): {}",
+                result.thirdPartyTileDisplayNameKeys.size,
+                result.thirdPartyTileDisplayNameKeys,
+            )
+            logger.info(
+                "Registered {} third-party rule module display name(s): {}",
+                result.thirdPartyRuleModuleDisplayNameKeys.size,
+                result.thirdPartyRuleModuleDisplayNameKeys,
             )
         } catch (cause: Exception) {
             logger.error("Failed to initialize Mahjong extensions", cause)
@@ -86,6 +102,8 @@ object FabricMahjongExtensions {
         persistenceRegistries: PersistenceRegistries,
         minecraftTileAssetRegistry: MinecraftTileAssetRegistry,
         aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
+        tileDisplayNameRegistry: TileDisplayNameRegistry,
+        ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
         extensions: Iterable<MahjongExtension>,
     ): MinecraftMahjongExtensionRegistrationResult {
         moduleRegistry.registerBuiltInRuleModules()
@@ -106,6 +124,8 @@ object FabricMahjongExtensions {
             extensions = extensions.filterIsInstance<MinecraftMahjongExtension>(),
             tileAssetRegistry = minecraftTileAssetRegistry,
             aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
+            tileDisplayNameRegistry = tileDisplayNameRegistry,
+            ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
         )
     }
 }

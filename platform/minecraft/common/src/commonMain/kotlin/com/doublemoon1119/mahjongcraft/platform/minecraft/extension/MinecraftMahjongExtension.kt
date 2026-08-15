@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 
 /**
  * 第三方 Minecraft mod 在 MahjongCraft runtime 啟動前登記 Minecraft 專屬整合的共用契約。
@@ -29,4 +31,18 @@ interface MinecraftMahjongExtension {
      * 預設不註冊任何映射，使不提供 AI 策略的 extension 不必加入空實作。
      */
     fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) = Unit
+
+    /**
+     * 登記第三方牌種對應的顯示名稱。
+     *
+     * 預設不註冊任何映射，使不提供自訂牌種顯示名稱的 extension 不必加入空實作。
+     */
+    fun registerTileDisplayNames(registry: TileDisplayNameRegistry) = Unit
+
+    /**
+     * 登記第三方規則模組對應的顯示名稱。
+     *
+     * 預設不註冊任何映射，使不提供自訂規則模組顯示名稱的 extension 不必加入空實作。
+     */
+    fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistry) = Unit
 }

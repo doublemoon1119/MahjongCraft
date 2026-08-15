@@ -36,7 +36,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -65,6 +67,8 @@ class MahjongCraftMod : ModInitializer {
             persistenceRegistries = koin.get<PersistenceRegistries>(),
             minecraftTileAssetRegistry = koin.get<MinecraftTileAssetRegistry>(),
             aiStrategyDisplayNameRegistry = koin.get<AiStrategyDisplayNameRegistry>(),
+            tileDisplayNameRegistry = koin.get<TileDisplayNameRegistry>(),
+            ruleModuleDisplayNameRegistry = koin.get<RuleModuleDisplayNameRegistry>(),
         )
         ModItems.register()
         ModEntities.register()

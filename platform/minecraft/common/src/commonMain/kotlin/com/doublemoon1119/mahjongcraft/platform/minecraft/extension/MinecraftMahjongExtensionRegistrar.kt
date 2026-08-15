@@ -3,20 +3,24 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.registerBuiltInAiStrategyDisplayNames
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.registerBuiltInRuleModuleDisplayNames
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTileAssets
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTileDisplayNames
 
 /**
  * 將平台發現的第三方 [MinecraftMahjongExtension] 登記至 runtime 實際使用的
- * [MinecraftTileAssetRegistry]／[AiStrategyDisplayNameRegistry]，完成後凍結兩者。
+ * [MinecraftTileAssetRegistry]／[AiStrategyDisplayNameRegistry]／[TileDisplayNameRegistry]／
+ * [RuleModuleDisplayNameRegistry]，完成後凍結四者。
  *
  * 版本與 loader 無關；loader adapter 只負責發現 extension 並呼叫此物件，不自行實作註冊順序或凍結
  * 時機。
  */
 object MinecraftMahjongExtensionRegistrar {
     /**
-     * 先註冊內建映射，再依 [extensions] 順序登記第三方映射，全部成功後凍結 [tileAssetRegistry] 與
-     * [aiStrategyDisplayNameRegistry]。
+     * 先註冊內建映射，再依 [extensions] 順序登記第三方映射，全部成功後凍結全部四個 registry。
      *
      * @return 依 [extensions] 順序登記的第三方映射，不含內建映射，供呼叫端記錄診斷資訊。
      * @throws MinecraftMahjongExtensionRegistrationException 若任一 extension 註冊失敗。
@@ -25,15 +29,25 @@ object MinecraftMahjongExtensionRegistrar {
         extensions: Iterable<MinecraftMahjongExtension>,
         tileAssetRegistry: MinecraftTileAssetRegistry,
         aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
+        tileDisplayNameRegistry: TileDisplayNameRegistry,
+        ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
     ): MinecraftMahjongExtensionRegistrationResult {
         tileAssetRegistry.registerBuiltInTileAssets()
         aiStrategyDisplayNameRegistry.registerBuiltInAiStrategyDisplayNames()
+        tileDisplayNameRegistry.registerBuiltInTileDisplayNames()
+        ruleModuleDisplayNameRegistry.registerBuiltInRuleModuleDisplayNames()
 
         val thirdPartyAssetKeys = mutableListOf<String>()
         val thirdPartyAiStrategyKeys = mutableListOf<String>()
+        val thirdPartyTileDisplayNameKeys = mutableListOf<String>()
+        val thirdPartyRuleModuleDisplayNameKeys = mutableListOf<String>()
         val recordingTileAssetRegistry = RecordingMinecraftTileAssetRegistry(tileAssetRegistry, thirdPartyAssetKeys)
         val recordingAiStrategyDisplayNameRegistry =
             RecordingAiStrategyDisplayNameRegistry(aiStrategyDisplayNameRegistry, thirdPartyAiStrategyKeys)
+        val recordingTileDisplayNameRegistry =
+            RecordingTileDisplayNameRegistry(tileDisplayNameRegistry, thirdPartyTileDisplayNameKeys)
+        val recordingRuleModuleDisplayNameRegistry =
+            RecordingRuleModuleDisplayNameRegistry(ruleModuleDisplayNameRegistry, thirdPartyRuleModuleDisplayNameKeys)
 
         val registeredExtensionIds = mutableSetOf<String>()
         extensions.forEach { extension ->
@@ -46,6 +60,8 @@ object MinecraftMahjongExtensionRegistrar {
             try {
                 extension.registerTileAssets(recordingTileAssetRegistry)
                 extension.registerAiStrategyDisplayNames(recordingAiStrategyDisplayNameRegistry)
+                extension.registerTileDisplayNames(recordingTileDisplayNameRegistry)
+                extension.registerRuleModuleDisplayNames(recordingRuleModuleDisplayNameRegistry)
             } catch (cause: Exception) {
                 throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
             }
@@ -53,7 +69,14 @@ object MinecraftMahjongExtensionRegistrar {
 
         tileAssetRegistry.freeze()
         aiStrategyDisplayNameRegistry.freeze()
-        return MinecraftMahjongExtensionRegistrationResult(thirdPartyAssetKeys, thirdPartyAiStrategyKeys)
+        tileDisplayNameRegistry.freeze()
+        ruleModuleDisplayNameRegistry.freeze()
+        return MinecraftMahjongExtensionRegistrationResult(
+            thirdPartyAssetKeys,
+            thirdPartyAiStrategyKeys,
+            thirdPartyTileDisplayNameKeys,
+            thirdPartyRuleModuleDisplayNameKeys,
+        )
     }
 }
 
@@ -62,10 +85,15 @@ object MinecraftMahjongExtensionRegistrar {
  *
  * @property thirdPartyTileAssetKeys 依 extension 順序登記的第三方 tile asset key，不含內建映射。
  * @property thirdPartyAiStrategyKeys 依 extension 順序登記的第三方 AI 策略顯示名稱 key，不含內建映射。
+ * @property thirdPartyTileDisplayNameKeys 依 extension 順序登記的第三方牌種顯示名稱 key，不含內建映射。
+ * @property thirdPartyRuleModuleDisplayNameKeys 依 extension 順序登記的第三方規則模組顯示名稱 key，
+ *   不含內建映射。
  */
 data class MinecraftMahjongExtensionRegistrationResult(
     val thirdPartyTileAssetKeys: List<String>,
     val thirdPartyAiStrategyKeys: List<String>,
+    val thirdPartyTileDisplayNameKeys: List<String>,
+    val thirdPartyRuleModuleDisplayNameKeys: List<String>,
 )
 
 /** 表示指定第三方 Minecraft extension 無法完成 registry 註冊。 */
@@ -106,4 +134,38 @@ private class RecordingAiStrategyDisplayNameRegistry(
     override fun freeze() = delegate.freeze()
 
     override fun find(strategyKey: String): String? = delegate.find(strategyKey)
+}
+
+/** 轉發至 [delegate]，並額外把第三方註冊的牌種顯示名稱 key 記錄進 [recorded]，供診斷用途。 */
+private class RecordingTileDisplayNameRegistry(
+    private val delegate: TileDisplayNameRegistry,
+    private val recorded: MutableList<String>,
+) : TileDisplayNameRegistry {
+    override val isFrozen: Boolean get() = delegate.isFrozen
+
+    override fun register(typeId: TileTypeId, translationKey: String) {
+        delegate.register(typeId, translationKey)
+        recorded += typeId.toString()
+    }
+
+    override fun freeze() = delegate.freeze()
+
+    override fun find(typeId: TileTypeId): String? = delegate.find(typeId)
+}
+
+/** 轉發至 [delegate]，並額外把第三方註冊的規則模組顯示名稱 key 記錄進 [recorded]，供診斷用途。 */
+private class RecordingRuleModuleDisplayNameRegistry(
+    private val delegate: RuleModuleDisplayNameRegistry,
+    private val recorded: MutableList<String>,
+) : RuleModuleDisplayNameRegistry {
+    override val isFrozen: Boolean get() = delegate.isFrozen
+
+    override fun register(ruleModuleId: String, translationKey: String) {
+        delegate.register(ruleModuleId, translationKey)
+        recorded += ruleModuleId
+    }
+
+    override fun freeze() = delegate.freeze()
+
+    override fun find(ruleModuleId: String): String? = delegate.find(ruleModuleId)
 }

@@ -6,8 +6,12 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -22,6 +26,8 @@ class MinecraftMahjongExtensionRegistrarTest {
     fun `extension registers tile assets and ai strategy names after built-in mappings and before freeze`() {
         val tileAssetRegistry = MinecraftTileAssetRegistryImpl()
         val aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl()
+        val tileDisplayNameRegistry = TileDisplayNameRegistryImpl()
+        val ruleModuleDisplayNameRegistry = RuleModuleDisplayNameRegistryImpl()
         val thirdPartyId = TileTypeId.parse("example:animal/cat")
         val extension = object : MinecraftMahjongExtension {
             override val id: String = "example:recording"
@@ -33,12 +39,22 @@ class MinecraftMahjongExtensionRegistrarTest {
             override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) {
                 registry.register("example:aggressive", "example.ai_strategy.aggressive")
             }
+
+            override fun registerTileDisplayNames(registry: TileDisplayNameRegistry) {
+                registry.register(thirdPartyId, "example.tile.cat")
+            }
+
+            override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistry) {
+                registry.register("example:my_rule", "example.rule_module.my_rule")
+            }
         }
 
         val result = MinecraftMahjongExtensionRegistrar.registerAndFreeze(
             listOf(extension),
             tileAssetRegistry,
             aiStrategyDisplayNameRegistry,
+            tileDisplayNameRegistry,
+            ruleModuleDisplayNameRegistry,
         )
 
         assertEquals("m5_red", tileAssetRegistry.find(RiichiTileTypes.RED_FIVE_CHARACTER))
@@ -58,6 +74,25 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertFailsWith<IllegalStateException> {
             aiStrategyDisplayNameRegistry.register("example:late", "example.ai_strategy.late")
         }
+
+        assertTrue(tileDisplayNameRegistry.find(RiichiTileTypes.RED_FIVE_CHARACTER) != null)
+        assertEquals("example.tile.cat", tileDisplayNameRegistry.find(thirdPartyId))
+        assertEquals(listOf(thirdPartyId.toString()), result.thirdPartyTileDisplayNameKeys)
+        assertTrue(tileDisplayNameRegistry.isFrozen)
+        assertFailsWith<IllegalStateException> {
+            tileDisplayNameRegistry.register(TileTypeId.parse("example:late"), "example.tile.late")
+        }
+
+        assertTrue(ruleModuleDisplayNameRegistry.find("mahjongcraft:riichi") != null)
+        assertEquals(
+            "example.rule_module.my_rule",
+            ruleModuleDisplayNameRegistry.find("example:my_rule"),
+        )
+        assertEquals(listOf("example:my_rule"), result.thirdPartyRuleModuleDisplayNameKeys)
+        assertTrue(ruleModuleDisplayNameRegistry.isFrozen)
+        assertFailsWith<IllegalStateException> {
+            ruleModuleDisplayNameRegistry.register("example:late", "example.rule_module.late")
+        }
     }
 
     /** 驗證未實作 [MinecraftMahjongExtension] 的清單一樣能完成內建映射與凍結。 */
@@ -65,8 +100,16 @@ class MinecraftMahjongExtensionRegistrarTest {
     fun `no third-party extensions still registers built-ins and freezes`() {
         val tileAssetRegistry = MinecraftTileAssetRegistryImpl()
         val aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl()
+        val tileDisplayNameRegistry = TileDisplayNameRegistryImpl()
+        val ruleModuleDisplayNameRegistry = RuleModuleDisplayNameRegistryImpl()
 
-        MinecraftMahjongExtensionRegistrar.registerAndFreeze(emptyList(), tileAssetRegistry, aiStrategyDisplayNameRegistry)
+        MinecraftMahjongExtensionRegistrar.registerAndFreeze(
+            emptyList(),
+            tileAssetRegistry,
+            aiStrategyDisplayNameRegistry,
+            tileDisplayNameRegistry,
+            ruleModuleDisplayNameRegistry,
+        )
 
         assertEquals("flower_spring", tileAssetRegistry.find(TaiwanTileTypes.SPRING))
         assertTrue(tileAssetRegistry.isFrozen)
@@ -75,6 +118,14 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertTrue(aiStrategyDisplayNameRegistry.find(RandomAiStrategy.KEY) != null)
         assertTrue(aiStrategyDisplayNameRegistry.isFrozen)
         assertNull(aiStrategyDisplayNameRegistry.find("example:unregistered"))
+
+        assertTrue(tileDisplayNameRegistry.find(RiichiTileTypes.RED_FIVE_DOT) != null)
+        assertTrue(tileDisplayNameRegistry.isFrozen)
+        assertNull(tileDisplayNameRegistry.find(TileTypeId.parse("example:unregistered")))
+
+        assertTrue(ruleModuleDisplayNameRegistry.find("mahjongcraft:taiwan") != null)
+        assertTrue(ruleModuleDisplayNameRegistry.isFrozen)
+        assertNull(ruleModuleDisplayNameRegistry.find("example:unregistered"))
     }
 
     /** 驗證註冊失敗時的例外會指出第三方 extension ID。 */
@@ -93,6 +144,8 @@ class MinecraftMahjongExtensionRegistrarTest {
                 listOf(extension),
                 MinecraftTileAssetRegistryImpl(),
                 AiStrategyDisplayNameRegistryImpl(),
+                TileDisplayNameRegistryImpl(),
+                RuleModuleDisplayNameRegistryImpl(),
             )
         }
 
@@ -111,6 +164,8 @@ class MinecraftMahjongExtensionRegistrarTest {
                 listOf(extension, extension),
                 MinecraftTileAssetRegistryImpl(),
                 AiStrategyDisplayNameRegistryImpl(),
+                TileDisplayNameRegistryImpl(),
+                RuleModuleDisplayNameRegistryImpl(),
             )
         }
 
