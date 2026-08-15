@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshotUseCase
@@ -24,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.ToggleReadyUseCa
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.UpdateConfigUseCase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongAutoDrawService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -68,6 +70,8 @@ class MahjongTableRoomService(
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val tableLocationRegistry: TableLocationRegistry,
     private val memberCandidateResolver: RoomMemberCandidateResolver,
+    private val gameFlowCoordinator: GameFlowCoordinator,
+    private val autoDrawService: MahjongAutoDrawService,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) {
@@ -189,8 +193,12 @@ class MahjongTableRoomService(
     }
 
     /**
-     * 讓房主在所有人皆已準備完成時開始遊戲。同樣以玩家目前的房間歸屬解析目標房間；成功時的座位
-     * 傳送與其他呈現已經由 `StartGameUseCase` 內部觸發，這裡不需要額外處理。
+     * 讓房主在所有人皆已準備完成時開始遊戲。同樣以玩家目前的房間歸屬解析目標房間；座位傳送與其他
+     * 呈現已經由 `StartGameUseCase` 內部觸發，這裡不需要額外處理。
+     *
+     * 開局後第一位玩家的摸牌需要另外補：[GameFlowCoordinator.driveAutomatedPlayers] 只涵蓋第一位是
+     * AI 的情況，[MahjongAutoDrawService.checkAndAutoDraw] 只涵蓋第一位是真人的情況，兩者依
+     * `current.isAi` 互斥，只呼叫其中一個會漏掉另一種開局，因此都要呼叫。
      */
     fun start(player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
@@ -201,7 +209,11 @@ class MahjongTableRoomService(
                 return@launch
             }
             when (val result = startGame(tableId, playerId)) {
-                is Outcome.Success -> Unit
+                is Outcome.Success -> {
+                    val gameId = result.value
+                    gameFlowCoordinator.driveAutomatedPlayers(gameId)
+                    autoDrawService.checkAndAutoDraw(gameId)
+                }
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.startError(result.error))
             }
         }
