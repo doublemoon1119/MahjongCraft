@@ -44,6 +44,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /**
@@ -205,26 +206,32 @@ class MahjongAutoDrawServiceTest {
     }
 
     /**
-     * 迴歸測試：驗證玩家一旦進入強制自動操作，即使沒有任何逾時事件（沒有計時器可等），單純重複
-     * 呼叫 [GameFlowCoordinator.driveAutomatedPlayers] 仍然能持續幫他完成摸牌與捨牌，不會卡住。
+     * 迴歸測試：驗證玩家進入強制自動操作後，即使沒有任何逾時事件（沒有計時器可等），單純重複呼叫
+     * [GameFlowCoordinator.driveAutomatedPlayers] 仍然能幫他完成當下卡住的那次捨牌，不會卡住。
      *
      * 對應 `FabricDecisionTimerScheduler` 現在每個 tick 都巡邏所有進行中對局呼叫
      * `driveAutomatedPlayers` 的設計——這裡驗證的正是這個心跳背後依賴的核心行為：強制自動操作的
      * 玩家不需要逾時事件也能被 `driveAutomatedPlayers` 正確推進。
+     *
+     * 摸牌先透過 [MahjongAutoDrawService] 走一般玩家的機械摸牌路徑，比照真實流程——強制自動操作只會
+     * 在玩家已經摸過牌、卡在「該打哪張」這個決策上逾時才成立（見 [GameDecisionAuthorityResolver]，
+     * `OWN_TURN` 一定要求 `lastDrawn != null`），不會發生在「連牌都還沒摸」的狀態。
      */
     @Test
-    fun `test driveAutomatedPlayers keeps advancing a forced auto play player without any timeout event`() = runTest {
+    fun `test driveAutomatedPlayers advances a forced auto play player without any timeout event`() = runTest {
         val fixtures = Fixtures()
         val gameId = fixtures.createStartedGame()
         val dealerId = fixtures.gameRepo.getTableState(gameId)!!.currentPlayer.id
+        fixtures.autoDrawService.checkAndAutoDraw(gameId)
         fixtures.gameRepo.updateGame(gameId) { game ->
             game!!.copy(forcedAutoPlayPlayerIds = setOf(dealerId)) to Unit
         }
 
         fixtures.coordinator.driveAutomatedPlayers(gameId)
 
-        val state = fixtures.gameRepo.getTableState(gameId)
-        assertNotNull(state)
-        assertEquals(1, state.players.first { it.id == dealerId }.discardPile.entries.size, "Forced player should have drawn and discarded on its own.")
+        val game = fixtures.gameRepo.getGame(gameId)
+        assertNotNull(game)
+        assertEquals(1, game.tableState.players.first { it.id == dealerId }.discardPile.entries.size, "Forced player should have discarded the tile it was stuck on.")
+        assertTrue(dealerId !in game.forcedAutoPlayPlayerIds, "Player must regain control after the single missed decision is served.")
     }
 }

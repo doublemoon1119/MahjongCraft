@@ -141,6 +141,45 @@ class GameFlowCoordinatorTest {
         assertEquals(game.tableState, fixtures.gameRepo.getTableState(gameId))
     }
 
+    /**
+     * 迴歸測試：驗證強制自動操作只鎖住逾時當下那一次決策——[GameFlowCoordinator.driveAutomatedPlayers]
+     * 替強制自動操作玩家送出一次自動捨牌後，該玩家必須立刻從
+     * [Game.forcedAutoPlayPlayerIds] 移除，而不是被永久鎖住到對局結束（曾經的設計缺陷：一旦逾時，
+     * 玩家之後每一次決策都會被伺服器代打，完全拿不回操作權）。
+     */
+    @Test
+    fun `test forced auto play only locks the single timed out decision`() = runTest {
+        val fixtures = Fixtures()
+        val forcedPlayerId = Uuid.random()
+        val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val forcedPlayer = FakeMahjongPlayerFactory.create(
+            id = forcedPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = lastDrawn),
+        )
+        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
+        val game = Game(
+            tableState = FakeTableStateFactory.create(
+                id = gameId,
+                players = listOf(forcedPlayer, other),
+                config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+                currentPlayerIndex = 0,
+            ),
+            flowConfig = GameFlowConfig(),
+            forcedAutoPlayPlayerIds = setOf(forcedPlayerId),
+        )
+        fixtures.gameRepo.setGame(game)
+
+        fixtures.coordinator.driveAutomatedPlayers(gameId)
+
+        val updatedGame = fixtures.gameRepo.getGame(gameId)!!
+        assertTrue(
+            forcedPlayerId !in updatedGame.forcedAutoPlayPlayerIds,
+            "Player must regain control after their single missed decision is auto-played.",
+        )
+        assertEquals(lastDrawn, updatedGame.tableState.players.first { it.id == forcedPlayerId }.discardPile.entries.single().tile)
+    }
+
     // ---- 一般流局：WallExhausted 銜接 ----
 
     /**

@@ -106,14 +106,20 @@ class GameFlowCoordinator(
      * 卡住會直接拋出例外，能被立即看見、定位。可由開局與逾時流程主動呼叫，確保沒有真人送出封包時
      * 仍能推進自動操作。
      *
+     * 由 [forcedAutoPlayDriver] 解析出的動作在送出前會先把該玩家從
+     * [com.doublemoon1119.mahjongcraft.flow.common.game.model.Game.forcedAutoPlayPlayerIds] 移除——
+     * 強制自動操作只鎖住逾時當下那一次決策，不是整場對局；提前移除也讓緊接著呼叫的
+     * [GameDecisionTimerManager.reconcile] 能立刻看到這位玩家重新是一般決策者，替他下一次決策
+     * （例如緊接著要捨牌）建立帶有完整 `baseSeconds` 的新計時器，而不是繼續被排除在外。
+     *
      * @param gameId 欲推進的遊戲。
      * @throws IllegalStateException 跑滿 [MAX_ITERATIONS] 步仍未收斂，代表自動操作鏈路真的卡住了。
      */
     suspend fun driveAutomatedPlayers(gameId: Uuid) {
         repeat(MAX_ITERATIONS) {
-            val (playerId, command) = forcedAutoPlayDriver.resolveNextAction(gameId)
-                ?: aiTurnDriver.resolveNextAction(gameId)
-                ?: return
+            val forcedAction = forcedAutoPlayDriver.resolveNextAction(gameId)
+            val (playerId, command) = forcedAction ?: aiTurnDriver.resolveNextAction(gameId) ?: return
+            if (forcedAction != null) clearForcedAutoPlay(gameId, playerId)
             val stateBefore = gameRepository.getTableState(gameId)
             dispatchAndReconcile(gameId, playerId, command)
             val stateAfter = gameRepository.getTableState(gameId)
@@ -143,6 +149,16 @@ class GameFlowCoordinator(
         )
         decisionTimerSynchronizationService.synchronize(gameId, statuses)
         return result
+    }
+
+    /**
+     * 把 [playerId] 從強制自動操作名單移除，讓他下一次決策恢復由自己（或再次逾時後重新進入名單）
+     * 決定，而不是繼續被伺服器代打。
+     */
+    private suspend fun clearForcedAutoPlay(gameId: Uuid, playerId: Uuid) {
+        gameRepository.updateGame(gameId) { game ->
+            (game?.copy(forcedAutoPlayPlayerIds = game.forcedAutoPlayPlayerIds - playerId) ?: game) to Unit
+        }
     }
 
     /**

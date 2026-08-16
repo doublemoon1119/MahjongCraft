@@ -12,7 +12,10 @@ import kotlin.uuid.Uuid
  * @property tableState 麻將規則運算使用的完整桌況。
  * @property flowConfig 不影響麻將規則的流程與觀看設定。
  * @property remainingReserveMillisByPlayerId 每位玩家在整場遊戲中尚未使用的保留思考時間毫秒數。
- * @property forcedAutoPlayPlayerIds 已耗盡思考時間且必須由伺服器自動操作至遊戲結束的玩家。
+ * @property forcedAutoPlayPlayerIds 已耗盡思考時間、目前這一次決策必須由伺服器自動操作的玩家。只鎖住
+ *   逾時當下那一次決策——[com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator]
+ *   每次替這裡的玩家送出自動命令後就會立即移除，玩家的下一次決策仍會拿到自己完整的
+ *   `baseSeconds`，不會被永久接管。
  * @property isMatchOver 整場對局是否已依規則的 `GameLength` 結束（見
  *   [com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase]）。一旦成立，
  *   `tableState` 維持結束當下的樣子不再變動；`AiTurnDriver`／`ForcedAutoPlayDriver` 都會檢查這個
