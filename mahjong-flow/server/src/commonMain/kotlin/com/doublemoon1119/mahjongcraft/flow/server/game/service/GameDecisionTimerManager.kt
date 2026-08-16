@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
@@ -49,14 +50,14 @@ data class TimedOutPlayerDecision(
  * @property gameRepository 權威遊戲狀態倉庫。
  * @property authorityResolver 解析目前具有決策權的玩家與階段。
  * @property timerFactory 依權威剩餘保留思考時間建立新的決策計時器。
- * @property clock 提供計算與結算使用的單調時間。
+ * @property clock 提供計算與結算使用的單調時間；實作由平台層提供，理由見 [MonotonicClock] KDoc。
  */
 @Single
 class GameDecisionTimerManager(
     private val gameRepository: GameRepository,
     private val authorityResolver: GameDecisionAuthorityResolver,
     private val timerFactory: PlayerDecisionTimerFactory,
-    private val clock: MonotonicClock,
+    @Provided private val clock: MonotonicClock,
 ) {
     /** 保護 runtime timer 索引及 repository 結算順序的互斥鎖。 */
     private val mutex = Mutex()

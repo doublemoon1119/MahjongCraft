@@ -32,6 +32,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricRoomCom
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
@@ -81,6 +82,7 @@ class MahjongCraftMod : ModInitializer {
         tableLifecycleService.registerEvents()
         tableLocationValidation.registerEvents()
         koin.get<FabricDecisionTimerScheduler>().registerEvents()
+        koin.get<FabricTickMonotonicClock>().registerEvents()
 
         val serverHolder = koin.get<FabricServerHolder>()
         val appScope = koin.get<FabricAppCoroutineScope>()
