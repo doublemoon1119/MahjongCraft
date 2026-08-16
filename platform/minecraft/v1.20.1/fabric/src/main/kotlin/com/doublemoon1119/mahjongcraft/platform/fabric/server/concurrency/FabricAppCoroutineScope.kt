@@ -3,12 +3,16 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
 import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration.Companion.milliseconds
 
 /** 可隨 integrated/dedicated server session 重新建立工作的 Fabric 應用協程作用域。 */
 @Single(binds = [AppCoroutineScope::class])
@@ -37,6 +41,23 @@ class FabricAppCoroutineScope(
     @Synchronized
     override fun cancel() {
         sessionContext.cancel()
+    }
+
+    /**
+     * 不加 `@Synchronized`：掛起函式裡面呼叫 [withTimeoutOrNull]／[Job.join] 這種真正會掛起的呼叫，
+     * 不能包在 synchronized 區塊裡（會在掛起期間持有 monitor，Kotlin 編譯器本來就禁止這樣寫）。
+     * 這裡只讀取 [sessionContext] 一次取得目前的 [Job]，不修改欄位本身，跟 [coroutineContext] 這個
+     * getter 一樣不需要跟 [startSession]／[cancel] 互斥。
+     *
+     * [newContext] 放進去的一定是 [SupervisorJob] 建立的 [CompletableJob]（`complete()` 定義在
+     * [CompletableJob]，不在 [Job] 本身），從 [CoroutineContext] 用 `[Job]` 拿回來的靜態型別只有
+     * [Job]，所以這裡轉型還原——執行期一定成立，拿不到才代表 context 本身有問題，直接放棄。
+     */
+    override suspend fun shutdown(timeoutMillis: Long) {
+        val job = sessionContext[Job] as? CompletableJob ?: return
+        job.complete()
+        withTimeoutOrNull(timeoutMillis.milliseconds) { job.join() }
+        job.cancel()
     }
 
     /**

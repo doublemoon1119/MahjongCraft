@@ -102,10 +102,15 @@ class MahjongCraftMod : ModInitializer {
             appScope.startSession()
         }
         ServerLifecycleEvents.SERVER_STOPPING.register {
-            appScope.cancel()
             tableLocationValidation.stopSession()
             tableLocationPersistence.detach()
             runBlocking {
+                // 順序很重要：appScope.shutdown() 必須先跑完，才能保證後面的 settleAll／detach／
+                // clear 執行時，不會有任何 Draw／討論結果之類還在等鎖、卡在中途的協程被攔腰砍斷——
+                // 那次原本該發生的權威狀態變更會完全遺失、不留任何訊號，是曾經真的踩過的問題。
+                // 比照 GameDecisionTimerManager.settleAll() 自己 KDoc 要求的「先停止新命令、再結算、
+                // 最後才解除 persistence dirty listener」。
+                appScope.shutdown()
                 decisionTimerManager.settleAll()
                 statePersistence.detach()
                 stateCleaner.clear()
