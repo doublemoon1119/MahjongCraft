@@ -80,6 +80,14 @@ object MahjongDiceTableLayout {
         }
     }
 
+    /**
+     * 依骰子數量取得該組 variant 內最大的 [MahjongDiceTablePlacement.startDelayTicks]——所有 variant
+     * 對同一顆骰子（依丟出順序）的延遲皆相同，只有落點座標不同，取任一組 variant 即可。用於呼叫端
+     * 計算「最後一顆骰子開始動畫」到「整組擲骰動畫全部結束」所需的總 tick 數
+     * （= 這個值 + [com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec.DEFAULT_DURATION_TICKS]）。
+     */
+    fun maxStartDelayTicks(diceCount: Int): Int = variantsFor(diceCount).first().maxOf { it.startDelayTicks }
+
     /** 依骰子數量選擇已驗證的基準 variant。 */
     private fun variantsFor(diceCount: Int): List<List<MahjongDiceTablePlacement>> = when (diceCount) {
         2 -> TWO_DICE_VARIANTS

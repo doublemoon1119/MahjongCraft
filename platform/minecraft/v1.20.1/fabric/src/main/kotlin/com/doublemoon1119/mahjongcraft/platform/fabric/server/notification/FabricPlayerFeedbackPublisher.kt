@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.notification
 
 import com.akuleshov7.ktoml.Toml
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
@@ -16,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
+import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -44,6 +47,8 @@ class FabricPlayerFeedbackPublisher(
     private val tileDisplayNames: TileDisplayNameRegistry,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val tileEmojiRegistry: TileEmojiRegistry,
+    private val scope: AppCoroutineScope,
+    private val dispatchers: CoroutineDispatchers,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) : MinecraftPlayerFeedbackPublisher {
@@ -53,9 +58,9 @@ class FabricPlayerFeedbackPublisher(
 
     /** 切換至 server thread，並在玩家仍在線時傳送目前版本選定的回饋。 */
     override fun publish(playerId: Uuid, feedback: MinecraftPlayerFeedback) {
-        val server = serverHolder.current() ?: return
-        server.execute {
-            val player = serverHolder.findPlayer(playerId) ?: return@execute
+        if (serverHolder.current() == null) return
+        scope.launch(dispatchers.main) {
+            val player = serverHolder.findPlayer(playerId) ?: return@launch
             when (feedback) {
                 MinecraftPlayerFeedback.GameAlreadyStarted ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_ALREADY_STARTED), true)
@@ -133,6 +138,8 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.WALL_EXHAUSTED), true)
                 MinecraftPlayerFeedback.UnsupportedGameAction ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.UNSUPPORTED_GAME_ACTION), true)
+                MinecraftPlayerFeedback.TableAnimationBusy ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.TABLE_ANIMATION_BUSY), true)
                 is MinecraftPlayerFeedback.ShowHand ->
                     player.sendMessage(showHandMessage(feedback))
                 is MinecraftPlayerFeedback.YourTurn ->

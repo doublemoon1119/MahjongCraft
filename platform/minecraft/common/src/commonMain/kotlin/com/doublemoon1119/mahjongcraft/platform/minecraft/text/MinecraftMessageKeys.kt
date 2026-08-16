@@ -267,6 +267,18 @@ object MinecraftMessageKeys {
     /** 對局結束排名清單內每一行，帶名次、玩家名稱、最終分數三個參數（三個 `%s`）。 */
     const val RANKING_LINE = PREFIX + "ranking_line"
 
+    /**
+     * [com.doublemoon1119.mahjongcraft.logic.base.GameAction.DiceRolled] 的顯示文字，不帶參數——
+     * 實際點數由 [DICE_ROLLED_BROADCAST] 承載，這裡只是滿足 `GameActionDisplayText` 窮舉 `when`。
+     */
+    const val GAME_ACTION_DICE_ROLLED = PREFIX + "game_action_dice_rolled"
+
+    /**
+     * 擲骰結果廣播，帶一個已格式化的骰子點數清單參數（一個 `%s`，例如「5、5」）——目前是 client 端
+     * 聊天訊息占位呈現，之後若換成 HUD 只需要換掉呼叫端，這個 key 不受影響。
+     */
+    const val DICE_ROLLED_BROADCAST = PREFIX + "dice_rolled_broadcast"
+
     // ── 對局階段指令回饋 ──────────────────────────────────────────────────
 
     /** 已成功執行對局操作，帶一個動作顯示文字參數（一個 `%s`，見上方 `GAME_ACTION_*`）。 */
@@ -286,6 +298,9 @@ object MinecraftMessageKeys {
 
     /** 目前規則不支援這個動作。 */
     const val UNSUPPORTED_GAME_ACTION = PREFIX + "unsupported_game_action"
+
+    /** 桌面正在播放呈現動畫（例如擲骰），暫時無法送出操作。 */
+    const val TABLE_ANIMATION_BUSY = PREFIX + "table_animation_busy"
 
     // ── 手牌查詢指令（`/mahjongcraft game hand`） ──────────────────────────
 
@@ -389,12 +404,15 @@ object MinecraftMessageKeys {
         GAME_ACTION_MATCH_ENDED,
         MATCH_RESULT_BROADCAST,
         RANKING_LINE,
+        GAME_ACTION_DICE_ROLLED,
+        DICE_ROLLED_BROADCAST,
         GAME_ACTION_PERFORMED,
         NOT_YOUR_TURN,
         FORCED_AUTO_PLAY_ACTIVE,
         ILLEGAL_GAME_ACTION,
         WALL_EXHAUSTED,
         UNSUPPORTED_GAME_ACTION,
+        TABLE_ANIMATION_BUSY,
         HAND_TITLE,
         HAND_MELDS_TITLE,
         HAND_LEGAL_ACTIONS_TITLE,

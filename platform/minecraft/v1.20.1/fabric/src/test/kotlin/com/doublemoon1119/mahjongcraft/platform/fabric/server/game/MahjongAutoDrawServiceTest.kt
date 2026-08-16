@@ -248,15 +248,19 @@ class MahjongAutoDrawServiceTest {
      * 兩者共用同一個 [AuthoritativeStateStore]，用來驗證 `ReturnToRoomUseCase` 真的接得到
      * `GameFlowCoordinator` 銜接的呼叫，而不是像 `GameFlowCoordinatorTest` 那樣用互不相通的
      * 假物件（那邊只驗證編排時機，不驗證轉移本身）。
+     *
+     * 四位玩家都設成 AI（含房主本人）——這裡只驗證 `Game.hostId` 能不能正確往返、Room 能不能正確
+     * 重建，不需要真人玩家；若房主是唯一的真人玩家，`GameInitializer.initialize` 內部洗牌座位是
+     * 隨機的，房主可能剛好被排到莊家（東家）座位，`driveAutomatedPlayers` 不會替真人行動，測試會在
+     * 空牌山的第一次摸牌前卡住、變成間歇性失敗——曾經在這裡踩過一次。
      */
     @Test
     fun `test match ending moves the table from Game back to Room`() = runTest {
         val fixtures = Fixtures()
-        val hostId = Uuid.random()
-        val aiIds = List(3) { Uuid.random() }
-        val playerIds = listOf(hostId) + aiIds
+        val playerIds = List(4) { Uuid.random() }
+        val hostId = playerIds.first()
         val gameId = Uuid.random()
-        val aiStrategyKeys = aiIds.associateWith { RandomAiStrategy.KEY }
+        val aiStrategyKeys = playerIds.associateWith { RandomAiStrategy.KEY }
         val module = fixtures.moduleRegistry.getModule(RiichiRuleConfig(gameLength = RiichiGameLength.OneGame))
         val initializationResult = GameInitializer.initialize(
             id = gameId,
@@ -279,6 +283,6 @@ class MahjongAutoDrawServiceTest {
         assertEquals(hostId, room.hostId, "Original room host must be preserved across the round trip.")
         assertEquals(playerIds.toSet(), room.playerIds.toSet())
         assertEquals(aiStrategyKeys, room.aiPlayerStrategyKeys)
-        assertEquals(aiIds.toSet(), room.readyPlayerIds.toSet(), "AI players can't toggle ready themselves and must stay ready; only the human host needs to ready up again.")
+        assertEquals(playerIds.toSet(), room.readyPlayerIds.toSet(), "All-AI table means everyone (including the AI host) stays ready.")
     }
 }

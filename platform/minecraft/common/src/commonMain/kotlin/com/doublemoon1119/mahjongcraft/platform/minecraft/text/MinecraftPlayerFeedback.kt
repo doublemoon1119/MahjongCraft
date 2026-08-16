@@ -199,6 +199,9 @@ sealed interface MinecraftPlayerFeedback {
     /** 目前規則不支援這個動作。 */
     data object UnsupportedGameAction : MinecraftPlayerFeedback
 
+    /** 桌面正在播放呈現動畫（例如擲骰），暫時無法送出操作，請稍候再試。 */
+    data object TableAnimationBusy : MinecraftPlayerFeedback
+
     /**
      * 顯示玩家目前的手牌、副露與可執行的特殊動作，供 `/mahjongcraft game hand` 使用。
      *

@@ -135,7 +135,14 @@ class AdvanceRoundUseCase(
         }
 
         // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過
-        advanceOutcome.diceRoll?.let { presentationPublisher.publishDiceRoll(gameId, it) }
+        advanceOutcome.diceRoll?.let { diceRoll ->
+            val dealerSeatIndex = newState.players.indexOfFirst { player -> player.id == newDealerId }
+            presentationPublisher.publishDiceRoll(gameId, diceRoll, dealerSeatIndex, newState.roundNumber, newState.comboCount)
+            // 廣播擲骰點數本身；跟第 3 步的 RoundStarted 是兩則獨立事件，理由同 StartGameUseCase。
+            newState.players.forEach { player ->
+                eventPublisher.publish(gameId, player.id, newDealerId, GameAction.DiceRolled(diceRoll))
+            }
+        }
         advanceOutcome.wallStructure?.let { presentationPublisher.publishWallStructure(gameId, it) }
 
         return Outcome.Success(result)

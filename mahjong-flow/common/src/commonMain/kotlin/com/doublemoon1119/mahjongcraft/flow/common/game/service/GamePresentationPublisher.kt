@@ -20,10 +20,18 @@ interface GamePresentationPublisher {
     /**
      * 通知平台呈現層本局權威擲骰結果。
      *
+     * [dealerSeatIndex]／[roundNumber]／[comboCount] 是呼叫端已經持有的通用桌況資料，一併帶過去讓
+     * 平台呈現層自行決定怎麼用（例如換算成畫面呈現用的「這是第幾次擲骰」序號、決定擲骰者的座位）——
+     * 不在這裡先算好任何 Minecraft 專屬概念，維持這個介面本身跟平台無關。
+     *
      * @param gameId 對局 Uuid。
      * @param dice 本次開門使用的權威擲骰個別點數。
+     * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index（自風輪轉不會改變
+     *   index，只改變該 index 玩家的風位）。
+     * @param roundNumber 本次擲骰發生當下的局數。
+     * @param comboCount 本次擲骰發生當下的本場數（連莊次數）。
      */
-    fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult)
+    fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int)
 
     /**
      * 通知平台呈現層本局牌牆結構座標。

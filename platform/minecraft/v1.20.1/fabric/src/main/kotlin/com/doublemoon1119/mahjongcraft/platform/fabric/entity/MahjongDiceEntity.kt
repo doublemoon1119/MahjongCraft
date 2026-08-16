@@ -120,17 +120,30 @@ class MahjongDiceEntity(
         managedTableId = tableId
     }
 
-    /** 由 server game time 結束動畫；client 只呈現同步狀態。 */
+    /**
+     * 由 server game time 結束動畫；client 只呈現同步狀態。
+     *
+     * 管理中的骰子（`managedByGame`）額外自行判斷是否該消失：`world.time` 是持久化、單調遞增的世界
+     * 年齡，不會因伺服器重啟歸零，所以「動畫＋觀看時間的目標時長」用 `world.time - animationStartGameTime`
+     * 就能算出來，不需要另外排計時器或在伺服器啟動時另外掃一輪——伺服器重啟後 entity 重新載入的第一
+     * 個 tick，這個算式就會自然算出「早就超過該存在的時長了」，直接 [discard]，正常運行期間跟崩潰
+     * 復原走的是同一段邏輯，不需要區分。玩家自由放置的裝飾骰子（`managedByGame == false`）不受影響，
+     * 永久存在直到玩家自己回收。
+     */
     override fun tick() {
         super.tick()
-        if (!world.isClient && rolling) {
-            val elapsedTicks = world.time - animationStartGameTime
+        if (world.isClient) return
+        val elapsedTicks = world.time - animationStartGameTime
+        if (rolling) {
             if (elapsedTicks == FIRST_LANDING_TICK) {
                 playSound(SoundEvents.ENTITY_ITEM_FRAME_PLACE, 1.0f, 1.0f)
             }
             if (elapsedTicks >= DiceRollAnimationSpec.DEFAULT_DURATION_TICKS) {
                 rolling = false
             }
+        }
+        if (managedByGame && elapsedTicks >= DESPAWN_AFTER_TICKS) {
+            discard()
         }
     }
 
@@ -179,6 +192,13 @@ class MahjongDiceEntity(
 
         /** 拋物線第一次抵達落點的 server tick。 */
         private const val FIRST_LANDING_TICK = 17L
+
+        /**
+         * 管理中骰子從動畫開始算起，總共該存在的 tick 數；超過就自我 [discard]。額外觀看時間
+         * （[DiceRollAnimationSpec.EXTRA_VIEWING_TICKS]）跟 `FabricGamePresentationPublisher` 算
+         * `TablePresentationBusyTracker` 忙碌時長用的是同一個常數，避免兩處各寫一份相同數字。
+         */
+        private const val DESPAWN_AFTER_TICKS = DiceRollAnimationSpec.DEFAULT_DURATION_TICKS + DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
 
         /** 同步目前朝上的點數值。 */
         private val POINT: TrackedData<Int> =

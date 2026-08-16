@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceDtoR
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
@@ -22,6 +23,10 @@ sealed interface GameActionPersistenceDto {
     /** [GameAction.MatchEnded] 的 persistence DTO。 */
     @Serializable
     data object MatchEnded : GameActionPersistenceDto
+
+    /** [GameAction.DiceRolled] 的 persistence DTO。 */
+    @Serializable
+    data class DiceRolled(val dice: List<Int>) : GameActionPersistenceDto
 
     /** [GameAction.Draw] 的 persistence DTO。 */
     @Serializable
@@ -80,6 +85,7 @@ fun GameAction.toPersistenceDto(
     GameAction.GameStarted -> GameActionPersistenceDto.GameStarted
     GameAction.RoundStarted -> GameActionPersistenceDto.RoundStarted
     GameAction.MatchEnded -> GameActionPersistenceDto.MatchEnded
+    is GameAction.DiceRolled -> GameActionPersistenceDto.DiceRolled(dice.values)
     GameAction.Draw -> GameActionPersistenceDto.Draw
     is GameAction.Discard -> GameActionPersistenceDto.Discard(tileId.toString())
     is GameAction.Chi -> GameActionPersistenceDto.Chi(tileId.toString(), withTiles.map(Uuid::toString))
@@ -102,6 +108,7 @@ fun GameActionPersistenceDto.toDomain(
     GameActionPersistenceDto.GameStarted -> GameAction.GameStarted
     GameActionPersistenceDto.RoundStarted -> GameAction.RoundStarted
     GameActionPersistenceDto.MatchEnded -> GameAction.MatchEnded
+    is GameActionPersistenceDto.DiceRolled -> GameAction.DiceRolled(DiceRollResult.of(dice))
     GameActionPersistenceDto.Draw -> GameAction.Draw
     is GameActionPersistenceDto.Discard -> GameAction.Discard(Uuid.parse(tileId))
     is GameActionPersistenceDto.Chi -> GameAction.Chi(Uuid.parse(tileId), withTileIds.map(Uuid::parse))

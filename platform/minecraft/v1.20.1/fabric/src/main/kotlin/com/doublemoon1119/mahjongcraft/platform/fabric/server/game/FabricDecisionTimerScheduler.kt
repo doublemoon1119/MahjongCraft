@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimeoutService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
@@ -22,6 +23,8 @@ import org.slf4j.LoggerFactory
  * @property gameFlowCoordinator 對每個進行中對局推進自動操作。
  * @property synchronizationService 每秒同步一次所有真人決策者的權威時間。
  * @property autoDrawService 對每個進行中對局補做真人玩家的自動摸牌檢查。
+ * @property busyTracker 查詢對局是否正在播放呈現動畫，播放期間跳過該桌這一輪的自動操作推進，
+ *   避免遊戲流程搶在動畫播完前繼續（例如 AI 莊家在擲骰動畫還沒播完就已經摸牌打牌）。
  */
 @Single
 class FabricDecisionTimerScheduler(
@@ -32,6 +35,7 @@ class FabricDecisionTimerScheduler(
     private val gameFlowCoordinator: GameFlowCoordinator,
     private val synchronizationService: DecisionTimerSynchronizationService,
     private val autoDrawService: MahjongAutoDrawService,
+    private val busyTracker: TablePresentationBusyTracker,
 ) {
     /** 決策逾時處理錯誤的專用 logger。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -60,6 +64,10 @@ class FabricDecisionTimerScheduler(
                     // 情況都會被推進。桌子如果本來就沒事要做，這兩個呼叫很快就會發現沒事然後返回，
                     // 不用擔心多跑這一輪很浪費。
                     gameRepository.getAllGameIds().forEach { gameId ->
+                        // 這桌還在播呈現動畫（例如擲骰）時跳過這一輪：讓 AI／強制自動操作等動畫播完
+                        // 再繼續，避免玩家看到牌局狀態搶在畫面之前推進。決策逾時計時器本身不受影響，
+                        // 只是這一輪不驅動——理由見 TablePresentationBusyTracker KDoc。
+                        if (busyTracker.isBusy(gameId)) return@forEach
                         gameFlowCoordinator.driveAutomatedPlayers(gameId)
                         autoDrawService.checkAndAutoDraw(gameId)
                     }

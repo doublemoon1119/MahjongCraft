@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
@@ -14,11 +15,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 /**
- * [buildRoundResultChatMessage] 的單元測試——只涵蓋不需要真正 Minecraft client 執行環境的分支
- * （AI 玩家、非回合結束事件、沒有前一份快照可比較）；真人玩家名稱解析需要 `MinecraftClient.getInstance()`，
- * 留給實機驗證。
+ * [buildRoundResultChatMessage]／[buildMatchResultChatMessage]／[buildDiceRolledChatMessage] 的單元測試
+ * ——只涵蓋不需要真正 Minecraft client 執行環境的分支（AI 玩家、非對應事件、沒有前一份快照可比較）；
+ * 真人玩家名稱解析需要 `MinecraftClient.getInstance()`，留給實機驗證。
  */
-class RoundResultChatNotifierTest {
+class GameEventChatNotifierTest {
 
     private val displayNameRegistry = TileDisplayNameRegistryImpl()
     private val tileAssetRegistry = MinecraftTileAssetRegistryImpl()
@@ -185,6 +186,20 @@ class RoundResultChatNotifierTest {
             orderedPlayerIdPrefixes.map { it.removePrefix("AI-") },
             "Expected east, then south before north (tied score broken by seat), then west.",
         )
+    }
+
+    @Test
+    fun `returns null for dice rolled message when the action is not dice rolled`() {
+        assertNull(buildDiceRolledChatMessage(GameAction.Tsumo))
+    }
+
+    @Test
+    fun `builds a dice rolled message listing every die's point`() {
+        val message = buildDiceRolledChatMessage(GameAction.DiceRolled(DiceRollResult.of(listOf(3, 5))))
+
+        val content = message?.content as? TranslatableTextContent
+        assertEquals("mahjongcraft.message.dice_rolled_broadcast", content?.key)
+        assertEquals("3、5", content?.args?.get(0)?.toString())
     }
 
     /** AI 玩家（`aiStrategyKey` 非 null）避免觸發需要真正 client 執行環境的名稱解析分支。 */

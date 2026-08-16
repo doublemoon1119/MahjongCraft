@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
@@ -38,6 +39,8 @@ import kotlin.uuid.toKotlinUuid
  * @property candidateResolver 查詢目前合法動作清單，供 [showHand] 使用；跟 `action` 指令 Tab 補全共用
  *   同一份查詢，確保手牌畫面顯示的候選跟玩家實際能輸入的候選一致。
  * @property feedbackPublisher 操作結果的一次性回饋。
+ * @property busyTracker 查詢該桌是否正在播放呈現動畫（例如擲骰），播放期間擋下玩家操作，避免畫面出現
+ *   跟動畫不一致的桌況。
  */
 @Single
 class MahjongTableGameActionService(
@@ -48,6 +51,7 @@ class MahjongTableGameActionService(
     private val autoDrawService: MahjongAutoDrawService,
     private val candidateResolver: GameActionCandidateResolver,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
+    private val busyTracker: TablePresentationBusyTracker,
 ) {
     /** 對局命令與自動銜接失敗時的專用 logger。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -148,6 +152,10 @@ class MahjongTableGameActionService(
      * 例外，攔下來記錄，避免協程靜默死掉、對局卡在半途卻沒有任何 log 可查。
      */
     private suspend fun execute(gameId: Uuid, playerId: Uuid, command: GameCommand, action: GameAction, referenceTile: Tile?) {
+        if (busyTracker.isBusy(gameId)) {
+            feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.TableAnimationBusy)
+            return
+        }
         try {
             val result = gameFlowCoordinator.dispatch(gameId, playerId, command)
             when (result) {

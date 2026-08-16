@@ -15,14 +15,18 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的擲骰結果。 */
     private val diceRolls = mutableMapOf<Uuid, DiceRollResult>()
 
+    /** 依對局 Uuid 紀錄最後一次收到的擲骰隨附桌況資料。 */
+    private val diceRollContexts = mutableMapOf<Uuid, DiceRollContext>()
+
     /** 依對局 Uuid 紀錄最後一次收到的牌牆結構座標。 */
     private val wallStructures = mutableMapOf<Uuid, Map<Uuid, TileWallPosition>>()
 
     /** 依對局 Uuid 紀錄最後一次收到的開局座位傳送清單。 */
     private val gameStartedSeatings = mutableMapOf<Uuid, List<Uuid>>()
 
-    override fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult) {
+    override fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int) {
         diceRolls[gameId] = dice
+        diceRollContexts[gameId] = DiceRollContext(dealerSeatIndex, roundNumber, comboCount)
     }
 
     override fun publishWallStructure(gameId: Uuid, structure: Map<Uuid, TileWallPosition>) {
@@ -36,9 +40,19 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 取得指定對局最後一次收到的擲骰結果；若無紀錄則回傳 null。 */
     fun getPublishedDiceRoll(gameId: Uuid): DiceRollResult? = diceRolls[gameId]
 
+    /** 取得指定對局最後一次收到的擲骰隨附桌況資料；若無紀錄則回傳 null。 */
+    fun getPublishedDiceRollContext(gameId: Uuid): DiceRollContext? = diceRollContexts[gameId]
+
     /** 取得指定對局最後一次收到的牌牆結構座標；若無紀錄則回傳 null。 */
     fun getPublishedWallStructure(gameId: Uuid): Map<Uuid, TileWallPosition>? = wallStructures[gameId]
 
     /** 取得指定對局最後一次收到的開局座位傳送清單；若無紀錄則回傳 null。 */
     fun getPublishedGameStartedSeating(gameId: Uuid): List<Uuid>? = gameStartedSeatings[gameId]
 }
+
+/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishDiceRoll] 隨附桌況資料。 */
+data class DiceRollContext(
+    val dealerSeatIndex: Int,
+    val roundNumber: Int,
+    val comboCount: Int,
+)

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildDiceRolledChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildMatchResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildRoundResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
@@ -58,7 +59,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 displayNameRegistry = tileDisplayNames,
                 tileAssetRegistry = tileAssetRegistry,
                 tileEmojiRegistry = tileEmojiRegistry,
-            ) ?: buildMatchResultChatMessage(action, newSnapshot) ?: return@registerClientReceiver
+            ) ?: buildMatchResultChatMessage(action, newSnapshot) ?: buildDiceRolledChatMessage(action) ?: return@registerClientReceiver
             MinecraftClient.getInstance().player?.sendMessage(message)
         }
         MahjongChannels.roomSnapshot.registerClientReceiver(json) { payload ->

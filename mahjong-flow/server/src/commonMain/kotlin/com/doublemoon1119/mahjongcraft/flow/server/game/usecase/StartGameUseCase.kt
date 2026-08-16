@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdat
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -93,7 +94,15 @@ class StartGameUseCase(
         }
 
         // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過
-        initializationResult.diceRoll?.let { presentationPublisher.publishDiceRoll(roomId, it) }
+        initializationResult.diceRoll?.let { diceRoll ->
+            val dealerSeatIndex = tableState.players.indexOfFirst { player -> player.currentWind == Wind.EAST }
+            presentationPublisher.publishDiceRoll(roomId, diceRoll, dealerSeatIndex, tableState.roundNumber, tableState.comboCount)
+            // 廣播擲骰點數本身；跟第 3 步的 GameStarted 是兩則獨立事件，讓客戶端不用從 GameStarted
+            // 的快照反推點數（快照本來就不帶開門用的擲骰資料）。
+            tableState.players.forEach { player ->
+                eventPublisher.publish(roomId, player.id, operatorId, GameAction.DiceRolled(diceRoll))
+            }
+        }
         initializationResult.wallStructure?.let { presentationPublisher.publishWallStructure(roomId, it) }
         presentationPublisher.publishGameStarted(roomId, tableState.players.map { it.id })
 

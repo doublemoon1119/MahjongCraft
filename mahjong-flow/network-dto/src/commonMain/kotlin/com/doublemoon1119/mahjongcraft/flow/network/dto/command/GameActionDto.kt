@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
@@ -19,6 +20,8 @@ sealed interface GameActionDto {
     @Serializable data object RoundStarted : GameActionDto
 
     @Serializable data object MatchEnded : GameActionDto
+
+    @Serializable data class DiceRolled(val dice: List<Int>) : GameActionDto
 
     @Serializable data object Draw : GameActionDto
 
@@ -48,6 +51,7 @@ fun GameAction.toDto(registries: NetworkDtoRegistries): GameActionDto = when (th
     GameAction.GameStarted -> GameActionDto.GameStarted
     GameAction.RoundStarted -> GameActionDto.RoundStarted
     GameAction.MatchEnded -> GameActionDto.MatchEnded
+    is GameAction.DiceRolled -> GameActionDto.DiceRolled(dice.values)
     GameAction.Draw -> GameActionDto.Draw
     is GameAction.Discard -> GameActionDto.Discard(tileId.toString())
     is GameAction.Chi -> GameActionDto.Chi(tileId.toString(), withTiles.map { it.toString() })
@@ -64,6 +68,7 @@ fun GameActionDto.toDomain(registries: NetworkDtoRegistries): GameAction = when 
     GameActionDto.GameStarted -> GameAction.GameStarted
     GameActionDto.RoundStarted -> GameAction.RoundStarted
     GameActionDto.MatchEnded -> GameAction.MatchEnded
+    is GameActionDto.DiceRolled -> GameAction.DiceRolled(DiceRollResult.of(dice))
     GameActionDto.Draw -> GameAction.Draw
     is GameActionDto.Discard -> GameAction.Discard(Uuid.parse(tileId))
     is GameActionDto.Chi -> GameAction.Chi(Uuid.parse(tileId), withTiles.map { Uuid.parse(it) })

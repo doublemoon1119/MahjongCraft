@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacin
 import net.minecraft.util.math.Direction
 
 /** 將 Fabric 水平朝向轉為共用麻將桌 layout 朝向。 */
-internal fun Direction.toMahjongTableFacing(): MahjongTableFacing = when (this) {
+fun Direction.toMahjongTableFacing(): MahjongTableFacing = when (this) {
     Direction.NORTH -> MahjongTableFacing.NORTH
     Direction.EAST -> MahjongTableFacing.EAST
     Direction.SOUTH -> MahjongTableFacing.SOUTH

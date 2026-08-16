@@ -127,10 +127,7 @@ class StartGameUseCaseTest {
         fixtures.useCase(roomId, hostId)
 
         (listOf(hostId) + guestIds).forEach { playerId ->
-            assertEquals(
-                GameAction.GameStarted,
-                fixtures.eventPublisher.getNotifiedAction(roomId, playerId, hostId),
-            )
+            assertTrue(GameAction.GameStarted in fixtures.eventPublisher.getNotifiedActions(roomId, playerId, hostId))
         }
     }
 
