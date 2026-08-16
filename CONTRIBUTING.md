@@ -14,13 +14,17 @@
 
 ## Before Committing
 
-- Run a full recompile and check for compiler warnings, not just test results:
-  `./gradlew clean compileKotlinJvm compileTestKotlinJvm`. A green `jvmTest` run does not fail on
-  warnings (e.g. redundant casts, unused imports), so check compiler output explicitly.
-- Run `./gradlew ktlintCheck` (or `./gradlew ktlintFormat` to auto-fix) to enforce formatting
-  (`intellij_idea` code style, configured in `.editorconfig`). This is a separate concern from the
-  compiler warning check above — ktlint only checks style/formatting, not compiler diagnostics, so
-  both checks are required, not either/or.
+- Run `./gradlew build` — it compiles, tests, and lints (ktlint, `intellij_idea` code style per
+  `.editorconfig`) every currently loaded module, and also scans their source comments for
+  `docs/temp/` references (see Temp File Management).
+- If it fails on ktlint violations, run `./gradlew ktlintFormat` to auto-fix them instead of fixing
+  them by hand.
+- "Currently loaded module" means the core modules plus whichever platform target is active per
+  `local.dev.properties` (see `settings.gradle.kts`). All of the checks above — including the
+  `docs/temp/` scan — only see currently loaded modules; switch targets and rerun if you need to
+  verify a platform module you're not currently building against.
+- A passing build does not mean warning-free: compiler warnings (e.g. redundant casts, unused
+  imports) do not fail the build, so check the compiler output explicitly.
 - Fix flagged warnings/violations before committing, unless they are pre-existing and unrelated to
   the current change.
 
@@ -111,3 +115,5 @@ All modules must strictly follow the rules below to form a one-way dependency ch
 - All temporary instructions, logic drafts, or one-shot prompt files generated during development must be placed under `docs/temp/`.
 - Do not create non-code `.md` files directly in the project root or `src/` directory.
 - The `docs/temp/` directory is listed in `.gitignore` and will not be tracked by git.
+- Never cite a `docs/temp/` file from a source comment — it won't exist for anyone who clones the
+  repo. `./gradlew build` fails if it finds one.
