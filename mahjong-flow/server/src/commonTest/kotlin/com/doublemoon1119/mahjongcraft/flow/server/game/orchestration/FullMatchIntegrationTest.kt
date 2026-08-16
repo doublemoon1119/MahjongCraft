@@ -25,6 +25,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToChankanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.time.MonotonicClockImpl
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -35,6 +37,8 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeG
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -92,6 +96,10 @@ class FullMatchIntegrationTest {
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             advanceRoundUseCase = AdvanceRoundUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            // FakeGameRepository 獨立於 AuthoritativeStateStore，這裡的 ReturnToRoomUseCase 接不到
+            // 同一份對局資料，只是滿足建構子的無害 no-op——本測試關心的是編排層撐不撐得住整場對局，
+            // 不是 Game → Room 轉移本身。
+            returnToRoomUseCase = ReturnToRoomUseCase(AuthoritativeStateStore(), FakeRoomSnapshotRepository(), FakeRoomEventPublisher()),
             aiTurnDriver = aiTurnDriver,
             forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo),
             decisionTimerManager = decisionTimerManager,

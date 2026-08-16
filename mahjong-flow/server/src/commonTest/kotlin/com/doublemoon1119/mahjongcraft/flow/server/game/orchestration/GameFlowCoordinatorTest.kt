@@ -30,6 +30,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToChankanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -51,6 +53,8 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeG
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -106,6 +110,11 @@ class GameFlowCoordinatorTest {
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             advanceRoundUseCase = AdvanceRoundUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            // FakeGameRepository 是獨立於 AuthoritativeStateStore 的測試替身，這裡的 ReturnToRoomUseCase
+            // 因此接不到同一份對局資料，對本檔案的測試而言只是滿足建構子的無害 no-op；真的驗證
+            // Game → Room 轉移的整合測試見 ReturnToRoomUseCaseTest／MahjongAutoDrawServiceTest 那種
+            // 共用真正 AuthoritativeStateStore 的 Fixtures 寫法。
+            returnToRoomUseCase = ReturnToRoomUseCase(AuthoritativeStateStore(), FakeRoomSnapshotRepository(), FakeRoomEventPublisher()),
             aiTurnDriver = aiTurnDriver,
             forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo),
             decisionTimerManager = decisionTimerManager,

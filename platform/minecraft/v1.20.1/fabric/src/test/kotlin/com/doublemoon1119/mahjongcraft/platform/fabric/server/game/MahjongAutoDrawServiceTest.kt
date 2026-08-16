@@ -28,16 +28,21 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToChankanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -58,6 +63,8 @@ class MahjongAutoDrawServiceTest {
     private class Fixtures {
         val store = AuthoritativeStateStore()
         val gameRepo = GameRepositoryImpl(store)
+        val roomSnapshotRepo = FakeRoomSnapshotRepository()
+        val roomEventPublisher = FakeRoomEventPublisher()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
@@ -90,6 +97,7 @@ class MahjongAutoDrawServiceTest {
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             advanceRoundUseCase = AdvanceRoundUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            returnToRoomUseCase = ReturnToRoomUseCase(store, roomSnapshotRepo, roomEventPublisher),
             aiTurnDriver = aiTurnDriver,
             forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo),
             decisionTimerManager = decisionTimerManager,
@@ -233,5 +241,44 @@ class MahjongAutoDrawServiceTest {
         assertNotNull(game)
         assertEquals(1, game.tableState.players.first { it.id == dealerId }.discardPile.entries.size, "Forced player should have discarded the tile it was stuck on.")
         assertTrue(dealerId !in game.forcedAutoPlayPlayerIds, "Player must regain control after the single missed decision is served.")
+    }
+
+    /**
+     * 迴歸測試：驗證對局結束後，桌子真的從 Game 轉回 Room（不是只標記 [Game.isMatchOver]）——
+     * 兩者共用同一個 [AuthoritativeStateStore]，用來驗證 `ReturnToRoomUseCase` 真的接得到
+     * `GameFlowCoordinator` 銜接的呼叫，而不是像 `GameFlowCoordinatorTest` 那樣用互不相通的
+     * 假物件（那邊只驗證編排時機，不驗證轉移本身）。
+     */
+    @Test
+    fun `test match ending moves the table from Game back to Room`() = runTest {
+        val fixtures = Fixtures()
+        val hostId = Uuid.random()
+        val aiIds = List(3) { Uuid.random() }
+        val playerIds = listOf(hostId) + aiIds
+        val gameId = Uuid.random()
+        val aiStrategyKeys = aiIds.associateWith { RandomAiStrategy.KEY }
+        val module = fixtures.moduleRegistry.getModule(RiichiRuleConfig(gameLength = RiichiGameLength.OneGame))
+        val initializationResult = GameInitializer.initialize(
+            id = gameId,
+            playerIds = playerIds,
+            module = module,
+            aiPlayerStrategyKeys = aiStrategyKeys,
+        )
+        val emptyWallState = initializationResult.tableState.copy(tileWall = TileWall(emptyList()))
+        fixtures.gameRepo.setTableState(emptyWallState)
+        // GameInitializer 依座位風重排玩家順序，setTableState 預設把 hostId 定成第一位玩家的 id，
+        // 不保證真的是 hostId 這位玩家——比照 StartGameUseCase 實際上是明確從 Room.hostId 帶入，
+        // 這裡也要明確蓋回去才是在測「hostId 有沒有被正確保留」，不是在測隨機湊巧對上。
+        fixtures.gameRepo.updateGame(gameId) { game -> game!!.copy(hostId = hostId) to Unit }
+
+        fixtures.coordinator.driveAutomatedPlayers(gameId)
+
+        assertNull(fixtures.store.getGame(gameId), "Game record must be removed once the match ends.")
+        val room = fixtures.store.getRoom(gameId)
+        assertNotNull(room, "Table must become a Room again once the match ends.")
+        assertEquals(hostId, room.hostId, "Original room host must be preserved across the round trip.")
+        assertEquals(playerIds.toSet(), room.playerIds.toSet())
+        assertEquals(aiStrategyKeys, room.aiPlayerStrategyKeys)
+        assertEquals(aiIds.toSet(), room.readyPlayerIds.toSet(), "AI players can't toggle ready themselves and must stay ready; only the human host needs to ready up again.")
     }
 }

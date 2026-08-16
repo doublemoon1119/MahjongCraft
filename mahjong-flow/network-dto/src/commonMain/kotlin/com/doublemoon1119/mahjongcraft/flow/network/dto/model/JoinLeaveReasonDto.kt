@@ -10,16 +10,20 @@ sealed interface JoinReasonDto {
     @Serializable data object Created : JoinReasonDto
 
     @Serializable data object Joined : JoinReasonDto
+
+    @Serializable data object MatchEnded : JoinReasonDto
 }
 
 fun JoinReason.toDto(): JoinReasonDto = when (this) {
     JoinReason.Created -> JoinReasonDto.Created
     JoinReason.Joined -> JoinReasonDto.Joined
+    JoinReason.MatchEnded -> JoinReasonDto.MatchEnded
 }
 
 fun JoinReasonDto.toDomain(): JoinReason = when (this) {
     JoinReasonDto.Created -> JoinReason.Created
     JoinReasonDto.Joined -> JoinReason.Joined
+    JoinReasonDto.MatchEnded -> JoinReason.MatchEnded
 }
 
 /** [LeaveReason] 的網路 DTO。 */

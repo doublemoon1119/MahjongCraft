@@ -116,20 +116,22 @@ fun AuthoritativeStatePersistenceDto.toGames(
     json: Json = Json,
 ): Map<Uuid, Game> = games.values.associate { game ->
     val id = Uuid.parse(game.id)
+    val tableState = game.toDomain(
+        ruleConfigRegistry,
+        discardPileRegistry,
+        playerRuleStateRegistry,
+        dynamicRuleStateRegistry,
+        exhaustiveDrawReasonRegistry,
+        json,
+    )
+    val runtimeState = gameRuntimeStates.getValue(id.toString())
     id to Game(
-        tableState = game.toDomain(
-            ruleConfigRegistry,
-            discardPileRegistry,
-            playerRuleStateRegistry,
-            dynamicRuleStateRegistry,
-            exhaustiveDrawReasonRegistry,
-            json,
-        ),
+        tableState = tableState,
         flowConfig = gameFlowConfigs.getValue(id.toString()).toDomain(),
-        remainingReserveMillisByPlayerId = gameRuntimeStates.getValue(id.toString())
-            .toRemainingReserveMillisByPlayerId(),
-        forcedAutoPlayPlayerIds = gameRuntimeStates.getValue(id.toString()).toForcedAutoPlayPlayerIds(),
-        isMatchOver = gameRuntimeStates.getValue(id.toString()).isMatchOver,
+        remainingReserveMillisByPlayerId = runtimeState.toRemainingReserveMillisByPlayerId(),
+        forcedAutoPlayPlayerIds = runtimeState.toForcedAutoPlayPlayerIds(),
+        isMatchOver = runtimeState.isMatchOver,
+        hostId = runtimeState.hostId?.let { Uuid.parse(it) } ?: tableState.players.first().id,
     )
 }
 

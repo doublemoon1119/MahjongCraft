@@ -39,11 +39,12 @@ import kotlin.uuid.Uuid
  * 對應子項擴充。
  *
  * 整場對局已結束（[com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult.isMatchOver]）
- * 時，本用例只把這個事實記到 [com.doublemoon1119.mahjongcraft.flow.common.game.model.Game.isMatchOver]，
- * 不做任何額外收尾（房間清理、最終排名等留給未來獨立的單位）——不會開新的一局，`TableState`
- * 維持呼叫前的樣子不變，也不會同步快照或廣播事件。務必記下這個事實：`AiTurnDriver`／
- * `ForcedAutoPlayDriver` 都靠它提前跳過已結束的對局，否則牌山已空的桌況會被反覆嘗試摸牌、
- * 反覆觸發流局結算。
+ * 時，本用例把這個事實記到 [com.doublemoon1119.mahjongcraft.flow.common.game.model.Game.isMatchOver]，
+ * 並同步最終桌況快照、廣播 [GameAction.MatchEnded]（帶著最終分數的快照，供呼叫端／客戶端組出排名
+ * 呈現）——但不會開新的一局，`TableState` 維持呼叫前的樣子不變；房間清理（把桌子從 Game 轉回 Room）
+ * 留給呼叫端接著呼叫 `ReturnToRoomUseCase`，不在這裡處理。務必記下 `isMatchOver` 這個事實：
+ * `AiTurnDriver`／`ForcedAutoPlayDriver` 都靠它提前跳過已結束的對局，否則牌山已空的桌況會被反覆
+ * 嘗試摸牌、反覆觸發流局結算。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
@@ -110,8 +111,18 @@ class AdvanceRoundUseCase(
         if (outcome is Outcome.Error) return outcome
         val advanceOutcome = (outcome as Outcome.Success).value
         val result = advanceOutcome.result
-        if (result.isMatchOver) return Outcome.Success(result)
         val newState = result.tableState
+
+        if (result.isMatchOver) {
+            // 對局已結束：仍要同步最終快照、廣播 MatchEnded，讓客戶端能讀到最終分數組出排名畫面，
+            // 但不做開下一局才需要的 RoundStarted 廣播或擲骰／牌牆呈現。
+            snapshotSynchronizer.syncAll(gameId)
+            val lastDealerId = newState.players.first { it.currentWind == Wind.EAST }.id
+            newState.players.forEach { player ->
+                eventPublisher.publish(gameId, player.id, lastDealerId, GameAction.MatchEnded)
+            }
+            return Outcome.Success(result)
+        }
 
         // 2. 同步快照給所有正在觀察的玩家
         snapshotSynchronizer.syncAll(gameId)

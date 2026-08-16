@@ -23,9 +23,10 @@ class ClientMahjongStateStore(
     var gameSnapshot: TableStateSnapshot? = null
         private set
 
-    /** 接收帶事件的房間更新並保存其最新快照。 */
+    /** 接收帶事件的房間更新並保存其最新快照；同一張桌子不會同時是房間又是對局，一併清掉舊的遊戲快照。 */
     fun apply(payload: RoomUpdatePayloadDto) {
         roomSnapshot = payload.snapshot.toDomain(networkRegistries)
+        gameSnapshot = null
     }
 
     /** 接收帶動作的遊戲更新並保存其最新快照。 */
@@ -34,10 +35,11 @@ class ClientMahjongStateStore(
         roomSnapshot = null
     }
 
-    /** 保存沒有伴隨房間事件的主動同步快照。 */
+    /** 保存沒有伴隨房間事件的主動同步快照；同一張桌子不會同時是房間又是對局，一併清掉舊的遊戲快照。 */
     fun applyRoomSnapshot(roomId: Uuid, snapshot: RoomSnapshot) {
         require(snapshot.id == roomId) { "Room snapshot ID does not match its payload ID." }
         roomSnapshot = snapshot
+        gameSnapshot = null
     }
 
     /** 保存沒有伴隨遊戲動作的主動同步快照。 */

@@ -18,6 +18,8 @@ sealed interface GameActionDto {
 
     @Serializable data object RoundStarted : GameActionDto
 
+    @Serializable data object MatchEnded : GameActionDto
+
     @Serializable data object Draw : GameActionDto
 
     @Serializable data class Discard(val tileId: String) : GameActionDto
@@ -45,6 +47,7 @@ enum class KanTypeDto { OPEN_KAN, CLOSED_KAN, ADDED_KAN }
 fun GameAction.toDto(registries: NetworkDtoRegistries): GameActionDto = when (this) {
     GameAction.GameStarted -> GameActionDto.GameStarted
     GameAction.RoundStarted -> GameActionDto.RoundStarted
+    GameAction.MatchEnded -> GameActionDto.MatchEnded
     GameAction.Draw -> GameActionDto.Draw
     is GameAction.Discard -> GameActionDto.Discard(tileId.toString())
     is GameAction.Chi -> GameActionDto.Chi(tileId.toString(), withTiles.map { it.toString() })
@@ -60,6 +63,7 @@ fun GameAction.toDto(registries: NetworkDtoRegistries): GameActionDto = when (th
 fun GameActionDto.toDomain(registries: NetworkDtoRegistries): GameAction = when (this) {
     GameActionDto.GameStarted -> GameAction.GameStarted
     GameActionDto.RoundStarted -> GameAction.RoundStarted
+    GameActionDto.MatchEnded -> GameAction.MatchEnded
     GameActionDto.Draw -> GameAction.Draw
     is GameActionDto.Discard -> GameAction.Discard(Uuid.parse(tileId))
     is GameActionDto.Chi -> GameAction.Chi(Uuid.parse(tileId), withTiles.map { Uuid.parse(it) })

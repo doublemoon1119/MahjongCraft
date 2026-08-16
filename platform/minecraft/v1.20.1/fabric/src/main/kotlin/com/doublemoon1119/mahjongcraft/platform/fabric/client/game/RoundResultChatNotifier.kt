@@ -61,6 +61,32 @@ fun buildRoundResultChatMessage(
 }
 
 /**
+ * 把對局結束事件（[GameAction.MatchEnded]）組成一則列出最終名次的聊天訊息，占位呈現理由同
+ * [buildRoundResultChatMessage]。
+ *
+ * 名次單純依 [newSnapshot] 各玩家的最終 `score` 由高到低排序、依序編號——不特別處理同分的名次併列，
+ * 這是占位呈現刻意的簡化，真要處理同分規則（例如依莊家順位排序）留給未來的 GUI/HUD 呈現。
+ *
+ * @return 不是對局結束事件時回傳 null，代表呼叫端不需要顯示任何訊息。
+ */
+fun buildMatchResultChatMessage(action: GameAction, newSnapshot: TableStateSnapshot): Text? {
+    if (action !is GameAction.MatchEnded) return null
+
+    val message: MutableText = Text.translatable(MinecraftMessageKeys.MATCH_RESULT_BROADCAST)
+    newSnapshot.players.sortedByDescending { it.score }.forEachIndexed { index, player ->
+        message.append(Text.literal("\n")).append(
+            Text.translatable(
+                MinecraftMessageKeys.MATCH_RESULT_RANKING_LINE,
+                (index + 1).toString(),
+                resolvePlayerDisplayName(player.id, player.isAi),
+                player.score.toString(),
+            ),
+        )
+    }
+    return message
+}
+
+/**
  * 真人玩家的麻將 Uuid 就是其 Minecraft 帳號 Uuid（見 `MahjongTableRoomService.join`），可以直接查
  * 玩家清單解析出真實 ID；查不到（不在同一伺服器可見範圍）或是 AI 玩家則退回顯示短 ID 佔位。
  */

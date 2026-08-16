@@ -68,6 +68,7 @@ fun GameAction.toDisplayText(
     )
     GameAction.Pass -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_PASS)
     is GameAction.ExhaustiveDraw -> exhaustiveDrawText()
+    GameAction.MatchEnded -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_MATCH_ENDED)
     GameAction.GameStarted, GameAction.RoundStarted, GameAction.Draw -> Text.literal(this::class.simpleName ?: "")
 }
 

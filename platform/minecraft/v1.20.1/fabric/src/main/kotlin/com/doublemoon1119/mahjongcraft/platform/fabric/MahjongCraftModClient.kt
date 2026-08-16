@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildMatchResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildRoundResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongDiceEntityRenderer
@@ -48,14 +49,16 @@ class MahjongCraftModClient : ClientModInitializer {
         MahjongChannels.gameUpdate.registerClientReceiver(json) { payload ->
             val previousSnapshot = stateStore.gameSnapshot
             stateStore.apply(payload)
+            val action = payload.action.toDomain(networkRegistries)
+            val newSnapshot = stateStore.gameSnapshot ?: return@registerClientReceiver
             val message = buildRoundResultChatMessage(
-                action = payload.action.toDomain(networkRegistries),
+                action = action,
                 previousSnapshot = previousSnapshot,
-                newSnapshot = stateStore.gameSnapshot ?: return@registerClientReceiver,
+                newSnapshot = newSnapshot,
                 displayNameRegistry = tileDisplayNames,
                 tileAssetRegistry = tileAssetRegistry,
                 tileEmojiRegistry = tileEmojiRegistry,
-            ) ?: return@registerClientReceiver
+            ) ?: buildMatchResultChatMessage(action, newSnapshot) ?: return@registerClientReceiver
             MinecraftClient.getInstance().player?.sendMessage(message)
         }
         MahjongChannels.roomSnapshot.registerClientReceiver(json) { payload ->

@@ -250,6 +250,18 @@ object MinecraftMessageKeys {
     /** 回合結束廣播內每一行分數變化，帶玩家名稱與已格式化的正負號分數兩個參數（兩個 `%s`）。 */
     const val ROUND_RESULT_SCORE_DELTA = PREFIX + "round_result_score_delta"
 
+    /** [com.doublemoon1119.mahjongcraft.logic.base.GameAction.MatchEnded] 的顯示文字，不帶參數。 */
+    const val GAME_ACTION_MATCH_ENDED = PREFIX + "game_action_match_ended"
+
+    /**
+     * 對局結束廣播的標題，不帶參數——目前是 client 端聊天訊息占位呈現，之後若換成 GUI/HUD 只需要
+     * 換掉呼叫端，這個 key 不受影響。
+     */
+    const val MATCH_RESULT_BROADCAST = PREFIX + "match_result_broadcast"
+
+    /** 對局結束廣播內每一行最終名次，帶名次、玩家名稱、最終分數三個參數（三個 `%s`）。 */
+    const val MATCH_RESULT_RANKING_LINE = PREFIX + "match_result_ranking_line"
+
     // ── 對局階段指令回饋 ──────────────────────────────────────────────────
 
     /** 已成功執行對局操作，帶一個動作顯示文字參數（一個 `%s`，見上方 `GAME_ACTION_*`）。 */
@@ -369,6 +381,9 @@ object MinecraftMessageKeys {
         GAME_ACTION_EXHAUSTIVE_DRAW,
         ROUND_RESULT_BROADCAST,
         ROUND_RESULT_SCORE_DELTA,
+        GAME_ACTION_MATCH_ENDED,
+        MATCH_RESULT_BROADCAST,
+        MATCH_RESULT_RANKING_LINE,
         GAME_ACTION_PERFORMED,
         NOT_YOUR_TURN,
         FORCED_AUTO_PLAY_ACTIVE,

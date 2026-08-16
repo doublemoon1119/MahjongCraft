@@ -21,6 +21,13 @@ sealed class GameAction {
     data object RoundStarted : GameAction()
 
     /**
+     * 整場對局已結束。
+     * 用於對外廣播「這場對局已依規則的 `GameLength` 結束」事件，不代表任何玩家的主動操作。廣播時
+     * 附帶的桌況快照即為最終桌況，可直接從中讀出每位玩家的最終分數。
+     */
+    data object MatchEnded : GameAction()
+
+    /**
      * 摸牌動作。
      * 通常由系統自動執行，或在特定情況下由玩家觸發。
      */

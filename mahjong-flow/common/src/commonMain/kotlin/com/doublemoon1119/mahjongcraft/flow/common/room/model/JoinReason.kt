@@ -9,4 +9,7 @@ sealed interface JoinReason {
 
     /** 玩家主動加入房間。 */
     data object Joined : JoinReason
+
+    /** 對局結束，玩家回到房間。 */
+    data object MatchEnded : JoinReason
 }

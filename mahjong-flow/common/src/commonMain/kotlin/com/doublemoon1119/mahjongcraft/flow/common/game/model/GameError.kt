@@ -62,6 +62,13 @@ sealed interface GameError : ApplicationError {
     data class WallExhausted(val gameId: Uuid) : GameError
 
     /**
+     * 對局尚未結束，不能把桌子從 Game 轉回 Room。
+     *
+     * @param gameId 對局 Uuid。
+     */
+    data class MatchNotOver(val gameId: Uuid) : GameError
+
+    /**
      * 該對局採用的規則模組不支援目前嘗試的動作、或此動作在目前桌況下不合法，且沒有可攜帶的具體
      * [GameAction] payload（例如流局相關動作，其 payload 需要規則特有的具體流局原因型別，而
      * `:mahjong-flow` 不應該、也不需要知道那個具體型別是什麼）。

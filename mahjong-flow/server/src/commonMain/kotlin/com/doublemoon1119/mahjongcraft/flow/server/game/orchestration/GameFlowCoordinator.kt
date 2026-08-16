@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTime
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNagareUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import org.koin.core.annotation.Factory
@@ -53,6 +54,8 @@ import kotlin.uuid.Uuid
  * @property declareExhaustiveDrawUseCase 一般流局結算用例。
  * @property declareSuukanNagareUseCase 四槓散了結算用例。
  * @property advanceRoundUseCase 連莊/過莊/開下一局用例。
+ * @property returnToRoomUseCase 對局結束後把桌子轉回房間用例；[advanceRoundUseCase] 回報
+ *   `isMatchOver` 成立時立即銜接呼叫。
  * @property aiTurnDriver 找出下一個該行動的 AI 玩家與其命令。
  * @property forcedAutoPlayDriver 找出下一個必須由伺服器固定操作的真人玩家與命令。
  * @property decisionTimerManager 在每次命令完成後結算並調整玩家決策計時器。
@@ -66,6 +69,7 @@ class GameFlowCoordinator(
     private val declareExhaustiveDrawUseCase: DeclareExhaustiveDrawUseCase,
     private val declareSuukanNagareUseCase: DeclareSuukanNagareUseCase,
     private val advanceRoundUseCase: AdvanceRoundUseCase,
+    private val returnToRoomUseCase: ReturnToRoomUseCase,
     private val aiTurnDriver: AiTurnDriver,
     private val forcedAutoPlayDriver: ForcedAutoPlayDriver,
     private val decisionTimerManager: GameDecisionTimerManager,
@@ -207,16 +211,27 @@ class GameFlowCoordinator(
 
         if (result is Outcome.Error && result.error is GameError.WallExhausted) {
             if (declareExhaustiveDrawUseCase(gameId) is Outcome.Success) {
-                advanceRoundUseCase(gameId)
+                chainAdvanceRound(gameId)
             }
             return result
         }
 
         if (result is Outcome.Success && commandMayHaveEndedHand(command, gameId)) {
-            advanceRoundUseCase(gameId)
+            chainAdvanceRound(gameId)
         }
 
         return result
+    }
+
+    /**
+     * 呼叫 [advanceRoundUseCase]，若回報整場對局已結束，緊接著呼叫 [returnToRoomUseCase] 把桌子轉回
+     * 房間。三個呼叫點（一般流局、四槓散了、一般結束本局判斷）共用這個方法，確保銜接時機一致。
+     */
+    private suspend fun chainAdvanceRound(gameId: Uuid) {
+        val result = advanceRoundUseCase(gameId)
+        if (result is Outcome.Success && result.value.isMatchOver) {
+            returnToRoomUseCase(gameId)
+        }
     }
 
     /**
@@ -234,7 +249,7 @@ class GameFlowCoordinator(
 
         val result = declareSuukanNagareUseCase(gameId)
         if (result is Outcome.Success) {
-            advanceRoundUseCase(gameId)
+            chainAdvanceRound(gameId)
         }
         return result
     }

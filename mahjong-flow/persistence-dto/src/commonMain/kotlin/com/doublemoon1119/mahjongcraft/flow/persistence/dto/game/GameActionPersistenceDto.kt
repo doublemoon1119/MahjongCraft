@@ -19,6 +19,10 @@ sealed interface GameActionPersistenceDto {
     @Serializable
     data object RoundStarted : GameActionPersistenceDto
 
+    /** [GameAction.MatchEnded] 的 persistence DTO。 */
+    @Serializable
+    data object MatchEnded : GameActionPersistenceDto
+
     /** [GameAction.Draw] 的 persistence DTO。 */
     @Serializable
     data object Draw : GameActionPersistenceDto
@@ -75,6 +79,7 @@ fun GameAction.toPersistenceDto(
 ): GameActionPersistenceDto = when (this) {
     GameAction.GameStarted -> GameActionPersistenceDto.GameStarted
     GameAction.RoundStarted -> GameActionPersistenceDto.RoundStarted
+    GameAction.MatchEnded -> GameActionPersistenceDto.MatchEnded
     GameAction.Draw -> GameActionPersistenceDto.Draw
     is GameAction.Discard -> GameActionPersistenceDto.Discard(tileId.toString())
     is GameAction.Chi -> GameActionPersistenceDto.Chi(tileId.toString(), withTiles.map(Uuid::toString))
@@ -96,6 +101,7 @@ fun GameActionPersistenceDto.toDomain(
 ): GameAction = when (this) {
     GameActionPersistenceDto.GameStarted -> GameAction.GameStarted
     GameActionPersistenceDto.RoundStarted -> GameAction.RoundStarted
+    GameActionPersistenceDto.MatchEnded -> GameAction.MatchEnded
     GameActionPersistenceDto.Draw -> GameAction.Draw
     is GameActionPersistenceDto.Discard -> GameAction.Discard(Uuid.parse(tileId))
     is GameActionPersistenceDto.Chi -> GameAction.Chi(Uuid.parse(tileId), withTileIds.map(Uuid::parse))

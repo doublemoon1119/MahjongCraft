@@ -68,6 +68,7 @@ class StartGameUseCase(
                                 roomId to Game(
                                     tableState = tableState,
                                     flowConfig = room.gameConfig.flowConfig,
+                                    hostId = room.hostId,
                                 )
                                 ),
                         ),
