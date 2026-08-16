@@ -121,28 +121,39 @@ class MahjongDiceEntity(
     }
 
     /**
+     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `world.time`；只在記憶體內，不寫進存檔，每次
+     * entity 物件重新建立（剛 spawn，或世界重新載入還原自 NBT）都會是全新的一次，不會延續上一次的值。
+     * 用來讓 [tick] 的自我消失判斷不受「世界重新載入時 `world.time` 可能一次補跑一大段 tick」影響，
+     * 詳見 [tick] KDoc。
+     */
+    private var firstTickWorldTime: Long = Long.MIN_VALUE
+
+    /**
      * 由 server game time 結束動畫；client 只呈現同步狀態。
      *
-     * 管理中的骰子（`managedByGame`）額外自行判斷是否該消失：`world.time` 是持久化、單調遞增的世界
-     * 年齡，不會因伺服器重啟歸零，所以「動畫＋觀看時間的目標時長」用 `world.time - animationStartGameTime`
-     * 就能算出來，不需要另外排計時器或在伺服器啟動時另外掃一輪——伺服器重啟後 entity 重新載入的第一
-     * 個 tick，這個算式就會自然算出「早就超過該存在的時長了」，直接 [discard]，正常運行期間跟崩潰
-     * 復原走的是同一段邏輯，不需要區分。玩家自由放置的裝飾骰子（`managedByGame == false`）不受影響，
-     * 永久存在直到玩家自己回收。
+     * 管理中的骰子（`managedByGame`）額外自行判斷是否該消失，但**不是**直接拿 `world.time` 減
+     * [animationStartGameTime]——`world.time` 雖然持久化、不會因暫停停止前進，但世界重新載入
+     * （尤其是伺服器落後進度、需要一次補跑追趕的情況，例如重新載入出生點附近區塊那段）時可能在很
+     * 短的真實時間內一次前進一大段，若還是拿存檔裡的 [animationStartGameTime] 相減，剛載入完就會
+     * 誤判成「早就超過該存在的時長了」，動畫都還沒播完就被清掉——這是實際踩過的問題，不是假設。
+     * 改用 [firstTickWorldTime]（entity 物件這次載入後第一次被 tick 到的世界時間，只存在記憶體裡）
+     * 當基準，讓每次載入（不管是正常 spawn 還是世界重新載入）都有一段完整、不受補跑影響的存在時間，
+     * 崩潰復原情境下依然成立：重新載入後的第一個 tick 立刻取得新的基準點，不會提早也不會延後消失。
      */
     override fun tick() {
         super.tick()
         if (world.isClient) return
-        val elapsedTicks = world.time - animationStartGameTime
+        if (firstTickWorldTime == Long.MIN_VALUE) firstTickWorldTime = world.time
+        val elapsedTicksSinceAnimationStart = world.time - animationStartGameTime
         if (rolling) {
-            if (elapsedTicks == FIRST_LANDING_TICK) {
+            if (elapsedTicksSinceAnimationStart == FIRST_LANDING_TICK) {
                 playSound(SoundEvents.ENTITY_ITEM_FRAME_PLACE, 1.0f, 1.0f)
             }
-            if (elapsedTicks >= DiceRollAnimationSpec.DEFAULT_DURATION_TICKS) {
+            if (elapsedTicksSinceAnimationStart >= DiceRollAnimationSpec.DEFAULT_DURATION_TICKS) {
                 rolling = false
             }
         }
-        if (managedByGame && elapsedTicks >= DESPAWN_AFTER_TICKS) {
+        if (managedByGame && world.time - firstTickWorldTime >= DESPAWN_AFTER_TICKS) {
             discard()
         }
     }
