@@ -241,6 +241,15 @@ object MinecraftMessageKeys {
     /** 其他規則專屬流局原因的通用 fallback 顯示文字，不帶參數。 */
     const val GAME_ACTION_EXHAUSTIVE_DRAW = PREFIX + "game_action_exhaustive_draw"
 
+    /**
+     * 回合結束廣播的標題，帶一個動作顯示文字參數（一個 `%s`，見上方 `GAME_ACTION_*`）——目前是
+     * client 端聊天訊息占位呈現，之後若換成 GUI/HUD 只需要換掉呼叫端，這個 key 不受影響。
+     */
+    const val ROUND_RESULT_BROADCAST = PREFIX + "round_result_broadcast"
+
+    /** 回合結束廣播內每一行分數變化，帶玩家名稱與已格式化的正負號分數兩個參數（兩個 `%s`）。 */
+    const val ROUND_RESULT_SCORE_DELTA = PREFIX + "round_result_score_delta"
+
     // ── 對局階段指令回饋 ──────────────────────────────────────────────────
 
     /** 已成功執行對局操作，帶一個動作顯示文字參數（一個 `%s`，見上方 `GAME_ACTION_*`）。 */
@@ -358,6 +367,8 @@ object MinecraftMessageKeys {
         GAME_ACTION_PASS,
         GAME_ACTION_KYUUSHU_KYUUHAI,
         GAME_ACTION_EXHAUSTIVE_DRAW,
+        ROUND_RESULT_BROADCAST,
+        ROUND_RESULT_SCORE_DELTA,
         GAME_ACTION_PERFORMED,
         NOT_YOUR_TURN,
         FORCED_AUTO_PLAY_ACTIVE,
