@@ -100,7 +100,7 @@ class MahjongAutoDrawServiceTest {
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             advanceRoundUseCase = AdvanceRoundUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
-            returnToRoomUseCase = ReturnToRoomUseCase(store, roomSnapshotRepo, roomEventPublisher),
+            returnToRoomUseCase = ReturnToRoomUseCase(store, roomSnapshotRepo, roomEventPublisher, presentationPublisher),
             aiTurnDriver = aiTurnDriver,
             forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo),
             decisionTimerManager = decisionTimerManager,

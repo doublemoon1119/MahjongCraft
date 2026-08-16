@@ -1,10 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import net.minecraft.client.render.OverlayTexture
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRenderer
@@ -14,10 +18,18 @@ import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.item.ItemStack
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.RotationAxis
+import kotlin.uuid.toKotlinUuid
 
-/** 使用既有麻將牌 item model 呈現自由放置牌張的 client renderer。 */
+/**
+ * 使用既有麻將牌 item model 呈現牌張的 client renderer；自由放置與牌局管理中的牌共用同一個 entity
+ * 類型，牌面來源不同：自由放置直接讀 entity 自身 tracked data，牌局管理中的牌改依 entity UUID
+ * （等同 `IdentifiedTile.id`）查詢 [stateStore] 目前收到的可見性快照，完全不看 entity 自身的
+ * `tileAssetKey`（該欄位在管理模式下恆為 [UNKNOWN_TILE_ASSET_KEY]，見 [MahjongTileEntity]）。
+ */
 class MahjongTileEntityRenderer(
     context: EntityRendererFactory.Context,
+    private val stateStore: ClientMahjongStateStore,
+    private val tileAssetRegistry: MinecraftTileAssetRegistry,
 ) : EntityRenderer<MahjongTileEntity>(context) {
     /** 共用 Vanilla item renderer，避免建立第二套牌面模型格式。 */
     private val itemRenderer = context.itemRenderer
@@ -41,7 +53,7 @@ class MahjongTileEntityRenderer(
             MahjongTilePose.FACE_DOWN -> matrices.translate(0.0, 0.0, MahjongTileEntity.TILE_DEPTH / 2.0)
         }
         itemRenderer.renderItem(
-            tileStacks.getValue(entity.tileAssetKey),
+            tileStacks[entity.resolvedTileAssetKey()] ?: tileStacks.getValue(UNKNOWN_TILE_ASSET_KEY),
             ModelTransformationMode.HEAD,
             light,
             OverlayTexture.DEFAULT_UV,
@@ -55,6 +67,16 @@ class MahjongTileEntityRenderer(
 
     /** ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture。 */
     override fun getTexture(entity: MahjongTileEntity): Identifier? = null
+
+    /**
+     * 自由放置牌沿用 entity 自身 tracked data；牌局管理中的牌改查 [stateStore]——查不到（不在目前
+     * 對局範圍）或未對目前觀察者揭露時顯示牌背，查得到就換算成對應正面 asset key。
+     */
+    private fun MahjongTileEntity.resolvedTileAssetKey(): String {
+        if (!managedByGame) return tileAssetKey
+        val tile = stateStore.findWallTileSnapshot(uuid.toKotlinUuid())?.tile ?: return UNKNOWN_TILE_ASSET_KEY
+        return tile.toAssetKey(tileAssetRegistry)
+    }
 
     companion object {
         /** 每個合法 asset key 共用一個只供渲染使用的 ItemStack。 */

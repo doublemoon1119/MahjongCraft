@@ -15,6 +15,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentationResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -100,6 +103,9 @@ class FabricTableLifecycleServiceTest {
         /** 記錄清理呼叫的骰子 presenter fake。 */
         private val diceRollPresenter = RecordingDiceRollPresenter()
 
+        /** 記錄清理呼叫的牌牆 presenter fake。 */
+        private val tileWallPresenter = RecordingTileWallPresenter()
+
         /** 受測生命週期服務。 */
         val lifecycleService = FabricTableLifecycleService(
             store,
@@ -107,6 +113,7 @@ class FabricTableLifecycleServiceTest {
             cleanupService,
             configState,
             diceRollPresenter,
+            tileWallPresenter,
         )
 
         /** 建立包含測試 Room 與 membership 的初始狀態。 */
@@ -128,6 +135,15 @@ class FabricTableLifecycleServiceTest {
         override fun present(presentation: MahjongDiceRollPresentation): MahjongDiceRollPresentationResult = MahjongDiceRollPresentationResult.PRESENTED
 
         /** 記錄清理請求並回報沒有已載入骰子。 */
+        override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
+    }
+
+    /** 只記錄正式牌牆清理參數的測試 presenter。 */
+    private class RecordingTileWallPresenter : MahjongTileWallPresenter {
+        /** 此測試不使用正式牌牆呈現。 */
+        override fun present(presentation: MahjongTileWallPresentation): MahjongTileWallPresentationResult = MahjongTileWallPresentationResult.PRESENTED
+
+        /** 記錄清理請求並回報沒有已載入牌牆用牌。 */
         override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
     }
 }

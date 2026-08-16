@@ -12,11 +12,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import kotlinx.coroutines.launch
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
@@ -32,10 +34,9 @@ import kotlin.uuid.Uuid
 /**
  * [GamePresentationPublisher] 的 Fabric 實作，薄分派層。
  *
- * TODO: `publishWallStructure` 仍為 no-op，尚未接上真正的牌牆呈現邏輯。
- *
  * @property seatingPresenter 開局座位傳送的實際呈現邏輯。
  * @property diceRollPresenter 正式擲骰的實際呈現邏輯。
+ * @property tileWallPresenter 正式牌牆的實際呈現邏輯。
  * @property tableLocationRegistry 麻將桌最後已知位置索引。
  * @property serverHolder 目前運行中的 server，供世界／方塊狀態查詢使用。
  * @property busyTracker 呈現動畫播放期間標記該桌暫時忙碌，供輸入分派入口與自動操作心跳擋下操作。
@@ -46,6 +47,7 @@ import kotlin.uuid.Uuid
 class FabricGamePresentationPublisher(
     private val seatingPresenter: MahjongSeatingPresenter,
     private val diceRollPresenter: MahjongDiceRollPresenter,
+    private val tileWallPresenter: MahjongTileWallPresenter,
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
     private val busyTracker: TablePresentationBusyTracker,
@@ -123,7 +125,43 @@ class FabricGamePresentationPublisher(
         }
     }
 
-    override fun publishWallStructure(gameId: Uuid, structure: Map<Uuid, TileWallPosition>) = Unit
+    /** 跟 [publishDiceRoll] 同理，牌牆呈現也需要碰觸世界／entity，一併丟回伺服器主執行緒執行。 */
+    override fun publishWallStructure(gameId: Uuid, structure: Map<Uuid, TileWallPosition>, dealerSeatIndex: Int) {
+        logger.debug("publishWallStructure gameId={} tileCount={} dealerSeatIndex={}", gameId, structure.size, dealerSeatIndex)
+        if (serverHolder.current() == null) {
+            logger.warn("publishWallStructure gameId={} skipped: no active server", gameId)
+            return
+        }
+        scope.launch(dispatchers.main) {
+            val location = tableLocationRegistry.get(gameId)?.location
+            if (location == null) {
+                logger.warn("publishWallStructure gameId={} skipped: no known table location", gameId)
+                return@launch
+            }
+            val world = resolveWorld(location)
+            if (world == null) {
+                logger.warn("publishWallStructure gameId={} skipped: could not resolve world for location={}", gameId, location)
+                return@launch
+            }
+            val controllerPos = BlockPos(location.x, location.y, location.z)
+            val state = world.getBlockState(controllerPos)
+            if (!state.contains(Properties.HORIZONTAL_FACING)) {
+                logger.warn("publishWallStructure gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})", gameId, controllerPos, state)
+                return@launch
+            }
+            val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
+
+            val presentation = MahjongTileWallPresentation(
+                tableId = gameId,
+                tableLocation = location,
+                tableFacing = facing,
+                dealerSeatIndex = dealerSeatIndex,
+                structure = structure,
+            )
+            val result = tileWallPresenter.present(presentation)
+            logger.debug("publishWallStructure gameId={} present() result={}", gameId, result)
+        }
+    }
 
     /** 跟 [publishDiceRoll] 同理，座位傳送也需要碰觸世界／entity，一併丟回伺服器主執行緒執行。 */
     override fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>) {
@@ -138,29 +176,8 @@ class FabricGamePresentationPublisher(
         return serverHolder.current()?.getWorld(worldKey)
     }
 
-    /**
-     * 把座位 index 換算成骰子呈現用的桌子局部側面：index 0 固定對應局部南側，之後依
-     * [MahjongSeatingTableLayout][com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout]
-     * 既有的逆時針排列方向依序旋轉——跟 [MahjongDiceTableLayout][com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout]
-     * 內部 `rotateForSide` 本來就採用的 SOUTH→WEST→NORTH→EAST 旋轉順序一致，維持同一套局部方向系統
-     * 只有一個旋轉方向定義。
-     *
-     * 座位系統（[MahjongSeatingTableLayout][com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout]）
-     * 目前是世界絕對座標、不隨桌子朝向旋轉，跟這裡的局部側面是兩套不同座標系統——這個既有落差不在
-     * 這次擲骰接線的範圍內處理。
-     */
-    private fun seatIndexToTableSide(seatIndex: Int): MahjongTableSide = when (seatIndex.mod(SEAT_COUNT)) {
-        0 -> MahjongTableSide.SOUTH
-        1 -> MahjongTableSide.WEST
-        2 -> MahjongTableSide.NORTH
-        else -> MahjongTableSide.EAST
-    }
-
     /** 正式擲骰呈現使用的固定參數。 */
     private companion object {
-        /** 麻將桌固定座位數。 */
-        const val SEAT_COUNT: Int = 4
-
         /** 把局數換算成 `rollSequence` 時的本場數進位基準；本場數在真實對局中不可能達到此量級。 */
         const val ROLL_SEQUENCE_ROUND_MULTIPLIER: Long = 1_000_000L
     }

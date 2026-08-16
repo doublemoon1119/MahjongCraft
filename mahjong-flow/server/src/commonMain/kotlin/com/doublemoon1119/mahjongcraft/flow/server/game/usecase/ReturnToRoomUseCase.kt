@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
@@ -31,12 +32,14 @@ import kotlin.uuid.Uuid
  * @property authoritativeStateStore Room 與 Game 共用的權威狀態儲存。
  * @property roomSnapshotRepository 房間快照數據倉庫。
  * @property eventPublisher 房間通知服務。
+ * @property presentationPublisher 平台呈現層觸發介面，用來清除本局牌牆用牌。
  */
 @Factory
 class ReturnToRoomUseCase(
     private val authoritativeStateStore: AuthoritativeStateStore,
     private val roomSnapshotRepository: RoomSnapshotRepository,
     @Provided private val eventPublisher: RoomEventPublisher,
+    @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 執行 Game → Room 的狀態轉移。
@@ -78,13 +81,17 @@ class ReturnToRoomUseCase(
         if (outcome is Outcome.Error) return outcome
         val newRoom = (outcome as Outcome.Success).value
 
-        // 2. 為每位玩家同步一份房間快照——這些玩家先前都是 Game 快照的觀察者，不是既有的房間快照
+        // 2. 清除本局牌牆用牌；空 structure 觸發呈現層既有的「建空集合後丟棄全部舊牌」語意，不需要
+        //    另外定義專用的清除介面方法。莊家座位在空 structure 下不影響任何座標計算，傳 0 即可。
+        presentationPublisher.publishWallStructure(gameId, emptyMap(), dealerSeatIndex = 0)
+
+        // 3. 為每位玩家同步一份房間快照——這些玩家先前都是 Game 快照的觀察者，不是既有的房間快照
         //    觀察者，不能沿用 CreateRoomUseCase 那種「查詢既有觀察者」的寫法。
         newRoom.playerIds.forEach { playerId ->
             roomSnapshotRepository.setSnapshot(playerId, newRoom.toSnapshot(playerId))
         }
 
-        // 3. 廣播「已回到房間」事件；比照 CreateRoomUseCase 對房主的既有慣例，每位玩家收到一則描述
+        // 4. 廣播「已回到房間」事件；比照 CreateRoomUseCase 對房主的既有慣例，每位玩家收到一則描述
         //    自己這次狀態變化的通知
         newRoom.playerIds.forEach { playerId ->
             eventPublisher.publishJoin(gameId, playerId, playerId, JoinReason.MatchEnded)

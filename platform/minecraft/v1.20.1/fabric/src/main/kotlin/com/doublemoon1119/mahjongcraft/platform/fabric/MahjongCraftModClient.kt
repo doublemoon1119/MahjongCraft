@@ -75,7 +75,9 @@ class MahjongCraftModClient : ClientModInitializer {
             )
         }
         EntityRendererRegistry.register(ModEntities.mahjongDice, ::MahjongDiceEntityRenderer)
-        EntityRendererRegistry.register(ModEntities.mahjongTile, ::MahjongTileEntityRenderer)
+        EntityRendererRegistry.register(ModEntities.mahjongTile) { context ->
+            MahjongTileEntityRenderer(context, stateStore, tileAssetRegistry)
+        }
         MahjongChannels.decisionTimerUpdate.registerClientReceiver(json) { payload ->
             val gameId = Uuid.parse(payload.gameId)
             val status = payload.status

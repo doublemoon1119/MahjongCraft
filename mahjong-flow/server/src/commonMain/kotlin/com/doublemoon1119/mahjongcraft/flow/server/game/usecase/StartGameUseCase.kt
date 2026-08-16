@@ -103,7 +103,10 @@ class StartGameUseCase(
                 eventPublisher.publish(roomId, player.id, operatorId, GameAction.DiceRolled(diceRoll))
             }
         }
-        initializationResult.wallStructure?.let { presentationPublisher.publishWallStructure(roomId, it) }
+        initializationResult.wallStructure?.let { structure ->
+            val dealerSeatIndex = tableState.players.indexOfFirst { player -> player.currentWind == Wind.EAST }
+            presentationPublisher.publishWallStructure(roomId, structure, dealerSeatIndex)
+        }
         presentationPublisher.publishGameStarted(roomId, tableState.players.map { it.id })
 
         return Outcome.Success(roomId)

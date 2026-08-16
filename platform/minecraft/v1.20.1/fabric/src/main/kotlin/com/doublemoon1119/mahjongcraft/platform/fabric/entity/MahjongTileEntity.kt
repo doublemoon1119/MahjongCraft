@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.nextTileAssetKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAssetKey
@@ -178,17 +179,14 @@ class MahjongTileEntity(
     }
 
     companion object {
-        /** 舊版驗證過的麻將牌世界縮放。 */
-        const val TILE_SCALE = 0.15f
-
-        /** 麻將牌世界寬度。 */
-        const val TILE_WIDTH = 12.0f / 16.0f * TILE_SCALE
+        /** 麻將牌世界寬度；與 [MahjongTileTableLayout][com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout] 共用同一組數值來源。 */
+        val TILE_WIDTH = MahjongTileDimensions.TILE_WIDTH.toFloat()
 
         /** 麻將牌世界高度。 */
-        const val TILE_HEIGHT = 16.0f / 16.0f * TILE_SCALE
+        val TILE_HEIGHT = MahjongTileDimensions.TILE_HEIGHT.toFloat()
 
         /** 麻將牌世界深度。 */
-        const val TILE_DEPTH = 8.0f / 16.0f * TILE_SCALE
+        val TILE_DEPTH = MahjongTileDimensions.TILE_DEPTH.toFloat()
 
         /** 牌面世界存檔 key。 */
         private const val NBT_KEY_TILE = "Tile"

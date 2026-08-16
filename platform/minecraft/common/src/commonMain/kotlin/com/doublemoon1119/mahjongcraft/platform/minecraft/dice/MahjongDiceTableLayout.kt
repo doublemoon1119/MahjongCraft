@@ -45,6 +45,26 @@ data class MahjongDiceTablePlacement(
     val startDelayTicks: Int,
 )
 
+/**
+ * 把座位 index 換算成桌子局部側面：index 0 固定對應局部南側，之後依
+ * [MahjongSeatingTableLayout][com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout]
+ * 既有的逆時針排列方向依序旋轉——跟 [MahjongDiceTableLayout] 內部 `rotateForSide` 本來就採用的
+ * SOUTH→WEST→NORTH→EAST 旋轉順序一致，維持同一套局部方向系統只有一個旋轉方向定義。任何需要「某位
+ * 座位玩家的局部側面」的呈現層計算（骰子投入側、牌牆莊家面）都共用這個函式，不各自重複定義。
+ *
+ * 座位系統（`MahjongSeatingTableLayout`）目前是世界絕對座標、不隨桌子朝向旋轉，跟這裡的局部側面是
+ * 兩套不同座標系統——這個既有落差不在此函式的範圍內處理。
+ */
+fun seatIndexToTableSide(seatIndex: Int): MahjongTableSide = when (seatIndex.mod(SEAT_COUNT)) {
+    0 -> MahjongTableSide.SOUTH
+    1 -> MahjongTableSide.WEST
+    2 -> MahjongTableSide.NORTH
+    else -> MahjongTableSide.EAST
+}
+
+/** 麻將桌固定座位數。 */
+private const val SEAT_COUNT: Int = 4
+
 /** 兩款 3×3 麻將桌共用的兩顆／三顆正式骰子位置計算。 */
 object MahjongDiceTableLayout {
     /**

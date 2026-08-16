@@ -36,11 +36,16 @@ interface GamePresentationPublisher {
     /**
      * 通知平台呈現層本局牌牆結構座標。
      *
+     * [dealerSeatIndex] 跟 [publishDiceRoll] 同理，是呼叫端已經持有的通用桌況資料，一併帶過去讓平台
+     * 呈現層自行決定怎麼把牌牆面／墩／層結構換算成以莊家座位為基準的世界座標。
+     *
      * @param gameId 對局 Uuid。
      * @param structure 本局牌牆所有牌（含活牌與王牌）的面／墩／層結構座標，鍵為
-     * [com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile.id]。
+     * [com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile.id]；空 map 代表這局結束，只需要清除
+     * 舊牌。
+     * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index。
      */
-    fun publishWallStructure(gameId: Uuid, structure: Map<Uuid, TileWallPosition>)
+    fun publishWallStructure(gameId: Uuid, structure: Map<Uuid, TileWallPosition>, dealerSeatIndex: Int)
 
     /**
      * 通知平台呈現層本局開局座位傳送。只在開局時呼叫一次，之後連莊/過莊開新局不會再次呼叫——風位

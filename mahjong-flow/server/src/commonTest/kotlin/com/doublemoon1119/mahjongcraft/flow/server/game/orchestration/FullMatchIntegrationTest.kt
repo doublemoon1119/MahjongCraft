@@ -101,7 +101,7 @@ class FullMatchIntegrationTest {
             // FakeGameRepository 獨立於 AuthoritativeStateStore，這裡的 ReturnToRoomUseCase 接不到
             // 同一份對局資料，只是滿足建構子的無害 no-op——本測試關心的是編排層撐不撐得住整場對局，
             // 不是 Game → Room 轉移本身。
-            returnToRoomUseCase = ReturnToRoomUseCase(AuthoritativeStateStore(), FakeRoomSnapshotRepository(), FakeRoomEventPublisher()),
+            returnToRoomUseCase = ReturnToRoomUseCase(AuthoritativeStateStore(), FakeRoomSnapshotRepository(), FakeRoomEventPublisher(), presentationPublisher),
             aiTurnDriver = aiTurnDriver,
             forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo),
             decisionTimerManager = decisionTimerManager,

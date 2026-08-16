@@ -143,7 +143,10 @@ class AdvanceRoundUseCase(
                 eventPublisher.publish(gameId, player.id, newDealerId, GameAction.DiceRolled(diceRoll))
             }
         }
-        advanceOutcome.wallStructure?.let { presentationPublisher.publishWallStructure(gameId, it) }
+        advanceOutcome.wallStructure?.let { structure ->
+            val dealerSeatIndex = newState.players.indexOfFirst { player -> player.id == newDealerId }
+            presentationPublisher.publishWallStructure(gameId, structure, dealerSeatIndex)
+        }
 
         return Outcome.Success(result)
     }
