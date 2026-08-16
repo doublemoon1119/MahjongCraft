@@ -131,11 +131,25 @@ class RoomToRoomFullLifecycleIntegrationTest {
      * → 成功開出第二場全新對局。
      */
     @Test
-    fun `test full room to game to room to game lifecycle`() = runTest {
+    fun `test full room to game to room to game lifecycle for east-only`() = runTest {
+        testFullLifecycle(RiichiGameLength.East)
+    }
+
+    /**
+     * 跟上面東風戰同一套驗證，改用半莊（東南風，8 局，含可能的連莊會更長）——`isMatchOver` 判斷本身
+     * 通用於 `RiichiGameLength` 任何 `totalRounds`（見 `TableState.advanceRound`），這裡只是把「真的
+     * 連續打完好幾局、含場風輪轉」這條路徑也走一次自動測試，不是另外寫一套邏輯。
+     */
+    @Test
+    fun `test full room to game to room to game lifecycle for two-winds`() = runTest {
+        testFullLifecycle(RiichiGameLength.TwoWinds)
+    }
+
+    private suspend fun testFullLifecycle(gameLength: RiichiGameLength) {
         val fixtures = Fixtures()
         val hostId = Uuid.random()
         val roomId = Uuid.random()
-        val config = GameConfig(ruleConfig = RiichiRuleConfig(gameLength = RiichiGameLength.East))
+        val config = GameConfig(ruleConfig = RiichiRuleConfig(gameLength = gameLength))
 
         val createResult = fixtures.createRoomUseCase(roomId, hostId, config)
         assertTrue(createResult is Outcome.Success, "Room creation should succeed: $createResult")
