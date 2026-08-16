@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -132,23 +133,34 @@ class MahjongTableGameActionService(
     }
 
     /**
-     * 分派 [command]，成功時先發布這次操作本身的成功回饋，才補做真人自動摸牌；失敗時發布對應錯誤
-     * 回饋。順序很重要——[autoDrawService] 可能會在下一輪又輪回同一位玩家時發布
-     * [MinecraftPlayerFeedback.YourTurn]，如果先呼叫它，「輪到你了」會搶在「已執行：打出 X」這句
-     * 之前送達，讀起來像是訊息順序顛倒。
+     * 分派 [command]，成功時先發布這次操作本身的成功回饋，才驅動 AI／強制自動操作連鎖與真人自動摸牌；
+     * 失敗時發布對應錯誤回饋。順序很重要，且不只一處：
+     * - [autoDrawService] 可能會在下一輪又輪回同一位玩家時發布 [MinecraftPlayerFeedback.YourTurn]，
+     *   如果先呼叫它，「輪到你了」會搶在「已執行：打出 X」這句之前送達。
+     * - 這次操作本身若觸發流局／連莊（例如打出的正好是最後一張牌，導致牌山耗盡），
+     *   [GameFlowCoordinator.driveAutomatedPlayers] 內部會廣播回合結束事件；如果在驅動自動連鎖之前
+     *   還沒發布這次操作的回饋，玩家會先看到「本局結束」才看到「已執行：打出 X」，讀起來像是這次
+     *   操作發生在對局結束之後。
      *
-     * [gameFlowCoordinator] 內部會連帶驅動 AI／強制自動操作直到輪到下一位真人為止；那段迴圈若拋出
-     * 未預期例外，攔下來記錄，避免協程靜默死掉、對局卡在半途卻沒有任何 log 可查。
+     * 因此這裡刻意不用 [GameFlowCoordinator] 一次到位的 `invoke`，改拆成 [GameFlowCoordinator.dispatch]
+     * （只分派這次操作，不驅動自動連鎖）→ 發布這次操作的回饋 → [GameFlowCoordinator.driveAutomatedPlayers]
+     * （驅動 AI／強制自動操作直到輪到下一位真人為止）三個步驟依序執行。自動連鎖那段迴圈若拋出未預期
+     * 例外，攔下來記錄，避免協程靜默死掉、對局卡在半途卻沒有任何 log 可查。
      */
     private suspend fun execute(gameId: Uuid, playerId: Uuid, command: GameCommand, action: GameAction, referenceTile: Tile?) {
         try {
-            when (val result = gameFlowCoordinator(gameId, playerId, command)) {
-                is Outcome.Success -> {
-                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameActionPerformed(action, referenceTile))
-                    autoDrawService.checkAndAutoDraw(gameId)
-                }
+            val result = gameFlowCoordinator.dispatch(gameId, playerId, command)
+            when (result) {
+                is Outcome.Success -> feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameActionPerformed(action, referenceTile))
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftGameFeedbackResolver.actionError(result.error))
             }
+            // 被拒絕的命令視為完全沒發生過，不驅動自動連鎖——跟 GameFlowCoordinator.invoke() 對
+            // ForcedAutoPlayActive 的既有處理一致。其餘成功／失敗結果都要驅動，即使這位玩家的命令
+            // 失敗，其他 AI／強制自動操作玩家仍然可能有動作要做。
+            if (result !is Outcome.Error || result.error !is GameError.ForcedAutoPlayActive) {
+                gameFlowCoordinator.driveAutomatedPlayers(gameId)
+            }
+            if (result is Outcome.Success) autoDrawService.checkAndAutoDraw(gameId)
         } catch (throwable: Throwable) {
             logger.error("Failed to execute game command {} for player {} in game {}", command, playerId, gameId, throwable)
         }

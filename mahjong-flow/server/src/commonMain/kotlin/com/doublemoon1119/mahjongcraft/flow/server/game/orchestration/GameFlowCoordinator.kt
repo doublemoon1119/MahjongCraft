@@ -75,6 +75,12 @@ class GameFlowCoordinator(
      * 分派 [command] 並自動銜接對應的系統觸發 use case，完成後接著驅動所有需要行動的 AI 玩家
      * （見 [driveAutomatedPlayers]）。
      *
+     * 大多數呼叫端應該用這個一次到位的入口；已進入強制自動操作的玩家一律拒絕，且完全不觸發自動連鎖
+     * ——被拒絕的手動命令視為完全沒發生過，不應該有任何副作用。只有在呼叫端需要在「這次操作本身的
+     * 結果」與「隨之而來的自動連鎖」之間插入自己的動作時（例如先發布這次操作成功的回饋訊息，再讓
+     * 自動連鎖繼續跑，避免訊息順序看起來顛倒），才需要改拆成 [dispatch] + [driveAutomatedPlayers]
+     * 分開呼叫；這種情況下呼叫端要自行決定拒絕時是否仍要驅動自動連鎖。
+     *
      * @param gameId 對局 Uuid。
      * @param playerId 發起操作的玩家 Uuid。
      * @param command 欲執行的操作。
@@ -93,6 +99,33 @@ class GameFlowCoordinator(
         val result = dispatchAndReconcile(gameId, playerId, command)
         driveAutomatedPlayers(gameId)
         return result
+    }
+
+    /**
+     * 分派 [command] 並自動銜接對應的系統觸發 use case，**不會**接著驅動自動連鎖（見 [invoke] 與
+     * [driveAutomatedPlayers]）——只有需要在兩者之間插入自己動作的呼叫端才需要直接呼叫這個方法，
+     * 呼叫完後仍須自行接著呼叫 [driveAutomatedPlayers]，否則 AI／強制自動操作玩家不會被推進。
+     *
+     * 已進入強制自動操作（[com.doublemoon1119.mahjongcraft.flow.common.game.model.Game.forcedAutoPlayPlayerIds]）
+     * 的玩家一律拒絕——跟 [invoke] 共用同一條守門檢查；[driveAutomatedPlayers] 內部呼叫的是私有的
+     * `dispatchAndReconcile`，替 AI／強制自動操作玩家送出命令時不會經過這裡、不會撞到這條檢查。
+     *
+     * @param gameId 對局 Uuid。
+     * @param playerId 發起操作的玩家 Uuid。
+     * @param command 欲執行的操作。
+     * @return [GameActionRouter]（或四槓散了攔截時改呼叫的 [declareSuukanNagareUseCase]）的執行結果。
+     */
+    suspend fun dispatch(
+        gameId: Uuid,
+        playerId: Uuid,
+        command: GameCommand,
+    ): Outcome<Unit, GameError> {
+        val game = gameRepository.getGame(gameId)
+            ?: return Outcome.Error(GameError.GameNotFound(gameId))
+        if (playerId in game.forcedAutoPlayPlayerIds) {
+            return Outcome.Error(GameError.ForcedAutoPlayActive(playerId, gameId))
+        }
+        return dispatchAndReconcile(gameId, playerId, command)
     }
 
     /**
