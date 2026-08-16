@@ -13,6 +13,8 @@ class FakeGameRepository : GameRepository {
 
     override suspend fun getGame(gameId: Uuid): Game? = games[gameId]
 
+    override suspend fun getAllGameIds(): Set<Uuid> = games.keys.toSet()
+
     /** 直接寫入包含流程設定的 [Game]，供需驗證 flow policy 的測試使用。 */
     suspend fun setGame(game: Game) {
         games[game.id] = game

@@ -129,6 +129,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
         remainingReserveMillisByPlayerId = gameRuntimeStates.getValue(id.toString())
             .toRemainingReserveMillisByPlayerId(),
         forcedAutoPlayPlayerIds = gameRuntimeStates.getValue(id.toString()).toForcedAutoPlayPlayerIds(),
+        isMatchOver = gameRuntimeStates.getValue(id.toString()).isMatchOver,
     )
 }
 

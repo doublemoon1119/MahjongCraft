@@ -782,6 +782,46 @@ class GameFlowCoordinatorTest {
                 "100-iteration cap (actual call count: ${fixtures.gameRepo.getTableStateCallCount}).",
         )
     }
+
+    /**
+     * 迴歸測試：驗證對局結束後（[Game.isMatchOver] 成立）再次呼叫 [GameFlowCoordinator.driveAutomatedPlayers]
+     * 不會重複觸發流局結算——[Game.isMatchOver] 加入前，`AiTurnDriver`／`ForcedAutoPlayDriver` 不知道
+     * 對局已經結束，會不斷嘗試對已空的牌山摸牌、不斷重新觸發 `DeclareExhaustiveDrawUseCase`，導致
+     * 流局點數被重複套用；這支測試模擬「心跳每個 tick 都呼叫一次」的情境，驗證第二次呼叫之後分數
+     * 不會再變動。
+     */
+    @Test
+    fun `test driveAutomatedPlayers does not re-apply exhaustive draw settlement after match is over`() = runTest {
+        val fixtures = Fixtures()
+        val aiId = Uuid.random()
+        val ai = FakeMahjongPlayerFactory.create(
+            id = aiId,
+            initialSeat = Wind.EAST,
+            aiStrategyKey = RandomAiStrategy.KEY,
+            playerRuleState = RiichiPlayerState(),
+        )
+        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState())
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(ai, other),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.OneGame),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+            roundNumber = 1,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        // 第一次呼叫：觸發 WallExhausted → 流局結算 → isMatchOver 成立。
+        fixtures.coordinator.driveAutomatedPlayers(gameId)
+        val scoresAfterFirstCall = fixtures.gameRepo.getTableState(gameId)!!.players.associate { it.id to it.score }
+        assertTrue(fixtures.gameRepo.getGame(gameId)!!.isMatchOver, "Match should be over after the wall is exhausted in a one-round match.")
+
+        // 模擬心跳每個 tick 都再呼叫一次：分數不該再變動。
+        repeat(5) { fixtures.coordinator.driveAutomatedPlayers(gameId) }
+        val scoresAfterMoreCalls = fixtures.gameRepo.getTableState(gameId)!!.players.associate { it.id to it.score }
+
+        assertEquals(scoresAfterFirstCall, scoresAfterMoreCalls, "Scores must not change after the match has already ended.")
+    }
 }
 
 /** coordinator 計時整合測試使用的可控單調時間來源。 */

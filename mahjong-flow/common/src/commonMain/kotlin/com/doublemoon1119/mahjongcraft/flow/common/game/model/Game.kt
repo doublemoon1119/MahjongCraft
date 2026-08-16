@@ -13,6 +13,10 @@ import kotlin.uuid.Uuid
  * @property flowConfig 不影響麻將規則的流程與觀看設定。
  * @property remainingReserveMillisByPlayerId 每位玩家在整場遊戲中尚未使用的保留思考時間毫秒數。
  * @property forcedAutoPlayPlayerIds 已耗盡思考時間且必須由伺服器自動操作至遊戲結束的玩家。
+ * @property isMatchOver 整場對局是否已依規則的 `GameLength` 結束（見
+ *   [com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase]）。一旦成立，
+ *   `tableState` 維持結束當下的樣子不再變動；`AiTurnDriver`／`ForcedAutoPlayDriver` 都會檢查這個
+ *   欄位並提前跳過，避免對已經沒有牌可摸的桌況重複嘗試摸牌、重複觸發流局結算。
  */
 data class Game(
     val tableState: TableState,
@@ -21,6 +25,7 @@ data class Game(
         it.id to flowConfig.timeControl.reserveSeconds * 1_000L
     },
     val forcedAutoPlayPlayerIds: Set<Uuid> = emptySet(),
+    val isMatchOver: Boolean = false,
 ) {
     init {
         val playerIds = tableState.players.mapTo(mutableSetOf()) { it.id }

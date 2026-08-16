@@ -22,10 +22,11 @@ class ForcedAutoPlayDriver(
      * 解析目前下一個必須由伺服器操作的玩家與命令。
      *
      * @param gameId 欲處理的遊戲。
-     * @return 玩家與固定自動命令；目前沒有可處理決策時為 null。
+     * @return 玩家與固定自動命令；目前沒有可處理決策、或對局已結束時為 null。
      */
     suspend fun resolveNextAction(gameId: Uuid): Pair<Uuid, GameCommand>? {
         val game = gameRepository.getGame(gameId) ?: return null
+        if (game.isMatchOver) return null
         val state = game.tableState
         val forcedPlayerIds = game.forcedAutoPlayPlayerIds
 
@@ -42,8 +43,7 @@ class ForcedAutoPlayDriver(
         if (state.pendingChankan != null || state.pendingReaction != null) return null
 
         val currentPlayer = state.currentPlayer.takeIf { it.id in forcedPlayerIds } ?: return null
-        val justClaimedMeld = currentPlayer.actionHistory.lastOrNull().let { it is GameAction.Chi || it is GameAction.Pon }
-        if (currentPlayer.hand.lastDrawn == null && !justClaimedMeld) {
+        if (currentPlayer.hand.lastDrawn == null && !currentPlayer.justClaimedMeld) {
             return currentPlayer.id to GameCommand.Draw
         }
         val discardedTileId = currentPlayer.hand.lastDrawn?.id ?: currentPlayer.hand.tiles.firstOrNull()?.id ?: return null

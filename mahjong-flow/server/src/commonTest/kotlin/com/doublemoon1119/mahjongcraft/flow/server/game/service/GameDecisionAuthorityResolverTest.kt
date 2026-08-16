@@ -110,6 +110,54 @@ class GameDecisionAuthorityResolverTest {
         assertEquals(emptyMap(), GameDecisionAuthorityResolver().resolve(game))
     }
 
+    /**
+     * 驗證 AI 玩家摸牌後不會被視為需要決策——AI 的下一步由 `AiTurnDriver` 同步解析，不涉及等待，
+     * 誤判成需要決策會讓它被建立思考計時器，計時器真的耗盡時就會被誤標記進
+     * `forcedAutoPlayPlayerIds`，改由 `ForcedAutoPlayDriver` 的固定邏輯接管，而不是它自己的策略。
+     */
+    @Test
+    fun `test ai current player does not resolve own turn decision`() {
+        val playerId = Uuid.random()
+        val aiPlayer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            hand = Hand(lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.East)),
+            aiStrategyKey = "example-strategy",
+        )
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(aiPlayer)),
+            flowConfig = GameFlowConfig(),
+        )
+
+        assertEquals(emptyMap(), GameDecisionAuthorityResolver().resolve(game))
+    }
+
+    /** 驗證 AI 玩家即使在捨牌反應視窗的合資格清單裡，也不會被視為需要決策。 */
+    @Test
+    fun `test ai eligible player does not resolve discard reaction decision`() {
+        val aiId = Uuid.random()
+        val humanId = Uuid.random()
+        val game = Game(
+            tableState = FakeTableStateFactory.create(
+                players = listOf(
+                    FakeMahjongPlayerFactory.create(id = aiId, aiStrategyKey = "example-strategy"),
+                    FakeMahjongPlayerFactory.create(id = humanId),
+                ),
+                pendingReaction = PendingReaction(
+                    discarderId = Uuid.random(),
+                    tileId = Uuid.random(),
+                    eligiblePlayerIds = setOf(aiId, humanId),
+                    responses = emptyMap(),
+                ),
+            ),
+            flowConfig = GameFlowConfig(),
+        )
+
+        assertEquals(
+            mapOf(humanId to PlayerDecisionPhase.DISCARD_REACTION),
+            GameDecisionAuthorityResolver().resolve(game),
+        )
+    }
+
     /** 建立指定玩家及捨牌反應視窗的權威遊戲。 */
     private fun game(
         playerIds: List<Uuid>,

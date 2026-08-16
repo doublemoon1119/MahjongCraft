@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
-import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
@@ -42,10 +41,12 @@ class AiTurnDriver(
      * 回合開始時都必須做的機械動作，直接回傳固定命令。
      *
      * @param gameId 對局 Uuid。
-     * @return 下一個該行動的 AI 玩家 Uuid 與其命令；沒有 AI 需要行動、或對局不存在時為 null。
+     * @return 下一個該行動的 AI 玩家 Uuid 與其命令；沒有 AI 需要行動、對局已結束、或對局不存在時為
+     *   null。
      */
     suspend fun resolveNextAction(gameId: Uuid): Pair<Uuid, GameCommand>? {
         val game = gameRepository.getGame(gameId) ?: return null
+        if (game.isMatchOver) return null
         val state = game.tableState
 
         val pendingChankan = state.pendingChankan
@@ -63,12 +64,9 @@ class AiTurnDriver(
         if (pendingChankan == null && pendingReaction == null) {
             val current = state.currentPlayer
             if (current.isAi) {
-                // 剛碰/吃成立時，lastDrawn 也是 null，但這位玩家該做的是直接捨牌，不是摸牌——
-                // 用 actionHistory 的最後一筆動作區分「回合剛開始，還沒摸牌」與「剛碰/吃，
-                // 該直接捨牌」這兩種同樣 lastDrawn == null 的情境（明槓/暗槓/加槓皆會在套用副露
-                // 的同一次呼叫裡立即補摸嶺上牌，套用後 lastDrawn 必定非 null，不會落入這裡）。
-                val justClaimedMeld = current.actionHistory.lastOrNull().let { it is GameAction.Pon || it is GameAction.Chi }
-                return if (current.hand.lastDrawn == null && !justClaimedMeld) {
+                // 明槓/暗槓/加槓皆會在套用副露的同一次呼叫裡立即補摸嶺上牌，套用後 lastDrawn 必定
+                // 非 null，不會落入 justClaimedMeld 分支；只有吃/碰會讓 lastDrawn 維持 null。
+                return if (current.hand.lastDrawn == null && !current.justClaimedMeld) {
                     current.id to GameCommand.Draw
                 } else {
                     current.id to decide(gameId, game, current.id, AiDecisionPhase.OwnTurn)

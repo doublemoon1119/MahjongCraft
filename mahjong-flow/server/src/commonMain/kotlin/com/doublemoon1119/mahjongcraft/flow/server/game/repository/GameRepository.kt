@@ -14,6 +14,15 @@ interface GameRepository {
     suspend fun getGame(gameId: Uuid): Game?
 
     /**
+     * 取得目前所有進行中對局的 Uuid。
+     *
+     * 供需要定期巡邏所有對局的呼叫端使用（例如逾時排程每個 tick 都要推進所有對局的自動操作，
+     * 不能只依賴「這個 tick 剛好有玩家逾時」——已進入強制自動操作或全員皆為 AI 的對局，一旦沒有
+     * 真人決策計時器可等，就不會再出現在任何逾時事件裡，需要有獨立於計時器之外的心跳持續推進）。
+     */
+    suspend fun getAllGameIds(): Set<Uuid>
+
+    /**
      * 獲取指定遊戲 ID 的 [TableState]。
      *
      * @param gameId 遊戲的唯一識別碼。

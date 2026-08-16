@@ -47,6 +47,15 @@ data class MahjongPlayer(
     val isAi: Boolean get() = aiStrategyKey != null
 
     /**
+     * 是否剛吃／碰成立，尚未捨牌。
+     *
+     * 吃／碰不像摸牌／槓會補牌，[Hand.lastDrawn] 因此維持 `null`；用 [actionHistory] 的最後一筆動作
+     * 區分「回合剛開始，還沒摸牌」與「剛吃／碰，該直接捨牌」這兩種同樣 `lastDrawn == null` 的情境。
+     */
+    val justClaimedMeld: Boolean
+        get() = actionHistory.lastOrNull().let { it is GameAction.Chi || it is GameAction.Pon }
+
+    /**
      * 記錄玩家放過的牌（用於過水碰及同巡振聽判定）。
      *
      * @param tile 放過的原始牌；規則特有的等價轉換由規則層處理。

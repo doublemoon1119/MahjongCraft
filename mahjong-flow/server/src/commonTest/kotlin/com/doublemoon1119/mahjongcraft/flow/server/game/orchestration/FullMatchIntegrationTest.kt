@@ -106,10 +106,9 @@ class FullMatchIntegrationTest {
     /**
      * 驗證 4 位 AI 玩家能把整場東風戰（4 局，含可能的連莊）打完，不會卡住、分數守恆。
      *
-     * 判斷「整場對局真的打完了」的方式：重複呼叫 [GameFlowCoordinator.driveAutomatedPlayers]
-     * 足夠多次後，再多呼叫一次不應該再讓桌況產生任何變化（沒有變化代表沒有任何 AI 還需要行動、
-     * 也沒有任何系統銜接還能推進——這與 `driveAutomatedPlayers` 內部判斷「沒有進展」的機制完全一致）；
-     * 若桌況在這麼多次呼叫後仍持續變化，代表迴圈次數不夠或編排邏輯卡在某處，測試會直接失敗。
+     * 只呼叫一次 [GameFlowCoordinator.driveAutomatedPlayers]——它內部會自動開好幾批次直到真的收斂
+     * 為止（見其 KDoc），不需要呼叫端自己重複呼叫湊迭代預算；若真的卡在某處跑不完，這裡會直接拋出
+     * `IllegalStateException`，測試會直接失敗並帶出清楚的錯誤訊息，不需要額外再比較前後桌況。
      */
     @Test
     fun `test four ai players play a full east-only match to completion`() = runTest {
@@ -126,22 +125,9 @@ class FullMatchIntegrationTest {
         ).tableState
         fixtures.gameRepo.setTableState(initialState)
 
-        // 東風戰 4 局（含可能的連莊）粗估最多需要幾千步 AI 動作；driveAutomatedPlayers 單次呼叫有
-        // repeat(100) 上限，這裡從外層重複呼叫足夠多次，讓內部的迭代預算加總起來遠超過實際需求。
-        repeat(40) {
-            fixtures.coordinator.driveAutomatedPlayers(gameId)
-        }
-
-        val stateBeforeFinalCall = fixtures.gameRepo.getTableState(gameId)
         fixtures.coordinator.driveAutomatedPlayers(gameId)
         val finalState = fixtures.gameRepo.getTableState(gameId)
 
-        assertEquals(
-            stateBeforeFinalCall,
-            finalState,
-            "The table should have completely stabilized by now; if it's still changing, either the match " +
-                "genuinely didn't finish within the iteration budget, or the orchestration is stuck.",
-        )
         assertTrue(
             finalState!!.roundNumber >= RiichiGameLength.East.totalRounds,
             "The match should have progressed through all ${RiichiGameLength.East.totalRounds} rounds, " +

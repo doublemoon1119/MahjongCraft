@@ -39,8 +39,11 @@ import kotlin.uuid.Uuid
  * 對應子項擴充。
  *
  * 整場對局已結束（[com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult.isMatchOver]）
- * 時，本用例只誠實回報「已經結束」，不做任何額外收尾（房間清理、最終排名等留給未來獨立的單位）——
- * 不會開新的一局，`TableState` 維持呼叫前的樣子不變，也不會同步快照或廣播事件。
+ * 時，本用例只把這個事實記到 [com.doublemoon1119.mahjongcraft.flow.common.game.model.Game.isMatchOver]，
+ * 不做任何額外收尾（房間清理、最終排名等留給未來獨立的單位）——不會開新的一局，`TableState`
+ * 維持呼叫前的樣子不變，也不會同步快照或廣播事件。務必記下這個事實：`AiTurnDriver`／
+ * `ForcedAutoPlayDriver` 都靠它提前跳過已結束的對局，否則牌山已空的桌況會被反覆嘗試摸牌、
+ * 反覆觸發流局結算。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
@@ -64,9 +67,10 @@ class AdvanceRoundUseCase(
      */
     suspend operator fun invoke(gameId: Uuid): Outcome<AdvanceRoundResult, GameError> {
         // 1. 以原子方式讀取桌況、計算連莊/過莊結果並寫回
-        val outcome = gameRepository.update(gameId) { state ->
+        val outcome = gameRepository.updateGame(gameId) { game ->
+            val state = game?.tableState
             when {
-                state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
+                game == null || state == null -> game to Outcome.Error(GameError.GameNotFound(gameId))
                 else -> {
                     val module = moduleRegistry.getModule(state.config)
                     val dealer = state.players.first { it.currentWind == Wind.EAST }
@@ -81,7 +85,9 @@ class AdvanceRoundUseCase(
                             diceRoll = null,
                             wallStructure = null,
                         )
-                        state to Outcome.Success(advanceOutcome)
+                        // 對局已經結束：記下這個事實，讓 AiTurnDriver／ForcedAutoPlayDriver 之後都
+                        // 跳過這場對局，不會對已經沒有牌可摸的桌況繼續重複嘗試、重複觸發流局結算。
+                        game.copy(isMatchOver = true) to Outcome.Success(advanceOutcome)
                     } else {
                         val initializationResult = GameInitializer.startNextRound(
                             gameId = gameId,
@@ -95,7 +101,7 @@ class AdvanceRoundUseCase(
                             diceRoll = initializationResult.diceRoll,
                             wallStructure = initializationResult.wallStructure,
                         )
-                        newState to Outcome.Success(advanceOutcome)
+                        game.copy(tableState = newState) to Outcome.Success(advanceOutcome)
                     }
                 }
             }

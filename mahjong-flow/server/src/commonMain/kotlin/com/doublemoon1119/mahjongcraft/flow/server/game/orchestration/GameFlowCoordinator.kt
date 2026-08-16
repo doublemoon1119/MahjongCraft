@@ -98,10 +98,16 @@ class GameFlowCoordinator(
     /**
      * 依序驅動強制自動操作玩家與 AI，直到目前沒有任何自動決策需要執行。
      *
-     * 每次迭代前後比較 `TableState`；若命令未造成進展便立即停止，另以 [MAX_ITERATIONS] 防止異常
-     * 狀態形成無限迴圈。可由開局與逾時流程主動呼叫，確保沒有真人送出封包時仍能推進自動操作。
+     * 每次迭代前後比較 `TableState`；若命令未造成進展便立即停止。理論上這個迴圈一定會自然收斂
+     * （沒有更多自動決策要做，或桌況沒有任何進展），但仍設 [MAX_ITERATIONS] 作為上限而非單純
+     * `while (true)`——純粹是防呆：萬一未來出現尚未發現的收斂性 bug，讓這裡真的陷入無限迴圈，
+     * `while (true)` 會讓呼叫這個函式的心跳 tick 永遠卡住、吃滿 CPU 卻不留下任何訊號，而心跳是
+     * 依序遍歷所有對局的，一局卡住會連帶讓同一個 tick 裡其他對局的自動操作全部停擺。設上限後，
+     * 卡住會直接拋出例外，能被立即看見、定位。可由開局與逾時流程主動呼叫，確保沒有真人送出封包時
+     * 仍能推進自動操作。
      *
      * @param gameId 欲推進的遊戲。
+     * @throws IllegalStateException 跑滿 [MAX_ITERATIONS] 步仍未收斂，代表自動操作鏈路真的卡住了。
      */
     suspend fun driveAutomatedPlayers(gameId: Uuid) {
         repeat(MAX_ITERATIONS) {
@@ -113,6 +119,10 @@ class GameFlowCoordinator(
             val stateAfter = gameRepository.getTableState(gameId)
             if (stateBefore == stateAfter) return
         }
+        error(
+            "driveAutomatedPlayers did not converge for game $gameId after $MAX_ITERATIONS iterations; " +
+                "automated player chain is likely stuck",
+        )
     }
 
     /**
@@ -197,7 +207,7 @@ class GameFlowCoordinator(
     }
 
     private companion object {
-        /** [driveAutomatedPlayers] 的最大迭代次數，避免對局已結束但桌況卡住不變時無限迴圈。 */
-        const val MAX_ITERATIONS = 100
+        /** [driveAutomatedPlayers] 的最大迭代次數，避免收斂性 bug 讓自動操作鏈路無限跑下去。 */
+        const val MAX_ITERATIONS = 5000
     }
 }

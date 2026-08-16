@@ -53,7 +53,7 @@ class DiscardTileUseCase(
                     state to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
                 state.currentPlayer.id != playerId ->
                     state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
-                state.currentPlayer.hand.lastDrawn == null ->
+                state.currentPlayer.hand.lastDrawn == null && !state.currentPlayer.justClaimedMeld ->
                     state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Discard(tileId)))
                 else -> {
                     val discardResult = state.currentPlayer.hand.discardById(tileId)

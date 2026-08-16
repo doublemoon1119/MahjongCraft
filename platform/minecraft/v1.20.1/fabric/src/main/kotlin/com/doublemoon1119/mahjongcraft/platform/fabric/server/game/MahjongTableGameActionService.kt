@@ -8,11 +8,13 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import kotlinx.coroutines.launch
 import net.minecraft.server.network.ServerPlayerEntity
 import org.koin.core.annotation.Single
+import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -46,6 +48,9 @@ class MahjongTableGameActionService(
     private val candidateResolver: GameActionCandidateResolver,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
 ) {
+    /** 對局命令與自動銜接失敗時的專用 logger。 */
+    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+
     /** 打出 [tileId] 這張牌。 */
     fun discard(player: ServerPlayerEntity, tileId: Uuid) {
         val playerId = player.uuid.toKotlinUuid()
@@ -131,14 +136,21 @@ class MahjongTableGameActionService(
      * 回饋。順序很重要——[autoDrawService] 可能會在下一輪又輪回同一位玩家時發布
      * [MinecraftPlayerFeedback.YourTurn]，如果先呼叫它，「輪到你了」會搶在「已執行：打出 X」這句
      * 之前送達，讀起來像是訊息順序顛倒。
+     *
+     * [gameFlowCoordinator] 內部會連帶驅動 AI／強制自動操作直到輪到下一位真人為止；那段迴圈若拋出
+     * 未預期例外，攔下來記錄，避免協程靜默死掉、對局卡在半途卻沒有任何 log 可查。
      */
     private suspend fun execute(gameId: Uuid, playerId: Uuid, command: GameCommand, action: GameAction, referenceTile: Tile?) {
-        when (val result = gameFlowCoordinator(gameId, playerId, command)) {
-            is Outcome.Success -> {
-                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameActionPerformed(action, referenceTile))
-                autoDrawService.checkAndAutoDraw(gameId)
+        try {
+            when (val result = gameFlowCoordinator(gameId, playerId, command)) {
+                is Outcome.Success -> {
+                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameActionPerformed(action, referenceTile))
+                    autoDrawService.checkAndAutoDraw(gameId)
+                }
+                is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftGameFeedbackResolver.actionError(result.error))
             }
-            is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftGameFeedbackResolver.actionError(result.error))
+        } catch (throwable: Throwable) {
+            logger.error("Failed to execute game command {} for player {} in game {}", command, playerId, gameId, throwable)
         }
     }
 

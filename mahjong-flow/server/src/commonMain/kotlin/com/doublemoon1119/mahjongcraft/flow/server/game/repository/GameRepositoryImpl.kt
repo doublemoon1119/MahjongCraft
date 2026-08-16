@@ -14,6 +14,8 @@ class GameRepositoryImpl(
 ) : GameRepository {
     override suspend fun getGame(gameId: Uuid) = store.getGame(gameId)
 
+    override suspend fun getAllGameIds(): Set<Uuid> = store.snapshot().games.keys
+
     override suspend fun getTableState(gameId: Uuid): TableState? = store.getGame(gameId)?.tableState
 
     override suspend fun setTableState(state: TableState) = store.update { current ->

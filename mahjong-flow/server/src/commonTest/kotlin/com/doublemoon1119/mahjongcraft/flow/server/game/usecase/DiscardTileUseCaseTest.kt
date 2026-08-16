@@ -717,6 +717,34 @@ class DiscardTileUseCaseTest {
     }
 
     /**
+     * 驗證玩家剛吃／碰成立、`lastDrawn` 仍為 null 時仍然可以捨牌。
+     *
+     * 迴歸測試：`lastDrawn == null` 的驗證原本沒有排除「剛吃／碰，該直接捨牌」這種情境，導致這種
+     * 捨牌被誤判成「還沒摸牌」而拒絕——`AiTurnDriver`／`ForcedAutoPlayDriver` 都會在吃／碰成立後
+     * 送出捨牌指令，若被這裡拒絕，玩家的回合永遠無法推進，且不會拋出例外，只會靜默失敗。
+     */
+    @Test
+    fun `test discard tile succeeds right after claiming a meld with no lastDrawn`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(handTile)),
+        ).recordAction(GameAction.Pon(tileId = Uuid.random()))
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, handTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+    }
+
+    /**
      * 驗證欲捨棄的牌不存在於玩家手牌中時回傳 [GameError.IllegalAction]。
      */
     @Test

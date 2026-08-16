@@ -180,4 +180,51 @@ class MahjongAutoDrawServiceTest {
 
         assertEquals(remainingAfterFirstDraw, remainingAfterSecondCall, "Second call should not draw another tile.")
     }
+
+    /**
+     * 驗證目前玩家是已進入強制自動操作的真人時，`checkAndAutoDraw` 不會介入（改由
+     * `ForcedAutoPlayDriver` 透過 `driveAutomatedPlayers` 代打）。
+     *
+     * 迴歸測試：這個排除條件原本沒有，`checkAndAutoDraw` 會嘗試幫這種玩家摸牌，被
+     * [GameFlowCoordinator] 的強制自動操作守門檢查擋下、靜默失敗。
+     */
+    @Test
+    fun `test checkAndAutoDraw skips when current player is forced auto play`() = runTest {
+        val fixtures = Fixtures()
+        val gameId = fixtures.createStartedGame()
+        val dealerId = fixtures.gameRepo.getTableState(gameId)!!.currentPlayer.id
+        fixtures.gameRepo.updateGame(gameId) { game ->
+            game!!.copy(forcedAutoPlayPlayerIds = setOf(dealerId)) to Unit
+        }
+
+        fixtures.autoDrawService.checkAndAutoDraw(gameId)
+
+        val state = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(state)
+        assertNull(state.currentPlayer.hand.lastDrawn, "Forced auto-play player should not be auto-drawn by MahjongAutoDrawService.")
+    }
+
+    /**
+     * 迴歸測試：驗證玩家一旦進入強制自動操作，即使沒有任何逾時事件（沒有計時器可等），單純重複
+     * 呼叫 [GameFlowCoordinator.driveAutomatedPlayers] 仍然能持續幫他完成摸牌與捨牌，不會卡住。
+     *
+     * 對應 `FabricDecisionTimerScheduler` 現在每個 tick 都巡邏所有進行中對局呼叫
+     * `driveAutomatedPlayers` 的設計——這裡驗證的正是這個心跳背後依賴的核心行為：強制自動操作的
+     * 玩家不需要逾時事件也能被 `driveAutomatedPlayers` 正確推進。
+     */
+    @Test
+    fun `test driveAutomatedPlayers keeps advancing a forced auto play player without any timeout event`() = runTest {
+        val fixtures = Fixtures()
+        val gameId = fixtures.createStartedGame()
+        val dealerId = fixtures.gameRepo.getTableState(gameId)!!.currentPlayer.id
+        fixtures.gameRepo.updateGame(gameId) { game ->
+            game!!.copy(forcedAutoPlayPlayerIds = setOf(dealerId)) to Unit
+        }
+
+        fixtures.coordinator.driveAutomatedPlayers(gameId)
+
+        val state = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(state)
+        assertEquals(1, state.players.first { it.id == dealerId }.discardPile.entries.size, "Forced player should have drawn and discarded on its own.")
+    }
 }
