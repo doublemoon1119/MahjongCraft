@@ -43,6 +43,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
@@ -77,6 +78,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         val gameSnapshotRepo = FakeGameSnapshotRepository()
         val gameEventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
+        val presentationBusyGate = FakeGamePresentationBusyGate()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, gameSnapshotRepo, GameVisibilityPolicyImpl())
 
@@ -122,6 +124,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 gameRepo,
                 FakeDecisionTimerUpdatePublisher(),
             ),
+            presentationBusyGate = presentationBusyGate,
         )
     }
 

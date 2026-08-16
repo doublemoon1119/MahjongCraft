@@ -35,11 +35,13 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
@@ -70,6 +72,7 @@ class MahjongAutoDrawServiceTest {
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
+        val presentationBusyGate = FakeGamePresentationBusyGate()
         val router = GameActionRouter(
             drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             discardTileUseCase = DiscardTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
@@ -106,9 +109,10 @@ class MahjongAutoDrawServiceTest {
                 gameRepo,
                 FakeDecisionTimerUpdatePublisher(),
             ),
+            presentationBusyGate = presentationBusyGate,
         )
         val feedbackPublisher = FakeMinecraftPlayerFeedbackPublisher()
-        val autoDrawService = MahjongAutoDrawService(gameRepo, coordinator, feedbackPublisher)
+        val autoDrawService = MahjongAutoDrawService(gameRepo, coordinator, feedbackPublisher, TablePresentationBusyTracker(clock))
     }
 
     /** 提供固定時間的假時鐘，避免測試依賴真實系統時間。 */

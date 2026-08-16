@@ -10,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTabl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
@@ -73,6 +72,14 @@ class FabricGamePresentationPublisher(
      * `animationStartGameTime` 判斷是否已經播完＋額外觀看時間，時間到就自我 `discard()`，同一段邏輯
      * 天然涵蓋伺服器崩潰重啟的情境（entity 重新載入後第一個 tick 就會算出「早就該消失了」），這裡
      * 不需要另外排一個計時器，也不需要處理骰子本身的清理。
+     *
+     * [busyTracker] 的標記刻意寫在方法最前面、同步執行，不是等 [scope.launch] 裡 `present()` 成功
+     * 後才標記——呼叫端（`AdvanceRoundUseCase`／`StartGameUseCase`）呼叫完這個方法就會緊接著繼續走
+     * 自己的自動連鎖（莊家自動摸牌、開始思考計時器），如果標記忙碌這件事本身也要等非同步的世界呈現
+     * 跑完才發生，兩邊完全沒有因果關係、純粹看哪個先跑完，曾經真的看過自動連鎖贏過這個標記、玩家
+     * 動畫都還沒播完就已經被叫著打牌。同步標記才能保證呼叫端往下走之前，忙碌狀態已經生效。代價是
+     * 就算之後 [present] 真的失敗（例如桌子被拆掉），這桌還是會被錯誤標記忙碌一小段時間——比起
+     * 每一次擲骰都有機會被搶跑，這個機率很低的邊界情況划算得多。
      */
     override fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int) {
         logger.debug("publishDiceRoll gameId={} dice={} dealerSeatIndex={} roundNumber={} comboCount={}", gameId, dice.values, dealerSeatIndex, roundNumber, comboCount)
@@ -80,6 +87,10 @@ class FabricGamePresentationPublisher(
             logger.warn("publishDiceRoll gameId={} skipped: no active server", gameId)
             return
         }
+        val busyTicks = MahjongDiceTableLayout.maxStartDelayTicks(dice.values.size) +
+            DiceRollAnimationSpec.DEFAULT_DURATION_TICKS +
+            DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
+        busyTracker.markBusyFor(gameId, busyTicks)
         scope.launch(dispatchers.main) {
             val location = tableLocationRegistry.get(gameId)?.location
             if (location == null) {
@@ -109,12 +120,6 @@ class FabricGamePresentationPublisher(
             )
             val result = diceRollPresenter.present(presentation)
             logger.debug("publishDiceRoll gameId={} present() result={}", gameId, result)
-            if (result == MahjongDiceRollPresentationResult.PRESENTED) {
-                val busyTicks = MahjongDiceTableLayout.maxStartDelayTicks(dice.values.size) +
-                    DiceRollAnimationSpec.DEFAULT_DURATION_TICKS +
-                    DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
-                busyTracker.markBusyFor(gameId, busyTicks)
-            }
         }
     }
 

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
@@ -13,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseC
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import org.koin.core.annotation.Factory
+import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
@@ -60,6 +62,8 @@ import kotlin.uuid.Uuid
  * @property forcedAutoPlayDriver 找出下一個必須由伺服器固定操作的真人玩家與命令。
  * @property decisionTimerManager 在每次命令完成後結算並調整玩家決策計時器。
  * @property decisionTimerSynchronizationService 立即同步命令完成後的權威計時與停止狀態。
+ * @property presentationBusyGate 查詢平台呈現層是否仍在播放動畫，[driveAutomatedPlayers] 迴圈每次
+ *   迭代前都會檢查，避免播放期間自動操作鏈路搶跑；實作由平台層提供，理由見 [GamePresentationBusyGate] KDoc。
  */
 @Factory
 class GameFlowCoordinator(
@@ -74,6 +78,7 @@ class GameFlowCoordinator(
     private val forcedAutoPlayDriver: ForcedAutoPlayDriver,
     private val decisionTimerManager: GameDecisionTimerManager,
     private val decisionTimerSynchronizationService: DecisionTimerSynchronizationService,
+    @Provided private val presentationBusyGate: GamePresentationBusyGate,
 ) {
     /**
      * 分派 [command] 並自動銜接對應的系統觸發 use case，完成後接著驅動所有需要行動的 AI 玩家
@@ -149,11 +154,18 @@ class GameFlowCoordinator(
      * [GameDecisionTimerManager.reconcile] 能立刻看到這位玩家重新是一般決策者，替他下一次決策
      * （例如緊接著要捨牌）建立帶有完整 `baseSeconds` 的新計時器，而不是繼續被排除在外。
      *
+     * 每次迭代開始前都會用 [presentationBusyGate] 確認這桌目前沒有正在播放呈現動畫——不是只在呼叫
+     * 這個函式之前檢查一次：連莊/過莊本身就可能在迴圈中途觸發新一局的擲骰動畫（[advanceRoundUseCase]
+     * 銜接呼叫），如果只在最外層檢查一次，迴圈仍會在同一次呼叫裡繼續驅動新莊家的自動摸牌，讓新一局的
+     * 擲骰動畫還沒播完，遊戲流程就已經搶跑；改成每次迭代都檢查，動畫開始播放後迴圈會在下一次迭代前
+     * 自然停下，等下次心跳或玩家操作再重新呼叫。
+     *
      * @param gameId 欲推進的遊戲。
      * @throws IllegalStateException 跑滿 [MAX_ITERATIONS] 步仍未收斂，代表自動操作鏈路真的卡住了。
      */
     suspend fun driveAutomatedPlayers(gameId: Uuid) {
         repeat(MAX_ITERATIONS) {
+            if (presentationBusyGate.isBusy(gameId)) return
             val forcedAction = forcedAutoPlayDriver.resolveNextAction(gameId)
             val (playerId, command) = forcedAction ?: aiTurnDriver.resolveNextAction(gameId) ?: return
             if (forcedAction != null) clearForcedAutoPlay(gameId, playerId)

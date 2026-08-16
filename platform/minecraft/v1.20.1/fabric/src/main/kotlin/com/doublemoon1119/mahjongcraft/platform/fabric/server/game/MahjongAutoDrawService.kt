@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import org.koin.core.annotation.Single
@@ -21,12 +22,15 @@ import kotlin.uuid.Uuid
  * @property gameFlowCoordinator 對局命令的分派與自動銜接入口。
  * @property feedbackPublisher 摸牌成功後主動通知玩家輪到自己了——真人玩家的摸牌是全自動觸發，沒有
  *   這則通知玩家完全不會知道輪到自己，只能自己反覆查詢 `/mahjongcraft game hand`。
+ * @property busyTracker 呈現動畫播放期間查詢是否要暫時擋下自動摸牌，避免開局擲骰動畫還沒播完，
+ *   莊家自動摸牌／「輪到你了」通知就已經搶先發生。
  */
 @Single
 class MahjongAutoDrawService(
     private val gameRepository: GameRepository,
     private val gameFlowCoordinator: GameFlowCoordinator,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
+    private val busyTracker: TablePresentationBusyTracker,
 ) {
     /**
      * 檢查目前是不是輪到真人玩家、且尚未摸牌，是的話代替他送出 [GameCommand.Draw]，成功後發布
@@ -42,6 +46,7 @@ class MahjongAutoDrawService(
      * @param gameId 欲檢查的對局 Uuid。
      */
     suspend fun checkAndAutoDraw(gameId: Uuid) {
+        if (busyTracker.isBusy(gameId)) return
         val game = gameRepository.getGame(gameId) ?: return
         if (game.isMatchOver) return
         val state = game.tableState
