@@ -8,7 +8,8 @@ import kotlin.uuid.Uuid
  * [MahjongPlayer] 的不可變快照，用於 Client 端渲染。
  *
  * @property id 玩家的唯一識別碼
- * @property initialSeat 初始座位方位
+ * @property initialSeat 初始座位方位（起家順位，開局後終局前都不會再變）
+ * @property currentWind 目前這一局的座位方位，隨連莊/過莊輪轉
  * @property hand 手牌快照，其可見性由建立快照時傳入的 [isVisible] 參數決定
  * @property discardPile 牌河實體，始終對所有玩家可見
  * @property playerRuleState 規則特定的玩家狀態（如立直、振聽等）
@@ -18,6 +19,7 @@ import kotlin.uuid.Uuid
 data class MahjongPlayerSnapshot(
     val id: Uuid,
     val initialSeat: Wind,
+    val currentWind: Wind,
     val hand: HandSnapshot,
     val discardPile: DiscardPile<*>,
     val playerRuleState: PlayerRuleState?,
@@ -34,6 +36,7 @@ data class MahjongPlayerSnapshot(
 fun MahjongPlayer.toSnapshot(isVisible: Boolean): MahjongPlayerSnapshot = MahjongPlayerSnapshot(
     id = this.id,
     initialSeat = this.initialSeat,
+    currentWind = this.currentWind,
     hand = this.hand.toSnapshot(isVisible),
     discardPile = this.discardPile,
     playerRuleState = this.playerRuleState,

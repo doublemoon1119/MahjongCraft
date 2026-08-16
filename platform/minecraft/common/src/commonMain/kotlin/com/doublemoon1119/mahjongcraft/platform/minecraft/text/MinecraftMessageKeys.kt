@@ -247,8 +247,13 @@ object MinecraftMessageKeys {
      */
     const val ROUND_RESULT_BROADCAST = PREFIX + "round_result_broadcast"
 
-    /** 回合結束廣播內每一行分數變化，帶玩家名稱與已格式化的正負號分數兩個參數（兩個 `%s`）。 */
-    const val ROUND_RESULT_SCORE_DELTA = PREFIX + "round_result_score_delta"
+    /**
+     * 回合結束廣播內每一位玩家的一行，帶玩家名稱、回合前名次、回合後名次、名次變化符號
+     * （`↑`/`↓`/`→`）、回合前分數、回合後分數共六個參數（六個 `%s`）——固定列出所有玩家，不只是
+     * 分數有變化的人（自己分數沒變，也可能因為別人分數變了而被擠掉名次），供排行榜動畫使用的名次
+     * 升降跟分數增減兩種資料都在同一行裡。
+     */
+    const val ROUND_RESULT_PLAYER_LINE = PREFIX + "round_result_player_line"
 
     /** [com.doublemoon1119.mahjongcraft.logic.base.GameAction.MatchEnded] 的顯示文字，不帶參數。 */
     const val GAME_ACTION_MATCH_ENDED = PREFIX + "game_action_match_ended"
@@ -259,8 +264,8 @@ object MinecraftMessageKeys {
      */
     const val MATCH_RESULT_BROADCAST = PREFIX + "match_result_broadcast"
 
-    /** 對局結束廣播內每一行最終名次，帶名次、玩家名稱、最終分數三個參數（三個 `%s`）。 */
-    const val MATCH_RESULT_RANKING_LINE = PREFIX + "match_result_ranking_line"
+    /** 對局結束排名清單內每一行，帶名次、玩家名稱、最終分數三個參數（三個 `%s`）。 */
+    const val RANKING_LINE = PREFIX + "ranking_line"
 
     // ── 對局階段指令回饋 ──────────────────────────────────────────────────
 
@@ -380,10 +385,10 @@ object MinecraftMessageKeys {
         GAME_ACTION_KYUUSHU_KYUUHAI,
         GAME_ACTION_EXHAUSTIVE_DRAW,
         ROUND_RESULT_BROADCAST,
-        ROUND_RESULT_SCORE_DELTA,
+        ROUND_RESULT_PLAYER_LINE,
         GAME_ACTION_MATCH_ENDED,
         MATCH_RESULT_BROADCAST,
-        MATCH_RESULT_RANKING_LINE,
+        RANKING_LINE,
         GAME_ACTION_PERFORMED,
         NOT_YOUR_TURN,
         FORCED_AUTO_PLAY_ACTIVE,

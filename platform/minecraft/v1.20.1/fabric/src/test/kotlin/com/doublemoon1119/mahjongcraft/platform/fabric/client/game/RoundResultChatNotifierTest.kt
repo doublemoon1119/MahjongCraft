@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
@@ -9,8 +10,8 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 /**
  * [buildRoundResultChatMessage] 的單元測試——只涵蓋不需要真正 Minecraft client 執行環境的分支
@@ -57,11 +58,21 @@ class RoundResultChatNotifierTest {
     }
 
     @Test
-    fun `builds a tsumo message with only the changed players' score deltas`() {
-        val previous = fakeSnapshot(scores = listOf(25000, 25000, 25000, 25000))
+    fun `builds a tsumo message listing every player's rank and score movement, not just the ones whose score changed`() {
+        val dId = kotlin.uuid.Uuid.random()
+        val bId = kotlin.uuid.Uuid.random()
+        val cId = kotlin.uuid.Uuid.random()
+        val aId = kotlin.uuid.Uuid.random()
+        // B 自己的分數完全沒變（25000 → 25000），但 A 從 20000 衝到 26000 把 B 擠出第 2 名、
+        // 掉到第 3 名——這是刻意設計的情境，證明「名次會不會變」不能只看自己的分數變化，B 這種
+        // 玩家過去只看分數差異會被完全忽略，現在一定要出現在結果裡才對。
+        val previous = fakeSnapshot(
+            ids = listOf(dId, bId, cId, aId),
+            scores = listOf(30000, 25000, 25000, 20000),
+        )
         val current = fakeSnapshot(
-            ids = previous.players.map { it.id },
-            scores = listOf(33000, 25000, 22000, 23000),
+            ids = listOf(dId, bId, cId, aId),
+            scores = listOf(30000, 25000, 25000, 26000),
         )
 
         val message = buildRoundResultChatMessage(
@@ -76,16 +87,104 @@ class RoundResultChatNotifierTest {
         val broadcastContent = message?.content as? TranslatableTextContent
         kotlin.test.assertEquals("mahjongcraft.message.round_result_broadcast", broadcastContent?.key)
 
-        val deltaLines = message?.siblings
+        val playerLinesById = message?.siblings
             .orEmpty()
             .mapNotNull { it.content as? TranslatableTextContent }
-            .filter { it.key == "mahjongcraft.message.round_result_score_delta" }
-        val formattedDeltas = deltaLines.map { it.args[1].toString() }.toSet()
+            .filter { it.key == "mahjongcraft.message.round_result_player_line" }
+            .associateBy { it.args[0].toString().removePrefix("AI-") }
+        kotlin.test.assertEquals(4, playerLinesById.size, "every player must appear, even ones whose own score never moved")
 
-        assertTrue("+8000" in formattedDeltas, "expected a +8000 delta line, got: $formattedDeltas")
-        assertTrue("-3000" in formattedDeltas, "expected a -3000 delta line, got: $formattedDeltas")
-        assertTrue("-2000" in formattedDeltas, "expected a -2000 delta line, got: $formattedDeltas")
-        kotlin.test.assertEquals(3, deltaLines.size, "player with unchanged score must not get a delta line")
+        val bLine = playerLinesById.getValue(bId.toString().take(4))
+        assertEquals(listOf("2", "3", "↓", "25000", "25000"), bLine.args.drop(1).map { it.toString() }, "B's own score never changed, but A overtaking them should still drop them from rank 2 to rank 3")
+
+        val aLine = playerLinesById.getValue(aId.toString().take(4))
+        assertEquals(listOf("4", "2", "↑", "20000", "26000"), aLine.args.drop(1).map { it.toString() }, "A climbed from last place to 2nd")
+
+        val dLine = playerLinesById.getValue(dId.toString().take(4))
+        assertEquals(listOf("1", "1", "→", "30000", "30000"), dLine.args.drop(1).map { it.toString() }, "D stayed in 1st with no score change")
+    }
+
+    @Test
+    fun `round result ranks players by this hand's seat when scores are tied, not the original seat`() {
+        val eastId = kotlin.uuid.Uuid.random()
+        val southId = kotlin.uuid.Uuid.random()
+        val westId = kotlin.uuid.Uuid.random()
+        val northId = kotlin.uuid.Uuid.random()
+        // 東家跟南家同分；起家（initialSeat）刻意跟這一局的座位（currentWind）反過來排——南家的
+        // initialSeat 是西、currentWind 是東，東家的 initialSeat 是東、currentWind 是南——如果
+        // 用錯欄位（誤用 initialSeat），排序會反過來，藉此確認回合排名真的是比 currentWind。
+        val players = listOf(
+            FakeMahjongPlayerFactory.create(id = eastId, initialSeat = Wind.EAST, aiStrategyKey = "fake")
+                .copy(score = 25000, currentWind = Wind.SOUTH),
+            FakeMahjongPlayerFactory.create(id = southId, initialSeat = Wind.WEST, aiStrategyKey = "fake")
+                .copy(score = 25000, currentWind = Wind.EAST),
+            FakeMahjongPlayerFactory.create(id = westId, initialSeat = Wind.SOUTH, aiStrategyKey = "fake")
+                .copy(score = 30000, currentWind = Wind.WEST),
+            FakeMahjongPlayerFactory.create(id = northId, initialSeat = Wind.NORTH, aiStrategyKey = "fake")
+                .copy(score = 20000, currentWind = Wind.NORTH),
+        )
+        val previous = FakeTableStateFactory.create(players = players).toSnapshot(visibleHandPlayerIds = emptySet())
+        val current = FakeTableStateFactory.create(players = players.map { it.copy(score = it.score + 1) }).toSnapshot(visibleHandPlayerIds = emptySet())
+
+        val message = buildRoundResultChatMessage(
+            action = GameAction.Tsumo,
+            previousSnapshot = previous,
+            newSnapshot = current,
+            displayNameRegistry = displayNameRegistry,
+            tileAssetRegistry = tileAssetRegistry,
+            tileEmojiRegistry = tileEmojiRegistry,
+        )
+
+        val playerLines = message?.siblings
+            .orEmpty()
+            .mapNotNull { it.content as? TranslatableTextContent }
+            .filter { it.key == "mahjongcraft.message.round_result_player_line" }
+        val orderedPlayerIdPrefixes = playerLines.map { it.args[0].toString().removePrefix("AI-") }
+
+        assertEquals(
+            listOf(westId, southId, eastId, northId).map { it.toString().take(4) },
+            orderedPlayerIdPrefixes,
+            "Expected west (highest score), then south before east (tied score, south sits closer to this hand's east), then north.",
+        )
+    }
+
+    @Test
+    fun `returns null for match result when the action is not match ended`() {
+        val snapshot = fakeSnapshot(scores = listOf(25000, 25000))
+
+        assertNull(buildMatchResultChatMessage(GameAction.Tsumo, snapshot))
+    }
+
+    @Test
+    fun `breaks tied final scores by seat proximity to the original dealer`() {
+        val eastId = kotlin.uuid.Uuid.random()
+        val southId = kotlin.uuid.Uuid.random()
+        val westId = kotlin.uuid.Uuid.random()
+        val northId = kotlin.uuid.Uuid.random()
+        // 南家跟北家同分（25000），照座位規則南家名次要在北家前面；東家分數最高排第一，
+        // 西家分數最低排最後，藉此確認「同分才比座位、分數優先」沒有被弄反。
+        val snapshot = FakeTableStateFactory.create(
+            players = listOf(
+                FakeMahjongPlayerFactory.create(id = eastId, initialSeat = Wind.EAST, aiStrategyKey = "fake").copy(score = 30000),
+                FakeMahjongPlayerFactory.create(id = northId, initialSeat = Wind.NORTH, aiStrategyKey = "fake").copy(score = 25000),
+                FakeMahjongPlayerFactory.create(id = southId, initialSeat = Wind.SOUTH, aiStrategyKey = "fake").copy(score = 25000),
+                FakeMahjongPlayerFactory.create(id = westId, initialSeat = Wind.WEST, aiStrategyKey = "fake").copy(score = 20000),
+            ),
+        ).toSnapshot(visibleHandPlayerIds = emptySet())
+
+        val message = buildMatchResultChatMessage(GameAction.MatchEnded, snapshot)
+
+        val rankingLines = message?.siblings
+            .orEmpty()
+            .mapNotNull { it.content as? TranslatableTextContent }
+            .filter { it.key == "mahjongcraft.message.ranking_line" }
+        val orderedPlayerIdPrefixes = rankingLines.map { it.args[1].toString() }
+
+        assertEquals(
+            listOf(eastId, southId, northId, westId).map { it.toString().take(4) },
+            orderedPlayerIdPrefixes.map { it.removePrefix("AI-") },
+            "Expected east, then south before north (tied score broken by seat), then west.",
+        )
     }
 
     /** AI 玩家（`aiStrategyKey` 非 null）避免觸發需要真正 client 執行環境的名稱解析分支。 */
