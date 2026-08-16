@@ -21,8 +21,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的牌牆結構座標。 */
     private val wallStructures = mutableMapOf<Uuid, Map<Uuid, TileWallPosition>>()
 
-    /** 依對局 Uuid 紀錄最後一次收到的牌牆結構隨附莊家座位。 */
-    private val wallStructureDealerSeatIndices = mutableMapOf<Uuid, Int>()
+    /** 依對局 Uuid 紀錄最後一次收到的牌牆結構隨附桌況資料。 */
+    private val wallStructureContexts = mutableMapOf<Uuid, WallStructureContext>()
 
     /** 依對局 Uuid 紀錄最後一次收到的開局座位傳送清單。 */
     private val gameStartedSeatings = mutableMapOf<Uuid, List<Uuid>>()
@@ -32,9 +32,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         diceRollContexts[gameId] = DiceRollContext(dealerSeatIndex, roundNumber, comboCount)
     }
 
-    override fun publishWallStructure(gameId: Uuid, structure: Map<Uuid, TileWallPosition>, dealerSeatIndex: Int) {
+    override fun publishWallStructure(gameId: Uuid, structure: Map<Uuid, TileWallPosition>, dealerSeatIndex: Int, deadWallTileIds: Set<Uuid>, diceCount: Int) {
         wallStructures[gameId] = structure
-        wallStructureDealerSeatIndices[gameId] = dealerSeatIndex
+        wallStructureContexts[gameId] = WallStructureContext(dealerSeatIndex, deadWallTileIds, diceCount)
     }
 
     override fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>) {
@@ -50,8 +50,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 取得指定對局最後一次收到的牌牆結構座標；若無紀錄則回傳 null。 */
     fun getPublishedWallStructure(gameId: Uuid): Map<Uuid, TileWallPosition>? = wallStructures[gameId]
 
-    /** 取得指定對局最後一次收到的牌牆結構隨附莊家座位；若無紀錄則回傳 null。 */
-    fun getPublishedWallStructureDealerSeatIndex(gameId: Uuid): Int? = wallStructureDealerSeatIndices[gameId]
+    /** 取得指定對局最後一次收到的牌牆結構隨附桌況資料；若無紀錄則回傳 null。 */
+    fun getPublishedWallStructureContext(gameId: Uuid): WallStructureContext? = wallStructureContexts[gameId]
 
     /** 取得指定對局最後一次收到的開局座位傳送清單；若無紀錄則回傳 null。 */
     fun getPublishedGameStartedSeating(gameId: Uuid): List<Uuid>? = gameStartedSeatings[gameId]
@@ -62,4 +62,11 @@ data class DiceRollContext(
     val dealerSeatIndex: Int,
     val roundNumber: Int,
     val comboCount: Int,
+)
+
+/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishWallStructure] 隨附桌況資料。 */
+data class WallStructureContext(
+    val dealerSeatIndex: Int,
+    val deadWallTileIds: Set<Uuid>,
+    val diceCount: Int,
 )

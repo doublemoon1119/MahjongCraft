@@ -19,7 +19,7 @@ class MahjongTileTableLayoutTest {
         val middle = wallPlacement(position = TileWallPosition(side = 0, stack = (STACKS_PER_SIDE - 1) / 2, layer = 0))
         val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
         val cornerInterlockShift = MahjongTileDimensions.TILE_HEIGHT / 2.0 +
-            MahjongTileDimensions.TILE_WIDTH * CORNER_GAP_RATIO_MIRROR
+            MahjongTileDimensions.TILE_WIDTH * MahjongTileTableLayout.CORNER_GAP_RATIO
 
         assertEquals((STACKS_PER_SIDE - 1) * stackStep, first.x - last.x, ABSOLUTE_TOLERANCE)
         assertEquals(cornerInterlockShift, middle.x - CONTROLLER_CENTER_X, ABSOLUTE_TOLERANCE)
@@ -93,6 +93,22 @@ class MahjongTileTableLayoutTest {
         assertNotEquals(dealerZero.x to dealerZero.z, dealerOne.x to dealerOne.z)
     }
 
+    /**
+     * 王牌區在牌牆剛生成時（`isDeadWall = false`）應跟活牌落在完全相同的座標，維持一圈無縫牌牆；
+     * 只有事後標記為王牌（`isDeadWall = true`）才會沿排列方向、往 `stack` 遞增方向（開門缺口所在
+     * 方向）滑動一點，垂直於側面的距離不變。
+     */
+    @Test
+    fun `dead wall only slides toward the opening when explicitly marked`() {
+        val position = TileWallPosition(side = 0, stack = 0, layer = 0)
+        val asLiveWall = wallPlacement(position = position, isDeadWall = false)
+        val asDeadWall = wallPlacement(position = position, isDeadWall = true)
+        val expectedShift = MahjongTileDimensions.TILE_WIDTH * MahjongTileTableLayout.DEAD_WALL_GAP_RATIO
+
+        assertEquals(asLiveWall.z, asDeadWall.z, ABSOLUTE_TOLERANCE)
+        assertEquals(expectedShift, asLiveWall.x - asDeadWall.x, ABSOLUTE_TOLERANCE)
+    }
+
     /** 超出墩數或層數範圍應直接拒絕，不產生不合理座標。 */
     @Test
     fun `layout rejects out of range stack or layer`() {
@@ -109,6 +125,7 @@ class MahjongTileTableLayoutTest {
         tableFacing: MahjongTableFacing = MahjongTableFacing.NORTH,
         dealerSeatIndex: Int = 0,
         position: TileWallPosition = TileWallPosition(side = 0, stack = 0, layer = 0),
+        isDeadWall: Boolean = false,
     ): MahjongTileWallPlacement = MahjongTileTableLayout.wallPlacement(
         controllerX = 10,
         controllerY = 64,
@@ -117,6 +134,7 @@ class MahjongTileTableLayoutTest {
         dealerSeatIndex = dealerSeatIndex,
         stacksPerSide = STACKS_PER_SIDE,
         position = position,
+        isDeadWall = isDeadWall,
     )
 
     /** 一張躺平牌的世界水平 footprint，用來檢查不同墩是否重疊。 */
@@ -150,8 +168,5 @@ class MahjongTileTableLayoutTest {
         const val CONTROLLER_CENTER_Z: Double = -3.5
         const val ABSOLUTE_TOLERANCE: Double = 1e-9
         const val FULL_YAW_DEGREES: Float = 360.0f
-
-        /** 對應 [MahjongTileTableLayout] 私有的 `CORNER_GAP_RATIO`；改動生產端數值時記得同步這裡。 */
-        const val CORNER_GAP_RATIO_MIRROR: Double = 0.25
     }
 }

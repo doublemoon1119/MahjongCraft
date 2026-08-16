@@ -108,6 +108,15 @@ object MahjongDiceTableLayout {
      */
     fun maxStartDelayTicks(diceCount: Int): Int = variantsFor(diceCount).first().maxOf { it.startDelayTicks }
 
+    /**
+     * 依骰子數量取得從「呼叫端觸發擲骰呈現」到「整組擲骰動畫（含額外觀看時間）全部播完」所需的總
+     * tick 數。單一來源，供 [maxStartDelayTicks] 呼叫端計算忙碌時長，以及任何需要「等骰子動畫播完
+     * 才執行」的後續動作（例如牌牆事後接線）共用，不各自重複組合這三個數字。
+     */
+    fun totalAnimationTicks(diceCount: Int): Int = maxStartDelayTicks(diceCount) +
+        DiceRollAnimationSpec.DEFAULT_DURATION_TICKS +
+        DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
+
     /** 依骰子數量選擇已驗證的基準 variant。 */
     private fun variantsFor(diceCount: Int): List<List<MahjongDiceTablePlacement>> = when (diceCount) {
         2 -> TWO_DICE_VARIANTS

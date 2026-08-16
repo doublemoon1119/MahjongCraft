@@ -82,8 +82,9 @@ class ReturnToRoomUseCase(
         val newRoom = (outcome as Outcome.Success).value
 
         // 2. 清除本局牌牆用牌；空 structure 觸發呈現層既有的「建空集合後丟棄全部舊牌」語意，不需要
-        //    另外定義專用的清除介面方法。莊家座位在空 structure 下不影響任何座標計算，傳 0 即可。
-        presentationPublisher.publishWallStructure(gameId, emptyMap(), dealerSeatIndex = 0)
+        //    另外定義專用的清除介面方法。莊家座位、王牌集合、擲骰數量在空 structure 下都不影響任何
+        //    座標計算，直接傳空／零值即可。
+        presentationPublisher.publishWallStructure(gameId, emptyMap(), dealerSeatIndex = 0, deadWallTileIds = emptySet(), diceCount = 0)
 
         // 3. 為每位玩家同步一份房間快照——這些玩家先前都是 Game 快照的觀察者，不是既有的房間快照
         //    觀察者，不能沿用 CreateRoomUseCase 那種「查詢既有觀察者」的寫法。

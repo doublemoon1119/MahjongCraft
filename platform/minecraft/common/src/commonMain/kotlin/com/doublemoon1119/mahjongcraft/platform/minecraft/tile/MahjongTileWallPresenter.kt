@@ -15,6 +15,9 @@ import kotlin.uuid.Uuid
  * @property structure 本局牌牆所有牌（含活牌與王牌）的面／墩／層結構座標，鍵為
  * [com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile.id]；空 map 代表這局結束、只需要清除
  * 舊牌，不需要建立新牌。
+ * @property deadWallTileIds [structure] 之中屬於王牌區的牌 Uuid 子集合；[structure] 為空時可傳空集合。
+ * @property diceCount 本次開門擲骰的骰子數量，用來換算擲骰動畫總長度、決定王牌區延遲移出開門位置的
+ * 時機；未搭配擲骰時傳 `0`（此時實作不會排定王牌延遲移出）。
  */
 data class MahjongTileWallPresentation(
     val tableId: Uuid,
@@ -22,6 +25,8 @@ data class MahjongTileWallPresentation(
     val tableFacing: MahjongTableFacing,
     val dealerSeatIndex: Int,
     val structure: Map<Uuid, TileWallPosition>,
+    val deadWallTileIds: Set<Uuid>,
+    val diceCount: Int,
 )
 
 /** 正式牌牆呈現請求的處理結果。 */

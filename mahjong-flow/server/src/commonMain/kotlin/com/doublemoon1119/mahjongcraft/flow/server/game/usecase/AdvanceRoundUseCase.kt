@@ -145,7 +145,9 @@ class AdvanceRoundUseCase(
         }
         advanceOutcome.wallStructure?.let { structure ->
             val dealerSeatIndex = newState.players.indexOfFirst { player -> player.id == newDealerId }
-            presentationPublisher.publishWallStructure(gameId, structure, dealerSeatIndex)
+            val deadWallTileIds = newState.initialDeadWall.map { tile -> tile.id }.toSet()
+            val diceCount = advanceOutcome.diceRoll?.values?.size ?: 0
+            presentationPublisher.publishWallStructure(gameId, structure, dealerSeatIndex, deadWallTileIds, diceCount)
         }
 
         return Outcome.Success(result)

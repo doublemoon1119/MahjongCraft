@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
@@ -89,9 +88,7 @@ class FabricGamePresentationPublisher(
             logger.warn("publishDiceRoll gameId={} skipped: no active server", gameId)
             return
         }
-        val busyTicks = MahjongDiceTableLayout.maxStartDelayTicks(dice.values.size) +
-            DiceRollAnimationSpec.DEFAULT_DURATION_TICKS +
-            DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
+        val busyTicks = MahjongDiceTableLayout.totalAnimationTicks(dice.values.size)
         busyTracker.markBusyFor(gameId, busyTicks)
         scope.launch(dispatchers.main) {
             val location = tableLocationRegistry.get(gameId)?.location
@@ -126,8 +123,15 @@ class FabricGamePresentationPublisher(
     }
 
     /** 跟 [publishDiceRoll] 同理，牌牆呈現也需要碰觸世界／entity，一併丟回伺服器主執行緒執行。 */
-    override fun publishWallStructure(gameId: Uuid, structure: Map<Uuid, TileWallPosition>, dealerSeatIndex: Int) {
-        logger.debug("publishWallStructure gameId={} tileCount={} dealerSeatIndex={}", gameId, structure.size, dealerSeatIndex)
+    override fun publishWallStructure(gameId: Uuid, structure: Map<Uuid, TileWallPosition>, dealerSeatIndex: Int, deadWallTileIds: Set<Uuid>, diceCount: Int) {
+        logger.debug(
+            "publishWallStructure gameId={} tileCount={} dealerSeatIndex={} deadWallTileCount={} diceCount={}",
+            gameId,
+            structure.size,
+            dealerSeatIndex,
+            deadWallTileIds.size,
+            diceCount,
+        )
         if (serverHolder.current() == null) {
             logger.warn("publishWallStructure gameId={} skipped: no active server", gameId)
             return
@@ -157,6 +161,8 @@ class FabricGamePresentationPublisher(
                 tableFacing = facing,
                 dealerSeatIndex = dealerSeatIndex,
                 structure = structure,
+                deadWallTileIds = deadWallTileIds,
+                diceCount = diceCount,
             )
             val result = tileWallPresenter.present(presentation)
             logger.debug("publishWallStructure gameId={} present() result={}", gameId, result)

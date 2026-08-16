@@ -7,6 +7,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
@@ -21,14 +24,19 @@ import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
 import org.koin.core.annotation.Single
+import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
+import kotlin.uuid.toKotlinUuid
 
 /** 使用 Fabric 1.20.1 entity 呈現並替換指定麻將桌的正式牌牆。 */
 @Single(binds = [MahjongTileWallPresenter::class])
 class FabricMahjongTileWallPresenter(
     private val serverHolder: FabricServerHolder,
+    private val tickClock: FabricTickMonotonicClock,
 ) : MahjongTileWallPresenter {
+    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+
     /**
      * 驗證 controller 後先建立新牌；全部成功才移除同桌舊牌。[MahjongTileWallPresentation.structure]
      * 為空（例如對局結束）時，跳過建立步驟直接視為成功，等同只清除舊牌——重用同一段替換邏輯，不需要
@@ -37,6 +45,10 @@ class FabricMahjongTileWallPresenter(
      * 每張新牌 entity 的 UUID 在加入世界前直接設為對應 [com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile.id]，
      * 沿用 [MahjongTileEntity] 既有 KDoc 早已寫下的設計意圖——此時 entity 尚未加入 world 的 UUID
      * 索引，是唯一安全能覆寫 UUID 的時機點；`world.spawnEntity` 之後才變更會與世界既有索引不一致。
+     *
+     * 王牌區的牌這裡一律跟活牌用同一組（`isDeadWall = false`）座標生成，維持一圈完整無縫的牌牆——
+     * 不在生成當下就把王牌拉出開門，那樣會少了「開門」的過程，缺少沉浸感。真正把王牌區拉出的動作
+     * 交給 [scheduleDeadWallReveal]，等擲骰動畫播完才執行。
      */
     override fun present(presentation: MahjongTileWallPresentation): MahjongTileWallPresentationResult {
         val world = resolveWorld(presentation.tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
@@ -79,7 +91,55 @@ class FabricMahjongTileWallPresenter(
         }
         oldTiles.forEach(MahjongTileEntity::discard)
         table.markDirty()
+        scheduleDeadWallReveal(presentation, controllerPos, stacksPerSide)
         return MahjongTileWallPresentationResult.PRESENTED
+    }
+
+    /**
+     * 排定王牌區延遲移出開門位置：延遲時長跟 [FabricGamePresentationPublisher][com.doublemoon1119.mahjongcraft.platform.fabric.server.event.FabricGamePresentationPublisher]
+     * 用來標記桌子忙碌的時長算法完全一致（[MahjongDiceTableLayout.totalAnimationTicks]），確保王牌
+     * 移出的時機跟「擲骰動畫播完」同步，不是任意估計的秒數。[MahjongTileWallPresentation.diceCount]
+     * 為 `0`（沒有搭配擲骰）或沒有王牌時直接跳過，不排定任何延遲工作。
+     *
+     * 延遲工作觸發時重新用 UUID 查詢目前世界上的 entity（不沿用 [present] 當下建立的參考）：中途
+     * 桌子可能已被拆除或這局已經結束，屆時查不到對應 entity 屬於正常情況，直接放棄，不拋例外。
+     */
+    private fun scheduleDeadWallReveal(
+        presentation: MahjongTileWallPresentation,
+        controllerPos: BlockPos,
+        stacksPerSide: Int,
+    ) {
+        if (presentation.diceCount <= 0 || presentation.deadWallTileIds.isEmpty()) return
+        val delayTicks = MahjongDiceTableLayout.totalAnimationTicks(presentation.diceCount)
+        tickClock.scheduleAfter(delayTicks * MILLIS_PER_TICK) {
+            moveDeadWallToOpenPosition(presentation, controllerPos, stacksPerSide)
+        }
+    }
+
+    /** 把王牌區的牌從無縫牌牆位置移到跟活牌保持距離的開門位置，逐張 `refreshPositionAndAngles`。 */
+    private fun moveDeadWallToOpenPosition(
+        presentation: MahjongTileWallPresentation,
+        controllerPos: BlockPos,
+        stacksPerSide: Int,
+    ) {
+        val world = resolveWorld(presentation.tableLocation) ?: return
+        val deadWallTiles = findManagedTiles(world, presentation.tableId, controllerPos)
+            .filter { tile -> tile.uuid.toKotlinUuid() in presentation.deadWallTileIds }
+        deadWallTiles.forEach { tile ->
+            val position = presentation.structure[tile.uuid.toKotlinUuid()] ?: return@forEach
+            val placement = MahjongTileTableLayout.wallPlacement(
+                controllerX = controllerPos.x,
+                controllerY = controllerPos.y,
+                controllerZ = controllerPos.z,
+                tableFacing = presentation.tableFacing,
+                dealerSeatIndex = presentation.dealerSeatIndex,
+                stacksPerSide = stacksPerSide,
+                position = position,
+                isDeadWall = true,
+            )
+            tile.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+        }
+        logger.debug("moveDeadWallToOpenPosition tableId={} movedTileCount={}", presentation.tableId, deadWallTiles.size)
     }
 
     /** 清除指定 controller 周圍且 table UUID 相符的正式牌牆用牌。 */
@@ -133,5 +193,8 @@ class FabricMahjongTileWallPresenter(
 
         /** controller 周圍查詢正式牌牆用牌的垂直半徑。 */
         const val TILE_SEARCH_VERTICAL: Double = 2.0
+
+        /** Minecraft 正常運行時每個 tick 對應的毫秒數（20 TPS），換算 [FabricTickMonotonicClock.scheduleAfter] 的延遲毫秒數用。 */
+        const val MILLIS_PER_TICK: Long = 50L
     }
 }

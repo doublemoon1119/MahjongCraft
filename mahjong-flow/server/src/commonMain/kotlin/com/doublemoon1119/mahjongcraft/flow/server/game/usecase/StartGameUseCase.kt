@@ -105,7 +105,9 @@ class StartGameUseCase(
         }
         initializationResult.wallStructure?.let { structure ->
             val dealerSeatIndex = tableState.players.indexOfFirst { player -> player.currentWind == Wind.EAST }
-            presentationPublisher.publishWallStructure(roomId, structure, dealerSeatIndex)
+            val deadWallTileIds = tableState.initialDeadWall.map { tile -> tile.id }.toSet()
+            val diceCount = initializationResult.diceRoll?.values?.size ?: 0
+            presentationPublisher.publishWallStructure(roomId, structure, dealerSeatIndex, deadWallTileIds, diceCount)
         }
         presentationPublisher.publishGameStarted(roomId, tableState.players.map { it.id })
 

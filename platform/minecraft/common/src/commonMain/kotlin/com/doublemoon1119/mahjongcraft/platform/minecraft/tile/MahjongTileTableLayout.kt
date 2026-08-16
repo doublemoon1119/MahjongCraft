@@ -37,6 +37,10 @@ object MahjongTileTableLayout {
      * 依 controller 座標、桌子世界朝向、莊家座位與牌牆總墩數，算出單一 [TileWallPosition] 的世界座標。
      *
      * @param stacksPerSide 這副牌牆每面的總墩數（例如四人日麻固定 17），用來將牌墩對稱置中於側面。
+     * @param isDeadWall 這張牌是否屬於王牌區——為 `true` 時額外把整條線沿排列方向、往開門缺口的方向
+     * 滑動一點（見 [localWallVector]），跟活牌保持一點視覺距離。牌牆剛生成時所有牌（含王牌）都應該以
+     * `false` 呼叫，維持一圈完整無縫的牌牆；等到骰子動畫播完、要把王牌區「移出」開門時，才對王牌區的
+     * 牌改用 `true` 重新算一次座標並移動過去——這是刻意分兩階段呼叫的設計，不是可以合併成一次的參數。
      */
     fun wallPlacement(
         controllerX: Int,
@@ -46,6 +50,7 @@ object MahjongTileTableLayout {
         dealerSeatIndex: Int,
         stacksPerSide: Int,
         position: TileWallPosition,
+        isDeadWall: Boolean = false,
     ): MahjongTileWallPlacement {
         require(stacksPerSide > 0) { "Stacks per side must be positive" }
         require(position.stack in 0 until stacksPerSide) {
@@ -54,7 +59,7 @@ object MahjongTileTableLayout {
         require(position.layer in 0..1) { "Layer ${position.layer} must be 0 or 1" }
 
         val physicalSide = advance(seatIndexToTableSide(dealerSeatIndex), position.side)
-        val local = localWallVector(stacksPerSide, position.stack, position.layer)
+        val local = localWallVector(stacksPerSide, position.stack, position.layer, isDeadWall)
         val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
         return MahjongTileWallPlacement(
             x = controllerX + BLOCK_CENTER + worldOffset.x,
@@ -83,13 +88,23 @@ object MahjongTileTableLayout {
      * 觀感調整，不影響上面推導出的不重疊關係，只是把「剛好貼齊」再往外推一點；比例本身沒有幾何推導
      * 依據，純粹是視覺調校參數，用牌本身尺寸的比例表示比直接疊加 [MahjongTileDimensions.TILE_SMALL_PADDING]
      * 倍數更好預期調整後的視覺效果）。
+     *
+     * [isDeadWall] 為 `true` 時，額外把 `alongSide`（沿墩排列方向的位置）往「`stack` 遞增」的方向多推
+     * [MahjongTileDimensions.TILE_WIDTH] 的 [DEAD_WALL_GAP_RATIO] 倍——`stack` 遞增的方向正是王牌區
+     * 緊鄰開門缺口、之後會被摸走分配給玩家手牌的活牌墩所在方向（見
+     * [com.doublemoon1119.mahjongcraft.logic.table.layout.FourSidedWallLayoutSupport] 的墩位排列
+     * 邏輯：王牌從缺口本身往 `stack` 遞減方向連續佔用，活牌則從缺口另一側往 `stack` 遞增方向連續
+     * 佔用，兩者在缺口處以遞增/遞減方向相鄰）。這是刻意選這個方向的位移，不是垂直推向桌子中心——
+     * 活牌之後會被摸走清空這塊空間，王牌滑過去暫時會跟還沒摸走的活牌墩重疊一點點，等手牌分配這個
+     * 切片完成後就會自然錯開，這次不需要另外處理這個過渡期的重疊。
      */
-    private fun localWallVector(stacksPerSide: Int, stack: Int, layer: Int): TileTableVector {
+    private fun localWallVector(stacksPerSide: Int, stack: Int, layer: Int, isDeadWall: Boolean): TileTableVector {
         val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
         val halfSpan = stacksPerSide / 2.0 * stackStep
         val cornerInterlockShift = MahjongTileDimensions.TILE_HEIGHT / 2.0 +
             MahjongTileDimensions.TILE_WIDTH * CORNER_GAP_RATIO
-        val alongSide = ((stacksPerSide - 1) / 2.0 - stack) * stackStep + cornerInterlockShift
+        val deadWallOpeningShift = if (isDeadWall) MahjongTileDimensions.TILE_WIDTH * DEAD_WALL_GAP_RATIO else 0.0
+        val alongSide = ((stacksPerSide - 1) / 2.0 - stack) * stackStep + cornerInterlockShift - deadWallOpeningShift
         val layerHeight = layer * MahjongTileDimensions.TILE_DEPTH +
             if (layer > 0) MahjongTileDimensions.TILE_SMALL_PADDING else 0.0
         return TileTableVector(x = alongSide, y = layerHeight, z = halfSpan)
@@ -134,8 +149,15 @@ object MahjongTileTableLayout {
     private const val BLOCK_CENTER: Double = 0.5
     private const val TABLETOP_HEIGHT: Double = 1.0
 
-    /** 牌牆角落貼齊處縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，遊戲內驗證後調整的觀感參數。 */
-    private const val CORNER_GAP_RATIO: Double = 0.25
+    /**
+     * 牌牆角落貼齊處縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，遊戲內驗證後調整的觀感參數。
+     * `internal` 而非 `private`：讓同模組的 [MahjongTileTableLayoutTest][com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayoutTest]
+     * 能直接引用同一個數值驗證預期位移量，不需要在測試裡另外複製一份可能忘記同步的常數。
+     */
+    internal const val CORNER_GAP_RATIO: Double = 0.25
+
+    /** 王牌區沿排列方向滑向開門缺口的距離相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，使用者指定的觀感參數；`internal` 理由同 [CORNER_GAP_RATIO]。 */
+    internal const val DEAD_WALL_GAP_RATIO: Double = 0.25
     private const val FULL_YAW_DEGREES: Float = 360.0f
 
     /** 南→西→北→東的固定逆時針側面順序，跟 [seatIndexToTableSide] 與 `TileWallPosition.side` 同一套慣例。 */
