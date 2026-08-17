@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloa
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTileSnapshot
+import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
@@ -29,20 +30,28 @@ class ClientMahjongStateStore(
 
     /**
      * 依管理中麻將牌 entity UUID（等同 `IdentifiedTile.id`）索引的快照，隨每次 [gameSnapshot] 更新
-     * 一併重建，涵蓋牌牆與所有玩家的手牌（立牌＋剛摸到但尚未整理的牌）——管理中的
+     * 一併重建，涵蓋牌牆、所有玩家的手牌（立牌＋剛摸到但尚未整理的牌）與牌河——管理中的
      * [com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity] 渲染牌面時用這份
-     * 索引查詢自己是否對目前觀察者可見，不逐 entity 掃描整份牌牆／手牌清單。
+     * 索引查詢自己是否對目前觀察者可見，不逐 entity 掃描整份牌牆／手牌／牌河清單。
      */
     private var managedTileSnapshotsByTileId: Map<Uuid, IdentifiedTileSnapshot> = emptyMap()
 
-    /** 匯總牌牆與所有玩家手牌的牌張快照，建立單一索引。 */
+    /**
+     * 匯總牌牆、所有玩家手牌與牌河的牌張快照，建立單一索引。牌河永遠對所有玩家可見
+     * （`MahjongPlayerSnapshot.discardPile` 的 KDoc 本來就這樣寫），因此固定以 `isVisible = true`
+     * 轉換——`discardPile` 型別是跟 `MahjongPlayer` 共用的 domain `DiscardPile<*>`，不像手牌／牌牆
+     * 已經是依觀察者可見範圍轉換過的 snapshot 型別，需要在這裡自行呼叫 `toSnapshot`。
+     */
     private fun buildManagedTileIndex(snapshot: TableStateSnapshot?): Map<Uuid, IdentifiedTileSnapshot> {
         if (snapshot == null) return emptyMap()
         val wallTiles = snapshot.tileWall.tiles
         val handTiles = snapshot.players.flatMap { player ->
             player.hand.standingTiles + listOfNotNull(player.hand.lastDrawn)
         }
-        return (wallTiles + handTiles).associateBy { it.id }
+        val discardTiles = snapshot.players.flatMap { player ->
+            player.discardPile.entries.map { entry -> entry.tile.toSnapshot(isVisible = true) }
+        }
+        return (wallTiles + handTiles + discardTiles).associateBy { it.id }
     }
 
     /** 接收帶事件的房間更新並保存其最新快照；同一張桌子不會同時是房間又是對局，一併清掉舊的遊戲快照。 */

@@ -28,9 +28,11 @@ data class MahjongTileWallPlacement(
  *
  * 兩段式旋轉合成與 [com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout] 完全
  * 同一套慣例：先算出「以局部南側為基準」的向量，再依序旋轉到目標側面、旋轉到桌子世界朝向。
- * [TileWallPosition.side] 以莊家自身面為 0、逆時針遞增，跟 [seatIndexToTableSide] 採用的逆時針順序
- * （南→西→北→東）一致，因此只要把 [seatIndexToTableSide] 算出的莊家局部側面，依 [TileWallPosition.side]
- * 再旋轉相應步數，就能得到這張牌實際所在的局部側面。
+ * [TileWallPosition.side] 以莊家自身面為 0、依這裡的 `SIDE_ORDER`（南→西→北→東，逆時針）遞增，只需要
+ * 把 [seatIndexToTableSide] 算出的莊家局部側面當成起點，依 [TileWallPosition.side] 再用同一個
+ * `SIDE_ORDER` 旋轉相應步數，就能得到這張牌實際所在的局部側面——`SIDE_ORDER` 只是牌牆環狀結構自己的
+ * 固定組裝順序，起點在哪裡（[seatIndexToTableSide] 挑哪個方向對應座位 0）不影響這個環本身密不密合，
+ * 兩者刻意各自獨立，見 [seatIndexToTableSide] KDoc 的完整說明。
  */
 object MahjongTileTableLayout {
     /**
@@ -97,6 +99,10 @@ object MahjongTileTableLayout {
      * 佔用，兩者在缺口處以遞增/遞減方向相鄰）。這是刻意選這個方向的位移，不是垂直推向桌子中心——
      * 活牌之後會被摸走清空這塊空間，王牌滑過去暫時會跟還沒摸走的活牌墩重疊一點點，等手牌分配這個
      * 切片完成後就會自然錯開，這次不需要另外處理這個過渡期的重疊。
+     *
+     * `stack = 0` 在該面玩家自己右手邊（`alongSide` 較大）、`stack` 遞增往左手邊移動，真實麻將
+     * 「牌山數墩：從該牌山最右端往左邊數」就是這個方向。這裡的方向跟 [seatIndexToTableSide]／
+     * `SIDE_ORDER` 是耦合校準出來的一組關係，不要單獨改——理由與踩過的坑見 [seatIndexToTableSide] KDoc。
      */
     private fun localWallVector(stacksPerSide: Int, stack: Int, layer: Int, isDeadWall: Boolean): TileTableVector {
         val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
@@ -157,7 +163,118 @@ object MahjongTileTableLayout {
         return TileTableVector(x = alongSide, y = 0.0, z = HAND_EDGE_OFFSET)
     }
 
-    /** 依南→西→北→東的固定逆時針順序，把 [side] 往同方向推進 [steps] 步。 */
+    /**
+     * 依 controller 座標、桌子世界朝向與座位 index，算出這位玩家目前摸到、尚未併入立牌或打出的那張牌
+     * 的世界座標——緊鄰立牌列尾端外一段看得出來的縫隙，不是重新置中整排立牌（真實麻將：摸到的牌先擺
+     * 在手牌一側，不會立刻插入、重新排列整排立牌）。跟 [handPlacement] 同樣直接用座位 index 算局部
+     * 側面，不經過莊家相對旋轉。
+     *
+     * @param standingTileCount 這位玩家目前立牌張數（不含這張剛摸到的牌）。
+     */
+    fun drawnTilePlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatIndex: Int,
+        standingTileCount: Int,
+    ): MahjongTileWallPlacement {
+        val physicalSide = seatIndexToTableSide(seatIndex)
+        val local = localDrawnTileVector(standingTileCount)
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES),
+        )
+    }
+
+    /**
+     * 以局部南側玩家為基準的摸牌位位置：延續 [localHandVector] 立牌列尾端（`tileIndex = 0` 那張的
+     * 位置，即玩家右手邊——遊戲內驗證過摸牌位放在 `tileIndex = handSize - 1` 那側時方向是反的，摸到
+     * 的牌實際上該出現在玩家右手邊，不是左手邊）再往外一個 `stackStep`，額外加上
+     * [DRAWN_TILE_GAP_RATIO] 倍 [MahjongTileDimensions.TILE_WIDTH] 的縫隙，讓摸到的牌跟立牌列之間有
+     * 看得出來的間隔。直立擺放，`z` 跟 [localHandVector] 共用 [HAND_EDGE_OFFSET]。
+     */
+    private fun localDrawnTileVector(standingTileCount: Int): TileTableVector {
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val handRowEdge = (standingTileCount - 1) / 2.0 * stackStep
+        val gap = MahjongTileDimensions.TILE_WIDTH * DRAWN_TILE_GAP_RATIO
+        val alongSide = handRowEdge + stackStep + gap
+        return TileTableVector(x = alongSide, y = 0.0, z = HAND_EDGE_OFFSET)
+    }
+
+    /**
+     * 依 controller 座標、桌子世界朝向、座位 index 與這位玩家目前牌河總張數，算出牌河中第
+     * [discardIndex] 張牌（依捨牌順序，0-based）的世界座標——固定 [DISCARD_TILES_PER_ROW] 張一排，
+     * 超過時往桌緣方向堆疊下一排；牌躺平、牌面朝上（真實麻將：牌河攤開顯示花色，跟 [wallPlacement]
+     * 牌面朝下相反），整體比牌牆更靠近桌子中心（真實麻將：牌河位於四面牌牆圍成的桌面中央區域）。
+     * 跟 [handPlacement] 同樣直接用座位 index 算局部側面，不經過莊家相對旋轉——牌河屬於捨牌者自己，
+     * 跟座位一樣整場對局固定不變。
+     *
+     * @param isSidewaysMarked 這張牌是否要側身呈現（例如立直宣告牌）——為 `true` 時額外把 yaw 轉
+     * [SIDEWAYS_YAW_OFFSET] 度，位置本身不變。已知簡化：不因側身而加寬該格間距，跟真實麻將側身牌會
+     * 占用略多橫向空間不同；先進遊戲內用截圖比對，如果側身牌跟旁邊牌重疊太明顯，再考慮個別調整間距。
+     * @param wallRemaining 牌山是否還有剩餘牌——用來判斷第 [DISCARD_SAFE_ROWS] 排放滿後，第四排要不要
+     * 真的往桌緣方向新增，理由見 [localDiscardVector] KDoc。
+     */
+    fun discardPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatIndex: Int,
+        discardIndex: Int,
+        isSidewaysMarked: Boolean,
+        wallRemaining: Boolean,
+    ): MahjongTileWallPlacement {
+        require(discardIndex >= 0) { "Discard index must not be negative" }
+
+        val physicalSide = seatIndexToTableSide(seatIndex)
+        val local = localDiscardVector(discardIndex, wallRemaining)
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        val baseYaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = if (isSidewaysMarked) (baseYaw + SIDEWAYS_YAW_OFFSET).mod(FULL_YAW_DEGREES) else baseYaw,
+        )
+    }
+
+    /**
+     * 以局部南側玩家為基準的單張牌河牌位置：前 [DISCARD_SAFE_ROWS] 排（`row` 0 起算到
+     * `DISCARD_SAFE_ROWS - 1`）依 [DISCARD_TILES_PER_ROW] 張正常換行，列沿排列方向（局部 X 軸）
+     * 對稱置中——`column` 遞增時往玩家右手邊移動（遊戲內驗證過原本由右往左排列的方向是反的，真實
+     * 麻將是從玩家左手邊往右手邊依序擺放捨牌），行往桌緣方向（局部 Z 軸正向）堆疊，起始距離
+     * [DISCARD_ROW_BASE_OFFSET] 為比 [wallPlacement] 的 `halfSpan` 更靠近桌子中心的估算值。
+     *
+     * 超過 [DISCARD_SAFE_ROWS] 排（第四排以後）要不要真的往桌緣方向新增一排，取決於 [wallRemaining]：
+     * 牌山還有剩餘牌時，代表牌牆理論上仍可能佔用第四排的位置（遊戲內驗證過真的會撞進牌牆），因此固定
+     * 停在最後一個安全排（`row = DISCARD_SAFE_ROWS - 1`）、沿著同一排的排列方向繼續往外延伸，`column`
+     * 不回繞；牌山已經摸完（`wallRemaining = false`，此時牌牆本身視覺上也應該已經清空）就不需要再
+     * 避讓，正常繼續往桌緣方向新增第四、第五……排。這裡沒有精確查詢「捨牌者自己那一面牆是否還有牌」
+     * ——那需要額外把莊家座位、`TileWallPosition.side` 分配、目前牌山消耗進度都串起來查，對這種很少
+     * 見的極端長牌河邊界情況而言成本過高；用「牌山整體是否還有牌」當簡化版的替代判斷，兩者只有在牌山
+     * 快摸完但捨牌者自己那面牆已經先被摸空的極端情況下才會不一致，可接受。
+     */
+    private fun localDiscardVector(discardIndex: Int, wallRemaining: Boolean): TileTableVector {
+        val lastSafeRow = DISCARD_SAFE_ROWS - 1
+        val lastSafeRowStartIndex = lastSafeRow * DISCARD_TILES_PER_ROW
+        val (row, column) = if (!wallRemaining || discardIndex < lastSafeRowStartIndex) {
+            discardIndex / DISCARD_TILES_PER_ROW to discardIndex % DISCARD_TILES_PER_ROW
+        } else {
+            lastSafeRow to (discardIndex - lastSafeRowStartIndex)
+        }
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val alongSide = (column - (DISCARD_TILES_PER_ROW - 1) / 2.0) * stackStep
+        val rowStep = MahjongTileDimensions.TILE_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING
+        val perpendicular = DISCARD_ROW_BASE_OFFSET + row * rowStep
+        return TileTableVector(x = alongSide, y = 0.0, z = perpendicular)
+    }
+
+    /** 依南→西→北→東的固定順序（跟 [seatIndexToTableSide] 同一套方向），把 [side] 往同方向推進 [steps] 步。 */
     private fun advance(side: MahjongTableSide, steps: Int): MahjongTableSide = SIDE_ORDER[(SIDE_ORDER.indexOf(side) + steps).mod(SIDE_ORDER.size)]
 
     /** 將局部南側基準旋轉至指定側面。 */
@@ -207,17 +324,60 @@ object MahjongTileTableLayout {
     internal const val DEAD_WALL_GAP_RATIO: Double = 0.25
     private const val FULL_YAW_DEGREES: Float = 360.0f
 
-    /**
-     * 手牌垂直於側面、離桌子中心的距離：46×46 模型單位可用內框半寬（換算 1.4375 block）扣除立牌厚度
-     * 的一半，再扣掉 [HAND_EDGE_MARGIN] 讓手牌跟桌緣之間留一點空隙——初始版本沒扣這段margin，
-     * 遊戲內驗證時手牌幾乎貼到桌緣（見 [HAND_EDGE_MARGIN] KDoc），因此往桌子中心方向再退一點；仍比
-     * 牌牆（`halfSpan` 約 0.98 block，17 墩時）更靠外，維持在牌牆與桌緣之間。
-     */
     /** [HAND_EDGE_OFFSET] 額外扣除的桌緣留白，遊戲內驗證後調整的觀感參數（使用者回報手牌離桌緣太近）。 */
     internal const val HAND_EDGE_MARGIN: Double = 0.15
 
+    /**
+     * 手牌垂直於側面、離桌子中心的距離：46×46 模型單位可用內框半寬（換算 1.4375 block）扣除立牌厚度
+     * 的一半，再扣掉 [HAND_EDGE_MARGIN] 讓手牌跟桌緣之間留一點空隙——初始版本沒扣這段 margin，
+     * 遊戲內驗證時手牌幾乎貼到桌緣，因此往桌子中心方向再退一點；仍比牌牆（`halfSpan` 約 0.98 block，
+     * 17 墩時）更靠外，維持在牌牆與桌緣之間。
+     */
     internal const val HAND_EDGE_OFFSET: Double = 46.0 / 16.0 / 2.0 - MahjongTileDimensions.TILE_DEPTH / 2.0 - HAND_EDGE_MARGIN
 
-    /** 南→西→北→東的固定逆時針側面順序，跟 [seatIndexToTableSide] 與 `TileWallPosition.side` 同一套慣例。 */
+    /** 摸牌位跟立牌列尾端之間的縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，起始估算值，預期進遊戲後用截圖比對調整。 */
+    internal const val DRAWN_TILE_GAP_RATIO: Double = 0.5
+
+    /** 牌河固定每排張數，超過往下一排堆疊。 */
+    internal const val DISCARD_TILES_PER_ROW: Int = 6
+
+    /**
+     * `discardPlacement` 沒有像 [wallPlacement] 一樣收到 `stacksPerSide`，這裡假設標準日麻 17
+     * 墩／面來估算牌牆 `halfSpan`，換算 [DISCARD_ROW_BASE_OFFSET]／[DISCARD_WALL_NEAR_EDGE] 用。
+     */
+    private const val ASSUMED_WALL_STACKS_PER_SIDE: Int = 17
+
+    /**
+     * 牌河實際會換行的排數——第三排（`row` 從 0 起算為 2）用完後，[localDiscardVector] 不再往桌緣
+     * 方向新增第四排，而是固定停在這一排、沿排列方向繼續延伸，理由見 [localDiscardVector] KDoc。
+     */
+    internal const val DISCARD_SAFE_ROWS: Int = 3
+
+    /** [DISCARD_WALL_NEAR_EDGE] 再往內縮的小留白，避免牌河貼到牌牆邊緣完全不留縫隙。 */
+    internal const val DISCARD_WALL_CLEARANCE_MARGIN: Double = 0.05
+
+    /**
+     * 牌牆內緣（最靠近桌子中心那一側）的估算位置，扣掉 [DISCARD_WALL_CLEARANCE_MARGIN] 留白，供
+     * [DISCARD_ROW_BASE_OFFSET] 換算用。
+     */
+    internal const val DISCARD_WALL_NEAR_EDGE: Double =
+        ASSUMED_WALL_STACKS_PER_SIDE / 2.0 * (MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING) -
+            DISCARD_WALL_CLEARANCE_MARGIN
+
+    /**
+     * 牌河第一排垂直於側面、離桌子中心的起始距離——用「[DISCARD_WALL_NEAR_EDGE] 扣掉 [DISCARD_SAFE_ROWS]
+     * 排乘每排間距」算出來的：可以離桌子中心最遠、又保證 [DISCARD_SAFE_ROWS] 排都不會撞進牌牆的偏移
+     * 值。遊戲內先後驗證過「太靠近中心」（初版估算值 0.3）、「太靠近牌牆」（手動加大到 0.6）、「第四排
+     * 撞進牌牆」（拿全部排數去扣，沒有預留餘裕）三種錯誤，這個公式與 [localDiscardVector] 的「超過
+     * [DISCARD_SAFE_ROWS] 排就停在最後一排延伸」設計一起解決，之後如果 [DISCARD_SAFE_ROWS] 或牌牆
+     * 墩數估計改變，這裡會自動跟著調整，不需要再手動猜一次。
+     */
+    internal const val DISCARD_ROW_BASE_OFFSET: Double =
+        DISCARD_WALL_NEAR_EDGE - DISCARD_SAFE_ROWS * (MahjongTileDimensions.TILE_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING)
+
+    /** 側身標記的牌額外旋轉角度。 */
+    internal const val SIDEWAYS_YAW_OFFSET: Float = 90.0f
+
+    /** 南→西→北→東的固定順序，跟 [seatIndexToTableSide] 與 `TileWallPosition.side` 同一套慣例。 */
     private val SIDE_ORDER = listOf(MahjongTableSide.SOUTH, MahjongTableSide.WEST, MahjongTableSide.NORTH, MahjongTableSide.EAST)
 }

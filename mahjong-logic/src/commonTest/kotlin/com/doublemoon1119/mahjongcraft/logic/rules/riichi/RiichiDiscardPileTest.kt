@@ -51,4 +51,60 @@ class RiichiDiscardPileTest {
         assertTrue(pile.entries[1].isTaken)
         assertFalse(pile.entries[0].isTaken)
     }
+
+    /** 沒有宣告立直時，沒有任何一張牌需要側身標示。 */
+    @Test
+    fun `sidewaysMarkedTileId returns null when no riichi declared`() {
+        var pile = RiichiDiscardPile()
+        pile = pile.discard(RiichiDiscardEntry(FakeIdentifiedTileFactory.create(Tile.Honor.East)))
+
+        assertEquals(null, pile.sidewaysMarkedTileId())
+    }
+
+    /** 立直宣告牌還沒被鳴走時，側身標示的就是它自己。 */
+    @Test
+    fun `sidewaysMarkedTileId returns the declared riichi tile id when it is still in the river`() {
+        val riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        var pile = RiichiDiscardPile()
+        pile = pile.discard(RiichiDiscardEntry(FakeIdentifiedTileFactory.create(Tile.Honor.South)))
+        pile = pile.discard(RiichiDiscardEntry(riichiTile, isRiichi = true))
+
+        assertEquals(riichiTile.id, pile.sidewaysMarkedTileId())
+    }
+
+    /** 立直宣告牌被鳴走後，側身標記自然移到下一張還留著的牌。 */
+    @Test
+    fun `sidewaysMarkedTileId shifts to the next not-taken entry after the riichi tile is taken`() {
+        val nextTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        var pile = RiichiDiscardPile()
+        pile = pile.discard(RiichiDiscardEntry(FakeIdentifiedTileFactory.create(Tile.Honor.East), isRiichi = true))
+        pile = pile.takeLast()
+        pile = pile.discard(RiichiDiscardEntry(nextTile))
+
+        assertEquals(nextTile.id, pile.sidewaysMarkedTileId())
+    }
+
+    /** 立直宣告牌被鳴走、還沒有下一張捨牌時，暫時沒有任何一張需要側身。 */
+    @Test
+    fun `sidewaysMarkedTileId returns null when the riichi tile is taken and no later discard exists`() {
+        var pile = RiichiDiscardPile()
+        pile = pile.discard(RiichiDiscardEntry(FakeIdentifiedTileFactory.create(Tile.Honor.East), isRiichi = true))
+        pile = pile.takeLast()
+
+        assertEquals(null, pile.sidewaysMarkedTileId())
+    }
+
+    /** 立直宣告牌之後連續好幾張捨牌都被鳴走，側身標記仍正確落在第一張還留著的牌上。 */
+    @Test
+    fun `sidewaysMarkedTileId skips multiple consecutive taken entries after the riichi tile`() {
+        val survivingTile = FakeIdentifiedTileFactory.create(Tile.Honor.West)
+        var pile = RiichiDiscardPile()
+        pile = pile.discard(RiichiDiscardEntry(FakeIdentifiedTileFactory.create(Tile.Honor.East), isRiichi = true))
+        pile = pile.takeLast()
+        pile = pile.discard(RiichiDiscardEntry(FakeIdentifiedTileFactory.create(Tile.Honor.South)))
+        pile = pile.takeLast()
+        pile = pile.discard(RiichiDiscardEntry(survivingTile))
+
+        assertEquals(survivingTile.id, pile.sidewaysMarkedTileId())
+    }
 }

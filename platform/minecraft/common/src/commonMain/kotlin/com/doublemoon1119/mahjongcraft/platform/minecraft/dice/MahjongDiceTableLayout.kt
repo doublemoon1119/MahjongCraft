@@ -46,20 +46,36 @@ data class MahjongDiceTablePlacement(
 )
 
 /**
- * 把座位 index 換算成桌子局部側面：index 0 固定對應局部南側，之後依
- * [MahjongSeatingTableLayout][com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout]
- * 既有的逆時針排列方向依序旋轉——跟 [MahjongDiceTableLayout] 內部 `rotateForSide` 本來就採用的
- * SOUTH→WEST→NORTH→EAST 旋轉順序一致，維持同一套局部方向系統只有一個旋轉方向定義。任何需要「某位
- * 座位玩家的局部側面」的呈現層計算（骰子投入側、牌牆莊家面）都共用這個函式，不各自重複定義。
+ * 把座位 index 換算成桌子局部側面：index 0 固定對應局部南側，之後依序旋轉。任何需要「某位座位玩家的
+ * 局部側面」的呈現層計算（骰子投入側、座位站立位置、手牌／摸牌位／牌河座位方向、[wallPlacement][
+ * com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.wallPlacement] 的
+ * `dealerSeatIndex` 錨點）都共用這個函式，不各自重複定義。
  *
- * 座位系統（`MahjongSeatingTableLayout`）目前是世界絕對座標、不隨桌子朝向旋轉，跟這裡的局部側面是
- * 兩套不同座標系統——這個既有落差不在此函式的範圍內處理。
+ * 這裡採用 SOUTH→EAST→NORTH→WEST（順時針），刻意跟
+ * [MahjongTileTableLayout][com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout]
+ * 內部 `SIDE_ORDER`／`advance`／`localWallVector` 使用的 SOUTH→WEST→NORTH→EAST（逆時針）**不是同一個
+ * 方向**——這兩者過去被誤以為必須共用同一套旋轉順序，因而耦合修改了三次，三次都在牌牆密合度或墩的
+ * 左右手方向上被使用者實際遊玩截圖推翻（詳見專案記憶 `seat-direction-ccw-fix`）。實際上這是兩個各自
+ * 獨立的問題：
+ *
+ * - **牌牆自身是否密合、墩的左右手方向是否正確**：只取決於 [MahjongTileTableLayout] 內部
+ *   `SIDE_ORDER`／`advance`／`localWallVector` 三者的相對關係，屬於牌牆環狀結構本身的幾何自洽性，
+ *   跟這裡的 `seatIndexToTableSide` 選哪個方向、從哪個側面開始編號完全無關（`advance` 只是把
+ *   `SIDE_ORDER` 這個固定環從任意起點開始走，起點在哪裡不影響環本身密不密合、左右手對不對）。
+ * - **玩家（連同手牌／摸牌位／牌河，因為這些本來就該跟著玩家站的位置走）該站在哪個物理側面**：只取決於
+ *   這裡的 `seatIndexToTableSide`，需要滿足「回合順序中的下一位玩家（[TableState.getNextPlayer][
+ *   com.doublemoon1119.mahjongcraft.logic.table.TableState.getNextPlayer]，即下家）物理站位在目前
+ *   玩家的右手邊」這個真實麻將慣例，這件事跟牌牆內部怎麼組裝完全無關。
+ *
+ * 因此這裡改成順時針（`seatIndex + 1` 落在右手邊），[MahjongTileTableLayout] 的 `SIDE_ORDER`／
+ * `advance`／`localWallVector` 完全不動、繼續維持已證實正確的逆時針版本——兩邊各自獨立正確，不需要
+ * 也不應該再耦合修改。
  */
 fun seatIndexToTableSide(seatIndex: Int): MahjongTableSide = when (seatIndex.mod(SEAT_COUNT)) {
     0 -> MahjongTableSide.SOUTH
-    1 -> MahjongTableSide.WEST
+    1 -> MahjongTableSide.EAST
     2 -> MahjongTableSide.NORTH
-    else -> MahjongTableSide.EAST
+    else -> MahjongTableSide.WEST
 }
 
 /** 麻將桌固定座位數。 */

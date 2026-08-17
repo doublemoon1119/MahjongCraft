@@ -45,6 +45,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import kotlinx.coroutines.test.runTest
 import net.minecraft.nbt.NbtCompound
@@ -296,6 +297,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             moduleRegistry,
             snapshotSynchronizer,
             FakeGameEventPublisher(),
+            FakeGamePresentationPublisher(),
         )(gameId, playerId)
 
         /** 使用恢復後 repository 提交捨牌反應 Pass。 */
@@ -304,6 +306,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             moduleRegistry,
             snapshotSynchronizer,
             FakeGameEventPublisher(),
+            FakeGamePresentationPublisher(),
         )(gameId, playerId, GameAction.Pass)
 
         /** 使用恢復後 repository 提交搶槓反應 Pass。 */

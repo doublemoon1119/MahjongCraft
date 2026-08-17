@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -44,7 +45,8 @@ class DrawTileUseCaseTest {
         val snapshotRepo = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val eventPublisher = FakeGameEventPublisher()
-        val useCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher)
+        val presentationPublisher = FakeGamePresentationPublisher()
+        val useCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher)
     }
 
     private val drawnTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
@@ -141,6 +143,33 @@ class DrawTileUseCaseTest {
             fixtures.eventPublisher.getNotifiedAction(gameId, currentPlayerId, currentPlayerId),
         )
         assertEquals(GameAction.Draw, fixtures.eventPublisher.getNotifiedAction(gameId, otherPlayerId, currentPlayerId))
+    }
+
+    /**
+     * 驗證摸牌後會觸發平台呈現層，帶上正確的座位 index、摸牌前立牌張數與摸到的牌。
+     */
+    @Test
+    fun `test draw tile publishes tile drawn presentation`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(id = currentPlayerId, initialSeat = Wind.EAST)
+            .copy(hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.South))))
+        val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(listOf(drawnTile)),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.useCase(gameId, currentPlayerId)
+
+        val published = fixtures.presentationPublisher.getPublishedTileDrawn(gameId)
+        assertNotNull(published)
+        assertEquals(0, published.seatIndex)
+        assertEquals(1, published.standingTileCount)
+        assertEquals(drawnTile.id, published.drawnTileId)
     }
 
     /**

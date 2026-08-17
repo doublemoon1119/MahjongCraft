@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -20,6 +21,7 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property eventPublisher 對局通知服務。
+ * @property presentationPublisher 對局 in-process 呈現觸發器。
  */
 @Factory
 class DrawTileUseCase(
@@ -27,6 +29,7 @@ class DrawTileUseCase(
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
+    @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 執行摸牌邏輯。
@@ -77,6 +80,11 @@ class DrawTileUseCase(
         newState.players.forEach { player ->
             eventPublisher.publish(gameId, player.id, playerId, GameAction.Draw)
         }
+
+        // 4. 觸發平台呈現層：把摸到的牌從牌牆移到摸牌位
+        val seatIndex = newState.players.indexOfFirst { it.id == playerId }
+        val drawnPlayer = newState.players[seatIndex]
+        presentationPublisher.publishTileDrawn(gameId, seatIndex, drawnPlayer.hand.tiles.size, drawnPlayer.hand.lastDrawn?.id)
 
         return Outcome.Success(Unit)
     }

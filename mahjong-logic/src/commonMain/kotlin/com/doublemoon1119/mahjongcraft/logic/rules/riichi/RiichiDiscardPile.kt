@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
+import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
+import kotlin.uuid.Uuid
 
 /**
  * 日本麻將專用的牌河紀錄實體。
@@ -29,12 +31,26 @@ class RiichiDiscardEntry(
  */
 data class RiichiDiscardPile(
     private val _entries: List<RiichiDiscardEntry> = emptyList(),
-) : DiscardPile<RiichiDiscardEntry> {
+) : DiscardPile<RiichiDiscardEntry>,
+    SidewaysMarkedDiscardPile {
 
     /**
      * 獲取目前牌河中所有的日本麻將捨牌紀錄。
      */
     override val entries: List<RiichiDiscardEntry> get() = _entries
+
+    /**
+     * 從宣告立直的那張牌開始往後找第一張還沒被鳴走的牌——立直宣告牌本身沒被鳴走時就是它自己；
+     * 被鳴走後（`takeLast()` 不會真的移除該筆紀錄，只標記 [RiichiDiscardEntry.isTaken]，
+     * [RiichiDiscardEntry.isRiichi] 透過 [RiichiDiscardEntry.withTaken] 保留），標記自然往後移到
+     * 下一張還留著的牌，連續好幾張都被鳴走也一樣正確；還沒有下一張時回傳 `null`，不需要額外的
+     * 位移狀態機，下一次捨牌時再次呼叫本方法就會自然補上。
+     */
+    override fun sidewaysMarkedTileId(): Uuid? {
+        val declaredIndex = _entries.indexOfFirst { it.isRiichi }
+        if (declaredIndex == -1) return null
+        return _entries.drop(declaredIndex).firstOrNull { !it.isTaken }?.tile?.id
+    }
 
     /**
      * 向牌河添加一項日本麻將捨牌紀錄。

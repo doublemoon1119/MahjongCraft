@@ -33,6 +33,12 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的開局座位傳送清單。 */
     private val gameStartedSeatings = mutableMapOf<Uuid, List<Uuid>>()
 
+    /** 依對局 Uuid 紀錄最後一次收到的摸牌呈現資料。 */
+    private val tileDrawn = mutableMapOf<Uuid, DrawnTileContext>()
+
+    /** 依對局 Uuid 紀錄最後一次收到的牌河更新資料。 */
+    private val discardPiles = mutableMapOf<Uuid, DiscardPileContext>()
+
     override fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int) {
         diceRolls[gameId] = dice
         diceRollContexts[gameId] = DiceRollContext(dealerSeatIndex, roundNumber, comboCount)
@@ -50,6 +56,14 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     override fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>) {
         gameStartedSeatings[gameId] = seatedPlayerIds
+    }
+
+    override fun publishTileDrawn(gameId: Uuid, seatIndex: Int, standingTileCount: Int, drawnTileId: Uuid?) {
+        tileDrawn[gameId] = DrawnTileContext(seatIndex, standingTileCount, drawnTileId)
+    }
+
+    override fun publishDiscardPileUpdated(gameId: Uuid, seatIndex: Int, discardTileIds: List<Uuid>, sidewaysMarkedTileId: Uuid?) {
+        discardPiles[gameId] = DiscardPileContext(seatIndex, discardTileIds, sidewaysMarkedTileId)
     }
 
     /** 取得指定對局最後一次收到的擲骰結果；若無紀錄則回傳 null。 */
@@ -72,6 +86,12 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 取得指定對局最後一次收到的開局座位傳送清單；若無紀錄則回傳 null。 */
     fun getPublishedGameStartedSeating(gameId: Uuid): List<Uuid>? = gameStartedSeatings[gameId]
+
+    /** 取得指定對局最後一次收到的摸牌呈現資料；若無紀錄則回傳 null。 */
+    fun getPublishedTileDrawn(gameId: Uuid): DrawnTileContext? = tileDrawn[gameId]
+
+    /** 取得指定對局最後一次收到的牌河更新資料；若無紀錄則回傳 null。 */
+    fun getPublishedDiscardPile(gameId: Uuid): DiscardPileContext? = discardPiles[gameId]
 }
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishDiceRoll] 隨附桌況資料。 */
@@ -86,4 +106,18 @@ data class WallStructureContext(
     val dealerSeatIndex: Int,
     val deadWallTileIds: Set<Uuid>,
     val diceCount: Int,
+)
+
+/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishTileDrawn] 資料。 */
+data class DrawnTileContext(
+    val seatIndex: Int,
+    val standingTileCount: Int,
+    val drawnTileId: Uuid?,
+)
+
+/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishDiscardPileUpdated] 資料。 */
+data class DiscardPileContext(
+    val seatIndex: Int,
+    val discardTileIds: List<Uuid>,
+    val sidewaysMarkedTileId: Uuid?,
 )

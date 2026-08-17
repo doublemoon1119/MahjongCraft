@@ -17,6 +17,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDrawnTilePresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
@@ -39,7 +42,8 @@ import kotlin.uuid.Uuid
  * @property seatingPresenter 開局座位傳送的實際呈現邏輯。
  * @property diceRollPresenter 正式擲骰的實際呈現邏輯。
  * @property tileWallPresenter 正式牌牆的實際呈現邏輯。
- * @property handTilesPresenter 正式手牌的實際呈現邏輯。
+ * @property handTilesPresenter 正式手牌（含摸牌位）的實際呈現邏輯。
+ * @property discardPresenter 正式牌河的實際呈現邏輯。
  * @property tableLocationRegistry 麻將桌最後已知位置索引。
  * @property serverHolder 目前運行中的 server，供世界／方塊狀態查詢使用。
  * @property busyTracker 呈現動畫播放期間標記該桌暫時忙碌，供輸入分派入口與自動操作心跳擋下操作。
@@ -53,6 +57,7 @@ class FabricGamePresentationPublisher(
     private val diceRollPresenter: MahjongDiceRollPresenter,
     private val tileWallPresenter: MahjongTileWallPresenter,
     private val handTilesPresenter: MahjongHandTilesPresenter,
+    private val discardPresenter: MahjongDiscardPresenter,
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
     private val busyTracker: TablePresentationBusyTracker,
@@ -242,6 +247,88 @@ class FabricGamePresentationPublisher(
     override fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>) {
         if (serverHolder.current() == null) return
         scope.launch(dispatchers.main) { seatingPresenter.present(gameId, seatedPlayerIds) }
+    }
+
+    /**
+     * 摸牌/丟牌是整場遊戲隨時都會發生的一般回合動作，不是開局限定的一次性動畫，不需要
+     * [busyTracker] 標記，也不需要延遲——直接同步呈現。跟 [publishDiceRoll] 同理，世界／entity 存取
+     * 一併丟回伺服器主執行緒執行。
+     */
+    override fun publishTileDrawn(gameId: Uuid, seatIndex: Int, standingTileCount: Int, drawnTileId: Uuid?) {
+        logger.debug("publishTileDrawn gameId={} seatIndex={} standingTileCount={} drawnTileId={}", gameId, seatIndex, standingTileCount, drawnTileId)
+        if (serverHolder.current() == null) {
+            logger.warn("publishTileDrawn gameId={} skipped: no active server", gameId)
+            return
+        }
+        scope.launch(dispatchers.main) {
+            val location = tableLocationRegistry.get(gameId)?.location
+            if (location == null) {
+                logger.warn("publishTileDrawn gameId={} skipped: no known table location", gameId)
+                return@launch
+            }
+            val world = resolveWorld(location)
+            if (world == null) {
+                logger.warn("publishTileDrawn gameId={} skipped: could not resolve world for location={}", gameId, location)
+                return@launch
+            }
+            val controllerPos = BlockPos(location.x, location.y, location.z)
+            val state = world.getBlockState(controllerPos)
+            if (!state.contains(Properties.HORIZONTAL_FACING)) {
+                logger.warn("publishTileDrawn gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})", gameId, controllerPos, state)
+                return@launch
+            }
+            val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
+
+            val presentation = MahjongDrawnTilePresentation(
+                tableId = gameId,
+                tableLocation = location,
+                tableFacing = facing,
+                seatIndex = seatIndex,
+                standingTileCount = standingTileCount,
+                drawnTileId = drawnTileId,
+            )
+            val result = handTilesPresenter.presentDrawnTile(presentation)
+            logger.debug("publishTileDrawn gameId={} presentDrawnTile() result={}", gameId, result)
+        }
+    }
+
+    /** 理由同 [publishTileDrawn]：一般回合動作，不需要 [busyTracker] 或延遲，直接同步呈現。 */
+    override fun publishDiscardPileUpdated(gameId: Uuid, seatIndex: Int, discardTileIds: List<Uuid>, sidewaysMarkedTileId: Uuid?) {
+        logger.debug("publishDiscardPileUpdated gameId={} seatIndex={} tileCount={} sidewaysMarkedTileId={}", gameId, seatIndex, discardTileIds.size, sidewaysMarkedTileId)
+        if (serverHolder.current() == null) {
+            logger.warn("publishDiscardPileUpdated gameId={} skipped: no active server", gameId)
+            return
+        }
+        scope.launch(dispatchers.main) {
+            val location = tableLocationRegistry.get(gameId)?.location
+            if (location == null) {
+                logger.warn("publishDiscardPileUpdated gameId={} skipped: no known table location", gameId)
+                return@launch
+            }
+            val world = resolveWorld(location)
+            if (world == null) {
+                logger.warn("publishDiscardPileUpdated gameId={} skipped: could not resolve world for location={}", gameId, location)
+                return@launch
+            }
+            val controllerPos = BlockPos(location.x, location.y, location.z)
+            val state = world.getBlockState(controllerPos)
+            if (!state.contains(Properties.HORIZONTAL_FACING)) {
+                logger.warn("publishDiscardPileUpdated gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})", gameId, controllerPos, state)
+                return@launch
+            }
+            val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
+
+            val presentation = MahjongDiscardPresentation(
+                tableId = gameId,
+                tableLocation = location,
+                tableFacing = facing,
+                seatIndex = seatIndex,
+                discardTileIds = discardTileIds,
+                sidewaysMarkedTileId = sidewaysMarkedTileId,
+            )
+            val result = discardPresenter.present(presentation)
+            logger.debug("publishDiscardPileUpdated gameId={} present() result={}", gameId, result)
+        }
     }
 
     /** 由版本無關 dimension ID 取得目前 server session 的世界。 */

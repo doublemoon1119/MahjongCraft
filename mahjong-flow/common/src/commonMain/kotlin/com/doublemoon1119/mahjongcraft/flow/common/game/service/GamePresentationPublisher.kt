@@ -78,4 +78,37 @@ interface GamePresentationPublisher {
      * @param seatedPlayerIds 依 `TableState.players` 固定座位順序排列的玩家 Uuid 清單。
      */
     fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>)
+
+    /**
+     * 通知平台呈現層某玩家摸到的牌需要移動到手牌旁的摸牌位置。
+     *
+     * 只在真正摸牌時呼叫；捨牌不會呼叫這個方法清除摸牌位——捨牌時原本佔用摸牌位的那張牌一定會有
+     * 新去處（併入立牌列表，或本身就是被丟的那張移去牌河），呼叫端改呼叫 [publishHandTiles]（重新
+     * 排列立牌列）與 [publishDiscardPileUpdated]（把牌移去牌河），不會有「entity 留在摸牌位沒人管」
+     * 的情況。
+     *
+     * @param gameId 對局 Uuid。
+     * @param seatIndex 摸牌玩家在 `TableState.players` 的固定座位 index。
+     * @param standingTileCount 這位玩家目前立牌張數（不含這張剛摸到的牌），供平台實作換算摸牌位相對
+     * 立牌列尾端的偏移，不需要重新定位既有立牌。
+     * @param drawnTileId 剛摸到那張牌的 Uuid；為 `null` 代表清除既有摸牌位呈現（例如對局／該局結束
+     * 時的收尾呼叫）。
+     */
+    fun publishTileDrawn(gameId: Uuid, seatIndex: Int, standingTileCount: Int, drawnTileId: Uuid?)
+
+    /**
+     * 通知平台呈現層某玩家的牌河需要更新為目前狀態。
+     *
+     * 呼叫時機：該玩家捨牌後，或該玩家先前的捨牌被吃/碰/槓走、使牌河紀錄的 `isTaken` 狀態改變時
+     * （即使沒有新增捨牌，側身標記也可能因此位移，需要重新呈現）。
+     *
+     * @param gameId 對局 Uuid。
+     * @param seatIndex 牌河所屬玩家在 `TableState.players` 的固定座位 index。
+     * @param discardTileIds 這位玩家目前牌河所有紀錄的牌 Uuid，依捨牌順序排列——順序本身決定牌河
+     * 排列位置，呼叫端不需要另外傳遞位置索引。
+     * @param sidewaysMarkedTileId 這位玩家牌河中應側身呈現的牌 Uuid；`null` 代表沒有任何一張需要
+     * 側身（例如非立直規則、或立直牌已被鳴走且尚無下一張捨牌）。刻意用泛用的「側身標記」措辭而非
+     * 「立直」，讓這個介面本身維持規則無關。
+     */
+    fun publishDiscardPileUpdated(gameId: Uuid, seatIndex: Int, discardTileIds: List<Uuid>, sidewaysMarkedTileId: Uuid?)
 }

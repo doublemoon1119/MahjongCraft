@@ -10,8 +10,8 @@ import kotlin.test.assertNotEquals
 
 /** [MahjongTileTableLayout] 的墩位間距、四面旋轉、角落不重疊與輸入驗證測試。 */
 class MahjongTileTableLayoutTest {
-    /** 同一面內不同墩應等距排列，`stack` 0 在最大 X、遞增時往負向移動；整條線額外偏移半個牌高
-     *  （見 [MahjongTileTableLayout] 角落互相接角的說明），不是置中於側面正中央。 */
+    /** 同一面內不同墩應等距排列，`stack` 0 在最大 X（該面玩家自己右手邊）、遞增時往負向移動；整條線
+     *  額外偏移半個牌高（見 [MahjongTileTableLayout] 角落互相接角的說明），不是置中於側面正中央。 */
     @Test
     fun `stacks are evenly spaced and shifted for corner interlock`() {
         val first = wallPlacement(position = TileWallPosition(side = 0, stack = 0, layer = 0))
@@ -143,14 +143,18 @@ class MahjongTileTableLayoutTest {
         assertEquals(true, (hand.z - centerZ) > (wall.z - centerZ), "Hand offset ${hand.z - centerZ} should exceed wall offset ${wall.z - centerZ}")
     }
 
-    /** 不同座位 index 應落在不同的世界局部側面，且不經過莊家相對旋轉（跟牌牆不同）。 */
+    /**
+     * 不同座位 index 應落在不同的世界局部側面，且不經過莊家相對旋轉（跟牌牆不同）。座位 1 落在
+     * EAST（`seatIndexToTableSide` 的順時針方向，跟牌牆自身組裝用的逆時針 `SIDE_ORDER` 是兩套獨立
+     * 方向，見 `seatIndexToTableSide` KDoc），對應 [rotateForSide] 的 EAST 公式 `(z, -x)`。
+     */
     @Test
     fun `hand seat index selects physical side directly`() {
         val seatZero = handPlacement(seatIndex = 0)
         val seatOne = handPlacement(seatIndex = 1)
 
-        assertEquals(-(seatZero.z - CONTROLLER_CENTER_Z), seatOne.x - CONTROLLER_CENTER_X, ABSOLUTE_TOLERANCE)
-        assertEquals(seatZero.x - CONTROLLER_CENTER_X, seatOne.z - CONTROLLER_CENTER_Z, ABSOLUTE_TOLERANCE)
+        assertEquals(seatZero.z - CONTROLLER_CENTER_Z, seatOne.x - CONTROLLER_CENTER_X, ABSOLUTE_TOLERANCE)
+        assertEquals(-(seatZero.x - CONTROLLER_CENTER_X), seatOne.z - CONTROLLER_CENTER_Z, ABSOLUTE_TOLERANCE)
     }
 
     /** 超出手牌張數範圍應直接拒絕。 */
@@ -158,6 +162,91 @@ class MahjongTileTableLayoutTest {
     fun `hand layout rejects out of range tile index`() {
         assertFailsWith<IllegalArgumentException> { handPlacement(tileIndex = HAND_SIZE) }
         assertFailsWith<IllegalArgumentException> { handPlacement(tileIndex = -1) }
+    }
+
+    /** 摸牌位應落在立牌列尾端（`tileIndex = 0`，玩家右手邊）外一段看得出來的縫隙，不是緊貼。 */
+    @Test
+    fun `drawn tile sits beyond the hand row edge with a visible gap`() {
+        val firstStanding = handPlacement(handSize = HAND_SIZE, tileIndex = 0)
+        val drawn = drawnTilePlacement(standingTileCount = HAND_SIZE)
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val gap = MahjongTileDimensions.TILE_WIDTH * MahjongTileTableLayout.DRAWN_TILE_GAP_RATIO
+
+        assertEquals(stackStep + gap, drawn.x - firstStanding.x, ABSOLUTE_TOLERANCE)
+        assertEquals(firstStanding.z, drawn.z, ABSOLUTE_TOLERANCE)
+    }
+
+    /** 摸牌位垂直於側面的距離應跟手牌共用同一個 `HAND_EDGE_OFFSET`。 */
+    @Test
+    fun `drawn tile shares the hand row's distance from center`() {
+        val hand = handPlacement(tileIndex = 0)
+        val drawn = drawnTilePlacement(standingTileCount = HAND_SIZE)
+
+        assertEquals(hand.z, drawn.z, ABSOLUTE_TOLERANCE)
+    }
+
+    /** 牌河第 7 張（index 6）應換到下一排，跟前 6 張的垂直距離不同、第 0 欄的 X 相同。 */
+    @Test
+    fun `discard pile wraps to a new row after the row size`() {
+        val firstOfRowOne = discardPlacement(discardIndex = 0)
+        val lastOfRowOne = discardPlacement(discardIndex = MahjongTileTableLayout.DISCARD_TILES_PER_ROW - 1)
+        val firstOfRowTwo = discardPlacement(discardIndex = MahjongTileTableLayout.DISCARD_TILES_PER_ROW)
+
+        assertEquals(firstOfRowOne.z, lastOfRowOne.z, ABSOLUTE_TOLERANCE)
+        assertEquals(firstOfRowOne.x, firstOfRowTwo.x, ABSOLUTE_TOLERANCE)
+        assertNotEquals(firstOfRowOne.z, firstOfRowTwo.z)
+    }
+
+    /** 側身標記只改變 yaw（多轉 90 度），不改變座標。 */
+    @Test
+    fun `sideways marked discard tile only rotates yaw`() {
+        val upright = discardPlacement(discardIndex = 0, isSidewaysMarked = false)
+        val sideways = discardPlacement(discardIndex = 0, isSidewaysMarked = true)
+
+        assertEquals(upright.x, sideways.x, ABSOLUTE_TOLERANCE)
+        assertEquals(upright.y, sideways.y, ABSOLUTE_TOLERANCE)
+        assertEquals(upright.z, sideways.z, ABSOLUTE_TOLERANCE)
+        assertEquals(MahjongTileTableLayout.SIDEWAYS_YAW_OFFSET, ((sideways.yaw - upright.yaw) + FULL_YAW_DEGREES) % FULL_YAW_DEGREES, ABSOLUTE_TOLERANCE.toFloat())
+    }
+
+    /** 牌河整體應比牌牆更靠近桌子中心。 */
+    @Test
+    fun `discard pile sits closer to the table center than the wall`() {
+        val discard = discardPlacement(discardIndex = 0)
+        val wall = wallPlacement(position = TileWallPosition(side = 0, stack = 0, layer = 0))
+        val centerZ = CONTROLLER_CENTER_Z
+
+        assertEquals(true, (discard.z - centerZ) < (wall.z - centerZ), "Discard offset ${discard.z - centerZ} should be less than wall offset ${wall.z - centerZ}")
+    }
+
+    /** 負數 discardIndex 應直接拒絕。 */
+    @Test
+    fun `discard layout rejects negative index`() {
+        assertFailsWith<IllegalArgumentException> { discardPlacement(discardIndex = -1) }
+    }
+
+    /**
+     * 牌山還有剩餘牌時，第 [MahjongTileTableLayout.DISCARD_SAFE_ROWS] 排放滿後不應該新增第四排——
+     * 應該固定停在最後一個安全排，沿著同一排方向繼續延伸（`z` 不變，`x` 持續往外）。
+     */
+    @Test
+    fun `discard pile extends the last safe row instead of adding a fourth row while wall remains`() {
+        val lastSafeRowStart = (MahjongTileTableLayout.DISCARD_SAFE_ROWS - 1) * MahjongTileTableLayout.DISCARD_TILES_PER_ROW
+        val lastTileOfSafeRows = discardPlacement(discardIndex = lastSafeRowStart, wallRemaining = true)
+        val overflow = discardPlacement(discardIndex = lastSafeRowStart + MahjongTileTableLayout.DISCARD_TILES_PER_ROW, wallRemaining = true)
+
+        assertEquals(lastTileOfSafeRows.z, overflow.z, ABSOLUTE_TOLERANCE)
+        assertNotEquals(lastTileOfSafeRows.x, overflow.x)
+    }
+
+    /** 牌山已經摸完時，第四排應該正常往桌緣方向新增，不再固定停在最後一個安全排。 */
+    @Test
+    fun `discard pile adds a fourth row once the wall is exhausted`() {
+        val lastSafeRowStart = (MahjongTileTableLayout.DISCARD_SAFE_ROWS - 1) * MahjongTileTableLayout.DISCARD_TILES_PER_ROW
+        val lastTileOfSafeRows = discardPlacement(discardIndex = lastSafeRowStart, wallRemaining = false)
+        val fourthRowFirstTile = discardPlacement(discardIndex = lastSafeRowStart + MahjongTileTableLayout.DISCARD_TILES_PER_ROW, wallRemaining = false)
+
+        assertNotEquals(lastTileOfSafeRows.z, fourthRowFirstTile.z)
     }
 
     /** 建立固定 controller 與可覆寫輸入的測試 placement。 */
@@ -191,6 +280,38 @@ class MahjongTileTableLayoutTest {
         seatIndex = seatIndex,
         handSize = handSize,
         tileIndex = tileIndex,
+    )
+
+    /** 建立固定 controller 與可覆寫輸入的測試摸牌位 placement。 */
+    private fun drawnTilePlacement(
+        tableFacing: MahjongTableFacing = MahjongTableFacing.NORTH,
+        seatIndex: Int = 0,
+        standingTileCount: Int = HAND_SIZE,
+    ): MahjongTileWallPlacement = MahjongTileTableLayout.drawnTilePlacement(
+        controllerX = 10,
+        controllerY = 64,
+        controllerZ = -4,
+        tableFacing = tableFacing,
+        seatIndex = seatIndex,
+        standingTileCount = standingTileCount,
+    )
+
+    /** 建立固定 controller 與可覆寫輸入的測試牌河 placement。 */
+    private fun discardPlacement(
+        tableFacing: MahjongTableFacing = MahjongTableFacing.NORTH,
+        seatIndex: Int = 0,
+        discardIndex: Int = 0,
+        isSidewaysMarked: Boolean = false,
+        wallRemaining: Boolean = true,
+    ): MahjongTileWallPlacement = MahjongTileTableLayout.discardPlacement(
+        controllerX = 10,
+        controllerY = 64,
+        controllerZ = -4,
+        tableFacing = tableFacing,
+        seatIndex = seatIndex,
+        discardIndex = discardIndex,
+        isSidewaysMarked = isSidewaysMarked,
+        wallRemaining = wallRemaining,
     )
 
     /** 一張躺平牌的世界水平 footprint，用來檢查不同墩是否重疊。 */

@@ -76,6 +76,17 @@ class MahjongTileEntity(
     /** 這個 entity 是否已經做過一次 [validateStillManagedByActiveGame] 檢查；只需要做一次。 */
     private var hasValidatedManagedState = false
 
+    /**
+     * 這張牌是否已經被移到王牌區的開門位置；只有伺服器端邏輯（[FabricMahjongDiscardPresenter][
+     * com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongDiscardPresenter]
+     * 判斷牌河第四排要不要避讓）需要區分「活牌牆」跟「王牌區」，不影響 client 顯示（雙面都是牌背朝下），
+     * 因此不透過 [DataTracker] 同步、只用一般欄位＋NBT 持久化。王牌區的牌一旦移出開門位置就會一直留在
+     * 原地直到這局結束，不能算進「這一面牆是否還有活牌」的查詢範圍，否則開門缺口剛好落在某位玩家自己
+     * 面前那面牆時，即使活牌早就摸光了，查詢仍會因為王牌區殘留的牌一直回傳 true（遊戲內驗證過的
+     * bug：玩家自己那面牆明明已經空了，牌河卻沒有换到第四排，一直沿第三排延伸）。
+     */
+    var isDeadWallTile: Boolean = false
+
     init {
         setNoGravity(true)
     }
@@ -211,6 +222,7 @@ class MahjongTileEntity(
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
         tileAssetKey = nbt.getString(NBT_KEY_TILE)
         tilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
+        isDeadWallTile = nbt.getBoolean(NBT_KEY_IS_DEAD_WALL_TILE)
     }
 
     /** 將牌面、姿態與管理狀態寫入世界存檔。 */
@@ -219,6 +231,7 @@ class MahjongTileEntity(
         nbt.putString(NBT_KEY_POSE, tilePose.name)
         nbt.putBoolean(NBT_KEY_MANAGED_BY_GAME, managedByGame)
         managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
+        nbt.putBoolean(NBT_KEY_IS_DEAD_WALL_TILE, isDeadWallTile)
     }
 
     companion object {
@@ -242,6 +255,9 @@ class MahjongTileEntity(
 
         /** 正式牌局所屬桌子 UUID 的世界存檔 key。 */
         private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
+
+        /** [isDeadWallTile] 的世界存檔 key。 */
+        private const val NBT_KEY_IS_DEAD_WALL_TILE = "IsDeadWallTile"
 
         /** 同步牌面素材 key。 */
         private val TILE_ASSET_KEY: TrackedData<String> =

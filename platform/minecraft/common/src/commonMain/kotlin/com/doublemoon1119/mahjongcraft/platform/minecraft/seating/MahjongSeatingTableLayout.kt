@@ -27,7 +27,10 @@ data class MahjongSeatPlacement(
  * 麻將桌四個固定座位的座標計算。
  *
  * 整張桌子的實體結構固定是寬 3、深 3、高 2 的方塊範圍，controller 位於正中央下方；四個座位因此位於
- * 桌子四個側邊中點，離中心固定 [SEAT_DISTANCE] 格。座位依 index 0～3 逆時針排列，對應
+ * 桌子四個側邊中點，離中心固定 [SEAT_DISTANCE] 格。座位依 index 0～3 順時針排列（[seatIndexToTableSide]
+ * 的方向，跟牌牆自身組裝用的逆時針 `SIDE_ORDER` 是刻意不同的兩套獨立方向，見該函式 KDoc）——這是
+ * 為了讓回合順序中的下一位玩家（`TableState.getNextPlayer()`，下家）physically 站在目前玩家的右手邊，
+ * 符合真實麻將慣例。座位 index 對應
  * [com.doublemoon1119.mahjongcraft.logic.table.TableState.players] 固定不變的座位順序——
  * `TableState.advanceRound()` 只轉動每個 index 位置玩家的自風，不重排 index，因此這裡的座位 index
  * 必須跟規則層的玩家座位 index 一一對應，順序不能任意調整。

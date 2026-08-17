@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -12,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -35,6 +37,7 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與規則特有邏輯。
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property eventPublisher 對局通知服務。
+ * @property presentationPublisher 對局 in-process 呈現觸發器。
  */
 @Factory
 class RespondToDiscardUseCase(
@@ -42,6 +45,7 @@ class RespondToDiscardUseCase(
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
+    @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 執行捨牌反應回應邏輯。
@@ -118,15 +122,34 @@ class RespondToDiscardUseCase(
             }
         }
 
+        // 觸發平台呈現層：碰/吃/明槓得標時，丟牌者的 discardPile 被 takeLast() 標記，即使沒有新增
+        // 捨牌，側身標記也可能因此位移，需要重新呈現這位丟牌者的牌河
+        result.discarderId?.let { discarderId ->
+            val discarderSeatIndex = newState.players.indexOfFirst { it.id == discarderId }
+            val discarder = newState.players[discarderSeatIndex]
+            presentationPublisher.publishDiscardPileUpdated(
+                gameId,
+                discarderSeatIndex,
+                discarder.discardPile.entries.map { it.tile.id },
+                (discarder.discardPile as? SidewaysMarkedDiscardPile)?.sidewaysMarkedTileId(),
+            )
+        }
+
         return Outcome.Success(Unit)
     }
 
     /**
-     * `update` 區塊內部使用的中繼結果，讓 [rinshanDrawHappened] 能跟著 [tableState] 一起帶出
-     * `gameRepository.update` 的作用域，供廣播事件時使用。[rinshanDrawHappened] 為 true 代表明槓
-     * 得標後成功補到嶺上牌，需要額外廣播 [GameAction.Draw]。
+     * `update` 區塊內部使用的中繼結果，讓 [rinshanDrawHappened]／[discarderId] 能跟著 [tableState]
+     * 一起帶出 `gameRepository.update` 的作用域，供廣播事件／觸發呈現時使用。[rinshanDrawHappened]
+     * 為 true 代表明槓得標後成功補到嶺上牌，需要額外廣播 [GameAction.Draw]。[discarderId] 只在碰/吃/
+     * 明槓得標、實際對丟牌者的 `discardPile` 呼叫過 `takeLast()` 時才有值（全員過牌與榮和都不會呼叫
+     * `takeLast()`），供呼叫端重新呈現該玩家的牌河。
      */
-    private data class RespondResult(val tableState: TableState, val rinshanDrawHappened: Boolean = false)
+    private data class RespondResult(
+        val tableState: TableState,
+        val rinshanDrawHappened: Boolean = false,
+        val discarderId: Uuid? = null,
+    )
 
     /**
      * 所有有資格的玩家皆已回應，進行結算：找出優先權最高的非過牌回應套用鳴牌，或在全員過牌時單純推進回合。
@@ -213,11 +236,12 @@ class RespondToDiscardUseCase(
 
         if (meldType != MeldType.OPEN_KAN) {
             return RespondResult(
-                state.copy(
+                tableState = state.copy(
                     players = playersAfterMeldClaimed,
                     currentPlayerIndex = winnerIndex,
                     pendingReaction = null,
                 ),
+                discarderId = pendingReaction.discarderId,
             )
         }
 
@@ -246,6 +270,7 @@ class RespondToDiscardUseCase(
                 tileWall = if (rinshanTile == null) state.tileWall else newWall,
             ),
             rinshanDrawHappened = rinshanTile != null,
+            discarderId = pendingReaction.discarderId,
         )
     }
 }

@@ -15,6 +15,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentationResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDrawnTilePresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDrawnTilePresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresenter
@@ -112,6 +117,9 @@ class FabricTableLifecycleServiceTest {
         /** 記錄清理呼叫的手牌 presenter fake。 */
         private val handTilesPresenter = RecordingHandTilesPresenter()
 
+        /** 記錄清理呼叫的牌河 presenter fake。 */
+        private val discardPresenter = RecordingDiscardPresenter()
+
         /** 受測生命週期服務。 */
         val lifecycleService = FabricTableLifecycleService(
             store,
@@ -121,6 +129,7 @@ class FabricTableLifecycleServiceTest {
             diceRollPresenter,
             tileWallPresenter,
             handTilesPresenter,
+            discardPresenter,
         )
 
         /** 建立包含測試 Room 與 membership 的初始狀態。 */
@@ -159,7 +168,19 @@ class FabricTableLifecycleServiceTest {
         /** 此測試不使用正式手牌呈現。 */
         override fun present(presentation: MahjongHandTilesPresentation): MahjongHandTilesPresentationResult = MahjongHandTilesPresentationResult.PRESENTED
 
+        /** 此測試不使用正式摸牌位呈現。 */
+        override fun presentDrawnTile(presentation: MahjongDrawnTilePresentation): MahjongDrawnTilePresentationResult = MahjongDrawnTilePresentationResult.PRESENTED
+
         /** 記錄清理請求並回報沒有已載入手牌。 */
+        override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
+    }
+
+    /** 只記錄正式牌河清理參數的測試 presenter。 */
+    private class RecordingDiscardPresenter : MahjongDiscardPresenter {
+        /** 此測試不使用正式牌河呈現。 */
+        override fun present(presentation: MahjongDiscardPresentation): MahjongDiscardPresentationResult = MahjongDiscardPresentationResult.PRESENTED
+
+        /** 記錄清理請求並回報沒有已載入牌河。 */
         override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
     }
 }

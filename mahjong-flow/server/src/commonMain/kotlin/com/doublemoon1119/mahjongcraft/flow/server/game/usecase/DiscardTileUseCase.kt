@@ -2,12 +2,14 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -28,6 +30,7 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器。
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property eventPublisher 對局通知服務。
+ * @property presentationPublisher 對局 in-process 呈現觸發器。
  */
 @Factory
 class DiscardTileUseCase(
@@ -35,6 +38,7 @@ class DiscardTileUseCase(
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
+    @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 執行捨牌邏輯。
@@ -110,6 +114,18 @@ class DiscardTileUseCase(
                 eventPublisher.publish(gameId, player.id, playerId, GameAction.ExhaustiveDraw(reason))
             }
         }
+
+        // 4. 觸發平台呈現層：重新排列立牌列（涵蓋摸切、或打手牌併入摸到的牌兩種情況），並把捨棄的牌
+        // 移到牌河
+        val seatIndex = newState.players.indexOfFirst { it.id == playerId }
+        val discarder = newState.players[seatIndex]
+        presentationPublisher.publishHandTiles(gameId, mapOf(seatIndex to discarder.hand.tiles.map { it.id }), diceCount = 0)
+        presentationPublisher.publishDiscardPileUpdated(
+            gameId,
+            seatIndex,
+            discarder.discardPile.entries.map { it.tile.id },
+            (discarder.discardPile as? SidewaysMarkedDiscardPile)?.sidewaysMarkedTileId(),
+        )
 
         return Outcome.Success(Unit)
     }

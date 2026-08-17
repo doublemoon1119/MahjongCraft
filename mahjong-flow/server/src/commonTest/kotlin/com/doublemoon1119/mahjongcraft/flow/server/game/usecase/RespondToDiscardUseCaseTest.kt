@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -53,7 +54,8 @@ class RespondToDiscardUseCaseTest {
         val snapshotRepo = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val eventPublisher = FakeGameEventPublisher()
-        val useCase = RespondToDiscardUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher)
+        val presentationPublisher = FakeGamePresentationPublisher()
+        val useCase = RespondToDiscardUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher)
     }
 
     /**
@@ -139,6 +141,44 @@ class RespondToDiscardUseCaseTest {
 
         val newDiscarder = newState.players.first { it.id == discarderId }
         assertTrue(newDiscarder.discardPile.entries.last().isTaken, "The claimed discard should be marked as taken.")
+    }
+
+    /**
+     * 驗證碰牌得標後，即使沒有新增捨牌，也會觸發平台呈現層重新呈現丟牌者的牌河——因為
+     * `takeLast()` 改變了 `isTaken` 狀態，側身標記可能因此位移。
+     */
+    @Test
+    fun `test pon success publishes discarder's discard pile presentation`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val handTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val handTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val responder = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = listOf(handTile1, handTile2)),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, responder),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id))
+
+        val publishedDiscardPile = fixtures.presentationPublisher.getPublishedDiscardPile(gameId)
+        assertNotNull(publishedDiscardPile)
+        assertEquals(0, publishedDiscardPile.seatIndex)
+        assertEquals(listOf(discardedTile.id), publishedDiscardPile.discardTileIds)
+        assertEquals(null, publishedDiscardPile.sidewaysMarkedTileId, "FakeDiscardPile has no riichi concept, so no tile should be marked sideways.")
     }
 
     /**

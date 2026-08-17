@@ -9,6 +9,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDrawnTilePresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDrawnTilePresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresenter
@@ -91,6 +93,43 @@ class FabricMahjongHandTilesPresenter(
             return MahjongHandTilesPresentationResult.SPAWN_FAILED
         }
         return MahjongHandTilesPresentationResult.PRESENTED
+    }
+
+    /**
+     * 摸到的牌是同一批 wall-spawned entity 之一，跟 [present] 同一套「找 UUID、改標記、移動」邏輯，
+     * 只是移動目的地換成 [MahjongTileTableLayout.drawnTilePlacement]。
+     * [MahjongDrawnTilePresentation.drawnTileId] 為 `null` 時直接視為成功、不做任何事——理由見本
+     * 方法所屬介面的 KDoc。
+     */
+    override fun presentDrawnTile(presentation: MahjongDrawnTilePresentation): MahjongDrawnTilePresentationResult {
+        val drawnTileId = presentation.drawnTileId ?: return MahjongDrawnTilePresentationResult.PRESENTED
+        val world = resolveWorld(presentation.tableLocation) ?: return MahjongDrawnTilePresentationResult.TABLE_NOT_FOUND
+        val controllerPos = presentation.tableLocation.toBlockPos()
+        val state = world.getBlockState(controllerPos)
+        val table = resolveTable(world, controllerPos, state, presentation.tableId)
+            ?: return MahjongDrawnTilePresentationResult.TABLE_NOT_FOUND
+        if (state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing() != presentation.tableFacing) {
+            return MahjongDrawnTilePresentationResult.TABLE_NOT_FOUND
+        }
+
+        val tile = world.getEntity(drawnTileId.toJavaUuid()) as? MahjongTileEntity
+        if (tile == null) {
+            logger.warn("publishTileDrawn tableId={} tileId={} skipped: no existing wall entity found to claim", presentation.tableId, drawnTileId)
+            return MahjongDrawnTilePresentationResult.SPAWN_FAILED
+        }
+        val placement = MahjongTileTableLayout.drawnTilePlacement(
+            controllerX = controllerPos.x,
+            controllerY = controllerPos.y,
+            controllerZ = controllerPos.z,
+            tableFacing = presentation.tableFacing,
+            seatIndex = presentation.seatIndex,
+            standingTileCount = presentation.standingTileCount,
+        )
+        tile.assignToTable(presentation.tableId)
+        tile.tilePose = MahjongTilePose.STANDING
+        tile.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+        table.markDirty()
+        return MahjongDrawnTilePresentationResult.PRESENTED
     }
 
     /**
