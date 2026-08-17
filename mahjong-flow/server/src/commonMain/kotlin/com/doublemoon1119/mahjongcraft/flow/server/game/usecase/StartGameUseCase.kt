@@ -109,6 +109,11 @@ class StartGameUseCase(
             val diceCount = initializationResult.diceRoll?.values?.size ?: 0
             presentationPublisher.publishWallStructure(roomId, structure, dealerSeatIndex, deadWallTileIds, diceCount)
         }
+        run {
+            val handsBySeatIndex = tableState.players.mapIndexed { seatIndex, player -> seatIndex to player.hand.tiles.map { tile -> tile.id } }.toMap()
+            val diceCount = initializationResult.diceRoll?.values?.size ?: 0
+            presentationPublisher.publishHandTiles(roomId, handsBySeatIndex, diceCount)
+        }
         presentationPublisher.publishGameStarted(roomId, tableState.players.map { it.id })
 
         return Outcome.Success(roomId)

@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
@@ -16,6 +17,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import kotlinx.coroutines.launch
@@ -36,22 +39,26 @@ import kotlin.uuid.Uuid
  * @property seatingPresenter 開局座位傳送的實際呈現邏輯。
  * @property diceRollPresenter 正式擲骰的實際呈現邏輯。
  * @property tileWallPresenter 正式牌牆的實際呈現邏輯。
+ * @property handTilesPresenter 正式手牌的實際呈現邏輯。
  * @property tableLocationRegistry 麻將桌最後已知位置索引。
  * @property serverHolder 目前運行中的 server，供世界／方塊狀態查詢使用。
  * @property busyTracker 呈現動畫播放期間標記該桌暫時忙碌，供輸入分派入口與自動操作心跳擋下操作。
  * @property scope 承接世界／方塊狀態查詢需要切回伺服器主執行緒的工作。
  * @property dispatchers 切回伺服器主執行緒用的 dispatcher。
+ * @property tickClock 排定手牌延遲落地用的 tick 排程器，跟 [busyTracker] 共用同一套暫停感知計時。
  */
 @Single(binds = [GamePresentationPublisher::class])
 class FabricGamePresentationPublisher(
     private val seatingPresenter: MahjongSeatingPresenter,
     private val diceRollPresenter: MahjongDiceRollPresenter,
     private val tileWallPresenter: MahjongTileWallPresenter,
+    private val handTilesPresenter: MahjongHandTilesPresenter,
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
     private val busyTracker: TablePresentationBusyTracker,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
+    private val tickClock: FabricTickMonotonicClock,
 ) : GamePresentationPublisher {
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
@@ -169,6 +176,68 @@ class FabricGamePresentationPublisher(
         }
     }
 
+    /**
+     * 手牌落地要等擲骰動畫播完才觸發（跟牌牆的王牌分離同一個時機點），不能在骰子還在動畫時就直接讓
+     * 手牌出現——不像牌牆／王牌是「先生成、之後才移動」，手牌是整個延遲到那個時間點才真正呼叫
+     * [handTilesPresenter.present]，之前完全不存在任何 entity。
+     *
+     * [busyTracker] 的標記額外加上 [OPENING_SEQUENCE_EXTRA_VIEWING_TICKS] 這段緩衝——這是「建牌 →
+     * 擲骰開門 → 分牌」整個開局節奏裡最後一步觸發的呼叫（[StartGameUseCase]／[AdvanceRoundUseCase]
+     * 呼叫順序固定在 `publishWallStructure` 之後），所以由這裡負責把桌子的忙碌時長從單純的擲骰動畫
+     * 長度，延長到涵蓋王牌分離／手牌落地／寶牌翻開整段開局呈現，讓莊家的強制自動摸牌
+     * （[GameFlowCoordinator][com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator.driveAutomatedPlayers]）
+     * 確實等到玩家看得到手牌、王牌分離都完成後才開始，不是單純等骰子動畫播完就搶跑。沒有擲骰
+     * （[diceCount] 為 `0`）時沒有動畫可等，直接同步呈現，不排定延遲、不額外標記忙碌。
+     */
+    override fun publishHandTiles(gameId: Uuid, handsBySeatIndex: Map<Int, List<Uuid>>, diceCount: Int) {
+        logger.debug("publishHandTiles gameId={} seatCount={} diceCount={}", gameId, handsBySeatIndex.size, diceCount)
+        if (serverHolder.current() == null) {
+            logger.warn("publishHandTiles gameId={} skipped: no active server", gameId)
+            return
+        }
+        if (diceCount <= 0) {
+            presentHandTiles(gameId, handsBySeatIndex)
+            return
+        }
+        val delayTicks = MahjongDiceTableLayout.totalAnimationTicks(diceCount)
+        busyTracker.markBusyFor(gameId, delayTicks + OPENING_SEQUENCE_EXTRA_VIEWING_TICKS)
+        tickClock.scheduleAfter(delayTicks * MILLIS_PER_TICK) {
+            presentHandTiles(gameId, handsBySeatIndex)
+        }
+    }
+
+    /** 實際呼叫 [handTilesPresenter]，跟 [publishDiceRoll] 同理丟回伺服器主執行緒執行。 */
+    private fun presentHandTiles(gameId: Uuid, handsBySeatIndex: Map<Int, List<Uuid>>) {
+        scope.launch(dispatchers.main) {
+            val location = tableLocationRegistry.get(gameId)?.location
+            if (location == null) {
+                logger.warn("publishHandTiles gameId={} skipped: no known table location", gameId)
+                return@launch
+            }
+            val world = resolveWorld(location)
+            if (world == null) {
+                logger.warn("publishHandTiles gameId={} skipped: could not resolve world for location={}", gameId, location)
+                return@launch
+            }
+            val controllerPos = BlockPos(location.x, location.y, location.z)
+            val state = world.getBlockState(controllerPos)
+            if (!state.contains(Properties.HORIZONTAL_FACING)) {
+                logger.warn("publishHandTiles gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})", gameId, controllerPos, state)
+                return@launch
+            }
+            val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
+
+            val presentation = MahjongHandTilesPresentation(
+                tableId = gameId,
+                tableLocation = location,
+                tableFacing = facing,
+                handsBySeatIndex = handsBySeatIndex,
+            )
+            val result = handTilesPresenter.present(presentation)
+            logger.debug("publishHandTiles gameId={} present() result={}", gameId, result)
+        }
+    }
+
     /** 跟 [publishDiceRoll] 同理，座位傳送也需要碰觸世界／entity，一併丟回伺服器主執行緒執行。 */
     override fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>) {
         if (serverHolder.current() == null) return
@@ -182,9 +251,18 @@ class FabricGamePresentationPublisher(
         return serverHolder.current()?.getWorld(worldKey)
     }
 
-    /** 正式擲骰呈現使用的固定參數。 */
+    /** 正式擲骰／開局呈現使用的固定參數。 */
     private companion object {
         /** 把局數換算成 `rollSequence` 時的本場數進位基準；本場數在真實對局中不可能達到此量級。 */
         const val ROLL_SEQUENCE_ROUND_MULTIPLIER: Long = 1_000_000L
+
+        /**
+         * 手牌落地／王牌分離都完成後，額外多留給玩家看清楚開局結果的 tick 數，才讓莊家的強制自動摸牌
+         * 開始——量級比照 [com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec.EXTRA_VIEWING_TICKS]。
+         */
+        const val OPENING_SEQUENCE_EXTRA_VIEWING_TICKS: Int = 25
+
+        /** Minecraft 正常運行時每個 tick 對應的毫秒數（20 TPS），換算 [FabricTickMonotonicClock.scheduleAfter] 的延遲毫秒數用。 */
+        const val MILLIS_PER_TICK: Long = 50L
     }
 }

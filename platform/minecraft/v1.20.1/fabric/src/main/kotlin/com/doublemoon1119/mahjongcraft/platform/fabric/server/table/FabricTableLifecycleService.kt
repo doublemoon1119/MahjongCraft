@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.allowsTableBrea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import kotlinx.coroutines.runBlocking
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
@@ -29,6 +30,7 @@ class FabricTableLifecycleService(
     private val configState: MinecraftServerConfigState,
     private val diceRollPresenter: MahjongDiceRollPresenter,
     private val tileWallPresenter: MahjongTileWallPresenter,
+    private val handTilesPresenter: MahjongHandTilesPresenter,
 ) {
     /** 記錄麻將桌破壞政策判斷與清理入口。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -48,15 +50,17 @@ class FabricTableLifecycleService(
     fun onBlockReplaced(world: ServerWorld, table: MahjongTableBlockEntity) {
         val tableLocation = world.toTableLocation(table.pos)
         val removedDiceCount = diceRollPresenter.clear(table.tableId, tableLocation)
-        val removedTileCount = tileWallPresenter.clear(table.tableId, tableLocation)
+        val removedWallTileCount = tileWallPresenter.clear(table.tableId, tableLocation)
+        val removedHandTileCount = handTilesPresenter.clear(table.tableId, tableLocation)
         val entry = locations.put(table.tableId, tableLocation)
         val result = runBlocking { cleanupService.cleanupMissing(table.tableId, entry.revision) }
         logger.debug(
-            "Handled replaced Mahjong table {} with cleanup result {}, removed {} managed dice and {} managed tiles",
+            "Handled replaced Mahjong table {} with cleanup result {}, removed {} managed dice, {} managed wall tiles and {} managed hand tiles",
             table.tableId,
             result,
             removedDiceCount,
-            removedTileCount,
+            removedWallTileCount,
+            removedHandTileCount,
         )
     }
 

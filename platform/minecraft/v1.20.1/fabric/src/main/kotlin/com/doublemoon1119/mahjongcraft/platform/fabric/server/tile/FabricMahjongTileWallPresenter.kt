@@ -49,6 +49,14 @@ class FabricMahjongTileWallPresenter(
      * 王牌區的牌這裡一律跟活牌用同一組（`isDeadWall = false`）座標生成，維持一圈完整無縫的牌牆——
      * 不在生成當下就把王牌拉出開門，那樣會少了「開門」的過程，缺少沉浸感。真正把王牌區拉出的動作
      * 交給 [scheduleDeadWallReveal]，等擲骰動畫播完才執行。
+     *
+     * 這裡查詢並清除的「舊牌」不限定牌牆自己管理的牌，而是這張桌子目前所有管理中的麻將牌 entity
+     * （含已經被 [com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongHandTilesPresenter]
+     * 領走、目前呈現成手牌的那些）——因為每一局重新洗牌都會產生全新的 `IdentifiedTile.id`，跟上一局
+     * 完全無關，所以只要牌牆重新生成（代表新的一局開始），上一局不管是牌牆、王牌還是手牌的舊 entity
+     * 全部都已經沒有意義，應該整批清空，不需要區分「這張舊牌上一局屬於哪個呈現子系統」再各自分開
+     * 清理。這也是本方法是這條開局呈現鏈裡第一個被呼叫的原因：由它負責一次把整張桌子清乾淨，之後
+     * 手牌 presenter 只需要專心「領走這局的新牌」，不用再自己額外清理上一局的殘留。
      */
     override fun present(presentation: MahjongTileWallPresentation): MahjongTileWallPresentationResult {
         val world = resolveWorld(presentation.tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
@@ -142,7 +150,7 @@ class FabricMahjongTileWallPresenter(
         logger.debug("moveDeadWallToOpenPosition tableId={} movedTileCount={}", presentation.tableId, deadWallTiles.size)
     }
 
-    /** 清除指定 controller 周圍且 table UUID 相符的正式牌牆用牌。 */
+    /** 清除指定 controller 周圍且 table UUID 相符的所有正式管理中麻將牌（含手牌），理由同 [present] KDoc。 */
     override fun clear(tableId: Uuid, tableLocation: TableLocation): Int {
         val world = resolveWorld(tableLocation) ?: return 0
         val tiles = findManagedTiles(world, tableId, tableLocation.toBlockPos())
@@ -173,7 +181,11 @@ class FabricMahjongTileWallPresenter(
         }
     }
 
-    /** 只查詢桌子結構附近並以同步 UUID 精確篩選，避免掃描整個 dimension。 */
+    /**
+     * 只查詢桌子結構附近並以同步 UUID 精確篩選，避免掃描整個 dimension。不篩選角色——同一張桌子
+     * 目前所有管理中的麻將牌（不管是牌牆、王牌還是已經被領走的手牌）都在查詢範圍內，理由見 [present]
+     * KDoc。
+     */
     private fun findManagedTiles(
         world: ServerWorld,
         tableId: Uuid,

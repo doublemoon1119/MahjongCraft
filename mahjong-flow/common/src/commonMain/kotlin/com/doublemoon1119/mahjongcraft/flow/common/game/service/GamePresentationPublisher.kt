@@ -55,6 +55,22 @@ interface GamePresentationPublisher {
     fun publishWallStructure(gameId: Uuid, structure: Map<Uuid, TileWallPosition>, dealerSeatIndex: Int, deadWallTileIds: Set<Uuid>, diceCount: Int)
 
     /**
+     * 通知平台呈現層本局初始手牌分配。
+     *
+     * 跟 [publishWallStructure] 的王牌分離同理，手牌落地要等擲骰動畫播完才觸發，不能在骰子還在動畫
+     * 時就直接讓手牌出現在玩家面前——這三件事（王牌分離、手牌分配、寶牌指示器翻開）體感上應該同時
+     * 發生，才符合「建牌 → 擲骰開門 → 分牌」的真實節奏。[diceCount] 的用途跟 [publishWallStructure]
+     * 相同，供平台實作換算延遲時長。
+     *
+     * @param gameId 對局 Uuid。
+     * @param handsBySeatIndex 依 `TableState.players` 固定座位 index 分組的初始手牌，每組依發牌順序
+     * 排列，鍵為 [com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile.id]；空 map 代表這局結束，
+     * 只需要清除舊牌。
+     * @param diceCount 本次開局擲骰的骰子數量；未搭配擲骰的呼叫可傳 `0`。
+     */
+    fun publishHandTiles(gameId: Uuid, handsBySeatIndex: Map<Int, List<Uuid>>, diceCount: Int)
+
+    /**
      * 通知平台呈現層本局開局座位傳送。只在開局時呼叫一次，之後連莊/過莊開新局不會再次呼叫——風位
      * 輪轉純粹是規則概念，玩家在平台世界裡的物理位置整場對局固定不變。
      *

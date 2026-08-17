@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
@@ -7,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimens
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.nextTileAssetKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAssetKey
+import kotlinx.coroutines.runBlocking
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityDimensions
 import net.minecraft.entity.EntityPose
@@ -21,6 +23,7 @@ import net.minecraft.sound.SoundEvents
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import net.minecraft.world.World
+import org.koin.core.context.GlobalContext
 import kotlin.uuid.Uuid
 
 /**
@@ -70,6 +73,9 @@ class MahjongTileEntity(
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
         private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
+    /** 這個 entity 是否已經做過一次 [validateStillManagedByActiveGame] 檢查；只需要做一次。 */
+    private var hasValidatedManagedState = false
+
     init {
         setNoGravity(true)
     }
@@ -79,6 +85,43 @@ class MahjongTileEntity(
         check(!world.isClient) { "Managed tiles must be assigned by the server" }
         managedByGame = true
         managedTableId = tableId
+    }
+
+    /**
+     * 只在這個 entity 存在後的第一個 server tick 驗證一次：`managedByGame` 為 `true` 時，
+     * [managedTableId] 對應的對局是否還存在——查不到就自我 [discard]。
+     *
+     * 這是崩潰恢復的安全網，補足「某條清除路徑忘記清 3D entity」這類漏洞（已知一例：
+     * `FabricTableLocationValidationService.cleanupMissing`），不是取代既有的明確清除呼叫
+     * （`MahjongTileWallPresenter.clear()`／`MahjongHandTilesPresenter.clear()` 等）——那些呼叫仍是
+     * 正常流程下的清除方式，這裡只在「不知道為什麼漏清了」的情況下才會真的觸發。
+     *
+     * 只查「這個 tableId 是否還有對局」，不逐一比對這張牌的 UUID 是否還在牌牆／手牌／牌河／副露的
+     * 哪個位置——那需要把整個 `TableState` 攤開搜尋，對一個安全網來說成本太高；只要對局本身還在，
+     * 就交給既有的「每局重建時整批清空重新生成」機制（見
+     * [com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter.present]
+     * KDoc）保證舊局的牌會被正確換掉，不需要這裡重複驗證。
+     *
+     * 只在第一個 tick 檢查一次，不是每個 tick 都查：[AuthoritativeStateStore.getGame] 是 suspend
+     * function，要用 [runBlocking] 橋接到 tick 這個同步呼叫點（比照 `FabricTableLifecycleService`
+     * 既有處理事件回呼的同一種寫法）；對「一整場遊戲可能有上百張管理中的牌」的規模，每 tick 都做
+     * 這件事會是不必要的開銷，只在 entity 剛存在（含世界重新載入後第一次 tick，也就是崩潰重啟後
+     * 最需要驗證的時機點）驗證一次就足夠——這個 entity 之後如果真的被清除，一定是走上面說的既有
+     * 明確清除路徑，不會是本機制錯過的情況。
+     */
+    override fun tick() {
+        super.tick()
+        if (world.isClient || !managedByGame || hasValidatedManagedState) return
+        hasValidatedManagedState = true
+        validateStillManagedByActiveGame()
+    }
+
+    /** 見 [tick] KDoc。 */
+    private fun validateStillManagedByActiveGame() {
+        val tableId = managedTableId ?: return
+        val store = GlobalContext.get().get<AuthoritativeStateStore>()
+        val gameStillActive = runBlocking { store.getGame(tableId) } != null
+        if (!gameStillActive) discard()
     }
 
     /** 依 server policy 決定是否提供物理阻擋；raycast 選取能力由 [canHit] 獨立保留。 */

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -8,7 +9,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.server.world.ServerWorld
+import net.minecraft.state.property.Properties
 import net.minecraft.util.Identifier
+import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
@@ -21,7 +24,11 @@ class FabricMahjongSeatingPresenter(
     override fun present(tableId: Uuid, seatedPlayerIds: List<Uuid>) {
         val location = tableLocationRegistry.get(tableId)?.location ?: return
         val world = resolveWorld(location) ?: return
-        val placements = MahjongSeatingTableLayout.seatPlacements(location.x, location.y, location.z)
+        val controllerPos = BlockPos(location.x, location.y, location.z)
+        val state = world.getBlockState(controllerPos)
+        if (!state.contains(Properties.HORIZONTAL_FACING)) return
+        val tableFacing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
+        val placements = MahjongSeatingTableLayout.seatPlacements(location.x, location.y, location.z, tableFacing)
 
         seatedPlayerIds.forEachIndexed { index, playerId ->
             val placement = placements.getOrNull(index) ?: return@forEachIndexed

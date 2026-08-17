@@ -149,6 +149,11 @@ class AdvanceRoundUseCase(
             val diceCount = advanceOutcome.diceRoll?.values?.size ?: 0
             presentationPublisher.publishWallStructure(gameId, structure, dealerSeatIndex, deadWallTileIds, diceCount)
         }
+        run {
+            val handsBySeatIndex = newState.players.mapIndexed { seatIndex, player -> seatIndex to player.hand.tiles.map { tile -> tile.id } }.toMap()
+            val diceCount = advanceOutcome.diceRoll?.values?.size ?: 0
+            presentationPublisher.publishHandTiles(gameId, handsBySeatIndex, diceCount)
+        }
 
         return Outcome.Success(result)
     }

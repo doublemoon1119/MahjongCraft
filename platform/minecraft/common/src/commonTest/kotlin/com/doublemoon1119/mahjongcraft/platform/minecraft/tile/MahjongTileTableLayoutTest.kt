@@ -120,6 +120,46 @@ class MahjongTileTableLayoutTest {
         }
     }
 
+    /** 手牌應等距排列、對稱置中，`tileIndex` 0 在最大 X、遞增時往負向移動，跟牌牆 `stack` 排列方向一致。 */
+    @Test
+    fun `hand tiles are evenly spaced and centered`() {
+        val first = handPlacement(tileIndex = 0)
+        val last = handPlacement(tileIndex = HAND_SIZE - 1)
+        val middle = handPlacement(tileIndex = (HAND_SIZE - 1) / 2)
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+
+        assertEquals((HAND_SIZE - 1) * stackStep, first.x - last.x, ABSOLUTE_TOLERANCE)
+        assertEquals(CONTROLLER_CENTER_X, middle.x, ABSOLUTE_TOLERANCE)
+        assertEquals(first.z, last.z, ABSOLUTE_TOLERANCE)
+    }
+
+    /** 手牌垂直於側面的距離應比牌牆更靠桌緣（比 `halfSpan` 更遠離桌子中心）。 */
+    @Test
+    fun `hand tiles sit closer to the table edge than the wall`() {
+        val hand = handPlacement(tileIndex = 0)
+        val wall = wallPlacement(position = TileWallPosition(side = 0, stack = 0, layer = 0))
+        val centerZ = CONTROLLER_CENTER_Z
+
+        assertEquals(true, (hand.z - centerZ) > (wall.z - centerZ), "Hand offset ${hand.z - centerZ} should exceed wall offset ${wall.z - centerZ}")
+    }
+
+    /** 不同座位 index 應落在不同的世界局部側面，且不經過莊家相對旋轉（跟牌牆不同）。 */
+    @Test
+    fun `hand seat index selects physical side directly`() {
+        val seatZero = handPlacement(seatIndex = 0)
+        val seatOne = handPlacement(seatIndex = 1)
+
+        assertEquals(-(seatZero.z - CONTROLLER_CENTER_Z), seatOne.x - CONTROLLER_CENTER_X, ABSOLUTE_TOLERANCE)
+        assertEquals(seatZero.x - CONTROLLER_CENTER_X, seatOne.z - CONTROLLER_CENTER_Z, ABSOLUTE_TOLERANCE)
+    }
+
+    /** 超出手牌張數範圍應直接拒絕。 */
+    @Test
+    fun `hand layout rejects out of range tile index`() {
+        assertFailsWith<IllegalArgumentException> { handPlacement(tileIndex = HAND_SIZE) }
+        assertFailsWith<IllegalArgumentException> { handPlacement(tileIndex = -1) }
+    }
+
     /** 建立固定 controller 與可覆寫輸入的測試 placement。 */
     private fun wallPlacement(
         tableFacing: MahjongTableFacing = MahjongTableFacing.NORTH,
@@ -135,6 +175,22 @@ class MahjongTileTableLayoutTest {
         stacksPerSide = STACKS_PER_SIDE,
         position = position,
         isDeadWall = isDeadWall,
+    )
+
+    /** 建立固定 controller 與可覆寫輸入的測試手牌 placement。 */
+    private fun handPlacement(
+        tableFacing: MahjongTableFacing = MahjongTableFacing.NORTH,
+        seatIndex: Int = 0,
+        handSize: Int = HAND_SIZE,
+        tileIndex: Int = 0,
+    ): MahjongTileWallPlacement = MahjongTileTableLayout.handPlacement(
+        controllerX = 10,
+        controllerY = 64,
+        controllerZ = -4,
+        tableFacing = tableFacing,
+        seatIndex = seatIndex,
+        handSize = handSize,
+        tileIndex = tileIndex,
     )
 
     /** 一張躺平牌的世界水平 footprint，用來檢查不同墩是否重疊。 */
@@ -164,6 +220,7 @@ class MahjongTileTableLayoutTest {
     private companion object {
         const val STACKS_PER_SIDE: Int = 17
         const val SIDE_COUNT: Int = 4
+        const val HAND_SIZE: Int = 13
         const val CONTROLLER_CENTER_X: Double = 10.5
         const val CONTROLLER_CENTER_Z: Double = -3.5
         const val ABSOLUTE_TOLERANCE: Double = 1e-9

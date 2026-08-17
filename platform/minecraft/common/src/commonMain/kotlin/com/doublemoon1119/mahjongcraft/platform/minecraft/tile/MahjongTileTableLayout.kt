@@ -110,6 +110,53 @@ object MahjongTileTableLayout {
         return TileTableVector(x = alongSide, y = layerHeight, z = halfSpan)
     }
 
+    /**
+     * 依 controller 座標、桌子世界朝向與座位 index，算出該玩家手牌中第 [tileIndex] 張牌的世界座標。
+     *
+     * 跟 [wallPlacement] 不同，手牌位置直接用玩家自己在 `TableState.players` 的固定座位 index 算局部
+     * 側面（`seatIndexToTableSide(seatIndex)`），不經過莊家相對的 [advance] 旋轉——座位 index 整場對局
+     * 固定不變（只有自風跟著轉），跟 [com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout]
+     * 的既有慣例一致；牌牆才需要莊家相對旋轉，因為 `TileWallPosition.side` 的意義每局隨莊家改變。
+     *
+     * @param handSize 這位玩家目前的手牌張數，用來把整排手牌對稱置中於局部側面。
+     * @param tileIndex 這張牌在手牌裡的零基底索引（`0` 在最大 X、遞增時往負向移動，跟牌牆 `stack` 的
+     * 排列方向一致）。
+     */
+    fun handPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatIndex: Int,
+        handSize: Int,
+        tileIndex: Int,
+    ): MahjongTileWallPlacement {
+        require(handSize > 0) { "Hand size must be positive" }
+        require(tileIndex in 0 until handSize) { "Tile index $tileIndex out of range for hand size $handSize" }
+
+        val physicalSide = seatIndexToTableSide(seatIndex)
+        val local = localHandVector(handSize, tileIndex)
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES),
+        )
+    }
+
+    /**
+     * 以局部南側玩家為基準的單張手牌位置：牌直立擺放，沿排列方向（局部 X 軸）的外觀寬度是
+     * [MahjongTileDimensions.TILE_WIDTH]，跟牌牆同一套墩間距常數對稱置中。垂直於側面的距離
+     * （`HAND_EDGE_OFFSET`）是初始估算值，只要求比牌牆的 `halfSpan` 更靠近桌緣（手牌在牌牆跟桌緣
+     * 之間，貼近玩家自己），實際數值待遊戲內比對後可能還要再微調，比照牌牆當初的調校方式。
+     */
+    private fun localHandVector(handSize: Int, tileIndex: Int): TileTableVector {
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val alongSide = ((handSize - 1) / 2.0 - tileIndex) * stackStep
+        return TileTableVector(x = alongSide, y = 0.0, z = HAND_EDGE_OFFSET)
+    }
+
     /** 依南→西→北→東的固定逆時針順序，把 [side] 往同方向推進 [steps] 步。 */
     private fun advance(side: MahjongTableSide, steps: Int): MahjongTableSide = SIDE_ORDER[(SIDE_ORDER.indexOf(side) + steps).mod(SIDE_ORDER.size)]
 
@@ -159,6 +206,17 @@ object MahjongTileTableLayout {
     /** 王牌區沿排列方向滑向開門缺口的距離相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，使用者指定的觀感參數；`internal` 理由同 [CORNER_GAP_RATIO]。 */
     internal const val DEAD_WALL_GAP_RATIO: Double = 0.25
     private const val FULL_YAW_DEGREES: Float = 360.0f
+
+    /**
+     * 手牌垂直於側面、離桌子中心的距離：46×46 模型單位可用內框半寬（換算 1.4375 block）扣除立牌厚度
+     * 的一半，再扣掉 [HAND_EDGE_MARGIN] 讓手牌跟桌緣之間留一點空隙——初始版本沒扣這段margin，
+     * 遊戲內驗證時手牌幾乎貼到桌緣（見 [HAND_EDGE_MARGIN] KDoc），因此往桌子中心方向再退一點；仍比
+     * 牌牆（`halfSpan` 約 0.98 block，17 墩時）更靠外，維持在牌牆與桌緣之間。
+     */
+    /** [HAND_EDGE_OFFSET] 額外扣除的桌緣留白，遊戲內驗證後調整的觀感參數（使用者回報手牌離桌緣太近）。 */
+    internal const val HAND_EDGE_MARGIN: Double = 0.15
+
+    internal const val HAND_EDGE_OFFSET: Double = 46.0 / 16.0 / 2.0 - MahjongTileDimensions.TILE_DEPTH / 2.0 - HAND_EDGE_MARGIN
 
     /** 南→西→北→東的固定逆時針側面順序，跟 [seatIndexToTableSide] 與 `TileWallPosition.side` 同一套慣例。 */
     private val SIDE_ORDER = listOf(MahjongTableSide.SOUTH, MahjongTableSide.WEST, MahjongTableSide.NORTH, MahjongTableSide.EAST)

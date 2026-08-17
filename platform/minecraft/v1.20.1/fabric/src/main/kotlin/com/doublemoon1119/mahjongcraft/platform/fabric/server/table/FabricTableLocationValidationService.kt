@@ -2,11 +2,14 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import kotlinx.coroutines.runBlocking
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
@@ -22,6 +25,9 @@ import org.slf4j.LoggerFactory
 class FabricTableLocationValidationService(
     private val locations: TableLocationRegistry,
     private val cleanupService: OrphanedTableCleanupService,
+    private val diceRollPresenter: MahjongDiceRollPresenter,
+    private val tileWallPresenter: MahjongTileWallPresenter,
+    private val handTilesPresenter: MahjongHandTilesPresenter,
 ) {
     /** 回報相同 UUID 移動與位置驗證結果。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -108,12 +114,31 @@ class FabricTableLocationValidationService(
         return locations.getByChunk(key)
     }
 
-    /** 第二次確認仍缺失後套用 orphan cleanup。 */
+    /**
+     * 第二次確認仍缺失後套用 orphan cleanup。
+     *
+     * 這條路徑（chunk 重新載入後驗證失敗，例如伺服器崩潰重啟後桌子方塊本身出問題）跟
+     * [FabricTableLifecycleService.onBlockReplaced] 是兩條獨立的桌子消失偵測管道，但都代表同一件事：
+     * 這張桌子的 3D 呈現不該再存在。因此清除順序完全比照 `onBlockReplaced`——先清掉骰子／牌牆／手牌
+     * 這三個 presenter 管理的 entity，再清權威 Room／Game 狀態；先前這裡漏掉了 presenter 清除，
+     * 只清權威狀態，會讓已經生成的管理中麻將牌 entity 變成沒有任何權威資料支撐的孤兒，永遠留在世界
+     * 存檔裡。
+     */
     private suspend fun cleanupMissing(entry: TableLocationEntry) {
         logger.debug(
             "Confirmed missing Mahjong table {} at {}; applying orphan cleanup",
             entry.tableId,
             entry.location,
+        )
+        val removedDiceCount = diceRollPresenter.clear(entry.tableId, entry.location)
+        val removedWallTileCount = tileWallPresenter.clear(entry.tableId, entry.location)
+        val removedHandTileCount = handTilesPresenter.clear(entry.tableId, entry.location)
+        logger.debug(
+            "Removed {} managed dice, {} managed wall tiles and {} managed hand tiles for missing Mahjong table {}",
+            removedDiceCount,
+            removedWallTileCount,
+            removedHandTileCount,
+            entry.tableId,
         )
         cleanupService.cleanupMissing(entry.tableId, entry.revision)
     }
