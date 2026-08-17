@@ -60,16 +60,24 @@ class FabricMahjongDiscardPresenter(
             return MahjongDiscardPresentationResult.TABLE_NOT_FOUND
         }
 
-        // TODO: 暫時停用 sideStillHasWall 即時查詢，固定延伸第三排；換回真正的判斷時把下面這行換成
-        //  sideStillHasWall(world, presentation.tableId, controllerPos, presentation.tableFacing, presentation.seatIndex)。
-        val wallRemaining = true
+        val wallRemaining = sideStillHasWall(
+            world,
+            presentation.tableId,
+            controllerPos,
+            presentation.tableFacing,
+            presentation.seatIndex,
+        )
 
         var missingTileCount = 0
         presentation.discardTileIds.forEachIndexed { discardIndex, tileId ->
             val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity
             if (tile == null) {
                 missingTileCount++
-                logger.warn("publishDiscardPileUpdated tableId={} tileId={} skipped: no existing wall entity found to claim", presentation.tableId, tileId)
+                logger.warn(
+                    "publishDiscardPileUpdated tableId={} tileId={} skipped: no existing wall entity found to claim",
+                    presentation.tableId,
+                    tileId,
+                )
                 return@forEachIndexed
             }
             val placement = MahjongTileTableLayout.discardPlacement(
@@ -88,7 +96,12 @@ class FabricMahjongDiscardPresenter(
         }
         table.markDirty()
         if (missingTileCount > 0) {
-            logger.warn("publishDiscardPileUpdated tableId={} presented with {} missing tile(s) out of {}", presentation.tableId, missingTileCount, presentation.discardTileIds.size)
+            logger.warn(
+                "publishDiscardPileUpdated tableId={} presented with {} missing tile(s) out of {}",
+                presentation.tableId,
+                missingTileCount,
+                presentation.discardTileIds.size,
+            )
             return MahjongDiscardPresentationResult.SPAWN_FAILED
         }
         return MahjongDiscardPresentationResult.PRESENTED
@@ -130,31 +143,23 @@ class FabricMahjongDiscardPresenter(
     }
 
     /**
-     * **尚未定型，目前未被呼叫（見 [present] 內的 TODO）**：`isDeadWallTile` 排除法只解決了王牌區殘留
-     * 造成的誤判，還沒有實際遊玩驗證過整體判斷是否可靠；之後可能會整個換成完全不同的實作方式（例如
-     * 不再即時掃描世界範圍內的 entity，改用其他判斷依據），不是只在目前這個「查詢範圍內是否有實體」的
-     * 設計上小修小補。改動或整個換掉這個函式前不需要顧慮相容性。
+     * 判斷麻將桌面向 [seatIndex] 該側是否還有牌牆——純用世界上既有麻將牌 entity 的姿態與朝向判斷，
+     * 不查詢座標範圍：
      *
-     * 這位玩家自己那面牆目前是否還有管理中的麻將牌 entity——每次都對世界即時查詢，不快取任何東西：
-     * 快取撐不過伺服器重啟（世界重新載入後快取的計數就對不上了），世界本身的 entity 位置才是持久化、
-     * 每次重啟都會正確還原的權威資料，直接查它即可。
+     * 1. 找出這張桌子目前所有管理中的麻將牌 entity（[findManagedTiles]，涵蓋牌牆、王牌區、手牌、
+     *    摸牌位、牌河，不分子系統）。
+     * 2. 篩選出姿態為 [MahjongTilePose.FACE_DOWN] 的那些——手牌／摸牌位固定 `STANDING`
+     *    （見 [FabricMahjongHandTilesPresenter]），牌河固定 `FACE_UP`（見 [present]），只有牌牆／
+     *    王牌區固定 `FACE_DOWN`（見 [FabricMahjongTileWallPresenter.present]），因此姿態本身就足以
+     *    排除手牌、副露、牌河，不需要另外比對 UUID 是否還在牌牆結構裡。
+     * 3. 再篩選 yaw 跟 [seatIndex] 自己那面牆的 yaw 一致——四面牆都是 `FACE_DOWN`，需要 yaw 才能
+     *    分辨是哪一面；`seatIndex` 自己那面牆的 yaw 直接用
+     *    `wallPlacement(dealerSeatIndex = seatIndex, position.side = 0, ...)` 算，理由同舊版
+     *    KDoc：`advance` 步數為 0 時直接等於 `seatIndexToTableSide(seatIndex)`，不需要另外知道莊家
+     *    是誰。
      *
-     * 牌牆某一面的實際物理方位，推導出來剛好等於「這位玩家自己座位的物理方位」——不管誰是莊家：
-     * [MahjongTileTableLayout.wallPlacement] 的旋轉合成是 `advance(seatIndexToTableSide(dealerSeatIndex),
-     * position.side)`，`position.side = 0`（該面所屬玩家自己面前）時 `advance` 不推進，直接等於
-     * `seatIndexToTableSide(dealerSeatIndex)`；而某位玩家自己那面牆的 domain side 剛好是
-     * `(該玩家座位 index - dealerSeatIndex) mod 4`，代入後两个旋轉相消，結果就是
-     * `seatIndexToTableSide(該玩家座位 index)`。因此不需要另外知道莊家是誰，直接用
-     * `wallPlacement(dealerSeatIndex = seatIndex, position.side = 0, ...)` 這個技巧就能算出這位玩家
-     * 自己那面牆的世界座標範圍。
-     *
-     * 用該面 `stack = 0` 跟 `stack = ASSUMED_STACKS_PER_SIDE - 1`（假設標準日麻 17 墩／面，理由同
-     * [MahjongTileTableLayout] 內部换算 `discardPlacement` 安全距離時的同一個假設）兩個角落的世界
-     * 座標框出一個涵蓋整面牆的 [Box]，外擴一點誤差空間，查詢範圍內是否還有這張桌子管理中、且不屬於
-     * 王牌區（[MahjongTileEntity.isDeadWallTile]）的麻將牌——王牌區的牌一旦移出開門位置就會一直留在
-     * 原地直到這局結束，不能算進「這一面牆是否還有活牌」：開門缺口剛好落在某位玩家自己面前那面牆時，
-     * 王牌區的牌仍會落在這個查詢框內，如果不排除會讓查詢永遠回傳 true，即使活牌早就摸光了（遊戲內
-     * 驗證過的現象：玩家自己那面牆明明已經空了，牌河卻沒有换到第四排，一直沿第三排延伸）。
+     * 王牌區的牌被移出開門位置（[FabricMahjongTileWallPresenter.moveDeadWallToOpenPosition]）時只改
+     * 位置，姿態與 yaw 都不變，因此天然滿足「王牌區視同牌牆」——不需要額外標記或排除。
      */
     private fun sideStillHasWall(
         world: ServerWorld,
@@ -163,7 +168,7 @@ class FabricMahjongDiscardPresenter(
         tableFacing: MahjongTableFacing,
         seatIndex: Int,
     ): Boolean {
-        val nearCorner = MahjongTileTableLayout.wallPlacement(
+        val expectedYaw = MahjongTileTableLayout.wallPlacement(
             controllerX = controllerPos.x,
             controllerY = controllerPos.y,
             controllerZ = controllerPos.z,
@@ -171,21 +176,17 @@ class FabricMahjongDiscardPresenter(
             dealerSeatIndex = seatIndex,
             stacksPerSide = ASSUMED_STACKS_PER_SIDE,
             position = TileWallPosition(side = 0, stack = 0, layer = 0),
-        )
-        val farCorner = MahjongTileTableLayout.wallPlacement(
-            controllerX = controllerPos.x,
-            controllerY = controllerPos.y,
-            controllerZ = controllerPos.z,
-            tableFacing = tableFacing,
-            dealerSeatIndex = seatIndex,
-            stacksPerSide = ASSUMED_STACKS_PER_SIDE,
-            position = TileWallPosition(side = 0, stack = ASSUMED_STACKS_PER_SIDE - 1, layer = 1),
-        )
-        val box = Box(nearCorner.x, nearCorner.y, nearCorner.z, farCorner.x, farCorner.y, farCorner.z)
-            .expand(WALL_SIDE_QUERY_PADDING)
-        return world.getEntitiesByClass(MahjongTileEntity::class.java, box) { tile ->
-            tile.managedTableId == tableId && !tile.isDeadWallTile
-        }.isNotEmpty()
+        ).yaw
+        return findManagedTiles(world, tableId, controllerPos).any { tile ->
+            tile.tilePose == MahjongTilePose.FACE_DOWN && yawMatches(tile.yaw, expectedYaw)
+        }
+    }
+
+    /** 容許浮點誤差比較兩個 yaw 是否代表同一個世界朝向，先各自正規化到 `[0, 360)` 再比較差距。 */
+    private fun yawMatches(a: Float, b: Float): Boolean {
+        val normalizedA = ((a % FULL_YAW_DEGREES) + FULL_YAW_DEGREES) % FULL_YAW_DEGREES
+        val normalizedB = ((b % FULL_YAW_DEGREES) + FULL_YAW_DEGREES) % FULL_YAW_DEGREES
+        return kotlin.math.abs(normalizedA - normalizedB) < YAW_TOLERANCE_DEGREES
     }
 
     /** 只查詢桌子結構附近並以同步 UUID 精確篩選，避免掃描整個 dimension。 */
@@ -212,7 +213,10 @@ class FabricMahjongDiscardPresenter(
         /** [sideStillHasWall] 假設的標準日麻每面墩數，理由同 [MahjongTileTableLayout] 內部同名假設。 */
         const val ASSUMED_STACKS_PER_SIDE: Int = 17
 
-        /** [sideStillHasWall] 用兩個角落算出來的框再外擴的容許誤差，確保牌本身的寬度也算進查詢範圍。 */
-        const val WALL_SIDE_QUERY_PADDING: Double = 1.0
+        /** [yawMatches] 比較兩個 yaw 時容許的浮點誤差（度）。 */
+        const val YAW_TOLERANCE_DEGREES: Float = 0.01f
+
+        /** [yawMatches] 正規化 yaw 用的完整一圈角度。 */
+        const val FULL_YAW_DEGREES: Float = 360.0f
     }
 }

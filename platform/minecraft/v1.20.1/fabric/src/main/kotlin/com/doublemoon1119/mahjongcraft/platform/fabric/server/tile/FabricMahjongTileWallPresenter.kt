@@ -146,7 +146,6 @@ class FabricMahjongTileWallPresenter(
                 isDeadWall = true,
             )
             tile.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
-            tile.isDeadWallTile = true
         }
         logger.debug("moveDeadWallToOpenPosition tableId={} movedTileCount={}", presentation.tableId, deadWallTiles.size)
     }
