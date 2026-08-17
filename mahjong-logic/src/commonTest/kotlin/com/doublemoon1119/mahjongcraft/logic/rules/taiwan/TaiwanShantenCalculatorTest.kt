@@ -99,7 +99,6 @@ class TaiwanShantenCalculatorTest {
             ),
         )
         val result = calculator.calculate(hand)
-        println("Result: $result")
         assertTrue(
             result is ShantenResult.Complete,
             "Hand with 5 melds, 1 pair should be Complete (Agari), but was: $result",
