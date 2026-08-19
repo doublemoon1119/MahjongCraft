@@ -39,38 +39,45 @@ class BuiltInTileLabelsTest {
         assertEquals(TileLabelText("Wh", TileLabelColor.RED), registry.find("white_dragon")?.topRight)
     }
 
-    /** 四季花牌：右上紅色中文字、左上黑色數字，依春夏秋冬排序 1～4。 */
+    /** 四季花牌：右上紅色中文字、左上黑色數字，依春夏秋冬排序 1～4，且無視玩家開關永遠顯示。 */
     @Test
     fun `seasonal flowers pair red chinese character with black order number`() {
         assertEquals(
-            TileLabel(topLeft = TileLabelText("1", TileLabelColor.BLACK), topRight = TileLabelText("春", TileLabelColor.RED)),
+            TileLabel(topLeft = TileLabelText("1", TileLabelColor.BLACK), topRight = TileLabelText("春", TileLabelColor.RED), forced = true),
             registry.find("flower_spring"),
         )
         assertEquals(
-            TileLabel(topLeft = TileLabelText("4", TileLabelColor.BLACK), topRight = TileLabelText("冬", TileLabelColor.RED)),
+            TileLabel(topLeft = TileLabelText("4", TileLabelColor.BLACK), topRight = TileLabelText("冬", TileLabelColor.RED), forced = true),
             registry.find("flower_winter"),
         )
     }
 
-    /** 四君子花牌：右上紅色數字、左上黑色中文字，依梅蘭菊竹排序 1～4。 */
+    /** 四君子花牌：右上紅色數字、左上黑色中文字，依梅蘭菊竹排序 1～4，且無視玩家開關永遠顯示。 */
     @Test
     fun `plant flowers pair black chinese character with red order number in plum orchid chrysanthemum bamboo order`() {
         assertEquals(
-            TileLabel(topLeft = TileLabelText("梅", TileLabelColor.BLACK), topRight = TileLabelText("1", TileLabelColor.RED)),
+            TileLabel(topLeft = TileLabelText("梅", TileLabelColor.BLACK), topRight = TileLabelText("1", TileLabelColor.RED), forced = true),
             registry.find("flower_plum"),
         )
         assertEquals(
-            TileLabel(topLeft = TileLabelText("蘭", TileLabelColor.BLACK), topRight = TileLabelText("2", TileLabelColor.RED)),
+            TileLabel(topLeft = TileLabelText("蘭", TileLabelColor.BLACK), topRight = TileLabelText("2", TileLabelColor.RED), forced = true),
             registry.find("flower_orchid"),
         )
         assertEquals(
-            TileLabel(topLeft = TileLabelText("菊", TileLabelColor.BLACK), topRight = TileLabelText("3", TileLabelColor.RED)),
+            TileLabel(topLeft = TileLabelText("菊", TileLabelColor.BLACK), topRight = TileLabelText("3", TileLabelColor.RED), forced = true),
             registry.find("flower_chrysanthemum"),
         )
         assertEquals(
-            TileLabel(topLeft = TileLabelText("竹", TileLabelColor.BLACK), topRight = TileLabelText("4", TileLabelColor.RED)),
+            TileLabel(topLeft = TileLabelText("竹", TileLabelColor.BLACK), topRight = TileLabelText("4", TileLabelColor.RED), forced = true),
             registry.find("flower_bamboo"),
         )
+    }
+
+    /** 非花牌不強制顯示，只有玩家自己開啟開關時才顯示。 */
+    @Test
+    fun `non-flower tiles are not forced`() {
+        assertEquals(false, registry.find("p9")?.forced)
+        assertEquals(false, registry.find("red_dragon")?.forced)
     }
 
     /** 未知佔位牌不註冊標籤。 */

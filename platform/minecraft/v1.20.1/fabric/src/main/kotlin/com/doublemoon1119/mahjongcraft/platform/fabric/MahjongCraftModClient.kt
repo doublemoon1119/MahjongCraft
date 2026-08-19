@@ -26,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
@@ -44,8 +45,9 @@ class MahjongCraftModClient : ClientModInitializer {
 
         ModelLoadingPlugin.register(MahjongTileModelLoadingPlugin)
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAHJONG_TILE, MahjongTileItemRenderer)
+        val clientConfigStore = koin.get<MahjongClientConfigStore>()
         koin.get<FabricOpenRoomConfigScreenCommand>().register()
-        initializeClientConfig(koin.get<MahjongClientConfigStore>())
+        initializeClientConfig(clientConfigStore)
         koin.get<FabricTileLabelCommand>().register()
         koin.get<FabricClientConfigCommand>().register()
 
@@ -56,6 +58,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val tileDisplayNames = koin.get<TileDisplayNameRegistry>()
         val tileAssetRegistry = koin.get<MinecraftTileAssetRegistry>()
         val tileEmojiRegistry = koin.get<TileEmojiRegistry>()
+        val tileLabelRegistry = koin.get<TileLabelRegistry>()
         MahjongChannels.roomUpdate.registerClientReceiver(json, stateStore::apply)
         MahjongChannels.gameUpdate.registerClientReceiver(json) { payload ->
             val previousSnapshot = stateStore.gameSnapshot
@@ -86,7 +89,7 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         EntityRendererRegistry.register(ModEntities.mahjongDice, ::MahjongDiceEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongTile) { context ->
-            MahjongTileEntityRenderer(context, stateStore, tileAssetRegistry)
+            MahjongTileEntityRenderer(context, stateStore, tileAssetRegistry, tileLabelRegistry, clientConfigStore)
         }
         MahjongChannels.decisionTimerUpdate.registerClientReceiver(json) { payload ->
             val gameId = Uuid.parse(payload.gameId)

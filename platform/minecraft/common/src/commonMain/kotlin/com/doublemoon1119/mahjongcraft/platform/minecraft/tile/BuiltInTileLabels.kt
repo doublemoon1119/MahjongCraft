@@ -18,6 +18,11 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
  * 文字內容規則：數牌只顯示點數數字，不額外標示花色字母（花色本身已由牌面材質的餅／條／萬圖案表達）；
  * 字牌用單一或兩個字母縮寫（東南西北＝E/S/W/N，紅中＝R，發＝G，白＝Wh——避免跟西風的 `W` 混淆特地用
  * 兩個字母）。
+ *
+ * 花牌額外標記 [TileLabel.forced]＝`true`：八張花牌都是同一個樹形剪影配不同季節配色（見
+ * `mahjong_tile_flower_*.png`），彼此外觀相近、單靠材質不容易一眼分辨花色與順序，標籤本身兼有辨識
+ * 功能，不只是給非中文圈玩家看的輔助資訊，因此無視玩家本機開關、永遠顯示；其餘牌種維持預設的
+ * `forced = false`。
  */
 fun TileLabelRegistry.registerBuiltInTileLabels() {
     // 萬子
@@ -92,14 +97,16 @@ private fun blackTextOnRedTile(text: String): TileLabel = TileLabel(
     topRight = TileLabelText(text, TileLabelColor.BLACK),
 )
 
-/** 四季花牌：右上紅色中文字、左上黑色排序數字。 */
+/** 四季花牌：右上紅色中文字、左上黑色排序數字，永遠顯示（理由見類別 KDoc）。 */
 private fun seasonalFlower(chinese: String, order: String): TileLabel = TileLabel(
     topLeft = TileLabelText(order, TileLabelColor.BLACK),
     topRight = TileLabelText(chinese, TileLabelColor.RED),
+    forced = true,
 )
 
-/** 四君子花牌：右上紅色排序數字、左上黑色中文字。 */
+/** 四君子花牌：右上紅色排序數字、左上黑色中文字，永遠顯示（理由見類別 KDoc）。 */
 private fun plantFlower(chinese: String, order: String): TileLabel = TileLabel(
     topLeft = TileLabelText(chinese, TileLabelColor.BLACK),
     topRight = TileLabelText(order, TileLabelColor.RED),
+    forced = true,
 )
