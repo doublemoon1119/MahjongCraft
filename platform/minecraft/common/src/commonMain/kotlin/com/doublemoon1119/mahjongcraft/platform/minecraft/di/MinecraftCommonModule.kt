@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistryImpl
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Single
 
@@ -30,4 +32,14 @@ class MinecraftCommonModule {
      */
     @Single
     fun provideTileEmojiRegistry(): TileEmojiRegistry = TileEmojiRegistryImpl()
+
+    /**
+     * 建立由 Koin 管理的 runtime [TileLabelRegistry]。
+     *
+     * 凍結時機與 [provideMinecraftTileAssetRegistry] 一致，同樣交給
+     * [com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar]
+     * 負責內建與第三方登記。
+     */
+    @Single
+    fun provideTileLabelRegistry(): TileLabelRegistry = TileLabelRegistryImpl()
 }

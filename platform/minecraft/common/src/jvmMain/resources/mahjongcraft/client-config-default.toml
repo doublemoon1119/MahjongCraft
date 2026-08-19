@@ -1,0 +1,14 @@
+# MahjongCraft client configuration.
+# This file only affects your own local client and is never sent to a server.
+#
+# Configuration location:
+# <Minecraft instance>/config/mahjongcraft/client.toml
+#
+# You can also toggle this setting in-game with:
+#   /mahjongcraft_client label toggle
+# The command updates this value and writes it straight back to this line, keeping the rest of
+# this file (including these comments) unchanged.
+
+# Show a small corner label (a digit or letter) on each mahjong tile face, to help players who
+# don't read Chinese identify tiles at a glance (for example, a nine dot tile shows "9").
+tile-labels-enabled = false

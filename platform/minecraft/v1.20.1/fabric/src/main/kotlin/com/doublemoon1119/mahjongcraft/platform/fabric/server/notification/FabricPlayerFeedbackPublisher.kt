@@ -213,7 +213,7 @@ class FabricPlayerFeedbackPublisher(
     /**
      * 建立「顯示目前遊戲設定」訊息；可互動文字點擊後透過 [ClickEvent.Action.RUN_COMMAND] 觸發
      * client-only 指令開啟設定編輯畫面（見
-     * [com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenConfigScreenCommand]），
+     * [com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand]），
      * 不是複製 JSON。
      */
     private fun showGameConfigMessage(feedback: MinecraftPlayerFeedback.ShowGameConfig): MutableText = Text.translatable(
@@ -221,7 +221,7 @@ class FabricPlayerFeedbackPublisher(
         bracketedInteractiveLabel(
             MinecraftMessageKeys.GAME_CONFIG_LABEL,
             gameConfigHoverText(feedback.configJson),
-            ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_CONFIG_SCREEN_COMMAND),
+            ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_ROOM_CONFIG_SCREEN_COMMAND),
         ),
     )
 
@@ -336,11 +336,11 @@ class FabricPlayerFeedbackPublisher(
         const val OVERWORLD_DIMENSION_ID: String = "minecraft:overworld"
 
         /**
-         * 開啟設定編輯畫面的 client-only 指令；純粹當點擊觸發器用，不是給玩家手動輸入。根節點用麻將牌
-         * 字元 `🀇` 而非英文字串的理由見
-         * [com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenConfigScreenCommand]
+         * 開啟房間規則設定編輯畫面的 client-only 指令；純粹當點擊觸發器用，不是給玩家手動輸入。根節點用
+         * 麻將牌字元 `🀇` 而非英文字串的理由見
+         * [com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand]
          * 的類別 KDoc。
          */
-        const val OPEN_CONFIG_SCREEN_COMMAND: String = "/🀇 open_config_screen"
+        const val OPEN_ROOM_CONFIG_SCREEN_COMMAND: String = "/🀇 open_room_config_screen"
     }
 }

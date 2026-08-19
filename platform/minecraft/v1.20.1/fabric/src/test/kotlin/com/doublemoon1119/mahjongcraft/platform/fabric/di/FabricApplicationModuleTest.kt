@@ -37,6 +37,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import org.koin.core.context.stopKoin
 import org.koin.plugin.module.dsl.startKoin
 import kotlin.test.AfterTest
@@ -68,17 +69,19 @@ class FabricApplicationModuleTest {
         val tileDisplayNameRegistry = koin.get<TileDisplayNameRegistry>()
         val ruleModuleDisplayNameRegistry = koin.get<RuleModuleDisplayNameRegistry>()
         val tileEmojiRegistry = koin.get<TileEmojiRegistry>()
+        val tileLabelRegistry = koin.get<TileLabelRegistry>()
         FabricMahjongExtensions.initialize(
-            moduleRegistry,
-            tileTypeRegistry,
-            networkRegistries,
-            persistenceRegistries,
-            minecraftTileAssetRegistry,
-            aiStrategyDisplayNameRegistry,
-            tileDisplayNameRegistry,
-            ruleModuleDisplayNameRegistry,
-            tileEmojiRegistry,
-            emptyList(),
+            moduleRegistry = moduleRegistry,
+            tileTypeRegistry = tileTypeRegistry,
+            networkRegistries = networkRegistries,
+            persistenceRegistries = persistenceRegistries,
+            minecraftTileAssetRegistry = minecraftTileAssetRegistry,
+            aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
+            tileDisplayNameRegistry = tileDisplayNameRegistry,
+            ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
+            tileEmojiRegistry = tileEmojiRegistry,
+            tileLabelRegistry = tileLabelRegistry,
+            extensions = emptyList(),
         )
 
         assertSame(moduleRegistry, koin.get<MahjongModuleRegistry>())
@@ -90,12 +93,14 @@ class FabricApplicationModuleTest {
         assertSame(tileDisplayNameRegistry, koin.get<TileDisplayNameRegistry>())
         assertSame(ruleModuleDisplayNameRegistry, koin.get<RuleModuleDisplayNameRegistry>())
         assertSame(tileEmojiRegistry, koin.get<TileEmojiRegistry>())
+        assertSame(tileLabelRegistry, koin.get<TileLabelRegistry>())
         assertEquals(RiichiTileTypes.ALL + TaiwanTileTypes.ALL, tileTypeRegistry.getAll().map { it.id })
         assertTrue(minecraftTileAssetRegistry.isFrozen)
         assertTrue(aiStrategyDisplayNameRegistry.isFrozen)
         assertTrue(tileDisplayNameRegistry.isFrozen)
         assertTrue(ruleModuleDisplayNameRegistry.isFrozen)
         assertTrue(tileEmojiRegistry.isFrozen)
+        assertTrue(tileLabelRegistry.isFrozen)
         koin.get<GameFlowCoordinator>()
         koin.get<GameEventPublisher>()
         koin.get<DecisionTimerUpdatePublisher>()

@@ -328,6 +328,14 @@ object MinecraftMessageKeys {
      */
     const val YOUR_TURN = PREFIX + "your_turn"
 
+    // ── 牌面輔助標籤指令（`/mahjongcraft_client label toggle`，純 client-only） ─────
+
+    /** 已開啟牌面角落輔助標籤（給非中文圈玩家看的數字/字母）。 */
+    const val TILE_LABELS_ENABLED = PREFIX + "tile_labels_enabled"
+
+    /** 已關閉牌面角落輔助標籤。 */
+    const val TILE_LABELS_DISABLED = PREFIX + "tile_labels_disabled"
+
     /** Minecraft 語系資源必須提供的全部玩家回饋 key。 */
     val ALL: Set<String> = setOf(
         GAME_ALREADY_STARTED,
@@ -420,5 +428,7 @@ object MinecraftMessageKeys {
         HAND_NO_RESPONSE_AVAILABLE,
         HAND_WAITING,
         YOUR_TURN,
+        TILE_LABELS_ENABLED,
+        TILE_LABELS_DISABLED,
     )
 }

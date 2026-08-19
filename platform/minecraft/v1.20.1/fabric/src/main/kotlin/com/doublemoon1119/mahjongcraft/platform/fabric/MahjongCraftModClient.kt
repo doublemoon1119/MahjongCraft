@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildDiceRolledChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildMatchResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildRoundResultChatMessage
@@ -13,8 +14,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileM
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongDiceEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenConfigScreenCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
@@ -37,7 +39,9 @@ class MahjongCraftModClient : ClientModInitializer {
 
         ModelLoadingPlugin.register(MahjongTileModelLoadingPlugin)
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAHJONG_TILE, MahjongTileItemRenderer)
-        koin.get<FabricOpenConfigScreenCommand>().register()
+        koin.get<FabricOpenRoomConfigScreenCommand>().register()
+        koin.get<MahjongClientConfigStore>().load()
+        koin.get<FabricTileLabelCommand>().register()
 
         val json = koin.get<kotlinx.serialization.json.Json>()
         val networkRegistries = koin.get<NetworkDtoRegistries>()

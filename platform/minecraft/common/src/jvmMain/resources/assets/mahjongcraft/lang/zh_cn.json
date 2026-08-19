@@ -95,5 +95,7 @@
   "mahjongcraft.message.hand_no_legal_actions": "（没有特殊动作可用，可以用 /mahjongcraft game discard 打牌）",
   "mahjongcraft.message.hand_no_response_available": "（没有可回应的动作，请稍候）",
   "mahjongcraft.message.hand_waiting": "（还没轮到你，请稍候）",
-  "mahjongcraft.message.your_turn": "轮到你了，摸到：%s"
+  "mahjongcraft.message.your_turn": "轮到你了，摸到：%s",
+  "mahjongcraft.message.tile_labels_enabled": "已开启牌面角落辅助标签",
+  "mahjongcraft.message.tile_labels_disabled": "已关闭牌面角落辅助标签"
 }

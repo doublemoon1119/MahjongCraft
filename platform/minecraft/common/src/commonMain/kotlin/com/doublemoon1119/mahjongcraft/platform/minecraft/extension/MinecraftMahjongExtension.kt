@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 
 /**
  * 第三方 Minecraft mod 在 MahjongCraft runtime 啟動前登記 Minecraft 專屬整合的共用契約。
@@ -55,4 +56,12 @@ interface MinecraftMahjongExtension {
      * provider；這個 registry 只負責保存字元對照，不管字型檔案。
      */
     fun registerTileEmojis(registry: TileEmojiRegistry) = Unit
+
+    /**
+     * 登記第三方牌種 asset key 對應的牌面角落標籤（非中文圈玩家可切換的輔助標籤）。
+     *
+     * 預設不註冊任何映射，使不提供自訂標籤的 extension 不必加入空實作；未註冊的 asset key 呈現端會
+     * 視為不顯示標籤，不是錯誤。
+     */
+    fun registerTileLabels(registry: TileLabelRegistry) = Unit
 }

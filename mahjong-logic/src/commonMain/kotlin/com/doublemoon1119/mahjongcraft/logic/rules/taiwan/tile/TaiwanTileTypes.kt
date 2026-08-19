@@ -29,8 +29,8 @@ object TaiwanTileTypes {
     /** 菊。 */
     val CHRYSANTHEMUM: TileTypeId = TileTypeId.parse("mahjongcraft:taiwan/chrysanthemum")
 
-    /** 依春、夏、秋、冬、梅、蘭、竹、菊排列的全部內建花牌 ID。 */
-    val ALL: List<TileTypeId> = listOf(SPRING, SUMMER, AUTUMN, WINTER, PLUM, ORCHID, BAMBOO, CHRYSANTHEMUM)
+    /** 依春、夏、秋、冬、梅、蘭、菊、竹排列的全部內建花牌 ID。 */
+    val ALL: List<TileTypeId> = listOf(SPRING, SUMMER, AUTUMN, WINTER, PLUM, ORCHID, CHRYSANTHEMUM, BAMBOO)
 
     /** 建立八張各一張的台灣麻將花牌。 */
     fun createAll(): List<Tile.Extension> = ALL.map(Tile::Extension)

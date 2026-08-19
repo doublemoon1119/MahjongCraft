@@ -95,5 +95,7 @@
   "mahjongcraft.message.hand_no_legal_actions": "(No special actions available; you can discard with /mahjongcraft game discard)",
   "mahjongcraft.message.hand_no_response_available": "(No response available; please wait)",
   "mahjongcraft.message.hand_waiting": "(It's not your turn yet; please wait)",
-  "mahjongcraft.message.your_turn": "It's your turn. You drew: %s"
+  "mahjongcraft.message.your_turn": "It's your turn. You drew: %s",
+  "mahjongcraft.message.tile_labels_enabled": "Tile corner labels enabled",
+  "mahjongcraft.message.tile_labels_disabled": "Tile corner labels disabled"
 }

@@ -95,5 +95,7 @@
   "mahjongcraft.message.hand_no_legal_actions": "（特殊な操作はありません。/mahjongcraft game discard で打牌できます）",
   "mahjongcraft.message.hand_no_response_available": "（応答できる操作はありません。しばらくお待ちください）",
   "mahjongcraft.message.hand_waiting": "（まだあなたの番ではありません。しばらくお待ちください）",
-  "mahjongcraft.message.your_turn": "あなたの番です。ツモ：%s"
+  "mahjongcraft.message.your_turn": "あなたの番です。ツモ：%s",
+  "mahjongcraft.message.tile_labels_enabled": "牌の角の補助ラベルをオンにしました",
+  "mahjongcraft.message.tile_labels_disabled": "牌の角の補助ラベルをオフにしました"
 }

@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import net.fabricmc.loader.api.FabricLoader
 import org.slf4j.LoggerFactory
 
@@ -45,21 +46,23 @@ object FabricMahjongExtensions {
         tileDisplayNameRegistry: TileDisplayNameRegistry,
         ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
         tileEmojiRegistry: TileEmojiRegistry,
+        tileLabelRegistry: TileLabelRegistry,
     ) {
         try {
             val extensions = FabricLoader.getInstance()
                 .getEntrypoints(MAHJONG_EXTENSION_ENTRYPOINT, MahjongExtension::class.java)
             val result = initialize(
-                moduleRegistry,
-                tileTypeRegistry,
-                networkRegistries,
-                persistenceRegistries,
-                minecraftTileAssetRegistry,
-                aiStrategyDisplayNameRegistry,
-                tileDisplayNameRegistry,
-                ruleModuleDisplayNameRegistry,
-                tileEmojiRegistry,
-                extensions,
+                moduleRegistry = moduleRegistry,
+                tileTypeRegistry = tileTypeRegistry,
+                networkRegistries = networkRegistries,
+                persistenceRegistries = persistenceRegistries,
+                minecraftTileAssetRegistry = minecraftTileAssetRegistry,
+                aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
+                tileDisplayNameRegistry = tileDisplayNameRegistry,
+                ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
+                tileEmojiRegistry = tileEmojiRegistry,
+                tileLabelRegistry = tileLabelRegistry,
+                extensions = extensions,
             )
             val extensionIds = extensions.map { it.id }
             logger.info(
@@ -92,6 +95,11 @@ object FabricMahjongExtensions {
                 result.thirdPartyTileEmojiKeys.size,
                 result.thirdPartyTileEmojiKeys,
             )
+            logger.info(
+                "Registered {} third-party tile label(s): {}",
+                result.thirdPartyTileLabelKeys.size,
+                result.thirdPartyTileLabelKeys,
+            )
         } catch (cause: Exception) {
             logger.error("Failed to initialize Mahjong extensions", cause)
             throw cause
@@ -113,6 +121,7 @@ object FabricMahjongExtensions {
         tileDisplayNameRegistry: TileDisplayNameRegistry,
         ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
         tileEmojiRegistry: TileEmojiRegistry,
+        tileLabelRegistry: TileLabelRegistry,
         extensions: Iterable<MahjongExtension>,
     ): MinecraftMahjongExtensionRegistrationResult {
         moduleRegistry.registerBuiltInRuleModules()
@@ -136,6 +145,7 @@ object FabricMahjongExtensions {
             tileDisplayNameRegistry = tileDisplayNameRegistry,
             ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
+            tileLabelRegistry = tileLabelRegistry,
         )
     }
 }

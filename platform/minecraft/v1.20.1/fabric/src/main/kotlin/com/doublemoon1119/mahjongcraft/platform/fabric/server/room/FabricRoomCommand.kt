@@ -38,9 +38,9 @@ import kotlin.uuid.toKotlinUuid
  * 歸屬解析目標房間，不需要玩家人在桌子附近——開局本身就會把玩家傳送到座位，先天不需要距離限制。
  *
  * [showConfig] 不帶參數，只負責印出目前設定；訊息裡的可互動文字點擊後會觸發另一個純 client-only
- * 指令（`mahjongcraft_open_config_screen`，見
- * [com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenConfigScreenCommand]）開啟
- * 設定編輯畫面，實際送出新設定走的是獨立的網路頻道，不經過這個伺服器指令。
+ * 指令（`/🀇 open_room_config_screen`，見
+ * [com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand]）
+ * 開啟設定編輯畫面，實際送出新設定走的是獨立的網路頻道，不經過這個伺服器指令。
  *
  * [kick]、[changeAiStrategy] 的目標引數與 [addAi]／[changeAiStrategy] 的策略引數都用
  * [StringArgumentType.string]（而非 [StringArgumentType.word]），因為策略 key 慣用的命名空間冒號

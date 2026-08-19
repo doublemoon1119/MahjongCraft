@@ -14,10 +14,15 @@ import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 
 /**
- * 純 client-only 指令 `/🀇 open_config_screen`：由
+ * 純 client-only 指令 `/🀇 open_room_config_screen`：由
  * [com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.FabricPlayerFeedbackPublisher]
  * 印出的「所在麻將遊戲的規則」訊息點擊觸發，不會送到伺服器（Fabric client command 在到達網路層之前就
  * 被攔截處理），純粹當開啟 [GameConfigScreen] 的觸發器，不是給玩家手動輸入。
+ *
+ * 類別與指令名稱刻意明確標成「room config」（房間規則設定），不是單純的「config screen」——之後如果要
+ * 加入 client 端自己的設定畫面（例如牌面輔助標籤的圖形化開關，見
+ * [com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand]），「config
+ * screen」這種泛稱會分不清楚指的是房間規則設定還是 client 本機設定，所以先把這個既有的畫面正名。
  *
  * 根節點刻意用麻將牌字元 `🀇`（一萬）而非英文字串：本 mod 之後所有 client-only／內部觸發用指令都應該
  * 統一掛在這個根節點下面，玩家打 `/` 開頭的一般指令時字面比對不到，不會出現在即時建議清單裡；這個字元
@@ -29,7 +34,7 @@ import org.koin.core.annotation.Single
  * `UpdateConfigUseCase` 原本的房主驗證依然是唯一的權威判斷。
  */
 @Single
-class FabricOpenConfigScreenCommand(
+class FabricOpenRoomConfigScreenCommand(
     private val stateStore: ClientMahjongStateStore,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
@@ -39,7 +44,7 @@ class FabricOpenConfigScreenCommand(
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
             dispatcher.register(
                 ClientCommandManager.literal(INTERNAL_COMMAND_ROOT).then(
-                    ClientCommandManager.literal(OPEN_CONFIG_SCREEN_SUBCOMMAND).executes {
+                    ClientCommandManager.literal(OPEN_ROOM_CONFIG_SCREEN_SUBCOMMAND).executes {
                         openScreen()
                         COMMAND_SUCCESS
                     },
@@ -68,8 +73,8 @@ class FabricOpenConfigScreenCommand(
         /** 見類別 KDoc：所有 client-only／內部觸發用指令共用的根節點。 */
         const val INTERNAL_COMMAND_ROOT: String = "🀇"
 
-        /** 開啟設定編輯畫面的子指令。 */
-        const val OPEN_CONFIG_SCREEN_SUBCOMMAND: String = "open_config_screen"
+        /** 開啟房間規則設定編輯畫面的子指令。 */
+        const val OPEN_ROOM_CONFIG_SCREEN_SUBCOMMAND: String = "open_room_config_screen"
 
         /** Brigadier 成功回傳值。 */
         const val COMMAND_SUCCESS: Int = 1
