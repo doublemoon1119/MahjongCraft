@@ -6,7 +6,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildDiceRolledChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildMatchResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildRoundResultChatMessage
@@ -20,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLab
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -30,9 +33,11 @@ import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
 import net.minecraft.client.MinecraftClient
 import org.koin.core.context.GlobalContext
+import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 
 class MahjongCraftModClient : ClientModInitializer {
+    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
     override fun onInitializeClient() {
         val koin = GlobalContext.get()
@@ -40,8 +45,9 @@ class MahjongCraftModClient : ClientModInitializer {
         ModelLoadingPlugin.register(MahjongTileModelLoadingPlugin)
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAHJONG_TILE, MahjongTileItemRenderer)
         koin.get<FabricOpenRoomConfigScreenCommand>().register()
-        koin.get<MahjongClientConfigStore>().load()
+        initializeClientConfig(koin.get<MahjongClientConfigStore>())
         koin.get<FabricTileLabelCommand>().register()
+        koin.get<FabricClientConfigCommand>().register()
 
         val json = koin.get<kotlinx.serialization.json.Json>()
         val networkRegistries = koin.get<NetworkDtoRegistries>()
@@ -99,6 +105,23 @@ class MahjongCraftModClient : ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
             stateStore.clear()
             decisionTimerStore.clear()
+        }
+    }
+
+    /** 載入 client TOML；失敗時 store 會保留程式預設值並記錄詳細錯誤，對稱 server 端 `initializeServerConfig`。 */
+    private fun initializeClientConfig(configStore: MahjongClientConfigStore) {
+        when (val result = configStore.load()) {
+            is MahjongClientConfigUpdateResult.Success -> {
+                // 使用 SLF4J 參數化訊息，避免對應 log level 關閉時先建立字串。
+                if (result.createdDefaultFile) {
+                    logger.info("Created and loaded default client config at {}", configStore.path)
+                } else {
+                    logger.info("Loaded client config from {}", configStore.path)
+                }
+            }
+            is MahjongClientConfigUpdateResult.Failure -> {
+                logger.warn("Using built-in MahjongCraft client config defaults because loading failed: {}", result.message)
+            }
         }
     }
 }

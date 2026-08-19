@@ -330,11 +330,14 @@ object MinecraftMessageKeys {
 
     // ── 牌面輔助標籤指令（`/mahjongcraft_client label toggle`，純 client-only） ─────
 
-    /** 已開啟牌面角落輔助標籤（給非中文圈玩家看的數字/字母）。 */
-    const val TILE_LABELS_ENABLED = PREFIX + "tile_labels_enabled"
+    /** 牌面角落輔助標籤（給非中文圈玩家看的數字/字母）切換訊息的前綴，後面接切換前後的狀態文字。 */
+    const val TILE_LABELS_TOGGLE_PREFIX = PREFIX + "tile_labels_toggle_prefix"
 
-    /** 已關閉牌面角落輔助標籤。 */
-    const val TILE_LABELS_DISABLED = PREFIX + "tile_labels_disabled"
+    /** 「開啟」狀態文字，用於牌面輔助標籤切換訊息中上色顯示。 */
+    const val TILE_LABELS_STATE_ON = PREFIX + "tile_labels_state_on"
+
+    /** 「關閉」狀態文字，用於牌面輔助標籤切換訊息中上色顯示。 */
+    const val TILE_LABELS_STATE_OFF = PREFIX + "tile_labels_state_off"
 
     /** Minecraft 語系資源必須提供的全部玩家回饋 key。 */
     val ALL: Set<String> = setOf(
@@ -428,7 +431,8 @@ object MinecraftMessageKeys {
         HAND_NO_RESPONSE_AVAILABLE,
         HAND_WAITING,
         YOUR_TURN,
-        TILE_LABELS_ENABLED,
-        TILE_LABELS_DISABLED,
+        TILE_LABELS_TOGGLE_PREFIX,
+        TILE_LABELS_STATE_ON,
+        TILE_LABELS_STATE_OFF,
     )
 }

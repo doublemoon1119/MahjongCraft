@@ -96,6 +96,7 @@
   "mahjongcraft.message.hand_no_response_available": "（没有可回应的动作，请稍候）",
   "mahjongcraft.message.hand_waiting": "（还没轮到你，请稍候）",
   "mahjongcraft.message.your_turn": "轮到你了，摸到：%s",
-  "mahjongcraft.message.tile_labels_enabled": "已开启牌面角落辅助标签",
-  "mahjongcraft.message.tile_labels_disabled": "已关闭牌面角落辅助标签"
+  "mahjongcraft.message.tile_labels_toggle_prefix": "已将牌面角落辅助标签切换为：",
+  "mahjongcraft.message.tile_labels_state_on": "开启",
+  "mahjongcraft.message.tile_labels_state_off": "关闭"
 }

@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.resolveDisplayText
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.bracketedInteractiveLabel
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -23,9 +24,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.minecraft.text.ClickEvent
-import net.minecraft.text.HoverEvent
 import net.minecraft.text.MutableText
-import net.minecraft.text.Style
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import org.koin.core.annotation.Provided
@@ -166,7 +165,7 @@ class FabricPlayerFeedbackPublisher(
             hoverText = hoverText.append("\n").append(Text.literal(location.dimensionId))
         }
         return message.append(Text.literal(" "))
-            .append(bracketedInteractiveLabel(MinecraftMessageKeys.GAME_CREATED_LOCATION_LABEL, hoverText))
+            .append(bracketedInteractiveLabel(Text.translatable(MinecraftMessageKeys.GAME_CREATED_LOCATION_LABEL), hoverText))
     }
 
     /** 建立「已新增 AI 玩家」訊息，策略名稱與 `kick` 補全 tooltip 使用同一套顯示名稱解析。 */
@@ -219,7 +218,7 @@ class FabricPlayerFeedbackPublisher(
     private fun showGameConfigMessage(feedback: MinecraftPlayerFeedback.ShowGameConfig): MutableText = Text.translatable(
         MinecraftMessageKeys.SHOW_GAME_CONFIG,
         bracketedInteractiveLabel(
-            MinecraftMessageKeys.GAME_CONFIG_LABEL,
+            Text.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
             gameConfigHoverText(feedback.configJson),
             ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_ROOM_CONFIG_SCREEN_COMMAND),
         ),
@@ -231,32 +230,11 @@ class FabricPlayerFeedbackPublisher(
      * 預設沿用一般可互動文字的 AQUA；「舊 → 新」類訊息才需要另外指定綠／紅。
      */
     private fun gameConfigText(configJson: String, color: Formatting = Formatting.AQUA): MutableText = bracketedInteractiveLabel(
-        MinecraftMessageKeys.GAME_CONFIG_LABEL,
+        Text.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
         gameConfigHoverText(configJson),
         ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, configJson),
         color,
     )
-
-    /**
-     * 依 vanilla「中括號 + 顏色 = 可 hover／可點擊」的慣例（例如成就、物品連結訊息），把 [labelKey]
-     * 包成 `[標籤]`。中括號本身與翻譯文字套用同一個 [Style]，確保滑鼠移到中括號上也會觸發 hover，不會
-     * 只有文字本身才有效果；[clickEvent] 省略時只有 hover，沒有點擊行為（例如 [gameCreatedMessage] 的
-     * 座標標籤）；[color] 預設 AQUA，作為一般可互動文字的配色。
-     */
-    private fun bracketedInteractiveLabel(
-        labelKey: String,
-        hoverText: Text,
-        clickEvent: ClickEvent? = null,
-        color: Formatting = Formatting.AQUA,
-    ): MutableText {
-        var style = Style.EMPTY.withColor(color).withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverText))
-        if (clickEvent != null) {
-            style = style.withClickEvent(clickEvent)
-        }
-        return Text.literal("[").setStyle(style)
-            .append(Text.translatable(labelKey).setStyle(style))
-            .append(Text.literal("]").setStyle(style))
-    }
 
     /**
      * 將一段設定 JSON 轉成 hover 顯示用的 TOML 版本（較適合人眼閱讀），供 [gameConfigText] 與

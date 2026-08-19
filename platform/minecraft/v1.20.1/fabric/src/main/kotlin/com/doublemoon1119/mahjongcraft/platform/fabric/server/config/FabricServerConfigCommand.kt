@@ -1,12 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.bracketedInteractiveLabel
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowHoverText
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.prefixedConfigMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.MutableText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import org.koin.core.annotation.Single
@@ -47,44 +49,34 @@ class FabricServerConfigCommand(
         is MinecraftServerConfigUpdateResult.Success -> {
             mahjongTileCollisionService.applyToLoaded(source.server, result.config)
             logger.info("Server config reloaded by {}", source.name)
-            source.sendFeedback({ prefixed("Server config reloaded", Formatting.GREEN) }, false)
+            source.sendFeedback({ prefixedConfigMessage("Server config reloaded", Formatting.GREEN) }, false)
             COMMAND_SUCCESS
         }
         is MinecraftServerConfigUpdateResult.Failure -> {
             logger.warn("Server config reload requested by {} failed: {}", source.name, result.message)
-            source.sendError(prefixed(result.message, Formatting.RED))
+            source.sendError(prefixedConfigMessage(result.message, Formatting.RED))
             COMMAND_FAILURE
         }
     }
 
-    /** 顯示目前記憶體內實際生效的標準 TOML。 */
+    /**
+     * 顯示目前記憶體內實際生效的標準 TOML；收進單行可 hover 的中括號標籤裡（而不是直接把每一行都貼進
+     * 聊天欄），理由見 [configShowHoverText] KDoc。
+     */
     private fun show(source: ServerCommandSource): Int {
         logger.info("Effective server config displayed to {}", source.name)
-        source.sendFeedback({ prefixed("Effective server config", Formatting.AQUA) }, false)
-        source.sendFeedback({ Text.literal("Path: ${configManager.displayPath}").formatted(Formatting.DARK_GRAY) }, false)
-        configManager.formattedCurrentToml().lineSequence().forEach { line ->
-            source.sendFeedback({ formatTomlLine(line) }, false)
-        }
+        source.sendFeedback(
+            {
+                prefixedConfigMessage("Effective server config ", Formatting.AQUA).append(
+                    bracketedInteractiveLabel(
+                        Text.literal("Details"),
+                        configShowHoverText(configManager.displayPath, configManager.formattedCurrentToml()),
+                    ),
+                )
+            },
+            false,
+        )
         return COMMAND_SUCCESS
-    }
-
-    /** 建立統一帶有 mod 名稱前綴的 config 指令回饋。 */
-    private fun prefixed(message: String, color: Formatting): MutableText = Text
-        .literal("[${MinecraftModMetadata.MOD_NAME}] ")
-        .formatted(Formatting.GOLD)
-        .append(Text.literal(message).formatted(color))
-
-    /** 以 section、key 與 value 套用不同顏色，空行則維持空白。 */
-    private fun formatTomlLine(line: String): MutableText = when {
-        line.isBlank() -> Text.empty()
-        line.startsWith("[") -> Text.literal(line).formatted(Formatting.AQUA)
-        " = " in line -> {
-            val (key, value) = line.split(" = ", limit = 2)
-            Text.literal(key).formatted(Formatting.GRAY)
-                .append(Text.literal(" = ").formatted(Formatting.DARK_GRAY))
-                .append(Text.literal(value).formatted(Formatting.GREEN))
-        }
-        else -> Text.literal(line)
     }
 
     /** 指令權限與 Brigadier 回傳值。 */
