@@ -131,6 +131,10 @@ class RespondToChankanUseCaseTest {
             fixtures.eventPublisher.getNotifiedActions(gameId, declarerId, robberId),
             "Only the Ron response should be broadcast; no rinshan draw happened.",
         )
+        assertNull(
+            fixtures.presentationPublisher.getPublishedTileDrawn(gameId),
+            "Robbing the kan is a Ron, not a completed kan — no rinshan tile was drawn, so nothing should be presented as drawn.",
+        )
     }
 
     /**
@@ -160,6 +164,11 @@ class RespondToChankanUseCaseTest {
         assertEquals(
             listOf(GameAction.Pass, GameAction.Draw),
             fixtures.eventPublisher.getNotifiedActions(gameId, robberId, robberId),
+        )
+        assertEquals(
+            rinshanTile.id,
+            fixtures.presentationPublisher.getPublishedTileDrawn(gameId)?.drawnTileId,
+            "The rinshan tile drawn once the kan actually goes through should be presented as a drawn tile.",
         )
     }
 

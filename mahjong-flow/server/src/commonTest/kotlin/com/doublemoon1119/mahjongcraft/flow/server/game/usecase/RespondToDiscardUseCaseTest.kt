@@ -319,6 +319,11 @@ class RespondToDiscardUseCaseTest {
 
         val newDiscarder = newState.players.first { it.id == discarderId }
         assertTrue(newDiscarder.discardPile.entries.last().isTaken, "The claimed discard should be marked as taken.")
+        assertEquals(
+            rinshanTile.id,
+            fixtures.presentationPublisher.getPublishedTileDrawn(gameId)?.drawnTileId,
+            "The rinshan tile should be presented as a drawn tile (moved to the draw slot), same as a normal draw.",
+        )
     }
 
     /**
@@ -409,6 +414,10 @@ class RespondToDiscardUseCaseTest {
             listOf(kanAction),
             fixtures.eventPublisher.getNotifiedActions(gameId, responderId, responderId),
             "No rinshan tile was drawn, so no Draw event should be broadcast.",
+        )
+        assertNull(
+            fixtures.presentationPublisher.getPublishedTileDrawn(gameId),
+            "No rinshan tile was drawn, so nothing should be presented as drawn either.",
         )
     }
 

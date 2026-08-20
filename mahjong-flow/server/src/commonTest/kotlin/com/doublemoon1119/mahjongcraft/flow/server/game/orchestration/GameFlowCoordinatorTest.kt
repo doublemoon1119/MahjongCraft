@@ -466,11 +466,14 @@ class GameFlowCoordinatorTest {
 
     private fun discardReactionTable(discarderId: Uuid, respondentId: Uuid, respondentHand: Hand): TableState {
         val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        // score 給一個一般起始分數（而非工廠預設的 0），避免放銃付款後分數跌破 0 誤觸「擊飛」
+        // （MahjongRuleModule.hasAdditionalMatchEndCondition）而讓對局提早結束，干擾這裡真正要測的
+        // 「Ron 後有沒有正確銜接 AdvanceRoundUseCase」。
         val discarder = FakeMahjongPlayerFactory.create(
             id = discarderId,
             initialSeat = Wind.EAST,
             discardPile = FakeDiscardPile().discardTile(discardedTile),
-        )
+        ).copy(score = 25000)
         val respondent = FakeMahjongPlayerFactory.create(id = respondentId, initialSeat = Wind.SOUTH, hand = respondentHand, playerRuleState = RiichiPlayerState())
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -541,11 +544,12 @@ class GameFlowCoordinatorTest {
         val robbedWhiteTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val existingPon = Meld(MeldType.PON, listOf(whiteTile1, whiteTile2, whiteTile3), sourceTile = whiteTile3, sourceDirection = RelativeDirection.Left)
         val kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedWhiteTile.id, emptyList())
+        // score 理由同 discardReactionTable：避免放槍付款後分數跌破 0 誤觸擊飛。
         val declarer = FakeMahjongPlayerFactory.create(
             id = declarerId,
             initialSeat = Wind.EAST,
             hand = Hand(melds = listOf(existingPon), lastDrawn = robbedWhiteTile),
-        )
+        ).copy(score = 25000)
         val robber = FakeMahjongPlayerFactory.create(id = robberId, initialSeat = Wind.SOUTH, hand = robberHand, playerRuleState = RiichiPlayerState())
         return FakeTableStateFactory.create(
             id = gameId,

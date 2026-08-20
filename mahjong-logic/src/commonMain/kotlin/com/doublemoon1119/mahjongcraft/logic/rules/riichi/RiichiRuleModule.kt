@@ -463,4 +463,9 @@ class RiichiRuleModule(
         val isSinglePlayerAllKans = kanCountsByPlayer.any { it == totalKans }
         return if (isSinglePlayerAllKans) null else RiichiExhaustiveDrawReason.SuukanNagare
     }
+
+    /**
+     * 擊飛（飛び/Tobi）：任一玩家分數低於 0 分時，立即強制結束整場對局，不再繼續連莊或換莊。
+     */
+    override fun hasAdditionalMatchEndCondition(tableState: TableState): Boolean = tableState.players.any { it.score < 0 }
 }

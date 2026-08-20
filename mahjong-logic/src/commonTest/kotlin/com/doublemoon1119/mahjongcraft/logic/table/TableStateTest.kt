@@ -198,7 +198,7 @@ class TableStateTest {
 
     /**
      * 驗證 [TableState.advanceRound] 連莊時只推進本場數，其餘欄位（局數、場風、各玩家方位）
-     * 皆維持不變，且連莊永遠不會讓整場對局結束。
+     * 皆維持不變；未打到 `totalRounds` 前，連莊不會讓整場對局結束。
      */
     @Test
     fun `test advanceRound with dealer repeats only increments combo count`() {
@@ -211,6 +211,7 @@ class TableStateTest {
             roundNumber = 2,
             comboCount = 0,
             prevalentWind = Wind.EAST,
+            config = FakeMahjongRuleConfig(gameLength = FakeGameLength(totalRounds = 4)),
         )
 
         val result = table.advanceRound(dealerRepeats = true)
@@ -219,7 +220,31 @@ class TableStateTest {
         assertEquals(2, result.roundNumber, "Round number should not advance on a repeat.")
         assertEquals(Wind.EAST, result.prevalentWind)
         assertEquals(listOf(p1, p2, p3, p4), result.players, "No player's currentWind should change on a repeat.")
-        assertFalse(result.isMatchOver)
+        assertFalse(result.isMatchOver, "The match should still be ongoing before the final round is reached.")
+    }
+
+    /**
+     * 驗證 [TableState.advanceRound] 連莊發生在已經是最後一局（`roundNumber >= totalRounds`，例如
+     * 一局戰打完唯一一局、莊家自摸或榮和）時，即使是連莊分支，整場對局也應該結束——先前版本這個分支
+     * 固定回傳 `isMatchOver = false`，導致設定一局戰時只要贏家剛好是莊家，對局就會無限連莊下去。
+     */
+    @Test
+    fun `test advanceRound with dealer repeats ends the match when already at the final round`() {
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val table = FakeTableStateFactory.create(
+            players = listOf(p1, p2, p3, p4),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            config = FakeMahjongRuleConfig(gameLength = FakeGameLength(totalRounds = 1)),
+        )
+
+        val result = table.advanceRound(dealerRepeats = true)
+
+        assertTrue(result.isMatchOver, "OneGame (totalRounds = 1) should end the match once the only round's dealer repeats.")
     }
 
     /**

@@ -17,16 +17,19 @@ import kotlin.uuid.Uuid
 /**
  * 回應搶槓反應視窗（榮和/過）的實例化用例。
  *
- * 對應 [DeclareKanUseCase] 宣告暗槓/加槓後開啟的 `TableState.pendingChankan`：每位有資格搶槓的
- * 玩家各自呼叫一次本用例記錄自己的回應，直到所有有資格的玩家都回應完畢，才會實際結算。
+ * 名詞對照：**宣告者**（`pending.declarerId`）是剛剛宣告暗槓/加槓的那個人；**搶槓者**是這裡呼叫
+ * [GameAction.Ron] 的其他玩家。搶槓的本質是「用宣告者這張要拿去槓的牌榮和」，所以搶槓成功時，
+ * 宣告者的身分變成榮和結算裡的放銃者，不是槓的宣告者——這跟一般槓牌完全是兩回事。
+ *
+ * 對應 [DeclareKanUseCase] 開啟的 `TableState.pendingChankan`：每位有資格搶槓的玩家各自呼叫一次
+ * 本用例記錄自己的回應，等全部人都回應完才結算，結算只有兩種結果：
+ * - **有人搶槓成功**：這次暗槓/加槓視為沒發生，改用 [RonSettlementResolver] 結算榮和。
+ * - **全員放過**：槓真的成立，這時才呼叫 [KanDeclarationApplier] 補做原本暫緩的副露套用，並讓
+ *   宣告者摸嶺上牌——只有這個分支會摸牌，搶槓成功那個分支不會。
  *
  * 只信任 [GameAction.Ron]/[GameAction.Pass]：`LegalActionValidator.getLegalActions` 的「反應」
  * 分支不分辨 `sourceAction` 是捨牌還是槓牌，會一併算出吃/碰/明槓資格，但搶槓情境下這些都不合法
  * （這張牌不是捨牌）——回應驗證時額外過濾，只接受 `Ron`/`Pass`。
- *
- * 全員放過時，原本被 [DeclareKanUseCase] 暫緩的副露套用與嶺上摸牌會在這裡「補做」
- * （[KanDeclarationApplier]）；有人搶槓成功時，這次暗槓/加槓視為未成立，透過
- * [RonSettlementResolver] 結算榮和（搶槓的宣告者扮演「放銃者」的角色）。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與規則特有邏輯。
@@ -85,6 +88,7 @@ class RespondToChankanUseCase(
 
                     val ronWinnerIds = newPending.responses.filterValues { it is GameAction.Ron }.keys
                     if (ronWinnerIds.isNotEmpty()) {
+                        // 搶槓成功：這次槓視為沒發生，宣告者變成放銃者，改走榮和結算，不摸嶺上牌。
                         val resolved = RonSettlementResolver.resolve(
                             state = state,
                             players = state.players,
@@ -98,6 +102,7 @@ class RespondToChankanUseCase(
                             ?: state.copy(pendingChankan = newPending)
                         newState to Outcome.Success(ChankanResult(newState, drawHappened = false))
                     } else {
+                        // 全員放過：槓真的成立，補做副露套用，並讓宣告者摸嶺上牌。
                         val applied = KanDeclarationApplier.apply(state, pending.declarerId, pending.kanAction, pending.robbedTile, module)
                         if (applied.rinshanTile == null) {
                             return@update state to Outcome.Error(GameError.WallExhausted(gameId))
@@ -124,7 +129,9 @@ class RespondToChankanUseCase(
             }
         }
 
-        // 全員放過、原本暫緩的副露補做成立時，重新呈現宣告者的整份副露列表
+        // declarerId 只在「全員放過、槓真的成立」時才有值（見上面 KanDeclarationApplier 那個分支）；
+        // 這裡重新呈現宣告者的副露，並把摸到的嶺上牌移到摸牌位（跟一般摸牌同一套呈現方式，見
+        // DrawTileUseCase）。搶槓成功那個分支不會走到這裡。
         result.declarerId?.let { declarerId ->
             val declarerSeatIndex = newState.players.indexOfFirst { it.id == declarerId }
             val declarer = newState.players[declarerSeatIndex]
@@ -133,16 +140,21 @@ class RespondToChankanUseCase(
                 declarerSeatIndex,
                 declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
             )
+            presentationPublisher.publishTileDrawn(
+                gameId,
+                declarerSeatIndex,
+                declarer.hand.tiles.size,
+                declarer.hand.lastDrawn?.id,
+            )
         }
 
         return Outcome.Success(Unit)
     }
 
     /**
-     * `update` 區塊內部使用的中繼結果，讓 [drawHappened]／[declarerId] 能跟著 [tableState] 一起帶出
-     * `gameRepository.update` 的作用域，供廣播事件／觸發呈現時使用。[drawHappened] 為 true 代表全員
-     * 放過、原本暫緩的副露與嶺上摸牌已在這次呼叫補做完成，需要額外廣播 [GameAction.Draw]。
-     * [declarerId] 只在 [drawHappened] 為 true 時才有值，供呼叫端重新呈現宣告者的副露。
+     * `update` 區塊內部用的中繼結果。[drawHappened] 為 true 代表「全員放過、槓真的成立」，這時才有
+     * 嶺上摸牌，需要廣播 [GameAction.Draw]；[declarerId]（槓的宣告者）也只在這種情況才有值。搶槓
+     * 成功的情況兩者都維持預設（false／null）。
      */
     private data class ChankanResult(val tableState: TableState, val drawHappened: Boolean, val declarerId: Uuid? = null)
 }

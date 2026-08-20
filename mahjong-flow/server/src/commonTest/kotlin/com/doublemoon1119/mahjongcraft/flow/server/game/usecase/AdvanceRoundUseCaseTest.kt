@@ -63,7 +63,10 @@ class AdvanceRoundUseCaseTest {
         val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
         val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
         val players = listOf(dealer, p2, p3, p4)
-        val config = RiichiRuleConfig()
+        // 用 East（4 局）而非預設的 OneGame（1 局），確保「連莊」跟「整場對局是否已依局數結束」是
+        // 兩件互不干擾的事——OneGame 下第 1 局連莊本身就會正確結束對局（見 TableStateTest 新增的
+        // 迴歸測試），但這裡要驗證的是連莊機制本身（本場數/莊家/新牌），不該被 OneGame 的預設值誤觸。
+        val config = RiichiRuleConfig(gameLength = RiichiGameLength.East)
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = players,
@@ -163,7 +166,8 @@ class AdvanceRoundUseCaseTest {
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(dealer, p2, p3, p4),
-            config = RiichiRuleConfig(),
+            // 用 East（4 局）而非預設的 OneGame，理由同上一個連莊測試。
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
@@ -258,6 +262,35 @@ class AdvanceRoundUseCaseTest {
     }
 
     /**
+     * 驗證擊飛（`RiichiRuleModule.hasAdditionalMatchEndCondition`）：即使局數遠未達
+     * [GameLength.totalRounds] 上限，只要有玩家分數低於 0，整場對局也應該立即結束，不開新的一局。
+     */
+    @Test
+    fun `test advance round reports match over when a player is bankrupt even before the final round`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(Wind.EAST).copy(score = -500)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(score = 30500)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST).copy(score = 25000)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(score = 25000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, p2, p3, p4),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.TwoWinds),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        assertEquals(true, advanceResult.isMatchOver, "A negative score should end the match immediately (Tobi).")
+        assertEquals(table, advanceResult.tableState, "Table state should be left completely untouched when the match is over.")
+    }
+
+    /**
      * 驗證開新的一局後，所有觀察者的快照皆同步更新，且所有玩家皆收到 [GameAction.RoundStarted] 事件通知。
      */
     @Test
@@ -272,7 +305,9 @@ class AdvanceRoundUseCaseTest {
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(dealer, p2, p3, p4),
-            config = RiichiRuleConfig(),
+            // 用 East（4 局）而非預設的 OneGame——這裡要驗證的是「開下一局後的快照/事件同步」，
+            // 用 OneGame 會讓這局直接結束對局，走進完全不同（也不會有 RoundStarted）的分支。
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
         )
         fixtures.gameRepo.setTableState(table)
         fixtures.snapshotRepo.setSnapshot(dealerId, table.toSnapshot(setOf(dealerId)))

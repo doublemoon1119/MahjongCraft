@@ -136,7 +136,8 @@ class RespondToDiscardUseCase(
             )
         }
 
-        // 碰/吃/明槓得標時，得標玩家的副露多了一組，需要重新呈現整份副露列表
+        // 碰/吃/明槓得標時，得標玩家的副露多了一組，需要重新呈現整份副露列表；明槓另外補到嶺上牌時
+        // （[RespondResult.rinshanDrawHappened]），比照一般摸牌同一套呈現慣例把補到的牌移到摸牌位。
         result.winnerId?.let { winnerId ->
             val winnerSeatIndex = newState.players.indexOfFirst { it.id == winnerId }
             val winner = newState.players[winnerSeatIndex]
@@ -145,6 +146,9 @@ class RespondToDiscardUseCase(
                 winnerSeatIndex,
                 winner.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
             )
+            if (result.rinshanDrawHappened) {
+                presentationPublisher.publishTileDrawn(gameId, winnerSeatIndex, winner.hand.tiles.size, winner.hand.lastDrawn?.id)
+            }
         }
 
         return Outcome.Success(Unit)

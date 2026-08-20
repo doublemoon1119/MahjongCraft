@@ -101,6 +101,11 @@ class DeclareKanUseCaseTest {
             "Kan must be recorded before Draw for rinshan kaihou detection to work.",
         )
         assertEquals(0, newState.tileWall.remainingCount)
+        assertEquals(
+            rinshanTile.id,
+            fixtures.presentationPublisher.getPublishedTileDrawn(gameId)?.drawnTileId,
+            "The rinshan tile should be presented as a drawn tile (moved to the draw slot), same as a normal draw.",
+        )
     }
 
     /**

@@ -192,4 +192,11 @@ class TaiwanRuleModule(
      * @return 固定回傳 null。
      */
     override fun resolveSuukanNagare(tableState: TableState): ExhaustiveDrawReason? = null
+
+    /**
+     * 台灣麻將目前沒有實作任何比 `totalRounds` 更早結束整場對局的額外條件（例如日麻的擊飛）。
+     *
+     * @return 固定回傳 `false`。
+     */
+    override fun hasAdditionalMatchEndCondition(tableState: TableState): Boolean = false
 }

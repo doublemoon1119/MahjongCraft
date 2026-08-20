@@ -142,12 +142,16 @@ data class TableState(
      */
     fun advanceRound(dealerRepeats: Boolean): RoundAdvancementResult {
         if (dealerRepeats) {
+            // 連莊時 roundNumber 不會遞增，但如果連莊發生在已經是最後一局（例如一局戰／東風戰打完
+            // 最後一局時莊家還贏），整場對局仍然應該結束，不能因為「連莊」這個分支就無條件跳過
+            // totalRounds 的檢查——先前版本這裡固定回傳 false，導致設定一局戰時，只要贏家剛好是
+            // 莊家（含 RON），對局就會無限連莊下去，永遠打不完，這是實際遊戲內驗證過的問題。
             return RoundAdvancementResult(
                 players = players,
                 roundNumber = roundNumber,
                 comboCount = comboCount + 1,
                 prevalentWind = prevalentWind,
-                isMatchOver = false,
+                isMatchOver = roundNumber >= config.gameLength.totalRounds,
             )
         }
 

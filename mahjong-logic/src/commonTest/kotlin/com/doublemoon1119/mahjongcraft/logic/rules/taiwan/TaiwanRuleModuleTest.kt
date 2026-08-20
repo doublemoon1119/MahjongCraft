@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Ignore
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -249,5 +250,17 @@ class TaiwanRuleModuleTest {
         val table = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create()))
 
         assertNull(module.resolveSuukanNagare(table))
+    }
+
+    /**
+     * 驗證台灣麻將目前沒有實作任何額外結束對局的條件，即使有玩家分數為負也回傳 false。
+     */
+    @Test
+    fun `test hasAdditionalMatchEndCondition returns false`() {
+        val table = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create().copy(score = -100)),
+        )
+
+        assertFalse(module.hasAdditionalMatchEndCondition(table))
     }
 }

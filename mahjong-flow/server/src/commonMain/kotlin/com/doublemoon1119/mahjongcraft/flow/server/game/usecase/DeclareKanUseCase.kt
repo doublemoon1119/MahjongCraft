@@ -217,7 +217,9 @@ class DeclareKanUseCase(
             }
         }
 
-        // 副露成立時（無人搶槓、也未判定為途中流局），重新呈現宣告者的整份副露列表
+        // 副露成立時（無人搶槓、也未判定為途中流局），重新呈現宣告者的整份副露列表，並把補到的
+        // 嶺上牌移到摸牌位——跟一般摸牌同一套呈現慣例（見 DrawTileUseCase），先前遺漏這一步會讓
+        // 補到的嶺上牌在玩家端看起來像是憑空消失，只看到副露成立、看不到補牌動作。
         if (result.drawHappened) {
             val declarerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
             val declarer = newState.players[declarerSeatIndex]
@@ -225,6 +227,12 @@ class DeclareKanUseCase(
                 gameId,
                 declarerSeatIndex,
                 declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+            )
+            presentationPublisher.publishTileDrawn(
+                gameId,
+                declarerSeatIndex,
+                declarer.hand.tiles.size,
+                declarer.hand.lastDrawn?.id,
             )
         }
 

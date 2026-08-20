@@ -81,8 +81,13 @@ class AdvanceRoundUseCase(
                         it is GameAction.Tsumo || it is GameAction.Ron || it is GameAction.ExhaustiveDraw
                     }
                     val roundAdvancement = state.advanceRound(dealerRepeats)
+                    // 除了 GameLength.totalRounds（已經反映在 roundAdvancement.isMatchOver）之外，
+                    // 規則模組可能還有額外造成對局立即結束的條件（例如日麻的擊飛），見
+                    // MahjongRuleModule.hasAdditionalMatchEndCondition KDoc。用「本局結算完畢後」的
+                    // state（分數已是最終值）判斷，只會讓對局比 totalRounds 更早結束，不會延後。
+                    val isMatchOver = roundAdvancement.isMatchOver || module.hasAdditionalMatchEndCondition(state)
 
-                    if (roundAdvancement.isMatchOver) {
+                    if (isMatchOver) {
                         val advanceOutcome = AdvanceRoundOutcome(
                             result = AdvanceRoundResult(state, isMatchOver = true),
                             diceRoll = null,

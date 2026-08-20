@@ -326,4 +326,20 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 若構成四槓散了則為對應的流局原因，否則為 null；不支援此流局類型的規則固定回傳 null。
      */
     fun resolveSuukanNagare(tableState: TableState): ExhaustiveDrawReason?
+
+    /**
+     * 除了 [MahjongRuleConfig.gameLength]（`totalRounds`）之外，該規則是否有額外造成整場對局立即
+     * 結束的條件（例如日麻的擊飛：任一玩家分數低於 0）。每次連莊/過莊判定完成之後呼叫一次，讓規則
+     * 模組能疊加使對局提前結束的條件——只會、也只能讓對局比 `totalRounds` 更早結束，不能用來延後
+     * 結束（例如日麻的烏本延長賽需要「打完最後一局仍沒人達標時延長到西入」，那是完全不同的機制，
+     * 需要動態調整 `totalRounds` 本身，不是這裡能表達的；此 hook 尚未支援這類延長情境）。
+     *
+     * 不支援額外結束條件的規則應直接回傳 `false`，不代表「這個規則沒有結束條件」，只代表這個規則
+     * 沒有比 `totalRounds` 更早結束對局的額外條件。
+     *
+     * @param tableState 目前桌況——呼叫時機在本局點數結算之後、`TableState.advanceRound` 判定完成
+     * 之後，分數已經是本局結算完畢後的最終值。
+     * @return 是否應該立即結束整場對局。
+     */
+    fun hasAdditionalMatchEndCondition(tableState: TableState): Boolean
 }
