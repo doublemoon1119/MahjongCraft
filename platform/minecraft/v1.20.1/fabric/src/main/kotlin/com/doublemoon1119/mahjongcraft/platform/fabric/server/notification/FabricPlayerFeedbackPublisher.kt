@@ -127,7 +127,7 @@ class FabricPlayerFeedbackPublisher(
                 is MinecraftPlayerFeedback.ShowGameConfig ->
                     player.sendMessage(showGameConfigMessage(feedback))
                 is MinecraftPlayerFeedback.GameActionPerformed ->
-                    player.sendMessage(gameActionPerformedMessage(feedback))
+                    player.sendMessage(gameActionPerformedMessage(feedback), true)
                 MinecraftPlayerFeedback.NotYourTurn ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.NOT_YOUR_TURN), true)
                 MinecraftPlayerFeedback.ForcedAutoPlayActive ->
@@ -148,6 +148,7 @@ class FabricPlayerFeedbackPublisher(
                             MinecraftMessageKeys.YOUR_TURN,
                             feedback.drawnTile.toDisplayText(tileDisplayNames, tileAssetRegistry, tileEmojiRegistry),
                         ),
+                        true,
                     )
             }
         }
