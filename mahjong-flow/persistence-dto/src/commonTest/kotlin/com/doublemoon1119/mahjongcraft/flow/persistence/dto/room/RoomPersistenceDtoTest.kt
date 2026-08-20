@@ -124,6 +124,7 @@ private data class ThirdPartyRuleConfig(
         RonResolution.ALL_WINNERS,
         RonResolution.ALL_WINNERS,
     ),
+    override val revealsClosedKanTiles: Boolean = true,
 ) : MahjongRuleConfig
 
 /** 測試第三方規則配置的 persistence DTO。 */

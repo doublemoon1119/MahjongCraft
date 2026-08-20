@@ -32,6 +32,7 @@ data class TaiwanRuleConfigDto(
     val maxPlayers: Int,
     val multiRonPolicy: MultiRonPolicyDto,
     val useFlowerTiles: Boolean,
+    val revealsClosedKanTiles: Boolean,
 ) : MahjongRuleConfigDto
 
 fun TaiwanRuleConfig.toTaiwanDto(registries: NetworkDtoRegistries): TaiwanRuleConfigDto = TaiwanRuleConfigDto(
@@ -44,6 +45,7 @@ fun TaiwanRuleConfig.toTaiwanDto(registries: NetworkDtoRegistries): TaiwanRuleCo
     maxPlayers = maxPlayers,
     multiRonPolicy = multiRonPolicy.toRuleDto(),
     useFlowerTiles = useFlowerTiles,
+    revealsClosedKanTiles = revealsClosedKanTiles,
 )
 
 fun TaiwanRuleConfigDto.toDomain(registries: NetworkDtoRegistries): TaiwanRuleConfig = TaiwanRuleConfig(

@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * @property maxPlayers 該規則允許的最大玩家人數
  * @property multiRonPolicy 一炮多響時的結算方式，預設雙響、三響皆為多家和。此欄位刻意不依循上述
  *   M League 基準，預設採用多家和以貼近多數玩家熟悉的體驗，可依需求另行設定。
+ * @property revealsClosedKanTiles 暗槓身份是否公開，恆為 true。
  */
 data class RiichiRuleConfig(
     val redDoraCount: Int = 3,
@@ -42,6 +43,7 @@ data class RiichiRuleConfig(
     override val deadTileCount: Int = 14
     override val minPlayers: Int = 4
     override val maxPlayers: Int = 4
+    override val revealsClosedKanTiles: Boolean = true
 
     init {
         validate()

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.config
 
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+
 /**
  * 定義麻將遊戲最基礎的物理配置介面。
  *
@@ -38,6 +40,15 @@ interface MahjongRuleConfig {
      * 一炮多響（同一張捨牌同時被多位玩家榮和）時的結算方式。
      */
     val multiRonPolicy: MultiRonPolicy
+
+    /**
+     * 是否公開暗槓（[MeldType.CLOSED_KAN]）的牌面給本人以外的觀察者。
+     *
+     * 日本麻將等規則暗槓身份仍算公開（僅實際擺放時把兩端牌翻蓋，不影響身份判定）；台灣麻將等規則
+     * 暗槓完全不公開，直到自摸或流局才揭露。其他副露種類（吃／碰／明槓／加槓）本身就是公開宣告的
+     * 動作，不受此欄位影響，恆為可見。
+     */
+    val revealsClosedKanTiles: Boolean
 }
 
 /**

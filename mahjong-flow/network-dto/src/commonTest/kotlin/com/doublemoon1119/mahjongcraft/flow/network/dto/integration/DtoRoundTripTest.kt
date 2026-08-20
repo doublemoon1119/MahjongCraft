@@ -329,6 +329,7 @@ private data class ThirdPartyRuleConfig(
     override val minPlayers: Int = 2,
     override val maxPlayers: Int = 2,
     override val multiRonPolicy: MultiRonPolicy = MultiRonPolicy(RonResolution.ALL_WINNERS, RonResolution.ALL_WINNERS),
+    override val revealsClosedKanTiles: Boolean = true,
 ) : MahjongRuleConfig
 
 @Serializable

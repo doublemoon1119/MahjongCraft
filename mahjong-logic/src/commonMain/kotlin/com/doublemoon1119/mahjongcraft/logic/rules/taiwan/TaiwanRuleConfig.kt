@@ -19,6 +19,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * @property minPlayers 該規則要求的最小玩家人數
  * @property maxPlayers 該規則允許的最大玩家人數
  * @property multiRonPolicy 一炮多響時的結算方式，預設雙響、三響皆為頭跳。
+ * @property revealsClosedKanTiles 暗槓身份是否公開，恆為 false——台灣麻將暗槓完全不公開，直到自摸
+ *   或流局才揭露。
  */
 data class TaiwanRuleConfig(
     val useFlowerTiles: Boolean = true,
@@ -34,6 +36,7 @@ data class TaiwanRuleConfig(
     override val deadTileCount: Int = 16
     override val minPlayers: Int = 4
     override val maxPlayers: Int = 4
+    override val revealsClosedKanTiles: Boolean = false
 
     init {
         validate()

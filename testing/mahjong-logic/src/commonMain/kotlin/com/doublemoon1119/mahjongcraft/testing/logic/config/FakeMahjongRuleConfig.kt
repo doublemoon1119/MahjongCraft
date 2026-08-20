@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
  * @property scoreConfig 積分配置，預設使用 [FakeScoreConfig]。
  * @property gameLength 對局長度配置，預設使用 [FakeGameLength]。
  * @property multiRonPolicy 一炮多響時的結算方式，預設雙響、三響皆為頭跳。
+ * @property revealsClosedKanTiles 暗槓身份是否公開，預設為 true。
  */
 class FakeMahjongRuleConfig(
     override val initialHandSize: Int = 13,
@@ -30,4 +31,5 @@ class FakeMahjongRuleConfig(
         doubleRonResolution = RonResolution.NEAREST_WINNER,
         tripleRonResolution = RonResolution.NEAREST_WINNER,
     ),
+    override val revealsClosedKanTiles: Boolean = true,
 ) : MahjongRuleConfig

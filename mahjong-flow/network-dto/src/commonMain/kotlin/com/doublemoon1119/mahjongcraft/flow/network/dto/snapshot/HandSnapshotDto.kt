@@ -11,14 +11,17 @@ import kotlinx.serialization.Serializable
 data class HandSnapshotDto(
     val standingTiles: List<IdentifiedTileSnapshotDto>,
     val lastDrawn: IdentifiedTileSnapshotDto? = null,
+    val melds: List<MeldSnapshotDto> = emptyList(),
 )
 
 fun HandSnapshot.toDto(): HandSnapshotDto = HandSnapshotDto(
     standingTiles = standingTiles.map { it.toDto() },
     lastDrawn = lastDrawn?.toDto(),
+    melds = melds.map { it.toDto() },
 )
 
 fun HandSnapshotDto.toDomain(): HandSnapshot = HandSnapshot(
     standingTiles = standingTiles.map { it.toDomain() },
     lastDrawn = lastDrawn?.toDomain(),
+    melds = melds.map { it.toDomain() },
 )

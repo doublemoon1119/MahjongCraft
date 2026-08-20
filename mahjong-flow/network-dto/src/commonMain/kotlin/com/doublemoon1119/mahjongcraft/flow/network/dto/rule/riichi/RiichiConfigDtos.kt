@@ -42,6 +42,7 @@ data class RiichiRuleConfigDto(
     val redDoraCount: Int,
     val allowOpenTanyao: Boolean,
     val useLocalYaku: Boolean,
+    val revealsClosedKanTiles: Boolean,
 ) : MahjongRuleConfigDto
 
 fun RiichiRuleConfig.toRiichiDto(registries: NetworkDtoRegistries): RiichiRuleConfigDto = RiichiRuleConfigDto(
@@ -56,6 +57,7 @@ fun RiichiRuleConfig.toRiichiDto(registries: NetworkDtoRegistries): RiichiRuleCo
     redDoraCount = redDoraCount,
     allowOpenTanyao = allowOpenTanyao,
     useLocalYaku = useLocalYaku,
+    revealsClosedKanTiles = revealsClosedKanTiles,
 )
 
 fun RiichiRuleConfigDto.toDomain(registries: NetworkDtoRegistries): RiichiRuleConfig = RiichiRuleConfig(

@@ -37,10 +37,11 @@ class ClientMahjongStateStore(
     private var managedTileSnapshotsByTileId: Map<Uuid, IdentifiedTileSnapshot> = emptyMap()
 
     /**
-     * 匯總牌牆、所有玩家手牌與牌河的牌張快照，建立單一索引。牌河永遠對所有玩家可見
+     * 匯總牌牆、所有玩家手牌、副露與牌河的牌張快照，建立單一索引。牌河永遠對所有玩家可見
      * （`MahjongPlayerSnapshot.discardPile` 的 KDoc 本來就這樣寫），因此固定以 `isVisible = true`
      * 轉換——`discardPile` 型別是跟 `MahjongPlayer` 共用的 domain `DiscardPile<*>`，不像手牌／牌牆
-     * 已經是依觀察者可見範圍轉換過的 snapshot 型別，需要在這裡自行呼叫 `toSnapshot`。
+     * 已經是依觀察者可見範圍轉換過的 snapshot 型別，需要在這裡自行呼叫 `toSnapshot`。副露（`hand.melds`）
+     * 本身就恆為完整可見（見 `HandSnapshot.melds` KDoc），直接取用即可，不需要另外轉換可見性。
      */
     private fun buildManagedTileIndex(snapshot: TableStateSnapshot?): Map<Uuid, IdentifiedTileSnapshot> {
         if (snapshot == null) return emptyMap()
@@ -48,10 +49,13 @@ class ClientMahjongStateStore(
         val handTiles = snapshot.players.flatMap { player ->
             player.hand.standingTiles + listOfNotNull(player.hand.lastDrawn)
         }
+        val meldTiles = snapshot.players.flatMap { player ->
+            player.hand.melds.flatMap { meld -> meld.tiles }
+        }
         val discardTiles = snapshot.players.flatMap { player ->
             player.discardPile.entries.map { entry -> entry.tile.toSnapshot(isVisible = true) }
         }
-        return (wallTiles + handTiles + discardTiles).associateBy { it.id }
+        return (wallTiles + handTiles + meldTiles + discardTiles).associateBy { it.id }
     }
 
     /** 接收帶事件的房間更新並保存其最新快照；同一張桌子不會同時是房間又是對局，一併清掉舊的遊戲快照。 */

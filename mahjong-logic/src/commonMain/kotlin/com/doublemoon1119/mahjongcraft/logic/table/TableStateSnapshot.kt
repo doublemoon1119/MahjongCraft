@@ -43,7 +43,9 @@ fun TableState.toSnapshot(visibleHandPlayerIds: Set<Uuid>): TableStateSnapshot {
 
     return TableStateSnapshot(
         id = this.id,
-        players = this.players.map { it.toSnapshot(isVisible = it.id in visibleHandPlayerIds) },
+        players = this.players.map {
+            it.toSnapshot(isVisible = it.id in visibleHandPlayerIds, revealsClosedKanTiles = config.revealsClosedKanTiles)
+        },
         config = this.config,
         tileWall = this.tileWall.toSnapshot(visibleTileIds = visibleTileIds),
         prevalentWind = this.prevalentWind,

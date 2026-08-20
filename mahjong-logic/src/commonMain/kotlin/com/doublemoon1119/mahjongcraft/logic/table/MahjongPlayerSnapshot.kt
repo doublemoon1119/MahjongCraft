@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.HandSnapshot
 import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
 import kotlin.uuid.Uuid
@@ -31,13 +32,15 @@ data class MahjongPlayerSnapshot(
  * 產生一個 [MahjongPlayer] 的不可變快照。
  *
  * @param isVisible 控制手牌是否可見。當值為 `false` 時，手牌中的牌張資訊將被隱藏，僅保留識別碼
+ * @param revealsClosedKanTiles 該規則是否公開暗槓身份，轉交給 [Hand.toSnapshot] 決定副露中暗槓的
+ *   可見性
  * @return 依據 [isVisible] 決定手牌可見性的玩家快照
  */
-fun MahjongPlayer.toSnapshot(isVisible: Boolean): MahjongPlayerSnapshot = MahjongPlayerSnapshot(
+fun MahjongPlayer.toSnapshot(isVisible: Boolean, revealsClosedKanTiles: Boolean): MahjongPlayerSnapshot = MahjongPlayerSnapshot(
     id = this.id,
     initialSeat = this.initialSeat,
     currentWind = this.currentWind,
-    hand = this.hand.toSnapshot(isVisible),
+    hand = this.hand.toSnapshot(isVisible, revealsClosedKanTiles),
     discardPile = this.discardPile,
     playerRuleState = this.playerRuleState,
     score = this.score,
