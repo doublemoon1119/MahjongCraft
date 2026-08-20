@@ -94,22 +94,23 @@ class StartGameUseCase(
             eventPublisher.publish(roomId, player.id, operatorId, GameAction.GameStarted)
         }
 
-        // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過
-        initializationResult.diceRoll?.let { diceRoll ->
-            val dealerSeatIndex = tableState.players.indexOfFirst { player -> player.currentWind == Wind.EAST }
-            presentationPublisher.publishDiceRoll(roomId, diceRoll, dealerSeatIndex, tableState.roundNumber, tableState.comboCount)
-            // 廣播擲骰點數本身；跟第 3 步的 GameStarted 是兩則獨立事件，讓客戶端不用從 GameStarted
-            // 的快照反推點數（快照本來就不帶開門用的擲骰資料）。
-            tableState.players.forEach { player ->
-                eventPublisher.publish(roomId, player.id, operatorId, GameAction.DiceRolled(diceRoll))
-            }
-        }
+        // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過。牌牆先建、骰子後擲——真實麻將
+        // 是先砌好牌牆才擲骰決定開門位置，呈現層（`FabricGamePresentationPublisher`）依賴這個固定
+        // 呼叫順序，把擲骰動畫延遲到牌牆完全落地才開始播放，這裡不能對調。
         val dealerSeatIndex = tableState.players.indexOfFirst { player -> player.currentWind == Wind.EAST }
         initializationResult.wallStructure?.let { structure ->
             val deadWallTileIds = tableState.initialDeadWall.map { tile -> tile.id }.toSet()
             val diceCount = initializationResult.diceRoll?.values?.size ?: 0
             val revealedTileIds = (tableState.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(tableState) ?: emptySet()
             presentationPublisher.publishWallStructure(roomId, structure, dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
+        }
+        initializationResult.diceRoll?.let { diceRoll ->
+            presentationPublisher.publishDiceRoll(roomId, diceRoll, dealerSeatIndex, tableState.roundNumber, tableState.comboCount)
+            // 廣播擲骰點數本身；跟第 3 步的 GameStarted 是兩則獨立事件，讓客戶端不用從 GameStarted
+            // 的快照反推點數（快照本來就不帶開門用的擲骰資料）。
+            tableState.players.forEach { player ->
+                eventPublisher.publish(roomId, player.id, operatorId, GameAction.DiceRolled(diceRoll))
+            }
         }
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；開局第一局 comboCount 恆為 0，
         // 呼叫本身仍需要，確保積棒 entity 從上一局殘留（理論上不會發生，但保持呼叫語意一致）清乾淨。

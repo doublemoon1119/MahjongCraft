@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
@@ -81,11 +82,74 @@ class MahjongTileEntity(
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
         private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
+    /**
+     * 是否正在播放由伺服器啟動的運動動畫（牌牆生成掉落、發牌、摸牌共用同一套機制，見
+     * [startMotionAnimation]）。`entity` 本身固定 `refreshPositionAndAngles` 到動畫**終點**，動畫期間
+     * 的視覺位移／姿態旋轉完全由 client 端 renderer 依 [animationStartGameTime] 等欄位即時計算插值，
+     * 不影響這個欄位代表的實際邏輯位置——比照 [MahjongDiceEntity.rolling] 的既有設計。
+     */
+    var animating: Boolean
+        get() = dataTracker[ANIMATING]
+        private set(value) = dataTracker.set(ANIMATING, value)
+
+    /** 動畫開始時的 server game time。 */
+    val animationStartGameTime: Long
+        get() = dataTracker[ANIMATION_START_GAME_TIME]
+
+    /** 動畫總長度，以 server ticks 表示。 */
+    val animationDurationTicks: Int
+        get() = dataTracker[ANIMATION_DURATION_TICKS]
+
+    /** 拋物線最高額外高度；`0` 代表純直落，不套用拋物線。 */
+    val animationArcHeight: Double
+        get() = dataTracker[ANIMATION_ARC_HEIGHT].toDouble()
+
+    /** 動畫起點相對 entity 最終位置的向量。 */
+    val animationStartOffset: DiceAnimationVector
+        get() = DiceAnimationVector(
+            x = dataTracker[ANIMATION_START_OFFSET_X].toDouble(),
+            y = dataTracker[ANIMATION_START_OFFSET_Y].toDouble(),
+            z = dataTracker[ANIMATION_START_OFFSET_Z].toDouble(),
+        )
+
+    /** 動畫起始姿態的局部 X 軸旋轉角。 */
+    val animationStartPoseRotationDegrees: Float
+        get() = dataTracker[ANIMATION_START_POSE_ROTATION]
+
+    /** 動畫結束姿態的局部 X 軸旋轉角。 */
+    val animationEndPoseRotationDegrees: Float
+        get() = dataTracker[ANIMATION_END_POSE_ROTATION]
+
     /** 這個 entity 是否已經做過一次 [validateStillManagedByActiveGame] 檢查；只需要做一次。 */
     private var hasValidatedManagedState = false
 
     init {
         setNoGravity(true)
+    }
+
+    /**
+     * 啟動一次由伺服器決定終點的運動動畫；呼叫前 entity 應已經 `refreshPositionAndAngles` 到動畫
+     * **終點**座標，[startOffset] 是「起點相對終點」的差值（不是絕對世界座標），理由同
+     * [MahjongDiceEntity.startRoll]。
+     */
+    fun startMotionAnimation(
+        startGameTime: Long,
+        durationTicks: Int,
+        arcHeight: Double,
+        startOffset: DiceAnimationVector,
+        startPoseRotationDegrees: Float,
+        endPoseRotationDegrees: Float,
+    ) {
+        check(!world.isClient) { "Tile motion animations must be started by the server" }
+        dataTracker.set(ANIMATION_START_GAME_TIME, startGameTime)
+        dataTracker.set(ANIMATION_DURATION_TICKS, durationTicks)
+        dataTracker.set(ANIMATION_ARC_HEIGHT, arcHeight.toFloat())
+        dataTracker.set(ANIMATION_START_OFFSET_X, startOffset.x.toFloat())
+        dataTracker.set(ANIMATION_START_OFFSET_Y, startOffset.y.toFloat())
+        dataTracker.set(ANIMATION_START_OFFSET_Z, startOffset.z.toFloat())
+        dataTracker.set(ANIMATION_START_POSE_ROTATION, startPoseRotationDegrees)
+        dataTracker.set(ANIMATION_END_POSE_ROTATION, endPoseRotationDegrees)
+        animating = true
     }
 
     /** 將牌標記為指定正式牌局桌子管理；[tileAssetKey] 的 setter 會因此自動鎖定為 [UNKNOWN_TILE_ASSET_KEY]。 */
@@ -118,7 +182,9 @@ class MahjongTileEntity(
      */
     override fun tick() {
         super.tick()
-        if (world.isClient || !managedByGame || hasValidatedManagedState) return
+        if (world.isClient) return
+        if (animating && world.time - animationStartGameTime >= animationDurationTicks) animating = false
+        if (!managedByGame || hasValidatedManagedState) return
         hasValidatedManagedState = true
         validateStillManagedByActiveGame()
     }
@@ -245,6 +311,15 @@ class MahjongTileEntity(
         dataTracker.startTracking(PHYSICAL_COLLISION_ENABLED, true)
         dataTracker.startTracking(MANAGED_BY_GAME, false)
         dataTracker.startTracking(MANAGED_TABLE_ID, "")
+        dataTracker.startTracking(ANIMATING, false)
+        dataTracker.startTracking(ANIMATION_START_GAME_TIME, 0L)
+        dataTracker.startTracking(ANIMATION_DURATION_TICKS, 1)
+        dataTracker.startTracking(ANIMATION_ARC_HEIGHT, 0.0f)
+        dataTracker.startTracking(ANIMATION_START_OFFSET_X, 0.0f)
+        dataTracker.startTracking(ANIMATION_START_OFFSET_Y, 0.0f)
+        dataTracker.startTracking(ANIMATION_START_OFFSET_Z, 0.0f)
+        dataTracker.startTracking(ANIMATION_START_POSE_ROTATION, 0.0f)
+        dataTracker.startTracking(ANIMATION_END_POSE_ROTATION, 0.0f)
     }
 
     /** 從世界存檔還原牌面、姿態與管理狀態，非法值使用安全預設。 */
@@ -306,5 +381,41 @@ class MahjongTileEntity(
         /** 同步正式牌局所屬麻將桌 UUID；空字串表示自由放置。 */
         private val MANAGED_TABLE_ID: TrackedData<String> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
+
+        /** 同步是否正在播放運動動畫。 */
+        private val ANIMATING: TrackedData<Boolean> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+
+        /** 同步動畫開始的 server game time。 */
+        private val ANIMATION_START_GAME_TIME: TrackedData<Long> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
+
+        /** 同步動畫總長度（ticks）。 */
+        private val ANIMATION_DURATION_TICKS: TrackedData<Int> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
+
+        /** 同步動畫拋物線最高額外高度。 */
+        private val ANIMATION_ARC_HEIGHT: TrackedData<Float> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+
+        /** 同步動畫起點相對終點的 X 偏移。 */
+        private val ANIMATION_START_OFFSET_X: TrackedData<Float> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+
+        /** 同步動畫起點相對終點的 Y 偏移。 */
+        private val ANIMATION_START_OFFSET_Y: TrackedData<Float> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+
+        /** 同步動畫起點相對終點的 Z 偏移。 */
+        private val ANIMATION_START_OFFSET_Z: TrackedData<Float> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+
+        /** 同步動畫起始姿態的局部 X 軸旋轉角。 */
+        private val ANIMATION_START_POSE_ROTATION: TrackedData<Float> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+
+        /** 同步動畫結束姿態的局部 X 軸旋轉角。 */
+        private val ANIMATION_END_POSE_ROTATION: TrackedData<Float> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
     }
 }

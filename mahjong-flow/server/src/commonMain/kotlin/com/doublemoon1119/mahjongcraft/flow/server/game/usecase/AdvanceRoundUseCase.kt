@@ -142,9 +142,16 @@ class AdvanceRoundUseCase(
             eventPublisher.publish(gameId, player.id, newDealerId, GameAction.RoundStarted)
         }
 
-        // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過
+        // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過。牌牆先建、骰子後擲，理由同
+        // StartGameUseCase，這裡不能對調呼叫順序。
+        val dealerSeatIndex = newState.players.indexOfFirst { player -> player.id == newDealerId }
+        advanceOutcome.wallStructure?.let { structure ->
+            val deadWallTileIds = newState.initialDeadWall.map { tile -> tile.id }.toSet()
+            val diceCount = advanceOutcome.diceRoll?.values?.size ?: 0
+            val revealedTileIds = (newState.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(newState) ?: emptySet()
+            presentationPublisher.publishWallStructure(gameId, structure, dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
+        }
         advanceOutcome.diceRoll?.let { diceRoll ->
-            val dealerSeatIndex = newState.players.indexOfFirst { player -> player.id == newDealerId }
             presentationPublisher.publishDiceRoll(
                 gameId,
                 diceRoll,
@@ -156,13 +163,6 @@ class AdvanceRoundUseCase(
             newState.players.forEach { player ->
                 eventPublisher.publish(gameId, player.id, newDealerId, GameAction.DiceRolled(diceRoll))
             }
-        }
-        val dealerSeatIndex = newState.players.indexOfFirst { player -> player.id == newDealerId }
-        advanceOutcome.wallStructure?.let { structure ->
-            val deadWallTileIds = newState.initialDeadWall.map { tile -> tile.id }.toSet()
-            val diceCount = advanceOutcome.diceRoll?.values?.size ?: 0
-            val revealedTileIds = (newState.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(newState) ?: emptySet()
-            presentationPublisher.publishWallStructure(gameId, structure, dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
         }
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；新局手牌一定沒有副露，只是靠
         // publishPlayerAreaUpdated 的 comboStickCount 讓手牌正確讓開積棒佔用的空間。

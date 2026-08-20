@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
@@ -10,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.FabricGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -17,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableL
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
 import net.minecraft.block.BlockState
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
@@ -83,7 +86,7 @@ class FabricMahjongTileWallPresenter(
                 stacksPerSide = stacksPerSide,
                 position = position,
             )
-            MahjongTileEntity(world = world).apply {
+            position to MahjongTileEntity(world = world).apply {
                 uuid = tileId.toJavaUuid()
                 refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
                 tilePose = MahjongTilePose.FACE_DOWN
@@ -91,7 +94,7 @@ class FabricMahjongTileWallPresenter(
             }
         }
         val spawnedTiles = mutableListOf<MahjongTileEntity>()
-        newTiles.forEach { tile ->
+        newTiles.forEach { (_, tile) ->
             if (!world.spawnEntity(tile)) {
                 spawnedTiles.forEach(MahjongTileEntity::discard)
                 return MahjongTileWallPresentationResult.SPAWN_FAILED
@@ -100,15 +103,40 @@ class FabricMahjongTileWallPresenter(
         }
         oldTiles.forEach(MahjongTileEntity::discard)
         table.markDirty()
+        startWallDropAnimations(world, newTiles)
         scheduleDeadWallReveal(presentation, controllerPos, stacksPerSide)
         return MahjongTileWallPresentationResult.PRESENTED
     }
 
     /**
-     * 排定王牌區延遲移出開門位置：延遲時長跟 [FabricGamePresentationPublisher]
-     * 用來標記桌子忙碌的時長算法完全一致（[MahjongDiceTableLayout.totalAnimationTicks]），確保王牌
-     * 移出的時機跟「擲骰動畫播完」同步，不是任意估計的秒數。[MahjongTileWallPresentation.diceCount]
-     * 為 `0`（沒有搭配擲骰）或沒有王牌時直接跳過，不排定任何延遲工作。
+     * 每面牌牆同時由玩家右側（[TileWallPosition.stack] 為 `0`，見 [MahjongTileTableLayout.wallPlacement]
+     * KDoc）至左側依序半空生成掉落，形成波浪感——`stack` 越大延遲越久開始掉落，四面牌牆各自獨立套用
+     * 同一套延遲公式（[MahjongTileTableLayout.WAVE_STEP_TICKS]）、同時開始，天然同步成波浪；`layer`
+     * 不影響延遲，同一墩兩層一起落下。牌張本身已經 `refreshPositionAndAngles` 到掉落終點，這裡只需要
+     * 疊加半空起點的動畫，起訖姿態相同（[MahjongTilePose.FACE_DOWN]），只有位置在動。
+     */
+    private fun startWallDropAnimations(world: ServerWorld, tilesWithPosition: List<Pair<TileWallPosition, MahjongTileEntity>>) {
+        val startGameTime = world.time
+        tilesWithPosition.forEach { (position, tile) ->
+            val startDelayTicks = MahjongTileTableLayout.wallDropStartDelayTicks(position.stack)
+            tile.startMotionAnimation(
+                startGameTime = startGameTime + startDelayTicks,
+                durationTicks = TileMotionAnimationSpec.DEFAULT_DURATION_TICKS,
+                arcHeight = 0.0,
+                startOffset = DiceAnimationVector(0.0, WALL_DROP_HEIGHT, 0.0),
+                startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+            )
+        }
+    }
+
+    /**
+     * 排定王牌區延遲移出開門位置：延遲時長是牌牆生成掉落動畫時長加上擲骰動畫時長的總和——擲骰動畫
+     * 現在會等牌牆完全落地才開始播放（見 [FabricGamePresentationPublisher.publishDiceRoll] 的
+     * `pendingWallDropTicksByTable` 機制），王牌移出開門的時機要跟著往後移，不能只算擲骰動畫本身的
+     * 時長，否則王牌會在骰子都還沒開始播放時就提早移出，跟過去兩者平行播放時的算法不一樣。
+     * [MahjongTileWallPresentation.diceCount] 為 `0`（沒有搭配擲骰）或沒有王牌時直接跳過，不排定任何
+     * 延遲工作。
      *
      * 延遲工作觸發時重新用 UUID 查詢目前世界上的 entity（不沿用 [present] 當下建立的參考）：中途
      * 桌子可能已被拆除或這局已經結束，屆時查不到對應 entity 屬於正常情況，直接放棄，不拋例外。
@@ -119,7 +147,8 @@ class FabricMahjongTileWallPresenter(
         stacksPerSide: Int,
     ) {
         if (presentation.diceCount <= 0 || presentation.deadWallTileIds.isEmpty()) return
-        val delayTicks = MahjongDiceTableLayout.totalAnimationTicks(presentation.diceCount)
+        val delayTicks = MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide) +
+            MahjongDiceTableLayout.totalAnimationTicks(presentation.diceCount)
         tickClock.scheduleAfter(delayTicks * MILLIS_PER_TICK) {
             moveDeadWallToOpenPosition(presentation, controllerPos, stacksPerSide)
         }
@@ -241,5 +270,8 @@ class FabricMahjongTileWallPresenter(
 
         /** Minecraft 正常運行時每個 tick 對應的毫秒數（20 TPS），換算 [FabricTickMonotonicClock.scheduleAfter] 的延遲毫秒數用。 */
         const val MILLIS_PER_TICK: Long = 50L
+
+        /** 牌牆生成掉落動畫的半空起點高度，相對掉落終點的世界 Y 偏移；遊戲內驗證後從 1.5 調低。 */
+        const val WALL_DROP_HEIGHT: Double = 0.8
     }
 }

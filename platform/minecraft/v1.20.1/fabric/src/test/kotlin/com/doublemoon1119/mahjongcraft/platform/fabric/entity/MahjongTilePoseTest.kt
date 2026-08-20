@@ -20,4 +20,12 @@ class MahjongTilePoseTest {
         assertEquals(MahjongTilePose.STANDING, MahjongTilePose.fromNameOrDefault("SIDEWAYS"))
         assertEquals(MahjongTilePose.FACE_DOWN, MahjongTilePose.fromNameOrDefault("FACE_DOWN"))
     }
+
+    /** 驗證各姿態對應的 renderer 旋轉角度。 */
+    @Test
+    fun `poses map to their renderer rotation degrees`() {
+        assertEquals(0.0f, MahjongTilePose.STANDING.rotationDegrees)
+        assertEquals(90.0f, MahjongTilePose.FACE_UP.rotationDegrees)
+        assertEquals(-90.0f, MahjongTilePose.FACE_DOWN.rotationDegrees)
+    }
 }

@@ -82,6 +82,23 @@ object MahjongTileTableLayout {
     }
 
     /**
+     * 依牌牆每面墩數，算出牌牆生成掉落動畫（波浪感）從觸發到全部落地所需的總 tick 數——每面牌牆
+     * `stack` 越大（越靠玩家左手邊，見 [wallPlacement] KDoc）越晚開始掉落，`stack = stacksPerSide - 1`
+     * 是最後開始掉落的一墩，該墩開始掉落後還要再等一次完整的 [TileMotionAnimationSpec.DEFAULT_DURATION_TICKS]
+     * 才落地；跟 [MahjongDiceTableLayout.totalAnimationTicks]（「最大 stagger + 單次動畫時長」）同一套
+     * 算法模式，供呼叫端標記桌子忙碌時長使用。
+     */
+    fun wallDropAnimationTicks(stacksPerSide: Int): Int = wallDropStartDelayTicks((stacksPerSide - 1).coerceAtLeast(0)) +
+        TileMotionAnimationSpec.DEFAULT_DURATION_TICKS
+
+    /**
+     * 依 [TileWallPosition.stack] 算出牌牆生成掉落動畫該延遲多久才開始，供
+     * `FabricMahjongTileWallPresenter` 排定每墩延遲使用；跟 [wallDropAnimationTicks] 共用同一個
+     * [WAVE_STEP_TICKS]，避免呼叫端各自寫一份相同的乘法。
+     */
+    fun wallDropStartDelayTicks(stack: Int): Int = stack * WAVE_STEP_TICKS
+
+    /**
      * 以局部南側玩家為基準的單張牌牆用牌位置：[TileWallPosition.layer] 沿 Y 軸以牌深堆疊，牌面朝下
      * 平放——躺平後，沿墩排列方向（局部 X 軸）的外觀寬度是 [MahjongTileDimensions.TILE_WIDTH]，垂直
      * 於側面方向（局部 Z 軸）的外觀寬度是 [MahjongTileDimensions.TILE_HEIGHT]（原本直立時的高度，
@@ -536,6 +553,12 @@ object MahjongTileTableLayout {
     /** 固定桌面幾何常數。 */
     private const val BLOCK_CENTER: Double = 0.5
     private const val TABLETOP_HEIGHT: Double = 1.0
+
+    /**
+     * 牌牆生成掉落動畫中，同一面牌牆相鄰兩墩（`stack` 差 1）開始掉落的時間差，供 [wallDropAnimationTicks]
+     * 與呼叫端排定每墩延遲使用；遊戲內比對後整體再調快，從原本 2 調到現在的值。
+     */
+    internal const val WAVE_STEP_TICKS: Int = 1
 
     /**
      * 牌牆角落貼齊處縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，遊戲內驗證後調整的觀感參數。

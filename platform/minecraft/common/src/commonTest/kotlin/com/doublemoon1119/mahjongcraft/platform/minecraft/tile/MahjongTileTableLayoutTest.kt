@@ -413,6 +413,29 @@ class MahjongTileTableLayoutTest {
         assertFailsWith<IllegalArgumentException> { stickPlacement(stickIndex = -1) }
     }
 
+    /** `stack` 每加 1，掉落動畫延遲該多加一個 `WAVE_STEP_TICKS`；`stack = 0` 完全不延遲。 */
+    @Test
+    fun `wall drop start delay grows linearly with stack`() {
+        assertEquals(0, MahjongTileTableLayout.wallDropStartDelayTicks(0))
+        assertEquals(2 * MahjongTileTableLayout.wallDropStartDelayTicks(1), MahjongTileTableLayout.wallDropStartDelayTicks(2))
+    }
+
+    /** 總動畫時長應等於最後一墩（`stack = stacksPerSide - 1`）的延遲，加上單次動畫本身的時長。 */
+    @Test
+    fun `wall drop animation ticks accounts for the last stack plus a full animation`() {
+        val stacksPerSide = 17
+        val expected = MahjongTileTableLayout.wallDropStartDelayTicks(stacksPerSide - 1) + TileMotionAnimationSpec.DEFAULT_DURATION_TICKS
+
+        assertEquals(expected, MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide))
+    }
+
+    /** 只有一墩（或零墩）時，不需要任何 stagger，總時長就是單次動畫時長。 */
+    @Test
+    fun `wall drop animation ticks has no stagger for a single stack`() {
+        assertEquals(TileMotionAnimationSpec.DEFAULT_DURATION_TICKS, MahjongTileTableLayout.wallDropAnimationTicks(1))
+        assertEquals(TileMotionAnimationSpec.DEFAULT_DURATION_TICKS, MahjongTileTableLayout.wallDropAnimationTicks(0))
+    }
+
     /** 建立測試用的最小副露資料，只填入寬度計算需要的欄位。 */
     private fun fakeMeld(
         type: MeldType,

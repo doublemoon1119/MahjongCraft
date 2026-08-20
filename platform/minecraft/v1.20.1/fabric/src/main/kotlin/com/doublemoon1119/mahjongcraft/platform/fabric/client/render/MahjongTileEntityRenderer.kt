@@ -15,6 +15,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import net.minecraft.client.font.TextRenderer
@@ -68,9 +70,28 @@ class MahjongTileEntityRenderer(
         light: Int,
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
+        val elapsedAnimationTicks = entity.world.time.toDouble() + tickDelta - entity.animationStartGameTime
+        // 動畫的 startGameTime 是「這張牌該開始掉落」的時間點（牌牆生成掉落波浪用每墩不同的 stagger
+        // 延遲，見 FabricMahjongTileWallPresenter.startWallDropAnimations），在那之前 elapsed 是負值——
+        // 這段時間這張牌根本不該出現在畫面上（設計上要隱形／延遲生成，而不是提早出現在半空定格
+        // 不動），直接整個跳過繪製，比在 frame() 裡把 progress 硬夾到 0 更符合預期。
+        if (entity.animating && elapsedAnimationTicks < 0.0) return
+        val animationFrame = if (entity.animating) {
+            TileMotionAnimation(
+                TileMotionAnimationSpec(
+                    durationTicks = entity.animationDurationTicks,
+                    arcHeight = entity.animationArcHeight,
+                    startPoseRotationDegrees = entity.animationStartPoseRotationDegrees,
+                    endPoseRotationDegrees = entity.animationEndPoseRotationDegrees,
+                ),
+            ).frame(elapsedTicks = elapsedAnimationTicks, startOffset = entity.animationStartOffset)
+        } else {
+            null
+        }
         matrices.push()
+        if (animationFrame != null) matrices.translate(animationFrame.offset.x, animationFrame.offset.y, animationFrame.offset.z)
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-entity.yaw + 180.0f))
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(entity.tilePose.rotationDegrees))
+        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(animationFrame?.poseRotationDegrees ?: entity.tilePose.rotationDegrees))
         when (entity.tilePose) {
             MahjongTilePose.STANDING -> matrices.translate(0.0, MahjongTileEntity.TILE_HEIGHT / 2.0, 0.0)
             MahjongTilePose.FACE_UP -> matrices.translate(0.0, 0.0, -MahjongTileEntity.TILE_DEPTH / 2.0)
@@ -82,7 +103,7 @@ class MahjongTileEntityRenderer(
         val consumers = if (highlighted) vertexConsumers.withGlint() else vertexConsumers
         itemRenderer.renderItem(stack, ModelTransformationMode.HEAD, light, OverlayTexture.DEFAULT_UV, matrices, consumers, entity.world, entity.id)
         if (highlighted) {
-            // 遊戲內驗證時使用者反映單層光暈疊圖不夠明顯，額外疊一次「只有光暈、不含正常牌面」的
+            // 遊戲內驗證時發現單層光暈疊圖不夠明顯，額外疊一次「只有光暈、不含正常牌面」的
             // pass，讓同一個模型的光暈幾何再疊加一次（GLINT_TRANSPARENCY 是相加混合，疊兩次亮度會
             // 明顯提升），比單純換 solid 參數（改變的是光暈貼圖本身的縮放／滾動速度，不是強度）更
             // 直接有效，且不影響正常牌面只畫一次、不會有額外的不透明面覆寫。
@@ -245,14 +266,6 @@ class MahjongTileEntityRenderer(
         private const val LABEL_SCALE: Double = 0.004
     }
 }
-
-/** 轉成以局部 X 軸為基準的 renderer 旋轉角度。 */
-private val MahjongTilePose.rotationDegrees: Float
-    get() = when (this) {
-        MahjongTilePose.STANDING -> 0.0f
-        MahjongTilePose.FACE_UP -> 90.0f
-        MahjongTilePose.FACE_DOWN -> -90.0f
-    }
 
 /** 將標籤顏色語意值轉成 [TextRenderer.draw] 需要的不透明 ARGB 色碼。 */
 private fun TileLabelColor.toArgb(): Int = when (this) {
