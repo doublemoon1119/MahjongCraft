@@ -268,9 +268,18 @@ class MahjongTileEntityRenderer(
      * （[MahjongRuleModule.isHighlightedTile]，例如日麻寶牌）。自由放置的牌、或牌面對目前觀察者
      * 不可見（[stateStore] 查無對應快照）的管理中牌，一律回傳 `false`——不需要另外判斷保密，理由見
      * 類別 KDoc。
+     *
+     * 額外要求這張牌目前姿態不是 [MahjongTilePose.FACE_DOWN]、且沒有動畫正在播放中
+     * （`!entity.animating`）——伺服器端一算出手牌內容就會同步進快照，這張牌實際被玩家摸到、翻開之前
+     * entity 在畫面上都還蓋牌躺在牌山／發牌動畫途中，如果單純依快照是否解析出牌面就顯示光暈，玩家會在
+     * 開局發牌動畫翻牌之前就先看到寶牌發光，等於還沒翻牌就洩漏是不是寶牌——這是遊戲內實際發現的問題。
+     * 開局發牌動畫翻牌（`FabricMahjongPlayerAreaPresenter.scheduleDealFlipAnimation`）／未來摸牌動畫
+     * 播完後 `tilePose` 會變成 [MahjongTilePose.STANDING] 且 `animating` 歸零，光暈才會顯示；副露／牌河
+     * 攤開的 [MahjongTilePose.FACE_UP] 牌不受影響，本來就該一貫顯示光暈。
      */
     private fun MahjongTileEntity.isHighlighted(): Boolean {
         if (!managedByGame) return false
+        if (tilePose == MahjongTilePose.FACE_DOWN || animating) return false
         val tile = stateStore.findManagedTileSnapshot(uuid.toKotlinUuid())?.tile ?: return false
         val snapshot = stateStore.gameSnapshot ?: return false
         val module = moduleRegistry.getModule(snapshot.config)
