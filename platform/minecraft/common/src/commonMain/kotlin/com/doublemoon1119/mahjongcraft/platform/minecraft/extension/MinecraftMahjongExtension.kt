@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 /**
  * 第三方 Minecraft mod 在 MahjongCraft runtime 啟動前登記 Minecraft 專屬整合的共用契約。
  *
- * 與平台無關的 [com.doublemoon1119.mahjongcraft.extension.MahjongExtension] 分開定義，因為
+ * 與平台無關的 `com.doublemoon1119.mahjongcraft.extension.MahjongExtension` 分開定義，因為
  * [MinecraftTileAssetRegistry]／[AiStrategyDisplayNameRegistry] 屬於 Minecraft adapter 概念，不應
  * 出現在平台無關的 extension API。第三方類別若想同時登記規則層與 Minecraft 專屬整合，可以讓同一個
  * 類別同時實作兩個介面；loader adapter 會從既有 extension 發現結果中篩選出有實作此介面的部分，

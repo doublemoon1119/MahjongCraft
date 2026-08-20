@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
@@ -70,7 +71,7 @@ class ReachableMahjongTableResolver(
     }
 
     private companion object {
-        /** 方塊座標轉換為 16×16 chunk 座標的位移量，與 [com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation] 一致。 */
+        /** 方塊座標轉換為 16×16 chunk 座標的位移量，與 [TableLocation] 一致。 */
         const val CHUNK_COORDINATE_SHIFT: Int = 4
 
         /** 方塊中心的座標偏移。 */

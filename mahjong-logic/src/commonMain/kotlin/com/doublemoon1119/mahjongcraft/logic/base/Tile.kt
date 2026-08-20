@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.base
 
+import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
+
 /**
  * 定義麻將牌的基本模型。
  *
@@ -8,13 +10,12 @@ package com.doublemoon1119.mahjongcraft.logic.base
  * 一律以 [Extension] 表示。
  */
 sealed class Tile {
-
     /**
      * 代表由內建規則或第三方 extension 註冊的非共用牌種。
      *
      * 權威狀態只保存 [typeId]；實際張數、排序與特殊行為由目前規則解析，不由此值物件推論。
      *
-     * @property typeId 指向 runtime [com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry] 的穩定 ID。
+     * @property typeId 指向 runtime [TileTypeRegistry] 的穩定 ID。
      */
     data class Extension(val typeId: TileTypeId) : Tile()
 

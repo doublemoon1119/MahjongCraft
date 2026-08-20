@@ -7,11 +7,13 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
+import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -121,7 +123,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 建立該規則的初始動態桌況狀態。
      *
-     * 由 [com.doublemoon1119.mahjongcraft.logic.table.GameInitializer] 在開局時寫入 `TableState.dynamicRuleState`。
+     * 由 [GameInitializer] 在開局時寫入 `TableState.dynamicRuleState`。
      * 沒有動態狀態需求的規則可回傳 null。
      *
      * @return 該規則的初始 [DynamicRuleState]，若無則為 null。
@@ -131,7 +133,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 建立該規則的初始玩家規則狀態。
      *
-     * 由 [com.doublemoon1119.mahjongcraft.logic.table.GameInitializer] 在開局時寫入每位 `MahjongPlayer.playerRuleState`。
+     * 由 [GameInitializer] 在開局時寫入每位 `MahjongPlayer.playerRuleState`。
      * 沒有玩家規則狀態需求的規則可回傳 null。
      *
      * @return 該規則的初始 [PlayerRuleState]，若無則為 null。
@@ -154,7 +156,11 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @param discardResult 打出宣告牌的捨牌結果。
      * @return 套用宣告後的新玩家實例與新的動態規則狀態，若此規則不支援立直宣告則為 null。
      */
-    fun declareRiichi(tableState: TableState, player: MahjongPlayer, discardResult: Hand.DiscardResult): RiichiDeclarationResult?
+    fun declareRiichi(
+        tableState: TableState,
+        player: MahjongPlayer,
+        discardResult: Hand.DiscardResult,
+    ): RiichiDeclarationResult?
 
     /**
      * 因應「玩家摸牌」事件，套用規則特有的狀態清除。
@@ -255,8 +261,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 胡牌時，贏家收下場上供託（如立直棒）所增加的點數，以及收下後應套用的新動態桌況狀態。
      *
      * 不區分自摸／榮和／多家和——呼叫端決定「這次由誰收下」（自摸與單一贏家榮和是唯一贏家；
-     * 多家和則依頭跳順位由離放銃者最近的贏家收下，見
-     * [com.doublemoon1119.mahjongcraft.logic.table.TableState.nearestPlayerInTurnOrder]），
+     * 多家和則依頭跳順位由離放銃者最近的贏家收下，見 [TableState.nearestPlayerInTurnOrder]），
      * 這裡只負責算出「收下後供託剩多少、贏家因此多拿了多少點數」。
      *
      * 不支援供託機制的規則應回傳 null；即使場上目前沒有供託可收（例如立直棒數量為 0），
@@ -280,8 +285,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult?
 
     /**
-     * 多家和依 [MahjongRuleConfig.multiRonPolicy] 判定為流局
-     * （[com.doublemoon1119.mahjongcraft.logic.config.RonResolution.ABORTIVE_DRAW]）時，
+     * 多家和依 [MahjongRuleConfig.multiRonPolicy] 判定為流局（[RonResolution.ABORTIVE_DRAW]）時，
      * 該規則對應的具體流局原因。
      *
      * 不支援此流局類型的規則應回傳 null。

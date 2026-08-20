@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -27,15 +28,13 @@ import kotlin.uuid.Uuid
  * 不過 `LegalActionValidator` 只確認「打出某一張牌後可以聽牌」，並不知道玩家實際選了哪張牌，
  * 所以這裡還要另外用向聽數計算器驗證：打出 [tileId] 這張特定的牌之後，手牌是否仍然聽牌。
  *
- * 立直宣告實際造成的狀態變化（哪些欄位要改、改成什麼樣子）完全交給
- * [com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule.declareRiichi] 處理——
+ * 立直宣告實際造成的狀態變化（哪些欄位要改、改成什麼樣子）完全交給 [MahjongRuleModule.declareRiichi] 處理——
  * 這裡刻意不轉型成任何規則專屬的具體型別（如 `RiichiPlayerState`），否則會綁死在單一實作上，
  * 之後若有其他規則也想支援類似立直的宣告機制、卻使用自己的一套狀態型別，這裡就會誤判失敗。
  *
  * 立直宣告牌打出後，其他玩家是否有資格吃/碰/槓/榮和這張牌（含一炮多響判定為流局的情況）交給
  * [DiscardReactionResolver] 處理，與 [DiscardTileUseCase] 共用同一套邏輯。沒有人可以反應時，
- * 還會額外檢查是否構成四家立直
- * （[com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule.resolveSuuchaRiichi]）。
+ * 還會額外檢查是否構成四家立直（[MahjongRuleModule.resolveSuuchaRiichi]）。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與向聽數計算器。
@@ -64,10 +63,13 @@ class DeclareRiichiUseCase(
                 state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
                 state.players.none { it.id == playerId } ->
                     state to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
+
                 state.currentPlayer.id != playerId ->
                     state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
+
                 state.currentPlayer.hand.lastDrawn == null ->
                     state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Riichi))
+
                 else -> {
                     val module = moduleRegistry.getModule(state.config)
                     val legalActions = module.createLegalActionValidator().getLegalActions(
@@ -78,23 +80,47 @@ class DeclareRiichiUseCase(
                         incomingTile = null,
                     )
                     if (legalActions.none { it is GameAction.Riichi }) {
-                        return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Riichi))
+                        return@update state to Outcome.Error(
+                            GameError.IllegalAction(
+                                playerId,
+                                gameId,
+                                GameAction.Riichi,
+                            ),
+                        )
                     }
 
                     val discardResult = state.currentPlayer.hand.discardById(tileId)
-                        ?: return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Discard(tileId)))
+                        ?: return@update state to Outcome.Error(
+                            GameError.IllegalAction(
+                                playerId,
+                                gameId,
+                                GameAction.Discard(tileId),
+                            ),
+                        )
 
                     val postDiscardHand = discardResult.hand
                     val shantenResult = module.createShantenCalculator()
                         .calculate(Hand(tiles = postDiscardHand.tiles, melds = postDiscardHand.melds))
                     if (shantenResult !is ShantenResult.Tenpai) {
-                        return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Riichi))
+                        return@update state to Outcome.Error(
+                            GameError.IllegalAction(
+                                playerId,
+                                gameId,
+                                GameAction.Riichi,
+                            ),
+                        )
                     }
 
                     // 這個規則不支援立直宣告時 declareRiichi 回傳 null。理論上不會走到這裡，
                     // 因為上面的 legalActions 檢查已經先擋下了；僅作防呆。
                     val declaration = module.declareRiichi(state, state.currentPlayer, discardResult)
-                        ?: return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Riichi))
+                        ?: return@update state to Outcome.Error(
+                            GameError.IllegalAction(
+                                playerId,
+                                gameId,
+                                GameAction.Riichi,
+                            ),
+                        )
 
                     val updatedPlayer = declaration.player
                         .recordAction(GameAction.Riichi)
@@ -105,18 +131,31 @@ class DeclareRiichiUseCase(
                         dynamicRuleState = declaration.dynamicRuleState,
                     )
 
-                    val resolved = DiscardReactionResolver.resolve(state, stateAfterDeclaration, module, playerId, discardResult.tile)
+                    val resolved = DiscardReactionResolver.resolve(
+                        state,
+                        stateAfterDeclaration,
+                        module,
+                        playerId,
+                        discardResult.tile,
+                    )
 
                     // 沒有觸發一炮多響流局、也沒有人可反應時，額外檢查是否構成四家立直。
-                    val suuchaReason = if (resolved.abortiveDrawReason == null && resolved.tableState.pendingReaction == null) {
-                        module.resolveSuuchaRiichi(resolved.tableState)
-                    } else {
-                        null
-                    }
+                    val suuchaReason =
+                        if (resolved.abortiveDrawReason == null && resolved.tableState.pendingReaction == null) {
+                            module.resolveSuuchaRiichi(resolved.tableState)
+                        } else {
+                            null
+                        }
                     val finalResult = if (suuchaReason != null) {
                         resolved.copy(
                             tableState = resolved.tableState.copy(
-                                players = resolved.tableState.players.map { it.recordAction(GameAction.ExhaustiveDraw(suuchaReason)) },
+                                players = resolved.tableState.players.map {
+                                    it.recordAction(
+                                        GameAction.ExhaustiveDraw(
+                                            suuchaReason,
+                                        ),
+                                    )
+                                },
                             ),
                             abortiveDrawReason = suuchaReason,
                         )

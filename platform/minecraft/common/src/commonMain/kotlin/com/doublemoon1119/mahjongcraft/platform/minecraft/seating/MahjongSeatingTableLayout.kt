@@ -1,8 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.seating
 
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
+import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout.SEAT_DISTANCE
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import kotlin.math.atan2
 
 /** 局部水平向量，沿用 [MahjongTableSide]／[MahjongTableFacing] 兩段式旋轉合成。 */
@@ -30,12 +33,11 @@ data class MahjongSeatPlacement(
  * 桌子四個側邊中點，離中心固定 [SEAT_DISTANCE] 格。座位依 index 0～3 順時針排列（[seatIndexToTableSide]
  * 的方向，跟牌牆自身組裝用的逆時針 `SIDE_ORDER` 是刻意不同的兩套獨立方向，見該函式 KDoc）——這是
  * 為了讓回合順序中的下一位玩家（`TableState.getNextPlayer()`，下家）physically 站在目前玩家的右手邊，
- * 符合真實麻將慣例。座位 index 對應
- * [com.doublemoon1119.mahjongcraft.logic.table.TableState.players] 固定不變的座位順序——
+ * 符合真實麻將慣例。座位 index 對應 [TableState.players] 固定不變的座位順序——
  * `TableState.advanceRound()` 只轉動每個 index 位置玩家的自風，不重排 index，因此這裡的座位 index
  * 必須跟規則層的玩家座位 index 一一對應，順序不能任意調整。
  *
- * 旋轉合成與 [com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.handPlacement]
+ * 旋轉合成與 [MahjongTileTableLayout.handPlacement]
  * 完全同一套慣例（同樣以 [seatIndexToTableSide] 把座位 index 換算局部側面，不經過莊家相對旋轉，只套用
  * 桌子世界朝向）——先前這裡漏了套用 [MahjongTableFacing] 這一段，導致桌子朝向不是預設值時，玩家實際
  * 站立的座位跟同一 seatIndex 手牌呈現的位置對不上（曾實際造成手牌出現在對面玩家座位的錯位）；修好後
@@ -43,7 +45,12 @@ data class MahjongSeatPlacement(
  */
 object MahjongSeatingTableLayout {
     /** 依 controller 世界座標與桌子世界朝向，算出四個座位的座標與面向桌子中心的朝向，依 index 逆時針排列。 */
-    fun seatPlacements(controllerX: Int, controllerY: Int, controllerZ: Int, tableFacing: MahjongTableFacing): List<MahjongSeatPlacement> {
+    fun seatPlacements(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+    ): List<MahjongSeatPlacement> {
         val centerX = controllerX + BLOCK_CENTER
         val centerZ = controllerZ + BLOCK_CENTER
         return (0 until SEAT_COUNT).map { seatIndex ->
@@ -72,7 +79,7 @@ object MahjongSeatingTableLayout {
         return Math.toDegrees(atan2(-dx, dz)).toFloat()
     }
 
-    /** 將局部南側基準旋轉至指定側面，與 [com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout] 同一套慣例。 */
+    /** 將局部南側基準旋轉至指定側面，與 [MahjongTileTableLayout] 同一套慣例。 */
     private fun rotateForSide(vector: SeatVector, side: MahjongTableSide): SeatVector = when (side) {
         MahjongTableSide.SOUTH -> vector
         MahjongTableSide.WEST -> SeatVector(-vector.z, vector.x)

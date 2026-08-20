@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.module
 
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
 /**
@@ -10,9 +12,8 @@ import kotlin.uuid.Uuid
  * 而非某個地區規則自己的 package 底下（與 [RiichiDeclarationResult] 同理）。
  *
  * 與 [RiichiDeclarationResult] 不同的是，這裡直接以真實玩家 Uuid 作為 key，而非相對方位——
- * 因為胡牌結算發生在胡牌當下，呼叫端本來就已經拿著完整的
- * [com.doublemoon1119.mahjongcraft.logic.table.TableState]，不需要像
- * [com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability] 那樣延遲到結算時才解析身分。
+ * 因為胡牌結算發生在胡牌當下，呼叫端本來就已經拿著完整的 [TableState]，
+ * 不需要像 [PaoLiability] 那樣延遲到結算時才解析身分。
  *
  * @property totalGained 贏家本次胡牌實際獲得的點數總和，恆等於 [paymentsByPlayerId] 所有金額的加總。
  * @property paymentsByPlayerId 本次須支付點數的玩家 Uuid 對應其應付金額。只包含實際須付款的玩家

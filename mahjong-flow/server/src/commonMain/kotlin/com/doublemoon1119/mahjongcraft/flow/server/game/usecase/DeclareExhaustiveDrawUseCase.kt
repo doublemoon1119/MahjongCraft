@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
@@ -26,7 +27,7 @@ import kotlin.uuid.Uuid
  * 呼叫前應確認牌山確實已經摸盡。
  *
  * 聽牌判定、流局滿貫偵測與點數換算、不聽罰符拆分等規則相關的計算完全交給
- * [com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule.declareExhaustiveDraw]
+ * [MahjongRuleModule.declareExhaustiveDraw]
  * 處理——這裡刻意不轉型成任何規則專屬的具體型別，理由與 [DeclareTsumoUseCase] 相同。
  *
  * 只把 [GameAction.ExhaustiveDraw] 記錄進聽牌玩家（含流局滿貫成立者）的 `actionHistory`，

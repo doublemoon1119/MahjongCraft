@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
@@ -9,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
@@ -21,8 +23,8 @@ import kotlin.uuid.Uuid
  * 連莊/過莊、開下一局的實例化用例。
  *
  * 這是「連莊/過莊/開下一局」系列子項的最後一塊：把前面各自獨立寫好、測好的
- * [com.doublemoon1119.mahjongcraft.logic.table.TableState.advanceRound]（連莊/過莊判定與局數/
- * 本場數/場風推進）與 [GameInitializer.startNextRound]（開下一局的新初始化路徑）串起來，
+ * [TableState.advanceRound]（連莊/過莊判定與局數/本場數/場風推進）
+ * 與 [GameInitializer.startNextRound]（開下一局的新初始化路徑）串起來，
  * 做成一個真正會寫回 [GameRepository] 的 use case。
  *
  * 由誰、在什麼時機呼叫本用例（例如接在 [DeclareTsumoUseCase]/[RespondToDiscardUseCase] 成功之後
@@ -38,8 +40,8 @@ import kotlin.uuid.Uuid
  * 或流局時是否聽牌」。九種九牌等途中流局的連莊依據（莊家固定連莊，不需要判斷聽牌與否）留給
  * 對應子項擴充。
  *
- * 整場對局已結束（[com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult.isMatchOver]）
- * 時，本用例把這個事實記到 [com.doublemoon1119.mahjongcraft.flow.common.game.model.Game.isMatchOver]，
+ * 整場對局已結束（[RoundAdvancementResult.isMatchOver]）
+ * 時，本用例把這個事實記到 [Game.isMatchOver]，
  * 並同步最終桌況快照、廣播 [GameAction.MatchEnded]（帶著最終分數的快照，供呼叫端／客戶端組出排名
  * 呈現）——但不會開新的一局，`TableState` 維持呼叫前的樣子不變；房間清理（把桌子從 Game 轉回 Room）
  * 留給呼叫端接著呼叫 `ReturnToRoomUseCase`，不在這裡處理。務必記下 `isMatchOver` 這個事實：
@@ -137,7 +139,13 @@ class AdvanceRoundUseCase(
         // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過
         advanceOutcome.diceRoll?.let { diceRoll ->
             val dealerSeatIndex = newState.players.indexOfFirst { player -> player.id == newDealerId }
-            presentationPublisher.publishDiceRoll(gameId, diceRoll, dealerSeatIndex, newState.roundNumber, newState.comboCount)
+            presentationPublisher.publishDiceRoll(
+                gameId,
+                diceRoll,
+                dealerSeatIndex,
+                newState.roundNumber,
+                newState.comboCount,
+            )
             // 廣播擲骰點數本身；跟第 3 步的 RoundStarted 是兩則獨立事件，理由同 StartGameUseCase。
             newState.players.forEach { player ->
                 eventPublisher.publish(gameId, player.id, newDealerId, GameAction.DiceRolled(diceRoll))
@@ -150,7 +158,9 @@ class AdvanceRoundUseCase(
             presentationPublisher.publishWallStructure(gameId, structure, dealerSeatIndex, deadWallTileIds, diceCount)
         }
         run {
-            val handsBySeatIndex = newState.players.mapIndexed { seatIndex, player -> seatIndex to player.hand.tiles.map { tile -> tile.id } }.toMap()
+            val handsBySeatIndex =
+                newState.players.mapIndexed { seatIndex, player -> seatIndex to player.hand.tiles.map { tile -> tile.id } }
+                    .toMap()
             val diceCount = advanceOutcome.diceRoll?.values?.size ?: 0
             presentationPublisher.publishHandTiles(gameId, handsBySeatIndex, diceCount)
         }

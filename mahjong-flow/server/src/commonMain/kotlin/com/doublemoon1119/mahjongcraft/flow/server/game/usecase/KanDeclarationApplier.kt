@@ -1,10 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
@@ -14,16 +16,14 @@ import kotlin.uuid.Uuid
  * 從 [DeclareKanUseCase] 抽出的共用邏輯：無人可搶槓時直接套用、以及有人可搶槓但全員選擇放過
  * （[RespondToChankanUseCase]）時「補做」原本被暫緩的套用，兩處需要完全相同的一段邏輯，抽成
  * 共用物件避免重複。依序 `recordAction(kanAction)` → 補摸嶺上牌 → `recordAction(GameAction.Draw)`，
- * 讓 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueContextCalculator] 既有的
- * 嶺上開花偵測邏輯（依賴 `actionHistory` 最後兩筆是否恰為 `[Kan, Draw]`）能真正被觸發，並呼叫
- * `module.onMeldClaimed` 清除全場一發。
+ * 讓 [RiichiHandValueContextCalculator] 既有的嶺上開花偵測邏輯（依賴 `actionHistory` 最後兩筆是否恰為 `[Kan, Draw]`）能真正被觸發，
+ * 並呼叫 `module.onMeldClaimed` 清除全場一發。
  */
 internal object KanDeclarationApplier {
     /**
      * @property tableState 套用副露與嶺上摸牌後的新桌況；牌山恰好摸盡時（[rinshanTile] 為 null）
      *           與呼叫前的 [apply] 參數 `state` 內容相同，未套用任何變化。
-     * @property rinshanTile 補摸到的嶺上牌；牌山恰好摸盡時為 null，呼叫端此時應視為
-     *           [com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError.WallExhausted]。
+     * @property rinshanTile 補摸到的嶺上牌；牌山恰好摸盡時為 null，呼叫端此時應視為 [GameError.WallExhausted]。
      */
     data class Result(val tableState: TableState, val rinshanTile: IdentifiedTile?)
 

@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTileSnapshot
 import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
@@ -30,8 +31,7 @@ class ClientMahjongStateStore(
 
     /**
      * 依管理中麻將牌 entity UUID（等同 `IdentifiedTile.id`）索引的快照，隨每次 [gameSnapshot] 更新
-     * 一併重建，涵蓋牌牆、所有玩家的手牌（立牌＋剛摸到但尚未整理的牌）與牌河——管理中的
-     * [com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity] 渲染牌面時用這份
+     * 一併重建，涵蓋牌牆、所有玩家的手牌（立牌＋剛摸到但尚未整理的牌）與牌河——管理中的 [MahjongTileEntity] 渲染牌面時用這份
      * 索引查詢自己是否對目前觀察者可見，不逐 entity 掃描整份牌牆／手牌／牌河清單。
      */
     private var managedTileSnapshotsByTileId: Map<Uuid, IdentifiedTileSnapshot> = emptyMap()

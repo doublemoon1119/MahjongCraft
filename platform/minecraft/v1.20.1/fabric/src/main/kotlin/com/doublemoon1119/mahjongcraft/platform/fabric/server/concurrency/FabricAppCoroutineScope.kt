@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -63,9 +65,7 @@ class FabricAppCoroutineScope(
     /**
      * 建立使用平台預設 dispatcher 且彼此錯誤隔離的新 session context。
      *
-     * 掛上 [CoroutineExceptionHandler] 當作最後一道防線——個別呼叫端（例如
-     * [com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService]／
-     * [com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler]）
+     * 掛上 [CoroutineExceptionHandler] 當作最後一道防線——個別呼叫端（例如[MahjongTableGameActionService]／[FabricDecisionTimerScheduler]）
      * 已經在自己的呼叫路徑上攔截並記錄例外；這裡只處理任何遺漏、沒有各自 try/catch 的
      * `scope.launch { ... }`，避免例外完全不留 log 就讓協程靜默死掉。
      */

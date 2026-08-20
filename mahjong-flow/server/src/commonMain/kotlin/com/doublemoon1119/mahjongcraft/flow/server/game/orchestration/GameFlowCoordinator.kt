@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
@@ -115,7 +116,7 @@ class GameFlowCoordinator(
      * [driveAutomatedPlayers]）——只有需要在兩者之間插入自己動作的呼叫端才需要直接呼叫這個方法，
      * 呼叫完後仍須自行接著呼叫 [driveAutomatedPlayers]，否則 AI／強制自動操作玩家不會被推進。
      *
-     * 已進入強制自動操作（[com.doublemoon1119.mahjongcraft.flow.common.game.model.Game.forcedAutoPlayPlayerIds]）
+     * 已進入強制自動操作（[Game.forcedAutoPlayPlayerIds]）
      * 的玩家一律拒絕——跟 [invoke] 共用同一條守門檢查；[driveAutomatedPlayers] 內部呼叫的是私有的
      * `dispatchAndReconcile`，替 AI／強制自動操作玩家送出命令時不會經過這裡、不會撞到這條檢查。
      *
@@ -148,8 +149,7 @@ class GameFlowCoordinator(
      * 卡住會直接拋出例外，能被立即看見、定位。可由開局與逾時流程主動呼叫，確保沒有真人送出封包時
      * 仍能推進自動操作。
      *
-     * 由 [forcedAutoPlayDriver] 解析出的動作在送出前會先把該玩家從
-     * [com.doublemoon1119.mahjongcraft.flow.common.game.model.Game.forcedAutoPlayPlayerIds] 移除——
+     * 由 [forcedAutoPlayDriver] 解析出的動作在送出前會先把該玩家從[Game.forcedAutoPlayPlayerIds] 移除——
      * 強制自動操作只鎖住逾時當下那一次決策，不是整場對局；提前移除也讓緊接著呼叫的
      * [GameDecisionTimerManager.reconcile] 能立刻看到這位玩家重新是一般決策者，替他下一次決策
      * （例如緊接著要捨牌）建立帶有完整 `baseSeconds` 的新計時器，而不是繼續被排除在外。
@@ -279,6 +279,7 @@ class GameFlowCoordinator(
                 player.actionHistory.any { it is GameAction.Tsumo || it is GameAction.Ron || it is GameAction.ExhaustiveDraw }
             } == true
         }
+
         else -> false
     }
 

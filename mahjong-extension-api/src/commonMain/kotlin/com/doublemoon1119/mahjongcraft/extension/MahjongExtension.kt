@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.extension
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 
 /**
@@ -15,7 +16,7 @@ interface MahjongExtension {
     /** 第三方 extension 的穩定識別字串，用於診斷註冊錯誤。 */
     val id: String
 
-    /** 登記規則配置與 [com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule] factory。 */
+    /** 登記規則配置與 [MahjongRuleModule] factory。 */
     fun registerRuleModules(registry: MahjongModuleRegistry)
 
     /**

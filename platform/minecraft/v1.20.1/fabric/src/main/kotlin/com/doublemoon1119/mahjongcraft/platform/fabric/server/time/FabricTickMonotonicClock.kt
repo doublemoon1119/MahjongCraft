@@ -1,10 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.time
 
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
 import kotlinx.coroutines.DisposableHandle
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import org.koin.core.annotation.Single
-import java.util.PriorityQueue
+import java.util.*
 
 /**
  * [MonotonicClock] 的 Fabric 實作，以 server tick 計數換算毫秒數，而不是真實系統時間。
@@ -13,8 +14,7 @@ import java.util.PriorityQueue
  * 因此自然停止前進——這正是玩家決策計時器需要的語意：暫停期間不該算進思考時間。專用伺服器沒有
  * 這種暫停機制，tick 本來就會持續以正常速度前進，行為跟真實時間等價，不受影響。
  *
- * 額外提供 [scheduleAfter]：以同一份 tick 計數排定延遲工作，供
- * [ServerThreadCoroutineDispatcher][com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher]
+ * 額外提供 [scheduleAfter]：以同一份 tick 計數排定延遲工作，供 [ServerThreadCoroutineDispatcher]
  * 實作協程 `delay()` 使用，讓伺服器主執行緒上的延遲也一併具備暫停感知能力，不需要另外開一條跑真實
  * 時間的背景執行緒。
  */

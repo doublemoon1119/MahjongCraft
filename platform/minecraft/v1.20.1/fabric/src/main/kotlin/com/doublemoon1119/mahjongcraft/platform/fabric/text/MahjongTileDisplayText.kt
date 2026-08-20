@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.text
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.FabricPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -13,11 +15,10 @@ import net.minecraft.text.Text
  *
  * 放在 Fabric 模組（而非 `platform/minecraft/common`）——`net.minecraft.text.Text` 只在有實際
  * Minecraft 依賴的 loader 模組才看得到，`platform/minecraft/common` 刻意不依賴任何版本的 Minecraft，
- * 比照 [com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.FabricPlayerFeedbackPublisher]
- * 「共用模型在 common、實際組 Text 在 Fabric」的既有分工。
+ * 比照 [FabricPlayerFeedbackPublisher]「共用模型在 common、實際組 Text 在 Fabric」的既有分工。
  *
  * [Tile.Extension] 查 [displayNameRegistry]（內建日麻赤五已登記，第三方規則模組可自行登記自己的擴充
- * 牌種）；查不到時 fallback 顯示原始 [com.doublemoon1119.mahjongcraft.logic.base.TileTypeId] 字串。
+ * 牌種）；查不到時 fallback 顯示原始 [TileTypeId] 字串。
  *
  * 翻譯文字前面會依 [tileAssetRegistry] 解出的 asset key，查 [tileEmojiRegistry] 加上對應的牌面 emoji
  * 字元（要實際顯示成貼圖，還需要有人提供對應的 `assets/minecraft/font/default.json` bitmap

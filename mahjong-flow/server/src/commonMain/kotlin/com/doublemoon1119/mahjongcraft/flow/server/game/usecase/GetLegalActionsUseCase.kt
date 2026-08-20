@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
@@ -16,7 +17,7 @@ import kotlin.uuid.Uuid
  * `:mahjong-flow` 呼叫端（例如未來的 Minecraft GUI）取得目前玩家在當前情境下的合法動作清單，
  * 不需要直接依賴 `:mahjong-logic` 的規則型別自行判斷。
  *
- * 呼叫端只給 [gameId]/[playerId]，這裡會依 [com.doublemoon1119.mahjongcraft.logic.table.TableState]
+ * 呼叫端只給 [gameId]/[playerId]，這裡會依 [TableState]
  * 現況自動判斷屬於以下哪一種情境，並組出正確的 `sourceAction`/`sourceDirection`/`incomingTile` 參數：
  *
  * 1. 有資格搶槓、且尚未回應（`pendingChankan` 非 null）：比照 [RespondToChankanUseCase] 的既有慣例，

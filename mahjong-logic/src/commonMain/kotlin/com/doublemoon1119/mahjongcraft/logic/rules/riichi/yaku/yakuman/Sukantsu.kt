@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman
 
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
@@ -20,7 +21,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  * - 面子：1m 1m 1m 1m、9m 9m 9m 9m、5s 5s 5s 5s、發 發 發 發（暗槓）
  * - 雀頭：東 東
  *
- * @param handStructure 手牌結構（由 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer] 分割後的結果）。
+ * @param handStructure 手牌結構（由 [RiichiHandDecomposer] 分割後的結果）。
  * @return 四杠子役滿結果，若不符合則返回 null。
  */
 fun calculateSukantsu(

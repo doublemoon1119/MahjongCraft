@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
+import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -55,7 +56,7 @@ import kotlin.uuid.Uuid
  * 從沒有一個測試證明整條編排鏈路真的能把一整場牌局打完。`driveAutomatedPlayers` 先前的無限迴圈 bug
  * 正是在接近這種整合情境時才被發現的。
  *
- * 刻意用 [FakeAiStrategy]（見下方）而非 [com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy]：
+ * 刻意用 [FakeAiStrategy]（見下方）而非 [RandomAiStrategy]：
  * 這個測試關心的是「編排層撐不撐得住」，不是「AI 選得好不好」，用固定策略讓行為可預期、測試結果
  * 穩定重現，不需要處理隨機性帶來的不穩定。
  */
@@ -70,20 +71,49 @@ class FullMatchIntegrationTest {
         val presentationPublisher = FakeGamePresentationPublisher()
         val presentationBusyGate = FakeGamePresentationBusyGate()
         val router = GameActionRouter(
-            drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
-            discardTileUseCase = DiscardTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            drawTileUseCase = DrawTileUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                eventPublisher,
+                presentationPublisher,
+            ),
+            discardTileUseCase = DiscardTileUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                eventPublisher,
+                presentationPublisher,
+            ),
             declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
-            respondToDiscardUseCase = RespondToDiscardUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
-            respondToChankanUseCase = RespondToChankanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
-            declareKyuushuKyuuhaiUseCase = DeclareKyuushuKyuuhaiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
+            respondToDiscardUseCase = RespondToDiscardUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                eventPublisher,
+                presentationPublisher,
+            ),
+            respondToChankanUseCase = RespondToChankanUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                eventPublisher,
+            ),
+            declareKyuushuKyuuhaiUseCase = DeclareKyuushuKyuuhaiUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                eventPublisher,
+            ),
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = FakeAiStrategy.KEY).apply {
             register(FakeAiStrategy.KEY) { FakeAiStrategy() }
         }
-        val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl())
+        val aiTurnDriver =
+            AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl())
         val clock = MonotonicClockImpl()
         val decisionTimerManager = GameDecisionTimerManager(
             gameRepository = gameRepo,
@@ -95,13 +125,34 @@ class FullMatchIntegrationTest {
             gameActionRouter = router,
             gameRepository = gameRepo,
             moduleRegistry = moduleRegistry,
-            declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
-            declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
-            advanceRoundUseCase = AdvanceRoundUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                eventPublisher,
+            ),
+            declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                eventPublisher,
+            ),
+            advanceRoundUseCase = AdvanceRoundUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                eventPublisher,
+                presentationPublisher,
+            ),
             // FakeGameRepository 獨立於 AuthoritativeStateStore，這裡的 ReturnToRoomUseCase 接不到
             // 同一份對局資料，只是滿足建構子的無害 no-op——本測試關心的是編排層撐不撐得住整場對局，
             // 不是 Game → Room 轉移本身。
-            returnToRoomUseCase = ReturnToRoomUseCase(AuthoritativeStateStore(), FakeRoomSnapshotRepository(), FakeRoomEventPublisher(), presentationPublisher),
+            returnToRoomUseCase = ReturnToRoomUseCase(
+                AuthoritativeStateStore(),
+                FakeRoomSnapshotRepository(),
+                FakeRoomEventPublisher(),
+                presentationPublisher,
+            ),
             aiTurnDriver = aiTurnDriver,
             forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo),
             decisionTimerManager = decisionTimerManager,
@@ -167,10 +218,16 @@ class FullMatchIntegrationTest {
 
         override suspend fun decide(context: AiDecisionContext): GameCommand = when (context.phase) {
             AiDecisionPhase.RespondingToDiscard ->
-                GameCommand.RespondToDiscard(context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass)
+                GameCommand.RespondToDiscard(
+                    context.legalActions.firstOrNull { it is GameAction.Ron }
+                        ?: GameAction.Pass,
+                )
 
             AiDecisionPhase.RespondingToChankan ->
-                GameCommand.RespondToChankan(context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass)
+                GameCommand.RespondToChankan(
+                    context.legalActions.firstOrNull { it is GameAction.Ron }
+                        ?: GameAction.Pass,
+                )
 
             AiDecisionPhase.OwnTurn -> {
                 if (context.legalActions.contains(GameAction.Tsumo)) {

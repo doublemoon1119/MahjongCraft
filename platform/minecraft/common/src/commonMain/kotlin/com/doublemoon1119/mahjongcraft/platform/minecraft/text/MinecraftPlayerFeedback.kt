@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 
 /**
@@ -210,8 +211,8 @@ sealed interface MinecraftPlayerFeedback {
      * @property turnStatus 目前是否輪到自己／有資格回應／純粹等待，決定 [legalActions] 為空時要顯示
      *   哪一種提示（例如區分「輪到你但沒有特殊動作」與「還沒輪到你」，避免誤導玩家以為隨時都能
      *   `discard`）。
-     * @property legalActions 目前可執行的特殊動作清單（不含永遠合法的捨牌），與
-     *   [com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator] 既有的「空清單不代表
+     * @property legalActions 目前可執行的特殊動作清單（不含永遠合法的捨牌），
+     *   與 [LegalActionValidator] 既有的「空清單不代表
      *   不能捨牌」慣例一致；每個項目額外帶上該動作涉及的牌面（可能為 null），且與
      *   `/mahjongcraft game action` 指令 Tab 補全候選項目使用同一份查詢結果、同一個順序。
      */

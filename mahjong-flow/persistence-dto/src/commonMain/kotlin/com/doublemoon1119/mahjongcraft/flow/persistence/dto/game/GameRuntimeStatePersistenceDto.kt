@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.state.AuthoritativeStatePersistenceDto
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
@@ -11,7 +12,7 @@ import kotlin.uuid.Uuid
  * @property forcedAutoPlayPlayerIds 已進入強制自動操作的玩家 UUID 字串集合。
  * @property isMatchOver 整場對局是否已結束，見 [Game.isMatchOver]。
  * @property hostId 開局時的房主 UUID 字串，見 [Game.hostId]；早於此欄位新增的既有存檔沒有這筆資料，
- *   還原時退回第一位玩家（見 [com.doublemoon1119.mahjongcraft.flow.persistence.dto.state.AuthoritativeStatePersistenceDto]）。
+ *   還原時退回第一位玩家（見 [AuthoritativeStatePersistenceDto]）。
  */
 @Serializable
 data class GameRuntimeStatePersistenceDto(

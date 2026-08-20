@@ -45,7 +45,7 @@ interface MahjongRuleConfig {
  *
  * 供各規則配置的實作類別於建構時（`init` 區塊）呼叫，確保配置數值落在合理範圍內，
  * 避免非法數值（例如來自反序列化的網路封包或存檔）在建構當下就未被攔截，
- * 進而在後續的房間人數判斷（如 [com.doublemoon1119.mahjongcraft.flow.common.room.model.Room]）中產生不可預期的行為。
+ * 進而在後續的房間人數判斷（如 `com.doublemoon1119.mahjongcraft.flow.common.room.model.Room`）中產生不可預期的行為。
  *
  * @throws IllegalArgumentException 當任一數值不符合基本不變量時拋出。
  */

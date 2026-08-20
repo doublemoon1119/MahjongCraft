@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
@@ -52,7 +53,8 @@ class DiscardTileUseCaseTest {
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
-        val useCase = DiscardTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher)
+        val useCase =
+            DiscardTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher)
     }
 
     private val drawnTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
@@ -128,7 +130,7 @@ class DiscardTileUseCaseTest {
 
     /**
      * 驗證已宣告立直的玩家後續再捨牌時，牌河更新呈現的側身標記仍正確指向較早的立直宣告牌
-     * （[com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile.sidewaysMarkedTileId]
+     * （[SidewaysMarkedDiscardPile.sidewaysMarkedTileId]
      * 掃描整個牌河推導，不受這次捨牌影響）。
      */
     @Test
@@ -350,11 +352,18 @@ class DiscardTileUseCaseTest {
 
         val newState = fixtures.gameRepo.getTableState(gameId)
         assertNotNull(newState)
-        assertNull(newState.pendingReaction, "The hand already ended via the abortive draw; no reaction window should open, not even for ponPlayer.")
+        assertNull(
+            newState.pendingReaction,
+            "The hand already ended via the abortive draw; no reaction window should open, not even for ponPlayer.",
+        )
         assertEquals(0, newState.currentPlayerIndex, "Turn advancement is left to AdvanceRoundUseCase.")
         val expectedAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)
         newState.players.forEach { player ->
-            assertEquals(expectedAction, player.actionHistory.last(), "Every player should have ExhaustiveDraw recorded.")
+            assertEquals(
+                expectedAction,
+                player.actionHistory.last(),
+                "Every player should have ExhaustiveDraw recorded.",
+            )
             assertEquals(25000, player.score, "An abortive draw should not exchange any points.")
         }
     }
@@ -844,9 +853,12 @@ class DiscardTileUseCaseTest {
         val fixtures = Fixtures()
         val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val alreadyDiscardedEast = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
-        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, discardPile = alreadyDiscardedEast).copy(score = 25000)
-        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, discardPile = alreadyDiscardedEast).copy(score = 25000)
-        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, discardPile = alreadyDiscardedEast).copy(score = 25000)
+        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, discardPile = alreadyDiscardedEast)
+            .copy(score = 25000)
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, discardPile = alreadyDiscardedEast)
+            .copy(score = 25000)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, discardPile = alreadyDiscardedEast)
+            .copy(score = 25000)
         val north = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
             initialSeat = Wind.NORTH,

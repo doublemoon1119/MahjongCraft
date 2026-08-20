@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
@@ -30,7 +31,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  * - 東南西北各一個刻子（4 × 3 = 12 張）
  * - 單張任何非風牌（1 張）
  *
- * @param handStructure 手牌結構（由 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer] 分割後的結果）。
+ * @param handStructure 手牌結構（由 [RiichiHandDecomposer] 分割後的結果）。
  * @return 小四喜，大四喜結果，若不符合則返回 null。
  */
 fun calculateSuushii(

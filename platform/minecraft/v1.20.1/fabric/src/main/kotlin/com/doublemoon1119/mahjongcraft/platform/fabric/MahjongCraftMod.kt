@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftClientApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftServerApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
+import com.doublemoon1119.mahjongcraft.platform.fabric.network.C2SChannel
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
@@ -154,6 +155,7 @@ class MahjongCraftMod : ModInitializer {
                     logger.info("Loaded server config from {}", configManager.path)
                 }
             }
+
             is MinecraftServerConfigUpdateResult.Failure -> {
                 mahjongTileCollisionService.applyToLoaded(server, MinecraftServerConfig())
                 logger.warn("Using built-in MahjongCraft server config defaults because loading failed")
@@ -173,10 +175,10 @@ class MahjongCraftMod : ModInitializer {
     }
 
     /**
-     * 接收端跑在網路執行緒（見 [com.doublemoon1119.mahjongcraft.platform.fabric.network.C2SChannel]），
+     * 接收端跑在網路執行緒（見 [C2SChannel]），
      * `registerServerReceiver` 已經把 [envelope] 解碼、丟回伺服器執行緒；這裡再用 [AppCoroutineScope]
      * 啟動協程呼叫 [GameFlowCoordinator]（`suspend` 函式），不阻塞伺服器主執行緒。玩家身分一律用
-     * 連線本身的 [net.minecraft.server.network.ServerPlayerEntity.getUuid]，不信任封包內容宣稱的身分。
+     * 連線本身的 [ServerPlayerEntity.getUuid]，不信任封包內容宣稱的身分。
      */
     private fun registerGameCommandReceiver(koin: Koin) {
         val json = koin.get<Json>()

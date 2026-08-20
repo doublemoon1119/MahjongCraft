@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.dice
 
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import kotlin.uuid.Uuid
 
 /** 麻將桌 controller 的世界水平朝向；避免共用 layout 依賴特定 Minecraft 版本的 Direction。 */
@@ -47,12 +49,10 @@ data class MahjongDiceTablePlacement(
 
 /**
  * 把座位 index 換算成桌子局部側面：index 0 固定對應局部南側，之後依序旋轉。任何需要「某位座位玩家的
- * 局部側面」的呈現層計算（骰子投入側、座位站立位置、手牌／摸牌位／牌河座位方向、[wallPlacement][
- * com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.wallPlacement] 的
+ * 局部側面」的呈現層計算（骰子投入側、座位站立位置、手牌／摸牌位／牌河座位方向、[MahjongTileTableLayout.wallPlacement] 的
  * `dealerSeatIndex` 錨點）都共用這個函式，不各自重複定義。
  *
- * 這裡採用 SOUTH→EAST→NORTH→WEST（順時針），刻意跟
- * [MahjongTileTableLayout][com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout]
+ * 這裡採用 SOUTH→EAST→NORTH→WEST（順時針），刻意跟 [MahjongTileTableLayout]
  * 內部 `SIDE_ORDER`／`advance`／`localWallVector` 使用的 SOUTH→WEST→NORTH→EAST（逆時針）**不是同一個
  * 方向**——這兩者過去被誤以為必須共用同一套旋轉順序，因而耦合修改了三次，三次都在牌牆密合度或墩的
  * 左右手方向上被使用者實際遊玩截圖推翻（詳見專案記憶 `seat-direction-ccw-fix`）。實際上這是兩個各自
@@ -63,8 +63,7 @@ data class MahjongDiceTablePlacement(
  *   跟這裡的 `seatIndexToTableSide` 選哪個方向、從哪個側面開始編號完全無關（`advance` 只是把
  *   `SIDE_ORDER` 這個固定環從任意起點開始走，起點在哪裡不影響環本身密不密合、左右手對不對）。
  * - **玩家（連同手牌／摸牌位／牌河，因為這些本來就該跟著玩家站的位置走）該站在哪個物理側面**：只取決於
- *   這裡的 `seatIndexToTableSide`，需要滿足「回合順序中的下一位玩家（[TableState.getNextPlayer][
- *   com.doublemoon1119.mahjongcraft.logic.table.TableState.getNextPlayer]，即下家）物理站位在目前
+ *   這裡的 `seatIndexToTableSide`，需要滿足「回合順序中的下一位玩家（[TableState.getNextPlayer]，即下家）物理站位在目前
  *   玩家的右手邊」這個真實麻將慣例，這件事跟牌牆內部怎麼組裝完全無關。
  *
  * 因此這裡改成順時針（`seatIndex + 1` 落在右手邊），[MahjongTileTableLayout] 的 `SIDE_ORDER`／
@@ -120,7 +119,7 @@ object MahjongDiceTableLayout {
      * 依骰子數量取得該組 variant 內最大的 [MahjongDiceTablePlacement.startDelayTicks]——所有 variant
      * 對同一顆骰子（依丟出順序）的延遲皆相同，只有落點座標不同，取任一組 variant 即可。用於呼叫端
      * 計算「最後一顆骰子開始動畫」到「整組擲骰動畫全部結束」所需的總 tick 數
-     * （= 這個值 + [com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec.DEFAULT_DURATION_TICKS]）。
+     * （= 這個值 + [DiceRollAnimationSpec.DEFAULT_DURATION_TICKS]）。
      */
     fun maxStartDelayTicks(diceCount: Int): Int = variantsFor(diceCount).first().maxOf { it.startDelayTicks }
 
@@ -206,9 +205,25 @@ object MahjongDiceTableLayout {
 
     /** 由局部南側投入的四組三骰安全位置。 */
     private val THREE_DICE_VARIANTS: List<List<MahjongDiceTablePlacement>> = listOf(
-        listOf(placement(-0.25, -0.10, -0.22, 0.64, 0.74, 0), placement(0.02, 0.18, 0.02, 0.70, 0.80, 2), placement(0.27, -0.08, 0.24, 0.66, 0.76, 4)),
-        listOf(placement(-0.26, 0.16, -0.25, 0.69, 0.79, 0), placement(-0.02, -0.16, 0.00, 0.63, 0.72, 2), placement(0.25, 0.11, 0.23, 0.67, 0.77, 4)),
-        listOf(placement(-0.29, -0.02, -0.18, 0.66, 0.76, 0), placement(0.00, 0.22, 0.04, 0.71, 0.81, 2), placement(0.23, -0.18, 0.27, 0.62, 0.71, 4)),
-        listOf(placement(-0.20, -0.20, -0.27, 0.63, 0.73, 0), placement(-0.03, 0.12, 0.00, 0.68, 0.78, 2), placement(0.28, 0.00, 0.25, 0.70, 0.80, 4)),
+        listOf(
+            placement(-0.25, -0.10, -0.22, 0.64, 0.74, 0),
+            placement(0.02, 0.18, 0.02, 0.70, 0.80, 2),
+            placement(0.27, -0.08, 0.24, 0.66, 0.76, 4),
+        ),
+        listOf(
+            placement(-0.26, 0.16, -0.25, 0.69, 0.79, 0),
+            placement(-0.02, -0.16, 0.00, 0.63, 0.72, 2),
+            placement(0.25, 0.11, 0.23, 0.67, 0.77, 4),
+        ),
+        listOf(
+            placement(-0.29, -0.02, -0.18, 0.66, 0.76, 0),
+            placement(0.00, 0.22, 0.04, 0.71, 0.81, 2),
+            placement(0.23, -0.18, 0.27, 0.62, 0.71, 4),
+        ),
+        listOf(
+            placement(-0.20, -0.20, -0.27, 0.63, 0.73, 0),
+            placement(-0.03, 0.12, 0.00, 0.68, 0.78, 2),
+            placement(0.28, 0.00, 0.25, 0.70, 0.80, 4),
+        ),
     )
 }

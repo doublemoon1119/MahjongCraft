@@ -13,14 +13,14 @@ import kotlin.uuid.Uuid
  * @property flowConfig 不影響麻將規則的流程與觀看設定。
  * @property remainingReserveMillisByPlayerId 每位玩家在整場遊戲中尚未使用的保留思考時間毫秒數。
  * @property forcedAutoPlayPlayerIds 已耗盡思考時間、目前這一次決策必須由伺服器自動操作的玩家。只鎖住
- *   逾時當下那一次決策——[com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator]
+ *   逾時當下那一次決策——`com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator`
  *   每次替這裡的玩家送出自動命令後就會立即移除，玩家的下一次決策仍會拿到自己完整的
  *   `baseSeconds`，不會被永久接管。
  * @property isMatchOver 整場對局是否已依規則的 `GameLength` 結束（見
- *   [com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase]）。一旦成立，
+ *   `com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase`）。一旦成立，
  *   `tableState` 維持結束當下的樣子不再變動；`AiTurnDriver`／`ForcedAutoPlayDriver` 都會檢查這個
  *   欄位並提前跳過，避免對已經沒有牌可摸的桌況重複嘗試摸牌、重複觸發流局結算。
- * @property hostId 開局時的房主 Uuid，取自原本 `Room.hostId`——[com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase]
+ * @property hostId 開局時的房主 Uuid，取自原本 `Room.hostId`——`com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase`
  *   把 Room 轉換成 Game 後，房主身分不再能從 `Room` 讀出，保留在這裡讓對局結束轉回 Room
  *   （見 `ReturnToRoomUseCase`）時能還原同一位房主，預設值取第一位玩家僅供未指定房主的測試情境使用；
  *   `tableState` 沒有任何玩家時（同樣僅見於測試情境）退回隨機值，不受下方驗證約束。

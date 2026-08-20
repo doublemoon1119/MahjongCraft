@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import org.koin.core.annotation.Factory
@@ -9,7 +10,7 @@ import kotlin.uuid.Uuid
 /**
  * 替房間內既有 AI 玩家更換策略的應用層用例。
  *
- * 只更新 [com.doublemoon1119.mahjongcraft.flow.common.room.model.Room.aiPlayerStrategyKeys]，不影響
+ * 只更新 [Room.aiPlayerStrategyKeys]，不影響
  * 成員清單或準備狀態，因此不需要同步房間快照或發送房間通知——快照模型本來就不包含策略 key，其他
  * 房間成員也無從得知或需要得知 AI 的策略設定。
  *

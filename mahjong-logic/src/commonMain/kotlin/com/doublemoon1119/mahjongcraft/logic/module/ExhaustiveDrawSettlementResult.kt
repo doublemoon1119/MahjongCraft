@@ -1,13 +1,13 @@
 package com.doublemoon1119.mahjongcraft.logic.module
 
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import kotlin.uuid.Uuid
 
 /**
  * [MahjongRuleModule.declareExhaustiveDraw] 計算一般流局結算後的結果。
  *
- * @property reason 本次流局的具體原因（由規則模組自行決定其具體型別，如
- *   [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason.Normal]）。
+ * @property reason 本次流局的具體原因（由規則模組自行決定其具體型別，如 [RiichiExhaustiveDrawReason.Normal]）。
  * @property tenpaiPlayerIds 聽牌的玩家 Uuid 集合。以自摸式點數結算的玩家（如日麻的流局滿貫成立者）
  *   視為聽牌，一併包含在內（見 [stickPotCollectorPlayerIds]），供呼叫端記錄連莊依據使用。
  * @property stickPotCollectorPlayerIds 本次流局中應收下場上供託（如立直棒）的玩家 Uuid 集合，

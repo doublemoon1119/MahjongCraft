@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.fabric.network.S2CChannel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import kotlinx.serialization.json.Json
 import net.minecraft.client.gui.DrawContext
@@ -55,7 +56,7 @@ class GameConfigScreen(
     override fun shouldPause(): Boolean = false
 
     private companion object {
-        /** 遠超伺服器端 payload 上限（[com.doublemoon1119.mahjongcraft.platform.fabric.network.S2CChannel]
+        /** 遠超伺服器端 payload 上限（[S2CChannel]
          * 同一個常數），文字框本身不應該是這裡的瓶頸。 */
         const val MAX_CONFIG_LENGTH: Int = 1 shl 16
     }

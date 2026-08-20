@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
@@ -16,12 +17,10 @@ import kotlin.uuid.Uuid
  * 「捨牌前套用的規則特有狀態變化」不同（前者單純捨牌；後者還套用立直宣告的玩家/動態狀態）之外，
  * 捨牌後「其他玩家能不能反應這張牌」的計算完全相同，不應該各自重寫一份。
  *
- * 一炮多響（同一張捨牌同時被多位玩家榮和）依 [com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy]
- * 決定實際開放給誰：恰有 2 人可榮和時查
- * [com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy.doubleRonResolution]，3 人（含）以上
- * 則查 [com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy.tripleRonResolution]——
+ * 一炮多響（同一張捨牌同時被多位玩家榮和）依 [MultiRonPolicy] 決定實際開放給誰：恰有 2 人可榮和時查
+ * [MultiRonPolicy.doubleRonResolution]，3 人（含）以上則查 [MultiRonPolicy.tripleRonResolution]——
  * [RonResolution.ALL_WINNERS] 全部開放；[RonResolution.NEAREST_WINNER] 只開放依
- * [com.doublemoon1119.mahjongcraft.logic.table.TableState.nearestPlayerInTurnOrder] 判定、
+ * [TableState.nearestPlayerInTurnOrder] 判定、
  * 順位最接近放銃者下家的那一位（頭跳）；[RonResolution.ABORTIVE_DRAW] 這張捨牌會讓本局直接結束
  * （途中流局），吃/碰/槓資格一併作廢、不開反應視窗，把 [GameAction.ExhaustiveDraw] 記錄進全員
  * 的 `actionHistory`，不結算任何點數（供託延續到下一局）。
@@ -79,6 +78,7 @@ internal object DiscardReactionResolver {
             null, RonResolution.ALL_WINNERS -> ronEligiblePlayerIds
             RonResolution.NEAREST_WINNER ->
                 setOf(stateAfterDiscard.nearestPlayerInTurnOrder(discarderId, ronEligiblePlayerIds))
+
             RonResolution.ABORTIVE_DRAW -> emptySet()
         }
 

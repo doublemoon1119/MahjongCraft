@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
@@ -45,14 +46,19 @@ interface GamePresentationPublisher {
      * 呼叫端只負責提供這兩項資料，何時、如何觸發王牌分離的呈現細節仍完全交給平台實作決定。
      *
      * @param gameId 對局 Uuid。
-     * @param structure 本局牌牆所有牌（含活牌與王牌）的面／墩／層結構座標，鍵為
-     * [com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile.id]；空 map 代表這局結束，只需要清除
+     * @param structure 本局牌牆所有牌（含活牌與王牌）的面／墩／層結構座標，鍵為 [IdentifiedTile.id]；空 map 代表這局結束，只需要清除
      * 舊牌。
      * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index。
      * @param deadWallTileIds [structure] 之中屬於王牌區的牌 Uuid 子集合；空 map 呼叫時可傳空集合。
      * @param diceCount 本次開門擲骰的骰子數量，供平台實作換算擲骰動畫總長度；未搭配擲骰的呼叫可傳 `0`。
      */
-    fun publishWallStructure(gameId: Uuid, structure: Map<Uuid, TileWallPosition>, dealerSeatIndex: Int, deadWallTileIds: Set<Uuid>, diceCount: Int)
+    fun publishWallStructure(
+        gameId: Uuid,
+        structure: Map<Uuid, TileWallPosition>,
+        dealerSeatIndex: Int,
+        deadWallTileIds: Set<Uuid>,
+        diceCount: Int,
+    )
 
     /**
      * 通知平台呈現層本局初始手牌分配。
@@ -64,8 +70,7 @@ interface GamePresentationPublisher {
      *
      * @param gameId 對局 Uuid。
      * @param handsBySeatIndex 依 `TableState.players` 固定座位 index 分組的初始手牌，每組依發牌順序
-     * 排列，鍵為 [com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile.id]；空 map 代表這局結束，
-     * 只需要清除舊牌。
+     *        排列，鍵為 [IdentifiedTile.id]；空 map 代表這局結束，只需要清除舊牌。
      * @param diceCount 本次開局擲骰的骰子數量；未搭配擲骰的呼叫可傳 `0`。
      */
     fun publishHandTiles(gameId: Uuid, handsBySeatIndex: Map<Int, List<Uuid>>, diceCount: Int)

@@ -1,9 +1,17 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
+import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.advance
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localDiscardVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localHandVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localWallVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.rotateForFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.rotateForSide
 
 /** 局部水平向量；沿用 [MahjongTableSide]／[MahjongTableFacing] 兩段式旋轉合成，Y 軸不受水平旋轉影響。 */
 private data class TileTableVector(val x: Double, val y: Double, val z: Double)
@@ -26,8 +34,7 @@ data class MahjongTileWallPlacement(
 /**
  * 把 [TileWallPosition] 這種與 Minecraft 座標無關的抽象牌牆結構位置，轉換成真實世界座標。
  *
- * 兩段式旋轉合成與 [com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout] 完全
- * 同一套慣例：先算出「以局部南側為基準」的向量，再依序旋轉到目標側面、旋轉到桌子世界朝向。
+ * 兩段式旋轉合成與 [MahjongDiceTableLayout] 完全同一套慣例：先算出「以局部南側為基準」的向量，再依序旋轉到目標側面、旋轉到桌子世界朝向。
  * [TileWallPosition.side] 以莊家自身面為 0、依這裡的 `SIDE_ORDER`（南→西→北→東，逆時針）遞增，只需要
  * 把 [seatIndexToTableSide] 算出的莊家局部側面當成起點，依 [TileWallPosition.side] 再用同一個
  * `SIDE_ORDER` 旋轉相應步數，就能得到這張牌實際所在的局部側面——`SIDE_ORDER` 只是牌牆環狀結構自己的
@@ -94,7 +101,7 @@ object MahjongTileTableLayout {
      * [isDeadWall] 為 `true` 時，額外把 `alongSide`（沿墩排列方向的位置）往「`stack` 遞增」的方向多推
      * [MahjongTileDimensions.TILE_WIDTH] 的 [DEAD_WALL_GAP_RATIO] 倍——`stack` 遞增的方向正是王牌區
      * 緊鄰開門缺口、之後會被摸走分配給玩家手牌的活牌墩所在方向（見
-     * [com.doublemoon1119.mahjongcraft.logic.table.layout.FourSidedWallLayoutSupport] 的墩位排列
+     * `com.doublemoon1119.mahjongcraft.logic.table.layout.FourSidedWallLayoutSupport` 的墩位排列
      * 邏輯：王牌從缺口本身往 `stack` 遞減方向連續佔用，活牌則從缺口另一側往 `stack` 遞增方向連續
      * 佔用，兩者在缺口處以遞增/遞減方向相鄰）。這是刻意選這個方向的位移，不是垂直推向桌子中心——
      * 活牌之後會被摸走清空這塊空間，王牌滑過去暫時會跟還沒摸走的活牌墩重疊一點點，等手牌分配這個
@@ -121,8 +128,8 @@ object MahjongTileTableLayout {
      *
      * 跟 [wallPlacement] 不同，手牌位置直接用玩家自己在 `TableState.players` 的固定座位 index 算局部
      * 側面（`seatIndexToTableSide(seatIndex)`），不經過莊家相對的 [advance] 旋轉——座位 index 整場對局
-     * 固定不變（只有自風跟著轉），跟 [com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout]
-     * 的既有慣例一致；牌牆才需要莊家相對旋轉，因為 `TileWallPosition.side` 的意義每局隨莊家改變。
+     * 固定不變（只有自風跟著轉），跟 [MahjongSeatingTableLayout]的既有慣例一致；
+     * 牌牆才需要莊家相對旋轉，因為 `TileWallPosition.side` 的意義每局隨莊家改變。
      *
      * @param handSize 這位玩家目前的手牌張數，用來把整排手牌對稱置中於局部側面。
      * @param tileIndex 這張牌在手牌裡的零基底索引（`0` 在最大 X、遞增時往負向移動，跟牌牆 `stack` 的
@@ -315,7 +322,7 @@ object MahjongTileTableLayout {
 
     /**
      * 牌牆角落貼齊處縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，遊戲內驗證後調整的觀感參數。
-     * `internal` 而非 `private`：讓同模組的 [MahjongTileTableLayoutTest][com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayoutTest]
+     * `internal` 而非 `private`：讓同模組的 `com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayoutTest`
      * 能直接引用同一個數值驗證預期位移量，不需要在測試裡另外複製一份可能忘記同步的常數。
      */
     internal const val CORNER_GAP_RATIO: Double = 0.25
@@ -333,7 +340,8 @@ object MahjongTileTableLayout {
      * 遊戲內驗證時手牌幾乎貼到桌緣，因此往桌子中心方向再退一點；仍比牌牆（`halfSpan` 約 0.98 block，
      * 17 墩時）更靠外，維持在牌牆與桌緣之間。
      */
-    internal const val HAND_EDGE_OFFSET: Double = 46.0 / 16.0 / 2.0 - MahjongTileDimensions.TILE_DEPTH / 2.0 - HAND_EDGE_MARGIN
+    internal const val HAND_EDGE_OFFSET: Double =
+        46.0 / 16.0 / 2.0 - MahjongTileDimensions.TILE_DEPTH / 2.0 - HAND_EDGE_MARGIN
 
     /** 摸牌位跟立牌列尾端之間的縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，起始估算值，預期進遊戲後用截圖比對調整。 */
     internal const val DRAWN_TILE_GAP_RATIO: Double = 0.5
@@ -379,5 +387,6 @@ object MahjongTileTableLayout {
     internal const val SIDEWAYS_YAW_OFFSET: Float = 90.0f
 
     /** 南→西→北→東的固定順序，跟 [seatIndexToTableSide] 與 `TileWallPosition.side` 同一套慣例。 */
-    private val SIDE_ORDER = listOf(MahjongTableSide.SOUTH, MahjongTableSide.WEST, MahjongTableSide.NORTH, MahjongTableSide.EAST)
+    private val SIDE_ORDER =
+        listOf(MahjongTableSide.SOUTH, MahjongTableSide.WEST, MahjongTableSide.NORTH, MahjongTableSide.EAST)
 }

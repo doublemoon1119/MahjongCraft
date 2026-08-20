@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.resolveDisplayText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.bracketedInteractiveLabel
@@ -211,8 +212,7 @@ class FabricPlayerFeedbackPublisher(
 
     /**
      * 建立「顯示目前遊戲設定」訊息；可互動文字點擊後透過 [ClickEvent.Action.RUN_COMMAND] 觸發
-     * client-only 指令開啟設定編輯畫面（見
-     * [com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand]），
+     * client-only 指令開啟設定編輯畫面（見 [FabricOpenRoomConfigScreenCommand]），
      * 不是複製 JSON。
      */
     private fun showGameConfigMessage(feedback: MinecraftPlayerFeedback.ShowGameConfig): MutableText = Text.translatable(
@@ -315,9 +315,7 @@ class FabricPlayerFeedbackPublisher(
 
         /**
          * 開啟房間規則設定編輯畫面的 client-only 指令；純粹當點擊觸發器用，不是給玩家手動輸入。根節點用
-         * 麻將牌字元 `🀇` 而非英文字串的理由見
-         * [com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand]
-         * 的類別 KDoc。
+         * 麻將牌字元 `🀇` 而非英文字串的理由見 [FabricOpenRoomConfigScreenCommand] 的類別 KDoc。
          */
         const val OPEN_ROOM_CONFIG_SCREEN_COMMAND: String = "/🀇 open_room_config_screen"
     }

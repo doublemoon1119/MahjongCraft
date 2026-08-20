@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.text
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.minecraft.text.ClickEvent
 import net.minecraft.text.HoverEvent
@@ -9,11 +11,9 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 
 /**
- * `config reload`／`config show` 這類設定診斷指令共用的聊天訊息格式，供
- * [com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand]（server
- * 端）與
- * [com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand]（client
- * 端）共用，讓兩邊指令效果完全一致，不各自維護一份相同的格式化邏輯。
+ * `config reload`／`config show` 這類設定診斷指令共用的聊天訊息格式，
+ * 供 [FabricServerConfigCommand]（server端）與 [FabricClientConfigCommand]（client端）共用，
+ * 讓兩邊指令效果完全一致，不各自維護一份相同的格式化邏輯。
  */
 
 /** 建立統一帶有 mod 名稱前綴的 config 指令回饋。 */
@@ -32,6 +32,7 @@ fun formatTomlLine(line: String): MutableText = when {
             .append(Text.literal(" = ").formatted(Formatting.DARK_GRAY))
             .append(Text.literal(value).formatted(Formatting.GREEN))
     }
+
     else -> Text.literal(line)
 }
 

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard
 
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
@@ -15,7 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  * 暗面子是指在手中自行湊成的三張或四張相同牌組，未透過副露（鳴牌）取得。
  * 暗槓雖然是副露，但仍視為暗面子。
  *
- * @param handStructure 手牌結構（由 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer] 分割後的結果）。
+ * @param handStructure 手牌結構（由 [RiichiHandDecomposer] 分割後的結果）。
  * @return 三暗刻役種結果，若不符合則返回 null。
  */
 fun calculateSanankou(

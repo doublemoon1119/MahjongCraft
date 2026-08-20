@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.FourSidedWallLayoutSupport
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayoutResult
@@ -16,8 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
  *
  * 王牌相對開門缺口的方向與張數，來源：
  * [華人麻將競技聯盟賽事規則](https://cml88.com/%E8%B3%BD%E4%BA%8B%E8%A6%8F%E5%89%87/)（「尾牌留
- * 16 支」）；三骰換算開門位置的公式見
- * [TaiwanWallOpeningPolicy][com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy]。
+ * 16 支」）；三骰換算開門位置的公式見 [TaiwanWallOpeningPolicy]。
  *
  * @property config 決定王牌墩數的台灣麻將規則配置。
  */

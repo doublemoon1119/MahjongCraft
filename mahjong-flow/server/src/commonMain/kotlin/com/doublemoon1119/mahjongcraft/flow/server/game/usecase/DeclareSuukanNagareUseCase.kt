@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
@@ -27,8 +28,7 @@ import kotlin.uuid.Uuid
  * 並結束此局，會讓玩家完全沒有機會宣告嶺上開花。由誰、在什麼時機呼叫本用例（例如伺服器偵測到
  * 玩家對嶺上牌選擇不自摸之後接著呼叫）是更外層（伺服器流程編排）的決定，不在這裡處理。
  *
- * 是否構成四槓散了完全交給
- * [com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule.resolveSuukanNagare]
+ * 是否構成四槓散了完全交給 [MahjongRuleModule.resolveSuukanNagare]
  * 判斷，這裡不重新實作槓子計數邏輯。
  *
  * 把 [GameAction.ExhaustiveDraw] 記錄進**全員**（不只莊家）的 `actionHistory`——途中流局莊家

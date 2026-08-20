@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import kotlin.uuid.Uuid
 
@@ -10,7 +11,7 @@ import kotlin.uuid.Uuid
  * 都透過此介面往外廣播，由外層（如 Minecraft 平台層）決定要如何呈現或轉發。
  * `:mahjong-flow` 本身不知道、也不需要知道外層實際上是誰在監聽。
  *
- * 與 [com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher]（每種事件各一個方法）不同，
+ * 與 [RoomEventPublisher]（每種事件各一個方法）不同，
  * 這裡直接重用既有的 [GameAction] 密封類別當作事件酬載，避免以後每加一種動作就要在介面上新增方法。
  */
 interface GameEventPublisher {

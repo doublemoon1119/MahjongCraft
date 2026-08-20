@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -22,7 +23,7 @@ import kotlin.uuid.Uuid
  * `pendingReaction` 則刻意維持原樣不動。
  *
  * 自摸是否合法（含最低番數限制）、贏家實際獲得多少點數、其他玩家各自要付多少點數，這些規則相關
- * 的判斷完全交給 [com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule.declareTsumo]
+ * 的判斷完全交給 [MahjongRuleModule.declareTsumo]
  * 處理——這裡刻意不轉型成任何規則專屬的具體型別，理由與 [DeclareRiichiUseCase] 相同。
  *
  * @property gameRepository 權威對局數據倉庫。

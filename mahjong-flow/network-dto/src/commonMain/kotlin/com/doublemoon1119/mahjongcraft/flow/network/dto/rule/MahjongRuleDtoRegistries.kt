@@ -6,6 +6,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import kotlinx.serialization.Polymorphic
@@ -14,7 +16,7 @@ import kotlinx.serialization.modules.polymorphic
 
 /**
  * [MahjongRuleConfig] 的網路 DTO——刻意維持開放介面（不是 sealed），對應領域層本身就是開放介面、
- * 讓第三方能透過 [com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry] 註冊自己
+ * 讓第三方能透過 [MahjongModuleRegistry] 註冊自己
  * 的規則模組這件事。序列化用的多型清單改用 [NetworkDtoRegistries] 動態組成，不是編譯期窮舉；
  * `@Polymorphic` 標記在介面上，讓任何用到這個型別的欄位都自動走 `SerializersModule` 查表，
  * 不需要在每個使用處各自標註。
@@ -47,9 +49,8 @@ interface DiscardPileDto
 interface ExhaustiveDrawReasonDto
 
 /**
- * 領域層開放介面 ↔ DTO 的註冊表集合。建構時全部是空的，比照
- * [com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl] 的既有精神——
- * [registerBuiltInRuleConfigDtos] 把日麻/台麻已有的實作註冊進來，第三方規則模組要支援序列化，
+ * 領域層開放介面 ↔ DTO 的註冊表集合。建構時全部是空的，比照 [MahjongModuleRegistryImpl] 的既有精神——
+ * [com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos] 把日麻/台麻已有的實作註冊進來，第三方規則模組要支援序列化，
  * 一樣呼叫對應 registry 的 `register(...)`，不需要修改這個檔案。
  */
 interface NetworkDtoRegistries {
@@ -124,6 +125,7 @@ fun GameLength.toDto(registries: NetworkDtoRegistries): GameLengthDto = registri
 fun GameLengthDto.toDomain(registries: NetworkDtoRegistries): GameLength = registries.gameLength.toDomain(this)
 
 fun DynamicRuleState.toDto(registries: NetworkDtoRegistries): DynamicRuleStateDto = registries.dynamicRuleState.toDto(this)
+
 fun DynamicRuleStateDto.toDomain(registries: NetworkDtoRegistries): DynamicRuleState = registries.dynamicRuleState.toDomain(this)
 
 fun PlayerRuleState.toDto(registries: NetworkDtoRegistries): PlayerRuleStateDto = registries.playerRuleState.toDto(this)

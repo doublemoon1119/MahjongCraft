@@ -3,9 +3,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresentation
@@ -73,11 +76,11 @@ class FabricGamePresentationPublisher(
      * 「規則有配置骰子、但畫面上完全沒出現」這種靜默失敗。
      *
      * 世界／方塊狀態查詢一定要丟回伺服器主執行緒才能執行——`GameFlowCoordinator` 的呼叫鏈跑在
-     * `Dispatchers.Default`（見 [FabricAppCoroutineScope][com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope]），
+     * `Dispatchers.Default`（見 [FabricAppCoroutineScope]），
      * 直接在這裡讀 `world.getBlockState`／`getBlockEntity` 會在非主執行緒上跟伺服器自己的 tick
      * 並發存取同一份 chunk／block entity 資料，讀到不一致或直接讀不到，結果就是靜默呈現
      * `TABLE_NOT_FOUND`——這是曾經在這裡踩過、log 追出來的真實問題，不是假設。用 [dispatchers] 的
-     * `main`（[ServerThreadCoroutineDispatcher][com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher]）
+     * `main`（[ServerThreadCoroutineDispatcher]）
      * 而不是手動 `server.execute`：呼叫端不需要等世界端真的完成才能返回，符合本介面 best-effort、
      * 不阻塞呼叫端的既有慣例。
      *
@@ -94,8 +97,21 @@ class FabricGamePresentationPublisher(
      * 就算之後 [present] 真的失敗（例如桌子被拆掉），這桌還是會被錯誤標記忙碌一小段時間——比起
      * 每一次擲骰都有機會被搶跑，這個機率很低的邊界情況划算得多。
      */
-    override fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int) {
-        logger.debug("publishDiceRoll gameId={} dice={} dealerSeatIndex={} roundNumber={} comboCount={}", gameId, dice.values, dealerSeatIndex, roundNumber, comboCount)
+    override fun publishDiceRoll(
+        gameId: Uuid,
+        dice: DiceRollResult,
+        dealerSeatIndex: Int,
+        roundNumber: Int,
+        comboCount: Int,
+    ) {
+        logger.debug(
+            "publishDiceRoll gameId={} dice={} dealerSeatIndex={} roundNumber={} comboCount={}",
+            gameId,
+            dice.values,
+            dealerSeatIndex,
+            roundNumber,
+            comboCount,
+        )
         if (serverHolder.current() == null) {
             logger.warn("publishDiceRoll gameId={} skipped: no active server", gameId)
             return
@@ -110,13 +126,22 @@ class FabricGamePresentationPublisher(
             }
             val world = resolveWorld(location)
             if (world == null) {
-                logger.warn("publishDiceRoll gameId={} skipped: could not resolve world for location={}", gameId, location)
+                logger.warn(
+                    "publishDiceRoll gameId={} skipped: could not resolve world for location={}",
+                    gameId,
+                    location,
+                )
                 return@launch
             }
             val controllerPos = BlockPos(location.x, location.y, location.z)
             val state = world.getBlockState(controllerPos)
             if (!state.contains(Properties.HORIZONTAL_FACING)) {
-                logger.warn("publishDiceRoll gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})", gameId, controllerPos, state)
+                logger.warn(
+                    "publishDiceRoll gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})",
+                    gameId,
+                    controllerPos,
+                    state,
+                )
                 return@launch
             }
             val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
@@ -127,7 +152,12 @@ class FabricGamePresentationPublisher(
                 tableFacing = facing,
                 throwSide = seatIndexToTableSide(dealerSeatIndex),
                 rollSequence = roundNumber.toLong() * ROLL_SEQUENCE_ROUND_MULTIPLIER + comboCount,
-                dice = dice.values.map { point -> MahjongDicePresentation(point = point, animationSeed = Random.nextLong()) },
+                dice = dice.values.map { point ->
+                    MahjongDicePresentation(
+                        point = point,
+                        animationSeed = Random.nextLong(),
+                    )
+                },
             )
             val result = diceRollPresenter.present(presentation)
             logger.debug("publishDiceRoll gameId={} present() result={}", gameId, result)
@@ -135,7 +165,13 @@ class FabricGamePresentationPublisher(
     }
 
     /** 跟 [publishDiceRoll] 同理，牌牆呈現也需要碰觸世界／entity，一併丟回伺服器主執行緒執行。 */
-    override fun publishWallStructure(gameId: Uuid, structure: Map<Uuid, TileWallPosition>, dealerSeatIndex: Int, deadWallTileIds: Set<Uuid>, diceCount: Int) {
+    override fun publishWallStructure(
+        gameId: Uuid,
+        structure: Map<Uuid, TileWallPosition>,
+        dealerSeatIndex: Int,
+        deadWallTileIds: Set<Uuid>,
+        diceCount: Int,
+    ) {
         logger.debug(
             "publishWallStructure gameId={} tileCount={} dealerSeatIndex={} deadWallTileCount={} diceCount={}",
             gameId,
@@ -156,13 +192,22 @@ class FabricGamePresentationPublisher(
             }
             val world = resolveWorld(location)
             if (world == null) {
-                logger.warn("publishWallStructure gameId={} skipped: could not resolve world for location={}", gameId, location)
+                logger.warn(
+                    "publishWallStructure gameId={} skipped: could not resolve world for location={}",
+                    gameId,
+                    location,
+                )
                 return@launch
             }
             val controllerPos = BlockPos(location.x, location.y, location.z)
             val state = world.getBlockState(controllerPos)
             if (!state.contains(Properties.HORIZONTAL_FACING)) {
-                logger.warn("publishWallStructure gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})", gameId, controllerPos, state)
+                logger.warn(
+                    "publishWallStructure gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})",
+                    gameId,
+                    controllerPos,
+                    state,
+                )
                 return@launch
             }
             val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
@@ -189,8 +234,7 @@ class FabricGamePresentationPublisher(
      * [busyTracker] 的標記額外加上 [OPENING_SEQUENCE_EXTRA_VIEWING_TICKS] 這段緩衝——這是「建牌 →
      * 擲骰開門 → 分牌」整個開局節奏裡最後一步觸發的呼叫（[StartGameUseCase]／[AdvanceRoundUseCase]
      * 呼叫順序固定在 `publishWallStructure` 之後），所以由這裡負責把桌子的忙碌時長從單純的擲骰動畫
-     * 長度，延長到涵蓋王牌分離／手牌落地／寶牌翻開整段開局呈現，讓莊家的強制自動摸牌
-     * （[GameFlowCoordinator][com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator.driveAutomatedPlayers]）
+     * 長度，延長到涵蓋王牌分離／手牌落地／寶牌翻開整段開局呈現，讓莊家的強制自動摸牌（[GameFlowCoordinator.driveAutomatedPlayers]）
      * 確實等到玩家看得到手牌、王牌分離都完成後才開始，不是單純等骰子動畫播完就搶跑。沒有擲骰
      * （[diceCount] 為 `0`）時沒有動畫可等，直接同步呈現，不排定延遲、不額外標記忙碌。
      */
@@ -221,13 +265,22 @@ class FabricGamePresentationPublisher(
             }
             val world = resolveWorld(location)
             if (world == null) {
-                logger.warn("publishHandTiles gameId={} skipped: could not resolve world for location={}", gameId, location)
+                logger.warn(
+                    "publishHandTiles gameId={} skipped: could not resolve world for location={}",
+                    gameId,
+                    location,
+                )
                 return@launch
             }
             val controllerPos = BlockPos(location.x, location.y, location.z)
             val state = world.getBlockState(controllerPos)
             if (!state.contains(Properties.HORIZONTAL_FACING)) {
-                logger.warn("publishHandTiles gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})", gameId, controllerPos, state)
+                logger.warn(
+                    "publishHandTiles gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})",
+                    gameId,
+                    controllerPos,
+                    state,
+                )
                 return@launch
             }
             val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
@@ -255,7 +308,13 @@ class FabricGamePresentationPublisher(
      * 一併丟回伺服器主執行緒執行。
      */
     override fun publishTileDrawn(gameId: Uuid, seatIndex: Int, standingTileCount: Int, drawnTileId: Uuid?) {
-        logger.debug("publishTileDrawn gameId={} seatIndex={} standingTileCount={} drawnTileId={}", gameId, seatIndex, standingTileCount, drawnTileId)
+        logger.debug(
+            "publishTileDrawn gameId={} seatIndex={} standingTileCount={} drawnTileId={}",
+            gameId,
+            seatIndex,
+            standingTileCount,
+            drawnTileId,
+        )
         if (serverHolder.current() == null) {
             logger.warn("publishTileDrawn gameId={} skipped: no active server", gameId)
             return
@@ -268,13 +327,22 @@ class FabricGamePresentationPublisher(
             }
             val world = resolveWorld(location)
             if (world == null) {
-                logger.warn("publishTileDrawn gameId={} skipped: could not resolve world for location={}", gameId, location)
+                logger.warn(
+                    "publishTileDrawn gameId={} skipped: could not resolve world for location={}",
+                    gameId,
+                    location,
+                )
                 return@launch
             }
             val controllerPos = BlockPos(location.x, location.y, location.z)
             val state = world.getBlockState(controllerPos)
             if (!state.contains(Properties.HORIZONTAL_FACING)) {
-                logger.warn("publishTileDrawn gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})", gameId, controllerPos, state)
+                logger.warn(
+                    "publishTileDrawn gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})",
+                    gameId,
+                    controllerPos,
+                    state,
+                )
                 return@launch
             }
             val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
@@ -293,8 +361,19 @@ class FabricGamePresentationPublisher(
     }
 
     /** 理由同 [publishTileDrawn]：一般回合動作，不需要 [busyTracker] 或延遲，直接同步呈現。 */
-    override fun publishDiscardPileUpdated(gameId: Uuid, seatIndex: Int, discardTileIds: List<Uuid>, sidewaysMarkedTileId: Uuid?) {
-        logger.debug("publishDiscardPileUpdated gameId={} seatIndex={} tileCount={} sidewaysMarkedTileId={}", gameId, seatIndex, discardTileIds.size, sidewaysMarkedTileId)
+    override fun publishDiscardPileUpdated(
+        gameId: Uuid,
+        seatIndex: Int,
+        discardTileIds: List<Uuid>,
+        sidewaysMarkedTileId: Uuid?,
+    ) {
+        logger.debug(
+            "publishDiscardPileUpdated gameId={} seatIndex={} tileCount={} sidewaysMarkedTileId={}",
+            gameId,
+            seatIndex,
+            discardTileIds.size,
+            sidewaysMarkedTileId,
+        )
         if (serverHolder.current() == null) {
             logger.warn("publishDiscardPileUpdated gameId={} skipped: no active server", gameId)
             return
@@ -307,13 +386,22 @@ class FabricGamePresentationPublisher(
             }
             val world = resolveWorld(location)
             if (world == null) {
-                logger.warn("publishDiscardPileUpdated gameId={} skipped: could not resolve world for location={}", gameId, location)
+                logger.warn(
+                    "publishDiscardPileUpdated gameId={} skipped: could not resolve world for location={}",
+                    gameId,
+                    location,
+                )
                 return@launch
             }
             val controllerPos = BlockPos(location.x, location.y, location.z)
             val state = world.getBlockState(controllerPos)
             if (!state.contains(Properties.HORIZONTAL_FACING)) {
-                logger.warn("publishDiscardPileUpdated gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})", gameId, controllerPos, state)
+                logger.warn(
+                    "publishDiscardPileUpdated gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})",
+                    gameId,
+                    controllerPos,
+                    state,
+                )
                 return@launch
             }
             val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
@@ -345,7 +433,7 @@ class FabricGamePresentationPublisher(
 
         /**
          * 手牌落地／王牌分離都完成後，額外多留給玩家看清楚開局結果的 tick 數，才讓莊家的強制自動摸牌
-         * 開始——量級比照 [com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec.EXTRA_VIEWING_TICKS]。
+         * 開始——量級比照 [DiceRollAnimationSpec.EXTRA_VIEWING_TICKS]。
          */
         const val OPENING_SEQUENCE_EXTRA_VIEWING_TICKS: Int = 25
 

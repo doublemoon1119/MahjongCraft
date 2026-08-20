@@ -8,10 +8,15 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueContextCalculator
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -23,21 +28,18 @@ import kotlin.uuid.Uuid
  * （含立直後暗槓「不能改變聽牌」的限制），理由與 [DeclareRiichiUseCase]、
  * [DeclareKyuushuKyuuhaiUseCase] 相同。合法性確認後，先檢查有沒有其他玩家可以搶槓
  * （[GameAction.Kan.type] 為 [GameAction.KanType.ADDED_KAN] 時常見；暗槓只有國士無雙能搶，見
- * [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValidator] 既有邏輯）：
+ * [RiichiLegalActionValidator] 既有邏輯）：
  * 有人可以搶時開一次反應視窗（[TableState.pendingChankan]，副露暫緩套用，交給
  * [RespondToChankanUseCase] 解析）；沒人可以搶時直接套用（[KanDeclarationApplier]）。多位玩家同時
- * 可搶時（罕見），依
- * [com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig.multiRonPolicy] 決定實際開放
+ * 可搶時（罕見），依 [MahjongRuleConfig.multiRonPolicy] 決定實際開放
  * 給誰，與一般捨牌榮和共用同一套判定（見 [DiscardReactionResolver]）；判定為途中流局時，這次
  * 加槓視為未成立，不開反應視窗、不套用副露。
  *
- * 套用副露後依序記錄 [GameAction.Kan] → 從死牌區
- * （[com.doublemoon1119.mahjongcraft.logic.table.TileWall.drawLast]）補摸嶺上牌並記錄
- * [GameAction.Draw]，讓
- * [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueContextCalculator] 既有的
+ * 套用副露後依序記錄 [GameAction.Kan] → 從死牌區（[TileWall.drawLast]）
+ * 補摸嶺上牌並記錄 [GameAction.Draw]，讓 [RiichiHandValueContextCalculator] 既有的
  * 嶺上開花偵測邏輯（依賴 `actionHistory` 最後兩筆是否恰為 `[Kan, Draw]`）能真正被觸發。
  *
- * 不需要新增任何 [com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule] 規則鉤子——
+ * 不需要新增任何 [MahjongRuleModule] 規則鉤子——
  * 套用副露、補摸嶺上牌、清除全場一發皆為既有通用方法（`Hand.call`/`Hand.upgradeToAddedKan`/
  * `TileWall.drawLast`/`module.onMeldClaimed`）的組合。不涉及包牌（Pao）：加槓沿用
  * `Hand.upgradeToAddedKan` 保留的原碰副露來源方位，暗槓沒有鳴牌來源，兩者皆不構成包牌，不呼叫
@@ -66,19 +68,27 @@ class DeclareKanUseCase(
      * @param tileId 觸發槓牌的牌的唯一識別碼，必須等於玩家目前的 `hand.lastDrawn.id`。
      * @return 宣告結果，成功時為 [Unit]，失敗時為 [GameError]。
      */
-    suspend operator fun invoke(gameId: Uuid, playerId: Uuid, kanType: GameAction.KanType, tileId: Uuid): Outcome<Unit, GameError> {
+    suspend operator fun invoke(
+        gameId: Uuid,
+        playerId: Uuid,
+        kanType: GameAction.KanType,
+        tileId: Uuid,
+    ): Outcome<Unit, GameError> {
         // 1. 以原子方式讀取桌況、驗證業務規則並寫回
         val outcome = gameRepository.update(gameId) { state ->
             when {
                 state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
                 state.players.none { it.id == playerId } ->
                     state to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
+
                 state.currentPlayer.id != playerId ->
                     state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
+
                 state.pendingChankan != null ->
                     state to Outcome.Error(
                         GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
                     )
+
                 else -> {
                     val incomingTile = state.currentPlayer.hand.lastDrawn?.takeIf { it.id == tileId }
                         ?: return@update state to Outcome.Error(
@@ -90,7 +100,8 @@ class DeclareKanUseCase(
                     // incomingTile 參數單獨傳入；剝離手法與 DeclareTsumoUseCase/
                     // DeclareKyuushuKyuuhaiUseCase 相同（見規劃紀錄：暗槓判定 closedKanCount 若不
                     // 剝離 lastDrawn 會多算一張）。
-                    val playerForCheck = state.currentPlayer.copy(hand = state.currentPlayer.hand.copy(lastDrawn = null))
+                    val playerForCheck =
+                        state.currentPlayer.copy(hand = state.currentPlayer.hand.copy(lastDrawn = null))
                     val legalActions = module.createLegalActionValidator().getLegalActions(
                         tableState = state,
                         player = playerForCheck,
@@ -130,7 +141,13 @@ class DeclareKanUseCase(
                     }
                     val ronWinningPlayerIds = when (ronResolution) {
                         null, RonResolution.ALL_WINNERS -> ronEligiblePlayerIds
-                        RonResolution.NEAREST_WINNER -> setOf(state.nearestPlayerInTurnOrder(playerId, ronEligiblePlayerIds))
+                        RonResolution.NEAREST_WINNER -> setOf(
+                            state.nearestPlayerInTurnOrder(
+                                playerId,
+                                ronEligiblePlayerIds,
+                            ),
+                        )
+
                         RonResolution.ABORTIVE_DRAW -> emptySet()
                     }
                     val abortiveDrawReason = if (ronResolution == RonResolution.ABORTIVE_DRAW) {
@@ -147,13 +164,23 @@ class DeclareKanUseCase(
                             players = state.players.map { it.recordAction(GameAction.ExhaustiveDraw(abortiveDrawReason)) },
                         )
                         return@update newState to Outcome.Success(
-                            KanResult(newState, kanAction, drawHappened = false, abortiveDrawReason = abortiveDrawReason),
+                            KanResult(
+                                newState,
+                                kanAction,
+                                drawHappened = false,
+                                abortiveDrawReason = abortiveDrawReason,
+                            ),
                         )
                     }
 
                     if (ronWinningPlayerIds.isNotEmpty()) {
                         val newState = state.copy(
-                            pendingChankan = PendingChankanReaction(playerId, kanAction, incomingTile, ronWinningPlayerIds),
+                            pendingChankan = PendingChankanReaction(
+                                playerId,
+                                kanAction,
+                                incomingTile,
+                                ronWinningPlayerIds,
+                            ),
                         )
                         return@update newState to Outcome.Success(KanResult(newState, kanAction, drawHappened = false))
                     }

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard
 
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
@@ -15,7 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  * 與七對子不同，對對胡允許副露（鳴牌）。
  * 亦即：手牌（不含副露）部分可為 1 雀頭 + 1 刻子，其餘 3 組刻子可透過副露達成。
  *
- * @param handStructure 手牌結構（由 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer] 分割後的結果）。
+ * @param handStructure 手牌結構（由 [RiichiHandDecomposer] 分割後的結果）。
  * @return 對對胡役種結果，若不符合則返回 null。
  */
 fun calculateToitoi(

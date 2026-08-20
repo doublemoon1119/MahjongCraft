@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman
 
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.CompletionType
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
@@ -27,7 +28,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  * - 四暗刻：1m 1m 1m、9m 9m 9m、5s 5s 5s、2p 2p 2p、發 發（雀頭，胡牌東）
  * - 四暗刻單騎：1m 1m 1m、9m 9m 9m、5s 5s 5s、發 發 發、2p 2p（雀頭，等待發）
  *
- * @param handStructure 手牌結構（由 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer] 分割後的結果）。
+ * @param handStructure 手牌結構（由 [RiichiHandDecomposer] 分割後的結果）。
  * @param isMenzen 是否為門前清。
  * @param isTsumo 是否為自摸。
  * @return 四暗刻或四暗刻單騎結果，若不符合則返回 null。

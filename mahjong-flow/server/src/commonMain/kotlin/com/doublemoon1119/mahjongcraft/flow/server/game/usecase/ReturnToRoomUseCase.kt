@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
@@ -19,13 +20,12 @@ import kotlin.uuid.Uuid
  * 對局結束後把桌子從 Game 轉回 Room 的實例化用例。
  *
  * 是 [StartGameUseCase] 的反向操作：在 [AuthoritativeStateStore] 的單次交易內把識別碼從 Game 移回
- * Room，讓玩家能重新使用房間階段的操作（加入／準備／開新局／離開）。呼叫前必須確認
- * [com.doublemoon1119.mahjongcraft.flow.common.game.model.Game.isMatchOver] 已成立——這裡只負責
- * 狀態轉移，不重複判斷對局是否真的結束，那是 [AdvanceRoundUseCase] 的責任。
+ * Room，讓玩家能重新使用房間階段的操作（加入／準備／開新局／離開）。呼叫前必須確認[Game.isMatchOver] 已成立——
+ * 這裡只負責狀態轉移，不重複判斷對局是否真的結束，那是 [AdvanceRoundUseCase] 的責任。
  *
  * 還原後的 [Room]：`playerIds` 沿用最終桌況的座位順序、`aiPlayerStrategyKeys` 由每位 AI 玩家各自的
- * `aiStrategyKey` 重建、`hostId` 沿用開局時記錄在 [com.doublemoon1119.mahjongcraft.flow.common.game.model.Game.hostId]
- * 的原房主。`readyPlayerIds` 只清空真人玩家（新的一局要所有人重新準備）——AI 玩家維持準備完成，
+ * `aiStrategyKey` 重建、`hostId` 沿用開局時記錄在 [Game.hostId] 的原房主。
+ * `readyPlayerIds` 只清空真人玩家（新的一局要所有人重新準備）——AI 玩家維持準備完成，
  * 比照 `AddAiPlayerUseCase` 加入時就直接準備就緒的既有慣例：AI 沒有辦法自己切換準備狀態，若這裡
  * 也把 AI 一併清空，房間會永遠卡在 `Room.canStart` 不成立，沒有人能幫 AI 重新準備。
  *
@@ -84,7 +84,13 @@ class ReturnToRoomUseCase(
         // 2. 清除本局牌牆用牌與手牌；空 structure／空 map 觸發呈現層既有的「建空集合後丟棄全部舊牌」
         //    語意，不需要另外定義專用的清除介面方法。莊家座位、王牌集合、擲骰數量在空集合下都不影響
         //    任何座標計算，直接傳空／零值即可。
-        presentationPublisher.publishWallStructure(gameId, emptyMap(), dealerSeatIndex = 0, deadWallTileIds = emptySet(), diceCount = 0)
+        presentationPublisher.publishWallStructure(
+            gameId,
+            emptyMap(),
+            dealerSeatIndex = 0,
+            deadWallTileIds = emptySet(),
+            diceCount = 0,
+        )
         presentationPublisher.publishHandTiles(gameId, emptyMap(), diceCount = 0)
 
         // 3. 為每位玩家同步一份房間快照——這些玩家先前都是 Game 快照的觀察者，不是既有的房間快照

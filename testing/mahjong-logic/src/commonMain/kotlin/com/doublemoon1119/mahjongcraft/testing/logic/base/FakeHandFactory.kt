@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.testing.logic.base
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 
@@ -13,7 +14,7 @@ object FakeHandFactory {
 
     /**
      * 建立一個測試用的手牌。
-     * @param tiles 手中的立牌列表，自動轉換為 [com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile]。
+     * @param tiles 手中的立牌列表，自動轉換為 [IdentifiedTile]。
      * @param melds 副露列表，預設為空。
      * @param lastDrawn 最後摸入的牌，預設為空。
      */

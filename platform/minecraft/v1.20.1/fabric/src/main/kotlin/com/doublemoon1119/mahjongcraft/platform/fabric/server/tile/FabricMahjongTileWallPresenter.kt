@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
@@ -7,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.FabricGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
@@ -42,7 +44,7 @@ class FabricMahjongTileWallPresenter(
      * 為空（例如對局結束）時，跳過建立步驟直接視為成功，等同只清除舊牌——重用同一段替換邏輯，不需要
      * 另外開一個清除專用的呼叫路徑。
      *
-     * 每張新牌 entity 的 UUID 在加入世界前直接設為對應 [com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile.id]，
+     * 每張新牌 entity 的 UUID 在加入世界前直接設為對應 [IdentifiedTile.id]，
      * 沿用 [MahjongTileEntity] 既有 KDoc 早已寫下的設計意圖——此時 entity 尚未加入 world 的 UUID
      * 索引，是唯一安全能覆寫 UUID 的時機點；`world.spawnEntity` 之後才變更會與世界既有索引不一致。
      *
@@ -51,9 +53,8 @@ class FabricMahjongTileWallPresenter(
      * 交給 [scheduleDeadWallReveal]，等擲骰動畫播完才執行。
      *
      * 這裡查詢並清除的「舊牌」不限定牌牆自己管理的牌，而是這張桌子目前所有管理中的麻將牌 entity
-     * （含已經被 [com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongHandTilesPresenter]
-     * 領走、目前呈現成手牌的那些）——因為每一局重新洗牌都會產生全新的 `IdentifiedTile.id`，跟上一局
-     * 完全無關，所以只要牌牆重新生成（代表新的一局開始），上一局不管是牌牆、王牌還是手牌的舊 entity
+     * （含已經被 [FabricMahjongHandTilesPresenter]領走、目前呈現成手牌的那些）——因為每一局重新洗牌都會產生全新的 `IdentifiedTile.id`，
+     * 跟上一局完全無關，所以只要牌牆重新生成（代表新的一局開始），上一局不管是牌牆、王牌還是手牌的舊 entity
      * 全部都已經沒有意義，應該整批清空，不需要區分「這張舊牌上一局屬於哪個呈現子系統」再各自分開
      * 清理。這也是本方法是這條開局呈現鏈裡第一個被呼叫的原因：由它負責一次把整張桌子清乾淨，之後
      * 手牌 presenter 只需要專心「領走這局的新牌」，不用再自己額外清理上一局的殘留。
@@ -104,7 +105,7 @@ class FabricMahjongTileWallPresenter(
     }
 
     /**
-     * 排定王牌區延遲移出開門位置：延遲時長跟 [FabricGamePresentationPublisher][com.doublemoon1119.mahjongcraft.platform.fabric.server.event.FabricGamePresentationPublisher]
+     * 排定王牌區延遲移出開門位置：延遲時長跟 [FabricGamePresentationPublisher]
      * 用來標記桌子忙碌的時長算法完全一致（[MahjongDiceTableLayout.totalAnimationTicks]），確保王牌
      * 移出的時機跟「擲骰動畫播完」同步，不是任意估計的秒數。[MahjongTileWallPresentation.diceCount]
      * 為 `0`（沒有搭配擲骰）或沒有王牌時直接跳過，不排定任何延遲工作。
@@ -147,7 +148,11 @@ class FabricMahjongTileWallPresenter(
             )
             tile.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
         }
-        logger.debug("moveDeadWallToOpenPosition tableId={} movedTileCount={}", presentation.tableId, deadWallTiles.size)
+        logger.debug(
+            "moveDeadWallToOpenPosition tableId={} movedTileCount={}",
+            presentation.tableId,
+            deadWallTiles.size,
+        )
     }
 
     /** 清除指定 controller 周圍且 table UUID 相符的所有正式管理中麻將牌（含手牌），理由同 [present] KDoc。 */

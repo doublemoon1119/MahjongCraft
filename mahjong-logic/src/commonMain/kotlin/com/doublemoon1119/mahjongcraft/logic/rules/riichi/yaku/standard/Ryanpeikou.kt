@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard
 
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
@@ -14,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  * 與 [calculateIipeikou] 互斥，兩杯口優先於一杯口（3 翻 > 1 翻）。
  * 同時也與七對子互斥，七對子優先於一杯口（2 翻 > 1 翻）。
  *
- * @param handStructure 手牌結構（由 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer] 分割後的結果）。
+ * @param handStructure 手牌結構（由 [RiichiHandDecomposer] 分割後的結果）。
  * @param isMenzen 是否為門前清（無副露）。
  * @return 兩杯口役種結果，若不符合則返回 null。
  */

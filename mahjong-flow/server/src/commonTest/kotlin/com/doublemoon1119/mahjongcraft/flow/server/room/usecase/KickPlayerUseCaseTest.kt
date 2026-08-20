@@ -66,7 +66,7 @@ class KickPlayerUseCaseTest {
     }
 
     /**
-     * 驗證剔除 AI 玩家時，[com.doublemoon1119.mahjongcraft.flow.common.room.model.Room.aiPlayerStrategyKeys]
+     * 驗證剔除 AI 玩家時，[Room.aiPlayerStrategyKeys]
      * 裡對應的項目也會一併清除，不會留下指向不存在成員的殘留資料。
      */
     @Test
@@ -127,7 +127,12 @@ class KickPlayerUseCaseTest {
 
         val guestId = Uuid.random()
         val targetId = Uuid.random()
-        val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId, guestId, targetId))
+        val room = Room(
+            id = roomId,
+            hostId = hostId,
+            gameConfig = GameConfig(config),
+            playerIds = listOf(hostId, guestId, targetId),
+        )
         roomRepo.setRoom(room)
 
         val result = useCase(roomId, guestId, targetId)

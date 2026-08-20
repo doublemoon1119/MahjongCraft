@@ -11,8 +11,8 @@ import kotlin.uuid.Uuid
  * @property tableLocation 麻將桌 controller 的位置。
  * @property tableFacing 麻將桌 controller 的世界水平朝向。
  * @property handsBySeatIndex 依 `TableState.players` 固定座位 index 分組的手牌，每組依發牌順序排列，
- * 鍵為 [com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile.id]；空 map 代表這局結束、只需要
- * 清除舊牌，不需要建立新牌。
+ *                            鍵為 [IdentifiedTile.id]；空 map 代表這局結束、只需要
+ *                            清除舊牌，不需要建立新牌。
  */
 data class MahjongHandTilesPresentation(
     val tableId: Uuid,
@@ -72,8 +72,9 @@ enum class MahjongDrawnTilePresentationResult {
  * 將權威手牌分配呈現於 Minecraft 世界的版本 adapter 邊界。
  *
  * 呼叫端提供依座位分組的手牌；手牌裡每一張牌的 UUID 都跟牌牆結構座標裡的同一張牌完全相同——這副牌
- * 本來就是從牌牆摸出來分給玩家的，不是另外複製出一批新牌。實作因此不建立新 entity，而是找到
- * [com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter] 已經生成好的
+ * 本來就是從牌牆摸出來分給玩家的，不是另外複製出一批新牌。
+ *
+ * 實作因此不建立新 entity，而是找到 [MahjongTileWallPresenter] 已經生成好的
  * 既有 entity，直接改標記、改姿態、移動位置。比照 [MahjongTileWallPresenter] 的 best-effort 慣例。
  * 手牌落地時全部蓋著（牌面不可見），揭不揭露交給既有的 `TableStateSnapshot` 可見性機制決定，這裡只
  * 負責把 entity 移到正確位置。

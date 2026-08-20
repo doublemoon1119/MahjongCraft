@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 
 /** Minecraft 玩家可見訊息使用的 translation key 單一來源。 */
@@ -255,7 +256,7 @@ object MinecraftMessageKeys {
      */
     const val ROUND_RESULT_PLAYER_LINE = PREFIX + "round_result_player_line"
 
-    /** [com.doublemoon1119.mahjongcraft.logic.base.GameAction.MatchEnded] 的顯示文字，不帶參數。 */
+    /** [GameAction.MatchEnded] 的顯示文字，不帶參數。 */
     const val GAME_ACTION_MATCH_ENDED = PREFIX + "game_action_match_ended"
 
     /**
@@ -268,7 +269,7 @@ object MinecraftMessageKeys {
     const val RANKING_LINE = PREFIX + "ranking_line"
 
     /**
-     * [com.doublemoon1119.mahjongcraft.logic.base.GameAction.DiceRolled] 的顯示文字，不帶參數——
+     * [GameAction.DiceRolled] 的顯示文字，不帶參數——
      * 實際點數由 [DICE_ROLLED_BROADCAST] 承載，這裡只是滿足 `GameActionDisplayText` 窮舉 `when`。
      */
     const val GAME_ACTION_DICE_ROLLED = PREFIX + "game_action_dice_rolled"

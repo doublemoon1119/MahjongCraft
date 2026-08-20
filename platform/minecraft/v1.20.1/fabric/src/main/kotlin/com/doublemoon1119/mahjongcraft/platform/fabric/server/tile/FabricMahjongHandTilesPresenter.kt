@@ -37,10 +37,10 @@ class FabricMahjongHandTilesPresenter(
 
     /**
      * 手牌裡的每一張牌，UUID 都跟牌牆結構座標傳過來的那張牌完全同一個——這副牌本來就是從牌牆摸出來
-     * 分給玩家的，不是另外複製出一批新牌。[com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter]
-     * 已經在牌牆生成時，用同樣的 UUID 把這些 entity 建立在世界上了，這裡只需要用 `World.getEntity`
-     * 依 UUID 找到那個既有 entity，直接改標記、改姿態（[MahjongTilePose.STANDING]）、移動到手牌
-     * 位置——絕對不能另外呼叫 `world.spawnEntity` 建立相同 UUID 的第二個 entity，那樣一定會撞號失敗
+     * 分給玩家的，不是另外複製出一批新牌。
+     * [FabricMahjongTileWallPresenter] 已經在牌牆生成時，用同樣的 UUID 把這些 entity 建立在世界上了，
+     * 這裡只需要用 `World.getEntity` 依 UUID 找到那個既有 entity，直接改標記、改姿態（[MahjongTilePose.STANDING]）、
+     * 移動到手牌位置——絕對不能另外呼叫 `world.spawnEntity` 建立相同 UUID 的第二個 entity，那樣一定會撞號失敗
      * （Minecraft 世界不允許兩個相同 UUID 的 entity 同時存在）。
      *
      * 每位玩家的手牌各自對稱置中於自己座位的局部側面，直接用座位 index（不經過莊家相對旋轉），理由見
@@ -49,13 +49,12 @@ class FabricMahjongHandTilesPresenter(
      * 的既有慣例。
      *
      * 不在這裡另外清除「上一局遺留的手牌」——牌牆 presenter 每次重新生成牌牆時，已經會把這張桌子
-     * 目前所有管理中的麻將牌（不分牌牆／手牌）整批清空一次（見
-     * [com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter.present]
-     * KDoc），而牌牆一定比這裡先執行；輪到這裡領牌時，上一局的舊 entity 早就不存在了，不需要重複
-     * 清理。
+     * 目前所有管理中的麻將牌（不分牌牆／手牌）整批清空一次（見 [FabricMahjongTileWallPresenter.present]KDoc），
+     * 而牌牆一定比這裡先執行；輪到這裡領牌時，上一局的舊 entity 早就不存在了，不需要重複清理。
      */
     override fun present(presentation: MahjongHandTilesPresentation): MahjongHandTilesPresentationResult {
-        val world = resolveWorld(presentation.tableLocation) ?: return MahjongHandTilesPresentationResult.TABLE_NOT_FOUND
+        val world =
+            resolveWorld(presentation.tableLocation) ?: return MahjongHandTilesPresentationResult.TABLE_NOT_FOUND
         val controllerPos = presentation.tableLocation.toBlockPos()
         val state = world.getBlockState(controllerPos)
         val table = resolveTable(world, controllerPos, state, presentation.tableId)
@@ -70,7 +69,11 @@ class FabricMahjongHandTilesPresenter(
                 val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity
                 if (tile == null) {
                     missingTileCount++
-                    logger.warn("publishHandTiles tableId={} tileId={} skipped: no existing wall entity found to claim", presentation.tableId, tileId)
+                    logger.warn(
+                        "publishHandTiles tableId={} tileId={} skipped: no existing wall entity found to claim",
+                        presentation.tableId,
+                        tileId,
+                    )
                     return@forEachIndexed
                 }
                 val placement = MahjongTileTableLayout.handPlacement(
@@ -89,7 +92,12 @@ class FabricMahjongHandTilesPresenter(
         }
         table.markDirty()
         if (missingTileCount > 0) {
-            logger.warn("publishHandTiles tableId={} presented with {} missing tile(s) out of {}", presentation.tableId, missingTileCount, presentation.handsBySeatIndex.values.sumOf { it.size })
+            logger.warn(
+                "publishHandTiles tableId={} presented with {} missing tile(s) out of {}",
+                presentation.tableId,
+                missingTileCount,
+                presentation.handsBySeatIndex.values.sumOf { it.size },
+            )
             return MahjongHandTilesPresentationResult.SPAWN_FAILED
         }
         return MahjongHandTilesPresentationResult.PRESENTED
@@ -103,7 +111,8 @@ class FabricMahjongHandTilesPresenter(
      */
     override fun presentDrawnTile(presentation: MahjongDrawnTilePresentation): MahjongDrawnTilePresentationResult {
         val drawnTileId = presentation.drawnTileId ?: return MahjongDrawnTilePresentationResult.PRESENTED
-        val world = resolveWorld(presentation.tableLocation) ?: return MahjongDrawnTilePresentationResult.TABLE_NOT_FOUND
+        val world =
+            resolveWorld(presentation.tableLocation) ?: return MahjongDrawnTilePresentationResult.TABLE_NOT_FOUND
         val controllerPos = presentation.tableLocation.toBlockPos()
         val state = world.getBlockState(controllerPos)
         val table = resolveTable(world, controllerPos, state, presentation.tableId)
@@ -114,7 +123,11 @@ class FabricMahjongHandTilesPresenter(
 
         val tile = world.getEntity(drawnTileId.toJavaUuid()) as? MahjongTileEntity
         if (tile == null) {
-            logger.warn("publishTileDrawn tableId={} tileId={} skipped: no existing wall entity found to claim", presentation.tableId, drawnTileId)
+            logger.warn(
+                "publishTileDrawn tableId={} tileId={} skipped: no existing wall entity found to claim",
+                presentation.tableId,
+                drawnTileId,
+            )
             return MahjongDrawnTilePresentationResult.SPAWN_FAILED
         }
         val placement = MahjongTileTableLayout.drawnTilePlacement(
@@ -133,8 +146,7 @@ class FabricMahjongHandTilesPresenter(
     }
 
     /**
-     * 清除指定 controller 周圍且 table UUID 相符的所有正式管理中麻將牌——跟
-     * [com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter.clear]
+     * 清除指定 controller 周圍且 table UUID 相符的所有正式管理中麻將牌——跟 [FabricMahjongTileWallPresenter.clear]
      * 效果相同（都是清這張桌子的全部管理中麻將牌，不分子系統），保留成獨立方法只是維持介面對稱，
      * 呼叫端仍可能只想觸發手牌這條路徑的清除。
      */

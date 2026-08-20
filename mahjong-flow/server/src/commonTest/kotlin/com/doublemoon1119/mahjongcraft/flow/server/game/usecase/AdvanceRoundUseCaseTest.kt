@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
@@ -44,7 +45,8 @@ class AdvanceRoundUseCaseTest {
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
-        val useCase = AdvanceRoundUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher)
+        val useCase =
+            AdvanceRoundUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher)
     }
 
     /**
@@ -88,14 +90,21 @@ class AdvanceRoundUseCaseTest {
         assertEquals(1, newState.comboCount)
         assertEquals(1, newState.roundNumber)
         assertEquals(Wind.EAST, newState.prevalentWind)
-        assertEquals(remainingReserveMillisByPlayerId, fixtures.gameRepo.getGame(gameId)?.remainingReserveMillisByPlayerId)
+        assertEquals(
+            remainingReserveMillisByPlayerId,
+            fixtures.gameRepo.getGame(gameId)?.remainingReserveMillisByPlayerId,
+        )
         assertEquals(
             dealerId,
             newState.players.first { it.currentWind == Wind.EAST }.id,
             "Dealer should stay the same on a repeat.",
         )
         newState.players.forEach { player ->
-            assertEquals(config.initialHandSize, player.hand.tiles.size, "A fresh hand should be dealt for the new round.")
+            assertEquals(
+                config.initialHandSize,
+                player.hand.tiles.size,
+                "A fresh hand should be dealt for the new round.",
+            )
             assertTrue(player.actionHistory.isEmpty(), "actionHistory should be reset for the new round.")
         }
         assertNull(newState.pendingReaction)
@@ -215,7 +224,7 @@ class AdvanceRoundUseCaseTest {
     }
 
     /**
-     * 驗證局數已達 [com.doublemoon1119.mahjongcraft.logic.config.GameLength.totalRounds] 上限時，
+     * 驗證局數已達 [GameLength.totalRounds] 上限時，
      * 回報整場對局已結束，且不會開新的一局（回傳與寫回的桌況都與呼叫前完全相同）。
      */
     @Test
@@ -240,7 +249,11 @@ class AdvanceRoundUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val advanceResult = result.value
         assertEquals(true, advanceResult.isMatchOver)
-        assertEquals(table, advanceResult.tableState, "Table state should be left completely untouched when the match is over.")
+        assertEquals(
+            table,
+            advanceResult.tableState,
+            "Table state should be left completely untouched when the match is over.",
+        )
         assertEquals(table, fixtures.gameRepo.getTableState(gameId), "Repository should not have been mutated either.")
     }
 

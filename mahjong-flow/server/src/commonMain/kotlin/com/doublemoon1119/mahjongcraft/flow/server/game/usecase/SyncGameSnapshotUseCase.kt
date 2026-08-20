@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
@@ -10,7 +11,7 @@ import kotlin.uuid.Uuid
  * 同步對局快照的應用層用例。
  *
  * 負責處理特定觀察者的同步請求，從權威數據倉庫獲取對局狀態，並針對請求者的身分生成對應的視角快照。
- * 結構完全比照 [com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase]。
+ * 結構完全比照 [SyncRoomSnapshotUseCase]。
  *
  * @property snapshotSynchronizer 套用觀看政策並更新 read-side 快照的同步器。
  */

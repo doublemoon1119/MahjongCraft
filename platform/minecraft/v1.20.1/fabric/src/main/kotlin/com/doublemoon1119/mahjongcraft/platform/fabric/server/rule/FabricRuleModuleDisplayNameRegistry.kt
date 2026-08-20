@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.rule
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistryImpl
 import net.minecraft.text.Text
@@ -11,7 +12,7 @@ import org.koin.core.annotation.Single
  * 介面本身跨版本／loader 共用，定義在 `platform/minecraft/common`；實作與 Koin binding 放在這裡，
  * 比照 `AiStrategyDisplayNameRegistry` 與其 Fabric 實作 `FabricAiStrategyDisplayNameRegistry` 的分工
  * 方式。實際邏輯委派給 [RuleModuleDisplayNameRegistryImpl]；內建與第三方規則模組的註冊、凍結時機
- * 交給 [com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar]。
+ * 交給 [MinecraftMahjongExtensionRegistrar]。
  *
  * 目前沒有任何指令／訊息實際消費這個 registry，先把第三方註冊入口鋪好；之後要顯示規則名稱的地方
  * 直接注入 [RuleModuleDisplayNameRegistry] 並呼叫 [resolveDisplayText]。

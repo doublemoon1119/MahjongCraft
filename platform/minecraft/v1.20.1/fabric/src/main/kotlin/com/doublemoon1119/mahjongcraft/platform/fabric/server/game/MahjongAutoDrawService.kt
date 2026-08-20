@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
@@ -38,8 +39,7 @@ class MahjongAutoDrawService(
      *
      * 判斷邏輯比照 `AiTurnDriver.resolveNextAction` 對 AI 回合的既有判斷，只是條件反過來套用到真人：
      * 有反應視窗開著、目前玩家是 AI、已經摸過牌、或剛碰/吃成立準備直接捨牌時都不觸發。已進入強制
-     * 自動操作（[com.doublemoon1119.mahjongcraft.flow.common.game.model.Game.forcedAutoPlayPlayerIds]）
-     * 的真人玩家也不觸發——這類玩家的摸牌／捨牌改由 `ForcedAutoPlayDriver` 透過
+     * 自動操作（[Game.forcedAutoPlayPlayerIds]） 的真人玩家也不觸發——這類玩家的摸牌／捨牌改由 `ForcedAutoPlayDriver` 透過
      * [GameFlowCoordinator.driveAutomatedPlayers] 內部路徑代打，這裡若也嘗試呼叫
      * [gameFlowCoordinator]，會被其強制自動操作守門檢查擋下，白白多一次必定失敗的呼叫。
      *

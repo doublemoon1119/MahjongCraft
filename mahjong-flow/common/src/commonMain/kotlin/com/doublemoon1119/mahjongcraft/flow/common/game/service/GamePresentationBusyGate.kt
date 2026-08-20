@@ -4,7 +4,7 @@ import kotlin.uuid.Uuid
 
 /**
  * 查詢平台呈現層是否仍在為 [gameId] 播放呈現動畫（例如擲骰）——播放期間，自動操作鏈路
- * （[com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator.driveAutomatedPlayers]）
+ * （`com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator.driveAutomatedPlayers`）
  * 不該繼續驅動 AI／強制自動操作玩家，避免遊戲流程搶在畫面之前推進。
  *
  * 與 [GamePresentationPublisher] 分工明確：後者是「`mahjong-flow` 通知平台層發生了什麼事」的

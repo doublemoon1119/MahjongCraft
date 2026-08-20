@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
@@ -123,7 +124,7 @@ class TanyaoTest : RiichiHandValueCalculatorTestBase() {
      * 測試斷么九 - 有副露。
      *
      * 有副露時手牌仍能正確分解為「副露 + 手牌」，並計算斷么九。
-     * 此測試驗證 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer.tryDecomposeStandard] 正確處理副露。
+     * 此測試驗證 [RiichiHandDecomposer.tryDecomposeStandard] 正確處理副露。
      */
     @Test
     fun `test tanyao with pon fuuro`() {

@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
+import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
 
 /**
  * 立直麻將和局原因。
@@ -41,10 +44,9 @@ sealed class RiichiExhaustiveDrawReason : ExhaustiveDrawReason {
 
     /**
      * 三家和了（トリロン）。
-     * 同一張牌同時有三家（或依 [com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy]
-     * 設定、二家）可榮和，且規則設定為流局
-     * （[com.doublemoon1119.mahjongcraft.logic.config.RonResolution.ABORTIVE_DRAW]）時觸發——這張
-     * 牌可能是一般捨牌，也可能是搶槓（[com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction]）
+     * 同一張牌同時有三家（或依 [MultiRonPolicy]
+     * 設定、二家）可榮和，且規則設定為流局（[RonResolution.ABORTIVE_DRAW]）時觸發——
+     * 這張牌可能是一般捨牌，也可能是搶槓（[PendingChankanReaction]）
      * 的來源，兩者共用同一套多響判定，沿用同一個原因值，不另外區分。
      * 真實規則中「三家和了」專指三家同時可榮和的情境；本專案的 `MultiRonPolicy` 額外允許把雙響也
      * 設定為 `ABORTIVE_DRAW`（見 [RiichiRuleConfig.multiRonPolicy] 的既有說明，本身就是刻意貼近

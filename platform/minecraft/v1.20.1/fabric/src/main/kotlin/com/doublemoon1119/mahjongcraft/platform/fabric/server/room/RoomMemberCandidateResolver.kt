@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
@@ -27,7 +28,7 @@ data class RoomMemberCandidate(
 /**
  * 依玩家目前所在房間，列出除房主外的所有候選成員，供 `kick`、`ai strategy` 等指令的目標引數共用。
  *
- * AI 玩家的序號依 [com.doublemoon1119.mahjongcraft.flow.common.room.model.Room.playerIds] 的加入
+ * AI 玩家的序號依 [Room.playerIds] 的加入
  * 順序重新編號（每次呼叫都重新計算，不做跨呼叫的持久化）。
  *
  * @property membershipRepository 玩家唯一麻將桌歸屬倉庫，用於解析玩家目前所在房間。

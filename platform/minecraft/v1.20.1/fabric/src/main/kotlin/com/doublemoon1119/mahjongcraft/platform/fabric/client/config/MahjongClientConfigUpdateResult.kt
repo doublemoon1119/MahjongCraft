@@ -1,8 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
+
 /**
- * Client config 初始化或熱重載的結果，結構對稱
- * [com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult]。
+ * Client config 初始化或熱重載的結果，結構對稱 [MinecraftServerConfigUpdateResult]。
  */
 sealed interface MahjongClientConfigUpdateResult {
     /**

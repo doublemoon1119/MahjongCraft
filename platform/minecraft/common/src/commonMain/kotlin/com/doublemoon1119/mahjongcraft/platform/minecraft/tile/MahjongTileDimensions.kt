@@ -5,7 +5,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
  *
  * 沿用重構前 main 分支 `mahjong_tile_base.json`／`MahjongTileEntity`／`MahjongBoard` 已經過實際遊戲
  * 呈現驗證的初始比例（12×16×8 模型單位、`0.15` runtime 縮放），供 Fabric-only 的
- * [com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity] 與純 Kotlin common 座標
+ * `com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity` 與純 Kotlin common 座標
  * 計算（[MahjongTileTableLayout]）共用同一組數值，避免兩處各自定義後跑掉。
  */
 object MahjongTileDimensions {

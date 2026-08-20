@@ -7,8 +7,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -19,12 +21,12 @@ import kotlin.uuid.Uuid
  *
  * 負責處理玩家的捨牌請求，包含回合驗證、手牌與牌河狀態更新，以及快照與事件的同步。
  *
- * 捨牌後其他玩家是否有資格吃/碰/槓/榮和這張牌、一炮多響時依 [com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy]
+ * 捨牌後其他玩家是否有資格吃/碰/槓/榮和這張牌、一炮多響時依 [MultiRonPolicy]
  * 決定實際開放給誰、[RonResolution.ABORTIVE_DRAW] 是否直接觸發流局，這些邏輯與 [DeclareRiichiUseCase]
  * （立直宣告牌）共用，交給 [DiscardReactionResolver] 處理，詳見其 KDoc。
  *
  * 除了一炮多響判定為流局之外，這張捨牌若沒有任何人可以吃/碰/槓/榮和，還會額外檢查是否構成四風連打
- * （[com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule.resolveSuufonRenda]）。
+ * （[MahjongRuleModule.resolveSuufonRenda]）。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器。
@@ -55,10 +57,13 @@ class DiscardTileUseCase(
                 state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
                 state.players.none { it.id == playerId } ->
                     state to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
+
                 state.currentPlayer.id != playerId ->
                     state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
+
                 state.currentPlayer.hand.lastDrawn == null && !state.currentPlayer.justClaimedMeld ->
                     state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Discard(tileId)))
+
                 else -> {
                     val discardResult = state.currentPlayer.hand.discardById(tileId)
                     if (discardResult == null) {
@@ -75,18 +80,26 @@ class DiscardTileUseCase(
                         val stateAfterDiscard = state.copy(players = updatedPlayers)
 
                         val module = moduleRegistry.getModule(state.config)
-                        val resolved = DiscardReactionResolver.resolve(state, stateAfterDiscard, module, playerId, discardedTile)
+                        val resolved =
+                            DiscardReactionResolver.resolve(state, stateAfterDiscard, module, playerId, discardedTile)
 
                         // 沒有觸發一炮多響流局、也沒有人可反應時，額外檢查是否構成四風連打。
-                        val suufonReason = if (resolved.abortiveDrawReason == null && resolved.tableState.pendingReaction == null) {
-                            module.resolveSuufonRenda(resolved.tableState)
-                        } else {
-                            null
-                        }
+                        val suufonReason =
+                            if (resolved.abortiveDrawReason == null && resolved.tableState.pendingReaction == null) {
+                                module.resolveSuufonRenda(resolved.tableState)
+                            } else {
+                                null
+                            }
                         val finalResult = if (suufonReason != null) {
                             resolved.copy(
                                 tableState = resolved.tableState.copy(
-                                    players = resolved.tableState.players.map { it.recordAction(GameAction.ExhaustiveDraw(suufonReason)) },
+                                    players = resolved.tableState.players.map {
+                                        it.recordAction(
+                                            GameAction.ExhaustiveDraw(
+                                                suufonReason,
+                                            ),
+                                        )
+                                    },
                                 ),
                                 abortiveDrawReason = suufonReason,
                             )
@@ -119,7 +132,11 @@ class DiscardTileUseCase(
         // 移到牌河
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val discarder = newState.players[seatIndex]
-        presentationPublisher.publishHandTiles(gameId, mapOf(seatIndex to discarder.hand.tiles.map { it.id }), diceCount = 0)
+        presentationPublisher.publishHandTiles(
+            gameId,
+            mapOf(seatIndex to discarder.hand.tiles.map { it.id }),
+            diceCount = 0,
+        )
         presentationPublisher.publishDiscardPileUpdated(
             gameId,
             seatIndex,

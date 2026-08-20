@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import kotlin.uuid.Uuid
 
 /**
@@ -11,9 +12,8 @@ import kotlin.uuid.Uuid
  * 補摸嶺上牌都刻意延後到反應視窗解析完畢之後才執行——若提早套用，全員放過時固然不影響結果，
  * 但一旦真的被搶槓，提早套用等於讓寶牌指示牌/副露提前曝光，不符合規則對翻寶牌時機的要求）。
  *
- * 規則無關的通用型別：誰有資格搶槓由呼叫端（如 use case）搭配
- * [com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator] 決定，這裡只負責追蹤
- * 「誰還沒回應」與「大家是否都回應完了」。
+ * 規則無關的通用型別：誰有資格搶槓由呼叫端（如 use case）搭配 [LegalActionValidator] 決定，
+ * 這裡只負責追蹤「誰還沒回應」與「大家是否都回應完了」。
  *
  * @property declarerId 宣告暗槓/加槓的玩家 Uuid。
  * @property kanAction 本次宣告的具體動作（含 [GameAction.KanType]，決定反應視窗解析完畢、

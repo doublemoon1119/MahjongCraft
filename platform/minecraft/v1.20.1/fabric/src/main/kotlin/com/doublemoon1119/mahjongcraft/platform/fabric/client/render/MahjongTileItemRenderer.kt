@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
@@ -24,7 +25,7 @@ import org.slf4j.LoggerFactory
  * 麻將牌 item 的 runtime renderer；依 NBT 存的 asset key 動態選擇材質，取代固定的 item model
  * predicate override 清單，讓內建與第三方 registry 註冊的牌面都能正確顯示。
  *
- * 內建 46 種 asset key 透過 [MahjongTileModelLoadingPlugin][com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin]
+ * 內建 46 種 asset key 透過 [MahjongTileModelLoadingPlugin]
  * 登記為可獨立查詢的已烘焙模型，直接重繪其原始 quad，幾何與 UV 與遷移前完全一致。第三方或找不到
  * 已烘焙模型的 asset key，改為手繪與內建模型相同的立方體幾何，正面材質直接綁定 runtime 解析的
  * [Identifier]，不經過 atlas；缺少材質時退回內建 unknown 牌面，不靜默顯示錯誤畫面。
@@ -87,7 +88,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         matrices.pop()
     }
 
-    /** 依 asset key 查詢 [MahjongTileModelLoadingPlugin][com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin] 登記的已烘焙模型。 */
+    /** 依 asset key 查詢 [MahjongTileModelLoadingPlugin] 登記的已烘焙模型。 */
     private fun findBakedModel(assetKey: String): BakedModel? {
         val manager = MinecraftClient.getInstance().bakedModelManager
         val id = Identifier(MinecraftModMetadata.MOD_ID, tileModelAssetPath(assetKey))

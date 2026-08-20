@@ -1,9 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.nextTileAssetKey
@@ -29,9 +31,9 @@ import kotlin.uuid.Uuid
 /**
  * 可自由放置的麻將牌 entity。
  *
- * 正式牌局接線後，權威 [IdentifiedTile][com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile] 的
- * ID 會直接使用此 entity 的 UUID，不在 entity 內複製麻將規則狀態；牌局管理中的 entity 由
- * [managedByGame]／[managedTableId] 區分自由放置模式，比照 [MahjongDiceEntity] 的雙態設計。
+ * 正式牌局接線後，權威 [IdentifiedTile] 的 ID 會直接使用此 entity 的 UUID，
+ * 不在 entity 內複製麻將規則狀態；牌局管理中的 entity 由 [managedByGame]／[managedTableId] 區分自由放置模式，
+ * 比照 [MahjongDiceEntity] 的雙態設計。
  */
 class MahjongTileEntity(
     type: EntityType<out MahjongTileEntity> = ModEntities.mahjongTile,
@@ -98,9 +100,8 @@ class MahjongTileEntity(
      *
      * 只查「這個 tableId 是否還有對局」，不逐一比對這張牌的 UUID 是否還在牌牆／手牌／牌河／副露的
      * 哪個位置——那需要把整個 `TableState` 攤開搜尋，對一個安全網來說成本太高；只要對局本身還在，
-     * 就交給既有的「每局重建時整批清空重新生成」機制（見
-     * [com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter.present]
-     * KDoc）保證舊局的牌會被正確換掉，不需要這裡重複驗證。
+     * 就交給既有的「每局重建時整批清空重新生成」機制（見 [FabricMahjongTileWallPresenter.present] KDoc）
+     * 保證舊局的牌會被正確換掉，不需要這裡重複驗證。
      *
      * 只在第一個 tick 檢查一次，不是每個 tick 都查：[AuthoritativeStateStore.getGame] 是 suspend
      * function，要用 [runBlocking] 橋接到 tick 這個同步呼叫點（比照 `FabricTableLifecycleService`
@@ -222,7 +223,7 @@ class MahjongTileEntity(
     }
 
     companion object {
-        /** 麻將牌世界寬度；與 [MahjongTileTableLayout][com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout] 共用同一組數值來源。 */
+        /** 麻將牌世界寬度；與 [MahjongTileTableLayout] 共用同一組數值來源。 */
         val TILE_WIDTH = MahjongTileDimensions.TILE_WIDTH.toFloat()
 
         /** 麻將牌世界高度。 */

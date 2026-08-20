@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
@@ -8,15 +9,16 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** `discard`／`riichi` 指令的手牌候選項目：`tileId` 用來建構 [com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand]，`token` 是玩家實際輸入的字面值，`tile` 供 tooltip 顯示。 */
+/** `discard`／`riichi` 指令的手牌候選項目：`tileId` 用來建構 [GameCommand]，`token` 是玩家實際輸入的字面值，`tile` 供 tooltip 顯示。 */
 data class HandTileCandidate(val tileId: Uuid, val token: String, val tile: Tile)
 
 /**
- * 玩家目前該用哪一種 [com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand] 信封包裝
- * 選定動作，依 [GetLegalActionsUseCase] 內部同一套優先順序判斷：搶槓 > 回應捨牌 > 自己回合 > 都不是
+ * 玩家目前該用哪一種 [GameCommand] 信封包裝選定動作，
+ * 依 [GetLegalActionsUseCase] 內部同一套優先順序判斷：搶槓 > 回應捨牌 > 自己回合 > 都不是
  * （沒有任何額外動作可做，只能被動等待）。
  */
 enum class GamePendingMode {
@@ -111,6 +113,7 @@ class GameActionCandidateResolver(
             val discarder = state.players.first { it.id == pendingReaction?.discarderId }
             discarder.discardPile.entries.first { it.tile.id == pendingReaction?.tileId }.tile.tile
         }
+
         GamePendingMode.OWN_TURN -> state.players.first { it.id == playerId }.hand.lastDrawn?.tile
         GamePendingMode.NONE -> null
     }
@@ -126,9 +129,8 @@ class GameActionCandidateResolver(
          * 依玩家目前搶槓／回應捨牌／自己回合的優先順序判斷目前所處情境。複製自
          * [GetLegalActionsUseCase] 內部的同一套優先順序判斷——那個 use case 只回傳
          * `List<GameAction>`，不會單獨暴露目前是哪種情境，這裡才需要自己再判斷一次；
-         * [MahjongTableGameActionService] 決定要把選中的動作包成哪種
-         * [com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand] 信封時也需要同一個
-         * 判斷結果，因此獨立成 companion 函式供兩處共用，避免各自複製一份。
+         * [MahjongTableGameActionService] 決定要把選中的動作包成哪種 [GameCommand] 信封時也需要同一個判斷結果，
+         * 因此獨立成 companion 函式供兩處共用，避免各自複製一份。
          */
         fun resolvePendingMode(state: TableState, playerId: Uuid): GamePendingMode {
             val pendingChankan = state.pendingChankan
@@ -183,6 +185,7 @@ private fun GameAction.baseToken(): String = when (this) {
         GameAction.KanType.CLOSED_KAN -> "kan_closed"
         GameAction.KanType.ADDED_KAN -> "kan_added"
     }
+
     is GameAction.Ron -> "ron"
     GameAction.Pass -> "pass"
     is GameAction.ExhaustiveDraw -> "kyuushu"

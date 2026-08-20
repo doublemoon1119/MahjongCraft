@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
@@ -12,8 +13,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
  * 或大四喜（四組風牌）所需的最後一組面子，進而觸發包牌責任。
  *
  * 此判定必須在該次碰／明槓「實際套用到手牌之前」呼叫，以取得鳴牌當下、
- * 尚未加入新副露的手牌狀態；加槓（[com.doublemoon1119.mahjongcraft.logic.base.MeldType.ADDED_KAN]）
- * 與暗槓（[com.doublemoon1119.mahjongcraft.logic.base.MeldType.CLOSED_KAN]）不會產生新的包牌責任，
+ * 尚未加入新副露的手牌狀態；加槓（[MeldType.ADDED_KAN]）
+ * 與暗槓（[MeldType.CLOSED_KAN]）不會產生新的包牌責任，
  * 不需要呼叫此判定器：
  * - 加槓沿用原本碰的來源方位，不會新增責任。
  * - 暗槓沒有鳴牌來源，不構成包牌。

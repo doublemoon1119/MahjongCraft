@@ -1,13 +1,14 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.registry
 
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.modules.PolymorphicModuleBuilder
 import kotlin.reflect.KClass
 
 /**
- * 領域層開放介面（例如 [com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig]）與其對應
- * DTO 之間的通用註冊表，比照
- * [com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl] 的既有精神：建構時是空
+ * 領域層開放介面（例如 [MahjongRuleConfig]）與其對應
+ * DTO 之間的通用註冊表，比照 [MahjongModuleRegistryImpl] 的既有精神：建構時是空
  * 的對照表，日麻/台麻透過 `registerBuiltInRuleConfigDtos()` 呼叫 [register] 註冊進來，第三方規則
  * 模組要支援序列化的話走同一套流程，這個類別本身不知道、也不在乎誰註冊了什麼。
  *

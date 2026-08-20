@@ -1,13 +1,14 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import kotlin.uuid.Uuid
 
 /**
  * 捨牌後、等待其他玩家回應（吃/碰/槓/過）的反應視窗狀態。
  *
  * 規則無關的通用型別：哪些玩家有資格回應、回應的優先權判斷等規則特有邏輯，
- * 一律交由呼叫端（如 use case）搭配 [com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator] 決定，
+ * 一律交由呼叫端（如 use case）搭配 [LegalActionValidator] 決定，
  * 這裡只負責追蹤「誰還沒回應」與「大家是否都回應完了」。
  *
  * @property discarderId 本次捨牌的玩家 Uuid。

@@ -9,7 +9,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
@@ -22,9 +24,9 @@ import kotlin.uuid.toKotlinUuid
 
 /**
  * 把 Minecraft 玩家的對局階段操作（出牌／立直／吃碰槓胡過／九種九牌）路由到既有的
- * [GameFlowCoordinator]。比照 [com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService]
- * 的既有風格：直接呼叫 use case／coordinator，不透過
- * [com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels.gameCommand]——那個頻道
+ * [GameFlowCoordinator]。
+ * 比照 [MahjongTableRoomService] 的既有風格：直接呼叫 use case／coordinator，
+ * 不透過 [MahjongChannels.gameCommand]——那個頻道
  * 是給以後真的有 client 端 GUI 時使用，指令執行緒本身就在伺服器上，不需要繞經它。
  *
  * 摸牌（[GameCommand.Draw]）不在這裡開放——已經由 [MahjongAutoDrawService]／`AiTurnDriver` 全自動

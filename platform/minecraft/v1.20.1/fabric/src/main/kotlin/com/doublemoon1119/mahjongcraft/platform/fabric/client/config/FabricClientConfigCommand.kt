@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROOT
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.bracketedInteractiveLabel
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowHoverText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.prefixedConfigMessage
@@ -15,16 +17,14 @@ import org.slf4j.LoggerFactory
 
 /**
  * 純 client-only 指令 `/mahjongcraft_client config reload|show`：跟 server 端
- * `/mahjongcraft config reload|show`（見
- * [com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand]）效果
+ * `/mahjongcraft config reload|show`（見 [FabricServerConfigCommand]）效果
  * 完全一致——`reload` 重新讀取玩家手動編輯過的 `client.toml`，`show` 把目前記憶體內實際生效的標準
  * TOML 收進單行可 hover 的中括號標籤裡；訊息格式（`[MahjongCraft] ...` 前綴、成功綠色／失敗紅色／
  * 標題青色／hover 內容依 section·key·value 上色）共用同一套 [prefixedConfigMessage]／
  * [bracketedInteractiveLabel]／[configShowHoverText]。跟 server 版本的差別只有一點：這裡是玩家自己
  * 本機的設定檔，沒有權限限制，任何人都能執行。
  *
- * 根節點用共用的 [CLIENT_COMMAND_ROOT]，理由見該常數 KDoc；`config` 子節點在這裡跟
- * [com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand] 的 `label`
+ * 根節點用共用的 [CLIENT_COMMAND_ROOT]，理由見該常數 KDoc；`config` 子節點在這裡跟 [FabricTileLabelCommand] 的 `label`
  * 子節點是各自獨立註冊、共用同一個根節點，跟 server 端 `FabricRoomCommand`／`FabricServerConfigCommand`
  * 共用 `mahjongcraft` 根節點的既有慣例一致。
  */
@@ -41,8 +41,13 @@ class FabricClientConfigCommand(
             dispatcher.register(
                 ClientCommandManager.literal(CLIENT_COMMAND_ROOT).then(
                     ClientCommandManager.literal(CONFIG_SUBCOMMAND)
-                        .then(ClientCommandManager.literal(RELOAD_SUBCOMMAND).executes { context -> reload(context.source) })
-                        .then(ClientCommandManager.literal(SHOW_SUBCOMMAND).executes { context -> show(context.source) }),
+                        .then(
+                            ClientCommandManager.literal(RELOAD_SUBCOMMAND)
+                                .executes { context -> reload(context.source) },
+                        )
+                        .then(
+                            ClientCommandManager.literal(SHOW_SUBCOMMAND).executes { context -> show(context.source) },
+                        ),
                 ),
             )
         }
@@ -55,6 +60,7 @@ class FabricClientConfigCommand(
             source.sendFeedback(prefixedConfigMessage("Client config reloaded", Formatting.GREEN))
             COMMAND_SUCCESS
         }
+
         is MahjongClientConfigUpdateResult.Failure -> {
             logger.warn("Client config reload failed: {}", result.message)
             source.sendError(prefixedConfigMessage(result.message, Formatting.RED))

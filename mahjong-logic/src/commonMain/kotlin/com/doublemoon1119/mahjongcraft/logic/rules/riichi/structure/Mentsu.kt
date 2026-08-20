@@ -1,14 +1,16 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure
 
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 
 /**
  * 代表麻將手牌分析用的面子組合（Mentsu）。
  *
  * 此類別用於立直麻將的手牌結構分析，專注於牌型的內部組合邏輯。
- * 與 [com.doublemoon1119.mahjongcraft.logic.base.Meld] 不同：
- * - [com.doublemoon1119.mahjongcraft.logic.base.Meld] 用於表示遊戲狀態中的副露（已公開的牌組），
- *   包含 [com.doublemoon1119.mahjongcraft.logic.base.MeldType]、來源方向等遊戲狀態資訊。
+ * 與 [Meld] 不同：
+ * - [Meld] 用於表示遊戲狀態中的副露（已公開的牌組），
+ *   包含 [MeldType]、來源方向等遊戲狀態資訊。
  * - 本類別用於靜態的手牌分析，不涉及遊戲狀態，僅包含牌面資訊。
  *
  * 面子是指 3 張或 4 張相同的牌（刻子 / 槓），或者是 3 張連續的牌（順子）。

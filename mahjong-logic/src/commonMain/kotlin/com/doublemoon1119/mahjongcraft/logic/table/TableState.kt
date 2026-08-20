@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayoutResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlin.uuid.Uuid
 
@@ -25,8 +26,7 @@ import kotlin.uuid.Uuid
  * @property pendingChankan 目前尚待其他玩家回應（搶槓/過）的暗槓/加槓反應視窗，若無則為 null。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
  * @property initialDeadWall 開局瞬間的王牌快照，依規則定義的固定內部順序保存；規則尚未支援開門
- * 流程時為空清單。這只是初始狀態，不代表王牌整局固定不變——見
- * [com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayoutResult.initialDeadWall]。
+ * 流程時為空清單。這只是初始狀態，不代表王牌整局固定不變——見 [TileWallLayoutResult.initialDeadWall]。
  */
 data class TableState(
     val id: Uuid,

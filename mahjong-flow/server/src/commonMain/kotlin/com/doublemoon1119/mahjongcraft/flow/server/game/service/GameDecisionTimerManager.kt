@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.DecisionTimeStatus
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
@@ -173,8 +174,8 @@ class GameDecisionTimerManager(
      *
      * 平台停止 server session 時必須先停止新的遊戲命令，再呼叫本方法，最後才解除 persistence dirty
      * listener；如此最後使用的保留思考時間才會進入平台已快取的權威存檔快照。每場遊戲各自以一次 repository
-     * 交易寫回所有玩家的剩餘保留思考時間。「先停止新的遊戲命令」這件事本身，交給呼叫端用
-     * [com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope.shutdown] 完成——
+     * 交易寫回所有玩家的剩餘保留思考時間。「先停止新的遊戲命令」這件事本身，
+     * 交給呼叫端用 [AppCoroutineScope.shutdown] 完成——
      * 停止接受新工作、等現有工作自然跑完，而不是直接 `cancel()` 把還在等鎖、卡在中途的協程攔腰砍斷。
      */
     suspend fun settleAll() = mutex.withLock {

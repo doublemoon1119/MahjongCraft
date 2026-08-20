@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer.Companion.LABEL_MARGIN_RATIO
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer.Companion.LABEL_SCALE
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
@@ -8,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelText
@@ -82,8 +85,7 @@ class MahjongTileEntityRenderer(
 
     /**
      * 疊加繪製牌面角落輔助標籤；只在這個 asset key 有註冊標籤，且（[MahjongClientConfigStore.current]
-     * 開啟，或標籤本身標記
-     * [forced][com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabel.forced] 強制顯示——
+     * 開啟，或標籤本身標記 [TileLabel.forced] 強制顯示——
      * 例如八張花牌彼此外觀相近，標籤兼有辨識花色與順序的功能，不只是給非中文圈玩家看的輔助資訊，因此
      * 無視玩家本機開關）時才畫。呼叫時機在 [itemRenderer] 畫完牌面之後、`matrices.pop()` 之前，沿用
      * 同一個已經套用
