@@ -29,10 +29,16 @@ tasks.withType<Test>().configureEach {
 // assets/mahjongcraft 底下的貼圖/模型/語言檔實體上放在 :minecraft_common（跨版本、跨 loader 共用，
 // 避免每個版本/loader 模組各自留一份重複的素材），這裡只是把那個目錄多接一條 srcDir 進本模組的
 // resources，讓既有的 processResources/打包流程照樣把它們收進最終的 mod jar，不需要額外的複製 task。
+//
+// data/mahjongcraft/recipes 則放在 :minecraft_v1.20.1_common（同版本、跨 loader 共用，但不是跨版本
+// 共用）——recipe JSON 的 `result` 欄位格式會隨 Minecraft 版本破版（1.20.1 用 `item`，1.21+ 改用
+// `id`），不像貼圖/模型/語言檔那樣目前為止都還相容，因此不能跟其他素材一起放進真正跨版本共用的
+// :minecraft_common；日後其他版本若也需要各自一份 recipe，會在該版本自己的 xxx_common 模組另外維護。
 sourceSets {
     main {
         resources {
             srcDir(project(":minecraft_common").projectDir.resolve("src/jvmMain/resources"))
+            srcDir(project(":minecraft_v1.20.1_common").projectDir.resolve("src/jvmMain/resources"))
         }
     }
 }
