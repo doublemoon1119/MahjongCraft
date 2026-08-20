@@ -286,8 +286,10 @@ class FabricGamePresentationPublisher(
     }
 
     /**
-     * 一般回合動作（捨牌、摸牌、鳴牌）呼叫，沒有動畫可等，直接同步呈現；開局/換局的初次發牌改走
-     * [publishInitialDealAnimation]，不會呼叫這個方法。
+     * 一般回合動作（捨牌、摸牌、鳴牌）呼叫，不需要 [busyTracker] 或呼叫端延遲——即使 [animateDrawnTile]
+     * 為 `true` 觸發摸牌動畫，那段動畫本身的排程完全交給 `FabricMahjongPlayerAreaPresenter` 內部處理
+     * （`scheduleDrawnTileAnimation`），這裡仍然是直接同步呈現，理由同其餘一般回合動作。開局/換局的
+     * 初次發牌改走 [publishInitialDealAnimation]，不會呼叫這個方法。
      */
     override fun publishPlayerAreaUpdated(
         gameId: Uuid,
@@ -296,21 +298,23 @@ class FabricGamePresentationPublisher(
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
         comboStickCount: Int,
+        animateDrawnTile: Boolean,
     ) {
         logger.debug(
-            "publishPlayerAreaUpdated gameId={} seatIndex={} standingTileCount={} drawnTileId={} meldCount={} comboStickCount={}",
+            "publishPlayerAreaUpdated gameId={} seatIndex={} standingTileCount={} drawnTileId={} meldCount={} comboStickCount={} animateDrawnTile={}",
             gameId,
             seatIndex,
             standingTileIds.size,
             drawnTileId,
             melds.size,
             comboStickCount,
+            animateDrawnTile,
         )
         if (serverHolder.current() == null) {
             logger.warn("publishPlayerAreaUpdated gameId={} skipped: no active server", gameId)
             return
         }
-        presentPlayerArea(gameId, seatIndex, standingTileIds, drawnTileId, melds, comboStickCount)
+        presentPlayerArea(gameId, seatIndex, standingTileIds, drawnTileId, melds, comboStickCount, animateDrawnTile)
     }
 
     /**
@@ -384,6 +388,7 @@ class FabricGamePresentationPublisher(
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
         comboStickCount: Int,
+        animateDrawnTile: Boolean,
     ) {
         scope.launch(dispatchers.main) {
             val resolved = resolveTableContext(gameId, "publishPlayerAreaUpdated") ?: return@launch
@@ -399,6 +404,7 @@ class FabricGamePresentationPublisher(
                     MahjongMeldTileGroup(it.type, it.tileIds, it.calledTileId, it.sourceDirection, it.allTilesFaceDown)
                 },
                 comboStickCount = comboStickCount,
+                animateDrawnTile = animateDrawnTile,
             )
             val result = playerAreaPresenter.present(presentation)
             logger.debug("publishPlayerAreaUpdated gameId={} present() result={}", gameId, result)

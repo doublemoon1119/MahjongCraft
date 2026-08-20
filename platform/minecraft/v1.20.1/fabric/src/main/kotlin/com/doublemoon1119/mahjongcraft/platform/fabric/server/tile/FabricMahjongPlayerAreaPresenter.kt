@@ -55,7 +55,9 @@ class FabricMahjongPlayerAreaPresenter(
      *    [MahjongTileTableLayout.stickAreaWidth]），換算成整排立牌／摸牌位需要往玩家自己方向平移的
      *    距離（[MahjongTileTableLayout.handCornerYieldShift]）。
      * 2. 用 [MahjongTileTableLayout.handPlacement]／[MahjongTileTableLayout.drawnTilePlacement] 帶著
-     *    這個平移量，逐張擺放立牌與摸牌位（[MahjongTilePose.STANDING]）。
+     *    這個平移量，逐張擺放立牌與摸牌位（[MahjongTilePose.STANDING]）——摸牌位在
+     *    [MahjongPlayerAreaPresentation.animateDrawnTile] 為 `true` 時改排定
+     *    [scheduleDrawnTileAnimation]，不直接定格。
      * 3. 用 [MahjongTileTableLayout.meldPlacement] 逐格擺放副露——邏輯照搬原本
      *    `FabricMahjongMeldPresenter.present()`，起始游標從 [MahjongTileTableLayout.stickAreaWidth]
      *    開始（讓副露自然接在積棒外緣），其餘不變，含 [closedKanPose]／加槓 depth-offset。
@@ -127,8 +129,15 @@ class FabricMahjongPlayerAreaPresenter(
                     cornerYieldShift = cornerYieldShift,
                 )
                 tile.assignToTable(presentation.tableId)
-                tile.tilePose = MahjongTilePose.STANDING
-                tile.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+                if (presentation.animateDrawnTile) {
+                    // 起飛前維持牌現在的既有姿態（牌牆生成以來一直是 MahjongTilePose.FACE_DOWN，還沒被
+                    // 動過），不要在這裡先改成 STANDING——姿態要等 scheduleDrawnTileAnimation 隱形傳送
+                    // 那一刻才切換，見該方法 KDoc。
+                    scheduleDrawnTileAnimation(tile, placement)
+                } else {
+                    tile.tilePose = MahjongTilePose.STANDING
+                    tile.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+                }
             }
         }
 
@@ -381,6 +390,57 @@ class FabricMahjongPlayerAreaPresenter(
                     endPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
                 )
                 tile.tilePose = MahjongTilePose.STANDING
+            }
+        }
+    }
+
+    /**
+     * 排定摸牌動畫：跟開局發牌動畫共用同一套「起飛→隱形傳送→落下」節奏
+     * （[MahjongTileTableLayout.DRAW_LIFT_HEIGHT]／[MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS]／
+     * [MahjongTileTableLayout.DRAW_SNAP_GAP_TICKS]／[MahjongTileTableLayout.DRAW_DROP_DURATION_TICKS]，
+     * 手法同 [scheduleDealBatchAnimation]），完整順序是：面朝下起飛→隱形→傳送到摸牌位→（同一瞬間）
+     * 姿態換成面向玩家→解除隱形→落下。
+     *
+     * 跟開局發牌動畫的差別：翻面（[MahjongTilePose.FACE_DOWN] 換成 [MahjongTilePose.STANDING]）不是
+     * 落地後另外播放的旋轉動畫，而是在隱形傳送那一刻直接切換姿態——因為切換當下牌本身是隱形的，玩家
+     * 看不到姿態瞬間跳變，效果等同「傳送過去的時候順便翻好面」；摸牌是單張動作，不需要像開局發牌那樣
+     * 等所有座位都到齊才一起揭曉演出翻牌動畫，直接以面向玩家的姿態落下即可，理由見
+     * [MahjongPlayerAreaPresentation.animateDrawnTile] KDoc。起飛與落下兩階段各自的起訖姿態旋轉角相同
+     * （不內插），只有隱形傳送那一刻的姿態本身是離散跳變。只有這一張牌，不需要像 [presentInitialDeal]
+     * 那樣排定跨座位／跨批次的延遲，起飛立刻開始。
+     */
+    private fun scheduleDrawnTileAnimation(tile: MahjongTileEntity, finalPlacement: MahjongTileWallPlacement) {
+        val peakY = tile.y + MahjongTileTableLayout.DRAW_LIFT_HEIGHT
+        val wallX = tile.x
+        val wallY = tile.y
+        val wallZ = tile.z
+        tile.refreshPositionAndAngles(wallX, peakY, wallZ, tile.yaw, 0.0f)
+        tile.startMotionAnimation(
+            startGameTime = tile.world.time,
+            durationTicks = MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS,
+            arcHeight = 0.0,
+            startOffset = DiceAnimationVector(0.0, wallY - peakY, 0.0),
+            startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+            endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+        )
+
+        tickClock.scheduleAfter(MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS * MILLIS_PER_TICK) {
+            if (tile.isRemoved) return@scheduleAfter
+            tile.isInvisible = true
+            tile.refreshPositionAndAngles(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw, 0.0f)
+            tile.tilePose = MahjongTilePose.STANDING
+
+            tickClock.scheduleAfter(MahjongTileTableLayout.DRAW_SNAP_GAP_TICKS * MILLIS_PER_TICK) {
+                if (tile.isRemoved) return@scheduleAfter
+                tile.startMotionAnimation(
+                    startGameTime = tile.world.time,
+                    durationTicks = MahjongTileTableLayout.DRAW_DROP_DURATION_TICKS,
+                    arcHeight = 0.0,
+                    startOffset = DiceAnimationVector(0.0, peakY - finalPlacement.y, 0.0),
+                    startPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
+                    endPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
+                )
+                tile.isInvisible = false
             }
         }
     }

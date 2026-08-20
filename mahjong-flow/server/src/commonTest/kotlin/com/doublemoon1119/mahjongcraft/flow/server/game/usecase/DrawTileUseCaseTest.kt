@@ -170,6 +170,7 @@ class DrawTileUseCaseTest {
         assertEquals(0, published.seatIndex)
         assertEquals(1, published.standingTileIds.size)
         assertEquals(drawnTile.id, published.drawnTileId)
+        assertTrue(published.animateDrawnTile)
     }
 
     /**

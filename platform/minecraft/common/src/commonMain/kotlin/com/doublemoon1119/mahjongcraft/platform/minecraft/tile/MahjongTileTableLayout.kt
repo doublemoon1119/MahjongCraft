@@ -628,6 +628,24 @@ object MahjongTileTableLayout {
     const val DEAL_FLIP_DURATION_TICKS: Int = 4
 
     /**
+     * 摸牌動畫起飛階段的相對高度，跟開局發牌動畫共用同一套「起飛→隱形傳送→落下」節奏（見
+     * `FabricMahjongPlayerAreaPresenter.scheduleDrawnTileAnimation`），差別只在摸牌全程姿態固定直立、
+     * 不需要額外的翻牌步驟——摸牌是單張、高頻的動作，直接面向玩家出現比蓋牌後再翻更符合直覺，見
+     * `GamePresentationPublisher.publishPlayerAreaUpdated` 的 `animateDrawnTile` 參數 KDoc。起始估算值，
+     * 預期進遊戲後調整。
+     */
+    const val DRAW_LIFT_HEIGHT: Double = 0.4
+
+    /** 摸牌動畫起飛階段的動畫時長，供 [MahjongTileTableLayout] 以外的呼叫端引用，理由同 [DEAL_LIFT_DURATION_TICKS]。 */
+    const val DRAW_LIFT_DURATION_TICKS: Int = 4
+
+    /** 摸牌動畫起飛完成、隱形傳送到摸牌位上空後，到解除隱形開始落下之間的短暫間隔，理由同 [DEAL_SNAP_GAP_TICKS]。 */
+    const val DRAW_SNAP_GAP_TICKS: Int = 2
+
+    /** 摸牌動畫落下階段的動畫時長，理由同 [DEAL_DROP_DURATION_TICKS]。 */
+    const val DRAW_DROP_DURATION_TICKS: Int = 5
+
+    /**
      * 牌牆角落貼齊處縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，遊戲內驗證後調整的觀感參數。
      * `internal` 而非 `private`：讓同模組的 `com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayoutTest`
      * 能直接引用同一個數值驗證預期位移量，不需要在測試裡另外複製一份可能忘記同步的常數。

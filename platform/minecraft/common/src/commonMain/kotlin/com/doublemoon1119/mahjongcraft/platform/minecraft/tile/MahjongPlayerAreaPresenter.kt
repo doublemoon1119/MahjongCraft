@@ -46,6 +46,10 @@ data class MahjongMeldTileGroup(
  * @property comboStickCount 這位玩家目前該顯示的積棒（連莊棒）支數——只有莊家非零，等於
  * `TableState.comboCount`；只用來讓手牌／副露正確讓開積棒佔用的空間，這個 presenter 本身不負責
  * 積棒 entity 的生成／清除，見 [MahjongScoringStickPresenter]。
+ * @property animateDrawnTile [drawnTileId] 非 `null` 時，是否要播放摸牌動畫（牌從牌牆原位面朝下起飛、
+ * 短暫隱形傳送到摸牌位、傳送的同一瞬間切換成面向玩家的姿態、解除隱形後再落下）——姿態切換發生在
+ * 隱形期間，玩家看不到旋轉過程，不像開局發牌動畫那樣需要落地後另外播放看得見的翻牌動畫。只有真正的
+ * 摸牌事件該傳 `true`，其餘呼叫端維持預設 `false` 直接定格顯示，不重複播放動畫。
  */
 data class MahjongPlayerAreaPresentation(
     val tableId: Uuid,
@@ -56,6 +60,7 @@ data class MahjongPlayerAreaPresentation(
     val drawnTileId: Uuid?,
     val melds: List<MahjongMeldTileGroup>,
     val comboStickCount: Int,
+    val animateDrawnTile: Boolean = false,
 )
 
 /**

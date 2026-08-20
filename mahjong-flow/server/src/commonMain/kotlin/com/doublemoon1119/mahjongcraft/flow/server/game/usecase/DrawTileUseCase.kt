@@ -84,7 +84,8 @@ class DrawTileUseCase(
         }
 
         // 4. 觸發平台呈現層：把摸到的牌從牌牆移到摸牌位（副露/積棒不受摸牌影響，仍要一併帶上讓手牌
-        // 讓開偏移量算得準）
+        // 讓開偏移量算得準）；animateDrawnTile 傳 true 播放摸牌動畫，理由見
+        // GamePresentationPublisher.publishPlayerAreaUpdated 的同名參數 KDoc。
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val drawnPlayer = newState.players[seatIndex]
         val dealerSeatIndex = newState.players.indexOfFirst { it.currentWind == Wind.EAST }
@@ -95,6 +96,7 @@ class DrawTileUseCase(
             drawnPlayer.hand.lastDrawn?.id,
             drawnPlayer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
             comboStickCount = if (seatIndex == dealerSeatIndex) newState.comboCount else 0,
+            animateDrawnTile = true,
         )
 
         return Outcome.Success(Unit)

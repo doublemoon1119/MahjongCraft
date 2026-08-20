@@ -157,6 +157,12 @@ interface GamePresentationPublisher {
      * @param comboStickCount 這位玩家目前該顯示的積棒支數——只有莊家非零，等於 `TableState.comboCount`；
      * 只用來讓手牌／副露正確讓開積棒佔用的空間，不會觸發積棒 entity 本身的生成／清除（那是
      * [publishScoringSticksUpdated] 的職責）。
+     * @param animateDrawnTile [drawnTileId] 非 `null` 時，是否要播放「牌從牌山原位面朝下起飛、隱形
+     * 傳送到摸牌位、傳送同一瞬間切換成面向玩家、解除隱形後落下」的動畫——只有真正的摸牌事件
+     * （`DrawTileUseCase`）該傳 `true`；其餘呼叫端（捨牌、鳴牌、副露相關回應）即使當下摸牌位仍有牌，
+     * 也維持預設 `false` 直接定格顯示，不重複播放動畫。跟 [publishInitialDealAnimation] 的差別是翻面
+     * 發生在隱形期間、玩家看不到旋轉過程，不需要落地後再另外播放一段看得見的翻牌動畫——摸牌是高頻的
+     * 單張動作，不需要像開局那樣等所有座位到齊才一起揭曉。
      */
     fun publishPlayerAreaUpdated(
         gameId: Uuid,
@@ -165,6 +171,7 @@ interface GamePresentationPublisher {
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
         comboStickCount: Int,
+        animateDrawnTile: Boolean = false,
     )
 
     /**
