@@ -147,7 +147,8 @@ data class Hand(
         if (index != -1) {
             val discardedTile = tiles[index]
             val remainingTiles = tiles.filterIndexed { i, _ -> i != index }
-            // 若打出手牌而非摸切牌，則將摸到的牌併入立牌中
+            // 若打出手牌而非摸切牌，則將摸到的牌併入立牌中，接在列表最後面——這裡的順序是加入的時間軸
+            // （先加入的在前）。
             val newTiles = lastDrawn?.let { remainingTiles + it } ?: remainingTiles
 
             return DiscardResult(

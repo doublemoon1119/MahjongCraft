@@ -99,6 +99,20 @@ class HandTest {
         assertEquals(1, updatedHand.standingTiles.size)
     }
 
+    /** 驗證非摸切捨牌時，併入立牌的 lastDrawn 接在列表最後面——這裡的順序是加入的時間軸。 */
+    @Test
+    fun `test non tsumogiri discard appends lastDrawn to the end of standing tiles`() {
+        val tileInHand1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+        val tileInHand2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2))
+        val tileLastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
+
+        val hand = Hand(tiles = listOf(tileInHand1, tileInHand2), lastDrawn = tileLastDrawn)
+
+        val result = hand.discardById(tileInHand1.id)
+
+        assertEquals(listOf(tileInHand2, tileLastDrawn), result?.hand?.standingTiles)
+    }
+
     /**
      * 測試排序功能，確保 organize() 回傳的新手牌依照指定的 [TileOrder] 正確排序。
      */

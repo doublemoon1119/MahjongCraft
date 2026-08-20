@@ -57,7 +57,11 @@ class FabricMahjongPlayerAreaPresenter(
      * 2. 用 [MahjongTileTableLayout.handPlacement]／[MahjongTileTableLayout.drawnTilePlacement] 帶著
      *    這個平移量，逐張擺放立牌與摸牌位（[MahjongTilePose.STANDING]）——摸牌位在
      *    [MahjongPlayerAreaPresentation.animateDrawnTile] 為 `true` 時改排定
-     *    [scheduleDrawnTileAnimation]，不直接定格。
+     *    [scheduleDrawnTileAnimation]，不直接定格。[MahjongPlayerAreaPresentation.standingTileIds] 的
+     *    順序是加入手牌的時間軸（先加入的在前，見 `Hand.discardById` KDoc），不是畫面左右順序，這裡
+     *    刻意把它反過來對應 [MahjongTileTableLayout.handPlacement] 的 `tileIndex`（`0` 是玩家自己右手
+     *    邊）——最後加入立牌的那張牌（例如非摸切捨牌時併入的 `lastDrawn`）因此會落在最右手邊，符合
+     *    真實麻將摸牌後插入手牌的直覺方向。
      * 3. 用 [MahjongTileTableLayout.meldPlacement] 逐格擺放副露——邏輯照搬原本
      *    `FabricMahjongMeldPresenter.present()`，起始游標從 [MahjongTileTableLayout.stickAreaWidth]
      *    開始（讓副露自然接在積棒外緣），其餘不變，含 [closedKanPose]／加槓 depth-offset。
@@ -99,7 +103,7 @@ class FabricMahjongPlayerAreaPresenter(
             hasDrawnTile = presentation.drawnTileId != null,
         )
 
-        presentation.standingTileIds.forEachIndexed { tileIndex, tileId ->
+        presentation.standingTileIds.forEachIndexed { orderIndex, tileId ->
             val tile = claimTile(tileId) ?: return@forEachIndexed
             val placement = MahjongTileTableLayout.handPlacement(
                 controllerX = controllerPos.x,
@@ -108,7 +112,7 @@ class FabricMahjongPlayerAreaPresenter(
                 tableFacing = presentation.tableFacing,
                 seatIndex = presentation.seatIndex,
                 handSize = presentation.standingTileIds.size,
-                tileIndex = tileIndex,
+                tileIndex = presentation.standingTileIds.size - 1 - orderIndex,
                 cornerYieldShift = cornerYieldShift,
             )
             tile.assignToTable(presentation.tableId)
@@ -216,7 +220,8 @@ class FabricMahjongPlayerAreaPresenter(
      * 播完才輪到下一次，理由同 [MahjongPlayerAreaPresenter.presentInitialDeal] KDoc。
      * 批次內每張牌各自的世界起點就是牌牆生成時留下的既有位置（不重新查詢牌山結構座標，直接讀 entity
      * 目前的實際座標），批次終點是 [MahjongTileTableLayout.handPlacement] 算出的最終手牌格位——跟
-     * [present] 一樣不建立新 entity。
+     * [present] 一樣不建立新 entity，也一樣把 [MahjongInitialDealPresentation.handTileIdsBySeatIndex]
+     * 各座位清單內的順序（時間軸，非畫面左右順序）反過來對應 `tileIndex`，見 [present] KDoc。
      *
      * 全部座位的最後一次抓取都落地後，額外統一排定一次翻牌動畫（[scheduleDealFlipAnimation]）——所有
      * 已成功領走的牌（不論哪一批、哪個座位）同一時間一起原地翻起，觸發時機由
@@ -267,7 +272,7 @@ class FabricMahjongPlayerAreaPresenter(
                 val batchDelayTicks = MahjongTileTableLayout.dealBatchStartDelayTicks(globalTurnIndex)
                 tileIds.drop(batchStart).take(batchSize).forEachIndexed { indexInBatch, tileId ->
                     val tile = claimTile(tileId) ?: return@forEachIndexed
-                    val tileIndex = batchStart + indexInBatch
+                    val orderIndex = batchStart + indexInBatch
                     val placement = MahjongTileTableLayout.handPlacement(
                         controllerX = controllerPos.x,
                         controllerY = controllerPos.y,
@@ -275,7 +280,7 @@ class FabricMahjongPlayerAreaPresenter(
                         tableFacing = presentation.tableFacing,
                         seatIndex = seatIndex,
                         handSize = tileIds.size,
-                        tileIndex = tileIndex,
+                        tileIndex = tileIds.size - 1 - orderIndex,
                         cornerYieldShift = cornerYieldShiftBySeat.getValue(seatIndex),
                     )
                     tile.assignToTable(presentation.tableId)

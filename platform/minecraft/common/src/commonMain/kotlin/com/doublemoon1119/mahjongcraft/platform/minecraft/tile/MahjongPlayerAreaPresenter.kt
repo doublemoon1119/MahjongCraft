@@ -36,8 +36,11 @@ data class MahjongMeldTileGroup(
  * @property tableLocation 麻將桌 controller 的位置。
  * @property tableFacing 麻將桌 controller 的世界水平朝向。
  * @property seatIndex 這位玩家在 `TableState.players` 的固定座位 index。
- * @property standingTileIds 這位玩家目前立牌張數，依發牌／捨牌後的順序排列（`Hand.tiles`，不含
- * [drawnTileId]），鍵為 [IdentifiedTile.id]；空清單代表這局結束，只需要清除舊牌。
+ * @property standingTileIds 這位玩家目前立牌張數，依加入手牌的時間軸排列（`Hand.tiles`，不含
+ * [drawnTileId]；先加入的在前，例如非摸切捨牌時併入立牌的 `Hand.lastDrawn` 排在最後面），鍵為
+ * [IdentifiedTile.id]；空清單代表這局結束，只需要清除舊牌。這個順序不是畫面上的左右順序——實作端會
+ * 自行反過來對應到左右座標，讓最後加入的那張牌落在玩家自己右手邊，符合真實麻將摸牌後插入手牌的直覺
+ * 方向，見 `FabricMahjongPlayerAreaPresenter.present` KDoc。
  * @property drawnTileId 這位玩家目前摸到、尚未併入立牌或打出的那張牌 Uuid（`Hand.lastDrawn`）；
  * `null` 代表目前沒有摸牌位要呈現。
  * @property melds 這位玩家目前所有副露，依宣告順序排列——第一組（最早宣告）位於副露區固定的桌角
@@ -72,7 +75,7 @@ data class MahjongPlayerAreaPresentation(
  * @property tableLocation 麻將桌 controller 的位置。
  * @property tableFacing 麻將桌 controller 的世界水平朝向。
  * @property handTileIdsBySeatIndex 每個座位最終手牌的完整牌 Uuid 列表（依 [MahjongPlayerAreaPresentation.standingTileIds]
- * 同一套順序），鍵為座位 index。
+ * 同一套「加入時間軸、不是畫面左右順序」的慣例），鍵為座位 index。
  * @property dealerSeatIndex 本局莊家座位 index，只用來換算積棒佔用寬度（[comboStickCount] 只有莊家
  * 非零），跟牌牆的莊家相對旋轉無關——理由同 [MahjongPlayerAreaPresentation]，手牌位置不需要莊家相對
  * 旋轉。
