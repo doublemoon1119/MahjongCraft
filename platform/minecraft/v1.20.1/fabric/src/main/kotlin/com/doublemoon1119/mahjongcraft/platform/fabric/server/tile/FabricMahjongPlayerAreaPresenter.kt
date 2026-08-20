@@ -208,6 +208,10 @@ class FabricMahjongPlayerAreaPresenter(
      * 批次內每張牌各自的世界起點就是牌牆生成時留下的既有位置（不重新查詢牌山結構座標，直接讀 entity
      * 目前的實際座標），批次終點是 [MahjongTileTableLayout.handPlacement] 算出的最終手牌格位——跟
      * [present] 一樣不建立新 entity。
+     *
+     * 全部座位的最後一次抓取都落地後，額外統一排定一次翻牌動畫（[scheduleDealFlipAnimation]）——所有
+     * 已成功領走的牌（不論哪一批、哪個座位）同一時間一起原地翻起，觸發時機由
+     * [MahjongTileTableLayout.dealFlipStartDelayTicks] 依總抓取次數算出。
      */
     override fun presentInitialDeal(presentation: MahjongInitialDealPresentation): MahjongPlayerAreaPresentationResult {
         val world = resolveWorld(presentation.tableLocation) ?: return MahjongPlayerAreaPresentationResult.TABLE_NOT_FOUND
@@ -245,6 +249,7 @@ class FabricMahjongPlayerAreaPresenter(
             )
         }
 
+        val dealtTiles = mutableListOf<MahjongTileEntity>()
         var batchStart = 0
         presentation.dealBatchSizes.forEachIndexed { batchIndex, batchSize ->
             dealOrderSeatIndices.forEachIndexed { turnOffset, seatIndex ->
@@ -266,10 +271,14 @@ class FabricMahjongPlayerAreaPresenter(
                     )
                     tile.assignToTable(presentation.tableId)
                     scheduleDealBatchAnimation(tile, placement, batchDelayTicks)
+                    dealtTiles += tile
                 }
             }
             batchStart += batchSize
         }
+
+        val totalTurnCount = presentation.dealBatchSizes.size * seatCount
+        scheduleDealFlipAnimation(dealtTiles, MahjongTileTableLayout.dealFlipStartDelayTicks(totalTurnCount))
 
         table.markDirty()
         if (missingTileCount > 0) {
@@ -349,6 +358,29 @@ class FabricMahjongPlayerAreaPresenter(
                     tile.tilePose = MahjongTilePose.FACE_DOWN
                     tile.isInvisible = false
                 }
+            }
+        }
+    }
+
+    /**
+     * 排定開局發牌動畫最後統一的翻牌動畫：所有座位、所有批次成功領到的牌（[tiles]）在同一個 tick 一起
+     * 原地翻起——姿態從 [MahjongTilePose.FACE_DOWN] 轉 [MahjongTilePose.STANDING]，位置完全不動
+     * （[com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector] 起點偏移固定
+     * `(0, 0, 0)`），只有姿態旋轉角隨動畫進度內插，理由見 [presentInitialDeal] KDoc。
+     */
+    private fun scheduleDealFlipAnimation(tiles: List<MahjongTileEntity>, flipDelayTicks: Int) {
+        tickClock.scheduleAfter(flipDelayTicks * MILLIS_PER_TICK) {
+            tiles.forEach { tile ->
+                if (tile.isRemoved) return@forEach
+                tile.startMotionAnimation(
+                    startGameTime = tile.world.time,
+                    durationTicks = MahjongTileTableLayout.DEAL_FLIP_DURATION_TICKS,
+                    arcHeight = 0.0,
+                    startOffset = DiceAnimationVector(0.0, 0.0, 0.0),
+                    startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                    endPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
+                )
+                tile.tilePose = MahjongTilePose.STANDING
             }
         }
     }

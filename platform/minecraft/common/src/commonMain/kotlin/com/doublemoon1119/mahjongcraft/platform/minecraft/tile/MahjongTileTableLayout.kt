@@ -155,12 +155,20 @@ object MahjongTileTableLayout {
     fun dealBatchStartDelayTicks(turnIndex: Int): Int = turnIndex * DEAL_TURN_STAGGER_TICKS
 
     /**
-     * 依總抓取次數（輪數 × 座位數，見 [dealBatchStartDelayTicks] KDoc）算出開局發牌動畫從觸發到全部
-     * 播完所需的總 tick 數，供呼叫端標記桌子忙碌時長使用；算法跟 [wallDropAnimationTicks]（「最後一次
-     * 的延遲 + 該次本身時長」）同一套模式。
+     * 依總抓取次數（輪數 × 座位數，見 [dealBatchStartDelayTicks] KDoc）算出翻牌動畫該延遲多久才開始
+     * ——所有座位的最後一次抓取（落下階段）完整播完後，經過 [DEAL_FLIP_GAP_TICKS] 這一小段停頓，
+     * 全部座位的牌才同時原地翻起（位置不變，只有姿態旋轉角內插）；跟
+     * [dealAnimationTicks] 共用「最後一次抓取的延遲 + 該次本身時長」這段算法，避免兩處各自重複計算。
      */
-    fun dealAnimationTicks(totalTurnCount: Int): Int = dealBatchStartDelayTicks((totalTurnCount - 1).coerceAtLeast(0)) +
-        DEAL_LIFT_DURATION_TICKS + DEAL_SNAP_GAP_TICKS + DEAL_DROP_DURATION_TICKS
+    fun dealFlipStartDelayTicks(totalTurnCount: Int): Int = dealBatchStartDelayTicks((totalTurnCount - 1).coerceAtLeast(0)) +
+        DEAL_LIFT_DURATION_TICKS + DEAL_SNAP_GAP_TICKS + DEAL_DROP_DURATION_TICKS + DEAL_FLIP_GAP_TICKS
+
+    /**
+     * 依總抓取次數（輪數 × 座位數，見 [dealBatchStartDelayTicks] KDoc）算出開局發牌動畫（含最後統一
+     * 翻牌）從觸發到全部播完所需的總 tick 數，供呼叫端標記桌子忙碌時長使用；等於 [dealFlipStartDelayTicks]
+     * 加上翻牌動畫本身的時長（[DEAL_FLIP_DURATION_TICKS]）。
+     */
+    fun dealAnimationTicks(totalTurnCount: Int): Int = dealFlipStartDelayTicks(totalTurnCount) + DEAL_FLIP_DURATION_TICKS
 
     /**
      * 依 controller 座標、桌子世界朝向與座位 index，算出該玩家手牌中第 [tileIndex] 張牌的世界座標。
@@ -604,6 +612,20 @@ object MahjongTileTableLayout {
      * [dealBatchStartDelayTicks]；`internal` 理由同 [CORNER_GAP_RATIO]。
      */
     internal const val DEAL_TURN_STAGGER_TICKS: Int = 3
+
+    /**
+     * 開局發牌動畫中，所有座位的最後一次抓取都落地後，到全部座位的牌同時開始原地翻起之間的短暫停頓，
+     * 供 [dealFlipStartDelayTicks] 使用——讓「全部落地」跟「一起翻起」感覺是兩個分開的動作，不是無縫
+     * 接續；公開理由同 [DEAL_LIFT_DURATION_TICKS]。
+     */
+    const val DEAL_FLIP_GAP_TICKS: Int = 3
+
+    /**
+     * 開局發牌動畫中，翻牌動畫（姿態從蓋牌轉直立，位置不變）的動畫時長，供
+     * [dealFlipStartDelayTicks]／[dealAnimationTicks] 使用；公開理由同
+     * [DEAL_LIFT_DURATION_TICKS]。
+     */
+    const val DEAL_FLIP_DURATION_TICKS: Int = 4
 
     /**
      * 牌牆角落貼齊處縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，遊戲內驗證後調整的觀感參數。

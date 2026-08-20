@@ -97,11 +97,12 @@ class MahjongTileEntityRenderer(
         if (animationFrame != null) matrices.translate(animationFrame.offset.x, animationFrame.offset.y, animationFrame.offset.z)
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-entity.yaw + 180.0f))
         matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(animationFrame?.poseRotationDegrees ?: entity.tilePose.rotationDegrees))
-        when (entity.tilePose) {
-            MahjongTilePose.STANDING -> matrices.translate(0.0, MahjongTileEntity.TILE_HEIGHT / 2.0, 0.0)
-            MahjongTilePose.FACE_UP -> matrices.translate(0.0, 0.0, -MahjongTileEntity.TILE_DEPTH / 2.0)
-            MahjongTilePose.FACE_DOWN -> matrices.translate(0.0, 0.0, MahjongTileEntity.TILE_DEPTH / 2.0)
+        val (poseOffsetX, poseOffsetY, poseOffsetZ) = if (animationFrame != null) {
+            lerpPoseOriginOffset(entity.animationStartPoseRotationDegrees, entity.animationEndPoseRotationDegrees, animationFrame.progress)
+        } else {
+            poseOriginOffset(entity.tilePose.rotationDegrees)
         }
+        matrices.translate(poseOffsetX, poseOffsetY, poseOffsetZ)
         val assetKey = entity.resolvedTileAssetKey()
         val highlighted = entity.isHighlighted()
         val stack = tileStacks[assetKey] ?: tileStacks.getValue(UNKNOWN_TILE_ASSET_KEY)
@@ -125,6 +126,43 @@ class MahjongTileEntityRenderer(
         }
         renderCornerLabels(assetKey, matrices, vertexConsumers, light)
         matrices.pop()
+    }
+
+    /**
+     * 依姿態旋轉角換算原點補償位移，讓 [MahjongTilePose] 三種姿態各自「牌底」都貼齊 render() 套用
+     * 姿態旋轉前的錨點位置（entity 世界座標，經過動畫位移後的位置）——這個位移是套用在姿態旋轉
+     * *之後* 的局部座標系（[render] 呼叫順序：先轉姿態、後位移），效果等同讓姿態旋轉的軸心落在牌底
+     * 而非模型幾何中心，理由見 [lerpPoseOriginOffset] KDoc。
+     */
+    private fun poseOriginOffset(rotationDegrees: Float): Triple<Double, Double, Double> = when (rotationDegrees) {
+        MahjongTilePose.STANDING.rotationDegrees -> Triple(0.0, MahjongTileEntity.TILE_HEIGHT / 2.0, 0.0)
+        MahjongTilePose.FACE_UP.rotationDegrees -> Triple(0.0, 0.0, -MahjongTileEntity.TILE_DEPTH / 2.0)
+        else -> Triple(0.0, 0.0, MahjongTileEntity.TILE_DEPTH / 2.0) // MahjongTilePose.FACE_DOWN
+    }
+
+    /**
+     * 翻牌動畫（[MahjongTilePose.FACE_DOWN] ↔ [MahjongTilePose.STANDING]）播放期間，姿態旋轉角
+     * ([TileMotionAnimationFrame.poseRotationDegrees]) 是連續內插的，但 [poseOriginOffset] 只在三個
+     * 離散姿態各自定義了正確的補償位移——若動畫途中仍固定套用終點姿態的補償位移（原本的做法：
+     * 直接讀 `entity.tilePose`，而 [FabricMahjongPlayerAreaPresenter.scheduleDealFlipAnimation] 一開始
+     * 就把 `tilePose` 設成動畫終點姿態），旋轉角跟位移補償量會對不上，牌看起來會有一段不自然的位移、
+     * 旋轉軸心也不會落在牌底——這是遊戲內實際發現的問題。
+     *
+     * 改成依動畫進度（跟 [TileMotionAnimationFrame.poseRotationDegrees] 用同一個 `progress`，確保兩者
+     * 步調一致）在起訖姿態各自的補償位移之間線性內插，讓補償位移隨著旋轉角同步變化——起訖兩端會精確
+     * 對齊原本靜態姿態的補償量（跟播放前、播放完成後的靜態渲染結果完全連續，不會有起訖瞬間的跳動），
+     * 中間過程雖然不是嚴格意義上單一軸心的剛體旋轉（三個姿態各自的補償位移原本就是各自獨立調校、
+     * 沒有共用同一個真實幾何軸心），但比起原本「旋轉角在動、位移卻整段固定」的錯誤參照點更接近直覺
+     * 上「繞牌底翻起」的觀感，且不會有明顯的位置跳動。
+     */
+    private fun lerpPoseOriginOffset(startRotationDegrees: Float, endRotationDegrees: Float, progress: Double): Triple<Double, Double, Double> {
+        val (startX, startY, startZ) = poseOriginOffset(startRotationDegrees)
+        val (endX, endY, endZ) = poseOriginOffset(endRotationDegrees)
+        return Triple(
+            startX + (endX - startX) * progress,
+            startY + (endY - startY) * progress,
+            startZ + (endZ - startZ) * progress,
+        )
     }
 
     /**
