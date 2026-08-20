@@ -25,23 +25,20 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的牌牆結構隨附桌況資料。 */
     private val wallStructureContexts = mutableMapOf<Uuid, WallStructureContext>()
 
-    /** 依對局 Uuid 紀錄最後一次收到的初始手牌分配。 */
-    private val handTiles = mutableMapOf<Uuid, Map<Int, List<Uuid>>>()
+    /** 依對局 Uuid 紀錄最後一次收到的積棒呈現資料。 */
+    private val scoringSticks = mutableMapOf<Uuid, ScoringStickContext>()
 
-    /** 依對局 Uuid 紀錄最後一次收到的初始手牌分配隨附擲骰數量。 */
-    private val handTileDiceCounts = mutableMapOf<Uuid, Int>()
+    /** 依對局 Uuid 紀錄最後一次收到的桌角區域（手牌/摸牌位/副露）呈現資料。 */
+    private val playerAreas = mutableMapOf<Uuid, PlayerAreaContext>()
+
+    /** 依對局 Uuid 紀錄是否收到過 [clearPlayerAreas]。 */
+    private val clearedPlayerAreas = mutableSetOf<Uuid>()
 
     /** 依對局 Uuid 紀錄最後一次收到的開局座位傳送清單。 */
     private val gameStartedSeatings = mutableMapOf<Uuid, List<Uuid>>()
 
-    /** 依對局 Uuid 紀錄最後一次收到的摸牌呈現資料。 */
-    private val tileDrawn = mutableMapOf<Uuid, DrawnTileContext>()
-
     /** 依對局 Uuid 紀錄最後一次收到的牌河更新資料。 */
     private val discardPiles = mutableMapOf<Uuid, DiscardPileContext>()
-
-    /** 依對局 Uuid 紀錄最後一次收到的副露更新資料。 */
-    private val melds = mutableMapOf<Uuid, MeldsContext>()
 
     override fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int) {
         diceRolls[gameId] = dice
@@ -53,25 +50,32 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         wallStructureContexts[gameId] = WallStructureContext(dealerSeatIndex, deadWallTileIds, diceCount)
     }
 
-    override fun publishHandTiles(gameId: Uuid, handsBySeatIndex: Map<Int, List<Uuid>>, diceCount: Int) {
-        handTiles[gameId] = handsBySeatIndex
-        handTileDiceCounts[gameId] = diceCount
+    override fun publishScoringSticksUpdated(gameId: Uuid, dealerSeatIndex: Int, stickCount: Int) {
+        scoringSticks[gameId] = ScoringStickContext(dealerSeatIndex, stickCount)
+    }
+
+    override fun publishPlayerAreaUpdated(
+        gameId: Uuid,
+        seatIndex: Int,
+        standingTileIds: List<Uuid>,
+        drawnTileId: Uuid?,
+        melds: List<MeldPresentation>,
+        comboStickCount: Int,
+        diceCount: Int,
+    ) {
+        playerAreas[gameId] = PlayerAreaContext(seatIndex, standingTileIds, drawnTileId, melds, comboStickCount, diceCount)
+    }
+
+    override fun clearPlayerAreas(gameId: Uuid) {
+        clearedPlayerAreas += gameId
     }
 
     override fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>) {
         gameStartedSeatings[gameId] = seatedPlayerIds
     }
 
-    override fun publishTileDrawn(gameId: Uuid, seatIndex: Int, standingTileCount: Int, drawnTileId: Uuid?) {
-        tileDrawn[gameId] = DrawnTileContext(seatIndex, standingTileCount, drawnTileId)
-    }
-
     override fun publishDiscardPileUpdated(gameId: Uuid, seatIndex: Int, discardTileIds: List<Uuid>, sidewaysMarkedTileId: Uuid?) {
         discardPiles[gameId] = DiscardPileContext(seatIndex, discardTileIds, sidewaysMarkedTileId)
-    }
-
-    override fun publishMeldsUpdated(gameId: Uuid, seatIndex: Int, melds: List<MeldPresentation>) {
-        this.melds[gameId] = MeldsContext(seatIndex, melds)
     }
 
     /** 取得指定對局最後一次收到的擲骰結果；若無紀錄則回傳 null。 */
@@ -86,23 +90,20 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 取得指定對局最後一次收到的牌牆結構隨附桌況資料；若無紀錄則回傳 null。 */
     fun getPublishedWallStructureContext(gameId: Uuid): WallStructureContext? = wallStructureContexts[gameId]
 
-    /** 取得指定對局最後一次收到的初始手牌分配；若無紀錄則回傳 null。 */
-    fun getPublishedHandTiles(gameId: Uuid): Map<Int, List<Uuid>>? = handTiles[gameId]
+    /** 取得指定對局最後一次收到的積棒呈現資料；若無紀錄則回傳 null。 */
+    fun getPublishedScoringSticks(gameId: Uuid): ScoringStickContext? = scoringSticks[gameId]
 
-    /** 取得指定對局最後一次收到的初始手牌分配隨附擲骰數量；若無紀錄則回傳 null。 */
-    fun getPublishedHandTilesDiceCount(gameId: Uuid): Int? = handTileDiceCounts[gameId]
+    /** 取得指定對局最後一次收到的桌角區域（手牌/摸牌位/副露）呈現資料；若無紀錄則回傳 null。 */
+    fun getPublishedPlayerArea(gameId: Uuid): PlayerAreaContext? = playerAreas[gameId]
+
+    /** 指定對局是否曾經收到過 [clearPlayerAreas]。 */
+    fun wasPlayerAreasCleared(gameId: Uuid): Boolean = gameId in clearedPlayerAreas
 
     /** 取得指定對局最後一次收到的開局座位傳送清單；若無紀錄則回傳 null。 */
     fun getPublishedGameStartedSeating(gameId: Uuid): List<Uuid>? = gameStartedSeatings[gameId]
 
-    /** 取得指定對局最後一次收到的摸牌呈現資料；若無紀錄則回傳 null。 */
-    fun getPublishedTileDrawn(gameId: Uuid): DrawnTileContext? = tileDrawn[gameId]
-
     /** 取得指定對局最後一次收到的牌河更新資料；若無紀錄則回傳 null。 */
     fun getPublishedDiscardPile(gameId: Uuid): DiscardPileContext? = discardPiles[gameId]
-
-    /** 取得指定對局最後一次收到的副露更新資料；若無紀錄則回傳 null。 */
-    fun getPublishedMelds(gameId: Uuid): MeldsContext? = melds[gameId]
 }
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishDiceRoll] 隨附桌況資料。 */
@@ -119,11 +120,20 @@ data class WallStructureContext(
     val diceCount: Int,
 )
 
-/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishTileDrawn] 資料。 */
-data class DrawnTileContext(
+/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishScoringSticksUpdated] 資料。 */
+data class ScoringStickContext(
+    val dealerSeatIndex: Int,
+    val stickCount: Int,
+)
+
+/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishPlayerAreaUpdated] 資料。 */
+data class PlayerAreaContext(
     val seatIndex: Int,
-    val standingTileCount: Int,
+    val standingTileIds: List<Uuid>,
     val drawnTileId: Uuid?,
+    val melds: List<MeldPresentation>,
+    val comboStickCount: Int,
+    val diceCount: Int,
 )
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishDiscardPileUpdated] 資料。 */
@@ -131,10 +141,4 @@ data class DiscardPileContext(
     val seatIndex: Int,
     val discardTileIds: List<Uuid>,
     val sidewaysMarkedTileId: Uuid?,
-)
-
-/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishMeldsUpdated] 資料。 */
-data class MeldsContext(
-    val seatIndex: Int,
-    val melds: List<MeldPresentation>,
 )

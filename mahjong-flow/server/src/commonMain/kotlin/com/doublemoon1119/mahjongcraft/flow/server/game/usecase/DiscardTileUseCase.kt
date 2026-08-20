@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -12,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -128,14 +130,18 @@ class DiscardTileUseCase(
             }
         }
 
-        // 4. 觸發平台呈現層：重新排列立牌列（涵蓋摸切、或打手牌併入摸到的牌兩種情況），並把捨棄的牌
-        // 移到牌河
+        // 4. 觸發平台呈現層：重新排列立牌列（涵蓋摸切、或打手牌併入摸到的牌兩種情況；副露本身雖然
+        // 沒變，仍要一併帶上讓手牌讓開偏移量算得準），並把捨棄的牌移到牌河
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val discarder = newState.players[seatIndex]
-        presentationPublisher.publishHandTiles(
+        val dealerSeatIndex = newState.players.indexOfFirst { it.currentWind == Wind.EAST }
+        presentationPublisher.publishPlayerAreaUpdated(
             gameId,
-            mapOf(seatIndex to discarder.hand.tiles.map { it.id }),
-            diceCount = 0,
+            seatIndex,
+            discarder.hand.tiles.map { it.id },
+            null,
+            discarder.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+            comboStickCount = if (seatIndex == dealerSeatIndex) newState.comboCount else 0,
         )
         presentationPublisher.publishDiscardPileUpdated(
             gameId,

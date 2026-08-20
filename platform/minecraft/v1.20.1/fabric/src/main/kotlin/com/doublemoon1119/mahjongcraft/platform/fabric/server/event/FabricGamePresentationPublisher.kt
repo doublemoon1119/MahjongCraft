@@ -16,19 +16,19 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDrawnTilePresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import kotlinx.coroutines.launch
@@ -49,9 +49,11 @@ import kotlin.uuid.Uuid
  * @property seatingPresenter 開局座位傳送的實際呈現邏輯。
  * @property diceRollPresenter 正式擲骰的實際呈現邏輯。
  * @property tileWallPresenter 正式牌牆的實際呈現邏輯。
- * @property handTilesPresenter 正式手牌（含摸牌位）的實際呈現邏輯。
+ * @property playerAreaPresenter 正式手牌／摸牌位／副露（合併，理由見 [MahjongPlayerAreaPresenter]
+ *   KDoc）的實際呈現邏輯。
  * @property discardPresenter 正式牌河的實際呈現邏輯。
- * @property meldPresenter 正式副露的實際呈現邏輯。
+ * @property scoringStickPresenter 正式積棒的實際呈現邏輯，生命週期跟牌牆同時生成/清除，見
+ *   [MahjongScoringStickPresenter] KDoc。
  * @property tableLocationRegistry 麻將桌最後已知位置索引。
  * @property serverHolder 目前運行中的 server，供世界／方塊狀態查詢使用。
  * @property busyTracker 呈現動畫播放期間標記該桌暫時忙碌，供輸入分派入口與自動操作心跳擋下操作。
@@ -64,9 +66,9 @@ class FabricGamePresentationPublisher(
     private val seatingPresenter: MahjongSeatingPresenter,
     private val diceRollPresenter: MahjongDiceRollPresenter,
     private val tileWallPresenter: MahjongTileWallPresenter,
-    private val handTilesPresenter: MahjongHandTilesPresenter,
+    private val playerAreaPresenter: MahjongPlayerAreaPresenter,
     private val discardPresenter: MahjongDiscardPresenter,
-    private val meldPresenter: MahjongMeldPresenter,
+    private val scoringStickPresenter: MahjongScoringStickPresenter,
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
     private val busyTracker: TablePresentationBusyTracker,
@@ -125,37 +127,12 @@ class FabricGamePresentationPublisher(
         val busyTicks = MahjongDiceTableLayout.totalAnimationTicks(dice.values.size)
         busyTracker.markBusyFor(gameId, busyTicks)
         scope.launch(dispatchers.main) {
-            val location = tableLocationRegistry.get(gameId)?.location
-            if (location == null) {
-                logger.warn("publishDiceRoll gameId={} skipped: no known table location", gameId)
-                return@launch
-            }
-            val world = resolveWorld(location)
-            if (world == null) {
-                logger.warn(
-                    "publishDiceRoll gameId={} skipped: could not resolve world for location={}",
-                    gameId,
-                    location,
-                )
-                return@launch
-            }
-            val controllerPos = BlockPos(location.x, location.y, location.z)
-            val state = world.getBlockState(controllerPos)
-            if (!state.contains(Properties.HORIZONTAL_FACING)) {
-                logger.warn(
-                    "publishDiceRoll gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})",
-                    gameId,
-                    controllerPos,
-                    state,
-                )
-                return@launch
-            }
-            val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
+            val resolved = resolveTableContext(gameId, "publishDiceRoll") ?: return@launch
 
             val presentation = MahjongDiceRollPresentation(
                 tableId = gameId,
-                tableLocation = location,
-                tableFacing = facing,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
                 throwSide = seatIndexToTableSide(dealerSeatIndex),
                 rollSequence = roundNumber.toLong() * ROLL_SEQUENCE_ROUND_MULTIPLIER + comboCount,
                 dice = dice.values.map { point ->
@@ -191,37 +168,12 @@ class FabricGamePresentationPublisher(
             return
         }
         scope.launch(dispatchers.main) {
-            val location = tableLocationRegistry.get(gameId)?.location
-            if (location == null) {
-                logger.warn("publishWallStructure gameId={} skipped: no known table location", gameId)
-                return@launch
-            }
-            val world = resolveWorld(location)
-            if (world == null) {
-                logger.warn(
-                    "publishWallStructure gameId={} skipped: could not resolve world for location={}",
-                    gameId,
-                    location,
-                )
-                return@launch
-            }
-            val controllerPos = BlockPos(location.x, location.y, location.z)
-            val state = world.getBlockState(controllerPos)
-            if (!state.contains(Properties.HORIZONTAL_FACING)) {
-                logger.warn(
-                    "publishWallStructure gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})",
-                    gameId,
-                    controllerPos,
-                    state,
-                )
-                return@launch
-            }
-            val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
+            val resolved = resolveTableContext(gameId, "publishWallStructure") ?: return@launch
 
             val presentation = MahjongTileWallPresentation(
                 tableId = gameId,
-                tableLocation = location,
-                tableFacing = facing,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
                 dealerSeatIndex = dealerSeatIndex,
                 structure = structure,
                 deadWallTileIds = deadWallTileIds,
@@ -233,72 +185,133 @@ class FabricGamePresentationPublisher(
     }
 
     /**
+     * 積棒跟牌牆同一個時機點觸發（呼叫端緊接在 [publishWallStructure] 之後呼叫，見
+     * [MahjongScoringStickPresenter] KDoc）——每回合結束（換局）就重新生成一批，不是每次打牌/摸牌/
+     * 鳴牌都觸發。一般回合動作不會呼叫這個方法，不需要 [busyTracker] 或延遲，直接同步呈現；跟
+     * [publishDiceRoll] 同理，世界／entity 存取一併丟回伺服器主執行緒執行。
+     */
+    override fun publishScoringSticksUpdated(gameId: Uuid, dealerSeatIndex: Int, stickCount: Int) {
+        logger.debug("publishScoringSticksUpdated gameId={} dealerSeatIndex={} stickCount={}", gameId, dealerSeatIndex, stickCount)
+        if (serverHolder.current() == null) {
+            logger.warn("publishScoringSticksUpdated gameId={} skipped: no active server", gameId)
+            return
+        }
+        scope.launch(dispatchers.main) {
+            val resolved = resolveTableContext(gameId, "publishScoringSticksUpdated") ?: return@launch
+
+            val presentation = MahjongScoringStickPresentation(
+                tableId = gameId,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
+                dealerSeatIndex = dealerSeatIndex,
+                stickCount = stickCount,
+            )
+            val result = scoringStickPresenter.present(presentation)
+            logger.debug("publishScoringSticksUpdated gameId={} present() result={}", gameId, result)
+        }
+    }
+
+    /**
      * 手牌落地要等擲骰動畫播完才觸發（跟牌牆的王牌分離同一個時機點），不能在骰子還在動畫時就直接讓
      * 手牌出現——不像牌牆／王牌是「先生成、之後才移動」，手牌是整個延遲到那個時間點才真正呼叫
-     * [handTilesPresenter.present]，之前完全不存在任何 entity。
+     * [playerAreaPresenter.present]，之前完全不存在任何 entity。
      *
      * [busyTracker] 的標記額外加上 [OPENING_SEQUENCE_EXTRA_VIEWING_TICKS] 這段緩衝——這是「建牌 →
      * 擲骰開門 → 分牌」整個開局節奏裡最後一步觸發的呼叫（[StartGameUseCase]／[AdvanceRoundUseCase]
      * 呼叫順序固定在 `publishWallStructure` 之後），所以由這裡負責把桌子的忙碌時長從單純的擲骰動畫
      * 長度，延長到涵蓋王牌分離／手牌落地／寶牌翻開整段開局呈現，讓莊家的強制自動摸牌（[GameFlowCoordinator.driveAutomatedPlayers]）
      * 確實等到玩家看得到手牌、王牌分離都完成後才開始，不是單純等骰子動畫播完就搶跑。沒有擲骰
-     * （[diceCount] 為 `0`）時沒有動畫可等，直接同步呈現，不排定延遲、不額外標記忙碌。
+     * （[diceCount] 為 `0`，一般回合動作皆屬此類）時沒有動畫可等，直接同步呈現，不排定延遲、不額外
+     * 標記忙碌。
      */
-    override fun publishHandTiles(gameId: Uuid, handsBySeatIndex: Map<Int, List<Uuid>>, diceCount: Int) {
-        logger.debug("publishHandTiles gameId={} seatCount={} diceCount={}", gameId, handsBySeatIndex.size, diceCount)
+    override fun publishPlayerAreaUpdated(
+        gameId: Uuid,
+        seatIndex: Int,
+        standingTileIds: List<Uuid>,
+        drawnTileId: Uuid?,
+        melds: List<MeldPresentation>,
+        comboStickCount: Int,
+        diceCount: Int,
+    ) {
+        logger.debug(
+            "publishPlayerAreaUpdated gameId={} seatIndex={} standingTileCount={} drawnTileId={} meldCount={} comboStickCount={} diceCount={}",
+            gameId,
+            seatIndex,
+            standingTileIds.size,
+            drawnTileId,
+            melds.size,
+            comboStickCount,
+            diceCount,
+        )
         if (serverHolder.current() == null) {
-            logger.warn("publishHandTiles gameId={} skipped: no active server", gameId)
+            logger.warn("publishPlayerAreaUpdated gameId={} skipped: no active server", gameId)
             return
         }
         if (diceCount <= 0) {
-            presentHandTiles(gameId, handsBySeatIndex)
+            presentPlayerArea(gameId, seatIndex, standingTileIds, drawnTileId, melds, comboStickCount)
             return
         }
         val delayTicks = MahjongDiceTableLayout.totalAnimationTicks(diceCount)
         busyTracker.markBusyFor(gameId, delayTicks + OPENING_SEQUENCE_EXTRA_VIEWING_TICKS)
         tickClock.scheduleAfter(delayTicks * MILLIS_PER_TICK) {
-            presentHandTiles(gameId, handsBySeatIndex)
+            presentPlayerArea(gameId, seatIndex, standingTileIds, drawnTileId, melds, comboStickCount)
         }
     }
 
-    /** 實際呼叫 [handTilesPresenter]，跟 [publishDiceRoll] 同理丟回伺服器主執行緒執行。 */
-    private fun presentHandTiles(gameId: Uuid, handsBySeatIndex: Map<Int, List<Uuid>>) {
+    /** 實際呼叫 [playerAreaPresenter]，跟 [publishDiceRoll] 同理丟回伺服器主執行緒執行。 */
+    private fun presentPlayerArea(
+        gameId: Uuid,
+        seatIndex: Int,
+        standingTileIds: List<Uuid>,
+        drawnTileId: Uuid?,
+        melds: List<MeldPresentation>,
+        comboStickCount: Int,
+    ) {
+        scope.launch(dispatchers.main) {
+            val resolved = resolveTableContext(gameId, "publishPlayerAreaUpdated") ?: return@launch
+
+            val presentation = MahjongPlayerAreaPresentation(
+                tableId = gameId,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
+                seatIndex = seatIndex,
+                standingTileIds = standingTileIds,
+                drawnTileId = drawnTileId,
+                melds = melds.map {
+                    MahjongMeldTileGroup(it.type, it.tileIds, it.calledTileId, it.sourceDirection, it.allTilesFaceDown)
+                },
+                comboStickCount = comboStickCount,
+            )
+            val result = playerAreaPresenter.present(presentation)
+            logger.debug("publishPlayerAreaUpdated gameId={} present() result={}", gameId, result)
+        }
+    }
+
+    /**
+     * 清除整桌所有玩家的手牌/摸牌位/副露/積棒呈現——回房間等清空情境使用（見 `ReturnToRoomUseCase`），
+     * 沒有座位分組資料可傳，直接呼叫 [playerAreaPresenter]／[scoringStickPresenter] 各自的 `clear()`
+     * （以 `managedTableId` 範圍搜尋清除，不需要逐座位資料）。
+     */
+    override fun clearPlayerAreas(gameId: Uuid) {
+        logger.debug("clearPlayerAreas gameId={}", gameId)
+        if (serverHolder.current() == null) {
+            logger.warn("clearPlayerAreas gameId={} skipped: no active server", gameId)
+            return
+        }
         scope.launch(dispatchers.main) {
             val location = tableLocationRegistry.get(gameId)?.location
             if (location == null) {
-                logger.warn("publishHandTiles gameId={} skipped: no known table location", gameId)
+                logger.warn("clearPlayerAreas gameId={} skipped: no known table location", gameId)
                 return@launch
             }
-            val world = resolveWorld(location)
-            if (world == null) {
-                logger.warn(
-                    "publishHandTiles gameId={} skipped: could not resolve world for location={}",
-                    gameId,
-                    location,
-                )
-                return@launch
-            }
-            val controllerPos = BlockPos(location.x, location.y, location.z)
-            val state = world.getBlockState(controllerPos)
-            if (!state.contains(Properties.HORIZONTAL_FACING)) {
-                logger.warn(
-                    "publishHandTiles gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})",
-                    gameId,
-                    controllerPos,
-                    state,
-                )
-                return@launch
-            }
-            val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
-
-            val presentation = MahjongHandTilesPresentation(
-                tableId = gameId,
-                tableLocation = location,
-                tableFacing = facing,
-                handsBySeatIndex = handsBySeatIndex,
+            val removedTileCount = playerAreaPresenter.clear(gameId, location)
+            val removedStickCount = scoringStickPresenter.clear(gameId, location)
+            logger.debug(
+                "clearPlayerAreas gameId={} removedTileCount={} removedStickCount={}",
+                gameId,
+                removedTileCount,
+                removedStickCount,
             )
-            val result = handTilesPresenter.present(presentation)
-            logger.debug("publishHandTiles gameId={} present() result={}", gameId, result)
         }
     }
 
@@ -308,65 +321,7 @@ class FabricGamePresentationPublisher(
         scope.launch(dispatchers.main) { seatingPresenter.present(gameId, seatedPlayerIds) }
     }
 
-    /**
-     * 摸牌/丟牌是整場遊戲隨時都會發生的一般回合動作，不是開局限定的一次性動畫，不需要
-     * [busyTracker] 標記，也不需要延遲——直接同步呈現。跟 [publishDiceRoll] 同理，世界／entity 存取
-     * 一併丟回伺服器主執行緒執行。
-     */
-    override fun publishTileDrawn(gameId: Uuid, seatIndex: Int, standingTileCount: Int, drawnTileId: Uuid?) {
-        logger.debug(
-            "publishTileDrawn gameId={} seatIndex={} standingTileCount={} drawnTileId={}",
-            gameId,
-            seatIndex,
-            standingTileCount,
-            drawnTileId,
-        )
-        if (serverHolder.current() == null) {
-            logger.warn("publishTileDrawn gameId={} skipped: no active server", gameId)
-            return
-        }
-        scope.launch(dispatchers.main) {
-            val location = tableLocationRegistry.get(gameId)?.location
-            if (location == null) {
-                logger.warn("publishTileDrawn gameId={} skipped: no known table location", gameId)
-                return@launch
-            }
-            val world = resolveWorld(location)
-            if (world == null) {
-                logger.warn(
-                    "publishTileDrawn gameId={} skipped: could not resolve world for location={}",
-                    gameId,
-                    location,
-                )
-                return@launch
-            }
-            val controllerPos = BlockPos(location.x, location.y, location.z)
-            val state = world.getBlockState(controllerPos)
-            if (!state.contains(Properties.HORIZONTAL_FACING)) {
-                logger.warn(
-                    "publishTileDrawn gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})",
-                    gameId,
-                    controllerPos,
-                    state,
-                )
-                return@launch
-            }
-            val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
-
-            val presentation = MahjongDrawnTilePresentation(
-                tableId = gameId,
-                tableLocation = location,
-                tableFacing = facing,
-                seatIndex = seatIndex,
-                standingTileCount = standingTileCount,
-                drawnTileId = drawnTileId,
-            )
-            val result = handTilesPresenter.presentDrawnTile(presentation)
-            logger.debug("publishTileDrawn gameId={} presentDrawnTile() result={}", gameId, result)
-        }
-    }
-
-    /** 理由同 [publishTileDrawn]：一般回合動作，不需要 [busyTracker] 或延遲，直接同步呈現。 */
+    /** 理由同 [publishDiscardPileUpdated]：一般回合動作，不需要 [busyTracker] 或延遲，直接同步呈現。 */
     override fun publishDiscardPileUpdated(
         gameId: Uuid,
         seatIndex: Int,
@@ -385,37 +340,12 @@ class FabricGamePresentationPublisher(
             return
         }
         scope.launch(dispatchers.main) {
-            val location = tableLocationRegistry.get(gameId)?.location
-            if (location == null) {
-                logger.warn("publishDiscardPileUpdated gameId={} skipped: no known table location", gameId)
-                return@launch
-            }
-            val world = resolveWorld(location)
-            if (world == null) {
-                logger.warn(
-                    "publishDiscardPileUpdated gameId={} skipped: could not resolve world for location={}",
-                    gameId,
-                    location,
-                )
-                return@launch
-            }
-            val controllerPos = BlockPos(location.x, location.y, location.z)
-            val state = world.getBlockState(controllerPos)
-            if (!state.contains(Properties.HORIZONTAL_FACING)) {
-                logger.warn(
-                    "publishDiscardPileUpdated gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})",
-                    gameId,
-                    controllerPos,
-                    state,
-                )
-                return@launch
-            }
-            val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
+            val resolved = resolveTableContext(gameId, "publishDiscardPileUpdated") ?: return@launch
 
             val presentation = MahjongDiscardPresentation(
                 tableId = gameId,
-                tableLocation = location,
-                tableFacing = facing,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
                 seatIndex = seatIndex,
                 discardTileIds = discardTileIds,
                 sidewaysMarkedTileId = sidewaysMarkedTileId,
@@ -425,61 +355,52 @@ class FabricGamePresentationPublisher(
         }
     }
 
-    /** 理由同 [publishTileDrawn]：一般回合動作，不需要 [busyTracker] 或延遲，直接同步呈現。 */
-    override fun publishMeldsUpdated(gameId: Uuid, seatIndex: Int, melds: List<MeldPresentation>) {
-        logger.debug("publishMeldsUpdated gameId={} seatIndex={} meldCount={}", gameId, seatIndex, melds.size)
-        if (serverHolder.current() == null) {
-            logger.warn("publishMeldsUpdated gameId={} skipped: no active server", gameId)
-            return
-        }
-        scope.launch(dispatchers.main) {
-            val location = tableLocationRegistry.get(gameId)?.location
-            if (location == null) {
-                logger.warn("publishMeldsUpdated gameId={} skipped: no known table location", gameId)
-                return@launch
-            }
-            val world = resolveWorld(location)
-            if (world == null) {
-                logger.warn(
-                    "publishMeldsUpdated gameId={} skipped: could not resolve world for location={}",
-                    gameId,
-                    location,
-                )
-                return@launch
-            }
-            val controllerPos = BlockPos(location.x, location.y, location.z)
-            val state = world.getBlockState(controllerPos)
-            if (!state.contains(Properties.HORIZONTAL_FACING)) {
-                logger.warn(
-                    "publishMeldsUpdated gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})",
-                    gameId,
-                    controllerPos,
-                    state,
-                )
-                return@launch
-            }
-            val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
-
-            val presentation = MahjongMeldPresentation(
-                tableId = gameId,
-                tableLocation = location,
-                tableFacing = facing,
-                seatIndex = seatIndex,
-                melds = melds.map {
-                    MahjongMeldTileGroup(it.type, it.tileIds, it.calledTileId, it.sourceDirection, it.allTilesFaceDown)
-                },
-            )
-            val result = meldPresenter.present(presentation)
-            logger.debug("publishMeldsUpdated gameId={} present() result={}", gameId, result)
-        }
-    }
-
     /** 由版本無關 dimension ID 取得目前 server session 的世界。 */
     private fun resolveWorld(location: TableLocation): ServerWorld? {
         val identifier = Identifier.tryParse(location.dimensionId) ?: return null
         val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
         return serverHolder.current()?.getWorld(worldKey)
     }
+
+    /**
+     * 解析 [gameId] 目前的桌子位置與世界水平朝向，供各 `publish*` 方法在 [scope.launch] 裡呼叫——把
+     * 「查桌子位置 → 解析世界 → 讀 controller 方塊狀態 → 確認有 `HORIZONTAL_FACING` → 換算朝向」這一
+     * 串六個方法都重複的樣板抽成一個共用 helper。任何一步失敗都回傳 `null` 並記一則 DEBUG log（帶
+     * [methodName] 方便追蹤是哪個呼叫端放棄的），呼叫端收到 `null` 直接 `return@launch`，比照本介面
+     * best-effort 的既有慣例。
+     */
+    private fun resolveTableContext(gameId: Uuid, methodName: String): ResolvedTableContext? {
+        val location = tableLocationRegistry.get(gameId)?.location
+        if (location == null) {
+            logger.warn("$methodName gameId={} skipped: no known table location", gameId)
+            return null
+        }
+        val world = resolveWorld(location)
+        if (world == null) {
+            logger.warn("$methodName gameId={} skipped: could not resolve world for location={}", gameId, location)
+            return null
+        }
+        val controllerPos = BlockPos(location.x, location.y, location.z)
+        val state = world.getBlockState(controllerPos)
+        if (!state.contains(Properties.HORIZONTAL_FACING)) {
+            logger.warn(
+                "$methodName gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})",
+                gameId,
+                controllerPos,
+                state,
+            )
+            return null
+        }
+        val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
+        return ResolvedTableContext(world, location, facing)
+    }
+
+    /** [resolveTableContext] 的解析結果。 */
+    private data class ResolvedTableContext(
+        val world: ServerWorld,
+        val location: TableLocation,
+        val facing: MahjongTableFacing,
+    )
 
     /** 正式擲骰／開局呈現使用的固定參數。 */
     private companion object {

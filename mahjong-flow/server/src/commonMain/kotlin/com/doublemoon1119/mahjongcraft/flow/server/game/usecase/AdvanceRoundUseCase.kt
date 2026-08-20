@@ -156,18 +156,28 @@ class AdvanceRoundUseCase(
                 eventPublisher.publish(gameId, player.id, newDealerId, GameAction.DiceRolled(diceRoll))
             }
         }
+        val dealerSeatIndex = newState.players.indexOfFirst { player -> player.id == newDealerId }
         advanceOutcome.wallStructure?.let { structure ->
-            val dealerSeatIndex = newState.players.indexOfFirst { player -> player.id == newDealerId }
             val deadWallTileIds = newState.initialDeadWall.map { tile -> tile.id }.toSet()
             val diceCount = advanceOutcome.diceRoll?.values?.size ?: 0
             presentationPublisher.publishWallStructure(gameId, structure, dealerSeatIndex, deadWallTileIds, diceCount)
         }
+        // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；新局手牌一定沒有副露，只是靠
+        // publishPlayerAreaUpdated 的 comboStickCount 讓手牌正確讓開積棒佔用的空間。
+        presentationPublisher.publishScoringSticksUpdated(gameId, dealerSeatIndex, newState.comboCount)
         run {
-            val handsBySeatIndex =
-                newState.players.mapIndexed { seatIndex, player -> seatIndex to player.hand.tiles.map { tile -> tile.id } }
-                    .toMap()
             val diceCount = advanceOutcome.diceRoll?.values?.size ?: 0
-            presentationPublisher.publishHandTiles(gameId, handsBySeatIndex, diceCount)
+            newState.players.forEachIndexed { seatIndex, player ->
+                presentationPublisher.publishPlayerAreaUpdated(
+                    gameId,
+                    seatIndex,
+                    player.hand.tiles.map { tile -> tile.id },
+                    null,
+                    emptyList(),
+                    comboStickCount = if (seatIndex == dealerSeatIndex) newState.comboCount else 0,
+                    diceCount = diceCount,
+                )
+            }
         }
 
         return Outcome.Success(result)

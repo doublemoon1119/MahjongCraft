@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -130,21 +131,19 @@ class RespondToChankanUseCase(
         }
 
         // declarerId 只在「全員放過、槓真的成立」時才有值（見上面 KanDeclarationApplier 那個分支）；
-        // 這裡重新呈現宣告者的副露，並把摸到的嶺上牌移到摸牌位（跟一般摸牌同一套呈現方式，見
-        // DrawTileUseCase）。搶槓成功那個分支不會走到這裡。
+        // 這裡重新呈現宣告者的手牌/摸牌位/副露，把摸到的嶺上牌移到摸牌位（跟一般摸牌同一套呈現方式，
+        // 見 DrawTileUseCase）。搶槓成功那個分支不會走到這裡。
         result.declarerId?.let { declarerId ->
             val declarerSeatIndex = newState.players.indexOfFirst { it.id == declarerId }
             val declarer = newState.players[declarerSeatIndex]
-            presentationPublisher.publishMeldsUpdated(
+            val dealerSeatIndex = newState.players.indexOfFirst { it.currentWind == Wind.EAST }
+            presentationPublisher.publishPlayerAreaUpdated(
                 gameId,
                 declarerSeatIndex,
-                declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-            )
-            presentationPublisher.publishTileDrawn(
-                gameId,
-                declarerSeatIndex,
-                declarer.hand.tiles.size,
+                declarer.hand.tiles.map { it.id },
                 declarer.hand.lastDrawn?.id,
+                declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+                comboStickCount = if (declarerSeatIndex == dealerSeatIndex) newState.comboCount else 0,
             )
         }
 

@@ -8,9 +8,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.TableBreakPolic
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.allowsTableBreak
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import kotlinx.coroutines.runBlocking
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
@@ -31,7 +32,8 @@ class FabricTableLifecycleService(
     private val configState: MinecraftServerConfigState,
     private val diceRollPresenter: MahjongDiceRollPresenter,
     private val tileWallPresenter: MahjongTileWallPresenter,
-    private val handTilesPresenter: MahjongHandTilesPresenter,
+    private val playerAreaPresenter: MahjongPlayerAreaPresenter,
+    private val scoringStickPresenter: MahjongScoringStickPresenter,
     private val discardPresenter: MahjongDiscardPresenter,
 ) {
     /** 記錄麻將桌破壞政策判斷與清理入口。 */
@@ -53,17 +55,19 @@ class FabricTableLifecycleService(
         val tableLocation = world.toTableLocation(table.pos)
         val removedDiceCount = diceRollPresenter.clear(table.tableId, tableLocation)
         val removedWallTileCount = tileWallPresenter.clear(table.tableId, tableLocation)
-        val removedHandTileCount = handTilesPresenter.clear(table.tableId, tableLocation)
+        val removedPlayerAreaTileCount = playerAreaPresenter.clear(table.tableId, tableLocation)
+        val removedStickCount = scoringStickPresenter.clear(table.tableId, tableLocation)
         val removedDiscardTileCount = discardPresenter.clear(table.tableId, tableLocation)
         val entry = locations.put(table.tableId, tableLocation)
         val result = runBlocking { cleanupService.cleanupMissing(table.tableId, entry.revision) }
         logger.debug(
-            "Handled replaced Mahjong table {} with cleanup result {}, removed {} managed dice, {} managed wall tiles, {} managed hand tiles and {} managed discard tiles",
+            "Handled replaced Mahjong table {} with cleanup result {}, removed {} managed dice, {} managed wall tiles, {} managed player area tiles, {} managed sticks and {} managed discard tiles",
             table.tableId,
             result,
             removedDiceCount,
             removedWallTileCount,
-            removedHandTileCount,
+            removedPlayerAreaTileCount,
+            removedStickCount,
             removedDiscardTileCount,
         )
     }

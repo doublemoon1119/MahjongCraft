@@ -215,7 +215,7 @@ class RespondToDiscardUseCaseTest {
 
         fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id))
 
-        val publishedMelds = fixtures.presentationPublisher.getPublishedMelds(gameId)
+        val publishedMelds = fixtures.presentationPublisher.getPublishedPlayerArea(gameId)
         assertNotNull(publishedMelds)
         assertEquals(1, publishedMelds.seatIndex, "The winner (responder) sits at seat index 1.")
         val meld = publishedMelds.melds.single()
@@ -321,7 +321,7 @@ class RespondToDiscardUseCaseTest {
         assertTrue(newDiscarder.discardPile.entries.last().isTaken, "The claimed discard should be marked as taken.")
         assertEquals(
             rinshanTile.id,
-            fixtures.presentationPublisher.getPublishedTileDrawn(gameId)?.drawnTileId,
+            fixtures.presentationPublisher.getPublishedPlayerArea(gameId)?.drawnTileId,
             "The rinshan tile should be presented as a drawn tile (moved to the draw slot), same as a normal draw.",
         )
     }
@@ -416,7 +416,7 @@ class RespondToDiscardUseCaseTest {
             "No rinshan tile was drawn, so no Draw event should be broadcast.",
         )
         assertNull(
-            fixtures.presentationPublisher.getPublishedTileDrawn(gameId),
+            fixtures.presentationPublisher.getPublishedPlayerArea(gameId)?.drawnTileId,
             "No rinshan tile was drawn, so nothing should be presented as drawn either.",
         )
     }

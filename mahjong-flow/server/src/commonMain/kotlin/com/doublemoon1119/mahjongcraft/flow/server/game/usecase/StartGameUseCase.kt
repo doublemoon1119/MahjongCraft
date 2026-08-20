@@ -103,16 +103,28 @@ class StartGameUseCase(
                 eventPublisher.publish(roomId, player.id, operatorId, GameAction.DiceRolled(diceRoll))
             }
         }
+        val dealerSeatIndex = tableState.players.indexOfFirst { player -> player.currentWind == Wind.EAST }
         initializationResult.wallStructure?.let { structure ->
-            val dealerSeatIndex = tableState.players.indexOfFirst { player -> player.currentWind == Wind.EAST }
             val deadWallTileIds = tableState.initialDeadWall.map { tile -> tile.id }.toSet()
             val diceCount = initializationResult.diceRoll?.values?.size ?: 0
             presentationPublisher.publishWallStructure(roomId, structure, dealerSeatIndex, deadWallTileIds, diceCount)
         }
+        // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；開局第一局 comboCount 恆為 0，
+        // 呼叫本身仍需要，確保積棒 entity 從上一局殘留（理論上不會發生，但保持呼叫語意一致）清乾淨。
+        presentationPublisher.publishScoringSticksUpdated(roomId, dealerSeatIndex, tableState.comboCount)
         run {
-            val handsBySeatIndex = tableState.players.mapIndexed { seatIndex, player -> seatIndex to player.hand.tiles.map { tile -> tile.id } }.toMap()
             val diceCount = initializationResult.diceRoll?.values?.size ?: 0
-            presentationPublisher.publishHandTiles(roomId, handsBySeatIndex, diceCount)
+            tableState.players.forEachIndexed { seatIndex, player ->
+                presentationPublisher.publishPlayerAreaUpdated(
+                    roomId,
+                    seatIndex,
+                    player.hand.tiles.map { tile -> tile.id },
+                    null,
+                    emptyList(),
+                    comboStickCount = if (seatIndex == dealerSeatIndex) tableState.comboCount else 0,
+                    diceCount = diceCount,
+                )
+            }
         }
         presentationPublisher.publishGameStarted(roomId, tableState.players.map { it.id })
 

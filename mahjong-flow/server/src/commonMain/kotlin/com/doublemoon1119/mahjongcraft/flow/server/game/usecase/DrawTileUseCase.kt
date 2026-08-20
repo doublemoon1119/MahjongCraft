@@ -3,11 +3,13 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -81,10 +83,19 @@ class DrawTileUseCase(
             eventPublisher.publish(gameId, player.id, playerId, GameAction.Draw)
         }
 
-        // 4. 觸發平台呈現層：把摸到的牌從牌牆移到摸牌位
+        // 4. 觸發平台呈現層：把摸到的牌從牌牆移到摸牌位（副露/積棒不受摸牌影響，仍要一併帶上讓手牌
+        // 讓開偏移量算得準）
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val drawnPlayer = newState.players[seatIndex]
-        presentationPublisher.publishTileDrawn(gameId, seatIndex, drawnPlayer.hand.tiles.size, drawnPlayer.hand.lastDrawn?.id)
+        val dealerSeatIndex = newState.players.indexOfFirst { it.currentWind == Wind.EAST }
+        presentationPublisher.publishPlayerAreaUpdated(
+            gameId,
+            seatIndex,
+            drawnPlayer.hand.tiles.map { it.id },
+            drawnPlayer.hand.lastDrawn?.id,
+            drawnPlayer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+            comboStickCount = if (seatIndex == dealerSeatIndex) newState.comboCount else 0,
+        )
 
         return Outcome.Success(Unit)
     }

@@ -1,12 +1,16 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
+import kotlin.uuid.Uuid
 
 /** [MahjongTileTableLayout] 的墩位間距、四面旋轉、角落不重疊與輸入驗證測試。 */
 class MahjongTileTableLayoutTest {
@@ -249,6 +253,180 @@ class MahjongTileTableLayoutTest {
         assertNotEquals(lastTileOfSafeRows.z, fourthRowFirstTile.z)
     }
 
+    /** 沒有任何副露時，副露區寬度應為零。 */
+    @Test
+    fun `meld area width is zero when there are no melds`() {
+        assertEquals(0.0, MahjongTileTableLayout.meldAreaWidth(emptyList()), ABSOLUTE_TOLERANCE)
+    }
+
+    /** 沒有鳴取牌（暗槓）的一組副露，每張牌都是直立寬度，逐張累加加上間距即為總寬度。 */
+    @Test
+    fun `meld area width sums standing tile widths without a sideways tile`() {
+        val meld = fakeMeld(type = MeldType.CLOSED_KAN, tileCount = 4, calledTileId = null)
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+
+        assertEquals(4 * stackStep, MahjongTileTableLayout.meldAreaWidth(listOf(meld)), ABSOLUTE_TOLERANCE)
+    }
+
+    /** 有鳴取牌的一組副露，側身格位改用牌高當寬度，其餘格位仍是直立寬度。 */
+    @Test
+    fun `meld area width uses tile height for the sideways slot`() {
+        val meld = fakeMeld(type = MeldType.PON, tileCount = 3, calledTileId = Uuid.random(), sourceDirection = RelativeDirection.Across)
+        val standingStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val sidewaysStep = MahjongTileDimensions.TILE_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING
+        val expected = 2 * standingStep + sidewaysStep
+
+        assertEquals(expected, MahjongTileTableLayout.meldAreaWidth(listOf(meld)), ABSOLUTE_TOLERANCE)
+    }
+
+    /** 加槓補上的第 4 張牌疊在側身牌旁邊，不佔用額外橫向格位，寬度應跟原本的碰（3 張）相同。 */
+    @Test
+    fun `meld area width does not count the added kan's fourth tile`() {
+        val pon = fakeMeld(type = MeldType.PON, tileCount = 3, calledTileId = Uuid.random(), sourceDirection = RelativeDirection.Across)
+        val addedKan = fakeMeld(type = MeldType.ADDED_KAN, tileCount = 4, calledTileId = pon.calledTileId, sourceDirection = RelativeDirection.Across)
+
+        assertEquals(
+            MahjongTileTableLayout.meldAreaWidth(listOf(pon)),
+            MahjongTileTableLayout.meldAreaWidth(listOf(addedKan)),
+            ABSOLUTE_TOLERANCE,
+        )
+    }
+
+    /** 兩組副露之間應額外跳過一個 [MahjongTileTableLayout.MELD_GROUP_GAP]。 */
+    @Test
+    fun `meld area width adds a gap between groups`() {
+        val meld = fakeMeld(type = MeldType.CLOSED_KAN, tileCount = 4, calledTileId = null)
+        val oneGroup = MahjongTileTableLayout.meldAreaWidth(listOf(meld))
+        val twoGroups = MahjongTileTableLayout.meldAreaWidth(listOf(meld, meld))
+
+        assertEquals(2 * oneGroup + MahjongTileTableLayout.MELD_GROUP_GAP, twoGroups, ABSOLUTE_TOLERANCE)
+    }
+
+    /** 沒有積棒時，積棒區寬度應為零。 */
+    @Test
+    fun `stick area width is zero when there are no sticks`() {
+        assertEquals(0.0, MahjongTileTableLayout.stickAreaWidth(0), ABSOLUTE_TOLERANCE)
+    }
+
+    /** 積棒支數不超過每排上限時，寬度隨支數線性增加。 */
+    @Test
+    fun `stick area width grows linearly up to one row`() {
+        val stepWidth = MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING
+
+        assertEquals(stepWidth, MahjongTileTableLayout.stickAreaWidth(1), ABSOLUTE_TOLERANCE)
+        assertEquals(3 * stepWidth, MahjongTileTableLayout.stickAreaWidth(3), ABSOLUTE_TOLERANCE)
+        assertEquals(MahjongTileTableLayout.STICKS_PER_ROW * stepWidth, MahjongTileTableLayout.stickAreaWidth(MahjongTileTableLayout.STICKS_PER_ROW), ABSOLUTE_TOLERANCE)
+    }
+
+    /** 超過每排上限的積棒往 Y 軸疊層，不再增加寬度。 */
+    @Test
+    fun `stick area width stops growing once sticks stack into a new layer`() {
+        val oneRowWidth = MahjongTileTableLayout.stickAreaWidth(MahjongTileTableLayout.STICKS_PER_ROW)
+        val twoLayersWidth = MahjongTileTableLayout.stickAreaWidth(MahjongTileTableLayout.STICKS_PER_ROW + 2)
+
+        assertEquals(oneRowWidth, twoLayersWidth, ABSOLUTE_TOLERANCE)
+    }
+
+    /** 手牌張數不多或副露／積棒沒有佔用空間時，不需要讓開。 */
+    @Test
+    fun `hand corner yield shift is zero when nothing needs to be avoided`() {
+        assertEquals(0.0, MahjongTileTableLayout.handCornerYieldShift(0, 10.0), ABSOLUTE_TOLERANCE)
+        assertEquals(0.0, MahjongTileTableLayout.handCornerYieldShift(HAND_SIZE, 0.0), ABSOLUTE_TOLERANCE)
+        assertEquals(0.0, MahjongTileTableLayout.handCornerYieldShift(1, 0.5), ABSOLUTE_TOLERANCE)
+    }
+
+    /** 手牌外緣超過退讓後的邊界時，應回傳剛好讓外緣貼齊邊界所需的平移量。 */
+    @Test
+    fun `hand corner yield shift matches the overlap amount`() {
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val handRightEdge = (HAND_SIZE - 1) / 2.0 * stackStep + MahjongTileDimensions.TILE_WIDTH / 2.0
+        val reservedCornerWidth = MahjongTileTableLayout.MELD_AREA_CORNER_OFFSET
+        val expectedShift = handRightEdge - (MahjongTileTableLayout.MELD_AREA_CORNER_OFFSET - reservedCornerWidth - MahjongTileTableLayout.HAND_CORNER_GAP)
+
+        assertEquals(expectedShift, MahjongTileTableLayout.handCornerYieldShift(HAND_SIZE, reservedCornerWidth), ABSOLUTE_TOLERANCE)
+    }
+
+    /**
+     * 遊戲內實際回報過的 bug：摸牌位比立牌列尾端更靠近桌角一個 `stackStep` 加縫隙，若讓開偏移只看
+     * 立牌列自己的外緣（不管 `hasDrawnTile`），算出來的偏移會不夠，摸牌位仍然撞進副露區。
+     * `hasDrawnTile = true` 應該比 `false` 算出更大（或至少相等）的偏移，且摸牌位擺放後的外緣不得
+     * 超過退讓後的邊界。
+     */
+    @Test
+    fun `hand corner yield shift accounts for the drawn tile slot reaching further toward the corner`() {
+        val reservedCornerWidth = MahjongTileTableLayout.MELD_AREA_CORNER_OFFSET - 0.1
+        val shiftWithoutDrawnTile = MahjongTileTableLayout.handCornerYieldShift(HAND_SIZE, reservedCornerWidth, hasDrawnTile = false)
+        val shiftWithDrawnTile = MahjongTileTableLayout.handCornerYieldShift(HAND_SIZE, reservedCornerWidth, hasDrawnTile = true)
+
+        assertEquals(true, shiftWithDrawnTile > shiftWithoutDrawnTile, "Expected $shiftWithDrawnTile to exceed $shiftWithoutDrawnTile")
+
+        val drawn = drawnTilePlacement(standingTileCount = HAND_SIZE, cornerYieldShift = shiftWithDrawnTile)
+        val drawnAlongSide = drawn.x - CONTROLLER_CENTER_X
+        val drawnOuterEdge = drawnAlongSide + MahjongTileDimensions.TILE_WIDTH / 2.0
+        val availableCornerBoundary = MahjongTileTableLayout.MELD_AREA_CORNER_OFFSET - reservedCornerWidth - MahjongTileTableLayout.HAND_CORNER_GAP
+
+        assertEquals(true, drawnOuterEdge <= availableCornerBoundary + ABSOLUTE_TOLERANCE, "Drawn tile outer edge $drawnOuterEdge should not exceed boundary $availableCornerBoundary")
+    }
+
+    /** [MahjongTileTableLayout.handPlacement] 帶上非零 `cornerYieldShift` 時，整排牌等量往玩家自己方向平移，牌與牌間距不變。 */
+    @Test
+    fun `hand placement shifts the whole row without compressing spacing`() {
+        val shift = 0.4
+        val unshifted = handPlacement(tileIndex = 0)
+        val shiftedFirst = handPlacement(tileIndex = 0, cornerYieldShift = shift)
+        val shiftedLast = handPlacement(tileIndex = HAND_SIZE - 1, cornerYieldShift = shift)
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+
+        assertEquals(shift, unshifted.x - shiftedFirst.x, ABSOLUTE_TOLERANCE)
+        assertEquals((HAND_SIZE - 1) * stackStep, shiftedFirst.x - shiftedLast.x, ABSOLUTE_TOLERANCE)
+    }
+
+    /** 積棒同一排內每支之間應等距排列，短邊（[MahjongScoringStickDimensions.STICK_DEPTH]）決定步距。 */
+    @Test
+    fun `stick placement spaces sticks evenly within a row`() {
+        val first = stickPlacement(stickIndex = 0)
+        val second = stickPlacement(stickIndex = 1)
+        val stepWidth = MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING
+
+        assertEquals(stepWidth, first.x - second.x, ABSOLUTE_TOLERANCE)
+        assertEquals(first.z, second.z, ABSOLUTE_TOLERANCE)
+        assertEquals(first.y, second.y, ABSOLUTE_TOLERANCE)
+    }
+
+    /** 超過每排上限（[MahjongTileTableLayout.STICKS_PER_ROW]）的積棒應疊到下一層，水平座標回到第一欄、Y 軸升高一層。 */
+    @Test
+    fun `stick placement stacks onto a new layer past the row limit`() {
+        val lastOfFirstRow = stickPlacement(stickIndex = MahjongTileTableLayout.STICKS_PER_ROW - 1)
+        val firstOfFirstRow = stickPlacement(stickIndex = 0)
+        val firstOfSecondRow = stickPlacement(stickIndex = MahjongTileTableLayout.STICKS_PER_ROW)
+        val expectedLayerHeight = MahjongScoringStickDimensions.STICK_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING
+
+        assertEquals(firstOfFirstRow.x, firstOfSecondRow.x, ABSOLUTE_TOLERANCE)
+        assertEquals(firstOfFirstRow.z, firstOfSecondRow.z, ABSOLUTE_TOLERANCE)
+        assertEquals(expectedLayerHeight, firstOfSecondRow.y - firstOfFirstRow.y, ABSOLUTE_TOLERANCE)
+        assertNotEquals(lastOfFirstRow.x, firstOfSecondRow.x)
+    }
+
+    /** 負數 stickIndex 應直接拒絕。 */
+    @Test
+    fun `stick placement rejects negative index`() {
+        assertFailsWith<IllegalArgumentException> { stickPlacement(stickIndex = -1) }
+    }
+
+    /** 建立測試用的最小副露資料，只填入寬度計算需要的欄位。 */
+    private fun fakeMeld(
+        type: MeldType,
+        tileCount: Int,
+        calledTileId: Uuid?,
+        sourceDirection: RelativeDirection = RelativeDirection.Self,
+    ): MahjongMeldTileGroup = MahjongMeldTileGroup(
+        type = type,
+        tileIds = List(tileCount) { Uuid.random() },
+        calledTileId = calledTileId,
+        sourceDirection = sourceDirection,
+        allTilesFaceDown = false,
+    )
+
     /** 建立固定 controller 與可覆寫輸入的測試 placement。 */
     private fun wallPlacement(
         tableFacing: MahjongTableFacing = MahjongTableFacing.NORTH,
@@ -272,6 +450,7 @@ class MahjongTileTableLayoutTest {
         seatIndex: Int = 0,
         handSize: Int = HAND_SIZE,
         tileIndex: Int = 0,
+        cornerYieldShift: Double = 0.0,
     ): MahjongTileWallPlacement = MahjongTileTableLayout.handPlacement(
         controllerX = 10,
         controllerY = 64,
@@ -280,6 +459,21 @@ class MahjongTileTableLayoutTest {
         seatIndex = seatIndex,
         handSize = handSize,
         tileIndex = tileIndex,
+        cornerYieldShift = cornerYieldShift,
+    )
+
+    /** 建立固定 controller 與可覆寫輸入的測試積棒 placement。 */
+    private fun stickPlacement(
+        tableFacing: MahjongTableFacing = MahjongTableFacing.NORTH,
+        seatIndex: Int = 0,
+        stickIndex: Int = 0,
+    ): MahjongTileWallPlacement = MahjongTileTableLayout.stickPlacement(
+        controllerX = 10,
+        controllerY = 64,
+        controllerZ = -4,
+        tableFacing = tableFacing,
+        seatIndex = seatIndex,
+        stickIndex = stickIndex,
     )
 
     /** 建立固定 controller 與可覆寫輸入的測試摸牌位 placement。 */
@@ -287,6 +481,7 @@ class MahjongTileTableLayoutTest {
         tableFacing: MahjongTableFacing = MahjongTableFacing.NORTH,
         seatIndex: Int = 0,
         standingTileCount: Int = HAND_SIZE,
+        cornerYieldShift: Double = 0.0,
     ): MahjongTileWallPlacement = MahjongTileTableLayout.drawnTilePlacement(
         controllerX = 10,
         controllerY = 64,
@@ -294,6 +489,7 @@ class MahjongTileTableLayoutTest {
         tableFacing = tableFacing,
         seatIndex = seatIndex,
         standingTileCount = standingTileCount,
+        cornerYieldShift = cornerYieldShift,
     )
 
     /** 建立固定 controller 與可覆寫輸入的測試牌河 placement。 */

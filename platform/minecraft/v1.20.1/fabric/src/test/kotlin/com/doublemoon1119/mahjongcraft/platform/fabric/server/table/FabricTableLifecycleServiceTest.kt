@@ -13,16 +13,17 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentationResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDrawnTilePresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDrawnTilePresentationResult
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresentationResult
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongHandTilesPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentationResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
@@ -114,8 +115,11 @@ class FabricTableLifecycleServiceTest {
         /** 記錄清理呼叫的牌牆 presenter fake。 */
         private val tileWallPresenter = RecordingTileWallPresenter()
 
-        /** 記錄清理呼叫的手牌 presenter fake。 */
-        private val handTilesPresenter = RecordingHandTilesPresenter()
+        /** 記錄清理呼叫的桌角區域 presenter fake。 */
+        private val playerAreaPresenter = RecordingPlayerAreaPresenter()
+
+        /** 記錄清理呼叫的積棒 presenter fake。 */
+        private val scoringStickPresenter = RecordingScoringStickPresenter()
 
         /** 記錄清理呼叫的牌河 presenter fake。 */
         private val discardPresenter = RecordingDiscardPresenter()
@@ -128,7 +132,8 @@ class FabricTableLifecycleServiceTest {
             configState,
             diceRollPresenter,
             tileWallPresenter,
-            handTilesPresenter,
+            playerAreaPresenter,
+            scoringStickPresenter,
             discardPresenter,
         )
 
@@ -163,15 +168,21 @@ class FabricTableLifecycleServiceTest {
         override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
     }
 
-    /** 只記錄正式手牌清理參數的測試 presenter。 */
-    private class RecordingHandTilesPresenter : MahjongHandTilesPresenter {
-        /** 此測試不使用正式手牌呈現。 */
-        override fun present(presentation: MahjongHandTilesPresentation): MahjongHandTilesPresentationResult = MahjongHandTilesPresentationResult.PRESENTED
+    /** 只記錄正式桌角區域（手牌/摸牌位/副露）清理參數的測試 presenter。 */
+    private class RecordingPlayerAreaPresenter : MahjongPlayerAreaPresenter {
+        /** 此測試不使用正式桌角區域呈現。 */
+        override fun present(presentation: MahjongPlayerAreaPresentation): MahjongPlayerAreaPresentationResult = MahjongPlayerAreaPresentationResult.PRESENTED
 
-        /** 此測試不使用正式摸牌位呈現。 */
-        override fun presentDrawnTile(presentation: MahjongDrawnTilePresentation): MahjongDrawnTilePresentationResult = MahjongDrawnTilePresentationResult.PRESENTED
+        /** 記錄清理請求並回報沒有已載入桌角區域用牌。 */
+        override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
+    }
 
-        /** 記錄清理請求並回報沒有已載入手牌。 */
+    /** 只記錄正式積棒清理參數的測試 presenter。 */
+    private class RecordingScoringStickPresenter : MahjongScoringStickPresenter {
+        /** 此測試不使用正式積棒呈現。 */
+        override fun present(presentation: MahjongScoringStickPresentation): MahjongScoringStickPresentationResult = MahjongScoringStickPresentationResult.PRESENTED
+
+        /** 記錄清理請求並回報沒有已載入積棒。 */
         override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
     }
 

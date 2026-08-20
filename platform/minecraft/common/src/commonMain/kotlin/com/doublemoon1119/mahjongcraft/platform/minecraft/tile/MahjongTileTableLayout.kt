@@ -1,11 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.advance
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localDiscardVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localHandVector
@@ -134,6 +137,10 @@ object MahjongTileTableLayout {
      * @param handSize 這位玩家目前的手牌張數，用來把整排手牌對稱置中於局部側面。
      * @param tileIndex 這張牌在手牌裡的零基底索引（`0` 在最大 X、遞增時往負向移動，跟牌牆 `stack` 的
      * 排列方向一致）。
+     * @param cornerYieldShift 整排手牌（含摸牌位，見 [drawnTilePlacement]）需要往玩家自己方向（局部
+     * X 軸負向）額外平移的距離，`0.0`（預設值）代表不需要讓開。由呼叫端依
+     * [handCornerYieldShift] 算好傳入——這裡只負責套用，不重新判斷是否需要讓開；整排牌一起平移，牌與
+     * 牌之間的間距（`stackStep`）不受影響，是使用者確認過的設計決定。
      */
     fun handPlacement(
         controllerX: Int,
@@ -143,12 +150,14 @@ object MahjongTileTableLayout {
         seatIndex: Int,
         handSize: Int,
         tileIndex: Int,
+        cornerYieldShift: Double = 0.0,
     ): MahjongTileWallPlacement {
         require(handSize > 0) { "Hand size must be positive" }
         require(tileIndex in 0 until handSize) { "Tile index $tileIndex out of range for hand size $handSize" }
+        require(cornerYieldShift >= 0.0) { "Corner yield shift must not be negative" }
 
         val physicalSide = seatIndexToTableSide(seatIndex)
-        val local = localHandVector(handSize, tileIndex)
+        val local = localHandVector(handSize, tileIndex, cornerYieldShift)
         val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
         return MahjongTileWallPlacement(
             x = controllerX + BLOCK_CENTER + worldOffset.x,
@@ -160,13 +169,14 @@ object MahjongTileTableLayout {
 
     /**
      * 以局部南側玩家為基準的單張手牌位置：牌直立擺放，沿排列方向（局部 X 軸）的外觀寬度是
-     * [MahjongTileDimensions.TILE_WIDTH]，跟牌牆同一套墩間距常數對稱置中。垂直於側面的距離
-     * （`HAND_EDGE_OFFSET`）是初始估算值，只要求比牌牆的 `halfSpan` 更靠近桌緣（手牌在牌牆跟桌緣
-     * 之間，貼近玩家自己），實際數值待遊戲內比對後可能還要再微調，比照牌牆當初的調校方式。
+     * [MahjongTileDimensions.TILE_WIDTH]，跟牌牆同一套墩間距常數對稱置中，再扣掉 [cornerYieldShift]
+     * 整排一起往負向平移。垂直於側面的距離（`HAND_EDGE_OFFSET`）是初始估算值，只要求比牌牆的
+     * `halfSpan` 更靠近桌緣（手牌在牌牆跟桌緣之間，貼近玩家自己），實際數值待遊戲內比對後可能還要
+     * 再微調，比照牌牆當初的調校方式。
      */
-    private fun localHandVector(handSize: Int, tileIndex: Int): TileTableVector {
+    private fun localHandVector(handSize: Int, tileIndex: Int, cornerYieldShift: Double): TileTableVector {
         val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
-        val alongSide = ((handSize - 1) / 2.0 - tileIndex) * stackStep
+        val alongSide = ((handSize - 1) / 2.0 - tileIndex) * stackStep - cornerYieldShift
         return TileTableVector(x = alongSide, y = 0.0, z = HAND_EDGE_OFFSET)
     }
 
@@ -177,6 +187,8 @@ object MahjongTileTableLayout {
      * 側面，不經過莊家相對旋轉。
      *
      * @param standingTileCount 這位玩家目前立牌張數（不含這張剛摸到的牌）。
+     * @param cornerYieldShift 跟 [handPlacement] 的同名參數共用同一個值——摸牌位跟著整排立牌一起
+     * 平移，才不會平移後反而超出立牌列。`0.0`（預設值）代表不需要讓開。
      */
     fun drawnTilePlacement(
         controllerX: Int,
@@ -185,9 +197,12 @@ object MahjongTileTableLayout {
         tableFacing: MahjongTableFacing,
         seatIndex: Int,
         standingTileCount: Int,
+        cornerYieldShift: Double = 0.0,
     ): MahjongTileWallPlacement {
+        require(cornerYieldShift >= 0.0) { "Corner yield shift must not be negative" }
+
         val physicalSide = seatIndexToTableSide(seatIndex)
-        val local = localDrawnTileVector(standingTileCount)
+        val local = localDrawnTileVector(standingTileCount, cornerYieldShift)
         val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
         return MahjongTileWallPlacement(
             x = controllerX + BLOCK_CENTER + worldOffset.x,
@@ -202,13 +217,14 @@ object MahjongTileTableLayout {
      * 位置，即玩家右手邊——遊戲內驗證過摸牌位放在 `tileIndex = handSize - 1` 那側時方向是反的，摸到
      * 的牌實際上該出現在玩家右手邊，不是左手邊）再往外一個 `stackStep`，額外加上
      * [DRAWN_TILE_GAP_RATIO] 倍 [MahjongTileDimensions.TILE_WIDTH] 的縫隙，讓摸到的牌跟立牌列之間有
-     * 看得出來的間隔。直立擺放，`z` 跟 [localHandVector] 共用 [HAND_EDGE_OFFSET]。
+     * 看得出來的間隔，再扣掉 [cornerYieldShift]。直立擺放，`z` 跟 [localHandVector] 共用
+     * [HAND_EDGE_OFFSET]。
      */
-    private fun localDrawnTileVector(standingTileCount: Int): TileTableVector {
+    private fun localDrawnTileVector(standingTileCount: Int, cornerYieldShift: Double): TileTableVector {
         val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
         val handRowEdge = (standingTileCount - 1) / 2.0 * stackStep
         val gap = MahjongTileDimensions.TILE_WIDTH * DRAWN_TILE_GAP_RATIO
-        val alongSide = handRowEdge + stackStep + gap
+        val alongSide = handRowEdge + stackStep + gap - cornerYieldShift
         return TileTableVector(x = alongSide, y = 0.0, z = HAND_EDGE_OFFSET)
     }
 
@@ -350,6 +366,138 @@ object MahjongTileTableLayout {
         return TileTableVector(x = alongSide, y = 0.0, z = perpendicular)
     }
 
+    /**
+     * 依鳴取來源方位，換算鳴取牌在副露組內（`0` 為組內最左，靠近副露區桌角錨點方向）該落在哪個格位——
+     * 上家（[RelativeDirection.Left]，吃唯一合法來源）固定最左；對家（[RelativeDirection.Across]）
+     * 固定格位 `1`，三張的碰跟四張的槓皆同（四張時是「偏左第二張」，不是幾何正中央）；下家
+     * （[RelativeDirection.Right]）固定最右；暗槓（[RelativeDirection.Self]，沒有鳴牌來源）回傳
+     * `null`，呼叫端據此判斷不重排、四張全部直立呈現。公開成員：[meldAreaWidth]（算總寬度）與
+     * `FabricMahjongMeldPresenter`（逐格擺放）需要共用同一套判斷，避免兩處各自實作後互相漂移。
+     */
+    fun sidewaysSlotIndex(direction: RelativeDirection, tileCount: Int): Int? = when (direction) {
+        RelativeDirection.Left -> SIDEWAYS_SLOT_LEFT
+        RelativeDirection.Across -> SIDEWAYS_SLOT_ACROSS
+        RelativeDirection.Right -> tileCount - 1
+        RelativeDirection.Self -> null
+    }
+
+    /**
+     * 副露區沿排列方向（局部 X 軸）總共消耗的世界寬度（不含桌角本身的偏移，純粹是「這些副露疊起來
+     * 有多寬」），供手牌／摸牌位（[handCornerYieldShift]）判斷是否需要讓開。
+     *
+     * 逐格累加的公式跟 `FabricMahjongMeldPresenter.present()` 實際逐格擺放時的游標算法完全一致
+     * （側身牌用 [MahjongTileDimensions.TILE_HEIGHT]、直立牌用 [MahjongTileDimensions.TILE_WIDTH]，
+     * 每張牌後面都跟一層 [MahjongTileDimensions.TILE_SMALL_PADDING] 縫隙，組間再額外跳過
+     * [MELD_GROUP_GAP]）——兩處算的是同一件事的兩種用途（一個要算出每張牌的實際座標、一個只要算出
+     * 總寬度），必須共用同一套公式，否則手牌讓開的偏移量會跟副露實際佔用的空間對不上。
+     * [MeldType.ADDED_KAN] 補上的第 4 張牌疊在原碰側身牌旁邊（見 [meldPlacement] 的
+     * `depthOffsetFromEdge`），不佔用額外的橫向格位，因此不計入寬度。
+     */
+    fun meldAreaWidth(melds: List<MahjongMeldTileGroup>): Double {
+        var width = 0.0
+        melds.forEachIndexed { index, meld ->
+            if (index > 0) width += MELD_GROUP_GAP
+            val isAddedKan = meld.type == MeldType.ADDED_KAN
+            val baseTileIds = if (isAddedKan) meld.tileIds.dropLast(1) else meld.tileIds
+            val slotCount = baseTileIds.size
+            val sidewaysSlot = meld.calledTileId?.let { sidewaysSlotIndex(meld.sourceDirection, slotCount) }
+            for (slot in 0 until slotCount) {
+                val isSideways = slot == sidewaysSlot
+                val tileWidth = if (isSideways) MahjongTileDimensions.TILE_HEIGHT else MahjongTileDimensions.TILE_WIDTH
+                width += tileWidth + MahjongTileDimensions.TILE_SMALL_PADDING
+            }
+        }
+        return width
+    }
+
+    /**
+     * 積棒區沿排列方向（局部 X 軸）總共消耗的世界寬度——同一排最多 [STICKS_PER_ROW] 支，超過的部分
+     * 往局部 Y 軸疊下一層（見 [stickPlacement]），不會增加寬度，所以寬度只會隨 [stickCount] 成長到
+     * [STICKS_PER_ROW] 支就不再變化。
+     */
+    fun stickAreaWidth(stickCount: Int): Double {
+        if (stickCount <= 0) return 0.0
+        val columns = stickCount.coerceAtMost(STICKS_PER_ROW)
+        return columns * (MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING)
+    }
+
+    /**
+     * 手牌整列（含摸牌位）需要往玩家自己方向（局部 X 軸負向）平移多少距離，才不會跟副露＋積棒區
+     * （[reservedCornerWidth]，即 [stickAreaWidth] 加 [meldAreaWidth] 的總和）重疊——`0.0` 代表目前
+     * 手牌長度不足以碰到副露／積棒區，不需要讓開。
+     *
+     * 手牌本來就以桌子中心對稱置中（見 [localHandVector]），最靠近桌角那一側的外緣（`tileIndex = 0`
+     * 那張牌的外緣）天生會隨手牌張數增加往桌角方向逼近；[reservedCornerWidth] 越大，[MELD_AREA_CORNER_OFFSET]
+     * 桌角錨點往手牌方向退讓的邊界就越靠內。只要手牌外緣還沒超過這條退讓後的邊界（扣掉
+     * [HAND_CORNER_GAP]，讓兩者之間留一點看得出來的縫隙，不是貼死），回傳 `0.0`；超過時回傳剛好
+     * 讓外緣貼齊這條退讓後邊界所需的平移量。
+     *
+     * [hasDrawnTile] 為 `true` 時，實際最靠近桌角的外緣不是立牌列本身，而是
+     * [localDrawnTileVector]（緊接立牌列尾端外一個 `stackStep` 加 [DRAWN_TILE_GAP_RATIO] 縫隙）——
+     * 摸牌位跟著整排立牌共用同一個 `cornerYieldShift`（見 [drawnTilePlacement] KDoc），若這裡只用
+     * 立牌列自己的外緣計算，摸牌位會在讓開後仍然超出邊界、撞進副露區，這是遊戲內實際驗證過的問題。
+     */
+    fun handCornerYieldShift(handSize: Int, reservedCornerWidth: Double, hasDrawnTile: Boolean = false): Double {
+        if (handSize <= 0 || reservedCornerWidth <= 0.0) return 0.0
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val handRightEdge = (handSize - 1) / 2.0 * stackStep + MahjongTileDimensions.TILE_WIDTH / 2.0
+        val drawnTileGap = MahjongTileDimensions.TILE_WIDTH * DRAWN_TILE_GAP_RATIO
+        val rightEdge = if (hasDrawnTile) handRightEdge + stackStep + drawnTileGap else handRightEdge
+        val availableCornerBoundary = MELD_AREA_CORNER_OFFSET - reservedCornerWidth - HAND_CORNER_GAP
+        return (rightEdge - availableCornerBoundary).coerceAtLeast(0.0)
+    }
+
+    /**
+     * 依 controller 座標、桌子世界朝向與座位 index，算出這位玩家積棒區中第 [stickIndex]
+     * （`0` 起算，依生成順序排列）支積棒的世界座標——積棒直接佔用 [MELD_AREA_CORNER_OFFSET] 桌角
+     * 錨點本身（副露從積棒外緣往手牌方向接續排開，見 [meldPlacement] 呼叫端如何把
+     * [stickAreaWidth] 當成副露游標起始值），使用者確認過的設計決定。
+     *
+     * 短邊（[MahjongScoringStickDimensions.STICK_DEPTH]）朝向玩家自己、沿排列方向（局部 X 軸）決定
+     * 同一排能塞幾支；長邊（[MahjongScoringStickDimensions.STICK_WIDTH]）往桌子中心延伸（垂直排列
+     * 方向，局部 Z 軸）。同一排最多 [STICKS_PER_ROW] 支，超過往局部 Y 軸疊下一層，同樣從第一支排到
+     * 第 [STICKS_PER_ROW] 支，Y 軸層數無上限——同樣是使用者確認過的設計決定。
+     */
+    fun stickPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatIndex: Int,
+        stickIndex: Int,
+    ): MahjongTileWallPlacement {
+        require(stickIndex >= 0) { "Stick index must not be negative" }
+
+        val physicalSide = seatIndexToTableSide(seatIndex)
+        val local = localStickVector(stickIndex)
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        val baseYaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = (baseYaw + SIDEWAYS_YAW_OFFSET).mod(FULL_YAW_DEGREES),
+        )
+    }
+
+    /**
+     * 以局部南側玩家為基準的單支積棒位置：沿排列方向（局部 X 軸）從 [MELD_AREA_CORNER_OFFSET] 桌角
+     * 錨點往負向排開，每排（[STICKS_PER_ROW] 支）用一個 [MahjongScoringStickDimensions.STICK_DEPTH]
+     * 加 [MahjongTileDimensions.TILE_SMALL_PADDING] 的步距；垂直排列方向（局部 Z 軸）固定貼齊
+     * [MELD_NEAR_EDGE_LINE] 往桌子中心扣除半個 [MahjongScoringStickDimensions.STICK_WIDTH]（長邊朝
+     * 桌子中心延伸）；局部 Y 軸依層數（`stickIndex / STICKS_PER_ROW`）疊高，層高為
+     * [MahjongScoringStickDimensions.STICK_HEIGHT] 加一層 [MahjongTileDimensions.TILE_SMALL_PADDING]。
+     */
+    private fun localStickVector(stickIndex: Int): TileTableVector {
+        val column = stickIndex % STICKS_PER_ROW
+        val layer = stickIndex / STICKS_PER_ROW
+        val stepAlong = MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val alongSide = MELD_AREA_CORNER_OFFSET - (column + 0.5) * stepAlong
+        val perpendicular = MELD_NEAR_EDGE_LINE - MahjongScoringStickDimensions.STICK_WIDTH / 2.0
+        val layerHeight = layer * (MahjongScoringStickDimensions.STICK_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING)
+        return TileTableVector(x = alongSide, y = layerHeight, z = perpendicular)
+    }
+
     /** 依南→西→北→東的固定順序（跟 [seatIndexToTableSide] 同一套方向），把 [side] 往同方向推進 [steps] 步。 */
     private fun advance(side: MahjongTableSide, steps: Int): MahjongTableSide = SIDE_ORDER[(SIDE_ORDER.indexOf(side) + steps).mod(SIDE_ORDER.size)]
 
@@ -485,6 +633,45 @@ object MahjongTileTableLayout {
      * 換算中心點，確保兩種朝向的牌外緣都對齊同一條線，不會其中一種突出或內縮。
      */
     internal const val MELD_NEAR_EDGE_LINE: Double = 46.0 / 16.0 / 2.0 - MELD_AREA_CORNER_MARGIN
+
+    /**
+     * 相鄰兩組副露之間額外跳過的世界距離相對 [MahjongTileDimensions.TILE_WIDTH] 的比例——只需要
+     * 看得出分組的小縫隙，不是一整張牌的寬度（初版直接用一整張牌寬，遊戲內驗證後回報間距過大）。
+     * 原本是 `FabricMahjongMeldPresenter` 私有的調校常數，搬進這裡是因為 [meldAreaWidth] 需要跟
+     * 逐格擺放共用同一個數值，不能各自維護一份。
+     */
+    const val MELD_GROUP_GAP_RATIO: Double = 0.3
+
+    /** 相鄰兩組副露之間額外跳過的世界距離，見 [MELD_GROUP_GAP_RATIO]。 */
+    const val MELD_GROUP_GAP: Double = MahjongTileDimensions.TILE_WIDTH * MELD_GROUP_GAP_RATIO
+
+    /**
+     * 加槓補上的第 4 張牌，垂直於排列方向（往桌子中心）額外推的距離——剛好是側身牌自己的外觀寬度
+     * （[MahjongTileDimensions.TILE_WIDTH]，側身後這個方向的寬度）加一層
+     * [MahjongTileDimensions.TILE_SMALL_PADDING] 縫隙，讓兩張側身牌前後相鄰、不重疊。搬移理由同
+     * [MELD_GROUP_GAP]。
+     */
+    const val ADDED_KAN_DEPTH_OFFSET: Double = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+
+    /** 上家鳴取（吃唯一合法來源）的側身牌組內格位：固定最左。搬移理由同 [MELD_GROUP_GAP]。 */
+    const val SIDEWAYS_SLOT_LEFT: Int = 0
+
+    /**
+     * 對家鳴取的側身牌組內格位：固定 `1`（碰／槓皆同，四張時是偏左第二張，不是幾何正中央）。搬移
+     * 理由同 [MELD_GROUP_GAP]。
+     */
+    const val SIDEWAYS_SLOT_ACROSS: Int = 1
+
+    /** 積棒同一排最多排放的支數，超過往局部 Y 軸疊下一層——使用者確認過的設計決定。 */
+    const val STICKS_PER_ROW: Int = 5
+
+    /**
+     * 手牌／摸牌位讓開副露＋積棒區時，額外多留的縫隙——避免 [handCornerYieldShift] 算出來的偏移
+     * 只是讓兩者剛好貼齊、外觀上完全不留空隙。使用起始估算值，跟 [MELD_GROUP_GAP] 同一數量級但
+     * 不共用同一個值，因為這裡是手牌區跟副露／積棒區兩個不同子系統之間的縫隙，不是同一副露內部的
+     * 組間縫隙，兩者觀感上不必然要一致；預期進遊戲後用截圖比對調整。
+     */
+    internal const val HAND_CORNER_GAP: Double = MahjongTileDimensions.TILE_WIDTH * 0.2
 
     /** 南→西→北→東的固定順序，跟 [seatIndexToTableSide] 與 `TileWallPosition.side` 同一套慣例。 */
     private val SIDE_ORDER =

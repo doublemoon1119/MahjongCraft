@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
 
 /**
- * 供 [GamePresentationPublisher.publishMeldsUpdated] 使用的單一副露呈現資料。
+ * 供 [GamePresentationPublisher.publishPlayerAreaUpdated] 使用的單一副露呈現資料。
  *
  * 刻意只帶位置呈現需要的最小資訊（種類、牌 Uuid 列表、鳴取來源牌 Uuid、鳴取方位），不像 [Meld] 那樣
  * 攜帶實際 `Tile` 牌面——管理中牌張的牌面完全交給 client 端依可見性快照另外呈現，平台呈現層只需要
@@ -103,19 +103,59 @@ interface GamePresentationPublisher {
     )
 
     /**
-     * 通知平台呈現層本局初始手牌分配。
+     * 通知平台呈現層本局莊家角落的積棒（連莊棒）數量。
      *
-     * 跟 [publishWallStructure] 的王牌分離同理，手牌落地要等擲骰動畫播完才觸發，不能在骰子還在動畫
-     * 時就直接讓手牌出現在玩家面前——這三件事（王牌分離、手牌分配、寶牌指示器翻開）體感上應該同時
-     * 發生，才符合「建牌 → 擲骰開門 → 分牌」的真實節奏。[diceCount] 的用途跟 [publishWallStructure]
-     * 相同，供平台實作換算延遲時長。
+     * 跟牌牆同一個時機點觸發（呼叫端緊接在 [publishWallStructure] 之後呼叫），不是每次打牌/摸牌/
+     * 鳴牌都觸發——積棒數量整局固定（等於 `TableState.comboCount`），只有連莊/換局時才變，生命週期
+     * 綁在牌牆生成，不是綁在 [publishPlayerAreaUpdated]。
      *
      * @param gameId 對局 Uuid。
-     * @param handsBySeatIndex 依 `TableState.players` 固定座位 index 分組的初始手牌，每組依發牌順序
-     *        排列，鍵為 [IdentifiedTile.id]；空 map 代表這局結束，只需要清除舊牌。
-     * @param diceCount 本次開局擲骰的骰子數量；未搭配擲骰的呼叫可傳 `0`。
+     * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index——積棒只在莊家角落顯示。
+     * @param stickCount 該顯示的積棒支數，恆等於 `TableState.comboCount`；`0` 代表這局還沒連莊過，
+     * 等同只清除舊積棒。
      */
-    fun publishHandTiles(gameId: Uuid, handsBySeatIndex: Map<Int, List<Uuid>>, diceCount: Int)
+    fun publishScoringSticksUpdated(gameId: Uuid, dealerSeatIndex: Int, stickCount: Int)
+
+    /**
+     * 通知平台呈現層某玩家目前的手牌（含摸牌位）與副露需要更新為目前狀態。
+     *
+     * 原本是 `publishHandTiles`／`publishTileDrawn`／`publishMeldsUpdated` 三個獨立方法，合併成這一個
+     * 的理由：手牌（含摸牌位）要能對副露＋積棒讓開空間，前提是同一次呼叫必須同時知道「立牌、摸牌、
+     * 副露、積棒支數」四種狀態——平台實作才能一次算出正確的讓開偏移，不能分開觸發、各自為政。
+     *
+     * 跟原本 `publishHandTiles` 的王牌分離同理，開局/換局時手牌落地要等擲骰動畫播完才觸發（[diceCount]
+     * 控制延遲時長）；一般回合動作（捨牌、摸牌、鳴牌）呼叫時沒有擲骰可等，傳 `0` 直接同步呈現。
+     *
+     * @param gameId 對局 Uuid。
+     * @param seatIndex 這位玩家在 `TableState.players` 的固定座位 index。
+     * @param standingTileIds 這位玩家目前立牌，依發牌／捨牌後的順序排列（`Hand.tiles`，不含
+     * [drawnTileId]），鍵為 [IdentifiedTile.id]；空清單代表這局結束，只需要清除舊牌。
+     * @param drawnTileId 這位玩家目前摸到、尚未併入立牌或打出的那張牌 Uuid（`Hand.lastDrawn`）；
+     * `null` 代表目前沒有摸牌位要呈現。
+     * @param melds 這位玩家目前所有副露，依宣告順序排列——第一組（最早宣告）位於副露區固定的桌角
+     * 錨點外緣（積棒外緣），後續每組依序往玩家自己手牌方向排開，呼叫端不需要另外傳遞位置索引。
+     * @param comboStickCount 這位玩家目前該顯示的積棒支數——只有莊家非零，等於 `TableState.comboCount`；
+     * 只用來讓手牌／副露正確讓開積棒佔用的空間，不會觸發積棒 entity 本身的生成／清除（那是
+     * [publishScoringSticksUpdated] 的職責）。
+     * @param diceCount 本次開局擲骰的骰子數量；未搭配擲骰的一般回合動作呼叫可傳 `0`（預設值）。
+     */
+    fun publishPlayerAreaUpdated(
+        gameId: Uuid,
+        seatIndex: Int,
+        standingTileIds: List<Uuid>,
+        drawnTileId: Uuid?,
+        melds: List<MeldPresentation>,
+        comboStickCount: Int,
+        diceCount: Int = 0,
+    )
+
+    /**
+     * 清除整桌所有玩家的手牌/摸牌位/副露/積棒呈現——對局結束、回房間等清空情境使用，沒有座位分組
+     * 資料可傳時呼叫這個方法，取代原本 `publishHandTiles(gameId, emptyMap(), 0)` 的空 map 清空語意。
+     *
+     * @param gameId 對局 Uuid。
+     */
+    fun clearPlayerAreas(gameId: Uuid)
 
     /**
      * 通知平台呈現層本局開局座位傳送。只在開局時呼叫一次，之後連莊/過莊開新局不會再次呼叫——風位
@@ -125,23 +165,6 @@ interface GamePresentationPublisher {
      * @param seatedPlayerIds 依 `TableState.players` 固定座位順序排列的玩家 Uuid 清單。
      */
     fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>)
-
-    /**
-     * 通知平台呈現層某玩家摸到的牌需要移動到手牌旁的摸牌位置。
-     *
-     * 只在真正摸牌時呼叫；捨牌不會呼叫這個方法清除摸牌位——捨牌時原本佔用摸牌位的那張牌一定會有
-     * 新去處（併入立牌列表，或本身就是被丟的那張移去牌河），呼叫端改呼叫 [publishHandTiles]（重新
-     * 排列立牌列）與 [publishDiscardPileUpdated]（把牌移去牌河），不會有「entity 留在摸牌位沒人管」
-     * 的情況。
-     *
-     * @param gameId 對局 Uuid。
-     * @param seatIndex 摸牌玩家在 `TableState.players` 的固定座位 index。
-     * @param standingTileCount 這位玩家目前立牌張數（不含這張剛摸到的牌），供平台實作換算摸牌位相對
-     * 立牌列尾端的偏移，不需要重新定位既有立牌。
-     * @param drawnTileId 剛摸到那張牌的 Uuid；為 `null` 代表清除既有摸牌位呈現（例如對局／該局結束
-     * 時的收尾呼叫）。
-     */
-    fun publishTileDrawn(gameId: Uuid, seatIndex: Int, standingTileCount: Int, drawnTileId: Uuid?)
 
     /**
      * 通知平台呈現層某玩家的牌河需要更新為目前狀態。
@@ -158,20 +181,4 @@ interface GamePresentationPublisher {
      * 「立直」，讓這個介面本身維持規則無關。
      */
     fun publishDiscardPileUpdated(gameId: Uuid, seatIndex: Int, discardTileIds: List<Uuid>, sidewaysMarkedTileId: Uuid?)
-
-    /**
-     * 通知平台呈現層某玩家的副露需要更新為目前狀態。
-     *
-     * 呼叫時機：該玩家吃／碰／明槓／暗槓／加槓成立後。跟 [publishHandTiles] 同理，每次都傳完整的
-     * 目前副露列表，不是只傳新增的那一組——`Hand.melds` 本身也是每次都整組覆寫，呼叫端沒有「只新增
-     * 一筆」的中繼狀態需要另外追蹤。加槓（升級既有碰為加槓）會讓某一組副露的
-     * [MeldPresentation.tileIds] 多一張牌但仍是同一組，不是新增一組獨立副露，呼叫端需自行依
-     * `Hand.melds` 目前內容組出完整列表。
-     *
-     * @param gameId 對局 Uuid。
-     * @param seatIndex 副露所屬玩家在 `TableState.players` 的固定座位 index。
-     * @param melds 這位玩家目前所有副露，依宣告順序排列——第一組（最早宣告）位於副露區固定的桌角
-     * 錨點，後續每組依序往玩家自己手牌方向排開，呼叫端不需要另外傳遞位置索引。
-     */
-    fun publishMeldsUpdated(gameId: Uuid, seatIndex: Int, melds: List<MeldPresentation>)
 }

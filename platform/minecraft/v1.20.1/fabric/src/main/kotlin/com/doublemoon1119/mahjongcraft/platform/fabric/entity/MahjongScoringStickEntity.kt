@@ -49,6 +49,29 @@ class MahjongScoringStickEntity(
         setNoGravity(true)
     }
 
+    /**
+     * 這個 entity 物件在記憶體裡第一次被 tick 到的 `world.time`；只在記憶體內，不寫進存檔，理由跟
+     * `MahjongDiceEntity.firstTickWorldTime` 完全一致（避免世界重新載入一次補跑大量 tick 時誤判成
+     * 早就該消失了）。
+     */
+    private var firstTickWorldTime: Long = Long.MIN_VALUE
+
+    /**
+     * 管理中積棒的 fallback 自動清除——**不是主要清除路徑**。積棒的正常生命週期是跟牌牆同時生成、
+     * 每次換局由 `FabricMahjongScoringStickPresenter.present()` 在新積棒生成成功後才刪除舊的，或由
+     * 對局結束的顯式清除觸發；這裡只是意外情境（伺服器崩潰、對局非正常結束導致沒有機會走到正常清除
+     * 流程）的保險，門檻抓得遠大於正常一局遊戲時長，不能像 `MahjongDiceEntity` 那樣抓短動畫時長——
+     * 積棒沒有「動畫播完」的概念，太短的門檻會在正常對局進行中就把還在使用的積棒清掉。
+     */
+    override fun tick() {
+        super.tick()
+        if (world.isClient) return
+        if (firstTickWorldTime == Long.MIN_VALUE) firstTickWorldTime = world.time
+        if (managedByGame && world.time - firstTickWorldTime >= FALLBACK_DESPAWN_AFTER_TICKS) {
+            discard()
+        }
+    }
+
     /** 點棒扁平輕薄，不提供物理阻擋，僅供視線選取。 */
     override fun isCollidable(): Boolean = false
 
@@ -134,6 +157,12 @@ class MahjongScoringStickEntity(
 
         /** 正式點棒所屬桌子 UUID 的世界存檔 key。 */
         private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
+
+        /**
+         * 管理中積棒的 fallback 自動清除門檻（見 [tick]）——1 小時份的 tick 數，遠大於正常一局遊戲
+         * 時長，只用來兜底意外情境，不影響正常對局的積棒顯示。
+         */
+        private const val FALLBACK_DESPAWN_AFTER_TICKS = 20L * 60L * 60L
 
         /** 同步目前面額 ordinal。 */
         private val DENOMINATION: TrackedData<Int> =

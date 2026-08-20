@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -136,19 +137,22 @@ class RespondToDiscardUseCase(
             )
         }
 
-        // 碰/吃/明槓得標時，得標玩家的副露多了一組，需要重新呈現整份副露列表；明槓另外補到嶺上牌時
-        // （[RespondResult.rinshanDrawHappened]），比照一般摸牌同一套呈現慣例把補到的牌移到摸牌位。
+        // 碰/吃/明槓得標時，得標玩家的副露多了一組、手牌也少了對應張數，重新呈現整份手牌/摸牌位/
+        // 副露；明槓另外補到嶺上牌時（[RespondResult.rinshanDrawHappened]）摸牌位自然帶著呈現，不需要
+        // 額外判斷——合併呼叫後也順便補上先前缺漏的手牌重新呈現（吃/碰/明槓後手牌張數變少，先前完全
+        // 沒有重新呈現手牌列）。
         result.winnerId?.let { winnerId ->
             val winnerSeatIndex = newState.players.indexOfFirst { it.id == winnerId }
             val winner = newState.players[winnerSeatIndex]
-            presentationPublisher.publishMeldsUpdated(
+            val dealerSeatIndex = newState.players.indexOfFirst { it.currentWind == Wind.EAST }
+            presentationPublisher.publishPlayerAreaUpdated(
                 gameId,
                 winnerSeatIndex,
+                winner.hand.tiles.map { it.id },
+                winner.hand.lastDrawn?.id,
                 winner.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+                comboStickCount = if (winnerSeatIndex == dealerSeatIndex) newState.comboCount else 0,
             )
-            if (result.rinshanDrawHappened) {
-                presentationPublisher.publishTileDrawn(gameId, winnerSeatIndex, winner.hand.tiles.size, winner.hand.lastDrawn?.id)
-            }
         }
 
         return Outcome.Success(Unit)

@@ -120,7 +120,7 @@ class DiscardTileUseCaseTest {
 
         fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
 
-        assertEquals(listOf(handTile.id), fixtures.presentationPublisher.getPublishedHandTiles(gameId)?.get(0))
+        assertEquals(listOf(handTile.id), fixtures.presentationPublisher.getPublishedPlayerArea(gameId)?.standingTileIds)
         val publishedDiscardPile = fixtures.presentationPublisher.getPublishedDiscardPile(gameId)
         assertNotNull(publishedDiscardPile)
         assertEquals(0, publishedDiscardPile.seatIndex)
