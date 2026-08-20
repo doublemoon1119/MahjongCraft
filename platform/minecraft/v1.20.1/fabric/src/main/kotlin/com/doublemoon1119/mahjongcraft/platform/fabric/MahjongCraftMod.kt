@@ -28,7 +28,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisio
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricGameCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.DisconnectedPlayerLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricRoomCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
@@ -165,7 +165,7 @@ class MahjongCraftMod : ModInitializer {
 
     /** 將 Fabric 玩家連線事件轉送給可測試的斷線政策執行器。 */
     private fun registerPlayerConnectionEvents(koin: Koin) {
-        val lifecycleService = koin.get<DisconnectedPlayerLifecycleService>()
+        val lifecycleService = koin.get<PlayerConnectionLifecycleService>()
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
             lifecycleService.onConnected(handler.player.uuid.toKotlinUuid())
         }

@@ -2,19 +2,30 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.player
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPlayerPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -22,6 +33,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -30,9 +42,9 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
-/** [DisconnectedPlayerLifecycleService] 的斷線政策與重連取消測試。 */
+/** [PlayerConnectionLifecycleService] 的斷線政策、重連取消與重連快照補送測試。 */
 @OptIn(ExperimentalCoroutinesApi::class)
-class DisconnectedPlayerLifecycleServiceTest {
+class PlayerConnectionLifecycleServiceTest {
     /** `KEEP_SEAT` 不得移除等待室玩家。 */
     @Test
     fun `test keep seat policy preserves waiting room membership`() = runTest {
@@ -86,6 +98,37 @@ class DisconnectedPlayerLifecycleServiceTest {
 
         assertEquals(fixture.tableId, fixture.memberships.getTableId(fixture.playerId))
         assertNotNull(fixture.roomRepository.getRoom(fixture.tableId))
+    }
+
+    /**
+     * 玩家重連時應主動補送一份快照，不必等玩家再次右鍵桌子——這是玩家重新登入後手牌會暫時顯示
+     * unknown 的實際回報問題（見 [PlayerConnectionLifecycleService.onConnected] KDoc）。
+     */
+    @Test
+    fun `test reconnect resyncs waiting room snapshot`() = runTest {
+        val fixture = createFixture(DisconnectedPlayerPolicy.KEEP_SEAT)
+        assertNull(fixture.roomSnapshotRepository.getSnapshot(fixture.tableId, fixture.playerId))
+
+        fixture.service.onConnected(fixture.playerId)
+        advanceUntilIdle()
+
+        assertNotNull(fixture.roomSnapshotRepository.getSnapshot(fixture.tableId, fixture.playerId))
+    }
+
+    /** 對局已開始時，玩家重連應改補送對局快照，而不是等待室快照。 */
+    @Test
+    fun `test reconnect resyncs active game snapshot`() = runTest {
+        val fixture = createFixture(DisconnectedPlayerPolicy.KEEP_SEAT)
+        fixture.roomRepository.removeRoom(fixture.tableId)
+        fixture.gameRepository.setTableState(
+            FakeTableStateFactory.create(id = fixture.tableId, players = fixture.players),
+        )
+        assertNull(fixture.gameSnapshotRepository.getSnapshot(fixture.tableId, fixture.playerId))
+
+        fixture.service.onConnected(fixture.playerId)
+        advanceUntilIdle()
+
+        assertNotNull(fixture.gameSnapshotRepository.getSnapshot(fixture.tableId, fixture.playerId))
     }
 
     /** 進行中的 Game 不受斷線離開政策影響。 */
@@ -160,6 +203,10 @@ class DisconnectedPlayerLifecycleServiceTest {
         val tableId = Uuid.random()
         val hostId = Uuid.random()
         val playerId = Uuid.random()
+        val players = listOf(
+            FakeMahjongPlayerFactory.create(id = hostId),
+            FakeMahjongPlayerFactory.create(id = playerId),
+        )
         roomRepository.setRoom(
             Room(
                 id = tableId,
@@ -169,10 +216,12 @@ class DisconnectedPlayerLifecycleServiceTest {
             ),
         )
         memberships.claim(playerId, tableId)
+        val roomSnapshotRepository = FakeRoomSnapshotRepository()
+        val gameSnapshotRepository = FakeGameSnapshotRepository()
         val leaveRoom = LeaveRoomUseCase(
             roomRepository,
             memberships,
-            FakeRoomSnapshotRepository(),
+            roomSnapshotRepository,
             FakeRoomEventPublisher(),
         )
         val configState = MinecraftServerConfigState(
@@ -181,35 +230,57 @@ class DisconnectedPlayerLifecycleServiceTest {
                 disconnectedPlayerTimeoutSeconds = timeoutSeconds,
             ),
         )
-        val service = DisconnectedPlayerLifecycleService(
+        val networkRegistries = DefaultNetworkDtoRegistries()
+        val service = PlayerConnectionLifecycleService(
             scope,
             configState,
             memberships,
             roomRepository,
             gameRepository,
             leaveRoom,
+            SyncRoomSnapshotUseCase(roomRepository, roomSnapshotRepository),
+            SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl())),
+            RoomSnapshotSender(roomSnapshotRepository, FabricServerHolder(), Json, networkRegistries),
+            GameSnapshotSender(gameSnapshotRepository, FabricServerHolder(), Json, networkRegistries),
         )
-        return Fixture(service, configState, roomRepository, gameRepository, memberships, tableId, playerId)
+        return Fixture(
+            service,
+            configState,
+            roomRepository,
+            gameRepository,
+            memberships,
+            roomSnapshotRepository,
+            gameSnapshotRepository,
+            tableId,
+            playerId,
+            players,
+        )
     }
 
     /**
      * 測試中共用的斷線服務與權威 repository。
      *
-     * @property service 受測斷線生命週期服務。
+     * @property service 受測連線生命週期服務。
      * @property configState 可替換的有效設定 state。
      * @property roomRepository Room repository。
      * @property gameRepository Game repository。
      * @property memberships 玩家唯一桌子歸屬 repository。
+     * @property roomSnapshotRepository 房間快照 read-side repository，用來驗證重連是否補送快照。
+     * @property gameSnapshotRepository 對局快照 read-side repository，用來驗證重連是否補送快照。
      * @property tableId 測試麻將桌 UUID。
      * @property playerId 測試玩家 UUID。
+     * @property players 測試房主與測試玩家組成的固定玩家清單，供對局測試建立 [FakeTableStateFactory] 用。
      */
     private data class Fixture(
-        val service: DisconnectedPlayerLifecycleService,
+        val service: PlayerConnectionLifecycleService,
         val configState: MinecraftServerConfigState,
         val roomRepository: RoomRepositoryImpl,
         val gameRepository: GameRepositoryImpl,
         val memberships: PlayerMembershipRepositoryImpl,
+        val roomSnapshotRepository: FakeRoomSnapshotRepository,
+        val gameSnapshotRepository: FakeGameSnapshotRepository,
         val tableId: Uuid,
         val playerId: Uuid,
+        val players: List<MahjongPlayer>,
     )
 }
