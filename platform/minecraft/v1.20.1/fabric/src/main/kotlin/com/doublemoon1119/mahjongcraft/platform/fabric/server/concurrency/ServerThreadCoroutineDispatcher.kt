@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.DisposableHandle
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlin.coroutines.CoroutineContext
 
@@ -22,7 +23,7 @@ import kotlin.coroutines.CoroutineContext
  * 單機版暫停時背景執行緒仍然照常計時，恢復後會立刻觸發「早就到期」的延遲工作。改委派給
  * [tickClock] 的 tick 計數排程，暫停時自然停止前進，不需要另開一條背景執行緒。
  */
-@OptIn(InternalCoroutinesApi::class)
+@OptIn(InternalCoroutinesApi::class, ExperimentalCoroutinesApi::class)
 class ServerThreadCoroutineDispatcher(
     private val serverHolder: FabricServerHolder,
     private val tickClock: FabricTickMonotonicClock,

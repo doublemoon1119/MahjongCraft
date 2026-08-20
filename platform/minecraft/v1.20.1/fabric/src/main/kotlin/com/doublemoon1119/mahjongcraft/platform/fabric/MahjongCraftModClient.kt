@@ -34,8 +34,8 @@ import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
-import net.fabricmc.fabric.api.`object`.builder.v1.client.model.FabricModelPredicateProviderRegistry
 import net.minecraft.client.MinecraftClient
+import net.minecraft.client.item.ModelPredicateProviderRegistry
 import net.minecraft.util.Identifier
 import org.koin.core.context.GlobalContext
 import org.slf4j.LoggerFactory
@@ -49,7 +49,7 @@ class MahjongCraftModClient : ClientModInitializer {
 
         ModelLoadingPlugin.register(MahjongTileModelLoadingPlugin)
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAHJONG_TILE, MahjongTileItemRenderer)
-        FabricModelPredicateProviderRegistry.register(
+        ModelPredicateProviderRegistry.register(
             ModItems.MAHJONG_SCORING_STICK,
             Identifier(MinecraftModMetadata.MOD_ID, "denomination"),
         ) { stack, _, _, _ -> MahjongScoringStickItem.readDenomination(stack).normalizedPredicateValue }
