@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -30,6 +32,7 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與規則特有邏輯。
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property eventPublisher 對局通知服務。
+ * @property presentationPublisher 對局 in-process 呈現觸發器。
  */
 @Factory
 class RespondToChankanUseCase(
@@ -37,6 +40,7 @@ class RespondToChankanUseCase(
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
+    @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 執行搶槓反應回應邏輯。
@@ -99,7 +103,9 @@ class RespondToChankanUseCase(
                             return@update state to Outcome.Error(GameError.WallExhausted(gameId))
                         }
                         val newState = applied.tableState.copy(pendingChankan = null)
-                        newState to Outcome.Success(ChankanResult(newState, drawHappened = true))
+                        newState to Outcome.Success(
+                            ChankanResult(newState, drawHappened = true, declarerId = pending.declarerId),
+                        )
                     }
                 }
             }
@@ -118,13 +124,25 @@ class RespondToChankanUseCase(
             }
         }
 
+        // 全員放過、原本暫緩的副露補做成立時，重新呈現宣告者的整份副露列表
+        result.declarerId?.let { declarerId ->
+            val declarerSeatIndex = newState.players.indexOfFirst { it.id == declarerId }
+            val declarer = newState.players[declarerSeatIndex]
+            presentationPublisher.publishMeldsUpdated(
+                gameId,
+                declarerSeatIndex,
+                declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+            )
+        }
+
         return Outcome.Success(Unit)
     }
 
     /**
-     * `update` 區塊內部使用的中繼結果，讓 [drawHappened] 能跟著 [tableState] 一起帶出
-     * `gameRepository.update` 的作用域，供廣播事件時使用。[drawHappened] 為 true 代表全員放過、
-     * 原本暫緩的副露與嶺上摸牌已在這次呼叫補做完成，需要額外廣播 [GameAction.Draw]。
+     * `update` 區塊內部使用的中繼結果，讓 [drawHappened]／[declarerId] 能跟著 [tableState] 一起帶出
+     * `gameRepository.update` 的作用域，供廣播事件／觸發呈現時使用。[drawHappened] 為 true 代表全員
+     * 放過、原本暫緩的副露與嶺上摸牌已在這次呼叫補做完成，需要額外廣播 [GameAction.Draw]。
+     * [declarerId] 只在 [drawHappened] 為 true 時才有值，供呼叫端重新呈現宣告者的副露。
      */
-    private data class ChankanResult(val tableState: TableState, val drawHappened: Boolean)
+    private data class ChankanResult(val tableState: TableState, val drawHappened: Boolean, val declarerId: Uuid? = null)
 }

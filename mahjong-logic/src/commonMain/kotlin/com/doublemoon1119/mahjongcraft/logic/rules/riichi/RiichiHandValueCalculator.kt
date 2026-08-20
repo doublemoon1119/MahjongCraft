@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Fuuro
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
@@ -60,7 +61,11 @@ class RiichiHandValueCalculator(
             val tile = meld.tiles.first().tile.riichiCanonical
             val mentsu = when (meld.type) {
                 MeldType.PON -> Mentsu.Kotsu(tile)
-                MeldType.CHI -> Mentsu.Shuntsu(headTile = tile)
+                // CHI 的 tiles 依鳴牌時呼叫端選牌順序排列（被鳴牌固定最後一張），不保證數值遞增，
+                // Shuntsu 的 headTile 必須是三張裡數值最小的那張，不能直接沿用 tiles.first()。
+                MeldType.CHI -> Mentsu.Shuntsu(
+                    headTile = meld.tiles.minBy { (it.tile.riichiCanonical as Tile.Numeric).value }.tile.riichiCanonical,
+                )
                 MeldType.OPEN_KAN -> Mentsu.Minkan(tile)
                 MeldType.CLOSED_KAN -> Mentsu.Ankan(tile)
                 MeldType.ADDED_KAN -> Mentsu.Kakan(tile)

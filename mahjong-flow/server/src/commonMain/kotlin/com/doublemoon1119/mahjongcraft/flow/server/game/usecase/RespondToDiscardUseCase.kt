@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -130,8 +131,19 @@ class RespondToDiscardUseCase(
             presentationPublisher.publishDiscardPileUpdated(
                 gameId,
                 discarderSeatIndex,
-                discarder.discardPile.entries.map { it.tile.id },
+                discarder.discardPile.entries.filterNot { it.isTaken }.map { it.tile.id },
                 (discarder.discardPile as? SidewaysMarkedDiscardPile)?.sidewaysMarkedTileId(),
+            )
+        }
+
+        // 碰/吃/明槓得標時，得標玩家的副露多了一組，需要重新呈現整份副露列表
+        result.winnerId?.let { winnerId ->
+            val winnerSeatIndex = newState.players.indexOfFirst { it.id == winnerId }
+            val winner = newState.players[winnerSeatIndex]
+            presentationPublisher.publishMeldsUpdated(
+                gameId,
+                winnerSeatIndex,
+                winner.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
             )
         }
 
@@ -139,16 +151,18 @@ class RespondToDiscardUseCase(
     }
 
     /**
-     * `update` 區塊內部使用的中繼結果，讓 [rinshanDrawHappened]／[discarderId] 能跟著 [tableState]
-     * 一起帶出 `gameRepository.update` 的作用域，供廣播事件／觸發呈現時使用。[rinshanDrawHappened]
-     * 為 true 代表明槓得標後成功補到嶺上牌，需要額外廣播 [GameAction.Draw]。[discarderId] 只在碰/吃/
-     * 明槓得標、實際對丟牌者的 `discardPile` 呼叫過 `takeLast()` 時才有值（全員過牌與榮和都不會呼叫
-     * `takeLast()`），供呼叫端重新呈現該玩家的牌河。
+     * `update` 區塊內部使用的中繼結果，讓 [rinshanDrawHappened]／[discarderId]／[winnerId] 能跟著
+     * [tableState] 一起帶出 `gameRepository.update` 的作用域，供廣播事件／觸發呈現時使用。
+     * [rinshanDrawHappened] 為 true 代表明槓得標後成功補到嶺上牌，需要額外廣播 [GameAction.Draw]。
+     * [discarderId] 只在碰/吃/明槓得標、實際對丟牌者的 `discardPile` 呼叫過 `takeLast()` 時才有值
+     * （全員過牌與榮和都不會呼叫 `takeLast()`），供呼叫端重新呈現該玩家的牌河。[winnerId] 跟
+     * [discarderId] 同一個有效視窗（碰/吃/明槓得標時才有值），供呼叫端重新呈現得標玩家的副露。
      */
     private data class RespondResult(
         val tableState: TableState,
         val rinshanDrawHappened: Boolean = false,
         val discarderId: Uuid? = null,
+        val winnerId: Uuid? = null,
     )
 
     /**
@@ -242,6 +256,7 @@ class RespondToDiscardUseCase(
                     pendingReaction = null,
                 ),
                 discarderId = pendingReaction.discarderId,
+                winnerId = winnerId,
             )
         }
 
@@ -271,6 +286,7 @@ class RespondToDiscardUseCase(
             ),
             rinshanDrawHappened = rinshanTile != null,
             discarderId = pendingReaction.discarderId,
+            winnerId = winnerId,
         )
     }
 }

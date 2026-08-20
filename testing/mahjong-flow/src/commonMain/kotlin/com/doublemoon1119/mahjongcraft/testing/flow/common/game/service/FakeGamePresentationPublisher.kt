@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.testing.flow.common.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
@@ -39,6 +40,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的牌河更新資料。 */
     private val discardPiles = mutableMapOf<Uuid, DiscardPileContext>()
 
+    /** 依對局 Uuid 紀錄最後一次收到的副露更新資料。 */
+    private val melds = mutableMapOf<Uuid, MeldsContext>()
+
     override fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int) {
         diceRolls[gameId] = dice
         diceRollContexts[gameId] = DiceRollContext(dealerSeatIndex, roundNumber, comboCount)
@@ -64,6 +68,10 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     override fun publishDiscardPileUpdated(gameId: Uuid, seatIndex: Int, discardTileIds: List<Uuid>, sidewaysMarkedTileId: Uuid?) {
         discardPiles[gameId] = DiscardPileContext(seatIndex, discardTileIds, sidewaysMarkedTileId)
+    }
+
+    override fun publishMeldsUpdated(gameId: Uuid, seatIndex: Int, melds: List<MeldPresentation>) {
+        this.melds[gameId] = MeldsContext(seatIndex, melds)
     }
 
     /** 取得指定對局最後一次收到的擲骰結果；若無紀錄則回傳 null。 */
@@ -92,6 +100,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 取得指定對局最後一次收到的牌河更新資料；若無紀錄則回傳 null。 */
     fun getPublishedDiscardPile(gameId: Uuid): DiscardPileContext? = discardPiles[gameId]
+
+    /** 取得指定對局最後一次收到的副露更新資料；若無紀錄則回傳 null。 */
+    fun getPublishedMelds(gameId: Uuid): MeldsContext? = melds[gameId]
 }
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishDiceRoll] 隨附桌況資料。 */
@@ -120,4 +131,10 @@ data class DiscardPileContext(
     val seatIndex: Int,
     val discardTileIds: List<Uuid>,
     val sidewaysMarkedTileId: Uuid?,
+)
+
+/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishMeldsUpdated] 資料。 */
+data class MeldsContext(
+    val seatIndex: Int,
+    val melds: List<MeldPresentation>,
 )

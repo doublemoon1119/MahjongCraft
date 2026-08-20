@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -51,6 +53,7 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器。
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property eventPublisher 對局通知服務。
+ * @property presentationPublisher 對局 in-process 呈現觸發器。
  */
 @Factory
 class DeclareKanUseCase(
@@ -58,6 +61,7 @@ class DeclareKanUseCase(
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
+    @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 執行暗槓/加槓宣告邏輯。
@@ -211,6 +215,17 @@ class DeclareKanUseCase(
             result.abortiveDrawReason?.let { reason ->
                 eventPublisher.publish(gameId, player.id, playerId, GameAction.ExhaustiveDraw(reason))
             }
+        }
+
+        // 副露成立時（無人搶槓、也未判定為途中流局），重新呈現宣告者的整份副露列表
+        if (result.drawHappened) {
+            val declarerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
+            val declarer = newState.players[declarerSeatIndex]
+            presentationPublisher.publishMeldsUpdated(
+                gameId,
+                declarerSeatIndex,
+                declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+            )
         }
 
         return Outcome.Success(Unit)

@@ -91,9 +91,9 @@ class RoomToRoomFullLifecycleIntegrationTest {
             discardTileUseCase = DiscardTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
             declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
             declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
-            declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
+            declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
             respondToDiscardUseCase = RespondToDiscardUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
-            respondToChankanUseCase = RespondToChankanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
+            respondToChankanUseCase = RespondToChankanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
             declareKyuushuKyuuhaiUseCase = DeclareKyuushuKyuuhaiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)

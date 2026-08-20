@@ -140,7 +140,7 @@ class DiscardTileUseCase(
         presentationPublisher.publishDiscardPileUpdated(
             gameId,
             seatIndex,
-            discarder.discardPile.entries.map { it.tile.id },
+            discarder.discardPile.entries.filterNot { it.isTaken }.map { it.tile.id },
             (discarder.discardPile as? SidewaysMarkedDiscardPile)?.sidewaysMarkedTileId(),
         )
 

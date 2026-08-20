@@ -87,7 +87,7 @@ class FullMatchIntegrationTest {
             ),
             declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
-            declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
+            declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
             respondToDiscardUseCase = RespondToDiscardUseCase(
                 gameRepo,
                 moduleRegistry,
@@ -100,6 +100,7 @@ class FullMatchIntegrationTest {
                 moduleRegistry,
                 snapshotSynchronizer,
                 eventPublisher,
+                presentationPublisher,
             ),
             declareKyuushuKyuuhaiUseCase = DeclareKyuushuKyuuhaiUseCase(
                 gameRepo,

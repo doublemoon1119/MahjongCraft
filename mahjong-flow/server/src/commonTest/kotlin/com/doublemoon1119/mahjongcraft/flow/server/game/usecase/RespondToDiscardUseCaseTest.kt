@@ -177,8 +177,51 @@ class RespondToDiscardUseCaseTest {
         val publishedDiscardPile = fixtures.presentationPublisher.getPublishedDiscardPile(gameId)
         assertNotNull(publishedDiscardPile)
         assertEquals(0, publishedDiscardPile.seatIndex)
-        assertEquals(listOf(discardedTile.id), publishedDiscardPile.discardTileIds)
+        assertEquals(
+            emptyList(),
+            publishedDiscardPile.discardTileIds,
+            "The claimed tile is now taken and moves to the meld area, so it's excluded from the river presentation.",
+        )
         assertEquals(null, publishedDiscardPile.sidewaysMarkedTileId, "FakeDiscardPile has no riichi concept, so no tile should be marked sideways.")
+    }
+
+    /**
+     * 驗證碰牌得標後，觸發平台呈現層重新呈現得標玩家的整份副露列表。
+     */
+    @Test
+    fun `test pon success publishes winner's melds presentation`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val handTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val handTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val responder = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = listOf(handTile1, handTile2)),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, responder),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id))
+
+        val publishedMelds = fixtures.presentationPublisher.getPublishedMelds(gameId)
+        assertNotNull(publishedMelds)
+        assertEquals(1, publishedMelds.seatIndex, "The winner (responder) sits at seat index 1.")
+        val meld = publishedMelds.melds.single()
+        assertEquals(MeldType.PON, meld.type)
+        assertEquals(setOf(handTile1.id, handTile2.id, discardedTile.id), meld.tileIds.toSet())
+        assertEquals(discardedTile.id, meld.calledTileId)
     }
 
     /**

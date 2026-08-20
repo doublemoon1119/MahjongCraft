@@ -281,6 +281,75 @@ object MahjongTileTableLayout {
         return TileTableVector(x = alongSide, y = 0.0, z = perpendicular)
     }
 
+    /**
+     * 依 controller 座標、桌子世界朝向與座位 index，算出這位玩家副露區中偏離桌角錨點
+     * [alongOffsetFromCorner] 距離的那張牌的世界座標——副露區錨定在桌子實際邊界的固定角落（玩家自己
+     * 右手邊），不是相對手牌列／摸牌位算出來的浮動錨點（理由見 [MELD_AREA_CORNER_OFFSET] KDoc）。
+     * 第一組（最早宣告）副露的最右側那張牌貼齊錨點本身，後續每組依序往玩家自己手牌方向（局部 X 軸
+     * 負向）排開；單一組內鳴取牌該落在哪個格位，由呼叫端依鳴取來源方位（`RelativeDirection`）換算。
+     *
+     * 躺平的牌側身（[isSidewaysTile]）與直立兩種朝向的實際外觀寬高不同——側身牌沿排列方向的寬度是
+     * [MahjongTileDimensions.TILE_HEIGHT]，直立牌是 [MahjongTileDimensions.TILE_WIDTH]（原本立牌的
+     * 寬／高互換，見 [wallPlacement] 同一套躺平慣例）——因此 [alongOffsetFromCorner] 不是單純的格數
+     * 乘上固定間距，而是呼叫端依每張牌實際朝向的寬度累加出來的距離，確保側身牌不會因為只占用一般
+     * 格寬而跟隔壁重疊；垂直於排列方向的位置（`z`）也依 [isSidewaysTile] 內部換算，讓兩種朝向的牌
+     * 靠近桌緣那一側的外緣對齊在同一條線上（[MELD_NEAR_EDGE_LINE]），不會因為朝向不同而其中一種
+     * 牌外緣突出或內縮。
+     *
+     * 跟 [handPlacement]／[discardPlacement] 同樣直接用座位 index 算局部側面，不經過莊家相對旋轉——
+     * 副露屬於宣告玩家自己，跟座位一樣整場對局固定不變。
+     *
+     * @param alongOffsetFromCorner 這張牌中心點沿排列方向距離桌角錨點（[MELD_AREA_CORNER_OFFSET]，
+     * 往玩家自己手牌方向為正）的實際世界距離；呼叫端需自行沿排列方向累加每張已放置牌的半寬，確保這個
+     * 值不會大到讓副露延伸進手牌列範圍，這裡不做邊界檢查。
+     * @param isSidewaysTile 這張牌是否為鳴取自他家、需側身呈現的牌——為 `true` 時除了額外把 yaw 轉
+     * [SIDEWAYS_YAW_OFFSET] 度，也依側身牌的實際外觀寬度換算 `x`／`z`，見本函式 KDoc。
+     * @param depthOffsetFromEdge 這張牌垂直於排列方向（局部 Z 軸）額外往桌子中心方向（遠離桌緣）推
+     * 的距離，`0.0`（預設值）代表跟同排其他牌一樣貼齊 [MELD_NEAR_EDGE_LINE]。加槓（`MeldType.ADDED_KAN`）
+     * 補上的第 4 張牌用這個參數疊在原碰側身牌「靠近桌子中心」那一側（不是沿排列方向的旁邊），使用者
+     * 確認過的設計決定；其餘所有牌固定 `0.0`。
+     */
+    fun meldPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatIndex: Int,
+        alongOffsetFromCorner: Double,
+        isSidewaysTile: Boolean,
+        depthOffsetFromEdge: Double = 0.0,
+    ): MahjongTileWallPlacement {
+        require(alongOffsetFromCorner >= 0.0) { "Along offset from corner must not be negative" }
+        require(depthOffsetFromEdge >= 0.0) { "Depth offset from edge must not be negative" }
+
+        val physicalSide = seatIndexToTableSide(seatIndex)
+        val local = localMeldVector(alongOffsetFromCorner, isSidewaysTile, depthOffsetFromEdge)
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        val baseYaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = if (isSidewaysTile) (baseYaw + SIDEWAYS_YAW_OFFSET).mod(FULL_YAW_DEGREES) else baseYaw,
+        )
+    }
+
+    /**
+     * 以局部南側玩家為基準的單張副露牌位置：沿排列方向（局部 X 軸）從 [MELD_AREA_CORNER_OFFSET] 桌角
+     * 錨點往負向（玩家自己手牌方向）位移 [alongOffsetFromCorner]；垂直於排列方向（局部 Z 軸）依
+     * [isSidewaysTile] 換算讓外緣對齊 [MELD_NEAR_EDGE_LINE]（副露區自己緊貼桌子實際邊界的外緣線，
+     * 不是手牌那條退縮過的線，見該常數 KDoc），不是固定值——直立牌沿排列方向的寬度是
+     * [MahjongTileDimensions.TILE_WIDTH]，垂直方向是 [MahjongTileDimensions.TILE_HEIGHT]；側身牌兩者
+     * 互換。[depthOffsetFromEdge] 大於 `0.0` 時再額外往桌子中心方向（局部 Z 軸負向）推這麼多距離。
+     */
+    private fun localMeldVector(alongOffsetFromCorner: Double, isSidewaysTile: Boolean, depthOffsetFromEdge: Double): TileTableVector {
+        val alongSide = MELD_AREA_CORNER_OFFSET - alongOffsetFromCorner
+        val halfPerpendicularFootprint =
+            if (isSidewaysTile) MahjongTileDimensions.TILE_WIDTH / 2.0 else MahjongTileDimensions.TILE_HEIGHT / 2.0
+        val perpendicular = MELD_NEAR_EDGE_LINE - halfPerpendicularFootprint - depthOffsetFromEdge
+        return TileTableVector(x = alongSide, y = 0.0, z = perpendicular)
+    }
+
     /** 依南→西→北→東的固定順序（跟 [seatIndexToTableSide] 同一套方向），把 [side] 往同方向推進 [steps] 步。 */
     private fun advance(side: MahjongTableSide, steps: Int): MahjongTableSide = SIDE_ORDER[(SIDE_ORDER.indexOf(side) + steps).mod(SIDE_ORDER.size)]
 
@@ -385,6 +454,37 @@ object MahjongTileTableLayout {
 
     /** 側身標記的牌額外旋轉角度。 */
     internal const val SIDEWAYS_YAW_OFFSET: Float = 90.0f
+
+    /** [MELD_AREA_CORNER_OFFSET] 額外扣除的桌緣留白，理由同 [HAND_EDGE_MARGIN]。 */
+    internal const val MELD_AREA_CORNER_MARGIN: Double = 0.05
+
+    /**
+     * 副露區沿排列方向（局部 X 軸）的固定桌角邊界線——是第一組（最早宣告）副露最右側那張牌「外緣」
+     * 該貼齊的線，不是那張牌的中心點；那張牌實際朝向（直立或側身）寬度不同，中心點座標由呼叫端依
+     * [meldPlacement] 的 `alongOffsetFromCorner` 換算，這裡只固定邊界本身。
+     *
+     * 邊界固定在桌子實際邊界的角落，不是相對目前手牌張數／副露組數算出來的浮動起點——手牌張數會隨
+     * 副露成立而縮小，若邊界跟著目前手牌張數或副露組數計算，邊界會不斷往外退，超過兩組副露就可能
+     * 撐出桌面邊界，甚至遠到超出 `FabricMahjongMeldPresenter` 清除既有管理中麻將牌用的搜尋半徑，
+     * 遊戲結束後留下沒被回收的孤兒 entity——這是實際遊戲內驗證過的問題，不是假設。改用跟
+     * [HAND_EDGE_OFFSET] 同一組「46×46 模型單位可用內框半寬」換算固定角落位置，扣除 [MELD_AREA_CORNER_MARGIN]
+     * 留白；後續每組副露都往這條線的左側（玩家自己手牌方向）排開，只會往桌子內側延伸，不會再超出邊界。
+     */
+    internal const val MELD_AREA_CORNER_OFFSET: Double =
+        46.0 / 16.0 / 2.0 - MELD_AREA_CORNER_MARGIN
+
+    /**
+     * 副露區垂直於排列方向（局部 Z 軸）、靠近桌緣那一側的固定外緣邊界線——直接沿用跟
+     * [MELD_AREA_CORNER_OFFSET] 相同的「46×46 模型單位可用內框半寬扣 [MELD_AREA_CORNER_MARGIN]」桌子
+     * 實際邊界公式（兩個方向的留白刻意用同一個較小的邊界留白，不是 [HAND_EDGE_MARGIN] 那個手牌專用、
+     * 為了視覺退縮特地調大的留白值），讓錨點那張牌在角落的兩側外緣（沿排列方向與垂直排列方向）都貼齊
+     * 桌子實際邊界，不是跟手牌列共用同一條線——手牌是立牌、副露是躺平的牌，兩者外觀尺寸與貼齊基準本來
+     * 就不同，共用同一條線是先前設計的誤用，也是副露會跟手牌列外觀體積重疊的原因之一。直立與側身兩種
+     * 朝向的牌，外觀垂直於排列方向的寬度不同（分別是 [MahjongTileDimensions.TILE_HEIGHT] 與
+     * [MahjongTileDimensions.TILE_WIDTH]），[meldPlacement] 依朝向各自從這條邊界線往桌子中心扣除半寬
+     * 換算中心點，確保兩種朝向的牌外緣都對齊同一條線，不會其中一種突出或內縮。
+     */
+    internal const val MELD_NEAR_EDGE_LINE: Double = 46.0 / 16.0 / 2.0 - MELD_AREA_CORNER_MARGIN
 
     /** 南→西→北→東的固定順序，跟 [seatIndexToTableSide] 與 `TileWallPosition.side` 同一套慣例。 */
     private val SIDE_ORDER =

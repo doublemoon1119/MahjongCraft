@@ -315,6 +315,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             moduleRegistry,
             snapshotSynchronizer,
             FakeGameEventPublisher(),
+            FakeGamePresentationPublisher(),
         )(gameId, playerId, GameAction.Pass)
     }
 }

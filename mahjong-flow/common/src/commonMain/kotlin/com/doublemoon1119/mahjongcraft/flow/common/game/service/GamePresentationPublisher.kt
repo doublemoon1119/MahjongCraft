@@ -1,9 +1,51 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
+
+/**
+ * 供 [GamePresentationPublisher.publishMeldsUpdated] 使用的單一副露呈現資料。
+ *
+ * 刻意只帶位置呈現需要的最小資訊（種類、牌 Uuid 列表、鳴取來源牌 Uuid、鳴取方位），不像 [Meld] 那樣
+ * 攜帶實際 `Tile` 牌面——管理中牌張的牌面完全交給 client 端依可見性快照另外呈現，平台呈現層只需要
+ * 知道怎麼擺位置。
+ *
+ * @property type 副露種類，決定橫放張數與位置排列。
+ * @property tileIds 組成這組副露的所有牌 Uuid，依 [Meld.tiles] 原始順序排列。
+ * @property calledTileId 鳴取自他家的那張牌 Uuid；暗槓沒有鳴牌來源時為 `null`。
+ * @property sourceDirection 鳴取來源的相對方位，決定 [calledTileId] 在組內橫放的位置（左／中／右）；
+ * 暗槓沒有鳴牌來源時為 [RelativeDirection.Self]。
+ * @property allTilesFaceDown 只在 [type] 為 [MeldType.CLOSED_KAN] 時有意義：該規則是否連暗槓身份都
+ * 不公開（例如台灣麻將），此時四張牌全部蓋牌呈現；日本麻將等身份公開的規則此欄位為 `false`，維持
+ * 兩端蓋牌、中間兩張攤牌的傳統呈現方式。其餘副露種類固定為 `false`（一律牌面朝上，不受此欄位影響）。
+ */
+data class MeldPresentation(
+    val type: MeldType,
+    val tileIds: List<Uuid>,
+    val calledTileId: Uuid?,
+    val sourceDirection: RelativeDirection,
+    val allTilesFaceDown: Boolean,
+)
+
+/**
+ * 剝除 [Meld] 的實際牌面，只保留 [MeldPresentation] 需要的位置呈現資訊。
+ *
+ * @param revealsClosedKanTiles 該規則是否公開暗槓身份（[MahjongRuleConfig.revealsClosedKanTiles]），
+ * 只影響 [MeldPresentation.allTilesFaceDown] 的計算，非暗槓時傳入的值不影響結果。
+ */
+fun Meld.toPresentation(revealsClosedKanTiles: Boolean): MeldPresentation = MeldPresentation(
+    type = type,
+    tileIds = tiles.map { it.id },
+    calledTileId = sourceTile?.id,
+    sourceDirection = sourceDirection,
+    allTilesFaceDown = type == MeldType.CLOSED_KAN && !revealsClosedKanTiles,
+)
 
 /**
  * 對局 in-process 呈現觸發器。
@@ -116,4 +158,20 @@ interface GamePresentationPublisher {
      * 「立直」，讓這個介面本身維持規則無關。
      */
     fun publishDiscardPileUpdated(gameId: Uuid, seatIndex: Int, discardTileIds: List<Uuid>, sidewaysMarkedTileId: Uuid?)
+
+    /**
+     * 通知平台呈現層某玩家的副露需要更新為目前狀態。
+     *
+     * 呼叫時機：該玩家吃／碰／明槓／暗槓／加槓成立後。跟 [publishHandTiles] 同理，每次都傳完整的
+     * 目前副露列表，不是只傳新增的那一組——`Hand.melds` 本身也是每次都整組覆寫，呼叫端沒有「只新增
+     * 一筆」的中繼狀態需要另外追蹤。加槓（升級既有碰為加槓）會讓某一組副露的
+     * [MeldPresentation.tileIds] 多一張牌但仍是同一組，不是新增一組獨立副露，呼叫端需自行依
+     * `Hand.melds` 目前內容組出完整列表。
+     *
+     * @param gameId 對局 Uuid。
+     * @param seatIndex 副露所屬玩家在 `TableState.players` 的固定座位 index。
+     * @param melds 這位玩家目前所有副露，依宣告順序排列——第一組（最早宣告）位於副露區固定的桌角
+     * 錨點，後續每組依序往玩家自己手牌方向排開，呼叫端不需要另外傳遞位置索引。
+     */
+    fun publishMeldsUpdated(gameId: Uuid, seatIndex: Int, melds: List<MeldPresentation>)
 }
