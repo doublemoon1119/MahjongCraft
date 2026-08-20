@@ -1,11 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.nextTileAssetKey
@@ -21,12 +25,14 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.ItemStack
 import net.minecraft.nbt.NbtCompound
+import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.sound.SoundEvents
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import net.minecraft.world.World
 import org.koin.core.context.GlobalContext
 import kotlin.uuid.Uuid
+import kotlin.uuid.toKotlinUuid
 
 /**
  * 可自由放置的麻將牌 entity。
@@ -163,9 +169,12 @@ class MahjongTileEntity(
         }
     }
 
-    /** 普通右鍵循環牌面；蹲下右鍵循環姿態。牌局管理中的牌不接受此互動。 */
+    /**
+     * 普通右鍵循環牌面；蹲下右鍵循環姿態。牌局管理中的牌改右鍵直接捨牌（見 [interactManaged]），
+     * 不區分蹲下——立直宣告改由 GUI／HUD 詢問玩家，不使用蹲下右鍵麻將牌。
+     */
     override fun interact(player: PlayerEntity, hand: Hand): ActionResult {
-        if (managedByGame) return ActionResult.PASS
+        if (managedByGame) return interactManaged(player)
         if (world.isClient) return ActionResult.SUCCESS
 
         if (player.isSneaking) {
@@ -173,6 +182,40 @@ class MahjongTileEntity(
         } else {
             tileAssetKey = tileAssetKey.nextTileAssetKey()
         }
+        return ActionResult.CONSUME
+    }
+
+    /**
+     * 牌局管理中的牌右鍵直接捨牌。
+     *
+     * 這裡先做一次廉價過濾：這張牌是否確實是互動玩家目前的手牌，過濾不過直接發布拒絕回饋、不送出
+     * 指令，避免點別人的手牌、牌牆或牌河都各送一趟權威流程；[MahjongTableGameActionService.discard]
+     * 內部仍會經過 `DiscardTileUseCase` 完整驗證（是否輪到這位玩家、振聽等規則限制），這裡的過濾
+     * 只是提早擋掉明顯不合理的點擊，不是唯一防線。
+     */
+    private fun interactManaged(player: PlayerEntity): ActionResult {
+        if (world.isClient) return ActionResult.SUCCESS
+        val serverPlayer = player as? ServerPlayerEntity ?: return ActionResult.PASS
+        val tableId = managedTableId ?: return ActionResult.PASS
+
+        val playerId = player.uuid.toKotlinUuid()
+        val tileId = uuid.toKotlinUuid()
+        val gameRepository = GlobalContext.get().get<GameRepository>()
+        val isOwnHandTile = runBlocking {
+            gameRepository.getTableState(tableId)
+                ?.players
+                ?.firstOrNull { it.id == playerId }
+                ?.hand
+                ?.standingTiles
+                ?.any { it.id == tileId }
+        } == true
+        if (!isOwnHandTile) {
+            GlobalContext.get().get<MinecraftPlayerFeedbackPublisher>()
+                .publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
+            return ActionResult.CONSUME
+        }
+
+        GlobalContext.get().get<MahjongTableGameActionService>().discard(serverPlayer, tileId)
         return ActionResult.CONSUME
     }
 
