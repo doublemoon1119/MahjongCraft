@@ -236,6 +236,16 @@ interface GamePresentationPublisher {
      * @param sidewaysMarkedTileId 這位玩家牌河中應側身呈現的牌 Uuid；`null` 代表沒有任何一張需要
      * 側身（例如非立直規則、或立直牌已被鳴走且尚無下一張捨牌）。刻意用泛用的「側身標記」措辭而非
      * 「立直」，讓這個介面本身維持規則無關。
+     * @param newlyDiscardedTileId [discardTileIds] 之中這次呼叫真正新增的那張牌 Uuid，只有它該播放
+     * 「牌從手牌位置飛到牌河」的動畫；`null`（預設值）代表這次呼叫沒有新增捨牌，只是既有牌河重新整理
+     * （例如吃/碰/槓走某張捨牌後側身標記位移），所有牌維持定格顯示。只有 [DiscardTileUseCase] 真正
+     * 捨牌那次該傳入實際 Uuid。
      */
-    fun publishDiscardPileUpdated(gameId: Uuid, seatIndex: Int, discardTileIds: List<Uuid>, sidewaysMarkedTileId: Uuid?)
+    fun publishDiscardPileUpdated(
+        gameId: Uuid,
+        seatIndex: Int,
+        discardTileIds: List<Uuid>,
+        sidewaysMarkedTileId: Uuid?,
+        newlyDiscardedTileId: Uuid? = null,
+    )
 }

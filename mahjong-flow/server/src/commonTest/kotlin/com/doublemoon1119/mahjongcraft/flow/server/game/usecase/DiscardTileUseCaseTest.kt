@@ -126,6 +126,7 @@ class DiscardTileUseCaseTest {
         assertEquals(0, publishedDiscardPile.seatIndex)
         assertEquals(listOf(drawnTile.id), publishedDiscardPile.discardTileIds)
         assertEquals(null, publishedDiscardPile.sidewaysMarkedTileId)
+        assertEquals(drawnTile.id, publishedDiscardPile.newlyDiscardedTileId)
     }
 
     /**

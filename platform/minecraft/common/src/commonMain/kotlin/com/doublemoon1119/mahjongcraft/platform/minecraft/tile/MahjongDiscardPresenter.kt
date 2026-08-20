@@ -15,6 +15,11 @@ import kotlin.uuid.Uuid
  * 排列位置，不需要另外傳遞位置索引；空清單代表這局結束，只需要清除舊牌。
  * @property sidewaysMarkedTileId [discardTileIds] 之中應側身呈現的那張牌 Uuid；`null` 代表沒有任何
  * 一張需要側身。
+ * @property newlyDiscardedTileId [discardTileIds] 之中這次呼叫真正新增的那張牌 Uuid——只有它會播放
+ * 「牌從手牌位置面向玩家起飛、隱形傳送到牌河位置、傳送同一瞬間切換成面朝上（含側身旋轉，若
+ * [sidewaysMarkedTileId] 相符）、解除隱形後落下」的動畫；其餘既有牌（即使位置因為側身標記轉移而
+ * 跟著微調）維持定格顯示，不重複播放。`null` 代表這次呼叫沒有新增捨牌，只是既有牌河重新整理
+ * （例如吃/碰/槓走某張捨牌後側身標記位移），所有牌都定格顯示。
  */
 data class MahjongDiscardPresentation(
     val tableId: Uuid,
@@ -23,6 +28,7 @@ data class MahjongDiscardPresentation(
     val seatIndex: Int,
     val discardTileIds: List<Uuid>,
     val sidewaysMarkedTileId: Uuid?,
+    val newlyDiscardedTileId: Uuid? = null,
 )
 
 /** 正式牌河呈現請求的處理結果。 */

@@ -102,8 +102,14 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         gameStartedSeatings[gameId] = seatedPlayerIds
     }
 
-    override fun publishDiscardPileUpdated(gameId: Uuid, seatIndex: Int, discardTileIds: List<Uuid>, sidewaysMarkedTileId: Uuid?) {
-        discardPiles[gameId] = DiscardPileContext(seatIndex, discardTileIds, sidewaysMarkedTileId)
+    override fun publishDiscardPileUpdated(
+        gameId: Uuid,
+        seatIndex: Int,
+        discardTileIds: List<Uuid>,
+        sidewaysMarkedTileId: Uuid?,
+        newlyDiscardedTileId: Uuid?,
+    ) {
+        discardPiles[gameId] = DiscardPileContext(seatIndex, discardTileIds, sidewaysMarkedTileId, newlyDiscardedTileId)
     }
 
     /** 取得指定對局最後一次收到的擲骰結果；若無紀錄則回傳 null。 */
@@ -185,4 +191,5 @@ data class DiscardPileContext(
     val seatIndex: Int,
     val discardTileIds: List<Uuid>,
     val sidewaysMarkedTileId: Uuid?,
+    val newlyDiscardedTileId: Uuid?,
 )

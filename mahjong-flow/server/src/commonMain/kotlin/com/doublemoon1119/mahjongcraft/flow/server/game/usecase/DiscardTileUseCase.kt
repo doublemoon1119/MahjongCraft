@@ -148,6 +148,7 @@ class DiscardTileUseCase(
             seatIndex,
             discarder.discardPile.entries.filterNot { it.isTaken }.map { it.tile.id },
             (discarder.discardPile as? SidewaysMarkedDiscardPile)?.sidewaysMarkedTileId(),
+            newlyDiscardedTileId = tileId,
         )
 
         return Outcome.Success(Unit)

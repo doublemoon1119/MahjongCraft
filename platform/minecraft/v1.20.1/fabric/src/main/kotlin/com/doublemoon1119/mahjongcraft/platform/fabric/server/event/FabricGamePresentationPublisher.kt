@@ -445,19 +445,25 @@ class FabricGamePresentationPublisher(
         scope.launch(dispatchers.main) { seatingPresenter.present(gameId, seatedPlayerIds) }
     }
 
-    /** 理由同 [publishDiscardPileUpdated]：一般回合動作，不需要 [busyTracker] 或延遲，直接同步呈現。 */
+    /**
+     * 一般回合動作，不需要 [busyTracker] 或延遲，直接同步呈現——即使 [newlyDiscardedTileId] 非
+     * `null` 觸發捨牌動畫，那段動畫本身的排程完全交給 `FabricMahjongDiscardPresenter` 內部處理，理由同
+     * [publishPlayerAreaUpdated] 的 `animateDrawnTile` 同款設計。
+     */
     override fun publishDiscardPileUpdated(
         gameId: Uuid,
         seatIndex: Int,
         discardTileIds: List<Uuid>,
         sidewaysMarkedTileId: Uuid?,
+        newlyDiscardedTileId: Uuid?,
     ) {
         logger.debug(
-            "publishDiscardPileUpdated gameId={} seatIndex={} tileCount={} sidewaysMarkedTileId={}",
+            "publishDiscardPileUpdated gameId={} seatIndex={} tileCount={} sidewaysMarkedTileId={} newlyDiscardedTileId={}",
             gameId,
             seatIndex,
             discardTileIds.size,
             sidewaysMarkedTileId,
+            newlyDiscardedTileId,
         )
         if (serverHolder.current() == null) {
             logger.warn("publishDiscardPileUpdated gameId={} skipped: no active server", gameId)
@@ -473,6 +479,7 @@ class FabricGamePresentationPublisher(
                 seatIndex = seatIndex,
                 discardTileIds = discardTileIds,
                 sidewaysMarkedTileId = sidewaysMarkedTileId,
+                newlyDiscardedTileId = newlyDiscardedTileId,
             )
             val result = discardPresenter.present(presentation)
             logger.debug("publishDiscardPileUpdated gameId={} present() result={}", gameId, result)

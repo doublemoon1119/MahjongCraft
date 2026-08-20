@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -15,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPre
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import net.minecraft.block.BlockState
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
@@ -91,8 +93,15 @@ class FabricMahjongDiscardPresenter(
                 wallRemaining = wallRemaining,
             )
             tile.assignToTable(presentation.tableId)
-            tile.tilePose = MahjongTilePose.FACE_UP
-            tile.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+            if (tileId == presentation.newlyDiscardedTileId) {
+                // 起飛前維持牌現在的既有姿態（手牌位置本來就是 MahjongTilePose.STANDING、面向玩家），
+                // 不要在這裡先改成 FACE_UP——姿態要等 scheduleDiscardTileAnimation 隱形傳送那一刻才
+                // 切換，見該方法 KDoc。
+                scheduleDiscardTileAnimation(tile, placement)
+            } else {
+                tile.tilePose = MahjongTilePose.FACE_UP
+                tile.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+            }
         }
         table.markDirty()
         if (missingTileCount > 0) {
@@ -105,6 +114,33 @@ class FabricMahjongDiscardPresenter(
             return MahjongDiscardPresentationResult.SPAWN_FAILED
         }
         return MahjongDiscardPresentationResult.PRESENTED
+    }
+
+    /**
+     * 排定捨牌動畫：一次連續可見的拋物線飛行，從手牌現在的實際位置直接飛到牌河位置，不像摸牌／發牌
+     * 動畫那樣中途隱形傳送——理由見 [MahjongTileTableLayout.DISCARD_ARC_HEIGHT] KDoc。姿態
+     * （[MahjongTilePose.STANDING] 轉 [MahjongTilePose.FACE_UP]）跟位移用同一段動畫連續內插，玩家全程
+     * 看得見牌從手牌翻轉、飛到牌河的過程。
+     *
+     * 側身旋轉（立直宣告牌）不連續內插——[finalPlacement] 的 yaw 本身已經是
+     * [MahjongTileTableLayout.discardPlacement] 依 `isSidewaysMarked` 算好的最終朝向，這裡直接在起飛
+     * 那一刻就把 yaw 設成最終值，讓牌以最終朝向飛過去（等同一開始就轉正，不是飛行途中才轉），跟真的
+     * 連續旋轉 yaw 比起來是簡化，但實作成本低很多，且側身牌只在立直宣告時出現，效果可接受。
+     */
+    private fun scheduleDiscardTileAnimation(tile: MahjongTileEntity, finalPlacement: MahjongTileWallPlacement) {
+        val startX = tile.x
+        val startY = tile.y
+        val startZ = tile.z
+        tile.refreshPositionAndAngles(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw, 0.0f)
+        tile.tilePose = MahjongTilePose.FACE_UP
+        tile.startMotionAnimation(
+            startGameTime = tile.world.time,
+            durationTicks = MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS,
+            arcHeight = MahjongTileTableLayout.DISCARD_ARC_HEIGHT,
+            startOffset = DiceAnimationVector(startX - finalPlacement.x, startY - finalPlacement.y, startZ - finalPlacement.z),
+            startPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
+            endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
+        )
     }
 
     /**

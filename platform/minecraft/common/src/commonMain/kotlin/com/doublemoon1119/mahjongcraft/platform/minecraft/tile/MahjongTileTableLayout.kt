@@ -646,6 +646,22 @@ object MahjongTileTableLayout {
     const val DRAW_DROP_DURATION_TICKS: Int = 5
 
     /**
+     * 捨牌動畫是一次連續可見的拋物線飛行（不隱形、不傳送），從手牌位置直接飛到牌河位置，途中姿態從
+     * 面向玩家的直立牌連續轉成攤平面朝上——跟摸牌／發牌刻意不同：丟牌是玩家自己主動觸發、全場最高頻
+     * 的即時操作，玩家丟牌當下早就知道牌面內容，不需要摸牌／發牌那種「隱形揭曉」的儀式感，反而應該
+     * 像現實丟牌一樣是一個連續、看得見、俐落的動作，見
+     * `GamePresentationPublisher.publishDiscardPileUpdated` 的 `newlyDiscardedTileId` 參數 KDoc。
+     * 側身旋轉（立直宣告牌）不連續內插，直接在動畫一開始就用最終 yaw 起飛——理由見
+     * `FabricMahjongDiscardPresenter.scheduleDiscardTileAnimation` KDoc。
+     *
+     * 這個拋物線頂點額外高度，起始估算值，預期進遊戲後調整。
+     */
+    const val DISCARD_ARC_HEIGHT: Double = 0.3
+
+    /** 捨牌動畫的動畫總時長，理由同 [DISCARD_ARC_HEIGHT]。 */
+    const val DISCARD_FLIGHT_DURATION_TICKS: Int = 5
+
+    /**
      * 牌牆角落貼齊處縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，遊戲內驗證後調整的觀感參數。
      * `internal` 而非 `private`：讓同模組的 `com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayoutTest`
      * 能直接引用同一個數值驗證預期位移量，不需要在測試裡另外複製一份可能忘記同步的常數。
