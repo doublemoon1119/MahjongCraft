@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -27,13 +26,14 @@ class RiichiDynamicStateTest {
 
     /**
      * 建立一個包含指定數量王牌牌的 TableState，方便測試指示器邏輯。
+     *
+     * [deadWallTiles] 寫入 [TableState.initialDeadWall]（[RiichiDynamicState.getDoraIndicators] 真正
+     * 讀取的來源），不是 [TableState.tileWall]（那是活牌堆，跟王牌完全無關，見該函式 KDoc）。
      */
     private fun createTableStateWithWall(
         deadWallTiles: List<IdentifiedTile>,
         players: List<MahjongPlayer> = emptyList(),
     ): TableState {
-        val allTiles = deadWallTiles.toMutableList()
-        val tileWall = TileWall(allTiles)
         val config = FakeMahjongRuleConfig(
             deadTileCount = deadWallTiles.size,
         )
@@ -41,7 +41,7 @@ class RiichiDynamicStateTest {
         return FakeTableStateFactory.create(
             players = players,
             config = config,
-            tileWall = tileWall,
+            initialDeadWall = deadWallTiles,
         )
     }
 

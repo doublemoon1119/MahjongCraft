@@ -40,14 +40,28 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的牌河更新資料。 */
     private val discardPiles = mutableMapOf<Uuid, DiscardPileContext>()
 
+    /** 依對局 Uuid 紀錄最後一次收到的王牌追加公開集合。 */
+    private val deadWallReveals = mutableMapOf<Uuid, Set<Uuid>>()
+
     override fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int) {
         diceRolls[gameId] = dice
         diceRollContexts[gameId] = DiceRollContext(dealerSeatIndex, roundNumber, comboCount)
     }
 
-    override fun publishWallStructure(gameId: Uuid, structure: Map<Uuid, TileWallPosition>, dealerSeatIndex: Int, deadWallTileIds: Set<Uuid>, diceCount: Int) {
+    override fun publishWallStructure(
+        gameId: Uuid,
+        structure: Map<Uuid, TileWallPosition>,
+        dealerSeatIndex: Int,
+        deadWallTileIds: Set<Uuid>,
+        diceCount: Int,
+        revealedTileIds: Set<Uuid>,
+    ) {
         wallStructures[gameId] = structure
-        wallStructureContexts[gameId] = WallStructureContext(dealerSeatIndex, deadWallTileIds, diceCount)
+        wallStructureContexts[gameId] = WallStructureContext(dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
+    }
+
+    override fun publishDeadWallRevealUpdated(gameId: Uuid, revealedTileIds: Set<Uuid>) {
+        deadWallReveals[gameId] = revealedTileIds
     }
 
     override fun publishScoringSticksUpdated(gameId: Uuid, dealerSeatIndex: Int, stickCount: Int) {
@@ -104,6 +118,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 取得指定對局最後一次收到的牌河更新資料；若無紀錄則回傳 null。 */
     fun getPublishedDiscardPile(gameId: Uuid): DiscardPileContext? = discardPiles[gameId]
+
+    /** 取得指定對局最後一次收到的王牌追加公開集合；若無紀錄則回傳 null。 */
+    fun getPublishedDeadWallReveal(gameId: Uuid): Set<Uuid>? = deadWallReveals[gameId]
 }
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishDiceRoll] 隨附桌況資料。 */
@@ -118,6 +135,7 @@ data class WallStructureContext(
     val dealerSeatIndex: Int,
     val deadWallTileIds: Set<Uuid>,
     val diceCount: Int,
+    val revealedTileIds: Set<Uuid>,
 )
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishScoringSticksUpdated] 資料。 */

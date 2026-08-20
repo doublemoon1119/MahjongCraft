@@ -164,6 +164,9 @@ class FabricTableLifecycleServiceTest {
         /** 此測試不使用正式牌牆呈現。 */
         override fun present(presentation: MahjongTileWallPresentation): MahjongTileWallPresentationResult = MahjongTileWallPresentationResult.PRESENTED
 
+        /** 此測試不使用正式王牌追加翻面呈現。 */
+        override fun revealDeadWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult = MahjongTileWallPresentationResult.PRESENTED
+
         /** 記錄清理請求並回報沒有已載入牌牆用牌。 */
         override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
     }

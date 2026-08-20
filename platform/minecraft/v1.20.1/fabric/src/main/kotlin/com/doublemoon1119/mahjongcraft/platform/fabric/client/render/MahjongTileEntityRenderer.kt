@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer.Companion.LABEL_MARGIN_RATIO
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer.Companion.LABEL_SCALE
@@ -18,9 +19,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.render.OverlayTexture
+import net.minecraft.client.render.RenderLayer
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRenderer
 import net.minecraft.client.render.entity.EntityRendererFactory
+import net.minecraft.client.render.item.ItemRenderer
 import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.item.ItemStack
@@ -36,6 +39,10 @@ import kotlin.uuid.toKotlinUuid
  *
  * 牌面角落輔助標籤（[TileLabelRegistry]，給非中文圈玩家看的數字／字母）在 [clientConfigStore] 開啟時
  * 額外疊加繪製，見 [renderCornerLabels]。
+ *
+ * 特殊視覺強調（例如日麻寶牌發光，見 [MahjongRuleModule.isHighlightedTile]）也是逐幀在這裡由
+ * client 端自行判斷，見 [isHighlighted]——理由跟牌面解析完全一致：這個判斷只能在真正解析出可見牌面
+ * 之後才進行，對觀察者看不到牌面的隱藏牌天然不會觸發，不需要另外處理保密。
  */
 class MahjongTileEntityRenderer(
     context: EntityRendererFactory.Context,
@@ -43,6 +50,7 @@ class MahjongTileEntityRenderer(
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val tileLabelRegistry: TileLabelRegistry,
     private val clientConfigStore: MahjongClientConfigStore,
+    private val moduleRegistry: MahjongModuleRegistry,
 ) : EntityRenderer<MahjongTileEntity>(context) {
     /** 共用 Vanilla item renderer，避免建立第二套牌面模型格式。 */
     private val itemRenderer = context.itemRenderer
@@ -69,16 +77,26 @@ class MahjongTileEntityRenderer(
             MahjongTilePose.FACE_DOWN -> matrices.translate(0.0, 0.0, MahjongTileEntity.TILE_DEPTH / 2.0)
         }
         val assetKey = entity.resolvedTileAssetKey()
-        itemRenderer.renderItem(
-            tileStacks[assetKey] ?: tileStacks.getValue(UNKNOWN_TILE_ASSET_KEY),
-            ModelTransformationMode.HEAD,
-            light,
-            OverlayTexture.DEFAULT_UV,
-            matrices,
-            vertexConsumers,
-            entity.world,
-            entity.id,
-        )
+        val highlighted = entity.isHighlighted()
+        val stack = tileStacks[assetKey] ?: tileStacks.getValue(UNKNOWN_TILE_ASSET_KEY)
+        val consumers = if (highlighted) vertexConsumers.withGlint() else vertexConsumers
+        itemRenderer.renderItem(stack, ModelTransformationMode.HEAD, light, OverlayTexture.DEFAULT_UV, matrices, consumers, entity.world, entity.id)
+        if (highlighted) {
+            // 遊戲內驗證時使用者反映單層光暈疊圖不夠明顯，額外疊一次「只有光暈、不含正常牌面」的
+            // pass，讓同一個模型的光暈幾何再疊加一次（GLINT_TRANSPARENCY 是相加混合，疊兩次亮度會
+            // 明顯提升），比單純換 solid 參數（改變的是光暈貼圖本身的縮放／滾動速度，不是強度）更
+            // 直接有效，且不影響正常牌面只畫一次、不會有額外的不透明面覆寫。
+            itemRenderer.renderItem(
+                stack,
+                ModelTransformationMode.HEAD,
+                light,
+                OverlayTexture.DEFAULT_UV,
+                matrices,
+                vertexConsumers.glintOnly(),
+                entity.world,
+                entity.id,
+            )
+        }
         renderCornerLabels(assetKey, matrices, vertexConsumers, light)
         matrices.pop()
     }
@@ -180,6 +198,39 @@ class MahjongTileEntityRenderer(
         val tile = stateStore.findManagedTileSnapshot(uuid.toKotlinUuid())?.tile ?: return UNKNOWN_TILE_ASSET_KEY
         return tile.toAssetKey(tileAssetRegistry)
     }
+
+    /**
+     * 這張管理中的牌對目前觀察者而言，牌面是否已解析出來、且該有特殊視覺強調
+     * （[MahjongRuleModule.isHighlightedTile]，例如日麻寶牌）。自由放置的牌、或牌面對目前觀察者
+     * 不可見（[stateStore] 查無對應快照）的管理中牌，一律回傳 `false`——不需要另外判斷保密，理由見
+     * 類別 KDoc。
+     */
+    private fun MahjongTileEntity.isHighlighted(): Boolean {
+        if (!managedByGame) return false
+        val tile = stateStore.findManagedTileSnapshot(uuid.toKotlinUuid())?.tile ?: return false
+        val snapshot = stateStore.gameSnapshot ?: return false
+        val module = moduleRegistry.getModule(snapshot.config)
+        val revealedWallTiles = snapshot.tileWall.tiles.mapNotNull { it.tile }
+        return module.isHighlightedTile(tile, revealedWallTiles)
+    }
+
+    /**
+     * 疊加附魔物品光暈疊圖層——用 [ItemRenderer.getDirectItemGlintConsumer]（entity 世界渲染用的
+     * direct 版本，不是 GUI 用的 [ItemRenderer.getItemGlintConsumer]）包一層，讓
+     * [itemRenderer]（`solid` 參數暫定 `false`，遊戲內驗證光暈貼合效果後可再調整）在同一次
+     * `renderItem` 呼叫裡連同正常牌面一起疊畫，完全不用碰 [ItemStack] 本身的附魔資料
+     * （見 [MahjongTileEntityRenderer] 類別 KDoc：`tileStacks` 是全部 entity 共用的靜態實例，不能
+     * 每幀個別修改）也不用 `Entity.setGlowing()`（保留給其他用途）。
+     */
+    private fun VertexConsumerProvider.withGlint(): VertexConsumerProvider = VertexConsumerProvider { layer -> ItemRenderer.getDirectItemGlintConsumer(this, layer, false, true) }
+
+    /**
+     * 純光暈疊圖層，不含正常牌面——所有 buffer 請求一律導向
+     * [RenderLayer.getDirectEntityGlint]，忽略呼叫端原本要求的 layer（正常牌面已經在第一次
+     * `renderItem` 呼叫時畫過一次），用來在 [render] 額外疊加第二次光暈幾何、加強亮度，見 [render]
+     * 內的呼叫點註解。
+     */
+    private fun VertexConsumerProvider.glintOnly(): VertexConsumerProvider = VertexConsumerProvider { _ -> this.getBuffer(RenderLayer.getDirectEntityGlint()) }
 
     companion object {
         /** 每個合法 asset key 共用一個只供渲染使用的 ItemStack。 */

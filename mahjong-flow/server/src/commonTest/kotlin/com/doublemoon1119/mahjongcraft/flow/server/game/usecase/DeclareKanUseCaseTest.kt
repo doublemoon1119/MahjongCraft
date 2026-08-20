@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -105,6 +106,43 @@ class DeclareKanUseCaseTest {
             rinshanTile.id,
             fixtures.presentationPublisher.getPublishedPlayerArea(gameId)?.drawnTileId,
             "The rinshan tile should be presented as a drawn tile (moved to the draw slot), same as a normal draw.",
+        )
+    }
+
+    /**
+     * 驗證槓牌成立後會透過 `TileWallRevealable` 通知平台呈現層目前完整該公開翻面的王牌集合（例如
+     * 槓寶牌）——不是只有「有沒有呼叫」，而是真的用了 `RiichiDynamicState.getVisibleTileIds` 算出來的
+     * 值，不支援 `TileWallRevealable` 的桌況（`dynamicRuleState` 為 null）則完全不會呼叫。
+     */
+    @Test
+    fun `test closed kan success publishes newly revealed dead wall tiles`() = runTest {
+        val fixtures = Fixtures()
+        val east1 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east2 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east3 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val east4 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(east1, east2, east3), lastDrawn = east4),
+        )
+        val deadWall = List(14) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)) }
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(deadWall),
+            currentPlayerIndex = 0,
+            dynamicRuleState = RiichiDynamicState(),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, east4.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertNotNull(
+            fixtures.presentationPublisher.getPublishedDeadWallReveal(gameId),
+            "A kan-dora reveal should have been published for a rule that implements TileWallRevealable.",
         )
     }
 

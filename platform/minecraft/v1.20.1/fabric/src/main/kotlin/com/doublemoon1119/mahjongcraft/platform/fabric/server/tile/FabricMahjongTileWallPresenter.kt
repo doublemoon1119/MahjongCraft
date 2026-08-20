@@ -125,7 +125,11 @@ class FabricMahjongTileWallPresenter(
         }
     }
 
-    /** 把王牌區的牌從無縫牌牆位置移到跟活牌保持距離的開門位置，逐張 `refreshPositionAndAngles`。 */
+    /**
+     * 把王牌區的牌從無縫牌牆位置移到跟活牌保持距離的開門位置，逐張 `refreshPositionAndAngles`；同一
+     * 時機點順便把 [MahjongTileWallPresentation.revealedTileIds] 對應的牌翻成正面朝上——開局第一張
+     * 寶牌指示牌本該在王牌分離、開門完成的這一刻公開，不需要另外排一個時機點。
+     */
     private fun moveDeadWallToOpenPosition(
         presentation: MahjongTileWallPresentation,
         controllerPos: BlockPos,
@@ -147,12 +151,36 @@ class FabricMahjongTileWallPresenter(
                 isDeadWall = true,
             )
             tile.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+            if (tile.uuid.toKotlinUuid() in presentation.revealedTileIds) tile.tilePose = MahjongTilePose.FACE_UP
         }
         logger.debug(
-            "moveDeadWallToOpenPosition tableId={} movedTileCount={}",
+            "moveDeadWallToOpenPosition tableId={} movedTileCount={} revealedTileCount={}",
             presentation.tableId,
             deadWallTiles.size,
+            presentation.revealedTileIds.size,
         )
+    }
+
+    /**
+     * 把 [revealedTileIds] 對應的既有管理中牌姿態改成正面朝上；找不到對應 entity（例如桌子已被拆掉、
+     * 或這局已經結束）的牌直接跳過，回傳結果只用來讓呼叫端記 log，不影響已成功翻面的牌。
+     */
+    override fun revealDeadWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult {
+        val world = resolveWorld(tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
+        val controllerPos = tableLocation.toBlockPos()
+        val managedTiles = findManagedTiles(world, tableId, controllerPos)
+            .filter { tile -> tile.uuid.toKotlinUuid() in revealedTileIds }
+            .associateBy { tile -> tile.uuid.toKotlinUuid() }
+        managedTiles.values.forEach { tile -> tile.tilePose = MahjongTilePose.FACE_UP }
+        val missingTileCount = revealedTileIds.size - managedTiles.size
+        if (missingTileCount > 0) {
+            logger.warn(
+                "revealDeadWallTiles tableId={} skipped {} tile(s): no existing managed entity found",
+                tableId,
+                missingTileCount,
+            )
+        }
+        return MahjongTileWallPresentationResult.PRESENTED
     }
 
     /** 清除指定 controller 周圍且 table UUID 相符的所有正式管理中麻將牌（含手牌），理由同 [present] KDoc。 */

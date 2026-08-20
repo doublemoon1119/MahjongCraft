@@ -147,6 +147,22 @@ class StartGameUseCaseTest {
     }
 
     /**
+     * 驗證開局呈現牌牆結構時，同時帶上開局當下就該公開翻面的王牌 Uuid 集合（日麻的第一張寶牌指示牌）
+     * ——不是空集合，代表 [StartGameUseCase] 真的有透過 `TileWallRevealable` 算出目前該公開的牌。
+     */
+    @Test
+    fun `test start game publishes the first revealed dead wall tile`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.roomRepo.setRoom(readyRoom())
+
+        fixtures.useCase(roomId, hostId)
+
+        val revealedTileIds = fixtures.presentationPublisher.getPublishedWallStructureContext(roomId)?.revealedTileIds
+        assertNotNull(revealedTileIds)
+        assertEquals(1, revealedTileIds.size)
+    }
+
+    /**
      * 驗證房間不存在時回傳 [RoomError.RoomNotFound]。
      */
     @Test

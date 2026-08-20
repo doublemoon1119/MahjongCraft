@@ -34,15 +34,6 @@ class RiichiHandValueContextCalculatorTest {
 
     private fun createCalculator(): RiichiHandValueContextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig())
 
-    /**
-     * 模擬從牌山尾端（嶺上）連續摸取 [times] 次，回傳摸牌後的新 [TileWall] 實例。
-     */
-    private fun TileWall.drawLastTimes(times: Int): TileWall {
-        var wall = this
-        repeat(times) { wall = wall.drawLast().wall }
-        return wall
-    }
-
     private fun createPlayer(hand: Hand, riichiState: RiichiPlayerState? = null): MahjongPlayer = FakeMahjongPlayerFactory.create(
         hand = hand,
         playerRuleState = riichiState ?: RiichiPlayerState(),
@@ -270,6 +261,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = tileWall,
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
+            initialDeadWall = wanPaiTiles,
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
@@ -334,6 +326,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = tileWall,
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
+            initialDeadWall = wanPaiTiles,
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
@@ -419,6 +412,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = tileWall,
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
+            initialDeadWall = wanPaiTiles,
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
@@ -471,6 +465,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = tileWall,
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
+            initialDeadWall = wanPaiTiles,
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
@@ -526,6 +521,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = tileWall,
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
+            initialDeadWall = wanPaiTiles,
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
@@ -669,17 +665,15 @@ class RiichiHandValueContextCalculatorTest {
     /**
      * 驗證不同槓數下的寶牌指示器計算邏輯是否正確。
      *
-     * 日麻王牌結構（反轉後）：
-     * - 索引 0-3：嶺上牌（共 4 張）
-     * - 索引 4, 6, 8, 10, 12：寶牌指示牌（上層，共 5 張）
-     * - 索引 5, 7, 9, 11, 13：裏寶牌指示牌（下層，共 5 張）
+     * 資料來源是 [TableState.initialDeadWall]（固定 14 張、順序穩定），索引在整個對局期間都不會變動，
+     * 見 [RiichiDynamicState.getDoraIndicators] KDoc。
      *
-     * 計算公式：`baseIndex = (4 - kanCount) + (i * 2)`
+     * 計算公式：`baseIndex = 4 + (i * 2)`，其中 `indicatorCount = (1 + kanCount).coerceAtMost(5)`
      * - 0 槓：baseIndex = 4 → 寶牌 1 張
-     * - 1 槓：baseIndex = 3, 5 → 寶牌 2 張
-     * - 2 槓：baseIndex = 2, 4, 6 → 寶牌 3 張
-     * - 3 槓：baseIndex = 1, 3, 5, 7 → 寶牌 4 張
-     * - 4 槓：baseIndex = 0, 2, 4, 6, 8 → 寶牌 5 張
+     * - 1 槓：baseIndex = 4, 6 → 寶牌 2 張
+     * - 2 槓：baseIndex = 4, 6, 8 → 寶牌 3 張
+     * - 3 槓：baseIndex = 4, 6, 8, 10 → 寶牌 4 張
+     * - 4 槓：baseIndex = 4, 6, 8, 10, 12 → 寶牌 5 張
      */
     @Test
     fun `test dora indicators with different kan counts`() {
@@ -705,52 +699,46 @@ class RiichiHandValueContextCalculatorTest {
         val player = createPlayer(hand)
 
         /**
-         * 王牌配置（tileWall.takeLast(14).reversed()）。
-         *
-         * ## 計算公式
-         * `baseIndex = (4 - kanCount) + (i * 2)`，其中 `indicatorCount = (1 + kanCount).coerceAtMost(5)`
+         * 王牌配置，依 [TableState.initialDeadWall] 的索引順序（0~13）直接排列，每個位置都用不同牌面
+         * 以便驗證索引對應是否正確。
          *
          * ## 各位置在不同槓數下的 dora / uraDora
          * | wanPai | 0槓 | 1槓 | 2槓 | 3槓 | 4槓 |
          * | :---: | :---: | :---: | :---: | :---: | :---: |
-         * | 0 | - | - | - | - | dora1 |
-         * | 1 | - | - | - | dora1 | uraDora1 |
-         * | 2 | - | - | dora1 | uraDora1 | dora2 |
-         * | 3 | - | dora1 | uraDora1 | dora2 | uraDora2 |
-         * | 4 | dora1 | uraDora1 | dora2 | uraDora2 | dora3 |
-         * | 5 | uraDora1 | dora2 | uraDora2 | dora3 | uraDora3 |
-         * | 6 | dora2 | uraDora2 | dora3 | uraDora3 | dora4 |
-         * | 7 | uraDora2 | dora3 | uraDora3 | dora4 | uraDora4 |
-         * | 8 | dora3 | uraDora3 | dora4 | uraDora4 | dora5 |
-         * | 9 | uraDora3 | dora4 | uraDora4 | dora5 | uraDora5 |
-         * | 10 | dora4 | uraDora4 | dora5 | uraDora5 | - |
-         * | 11 | uraDora4 | dora5 | uraDora5 | - | - |
-         * | 12 | dora5 | uraDora5 | - | - | - |
-         * | 13 | uraDora5 | - | - | - | - |
+         * | 4 | dora1 | dora1 | dora1 | dora1 | dora1 |
+         * | 5 | uraDora1 | uraDora1 | uraDora1 | uraDora1 | uraDora1 |
+         * | 6 | - | dora2 | dora2 | dora2 | dora2 |
+         * | 7 | - | uraDora2 | uraDora2 | uraDora2 | uraDora2 |
+         * | 8 | - | - | dora3 | dora3 | dora3 |
+         * | 9 | - | - | uraDora3 | uraDora3 | uraDora3 |
+         * | 10 | - | - | - | dora4 | dora4 |
+         * | 11 | - | - | - | uraDora4 | uraDora4 |
+         * | 12 | - | - | - | - | dora5 |
+         * | 13 | - | - | - | - | uraDora5 |
          */
         val wanPaiTiles = listOf(
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)), // wanPai[13]
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)), // wanPai[12]
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)), // wanPai[11]
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)), // wanPai[10]
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)), // wanPai[9]
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)), // wanPai[8]
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)), // wanPai[7]
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)), // wanPai[6]
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)), // wanPai[5]
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)), // wanPai[4]
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)), // wanPai[3]
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)), // wanPai[2]
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)), // wanPai[1]
             FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character)), // wanPai[0]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)), // wanPai[1]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)), // wanPai[2]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)), // wanPai[3]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)), // wanPai[4]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6)), // wanPai[5]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 7)), // wanPai[6]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 8)), // wanPai[7]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)), // wanPai[8]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)), // wanPai[9]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2)), // wanPai[10]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 3)), // wanPai[11]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 4)), // wanPai[12]
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)), // wanPai[13]
         )
-        val tileWall = TileWall(wanPaiTiles)
 
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
-            tileWall = tileWall,
+            tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
+            initialDeadWall = wanPaiTiles,
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
@@ -766,7 +754,7 @@ class RiichiHandValueContextCalculatorTest {
         )
         // 0 槓：baseIndex = 4 → wanPai[4] = 寶牌指示牌 1
         assertEquals(1, context0Kan.doraIndicators.size)
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 1), context0Kan.doraIndicators[0]) // wanPai[4]
+        assertEquals(Tile.Numeric(Tile.Suit.Character, 5), context0Kan.doraIndicators[0]) // wanPai[4]
 
         // 測試 1 槓
         val player1Kan = createPlayerWithKan(
@@ -775,9 +763,10 @@ class RiichiHandValueContextCalculatorTest {
         )
         val tableState1Kan = FakeTableStateFactory.create(
             players = listOf(player1Kan),
-            tileWall = TileWall(wanPaiTiles).drawLastTimes(1),
+            tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
+            initialDeadWall = wanPaiTiles,
         )
         val context1Kan = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -787,10 +776,10 @@ class RiichiHandValueContextCalculatorTest {
                 isTsumo = true,
             ),
         )
-        // 1 槓：baseIndex = 3, 5
+        // 1 槓：baseIndex = 4, 6
         assertEquals(2, context1Kan.doraIndicators.size)
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 1), context1Kan.doraIndicators[0]) // wanPai[3]
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 2), context1Kan.doraIndicators[1]) // wanPai[5]
+        assertEquals(Tile.Numeric(Tile.Suit.Character, 5), context1Kan.doraIndicators[0]) // wanPai[4]
+        assertEquals(Tile.Numeric(Tile.Suit.Character, 7), context1Kan.doraIndicators[1]) // wanPai[6]
 
         // 測試 2 槓
         val player2Kan = createPlayerWithKan(
@@ -799,9 +788,10 @@ class RiichiHandValueContextCalculatorTest {
         )
         val tableState2Kan = FakeTableStateFactory.create(
             players = listOf(player2Kan),
-            tileWall = TileWall(wanPaiTiles).drawLastTimes(2),
+            tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
+            initialDeadWall = wanPaiTiles,
         )
         val context2Kan = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -811,11 +801,11 @@ class RiichiHandValueContextCalculatorTest {
                 isTsumo = true,
             ),
         )
-        // 2 槓：baseIndex = 2, 4, 6
+        // 2 槓：baseIndex = 4, 6, 8
         assertEquals(3, context2Kan.doraIndicators.size)
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 1), context2Kan.doraIndicators[0]) // wanPai[2]
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 2), context2Kan.doraIndicators[1]) // wanPai[4]
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 2), context2Kan.doraIndicators[2]) // wanPai[6]
+        assertEquals(Tile.Numeric(Tile.Suit.Character, 5), context2Kan.doraIndicators[0]) // wanPai[4]
+        assertEquals(Tile.Numeric(Tile.Suit.Character, 7), context2Kan.doraIndicators[1]) // wanPai[6]
+        assertEquals(Tile.Numeric(Tile.Suit.Character, 9), context2Kan.doraIndicators[2]) // wanPai[8]
 
         // 測試 3 槓
         val player3Kan = createPlayerWithKan(
@@ -824,9 +814,10 @@ class RiichiHandValueContextCalculatorTest {
         )
         val tableState3Kan = FakeTableStateFactory.create(
             players = listOf(player3Kan),
-            tileWall = TileWall(wanPaiTiles).drawLastTimes(3),
+            tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
+            initialDeadWall = wanPaiTiles,
         )
         val context3Kan = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -836,12 +827,12 @@ class RiichiHandValueContextCalculatorTest {
                 isTsumo = true,
             ),
         )
-        // 3 槓：baseIndex = 1, 3, 5, 7
+        // 3 槓：baseIndex = 4, 6, 8, 10
         assertEquals(4, context3Kan.doraIndicators.size)
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 1), context3Kan.doraIndicators[0]) // wanPai[1]
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 2), context3Kan.doraIndicators[1]) // wanPai[3]
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 2), context3Kan.doraIndicators[2]) // wanPai[5]
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 1), context3Kan.doraIndicators[3]) // wanPai[7]
+        assertEquals(Tile.Numeric(Tile.Suit.Character, 5), context3Kan.doraIndicators[0]) // wanPai[4]
+        assertEquals(Tile.Numeric(Tile.Suit.Character, 7), context3Kan.doraIndicators[1]) // wanPai[6]
+        assertEquals(Tile.Numeric(Tile.Suit.Character, 9), context3Kan.doraIndicators[2]) // wanPai[8]
+        assertEquals(Tile.Numeric(Tile.Suit.Dot, 2), context3Kan.doraIndicators[3]) // wanPai[10]
 
         // 測試 4 槓
         val player4Kan = createPlayerWithKan(
@@ -850,9 +841,10 @@ class RiichiHandValueContextCalculatorTest {
         )
         val tableState4Kan = FakeTableStateFactory.create(
             players = listOf(player4Kan),
-            tileWall = TileWall(wanPaiTiles).drawLastTimes(4),
+            tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
+            initialDeadWall = wanPaiTiles,
         )
         val context4Kan = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -862,12 +854,12 @@ class RiichiHandValueContextCalculatorTest {
                 isTsumo = true,
             ),
         )
-        // 4 槓：baseIndex = 0, 2, 4, 6, 8
+        // 4 槓：baseIndex = 4, 6, 8, 10, 12
         assertEquals(5, context4Kan.doraIndicators.size)
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 1), context4Kan.doraIndicators[0]) // wanPai[0]
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 2), context4Kan.doraIndicators[1]) // wanPai[2]
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 2), context4Kan.doraIndicators[2]) // wanPai[4]
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 1), context4Kan.doraIndicators[3]) // wanPai[6]
-        assertEquals(Tile.Numeric(Tile.Suit.Character, 9), context4Kan.doraIndicators[4]) // wanPai[8]
+        assertEquals(Tile.Numeric(Tile.Suit.Character, 5), context4Kan.doraIndicators[0]) // wanPai[4]
+        assertEquals(Tile.Numeric(Tile.Suit.Character, 7), context4Kan.doraIndicators[1]) // wanPai[6]
+        assertEquals(Tile.Numeric(Tile.Suit.Character, 9), context4Kan.doraIndicators[2]) // wanPai[8]
+        assertEquals(Tile.Numeric(Tile.Suit.Dot, 2), context4Kan.doraIndicators[3]) // wanPai[10]
+        assertEquals(Tile.Numeric(Tile.Suit.Dot, 4), context4Kan.doraIndicators[4]) // wanPai[12]
     }
 }

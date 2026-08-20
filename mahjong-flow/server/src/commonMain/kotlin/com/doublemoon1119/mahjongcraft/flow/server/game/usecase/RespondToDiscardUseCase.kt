@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -153,6 +154,13 @@ class RespondToDiscardUseCase(
                 winner.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
                 comboStickCount = if (winnerSeatIndex == dealerSeatIndex) newState.comboCount else 0,
             )
+            // 明槓得標可能翻開新的一張寶牌指示牌，理由同 DeclareKanUseCase；吃/碰不構成槓，不需要
+            // 檢查——只看剛成立的那組副露（永遠是 melds 的最後一組）是不是明槓。
+            if (winner.hand.melds.lastOrNull()?.type == MeldType.OPEN_KAN) {
+                (newState.dynamicRuleState as? TileWallRevealable)?.let { revealable ->
+                    presentationPublisher.publishDeadWallRevealUpdated(gameId, revealable.getVisibleTileIds(newState))
+                }
+            }
         }
 
         return Outcome.Success(Unit)

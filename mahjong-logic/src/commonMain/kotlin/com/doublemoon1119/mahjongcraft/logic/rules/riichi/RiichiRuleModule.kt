@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
@@ -14,6 +15,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.getNextDora
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -468,4 +471,12 @@ class RiichiRuleModule(
      * 擊飛（飛び/Tobi）：任一玩家分數低於 0 分時，立即強制結束整場對局，不再繼續連莊或換莊。
      */
     override fun hasAdditionalMatchEndCondition(tableState: TableState): Boolean = tableState.players.any { it.score < 0 }
+
+    /**
+     * 日本麻將的特殊視覺強調對象是寶牌：赤寶牌（[RiichiTileInterpretationPolicy.isRedDora]，跟指示牌
+     * 無關的獨立判斷）或符合任一 [revealedWallTiles]（寶牌指示牌）下一張的牌（[getNextDora]，兩張牌
+     * 需先各自轉成 [riichiCanonical] 再比較，理由同 [createTileInterpretationPolicy] 的既有慣例）。
+     */
+    override fun isHighlightedTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = RiichiTileInterpretationPolicy.isRedDora(tile) ||
+        revealedWallTiles.any { indicator -> tile.riichiCanonical == getNextDora(indicator).riichiCanonical }
 }

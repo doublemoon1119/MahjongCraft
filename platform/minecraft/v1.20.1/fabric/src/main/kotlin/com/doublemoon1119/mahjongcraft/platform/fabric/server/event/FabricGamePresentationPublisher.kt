@@ -154,14 +154,16 @@ class FabricGamePresentationPublisher(
         dealerSeatIndex: Int,
         deadWallTileIds: Set<Uuid>,
         diceCount: Int,
+        revealedTileIds: Set<Uuid>,
     ) {
         logger.debug(
-            "publishWallStructure gameId={} tileCount={} dealerSeatIndex={} deadWallTileCount={} diceCount={}",
+            "publishWallStructure gameId={} tileCount={} dealerSeatIndex={} deadWallTileCount={} diceCount={} revealedTileCount={}",
             gameId,
             structure.size,
             dealerSeatIndex,
             deadWallTileIds.size,
             diceCount,
+            revealedTileIds.size,
         )
         if (serverHolder.current() == null) {
             logger.warn("publishWallStructure gameId={} skipped: no active server", gameId)
@@ -178,9 +180,31 @@ class FabricGamePresentationPublisher(
                 structure = structure,
                 deadWallTileIds = deadWallTileIds,
                 diceCount = diceCount,
+                revealedTileIds = revealedTileIds,
             )
             val result = tileWallPresenter.present(presentation)
             logger.debug("publishWallStructure gameId={} present() result={}", gameId, result)
+        }
+    }
+
+    /**
+     * 一般回合動作，不需要 [busyTracker] 或延遲，直接同步呈現；跟 [publishDiceRoll] 同理，世界／entity
+     * 存取一併丟回伺服器主執行緒執行。
+     */
+    override fun publishDeadWallRevealUpdated(gameId: Uuid, revealedTileIds: Set<Uuid>) {
+        logger.debug("publishDeadWallRevealUpdated gameId={} revealedTileCount={}", gameId, revealedTileIds.size)
+        if (serverHolder.current() == null) {
+            logger.warn("publishDeadWallRevealUpdated gameId={} skipped: no active server", gameId)
+            return
+        }
+        scope.launch(dispatchers.main) {
+            val location = tableLocationRegistry.get(gameId)?.location
+            if (location == null) {
+                logger.warn("publishDeadWallRevealUpdated gameId={} skipped: no known table location", gameId)
+                return@launch
+            }
+            val result = tileWallPresenter.revealDeadWallTiles(gameId, location, revealedTileIds)
+            logger.debug("publishDeadWallRevealUpdated gameId={} revealDeadWallTiles() result={}", gameId, result)
         }
     }
 

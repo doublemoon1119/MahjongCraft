@@ -263,4 +263,14 @@ class TaiwanRuleModuleTest {
 
         assertFalse(module.hasAdditionalMatchEndCondition(table))
     }
+
+    /**
+     * 驗證台灣麻將沒有寶牌概念，不覆寫 [MahjongRuleModule.isHighlightedTile]，固定回傳預設值 false。
+     */
+    @Test
+    fun `test isHighlightedTile returns false`() {
+        val tile = Tile.Numeric(Tile.Suit.Character, 5)
+
+        assertFalse(module.isHighlightedTile(tile, listOf(Tile.Numeric(Tile.Suit.Character, 4))))
+    }
 }

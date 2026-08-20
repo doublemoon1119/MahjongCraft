@@ -93,6 +93,10 @@ interface GamePresentationPublisher {
      * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index。
      * @param deadWallTileIds [structure] 之中屬於王牌區的牌 Uuid 子集合；空 map 呼叫時可傳空集合。
      * @param diceCount 本次開門擲骰的骰子數量，供平台實作換算擲骰動畫總長度；未搭配擲骰的呼叫可傳 `0`。
+     * @param revealedTileIds [deadWallTileIds] 之中，牌牆建立當下就該立即公開翻面的牌 Uuid 子集合
+     * （例如日麻開局就翻開的第一張寶牌指示牌，由呼叫端用 `TileWallRevealable.getVisibleTileIds`
+     * 算出）；平台實作會在王牌移出開門位置的同一個時機點翻開這些牌，不支援此概念的規則傳空集合即可。
+     * 槓牌後才追加公開的牌屬於 [publishDeadWallRevealUpdated] 的職責，不是這裡。
      */
     fun publishWallStructure(
         gameId: Uuid,
@@ -100,7 +104,23 @@ interface GamePresentationPublisher {
         dealerSeatIndex: Int,
         deadWallTileIds: Set<Uuid>,
         diceCount: Int,
+        revealedTileIds: Set<Uuid> = emptySet(),
     )
+
+    /**
+     * 通知平台呈現層本局王牌區裡，目前完整應該公開翻面的牌集合有異動——用於牌牆建立**之後**才追加
+     * 公開的牌，例如日麻槓牌成立後翻開的新寶牌指示牌；開局當下就該公開的第一張（不需要等任何事件）
+     * 屬於 [publishWallStructure] 的 `revealedTileIds`，不是這裡，兩者是完全獨立的呈現時機。
+     *
+     * 刻意用泛用的「應該公開翻面」措辭而非「寶牌」，讓這個介面本身維持規則無關——呼叫端一律用
+     * `TileWallRevealable.getVisibleTileIds` 算出目前完整該公開的集合，不支援此概念的規則永遠不會
+     * 呼叫這個方法。
+     *
+     * @param gameId 對局 Uuid。
+     * @param revealedTileIds 目前完整應該公開翻面的王牌 Uuid 集合（不是只有新增的那幾張），平台實作
+     * 逐張翻面、冪等，呼叫端不需要自行比對差異。
+     */
+    fun publishDeadWallRevealUpdated(gameId: Uuid, revealedTileIds: Set<Uuid>)
 
     /**
      * 通知平台呈現層本局莊家角落的積棒（連莊棒）數量。

@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
@@ -342,4 +343,18 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 是否應該立即結束整場對局。
      */
     fun hasAdditionalMatchEndCondition(tableState: TableState): Boolean
+
+    /**
+     * 給定一張牌與目前已公開翻開的牌山牌張（[revealedWallTiles]，一般是各規則自訂的指示牌），判斷這張
+     * 牌目前是否該有特殊視覺強調（例如日麻的寶牌發光）——純粹牌面比對，不需要完整 [TableState]，
+     * client／server 都能呼叫。呈現層只負責「有沒有」，實際疊加什麼視覺效果由呈現層自己決定，這裡
+     * 刻意不用任何特定規則的術語命名，避免介面綁死成只有日麻會用。
+     *
+     * 不支援此概念的規則固定回傳 `false`（例如台麻沒有寶牌）。
+     *
+     * @param tile 欲判斷的牌面。
+     * @param revealedWallTiles 目前已公開翻開的牌山牌張列表。
+     * @return 這張牌目前是否該有特殊視覺強調。
+     */
+    fun isHighlightedTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = false
 }

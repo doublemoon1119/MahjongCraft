@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValid
 import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -233,6 +234,11 @@ class DeclareKanUseCase(
                 declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
                 comboStickCount = if (declarerSeatIndex == dealerSeatIndex) newState.comboCount else 0,
             )
+            // 槓牌成立後可能翻開新的一張寶牌指示牌（例如日麻的槓寶牌）；不支援 TileWallRevealable
+            // 的規則永遠算出空集合，呼叫這個方法沒有任何效果。
+            (newState.dynamicRuleState as? TileWallRevealable)?.let { revealable ->
+                presentationPublisher.publishDeadWallRevealUpdated(gameId, revealable.getVisibleTileIds(newState))
+            }
         }
 
         return Outcome.Success(Unit)

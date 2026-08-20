@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
@@ -160,7 +161,8 @@ class AdvanceRoundUseCase(
         advanceOutcome.wallStructure?.let { structure ->
             val deadWallTileIds = newState.initialDeadWall.map { tile -> tile.id }.toSet()
             val diceCount = advanceOutcome.diceRoll?.values?.size ?: 0
-            presentationPublisher.publishWallStructure(gameId, structure, dealerSeatIndex, deadWallTileIds, diceCount)
+            val revealedTileIds = (newState.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(newState) ?: emptySet()
+            presentationPublisher.publishWallStructure(gameId, structure, dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
         }
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；新局手牌一定沒有副露，只是靠
         // publishPlayerAreaUpdated 的 comboStickCount 讓手牌正確讓開積棒佔用的空間。

@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdat
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -107,7 +108,8 @@ class StartGameUseCase(
         initializationResult.wallStructure?.let { structure ->
             val deadWallTileIds = tableState.initialDeadWall.map { tile -> tile.id }.toSet()
             val diceCount = initializationResult.diceRoll?.values?.size ?: 0
-            presentationPublisher.publishWallStructure(roomId, structure, dealerSeatIndex, deadWallTileIds, diceCount)
+            val revealedTileIds = (tableState.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(tableState) ?: emptySet()
+            presentationPublisher.publishWallStructure(roomId, structure, dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
         }
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；開局第一局 comboCount 恆為 0，
         // 呼叫本身仍需要，確保積棒 entity 從上一局殘留（理論上不會發生，但保持呼叫語意一致）清乾淨。

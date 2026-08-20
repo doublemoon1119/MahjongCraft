@@ -19,6 +19,10 @@ import kotlin.uuid.Uuid
  * @property deadWallTileIds [structure] 之中屬於王牌區的牌 Uuid 子集合；[structure] 為空時可傳空集合。
  * @property diceCount 本次開門擲骰的骰子數量，用來換算擲骰動畫總長度、決定王牌區延遲移出開門位置的
  *                     時機；未搭配擲骰時傳 `0`（此時實作不會排定王牌延遲移出）。
+ * @property revealedTileIds [deadWallTileIds] 之中，牌牆建立當下就該立即公開翻面的牌 Uuid 子集合
+ *                     （例如日麻開局就翻開的第一張寶牌指示牌，見 `TileWallRevealable`）——實作會在
+ *                     王牌移出開門位置的同一個時機點把這些牌的姿態改成正面朝上，其餘王牌維持牌背朝上；
+ *                     不支援此概念的規則（或尚未有任何牌需要公開，例如空王牌）傳空集合即可。
  */
 data class MahjongTileWallPresentation(
     val tableId: Uuid,
@@ -28,6 +32,7 @@ data class MahjongTileWallPresentation(
     val structure: Map<Uuid, TileWallPosition>,
     val deadWallTileIds: Set<Uuid>,
     val diceCount: Int,
+    val revealedTileIds: Set<Uuid> = emptySet(),
 )
 
 /** 正式牌牆呈現請求的處理結果。 */
@@ -51,6 +56,19 @@ enum class MahjongTileWallPresentationResult {
 interface MahjongTileWallPresenter {
     /** 在指定桌面呈現整副牌牆；[MahjongTileWallPresentation.structure] 為空時等同只清除舊牌。 */
     fun present(presentation: MahjongTileWallPresentation): MahjongTileWallPresentationResult
+
+    /**
+     * 把 [revealedTileIds] 對應的既有王牌 entity 姿態改成正面朝上，其餘管理中的王牌不受影響——用於
+     * 牌牆建立之後才追加公開的牌（例如日麻槓牌後翻開新的寶牌指示牌），跟 [present] 開局那次的初始
+     * 公開（[MahjongTileWallPresentation.revealedTileIds]）是兩條獨立的時機，理由見
+     * `GamePresentationPublisher.publishDeadWallRevealUpdated` KDoc。冪等：重複呼叫同一批 id 沒有
+     * 副作用。
+     *
+     * @param revealedTileIds 目前應該公開翻面的完整王牌 Uuid 集合（不是只有「新增」的那幾張），
+     *                        呼叫端每次都傳目前完整該公開的集合，實作不需要自行比對差異。
+     * @return 找不到對應 entity 的張數；比照本介面 best-effort 慣例，找不到的牌會被跳過。
+     */
+    fun revealDeadWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult
 
     /** 清除指定桌子目前的正式牌牆用牌；回傳實際移除數量。 */
     fun clear(tableId: Uuid, tableLocation: TableLocation): Int
