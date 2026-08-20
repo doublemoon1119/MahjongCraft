@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.fabric.api.`object`.builder.v1.entity.FabricEntityTypeBuilder
@@ -21,6 +22,10 @@ object ModEntities {
     lateinit var mahjongTile: EntityType<MahjongTileEntity>
         private set
 
+    /** 麻將點棒 entity type；由 [register] 初始化。 */
+    lateinit var mahjongScoringStick: EntityType<MahjongScoringStickEntity>
+        private set
+
     /** 註冊不自然生成的輕量麻將牌 entity。 */
     fun register() {
         mahjongDice = Registry.register(
@@ -38,6 +43,16 @@ object ModEntities {
             Identifier(MinecraftModMetadata.MOD_ID, "mahjong_tile"),
             FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongTileEntity)
                 .dimensions(EntityDimensions.fixed(MahjongTileEntity.TILE_WIDTH, MahjongTileEntity.TILE_HEIGHT))
+                .trackRangeBlocks(16)
+                .trackedUpdateRate(10)
+                .fireImmune()
+                .build(),
+        )
+        mahjongScoringStick = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_scoring_stick"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongScoringStickEntity)
+                .dimensions(EntityDimensions.fixed(MahjongScoringStickEntity.STICK_WIDTH, MahjongScoringStickEntity.STICK_HEIGHT))
                 .trackRangeBlocks(16)
                 .trackedUpdateRate(10)
                 .fireImmune()

@@ -14,11 +14,13 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildMatchRes
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildRoundResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongDiceEntityRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongScoringStickEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
@@ -32,7 +34,9 @@ import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
+import net.fabricmc.fabric.api.`object`.builder.v1.client.model.FabricModelPredicateProviderRegistry
 import net.minecraft.client.MinecraftClient
+import net.minecraft.util.Identifier
 import org.koin.core.context.GlobalContext
 import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
@@ -45,6 +49,10 @@ class MahjongCraftModClient : ClientModInitializer {
 
         ModelLoadingPlugin.register(MahjongTileModelLoadingPlugin)
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAHJONG_TILE, MahjongTileItemRenderer)
+        FabricModelPredicateProviderRegistry.register(
+            ModItems.MAHJONG_SCORING_STICK,
+            Identifier(MinecraftModMetadata.MOD_ID, "denomination"),
+        ) { stack, _, _, _ -> MahjongScoringStickItem.readDenomination(stack).normalizedPredicateValue }
         val clientConfigStore = koin.get<MahjongClientConfigStore>()
         koin.get<FabricOpenRoomConfigScreenCommand>().register()
         initializeClientConfig(clientConfigStore)
@@ -88,6 +96,7 @@ class MahjongCraftModClient : ClientModInitializer {
             )
         }
         EntityRendererRegistry.register(ModEntities.mahjongDice, ::MahjongDiceEntityRenderer)
+        EntityRendererRegistry.register(ModEntities.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongTile) { context ->
             MahjongTileEntityRenderer(context, stateStore, tileAssetRegistry, tileLabelRegistry, clientConfigStore)
         }

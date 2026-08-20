@@ -6,6 +6,7 @@
   "item_group.mahjongcraft.main": "MahjongCraft",
   "item.mahjongcraft.mahjong_dice": "麻雀サイコロ",
   "item.mahjongcraft.mahjong_tile": "麻雀牌",
+  "item.mahjongcraft.mahjong_scoring_stick": "麻雀点棒",
   "mahjongcraft.message.game_created": "麻雀ゲームを作成しました",
   "mahjongcraft.message.game_created_location_label": "座標",
   "mahjongcraft.message.game_joined": "麻雀ゲームに参加しました",

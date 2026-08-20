@@ -6,6 +6,7 @@
   "item_group.mahjongcraft.main": "MahjongCraft",
   "item.mahjongcraft.mahjong_dice": "麻將骰子",
   "item.mahjongcraft.mahjong_tile": "麻將牌",
+  "item.mahjongcraft.mahjong_scoring_stick": "麻將點棒",
   "mahjongcraft.message.game_created": "已建立麻將遊戲",
   "mahjongcraft.message.game_created_location_label": "位置",
   "mahjongcraft.message.game_joined": "已加入麻將遊戲",
