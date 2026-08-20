@@ -157,7 +157,7 @@ object MahjongTileTableLayout {
      * @param cornerYieldShift 整排手牌（含摸牌位，見 [drawnTilePlacement]）需要往玩家自己方向（局部
      * X 軸負向）額外平移的距離，`0.0`（預設值）代表不需要讓開。由呼叫端依
      * [handCornerYieldShift] 算好傳入——這裡只負責套用，不重新判斷是否需要讓開；整排牌一起平移，牌與
-     * 牌之間的間距（`stackStep`）不受影響，是使用者確認過的設計決定。
+     * 牌之間的間距（`stackStep`）不受影響，是刻意的設計決定。
      */
     fun handPlacement(
         controllerX: Int,
@@ -339,8 +339,8 @@ object MahjongTileTableLayout {
      * [SIDEWAYS_YAW_OFFSET] 度，也依側身牌的實際外觀寬度換算 `x`／`z`，見本函式 KDoc。
      * @param depthOffsetFromEdge 這張牌垂直於排列方向（局部 Z 軸）額外往桌子中心方向（遠離桌緣）推
      * 的距離，`0.0`（預設值）代表跟同排其他牌一樣貼齊 [MELD_NEAR_EDGE_LINE]。加槓（`MeldType.ADDED_KAN`）
-     * 補上的第 4 張牌用這個參數疊在原碰側身牌「靠近桌子中心」那一側（不是沿排列方向的旁邊），使用者
-     * 確認過的設計決定；其餘所有牌固定 `0.0`。
+     * 補上的第 4 張牌用這個參數疊在原碰側身牌「靠近桌子中心」那一側（不是沿排列方向的旁邊），刻意
+     * 的設計決定；其餘所有牌固定 `0.0`。
      */
     fun meldPlacement(
         controllerX: Int,
@@ -468,12 +468,12 @@ object MahjongTileTableLayout {
      * 依 controller 座標、桌子世界朝向與座位 index，算出這位玩家積棒區中第 [stickIndex]
      * （`0` 起算，依生成順序排列）支積棒的世界座標——積棒直接佔用 [MELD_AREA_CORNER_OFFSET] 桌角
      * 錨點本身（副露從積棒外緣往手牌方向接續排開，見 [meldPlacement] 呼叫端如何把
-     * [stickAreaWidth] 當成副露游標起始值），使用者確認過的設計決定。
+     * [stickAreaWidth] 當成副露游標起始值），刻意的設計決定。
      *
      * 短邊（[MahjongScoringStickDimensions.STICK_DEPTH]）朝向玩家自己、沿排列方向（局部 X 軸）決定
      * 同一排能塞幾支；長邊（[MahjongScoringStickDimensions.STICK_WIDTH]）往桌子中心延伸（垂直排列
      * 方向，局部 Z 軸）。同一排最多 [STICKS_PER_ROW] 支，超過往局部 Y 軸疊下一層，同樣從第一支排到
-     * 第 [STICKS_PER_ROW] 支，Y 軸層數無上限——同樣是使用者確認過的設計決定。
+     * 第 [STICKS_PER_ROW] 支，Y 軸層數無上限——同樣是刻意的設計決定。
      */
     fun stickPlacement(
         controllerX: Int,
@@ -567,11 +567,11 @@ object MahjongTileTableLayout {
      */
     internal const val CORNER_GAP_RATIO: Double = 0.25
 
-    /** 王牌區沿排列方向滑向開門缺口的距離相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，使用者指定的觀感參數；`internal` 理由同 [CORNER_GAP_RATIO]。 */
+    /** 王牌區沿排列方向滑向開門缺口的距離相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，觀感調校參數；`internal` 理由同 [CORNER_GAP_RATIO]。 */
     internal const val DEAD_WALL_GAP_RATIO: Double = 0.25
     private const val FULL_YAW_DEGREES: Float = 360.0f
 
-    /** [HAND_EDGE_OFFSET] 額外扣除的桌緣留白，遊戲內驗證後調整的觀感參數（使用者回報手牌離桌緣太近）。 */
+    /** [HAND_EDGE_OFFSET] 額外扣除的桌緣留白，遊戲內驗證後調整的觀感參數（初版手牌幾乎貼到桌緣）。 */
     internal const val HAND_EDGE_MARGIN: Double = 0.15
 
     /**
@@ -685,7 +685,7 @@ object MahjongTileTableLayout {
      */
     const val SIDEWAYS_SLOT_ACROSS: Int = 1
 
-    /** 積棒同一排最多排放的支數，超過往局部 Y 軸疊下一層——使用者確認過的設計決定。 */
+    /** 積棒同一排最多排放的支數，超過往局部 Y 軸疊下一層——刻意的設計決定。 */
     const val STICKS_PER_ROW: Int = 5
 
     /**

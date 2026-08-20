@@ -8,7 +8,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
  * [UNKNOWN_TILE_ASSET_KEY] 與尚未提供標籤的第三方牌種一律不註冊，呈現端 [TileLabelRegistry.find]
  * 回傳 `null` 時不顯示任何標籤。
  *
- * 顏色規則（使用者指定）：
+ * 顏色規則：
  * - 非花牌中，赤牌（赤五餅／赤五條／赤五萬、紅中——牌面本身印刷成紅色）的角落文字用黑色，其餘非花牌
  *   一律用紅色；非花牌只有右上角標籤，左上角固定不顯示。
  * - 花牌成對出現：春夏秋冬右上角是紅色中文字、左上角是黑色數字（依春夏秋冬排序，1～4）；梅蘭菊竹

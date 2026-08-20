@@ -31,8 +31,8 @@ class MahjongTileTableLayoutTest {
     }
 
     /**
-     * 四面牌牆的所有墩（含四個角落）躺平後的世界footprint 彼此都不該重疊——這正是使用者實際在遊戲內
-     * 發現過的 bug（角落偏移量只顧到端點座標重合，沒考慮牌本身的寬度）。footprint 沿墩排列方向的
+     * 四面牌牆的所有墩（含四個角落）躺平後的世界footprint 彼此都不該重疊——這正是實際在遊戲內發現過
+     * 的 bug（角落偏移量只顧到端點座標重合，沒考慮牌本身的寬度）。footprint 沿墩排列方向的
      * 半寬是 [MahjongTileDimensions.TILE_WIDTH]／2，垂直於側面方向的半寬是
      * [MahjongTileDimensions.TILE_HEIGHT]／2（牌立起時的高度，躺平後變成水平方向的寬度），依 yaw
      * 判斷這張牌的兩個方向何者對應世界 X／Z。允許邊界剛好貼齊（觸碰但不重疊），只有兩個 footprint

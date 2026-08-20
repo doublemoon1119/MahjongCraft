@@ -4,7 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-/** 驗證內建牌面角落標籤的顏色與文字規則（使用者指定的赤牌／花牌規則）。 */
+/** 驗證內建牌面角落標籤的顏色與文字規則（赤牌／花牌的固定配色規則）。 */
 class BuiltInTileLabelsTest {
     private val registry = TileLabelRegistryImpl().apply { registerBuiltInTileLabels() }
 

@@ -55,7 +55,7 @@ data class MahjongDiceTablePlacement(
  * 這裡採用 SOUTH→EAST→NORTH→WEST（順時針），刻意跟 [MahjongTileTableLayout]
  * 內部 `SIDE_ORDER`／`advance`／`localWallVector` 使用的 SOUTH→WEST→NORTH→EAST（逆時針）**不是同一個
  * 方向**——這兩者過去被誤以為必須共用同一套旋轉順序，因而耦合修改了三次，三次都在牌牆密合度或墩的
- * 左右手方向上被使用者實際遊玩截圖推翻（詳見專案記憶 `seat-direction-ccw-fix`）。實際上這是兩個各自
+ * 左右手方向上被實際遊玩截圖推翻。實際上這是兩個各自
  * 獨立的問題：
  *
  * - **牌牆自身是否密合、墩的左右手方向是否正確**：只取決於 [MahjongTileTableLayout] 內部
