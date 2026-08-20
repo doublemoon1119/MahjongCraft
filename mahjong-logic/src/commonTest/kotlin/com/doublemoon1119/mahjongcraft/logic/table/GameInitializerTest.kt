@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer.dealInitialHands
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import kotlin.test.Test
@@ -99,6 +100,29 @@ class GameInitializerTest {
 
         assertEquals(totalTileCount, allTileIds.size)
         assertEquals(totalTileCount, allTileIds.toSet().size)
+    }
+
+    /**
+     * 驗證 [GameInitializer.dealInitialHands] 真的是「輪流各摸一批」（真實麻將的發牌方式），不是讓
+     * 某位玩家一次連續摸完整手牌——用可控制牌張順序的 [TileWall] 直接測試，牌山依序是索引
+     * `0..51`（52 張，剛好夠 4 人 × 13 張），日麻批次節奏固定 `[4, 4, 4, 1]`：每位玩家應該拿到
+     * 4 個不連續的區段（索引間隔 16，最後一輪間隔 4），不是單一連續的 13 張區段。
+     */
+    @Test
+    fun `test dealInitialHands deals in rotation instead of one player at a time`() {
+        val orderedTiles = List(52) { index -> FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (index % 9) + 1)) }
+        val wall = TileWall(orderedTiles)
+        val playerIds = List(4) { Uuid.random() }
+
+        val (hands, remainingWall) = module.dealInitialHands(wall, playerIds)
+
+        val indexById = orderedTiles.withIndex().associate { (index, tile) -> tile.id to index }
+        val handIndices = hands.map { hand -> hand.map { tile -> indexById.getValue(tile.id) } }
+        assertEquals(listOf(0, 1, 2, 3, 16, 17, 18, 19, 32, 33, 34, 35, 48), handIndices[0])
+        assertEquals(listOf(4, 5, 6, 7, 20, 21, 22, 23, 36, 37, 38, 39, 49), handIndices[1])
+        assertEquals(listOf(8, 9, 10, 11, 24, 25, 26, 27, 40, 41, 42, 43, 50), handIndices[2])
+        assertEquals(listOf(12, 13, 14, 15, 28, 29, 30, 31, 44, 45, 46, 47, 51), handIndices[3])
+        assertEquals(0, remainingWall.remainingCount)
     }
 
     /**

@@ -163,6 +163,27 @@ class StartGameUseCaseTest {
     }
 
     /**
+     * 驗證開局呈現初次發牌動畫時，每個座位都帶上完整的最終手牌，且批次大小依日麻規則模組固定為
+     * `[4, 4, 4, 1]`（總和等於 13 張初始手牌）——確認 [StartGameUseCase] 真的呼叫
+     * `publishInitialDealAnimation`（而不是逐座位呼叫 `publishPlayerAreaUpdated`）。
+     */
+    @Test
+    fun `test start game publishes initial deal animation with batched hands`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.roomRepo.setRoom(readyRoom())
+
+        fixtures.useCase(roomId, hostId)
+
+        val tableState = assertNotNull(fixtures.gameRepo.getTableState(roomId))
+        val dealAnimation = assertNotNull(fixtures.presentationPublisher.getPublishedInitialDealAnimation(roomId))
+        assertEquals(listOf(4, 4, 4, 1), dealAnimation.dealBatchSizes)
+        assertEquals(tableState.players.size, dealAnimation.handTileIdsBySeatIndex.size)
+        tableState.players.forEachIndexed { seatIndex, player ->
+            assertEquals(player.hand.tiles.map { it.id }, dealAnimation.handTileIdsBySeatIndex[seatIndex])
+        }
+    }
+
+    /**
      * 驗證房間不存在時回傳 [RoomError.RoomNotFound]。
      */
     @Test

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.config
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 
 /**
  * 定義麻將遊戲最基礎的物理配置介面。
@@ -67,3 +68,27 @@ fun MahjongRuleConfig.validate() {
     require(deadTileCount >= 0) { "deadTileCount($deadTileCount) must not be negative" }
     require(minimumWinConstraint >= 0) { "minimumWinConstraint($minimumWinConstraint) must not be negative" }
 }
+
+/**
+ * 配牌時每批最多同時抓取幾張牌——真實麻將不分玩法，配牌動作普遍是一次抓兩墩（4 張），重複抓取
+ * 直到湊滿 [MahjongRuleConfig.initialHandSize]，最後一批不足 4 張時只抓剩下的張數（例如 13 張是
+ * `[4, 4, 4, 1]`，16 張是 `[4, 4, 4, 4]`）。各批總和恆等於 [MahjongRuleConfig.initialHandSize]。
+ *
+ * 純函式而非 [MahjongRuleModule] 的
+ * 可覆寫方法：這是通行慣例，沒有任何規則需要客製化抓取節奏，做成 virtual method 只是不必要的間接層。
+ *
+ * @return 依序播放的批次大小列表。
+ */
+fun MahjongRuleConfig.dealBatchSizes(): List<Int> {
+    val batches = mutableListOf<Int>()
+    var remaining = initialHandSize
+    while (remaining > 0) {
+        val take = minOf(DEAL_BATCH_MAX_SIZE, remaining)
+        batches += take
+        remaining -= take
+    }
+    return batches
+}
+
+/** 配牌時每批最多同時抓取的張數（兩墩），見 [dealBatchSizes] KDoc。 */
+private const val DEAL_BATCH_MAX_SIZE = 4

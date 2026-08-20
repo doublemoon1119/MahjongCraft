@@ -58,6 +58,34 @@ data class MahjongPlayerAreaPresentation(
     val comboStickCount: Int,
 )
 
+/**
+ * 已由伺服器決定的開局發牌動畫呈現資料——只涵蓋立牌本身，不含摸牌位／副露／積棒：開局當下沒有人已經
+ * 摸牌、也沒有任何副露，理由同 [MahjongPlayerAreaPresentation.comboStickCount] 只在有副露/積棒時才有
+ * 意義。
+ *
+ * @property tableId 所屬麻將桌的穩定 UUID。
+ * @property tableLocation 麻將桌 controller 的位置。
+ * @property tableFacing 麻將桌 controller 的世界水平朝向。
+ * @property handTileIdsBySeatIndex 每個座位最終手牌的完整牌 Uuid 列表（依 [MahjongPlayerAreaPresentation.standingTileIds]
+ * 同一套順序），鍵為座位 index。
+ * @property dealerSeatIndex 本局莊家座位 index，只用來換算積棒佔用寬度（[comboStickCount] 只有莊家
+ * 非零），跟牌牆的莊家相對旋轉無關——理由同 [MahjongPlayerAreaPresentation]，手牌位置不需要莊家相對
+ * 旋轉。
+ * @property comboStickCount 開局當下該顯示的積棒（連莊棒）支數，只用來讓手牌正確讓開積棒佔用的空間，
+ * 理由同 [MahjongPlayerAreaPresentation.comboStickCount]。
+ * @property dealBatchSizes 依序播放的批次大小列表，見 `MahjongRuleConfig.dealBatchSizes()`；呼叫端
+ * 不驗證總和是否等於各座位手牌張數，由該函式自己保證。
+ */
+data class MahjongInitialDealPresentation(
+    val tableId: Uuid,
+    val tableLocation: TableLocation,
+    val tableFacing: MahjongTableFacing,
+    val handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
+    val dealerSeatIndex: Int,
+    val comboStickCount: Int,
+    val dealBatchSizes: List<Int>,
+)
+
 /** 正式桌角區域呈現請求的處理結果。 */
 enum class MahjongPlayerAreaPresentationResult {
     /** 已把這位玩家的手牌／摸牌位／副露更新為本次要呈現的狀態。 */
@@ -105,6 +133,15 @@ interface MahjongPlayerAreaPresenter {
      * `null` 時等同只清除舊牌。
      */
     fun present(presentation: MahjongPlayerAreaPresentation): MahjongPlayerAreaPresentationResult
+
+    /**
+     * 呈現開局發牌動畫：依 [MahjongInitialDealPresentation.dealBatchSizes] 分批，每批同時對所有座位
+     * 執行「牌從牌山原位小幅起飛→頂點瞬間重新排列到手牌列上空、面朝下→落下到最終手牌位置」的動畫，
+     * 播完後牌維持面朝下姿態靜置在最終手牌位置——翻牌動畫是後續獨立的一步，不在這個方法的職責內。
+     *
+     * 跟 [present] 一樣不建立新 entity，領走 [MahjongTileWallPresenter] 已生成好的既有牌牆 entity。
+     */
+    fun presentInitialDeal(presentation: MahjongInitialDealPresentation): MahjongPlayerAreaPresentationResult
 
     /** 清除指定桌子目前的正式手牌／摸牌位／副露用牌；回傳實際移除數量。 */
     fun clear(tableId: Uuid, tableLocation: TableLocation): Int

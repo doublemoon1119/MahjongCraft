@@ -26,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
@@ -81,14 +82,17 @@ class FabricGamePresentationPublisher(
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
     /**
-     * 記錄剛呼叫過 [publishWallStructure] 但還沒被對應 [publishDiceRoll] 讀取消費的牌牆生成掉落動畫
-     * 總時長（ticks）——[publishDiceRoll] 讀到後立刻移除（單次消費），用來把擲骰動畫延遲到牌牆完全
-     * 落地才開始播放，符合真實麻將先砌牌牆才擲骰開門的順序，體感上也更自然。
-     * 依賴呼叫端（`StartGameUseCase`／`AdvanceRoundUseCase`）固定先呼叫 [publishWallStructure] 才呼叫
-     * [publishDiceRoll]；找不到對應紀錄（例如規則沒有牌牆，或呼叫端沒有依既定順序呼叫）時預設視為
-     * `0`，擲骰動畫維持立即播放，不強制要求呼叫順序。
+     * 記錄每張桌子最近一次 [publishWallStructure] 算出的牌牆生成掉落動畫總時長（ticks）——[publishDiceRoll]
+     * 與 [publishInitialDealAnimation] 都會讀取，用來把擲骰動畫、發牌動畫依序延遲到牌牆完全落地、
+     * 擲骰動畫也播完才開始播放，符合真實麻將先砌牌牆、擲骰開門、才發牌的順序。
+     *
+     * 每次 [publishWallStructure] 呼叫都覆寫（不是單次消費後移除）——同一張桌子每局都會重新呼叫
+     * [publishWallStructure]，覆寫掉上一局的舊值，兩個讀取端都能各自安全讀到本局的值，不需要協調
+     * 誰先讀、誰清除。依賴呼叫端（`StartGameUseCase`／`AdvanceRoundUseCase`）固定先呼叫
+     * [publishWallStructure] 才呼叫 [publishDiceRoll]／[publishInitialDealAnimation]；找不到對應紀錄
+     * （例如規則沒有牌牆）時預設視為 `0`，不強制要求呼叫順序。
      */
-    private val pendingWallDropTicksByTable = ConcurrentHashMap<Uuid, Int>()
+    private val wallDropTicksByTable = ConcurrentHashMap<Uuid, Int>()
 
     /**
      * 查無桌子位置、世界、或 controller 目前不是合法麻將桌方塊時直接放棄——比照本介面 best-effort
@@ -117,7 +121,7 @@ class FabricGamePresentationPublisher(
      * [present] 真的失敗（例如桌子被拆掉），這桌還是會被錯誤標記忙碌一小段時間——比起每一次擲骰都
      * 有機會被搶跑，這個機率很低的邊界情況划算得多。
      *
-     * 真正的呈現（[presentDiceRoll]）延遲到 [pendingWallDropTicksByTable] 記錄的牌牆掉落動畫播完才
+     * 真正的呈現（[presentDiceRoll]）延遲到 [wallDropTicksByTable] 記錄的牌牆掉落動畫播完才
      * 觸發，理由見該欄位 KDoc；[busyTracker] 標記的時長需要涵蓋這段等待，因此是牌牆時長加上擲骰動畫
      * 本身時長的總和，不是單純擲骰動畫時長。
      */
@@ -140,7 +144,7 @@ class FabricGamePresentationPublisher(
             logger.warn("publishDiceRoll gameId={} skipped: no active server", gameId)
             return
         }
-        val wallDropTicks = pendingWallDropTicksByTable.remove(gameId) ?: 0
+        val wallDropTicks = wallDropTicksByTable[gameId] ?: 0
         val diceTicks = MahjongDiceTableLayout.totalAnimationTicks(dice.values.size)
         busyTracker.markBusyFor(gameId, wallDropTicks + diceTicks)
         tickClock.scheduleAfter(wallDropTicks * MILLIS_PER_TICK) {
@@ -186,9 +190,9 @@ class FabricGamePresentationPublisher(
      * 不能搶在牌牆落地之前執行。`stacksPerSide` 的算法跟 [FabricMahjongTileWallPresenter.present]
      * 內部完全一致（取 `side == 0` 的最大 `stack + 1`），兩處必須同步，否則忙碌時長會跟實際動畫時長脫鉤。
      *
-     * 同時把算出來的動畫時長寫進 [pendingWallDropTicksByTable]，供緊接著呼叫的 [publishDiceRoll]
-     * 讀取，延遲擲骰動畫到牌牆完全落地才開始播放；呼叫端固定先呼叫這個方法才呼叫 [publishDiceRoll]，
-     * 見該欄位 KDoc。
+     * 同時把算出來的動畫時長寫進 [wallDropTicksByTable]，供緊接著呼叫的 [publishDiceRoll]／
+     * [publishInitialDealAnimation] 讀取，延遲擲骰／發牌動畫到牌牆完全落地才開始播放；呼叫端固定先
+     * 呼叫這個方法才呼叫另外兩者，見該欄位 KDoc。
      */
     override fun publishWallStructure(
         gameId: Uuid,
@@ -213,7 +217,7 @@ class FabricGamePresentationPublisher(
         }
         val stacksPerSide = structure.values.filter { position -> position.side == 0 }.maxOfOrNull { position -> position.stack + 1 } ?: 0
         val wallDropTicks = MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide)
-        pendingWallDropTicksByTable[gameId] = wallDropTicks
+        wallDropTicksByTable[gameId] = wallDropTicks
         busyTracker.markBusyFor(gameId, wallDropTicks)
         scope.launch(dispatchers.main) {
             val resolved = resolveTableContext(gameId, "publishWallStructure") ?: return@launch
@@ -282,17 +286,8 @@ class FabricGamePresentationPublisher(
     }
 
     /**
-     * 手牌落地要等擲骰動畫播完才觸發（跟牌牆的王牌分離同一個時機點），不能在骰子還在動畫時就直接讓
-     * 手牌出現——不像牌牆／王牌是「先生成、之後才移動」，手牌是整個延遲到那個時間點才真正呼叫
-     * [playerAreaPresenter.present]，之前完全不存在任何 entity。
-     *
-     * [busyTracker] 的標記額外加上 [OPENING_SEQUENCE_EXTRA_VIEWING_TICKS] 這段緩衝——這是「建牌 →
-     * 擲骰開門 → 分牌」整個開局節奏裡最後一步觸發的呼叫（[StartGameUseCase]／[AdvanceRoundUseCase]
-     * 呼叫順序固定在 `publishWallStructure` 之後），所以由這裡負責把桌子的忙碌時長從單純的擲骰動畫
-     * 長度，延長到涵蓋王牌分離／手牌落地／寶牌翻開整段開局呈現，讓莊家的強制自動摸牌（[GameFlowCoordinator.driveAutomatedPlayers]）
-     * 確實等到玩家看得到手牌、王牌分離都完成後才開始，不是單純等骰子動畫播完就搶跑。沒有擲骰
-     * （[diceCount] 為 `0`，一般回合動作皆屬此類）時沒有動畫可等，直接同步呈現，不排定延遲、不額外
-     * 標記忙碌。
+     * 一般回合動作（捨牌、摸牌、鳴牌）呼叫，沒有動畫可等，直接同步呈現；開局/換局的初次發牌改走
+     * [publishInitialDealAnimation]，不會呼叫這個方法。
      */
     override fun publishPlayerAreaUpdated(
         gameId: Uuid,
@@ -301,30 +296,83 @@ class FabricGamePresentationPublisher(
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
         comboStickCount: Int,
-        diceCount: Int,
     ) {
         logger.debug(
-            "publishPlayerAreaUpdated gameId={} seatIndex={} standingTileCount={} drawnTileId={} meldCount={} comboStickCount={} diceCount={}",
+            "publishPlayerAreaUpdated gameId={} seatIndex={} standingTileCount={} drawnTileId={} meldCount={} comboStickCount={}",
             gameId,
             seatIndex,
             standingTileIds.size,
             drawnTileId,
             melds.size,
             comboStickCount,
-            diceCount,
         )
         if (serverHolder.current() == null) {
             logger.warn("publishPlayerAreaUpdated gameId={} skipped: no active server", gameId)
             return
         }
-        if (diceCount <= 0) {
-            presentPlayerArea(gameId, seatIndex, standingTileIds, drawnTileId, melds, comboStickCount)
+        presentPlayerArea(gameId, seatIndex, standingTileIds, drawnTileId, melds, comboStickCount)
+    }
+
+    /**
+     * 初次發牌要等牌牆＋擲骰動畫都播完才觸發（跟牌牆的王牌分離同一個時機點），不能在骰子還在動畫時
+     * 就直接讓手牌出現——不像牌牆／王牌是「先生成、之後才移動」，手牌是整個延遲到那個時間點才真正
+     * 呼叫 [playerAreaPresenter.presentInitialDeal]，之前完全不存在任何 entity；等待時長跟
+     * [publishDiceRoll] 同一套 [wallDropTicksByTable] 機制，涵蓋牌牆掉落動畫時長。
+     *
+     * [busyTracker] 的標記額外加上 [OPENING_SEQUENCE_EXTRA_VIEWING_TICKS] 這段緩衝，並涵蓋發牌動畫
+     * 本身的時長（[MahjongTileTableLayout.dealAnimationTicks]）——這是「建牌 → 擲骰開門 → 分牌」整個
+     * 開局節奏裡最後一步觸發的呼叫（[StartGameUseCase]／[AdvanceRoundUseCase] 呼叫順序固定在
+     * `publishWallStructure`／`publishDiceRoll` 之後），所以由這裡負責把桌子的忙碌時長從擲骰動畫
+     * 長度，延長到涵蓋王牌分離／發牌動畫／寶牌翻開整段開局呈現，讓莊家的強制自動摸牌
+     * （[GameFlowCoordinator.driveAutomatedPlayers]）確實等到玩家看得到手牌、發牌動畫都播完後才開始，
+     * 不是單純等骰子動畫播完就搶跑。
+     *
+     * [MahjongTileTableLayout.dealAnimationTicks] 吃的是「總抓取次數」，不是單純的 `dealBatchSizes.size`
+     * ——[playerAreaPresenter.presentInitialDeal] 是每一輪依序輪流對每個座位各抓一次（見該方法 KDoc），
+     * 總抓取次數是「輪數 × 座位數」，這裡要用同一套算法才能對得上實際動畫時長。
+     */
+    override fun publishInitialDealAnimation(
+        gameId: Uuid,
+        handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
+        dealerSeatIndex: Int,
+        comboStickCount: Int,
+        dealBatchSizes: List<Int>,
+        diceCount: Int,
+    ) {
+        logger.debug(
+            "publishInitialDealAnimation gameId={} seatCount={} dealerSeatIndex={} comboStickCount={} dealBatchSizes={} diceCount={}",
+            gameId,
+            handTileIdsBySeatIndex.size,
+            dealerSeatIndex,
+            comboStickCount,
+            dealBatchSizes,
+            diceCount,
+        )
+        if (serverHolder.current() == null) {
+            logger.warn("publishInitialDealAnimation gameId={} skipped: no active server", gameId)
             return
         }
-        val delayTicks = MahjongDiceTableLayout.totalAnimationTicks(diceCount)
-        busyTracker.markBusyFor(gameId, delayTicks + OPENING_SEQUENCE_EXTRA_VIEWING_TICKS)
+        val wallDropTicks = wallDropTicksByTable[gameId] ?: 0
+        val diceTicks = if (diceCount > 0) MahjongDiceTableLayout.totalAnimationTicks(diceCount) else 0
+        val delayTicks = wallDropTicks + diceTicks
+        val totalDealTurnCount = dealBatchSizes.size * handTileIdsBySeatIndex.size
+        busyTracker.markBusyFor(gameId, delayTicks + MahjongTileTableLayout.dealAnimationTicks(totalDealTurnCount) + OPENING_SEQUENCE_EXTRA_VIEWING_TICKS)
         tickClock.scheduleAfter(delayTicks * MILLIS_PER_TICK) {
-            presentPlayerArea(gameId, seatIndex, standingTileIds, drawnTileId, melds, comboStickCount)
+            scope.launch(dispatchers.main) {
+                val resolved = resolveTableContext(gameId, "publishInitialDealAnimation") ?: return@launch
+
+                val presentation = MahjongInitialDealPresentation(
+                    tableId = gameId,
+                    tableLocation = resolved.location,
+                    tableFacing = resolved.facing,
+                    handTileIdsBySeatIndex = handTileIdsBySeatIndex,
+                    dealerSeatIndex = dealerSeatIndex,
+                    comboStickCount = comboStickCount,
+                    dealBatchSizes = dealBatchSizes,
+                )
+                val result = playerAreaPresenter.presentInitialDeal(presentation)
+                logger.debug("publishInitialDealAnimation gameId={} presentInitialDeal() result={}", gameId, result)
+            }
         }
     }
 

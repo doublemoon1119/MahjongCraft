@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
@@ -175,6 +176,9 @@ class FabricTableLifecycleServiceTest {
     private class RecordingPlayerAreaPresenter : MahjongPlayerAreaPresenter {
         /** 此測試不使用正式桌角區域呈現。 */
         override fun present(presentation: MahjongPlayerAreaPresentation): MahjongPlayerAreaPresentationResult = MahjongPlayerAreaPresentationResult.PRESENTED
+
+        /** 此測試不使用正式開局發牌動畫呈現。 */
+        override fun presentInitialDeal(presentation: MahjongInitialDealPresentation): MahjongPlayerAreaPresentationResult = MahjongPlayerAreaPresentationResult.PRESENTED
 
         /** 記錄清理請求並回報沒有已載入桌角區域用牌。 */
         override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0

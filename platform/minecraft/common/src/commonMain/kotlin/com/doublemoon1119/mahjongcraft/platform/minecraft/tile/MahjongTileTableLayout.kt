@@ -144,6 +144,25 @@ object MahjongTileTableLayout {
     }
 
     /**
+     * 依全域抓取次序（`0` 起算，涵蓋所有座位、所有輪次攤平成一個序列——莊家抓第一批、換下一家抓、
+     * 輪完一圈才回到莊家抓下一批，見 `FabricMahjongPlayerAreaPresenter.presentInitialDeal` KDoc）算出
+     * 開局發牌動畫這一次該延遲多久才開始——不像 [wallDropStartDelayTicks] 那樣所有墩其實還是各自
+     * 獨立落下，這裡是刻意讓連續抓取大幅重疊：[DEAL_TURN_STAGGER_TICKS] 小於
+     * [DEAL_LIFT_DURATION_TICKS]，下一次抓取甚至會在上一次的起飛動畫播到一半時就先開始，不需要等
+     * 上一次的起飛播完、更不需要等牌真的落地放好，讓連續抓取的節奏更快、更連貫；供 [dealAnimationTicks]
+     * 與呼叫端排定每次抓取延遲使用。
+     */
+    fun dealBatchStartDelayTicks(turnIndex: Int): Int = turnIndex * DEAL_TURN_STAGGER_TICKS
+
+    /**
+     * 依總抓取次數（輪數 × 座位數，見 [dealBatchStartDelayTicks] KDoc）算出開局發牌動畫從觸發到全部
+     * 播完所需的總 tick 數，供呼叫端標記桌子忙碌時長使用；算法跟 [wallDropAnimationTicks]（「最後一次
+     * 的延遲 + 該次本身時長」）同一套模式。
+     */
+    fun dealAnimationTicks(totalTurnCount: Int): Int = dealBatchStartDelayTicks((totalTurnCount - 1).coerceAtLeast(0)) +
+        DEAL_LIFT_DURATION_TICKS + DEAL_SNAP_GAP_TICKS + DEAL_DROP_DURATION_TICKS
+
+    /**
      * 依 controller 座標、桌子世界朝向與座位 index，算出該玩家手牌中第 [tileIndex] 張牌的世界座標。
      *
      * 跟 [wallPlacement] 不同，手牌位置直接用玩家自己在 `TableState.players` 的固定座位 index 算局部
@@ -559,6 +578,32 @@ object MahjongTileTableLayout {
      * 與呼叫端排定每墩延遲使用；遊戲內比對後整體再調快，從原本 2 調到現在的值。
      */
     internal const val WAVE_STEP_TICKS: Int = 1
+
+    /**
+     * 開局發牌動畫中，牌從牌山位置小幅起飛的動畫時長，供 [dealBatchStartDelayTicks]／[dealAnimationTicks]
+     * 使用；公開（非 `internal`）讓版本層的動畫實作能直接引用同一個值當作
+     * `MahjongTileEntity.startMotionAnimation` 的 `durationTicks` 參數，不需要另外複製一份可能忘記
+     * 同步的數字。
+     */
+    const val DEAL_LIFT_DURATION_TICKS: Int = 4
+
+    /** 開局發牌動畫中，牌從起飛頂點瞬間重新排列到手牌列上空後，落下到最終手牌位置的動畫時長；公開理由同 [DEAL_LIFT_DURATION_TICKS]。 */
+    const val DEAL_DROP_DURATION_TICKS: Int = 5
+
+    /**
+     * 開局發牌動畫中，起飛完成、瞬間重新排列到手牌列上空那一刻起，到真正解除隱形開始落下之間的短暫
+     * 間隔——這段期間牌是隱形的（見 `FabricMahjongPlayerAreaPresenter.scheduleDealBatchAnimation`），
+     * 讓「重新排成一列」感覺像是刻意的一個轉場動作，不是無縫瞬移；公開理由同 [DEAL_LIFT_DURATION_TICKS]。
+     */
+    const val DEAL_SNAP_GAP_TICKS: Int = 2
+
+    /**
+     * 開局發牌動畫中，連續兩次抓取「開始」之間的間隔——刻意小於 [DEAL_LIFT_DURATION_TICKS]，讓下一次
+     * 抓取在上一次起飛動畫「播到一半」就先開始，不必等上一次的起飛都播完，兩次抓取的起飛動作會有一小
+     * 段同時進行，讓連續抓取的節奏更快、更連貫；重新排列＋落下就更不用等了，理由見
+     * [dealBatchStartDelayTicks]；`internal` 理由同 [CORNER_GAP_RATIO]。
+     */
+    internal const val DEAL_TURN_STAGGER_TICKS: Int = 3
 
     /**
      * 牌牆角落貼齊處縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，遊戲內驗證後調整的觀感參數。

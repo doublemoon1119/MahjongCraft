@@ -31,6 +31,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的桌角區域（手牌/摸牌位/副露）呈現資料。 */
     private val playerAreas = mutableMapOf<Uuid, PlayerAreaContext>()
 
+    /** 依對局 Uuid 紀錄最後一次收到的開局發牌動畫資料。 */
+    private val initialDealAnimations = mutableMapOf<Uuid, InitialDealAnimationContext>()
+
     /** 依對局 Uuid 紀錄是否收到過 [clearPlayerAreas]。 */
     private val clearedPlayerAreas = mutableSetOf<Uuid>()
 
@@ -75,9 +78,19 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
         comboStickCount: Int,
+    ) {
+        playerAreas[gameId] = PlayerAreaContext(seatIndex, standingTileIds, drawnTileId, melds, comboStickCount)
+    }
+
+    override fun publishInitialDealAnimation(
+        gameId: Uuid,
+        handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
+        dealerSeatIndex: Int,
+        comboStickCount: Int,
+        dealBatchSizes: List<Int>,
         diceCount: Int,
     ) {
-        playerAreas[gameId] = PlayerAreaContext(seatIndex, standingTileIds, drawnTileId, melds, comboStickCount, diceCount)
+        initialDealAnimations[gameId] = InitialDealAnimationContext(handTileIdsBySeatIndex, dealerSeatIndex, comboStickCount, dealBatchSizes, diceCount)
     }
 
     override fun clearPlayerAreas(gameId: Uuid) {
@@ -109,6 +122,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 取得指定對局最後一次收到的桌角區域（手牌/摸牌位/副露）呈現資料；若無紀錄則回傳 null。 */
     fun getPublishedPlayerArea(gameId: Uuid): PlayerAreaContext? = playerAreas[gameId]
+
+    /** 取得指定對局最後一次收到的開局發牌動畫資料；若無紀錄則回傳 null。 */
+    fun getPublishedInitialDealAnimation(gameId: Uuid): InitialDealAnimationContext? = initialDealAnimations[gameId]
 
     /** 指定對局是否曾經收到過 [clearPlayerAreas]。 */
     fun wasPlayerAreasCleared(gameId: Uuid): Boolean = gameId in clearedPlayerAreas
@@ -151,6 +167,14 @@ data class PlayerAreaContext(
     val drawnTileId: Uuid?,
     val melds: List<MeldPresentation>,
     val comboStickCount: Int,
+)
+
+/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishInitialDealAnimation] 資料。 */
+data class InitialDealAnimationContext(
+    val handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
+    val dealerSeatIndex: Int,
+    val comboStickCount: Int,
+    val dealBatchSizes: List<Int>,
     val diceCount: Int,
 )
 

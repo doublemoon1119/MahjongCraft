@@ -436,6 +436,40 @@ class MahjongTileTableLayoutTest {
         assertEquals(TileMotionAnimationSpec.DEFAULT_DURATION_TICKS, MahjongTileTableLayout.wallDropAnimationTicks(0))
     }
 
+    /**
+     * 每多一次抓取，延遲該多加一個 [MahjongTileTableLayout.DEAL_TURN_STAGGER_TICKS]（只等上一次起飛
+     * 播完，不等上一次整段落地）；`turnIndex = 0` 完全不延遲。
+     */
+    @Test
+    fun `deal batch start delay grows by one turn stagger each time`() {
+        assertEquals(0, MahjongTileTableLayout.dealBatchStartDelayTicks(0))
+        assertEquals(MahjongTileTableLayout.DEAL_TURN_STAGGER_TICKS, MahjongTileTableLayout.dealBatchStartDelayTicks(1))
+        assertEquals(2 * MahjongTileTableLayout.DEAL_TURN_STAGGER_TICKS, MahjongTileTableLayout.dealBatchStartDelayTicks(2))
+    }
+
+    /** 總動畫時長應等於最後一批的延遲，加上單一批次本身（起飛＋隱形間隔＋落下）的時長。 */
+    @Test
+    fun `deal animation ticks accounts for the last batch plus a full batch`() {
+        val batchCount = 4
+        val expected = MahjongTileTableLayout.dealBatchStartDelayTicks(batchCount - 1) +
+            MahjongTileTableLayout.DEAL_LIFT_DURATION_TICKS +
+            MahjongTileTableLayout.DEAL_SNAP_GAP_TICKS +
+            MahjongTileTableLayout.DEAL_DROP_DURATION_TICKS
+
+        assertEquals(expected, MahjongTileTableLayout.dealAnimationTicks(batchCount))
+    }
+
+    /** 只有一批（或零批）時，不需要任何批次間隔，總時長就是單一批次本身的時長。 */
+    @Test
+    fun `deal animation ticks has no stagger for a single batch`() {
+        val singleBatchDuration = MahjongTileTableLayout.DEAL_LIFT_DURATION_TICKS +
+            MahjongTileTableLayout.DEAL_SNAP_GAP_TICKS +
+            MahjongTileTableLayout.DEAL_DROP_DURATION_TICKS
+
+        assertEquals(singleBatchDuration, MahjongTileTableLayout.dealAnimationTicks(1))
+        assertEquals(singleBatchDuration, MahjongTileTableLayout.dealAnimationTicks(0))
+    }
+
     /** 建立測試用的最小副露資料，只填入寬度計算需要的欄位。 */
     private fun fakeMeld(
         type: MeldType,

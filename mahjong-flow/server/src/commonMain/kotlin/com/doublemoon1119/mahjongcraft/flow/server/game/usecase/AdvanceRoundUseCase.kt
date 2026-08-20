@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult
@@ -165,22 +166,19 @@ class AdvanceRoundUseCase(
             }
         }
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；新局手牌一定沒有副露，只是靠
-        // publishPlayerAreaUpdated 的 comboStickCount 讓手牌正確讓開積棒佔用的空間。
+        // publishInitialDealAnimation 的 comboStickCount 讓手牌正確讓開積棒佔用的空間。
         presentationPublisher.publishScoringSticksUpdated(gameId, dealerSeatIndex, newState.comboCount)
-        run {
-            val diceCount = advanceOutcome.diceRoll?.values?.size ?: 0
-            newState.players.forEachIndexed { seatIndex, player ->
-                presentationPublisher.publishPlayerAreaUpdated(
-                    gameId,
-                    seatIndex,
-                    player.hand.tiles.map { tile -> tile.id },
-                    null,
-                    emptyList(),
-                    comboStickCount = if (seatIndex == dealerSeatIndex) newState.comboCount else 0,
-                    diceCount = diceCount,
-                )
-            }
+        val handTileIdsBySeatIndex = newState.players.withIndex().associate { (seatIndex, player) ->
+            seatIndex to player.hand.tiles.map { tile -> tile.id }
         }
+        presentationPublisher.publishInitialDealAnimation(
+            gameId,
+            handTileIdsBySeatIndex,
+            dealerSeatIndex,
+            comboStickCount = newState.comboCount,
+            dealBatchSizes = newState.config.dealBatchSizes(),
+            diceCount = advanceOutcome.diceRoll?.values?.size ?: 0,
+        )
 
         return Outcome.Success(result)
     }

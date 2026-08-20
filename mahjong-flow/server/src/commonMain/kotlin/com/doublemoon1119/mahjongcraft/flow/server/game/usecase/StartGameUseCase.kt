@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
@@ -115,20 +116,17 @@ class StartGameUseCase(
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；開局第一局 comboCount 恆為 0，
         // 呼叫本身仍需要，確保積棒 entity 從上一局殘留（理論上不會發生，但保持呼叫語意一致）清乾淨。
         presentationPublisher.publishScoringSticksUpdated(roomId, dealerSeatIndex, tableState.comboCount)
-        run {
-            val diceCount = initializationResult.diceRoll?.values?.size ?: 0
-            tableState.players.forEachIndexed { seatIndex, player ->
-                presentationPublisher.publishPlayerAreaUpdated(
-                    roomId,
-                    seatIndex,
-                    player.hand.tiles.map { tile -> tile.id },
-                    null,
-                    emptyList(),
-                    comboStickCount = if (seatIndex == dealerSeatIndex) tableState.comboCount else 0,
-                    diceCount = diceCount,
-                )
-            }
+        val handTileIdsBySeatIndex = tableState.players.withIndex().associate { (seatIndex, player) ->
+            seatIndex to player.hand.tiles.map { tile -> tile.id }
         }
+        presentationPublisher.publishInitialDealAnimation(
+            roomId,
+            handTileIdsBySeatIndex,
+            dealerSeatIndex,
+            comboStickCount = tableState.comboCount,
+            dealBatchSizes = tableState.config.dealBatchSizes(),
+            diceCount = initializationResult.diceRoll?.values?.size ?: 0,
+        )
         presentationPublisher.publishGameStarted(roomId, tableState.players.map { it.id })
 
         return Outcome.Success(roomId)

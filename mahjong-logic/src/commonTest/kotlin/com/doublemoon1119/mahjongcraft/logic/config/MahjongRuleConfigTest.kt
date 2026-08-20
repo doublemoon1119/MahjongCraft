@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.config
 
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 /**
@@ -65,5 +66,39 @@ class MahjongRuleConfigTest {
         val config = FakeMahjongRuleConfig(minimumWinConstraint = -1)
 
         assertFailsWith<IllegalArgumentException> { config.validate() }
+    }
+
+    /** 測試日麻 13 張初始手牌，依「每批最多 4 張」的通行慣例切成 4、4、4、1。 */
+    @Test
+    fun `test dealBatchSizes splits thirteen tiles into four four four one`() {
+        val config = FakeMahjongRuleConfig(initialHandSize = 13)
+
+        assertEquals(listOf(4, 4, 4, 1), config.dealBatchSizes())
+    }
+
+    /** 測試台麻 16 張初始手牌恰好整除，切成四批 4 張。 */
+    @Test
+    fun `test dealBatchSizes splits sixteen tiles into four equal batches`() {
+        val config = FakeMahjongRuleConfig(initialHandSize = 16)
+
+        assertEquals(listOf(4, 4, 4, 4), config.dealBatchSizes())
+    }
+
+    /** 測試不足一批（小於 4 張）的初始手牌只回傳單一批次，不會多切出空批次。 */
+    @Test
+    fun `test dealBatchSizes returns a single batch when hand size is under four`() {
+        val config = FakeMahjongRuleConfig(initialHandSize = 3)
+
+        assertEquals(listOf(3), config.dealBatchSizes())
+    }
+
+    /** 測試任何初始手牌張數算出的批次總和都必須等於原始張數，不會多算或漏算。 */
+    @Test
+    fun `test dealBatchSizes total matches initial hand size`() {
+        for (handSize in 1..20) {
+            val config = FakeMahjongRuleConfig(initialHandSize = handSize)
+
+            assertEquals(handSize, config.dealBatchSizes().sum(), "Batch sizes for hand size $handSize should sum back to itself.")
+        }
     }
 }

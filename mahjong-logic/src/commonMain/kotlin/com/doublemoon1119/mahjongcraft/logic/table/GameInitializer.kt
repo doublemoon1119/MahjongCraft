@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.table
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer.buildOpenedWall
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
@@ -46,14 +47,13 @@ object GameInitializer {
         val shuffledPlayerIds = playerIds.shuffled()
 
         val openedWall = module.buildOpenedWall()
-        var wall = openedWall.wall
+        // 洗座位當下 shuffledPlayerIds[0] 就是莊家（seats[0] = EAST），順序本來就是正確的發牌輪轉順序。
+        val (hands, remainingWall) = module.dealInitialHands(openedWall.wall, shuffledPlayerIds)
         val players = shuffledPlayerIds.mapIndexed { index, playerId ->
-            val (tiles, remainingWall) = wall.drawN(module.config.initialHandSize)
-            wall = remainingWall
             MahjongPlayer(
                 id = playerId,
                 initialSeat = seats[index],
-                hand = Hand(tiles = tiles),
+                hand = Hand(tiles = hands[index]),
                 discardPile = module.createDiscardPile(),
                 playerRuleState = module.createInitialPlayerRuleState(),
                 aiStrategyKey = aiPlayerStrategyKeys[playerId],
@@ -64,7 +64,7 @@ object GameInitializer {
             id = id,
             players = players,
             config = module.config,
-            tileWall = wall,
+            tileWall = remainingWall,
             dynamicRuleState = module.createInitialDynamicState(),
             wallOpening = openedWall.wallOpening,
             initialDeadWall = openedWall.initialDeadWall,
@@ -103,25 +103,30 @@ object GameInitializer {
         module: MahjongRuleModule<*>,
     ): GameInitializationResult {
         val openedWall = module.buildOpenedWall()
-        var wall = openedWall.wall
+        // TableState.players 順序整場對局固定不變、不是從莊家開始排的，發牌輪轉順序需要另外把玩家
+        // 列表依莊家旋轉過（見 dealInitialHands KDoc 對 playerIds 順序的要求），發完牌後再依原本固定
+        // 順序組回 players 列表，不能直接沿用旋轉過的順序。
+        val dealerIndex = roundAdvancement.players.indexOfFirst { it.currentWind == Wind.EAST }
+        val dealOrderPlayerIds = List(roundAdvancement.players.size) { offset ->
+            roundAdvancement.players[(dealerIndex + offset) % roundAdvancement.players.size].id
+        }
+        val (hands, remainingWall) = module.dealInitialHands(openedWall.wall, dealOrderPlayerIds)
+        val handsByPlayerId = dealOrderPlayerIds.zip(hands).toMap()
         val players = roundAdvancement.players.map { player ->
-            val (tiles, remainingWall) = wall.drawN(module.config.initialHandSize)
-            wall = remainingWall
             player.copy(
-                hand = Hand(tiles = tiles),
+                hand = Hand(tiles = handsByPlayerId.getValue(player.id)),
                 discardPile = module.createDiscardPile(),
                 playerRuleState = module.createInitialPlayerRuleState(),
                 passedTilesInRound = emptySet(),
                 actionHistory = emptyList(),
             )
         }
-        val dealerIndex = players.indexOfFirst { it.currentWind == Wind.EAST }
 
         val tableState = TableState(
             id = gameId,
             players = players,
             config = module.config,
-            tileWall = wall,
+            tileWall = remainingWall,
             prevalentWind = roundAdvancement.prevalentWind,
             roundNumber = roundAdvancement.roundNumber,
             comboCount = roundAdvancement.comboCount,
@@ -202,5 +207,35 @@ object GameInitializer {
             wall = newWall
         }
         return tiles to wall
+    }
+
+    /**
+     * 依 [MahjongRuleConfig.dealBatchSizes] 決定的節奏，輪流（不是讓某位玩家一次連續摸完整手牌）發
+     * 初始手牌——每一輪 [playerIds] 依序各摸一批，模擬真實麻將「莊家先抓兩墩、換下一家抓兩墩、輪完
+     * 一圈才回到莊家抓下一輪」的發牌方式，直到每位玩家都湊滿整手牌。
+     *
+     * [playerIds] 的順序即發牌輪轉順序，必須固定從莊家開始依序輪替——呼叫端負責提供正確順序（開局時
+     * 洗座位當下第一位就是莊家；連莊/過莊開新局時需要另外把 `TableState.players` 依莊家旋轉過）。
+     *
+     * `internal` 而非 `private`：讓同模組的 [GameInitializerTest] 能直接用可控制的 [TileWall] 測試
+     * 輪轉順序本身，不需要透過完整 [initialize] 流程（牌山來自
+     * [MahjongRuleModule.createWallFactory] 的隨機洗牌，測試端無法控制牌張順序，驗證不了輪轉節奏）。
+     *
+     * @return 依 [playerIds] 對應順序排列的手牌列表，與發牌後剩餘的牌山。
+     */
+    internal fun MahjongRuleModule<*>.dealInitialHands(
+        wall: TileWall,
+        playerIds: List<Uuid>,
+    ): Pair<List<List<IdentifiedTile>>, TileWall> {
+        var remainingWall = wall
+        val hands = List(playerIds.size) { mutableListOf<IdentifiedTile>() }
+        config.dealBatchSizes().forEach { batchSize ->
+            playerIds.indices.forEach { playerIndex ->
+                val (tiles, newWall) = remainingWall.drawN(batchSize)
+                remainingWall = newWall
+                hands[playerIndex] += tiles
+            }
+        }
+        return hands to remainingWall
     }
 }

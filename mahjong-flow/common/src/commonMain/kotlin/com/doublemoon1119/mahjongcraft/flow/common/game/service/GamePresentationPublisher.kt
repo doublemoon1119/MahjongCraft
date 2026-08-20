@@ -143,8 +143,8 @@ interface GamePresentationPublisher {
      * 的理由：手牌（含摸牌位）要能對副露＋積棒讓開空間，前提是同一次呼叫必須同時知道「立牌、摸牌、
      * 副露、積棒支數」四種狀態——平台實作才能一次算出正確的讓開偏移，不能分開觸發、各自為政。
      *
-     * 跟原本 `publishHandTiles` 的王牌分離同理，開局/換局時手牌落地要等擲骰動畫播完才觸發（[diceCount]
-     * 控制延遲時長）；一般回合動作（捨牌、摸牌、鳴牌）呼叫時沒有擲骰可等，傳 `0` 直接同步呈現。
+     * 開局/換局的初次發牌不走這個方法——那有專屬的分批動畫節奏，見 [publishInitialDealAnimation]；
+     * 這個方法固定同步呈現，適用一般回合動作（捨牌、摸牌、鳴牌）。
      *
      * @param gameId 對局 Uuid。
      * @param seatIndex 這位玩家在 `TableState.players` 的固定座位 index。
@@ -157,7 +157,6 @@ interface GamePresentationPublisher {
      * @param comboStickCount 這位玩家目前該顯示的積棒支數——只有莊家非零，等於 `TableState.comboCount`；
      * 只用來讓手牌／副露正確讓開積棒佔用的空間，不會觸發積棒 entity 本身的生成／清除（那是
      * [publishScoringSticksUpdated] 的職責）。
-     * @param diceCount 本次開局擲骰的骰子數量；未搭配擲骰的一般回合動作呼叫可傳 `0`（預設值）。
      */
     fun publishPlayerAreaUpdated(
         gameId: Uuid,
@@ -166,7 +165,38 @@ interface GamePresentationPublisher {
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
         comboStickCount: Int,
-        diceCount: Int = 0,
+    )
+
+    /**
+     * 通知平台呈現層本局開局（或換局）的初次發牌動畫。
+     *
+     * 跟原本逐座位呼叫 [publishPlayerAreaUpdated] 不同，這個方法一次帶齊所有座位的最終手牌，讓平台
+     * 實作能把每個座位「同一批」的牌同時排入動畫時間軸——四位玩家同時摸牌、同時落地，不是各自獨立的
+     * 時間軸。呼叫端固定在開局/換局流程裡取代原本逐座位呼叫 [publishPlayerAreaUpdated] 的那一段，只
+     * 用於初次發牌；發牌完成後的立牌張數異動（捨牌、鳴牌等）一律回到 [publishPlayerAreaUpdated]。
+     *
+     * 摸牌位／副露在開局當下必定為空／`null`——沒有人已經摸牌、也沒有任何宣告，因此不像
+     * [publishPlayerAreaUpdated] 需要收這兩項參數。
+     *
+     * @param gameId 對局 Uuid。
+     * @param handTileIdsBySeatIndex 每個座位最終手牌的完整牌 Uuid 列表，鍵為 `TableState.players` 的
+     * 固定座位 index；規則不支援開門流程（沒有牌牆／擲骰）時呼叫端不應呼叫這個方法。
+     * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index，只用來換算積棒佔用
+     * 寬度（[comboStickCount] 只有莊家非零）。
+     * @param comboStickCount 開局當下該顯示的積棒支數，等於 `TableState.comboCount`；理由同
+     * [publishPlayerAreaUpdated] 的同名參數。
+     * @param dealBatchSizes 依序播放的批次大小列表，由呼叫端依規則模組的
+     * `MahjongRuleModule.dealBatchSizes` 算出；平台實作依序播放，不驗證總和是否等於各座位手牌張數。
+     * @param diceCount 本次開局擲骰的骰子數量，供平台實作換算「發牌動畫該等擲骰動畫播完才開始」的
+     * 延遲時長；規則不支援開門流程時傳 `0`。
+     */
+    fun publishInitialDealAnimation(
+        gameId: Uuid,
+        handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
+        dealerSeatIndex: Int,
+        comboStickCount: Int,
+        dealBatchSizes: List<Int>,
+        diceCount: Int,
     )
 
     /**
