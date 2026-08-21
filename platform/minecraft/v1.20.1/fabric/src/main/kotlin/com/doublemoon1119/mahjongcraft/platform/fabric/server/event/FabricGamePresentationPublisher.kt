@@ -138,14 +138,6 @@ class FabricGamePresentationPublisher(
         roundNumber: Int,
         comboCount: Int,
     ) {
-        logger.debug(
-            "publishDiceRoll gameId={} dice={} dealerSeatIndex={} roundNumber={} comboCount={}",
-            gameId,
-            dice.values,
-            dealerSeatIndex,
-            roundNumber,
-            comboCount,
-        )
         if (serverHolder.current() == null) {
             logger.warn("publishDiceRoll gameId={} skipped: no active server", gameId)
             return
@@ -170,8 +162,7 @@ class FabricGamePresentationPublisher(
                     },
                     extraLeadDelayTicks = wallDropTicks,
                 )
-                val result = diceRollPresenter.present(presentation)
-                logger.debug("publishDiceRoll gameId={} present() result={}", gameId, result)
+                diceRollPresenter.present(presentation)
             } finally {
                 busyTracker.clearPending(gameId)
             }
@@ -198,15 +189,6 @@ class FabricGamePresentationPublisher(
         diceCount: Int,
         revealedTileIds: Set<Uuid>,
     ) {
-        logger.debug(
-            "publishWallStructure gameId={} tileCount={} dealerSeatIndex={} deadWallTileCount={} diceCount={} revealedTileCount={}",
-            gameId,
-            structure.size,
-            dealerSeatIndex,
-            deadWallTileIds.size,
-            diceCount,
-            revealedTileIds.size,
-        )
         if (serverHolder.current() == null) {
             logger.warn("publishWallStructure gameId={} skipped: no active server", gameId)
             return
@@ -229,8 +211,7 @@ class FabricGamePresentationPublisher(
                     diceCount = diceCount,
                     revealedTileIds = revealedTileIds,
                 )
-                val result = tileWallPresenter.present(presentation)
-                logger.debug("publishWallStructure gameId={} present() result={}", gameId, result)
+                tileWallPresenter.present(presentation)
             } finally {
                 busyTracker.clearPending(gameId)
             }
@@ -242,7 +223,6 @@ class FabricGamePresentationPublisher(
      * 存取一併丟回伺服器主執行緒執行。
      */
     override fun publishDeadWallRevealUpdated(gameId: Uuid, revealedTileIds: Set<Uuid>) {
-        logger.debug("publishDeadWallRevealUpdated gameId={} revealedTileCount={}", gameId, revealedTileIds.size)
         if (serverHolder.current() == null) {
             logger.warn("publishDeadWallRevealUpdated gameId={} skipped: no active server", gameId)
             return
@@ -253,8 +233,7 @@ class FabricGamePresentationPublisher(
                 logger.warn("publishDeadWallRevealUpdated gameId={} skipped: no known table location", gameId)
                 return@launch
             }
-            val result = tileWallPresenter.revealDeadWallTiles(gameId, location, revealedTileIds)
-            logger.debug("publishDeadWallRevealUpdated gameId={} revealDeadWallTiles() result={}", gameId, result)
+            tileWallPresenter.revealDeadWallTiles(gameId, location, revealedTileIds)
         }
     }
 
@@ -265,7 +244,6 @@ class FabricGamePresentationPublisher(
      * [publishDiceRoll] 同理，世界／entity 存取一併丟回伺服器主執行緒執行。
      */
     override fun publishScoringSticksUpdated(gameId: Uuid, dealerSeatIndex: Int, stickCount: Int) {
-        logger.debug("publishScoringSticksUpdated gameId={} dealerSeatIndex={} stickCount={}", gameId, dealerSeatIndex, stickCount)
         if (serverHolder.current() == null) {
             logger.warn("publishScoringSticksUpdated gameId={} skipped: no active server", gameId)
             return
@@ -280,8 +258,7 @@ class FabricGamePresentationPublisher(
                 dealerSeatIndex = dealerSeatIndex,
                 stickCount = stickCount,
             )
-            val result = scoringStickPresenter.present(presentation)
-            logger.debug("publishScoringSticksUpdated gameId={} present() result={}", gameId, result)
+            scoringStickPresenter.present(presentation)
         }
     }
 
@@ -297,14 +274,6 @@ class FabricGamePresentationPublisher(
         comboCount: Int,
         wallRemainingCount: Int,
     ) {
-        logger.debug(
-            "publishRoundInfoUpdated gameId={} prevalentWind={} localRoundNumber={} comboCount={} wallRemainingCount={}",
-            gameId,
-            prevalentWind,
-            localRoundNumber,
-            comboCount,
-            wallRemainingCount,
-        )
         if (serverHolder.current() == null) {
             logger.warn("publishRoundInfoUpdated gameId={} skipped: no active server", gameId)
             return
@@ -321,8 +290,7 @@ class FabricGamePresentationPublisher(
                 comboCount = comboCount,
                 wallRemainingCount = wallRemainingCount,
             )
-            val result = roundInfoPresenter.present(presentation)
-            logger.debug("publishRoundInfoUpdated gameId={} present() result={}", gameId, result)
+            roundInfoPresenter.present(presentation)
         }
     }
 
@@ -341,16 +309,6 @@ class FabricGamePresentationPublisher(
         comboStickCount: Int,
         animateDrawnTile: Boolean,
     ) {
-        logger.debug(
-            "publishPlayerAreaUpdated gameId={} seatIndex={} standingTileCount={} drawnTileId={} meldCount={} comboStickCount={} animateDrawnTile={}",
-            gameId,
-            seatIndex,
-            standingTileIds.size,
-            drawnTileId,
-            melds.size,
-            comboStickCount,
-            animateDrawnTile,
-        )
         if (serverHolder.current() == null) {
             logger.warn("publishPlayerAreaUpdated gameId={} skipped: no active server", gameId)
             return
@@ -381,15 +339,6 @@ class FabricGamePresentationPublisher(
         dealBatchSizes: List<Int>,
         diceCount: Int,
     ) {
-        logger.debug(
-            "publishInitialDealAnimation gameId={} seatCount={} dealerSeatIndex={} comboStickCount={} dealBatchSizes={} diceCount={}",
-            gameId,
-            handTileIdsBySeatIndex.size,
-            dealerSeatIndex,
-            comboStickCount,
-            dealBatchSizes,
-            diceCount,
-        )
         if (serverHolder.current() == null) {
             logger.warn("publishInitialDealAnimation gameId={} skipped: no active server", gameId)
             return
@@ -411,8 +360,7 @@ class FabricGamePresentationPublisher(
                     dealBatchSizes = dealBatchSizes,
                     extraLeadDelayTicks = wallDropTicks + diceTicks,
                 )
-                val result = playerAreaPresenter.presentInitialDeal(presentation)
-                logger.debug("publishInitialDealAnimation gameId={} presentInitialDeal() result={}", gameId, result)
+                playerAreaPresenter.presentInitialDeal(presentation)
             } finally {
                 busyTracker.clearPending(gameId)
             }
@@ -445,8 +393,7 @@ class FabricGamePresentationPublisher(
                 comboStickCount = comboStickCount,
                 animateDrawnTile = animateDrawnTile,
             )
-            val result = playerAreaPresenter.present(presentation)
-            logger.debug("publishPlayerAreaUpdated gameId={} present() result={}", gameId, result)
+            playerAreaPresenter.present(presentation)
         }
     }
 
@@ -457,7 +404,6 @@ class FabricGamePresentationPublisher(
      * 清除，不需要逐座位資料）。
      */
     override fun clearPlayerAreas(gameId: Uuid) {
-        logger.debug("clearPlayerAreas gameId={}", gameId)
         if (serverHolder.current() == null) {
             logger.warn("clearPlayerAreas gameId={} skipped: no active server", gameId)
             return
@@ -468,16 +414,9 @@ class FabricGamePresentationPublisher(
                 logger.warn("clearPlayerAreas gameId={} skipped: no known table location", gameId)
                 return@launch
             }
-            val removedTileCount = playerAreaPresenter.clear(gameId, location)
-            val removedStickCount = scoringStickPresenter.clear(gameId, location)
-            val removedRoundInfoCount = roundInfoPresenter.clear(gameId, location)
-            logger.debug(
-                "clearPlayerAreas gameId={} removedTileCount={} removedStickCount={} removedRoundInfoCount={}",
-                gameId,
-                removedTileCount,
-                removedStickCount,
-                removedRoundInfoCount,
-            )
+            playerAreaPresenter.clear(gameId, location)
+            scoringStickPresenter.clear(gameId, location)
+            roundInfoPresenter.clear(gameId, location)
         }
     }
 
@@ -499,14 +438,6 @@ class FabricGamePresentationPublisher(
         sidewaysMarkedTileId: Uuid?,
         newlyDiscardedTileId: Uuid?,
     ) {
-        logger.debug(
-            "publishDiscardPileUpdated gameId={} seatIndex={} tileCount={} sidewaysMarkedTileId={} newlyDiscardedTileId={}",
-            gameId,
-            seatIndex,
-            discardTileIds.size,
-            sidewaysMarkedTileId,
-            newlyDiscardedTileId,
-        )
         if (serverHolder.current() == null) {
             logger.warn("publishDiscardPileUpdated gameId={} skipped: no active server", gameId)
             return
@@ -523,8 +454,7 @@ class FabricGamePresentationPublisher(
                 sidewaysMarkedTileId = sidewaysMarkedTileId,
                 newlyDiscardedTileId = newlyDiscardedTileId,
             )
-            val result = discardPresenter.present(presentation)
-            logger.debug("publishDiscardPileUpdated gameId={} present() result={}", gameId, result)
+            discardPresenter.present(presentation)
         }
     }
 
