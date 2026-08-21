@@ -7,6 +7,8 @@ import net.minecraft.entity.EntityType
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.nbt.NbtElement
 import net.minecraft.nbt.NbtList
+import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket
+import net.minecraft.server.world.ServerWorld
 import net.minecraft.world.World
 
 /**
@@ -27,6 +29,7 @@ abstract class AnimatedMahjongEntity<C>(
 ) : Entity(type, world) {
     private val queue: ArrayDeque<AnimationStep<C>> = ArrayDeque()
     private var activeStepEndGameTime: Long? = null
+    private var pendingTrackerResyncGameTime: Long? = null
 
     /** 佇列是否還有未播完的 step；`false` 代表這個 entity 目前完全靜止。 */
     val isAnimating: Boolean
@@ -83,6 +86,7 @@ abstract class AnimatedMahjongEntity<C>(
         super.tick()
         if (world.isClient) return
         drainAnimationQueue()
+        resyncTrackerIfDue()
     }
 
     /**
@@ -95,7 +99,11 @@ abstract class AnimatedMahjongEntity<C>(
         val result = AnimationQueueDriver.tick(queue, activeStepEndGameTime, world.time)
         result.appliedInstantSteps.forEach { step ->
             when (step) {
-                is AnimationStep.Teleport -> refreshPositionAndAngles(step.x, step.y, step.z, step.yaw, 0.0f)
+                is AnimationStep.Teleport -> {
+                    refreshPositionAndAngles(step.x, step.y, step.z, step.yaw, 0.0f)
+                    pendingTrackerResyncGameTime = world.time + TRACKER_RESYNC_DELAY_TICKS
+                }
+
                 is AnimationStep.SetInvisible -> isInvisible = step.invisible
                 is AnimationStep.Custom -> applyCustomStep(step.step)
                 is AnimationStep.WaitUntil, is AnimationStep.PlayMotion ->
@@ -107,6 +115,28 @@ abstract class AnimatedMahjongEntity<C>(
         queue.clear()
         queue.addAll(result.remainingQueue)
         activeStepEndGameTime = result.activeStepEndGameTime
+    }
+
+    /**
+     * `AnimationStep.Teleport` 改的是真實座標，但 `EntityTrackerEntry` 對每個 entity 只維護一份
+     * 「所有追蹤中 client 共用」的相對位移基準（`trackedPos`），且這份基準只在牠自己的 `tick()`
+     * （依 `trackedUpdateRate` 節流）裡才會追上最新座標。如果一個新 client 在基準還沒追上之前開始
+     * 追蹤這個 entity（最典型的情境：世界剛重新載入、佇列一恢復就立刻執行 `Teleport`，幾乎與新玩家
+     * 開始追蹤同時發生），該 client 會先透過 spawn packet 拿到正確座標，但下一次基準追上時算出的
+     * 「相對位移」會疊加在這個已經正確的座標上，讓畫面（含 hitbox）永久停在一個偏移過的錯誤位置，
+     * 直到重新連線重新收到一次 spawn packet 為止——這正是「動畫播放中重進世界，牌偶爾卡在半空」這個
+     * 已修 bug 修好後，仍會極少數重現的殘留幽靈 entity 問題的根因。
+     *
+     * 延遲（[TRACKER_RESYNC_DELAY_TICKS]，需大於 entity type 註冊的 `trackedUpdateRate`）是為了確保
+     * `EntityTrackerEntry` 自己的基準已經追上這次 `Teleport` 之後，再主動廣播一次完整定位封包
+     * （[EntityPositionS2CPacket]，不是相對位移）覆蓋掉任何可能已經算歪的中間狀態，讓所有追蹤中的
+     * client 都收斂回真實座標。
+     */
+    private fun resyncTrackerIfDue() {
+        val dueAt = pendingTrackerResyncGameTime ?: return
+        if (world.time < dueAt) return
+        pendingTrackerResyncGameTime = null
+        (world as ServerWorld).chunkManager.sendToNearbyPlayers(this, EntityPositionS2CPacket(this))
     }
 
     /** 把目前佇列與計時進度寫進世界存檔，供子類別的 `writeCustomDataToNbt` 呼叫。 */
@@ -207,6 +237,9 @@ abstract class AnimatedMahjongEntity<C>(
     }
 
     private companion object {
+        /** 必須大於 entity type 註冊時的 `trackedUpdateRate`（目前是 `10`），理由見 [resyncTrackerIfDue]。 */
+        const val TRACKER_RESYNC_DELAY_TICKS = 12L
+
         const val NBT_KEY_QUEUE = "AnimationQueue"
         const val NBT_KEY_ACTIVE_STEP_END_GAME_TIME = "AnimationActiveStepEndGameTime"
         const val NO_ACTIVE_STEP = -1L
