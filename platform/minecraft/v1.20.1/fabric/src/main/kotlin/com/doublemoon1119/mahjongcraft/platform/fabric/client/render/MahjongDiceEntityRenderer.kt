@@ -31,6 +31,11 @@ class MahjongDiceEntityRenderer(
         light: Int,
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
+        // 沿用 vanilla Entity.isInvisible 當作「擲骰動畫尚未輪到、先隱形等待」的開關（骰子現在一
+        // 生成就存在於世界，等 MahjongDiceEntity.startRoll 排定的動畫佇列 Wait step 到期才解除隱形，
+        // 不再像過去那樣延後到真正該投擲的那一刻才生成 entity）；EntityRenderDispatcher 本身只用這個
+        // 旗標控制陰影／除錯 hitbox，不會自動幫自訂 renderer 跳過 render()，理由同 MahjongTileEntityRenderer。
+        if (entity.isInvisible) return
         val animationFrame = if (entity.rolling) {
             ROLL_ANIMATION.frame(
                 seed = entity.animationSeed,

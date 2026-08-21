@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.dice
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
 import kotlin.uuid.Uuid
 
 /**
@@ -32,6 +33,8 @@ data class MahjongDicePresentation(
  * @property throwSide 擲骰者相對麻將桌的局部側面。
  * @property rollSequence 同桌遞增的投擲序號，用來輪替安全 layout。
  * @property dice 由伺服器權威流程決定的骰子點數與動畫 seed；目前支援兩顆或三顆。
+ * @property extraLeadDelayTicks 這次投擲動畫在每顆骰子自己的動畫佇列最前面該多等待的 tick 數（等
+ * 牌牆掉落動畫播完才輪到擲骰），折算進每顆骰子自己的佇列，理由同 [MahjongInitialDealPresentation.extraLeadDelayTicks]。
  */
 data class MahjongDiceRollPresentation(
     val tableId: Uuid,
@@ -40,6 +43,7 @@ data class MahjongDiceRollPresentation(
     val throwSide: MahjongTableSide,
     val rollSequence: Long,
     val dice: List<MahjongDicePresentation>,
+    val extraLeadDelayTicks: Int = 0,
 ) {
     init {
         require(rollSequence >= 0) { "Roll sequence must not be negative" }

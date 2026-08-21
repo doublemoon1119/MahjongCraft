@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -131,15 +131,20 @@ class FabricMahjongDiscardPresenter(
         val startX = tile.x
         val startY = tile.y
         val startZ = tile.z
-        tile.refreshPositionAndAngles(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw, 0.0f)
-        tile.tilePose = MahjongTilePose.FACE_UP
-        tile.startMotionAnimation(
-            startGameTime = tile.world.time,
-            durationTicks = MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS,
-            arcHeight = MahjongTileTableLayout.DISCARD_ARC_HEIGHT,
-            startOffset = DiceAnimationVector(startX - finalPlacement.x, startY - finalPlacement.y, startZ - finalPlacement.z),
-            startPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
-            endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
+        tile.enqueueAll(
+            listOf(
+                AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
+                AnimationStep.Custom(MahjongTilePose.FACE_UP),
+                AnimationStep.PlayMotion(
+                    durationTicks = MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS,
+                    arcHeight = MahjongTileTableLayout.DISCARD_ARC_HEIGHT,
+                    startOffsetX = startX - finalPlacement.x,
+                    startOffsetY = startY - finalPlacement.y,
+                    startOffsetZ = startZ - finalPlacement.z,
+                    startPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
+                    endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
+                ),
+            ),
         )
     }
 

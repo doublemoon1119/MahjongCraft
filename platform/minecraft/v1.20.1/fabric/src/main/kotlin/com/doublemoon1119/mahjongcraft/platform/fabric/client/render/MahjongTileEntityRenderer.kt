@@ -71,16 +71,11 @@ class MahjongTileEntityRenderer(
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         // 沿用 vanilla Entity.isInvisible（設計給裝甲架等既有機制的隱形旗標，本身就會自動同步給所有
-        // 觀察者，不需要另外設計一套同步欄位）當作發牌動畫「重新排列瞬間短暫隱形」的開關，見
-        // FabricMahjongPlayerAreaPresenter.scheduleDealBatchAnimation；EntityRenderDispatcher 本身
-        // 只用這個旗標控制陰影／除錯 hitbox，不會自動幫自訂 renderer 跳過 render()，所以這裡要自己判斷。
+        // 觀察者，不需要另外設計一套同步欄位）當作「動畫佇列還沒輪到、先隱形等待」的統一開關，見
+        // AnimatedMahjongEntity KDoc；EntityRenderDispatcher 本身只用這個旗標控制陰影／除錯 hitbox，
+        // 不會自動幫自訂 renderer 跳過 render()，所以這裡要自己判斷。
         if (entity.isInvisible) return
         val elapsedAnimationTicks = entity.world.time.toDouble() + tickDelta - entity.animationStartGameTime
-        // 動畫的 startGameTime 是「這張牌該開始掉落」的時間點（牌牆生成掉落波浪用每墩不同的 stagger
-        // 延遲，見 FabricMahjongTileWallPresenter.startWallDropAnimations），在那之前 elapsed 是負值——
-        // 這段時間這張牌根本不該出現在畫面上（設計上要隱形／延遲生成，而不是提早出現在半空定格
-        // 不動），直接整個跳過繪製，比在 frame() 裡把 progress 硬夾到 0 更符合預期。
-        if (entity.animating && elapsedAnimationTicks < 0.0) return
         val animationFrame = if (entity.animating) {
             TileMotionAnimation(
                 TileMotionAnimationSpec(

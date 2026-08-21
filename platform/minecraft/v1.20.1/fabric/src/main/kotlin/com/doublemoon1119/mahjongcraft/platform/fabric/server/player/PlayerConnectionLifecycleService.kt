@@ -52,23 +52,9 @@ class PlayerConnectionLifecycleService(
     /** 保護 [pendingLeaveJobs] 的跨 coroutine 存取。 */
     private val pendingLeaveJobsLock = Any()
 
-    /**
-     * 玩家重連時取消尚未到期的離線離開工作，並主動重新推送一份快照。
-     *
-     * 客戶端重新登入後沒有任何既有快照——牌局管理的麻將牌 entity 在收到快照前恆定顯示
-     * [UNKNOWN_TILE_ASSET_KEY] 占位貼圖（見 `MahjongTileEntity` KDoc）。過去只有玩家重新右鍵桌子
-     * （[MahjongTableRoomService.interact]）才會觸發 `syncGame`／`syncRoom` 補送快照，玩家單純
-     * 重新登入、還沒來得及再次互動桌子的這段期間，手牌會一直卡在 unknown，這是遊戲內實際回報過的
-     * 問題。比照 `interact()` 的同一套「先同步 read-side 快照、再主動推送」模式，讓重連當下就補上。
-     *
-     * 只由真正的重連（`ServerPlayConnectionEvents.JOIN`）呼叫——[onDisconnected] 過去會呼叫這個方法
-     * 來重用「取消 pending leave job」邏輯，但這代表每次斷線也會誤觸發一次補送快照（送給正在斷線、
-     * 已經被標記 removed 的舊 entity，完全無效），這是實際除錯時發現的問題，因此把「取消 pending
-     * leave job」抽成 [cancelPendingLeaveJob]，[onDisconnected] 改呼叫那個，不再呼叫這個方法。
-     */
+    /** 玩家重連時取消尚未到期的離線離開工作；快照補送改由客戶端主動請求，見 [onSnapshotRequested]。 */
     fun onConnected(playerId: Uuid) {
         cancelPendingLeaveJob(playerId)
-        scope.launch { resyncSnapshotAfterReconnect(playerId) }
     }
 
     /** 取消玩家尚未到期的逾時離開工作；重連與斷線都需要這個動作，見 [onConnected]／[onDisconnected]。 */
@@ -80,8 +66,24 @@ class PlayerConnectionLifecycleService(
         }
     }
 
+    /**
+     * 客戶端主動請求補送一份快照時呼叫（`mahjongcraft:request_snapshot` C2S 頻道）。
+     *
+     * 客戶端重新登入後沒有任何既有快照——牌局管理的麻將牌 entity 在收到快照前恆定顯示
+     * [UNKNOWN_TILE_ASSET_KEY] 占位貼圖（見 `MahjongTileEntity` KDoc）。過去這裡是伺服器在
+     * `ServerPlayConnectionEvents.JOIN` 當下 fire-and-forget 猜測「玩家剛連上、該補送了」，一旦
+     * membership／對局查詢在那個瞬間剛好還沒就緒就會靜默放棄、不會重試，玩家手牌會一直卡在
+     * unknown，直到下一次真正的遊戲事件（例如右鍵桌子觸發 [MahjongTableRoomService.interact]）重新
+     * 產生完整快照才補上——這是遊戲內實際回報過的問題。改成由客戶端自己決定「我剛加入、還沒收到任何
+     * 快照」這件事、主動送一個請求信號過來，伺服器單純回應當下查得到的狀態，不需要再靠伺服器自己猜測
+     * 時機、也不需要重試邏輯。
+     */
+    fun onSnapshotRequested(playerId: Uuid) {
+        scope.launch { resyncSnapshot(playerId) }
+    }
+
     /** 依玩家目前的房間歸屬，補送一份對局或房間快照——沒有歸屬時代表玩家不在任何桌子上，略過。 */
-    private suspend fun resyncSnapshotAfterReconnect(playerId: Uuid) {
+    private suspend fun resyncSnapshot(playerId: Uuid) {
         val tableId = membershipRepository.getTableId(playerId)
         if (tableId == null) {
             logger.debug("Skipped reconnect snapshot resync for player {} because no membership exists", playerId)

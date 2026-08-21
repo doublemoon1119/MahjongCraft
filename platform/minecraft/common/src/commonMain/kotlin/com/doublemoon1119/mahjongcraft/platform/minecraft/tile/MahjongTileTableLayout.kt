@@ -636,9 +636,10 @@ object MahjongTileTableLayout {
     /**
      * 開局發牌動畫中，所有座位的最後一次抓取都落地後，到全部座位的牌同時開始原地翻起之間的短暫停頓，
      * 供 [dealFlipStartDelayTicks] 使用——讓「全部落地」跟「一起翻起」感覺是兩個分開的動作，不是無縫
-     * 接續；公開理由同 [DEAL_LIFT_DURATION_TICKS]。
+     * 接續；遊戲內驗證後從 3 調高，原本的量級太短，最後一手剛摸進來就緊接著翻牌，感覺不夠自然。公開
+     * 理由同 [DEAL_LIFT_DURATION_TICKS]。
      */
-    const val DEAL_FLIP_GAP_TICKS: Int = 3
+    const val DEAL_FLIP_GAP_TICKS: Int = 15
 
     /**
      * 開局發牌動畫中，翻牌動畫（姿態從蓋牌轉直立，位置不變）的動畫時長，供

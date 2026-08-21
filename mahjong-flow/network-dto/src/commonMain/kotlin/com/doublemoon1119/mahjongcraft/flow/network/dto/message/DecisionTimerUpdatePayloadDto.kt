@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.message
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import kotlinx.serialization.Serializable
 
 /** 玩家目前取得決策權的網路階段。 */
@@ -13,6 +14,20 @@ enum class PlayerDecisionPhaseDto {
 
     /** 玩家正在回應搶槓視窗。 */
     CHANKAN_REACTION,
+}
+
+/** 將流程決策階段轉成網路 DTO。 */
+fun PlayerDecisionPhase.toDto(): PlayerDecisionPhaseDto = when (this) {
+    PlayerDecisionPhase.OWN_TURN -> PlayerDecisionPhaseDto.OWN_TURN
+    PlayerDecisionPhase.DISCARD_REACTION -> PlayerDecisionPhaseDto.DISCARD_REACTION
+    PlayerDecisionPhase.CHANKAN_REACTION -> PlayerDecisionPhaseDto.CHANKAN_REACTION
+}
+
+/** 將網路決策階段還原成 flow common 型別。 */
+fun PlayerDecisionPhaseDto.toDomain(): PlayerDecisionPhase = when (this) {
+    PlayerDecisionPhaseDto.OWN_TURN -> PlayerDecisionPhase.OWN_TURN
+    PlayerDecisionPhaseDto.DISCARD_REACTION -> PlayerDecisionPhase.DISCARD_REACTION
+    PlayerDecisionPhaseDto.CHANKAN_REACTION -> PlayerDecisionPhase.CHANKAN_REACTION
 }
 
 /**

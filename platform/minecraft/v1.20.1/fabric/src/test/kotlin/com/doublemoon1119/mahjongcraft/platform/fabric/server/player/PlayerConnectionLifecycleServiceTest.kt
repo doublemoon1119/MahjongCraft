@@ -101,23 +101,24 @@ class PlayerConnectionLifecycleServiceTest {
     }
 
     /**
-     * 玩家重連時應主動補送一份快照，不必等玩家再次右鍵桌子——這是玩家重新登入後手牌會暫時顯示
-     * unknown 的實際回報問題（見 [PlayerConnectionLifecycleService.onConnected] KDoc）。
+     * 客戶端主動請求時應補送一份快照——這是玩家重新登入後手牌會暫時顯示 unknown 的實際回報問題
+     * （見 [PlayerConnectionLifecycleService.onSnapshotRequested] KDoc）。改成客戶端主動請求
+     * （`mahjongcraft:request_snapshot`）觸發，不是連線本身觸發，見該方法 KDoc。
      */
     @Test
-    fun `test reconnect resyncs waiting room snapshot`() = runTest {
+    fun `test snapshot request resyncs waiting room snapshot`() = runTest {
         val fixture = createFixture(DisconnectedPlayerPolicy.KEEP_SEAT)
         assertNull(fixture.roomSnapshotRepository.getSnapshot(fixture.tableId, fixture.playerId))
 
-        fixture.service.onConnected(fixture.playerId)
+        fixture.service.onSnapshotRequested(fixture.playerId)
         advanceUntilIdle()
 
         assertNotNull(fixture.roomSnapshotRepository.getSnapshot(fixture.tableId, fixture.playerId))
     }
 
-    /** 對局已開始時，玩家重連應改補送對局快照，而不是等待室快照。 */
+    /** 對局已開始時，快照補送請求應改補送對局快照，而不是等待室快照。 */
     @Test
-    fun `test reconnect resyncs active game snapshot`() = runTest {
+    fun `test snapshot request resyncs active game snapshot`() = runTest {
         val fixture = createFixture(DisconnectedPlayerPolicy.KEEP_SEAT)
         fixture.roomRepository.removeRoom(fixture.tableId)
         fixture.gameRepository.setTableState(
@@ -125,7 +126,7 @@ class PlayerConnectionLifecycleServiceTest {
         )
         assertNull(fixture.gameSnapshotRepository.getSnapshot(fixture.tableId, fixture.playerId))
 
-        fixture.service.onConnected(fixture.playerId)
+        fixture.service.onSnapshotRequested(fixture.playerId)
         advanceUntilIdle()
 
         assertNotNull(fixture.gameSnapshotRepository.getSnapshot(fixture.tableId, fixture.playerId))

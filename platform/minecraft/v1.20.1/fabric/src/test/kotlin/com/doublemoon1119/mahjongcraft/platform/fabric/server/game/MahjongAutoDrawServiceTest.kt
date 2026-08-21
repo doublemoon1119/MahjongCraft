@@ -35,7 +35,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -112,7 +114,12 @@ class MahjongAutoDrawServiceTest {
             presentationBusyGate = presentationBusyGate,
         )
         val feedbackPublisher = FakeMinecraftPlayerFeedbackPublisher()
-        val autoDrawService = MahjongAutoDrawService(gameRepo, coordinator, feedbackPublisher, TablePresentationBusyTracker(clock))
+        val autoDrawService = MahjongAutoDrawService(
+            gameRepo,
+            coordinator,
+            feedbackPublisher,
+            TablePresentationBusyTracker(FabricServerHolder(), TableLocationRegistry()),
+        )
     }
 
     /** 提供固定時間的假時鐘，避免測試依賴真實系統時間。 */

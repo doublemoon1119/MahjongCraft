@@ -1,11 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdate
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerStatusDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerUpdatePayloadDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPhaseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import kotlinx.serialization.json.Json
@@ -44,11 +43,4 @@ class DecisionTimerUpdatePublisherImpl(
         }
         MahjongChannels.decisionTimerUpdate.sendTo(player, json, payload)
     }
-}
-
-/** 將流程決策階段轉成網路 DTO。 */
-private fun PlayerDecisionPhase.toDto(): PlayerDecisionPhaseDto = when (this) {
-    PlayerDecisionPhase.OWN_TURN -> PlayerDecisionPhaseDto.OWN_TURN
-    PlayerDecisionPhase.DISCARD_REACTION -> PlayerDecisionPhaseDto.DISCARD_REACTION
-    PlayerDecisionPhase.CHANKAN_REACTION -> PlayerDecisionPhaseDto.CHANKAN_REACTION
 }

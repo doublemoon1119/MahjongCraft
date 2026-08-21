@@ -9,8 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -44,7 +43,6 @@ import kotlin.uuid.toJavaUuid
 @Single(binds = [MahjongPlayerAreaPresenter::class])
 class FabricMahjongPlayerAreaPresenter(
     private val serverHolder: FabricServerHolder,
-    private val tickClock: FabricTickMonotonicClock,
 ) : MahjongPlayerAreaPresenter {
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
@@ -263,13 +261,21 @@ class FabricMahjongPlayerAreaPresenter(
             )
         }
 
-        val dealtTiles = mutableListOf<MahjongTileEntity>()
+        val totalTurnCount = presentation.dealBatchSizes.size * seatCount
+        // 所有牌共用同一個算好的絕對翻牌時刻，不靠每張牌各自用減法反推剩餘等待時間湊出同一個目標，
+        // 理由見 AnimationStep.WaitUntil KDoc。
+        val flipAbsoluteGameTime = world.time + presentation.extraLeadDelayTicks +
+            MahjongTileTableLayout.dealFlipStartDelayTicks(totalTurnCount)
         var batchStart = 0
         presentation.dealBatchSizes.forEachIndexed { batchIndex, batchSize ->
             dealOrderSeatIndices.forEachIndexed { turnOffset, seatIndex ->
                 val tileIds = presentation.handTileIdsBySeatIndex.getValue(seatIndex)
                 val globalTurnIndex = batchIndex * seatCount + turnOffset
-                val batchDelayTicks = MahjongTileTableLayout.dealBatchStartDelayTicks(globalTurnIndex)
+                // 絕對時刻，不是相對等待——這批（同一次抓的所有牌）疊加進去的既有佇列可能還殘留著牌牆
+                // 掉落動畫沒播完的 step（見 AnimationStep.WaitUntil KDoc），如果用相對 Wait 表達，殘留
+                // 得比較久的牌會被拖慢、晚起飛，導致同一次抓的牌看起來分批起飛而不是一起。
+                val liftAbsoluteGameTime = world.time + presentation.extraLeadDelayTicks +
+                    MahjongTileTableLayout.dealBatchStartDelayTicks(globalTurnIndex)
                 tileIds.drop(batchStart).take(batchSize).forEachIndexed { indexInBatch, tileId ->
                     val tile = claimTile(tileId) ?: return@forEachIndexed
                     val orderIndex = batchStart + indexInBatch
@@ -284,15 +290,11 @@ class FabricMahjongPlayerAreaPresenter(
                         cornerYieldShift = cornerYieldShiftBySeat.getValue(seatIndex),
                     )
                     tile.assignToTable(presentation.tableId)
-                    scheduleDealBatchAnimation(tile, placement, batchDelayTicks)
-                    dealtTiles += tile
+                    scheduleDealBatchAnimation(tile, placement, liftAbsoluteGameTime, flipAbsoluteGameTime)
                 }
             }
             batchStart += batchSize
         }
-
-        val totalTurnCount = presentation.dealBatchSizes.size * seatCount
-        scheduleDealFlipAnimation(dealtTiles, MahjongTileTableLayout.dealFlipStartDelayTicks(totalTurnCount))
 
         table.markDirty()
         if (missingTileCount > 0) {
@@ -307,96 +309,98 @@ class FabricMahjongPlayerAreaPresenter(
     }
 
     /**
-     * 排定單張牌「起飛→落下」兩階段動畫；兩階段的實際設置（`refreshPositionAndAngles`／
-     * `startMotionAnimation`）都透過 [tickClock] 延遲到真正輪到執行的那一刻才呼叫，[batchDelayTicks]
-     * 到期前完全不碰這張牌——牌在牆上的既有 entity 本來就已經是可見狀態，不需要、也不該提早改動它的
-     * 動畫欄位。
+     * 排定單張牌「起飛→隱形傳送→落下→（全部座位都到齊後統一）翻牌」整段動畫，一次性組好整個
+     * [AnimationStep] 佇列——不再像過去那樣用巢狀 `tickClock.scheduleAfter` 一層層延遲到真正輪到執行
+     * 才設置下一階段，改成一次把「這張牌接下來該做的每一件事」都持久化掛在牌自己身上，理由見
+     * [AnimatedMahjongEntity] KDoc：後者在 server 關閉時會遺失「接下來該做什麼」的資訊，是牌卡在半空
+     * 這個 bug 的根因。
      *
-     * 這跟牌牆生成掉落動畫的做法刻意不同：掉落動畫是幫「剛生成、還沒真正出現過」的 entity 排定未來
-     * 才開始的動畫，此時 entity 已存在但邏輯座標已經是掉落終點，需要靠 renderer 端的「延遲隱形」機制
-     * 避免提早顯示成飄在半空的錯誤畫面；發牌抓取則是幫「已經存在、正常顯示在牌牆上」的 entity 排定
-     * 動畫，如果同樣提早設定 `animating`（即使 `startGameTime` 訂在未來），會被同一套「延遲隱形」
-     * 機制誤判成尚未到期而跟著隱形，導致牌在真正起飛前反而先消失——這正是這裡不能沿用掉落動畫那種
-     * 「一次全部同步排定、靠隱形機制擋住提早顯示」寫法的原因，只能靠真的延遲呼叫本身來達到「輪到才
-     * 動」的效果。
+     * [liftAbsoluteGameTime] 是呼叫端算好、同一次抓（同一批、可能橫跨兩敦）所有牌共用同一份的絕對
+     * 起飛時刻（[AnimationStep.WaitUntil]），不是相對等待——這批牌被 [tile.enqueueAll] 疊加進去的
+     * 既有佇列，此時可能還殘留著牌牆掉落動畫沒播完的 step（`presentInitialDeal` 現在立刻執行，不再
+     * 等牌牆掉落動畫全部播完才呼叫，理由見 `AnimatedMahjongEntity` KDoc），如果起飛前的等待用相對
+     * `Wait` 表達，殘留得比較久的牌會被拖慢、晚起飛，導致同一次抓的牌看起來分批起飛而不是一起，這是
+     * 遊戲內實際發現的問題；[AnimationStep.WaitUntil] 不管佇列殘留多久才真正輪到，一旦輪到就發現目標
+     * 時間早就到了、直接繼續，不會被拖慢。
      *
-     * 起飛終點高度（[peakY]）是這張牌牌牆原位高度（[wallY]）加上 [DEAL_LIFT_HEIGHT]，不是統一對齊到
+     * 起飛終點高度（`peakY`）是這張牌牌牆原位高度（`wallY`）加上 [DEAL_LIFT_HEIGHT]，不是統一對齊到
      * `finalPlacement.y`——同一批兩敦牌各自的上下兩層原本高度就不同（見 `MahjongTileTableLayout`
      * `layer` 疊高機制），若起飛終點固定用同一個絕對高度，上下兩層會在起飛途中收斂到同一個高度，看起來
      * 像下層那張牌憑空消失；改成「相對自己原高度往上抬固定量」，兩層之間的相對高度差在起飛階段維持
-     * 不變，落下階段的起點沿用各自的 [peakY]，兩階段共用同一個「頂點」，符合「高度保持不變」的設計。
+     * 不變，落下階段的起點沿用各自的 `peakY`，兩階段共用同一個「頂點」，符合「高度保持不變」的設計。
      *
-     * 起飛播完的那一刻，隱形與瞬間重新排列到手牌列上空是同一個瞬間發生（先隱形、緊接著同一個 tick
-     * 內就 `refreshPositionAndAngles` 過去，中間不留任何一幀「隱形但還沒換位置」的過渡狀態）；接著
-     * 額外維持 [MahjongTileTableLayout.DEAL_SNAP_GAP_TICKS] 的隱形（沿用 vanilla `Entity.isInvisible`，
-     * 見 `MahjongTileEntityRenderer` 的顯示端判斷），讓「重新排成一列」感覺像是刻意的一個轉場動作，
-     * 不是無縫瞬移；隱形時間一到才解除隱形、開始播放落下動畫，讓玩家看到的是「消失（同時已經換到新
-     * 位置）→短暫看不見→在新位置重新出現、開始下落」。
+     * 起飛播完的那一刻，隱形與瞬間重新排列到手牌列上空是同一個瞬間發生（同一個 tick 內連續處理完
+     * [AnimationStep.SetInvisible]／[AnimationStep.Teleport] 兩個瞬間 step，中間不留任何一幀「隱形但
+     * 還沒換位置」的過渡狀態）；接著額外維持 [MahjongTileTableLayout.DEAL_SNAP_GAP_TICKS] 的隱形，
+     * 讓「重新排成一列」感覺像是刻意的一個轉場動作，不是無縫瞬移；隱形時間一到才解除隱形、開始播放
+     * 落下動畫。
+     *
+     * 翻牌（所有座位、所有批次成功領到的牌同一時間一起原地翻起，姿態從 [MahjongTilePose.FACE_DOWN]
+     * 轉 [MahjongTilePose.STANDING]，位置完全不動，只有姿態旋轉角隨動畫進度內插，理由見
+     * [presentInitialDeal] KDoc）不再是另外排定的共用觸發點，改成接續在這張牌自己的佇列尾端——
+     * [flipAbsoluteGameTime] 是呼叫端（[presentInitialDeal]）算好、所有牌共用同一份的絕對翻牌時刻
+     * （[AnimationStep.WaitUntil]），不是每張牌各自用減法反推剩餘等待時間去湊同一個目標，理由見
+     * [AnimationStep.WaitUntil] KDoc——用減法反推的舊寫法只要任何一個相關常數改動就可能悄悄失去同步，
+     * 且不容易察覺。最後額外接上 [MahjongTileTableLayout.dealAnimationTicks] 之外、
+     * `FabricGamePresentationPublisher` 過去另外加總的觀看緩衝（[OPENING_SEQUENCE_EXTRA_VIEWING_TICKS]），
+     * 讓佇列在整段開局呈現真正結束前持續維持「還在忙」，供 `TablePresentationBusyTracker` 查詢。
      */
     private fun scheduleDealBatchAnimation(
         tile: MahjongTileEntity,
         finalPlacement: MahjongTileWallPlacement,
-        batchDelayTicks: Int,
+        liftAbsoluteGameTime: Long,
+        flipAbsoluteGameTime: Long,
     ) {
-        tickClock.scheduleAfter(batchDelayTicks * MILLIS_PER_TICK) {
-            if (tile.isRemoved) return@scheduleAfter
-            val peakY = tile.y + DEAL_LIFT_HEIGHT
-            val wallX = tile.x
-            val wallY = tile.y
-            val wallZ = tile.z
-            tile.refreshPositionAndAngles(wallX, peakY, wallZ, tile.yaw, 0.0f)
-            tile.startMotionAnimation(
-                startGameTime = tile.world.time,
-                durationTicks = MahjongTileTableLayout.DEAL_LIFT_DURATION_TICKS,
-                arcHeight = 0.0,
-                startOffset = DiceAnimationVector(0.0, wallY - peakY, 0.0),
-                startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-                endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-            )
-
-            tickClock.scheduleAfter(MahjongTileTableLayout.DEAL_LIFT_DURATION_TICKS * MILLIS_PER_TICK) {
-                if (tile.isRemoved) return@scheduleAfter
-                tile.isInvisible = true
-                tile.refreshPositionAndAngles(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw, 0.0f)
-
-                tickClock.scheduleAfter(MahjongTileTableLayout.DEAL_SNAP_GAP_TICKS * MILLIS_PER_TICK) {
-                    if (tile.isRemoved) return@scheduleAfter
-                    tile.startMotionAnimation(
-                        startGameTime = tile.world.time,
-                        durationTicks = MahjongTileTableLayout.DEAL_DROP_DURATION_TICKS,
-                        arcHeight = 0.0,
-                        startOffset = DiceAnimationVector(0.0, peakY - finalPlacement.y, 0.0),
-                        startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-                        endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-                    )
-                    tile.tilePose = MahjongTilePose.FACE_DOWN
-                    tile.isInvisible = false
-                }
-            }
-        }
-    }
-
-    /**
-     * 排定開局發牌動畫最後統一的翻牌動畫：所有座位、所有批次成功領到的牌（[tiles]）在同一個 tick 一起
-     * 原地翻起——姿態從 [MahjongTilePose.FACE_DOWN] 轉 [MahjongTilePose.STANDING]，位置完全不動
-     * （[com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector] 起點偏移固定
-     * `(0, 0, 0)`），只有姿態旋轉角隨動畫進度內插，理由見 [presentInitialDeal] KDoc。
-     */
-    private fun scheduleDealFlipAnimation(tiles: List<MahjongTileEntity>, flipDelayTicks: Int) {
-        tickClock.scheduleAfter(flipDelayTicks * MILLIS_PER_TICK) {
-            tiles.forEach { tile ->
-                if (tile.isRemoved) return@forEach
-                tile.startMotionAnimation(
-                    startGameTime = tile.world.time,
+        val wallX = tile.x
+        val wallY = tile.y
+        val wallZ = tile.z
+        val wallYaw = tile.yaw
+        val peakY = wallY + DEAL_LIFT_HEIGHT
+        val snapGapEndGameTime = liftAbsoluteGameTime + MahjongTileTableLayout.DEAL_LIFT_DURATION_TICKS +
+            MahjongTileTableLayout.DEAL_SNAP_GAP_TICKS
+        val viewingEndGameTime = flipAbsoluteGameTime + MahjongTileTableLayout.DEAL_FLIP_DURATION_TICKS +
+            OPENING_SEQUENCE_EXTRA_VIEWING_TICKS
+        tile.enqueueAll(
+            listOf(
+                AnimationStep.WaitUntil(liftAbsoluteGameTime),
+                AnimationStep.Teleport(wallX, peakY, wallZ, wallYaw),
+                AnimationStep.PlayMotion(
+                    durationTicks = MahjongTileTableLayout.DEAL_LIFT_DURATION_TICKS,
+                    arcHeight = 0.0,
+                    startOffsetX = 0.0,
+                    startOffsetY = wallY - peakY,
+                    startOffsetZ = 0.0,
+                    startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                    endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                ),
+                AnimationStep.SetInvisible(true),
+                AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
+                AnimationStep.WaitUntil(snapGapEndGameTime),
+                AnimationStep.Custom(MahjongTilePose.FACE_DOWN),
+                AnimationStep.SetInvisible(false),
+                AnimationStep.PlayMotion(
+                    durationTicks = MahjongTileTableLayout.DEAL_DROP_DURATION_TICKS,
+                    arcHeight = 0.0,
+                    startOffsetX = 0.0,
+                    startOffsetY = peakY - finalPlacement.y,
+                    startOffsetZ = 0.0,
+                    startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                    endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                ),
+                AnimationStep.WaitUntil(flipAbsoluteGameTime),
+                AnimationStep.Custom(MahjongTilePose.STANDING),
+                AnimationStep.PlayMotion(
                     durationTicks = MahjongTileTableLayout.DEAL_FLIP_DURATION_TICKS,
                     arcHeight = 0.0,
-                    startOffset = DiceAnimationVector(0.0, 0.0, 0.0),
+                    startOffsetX = 0.0,
+                    startOffsetY = 0.0,
+                    startOffsetZ = 0.0,
                     startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
                     endPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
-                )
-                tile.tilePose = MahjongTilePose.STANDING
-            }
-        }
+                ),
+                AnimationStep.WaitUntil(viewingEndGameTime),
+            ),
+        )
     }
 
     /**
@@ -415,39 +419,41 @@ class FabricMahjongPlayerAreaPresenter(
      * 那樣排定跨座位／跨批次的延遲，起飛立刻開始。
      */
     private fun scheduleDrawnTileAnimation(tile: MahjongTileEntity, finalPlacement: MahjongTileWallPlacement) {
-        val peakY = tile.y + MahjongTileTableLayout.DRAW_LIFT_HEIGHT
         val wallX = tile.x
         val wallY = tile.y
         val wallZ = tile.z
-        tile.refreshPositionAndAngles(wallX, peakY, wallZ, tile.yaw, 0.0f)
-        tile.startMotionAnimation(
-            startGameTime = tile.world.time,
-            durationTicks = MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS,
-            arcHeight = 0.0,
-            startOffset = DiceAnimationVector(0.0, wallY - peakY, 0.0),
-            startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-            endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-        )
-
-        tickClock.scheduleAfter(MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS * MILLIS_PER_TICK) {
-            if (tile.isRemoved) return@scheduleAfter
-            tile.isInvisible = true
-            tile.refreshPositionAndAngles(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw, 0.0f)
-            tile.tilePose = MahjongTilePose.STANDING
-
-            tickClock.scheduleAfter(MahjongTileTableLayout.DRAW_SNAP_GAP_TICKS * MILLIS_PER_TICK) {
-                if (tile.isRemoved) return@scheduleAfter
-                tile.startMotionAnimation(
-                    startGameTime = tile.world.time,
+        val wallYaw = tile.yaw
+        val peakY = wallY + MahjongTileTableLayout.DRAW_LIFT_HEIGHT
+        val snapGapEndGameTime = tile.world.time + MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS +
+            MahjongTileTableLayout.DRAW_SNAP_GAP_TICKS
+        tile.enqueueAll(
+            listOf(
+                AnimationStep.Teleport(wallX, peakY, wallZ, wallYaw),
+                AnimationStep.PlayMotion(
+                    durationTicks = MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS,
+                    arcHeight = 0.0,
+                    startOffsetX = 0.0,
+                    startOffsetY = wallY - peakY,
+                    startOffsetZ = 0.0,
+                    startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                    endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                ),
+                AnimationStep.SetInvisible(true),
+                AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
+                AnimationStep.Custom(MahjongTilePose.STANDING),
+                AnimationStep.WaitUntil(snapGapEndGameTime),
+                AnimationStep.SetInvisible(false),
+                AnimationStep.PlayMotion(
                     durationTicks = MahjongTileTableLayout.DRAW_DROP_DURATION_TICKS,
                     arcHeight = 0.0,
-                    startOffset = DiceAnimationVector(0.0, peakY - finalPlacement.y, 0.0),
+                    startOffsetX = 0.0,
+                    startOffsetY = peakY - finalPlacement.y,
+                    startOffsetZ = 0.0,
                     startPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
                     endPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
-                )
-                tile.isInvisible = false
-            }
-        }
+                ),
+            ),
+        )
     }
 
     /**
@@ -522,7 +528,12 @@ class FabricMahjongPlayerAreaPresenter(
         /** 開局發牌動畫起飛階段的相對高度，起始估算值，預期進遊戲後調整。 */
         const val DEAL_LIFT_HEIGHT: Double = 0.4
 
-        /** Minecraft 正常運行時每個 tick 對應的毫秒數（20 TPS），換算 [FabricTickMonotonicClock.scheduleAfter] 的延遲毫秒數用。 */
-        const val MILLIS_PER_TICK: Long = 50L
+        /**
+         * 開局發牌動畫全部播完（含翻牌）後，額外掛在每張牌佇列尾端的觀看緩衝，讓桌子在玩家真正看清楚
+         * 手牌之前持續維持「還在忙」——過去由 `FabricGamePresentationPublisher` 另外加總進
+         * `TablePresentationBusyTracker.markBusyFor` 的時長，現在改成掛在動畫佇列本身尾端，理由見
+         * [scheduleDealBatchAnimation] KDoc。
+         */
+        const val OPENING_SEQUENCE_EXTRA_VIEWING_TICKS: Int = 25
     }
 }

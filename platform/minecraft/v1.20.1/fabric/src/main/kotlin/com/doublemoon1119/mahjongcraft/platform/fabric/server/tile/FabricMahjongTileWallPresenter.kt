@@ -9,9 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.FabricGamePresentationPublisher
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -38,7 +36,6 @@ import kotlin.uuid.toKotlinUuid
 @Single(binds = [MahjongTileWallPresenter::class])
 class FabricMahjongTileWallPresenter(
     private val serverHolder: FabricServerHolder,
-    private val tickClock: FabricTickMonotonicClock,
 ) : MahjongTileWallPresenter {
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
@@ -103,8 +100,7 @@ class FabricMahjongTileWallPresenter(
         }
         oldTiles.forEach(MahjongTileEntity::discard)
         table.markDirty()
-        startWallDropAnimations(world, newTiles)
-        scheduleDeadWallReveal(presentation, controllerPos, stacksPerSide)
+        startWallDropAnimations(world, newTiles, presentation, controllerPos, stacksPerSide)
         return MahjongTileWallPresentationResult.PRESENTED
     }
 
@@ -113,81 +109,67 @@ class FabricMahjongTileWallPresenter(
      * KDoc）至左側依序半空生成掉落，形成波浪感——`stack` 越大延遲越久開始掉落，四面牌牆各自獨立套用
      * 同一套延遲公式（[MahjongTileTableLayout.WAVE_STEP_TICKS]）、同時開始，天然同步成波浪；`layer`
      * 不影響延遲，同一墩兩層一起落下。牌張本身已經 `refreshPositionAndAngles` 到掉落終點，這裡只需要
-     * 疊加半空起點的動畫，起訖姿態相同（[MahjongTilePose.FACE_DOWN]），只有位置在動。
+     * 疊加半空起點的動畫，起訖姿態相同（[MahjongTilePose.FACE_DOWN]），只有位置在動。「延遲到期前先
+     * 隱形」用 [AnimationStep.SetInvisible] 表達，不是像過去那樣提前把動畫起點設在未來、靠 renderer
+     * 端另外判斷「還沒到期」來隱藏——理由見 [AnimatedMahjongEntity] KDoc。
+     *
+     * 王牌區的牌（[MahjongTileWallPresentation.deadWallTileIds]）額外在掉落動畫播完後接續排定移出
+     * 開門位置：所有王牌共用同一個算好的絕對揭示時刻（[AnimationStep.WaitUntil]，等待時長是牌牆掉落
+     * 動畫總時長加上擲骰動畫時長的總和——擲骰動畫會等牌牆完全落地才開始播放，見
+     * `FabricGamePresentationPublisher.publishDiceRoll`，王牌移出開門的時機要跟著往後移，不能只算
+     * 擲骰動畫本身的時長），不是每張王牌各自用減法反推剩餘等待時間去湊同一個目標——理由見
+     * [AnimationStep.WaitUntil] KDoc。[MahjongTileWallPresentation.diceCount] 為 `0`（沒有搭配擲骰）
+     * 或沒有王牌時這張牌的佇列到掉落動畫播完就結束，不會多排這段。同一時機點順便把
+     * [MahjongTileWallPresentation.revealedTileIds] 對應的牌翻成正面朝上——開局第一張寶牌指示牌本該
+     * 在王牌分離、開門完成的這一刻公開，不需要另外排一個時機點。
      */
-    private fun startWallDropAnimations(world: ServerWorld, tilesWithPosition: List<Pair<TileWallPosition, MahjongTileEntity>>) {
-        val startGameTime = world.time
+    private fun startWallDropAnimations(
+        world: ServerWorld,
+        tilesWithPosition: List<Pair<TileWallPosition, MahjongTileEntity>>,
+        presentation: MahjongTileWallPresentation,
+        controllerPos: BlockPos,
+        stacksPerSide: Int,
+    ) {
+        val revealAbsoluteGameTime = if (presentation.diceCount > 0 && presentation.deadWallTileIds.isNotEmpty()) {
+            world.time + MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide) +
+                MahjongDiceTableLayout.totalAnimationTicks(presentation.diceCount)
+        } else {
+            null
+        }
         tilesWithPosition.forEach { (position, tile) ->
             val startDelayTicks = MahjongTileTableLayout.wallDropStartDelayTicks(position.stack)
-            tile.startMotionAnimation(
-                startGameTime = startGameTime + startDelayTicks,
-                durationTicks = TileMotionAnimationSpec.DEFAULT_DURATION_TICKS,
-                arcHeight = 0.0,
-                startOffset = DiceAnimationVector(0.0, WALL_DROP_HEIGHT, 0.0),
-                startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-                endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+            val steps = mutableListOf<AnimationStep<MahjongTilePose>>(
+                AnimationStep.SetInvisible(true),
+                AnimationStep.WaitUntil(world.time + startDelayTicks),
+                AnimationStep.SetInvisible(false),
+                AnimationStep.PlayMotion(
+                    durationTicks = TileMotionAnimationSpec.DEFAULT_DURATION_TICKS,
+                    arcHeight = 0.0,
+                    startOffsetX = 0.0,
+                    startOffsetY = WALL_DROP_HEIGHT,
+                    startOffsetZ = 0.0,
+                    startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                    endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                ),
             )
+            val tileId = tile.uuid.toKotlinUuid()
+            if (revealAbsoluteGameTime != null && tileId in presentation.deadWallTileIds) {
+                val openPlacement = MahjongTileTableLayout.wallPlacement(
+                    controllerX = controllerPos.x,
+                    controllerY = controllerPos.y,
+                    controllerZ = controllerPos.z,
+                    tableFacing = presentation.tableFacing,
+                    dealerSeatIndex = presentation.dealerSeatIndex,
+                    stacksPerSide = stacksPerSide,
+                    position = position,
+                    isDeadWall = true,
+                )
+                steps += AnimationStep.WaitUntil(revealAbsoluteGameTime)
+                steps += AnimationStep.Teleport(openPlacement.x, openPlacement.y, openPlacement.z, openPlacement.yaw)
+                if (tileId in presentation.revealedTileIds) steps += AnimationStep.Custom(MahjongTilePose.FACE_UP)
+            }
+            tile.enqueueAll(steps)
         }
-    }
-
-    /**
-     * 排定王牌區延遲移出開門位置：延遲時長是牌牆生成掉落動畫時長加上擲骰動畫時長的總和——擲骰動畫
-     * 現在會等牌牆完全落地才開始播放（見 [FabricGamePresentationPublisher.publishDiceRoll] 的
-     * `pendingWallDropTicksByTable` 機制），王牌移出開門的時機要跟著往後移，不能只算擲骰動畫本身的
-     * 時長，否則王牌會在骰子都還沒開始播放時就提早移出，跟過去兩者平行播放時的算法不一樣。
-     * [MahjongTileWallPresentation.diceCount] 為 `0`（沒有搭配擲骰）或沒有王牌時直接跳過，不排定任何
-     * 延遲工作。
-     *
-     * 延遲工作觸發時重新用 UUID 查詢目前世界上的 entity（不沿用 [present] 當下建立的參考）：中途
-     * 桌子可能已被拆除或這局已經結束，屆時查不到對應 entity 屬於正常情況，直接放棄，不拋例外。
-     */
-    private fun scheduleDeadWallReveal(
-        presentation: MahjongTileWallPresentation,
-        controllerPos: BlockPos,
-        stacksPerSide: Int,
-    ) {
-        if (presentation.diceCount <= 0 || presentation.deadWallTileIds.isEmpty()) return
-        val delayTicks = MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide) +
-            MahjongDiceTableLayout.totalAnimationTicks(presentation.diceCount)
-        tickClock.scheduleAfter(delayTicks * MILLIS_PER_TICK) {
-            moveDeadWallToOpenPosition(presentation, controllerPos, stacksPerSide)
-        }
-    }
-
-    /**
-     * 把王牌區的牌從無縫牌牆位置移到跟活牌保持距離的開門位置，逐張 `refreshPositionAndAngles`；同一
-     * 時機點順便把 [MahjongTileWallPresentation.revealedTileIds] 對應的牌翻成正面朝上——開局第一張
-     * 寶牌指示牌本該在王牌分離、開門完成的這一刻公開，不需要另外排一個時機點。
-     */
-    private fun moveDeadWallToOpenPosition(
-        presentation: MahjongTileWallPresentation,
-        controllerPos: BlockPos,
-        stacksPerSide: Int,
-    ) {
-        val world = resolveWorld(presentation.tableLocation) ?: return
-        val deadWallTiles = findManagedTiles(world, presentation.tableId, controllerPos)
-            .filter { tile -> tile.uuid.toKotlinUuid() in presentation.deadWallTileIds }
-        deadWallTiles.forEach { tile ->
-            val position = presentation.structure[tile.uuid.toKotlinUuid()] ?: return@forEach
-            val placement = MahjongTileTableLayout.wallPlacement(
-                controllerX = controllerPos.x,
-                controllerY = controllerPos.y,
-                controllerZ = controllerPos.z,
-                tableFacing = presentation.tableFacing,
-                dealerSeatIndex = presentation.dealerSeatIndex,
-                stacksPerSide = stacksPerSide,
-                position = position,
-                isDeadWall = true,
-            )
-            tile.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
-            if (tile.uuid.toKotlinUuid() in presentation.revealedTileIds) tile.tilePose = MahjongTilePose.FACE_UP
-        }
-        logger.debug(
-            "moveDeadWallToOpenPosition tableId={} movedTileCount={} revealedTileCount={}",
-            presentation.tableId,
-            deadWallTiles.size,
-            presentation.revealedTileIds.size,
-        )
     }
 
     /**
@@ -267,9 +249,6 @@ class FabricMahjongTileWallPresenter(
 
         /** controller 周圍查詢正式牌牆用牌的垂直半徑。 */
         const val TILE_SEARCH_VERTICAL: Double = 2.0
-
-        /** Minecraft 正常運行時每個 tick 對應的毫秒數（20 TPS），換算 [FabricTickMonotonicClock.scheduleAfter] 的延遲毫秒數用。 */
-        const val MILLIS_PER_TICK: Long = 50L
 
         /** 牌牆生成掉落動畫的半空起點高度，相對掉落終點的世界 Y 偏移；遊戲內驗證後從 1.5 調低。 */
         const val WALL_DROP_HEIGHT: Double = 0.8

@@ -28,7 +28,7 @@ class MahjongDiceItem(settings: Settings) : Item(settings) {
                 startRoll(
                     finalPoint = MahjongDicePoint.fromValueOrDefault(world.random.nextInt(6) + 1),
                     seed = world.random.nextLong(),
-                    startGameTime = world.time,
+                    startDelayTicks = 0,
                     startOffset = DiceAnimationVector(
                         x = visualStart.x - hitPos.x,
                         y = visualStart.y - hitPos.y,

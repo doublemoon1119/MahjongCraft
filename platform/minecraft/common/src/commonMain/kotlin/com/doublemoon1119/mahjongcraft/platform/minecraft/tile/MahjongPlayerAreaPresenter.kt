@@ -83,6 +83,10 @@ data class MahjongPlayerAreaPresentation(
  * 理由同 [MahjongPlayerAreaPresentation.comboStickCount]。
  * @property dealBatchSizes 依序播放的批次大小列表，見 `MahjongRuleConfig.dealBatchSizes()`；呼叫端
  * 不驗證總和是否等於各座位手牌張數，由該函式自己保證。
+ * @property extraLeadDelayTicks 這次發牌動畫在每張牌自己的動畫佇列最前面該多等待的 tick 數（等牌牆
+ * 掉落動畫、擲骰動畫都播完才輪到發牌），折算進每一張牌自己的佇列（一個 `AnimationStep.Wait` step），
+ * 不是外層再包一層延遲呼叫本身——理由見 `AnimatedMahjongEntity` KDoc：呼叫端延遲呼叫這個方法本身
+ * 沒辦法撐過伺服器重啟，只有掛在 entity 自己身上的佇列才可以。
  */
 data class MahjongInitialDealPresentation(
     val tableId: Uuid,
@@ -92,6 +96,7 @@ data class MahjongInitialDealPresentation(
     val dealerSeatIndex: Int,
     val comboStickCount: Int,
     val dealBatchSizes: List<Int>,
+    val extraLeadDelayTicks: Int = 0,
 )
 
 /** 正式桌角區域呈現請求的處理結果。 */

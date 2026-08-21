@@ -124,6 +124,7 @@ class MahjongCraftMod : ModInitializer {
 
         registerGameCommandReceiver(koin)
         registerUpdateGameConfigReceiver(koin)
+        registerRequestSnapshotReceiver(koin)
         registerPlayerConnectionEvents(koin)
         koin.get<FabricServerConfigCommand>().register()
         koin.get<FabricRoomCommand>().register()
@@ -203,6 +204,15 @@ class MahjongCraftMod : ModInitializer {
         val json = koin.get<Json>()
         MahjongChannels.updateGameConfig.registerServerReceiver(json) { _, player, configJson ->
             koin.get<MahjongTableRoomService>().updateConfig(player, configJson)
+        }
+    }
+
+    /** 接收客戶端加入世界後主動送出的快照補送請求，見 [MahjongChannels.requestSnapshot] KDoc。 */
+    private fun registerRequestSnapshotReceiver(koin: Koin) {
+        val json = koin.get<Json>()
+        val lifecycleService = koin.get<PlayerConnectionLifecycleService>()
+        MahjongChannels.requestSnapshot.registerServerReceiver(json) { _, player, _ ->
+            lifecycleService.onSnapshotRequested(player.uuid.toKotlinUuid())
         }
     }
 }

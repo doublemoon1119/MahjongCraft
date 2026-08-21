@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
@@ -45,7 +46,7 @@ import kotlin.uuid.toKotlinUuid
 class MahjongTileEntity(
     type: EntityType<out MahjongTileEntity> = ModEntities.mahjongTile,
     world: World,
-) : Entity(type, world) {
+) : AnimatedMahjongEntity<MahjongTilePose>(type, world) {
     /**
      * 牌面素材 key；外部輸入會正規化為支援值或 `unknown`。
      *
@@ -83,8 +84,8 @@ class MahjongTileEntity(
         private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
     /**
-     * 是否正在播放由伺服器啟動的運動動畫（牌牆生成掉落、發牌、摸牌共用同一套機制，見
-     * [startMotionAnimation]）。`entity` 本身固定 `refreshPositionAndAngles` 到動畫**終點**，動畫期間
+     * 是否正在播放由伺服器啟動的運動動畫（牌牆生成掉落、發牌、摸牌、丟牌共用同一套機制，見
+     * [applyPlayMotion]）。`entity` 本身固定 `refreshPositionAndAngles` 到動畫**終點**，動畫期間
      * 的視覺位移／姿態旋轉完全由 client 端 renderer 依 [animationStartGameTime] 等欄位即時計算插值，
      * 不影響這個欄位代表的實際邏輯位置——比照 [MahjongDiceEntity.rolling] 的既有設計。
      */
@@ -127,30 +128,36 @@ class MahjongTileEntity(
         setNoGravity(true)
     }
 
-    /**
-     * 啟動一次由伺服器決定終點的運動動畫；呼叫前 entity 應已經 `refreshPositionAndAngles` 到動畫
-     * **終點**座標，[startOffset] 是「起點相對終點」的差值（不是絕對世界座標），理由同
-     * [MahjongDiceEntity.startRoll]。
-     */
-    fun startMotionAnimation(
-        startGameTime: Long,
-        durationTicks: Int,
-        arcHeight: Double,
-        startOffset: DiceAnimationVector,
-        startPoseRotationDegrees: Float,
-        endPoseRotationDegrees: Float,
-    ) {
-        check(!world.isClient) { "Tile motion animations must be started by the server" }
+    /** 依 [AnimationStep.PlayMotion] 同步既有的 render 用 tracked data 欄位。 */
+    override fun applyPlayMotion(step: AnimationStep.PlayMotion, startGameTime: Long) {
         dataTracker.set(ANIMATION_START_GAME_TIME, startGameTime)
-        dataTracker.set(ANIMATION_DURATION_TICKS, durationTicks)
-        dataTracker.set(ANIMATION_ARC_HEIGHT, arcHeight.toFloat())
-        dataTracker.set(ANIMATION_START_OFFSET_X, startOffset.x.toFloat())
-        dataTracker.set(ANIMATION_START_OFFSET_Y, startOffset.y.toFloat())
-        dataTracker.set(ANIMATION_START_OFFSET_Z, startOffset.z.toFloat())
-        dataTracker.set(ANIMATION_START_POSE_ROTATION, startPoseRotationDegrees)
-        dataTracker.set(ANIMATION_END_POSE_ROTATION, endPoseRotationDegrees)
+        dataTracker.set(ANIMATION_DURATION_TICKS, step.durationTicks)
+        dataTracker.set(ANIMATION_ARC_HEIGHT, step.arcHeight.toFloat())
+        dataTracker.set(ANIMATION_START_OFFSET_X, step.startOffsetX.toFloat())
+        dataTracker.set(ANIMATION_START_OFFSET_Y, step.startOffsetY.toFloat())
+        dataTracker.set(ANIMATION_START_OFFSET_Z, step.startOffsetZ.toFloat())
+        dataTracker.set(ANIMATION_START_POSE_ROTATION, step.startPoseRotationDegrees)
+        dataTracker.set(ANIMATION_END_POSE_ROTATION, step.endPoseRotationDegrees)
         animating = true
     }
+
+    /** 動畫播完，render 端不再需要內插，實際邏輯位置早已是 [applyPlayMotion] 呼叫前設定好的終點。 */
+    override fun onPlayMotionCompleted() {
+        animating = false
+    }
+
+    /** [AnimationStep.Custom] 攜帶的姿態切換，瞬間套用。 */
+    override fun applyCustomStep(step: MahjongTilePose) {
+        tilePose = step
+    }
+
+    /** 序列化姿態名稱；持久化仍使用名稱以避免 enum 重排影響存檔，理由同 [writeCustomDataToNbt]。 */
+    override fun serializeCustomStep(step: MahjongTilePose, nbt: NbtCompound) {
+        nbt.putString(NBT_KEY_POSE, step.name)
+    }
+
+    /** 還原姿態名稱，非法值使用安全預設。 */
+    override fun deserializeCustomStep(nbt: NbtCompound): MahjongTilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
 
     /** 將牌標記為指定正式牌局桌子管理；[tileAssetKey] 的 setter 會因此自動鎖定為 [UNKNOWN_TILE_ASSET_KEY]。 */
     fun assignToTable(tableId: Uuid) {
@@ -183,7 +190,6 @@ class MahjongTileEntity(
     override fun tick() {
         super.tick()
         if (world.isClient) return
-        if (animating && world.time - animationStartGameTime >= animationDurationTicks) animating = false
         if (!managedByGame || hasValidatedManagedState) return
         hasValidatedManagedState = true
         validateStillManagedByActiveGame()
@@ -322,7 +328,11 @@ class MahjongTileEntity(
         dataTracker.startTracking(ANIMATION_END_POSE_ROTATION, 0.0f)
     }
 
-    /** 從世界存檔還原牌面、姿態與管理狀態，非法值使用安全預設。 */
+    /**
+     * 從世界存檔還原牌面、姿態、管理狀態與動畫佇列，非法值使用安全預設。動畫佇列一併還原
+     * （[readAnimationQueueFromNbt]）是修正「動畫播放中離開世界，牌卡在半空」這個 bug 的關鍵——佇列裡
+     * 還沒播完的 step 會在世界重新載入、entity 開始被 tick 之後自動接續播放，不需要另外觸發。
+     */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
         managedByGame = nbt.getBoolean(NBT_KEY_MANAGED_BY_GAME)
         managedTableId = nbt.getString(NBT_KEY_MANAGED_TABLE_ID)
@@ -330,14 +340,16 @@ class MahjongTileEntity(
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
         tileAssetKey = nbt.getString(NBT_KEY_TILE)
         tilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
+        readAnimationQueueFromNbt(nbt)
     }
 
-    /** 將牌面、姿態與管理狀態寫入世界存檔。 */
+    /** 將牌面、姿態、管理狀態與動畫佇列寫入世界存檔，理由同 [readCustomDataFromNbt]。 */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         nbt.putString(NBT_KEY_TILE, tileAssetKey)
         nbt.putString(NBT_KEY_POSE, tilePose.name)
         nbt.putBoolean(NBT_KEY_MANAGED_BY_GAME, managedByGame)
         managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
+        writeAnimationQueueToNbt(nbt)
     }
 
     companion object {

@@ -1,9 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric
 
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPhaseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -118,6 +117,9 @@ class MahjongCraftModClient : ClientModInitializer {
                 )
             }
         }
+        ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
+            MahjongChannels.requestSnapshot.sendToServer(json, Unit)
+        }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
             stateStore.clear()
             decisionTimerStore.clear()
@@ -140,11 +142,4 @@ class MahjongCraftModClient : ClientModInitializer {
             }
         }
     }
-}
-
-/** 將網路決策階段還原成 flow common 型別。 */
-private fun PlayerDecisionPhaseDto.toDomain(): PlayerDecisionPhase = when (this) {
-    PlayerDecisionPhaseDto.OWN_TURN -> PlayerDecisionPhase.OWN_TURN
-    PlayerDecisionPhaseDto.DISCARD_REACTION -> PlayerDecisionPhase.DISCARD_REACTION
-    PlayerDecisionPhaseDto.CHANKAN_REACTION -> PlayerDecisionPhase.CHANKAN_REACTION
 }

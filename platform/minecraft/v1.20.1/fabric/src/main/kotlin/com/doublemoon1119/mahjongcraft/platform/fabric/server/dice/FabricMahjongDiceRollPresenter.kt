@@ -61,7 +61,7 @@ class FabricMahjongDiceRollPresenter(
                 startRoll(
                     finalPoint = MahjongDicePoint.fromValueOrDefault(dicePresentation.point),
                     seed = dicePresentation.animationSeed,
-                    startGameTime = world.time + placement.startDelayTicks,
+                    startDelayTicks = presentation.extraLeadDelayTicks + placement.startDelayTicks,
                     startOffset = placement.startOffset,
                 )
             }
