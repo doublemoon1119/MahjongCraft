@@ -116,6 +116,13 @@ class StartGameUseCase(
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；開局第一局 comboCount 恆為 0，
         // 呼叫本身仍需要，確保積棒 entity 從上一局殘留（理論上不會發生，但保持呼叫語意一致）清乾淨。
         presentationPublisher.publishScoringSticksUpdated(roomId, dealerSeatIndex, tableState.comboCount)
+        presentationPublisher.publishRoundInfoUpdated(
+            roomId,
+            tableState.prevalentWind,
+            localRoundNumber = tableState.localRoundNumber,
+            comboCount = tableState.comboCount,
+            wallRemainingCount = tableState.tileWall.remainingCount,
+        )
         val handTileIdsBySeatIndex = tableState.players.withIndex().associate { (seatIndex, player) ->
             seatIndex to player.hand.tiles.map { tile -> tile.id }
         }

@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
@@ -22,6 +23,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
@@ -57,6 +60,7 @@ import kotlin.uuid.Uuid
  * @property discardPresenter 正式牌河的實際呈現邏輯。
  * @property scoringStickPresenter 正式積棒的實際呈現邏輯，生命週期跟牌牆同時生成/清除，見
  *   [MahjongScoringStickPresenter] KDoc。
+ * @property roundInfoPresenter 桌面中央局況顯示的實際呈現邏輯。
  * @property tableLocationRegistry 麻將桌最後已知位置索引。
  * @property serverHolder 目前運行中的 server，供世界／方塊狀態查詢使用。
  * @property busyTracker 呈現動畫播放期間標記該桌暫時忙碌，供輸入分派入口與自動操作心跳擋下操作。
@@ -72,6 +76,7 @@ class FabricGamePresentationPublisher(
     private val playerAreaPresenter: MahjongPlayerAreaPresenter,
     private val discardPresenter: MahjongDiscardPresenter,
     private val scoringStickPresenter: MahjongScoringStickPresenter,
+    private val roundInfoPresenter: MahjongRoundInfoPresenter,
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
     private val busyTracker: TablePresentationBusyTracker,
@@ -286,6 +291,47 @@ class FabricGamePresentationPublisher(
     }
 
     /**
+     * 開局/換局（跟 [publishWallStructure] 同一批呼叫）跟每次摸牌都會觸發，不需要 [busyTracker] 或
+     * 延遲——純文字更新是瞬間的；跟 [publishDiceRoll] 同理，世界／entity 存取一併丟回伺服器主執行緒
+     * 執行。
+     */
+    override fun publishRoundInfoUpdated(
+        gameId: Uuid,
+        prevalentWind: Wind,
+        localRoundNumber: Int,
+        comboCount: Int,
+        wallRemainingCount: Int,
+    ) {
+        logger.debug(
+            "publishRoundInfoUpdated gameId={} prevalentWind={} localRoundNumber={} comboCount={} wallRemainingCount={}",
+            gameId,
+            prevalentWind,
+            localRoundNumber,
+            comboCount,
+            wallRemainingCount,
+        )
+        if (serverHolder.current() == null) {
+            logger.warn("publishRoundInfoUpdated gameId={} skipped: no active server", gameId)
+            return
+        }
+        scope.launch(dispatchers.main) {
+            val resolved = resolveTableContext(gameId, "publishRoundInfoUpdated") ?: return@launch
+
+            val presentation = MahjongRoundInfoPresentation(
+                tableId = gameId,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
+                prevalentWind = prevalentWind,
+                localRoundNumber = localRoundNumber,
+                comboCount = comboCount,
+                wallRemainingCount = wallRemainingCount,
+            )
+            val result = roundInfoPresenter.present(presentation)
+            logger.debug("publishRoundInfoUpdated gameId={} present() result={}", gameId, result)
+        }
+    }
+
+    /**
      * 一般回合動作（捨牌、摸牌、鳴牌）呼叫，不需要 [busyTracker] 或呼叫端延遲——即使 [animateDrawnTile]
      * 為 `true` 觸發摸牌動畫，那段動畫本身的排程完全交給 `FabricMahjongPlayerAreaPresenter` 內部處理
      * （`scheduleDrawnTileAnimation`），這裡仍然是直接同步呈現，理由同其餘一般回合動作。開局/換局的
@@ -412,9 +458,10 @@ class FabricGamePresentationPublisher(
     }
 
     /**
-     * 清除整桌所有玩家的手牌/摸牌位/副露/積棒呈現——回房間等清空情境使用（見 `ReturnToRoomUseCase`），
-     * 沒有座位分組資料可傳，直接呼叫 [playerAreaPresenter]／[scoringStickPresenter] 各自的 `clear()`
-     * （以 `managedTableId` 範圍搜尋清除，不需要逐座位資料）。
+     * 清除整桌所有玩家的手牌/摸牌位/副露/積棒/局況顯示呈現——回房間等清空情境使用（見
+     * `ReturnToRoomUseCase`），沒有座位分組資料可傳，直接呼叫 [playerAreaPresenter]／
+     * [scoringStickPresenter]／[roundInfoPresenter] 各自的 `clear()`（以 `managedTableId` 範圍搜尋
+     * 清除，不需要逐座位資料）。
      */
     override fun clearPlayerAreas(gameId: Uuid) {
         logger.debug("clearPlayerAreas gameId={}", gameId)
@@ -430,11 +477,13 @@ class FabricGamePresentationPublisher(
             }
             val removedTileCount = playerAreaPresenter.clear(gameId, location)
             val removedStickCount = scoringStickPresenter.clear(gameId, location)
+            val removedRoundInfoCount = roundInfoPresenter.clear(gameId, location)
             logger.debug(
-                "clearPlayerAreas gameId={} removedTileCount={} removedStickCount={}",
+                "clearPlayerAreas gameId={} removedTileCount={} removedStickCount={} removedRoundInfoCount={}",
                 gameId,
                 removedTileCount,
                 removedStickCount,
+                removedRoundInfoCount,
             )
         }
     }

@@ -542,6 +542,20 @@ object MahjongTileTableLayout {
         return TileTableVector(x = alongSide, y = layerHeight, z = perpendicular)
     }
 
+    /**
+     * 依 controller 座標，算出桌面中央局況顯示（`MahjongRoundInfoEntity`）該擺放的世界座標——單一
+     * entity 置中於桌面正中央，不需要依座位旋轉（billboard 顯示永遠面向鏡頭，見該 entity 的
+     * renderer），高度刻意明顯高於牌牆／骰子等其他桌面機關的最高點（[ROUND_INFO_HEIGHT_ABOVE_TABLE]），
+     * 避免文字被桌面模型或牌牆擋住——實際數值待進遊戲用不同鏡頭角度比對調整。回傳值的 `yaw` 未使用
+     * （billboard 不需要固定朝向），固定為 `0.0f`。
+     */
+    fun roundInfoDisplayPlacement(controllerX: Int, controllerY: Int, controllerZ: Int): MahjongTileWallPlacement = MahjongTileWallPlacement(
+        x = controllerX + BLOCK_CENTER,
+        y = controllerY + TABLETOP_HEIGHT + ROUND_INFO_HEIGHT_ABOVE_TABLE,
+        z = controllerZ + BLOCK_CENTER,
+        yaw = 0.0f,
+    )
+
     /** 依南→西→北→東的固定順序（跟 [seatIndexToTableSide] 同一套方向），把 [side] 往同方向推進 [steps] 步。 */
     private fun advance(side: MahjongTableSide, steps: Int): MahjongTableSide = SIDE_ORDER[(SIDE_ORDER.indexOf(side) + steps).mod(SIDE_ORDER.size)]
 
@@ -580,6 +594,12 @@ object MahjongTileTableLayout {
     /** 固定桌面幾何常數。 */
     private const val BLOCK_CENTER: Double = 0.5
     private const val TABLETOP_HEIGHT: Double = 1.0
+
+    /**
+     * 桌面中央局況顯示（[roundInfoDisplayPlacement]）懸浮高度，明顯高於牌牆／骰子等其他桌面機關的
+     * 最高點，避免文字被擋住，起始估算值，預期進遊戲後調整。
+     */
+    private const val ROUND_INFO_HEIGHT_ABOVE_TABLE: Double = 1.5
 
     /**
      * 牌牆生成掉落動畫中，同一面牌牆相鄰兩墩（`stack` 差 1）開始掉落的時間差，供 [wallDropAnimationTicks]

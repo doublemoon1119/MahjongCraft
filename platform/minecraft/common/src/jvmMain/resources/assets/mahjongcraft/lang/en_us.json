@@ -97,6 +97,9 @@
   "mahjongcraft.message.hand_no_response_available": "(No response available; please wait)",
   "mahjongcraft.message.hand_waiting": "(It's not your turn yet; please wait)",
   "mahjongcraft.message.your_turn": "It's your turn. You drew: %s",
+  "mahjongcraft.message.round_info_title": "%s %d",
+  "mahjongcraft.message.round_info_combo_count": "%d Repeat Counter",
+  "mahjongcraft.message.round_info_wall_remaining": "Wall Remaining: %d",
   "mahjongcraft.message.tile_labels_toggle_prefix": "Tile corner labels toggled: ",
   "mahjongcraft.message.tile_labels_state_on": "On",
   "mahjongcraft.message.tile_labels_state_off": "Off"

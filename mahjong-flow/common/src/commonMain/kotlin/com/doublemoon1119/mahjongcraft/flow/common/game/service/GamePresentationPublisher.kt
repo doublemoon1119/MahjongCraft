@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
@@ -135,6 +136,26 @@ interface GamePresentationPublisher {
      * 等同只清除舊積棒。
      */
     fun publishScoringSticksUpdated(gameId: Uuid, dealerSeatIndex: Int, stickCount: Int)
+
+    /**
+     * 通知平台呈現層桌面中央局況顯示（場風、局數、本場數、牌山剩餘）需要更新為目前狀態。
+     *
+     * 觸發時機：開局/換局（跟 [publishWallStructure] 同一批呼叫）、以及每次摸牌（牌山剩餘張數會變）。
+     *
+     * @param gameId 對局 Uuid。
+     * @param prevalentWind 目前場風（圈風），恆等於 `TableState.prevalentWind`。
+     * @param localRoundNumber 目前場風內的第幾局（`1` 起算），由呼叫端依 `TableState.roundNumber` 與
+     * 玩家人數換算好才傳入——這個介面本身不重複做這個換算。
+     * @param comboCount 本場數，恆等於 `TableState.comboCount`。
+     * @param wallRemainingCount 牌山目前剩餘張數，恆等於 `TableState.tileWall.remainingCount`。
+     */
+    fun publishRoundInfoUpdated(
+        gameId: Uuid,
+        prevalentWind: Wind,
+        localRoundNumber: Int,
+        comboCount: Int,
+        wallRemainingCount: Int,
+    )
 
     /**
      * 通知平台呈現層某玩家目前的手牌（含摸牌位）與副露需要更新為目前狀態。

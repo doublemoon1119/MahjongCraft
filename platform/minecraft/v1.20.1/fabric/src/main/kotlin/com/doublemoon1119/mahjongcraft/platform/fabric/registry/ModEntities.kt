@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
@@ -24,6 +25,10 @@ object ModEntities {
 
     /** 麻將點棒 entity type；由 [register] 初始化。 */
     lateinit var mahjongScoringStick: EntityType<MahjongScoringStickEntity>
+        private set
+
+    /** 桌面中央局況顯示 entity type；由 [register] 初始化。 */
+    lateinit var mahjongRoundInfo: EntityType<MahjongRoundInfoEntity>
         private set
 
     /** 註冊不自然生成的輕量麻將牌 entity。 */
@@ -58,5 +63,25 @@ object ModEntities {
                 .fireImmune()
                 .build(),
         )
+        mahjongRoundInfo = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_round_info"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongRoundInfoEntity)
+                .dimensions(EntityDimensions.fixed(ROUND_INFO_SIZE, ROUND_INFO_SIZE))
+                .trackRangeBlocks(16)
+                .trackedUpdateRate(10)
+                .fireImmune()
+                .build(),
+        )
     }
+
+    /**
+     * 桌面中央局況顯示 entity 的碰撞箱大小，純視覺（不可碰撞）物件，數值本身不重要，但**不能是
+     * `(0f, 0f)`**——vanilla 的 `Marker` entity（1.19+ 專門給「純資料、不渲染」用途設計）固定用零體積
+     * 碰撞箱，這代表渲染管線的視錐剔除（`EntityRenderer.shouldRender`）對零體積碰撞箱有特殊處理，
+     * 會直接判定不在視野內、整個跳過 `render()` 呼叫——這是遊戲內實際驗證過的問題：改成 `(0f, 0f)`
+     * 後透過 IDE 斷點確認 `MahjongRoundInfoEntityRenderer.render()` 完全沒被呼叫到，改回非零值後才
+     * 正常。
+     */
+    private const val ROUND_INFO_SIZE: Float = 0.1f
 }

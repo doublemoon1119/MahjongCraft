@@ -331,6 +331,20 @@ object MinecraftMessageKeys {
 
     // ── 牌面輔助標籤指令（`/mahjongcraft_client label toggle`，純 client-only） ─────
 
+    // ── 桌面中央局況顯示（見 `MahjongRoundInfoEntityRenderer`） ────────────────
+
+    /** 局況顯示標題行，依序帶場風顯示文字（一個 `%s`，見上方 `TILE_HONOR_*`）與場風內局數（一個 `%d`）。 */
+    const val ROUND_INFO_TITLE = PREFIX + "round_info_title"
+
+    /**
+     * 局況顯示標題行的本場數，帶一個參數（一個 `%d`）——對應 `TableState.comboCount`（日麻：本場數；
+     * 台麻：連幾），key 命名跟這個 domain 欄位對齊，不是照抄「repeat counter」這種字面翻譯。
+     */
+    const val ROUND_INFO_COMBO_COUNT = PREFIX + "round_info_combo_count"
+
+    /** 局況顯示牌山剩餘張數，帶一個張數參數（一個 `%d`）。 */
+    const val ROUND_INFO_WALL_REMAINING = PREFIX + "round_info_wall_remaining"
+
     /** 牌面角落輔助標籤（給非中文圈玩家看的數字/字母）切換訊息的前綴，後面接切換前後的狀態文字。 */
     const val TILE_LABELS_TOGGLE_PREFIX = PREFIX + "tile_labels_toggle_prefix"
 
@@ -432,6 +446,9 @@ object MinecraftMessageKeys {
         HAND_NO_RESPONSE_AVAILABLE,
         HAND_WAITING,
         YOUR_TURN,
+        ROUND_INFO_TITLE,
+        ROUND_INFO_COMBO_COUNT,
+        ROUND_INFO_WALL_REMAINING,
         TILE_LABELS_TOGGLE_PREFIX,
         TILE_LABELS_STATE_ON,
         TILE_LABELS_STATE_OFF,

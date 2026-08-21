@@ -98,6 +98,14 @@ class DrawTileUseCase(
             comboStickCount = if (seatIndex == dealerSeatIndex) newState.comboCount else 0,
             animateDrawnTile = true,
         )
+        // 牌山剩餘張數每次摸牌都會變，桌面局況顯示要跟著更新。
+        presentationPublisher.publishRoundInfoUpdated(
+            gameId,
+            newState.prevalentWind,
+            localRoundNumber = newState.localRoundNumber,
+            comboCount = newState.comboCount,
+            wallRemainingCount = newState.tileWall.remainingCount,
+        )
 
         return Outcome.Success(Unit)
     }

@@ -50,6 +50,13 @@ data class TableState(
     val currentPlayer: MahjongPlayer get() = players[currentPlayerIndex]
 
     /**
+     * [roundNumber] 換算成目前場風（[prevalentWind]）內的第幾局（`1` 起算）——[roundNumber] 本身是
+     * 跨場風累計的絕對局數（例如四人桌東 4 局結束後，南 1 局的 [roundNumber] 是 `5`），這個屬性把它
+     * 換算回場風內慣用的「東1局」那種局數表示法，供呈現層使用。
+     */
+    val localRoundNumber: Int get() = ((roundNumber - 1) % playerCount) + 1
+
+    /**
      * 初始化對局。
      * 將所有玩家的分數根據 [config] 設定為初始分數，回傳套用後的新 [TableState] 實例。
      *

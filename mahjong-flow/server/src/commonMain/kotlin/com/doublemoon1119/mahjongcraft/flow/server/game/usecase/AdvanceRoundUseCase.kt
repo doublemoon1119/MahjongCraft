@@ -168,6 +168,13 @@ class AdvanceRoundUseCase(
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；新局手牌一定沒有副露，只是靠
         // publishInitialDealAnimation 的 comboStickCount 讓手牌正確讓開積棒佔用的空間。
         presentationPublisher.publishScoringSticksUpdated(gameId, dealerSeatIndex, newState.comboCount)
+        presentationPublisher.publishRoundInfoUpdated(
+            gameId,
+            newState.prevalentWind,
+            localRoundNumber = newState.localRoundNumber,
+            comboCount = newState.comboCount,
+            wallRemainingCount = newState.tileWall.remainingCount,
+        )
         val handTileIdsBySeatIndex = newState.players.withIndex().associate { (seatIndex, player) ->
             seatIndex to player.hand.tiles.map { tile -> tile.id }
         }

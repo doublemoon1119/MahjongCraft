@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.testing.flow.common.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
@@ -27,6 +28,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 依對局 Uuid 紀錄最後一次收到的積棒呈現資料。 */
     private val scoringSticks = mutableMapOf<Uuid, ScoringStickContext>()
+
+    /** 依對局 Uuid 紀錄最後一次收到的桌面局況顯示資料。 */
+    private val roundInfos = mutableMapOf<Uuid, RoundInfoContext>()
 
     /** 依對局 Uuid 紀錄最後一次收到的桌角區域（手牌/摸牌位/副露）呈現資料。 */
     private val playerAreas = mutableMapOf<Uuid, PlayerAreaContext>()
@@ -69,6 +73,16 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     override fun publishScoringSticksUpdated(gameId: Uuid, dealerSeatIndex: Int, stickCount: Int) {
         scoringSticks[gameId] = ScoringStickContext(dealerSeatIndex, stickCount)
+    }
+
+    override fun publishRoundInfoUpdated(
+        gameId: Uuid,
+        prevalentWind: Wind,
+        localRoundNumber: Int,
+        comboCount: Int,
+        wallRemainingCount: Int,
+    ) {
+        roundInfos[gameId] = RoundInfoContext(prevalentWind, localRoundNumber, comboCount, wallRemainingCount)
     }
 
     override fun publishPlayerAreaUpdated(
@@ -127,6 +141,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 取得指定對局最後一次收到的積棒呈現資料；若無紀錄則回傳 null。 */
     fun getPublishedScoringSticks(gameId: Uuid): ScoringStickContext? = scoringSticks[gameId]
 
+    /** 取得指定對局最後一次收到的桌面局況顯示資料；若無紀錄則回傳 null。 */
+    fun getPublishedRoundInfo(gameId: Uuid): RoundInfoContext? = roundInfos[gameId]
+
     /** 取得指定對局最後一次收到的桌角區域（手牌/摸牌位/副露）呈現資料；若無紀錄則回傳 null。 */
     fun getPublishedPlayerArea(gameId: Uuid): PlayerAreaContext? = playerAreas[gameId]
 
@@ -165,6 +182,14 @@ data class WallStructureContext(
 data class ScoringStickContext(
     val dealerSeatIndex: Int,
     val stickCount: Int,
+)
+
+/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishRoundInfoUpdated] 資料。 */
+data class RoundInfoContext(
+    val prevalentWind: Wind,
+    val localRoundNumber: Int,
+    val comboCount: Int,
+    val wallRemainingCount: Int,
 )
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishPlayerAreaUpdated] 資料。 */
