@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SetHandSortPreferenceUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
@@ -125,6 +126,7 @@ class MahjongCraftMod : ModInitializer {
         registerGameCommandReceiver(koin)
         registerUpdateGameConfigReceiver(koin)
         registerRequestSnapshotReceiver(koin)
+        registerSetAutoSortHandReceiver(koin)
         registerPlayerConnectionEvents(koin)
         koin.get<FabricServerConfigCommand>().register()
         koin.get<FabricRoomCommand>().register()
@@ -213,6 +215,16 @@ class MahjongCraftMod : ModInitializer {
         val lifecycleService = koin.get<PlayerConnectionLifecycleService>()
         MahjongChannels.requestSnapshot.registerServerReceiver(json) { _, player, _ ->
             lifecycleService.onSnapshotRequested(player.uuid.toKotlinUuid())
+        }
+    }
+
+    /** 接收客戶端切換「自動整理手牌」偏好的請求，見 [MahjongChannels.setAutoSortHand] KDoc。 */
+    private fun registerSetAutoSortHandReceiver(koin: Koin) {
+        val json = koin.get<Json>()
+        val useCase = koin.get<SetHandSortPreferenceUseCase>()
+        val scope = koin.get<AppCoroutineScope>()
+        MahjongChannels.setAutoSortHand.registerServerReceiver(json) { _, player, enabled ->
+            scope.launch { useCase(player.uuid.toKotlinUuid(), enabled) }
         }
     }
 }

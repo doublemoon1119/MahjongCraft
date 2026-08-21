@@ -75,7 +75,12 @@ data class MahjongPlayerAreaPresentation(
  * @property tableLocation 麻將桌 controller 的位置。
  * @property tableFacing 麻將桌 controller 的世界水平朝向。
  * @property handTileIdsBySeatIndex 每個座位最終手牌的完整牌 Uuid 列表（依 [MahjongPlayerAreaPresentation.standingTileIds]
- * 同一套「加入時間軸、不是畫面左右順序」的慣例），鍵為座位 index。
+ * 同一套「加入時間軸、不是畫面左右順序」的慣例），鍵為座位 index——這份順序只決定發牌動畫本身
+ * （哪張牌在哪一批抵達、抵達當下落在哪一格），翻牌後最終要停在哪一格改看 [postFlipHandTileIdsBySeatIndex]。
+ * @property postFlipHandTileIdsBySeatIndex 每個座位翻牌完成那一刻起、牌實際該停留的最終牌 Uuid 順序，
+ * 鍵為座位 index——沒有啟用自動整理手牌的座位這裡跟 [handTileIdsBySeatIndex] 內容相同（翻牌後原地不動）；
+ * 有啟用的座位這裡是已經整理過的順序，讓那個座位的牌翻起來之後立刻多一步瞬間移動到整理後的格位，發牌
+ * 動畫本身（起飛／落下／翻牌的節奏與順序）完全不受影響。
  * @property dealerSeatIndex 本局莊家座位 index，只用來換算積棒佔用寬度（[comboStickCount] 只有莊家
  * 非零），跟牌牆的莊家相對旋轉無關——理由同 [MahjongPlayerAreaPresentation]，手牌位置不需要莊家相對
  * 旋轉。
@@ -93,6 +98,7 @@ data class MahjongInitialDealPresentation(
     val tableLocation: TableLocation,
     val tableFacing: MahjongTableFacing,
     val handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
+    val postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     val dealerSeatIndex: Int,
     val comboStickCount: Int,
     val dealBatchSizes: List<Int>,

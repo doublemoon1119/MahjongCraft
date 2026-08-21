@@ -102,5 +102,8 @@
   "mahjongcraft.message.round_info_wall_remaining": "牌山剩餘：%d",
   "mahjongcraft.message.tile_labels_toggle_prefix": "已將牌面角落輔助標籤切換為：",
   "mahjongcraft.message.tile_labels_state_on": "開啟",
-  "mahjongcraft.message.tile_labels_state_off": "關閉"
+  "mahjongcraft.message.tile_labels_state_off": "關閉",
+  "mahjongcraft.message.hand_sort_toggle_prefix": "已將自動整理手牌切換為：",
+  "mahjongcraft.message.hand_sort_state_on": "開啟",
+  "mahjongcraft.message.hand_sort_state_off": "關閉"
 }

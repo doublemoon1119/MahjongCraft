@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
@@ -27,6 +28,9 @@ class TaiwanRuleModule(
     override val id: String,
     override val config: TaiwanRuleConfig,
 ) : MahjongRuleModule<TaiwanRuleConfig> {
+    /** 台灣麻將手牌整理排序規則。 */
+    override val tileOrder: TileOrder = TaiwanTileOrder
+
     /**
      * 建立台灣麻將牌山工廠。
      *

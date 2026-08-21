@@ -22,6 +22,13 @@ object MahjongChannels {
      * `Unit` 表示純粹的請求信號。
      */
     val requestSnapshot = C2SChannel("request_snapshot", Unit.serializer())
+
+    /**
+     * 切換「自動整理手牌」偏好時送出，見 `MahjongCraftMod.registerSetAutoSortHandReceiver`／
+     * `SetHandSortPreferenceUseCase`——手牌 tile entity 是伺服器端共用的實體，這個偏好必須讓伺服器
+     * 知道才能實際重新排列座標，不像牌角標籤那種純客戶端疊加。
+     */
+    val setAutoSortHand = C2SChannel("set_auto_sort_hand", Boolean.serializer())
     val decisionTimerUpdate = S2CChannel("decision_timer_update", DecisionTimerUpdatePayloadDto.serializer())
     val gameUpdate = S2CChannel("game_update", GameUpdatePayloadDto.serializer())
     val roomUpdate = S2CChannel("room_update", RoomUpdatePayloadDto.serializer())

@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
@@ -33,6 +34,7 @@ import kotlin.uuid.Uuid
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器。
  * @property snapshotSynchronizer 對局快照同步服務。
+ * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
  */
@@ -41,6 +43,7 @@ class DiscardTileUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
+    private val handSortPreferenceStore: HandSortPreferenceStore,
     @Provided private val eventPublisher: GameEventPublisher,
     @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
@@ -72,16 +75,21 @@ class DiscardTileUseCase(
                         state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Discard(tileId)))
                     } else {
                         val discardedTile = discardResult.tile
+                        val module = moduleRegistry.getModule(state.config)
+                        val organizedHand = if (handSortPreferenceStore.isEnabled(playerId)) {
+                            discardResult.hand.organize(module.tileOrder)
+                        } else {
+                            discardResult.hand
+                        }
                         val updatedPlayer = state.currentPlayer
                             .copy(
-                                hand = discardResult.hand,
+                                hand = organizedHand,
                                 discardPile = state.currentPlayer.discardPile.discardTile(discardedTile),
                             )
                             .recordAction(GameAction.Discard(tileId))
                         val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
                         val stateAfterDiscard = state.copy(players = updatedPlayers)
 
-                        val module = moduleRegistry.getModule(state.config)
                         val resolved =
                             DiscardReactionResolver.resolve(state, stateAfterDiscard, module, playerId, discardedTile)
 

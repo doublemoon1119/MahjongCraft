@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -58,6 +59,7 @@ class MahjongCraftModClient : ClientModInitializer {
         koin.get<FabricOpenRoomConfigScreenCommand>().register()
         initializeClientConfig(clientConfigStore)
         koin.get<FabricTileLabelCommand>().register()
+        koin.get<FabricHandSortCommand>().register()
         koin.get<FabricClientConfigCommand>().register()
 
         val json = koin.get<kotlinx.serialization.json.Json>()
@@ -119,6 +121,9 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
             MahjongChannels.requestSnapshot.sendToServer(json, Unit)
+            // 伺服器端的自動整理手牌偏好純記憶體、不撐過伺服器重啟（見 HandSortPreferenceStore KDoc），
+            // 每次加入世界都重送一次 client 本地記得的偏好，確保重啟後不需要玩家手動再切一次。
+            MahjongChannels.setAutoSortHand.sendToServer(json, clientConfigStore.current.autoSortHandEnabled)
         }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
             stateStore.clear()

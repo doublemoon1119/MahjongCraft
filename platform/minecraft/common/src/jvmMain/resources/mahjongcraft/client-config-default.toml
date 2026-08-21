@@ -12,3 +12,10 @@
 # Show a small corner label (a digit or letter) on each mahjong tile face, to help players who
 # don't read Chinese identify tiles at a glance (for example, a nine dot tile shows "9").
 tile-labels-enabled = false
+
+# Automatically keep your own hand tiles sorted after every draw/discard/call, instead of leaving
+# them in the order you picked them up. Toggle in-game with:
+#   /mahjongcraft_client hand_sort toggle
+# Unlike the label toggle above, this preference is also sent to the server: your hand tiles are
+# shared entities positioned by the server, so sorting them has to happen there.
+auto-sort-hand-enabled = true

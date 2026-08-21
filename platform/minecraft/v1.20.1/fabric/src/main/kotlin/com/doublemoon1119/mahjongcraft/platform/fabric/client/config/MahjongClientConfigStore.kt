@@ -93,11 +93,25 @@ class MahjongClientConfigStore {
      */
     fun setTileLabelsEnabled(enabled: Boolean) {
         current = current.copy(tileLabelsEnabled = enabled)
+        replaceLineAndSave(TILE_LABELS_ENABLED_KEY, TILE_LABELS_ENABLED_LINE, enabled)
+    }
+
+    /**
+     * 切換自動整理手牌開關並立即寫回磁碟，手法同 [setTileLabelsEnabled]；呼叫端（`FabricHandSortCommand`）
+     * 除了呼叫這個方法，還要另外把偏好同步給伺服器——這裡只負責 client 本機持久化。
+     */
+    fun setAutoSortHandEnabled(enabled: Boolean) {
+        current = current.copy(autoSortHandEnabled = enabled)
+        replaceLineAndSave(AUTO_SORT_HAND_ENABLED_KEY, AUTO_SORT_HAND_ENABLED_LINE, enabled)
+    }
+
+    /** 只替換檔案裡 [key] 那一行的值（不存在則附加在檔尾），其餘內容（含註解）原樣保留。 */
+    private fun replaceLineAndSave(key: String, lineRegex: Regex, enabled: Boolean) {
         try {
             val content = Files.readString(path, StandardCharsets.UTF_8)
-            val replacement = "$TILE_LABELS_ENABLED_KEY = $enabled"
-            val updatedContent = if (TILE_LABELS_ENABLED_LINE.containsMatchIn(content)) {
-                TILE_LABELS_ENABLED_LINE.replace(content, replacement)
+            val replacement = "$key = $enabled"
+            val updatedContent = if (lineRegex.containsMatchIn(content)) {
+                lineRegex.replace(content, replacement)
             } else {
                 content.trimEnd('\n') + "\n$replacement\n"
             }
@@ -127,5 +141,11 @@ class MahjongClientConfigStore {
 
         /** 比對檔案中 [TILE_LABELS_ENABLED_KEY] 那一行，用於 [setTileLabelsEnabled] 的原地替換。 */
         val TILE_LABELS_ENABLED_LINE = Regex("""(?m)^$TILE_LABELS_ENABLED_KEY\s*=.*$""")
+
+        /** [MahjongClientConfigState.autoSortHandEnabled] 對應的 TOML 欄位鍵，跟其 `@SerialName` 保持一致。 */
+        const val AUTO_SORT_HAND_ENABLED_KEY: String = "auto-sort-hand-enabled"
+
+        /** 比對檔案中 [AUTO_SORT_HAND_ENABLED_KEY] 那一行，用於 [setAutoSortHandEnabled] 的原地替換。 */
+        val AUTO_SORT_HAND_ENABLED_LINE = Regex("""(?m)^$AUTO_SORT_HAND_ENABLED_KEY\s*=.*$""")
     }
 }

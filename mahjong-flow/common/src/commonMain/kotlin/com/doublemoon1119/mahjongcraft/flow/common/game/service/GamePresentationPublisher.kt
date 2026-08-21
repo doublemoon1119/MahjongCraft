@@ -208,7 +208,12 @@ interface GamePresentationPublisher {
      *
      * @param gameId 對局 Uuid。
      * @param handTileIdsBySeatIndex 每個座位最終手牌的完整牌 Uuid 列表，鍵為 `TableState.players` 的
-     * 固定座位 index；規則不支援開門流程（沒有牌牆／擲骰）時呼叫端不應呼叫這個方法。
+     * 固定座位 index；規則不支援開門流程（沒有牌牆／擲骰）時呼叫端不應呼叫這個方法。這份順序只決定
+     * 發牌動畫本身（哪張牌在哪一批抵達、抵達當下落在哪一格），翻牌後最終停在哪一格改看
+     * [postFlipHandTileIdsBySeatIndex]。
+     * @param postFlipHandTileIdsBySeatIndex 每個座位翻牌完成那一刻起、牌實際該停留的最終牌 Uuid 順序，
+     * 鍵同上——沒有啟用自動整理手牌的座位這裡跟 [handTileIdsBySeatIndex] 內容相同；有啟用的座位這裡是
+     * 已經整理過的順序。
      * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index，只用來換算積棒佔用
      * 寬度（[comboStickCount] 只有莊家非零）。
      * @param comboStickCount 開局當下該顯示的積棒支數，等於 `TableState.comboCount`；理由同
@@ -221,6 +226,7 @@ interface GamePresentationPublisher {
     fun publishInitialDealAnimation(
         gameId: Uuid,
         handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
+        postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
         dealerSeatIndex: Int,
         comboStickCount: Int,
         dealBatchSizes: List<Int>,

@@ -334,6 +334,7 @@ class FabricGamePresentationPublisher(
     override fun publishInitialDealAnimation(
         gameId: Uuid,
         handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
+        postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
         dealerSeatIndex: Int,
         comboStickCount: Int,
         dealBatchSizes: List<Int>,
@@ -355,6 +356,7 @@ class FabricGamePresentationPublisher(
                     tableLocation = resolved.location,
                     tableFacing = resolved.facing,
                     handTileIdsBySeatIndex = handTileIdsBySeatIndex,
+                    postFlipHandTileIdsBySeatIndex = postFlipHandTileIdsBySeatIndex,
                     dealerSeatIndex = dealerSeatIndex,
                     comboStickCount = comboStickCount,
                     dealBatchSizes = dealBatchSizes,

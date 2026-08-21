@@ -100,12 +100,20 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     override fun publishInitialDealAnimation(
         gameId: Uuid,
         handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
+        postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
         dealerSeatIndex: Int,
         comboStickCount: Int,
         dealBatchSizes: List<Int>,
         diceCount: Int,
     ) {
-        initialDealAnimations[gameId] = InitialDealAnimationContext(handTileIdsBySeatIndex, dealerSeatIndex, comboStickCount, dealBatchSizes, diceCount)
+        initialDealAnimations[gameId] = InitialDealAnimationContext(
+            handTileIdsBySeatIndex,
+            postFlipHandTileIdsBySeatIndex,
+            dealerSeatIndex,
+            comboStickCount,
+            dealBatchSizes,
+            diceCount,
+        )
     }
 
     override fun clearPlayerAreas(gameId: Uuid) {
@@ -205,6 +213,7 @@ data class PlayerAreaContext(
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishInitialDealAnimation] 資料。 */
 data class InitialDealAnimationContext(
     val handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
+    val postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     val dealerSeatIndex: Int,
     val comboStickCount: Int,
     val dealBatchSizes: List<Int>,

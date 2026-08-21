@@ -16,4 +16,12 @@ data class MahjongClientConfigState(
      */
     @SerialName("tile-labels-enabled")
     val tileLabelsEnabled: Boolean = false,
+
+    /**
+     * 是否啟用自動整理手牌；透過 `/mahjongcraft_client hand_sort toggle` 切換。跟
+     * [tileLabelsEnabled] 不同，這個偏好還需要同步給伺服器（見 `FabricHandSortCommand` KDoc）——
+     * 手牌 tile entity 是伺服器端共用的實體，排序結果必須由伺服器套用才會反映在實際世界座標上。
+     */
+    @SerialName("auto-sort-hand-enabled")
+    val autoSortHandEnabled: Boolean = true,
 )

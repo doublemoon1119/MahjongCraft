@@ -354,6 +354,15 @@ object MinecraftMessageKeys {
     /** 「關閉」狀態文字，用於牌面輔助標籤切換訊息中上色顯示。 */
     const val TILE_LABELS_STATE_OFF = PREFIX + "tile_labels_state_off"
 
+    /** 自動整理手牌切換訊息的前綴，後面接切換前後的狀態文字。 */
+    const val HAND_SORT_TOGGLE_PREFIX = PREFIX + "hand_sort_toggle_prefix"
+
+    /** 「開啟」狀態文字，用於自動整理手牌切換訊息中上色顯示。 */
+    const val HAND_SORT_STATE_ON = PREFIX + "hand_sort_state_on"
+
+    /** 「關閉」狀態文字，用於自動整理手牌切換訊息中上色顯示。 */
+    const val HAND_SORT_STATE_OFF = PREFIX + "hand_sort_state_off"
+
     /** Minecraft 語系資源必須提供的全部玩家回饋 key。 */
     val ALL: Set<String> = setOf(
         GAME_ALREADY_STARTED,
@@ -452,5 +461,8 @@ object MinecraftMessageKeys {
         TILE_LABELS_TOGGLE_PREFIX,
         TILE_LABELS_STATE_ON,
         TILE_LABELS_STATE_OFF,
+        HAND_SORT_TOGGLE_PREFIX,
+        HAND_SORT_STATE_ON,
+        HAND_SORT_STATE_OFF,
     )
 }

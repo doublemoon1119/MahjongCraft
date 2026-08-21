@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
@@ -44,6 +45,11 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 該模組實例所持有的規則配置。
      */
     val config: T
+
+    /**
+     * 該規則整理手牌（[Hand.organize]）時使用的排序規則。
+     */
+    val tileOrder: TileOrder
 
     /**
      * 建立適用於該規則的牌山生成工廠。

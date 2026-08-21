@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSyn
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -67,6 +68,7 @@ class FullMatchIntegrationTest {
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
+        val handSortPreferenceStore = HandSortPreferenceStore()
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val presentationBusyGate = FakeGamePresentationBusyGate()
@@ -82,6 +84,7 @@ class FullMatchIntegrationTest {
                 gameRepo,
                 moduleRegistry,
                 snapshotSynchronizer,
+                handSortPreferenceStore,
                 eventPublisher,
                 presentationPublisher,
             ),
@@ -92,6 +95,7 @@ class FullMatchIntegrationTest {
                 gameRepo,
                 moduleRegistry,
                 snapshotSynchronizer,
+                handSortPreferenceStore,
                 eventPublisher,
                 presentationPublisher,
             ),
@@ -142,6 +146,7 @@ class FullMatchIntegrationTest {
                 gameRepo,
                 moduleRegistry,
                 snapshotSynchronizer,
+                handSortPreferenceStore,
                 eventPublisher,
                 presentationPublisher,
             ),

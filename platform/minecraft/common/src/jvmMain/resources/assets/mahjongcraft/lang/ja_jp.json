@@ -102,5 +102,8 @@
   "mahjongcraft.message.round_info_wall_remaining": "残り牌数：%d",
   "mahjongcraft.message.tile_labels_toggle_prefix": "牌の角の補助ラベルを切り替えました：",
   "mahjongcraft.message.tile_labels_state_on": "オン",
-  "mahjongcraft.message.tile_labels_state_off": "オフ"
+  "mahjongcraft.message.tile_labels_state_off": "オフ",
+  "mahjongcraft.message.hand_sort_toggle_prefix": "手牌の自動整理を切り替えました：",
+  "mahjongcraft.message.hand_sort_state_on": "オン",
+  "mahjongcraft.message.hand_sort_state_off": "オフ"
 }

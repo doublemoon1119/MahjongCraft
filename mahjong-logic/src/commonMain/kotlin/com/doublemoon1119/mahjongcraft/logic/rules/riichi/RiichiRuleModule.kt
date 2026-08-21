@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
@@ -35,6 +36,9 @@ class RiichiRuleModule(
     override val id: String,
     override val config: RiichiRuleConfig,
 ) : MahjongRuleModule<RiichiRuleConfig> {
+    /** 日本麻將手牌整理排序規則。 */
+    override val tileOrder: TileOrder = RiichiTileOrder
+
     /**
      * 建立日本麻將牌山工廠。
      *

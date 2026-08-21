@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSyn
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -81,18 +82,40 @@ class RoomToRoomFullLifecycleIntegrationTest {
         val presentationBusyGate = FakeGamePresentationBusyGate()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, gameSnapshotRepo, GameVisibilityPolicyImpl())
+        val handSortPreferenceStore = HandSortPreferenceStore()
 
         val createRoomUseCase = CreateRoomUseCase(store, membershipRepo, roomSnapshotRepo, roomEventPublisher)
         val addAiPlayerUseCase = AddAiPlayerUseCase(roomRepo, roomSnapshotRepo, roomEventPublisher)
-        val startGameUseCase = StartGameUseCase(store, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher)
+        val startGameUseCase = StartGameUseCase(
+            store,
+            moduleRegistry,
+            snapshotSynchronizer,
+            handSortPreferenceStore,
+            gameEventPublisher,
+            presentationPublisher,
+        )
 
         val router = GameActionRouter(
             drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
-            discardTileUseCase = DiscardTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
+            discardTileUseCase = DiscardTileUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                handSortPreferenceStore,
+                gameEventPublisher,
+                presentationPublisher,
+            ),
             declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
             declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
-            respondToDiscardUseCase = RespondToDiscardUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
+            respondToDiscardUseCase = RespondToDiscardUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                handSortPreferenceStore,
+                gameEventPublisher,
+                presentationPublisher,
+            ),
             respondToChankanUseCase = RespondToChankanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
             declareKyuushuKyuuhaiUseCase = DeclareKyuushuKyuuhaiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
         )
@@ -114,7 +137,14 @@ class RoomToRoomFullLifecycleIntegrationTest {
             moduleRegistry = moduleRegistry,
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
             declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
-            advanceRoundUseCase = AdvanceRoundUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
+            advanceRoundUseCase = AdvanceRoundUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                handSortPreferenceStore,
+                gameEventPublisher,
+                presentationPublisher,
+            ),
             returnToRoomUseCase = ReturnToRoomUseCase(store, roomSnapshotRepo, roomEventPublisher, presentationPublisher),
             aiTurnDriver = aiTurnDriver,
             forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo),

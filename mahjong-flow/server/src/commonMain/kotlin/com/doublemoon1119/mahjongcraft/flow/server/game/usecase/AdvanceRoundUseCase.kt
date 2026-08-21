@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -53,6 +54,7 @@ import kotlin.uuid.Uuid
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
  * @property snapshotSynchronizer 對局快照同步服務。
+ * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
  */
@@ -61,6 +63,7 @@ class AdvanceRoundUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
+    private val handSortPreferenceStore: HandSortPreferenceStore,
     @Provided private val eventPublisher: GameEventPublisher,
     @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
@@ -94,6 +97,7 @@ class AdvanceRoundUseCase(
                             result = AdvanceRoundResult(state, isMatchOver = true),
                             diceRoll = null,
                             wallStructure = null,
+                            dealOrderHandTileIdsBySeatIndex = emptyMap(),
                         )
                         // 對局已經結束：記下這個事實，讓 AiTurnDriver／ForcedAutoPlayDriver 之後都
                         // 跳過這場對局，不會對已經沒有牌可摸的桌況繼續重複嘗試、重複觸發流局結算。
@@ -105,11 +109,26 @@ class AdvanceRoundUseCase(
                             previousDynamicRuleState = state.dynamicRuleState,
                             module = module,
                         )
-                        val newState = initializationResult.tableState
+                        val dealtState = initializationResult.tableState
+                        // 只用來讓發牌動畫本身維持原始時間軸（哪張牌在哪一批抵達），不是實際寫回權威
+                        // 狀態的手牌順序——實際寫回的是下面整理過的 organizedState，理由同
+                        // StartGameUseCase KDoc。
+                        val dealOrderHandTileIdsBySeatIndex = dealtState.players.withIndex().associate { (seatIndex, player) ->
+                            seatIndex to player.hand.tiles.map { tile -> tile.id }
+                        }
+                        val organizedPlayers = dealtState.players.map { player ->
+                            if (handSortPreferenceStore.isEnabled(player.id)) {
+                                player.copy(hand = player.hand.organize(module.tileOrder))
+                            } else {
+                                player
+                            }
+                        }
+                        val newState = dealtState.copy(players = organizedPlayers)
                         val advanceOutcome = AdvanceRoundOutcome(
                             result = AdvanceRoundResult(newState, isMatchOver = false),
                             diceRoll = initializationResult.diceRoll,
                             wallStructure = initializationResult.wallStructure,
+                            dealOrderHandTileIdsBySeatIndex = dealOrderHandTileIdsBySeatIndex,
                         )
                         game.copy(tableState = newState) to Outcome.Success(advanceOutcome)
                     }
@@ -175,12 +194,15 @@ class AdvanceRoundUseCase(
             comboCount = newState.comboCount,
             wallRemainingCount = newState.tileWall.remainingCount,
         )
-        val handTileIdsBySeatIndex = newState.players.withIndex().associate { (seatIndex, player) ->
+        // 翻牌完成那一刻起的最終落地格位——newState 此時已經是整理過的順序，跟決定發牌動畫節奏本身的
+        // advanceOutcome.dealOrderHandTileIdsBySeatIndex 分開，見 MahjongInitialDealPresentation KDoc。
+        val postFlipHandTileIdsBySeatIndex = newState.players.withIndex().associate { (seatIndex, player) ->
             seatIndex to player.hand.tiles.map { tile -> tile.id }
         }
         presentationPublisher.publishInitialDealAnimation(
             gameId,
-            handTileIdsBySeatIndex,
+            advanceOutcome.dealOrderHandTileIdsBySeatIndex,
+            postFlipHandTileIdsBySeatIndex,
             dealerSeatIndex,
             comboStickCount = newState.comboCount,
             dealBatchSizes = newState.config.dealBatchSizes(),
@@ -202,11 +224,14 @@ class AdvanceRoundUseCase(
     /**
      * [invoke] 內部使用的中介結果，把只有平台呈現層需要的一次性擲骰／牌牆結構資料，跟對外公開的
      * [AdvanceRoundResult] 分開夾帶，避免污染既有呼叫端（例如 `GameFlowCoordinator`）只關心的
-     * 對外回傳形狀。
+     * 對外回傳形狀。[dealOrderHandTileIdsBySeatIndex] 是發牌動畫本身該用的原始時間軸順序，在
+     * [result] 的手牌已經被整理過之後就無法再從它反推出來，理由同 `StartGameUseCase` KDoc；整場對局
+     * 已結束（沒有開新的一局）時固定為空 map，不會被用到。
      */
     private data class AdvanceRoundOutcome(
         val result: AdvanceRoundResult,
         val diceRoll: DiceRollResult?,
         val wallStructure: Map<Uuid, TileWallPosition>?,
+        val dealOrderHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     )
 }

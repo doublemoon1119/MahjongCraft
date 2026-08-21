@@ -260,6 +260,12 @@ class FabricMahjongPlayerAreaPresenter(
                 hasDrawnTile = false,
             )
         }
+        // 翻牌後最終該停在哪一格改看 postFlipHandTileIdsBySeatIndex（自動整理手牌啟用時是整理過的
+        // 順序），跟決定發牌動畫本身節奏的 handTileIdsBySeatIndex 分開算，見
+        // MahjongInitialDealPresentation KDoc。
+        val postFlipOrderIndexBySeat = presentation.postFlipHandTileIdsBySeatIndex.mapValues { (_, tileIds) ->
+            tileIds.withIndex().associate { (index, tileId) -> tileId to index }
+        }
 
         val totalTurnCount = presentation.dealBatchSizes.size * seatCount
         // 所有牌共用同一個算好的絕對翻牌時刻，不靠每張牌各自用減法反推剩餘等待時間湊出同一個目標，
@@ -289,8 +295,19 @@ class FabricMahjongPlayerAreaPresenter(
                         tileIndex = tileIds.size - 1 - orderIndex,
                         cornerYieldShift = cornerYieldShiftBySeat.getValue(seatIndex),
                     )
+                    val postFlipOrderIndex = postFlipOrderIndexBySeat.getValue(seatIndex).getValue(tileId)
+                    val postFlipPlacement = MahjongTileTableLayout.handPlacement(
+                        controllerX = controllerPos.x,
+                        controllerY = controllerPos.y,
+                        controllerZ = controllerPos.z,
+                        tableFacing = presentation.tableFacing,
+                        seatIndex = seatIndex,
+                        handSize = tileIds.size,
+                        tileIndex = tileIds.size - 1 - postFlipOrderIndex,
+                        cornerYieldShift = cornerYieldShiftBySeat.getValue(seatIndex),
+                    )
                     tile.assignToTable(presentation.tableId)
-                    scheduleDealBatchAnimation(tile, placement, liftAbsoluteGameTime, flipAbsoluteGameTime)
+                    scheduleDealBatchAnimation(tile, placement, postFlipPlacement, liftAbsoluteGameTime, flipAbsoluteGameTime)
                 }
             }
             batchStart += batchSize
@@ -341,13 +358,21 @@ class FabricMahjongPlayerAreaPresenter(
      * [flipAbsoluteGameTime] 是呼叫端（[presentInitialDeal]）算好、所有牌共用同一份的絕對翻牌時刻
      * （[AnimationStep.WaitUntil]），不是每張牌各自用減法反推剩餘等待時間去湊同一個目標，理由見
      * [AnimationStep.WaitUntil] KDoc——用減法反推的舊寫法只要任何一個相關常數改動就可能悄悄失去同步，
-     * 且不容易察覺。最後額外接上 [MahjongTileTableLayout.dealAnimationTicks] 之外、
-     * `FabricGamePresentationPublisher` 過去另外加總的觀看緩衝（[OPENING_SEQUENCE_EXTRA_VIEWING_TICKS]），
-     * 讓佇列在整段開局呈現真正結束前持續維持「還在忙」，供 `TablePresentationBusyTracker` 查詢。
+     * 且不容易察覺。若這位玩家啟用了自動整理手牌，在觀看緩衝（[OPENING_SEQUENCE_EXTRA_VIEWING_TICKS]）
+     * 播完、整段開局呈現真正結束前的最後一刻，才傳送到 [postFlipPlacement]（可能與 [finalPlacement]
+     * 不同格）——理由見 [MahjongInitialDealPresentation] KDoc：發牌動畫本身（起飛/落下/翻牌的節奏、
+     * 順序）維持原始時間軸不受影響，只有翻牌後最終該停在哪一格才看整理過的順序；刻意等觀看緩衝播完
+     * 才校正位置，不是翻牌動畫一結束就立刻校正——翻牌的姿態旋轉剛好收斂、牌還「感覺上」處於剛翻起來
+     * 的那個瞬間就整隻手牌重新排列，會讓排序動作跟翻牌動畫黏在一起、像是翻牌還沒真正結束就被打斷，
+     * 這是遊戲內實際觀察到的問題。最後額外接上
+     * [MahjongTileTableLayout.dealAnimationTicks] 之外、`FabricGamePresentationPublisher` 過去另外
+     * 加總的觀看緩衝（[OPENING_SEQUENCE_EXTRA_VIEWING_TICKS]），讓佇列在整段開局呈現真正結束前持續
+     * 維持「還在忙」，供 `TablePresentationBusyTracker` 查詢。
      */
     private fun scheduleDealBatchAnimation(
         tile: MahjongTileEntity,
         finalPlacement: MahjongTileWallPlacement,
+        postFlipPlacement: MahjongTileWallPlacement,
         liftAbsoluteGameTime: Long,
         flipAbsoluteGameTime: Long,
     ) {
@@ -399,6 +424,7 @@ class FabricMahjongPlayerAreaPresenter(
                     endPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
                 ),
                 AnimationStep.WaitUntil(viewingEndGameTime),
+                AnimationStep.Teleport(postFlipPlacement.x, postFlipPlacement.y, postFlipPlacement.z, postFlipPlacement.yaw),
             ),
         )
     }

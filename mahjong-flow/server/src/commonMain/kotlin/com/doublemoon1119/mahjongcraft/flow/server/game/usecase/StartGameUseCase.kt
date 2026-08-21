@@ -6,11 +6,13 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.table.GameInitializationResult
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -27,6 +29,7 @@ import kotlin.uuid.Uuid
  * @property authoritativeStateStore Room 與 Game 共用的權威狀態儲存。
  * @property moduleRegistry 麻將規則模組註冊中心，用於依房間配置解析對應的規則模組。
  * @property snapshotSynchronizer 對局快照同步服務。
+ * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
  */
@@ -35,6 +38,7 @@ class StartGameUseCase(
     private val authoritativeStateStore: AuthoritativeStateStore,
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
+    private val handSortPreferenceStore: HandSortPreferenceStore,
     @Provided private val eventPublisher: GameEventPublisher,
     @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
@@ -62,27 +66,44 @@ class StartGameUseCase(
                         module = module,
                         aiPlayerStrategyKeys = room.aiPlayerStrategyKeys,
                     )
-                    val tableState = initializationResult.tableState
+                    val dealtState = initializationResult.tableState
+                    // 只用來讓發牌動畫本身維持原始時間軸（哪張牌在哪一批抵達），不是實際寫回權威狀態
+                    // 的手牌順序——實際寫回的是下面整理過的 organizedState，讓後續所有讀取 Hand.tiles
+                    // 的地方（例如摸牌後的重新呈現）自然維持排序，不需要每個呼叫點各自重新整理一次，
+                    // 見 HandSortPreferenceStore KDoc。
+                    val dealOrderHandTileIdsBySeatIndex = dealtState.players.withIndex().associate { (seatIndex, player) ->
+                        seatIndex to player.hand.tiles.map { tile -> tile.id }
+                    }
+                    val organizedPlayers = dealtState.players.map { player ->
+                        if (handSortPreferenceStore.isEnabled(player.id)) {
+                            player.copy(hand = player.hand.organize(module.tileOrder))
+                        } else {
+                            player
+                        }
+                    }
+                    val organizedState = dealtState.copy(players = organizedPlayers)
+                    val organizedResult = initializationResult.copy(tableState = organizedState)
 
                     AuthoritativeStateUpdate(
                         state = state.copy(
                             rooms = state.rooms - roomId,
                             games = state.games + (
                                 roomId to Game(
-                                    tableState = tableState,
+                                    tableState = organizedState,
                                     flowConfig = room.gameConfig.flowConfig,
                                     hostId = room.hostId,
                                 )
                                 ),
                         ),
-                        result = Outcome.Success(initializationResult),
+                        result = Outcome.Success(StartGameOutcome(organizedResult, dealOrderHandTileIdsBySeatIndex)),
                     )
                 }
             }
         }
 
         if (outcome is Outcome.Error) return outcome
-        val initializationResult = (outcome as Outcome.Success).value
+        val startOutcome = (outcome as Outcome.Success).value
+        val initializationResult = startOutcome.initializationResult
         val tableState = initializationResult.tableState
 
         // 2. 為每位玩家同步一份對局快照
@@ -123,12 +144,16 @@ class StartGameUseCase(
             comboCount = tableState.comboCount,
             wallRemainingCount = tableState.tileWall.remainingCount,
         )
-        val handTileIdsBySeatIndex = tableState.players.withIndex().associate { (seatIndex, player) ->
+        // 翻牌完成那一刻起的最終落地格位——tableState 此時已經是整理過的順序（見上方 organizedState），
+        // 跟決定發牌動畫節奏本身的 startOutcome.dealOrderHandTileIdsBySeatIndex 分開，見
+        // MahjongInitialDealPresentation KDoc。
+        val postFlipHandTileIdsBySeatIndex = tableState.players.withIndex().associate { (seatIndex, player) ->
             seatIndex to player.hand.tiles.map { tile -> tile.id }
         }
         presentationPublisher.publishInitialDealAnimation(
             roomId,
-            handTileIdsBySeatIndex,
+            startOutcome.dealOrderHandTileIdsBySeatIndex,
+            postFlipHandTileIdsBySeatIndex,
             dealerSeatIndex,
             comboStickCount = tableState.comboCount,
             dealBatchSizes = tableState.config.dealBatchSizes(),
@@ -138,4 +163,14 @@ class StartGameUseCase(
 
         return Outcome.Success(roomId)
     }
+
+    /**
+     * `update` 區塊內部使用的中繼結果，讓 [dealOrderHandTileIdsBySeatIndex]（發牌動畫本身該用的原始
+     * 時間軸順序，在 [initializationResult] 的手牌已經被整理過之後就無法再從它反推出來）能跟著
+     * [initializationResult] 一起帶出 `authoritativeStateStore.update` 的作用域。
+     */
+    private data class StartGameOutcome(
+        val initializationResult: GameInitializationResult,
+        val dealOrderHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
+    )
 }

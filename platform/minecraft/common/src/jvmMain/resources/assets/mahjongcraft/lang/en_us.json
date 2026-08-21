@@ -102,5 +102,8 @@
   "mahjongcraft.message.round_info_wall_remaining": "Wall Remaining: %d",
   "mahjongcraft.message.tile_labels_toggle_prefix": "Tile corner labels toggled: ",
   "mahjongcraft.message.tile_labels_state_on": "On",
-  "mahjongcraft.message.tile_labels_state_off": "Off"
+  "mahjongcraft.message.tile_labels_state_off": "Off",
+  "mahjongcraft.message.hand_sort_toggle_prefix": "Auto-sort hand toggled: ",
+  "mahjongcraft.message.hand_sort_state_on": "On",
+  "mahjongcraft.message.hand_sort_state_off": "Off"
 }
