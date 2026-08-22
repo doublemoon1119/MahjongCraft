@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
@@ -25,9 +26,10 @@ import kotlin.uuid.toJavaUuid
  * GUI/HUD（例如你說的名次上下移動動畫）只需要在呼叫端換掉輸出方式，不需要動 `mahjong-flow` 或
  * 伺服端任何一行；[previousSnapshot]／[newSnapshot] 本身就已經是動畫需要的頭尾兩個關鍵影格。
  *
- * 名次同分時依 `currentWind`（這一局的座位方位，隨連莊/過莊輪轉）決定順序，越靠近這一局的東家名次
- * 越前面；跟對局結束的最終排名（[buildMatchResultChatMessage]）改用 `initialSeat`（起家）不同，
- * 因為這裡談的是這一局的座位，不是整場對局開始時的座位。
+ * 排名（含同分決勝判準）交給 [module]（[MahjongRuleModule.compareForRoundRanking]），不在這裡寫死
+ * ——跟對局結束的最終排名（[buildMatchResultChatMessage]）用的是不同的 hook
+ * （[MahjongRuleModule.compareForMatchRanking]），因為這裡談的是這一局的座位，不是整場對局開始時的
+ * 座位，兩者的同分決勝依據可能不同。
  *
  * @return 不是回合結束事件（自摸／榮和／流局以外的動作），或沒有前一份快照可供比較（例如玩家剛連線、
  *   還沒收到過任何 `gameUpdate`）時回傳 null，代表呼叫端不需要顯示任何訊息。
@@ -36,6 +38,7 @@ fun buildRoundResultChatMessage(
     action: GameAction,
     previousSnapshot: TableStateSnapshot?,
     newSnapshot: TableStateSnapshot,
+    module: MahjongRuleModule<*>,
     displayNameRegistry: TileDisplayNameRegistry,
     tileAssetRegistry: MinecraftTileAssetRegistry,
     tileEmojiRegistry: TileEmojiRegistry,
@@ -51,7 +54,7 @@ fun buildRoundResultChatMessage(
     )
     val message: MutableText = Text.translatable(MinecraftMessageKeys.ROUND_RESULT_BROADCAST, actionText)
 
-    val rankBy = compareByDescending<MahjongPlayerSnapshot> { it.score }.thenBy { it.currentWind.ordinal }
+    val rankBy = module.compareForRoundRanking()
     val previousRankById = previousSnapshot.players.sortedWith(rankBy).withIndex().associate { (index, p) -> p.id to index + 1 }
     val previousScoreById = previousSnapshot.players.associate { it.id to it.score }
     val newRanked = newSnapshot.players.sortedWith(rankBy)
@@ -87,18 +90,15 @@ private fun rankChangeSymbol(previousRank: Int, newRank: Int): String = when {
  * 把對局結束事件（[GameAction.MatchEnded]）組成一則列出最終名次的聊天訊息，占位呈現理由同
  * [buildRoundResultChatMessage]。
  *
- * 名次依 [newSnapshot] 各玩家的最終 `score` 由高到低排序；同分時依 `initialSeat` 決定順序——
- * `initialSeat` 是開局當下（起家／初始東家）分配的座位，終局前都不會再變（會變的是 `currentWind`，
- * 隨連莊/過莊輪轉），座位越靠近起家（東 → 南 → 西 → 北）名次越前面，這是日本麻將常見的同分決勝
- * 慣例。
+ * 排名（含同分決勝判準）交給 [module]（[MahjongRuleModule.compareForMatchRanking]），不在這裡寫死。
  *
  * @return 不是對局結束事件時回傳 null，代表呼叫端不需要顯示任何訊息。
  */
-fun buildMatchResultChatMessage(action: GameAction, newSnapshot: TableStateSnapshot): Text? {
+fun buildMatchResultChatMessage(action: GameAction, newSnapshot: TableStateSnapshot, module: MahjongRuleModule<*>): Text? {
     if (action !is GameAction.MatchEnded) return null
 
     val message: MutableText = Text.translatable(MinecraftMessageKeys.MATCH_RESULT_BROADCAST)
-    appendRankingLines(message, newSnapshot.players.sortedWith(compareByDescending<MahjongPlayerSnapshot> { it.score }.thenBy { it.initialSeat.ordinal }))
+    appendRankingLines(message, newSnapshot.players.sortedWith(module.compareForMatchRanking()))
     return message
 }
 

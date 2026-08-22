@@ -33,16 +33,16 @@ import kotlin.uuid.Uuid
  */
 data class MahjongPlayer(
     val id: Uuid,
-    val initialSeat: Wind,
+    override val initialSeat: Wind,
     val hand: Hand = Hand(),
     val discardPile: DiscardPile<*>,
     val playerRuleState: PlayerRuleState? = null,
-    val score: Int = 0,
+    override val score: Int = 0,
     val aiStrategyKey: String? = null,
-    val currentWind: Wind = initialSeat,
+    override val currentWind: Wind = initialSeat,
     val passedTilesInRound: Set<Tile> = emptySet(),
     val actionHistory: List<GameAction> = emptyList(),
-) {
+) : RankablePlayer {
     /** 是否由 AI 操控——[aiStrategyKey] 非 null 即代表是 AI，不需要另外存一個 Boolean。 */
     val isAi: Boolean get() = aiStrategyKey != null
 

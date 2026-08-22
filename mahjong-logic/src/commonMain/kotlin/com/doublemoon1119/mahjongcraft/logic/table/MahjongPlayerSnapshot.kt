@@ -19,14 +19,14 @@ import kotlin.uuid.Uuid
  */
 data class MahjongPlayerSnapshot(
     val id: Uuid,
-    val initialSeat: Wind,
-    val currentWind: Wind,
+    override val initialSeat: Wind,
+    override val currentWind: Wind,
     val hand: HandSnapshot,
     val discardPile: DiscardPile<*>,
     val playerRuleState: PlayerRuleState?,
-    val score: Int,
+    override val score: Int,
     val isAi: Boolean,
-)
+) : RankablePlayer
 
 /**
  * 產生一個 [MahjongPlayer] 的不可變快照。

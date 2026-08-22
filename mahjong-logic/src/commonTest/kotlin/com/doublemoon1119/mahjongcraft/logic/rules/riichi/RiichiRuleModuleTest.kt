@@ -762,6 +762,38 @@ class RiichiRuleModuleTest {
     }
 
     /**
+     * 驗證 [MahjongRuleModule.compareForRoundRanking] 預設實作：分數優先，同分時依這一局的座位
+     * （`currentWind`）決定順序，越接近這一局東家名次越前面——`RiichiRuleModule` 沒有覆寫這個 hook，
+     * 這裡測的就是介面本身的預設慣例。
+     */
+    @Test
+    fun `test compareForRoundRanking breaks ties by currentWind`() {
+        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH).copy(score = 25000, currentWind = Wind.EAST)
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST).copy(score = 25000, currentWind = Wind.SOUTH)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 30000, currentWind = Wind.WEST)
+
+        val ranked = listOf(south, west, east).sortedWith(module.compareForRoundRanking())
+
+        assertEquals(listOf(west, east, south), ranked, "Highest score first; tied scores broken by this hand's seat (currentWind), not initialSeat.")
+    }
+
+    /**
+     * 驗證 [MahjongRuleModule.compareForMatchRanking] 預設實作：分數優先，同分時依起家座位
+     * （`initialSeat`）決定順序，越接近起家名次越前面。
+     */
+    @Test
+    fun `test compareForMatchRanking breaks ties by initialSeat`() {
+        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST).copy(score = 24000, currentWind = Wind.SOUTH)
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH).copy(score = 24000, currentWind = Wind.EAST)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH).copy(score = 20000, currentWind = Wind.NORTH)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 32000, currentWind = Wind.WEST)
+
+        val ranked = listOf(north, south, west, east).sortedWith(module.compareForMatchRanking())
+
+        assertEquals(listOf(west, east, south, north), ranked, "Highest score first; tied scores broken by initialSeat, not currentWind.")
+    }
+
+    /**
      * 聽牌手牌：1112345678999m（聽 1m 對倒），供 [declareExhaustiveDraw] 測試共用。
      */
     private fun tenpaiHand() = FakeHandFactory.create(

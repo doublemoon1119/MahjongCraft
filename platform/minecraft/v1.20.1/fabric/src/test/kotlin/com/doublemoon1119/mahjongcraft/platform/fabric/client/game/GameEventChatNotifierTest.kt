@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
@@ -25,6 +27,11 @@ class GameEventChatNotifierTest {
     private val tileAssetRegistry = MinecraftTileAssetRegistryImpl()
     private val tileEmojiRegistry = TileEmojiRegistryImpl()
 
+    /** 排名邏輯測的是 [MahjongRuleModule] 介面的預設實作，用哪個規則模組不影響結果——這裡沒有
+     *  覆寫 `compareForRoundRanking`／`compareForMatchRanking`，借用即可，跟快照本身用的
+     *  `FakeMahjongRuleConfig` 是不是同一種規則無關。 */
+    private val module = RiichiRuleModule(id = "riichi", config = RiichiRuleConfig())
+
     @Test
     fun `returns null for actions that do not end a round`() {
         val previous = fakeSnapshot(scores = listOf(25000, 25000))
@@ -34,6 +41,7 @@ class GameEventChatNotifierTest {
             action = GameAction.Discard(kotlin.uuid.Uuid.random()),
             previousSnapshot = previous,
             newSnapshot = current,
+            module = module,
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
@@ -50,6 +58,7 @@ class GameEventChatNotifierTest {
             action = GameAction.Tsumo,
             previousSnapshot = null,
             newSnapshot = current,
+            module = module,
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
@@ -80,6 +89,7 @@ class GameEventChatNotifierTest {
             action = GameAction.Tsumo,
             previousSnapshot = previous,
             newSnapshot = current,
+            module = module,
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
@@ -131,6 +141,7 @@ class GameEventChatNotifierTest {
             action = GameAction.Tsumo,
             previousSnapshot = previous,
             newSnapshot = current,
+            module = module,
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
@@ -153,7 +164,7 @@ class GameEventChatNotifierTest {
     fun `returns null for match result when the action is not match ended`() {
         val snapshot = fakeSnapshot(scores = listOf(25000, 25000))
 
-        assertNull(buildMatchResultChatMessage(GameAction.Tsumo, snapshot))
+        assertNull(buildMatchResultChatMessage(GameAction.Tsumo, snapshot, module))
     }
 
     @Test
@@ -173,7 +184,7 @@ class GameEventChatNotifierTest {
             ),
         ).toSnapshot(visibleHandPlayerIds = emptySet())
 
-        val message = buildMatchResultChatMessage(GameAction.MatchEnded, snapshot)
+        val message = buildMatchResultChatMessage(GameAction.MatchEnded, snapshot, module)
 
         val rankingLines = message?.siblings
             .orEmpty()

@@ -308,6 +308,39 @@ class AdvanceRoundUseCaseTest {
     }
 
     /**
+     * 驗證終局排名同分決勝依 `initialSeat`（起家順位）：A(南) 跟 B(西) 並列最高分 28000，A 起家順位
+     * 較前（南 < 西），供託應該歸給 A，不是 B——用來確認 `compareForMatchRanking` 真的有在比
+     * `initialSeat`，不是只比分數。
+     */
+    @Test
+    fun `test advance round breaks tied match ranking by initialSeat when awarding leftover stick pot`() = runTest {
+        val fixtures = Fixtures()
+        val playerA = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(score = 28000)
+        val playerB = FakeMahjongPlayerFactory.create(Wind.WEST).copy(score = 28000)
+        val playerC = FakeMahjongPlayerFactory.create(Wind.EAST).copy(score = 24000)
+        val playerD = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(score = 20000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(playerA, playerB, playerC, playerD),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.OneGame),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 1),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        val finalA = advanceResult.tableState.players.first { it.id == playerA.id }
+        val finalB = advanceResult.tableState.players.first { it.id == playerB.id }
+        assertEquals(29000, finalA.score, "A sits closer to the starting dealer (South before West) and should win the tie.")
+        assertEquals(28000, finalB.score, "B should not receive the stick pot despite the tied score.")
+    }
+
+    /**
      * 驗證整場對局結束時，桌上沒有未被收下的立直棒，分數與桌況完全不受影響。
      */
     @Test

@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
+import com.doublemoon1119.mahjongcraft.logic.table.RankablePlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayout
@@ -399,6 +400,28 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 這個規則想額外顯示的局況項目列表。
      */
     fun getRoundInfoExtras(tableState: TableState): List<RoundInfoExtra> = emptyList()
+
+    /**
+     * 同一局結束時的名次排序：分數高者優先，同分時依這一局的座位（越接近這一局東家名次越前面）。
+     * 用於回合結束的名次升降呈現，不是終局排名——同分決勝的座位基準不同，見 [compareForMatchRanking]。
+     *
+     * 這是所有規則共用的預設慣例，規則可以整個覆寫成自己的排名邏輯（甚至完全不同的判準）。
+     */
+    fun compareForRoundRanking(): Comparator<RankablePlayer> {
+        val byScoreDescending = compareByDescending<RankablePlayer> { it.score }
+        return byScoreDescending.thenBy { it.currentWind.ordinal }
+    }
+
+    /**
+     * 整場對局結束時的最終名次排序：分數高者優先，同分時依起家座位（越接近起家名次越前面）——起家在
+     * 對局開始時就固定、不會隨連莊/過莊改變，是最終名次同分決勝的傳統依據。
+     *
+     * 這是所有規則共用的預設慣例，規則可以整個覆寫成自己的排名邏輯（甚至完全不同的判準）。
+     */
+    fun compareForMatchRanking(): Comparator<RankablePlayer> {
+        val byScoreDescending = compareByDescending<RankablePlayer> { it.score }
+        return byScoreDescending.thenBy { it.initialSeat.ordinal }
+    }
 
     /**
      * 因應「玩家放棄一次原本合法的和牌機會」事件，套用規則特有的狀態變化——例如日麻立直後放過榮和

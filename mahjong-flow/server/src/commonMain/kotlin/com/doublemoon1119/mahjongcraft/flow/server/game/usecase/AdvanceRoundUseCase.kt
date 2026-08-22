@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
-import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
@@ -95,14 +94,14 @@ class AdvanceRoundUseCase(
                     val isMatchOver = roundAdvancement.isMatchOver || module.hasAdditionalMatchEndCondition(state)
 
                     if (isMatchOver) {
-                        // 整場對局結束時，桌上未被任何人收下的供託（如立直棒）歸給最終第一名——分數
-                        // 高者優先，同分時 initialSeat 較小者優先，跟用戶端既有的排名呈現邏輯一致
-                        // （見 GameEventChatNotifier 的排名比較器）。沿用既有的 collectStickPot（贏家
-                        // 收供託也是同一支函式），不支援供託機制的規則回傳 null，維持 state 不變。
+                        // 整場對局結束時，桌上未被任何人收下的供託（如立直棒）歸給最終第一名——排名
+                        // 判準交給 module.compareForMatchRanking()，跟用戶端的終局排名呈現邏輯共用
+                        // 同一支規則 hook（見 GameEventChatNotifier）。沿用既有的 collectStickPot
+                        // （贏家收供託也是同一支函式），不支援供託機制的規則回傳 null，維持 state 不變。
                         val stickPot = module.collectStickPot(state)
                         val finalState = if (stickPot != null && stickPot.second > 0) {
                             val topPlayerId = state.players
-                                .sortedWith(compareByDescending<MahjongPlayer> { it.score }.thenBy { it.initialSeat.ordinal })
+                                .sortedWith(module.compareForMatchRanking())
                                 .first().id
                             state.copy(
                                 players = state.players.map {

@@ -77,14 +77,16 @@ class MahjongCraftModClient : ClientModInitializer {
             stateStore.apply(payload)
             val action = payload.action.toDomain(networkRegistries)
             val newSnapshot = stateStore.gameSnapshot ?: return@registerClientReceiver
+            val module = moduleRegistry.getModule(newSnapshot.config)
             val message = buildRoundResultChatMessage(
                 action = action,
                 previousSnapshot = previousSnapshot,
                 newSnapshot = newSnapshot,
+                module = module,
                 displayNameRegistry = tileDisplayNames,
                 tileAssetRegistry = tileAssetRegistry,
                 tileEmojiRegistry = tileEmojiRegistry,
-            ) ?: buildMatchResultChatMessage(action, newSnapshot) ?: buildDiceRolledChatMessage(action) ?: return@registerClientReceiver
+            ) ?: buildMatchResultChatMessage(action, newSnapshot, module) ?: buildDiceRolledChatMessage(action) ?: return@registerClientReceiver
             MinecraftClient.getInstance().player?.sendMessage(message)
         }
         MahjongChannels.roomSnapshot.registerClientReceiver(json) { payload ->
