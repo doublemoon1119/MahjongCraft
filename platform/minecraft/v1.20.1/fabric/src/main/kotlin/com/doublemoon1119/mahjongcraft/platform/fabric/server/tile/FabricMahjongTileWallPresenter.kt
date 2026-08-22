@@ -119,9 +119,10 @@ class FabricMahjongTileWallPresenter(
      * `FabricGamePresentationPublisher.publishDiceRoll`，王牌移出開門的時機要跟著往後移，不能只算
      * 擲骰動畫本身的時長），不是每張王牌各自用減法反推剩餘等待時間去湊同一個目標——理由見
      * [AnimationStep.WaitUntil] KDoc。[MahjongTileWallPresentation.diceCount] 為 `0`（沒有搭配擲骰）
-     * 或沒有王牌時這張牌的佇列到掉落動畫播完就結束，不會多排這段。同一時機點順便把
-     * [MahjongTileWallPresentation.revealedTileIds] 對應的牌翻成正面朝上——開局第一張寶牌指示牌本該
-     * 在王牌分離、開門完成的這一刻公開，不需要另外排一個時機點。
+     * 或沒有王牌時這張牌的佇列到掉落動畫播完就結束，不會多排這段。同一時機點順便讓
+     * [MahjongTileWallPresentation.revealedTileIds] 對應的牌接續播放「起飛→翻面→落下」的公開動畫
+     * （見 [revealFlipAnimationSteps]）——開局第一張寶牌指示牌本該在王牌分離、開門完成的這一刻公開，
+     * 不需要另外排一個時機點。
      */
     private fun startWallDropAnimations(
         world: ServerWorld,
@@ -166,15 +167,74 @@ class FabricMahjongTileWallPresenter(
                 )
                 steps += AnimationStep.WaitUntil(revealAbsoluteGameTime)
                 steps += AnimationStep.Teleport(openPlacement.x, openPlacement.y, openPlacement.z, openPlacement.yaw)
-                if (tileId in presentation.revealedTileIds) steps += AnimationStep.Custom(MahjongTilePose.FACE_UP)
+                if (tileId in presentation.revealedTileIds) {
+                    steps += revealFlipAnimationSteps(openPlacement.x, openPlacement.y, openPlacement.z, openPlacement.yaw)
+                }
             }
             tile.enqueueAll(steps)
         }
     }
 
     /**
-     * 把 [revealedTileIds] 對應的既有管理中牌姿態改成正面朝上；找不到對應 entity（例如桌子已被拆掉、
-     * 或這局已經結束）的牌直接跳過，回傳結果只用來讓呼叫端記 log，不影響已成功翻面的牌。
+     * 寶牌指示牌翻面公開的「起飛→翻面→落下」步驟：牌原地（[x]／[z]／[yaw] 不變）往上抬起，在半空中
+     * 把姿態從 [MahjongTilePose.FACE_DOWN] 轉成 [MahjongTilePose.FACE_UP]（180 度旋轉插值，不是瞬間
+     * 換面——[MahjongTilePose.rotationDegrees] 這兩個姿態剛好相差 180 度），再落回原位，手法完全比照
+     * `FabricMahjongPlayerAreaPresenter` 開局發牌的起飛/翻牌/落下動畫。跟開局發牌不同的是這裡真實座標
+     * 全程只有 Y 在變、[x]／[z] 從頭到尾不變（牌本來就已經在開門後的正確位置，不需要像發牌那樣額外
+     * 傳送到不同的水平位置），因此不需要隱形／傳送到新座標那個轉場技巧。
+     *
+     * 翻面這段的 [AnimationStep.PlayMotion.easeRotation] 傳 `true`：旋轉本身也套用跟位移相同的
+     * ease-out 曲線，不是預設的純線性——遊戲內驗證過純線性旋轉在銜接下一個 step（落下）時，旋轉會
+     * 毫無預兆地瞬間停住，跟位移早已有的減速收尾比起來明顯生硬；套用同一條曲線後兩者收尾節奏一致，
+     * 翻面本身也有先快後慢的自然感，不是等速旋轉。這是刻意只在這個呼叫點加上的行為，不影響開局發牌
+     * 翻牌／摸牌換面等其他既有呼叫點的線性旋轉手感，見 [AnimationStep.PlayMotion.easeRotation] KDoc。
+     */
+    private fun revealFlipAnimationSteps(x: Double, y: Double, z: Double, yaw: Float): List<AnimationStep<MahjongTilePose>> {
+        val peakY = y + REVEAL_LIFT_HEIGHT
+        return listOf(
+            AnimationStep.Teleport(x, peakY, z, yaw),
+            AnimationStep.PlayMotion(
+                durationTicks = REVEAL_LIFT_DURATION_TICKS,
+                arcHeight = 0.0,
+                startOffsetX = 0.0,
+                startOffsetY = y - peakY,
+                startOffsetZ = 0.0,
+                startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+            ),
+            AnimationStep.Custom(MahjongTilePose.FACE_UP),
+            AnimationStep.PlayMotion(
+                durationTicks = REVEAL_FLIP_DURATION_TICKS,
+                arcHeight = 0.0,
+                startOffsetX = 0.0,
+                startOffsetY = 0.0,
+                startOffsetZ = 0.0,
+                startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
+                easeRotation = true,
+            ),
+            AnimationStep.Teleport(x, y, z, yaw),
+            AnimationStep.PlayMotion(
+                durationTicks = REVEAL_DROP_DURATION_TICKS,
+                arcHeight = 0.0,
+                startOffsetX = 0.0,
+                startOffsetY = peakY - y,
+                startOffsetZ = 0.0,
+                startPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
+                endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
+            ),
+        )
+    }
+
+    /**
+     * 排定 [revealedTileIds] 對應的既有管理中牌播放「起飛→翻面→落下」動畫（見
+     * [revealFlipAnimationSteps]），公開成正面朝上；找不到對應 entity（例如桌子已被拆掉、或這局已經
+     * 結束）的牌直接跳過，回傳結果只用來讓呼叫端記 log，不影響已成功排定的牌。牌目前的實際座標
+     * （`tile.x`／`tile.y`／`tile.z`／`tile.yaw`）就是動畫的起訖點，不需要重新查詢牌牆結構座標——這張
+     * 牌本來就已經在開門後的正確位置，手法同 `FabricMahjongPlayerAreaPresenter.scheduleDrawnTileAnimation`
+     * 讀取 entity 自身座標的既有慣例。同一次呼叫裡的牌全部立刻起飛，不需要額外的共用等待時刻：這裡
+     * 是同步方法、一個 tick 內跑完整個迴圈，[net.minecraft.server.world.ServerWorld.getTime] 對每張牌
+     * 而言都是同一個值，天然同步。
      */
     override fun revealDeadWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult {
         val world = resolveWorld(tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
@@ -182,7 +242,9 @@ class FabricMahjongTileWallPresenter(
         val managedTiles = findManagedTiles(world, tableId, controllerPos)
             .filter { tile -> tile.uuid.toKotlinUuid() in revealedTileIds }
             .associateBy { tile -> tile.uuid.toKotlinUuid() }
-        managedTiles.values.forEach { tile -> tile.tilePose = MahjongTilePose.FACE_UP }
+        managedTiles.values.forEach { tile ->
+            tile.enqueueAll(revealFlipAnimationSteps(tile.x, tile.y, tile.z, tile.yaw))
+        }
         val missingTileCount = revealedTileIds.size - managedTiles.size
         if (missingTileCount > 0) {
             logger.warn(
@@ -252,5 +314,20 @@ class FabricMahjongTileWallPresenter(
 
         /** 牌牆生成掉落動畫的半空起點高度，相對掉落終點的世界 Y 偏移；遊戲內驗證後從 1.5 調低。 */
         const val WALL_DROP_HEIGHT: Double = 0.8
+
+        /** 寶牌指示牌翻面動畫的起飛高度，理由同 [WALL_DROP_HEIGHT]。 */
+        const val REVEAL_LIFT_HEIGHT: Double = 0.4
+
+        /**
+         * 寶牌指示牌翻面動畫起飛階段的時長；比其他牌張動畫的對應時長長，因為這段動畫沒有其他牌同時
+         * 播放分散注意力，需要單獨看得清楚，遊戲內比對後從最初的 4 調到現在的值。
+         */
+        const val REVEAL_LIFT_DURATION_TICKS: Int = 8
+
+        /** 寶牌指示牌翻面動畫本身（[MahjongTilePose.FACE_DOWN] 轉 [MahjongTilePose.FACE_UP]）的時長，理由同 [REVEAL_LIFT_DURATION_TICKS]。 */
+        const val REVEAL_FLIP_DURATION_TICKS: Int = 8
+
+        /** 寶牌指示牌翻面動畫落下階段的時長，理由同 [REVEAL_LIFT_DURATION_TICKS]。 */
+        const val REVEAL_DROP_DURATION_TICKS: Int = 8
     }
 }

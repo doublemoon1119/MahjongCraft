@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
 import kotlin.math.PI
 import kotlin.math.sin
@@ -18,6 +19,11 @@ data class TileMotionAnimationSpec(
     val startPoseRotationDegrees: Float,
     /** 結束姿態的局部 X 軸旋轉角。 */
     val endPoseRotationDegrees: Float,
+    /**
+     * 姿態旋轉角是否也套用跟位移相同的 ease-out 曲線；預設 `false` 維持既有純線性內插，理由見
+     * [AnimationStep.PlayMotion.easeRotation] KDoc。
+     */
+    val easeRotation: Boolean = false,
 ) {
     init {
         require(durationTicks > 0) { "durationTicks must be positive" }
@@ -69,7 +75,8 @@ class TileMotionAnimation(
 
         // 位移用 ease-out（1 減去「1 減 progress」的平方）取代原始 progress 直接線性內插——遊戲內
         // 實際比較過先慢後快（ease-in）跟先快後慢（ease-out）兩種曲線，後者落地前明顯減速的感覺更好；
-        // 姿態旋轉角刻意維持線性內插，不受此影響（旋轉的速度感不需要跟位移的曲線綁在一起）。
+        // 姿態旋轉角預設維持線性內插，不受此影響（旋轉的速度感不需要跟位移的曲線綁在一起）——只有
+        // [TileMotionAnimationSpec.easeRotation] 明確要求時才套用同一條 ease-out 曲線，見該欄位 KDoc。
         val remaining = 1.0 - progress
         val easedProgress = 1.0 - remaining * remaining
         val offset = DiceAnimationVector(
@@ -77,8 +84,9 @@ class TileMotionAnimation(
             y = startOffset.y * (1.0 - easedProgress) + sin(PI * progress) * spec.arcHeight,
             z = startOffset.z * (1.0 - easedProgress),
         )
+        val rotationProgress = if (spec.easeRotation) easedProgress else progress
         val poseRotationDegrees = spec.startPoseRotationDegrees +
-            (spec.endPoseRotationDegrees - spec.startPoseRotationDegrees) * progress.toFloat()
+            (spec.endPoseRotationDegrees - spec.startPoseRotationDegrees) * rotationProgress.toFloat()
         return TileMotionAnimationFrame(
             offset = offset,
             poseRotationDegrees = poseRotationDegrees,

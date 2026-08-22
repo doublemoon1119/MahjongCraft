@@ -83,6 +83,7 @@ class MahjongTileEntityRenderer(
                     arcHeight = entity.animationArcHeight,
                     startPoseRotationDegrees = entity.animationStartPoseRotationDegrees,
                     endPoseRotationDegrees = entity.animationEndPoseRotationDegrees,
+                    easeRotation = entity.animationEaseRotation,
                 ),
             ).frame(elapsedTicks = elapsedAnimationTicks, startOffset = entity.animationStartOffset)
         } else {

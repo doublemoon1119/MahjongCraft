@@ -30,6 +30,10 @@ sealed interface AnimationStep<out C> {
      * 播放一段既有的運動動畫（起飛／落下等視覺位移，對應各平台既有 `startMotionAnimation` 的參數
      * 語意）：真實座標不受影響，只驅動 render 端的位移／姿態內插；[durationTicks] 到期前這個 step
      * 會讓佇列停在原地，不處理後續 step。
+     *
+     * [easeRotation] 預設 `false`：姿態旋轉角內插維持純線性，這是開局發牌翻牌／摸牌換面等既有呼叫點
+     * 已經驗證過手感的既有行為，不因為新增這個參數而改變。只有明確需要旋轉本身也先快後慢（跟位移的
+     * ease-out 曲線一致，銜接下一個 step 時才不會有旋轉忽然停止的生硬感）的呼叫點才傳 `true`。
      */
     data class PlayMotion(
         val durationTicks: Int,
@@ -39,6 +43,7 @@ sealed interface AnimationStep<out C> {
         val startOffsetZ: Double,
         val startPoseRotationDegrees: Float,
         val endPoseRotationDegrees: Float,
+        val easeRotation: Boolean = false,
     ) : AnimationStep<Nothing>
 
     /** 實體專屬的瞬間動作（例如麻將牌的姿態切換），交給該實體類型自己解讀與套用。 */

@@ -121,6 +121,10 @@ class MahjongTileEntity(
     val animationEndPoseRotationDegrees: Float
         get() = dataTracker[ANIMATION_END_POSE_ROTATION]
 
+    /** 姿態旋轉角是否也套用 ease-out 曲線，理由見 [AnimationStep.PlayMotion.easeRotation] KDoc。 */
+    val animationEaseRotation: Boolean
+        get() = dataTracker[ANIMATION_EASE_ROTATION]
+
     /** 這個 entity 是否已經做過一次 [validateStillManagedByActiveGame] 檢查；只需要做一次。 */
     private var hasValidatedManagedState = false
 
@@ -138,6 +142,7 @@ class MahjongTileEntity(
         dataTracker.set(ANIMATION_START_OFFSET_Z, step.startOffsetZ.toFloat())
         dataTracker.set(ANIMATION_START_POSE_ROTATION, step.startPoseRotationDegrees)
         dataTracker.set(ANIMATION_END_POSE_ROTATION, step.endPoseRotationDegrees)
+        dataTracker.set(ANIMATION_EASE_ROTATION, step.easeRotation)
         animating = true
     }
 
@@ -326,6 +331,7 @@ class MahjongTileEntity(
         dataTracker.startTracking(ANIMATION_START_OFFSET_Z, 0.0f)
         dataTracker.startTracking(ANIMATION_START_POSE_ROTATION, 0.0f)
         dataTracker.startTracking(ANIMATION_END_POSE_ROTATION, 0.0f)
+        dataTracker.startTracking(ANIMATION_EASE_ROTATION, false)
     }
 
     /**
@@ -429,5 +435,9 @@ class MahjongTileEntity(
         /** 同步動畫結束姿態的局部 X 軸旋轉角。 */
         private val ANIMATION_END_POSE_ROTATION: TrackedData<Float> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+
+        /** 同步姿態旋轉角是否也套用 ease-out 曲線。 */
+        private val ANIMATION_EASE_ROTATION: TrackedData<Boolean> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
     }
 }

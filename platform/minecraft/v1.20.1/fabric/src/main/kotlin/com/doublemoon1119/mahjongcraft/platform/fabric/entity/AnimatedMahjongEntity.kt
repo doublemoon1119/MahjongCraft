@@ -201,6 +201,7 @@ abstract class AnimatedMahjongEntity<C>(
                 stepNbt.putDouble(NBT_KEY_START_OFFSET_Z, step.startOffsetZ)
                 stepNbt.putFloat(NBT_KEY_START_POSE_ROTATION, step.startPoseRotationDegrees)
                 stepNbt.putFloat(NBT_KEY_END_POSE_ROTATION, step.endPoseRotationDegrees)
+                stepNbt.putBoolean(NBT_KEY_EASE_ROTATION, step.easeRotation)
             }
 
             is AnimationStep.Custom -> {
@@ -230,6 +231,7 @@ abstract class AnimatedMahjongEntity<C>(
             startOffsetZ = stepNbt.getDouble(NBT_KEY_START_OFFSET_Z),
             startPoseRotationDegrees = stepNbt.getFloat(NBT_KEY_START_POSE_ROTATION),
             endPoseRotationDegrees = stepNbt.getFloat(NBT_KEY_END_POSE_ROTATION),
+            easeRotation = stepNbt.getBoolean(NBT_KEY_EASE_ROTATION),
         )
 
         TYPE_CUSTOM -> AnimationStep.Custom(deserializeCustomStep(stepNbt))
@@ -264,5 +266,6 @@ abstract class AnimatedMahjongEntity<C>(
         const val NBT_KEY_START_OFFSET_Z = "StartOffsetZ"
         const val NBT_KEY_START_POSE_ROTATION = "StartPoseRotation"
         const val NBT_KEY_END_POSE_ROTATION = "EndPoseRotation"
+        const val NBT_KEY_EASE_ROTATION = "EaseRotation"
     }
 }
