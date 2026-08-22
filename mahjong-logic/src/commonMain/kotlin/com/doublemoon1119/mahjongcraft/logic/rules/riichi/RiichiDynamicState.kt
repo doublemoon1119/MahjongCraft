@@ -26,12 +26,12 @@ data class RiichiDynamicState(
      *
      * 資料來源必須是 [TableState.initialDeadWall]，不能用 [TableState.tileWall]——後者是
      * `GameInitializer.buildOpenedWall()` 建立時就已經排除王牌的活牌堆（`TileWall(layoutResult.drawOrder)`），
-     * 而且會隨每次摸牌持續縮短；[KanDeclarationApplier] 的嶺上摸牌（`TileWall.drawLast()`）目前也是
-     * 直接從這個活牌堆尾端摸給玩家，並不會真的去動 [TableState.initialDeadWall]。也就是說在這個
-     * 簡化後的實作裡，王牌集合從開局到終局都完全固定不變，這裡不需要、也不應該對索引做任何隨槓數
-     * 或摸牌次數變動的補償計算——過去用 `state.tileWall` 當來源、外加 `(4 - kanCount)` 補償位移的
-     * 寫法，是把「活牌堆尾端會縮短」跟「王牌本身固定不變」搞混，算出來的指示牌會隨場上摸牌次數持續
-     * 飄移，是真正影響到寶牌算分的錯誤，不只是呈現層看不到指示牌翻面而已。
+     * 而且會隨每次摸牌持續縮短；`KanDeclarationApplier.drawRinshanTile` 的嶺上摸牌也是直接從
+     * [TableState.initialDeadWall] 依已成立槓數當索引取用，同樣不會動到這份固定王牌集合本身。也就是說
+     * 王牌集合從開局到終局都完全固定不變，這裡不需要、也不應該對索引做任何隨槓數或摸牌次數變動的
+     * 補償計算——過去用 `state.tileWall` 當來源、外加 `(4 - kanCount)` 補償位移的寫法，是把「活牌堆
+     * 尾端會縮短」跟「王牌本身固定不變」搞混，算出來的指示牌會隨場上摸牌次數持續飄移，是真正影響到
+     * 寶牌算分的錯誤，不只是呈現層看不到指示牌翻面而已。
      *
      * [initialDeadWall] 的排列順序（[FourSidedWallLayoutSupport] 建牌時決定）是「離開門缺口最近的
      * 一墩排最前面，往深處排到最後」，每墩固定 [上層, 下層]；`FIRST_INDICATOR_OFFSET`（4）比照通行

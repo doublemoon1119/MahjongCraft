@@ -81,7 +81,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer),
             config = RiichiRuleConfig(),
-            tileWall = TileWall(listOf(rinshanTile)),
+            initialDeadWall = listOf(rinshanTile),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -101,7 +101,7 @@ class DeclareKanUseCaseTest {
             updated.actionHistory.takeLast(2),
             "Kan must be recorded before Draw for rinshan kaihou detection to work.",
         )
-        assertEquals(0, newState.tileWall.remainingCount)
+        assertEquals(table.tileWall, newState.tileWall, "The rinshan tile comes from the dead wall reserve, not the live wall.")
         assertEquals(
             rinshanTile.id,
             fixtures.presentationPublisher.getPublishedPlayerArea(gameId)?.drawnTileId,
@@ -131,7 +131,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer),
             config = RiichiRuleConfig(),
-            tileWall = TileWall(deadWall),
+            initialDeadWall = deadWall,
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
         )
@@ -167,7 +167,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer),
             config = RiichiRuleConfig(),
-            tileWall = TileWall(listOf(rinshanTile)),
+            initialDeadWall = listOf(rinshanTile),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -381,7 +381,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer, other),
             config = RiichiRuleConfig(),
-            tileWall = TileWall(listOf(rinshanTile)),
+            initialDeadWall = listOf(rinshanTile),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)

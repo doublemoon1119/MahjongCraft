@@ -100,8 +100,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         melds: List<MeldPresentation>,
         comboStickCount: Int,
         animateDrawnTile: Boolean,
+        animatedMeldClaimTileIds: Set<Uuid>,
     ) {
-        playerAreas[gameId] = PlayerAreaContext(seatIndex, standingTileIds, drawnTileId, melds, comboStickCount, animateDrawnTile)
+        playerAreas[gameId] = PlayerAreaContext(seatIndex, standingTileIds, drawnTileId, melds, comboStickCount, animateDrawnTile, animatedMeldClaimTileIds)
     }
 
     override fun publishInitialDealAnimation(
@@ -218,6 +219,7 @@ data class PlayerAreaContext(
     val melds: List<MeldPresentation>,
     val comboStickCount: Int,
     val animateDrawnTile: Boolean,
+    val animatedMeldClaimTileIds: Set<Uuid>,
 )
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishInitialDealAnimation] 資料。 */

@@ -560,7 +560,7 @@ class GameFlowCoordinatorTest {
         assertEquals(GameAction.Pon(whiteTileId), newState.players.first { it.id == respondentId }.actionHistory.last())
     }
 
-    private fun chankanTable(declarerId: Uuid, robberId: Uuid, tileWall: TileWall, robberHand: Hand): TableState {
+    private fun chankanTable(declarerId: Uuid, robberId: Uuid, initialDeadWall: List<IdentifiedTile>, robberHand: Hand): TableState {
         val whiteTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
@@ -578,7 +578,7 @@ class GameFlowCoordinatorTest {
             id = gameId,
             players = listOf(declarer, robber),
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
-            tileWall = tileWall,
+            initialDeadWall = initialDeadWall,
             currentPlayerIndex = 0,
             pendingChankan = PendingChankanReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
         )
@@ -592,7 +592,7 @@ class GameFlowCoordinatorTest {
         val fixtures = Fixtures()
         val declarerId = Uuid.random()
         val robberId = Uuid.random()
-        val table = chankanTable(declarerId, robberId, TileWall(emptyList()), ronReadyHand())
+        val table = chankanTable(declarerId, robberId, emptyList(), ronReadyHand())
         fixtures.gameRepo.setTableState(table)
         val robbedTileId = table.pendingChankan!!.robbedTile.id
 
@@ -613,7 +613,7 @@ class GameFlowCoordinatorTest {
         val declarerId = Uuid.random()
         val robberId = Uuid.random()
         val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
-        val table = chankanTable(declarerId, robberId, TileWall(listOf(rinshanTile)), ronReadyHand())
+        val table = chankanTable(declarerId, robberId, listOf(rinshanTile), ronReadyHand())
         fixtures.gameRepo.setTableState(table)
 
         val result = fixtures.coordinator(gameId, robberId, GameCommand.RespondToChankan(GameAction.Pass))
@@ -675,7 +675,7 @@ class GameFlowCoordinatorTest {
             id = gameId,
             players = listOf(player),
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
-            tileWall = TileWall(listOf(rinshanTile)),
+            initialDeadWall = listOf(rinshanTile),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)

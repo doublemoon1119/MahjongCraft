@@ -56,6 +56,17 @@ class RiichiLegalActionValidator(
         val riichiState = player.playerRuleState as? RiichiPlayerState
         val isRiichi = riichiState?.isRiichi == true
 
+        // 全場槓子數上限（明槓/暗槓/加槓皆算）固定 4 次，不論這 4 次是不是同一位玩家達成——「同一位
+        // 玩家獨得全部 4 槓」只是不觸發 resolveSuukanNagare 流局判定（見該函式 KDoc，可能正在嘗試
+        // 四槓子役滿），不代表這位玩家還能繼續槓第 5 次；已達上限時完全不提供任何一種槓的候選，之後
+        // 由 GameFlowCoordinator 在下一次捨牌/立直前檢查 resolveSuukanNagare 決定是否流局。
+        val totalKanCount = tableState.players.sumOf { p ->
+            p.hand.exposedMelds.count {
+                it.type == MeldType.OPEN_KAN || it.type == MeldType.ADDED_KAN || it.type == MeldType.CLOSED_KAN
+            }
+        }
+        val canDeclareAnotherKan = totalKanCount < MAX_KAN_COUNT
+
         // incomingTile == null 表示玩家正在打牌（準備捨牌）
         // 捨牌動作由 UI 層處理，讓玩家選擇要打的牌
         // 此 Validator 只處理「額外動作」（鳴牌、胡牌、立直）
@@ -102,9 +113,11 @@ class RiichiLegalActionValidator(
             }
 
             // 2. 檢查是否可以加槓 (Added Kan)
-            player.hand.exposedMelds.forEach { meld ->
-                if (meld.type == MeldType.PON && meld.tiles.first().tile.riichiCanonical == incomingBaseTile) {
-                    legalActions.add(GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()))
+            if (canDeclareAnotherKan) {
+                player.hand.exposedMelds.forEach { meld ->
+                    if (meld.type == MeldType.PON && meld.tiles.first().tile.riichiCanonical == incomingBaseTile) {
+                        legalActions.add(GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()))
+                    }
                 }
             }
 
@@ -113,7 +126,7 @@ class RiichiLegalActionValidator(
             // - 暗槓前跟暗槓後聽的牌必須一模一樣才能暗槓
             // - 需要計算暗槓後的聽牌列表，與暗槓前的聽牌列表比對
             val closedKanCount = player.hand.standingTiles.count { it.tile.riichiCanonical == incomingBaseTile }
-            if (closedKanCount == 3) {
+            if (canDeclareAnotherKan && closedKanCount == 3) {
                 val withTiles =
                     player.hand.standingTiles.filter { it.tile.riichiCanonical == incomingBaseTile }.map { it.id }
 
@@ -244,7 +257,7 @@ class RiichiLegalActionValidator(
             // 立直後不能明槓
             // 赤五與普通五視為同一張牌，故使用日麻標準牌比較
             val openKanCount = player.hand.standingTiles.count { it.tile.riichiCanonical == incomingBaseTile }
-            if (openKanCount == 3 && !isRiichi) {
+            if (canDeclareAnotherKan && openKanCount == 3 && !isRiichi) {
                 val withTiles =
                     player.hand.standingTiles.filter { it.tile.riichiCanonical == incomingBaseTile }.map { it.id }
                 legalActions.add(GameAction.Kan(GameAction.KanType.OPEN_KAN, incomingTile.id, withTiles))
@@ -409,5 +422,10 @@ class RiichiLegalActionValidator(
                 otherBase.suit == kanBase.suit &&
                 abs(otherBase.value - kanBase.value) <= 2
         }
+    }
+
+    private companion object {
+        /** 全場槓子數上限（明槓/暗槓/加槓皆算），見 [getLegalActions] 對這個上限的說明。 */
+        const val MAX_KAN_COUNT = 4
     }
 }

@@ -53,6 +53,13 @@ data class MahjongMeldTileGroup(
  * 短暫隱形傳送到摸牌位、傳送的同一瞬間切換成面向玩家的姿態、解除隱形後再落下）——姿態切換發生在
  * 隱形期間，玩家看不到旋轉過程，不像開局發牌動畫那樣需要落地後另外播放看得見的翻牌動畫。只有真正的
  * 摸牌事件該傳 `true`，其餘呼叫端維持預設 `false` 直接定格顯示，不重複播放動畫。
+ * @property animatedMeldClaimTileIds 這次鳴牌/槓牌成立，需要播放「連續飛到副露區最終格位」動畫的牌
+ * Uuid 集合——不像開局發牌動畫那樣中途隱形傳送，全程看得見飛行過程。呼叫端直接指名要動畫哪些牌，不是
+ * 用「哪一組副露」推斷：吃/碰/明槓是整組一次成立的新副露，全部牌都新，直接傳整組；暗槓也是整組全新
+ * 副露；但加槓是把新牌插進一組**既有**副露（`Hand.upgradeToAddedKan` 原地修改既有那組，不是加到
+ * `melds` 尾端），只有新插入的那一張該動畫，既有三張碰的牌本來就已經在正確位置，不需要重新移動——用
+ * 「最後一組」這種位置推斷會在加槓的那組副露不是清單最後一組時抓錯目標，因此改成明確指名。空集合
+ * （預設值）代表這次沒有任何牌需要播放這個動畫，維持既有的瞬間顯示。
  */
 data class MahjongPlayerAreaPresentation(
     val tableId: Uuid,
@@ -64,6 +71,7 @@ data class MahjongPlayerAreaPresentation(
     val melds: List<MahjongMeldTileGroup>,
     val comboStickCount: Int,
     val animateDrawnTile: Boolean = false,
+    val animatedMeldClaimTileIds: Set<Uuid> = emptySet(),
 )
 
 /**

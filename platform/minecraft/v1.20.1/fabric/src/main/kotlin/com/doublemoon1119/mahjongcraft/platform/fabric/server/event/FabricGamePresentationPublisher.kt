@@ -336,12 +336,13 @@ class FabricGamePresentationPublisher(
         melds: List<MeldPresentation>,
         comboStickCount: Int,
         animateDrawnTile: Boolean,
+        animatedMeldClaimTileIds: Set<Uuid>,
     ) {
         if (serverHolder.current() == null) {
             logger.warn("publishPlayerAreaUpdated gameId={} skipped: no active server", gameId)
             return
         }
-        presentPlayerArea(gameId, seatIndex, standingTileIds, drawnTileId, melds, comboStickCount, animateDrawnTile)
+        presentPlayerArea(gameId, seatIndex, standingTileIds, drawnTileId, melds, comboStickCount, animateDrawnTile, animatedMeldClaimTileIds)
     }
 
     /**
@@ -413,6 +414,7 @@ class FabricGamePresentationPublisher(
         melds: List<MeldPresentation>,
         comboStickCount: Int,
         animateDrawnTile: Boolean,
+        animatedMeldClaimTileIds: Set<Uuid>,
     ) {
         busyTracker.markPending(gameId)
         scope.launch(dispatchers.main) {
@@ -431,6 +433,7 @@ class FabricGamePresentationPublisher(
                     },
                     comboStickCount = comboStickCount,
                     animateDrawnTile = animateDrawnTile,
+                    animatedMeldClaimTileIds = animatedMeldClaimTileIds,
                 )
                 playerAreaPresenter.present(presentation)
             } finally {

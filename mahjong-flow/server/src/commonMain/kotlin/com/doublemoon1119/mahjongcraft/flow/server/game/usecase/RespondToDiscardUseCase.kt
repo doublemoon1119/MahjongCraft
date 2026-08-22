@@ -165,6 +165,9 @@ class RespondToDiscardUseCase(
                 winner.hand.lastDrawn?.id,
                 winner.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
                 comboStickCount = if (winnerSeatIndex == dealerSeatIndex) newState.comboCount else 0,
+                // 吃/碰/明槓永遠整組一次成立新副露（附加到 exposedMelds 尾端，不是原地修改既有組），
+                // 最後一組必定就是這次剛成立的那組，組內全部牌都該播放鳴牌動畫。
+                animatedMeldClaimTileIds = winner.hand.melds.last().tiles.map { it.id }.toSet(),
             )
             // 明槓得標可能翻開新的一張寶牌指示牌，理由同 DeclareKanUseCase；吃/碰不構成槓，不需要
             // 檢查——只看剛成立的那組副露（永遠是 melds 的最後一組）是不是明槓。
@@ -294,11 +297,13 @@ class RespondToDiscardUseCase(
             )
         }
 
-        // 明槓比照暗槓/加槓，得標後立即從死牌區補摸嶺上牌，取代原本依賴得標玩家事後另外呼叫
-        // DrawTileUseCase（那是從牌山前端摸牌，摸錯位置）的既有錯誤行為。若牌山恰好在此刻摸盡
-        // （極端邊界情況），這裡沒有 Outcome 通道可回報錯誤（本方法回傳單純 TableState），
-        // 已知簡化：讓 lastDrawn 維持空，不中斷已經套用完成的副露結果。
-        val (rinshanTile, newWall) = state.tileWall.drawLast()
+        // 明槓比照暗槓/加槓，得標後立即從死牌區補摸嶺上牌（KanDeclarationApplier.drawRinshanTile，
+        // 共用同一份「王牌區前段保留給嶺上摸牌」的邏輯），取代原本依賴得標玩家事後另外呼叫
+        // DrawTileUseCase（那是從牌山前端摸牌，摸錯位置）的既有錯誤行為。若王牌區的嶺上摸牌保留區
+        // 恰好在此刻摸盡（極端邊界情況，理論上四槓散了流局應該已經先成立），這裡沒有 Outcome 通道
+        // 可回報錯誤（本方法回傳單純 TableState），已知簡化：讓 lastDrawn 維持空，不中斷已經套用
+        // 完成的副露結果。
+        val rinshanTile = KanDeclarationApplier.drawRinshanTile(state)
         val playersWithRinshanDraw = if (rinshanTile == null) {
             playersAfterMeldClaimed
         } else {
@@ -316,7 +321,6 @@ class RespondToDiscardUseCase(
                 players = playersWithRinshanDraw,
                 currentPlayerIndex = winnerIndex,
                 pendingReaction = null,
-                tileWall = if (rinshanTile == null) state.tileWall else newWall,
             ),
             rinshanDrawHappened = rinshanTile != null,
             discarderId = pendingReaction.discarderId,

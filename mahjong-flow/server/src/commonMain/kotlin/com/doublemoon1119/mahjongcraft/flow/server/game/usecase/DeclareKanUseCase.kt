@@ -18,7 +18,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
@@ -39,13 +38,13 @@ import kotlin.uuid.Uuid
  * 給誰，與一般捨牌榮和共用同一套判定（見 [DiscardReactionResolver]）；判定為途中流局時，這次
  * 加槓視為未成立，不開反應視窗、不套用副露。
  *
- * 套用副露後依序記錄 [GameAction.Kan] → 從死牌區（[TileWall.drawLast]）
+ * 套用副露後依序記錄 [GameAction.Kan] → 從死牌區（[KanDeclarationApplier.drawRinshanTile]）
  * 補摸嶺上牌並記錄 [GameAction.Draw]，讓 [RiichiHandValueContextCalculator] 既有的
  * 嶺上開花偵測邏輯（依賴 `actionHistory` 最後兩筆是否恰為 `[Kan, Draw]`）能真正被觸發。
  *
  * 不需要新增任何 [MahjongRuleModule] 規則鉤子——
  * 套用副露、補摸嶺上牌、清除全場一發皆為既有通用方法（`Hand.call`/`Hand.upgradeToAddedKan`/
- * `TileWall.drawLast`/`module.onMeldClaimed`）的組合。不涉及包牌（Pao）：加槓沿用
+ * `KanDeclarationApplier.drawRinshanTile`/`module.onMeldClaimed`）的組合。不涉及包牌（Pao）：加槓沿用
  * `Hand.upgradeToAddedKan` 保留的原碰副露來源方位，暗槓沒有鳴牌來源，兩者皆不構成包牌，不呼叫
  * `applyPaoLiabilityIfTriggered`。
  *
@@ -226,6 +225,15 @@ class DeclareKanUseCase(
             val declarerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
             val declarer = newState.players[declarerSeatIndex]
             val dealerSeatIndex = newState.players.indexOfFirst { it.currentWind == Wind.EAST }
+            // 暗槓是整組一次成立的新副露（附加到 exposedMelds 尾端），組內全部牌都該播放鳴牌動畫；
+            // 加槓是把新牌插進一組既有副露（Hand.upgradeToAddedKan 原地修改，不是加到尾端），只有新
+            // 插入的那一張該播放，既有三張碰的牌本來就已經在正確位置，不需要重新移動——理由見
+            // MahjongPlayerAreaPresentation.animatedMeldClaimTileIds KDoc。
+            val animatedTileIds = when (result.kanAction.type) {
+                GameAction.KanType.CLOSED_KAN -> (result.kanAction.withTiles + result.kanAction.tileId).toSet()
+                GameAction.KanType.ADDED_KAN -> setOf(result.kanAction.tileId)
+                GameAction.KanType.OPEN_KAN -> error("Unreachable: OPEN_KAN never reaches DeclareKanUseCase")
+            }
             presentationPublisher.publishPlayerAreaUpdated(
                 gameId,
                 declarerSeatIndex,
@@ -233,6 +241,7 @@ class DeclareKanUseCase(
                 declarer.hand.lastDrawn?.id,
                 declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
                 comboStickCount = if (declarerSeatIndex == dealerSeatIndex) newState.comboCount else 0,
+                animatedMeldClaimTileIds = animatedTileIds,
             )
             // 槓牌成立後可能翻開新的一張寶牌指示牌（例如日麻的槓寶牌）；不支援 TileWallRevealable
             // 的規則永遠算出空集合，呼叫這個方法沒有任何效果。

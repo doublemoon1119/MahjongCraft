@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToChankan
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
@@ -249,7 +250,7 @@ class GameActionRouterTest {
         )
     }
 
-    private fun chankanTable(declarerId: Uuid, robberId: Uuid, tileWall: TileWall): TableState {
+    private fun chankanTable(declarerId: Uuid, robberId: Uuid, initialDeadWall: List<IdentifiedTile>): TableState {
         val whiteTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
@@ -275,7 +276,7 @@ class GameActionRouterTest {
             id = gameId,
             players = listOf(declarer, robber),
             config = RiichiRuleConfig(),
-            tileWall = tileWall,
+            initialDeadWall = initialDeadWall,
             currentPlayerIndex = 0,
             pendingChankan = PendingChankanReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
         )
@@ -326,7 +327,7 @@ class GameActionRouterTest {
         val declarerId = Uuid.random()
         val robberId = Uuid.random()
         val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
-        fixtures.gameRepo.setTableState(chankanTable(declarerId, robberId, TileWall(listOf(rinshanTile))))
+        fixtures.gameRepo.setTableState(chankanTable(declarerId, robberId, listOf(rinshanTile)))
 
         val result = fixtures.router(gameId, robberId, GameCommand.RespondToChankan(GameAction.Pass))
 
@@ -345,7 +346,7 @@ class GameActionRouterTest {
         val declarerId = Uuid.random()
         val robberId = Uuid.random()
         val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
-        fixtures.gameRepo.setTableState(chankanTable(declarerId, robberId, TileWall(listOf(rinshanTile))))
+        fixtures.gameRepo.setTableState(chankanTable(declarerId, robberId, listOf(rinshanTile)))
 
         val result = fixtures.router(gameId, robberId, GameCommand.RespondToDiscard(GameAction.Pass))
 

@@ -162,8 +162,12 @@ class FabricMahjongPlayerAreaPresenter(
                 depthOffsetFromEdge = depthOffsetFromEdge,
             )
             tile.assignToTable(presentation.tableId)
-            tile.tilePose = pose
-            tile.teleportExistingManagedTile(placement)
+            if (tileId in presentation.animatedMeldClaimTileIds) {
+                scheduleMeldClaimTileAnimation(tile, placement, pose)
+            } else {
+                tile.tilePose = pose
+                tile.teleportExistingManagedTile(placement)
+            }
         }
 
         var cursorAlong = MahjongTileTableLayout.stickAreaWidth(presentation.comboStickCount)
@@ -183,7 +187,12 @@ class FabricMahjongPlayerAreaPresenter(
                 val halfWidth =
                     if (isSideways) MahjongTileDimensions.TILE_HEIGHT / 2.0 else MahjongTileDimensions.TILE_WIDTH / 2.0
                 cursorAlong += halfWidth
-                placeMeldTile(tileAtSlot[slot], cursorAlong, isSidewaysTile = isSideways, pose = closedKanPose(meld, slot, slotCount))
+                placeMeldTile(
+                    tileAtSlot[slot],
+                    cursorAlong,
+                    isSidewaysTile = isSideways,
+                    pose = closedKanPose(meld, slot, slotCount),
+                )
                 if (isSideways) sidewaysAlongOffset = cursorAlong
                 cursorAlong += halfWidth + MahjongTileDimensions.TILE_SMALL_PADDING
             }
@@ -480,6 +489,42 @@ class FabricMahjongPlayerAreaPresenter(
                 ),
             ),
         )
+    }
+
+    /**
+     * 排定鳴牌/槓牌動畫：一次連續可見的拋物線飛行，從這張牌現在的實際位置直接飛到副露區最終格位，
+     * 手法比照 [FabricMahjongDiscardPresenter.scheduleDiscardTileAnimation]——差別是起始姿態改讀
+     * entity 自己目前的 [MahjongTileEntity.tilePose]，不是寫死 [MahjongTilePose.STANDING]：吃/碰/
+     * 明槓被鳴取的那張、暗槓全部牌都來自手牌或牌河，姿態各不相同（牌河裡的牌本來就已經是
+     * [MahjongTilePose.FACE_UP]，手牌來的則是 [MahjongTilePose.STANDING]），這個方法同時服務所有
+     * 情況，起訖姿態相同時就不會多插入一個沒有效果的 [AnimationStep.Custom]。
+     *
+     * 呼叫端（[present]）對同一組鳴牌/槓牌裡每一張需要動畫的牌都用同一個
+     * [MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS] 排這個動畫，各自從不同起點同時起飛、
+     * 同時落地，達到「手牌被抽出去接住這張牌」的效果（加槓只有新插入那一張會播放，見
+     * [MahjongPlayerAreaPresentation.animatedMeldClaimTileIds] KDoc），不需要另外協調時序。側身旋轉
+     * （被鳴取的那張若落在側身格）跟捨牌動畫同一個既有簡化：[finalPlacement] 的 yaw 本身已經是算好的
+     * 最終朝向，起飛那一刻就用最終 yaw 傳送，不連續內插旋轉角。
+     */
+    private fun scheduleMeldClaimTileAnimation(tile: MahjongTileEntity, finalPlacement: MahjongTileWallPlacement, endPose: MahjongTilePose) {
+        val startX = tile.x
+        val startY = tile.y
+        val startZ = tile.z
+        val startPose = tile.tilePose
+        val steps = mutableListOf<AnimationStep<MahjongTilePose>>(
+            AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
+        )
+        if (startPose != endPose) steps += AnimationStep.Custom(endPose)
+        steps += AnimationStep.PlayMotion(
+            durationTicks = MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS,
+            arcHeight = MahjongTileTableLayout.DISCARD_ARC_HEIGHT,
+            startOffsetX = startX - finalPlacement.x,
+            startOffsetY = startY - finalPlacement.y,
+            startOffsetZ = startZ - finalPlacement.z,
+            startPoseRotationDegrees = startPose.rotationDegrees,
+            endPoseRotationDegrees = endPose.rotationDegrees,
+        )
+        tile.enqueueAll(steps)
     }
 
     /**

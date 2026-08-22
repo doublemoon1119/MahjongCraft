@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepos
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
@@ -79,7 +80,7 @@ class RespondToChankanUseCaseTest {
         ).map { FakeIdentifiedTileFactory.create(it) } + FakeIdentifiedTileFactory.create(Tile.Honor.White),
     )
 
-    private fun setUpTable(tileWall: TileWall = TileWall(listOf(rinshanTile))): TableState {
+    private fun setUpTable(initialDeadWall: List<IdentifiedTile> = listOf(rinshanTile)): TableState {
         val declarer = FakeMahjongPlayerFactory.create(
             id = declarerId,
             initialSeat = Wind.EAST,
@@ -95,7 +96,7 @@ class RespondToChankanUseCaseTest {
             id = gameId,
             players = listOf(declarer, robber),
             config = RiichiRuleConfig(),
-            tileWall = tileWall,
+            initialDeadWall = initialDeadWall,
             currentPlayerIndex = 0,
             pendingChankan = PendingChankanReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
         )
@@ -124,7 +125,6 @@ class RespondToChankanUseCaseTest {
         assertTrue(declarer.score < 0, "The declarer should pay for the robbed kan, like a discarder.")
         assertEquals(MeldType.PON, declarer.hand.melds.single().type, "The kan must not be applied; it was robbed.")
         assertEquals(robbedWhiteTile, declarer.hand.lastDrawn, "The declarer's hand should remain untouched.")
-        assertEquals(1, newState.tileWall.remainingCount, "The dead wall should not be drawn from.")
 
         assertEquals(
             listOf(GameAction.Ron(robbedWhiteTile.id)),
@@ -159,7 +159,6 @@ class RespondToChankanUseCaseTest {
         assertEquals(setOf(whiteTile1, whiteTile2, whiteTile3, robbedWhiteTile), meld.tiles.toSet())
         assertEquals(rinshanTile, declarer.hand.lastDrawn)
         assertEquals(listOf(kanAction, GameAction.Draw), declarer.actionHistory.takeLast(2))
-        assertEquals(0, newState.tileWall.remainingCount)
 
         assertEquals(
             listOf(GameAction.Pass, GameAction.Draw),
@@ -179,7 +178,7 @@ class RespondToChankanUseCaseTest {
     @Test
     fun `test all pass fails with wall exhausted and applies nothing`() = runTest {
         val fixtures = Fixtures()
-        fixtures.gameRepo.setTableState(setUpTable(tileWall = TileWall(emptyList())))
+        fixtures.gameRepo.setTableState(setUpTable(initialDeadWall = emptyList()))
 
         val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
 

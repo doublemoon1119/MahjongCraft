@@ -231,6 +231,11 @@ class RespondToDiscardUseCaseTest {
         assertEquals(MeldType.PON, meld.type)
         assertEquals(setOf(handTile1.id, handTile2.id, discardedTile.id), meld.tileIds.toSet())
         assertEquals(discardedTile.id, meld.calledTileId)
+        assertEquals(
+            setOf(handTile1.id, handTile2.id, discardedTile.id),
+            publishedMelds.animatedMeldClaimTileIds,
+            "All tiles in a newly claimed pon should trigger the meld-claim flight animation.",
+        )
     }
 
     /**
@@ -300,7 +305,7 @@ class RespondToDiscardUseCaseTest {
             id = gameId,
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
-            tileWall = TileWall(listOf(rinshanTile)),
+            initialDeadWall = listOf(rinshanTile),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
         )
@@ -313,7 +318,7 @@ class RespondToDiscardUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertNull(newState.pendingReaction)
         assertEquals(1, newState.currentPlayerIndex, "Turn should move to the player who claimed the meld.")
-        assertEquals(0, newState.tileWall.remainingCount, "The replacement tile should be drawn from the dead wall.")
+        assertEquals(table.tileWall, newState.tileWall, "The replacement tile comes from the dead wall reserve, not the live wall.")
 
         val winner = newState.players.first { it.id == responderId }
         val meld = winner.hand.melds.single()
@@ -361,7 +366,7 @@ class RespondToDiscardUseCaseTest {
             id = gameId,
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
-            tileWall = TileWall(listOf(rinshanTile)),
+            initialDeadWall = listOf(rinshanTile),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
         )
@@ -652,6 +657,11 @@ class RespondToDiscardUseCaseTest {
 
         val newDiscarder = newState.players.first { it.id == discarderId }
         assertEquals(-32000, newDiscarder.score, "The sole discarder should pay the full amount.")
+
+        assertNull(
+            fixtures.presentationPublisher.getPublishedPlayerArea(gameId),
+            "Ron doesn't claim a meld, so it should never trigger the meld-claim presentation/animation.",
+        )
     }
 
     /**

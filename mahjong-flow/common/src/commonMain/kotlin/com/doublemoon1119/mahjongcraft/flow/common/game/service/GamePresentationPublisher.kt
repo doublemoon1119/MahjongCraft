@@ -197,6 +197,10 @@ interface GamePresentationPublisher {
      * 也維持預設 `false` 直接定格顯示，不重複播放動畫。跟 [publishInitialDealAnimation] 的差別是翻面
      * 發生在隱形期間、玩家看不到旋轉過程，不需要落地後再另外播放一段看得見的翻牌動畫——摸牌是高頻的
      * 單張動作，不需要像開局那樣等所有座位到齊才一起揭曉。
+     * @param animatedMeldClaimTileIds 這次鳴牌/槓牌成立，需要播放「連續飛到副露區最終格位」動畫的牌
+     * Uuid 集合——吃/碰/明槓/暗槓是整組一次成立的新副露，全部牌都該傳入；加槓只有新插入的那一張該傳入
+     * （既有三張碰的牌不需要重新移動），理由見 [MahjongPlayerAreaPresentation.animatedMeldClaimTileIds]
+     * KDoc。空集合（預設值）代表這次沒有牌需要播放這個動畫，維持既有的瞬間顯示。
      */
     fun publishPlayerAreaUpdated(
         gameId: Uuid,
@@ -206,6 +210,7 @@ interface GamePresentationPublisher {
         melds: List<MeldPresentation>,
         comboStickCount: Int,
         animateDrawnTile: Boolean = false,
+        animatedMeldClaimTileIds: Set<Uuid> = emptySet(),
     )
 
     /**

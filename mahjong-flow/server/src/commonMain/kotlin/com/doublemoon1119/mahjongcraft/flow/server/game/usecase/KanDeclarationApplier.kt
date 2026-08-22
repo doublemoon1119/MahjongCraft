@@ -64,10 +64,7 @@ internal object KanDeclarationApplier {
             GameAction.KanType.OPEN_KAN -> error("Unreachable: OPEN_KAN never reaches KanDeclarationApplier")
         }
 
-        val (rinshanTile, newWall) = state.tileWall.drawLast()
-        if (rinshanTile == null) {
-            return Result(state, null)
-        }
+        val rinshanTile = drawRinshanTile(state) ?: return Result(state, null)
 
         val declarerAfterMeld = declarer.copy(hand = handAfterMeld).recordAction(kanAction)
         val declarerAfterDraw = declarerAfterMeld
@@ -77,6 +74,39 @@ internal object KanDeclarationApplier {
         val playersAfterMeld = state.players.map { if (it.id == declarerId) declarerAfterDraw else it }
         val playersAfterMeldClaimed = module.onMeldClaimed(playersAfterMeld)
 
-        return Result(state.copy(players = playersAfterMeldClaimed, tileWall = newWall), rinshanTile)
+        return Result(state.copy(players = playersAfterMeldClaimed), rinshanTile)
     }
+
+    /**
+     * 從王牌區（[TableState.initialDeadWall]）摸嶺上牌，取代過去誤用 `TileWall.drawLast()`
+     * 從活牌堆尾端摸牌的既有錯誤行為——真實麻將的嶺上牌本來就該來自死牌區，不是活牌堆。
+     *
+     * [RiichiDynamicState.getDoraIndicators] 的既有慣例是王牌區前 2 墩（索引 0～3，
+     * `FIRST_INDICATOR_OFFSET = 4`）保留給嶺上摸牌、之後才是寶牌指示牌區——這裡沿用同一份保留區，
+     * 依「目前桌上已經成立幾次槓」當索引依序取用（第一次槓用索引 0，第二次用索引 1，以此類推），
+     * 跟寶牌指示牌區的索引範圍互不重疊，不會有同一張牌被兩邊重複使用的疑慮。索引超出保留區範圍
+     * （理論上不會發生：第 5 次槓之前四槓散了流局應該已經先成立）或這個規則不支援王牌區
+     * （`initialDeadWall` 為空）時回傳 `null`，呼叫端視同牌山摸盡。
+     *
+     * 王牌區本身固定不變、不需要每次槓後另外從活牌堆補牌維持張數——理由同
+     * [RiichiDynamicState.getDoraIndicators] KDoc「王牌集合從開局到終局都完全固定不變」的既有簡化，
+     * 這裡只是把嶺上牌的實際來源改成跟那份既有簡化一致，不是新增一種王牌會變動的機制。
+     *
+     * `internal` 而非 `private`：[RespondToDiscardUseCase] 的明槓（[GameAction.KanType.OPEN_KAN]）
+     * 分支需要完全相同的邏輯，避免重複實作一次。
+     */
+    internal fun drawRinshanTile(state: TableState): IdentifiedTile? {
+        val kanCountSoFar = state.players.sumOf { player ->
+            player.hand.exposedMelds.count {
+                it.type == MeldType.OPEN_KAN || it.type == MeldType.ADDED_KAN || it.type == MeldType.CLOSED_KAN
+            }
+        }
+        // 保守起見即使呼叫端沒擋住（RiichiLegalActionValidator 已經在合法動作層擋下第 5 次槓），這裡
+        // 也不讓索引跑出保留區、誤把寶牌指示牌區的牌當成嶺上牌摸走。
+        if (kanCountSoFar >= RINSHAN_RESERVE_SIZE) return null
+        return state.initialDeadWall.getOrNull(kanCountSoFar)
+    }
+
+    /** 王牌區前段保留給嶺上摸牌的張數，見 [drawRinshanTile] KDoc。 */
+    private const val RINSHAN_RESERVE_SIZE = 4
 }

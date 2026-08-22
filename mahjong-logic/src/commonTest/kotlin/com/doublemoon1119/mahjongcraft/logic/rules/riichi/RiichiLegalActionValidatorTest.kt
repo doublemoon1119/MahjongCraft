@@ -214,6 +214,85 @@ class RiichiLegalActionValidatorTest {
     }
 
     /**
+     * 測試全場槓子數已達上限（4 次）時不可再暗槓——即使這 4 次全部由同一位玩家達成（
+     * `resolveSuukanNagare` 因此不會判定四槓散了，該玩家可能正在嘗試四槓子役滿），全場槓子總數的
+     * 硬上限仍然是 4 次，這位玩家也不能繼續槓第 5 次。
+     */
+    @Test
+    fun `test cannot closed kan when the table already has 4 kans by a single player`() {
+        // 準備：這位玩家已經有 4 組暗槓副露（湊到全場上限），手牌另外湊了一組可以暗槓的第 5 組
+        val existingKans = (1..4).map { value ->
+            Meld(
+                MeldType.CLOSED_KAN,
+                List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, value)) },
+                sourceDirection = RelativeDirection.Self,
+            )
+        }
+        val playerHand = Hand(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+            ).map { FakeIdentifiedTileFactory.create(it) },
+            melds = existingKans,
+        )
+        val player = FakeMahjongPlayerFactory.create(hand = playerHand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Self,
+            incomingTile = incomingTile,
+        )
+
+        // 驗證：即使 3 張同種牌 + 摸到第 4 張的條件成立，全場槓子數已達上限，不應提供暗槓選項
+        assertFalse(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN })
+    }
+
+    /**
+     * 測試全場槓子數已達上限（4 次，皆由另一位玩家達成）時，其他玩家也不能明槓——上限是全場共用的
+     * 硬上限，不是「每位玩家各自 4 次」，即使這位玩家自己一次槓都還沒槓過。
+     */
+    @Test
+    fun `test cannot open kan for a different player when someone else already has 4 kans`() {
+        // 準備：另一位玩家已經獨得全場 4 組暗槓副露
+        val otherPlayerKans = (1..4).map { value ->
+            Meld(
+                MeldType.CLOSED_KAN,
+                List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, value)) },
+                sourceDirection = RelativeDirection.Self,
+            )
+        }
+        val otherPlayer = FakeMahjongPlayerFactory.create(hand = Hand(melds = otherPlayerKans))
+        val playerHand = FakeHandFactory.create(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(hand = playerHand)
+        val tableState = FakeTableStateFactory.create(players = listOf(otherPlayer, player))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
+            incomingTile = incomingTile,
+        )
+
+        // 驗證：即使這位玩家自己手牌條件符合明槓，全場槓子數已達上限，不應提供明槓選項
+        assertFalse(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.OPEN_KAN })
+    }
+
+    /**
      * 測試可執行榮和動作之情況（標準型）。
      *
      * 當打出的牌可使手牌形成胡牌結構時，應可執行榮和動作。
