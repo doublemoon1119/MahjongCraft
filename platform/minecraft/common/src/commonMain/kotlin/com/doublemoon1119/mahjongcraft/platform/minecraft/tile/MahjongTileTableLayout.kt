@@ -331,13 +331,14 @@ object MahjongTileTableLayout {
      * 見的極端長牌河邊界情況而言成本過高；用「牌山整體是否還有牌」當簡化版的替代判斷，兩者只有在牌山
      * 快摸完但捨牌者自己那面牆已經先被摸空的極端情況下才會不一致，可接受。
      *
-     * 同一排內若有側身標記牌（[sidewaysMarkedDiscardIndex] 落在同一排），該格改用
-     * [MahjongTileDimensions.TILE_HEIGHT] 當寬度（其餘格維持 [MahjongTileDimensions.TILE_WIDTH]），
-     * 逐格累加實際寬度＋固定間距算出每格中心點，取代原本「假設每格都是直立牌固定寬度」的簡化算法——
-     * 側身牌實際佔用的橫向空間比直立牌寬，用固定間距會讓側身牌跟旁邊的牌重疊，手法比照 [meldPlacement]
-     * 依牌實際朝向換算寬度的既有慣例。置中基準固定用整排 [DISCARD_TILES_PER_ROW] 格的假設總寬度（不是
-     * 「目前已經有幾張牌」），理由同原本的固定間距算法：牌河逐漸填滿時，已經擺好的牌不會因為新牌加入
-     * 而重新移位。
+     * 每排第一格（`column = 0`）固定用同一套「假設每格都是直立牌固定寬度」的置中公式算出的位置，
+     * 不因為某一排剛好有側身標記牌就整排重新置中——所有排的第一格因此永遠對齊在同一條軸線上。同一排
+     * 內若有側身標記牌（[sidewaysMarkedDiscardIndex] 落在同一排），只有從那一格開始（含）才往右
+     * 額外挪動 [MahjongTileDimensions.TILE_HEIGHT] 與 [MahjongTileDimensions.TILE_WIDTH] 的差距（側身牌
+     * 實際佔用的橫向空間比直立牌寬，見 [meldPlacement] 依牌實際朝向換算寬度的既有慣例），側身格本身
+     * 只挪動一半（讓它的左緣仍對齊直立牌該有的位置，右緣才多出來），之後的格子挪動全額，維持跟其他
+     * 直立牌之間原本的固定間距——這是遊戲內實際驗證過的問題：先前改成整排依實際寬度置中，會導致有
+     * 側身牌那一排的第一格跟其他排對不齊，看起來像整排在跳動。
      */
     private fun localDiscardVector(discardIndex: Int, wallRemaining: Boolean, sidewaysMarkedDiscardIndex: Int?): TileTableVector {
         val lastSafeRow = DISCARD_SAFE_ROWS - 1
@@ -355,12 +356,14 @@ object MahjongTileTableLayout {
             ?.takeIf { (sidewaysRow, _) -> sidewaysRow == row }
             ?.second
 
-        fun columnWidth(c: Int): Double = if (c == sidewaysColumn) MahjongTileDimensions.TILE_HEIGHT else MahjongTileDimensions.TILE_WIDTH
-        fun columnPitch(c: Int): Double = columnWidth(c) + MahjongTileDimensions.TILE_SMALL_PADDING
-
-        val leftEdge = (0 until column).sumOf(::columnPitch)
-        val totalRowPitch = (0 until DISCARD_TILES_PER_ROW).sumOf(::columnPitch)
-        val alongSide = leftEdge + columnWidth(column) / 2.0 - totalRowPitch / 2.0
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val baseAlongSide = (column - (DISCARD_TILES_PER_ROW - 1) / 2.0) * stackStep
+        val sidewaysExtraWidth = MahjongTileDimensions.TILE_HEIGHT - MahjongTileDimensions.TILE_WIDTH
+        val alongSide = when {
+            sidewaysColumn == null || column < sidewaysColumn -> baseAlongSide
+            column == sidewaysColumn -> baseAlongSide + sidewaysExtraWidth / 2.0
+            else -> baseAlongSide + sidewaysExtraWidth
+        }
 
         val rowStep = MahjongTileDimensions.TILE_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING
         val perpendicular = DISCARD_ROW_BASE_OFFSET + row * rowStep
