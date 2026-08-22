@@ -559,6 +559,7 @@ class MahjongTileTableLayoutTest {
         seatIndex: Int = 0,
         discardIndex: Int = 0,
         isSidewaysMarked: Boolean = false,
+        sidewaysMarkedDiscardIndex: Int? = null,
         wallRemaining: Boolean = true,
     ): MahjongTileWallPlacement = MahjongTileTableLayout.discardPlacement(
         controllerX = 10,
@@ -568,6 +569,7 @@ class MahjongTileTableLayoutTest {
         seatIndex = seatIndex,
         discardIndex = discardIndex,
         isSidewaysMarked = isSidewaysMarked,
+        sidewaysMarkedDiscardIndex = sidewaysMarkedDiscardIndex,
         wallRemaining = wallRemaining,
     )
 

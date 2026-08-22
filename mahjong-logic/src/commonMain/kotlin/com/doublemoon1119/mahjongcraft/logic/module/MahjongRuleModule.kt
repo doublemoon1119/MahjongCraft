@@ -363,4 +363,17 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 這張牌目前是否該有特殊視覺強調。
      */
     fun isHighlightedTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = false
+
+    /**
+     * 這位玩家目前算不算「立直中」——只有支援立直的規則（日麻）需要覆寫，用來讓呈現層知道該不該在
+     * 這個座位面前顯示立直棒，刻意不用 [PlayerRuleState] 以外任何規則專屬的具體型別命名，呼叫端也不
+     * 該自行轉型成特定規則的 [PlayerRuleState] 實作（例如 `RiichiPlayerState`）來回答這個問題——理由
+     * 同 `DeclareRiichiUseCase` KDoc「刻意不轉型成任何規則專屬的具體型別」的說明。
+     *
+     * 不支援立直的規則（例如台麻）固定回傳 `false`。
+     *
+     * @param player 欲判斷的玩家。
+     * @return 這位玩家目前是否算立直中。
+     */
+    fun isPlayerInRiichi(player: MahjongPlayer): Boolean = false
 }

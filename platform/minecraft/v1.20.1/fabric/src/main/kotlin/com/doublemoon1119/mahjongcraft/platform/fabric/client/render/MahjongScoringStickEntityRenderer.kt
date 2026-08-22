@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStic
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
 import net.minecraft.client.render.OverlayTexture
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRenderer
@@ -31,7 +33,22 @@ class MahjongScoringStickEntityRenderer(
         light: Int,
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
+        if (entity.isInvisible) return
+        val elapsedAnimationTicks = entity.world.time.toDouble() + tickDelta - entity.animationStartGameTime
+        val animationFrame = if (entity.animating) {
+            TileMotionAnimation(
+                TileMotionAnimationSpec(
+                    durationTicks = entity.animationDurationTicks,
+                    arcHeight = entity.animationArcHeight,
+                    startPoseRotationDegrees = 0.0f,
+                    endPoseRotationDegrees = 0.0f,
+                ),
+            ).frame(elapsedTicks = elapsedAnimationTicks, startOffset = entity.animationStartOffset)
+        } else {
+            null
+        }
         matrices.push()
+        if (animationFrame != null) matrices.translate(animationFrame.offset.x, animationFrame.offset.y, animationFrame.offset.z)
         matrices.translate(0.0, MahjongScoringStickEntity.STICK_HEIGHT / 2.0, 0.0)
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-entity.yaw + 180.0f))
         matrices.translate(0.0, MODEL_Y_CENTER_COMPENSATION, 0.0)

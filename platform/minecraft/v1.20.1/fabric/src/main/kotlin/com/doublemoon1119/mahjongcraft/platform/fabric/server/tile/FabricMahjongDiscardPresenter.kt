@@ -70,6 +70,10 @@ class FabricMahjongDiscardPresenter(
             presentation.seatIndex,
         )
 
+        val sidewaysMarkedDiscardIndex = presentation.sidewaysMarkedTileId
+            ?.let { sidewaysTileId -> presentation.discardTileIds.indexOf(sidewaysTileId) }
+            ?.takeIf { it >= 0 }
+
         var missingTileCount = 0
         presentation.discardTileIds.forEachIndexed { discardIndex, tileId ->
             val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity
@@ -90,6 +94,7 @@ class FabricMahjongDiscardPresenter(
                 seatIndex = presentation.seatIndex,
                 discardIndex = discardIndex,
                 isSidewaysMarked = tileId == presentation.sidewaysMarkedTileId,
+                sidewaysMarkedDiscardIndex = sidewaysMarkedDiscardIndex,
                 wallRemaining = wallRemaining,
             )
             tile.assignToTable(presentation.tableId)
@@ -100,7 +105,7 @@ class FabricMahjongDiscardPresenter(
                 scheduleDiscardTileAnimation(tile, placement)
             } else {
                 tile.tilePose = MahjongTilePose.FACE_UP
-                tile.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+                tile.teleportExistingManagedTile(placement)
             }
         }
         table.markDirty()

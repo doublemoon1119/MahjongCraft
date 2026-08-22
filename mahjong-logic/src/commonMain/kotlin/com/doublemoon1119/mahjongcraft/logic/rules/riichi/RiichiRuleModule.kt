@@ -483,4 +483,9 @@ class RiichiRuleModule(
      */
     override fun isHighlightedTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = RiichiTileInterpretationPolicy.isRedDora(tile) ||
         revealedWallTiles.any { indicator -> tile.riichiCanonical == getNextDora(indicator).riichiCanonical }
+
+    /**
+     * 直接查詢 [RiichiPlayerState.isRiichi]，轉型手法同 [resolveSuuchaRiichi]。
+     */
+    override fun isPlayerInRiichi(player: MahjongPlayer): Boolean = (player.playerRuleState as? RiichiPlayerState)?.isRiichi ?: false
 }

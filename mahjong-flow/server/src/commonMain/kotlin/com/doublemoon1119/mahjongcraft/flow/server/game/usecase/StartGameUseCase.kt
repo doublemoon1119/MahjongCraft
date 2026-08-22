@@ -137,6 +137,8 @@ class StartGameUseCase(
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；開局第一局 comboCount 恆為 0，
         // 呼叫本身仍需要，確保積棒 entity 從上一局殘留（理論上不會發生，但保持呼叫語意一致）清乾淨。
         presentationPublisher.publishScoringSticksUpdated(roomId, dealerSeatIndex, tableState.comboCount)
+        // 立直宣告每局歸零，開局當下不會有人已經立直，一律清空上一局殘留的立直棒。
+        presentationPublisher.publishRiichiSticksUpdated(roomId, emptySet())
         presentationPublisher.publishRoundInfoUpdated(
             roomId,
             tableState.prevalentWind,

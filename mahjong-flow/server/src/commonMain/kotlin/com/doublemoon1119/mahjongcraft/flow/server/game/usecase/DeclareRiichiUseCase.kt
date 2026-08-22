@@ -2,15 +2,20 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -39,14 +44,18 @@ import kotlin.uuid.Uuid
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與向聽數計算器。
  * @property snapshotSynchronizer 對局快照同步服務。
+ * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
  * @property eventPublisher 對局通知服務。
+ * @property presentationPublisher 對局呈現層通知服務，用於立直成立後通知平台呈現層更新立直棒。
  */
 @Factory
 class DeclareRiichiUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
+    private val handSortPreferenceStore: HandSortPreferenceStore,
     @Provided private val eventPublisher: GameEventPublisher,
+    @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 執行立直宣告邏輯。
@@ -111,9 +120,18 @@ class DeclareRiichiUseCase(
                         )
                     }
 
+                    // 立直宣告本質上也是一次捨牌，理應跟 DiscardTileUseCase 同樣尊重自動整理手牌偏好——
+                    // 立直宣告牌若不是摸切（打的是手牌、剛摸到的牌因此併入手牌），併入的牌也要照
+                    // tileOrder 排序，不能維持原始加入順序。
+                    val organizedDiscardResult = if (handSortPreferenceStore.isEnabled(playerId)) {
+                        discardResult.copy(hand = discardResult.hand.organize(module.tileOrder))
+                    } else {
+                        discardResult
+                    }
+
                     // 這個規則不支援立直宣告時 declareRiichi 回傳 null。理論上不會走到這裡，
                     // 因為上面的 legalActions 檢查已經先擋下了；僅作防呆。
-                    val declaration = module.declareRiichi(state, state.currentPlayer, discardResult)
+                    val declaration = module.declareRiichi(state, state.currentPlayer, organizedDiscardResult)
                         ?: return@update state to Outcome.Error(
                             GameError.IllegalAction(
                                 playerId,
@@ -183,6 +201,36 @@ class DeclareRiichiUseCase(
                 eventPublisher.publish(gameId, player.id, playerId, GameAction.ExhaustiveDraw(reason))
             }
         }
+
+        // 4. 觸發平台呈現層：重新排列立牌列、並把立直宣告牌移到牌河（橫放標記）——立直宣告本質上也是
+        // 一次捨牌，跟 [DiscardTileUseCase] 步驟 4 完全同一套呼叫。
+        val module = moduleRegistry.getModule(newState.config)
+        val seatIndex = newState.players.indexOfFirst { it.id == playerId }
+        val discarder = newState.players[seatIndex]
+        val dealerSeatIndex = newState.players.indexOfFirst { it.currentWind == Wind.EAST }
+        presentationPublisher.publishPlayerAreaUpdated(
+            gameId,
+            seatIndex,
+            discarder.hand.tiles.map { it.id },
+            null,
+            discarder.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+            comboStickCount = if (seatIndex == dealerSeatIndex) newState.comboCount else 0,
+        )
+        presentationPublisher.publishDiscardPileUpdated(
+            gameId,
+            seatIndex,
+            discarder.discardPile.entries.filterNot { it.isTaken }.map { it.tile.id },
+            (discarder.discardPile as? SidewaysMarkedDiscardPile)?.sidewaysMarkedTileId(),
+            newlyDiscardedTileId = tileId,
+        )
+
+        // 5. 通知平台呈現層更新立直棒——用規則無關的 isPlayerInRiichi hook 掃過全體玩家算出目前立直
+        // 中的座位集合，不假設剛宣告的這位玩家一定在集合裡（雖然目前唯一支援立直的規則必然如此）。
+        val riichiSeatIndices = newState.players.withIndex()
+            .filter { (_, player) -> module.isPlayerInRiichi(player) }
+            .map { (playerSeatIndex, _) -> playerSeatIndex }
+            .toSet()
+        presentationPublisher.publishRiichiSticksUpdated(gameId, riichiSeatIndices)
 
         return Outcome.Success(Unit)
     }

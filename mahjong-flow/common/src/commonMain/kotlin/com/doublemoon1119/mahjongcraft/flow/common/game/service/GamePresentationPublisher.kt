@@ -138,6 +138,19 @@ interface GamePresentationPublisher {
     fun publishScoringSticksUpdated(gameId: Uuid, dealerSeatIndex: Int, stickCount: Int)
 
     /**
+     * 通知平台呈現層本局目前立直中的座位集合。
+     *
+     * 生命週期綁在**立直宣告**的時間點（呼叫端緊接在立直宣告成立、廣播事件之後呼叫），跟
+     * [publishScoringSticksUpdated]（綁在牌牆生成）各自獨立；每局開始（不論上一局有沒有人立直）都應
+     * 額外呼叫一次空集合，清除上一局殘留的立直棒。
+     *
+     * @param gameId 對局 Uuid。
+     * @param riichiSeatIndices 目前立直中的座位 index 集合（`MahjongRuleModule.isPlayerInRiichi`）；
+     * 空集合代表這局目前沒有人立直，等同只清除舊立直棒。
+     */
+    fun publishRiichiSticksUpdated(gameId: Uuid, riichiSeatIndices: Set<Int>)
+
+    /**
      * 通知平台呈現層桌面中央局況顯示（場風、局數、本場數、牌山剩餘）需要更新為目前狀態。
      *
      * 觸發時機：開局/換局（跟 [publishWallStructure] 同一批呼叫）、以及每次摸牌（牌山剩餘張數會變）。

@@ -115,7 +115,7 @@ class FabricMahjongPlayerAreaPresenter(
             )
             tile.assignToTable(presentation.tableId)
             tile.tilePose = MahjongTilePose.STANDING
-            tile.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+            tile.teleportExistingManagedTile(placement)
         }
 
         presentation.drawnTileId?.let { drawnTileId ->
@@ -138,7 +138,7 @@ class FabricMahjongPlayerAreaPresenter(
                     scheduleDrawnTileAnimation(tile, placement)
                 } else {
                     tile.tilePose = MahjongTilePose.STANDING
-                    tile.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+                    tile.teleportExistingManagedTile(placement)
                 }
             }
         }
@@ -163,7 +163,7 @@ class FabricMahjongPlayerAreaPresenter(
             )
             tile.assignToTable(presentation.tableId)
             tile.tilePose = pose
-            tile.refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+            tile.teleportExistingManagedTile(placement)
         }
 
         var cursorAlong = MahjongTileTableLayout.stickAreaWidth(presentation.comboStickCount)

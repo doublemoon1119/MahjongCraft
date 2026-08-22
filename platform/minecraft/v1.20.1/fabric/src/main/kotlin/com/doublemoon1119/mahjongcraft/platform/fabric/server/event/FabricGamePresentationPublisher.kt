@@ -20,6 +20,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongRiichiStickPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongRiichiStickPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentation
@@ -59,6 +61,8 @@ import kotlin.uuid.Uuid
  * @property discardPresenter 正式牌河的實際呈現邏輯。
  * @property scoringStickPresenter 正式積棒的實際呈現邏輯，生命週期跟牌牆同時生成/清除，見
  *   [MahjongScoringStickPresenter] KDoc。
+ * @property riichiStickPresenter 正式立直棒的實際呈現邏輯，生命週期綁在立直宣告，見
+ *   [MahjongRiichiStickPresenter] KDoc。
  * @property roundInfoPresenter 桌面中央局況顯示的實際呈現邏輯。
  * @property tableLocationRegistry 麻將桌最後已知位置索引。
  * @property serverHolder 目前運行中的 server，供世界／方塊狀態查詢使用。
@@ -75,6 +79,7 @@ class FabricGamePresentationPublisher(
     private val playerAreaPresenter: MahjongPlayerAreaPresenter,
     private val discardPresenter: MahjongDiscardPresenter,
     private val scoringStickPresenter: MahjongScoringStickPresenter,
+    private val riichiStickPresenter: MahjongRiichiStickPresenter,
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
@@ -263,6 +268,29 @@ class FabricGamePresentationPublisher(
     }
 
     /**
+     * 立直棒綁在**立直宣告**的時間點觸發（呼叫端緊接在立直宣告成立、廣播事件之後呼叫，見
+     * [MahjongRiichiStickPresenter] KDoc）——跟 [publishScoringSticksUpdated]（綁在牌牆生成）各自
+     * 獨立觸發時機；不需要 [busyTracker] 或延遲，直接同步呈現，跟 [publishScoringSticksUpdated] 同理。
+     */
+    override fun publishRiichiSticksUpdated(gameId: Uuid, riichiSeatIndices: Set<Int>) {
+        if (serverHolder.current() == null) {
+            logger.warn("publishRiichiSticksUpdated gameId={} skipped: no active server", gameId)
+            return
+        }
+        scope.launch(dispatchers.main) {
+            val resolved = resolveTableContext(gameId, "publishRiichiSticksUpdated") ?: return@launch
+
+            val presentation = MahjongRiichiStickPresentation(
+                tableId = gameId,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
+                riichiSeatIndices = riichiSeatIndices,
+            )
+            riichiStickPresenter.present(presentation)
+        }
+    }
+
+    /**
      * 開局/換局（跟 [publishWallStructure] 同一批呼叫）跟每次摸牌都會觸發，不需要 [busyTracker] 或
      * 延遲——純文字更新是瞬間的；跟 [publishDiceRoll] 同理，世界／entity 存取一併丟回伺服器主執行緒
      * 執行。
@@ -369,7 +397,14 @@ class FabricGamePresentationPublisher(
         }
     }
 
-    /** 實際呼叫 [playerAreaPresenter]，跟 [publishDiceRoll] 同理丟回伺服器主執行緒執行。 */
+    /**
+     * 實際呼叫 [playerAreaPresenter]，跟 [publishDiceRoll] 同理丟回伺服器主執行緒執行——每次摸牌/
+     * 捨牌/鳴牌都會呼叫，是自動操作心跳（[GameFlowCoordinator.driveAutomatedPlayers]）觸發頻率最高
+     * 的呈現路徑，因此也需要 [busyTracker.markPending]／[busyTracker.clearPending] 覆蓋「已排定呈現、
+     * entity 還沒真正生成/移動」那段窗口，理由見 [TablePresentationBusyTracker] KDoc：AI 連續行動時
+     * 若沒有這組保護，偶爾會在這段窗口內搶跑，造成呈現跟權威桌況不同步、殘留幽靈 entity，這是遊戲內
+     * 實際驗證過的問題。
+     */
     private fun presentPlayerArea(
         gameId: Uuid,
         seatIndex: Int,
@@ -379,31 +414,36 @@ class FabricGamePresentationPublisher(
         comboStickCount: Int,
         animateDrawnTile: Boolean,
     ) {
+        busyTracker.markPending(gameId)
         scope.launch(dispatchers.main) {
-            val resolved = resolveTableContext(gameId, "publishPlayerAreaUpdated") ?: return@launch
+            try {
+                val resolved = resolveTableContext(gameId, "publishPlayerAreaUpdated") ?: return@launch
 
-            val presentation = MahjongPlayerAreaPresentation(
-                tableId = gameId,
-                tableLocation = resolved.location,
-                tableFacing = resolved.facing,
-                seatIndex = seatIndex,
-                standingTileIds = standingTileIds,
-                drawnTileId = drawnTileId,
-                melds = melds.map {
-                    MahjongMeldTileGroup(it.type, it.tileIds, it.calledTileId, it.sourceDirection, it.allTilesFaceDown)
-                },
-                comboStickCount = comboStickCount,
-                animateDrawnTile = animateDrawnTile,
-            )
-            playerAreaPresenter.present(presentation)
+                val presentation = MahjongPlayerAreaPresentation(
+                    tableId = gameId,
+                    tableLocation = resolved.location,
+                    tableFacing = resolved.facing,
+                    seatIndex = seatIndex,
+                    standingTileIds = standingTileIds,
+                    drawnTileId = drawnTileId,
+                    melds = melds.map {
+                        MahjongMeldTileGroup(it.type, it.tileIds, it.calledTileId, it.sourceDirection, it.allTilesFaceDown)
+                    },
+                    comboStickCount = comboStickCount,
+                    animateDrawnTile = animateDrawnTile,
+                )
+                playerAreaPresenter.present(presentation)
+            } finally {
+                busyTracker.clearPending(gameId)
+            }
         }
     }
 
     /**
-     * 清除整桌所有玩家的手牌/摸牌位/副露/積棒/局況顯示呈現——回房間等清空情境使用（見
+     * 清除整桌所有玩家的手牌/摸牌位/副露/積棒/立直棒/局況顯示呈現——回房間等清空情境使用（見
      * `ReturnToRoomUseCase`），沒有座位分組資料可傳，直接呼叫 [playerAreaPresenter]／
-     * [scoringStickPresenter]／[roundInfoPresenter] 各自的 `clear()`（以 `managedTableId` 範圍搜尋
-     * 清除，不需要逐座位資料）。
+     * [scoringStickPresenter]／[riichiStickPresenter]／[roundInfoPresenter] 各自的 `clear()`（以
+     * `managedTableId` 範圍搜尋清除，不需要逐座位資料）。
      */
     override fun clearPlayerAreas(gameId: Uuid) {
         if (serverHolder.current() == null) {
@@ -418,6 +458,7 @@ class FabricGamePresentationPublisher(
             }
             playerAreaPresenter.clear(gameId, location)
             scoringStickPresenter.clear(gameId, location)
+            riichiStickPresenter.clear(gameId, location)
             roundInfoPresenter.clear(gameId, location)
         }
     }
@@ -429,9 +470,11 @@ class FabricGamePresentationPublisher(
     }
 
     /**
-     * 一般回合動作，不需要 [busyTracker] 或延遲，直接同步呈現——即使 [newlyDiscardedTileId] 非
-     * `null` 觸發捨牌動畫，那段動畫本身的排程完全交給 `FabricMahjongDiscardPresenter` 內部處理，理由同
-     * [publishPlayerAreaUpdated] 的 `animateDrawnTile` 同款設計。
+     * 一般回合動作，即使 [newlyDiscardedTileId] 非 `null` 觸發捨牌動畫，那段動畫本身的排程完全交給
+     * `FabricMahjongDiscardPresenter` 內部處理，理由同 [publishPlayerAreaUpdated] 的 `animateDrawnTile`
+     * 同款設計；但這裡的 entity 操作仍是丟回伺服器主執行緒非同步執行，一樣需要
+     * [busyTracker.markPending]／[busyTracker.clearPending] 覆蓋「已排定呈現、entity 還沒真正生成/
+     * 移動」那段窗口，理由同 [presentPlayerArea]。
      */
     override fun publishDiscardPileUpdated(
         gameId: Uuid,
@@ -444,19 +487,24 @@ class FabricGamePresentationPublisher(
             logger.warn("publishDiscardPileUpdated gameId={} skipped: no active server", gameId)
             return
         }
+        busyTracker.markPending(gameId)
         scope.launch(dispatchers.main) {
-            val resolved = resolveTableContext(gameId, "publishDiscardPileUpdated") ?: return@launch
+            try {
+                val resolved = resolveTableContext(gameId, "publishDiscardPileUpdated") ?: return@launch
 
-            val presentation = MahjongDiscardPresentation(
-                tableId = gameId,
-                tableLocation = resolved.location,
-                tableFacing = resolved.facing,
-                seatIndex = seatIndex,
-                discardTileIds = discardTileIds,
-                sidewaysMarkedTileId = sidewaysMarkedTileId,
-                newlyDiscardedTileId = newlyDiscardedTileId,
-            )
-            discardPresenter.present(presentation)
+                val presentation = MahjongDiscardPresentation(
+                    tableId = gameId,
+                    tableLocation = resolved.location,
+                    tableFacing = resolved.facing,
+                    seatIndex = seatIndex,
+                    discardTileIds = discardTileIds,
+                    sidewaysMarkedTileId = sidewaysMarkedTileId,
+                    newlyDiscardedTileId = newlyDiscardedTileId,
+                )
+                discardPresenter.present(presentation)
+            } finally {
+                busyTracker.clearPending(gameId)
+            }
         }
     }
 

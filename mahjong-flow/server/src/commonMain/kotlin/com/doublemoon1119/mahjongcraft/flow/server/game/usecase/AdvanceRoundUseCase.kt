@@ -187,6 +187,8 @@ class AdvanceRoundUseCase(
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；新局手牌一定沒有副露，只是靠
         // publishInitialDealAnimation 的 comboStickCount 讓手牌正確讓開積棒佔用的空間。
         presentationPublisher.publishScoringSticksUpdated(gameId, dealerSeatIndex, newState.comboCount)
+        // 立直宣告每局歸零，不論上一局有沒有人立直，新局一律清空上一局殘留的立直棒。
+        presentationPublisher.publishRiichiSticksUpdated(gameId, emptySet())
         presentationPublisher.publishRoundInfoUpdated(
             gameId,
             newState.prevalentWind,

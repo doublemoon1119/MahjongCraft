@@ -281,8 +281,12 @@ object MahjongTileTableLayout {
      * 跟座位一樣整場對局固定不變。
      *
      * @param isSidewaysMarked 這張牌是否要側身呈現（例如立直宣告牌）——為 `true` 時額外把 yaw 轉
-     * [SIDEWAYS_YAW_OFFSET] 度，位置本身不變。已知簡化：不因側身而加寬該格間距，跟真實麻將側身牌會
-     * 占用略多橫向空間不同；先進遊戲內用截圖比對，如果側身牌跟旁邊牌重疊太明顯，再考慮個別調整間距。
+     * [SIDEWAYS_YAW_OFFSET] 度。側身牌沿排列方向（局部 X 軸）實際佔用的寬度是
+     * [MahjongTileDimensions.TILE_HEIGHT] 而非直立牌的 [MahjongTileDimensions.TILE_WIDTH]，
+     * [sidewaysMarkedDiscardIndex] 讓 [localDiscardVector] 知道該格該用哪一個寬度計算跟左右鄰居的
+     * 間距，避免側身牌跟旁邊的牌重疊——手法比照 [meldPlacement] 依牌實際朝向換算寬度的既有慣例。
+     * @param sidewaysMarkedDiscardIndex 這位玩家牌河裡側身標記那張牌自己的 [discardIndex]（`null`
+     * 代表這位玩家目前沒有任何側身標記牌）；同一位玩家牌河裡最多只會有一張側身標記牌。
      * @param wallRemaining 牌山是否還有剩餘牌——用來判斷第 [DISCARD_SAFE_ROWS] 排放滿後，第四排要不要
      * 真的往桌緣方向新增，理由見 [localDiscardVector] KDoc。
      */
@@ -294,12 +298,13 @@ object MahjongTileTableLayout {
         seatIndex: Int,
         discardIndex: Int,
         isSidewaysMarked: Boolean,
+        sidewaysMarkedDiscardIndex: Int?,
         wallRemaining: Boolean,
     ): MahjongTileWallPlacement {
         require(discardIndex >= 0) { "Discard index must not be negative" }
 
         val physicalSide = seatIndexToTableSide(seatIndex)
-        val local = localDiscardVector(discardIndex, wallRemaining)
+        val local = localDiscardVector(discardIndex, wallRemaining, sidewaysMarkedDiscardIndex)
         val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
         val baseYaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES)
         return MahjongTileWallPlacement(
@@ -325,17 +330,38 @@ object MahjongTileTableLayout {
      * ——那需要額外把莊家座位、`TileWallPosition.side` 分配、目前牌山消耗進度都串起來查，對這種很少
      * 見的極端長牌河邊界情況而言成本過高；用「牌山整體是否還有牌」當簡化版的替代判斷，兩者只有在牌山
      * 快摸完但捨牌者自己那面牆已經先被摸空的極端情況下才會不一致，可接受。
+     *
+     * 同一排內若有側身標記牌（[sidewaysMarkedDiscardIndex] 落在同一排），該格改用
+     * [MahjongTileDimensions.TILE_HEIGHT] 當寬度（其餘格維持 [MahjongTileDimensions.TILE_WIDTH]），
+     * 逐格累加實際寬度＋固定間距算出每格中心點，取代原本「假設每格都是直立牌固定寬度」的簡化算法——
+     * 側身牌實際佔用的橫向空間比直立牌寬，用固定間距會讓側身牌跟旁邊的牌重疊，手法比照 [meldPlacement]
+     * 依牌實際朝向換算寬度的既有慣例。置中基準固定用整排 [DISCARD_TILES_PER_ROW] 格的假設總寬度（不是
+     * 「目前已經有幾張牌」），理由同原本的固定間距算法：牌河逐漸填滿時，已經擺好的牌不會因為新牌加入
+     * 而重新移位。
      */
-    private fun localDiscardVector(discardIndex: Int, wallRemaining: Boolean): TileTableVector {
+    private fun localDiscardVector(discardIndex: Int, wallRemaining: Boolean, sidewaysMarkedDiscardIndex: Int?): TileTableVector {
         val lastSafeRow = DISCARD_SAFE_ROWS - 1
         val lastSafeRowStartIndex = lastSafeRow * DISCARD_TILES_PER_ROW
-        val (row, column) = if (!wallRemaining || discardIndex < lastSafeRowStartIndex) {
-            discardIndex / DISCARD_TILES_PER_ROW to discardIndex % DISCARD_TILES_PER_ROW
+
+        fun rowColumnOf(index: Int): Pair<Int, Int> = if (!wallRemaining || index < lastSafeRowStartIndex) {
+            index / DISCARD_TILES_PER_ROW to index % DISCARD_TILES_PER_ROW
         } else {
-            lastSafeRow to (discardIndex - lastSafeRowStartIndex)
+            lastSafeRow to (index - lastSafeRowStartIndex)
         }
-        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
-        val alongSide = (column - (DISCARD_TILES_PER_ROW - 1) / 2.0) * stackStep
+
+        val (row, column) = rowColumnOf(discardIndex)
+        val sidewaysColumn = sidewaysMarkedDiscardIndex
+            ?.let(::rowColumnOf)
+            ?.takeIf { (sidewaysRow, _) -> sidewaysRow == row }
+            ?.second
+
+        fun columnWidth(c: Int): Double = if (c == sidewaysColumn) MahjongTileDimensions.TILE_HEIGHT else MahjongTileDimensions.TILE_WIDTH
+        fun columnPitch(c: Int): Double = columnWidth(c) + MahjongTileDimensions.TILE_SMALL_PADDING
+
+        val leftEdge = (0 until column).sumOf(::columnPitch)
+        val totalRowPitch = (0 until DISCARD_TILES_PER_ROW).sumOf(::columnPitch)
+        val alongSide = leftEdge + columnWidth(column) / 2.0 - totalRowPitch / 2.0
+
         val rowStep = MahjongTileDimensions.TILE_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING
         val perpendicular = DISCARD_ROW_BASE_OFFSET + row * rowStep
         return TileTableVector(x = alongSide, y = 0.0, z = perpendicular)
@@ -543,6 +569,50 @@ object MahjongTileTableLayout {
     }
 
     /**
+     * 依 controller 座標、桌子世界朝向與座位 index，算出這位玩家立直棒該擺放的世界座標——立直棒放在
+     * 這位玩家牌河（[DISCARD_ROW_BASE_OFFSET]）更靠近桌子中心那一側、緊鄰牌河第一排的位置、沿排列
+     * 方向（局部 X 軸）置中，代表「立直棒放在桌子中央附近、緊鄰自己牌河」的實際擺法——遊戲內比對過
+     * 截圖後確認：不是放在手牌與牌河之間（那個位置太靠近玩家自己、而非桌子中央）。跟 [discardPlacement]／
+     * [stickPlacement] 同樣直接用座位 index 算局部側面，不經過莊家相對旋轉——立直棒屬於宣告立直的
+     * 玩家自己，跟座位一樣整場對局固定不變。
+     */
+    fun riichiStickPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatIndex: Int,
+    ): MahjongTileWallPlacement {
+        val physicalSide = seatIndexToTableSide(seatIndex)
+        val local = localRiichiStickVector()
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        val baseYaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = baseYaw,
+        )
+    }
+
+    /**
+     * 以局部南側玩家為基準的立直棒位置：沿排列方向（局部 X 軸）置中（`alongSide = 0`）；垂直於排列
+     * 方向（局部 Z 軸）從 [DISCARD_ROW_BASE_OFFSET]（牌河第一排「牌中心點」，不是牌的近緣）往桌子
+     * 中心方向退開：先扣掉牌河第一排那張牌自己一半的 [MahjongTileDimensions.TILE_HEIGHT]（牌本身
+     * 佔用的範圍，[DISCARD_ROW_BASE_OFFSET] 本身只是牌中心點座標，直接拿來當立直棒邊界會讓立直棒疊進
+     * 牌河第一排——這是遊戲內實際驗證過的問題），再扣掉立直棒自己一半的
+     * [MahjongScoringStickDimensions.STICK_DEPTH]，最後扣掉 [RIICHI_STICK_CLEARANCE_GAP] 讓兩者之間
+     * 保留一點肉眼可辨的縫隙，不是只夠避免 Z-fighting 的極小留白。
+     */
+    private fun localRiichiStickVector(): TileTableVector {
+        val clearance = MahjongTileDimensions.TILE_HEIGHT / 2.0 +
+            MahjongScoringStickDimensions.STICK_DEPTH / 2.0 +
+            RIICHI_STICK_CLEARANCE_GAP
+        val perpendicular = DISCARD_ROW_BASE_OFFSET - clearance
+        return TileTableVector(x = 0.0, y = 0.0, z = perpendicular)
+    }
+
+    /**
      * 依 controller 座標，算出桌面中央局況顯示（`MahjongRoundInfoEntity`）該擺放的世界座標——單一
      * entity 置中於桌面正中央，不需要依座位旋轉（billboard 顯示永遠面向鏡頭，見該 entity 的
      * renderer），高度刻意明顯高於牌牆／骰子等其他桌面機關的最高點（[ROUND_INFO_HEIGHT_ABOVE_TABLE]），
@@ -744,6 +814,9 @@ object MahjongTileTableLayout {
      */
     internal const val DISCARD_ROW_BASE_OFFSET: Double =
         DISCARD_WALL_NEAR_EDGE - DISCARD_SAFE_ROWS * (MahjongTileDimensions.TILE_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING)
+
+    /** 立直棒跟牌河第一排之間，肉眼可辨的留白距離，起始估算值，預期進遊戲後用截圖比對調整。 */
+    internal const val RIICHI_STICK_CLEARANCE_GAP: Double = 0.05
 
     /** 側身標記的牌額外旋轉角度。 */
     internal const val SIDEWAYS_YAW_OFFSET: Float = 90.0f

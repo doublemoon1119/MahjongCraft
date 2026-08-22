@@ -29,6 +29,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的積棒呈現資料。 */
     private val scoringSticks = mutableMapOf<Uuid, ScoringStickContext>()
 
+    /** 依對局 Uuid 紀錄最後一次收到的立直中座位集合。 */
+    private val riichiSticks = mutableMapOf<Uuid, Set<Int>>()
+
     /** 依對局 Uuid 紀錄最後一次收到的桌面局況顯示資料。 */
     private val roundInfos = mutableMapOf<Uuid, RoundInfoContext>()
 
@@ -73,6 +76,10 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     override fun publishScoringSticksUpdated(gameId: Uuid, dealerSeatIndex: Int, stickCount: Int) {
         scoringSticks[gameId] = ScoringStickContext(dealerSeatIndex, stickCount)
+    }
+
+    override fun publishRiichiSticksUpdated(gameId: Uuid, riichiSeatIndices: Set<Int>) {
+        riichiSticks[gameId] = riichiSeatIndices
     }
 
     override fun publishRoundInfoUpdated(
@@ -148,6 +155,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 取得指定對局最後一次收到的積棒呈現資料；若無紀錄則回傳 null。 */
     fun getPublishedScoringSticks(gameId: Uuid): ScoringStickContext? = scoringSticks[gameId]
+
+    /** 取得指定對局最後一次收到的立直中座位集合；若無紀錄則回傳 null。 */
+    fun getPublishedRiichiSticks(gameId: Uuid): Set<Int>? = riichiSticks[gameId]
 
     /** 取得指定對局最後一次收到的桌面局況顯示資料；若無紀錄則回傳 null。 */
     fun getPublishedRoundInfo(gameId: Uuid): RoundInfoContext? = roundInfos[gameId]
