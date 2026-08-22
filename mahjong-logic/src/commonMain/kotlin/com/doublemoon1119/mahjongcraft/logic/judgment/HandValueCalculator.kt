@@ -15,7 +15,7 @@ interface HandValueCalculator<C : HandValueContext, R : HandValueResult> {
      *
      * 不同規則有不同的計算方式：
      * - 日本麻將：計算役種的翻數（Han）
-     * - 台灣麻將：計算役種的台數（Dora）
+     * - 台灣麻將：計算役種的台數（Tai）
      *
      * @param context 價值計算所需的上下文資訊。
      * @return 價值計算結果。
