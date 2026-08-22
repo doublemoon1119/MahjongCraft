@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
+import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
@@ -24,9 +25,11 @@ import net.minecraft.util.Identifier
  * `TextRenderer.draw` 用 [TextRenderer.TextLayerType.NORMAL]（不是 `POLYGON_OFFSET`，那是給貼在其他
  * 已渲染表面上的疊字用的，跟這裡懸浮在半空中的文字情境不同）。
  *
- * 兩行文字都在這裡（client 端、每一幀）才用 [Text.translatable] 組出來，不是拿 server 端已經翻譯好的
- * 固定字串——[MahjongRoundInfoEntity] 只同步場風／局數／本場數／牌山剩餘這些原始數值，讓每個玩家依
- * 自己的語系看到對應翻譯，見該 entity KDoc。
+ * 每一行文字都在這裡（client 端、每一幀）才用 [Text.translatable] 組出來，不是拿 server 端已經翻譯好的
+ * 固定字串——[MahjongRoundInfoEntity] 只同步 [MahjongRoundInfoEntity.lines] 這些規則自訂的原始數值，
+ * 讓每個玩家依自己的語系看到對應翻譯，見該 entity KDoc。認得的 key 才產生對應文字，其餘略過
+ * （forward-compatible），比照 `GameActionDisplayText.exhaustiveDrawText()` 對
+ * `RiichiExhaustiveDrawReason` 的既有型別/key 判斷慣例。
  */
 class MahjongRoundInfoEntityRenderer(
     context: EntityRendererFactory.Context,
@@ -43,7 +46,7 @@ class MahjongRoundInfoEntityRenderer(
         light: Int,
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
-        val lines = listOf(entity.buildTitleText(), entity.buildWallRemainingText()) + entity.buildExtraTexts()
+        val lines = entity.lines.mapNotNull(::buildLineText)
 
         matrices.push()
         matrices.multiply(dispatcher.rotation)
@@ -70,26 +73,17 @@ class MahjongRoundInfoEntityRenderer(
         matrices.pop()
     }
 
-    /** 標題行：場風＋場風內局數＋本場數，例如「東1局 0本場」。 */
-    private fun MahjongRoundInfoEntity.buildTitleText(): Text = Text.translatable(
-        MinecraftMessageKeys.ROUND_INFO_TITLE,
-        Text.translatable(prevalentWind.toMessageKey()),
-        localRoundNumber,
-    ).append(" ").append(Text.translatable(MinecraftMessageKeys.ROUND_INFO_COMBO_COUNT, comboCount))
-
-    /** 牌山剩餘行。 */
-    private fun MahjongRoundInfoEntity.buildWallRemainingText(): Text = Text.translatable(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING, wallRemainingCount)
-
-    /**
-     * 規則自訂延伸顯示行——只有認得的 key 才產生對應文字，其餘略過（forward-compatible），比照
-     * `GameActionDisplayText.exhaustiveDrawText()` 對 `RiichiExhaustiveDrawReason` 的既有型別/key
-     * 判斷慣例。
-     */
-    private fun MahjongRoundInfoEntity.buildExtraTexts(): List<Text> = extras.mapNotNull { extra ->
-        when (extra.key) {
-            RiichiRuleModule.RIICHI_STICK_POT_KEY -> Text.translatable(MinecraftMessageKeys.ROUND_INFO_RIICHI_STICK_POT, extra.value)
-            else -> null
+    /** 依 [line] 的 key 組出對應文字；不認得的 key 回傳 null，呼叫端略過該行。 */
+    private fun buildLineText(line: RoundInfoLine): Text? = when (line.key) {
+        RiichiRuleModule.TITLE_KEY -> {
+            val wind = Wind.entries.getOrElse(line.args.getOrElse(0) { 0 }) { Wind.EAST }
+            val localRoundNumber = line.args.getOrElse(1) { 1 }
+            Text.translatable(MinecraftMessageKeys.ROUND_INFO_TITLE, Text.translatable(wind.toMessageKey()), localRoundNumber)
         }
+        RiichiRuleModule.COMBO_COUNT_KEY -> Text.translatable(MinecraftMessageKeys.ROUND_INFO_COMBO_COUNT, line.args.getOrElse(0) { 0 })
+        RiichiRuleModule.WALL_REMAINING_KEY -> Text.translatable(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING, line.args.getOrElse(0) { 0 })
+        RiichiRuleModule.STICK_POT_KEY -> Text.translatable(MinecraftMessageKeys.ROUND_INFO_RIICHI_STICK_POT, line.args.getOrElse(0) { 0 })
+        else -> null
     }
 
     /** 場風對應的牌面顯示文字 key，跟手牌裡的風牌共用同一組翻譯（同一個詞，不需要另外一套 key）。 */

@@ -346,9 +346,9 @@ object MinecraftMessageKeys {
     const val ROUND_INFO_WALL_REMAINING = PREFIX + "round_info_wall_remaining"
 
     /**
-     * 局況顯示的立直棒累積供託支數延伸行，帶一個支數參數（一個 `%d`）——對應
-     * `RiichiRuleModule.RIICHI_STICK_POT_KEY` 這個規則自訂延伸項目 key，只有支援立直棒的規則
-     * （日麻）會貢獻這個項目，見 `MahjongRuleModule.getRoundInfoExtras` KDoc。
+     * 局況顯示的立直棒累積供託數量行，帶一個數量參數（一個 `%d`）——對應
+     * `RiichiRuleModule.STICK_POT_KEY` 這個規則自訂顯示項目 key，只有支援立直棒的規則
+     * （日麻）會貢獻這個項目，見 `MahjongRuleModule.getRoundInfoLines` KDoc。
      */
     const val ROUND_INFO_RIICHI_STICK_POT = PREFIX + "round_info_riichi_stick_pot"
 

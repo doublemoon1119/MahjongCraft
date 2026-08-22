@@ -5,8 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
-import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoExtra
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
@@ -305,14 +304,7 @@ class FabricGamePresentationPublisher(
      * 延遲——純文字更新是瞬間的；跟 [publishDiceRoll] 同理，世界／entity 存取一併丟回伺服器主執行緒
      * 執行。
      */
-    override fun publishRoundInfoUpdated(
-        gameId: Uuid,
-        prevalentWind: Wind,
-        localRoundNumber: Int,
-        comboCount: Int,
-        wallRemainingCount: Int,
-        extras: List<RoundInfoExtra>,
-    ) {
+    override fun publishRoundInfoUpdated(gameId: Uuid, lines: List<RoundInfoLine>) {
         if (serverHolder.current() == null) {
             logger.warn("publishRoundInfoUpdated gameId={} skipped: no active server", gameId)
             return
@@ -324,11 +316,7 @@ class FabricGamePresentationPublisher(
                 tableId = gameId,
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
-                prevalentWind = prevalentWind,
-                localRoundNumber = localRoundNumber,
-                comboCount = comboCount,
-                wallRemainingCount = wallRemainingCount,
-                extras = extras,
+                lines = lines,
             )
             roundInfoPresenter.present(presentation)
         }

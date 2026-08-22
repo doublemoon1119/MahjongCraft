@@ -74,11 +74,7 @@ class FabricMahjongRoundInfoPresenter(
      * 語系解析，見 [MahjongRoundInfoEntity] KDoc。
      */
     private fun MahjongRoundInfoEntity.applyPresentation(presentation: MahjongRoundInfoPresentation) {
-        prevalentWind = presentation.prevalentWind
-        localRoundNumber = presentation.localRoundNumber
-        comboCount = presentation.comboCount
-        wallRemainingCount = presentation.wallRemainingCount
-        extras = presentation.extras
+        lines = presentation.lines
     }
 
     /** 由版本無關 dimension ID 取得目前 server session 的世界。 */

@@ -398,15 +398,14 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun getStickPotCount(tableState: TableState): Int = 0
 
     /**
-     * 桌面局況顯示的規則自訂延伸項目（例如日麻的立直棒累積支數）——不強迫每種規則的專屬資訊都擠進
-     * 呈現層固定欄位，呈現層看到不認得的 [RoundInfoExtra.key] 時應該略過該行，不是報錯。
-     *
-     * 不支援延伸顯示的規則維持預設空清單。
+     * 桌面中央局況顯示的完整內容——場風、局數、本場數、牌山剩餘等要不要顯示、怎麼顯示，全部由規則
+     * 自己的覆寫決定（見 [RoundInfoLine] KDoc），呈現層不預設任何固定欄位。不支援局況顯示、或尚未
+     * 實作的規則維持預設空清單，代表這桌完全不顯示局況面板內容，不是報錯。
      *
      * @param tableState 目前的桌況。
-     * @return 這個規則想額外顯示的局況項目列表。
+     * @return 這個規則想顯示的局況項目列表，依序顯示。
      */
-    fun getRoundInfoExtras(tableState: TableState): List<RoundInfoExtra> = emptyList()
+    fun getRoundInfoLines(tableState: TableState): List<RoundInfoLine> = emptyList()
 
     /**
      * 同一局結束時的名次排序：分數高者優先，同分時依這一局的座位（越接近這一局東家名次越前面）。

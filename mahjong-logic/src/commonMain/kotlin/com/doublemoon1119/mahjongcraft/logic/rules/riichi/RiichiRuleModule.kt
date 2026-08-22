@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
-import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoExtra
+import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
@@ -496,9 +496,14 @@ class RiichiRuleModule(
     override fun getStickPotCount(tableState: TableState): Int = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
 
     /**
-     * 唯一的延伸項目是立直棒累積支數，見 [RIICHI_STICK_POT_KEY]。
+     * 日麻桌面局況顯示依序四行：場風＋局數（標題）、本場數、牌山剩餘張數、立直棒累積供託數量。
      */
-    override fun getRoundInfoExtras(tableState: TableState): List<RoundInfoExtra> = listOf(RoundInfoExtra(RIICHI_STICK_POT_KEY, getStickPotCount(tableState)))
+    override fun getRoundInfoLines(tableState: TableState): List<RoundInfoLine> = listOf(
+        RoundInfoLine(TITLE_KEY, listOf(tableState.prevalentWind.ordinal, tableState.localRoundNumber)),
+        RoundInfoLine(COMBO_COUNT_KEY, listOf(tableState.comboCount)),
+        RoundInfoLine(WALL_REMAINING_KEY, listOf(tableState.tileWall.remainingCount)),
+        RoundInfoLine(STICK_POT_KEY, listOf(getStickPotCount(tableState))),
+    )
 
     /**
      * 只有立直中的玩家才需要記錄永久振聽——未立直時放過和牌只構成一般同巡振聽，不需要這個永久旗標，
@@ -511,7 +516,16 @@ class RiichiRuleModule(
     }
 
     companion object {
-        /** [getRoundInfoExtras] 回傳的立直棒累積支數項目 key，供呈現層辨識。 */
-        const val RIICHI_STICK_POT_KEY = "riichiStickPot"
+        /** [getRoundInfoLines] 場風＋局數標題行的 key，供呈現層辨識。 */
+        const val TITLE_KEY = "riichiTitle"
+
+        /** [getRoundInfoLines] 本場數行的 key，供呈現層辨識。 */
+        const val COMBO_COUNT_KEY = "riichiComboCount"
+
+        /** [getRoundInfoLines] 牌山剩餘張數行的 key，供呈現層辨識。 */
+        const val WALL_REMAINING_KEY = "riichiWallRemaining"
+
+        /** [getRoundInfoLines] 立直棒累積供託數量行的 key，供呈現層辨識。 */
+        const val STICK_POT_KEY = "riichiStickPot"
     }
 }

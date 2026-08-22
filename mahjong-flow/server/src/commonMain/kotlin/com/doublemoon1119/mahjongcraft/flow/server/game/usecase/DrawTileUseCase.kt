@@ -98,17 +98,10 @@ class DrawTileUseCase(
             comboStickCount = if (seatIndex == dealerSeatIndex) newState.comboCount else 0,
             animateDrawnTile = true,
         )
-        // 牌山剩餘張數每次摸牌都會變，桌面局況顯示要跟著更新；extras 也要重新算，這個 entity 是
-        // 「找到既有的就地更新」模式，沒帶上就會把之前顯示的延伸行覆蓋回空清單。
+        // 牌山剩餘張數每次摸牌都會變，桌面局況顯示要跟著更新——這個 entity 是「找到既有的就地更新」
+        // 模式，沒帶上完整內容就會把之前顯示的內容覆蓋回空清單。
         val module = moduleRegistry.getModule(newState.config)
-        presentationPublisher.publishRoundInfoUpdated(
-            gameId,
-            newState.prevalentWind,
-            localRoundNumber = newState.localRoundNumber,
-            comboCount = newState.comboCount,
-            wallRemainingCount = newState.tileWall.remainingCount,
-            extras = module.getRoundInfoExtras(newState),
-        )
+        presentationPublisher.publishRoundInfoUpdated(gameId, module.getRoundInfoLines(newState))
 
         return Outcome.Success(Unit)
     }

@@ -216,14 +216,7 @@ class AdvanceRoundUseCase(
             comboStickCount = newState.comboCount,
             pooledStickCount = module.getStickPotCount(newState),
         )
-        presentationPublisher.publishRoundInfoUpdated(
-            gameId,
-            newState.prevalentWind,
-            localRoundNumber = newState.localRoundNumber,
-            comboCount = newState.comboCount,
-            wallRemainingCount = newState.tileWall.remainingCount,
-            extras = module.getRoundInfoExtras(newState),
-        )
+        presentationPublisher.publishRoundInfoUpdated(gameId, module.getRoundInfoLines(newState))
         // 翻牌完成那一刻起的最終落地格位——newState 此時已經是整理過的順序，跟決定發牌動畫節奏本身的
         // advanceOutcome.dealOrderHandTileIdsBySeatIndex 分開，見 MahjongInitialDealPresentation KDoc。
         val postFlipHandTileIdsBySeatIndex = newState.players.withIndex().associate { (seatIndex, player) ->

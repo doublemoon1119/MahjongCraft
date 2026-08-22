@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoExtra
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
@@ -13,11 +12,10 @@ import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
 /**
- * 桌面中央局況顯示用的純視覺 entity——只同步組成畫面內容需要的原始數值（場風、場風內局數、本場數、
- * 牌山剩餘、規則自訂延伸項目 [extras]），不同步已經翻譯好的文字——翻譯必須在 client 端依各自語系解析，
- * 不能在 server 端就烘焙成固定語言的字串，見 `FabricMahjongRoundInfoPresenter`／
- * `MahjongRoundInfoEntityRenderer` 的分工：server 只決定「數值」，client renderer 才決定「怎麼翻譯成
- * 文字」。
+ * 桌面中央局況顯示用的純視覺 entity——只同步組成畫面內容需要的原始數值（[lines]，實際顯示什麼完全由
+ * 規則模組決定），不同步已經翻譯好的文字——翻譯必須在 client 端依各自語系解析，不能在 server 端就
+ * 烘焙成固定語言的字串，見 `FabricMahjongRoundInfoPresenter`／`MahjongRoundInfoEntityRenderer` 的
+ * 分工：server 只決定「數值」，client renderer 才決定「怎麼翻譯成文字」。
  *
  * 每張桌子固定只有一個，不像牌／點棒有多個 UUID 各自代表獨立的牌局物件，因此不需要
  * `managedByGame`／`managedTableId` 以外的識別欄位——找既有 entity 時直接依 [managedTableId] 搜尋
@@ -27,38 +25,20 @@ class MahjongRoundInfoEntity(
     type: EntityType<out MahjongRoundInfoEntity> = ModEntities.mahjongRoundInfo,
     world: World,
 ) : Entity(type, world) {
-    /** 目前場風（圈風）。 */
-    var prevalentWind: Wind
-        get() = Wind.entries.getOrElse(dataTracker[PREVALENT_WIND_ORDINAL]) { Wind.EAST }
-        set(value) = dataTracker.set(PREVALENT_WIND_ORDINAL, value.ordinal)
-
-    /** 目前場風內的第幾局（`1` 起算）。 */
-    var localRoundNumber: Int
-        get() = dataTracker[LOCAL_ROUND_NUMBER]
-        set(value) = dataTracker.set(LOCAL_ROUND_NUMBER, value)
-
-    /** 目前本場數（連莊次數）。 */
-    var comboCount: Int
-        get() = dataTracker[COMBO_COUNT]
-        set(value) = dataTracker.set(COMBO_COUNT, value)
-
-    /** 牌山目前剩餘張數。 */
-    var wallRemainingCount: Int
-        get() = dataTracker[WALL_REMAINING_COUNT]
-        set(value) = dataTracker.set(WALL_REMAINING_COUNT, value)
-
     /**
-     * 規則自訂延伸顯示項目（例如日麻的立直棒累積支數）——`DataTracker` 只能同步基本型別，這裡編碼成
-     * `"key1=value1;key2=value2"` 存進一個 `TrackedData<String>`（沒有延伸行時為空字串），
-     * client 端 renderer 解碼後才翻譯成文字，見 [MahjongRoundInfoEntity] KDoc同一套分工。
+     * 要顯示的完整內容，依序顯示——`DataTracker` 只能同步基本型別，這裡編碼成
+     * `"key1:1,2;key2:5"` 存進一個 `TrackedData<String>`（`:` 分隔 key 與參數列表，`,` 分隔參數
+     * 列表本身，沒有任何內容時為空字串），client 端 renderer 解碼後才依認得的 key 翻譯成文字，見
+     * [MahjongRoundInfoEntity] KDoc 同一套分工。
      */
-    var extras: List<RoundInfoExtra>
-        get() = dataTracker[EXTRAS].takeIf(String::isNotBlank)?.split(";")?.mapNotNull { entry ->
-            val parts = entry.split("=", limit = 2)
+    var lines: List<RoundInfoLine>
+        get() = dataTracker[LINES].takeIf(String::isNotBlank)?.split(";")?.mapNotNull { entry ->
+            val parts = entry.split(":", limit = 2)
             if (parts.size != 2) return@mapNotNull null
-            parts[1].toIntOrNull()?.let { value -> RoundInfoExtra(parts[0], value) }
+            val args = parts[1].takeIf(String::isNotEmpty)?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+            RoundInfoLine(parts[0], args)
         } ?: emptyList()
-        set(value) = dataTracker.set(EXTRAS, value.joinToString(";") { "${it.key}=${it.value}" })
+        set(value) = dataTracker.set(LINES, value.joinToString(";") { "${it.key}:${it.args.joinToString(",")}" })
 
     /** 正式牌局所屬麻將桌；未指派時為 `null`。 */
     var managedTableId: Uuid?
@@ -109,40 +89,24 @@ class MahjongRoundInfoEntity(
     }
 
     override fun initDataTracker() {
-        dataTracker.startTracking(PREVALENT_WIND_ORDINAL, Wind.EAST.ordinal)
-        dataTracker.startTracking(LOCAL_ROUND_NUMBER, 1)
-        dataTracker.startTracking(COMBO_COUNT, 0)
-        dataTracker.startTracking(WALL_REMAINING_COUNT, 0)
-        dataTracker.startTracking(EXTRAS, "")
+        dataTracker.startTracking(LINES, "")
         dataTracker.startTracking(MANAGED_TABLE_ID, "")
     }
 
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        prevalentWind = Wind.entries.getOrElse(nbt.getInt(NBT_KEY_PREVALENT_WIND_ORDINAL)) { Wind.EAST }
-        localRoundNumber = nbt.getInt(NBT_KEY_LOCAL_ROUND_NUMBER).coerceAtLeast(1)
-        comboCount = nbt.getInt(NBT_KEY_COMBO_COUNT)
-        wallRemainingCount = nbt.getInt(NBT_KEY_WALL_REMAINING_COUNT)
-        dataTracker.set(EXTRAS, nbt.getString(NBT_KEY_EXTRAS))
+        dataTracker.set(LINES, nbt.getString(NBT_KEY_LINES))
         managedTableId = nbt.getString(NBT_KEY_MANAGED_TABLE_ID)
             .takeIf(String::isNotBlank)
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
     }
 
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
-        nbt.putInt(NBT_KEY_PREVALENT_WIND_ORDINAL, prevalentWind.ordinal)
-        nbt.putInt(NBT_KEY_LOCAL_ROUND_NUMBER, localRoundNumber)
-        nbt.putInt(NBT_KEY_COMBO_COUNT, comboCount)
-        nbt.putInt(NBT_KEY_WALL_REMAINING_COUNT, wallRemainingCount)
-        nbt.putString(NBT_KEY_EXTRAS, dataTracker[EXTRAS])
+        nbt.putString(NBT_KEY_LINES, dataTracker[LINES])
         managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
     }
 
     companion object {
-        private const val NBT_KEY_PREVALENT_WIND_ORDINAL = "PrevalentWindOrdinal"
-        private const val NBT_KEY_LOCAL_ROUND_NUMBER = "LocalRoundNumber"
-        private const val NBT_KEY_COMBO_COUNT = "ComboCount"
-        private const val NBT_KEY_WALL_REMAINING_COUNT = "WallRemainingCount"
-        private const val NBT_KEY_EXTRAS = "Extras"
+        private const val NBT_KEY_LINES = "Lines"
         private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
 
         /**
@@ -151,24 +115,8 @@ class MahjongRoundInfoEntity(
          */
         private const val FALLBACK_DESPAWN_AFTER_TICKS = 20L * 60L * 60L
 
-        /** 同步目前場風 ordinal。 */
-        private val PREVALENT_WIND_ORDINAL: TrackedData<Int> =
-            DataTracker.registerData(MahjongRoundInfoEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
-
-        /** 同步目前場風內局數。 */
-        private val LOCAL_ROUND_NUMBER: TrackedData<Int> =
-            DataTracker.registerData(MahjongRoundInfoEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
-
-        /** 同步目前本場數。 */
-        private val COMBO_COUNT: TrackedData<Int> =
-            DataTracker.registerData(MahjongRoundInfoEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
-
-        /** 同步牌山目前剩餘張數。 */
-        private val WALL_REMAINING_COUNT: TrackedData<Int> =
-            DataTracker.registerData(MahjongRoundInfoEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
-
-        /** 同步規則自訂延伸顯示項目，編碼格式見 [extras]。 */
-        private val EXTRAS: TrackedData<String> =
+        /** 同步要顯示的完整內容，編碼格式見 [lines]。 */
+        private val LINES: TrackedData<String> =
             DataTracker.registerData(MahjongRoundInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
         /** 同步所屬麻將桌 UUID；空字串表示尚未指派。 */

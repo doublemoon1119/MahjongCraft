@@ -145,14 +145,7 @@ class StartGameUseCase(
             comboStickCount = 0,
             pooledStickCount = 0,
         )
-        presentationPublisher.publishRoundInfoUpdated(
-            roomId,
-            tableState.prevalentWind,
-            localRoundNumber = tableState.localRoundNumber,
-            comboCount = tableState.comboCount,
-            wallRemainingCount = tableState.tileWall.remainingCount,
-            extras = moduleRegistry.getModule(tableState.config).getRoundInfoExtras(tableState),
-        )
+        presentationPublisher.publishRoundInfoUpdated(roomId, moduleRegistry.getModule(tableState.config).getRoundInfoLines(tableState))
         // 翻牌完成那一刻起的最終落地格位——tableState 此時已經是整理過的順序（見上方 organizedState），
         // 跟決定發牌動畫節奏本身的 startOutcome.dealOrderHandTileIdsBySeatIndex 分開，見
         // MahjongInitialDealPresentation KDoc。

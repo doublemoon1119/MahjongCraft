@@ -5,8 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoExtra
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
@@ -163,31 +162,19 @@ interface GamePresentationPublisher {
     )
 
     /**
-     * 通知平台呈現層桌面中央局況顯示（場風、局數、本場數、牌山剩餘、規則自訂延伸項目）需要更新為
-     * 目前狀態。
+     * 通知平台呈現層桌面中央局況顯示需要更新為目前狀態——實際顯示什麼內容完全由規則模組決定
+     * （見 `MahjongRuleModule.getRoundInfoLines`），這裡不假設任何固定欄位。
      *
-     * 觸發時機：開局/換局（跟 [publishWallStructure] 同一批呼叫）、每次摸牌（牌山剩餘張數會變）、以及
-     * 任何會改變 [extras] 內容的事件（例如立直宣告後供託支數改變）。這個 entity 是「找到既有的就地
-     * 更新」模式，每個呼叫點都要重新算好完整的 [extras]（不能只在部分呼叫點帶上），否則沒帶的呼叫會把
-     * 之前顯示的延伸行覆蓋回空清單。
+     * 觸發時機：開局/換局（跟 [publishWallStructure] 同一批呼叫）、每次摸牌（牌山剩餘張數可能會變）、
+     * 以及任何會改變 [lines] 內容的事件（例如立直宣告後供託支數改變）。這個 entity 是「找到既有的
+     * 就地更新」模式，每個呼叫點都要重新算好完整的 [lines]（不能只在部分呼叫點帶上），否則沒帶的
+     * 呼叫會把之前顯示的內容覆蓋回空清單。
      *
      * @param gameId 對局 Uuid。
-     * @param prevalentWind 目前場風（圈風），恆等於 `TableState.prevalentWind`。
-     * @param localRoundNumber 目前場風內的第幾局（`1` 起算），由呼叫端依 `TableState.roundNumber` 與
-     * 玩家人數換算好才傳入——這個介面本身不重複做這個換算。
-     * @param comboCount 本場數，恆等於 `TableState.comboCount`。
-     * @param wallRemainingCount 牌山目前剩餘張數，恆等於 `TableState.tileWall.remainingCount`。
-     * @param extras 規則自訂延伸顯示項目，恆等於呼叫端當下算好的 `MahjongRuleModule.getRoundInfoExtras`
+     * @param lines 要顯示的完整內容，恆等於呼叫端當下算好的 `MahjongRuleModule.getRoundInfoLines`
      * 結果。
      */
-    fun publishRoundInfoUpdated(
-        gameId: Uuid,
-        prevalentWind: Wind,
-        localRoundNumber: Int,
-        comboCount: Int,
-        wallRemainingCount: Int,
-        extras: List<RoundInfoExtra> = emptyList(),
-    )
+    fun publishRoundInfoUpdated(gameId: Uuid, lines: List<RoundInfoLine>)
 
     /**
      * 通知平台呈現層某玩家目前的手牌（含摸牌位）與副露需要更新為目前狀態。

@@ -7,13 +7,14 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoExtra
+import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -745,20 +746,33 @@ class RiichiRuleModuleTest {
     }
 
     /**
-     * 驗證 [MahjongRuleModule.getRoundInfoExtras] 回傳的唯一項目是立直棒累積支數，key 固定為
-     * [RiichiRuleModule.RIICHI_STICK_POT_KEY]，值恆等於 [getStickPotCount]。
+     * 驗證 [MahjongRuleModule.getRoundInfoLines] 依序回傳 4 行：場風＋局數標題、本場數、牌山剩餘
+     * 張數、立直棒累積供託數量，各行的 key 與 args 正確對應目前桌況。
      */
     @Test
-    fun `test getRoundInfoExtras returns the current stick pot count`() {
+    fun `test getRoundInfoLines returns title combo count wall remaining and stick pot in order`() {
+        val players = List(4) { FakeMahjongPlayerFactory.create() }
         val table = FakeTableStateFactory.create(
-            players = listOf(FakeMahjongPlayerFactory.create()),
+            players = players,
             config = module.config,
+            tileWall = TileWall(List(50) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)) }),
+            prevalentWind = Wind.SOUTH,
+            roundNumber = 2,
+            comboCount = 1,
             dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
         )
 
-        val extras = module.getRoundInfoExtras(table)
+        val lines = module.getRoundInfoLines(table)
 
-        assertEquals(listOf(RoundInfoExtra(RiichiRuleModule.RIICHI_STICK_POT_KEY, 2)), extras)
+        assertEquals(
+            listOf(
+                RoundInfoLine(RiichiRuleModule.TITLE_KEY, listOf(Wind.SOUTH.ordinal, table.localRoundNumber)),
+                RoundInfoLine(RiichiRuleModule.COMBO_COUNT_KEY, listOf(1)),
+                RoundInfoLine(RiichiRuleModule.WALL_REMAINING_KEY, listOf(50)),
+                RoundInfoLine(RiichiRuleModule.STICK_POT_KEY, listOf(2)),
+            ),
+            lines,
+        )
     }
 
     /**
