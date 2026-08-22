@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -198,6 +199,108 @@ class DiscardTileUseCaseTest {
         assertEquals(null, updatedPlayer.hand.lastDrawn)
         assertEquals(listOf(drawnTile), updatedPlayer.hand.tiles)
         assertEquals(handTile, updatedPlayer.discardPile.entries.first().tile)
+    }
+
+    /**
+     * 驗證立直中的玩家嘗試打出手牌裡的牌（非摸切）時應該被拒絕——立直鎖定手牌結構，只能摸切。
+     */
+    @Test
+    fun `test discard tile fails when riichi player tries to discard a hand tile instead of tsumogiri`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, handTile.id)
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(handTile.id)), result.error)
+    }
+
+    /**
+     * 驗證立直中的玩家摸切（打出剛摸到的牌）時仍然合法。
+     */
+    @Test
+    fun `test discard tile succeeds when riichi player discards the drawn tile`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+    }
+
+    /**
+     * 驗證立直中的玩家摸切棄胡（摸到的牌原本可以自摸，卻選擇打出）時，本局起永久振聽——見
+     * [MahjongRuleModule.onPlayerDeclinedWin] KDoc。手牌結構是門前清自摸 1 番的單騎聽牌（聽西風），
+     * 摸到第二張西風時打出（而不是宣告自摸）即視為見逃す。
+     */
+    @Test
+    fun `test discard tile marks permanent furiten when riichi player tsumogiri declines a legal tsumo`() = runTest {
+        val fixtures = Fixtures()
+        val secondWest = FakeIdentifiedTileFactory.create(Tile.Honor.West)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(
+                tiles = listOf(
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 7)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 8)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 4)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 6)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3)),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 4)),
+                    FakeIdentifiedTileFactory.create(Tile.Honor.West),
+                ),
+                lastDrawn = secondWest,
+            ),
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, secondWest.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val updatedPlayer = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == currentPlayerId }
+        val riichiState = updatedPlayer.playerRuleState as RiichiPlayerState
+        assertTrue(riichiState.isPermanentlyFuriten, "Declining a legal tsumo while riichi-locked should mark permanent furiten.")
     }
 
     /**

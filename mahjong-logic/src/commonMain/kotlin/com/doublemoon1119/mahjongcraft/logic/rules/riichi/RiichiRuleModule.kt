@@ -488,4 +488,14 @@ class RiichiRuleModule(
      * 直接查詢 [RiichiPlayerState.isRiichi]，轉型手法同 [resolveSuuchaRiichi]。
      */
     override fun isPlayerInRiichi(player: MahjongPlayer): Boolean = (player.playerRuleState as? RiichiPlayerState)?.isRiichi ?: false
+
+    /**
+     * 只有立直中的玩家才需要記錄永久振聽——未立直時放過和牌只構成一般同巡振聽，不需要這個永久旗標，
+     * 轉型手法同 [isPlayerInRiichi]。
+     */
+    override fun onPlayerDeclinedWin(player: MahjongPlayer): MahjongPlayer {
+        val riichiState = player.playerRuleState as? RiichiPlayerState ?: return player
+        if (!riichiState.isRiichi) return player
+        return player.copy(playerRuleState = riichiState.copy(isPermanentlyFuriten = true))
+    }
 }

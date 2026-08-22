@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -74,17 +75,51 @@ class DiscardTileUseCase(
                     if (discardResult == null) {
                         state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Discard(tileId)))
                     } else {
-                        val discardedTile = discardResult.tile
                         val module = moduleRegistry.getModule(state.config)
+                        val lastDrawn = state.currentPlayer.hand.lastDrawn
+
+                        // 立直鎖定手牌結構：只能打剛摸到的牌（摸切），不能改打手牌裡其他牌——立直宣告
+                        // 本身一定是門前清，鳴牌後準備捨牌（justClaimedMeld、lastDrawn == null）不會
+                        // 發生在立直玩家身上，這裡不需要另外排除。
+                        if (module.isPlayerInRiichi(state.currentPlayer) && lastDrawn != null && lastDrawn.id != tileId) {
+                            return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Discard(tileId)))
+                        }
+
+                        val discardedTile = discardResult.tile
                         val organizedHand = if (handSortPreferenceStore.isEnabled(playerId)) {
                             discardResult.hand.organize(module.tileOrder)
                         } else {
                             discardResult.hand
                         }
-                        val updatedPlayer = state.currentPlayer
+
+                        // 立直中摸切棄胡（原本自摸合法卻選擇打出摸到的牌）視同見逃す，本局起永久振聽——
+                        // 手法比照 GetLegalActionsUseCase own-turn 分支：先把 lastDrawn 移除、再當
+                        // incomingTile 傳入，避免在 standingTiles 裡重複計算這張牌。
+                        val playerAfterDeclineCheck = if (module.isPlayerInRiichi(state.currentPlayer) &&
+                            lastDrawn != null &&
+                            lastDrawn.id == tileId
+                        ) {
+                            val playerForCheck = state.currentPlayer.copy(hand = state.currentPlayer.hand.copy(lastDrawn = null))
+                            val ownTurnActions = module.createLegalActionValidator().getLegalActions(
+                                tableState = state,
+                                player = playerForCheck,
+                                sourceAction = GameAction.Draw,
+                                sourceDirection = RelativeDirection.Self,
+                                incomingTile = lastDrawn,
+                            )
+                            if (ownTurnActions.any { it is GameAction.Tsumo }) {
+                                module.onPlayerDeclinedWin(state.currentPlayer)
+                            } else {
+                                state.currentPlayer
+                            }
+                        } else {
+                            state.currentPlayer
+                        }
+
+                        val updatedPlayer = playerAfterDeclineCheck
                             .copy(
                                 hand = organizedHand,
-                                discardPile = state.currentPlayer.discardPile.discardTile(discardedTile),
+                                discardPile = playerAfterDeclineCheck.discardPile.discardTile(discardedTile),
                             )
                             .recordAction(GameAction.Discard(tileId))
                         val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }

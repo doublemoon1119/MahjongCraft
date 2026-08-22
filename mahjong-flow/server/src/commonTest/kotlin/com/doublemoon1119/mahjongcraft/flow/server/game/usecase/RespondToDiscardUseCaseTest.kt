@@ -1060,6 +1060,55 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
+     * 驗證立直中的玩家放過原本可以榮和的牌時，額外標記永久振聽（見
+     * [MahjongRuleModule.onPlayerDeclinedWin] KDoc）——手牌結構跟
+     * `test pass on lone ron-eligible player records passed tile for furiten` 相同，只是
+     * `playerRuleState` 改成已立直。
+     */
+    @Test
+    fun `test pass on lone ron-eligible riichi player marks permanent furiten`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val responder = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(
+                tiles = listOf(
+                    Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
+                    Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+                    Tile.Numeric(Tile.Suit.Dot, 2), Tile.Numeric(Tile.Suit.Dot, 3), Tile.Numeric(Tile.Suit.Dot, 4),
+                    Tile.Numeric(Tile.Suit.Bamboo, 5), Tile.Numeric(Tile.Suit.Bamboo, 6), Tile.Numeric(Tile.Suit.Bamboo, 7),
+                    Tile.Honor.Red,
+                ).map { FakeIdentifiedTileFactory.create(it) },
+            ),
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, responder),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, responderId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val updatedResponder = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == responderId }
+        val riichiState = updatedResponder.playerRuleState as RiichiPlayerState
+        assertTrue(
+            riichiState.isPermanentlyFuriten,
+            "Passing on an available Ron while riichi-locked should mark permanent furiten.",
+        )
+    }
+
+    /**
      * 驗證振聽時榮和被擋下：玩家先前已經打過（或放過）等待的牌，重新驗證合法動作時 Ron 不會出現，
      * 直接回傳 [GameError.IllegalAction]（沿用既有的 getLegalActions 重新驗證機制，無需新程式碼）。
      */

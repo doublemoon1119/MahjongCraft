@@ -16,12 +16,18 @@ import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
  * @property isIppatsu 玩家立直時為 true，摸下一張牌之後或者期間有其他人鳴牌就會設為 false
  * @property paoLiability 本局是否已成立包牌責任（[PaoDetector] 判定後寫入），若無則為 null。
  *                        一旦成立即持續有效直到本局結束，胡牌結算時供 [RiichiHandValueContextCalculator] 讀取。
+ * @property isPermanentlyFuriten 立直後是否已經放棄過一次和牌機會（他家打出和牌張時放過、或自己摸到
+ *                        和牌張卻選擇打出）——一旦成立就持續有效直到本局結束，不會隨 `passedTilesInRound`
+ *                        清空而恢復，這位玩家之後整局都不能榮和，只能自摸。由
+ *                        [MahjongRuleModule.onPlayerDeclinedWin] 設定為 `true`，本局結束由
+ *                        [RiichiRuleModule.createInitialPlayerRuleState] 自然重置。
  */
 data class RiichiPlayerState(
     val riichiTile: IdentifiedTile? = null,
     val doubleRiichiTile: IdentifiedTile? = null,
     val isIppatsu: Boolean = false,
     val paoLiability: PaoLiability? = null,
+    val isPermanentlyFuriten: Boolean = false,
 ) : PlayerRuleState {
 
     /**

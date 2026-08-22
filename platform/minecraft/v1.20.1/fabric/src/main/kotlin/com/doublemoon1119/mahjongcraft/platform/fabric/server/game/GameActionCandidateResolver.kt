@@ -6,7 +6,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
@@ -57,12 +60,14 @@ data class GameActionCandidate(val action: GameAction, val token: String, val re
  * @property gameRepository 權威對局數據倉庫。
  * @property membershipRepository 玩家目前所在桌子（房間／對局共用同一個 Uuid）的歸屬查詢。
  * @property getLegalActions 查詢目前合法動作清單的既有 use case。
+ * @property moduleRegistry 麻將規則模組註冊中心，供 [listRiichiTileCandidates] 解析向聽數計算器。
  */
 @Single
 class GameActionCandidateResolver(
     private val gameRepository: GameRepository,
     private val membershipRepository: PlayerMembershipRepository,
     private val getLegalActions: GetLegalActionsUseCase,
+    private val moduleRegistry: MahjongModuleRegistry,
 ) {
     /** 列出玩家目前手牌（含剛摸到的牌）作為 `discard`／`riichi` 的候選項目。 */
     suspend fun listHandTileCandidates(playerId: Uuid): List<HandTileCandidate> {
@@ -70,6 +75,29 @@ class GameActionCandidateResolver(
         val player = state.players.firstOrNull { it.id == playerId } ?: return emptyList()
         return disambiguateTokens(player.hand.standingTiles, { it.tile.notationToken() }) { identifiedTile, token ->
             HandTileCandidate(identifiedTile.id, token, identifiedTile.tile)
+        }
+    }
+
+    /**
+     * 列出玩家目前手牌裡「打了這張牌之後仍然聽牌」的候選項目，供 `riichi` 指令使用——跟
+     * [listHandTileCandidates] 共用同一份候選來源，只是額外過濾掉打了會失去聽牌的牌。目前這位玩家
+     * 完全不可能立直時（未輪到自己回合、已經立直過、非門前清、點數不足等，交給
+     * [GetLegalActionsUseCase] 判斷，這裡不重複實作規則專屬的立直前置條件）直接回傳空清單，不需要
+     * 逐張再算一次向聽數。
+     */
+    suspend fun listRiichiTileCandidates(playerId: Uuid): List<HandTileCandidate> {
+        val state = resolveTableState(playerId) ?: return emptyList()
+        val player = state.players.firstOrNull { it.id == playerId } ?: return emptyList()
+        val gameId = membershipRepository.getTableId(playerId) ?: return emptyList()
+
+        val legalActionsOutcome = getLegalActions(gameId, playerId)
+        val riichiPossible = legalActionsOutcome is Outcome.Success && legalActionsOutcome.value.any { it is GameAction.Riichi }
+        if (!riichiPossible) return emptyList()
+
+        val calculator = moduleRegistry.getModule(state.config).createShantenCalculator()
+        return listHandTileCandidates(playerId).filter { candidate ->
+            val discardResult = player.hand.discardById(candidate.tileId) ?: return@filter false
+            calculator.calculate(Hand(tiles = discardResult.hand.tiles, melds = discardResult.hand.melds)) is ShantenResult.Tenpai
         }
     }
 

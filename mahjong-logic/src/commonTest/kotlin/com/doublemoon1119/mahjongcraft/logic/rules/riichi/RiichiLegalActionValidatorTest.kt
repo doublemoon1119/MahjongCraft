@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -467,6 +468,60 @@ class RiichiLegalActionValidatorTest {
         )
 
         // 驗證：不可自摸（番數不足）
+        assertFalse(actions.any { it is GameAction.Tsumo })
+    }
+
+    /**
+     * 測試最低胡牌番數限制 - 赤寶牌不能拿來湊最低番數。
+     *
+     * 手牌結構跟「番數不足無法自摸」完全相同（門前清自摸 1 番），只把 456p 裡的普通 5 筒換成赤 5 筒，
+     * 讓 `result.totalHan` 疊加赤寶牌後變成 2 番——如果直接拿 `totalHan` 去跟 `minimumWinConstraint`
+     * 比較會誤判為合法，但赤寶牌不該計入這個門檻，役種本身仍然只有 1 番，所以應該跟原本一樣不可自摸。
+     */
+    @Test
+    fun `test tsumo not allowed when han is insufficient even with aka dora`() {
+        val playerHand = FakeHandFactory.create(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                RiichiTileTypes.redFive(Tile.Suit.Dot), // 赤5筒，取代普通5筒
+                Tile.Numeric(Tile.Suit.Dot, 6),
+                Tile.Numeric(Tile.Suit.Bamboo, 2),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Honor.West,
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            discardPile = FakeDiscardPile().discard(
+                entry = FakeDiscardPile.FakeEntry(
+                    tile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    isTaken = false,
+                ),
+            ),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(minimumWinConstraint = 2),
+        )
+
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Honor.West)
+
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
+            incomingTile = incomingTile,
+        )
+
         assertFalse(actions.any { it is GameAction.Tsumo })
     }
 

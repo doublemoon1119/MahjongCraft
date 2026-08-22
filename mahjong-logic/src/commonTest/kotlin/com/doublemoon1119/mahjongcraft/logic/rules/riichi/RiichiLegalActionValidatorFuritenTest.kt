@@ -266,4 +266,49 @@ class RiichiLegalActionValidatorFuritenTest {
         // 驗證 - 放過普通5萬，赤5萬也不能碰
         assertFalse(actions.any { it is GameAction.Pon })
     }
+
+    /**
+     * 測試立直後永久振聽：即使 `passedTilesInRound` 已經被清空（模擬下一次摸牌後的狀態）、且這張進來
+     * 的牌也不在牌河裡（單靠既有的 [RiichiPlayerState.getFuritenTiles] 判斷不會視為振聽），只要
+     * [RiichiPlayerState.isPermanentlyFuriten] 為 `true`，該局就應該一路不能榮和。
+     */
+    @Test
+    fun `test cannot ron when permanently furiten after riichi even without matching discard or passed tile`() {
+        val playerHand = FakeHandFactory.create(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
+        )
+        // 牌河跟 passedTilesInRound 都是乾淨的——沒有永久旗標的話，這張榮和牌本來應該合法。
+        val riichiState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isPermanentlyFuriten = true)
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            discardPile = FakeDiscardPile(),
+            playerRuleState = riichiState,
+        )
+        val tableState = FakeTableStateFactory.create(players = listOf(player))
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
+
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
+            incomingTile = incomingTile,
+        )
+
+        assertFalse(actions.any { it is GameAction.Ron })
+    }
 }

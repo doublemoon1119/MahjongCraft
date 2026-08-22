@@ -30,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsU
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToChankanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
@@ -137,11 +138,14 @@ class MahjongAutoDrawServiceTest {
             presentationBusyGate = presentationBusyGate,
         )
         val feedbackPublisher = FakeMinecraftPlayerFeedbackPublisher()
+        val membershipRepository = PlayerMembershipRepositoryImpl()
+        val candidateResolver = GameActionCandidateResolver(gameRepo, membershipRepository, getLegalActionsUseCase, moduleRegistry)
         val autoDrawService = MahjongAutoDrawService(
             gameRepo,
             coordinator,
             feedbackPublisher,
             TablePresentationBusyTracker(FabricServerHolder(), TableLocationRegistry()),
+            candidateResolver,
         )
     }
 
@@ -175,8 +179,10 @@ class MahjongAutoDrawServiceTest {
     }
 
     /**
-     * 驗證真人莊家尚未摸牌時，`checkAndAutoDraw` 會實際幫他摸到一張牌，並發布
-     * [MinecraftPlayerFeedback.YourTurn] 通知他輪到自己了。
+     * 驗證真人莊家尚未摸牌時，`checkAndAutoDraw` 會實際幫他摸到一張牌，並依序發布
+     * [MinecraftPlayerFeedback.YourTurn] 通知他輪到自己了、緊接著發布
+     * [MinecraftPlayerFeedback.ShowHand] 讓他不需要另外手動查詢 `/mahjongcraft game hand`
+     * 就能看到目前的手牌與合法動作。
      */
     @Test
     fun `test checkAndAutoDraw draws for human player who has not drawn yet`() = runTest {
@@ -190,10 +196,16 @@ class MahjongAutoDrawServiceTest {
         val drawnTile = state.currentPlayer.hand.lastDrawn
         assertNotNull(drawnTile, "Human dealer should have been auto-drawn a tile.")
 
-        val (notifiedPlayerId, feedback) = fixtures.feedbackPublisher.published.single()
+        assertEquals(2, fixtures.feedbackPublisher.published.size)
+        val (notifiedPlayerId, yourTurnFeedback) = fixtures.feedbackPublisher.published[0]
         assertEquals(state.currentPlayer.id, notifiedPlayerId)
-        val yourTurn = assertIs<MinecraftPlayerFeedback.YourTurn>(feedback)
+        val yourTurn = assertIs<MinecraftPlayerFeedback.YourTurn>(yourTurnFeedback)
         assertEquals(drawnTile.tile, yourTurn.drawnTile)
+
+        val (showHandPlayerId, showHandFeedback) = fixtures.feedbackPublisher.published[1]
+        assertEquals(state.currentPlayer.id, showHandPlayerId)
+        val showHand = assertIs<MinecraftPlayerFeedback.ShowHand>(showHandFeedback)
+        assertEquals(state.currentPlayer.hand.standingTiles.map { it.tile }, showHand.standingTiles)
     }
 
     /** 驗證目前玩家是 AI 時，`checkAndAutoDraw` 不會介入（交給 `driveAutomatedPlayers` 處理）。 */

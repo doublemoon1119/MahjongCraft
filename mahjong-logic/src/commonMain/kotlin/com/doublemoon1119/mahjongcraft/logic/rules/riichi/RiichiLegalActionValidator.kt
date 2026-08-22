@@ -158,7 +158,11 @@ class RiichiLegalActionValidator(
                     ),
                 )
 
-                val isFuriten = if (currentHandResult is ShantenResult.Tenpai) {
+                val isFuriten = if (riichiState?.isPermanentlyFuriten == true) {
+                    // 立直後放過和牌機會即永久振聽，本局結束前恆為振聽，不需要再比對聽牌面或
+                    // passedTilesInRound——那些之後可能因為摸牌清空，但永久振聽不受影響。
+                    true
+                } else if (currentHandResult is ShantenResult.Tenpai) {
                     val furitenTiles = riichiState?.getFuritenTiles(
                         discardPile = player.discardPile,
                         passedTilesInRound = player.passedTilesInRound,
@@ -311,7 +315,12 @@ class RiichiLegalActionValidator(
             return false
         }
 
-        return result.totalHan >= minimumWinConstraint
+        // 寶牌/裏寶牌/赤寶牌不計入最低番數限制——這裡只判斷「役種本身」夠不夠格胡牌，寶牌只在
+        // result.totalHan（用來算實際點數）裡才該疊加，不能讓一手光靠寶牌湊到門檻的牌型被視為合法。
+        val hanExcludingDora = result.yakuResults
+            .filterNot { it.yaku == YakuType.Dora || it.yaku == YakuType.UraDora || it.yaku == YakuType.AkaDora }
+            .sumOf { it.han }
+        return hanExcludingDora >= minimumWinConstraint
     }
 
     /**

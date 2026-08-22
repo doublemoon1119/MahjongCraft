@@ -74,7 +74,7 @@ class FabricGameCommand(
                                 literal("riichi")
                                     .then(
                                         argument(TILE_ARGUMENT, StringArgumentType.string())
-                                            .suggests(::suggestHandTiles)
+                                            .suggests(::suggestRiichiTiles)
                                             .executes { context -> riichi(context) },
                                     ),
                             )
@@ -115,7 +115,7 @@ class FabricGameCommand(
         val token = StringArgumentType.getString(context, TILE_ARGUMENT)
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
-            val tileId = candidateResolver.listHandTileCandidates(playerId).firstOrNull { it.token == token }?.tileId
+            val tileId = candidateResolver.listRiichiTileCandidates(playerId).firstOrNull { it.token == token }?.tileId
             if (tileId == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
                 return@launch
@@ -145,7 +145,7 @@ class FabricGameCommand(
         return COMMAND_SUCCESS
     }
 
-    /** 列出執行指令玩家目前手牌，作為 `discard`／`riichi` 的候選建議，tooltip 顯示牌面文字。 */
+    /** 列出執行指令玩家目前手牌，作為 `discard` 的候選建議，tooltip 顯示牌面文字。 */
     private fun suggestHandTiles(
         context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
@@ -158,6 +158,33 @@ class FabricGameCommand(
         }
         scope.launch {
             candidateResolver.listHandTileCandidates(player.uuid.toKotlinUuid()).forEach { candidate ->
+                builder.suggest(
+                    StringArgumentType.escapeIfRequired(candidate.token),
+                    candidate.tile.toDisplayText(tileDisplayNameRegistry, tileAssetRegistry, tileEmojiRegistry),
+                )
+            }
+            future.complete(builder.build())
+        }
+        return future
+    }
+
+    /**
+     * 列出執行指令玩家目前手牌裡「打了還聽牌」的候選建議，作為 `riichi` 的候選建議，tooltip 顯示牌面
+     * 文字——跟 [suggestHandTiles] 不同，這裡只列 [GameActionCandidateResolver.listRiichiTileCandidates]
+     * 過濾過的子集，玩家才知道該選哪張才能立直成功。
+     */
+    private fun suggestRiichiTiles(
+        context: CommandContext<ServerCommandSource>,
+        builder: SuggestionsBuilder,
+    ): CompletableFuture<Suggestions> {
+        val future = CompletableFuture<Suggestions>()
+        val player = context.source.player
+        if (player == null) {
+            future.complete(builder.build())
+            return future
+        }
+        scope.launch {
+            candidateResolver.listRiichiTileCandidates(player.uuid.toKotlinUuid()).forEach { candidate ->
                 builder.suggest(
                     StringArgumentType.escapeIfRequired(candidate.token),
                     candidate.tile.toDisplayText(tileDisplayNameRegistry, tileAssetRegistry, tileEmojiRegistry),

@@ -94,12 +94,21 @@ class RespondToDiscardUseCase(
 
                     // 過水：放過的當下若原本可以碰或榮和，記錄下來——碰用於本巡過水碰，
                     // 榮和用於同巡振聽判定（見 MahjongPlayer.passedTilesInRound 的用途說明）
-                    val updatedResponder = if (action == GameAction.Pass &&
+                    val responderAfterPassedTile = if (action == GameAction.Pass &&
                         legalActions.any { it is GameAction.Pon || it is GameAction.Ron }
                     ) {
                         responder.addPassedTile(module.createTileInterpretationPolicy().canonicalize(discardedTile.tile))
                     } else {
                         responder
+                    }
+
+                    // 立直後放過原本合法的榮和機會即永久振聽，見 MahjongRuleModule.onPlayerDeclinedWin
+                    // KDoc；未立直時放過榮和只構成一般同巡振聽，交給 module 內部依 isRiichi 判斷是否要
+                    // 真的設定永久旗標，這裡不需要重複檢查。
+                    val updatedResponder = if (action == GameAction.Pass && legalActions.any { it is GameAction.Ron }) {
+                        module.onPlayerDeclinedWin(responderAfterPassedTile)
+                    } else {
+                        responderAfterPassedTile
                     }
                     val playersAfterResponse = state.players.map { if (it.id == playerId) updatedResponder else it }
                     val newPendingReaction = pendingReaction.copy(responses = pendingReaction.responses + (playerId to action))

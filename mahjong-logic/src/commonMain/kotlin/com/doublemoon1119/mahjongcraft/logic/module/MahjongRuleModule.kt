@@ -376,4 +376,17 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 這位玩家目前是否算立直中。
      */
     fun isPlayerInRiichi(player: MahjongPlayer): Boolean = false
+
+    /**
+     * 因應「玩家放棄一次原本合法的和牌機會」事件，套用規則特有的狀態變化——例如日麻立直後放過榮和
+     * （他家打出你的和牌張、你選擇過）或摸切棄胡（自己摸到和牌張卻選擇打出），從此本局起永久振聽，
+     * 不論之後 `passedTilesInRound` 是否因為摸牌而清空都不能再榮和，只能自摸；未立直時放過和牌
+     * 只構成一般的同巡振聽，會隨下一次摸牌清除，不需要呼叫這個 hook。
+     *
+     * 沒有對應規則需求的規則應直接回傳 [player] 本身，不做任何事。
+     *
+     * @param player 剛放棄和牌機會的玩家。
+     * @return 套用規則特有狀態變化後的新玩家實例。
+     */
+    fun onPlayerDeclinedWin(player: MahjongPlayer): MahjongPlayer = player
 }
