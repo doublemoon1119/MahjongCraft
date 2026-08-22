@@ -333,14 +333,14 @@ object MinecraftMessageKeys {
 
     // ── 桌面中央局況顯示（見 `MahjongRoundInfoEntityRenderer`） ────────────────
 
-    /** 局況顯示標題行，依序帶場風顯示文字（一個 `%s`，見上方 `TILE_HONOR_*`）與場風內局數（一個 `%d`）。 */
-    const val ROUND_INFO_TITLE = PREFIX + "round_info_title"
-
     /**
-     * 局況顯示標題行的本場數，帶一個參數（一個 `%d`）——對應 `TableState.comboCount`（日麻：本場數；
-     * 台麻：連幾），key 命名跟這個 domain 欄位對齊，不是照抄「repeat counter」這種字面翻譯。
+     * 局況顯示標題行，依序帶場風顯示文字（一個 `%s`，見上方 `TILE_HONOR_*`）、場風內局數（一個
+     * `%d`）、本場數（一個 `%d`，對應 `TableState.comboCount`：日麻本場數、台麻連幾）三個參數——
+     * 局數與本場數刻意合併成同一個 key、同一句翻譯，不是各自獨立 key 再由程式碼串接，因為「局數跟
+     * 本場之間該用什麼分隔（頓號、逗號、還是單純空格）」本身就是語言慣例的一部分，不同語系的自然
+     * 表達方式不一定相同，必須讓每個語系檔自己決定，不能寫死在程式碼裡。
      */
-    const val ROUND_INFO_COMBO_COUNT = PREFIX + "round_info_combo_count"
+    const val ROUND_INFO_TITLE = PREFIX + "round_info_title"
 
     /** 局況顯示牌山剩餘張數，帶一個張數參數（一個 `%d`）。 */
     const val ROUND_INFO_WALL_REMAINING = PREFIX + "round_info_wall_remaining"
@@ -463,7 +463,6 @@ object MinecraftMessageKeys {
         HAND_WAITING,
         YOUR_TURN,
         ROUND_INFO_TITLE,
-        ROUND_INFO_COMBO_COUNT,
         ROUND_INFO_WALL_REMAINING,
         ROUND_INFO_RIICHI_STICK_POT,
         TILE_LABELS_TOGGLE_PREFIX,
