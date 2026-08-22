@@ -212,7 +212,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
 
     /**
      * 計算一次自摸胡牌（[GameAction.Tsumo]）的點數結算：贏家實際獲得的點數，以及各應付款玩家
-     * 應支付的金額（依莊家/閒家身分、包牌責任等區分）。
+     * 應支付的金額——實際如何拆分完全由各規則自己的覆寫決定（例如日麻依莊家/閒家身分、包牌責任
+     * 等因素區分），這裡不預設任何規則的具體公式。
      *
      * 呼叫前應已確認 [GameAction.Tsumo] 目前合法（例如透過 [createLegalActionValidator]）——這是
      * 規則無關的驗證，由呼叫端負責；這裡只處理規則特有的點數計算與分攤方式，因此呼叫端（如
@@ -233,8 +234,9 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
 
     /**
      * 計算一次榮和胡牌（[GameAction.Ron]）的點數結算：贏家實際獲得的點數，以及各應付款玩家
-     * 應支付的金額（一般情況下由放銃者一人支付全額；包牌責任成立時由包牌責任者與放銃者平分，
-     * 但若包牌責任者恰好就是放銃者本人，視為單一玩家支付全額）。
+     * 應支付的金額——實際如何拆分完全由各規則自己的覆寫決定（例如日麻：一般情況下由放銃者一人
+     * 支付全額，包牌責任成立時由包牌責任者與放銃者平分，但若包牌責任者恰好就是放銃者本人則視為
+     * 單一玩家支付全額），這裡不預設任何規則的具體公式。
      *
      * 呼叫前應已確認 [GameAction.Ron] 目前合法（例如透過 [createLegalActionValidator]）——這是
      * 規則無關的驗證，由呼叫端負責；這裡只處理規則特有的點數計算與分攤方式，因此呼叫端（如
@@ -282,8 +284,9 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>?
 
     /**
-     * 計算一次一般流局（牌山摸盡）的點數結算：聽牌/不聽罰符的拆分，以及流局滿貫成立時
-     * 視為自摸滿貫的點數結算（兩者互斥，流局滿貫成立時不再進行不聽罰符收授）。
+     * 計算一次一般流局（牌山摸盡）的點數結算——實際如何結算完全由各規則自己的覆寫決定
+     * （例如日麻：聽牌/不聽罰符的拆分，以及流局滿貫成立時視為自摸滿貫的點數結算，兩者互斥，
+     * 流局滿貫成立時不再進行不聽罰符收授），這裡不預設任何規則的具體公式。
      *
      * 不支援一般流局結算的規則應回傳 null。
      *
@@ -303,35 +306,39 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun resolveMultiRonAbortiveDraw(): ExhaustiveDrawReason?
 
     /**
-     * 這次捨牌後，是否構成四風連打（第一巡、全員的第一張捨牌皆為同一種風牌，且都沒人反應）。
+     * 這次捨牌後，是否構成日麻慣稱「四風連打」這類途中流局——具體判定條件（例如日麻是第一巡、全員
+     * 第一張捨牌皆為同一種風牌、且都沒人反應）完全由各規則自己的覆寫決定，這裡不預設任何規則的
+     * 具體定義。
      *
      * 只應在確定這次捨牌沒有任何人可以吃/碰/槓/榮和之後才呼叫。
      *
      * @param tableStateAfterDiscard 捨牌且確定無人反應後的桌況。
-     * @return 若構成四風連打則為對應的流局原因，否則為 null；不支援此流局類型的規則固定回傳 null。
+     * @return 若構成此流局類型則為對應的流局原因，否則為 null；不支援此流局類型的規則固定回傳 null。
      */
     fun resolveSuufonRenda(tableStateAfterDiscard: TableState): ExhaustiveDrawReason?
 
     /**
-     * 這次立直宣告後，是否構成四家立直（全員皆已宣告立直，且這張立直宣告牌沒人反應）。
+     * 這次立直宣告後，是否構成日麻慣稱「四家立直」這類途中流局——具體判定條件（例如日麻是全員皆已
+     * 宣告立直、且這張立直宣告牌沒人反應）完全由各規則自己的覆寫決定，這裡不預設任何規則的具體定義。
      *
      * 只應在「剛套用完一次立直宣告」且確定這張宣告牌沒有任何人可以吃/碰/槓/榮和之後才呼叫——
      * 只有立直宣告的呼叫端會呼叫這個方法，一般捨牌不會（否則同一副立直保持到底的牌局，往後每次
-     * 捨牌都會被誤判成四家立直）。
+     * 捨牌都會被誤判成這類流局）。
      *
      * @param tableStateAfterDeclaration 立直宣告且確定無人反應後的桌況。
-     * @return 若構成四家立直則為對應的流局原因，否則為 null；不支援此流局類型的規則固定回傳 null。
+     * @return 若構成此流局類型則為對應的流局原因，否則為 null；不支援此流局類型的規則固定回傳 null。
      */
     fun resolveSuuchaRiichi(tableStateAfterDeclaration: TableState): ExhaustiveDrawReason?
 
     /**
-     * 全場玩家合計是否已槓了 4 次（明槓、暗槓、加槓皆算），且並非全部由同一人達成
-     * （若全部由同一人達成，該玩家可能正在做「四槓子」役滿，不觸發流局）。
+     * 是否構成日麻慣稱「四槓散了」這類途中流局——具體判定條件（例如日麻是全場合計槓了 4 次、且並非
+     * 全部由同一人達成，全部由同一人達成時該玩家可能正在做四槓子役滿而不觸發流局）完全由各規則自己
+     * 的覆寫決定，這裡不預設任何規則的具體定義。
      *
      * 只應在確定某次槓牌的嶺上摸牌已經處理完畢（例如玩家已經有機會嘗試嶺上開花自摸）之後才呼叫。
      *
      * @param tableState 目前的桌況。
-     * @return 若構成四槓散了則為對應的流局原因，否則為 null；不支援此流局類型的規則固定回傳 null。
+     * @return 若構成此流局類型則為對應的流局原因，否則為 null；不支援此流局類型的規則固定回傳 null。
      */
     fun resolveSuukanNagare(tableState: TableState): ExhaustiveDrawReason?
 
@@ -366,12 +373,12 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun isHighlightedTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = false
 
     /**
-     * 這位玩家目前算不算「立直中」——只有支援立直的規則（日麻）需要覆寫，用來讓呈現層知道該不該在
-     * 這個座位面前顯示立直棒，刻意不用 [PlayerRuleState] 以外任何規則專屬的具體型別命名，呼叫端也不
-     * 該自行轉型成特定規則的 [PlayerRuleState] 實作（例如 `RiichiPlayerState`）來回答這個問題——理由
-     * 同 `DeclareRiichiUseCase` KDoc「刻意不轉型成任何規則專屬的具體型別」的說明。
+     * 這位玩家目前算不算「立直中」——用來讓呈現層知道該不該在這個座位面前顯示立直棒。目前只有日麻
+     * 有立直這個概念，故僅該規則需要覆寫；刻意不用 [PlayerRuleState] 以外任何規則專屬的具體型別
+     * 命名，呼叫端也不該自行轉型成特定規則的 [PlayerRuleState] 實作（例如 `RiichiPlayerState`）來
+     * 回答這個問題——理由同 `DeclareRiichiUseCase` KDoc「刻意不轉型成任何規則專屬的具體型別」的說明。
      *
-     * 不支援立直的規則（例如台麻）固定回傳 `false`。
+     * 沒有立直（或對應概念）的規則固定回傳 `false`。
      *
      * @param player 欲判斷的玩家。
      * @return 這位玩家目前是否算立直中。
@@ -424,10 +431,11 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     }
 
     /**
-     * 因應「玩家放棄一次原本合法的和牌機會」事件，套用規則特有的狀態變化——例如日麻立直後放過榮和
-     * （他家打出你的和牌張、你選擇過）或摸切棄胡（自己摸到和牌張卻選擇打出），從此本局起永久振聽，
-     * 不論之後 `passedTilesInRound` 是否因為摸牌而清空都不能再榮和，只能自摸；未立直時放過和牌
-     * 只構成一般的同巡振聽，會隨下一次摸牌清除，不需要呼叫這個 hook。
+     * 因應「玩家放棄一次原本合法的和牌機會」事件，套用規則特有的狀態變化——實際套用什麼變化、
+     * 在什麼條件下才需要呼叫，完全由各規則自己的覆寫決定（例如日麻：立直後放過榮和，或摸切棄胡，
+     * 從此本局起永久振聽，不論之後 `passedTilesInRound` 是否因為摸牌而清空都不能再榮和、只能自摸；
+     * 未立直時放過和牌只構成一般的同巡振聽，會隨下一次摸牌清除，不需要呼叫這個 hook），這裡不預設
+     * 任何規則的具體條件。
      *
      * 沒有對應規則需求的規則應直接回傳 [player] 本身，不做任何事。
      *
