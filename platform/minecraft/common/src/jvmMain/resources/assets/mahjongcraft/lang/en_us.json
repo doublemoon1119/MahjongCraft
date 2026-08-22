@@ -100,6 +100,7 @@
   "mahjongcraft.message.round_info_title": "%s %d",
   "mahjongcraft.message.round_info_combo_count": "%d Repeat Counter",
   "mahjongcraft.message.round_info_wall_remaining": "Wall Remaining: %d",
+  "mahjongcraft.message.round_info_riichi_stick_pot": "Riichi Sticks: %d",
   "mahjongcraft.message.tile_labels_toggle_prefix": "Tile corner labels toggled: ",
   "mahjongcraft.message.tile_labels_state_on": "On",
   "mahjongcraft.message.tile_labels_state_off": "Off",

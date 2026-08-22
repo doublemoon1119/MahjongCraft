@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoExtra
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
@@ -138,22 +139,37 @@ interface GamePresentationPublisher {
     fun publishScoringSticksUpdated(gameId: Uuid, dealerSeatIndex: Int, stickCount: Int)
 
     /**
-     * 通知平台呈現層本局目前立直中的座位集合。
+     * 通知平台呈現層本局目前的全部立直棒——這局在場上宣告中的座位集合，以及延續自前局、尚未被任何人
+     * 收下的供託堆支數（兩者相加恆等於 `MahjongRuleModule.getStickPotCount`）。
      *
-     * 生命週期綁在**立直宣告**的時間點（呼叫端緊接在立直宣告成立、廣播事件之後呼叫），跟
-     * [publishScoringSticksUpdated]（綁在牌牆生成）各自獨立；每局開始（不論上一局有沒有人立直）都應
-     * 額外呼叫一次空集合，清除上一局殘留的立直棒。
+     * 立直棒不再是「換局一律清空」——流局後沒被收下的立直棒延續到下一局，只有真正被贏家收下、或整場
+     * 對局結束時才會消失，跟 [publishScoringSticksUpdated]（綁在牌牆生成）各自獨立更新。
      *
      * @param gameId 對局 Uuid。
      * @param riichiSeatIndices 目前立直中的座位 index 集合（`MahjongRuleModule.isPlayerInRiichi`）；
-     * 空集合代表這局目前沒有人立直，等同只清除舊立直棒。
+     * 空集合代表這局目前沒有人立直宣告。
+     * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index——延續自前局的供託堆只在
+     * 莊家角落顯示，跟積棒同一個角落。
+     * @param comboStickCount 目前積棒（本場棒）支數，恆等於 `TableState.comboCount`——延續自前局的供託
+     * 堆疊放時從這個支數之後接續，視覺上跟積棒同一疊。
+     * @param pooledStickCount 延續自前局、尚未被任何人收下的供託堆支數；`0` 代表沒有延續的供託。
      */
-    fun publishRiichiSticksUpdated(gameId: Uuid, riichiSeatIndices: Set<Int>)
+    fun publishRiichiSticksUpdated(
+        gameId: Uuid,
+        riichiSeatIndices: Set<Int>,
+        dealerSeatIndex: Int,
+        comboStickCount: Int,
+        pooledStickCount: Int,
+    )
 
     /**
-     * 通知平台呈現層桌面中央局況顯示（場風、局數、本場數、牌山剩餘）需要更新為目前狀態。
+     * 通知平台呈現層桌面中央局況顯示（場風、局數、本場數、牌山剩餘、規則自訂延伸項目）需要更新為
+     * 目前狀態。
      *
-     * 觸發時機：開局/換局（跟 [publishWallStructure] 同一批呼叫）、以及每次摸牌（牌山剩餘張數會變）。
+     * 觸發時機：開局/換局（跟 [publishWallStructure] 同一批呼叫）、每次摸牌（牌山剩餘張數會變）、以及
+     * 任何會改變 [extras] 內容的事件（例如立直宣告後供託支數改變）。這個 entity 是「找到既有的就地
+     * 更新」模式，每個呼叫點都要重新算好完整的 [extras]（不能只在部分呼叫點帶上），否則沒帶的呼叫會把
+     * 之前顯示的延伸行覆蓋回空清單。
      *
      * @param gameId 對局 Uuid。
      * @param prevalentWind 目前場風（圈風），恆等於 `TableState.prevalentWind`。
@@ -161,6 +177,8 @@ interface GamePresentationPublisher {
      * 玩家人數換算好才傳入——這個介面本身不重複做這個換算。
      * @param comboCount 本場數，恆等於 `TableState.comboCount`。
      * @param wallRemainingCount 牌山目前剩餘張數，恆等於 `TableState.tileWall.remainingCount`。
+     * @param extras 規則自訂延伸顯示項目，恆等於呼叫端當下算好的 `MahjongRuleModule.getRoundInfoExtras`
+     * 結果。
      */
     fun publishRoundInfoUpdated(
         gameId: Uuid,
@@ -168,6 +186,7 @@ interface GamePresentationPublisher {
         localRoundNumber: Int,
         comboCount: Int,
         wallRemainingCount: Int,
+        extras: List<RoundInfoExtra> = emptyList(),
     )
 
     /**

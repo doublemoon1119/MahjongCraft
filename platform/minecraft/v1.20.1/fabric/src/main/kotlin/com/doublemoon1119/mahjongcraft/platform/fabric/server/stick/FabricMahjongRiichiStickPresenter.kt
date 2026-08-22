@@ -27,8 +27,9 @@ import kotlin.uuid.Uuid
  * 使用 Fabric 1.20.1 entity 呈現並替換指定麻將桌的正式立直棒——跟
  * [FabricMahjongScoringStickPresenter] 共用同一個「全部生成成功才丟棄舊的」按需生成模式與同一個
  * [MahjongScoringStickEntity] 類型（同一個 entity 類型同時代表積棒與立直棒，見該類型 KDoc），只是
- * 這裡的呈現對象是「目前立直中的座位集合」而不是「莊家一人的積棒支數」，理由見 [MahjongRiichiStickPresenter]
- * KDoc。
+ * 這裡的呈現對象合併兩種來源——目前立直中的座位（`riichiStickPlacement`）與延續自前局、跟積棒疊在
+ * 莊家角落的供託堆（`stickPlacement`，跟 [FabricMahjongScoringStickPresenter] 共用同一個排列函式）——
+ * 見 [MahjongRiichiStickPresenter] KDoc。
  */
 @Single(binds = [MahjongRiichiStickPresenter::class])
 class FabricMahjongRiichiStickPresenter(
@@ -46,7 +47,7 @@ class FabricMahjongRiichiStickPresenter(
         }
 
         val oldSticks = findManagedSticks(world, presentation.tableId, controllerPos)
-        val newSticks = presentation.riichiSeatIndices.map { seatIndex ->
+        val declaredSticks = presentation.riichiSeatIndices.map { seatIndex ->
             val placement = MahjongTileTableLayout.riichiStickPlacement(
                 controllerX = controllerPos.x,
                 controllerY = controllerPos.y,
@@ -60,6 +61,24 @@ class FabricMahjongRiichiStickPresenter(
                 assignToTable(presentation.tableId)
             }
         }
+        // 延續自前局、尚未被收下的供託堆——跟積棒同一個莊家角落疊放，stickIndex 從積棒支數之後接續，
+        // 視覺上連成同一疊，見 MahjongRiichiStickPresentation KDoc。
+        val pooledSticks = (0 until presentation.pooledStickCount).map { i ->
+            val placement = MahjongTileTableLayout.stickPlacement(
+                controllerX = controllerPos.x,
+                controllerY = controllerPos.y,
+                controllerZ = controllerPos.z,
+                tableFacing = presentation.tableFacing,
+                seatIndex = presentation.dealerSeatIndex,
+                stickIndex = presentation.comboStickCount + i,
+            )
+            MahjongScoringStickEntity(world = world).apply {
+                refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+                denomination = MahjongScoringStickDenomination.P1000
+                assignToTable(presentation.tableId)
+            }
+        }
+        val newSticks = declaredSticks + pooledSticks
         val spawnedSticks = mutableListOf<MahjongScoringStickEntity>()
         newSticks.forEach { stick ->
             if (!world.spawnEntity(stick)) {

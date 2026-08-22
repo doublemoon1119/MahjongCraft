@@ -78,6 +78,7 @@ class FabricMahjongRoundInfoPresenter(
         localRoundNumber = presentation.localRoundNumber
         comboCount = presentation.comboCount
         wallRemainingCount = presentation.wallRemainingCount
+        extras = presentation.extras
     }
 
     /** 由版本無關 dimension ID 取得目前 server session 的世界。 */

@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
@@ -46,8 +47,9 @@ import kotlin.uuid.Uuid
  * 整場對局已結束（[RoundAdvancementResult.isMatchOver]）
  * 時，本用例把這個事實記到 [Game.isMatchOver]，
  * 並同步最終桌況快照、廣播 [GameAction.MatchEnded]（帶著最終分數的快照，供呼叫端／客戶端組出排名
- * 呈現）——但不會開新的一局，`TableState` 維持呼叫前的樣子不變；房間清理（把桌子從 Game 轉回 Room）
- * 留給呼叫端接著呼叫 `ReturnToRoomUseCase`，不在這裡處理。務必記下 `isMatchOver` 這個事實：
+ * 呈現）——但不會開新的一局；`TableState` 除了「桌上未被收下的供託歸給最終第一名」這個結算之外
+ * 維持呼叫前的樣子不變（見 `MahjongRuleModule.collectStickPot` 的呼叫）。房間清理（把桌子從 Game
+ * 轉回 Room）留給呼叫端接著呼叫 `ReturnToRoomUseCase`，不在這裡處理。務必記下 `isMatchOver` 這個事實：
  * `AiTurnDriver`／`ForcedAutoPlayDriver` 都靠它提前跳過已結束的對局，否則牌山已空的桌況會被反覆
  * 嘗試摸牌、反覆觸發流局結算。
  *
@@ -93,15 +95,33 @@ class AdvanceRoundUseCase(
                     val isMatchOver = roundAdvancement.isMatchOver || module.hasAdditionalMatchEndCondition(state)
 
                     if (isMatchOver) {
+                        // 整場對局結束時，桌上未被任何人收下的供託（如立直棒）歸給最終第一名——分數
+                        // 高者優先，同分時 initialSeat 較小者優先，跟用戶端既有的排名呈現邏輯一致
+                        // （見 GameEventChatNotifier 的排名比較器）。沿用既有的 collectStickPot（贏家
+                        // 收供託也是同一支函式），不支援供託機制的規則回傳 null，維持 state 不變。
+                        val stickPot = module.collectStickPot(state)
+                        val finalState = if (stickPot != null && stickPot.second > 0) {
+                            val topPlayerId = state.players
+                                .sortedWith(compareByDescending<MahjongPlayer> { it.score }.thenBy { it.initialSeat.ordinal })
+                                .first().id
+                            state.copy(
+                                players = state.players.map {
+                                    if (it.id == topPlayerId) it.copy(score = it.score + stickPot.second) else it
+                                },
+                                dynamicRuleState = stickPot.first ?: state.dynamicRuleState,
+                            )
+                        } else {
+                            state
+                        }
                         val advanceOutcome = AdvanceRoundOutcome(
-                            result = AdvanceRoundResult(state, isMatchOver = true),
+                            result = AdvanceRoundResult(finalState, isMatchOver = true),
                             diceRoll = null,
                             wallStructure = null,
                             dealOrderHandTileIdsBySeatIndex = emptyMap(),
                         )
                         // 對局已經結束：記下這個事實，讓 AiTurnDriver／ForcedAutoPlayDriver 之後都
                         // 跳過這場對局，不會對已經沒有牌可摸的桌況繼續重複嘗試、重複觸發流局結算。
-                        game.copy(isMatchOver = true) to Outcome.Success(advanceOutcome)
+                        game.copy(tableState = finalState, isMatchOver = true) to Outcome.Success(advanceOutcome)
                     } else {
                         val initializationResult = GameInitializer.startNextRound(
                             gameId = gameId,
@@ -187,14 +207,23 @@ class AdvanceRoundUseCase(
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；新局手牌一定沒有副露，只是靠
         // publishInitialDealAnimation 的 comboStickCount 讓手牌正確讓開積棒佔用的空間。
         presentationPublisher.publishScoringSticksUpdated(gameId, dealerSeatIndex, newState.comboCount)
-        // 立直宣告每局歸零，不論上一局有沒有人立直，新局一律清空上一局殘留的立直棒。
-        presentationPublisher.publishRiichiSticksUpdated(gameId, emptySet())
+        // 立直宣告本身每局歸零（新局還沒有人宣告），但延續自前局、尚未被收下的供託堆要跟著顯示出來，
+        // 不是無條件清空——流局後沒被收走的立直棒延續到下一局，見 GamePresentationPublisher KDoc。
+        val module = moduleRegistry.getModule(newState.config)
+        presentationPublisher.publishRiichiSticksUpdated(
+            gameId,
+            riichiSeatIndices = emptySet(),
+            dealerSeatIndex = dealerSeatIndex,
+            comboStickCount = newState.comboCount,
+            pooledStickCount = module.getStickPotCount(newState),
+        )
         presentationPublisher.publishRoundInfoUpdated(
             gameId,
             newState.prevalentWind,
             localRoundNumber = newState.localRoundNumber,
             comboCount = newState.comboCount,
             wallRemainingCount = newState.tileWall.remainingCount,
+            extras = module.getRoundInfoExtras(newState),
         )
         // 翻牌完成那一刻起的最終落地格位——newState 此時已經是整理過的順序，跟決定發牌動畫節奏本身的
         // advanceOutcome.dealOrderHandTileIdsBySeatIndex 分開，見 MahjongInitialDealPresentation KDoc。
@@ -217,8 +246,8 @@ class AdvanceRoundUseCase(
     /**
      * [AdvanceRoundUseCase] 的執行結果。
      *
-     * @property tableState 套用後的桌況——整場對局已結束時，維持呼叫前的桌況不變（不會開新的一局）；
-     *           否則為已經開始下一局的新桌況。
+     * @property tableState 套用後的桌況——整場對局已結束時，除了「桌上未被收下的供託歸給最終第一名」
+     *           這個結算之外維持呼叫前的桌況不變（不會開新的一局）；否則為已經開始下一局的新桌況。
      * @property isMatchOver 整場對局是否已依規則的 `GameLength` 結束。
      */
     data class AdvanceRoundResult(val tableState: TableState, val isMatchOver: Boolean)

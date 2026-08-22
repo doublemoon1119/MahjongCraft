@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
+import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoExtra
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
@@ -490,6 +491,16 @@ class RiichiRuleModule(
     override fun isPlayerInRiichi(player: MahjongPlayer): Boolean = (player.playerRuleState as? RiichiPlayerState)?.isRiichi ?: false
 
     /**
+     * 直接讀取 [RiichiDynamicState.riichiStickCount]，不像 [collectStickPot] 會連帶歸零。
+     */
+    override fun getStickPotCount(tableState: TableState): Int = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
+
+    /**
+     * 唯一的延伸項目是立直棒累積支數，見 [RIICHI_STICK_POT_KEY]。
+     */
+    override fun getRoundInfoExtras(tableState: TableState): List<RoundInfoExtra> = listOf(RoundInfoExtra(RIICHI_STICK_POT_KEY, getStickPotCount(tableState)))
+
+    /**
      * 只有立直中的玩家才需要記錄永久振聽——未立直時放過和牌只構成一般同巡振聽，不需要這個永久旗標，
      * 轉型手法同 [isPlayerInRiichi]。
      */
@@ -497,5 +508,10 @@ class RiichiRuleModule(
         val riichiState = player.playerRuleState as? RiichiPlayerState ?: return player
         if (!riichiState.isRiichi) return player
         return player.copy(playerRuleState = riichiState.copy(isPermanentlyFuriten = true))
+    }
+
+    companion object {
+        /** [getRoundInfoExtras] 回傳的立直棒累積支數項目 key，供呈現層辨識。 */
+        const val RIICHI_STICK_POT_KEY = "riichiStickPot"
     }
 }

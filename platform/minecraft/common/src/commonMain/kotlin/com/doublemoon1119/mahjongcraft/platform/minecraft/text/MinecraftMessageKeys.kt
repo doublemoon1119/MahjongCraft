@@ -345,6 +345,13 @@ object MinecraftMessageKeys {
     /** 局況顯示牌山剩餘張數，帶一個張數參數（一個 `%d`）。 */
     const val ROUND_INFO_WALL_REMAINING = PREFIX + "round_info_wall_remaining"
 
+    /**
+     * 局況顯示的立直棒累積供託支數延伸行，帶一個支數參數（一個 `%d`）——對應
+     * `RiichiRuleModule.RIICHI_STICK_POT_KEY` 這個規則自訂延伸項目 key，只有支援立直棒的規則
+     * （日麻）會貢獻這個項目，見 `MahjongRuleModule.getRoundInfoExtras` KDoc。
+     */
+    const val ROUND_INFO_RIICHI_STICK_POT = PREFIX + "round_info_riichi_stick_pot"
+
     /** 牌面角落輔助標籤（給非中文圈玩家看的數字/字母）切換訊息的前綴，後面接切換前後的狀態文字。 */
     const val TILE_LABELS_TOGGLE_PREFIX = PREFIX + "tile_labels_toggle_prefix"
 
@@ -458,6 +465,7 @@ object MinecraftMessageKeys {
         ROUND_INFO_TITLE,
         ROUND_INFO_COMBO_COUNT,
         ROUND_INFO_WALL_REMAINING,
+        ROUND_INFO_RIICHI_STICK_POT,
         TILE_LABELS_TOGGLE_PREFIX,
         TILE_LABELS_STATE_ON,
         TILE_LABELS_STATE_OFF,

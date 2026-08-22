@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
+import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoExtra
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import kotlin.uuid.Uuid
@@ -15,6 +16,9 @@ import kotlin.uuid.Uuid
  * 玩家人數換算好才傳入——這裡不重新做這個換算，維持純粹的呈現格式化職責）。
  * @property comboCount 本場數（連莊次數），恆等於 `TableState.comboCount`。
  * @property wallRemainingCount 牌山目前剩餘張數，恆等於 `TableState.tileWall.remainingCount`。
+ * @property extras 規則自訂延伸顯示項目，恆等於呼叫端當下算好的 `MahjongRuleModule.getRoundInfoExtras`
+ * 結果——這個 entity 是「找到既有的就地更新」模式，呼叫端每次都要重新算好完整內容一起傳入，不能只在
+ * 部分呼叫點帶上，否則沒帶的呼叫會把之前顯示的延伸行覆蓋回空清單。
  */
 data class MahjongRoundInfoPresentation(
     val tableId: Uuid,
@@ -24,6 +28,7 @@ data class MahjongRoundInfoPresentation(
     val localRoundNumber: Int,
     val comboCount: Int,
     val wallRemainingCount: Int,
+    val extras: List<RoundInfoExtra> = emptyList(),
 )
 
 /** 正式桌面局況顯示呈現請求的處理結果。 */

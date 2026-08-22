@@ -100,6 +100,7 @@
   "mahjongcraft.message.round_info_title": "%s%d局",
   "mahjongcraft.message.round_info_combo_count": "%d本场",
   "mahjongcraft.message.round_info_wall_remaining": "牌山剩余：%d",
+  "mahjongcraft.message.round_info_riichi_stick_pot": "供托：%d",
   "mahjongcraft.message.tile_labels_toggle_prefix": "已将牌面角落辅助标签切换为：",
   "mahjongcraft.message.tile_labels_state_on": "开启",
   "mahjongcraft.message.tile_labels_state_off": "关闭",

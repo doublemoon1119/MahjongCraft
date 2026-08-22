@@ -272,7 +272,9 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer),
             config = RiichiRuleConfig(),
-            tileWall = TileWall(emptyList()),
+            // tileWall 刻意不是空的——那是「河底/海底不可鳴牌」的判定條件，跟這裡要測的「嶺上牌保留區
+            // （initialDeadWall，預設空清單）摸盡」是兩回事，tileWall 空的話這次暗槓在走到補摸嶺上牌
+            // 之前就會先被 RiichiLegalActionValidator 擋下，這個測試就測不到真正想驗證的情境。
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -285,7 +287,7 @@ class DeclareKanUseCaseTest {
         val unchangedPlayer = unchangedState.players.first { it.id == playerId }
         assertTrue(unchangedPlayer.hand.melds.isEmpty(), "The meld should not be applied when the replacement draw fails.")
         assertEquals(east4, unchangedPlayer.hand.lastDrawn, "The player's hand should remain exactly as it was before the declaration.")
-        assertEquals(0, unchangedState.tileWall.remainingCount)
+        assertEquals(0, unchangedState.initialDeadWall.size, "The rinshan reserve (initialDeadWall) is what's actually exhausted here.")
     }
 
     /**

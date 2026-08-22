@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -25,6 +26,9 @@ class RiichiLegalActionValidatorRiichiTest {
         handValueCalculator = RiichiHandValueCalculator(),
         contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig()),
     )
+
+    /** 牌山還有牌可摸——立直/暗槓測試預設用這個，避免被新加的「牌山剩餘不足」限制誤擋。 */
+    private val nonEmptyWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))))
 
     /**
      * 測試可執行立直動作之情況（點數充足）。
@@ -57,6 +61,7 @@ class RiichiLegalActionValidatorRiichiTest {
         ).copy(score = 1000) // 點數剛好 1000
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
 
         // 執行
@@ -102,6 +107,96 @@ class RiichiLegalActionValidatorRiichiTest {
         ).copy(score = 2500) // 點數超過 1000
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
+        )
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
+            incomingTile = null,
+        )
+
+        // 驗證
+        assertTrue(actions.any { it is GameAction.Riichi })
+    }
+
+    /**
+     * 測試不可執行立直動作之情況（牌山剩餘張數不足以讓自己再摸一次）。
+     *
+     * 四人局裡，牌山剩餘張數必須 >= 玩家人數（4），確保這位宣告者輪到自己之前牌山不會先摸盡；
+     * 剩餘 3 張（< 4）時即使聽牌、門前清、點數充足，也不可立直。
+     */
+    @Test
+    fun `test cannot riichi when wall remaining is below player count`() {
+        // 準備
+        val playerHand = FakeHandFactory.create(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(hand = playerHand).copy(score = 2500)
+        val otherPlayers = List(3) { FakeMahjongPlayerFactory.create() }
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player) + otherPlayers,
+            tileWall = TileWall(List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)) }),
+        )
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
+            incomingTile = null,
+        )
+
+        // 驗證
+        assertFalse(actions.any { it is GameAction.Riichi })
+    }
+
+    /**
+     * 測試可執行立直動作之情況（牌山剩餘張數恰好等於玩家人數，邊界值）。
+     */
+    @Test
+    fun `test can riichi when wall remaining equals player count`() {
+        // 準備
+        val playerHand = FakeHandFactory.create(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Character, 8),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Numeric(Tile.Suit.Character, 9),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(hand = playerHand).copy(score = 2500)
+        val otherPlayers = List(3) { FakeMahjongPlayerFactory.create() }
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player) + otherPlayers,
+            tileWall = TileWall(List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)) }),
         )
 
         // 執行
@@ -147,6 +242,7 @@ class RiichiLegalActionValidatorRiichiTest {
         ).copy(score = 500) // 點數不足 1000
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
 
         // 執行
@@ -192,6 +288,7 @@ class RiichiLegalActionValidatorRiichiTest {
         ).copy(score = 0) // 點數為 0
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
 
         // 執行
@@ -244,6 +341,7 @@ class RiichiLegalActionValidatorRiichiTest {
 
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
 
         // 摸到 1 餅（暗槓後改變聽牌）
@@ -301,6 +399,7 @@ class RiichiLegalActionValidatorRiichiTest {
 
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
 
         // 摸到 1 萬（暗槓後聽牌不變，仍只聽 7 萬）

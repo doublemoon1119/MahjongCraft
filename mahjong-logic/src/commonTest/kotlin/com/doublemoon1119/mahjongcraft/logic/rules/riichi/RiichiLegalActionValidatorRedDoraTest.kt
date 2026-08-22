@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -29,6 +30,9 @@ class RiichiLegalActionValidatorRedDoraTest {
         contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig()),
     )
 
+    /** 牌山還有牌可摸——鳴牌/槓牌測試預設用這個，避免被新加的「河底/海底不可鳴牌」限制誤擋。 */
+    private val nonEmptyWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))))
+
     /**
      * 測試赤寶牌之情況：可執行碰牌動作（手牌有普通5萬，他家打赤5萬）。
      *
@@ -48,6 +52,7 @@ class RiichiLegalActionValidatorRedDoraTest {
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
         val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character)) // 赤5萬
 
@@ -83,6 +88,7 @@ class RiichiLegalActionValidatorRedDoraTest {
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
         val incomingTile =
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)) // 普通5萬
@@ -120,6 +126,7 @@ class RiichiLegalActionValidatorRedDoraTest {
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
         val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
 
@@ -156,6 +163,7 @@ class RiichiLegalActionValidatorRedDoraTest {
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
         val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
 
@@ -195,6 +203,7 @@ class RiichiLegalActionValidatorRedDoraTest {
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
         val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
 
@@ -230,6 +239,7 @@ class RiichiLegalActionValidatorRedDoraTest {
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
         val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
 

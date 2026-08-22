@@ -330,7 +330,6 @@ class DiscardTileUseCaseTest {
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
             config = RiichiRuleConfig(),
-            tileWall = TileWall(emptyList()),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -1065,7 +1064,6 @@ class DiscardTileUseCaseTest {
             id = gameId,
             players = listOf(east, south, west, north),
             config = RiichiRuleConfig(),
-            tileWall = TileWall(emptyList()),
             currentPlayerIndex = 3,
         )
         fixtures.gameRepo.setTableState(table)

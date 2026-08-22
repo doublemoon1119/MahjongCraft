@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
+import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoExtra
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import net.minecraft.entity.Entity
@@ -13,9 +14,10 @@ import kotlin.uuid.Uuid
 
 /**
  * 桌面中央局況顯示用的純視覺 entity——只同步組成畫面內容需要的原始數值（場風、場風內局數、本場數、
- * 牌山剩餘），不同步已經翻譯好的文字——翻譯必須在 client 端依各自語系解析，不能在 server 端就烘焙成
- * 固定語言的字串，見 `FabricMahjongRoundInfoPresenter`／`MahjongRoundInfoEntityRenderer` 的分工：
- * server 只決定「數值」，client renderer 才決定「怎麼翻譯成文字」。
+ * 牌山剩餘、規則自訂延伸項目 [extras]），不同步已經翻譯好的文字——翻譯必須在 client 端依各自語系解析，
+ * 不能在 server 端就烘焙成固定語言的字串，見 `FabricMahjongRoundInfoPresenter`／
+ * `MahjongRoundInfoEntityRenderer` 的分工：server 只決定「數值」，client renderer 才決定「怎麼翻譯成
+ * 文字」。
  *
  * 每張桌子固定只有一個，不像牌／點棒有多個 UUID 各自代表獨立的牌局物件，因此不需要
  * `managedByGame`／`managedTableId` 以外的識別欄位——找既有 entity 時直接依 [managedTableId] 搜尋
@@ -44,6 +46,19 @@ class MahjongRoundInfoEntity(
     var wallRemainingCount: Int
         get() = dataTracker[WALL_REMAINING_COUNT]
         set(value) = dataTracker.set(WALL_REMAINING_COUNT, value)
+
+    /**
+     * 規則自訂延伸顯示項目（例如日麻的立直棒累積支數）——`DataTracker` 只能同步基本型別，這裡編碼成
+     * `"key1=value1;key2=value2"` 存進一個 `TrackedData<String>`（沒有延伸行時為空字串），
+     * client 端 renderer 解碼後才翻譯成文字，見 [MahjongRoundInfoEntity] KDoc同一套分工。
+     */
+    var extras: List<RoundInfoExtra>
+        get() = dataTracker[EXTRAS].takeIf(String::isNotBlank)?.split(";")?.mapNotNull { entry ->
+            val parts = entry.split("=", limit = 2)
+            if (parts.size != 2) return@mapNotNull null
+            parts[1].toIntOrNull()?.let { value -> RoundInfoExtra(parts[0], value) }
+        } ?: emptyList()
+        set(value) = dataTracker.set(EXTRAS, value.joinToString(";") { "${it.key}=${it.value}" })
 
     /** 正式牌局所屬麻將桌；未指派時為 `null`。 */
     var managedTableId: Uuid?
@@ -98,6 +113,7 @@ class MahjongRoundInfoEntity(
         dataTracker.startTracking(LOCAL_ROUND_NUMBER, 1)
         dataTracker.startTracking(COMBO_COUNT, 0)
         dataTracker.startTracking(WALL_REMAINING_COUNT, 0)
+        dataTracker.startTracking(EXTRAS, "")
         dataTracker.startTracking(MANAGED_TABLE_ID, "")
     }
 
@@ -106,6 +122,7 @@ class MahjongRoundInfoEntity(
         localRoundNumber = nbt.getInt(NBT_KEY_LOCAL_ROUND_NUMBER).coerceAtLeast(1)
         comboCount = nbt.getInt(NBT_KEY_COMBO_COUNT)
         wallRemainingCount = nbt.getInt(NBT_KEY_WALL_REMAINING_COUNT)
+        dataTracker.set(EXTRAS, nbt.getString(NBT_KEY_EXTRAS))
         managedTableId = nbt.getString(NBT_KEY_MANAGED_TABLE_ID)
             .takeIf(String::isNotBlank)
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
@@ -116,6 +133,7 @@ class MahjongRoundInfoEntity(
         nbt.putInt(NBT_KEY_LOCAL_ROUND_NUMBER, localRoundNumber)
         nbt.putInt(NBT_KEY_COMBO_COUNT, comboCount)
         nbt.putInt(NBT_KEY_WALL_REMAINING_COUNT, wallRemainingCount)
+        nbt.putString(NBT_KEY_EXTRAS, dataTracker[EXTRAS])
         managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
     }
 
@@ -124,6 +142,7 @@ class MahjongRoundInfoEntity(
         private const val NBT_KEY_LOCAL_ROUND_NUMBER = "LocalRoundNumber"
         private const val NBT_KEY_COMBO_COUNT = "ComboCount"
         private const val NBT_KEY_WALL_REMAINING_COUNT = "WallRemainingCount"
+        private const val NBT_KEY_EXTRAS = "Extras"
         private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
 
         /**
@@ -147,6 +166,10 @@ class MahjongRoundInfoEntity(
         /** 同步牌山目前剩餘張數。 */
         private val WALL_REMAINING_COUNT: TrackedData<Int> =
             DataTracker.registerData(MahjongRoundInfoEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
+
+        /** 同步規則自訂延伸顯示項目，編碼格式見 [extras]。 */
+        private val EXTRAS: TrackedData<String> =
+            DataTracker.registerData(MahjongRoundInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
         /** 同步所屬麻將桌 UUID；空字串表示尚未指派。 */
         private val MANAGED_TABLE_ID: TrackedData<String> =

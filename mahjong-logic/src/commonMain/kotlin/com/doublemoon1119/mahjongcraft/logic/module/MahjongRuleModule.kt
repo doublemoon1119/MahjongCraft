@@ -378,6 +378,29 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun isPlayerInRiichi(player: MahjongPlayer): Boolean = false
 
     /**
+     * 場上目前尚未被任何人收下的供託數量——純查詢，不像 [collectStickPot] 會連帶把狀態歸零，用來讓
+     * 呈現層在收下之前（例如流局延續到下一局、或宣告供託當下）也能知道場上目前累積多少供託。是供託
+     * 本身的數量（例如日麻立直棒的支數），不是換算後的點數——換算成點數是 [collectStickPot] 的職責。
+     *
+     * 不支援供託機制的規則維持預設值 `0`。
+     *
+     * @param tableState 目前的桌況。
+     * @return 場上目前尚未被收下的供託數量。
+     */
+    fun getStickPotCount(tableState: TableState): Int = 0
+
+    /**
+     * 桌面局況顯示的規則自訂延伸項目（例如日麻的立直棒累積支數）——不強迫每種規則的專屬資訊都擠進
+     * 呈現層固定欄位，呈現層看到不認得的 [RoundInfoExtra.key] 時應該略過該行，不是報錯。
+     *
+     * 不支援延伸顯示的規則維持預設空清單。
+     *
+     * @param tableState 目前的桌況。
+     * @return 這個規則想額外顯示的局況項目列表。
+     */
+    fun getRoundInfoExtras(tableState: TableState): List<RoundInfoExtra> = emptyList()
+
+    /**
      * 因應「玩家放棄一次原本合法的和牌機會」事件，套用規則特有的狀態變化——例如日麻立直後放過榮和
      * （他家打出你的和牌張、你選擇過）或摸切棄胡（自己摸到和牌張卻選擇打出），從此本局起永久振聽，
      * 不論之後 `passedTilesInRound` 是否因為摸牌而清空都不能再榮和，只能自摸；未立直時放過和牌

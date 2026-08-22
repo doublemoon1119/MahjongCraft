@@ -20,7 +20,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
-import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -409,7 +408,9 @@ class RespondToDiscardUseCaseTest {
             id = gameId,
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
-            tileWall = TileWall(emptyList()),
+            // tileWall 刻意不是空的——那是「河底不可明槓」的判定條件，跟這裡要測的「嶺上牌保留區
+            // （initialDeadWall，預設空清單）摸盡」是兩回事，tileWall 空的話這次明槓在走到補摸嶺上牌
+            // 之前就會先被 RiichiLegalActionValidator 擋下，這個測試就測不到真正想驗證的情境。
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
         )
@@ -423,7 +424,7 @@ class RespondToDiscardUseCaseTest {
         val winner = newState.players.first { it.id == responderId }
         assertEquals(MeldType.OPEN_KAN, winner.hand.melds.single().type, "The meld itself should still be applied.")
         assertNull(winner.hand.lastDrawn, "No replacement tile is available; lastDrawn should remain empty.")
-        assertEquals(0, newState.tileWall.remainingCount)
+        assertEquals(0, newState.initialDeadWall.size, "The rinshan reserve (initialDeadWall) is what's actually exhausted here.")
         assertEquals(
             listOf(kanAction),
             fixtures.eventPublisher.getNotifiedActions(gameId, responderId, responderId),

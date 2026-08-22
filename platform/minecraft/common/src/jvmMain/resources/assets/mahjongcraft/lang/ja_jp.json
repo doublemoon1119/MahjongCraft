@@ -100,6 +100,7 @@
   "mahjongcraft.message.round_info_title": "%s%d局",
   "mahjongcraft.message.round_info_combo_count": "%d本場",
   "mahjongcraft.message.round_info_wall_remaining": "残り牌数：%d",
+  "mahjongcraft.message.round_info_riichi_stick_pot": "供託：%d",
   "mahjongcraft.message.tile_labels_toggle_prefix": "牌の角の補助ラベルを切り替えました：",
   "mahjongcraft.message.tile_labels_state_on": "オン",
   "mahjongcraft.message.tile_labels_state_off": "オフ",

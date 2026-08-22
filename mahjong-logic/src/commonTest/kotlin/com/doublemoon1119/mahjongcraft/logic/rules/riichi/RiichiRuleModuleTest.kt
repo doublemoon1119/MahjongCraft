@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoExtra
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
@@ -723,6 +724,41 @@ class RiichiRuleModuleTest {
         val result = module.collectStickPot(table)
 
         assertEquals(RiichiDynamicState(riichiStickCount = 0) to 0, result)
+    }
+
+    /**
+     * 驗證 [MahjongRuleModule.getStickPotCount] 純查詢場上目前立直棒數量，不像 [collectStickPot]
+     * 會連帶把狀態歸零。
+     */
+    @Test
+    fun `test getStickPotCount reads current stick count without resetting it`() {
+        val table = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create()),
+            config = module.config,
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 3),
+        )
+
+        val count = module.getStickPotCount(table)
+
+        assertEquals(3, count)
+        assertEquals(3, (table.dynamicRuleState as RiichiDynamicState).riichiStickCount, "getStickPotCount must be a pure query, not mutate the table state.")
+    }
+
+    /**
+     * 驗證 [MahjongRuleModule.getRoundInfoExtras] 回傳的唯一項目是立直棒累積支數，key 固定為
+     * [RiichiRuleModule.RIICHI_STICK_POT_KEY]，值恆等於 [getStickPotCount]。
+     */
+    @Test
+    fun `test getRoundInfoExtras returns the current stick pot count`() {
+        val table = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create()),
+            config = module.config,
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
+        )
+
+        val extras = module.getRoundInfoExtras(table)
+
+        assertEquals(listOf(RoundInfoExtra(RiichiRuleModule.RIICHI_STICK_POT_KEY, 2)), extras)
     }
 
     /**

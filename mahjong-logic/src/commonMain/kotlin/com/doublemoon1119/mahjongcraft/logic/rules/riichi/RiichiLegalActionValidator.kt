@@ -67,13 +67,21 @@ class RiichiLegalActionValidator(
         }
         val canDeclareAnotherKan = totalKanCount < MAX_KAN_COUNT
 
+        // 牌山（不含王牌）是否還有牌可摸——恆等於這次判斷當下 tableState.tileWall.remainingCount。
+        // == 0 有兩種情境：(1) sourceDirection == Self 時，incomingTile 剛好是海底牌本身（摸完它之後
+        // 牌山正好摸盡），日麻規則海底牌不能拿來暗槓／加槓；(2) 反應他家捨牌時，這張捨牌是海底牌
+        // 摸盡後打出的河底牌，只能榮和（河底撈魚）或流局，不能吃/碰/大明槓——因為吃/碰之後下一位
+        // 仍須有正常摸牌機會，大明槓還涉及嶺上補牌，這個時間點都已經不成立。
+        val wallHasMoreTiles = tableState.tileWall.remainingCount > 0
+
         // incomingTile == null 表示玩家正在打牌（準備捨牌）
         // 捨牌動作由 UI 層處理，讓玩家選擇要打的牌
         // 此 Validator 只處理「額外動作」（鳴牌、胡牌、立直）
         if (incomingTile == null) {
             // 檢查是否可以立直 (Riichi)
-            // 條件：向聽數為 0 且門前清（無副露）且未曾立直且點數 >= 1000
-            if (!isRiichi && isMenzen && player.score >= 1000) {
+            // 條件：向聽數為 0 且門前清（無副露）且未曾立直且點數 >= 1000，且牌山剩餘張數至少還夠
+            // 自己再摸一次（>= 玩家人數，確保輪到自己之前不會被其他人摸盡）
+            if (!isRiichi && isMenzen && player.score >= 1000 && tableState.tileWall.remainingCount >= tableState.playerCount) {
                 val result = shantenCalculator.calculate(
                     Hand(
                         player.hand.standingTiles.toMutableList(),
@@ -112,8 +120,8 @@ class RiichiLegalActionValidator(
                 }
             }
 
-            // 2. 檢查是否可以加槓 (Added Kan)
-            if (canDeclareAnotherKan) {
+            // 2. 檢查是否可以加槓 (Added Kan)——海底牌不能拿來加槓
+            if (canDeclareAnotherKan && wallHasMoreTiles) {
                 player.hand.exposedMelds.forEach { meld ->
                     if (meld.type == MeldType.PON && meld.tiles.first().tile.riichiCanonical == incomingBaseTile) {
                         legalActions.add(GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()))
@@ -126,7 +134,7 @@ class RiichiLegalActionValidator(
             // - 暗槓前跟暗槓後聽的牌必須一模一樣才能暗槓
             // - 需要計算暗槓後的聽牌列表，與暗槓前的聽牌列表比對
             val closedKanCount = player.hand.standingTiles.count { it.tile.riichiCanonical == incomingBaseTile }
-            if (canDeclareAnotherKan && closedKanCount == 3) {
+            if (canDeclareAnotherKan && wallHasMoreTiles && closedKanCount == 3) {
                 val withTiles =
                     player.hand.standingTiles.filter { it.tile.riichiCanonical == incomingBaseTile }.map { it.id }
 
@@ -203,19 +211,19 @@ class RiichiLegalActionValidator(
             }
 
             // 2. 檢查是否可以碰 (Pon)
-            // 立直後不能碰
+            // 立直後不能碰、河底牌不能碰
             // 赤五與普通五視為同一張牌，故使用日麻標準牌比較
             // 過水碰：若玩家在當前巡迴中已放過此牌，則不可碰
             val ponCount = player.hand.standingTiles.count { it.tile.riichiCanonical == incomingBaseTile }
-            if (ponCount >= 2 && !isRiichi && incomingBaseTile !in player.passedTilesInRound) {
+            if (ponCount >= 2 && !isRiichi && wallHasMoreTiles && incomingBaseTile !in player.passedTilesInRound) {
                 legalActions.add(GameAction.Pon(incomingTile.id))
             }
 
             // 3. 檢查是否可以吃 (Chi)
-            // 立直後不能吃
+            // 立直後不能吃、河底牌不能吃
             // 吃不受赤五外觀影響，必須使用日麻標準牌判斷數值與花色
             val incomingNumeric = incomingBaseTile as? Tile.Numeric
-            if (sourceDirection == RelativeDirection.Left && incomingNumeric != null && !isRiichi) {
+            if (sourceDirection == RelativeDirection.Left && incomingNumeric != null && !isRiichi && wallHasMoreTiles) {
                 val iTile = incomingNumeric
                 val handTiles = player.hand.standingTiles
 
@@ -254,10 +262,10 @@ class RiichiLegalActionValidator(
             }
 
             // 4. 檢查是否可以大明槓 (Open Kan)
-            // 立直後不能明槓
+            // 立直後不能明槓、河底牌不能明槓
             // 赤五與普通五視為同一張牌，故使用日麻標準牌比較
             val openKanCount = player.hand.standingTiles.count { it.tile.riichiCanonical == incomingBaseTile }
-            if (canDeclareAnotherKan && openKanCount == 3 && !isRiichi) {
+            if (canDeclareAnotherKan && wallHasMoreTiles && openKanCount == 3 && !isRiichi) {
                 val withTiles =
                     player.hand.standingTiles.filter { it.tile.riichiCanonical == incomingBaseTile }.map { it.id }
                 legalActions.add(GameAction.Kan(GameAction.KanType.OPEN_KAN, incomingTile.id, withTiles))

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.testing.flow.common.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
+import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoExtra
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
@@ -29,8 +30,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的積棒呈現資料。 */
     private val scoringSticks = mutableMapOf<Uuid, ScoringStickContext>()
 
-    /** 依對局 Uuid 紀錄最後一次收到的立直中座位集合。 */
-    private val riichiSticks = mutableMapOf<Uuid, Set<Int>>()
+    /** 依對局 Uuid 紀錄最後一次收到的立直棒呈現資料。 */
+    private val riichiSticks = mutableMapOf<Uuid, RiichiStickContext>()
 
     /** 依對局 Uuid 紀錄最後一次收到的桌面局況顯示資料。 */
     private val roundInfos = mutableMapOf<Uuid, RoundInfoContext>()
@@ -78,8 +79,14 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         scoringSticks[gameId] = ScoringStickContext(dealerSeatIndex, stickCount)
     }
 
-    override fun publishRiichiSticksUpdated(gameId: Uuid, riichiSeatIndices: Set<Int>) {
-        riichiSticks[gameId] = riichiSeatIndices
+    override fun publishRiichiSticksUpdated(
+        gameId: Uuid,
+        riichiSeatIndices: Set<Int>,
+        dealerSeatIndex: Int,
+        comboStickCount: Int,
+        pooledStickCount: Int,
+    ) {
+        riichiSticks[gameId] = RiichiStickContext(riichiSeatIndices, dealerSeatIndex, comboStickCount, pooledStickCount)
     }
 
     override fun publishRoundInfoUpdated(
@@ -88,8 +95,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         localRoundNumber: Int,
         comboCount: Int,
         wallRemainingCount: Int,
+        extras: List<RoundInfoExtra>,
     ) {
-        roundInfos[gameId] = RoundInfoContext(prevalentWind, localRoundNumber, comboCount, wallRemainingCount)
+        roundInfos[gameId] = RoundInfoContext(prevalentWind, localRoundNumber, comboCount, wallRemainingCount, extras)
     }
 
     override fun publishPlayerAreaUpdated(
@@ -157,8 +165,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 取得指定對局最後一次收到的積棒呈現資料；若無紀錄則回傳 null。 */
     fun getPublishedScoringSticks(gameId: Uuid): ScoringStickContext? = scoringSticks[gameId]
 
-    /** 取得指定對局最後一次收到的立直中座位集合；若無紀錄則回傳 null。 */
-    fun getPublishedRiichiSticks(gameId: Uuid): Set<Int>? = riichiSticks[gameId]
+    /** 取得指定對局最後一次收到的立直棒呈現資料；若無紀錄則回傳 null。 */
+    fun getPublishedRiichiSticks(gameId: Uuid): RiichiStickContext? = riichiSticks[gameId]
 
     /** 取得指定對局最後一次收到的桌面局況顯示資料；若無紀錄則回傳 null。 */
     fun getPublishedRoundInfo(gameId: Uuid): RoundInfoContext? = roundInfos[gameId]
@@ -209,6 +217,15 @@ data class RoundInfoContext(
     val localRoundNumber: Int,
     val comboCount: Int,
     val wallRemainingCount: Int,
+    val extras: List<RoundInfoExtra> = emptyList(),
+)
+
+/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishRiichiSticksUpdated] 資料。 */
+data class RiichiStickContext(
+    val riichiSeatIndices: Set<Int>,
+    val dealerSeatIndex: Int,
+    val comboStickCount: Int,
+    val pooledStickCount: Int,
 )
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishPlayerAreaUpdated] 資料。 */

@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -267,6 +268,72 @@ class AdvanceRoundUseCaseTest {
             "Table state should be left completely untouched when the match is over.",
         )
         assertEquals(table, fixtures.gameRepo.getTableState(gameId), "Repository should not have been mutated either.")
+    }
+
+    /**
+     * 驗證整場對局結束時，桌上未被任何人收下的立直棒歸給最終第一名（分數最高者）——這位玩家的分數
+     * 應加上 `立直棒數 * 1000`，`dynamicRuleState` 應歸零。
+     */
+    @Test
+    fun `test advance round awards leftover stick pot to the top-ranked player at match end`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(Wind.EAST).copy(score = 20000)
+        val topPlayer = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(score = 30000)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST).copy(score = 25000)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(score = 22000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, topPlayer, p3, p4),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.OneGame),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        assertEquals(true, advanceResult.isMatchOver)
+        val finalTopPlayer = advanceResult.tableState.players.first { it.id == topPlayer.id }
+        assertEquals(32000, finalTopPlayer.score, "The final 1st place player should collect all leftover riichi sticks (2 * 1000).")
+        assertEquals(
+            0,
+            (advanceResult.tableState.dynamicRuleState as RiichiDynamicState).riichiStickCount,
+            "The stick pot should be reset once collected.",
+        )
+        assertEquals(advanceResult.tableState, fixtures.gameRepo.getTableState(gameId), "Repository should reflect the swept state.")
+    }
+
+    /**
+     * 驗證整場對局結束時，桌上沒有未被收下的立直棒，分數與桌況完全不受影響。
+     */
+    @Test
+    fun `test advance round leaves scores untouched at match end when there is no leftover stick pot`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, p2, p3, p4),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.OneGame),
+            roundNumber = 1,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 0),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val advanceResult = result.value
+        assertEquals(true, advanceResult.isMatchOver)
+        assertEquals(table, advanceResult.tableState, "No leftover stick pot means the table state should be left untouched.")
     }
 
     /**

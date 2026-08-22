@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoExtra
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
@@ -272,7 +273,13 @@ class FabricGamePresentationPublisher(
      * [MahjongRiichiStickPresenter] KDoc）——跟 [publishScoringSticksUpdated]（綁在牌牆生成）各自
      * 獨立觸發時機；不需要 [busyTracker] 或延遲，直接同步呈現，跟 [publishScoringSticksUpdated] 同理。
      */
-    override fun publishRiichiSticksUpdated(gameId: Uuid, riichiSeatIndices: Set<Int>) {
+    override fun publishRiichiSticksUpdated(
+        gameId: Uuid,
+        riichiSeatIndices: Set<Int>,
+        dealerSeatIndex: Int,
+        comboStickCount: Int,
+        pooledStickCount: Int,
+    ) {
         if (serverHolder.current() == null) {
             logger.warn("publishRiichiSticksUpdated gameId={} skipped: no active server", gameId)
             return
@@ -285,6 +292,9 @@ class FabricGamePresentationPublisher(
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
                 riichiSeatIndices = riichiSeatIndices,
+                dealerSeatIndex = dealerSeatIndex,
+                comboStickCount = comboStickCount,
+                pooledStickCount = pooledStickCount,
             )
             riichiStickPresenter.present(presentation)
         }
@@ -301,6 +311,7 @@ class FabricGamePresentationPublisher(
         localRoundNumber: Int,
         comboCount: Int,
         wallRemainingCount: Int,
+        extras: List<RoundInfoExtra>,
     ) {
         if (serverHolder.current() == null) {
             logger.warn("publishRoundInfoUpdated gameId={} skipped: no active server", gameId)
@@ -317,6 +328,7 @@ class FabricGamePresentationPublisher(
                 localRoundNumber = localRoundNumber,
                 comboCount = comboCount,
                 wallRemainingCount = wallRemainingCount,
+                extras = extras,
             )
             roundInfoPresenter.present(presentation)
         }

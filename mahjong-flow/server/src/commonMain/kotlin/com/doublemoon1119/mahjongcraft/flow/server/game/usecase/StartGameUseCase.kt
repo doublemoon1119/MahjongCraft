@@ -137,14 +137,21 @@ class StartGameUseCase(
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；開局第一局 comboCount 恆為 0，
         // 呼叫本身仍需要，確保積棒 entity 從上一局殘留（理論上不會發生，但保持呼叫語意一致）清乾淨。
         presentationPublisher.publishScoringSticksUpdated(roomId, dealerSeatIndex, tableState.comboCount)
-        // 立直宣告每局歸零，開局當下不會有人已經立直，一律清空上一局殘留的立直棒。
-        presentationPublisher.publishRiichiSticksUpdated(roomId, emptySet())
+        // 開局第一局，不可能有任何延續的供託，全部固定為空／0。
+        presentationPublisher.publishRiichiSticksUpdated(
+            roomId,
+            riichiSeatIndices = emptySet(),
+            dealerSeatIndex = dealerSeatIndex,
+            comboStickCount = 0,
+            pooledStickCount = 0,
+        )
         presentationPublisher.publishRoundInfoUpdated(
             roomId,
             tableState.prevalentWind,
             localRoundNumber = tableState.localRoundNumber,
             comboCount = tableState.comboCount,
             wallRemainingCount = tableState.tileWall.remainingCount,
+            extras = moduleRegistry.getModule(tableState.config).getRoundInfoExtras(tableState),
         )
         // 翻牌完成那一刻起的最終落地格位——tableState 此時已經是整理過的順序（見上方 organizedState），
         // 跟決定發牌動畫節奏本身的 startOutcome.dealOrderHandTileIdsBySeatIndex 分開，見

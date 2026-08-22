@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -32,6 +33,9 @@ class RiichiLegalActionValidatorTest {
         contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig()),
     )
 
+    /** 牌山還有牌可摸——鳴牌/槓牌測試預設用這個，避免被新加的「河底/海底不可鳴牌」限制誤擋。 */
+    private val nonEmptyWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))))
+
     /**
      * 測試可執行碰牌動作之情況。
      *
@@ -51,6 +55,7 @@ class RiichiLegalActionValidatorTest {
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
@@ -86,6 +91,7 @@ class RiichiLegalActionValidatorTest {
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
@@ -122,6 +128,7 @@ class RiichiLegalActionValidatorTest {
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
@@ -161,6 +168,7 @@ class RiichiLegalActionValidatorTest {
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
@@ -197,6 +205,7 @@ class RiichiLegalActionValidatorTest {
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
@@ -211,6 +220,98 @@ class RiichiLegalActionValidatorTest {
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN })
+    }
+
+    /**
+     * 測試牌山已摸盡（河底牌情境）時不可吃／碰／大明槓——只能榮和（河底撈魚）或流局，見
+     * [RiichiLegalActionValidator.getLegalActions] 的 `wallHasMoreTiles` 判斷。
+     */
+    @Test
+    fun `test cannot chi pon or open kan when wall is exhausted`() {
+        // 準備：手牌同時滿足吃、碰、大明槓三種條件
+        val playerHand = FakeHandFactory.create(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(hand = playerHand)
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = TileWall(emptyList()),
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Left,
+            incomingTile = incomingTile,
+        )
+
+        // 驗證：吃／碰／大明槓皆不可，只留下 Pass
+        assertFalse(actions.any { it is GameAction.Chi })
+        assertFalse(actions.any { it is GameAction.Pon })
+        assertFalse(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.OPEN_KAN })
+    }
+
+    /**
+     * 測試牌山已摸盡（海底牌）時，自己摸到的這張牌不可拿來暗槓／加槓。
+     */
+    @Test
+    fun `test cannot closed or added kan on the haitei tile`() {
+        // 準備：手牌另外湊了一組可以暗槓的三張，且有一組可加槓的副露
+        val ponMeld = Meld(
+            MeldType.PON,
+            listOf(
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+            ),
+            sourceDirection = RelativeDirection.Left,
+        )
+        val playerHand = Hand(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+            ).map { FakeIdentifiedTileFactory.create(it) },
+            melds = mutableListOf(ponMeld),
+        )
+        val player = FakeMahjongPlayerFactory.create(hand = playerHand)
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = TileWall(emptyList()),
+        )
+        val incomingCharacterOne = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+        // 執行：摸到手牌已有 3 張的 1 萬（可暗槓的條件）
+        val closedKanActions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
+            incomingTile = incomingCharacterOne,
+        )
+        // 驗證：牌山已摸盡，不可暗槓
+        assertFalse(closedKanActions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN })
+
+        // 執行：摸到跟既有碰牌相同的 5 條（可加槓的條件）
+        val incomingBambooFive = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
+        val addedKanActions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
+            incomingTile = incomingBambooFive,
+        )
+        // 驗證：牌山已摸盡，不可加槓
+        assertFalse(addedKanActions.any { it is GameAction.Kan && it.type == GameAction.KanType.ADDED_KAN })
     }
 
     /**
@@ -478,6 +579,7 @@ class RiichiLegalActionValidatorTest {
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
+            tileWall = nonEmptyWall,
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 7))
 
