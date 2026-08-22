@@ -78,9 +78,11 @@ class MahjongRoundInfoEntityRenderer(
         RiichiRuleModule.TITLE_KEY -> {
             val wind = Wind.entries.getOrElse(line.args.getOrElse(0) { 0 }) { Wind.EAST }
             val localRoundNumber = line.args.getOrElse(1) { 1 }
+            val comboCount = line.args.getOrElse(2) { 0 }
             Text.translatable(MinecraftMessageKeys.ROUND_INFO_TITLE, Text.translatable(wind.toMessageKey()), localRoundNumber)
+                .append(" ")
+                .append(Text.translatable(MinecraftMessageKeys.ROUND_INFO_COMBO_COUNT, comboCount))
         }
-        RiichiRuleModule.COMBO_COUNT_KEY -> Text.translatable(MinecraftMessageKeys.ROUND_INFO_COMBO_COUNT, line.args.getOrElse(0) { 0 })
         RiichiRuleModule.WALL_REMAINING_KEY -> Text.translatable(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING, line.args.getOrElse(0) { 0 })
         RiichiRuleModule.STICK_POT_KEY -> Text.translatable(MinecraftMessageKeys.ROUND_INFO_RIICHI_STICK_POT, line.args.getOrElse(0) { 0 })
         else -> null

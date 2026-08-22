@@ -496,14 +496,17 @@ class RiichiRuleModule(
     override fun getStickPotCount(tableState: TableState): Int = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
 
     /**
-     * 日麻桌面局況顯示依序四行：場風＋局數（標題）、本場數、牌山剩餘張數、立直棒累積供託數量。
+     * 日麻桌面局況顯示依序：場風＋局數＋本場數合併一行（標題）、立直棒累積供託數量（沒有供託時
+     * 略過這行，不顯示「供託：0」）、牌山剩餘張數（固定排在最後）。
      */
-    override fun getRoundInfoLines(tableState: TableState): List<RoundInfoLine> = listOf(
-        RoundInfoLine(TITLE_KEY, listOf(tableState.prevalentWind.ordinal, tableState.localRoundNumber)),
-        RoundInfoLine(COMBO_COUNT_KEY, listOf(tableState.comboCount)),
-        RoundInfoLine(WALL_REMAINING_KEY, listOf(tableState.tileWall.remainingCount)),
-        RoundInfoLine(STICK_POT_KEY, listOf(getStickPotCount(tableState))),
-    )
+    override fun getRoundInfoLines(tableState: TableState): List<RoundInfoLine> {
+        val stickPotCount = getStickPotCount(tableState)
+        return listOfNotNull(
+            RoundInfoLine(TITLE_KEY, listOf(tableState.prevalentWind.ordinal, tableState.localRoundNumber, tableState.comboCount)),
+            if (stickPotCount > 0) RoundInfoLine(STICK_POT_KEY, listOf(stickPotCount)) else null,
+            RoundInfoLine(WALL_REMAINING_KEY, listOf(tableState.tileWall.remainingCount)),
+        )
+    }
 
     /**
      * 只有立直中的玩家才需要記錄永久振聽——未立直時放過和牌只構成一般同巡振聽，不需要這個永久旗標，
@@ -516,11 +519,8 @@ class RiichiRuleModule(
     }
 
     companion object {
-        /** [getRoundInfoLines] 場風＋局數標題行的 key，供呈現層辨識。 */
+        /** [getRoundInfoLines] 場風＋局數＋本場數合併標題行的 key，供呈現層辨識。 */
         const val TITLE_KEY = "riichiTitle"
-
-        /** [getRoundInfoLines] 本場數行的 key，供呈現層辨識。 */
-        const val COMBO_COUNT_KEY = "riichiComboCount"
 
         /** [getRoundInfoLines] 牌山剩餘張數行的 key，供呈現層辨識。 */
         const val WALL_REMAINING_KEY = "riichiWallRemaining"

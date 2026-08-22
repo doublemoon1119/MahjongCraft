@@ -746,11 +746,11 @@ class RiichiRuleModuleTest {
     }
 
     /**
-     * 驗證 [MahjongRuleModule.getRoundInfoLines] 依序回傳 4 行：場風＋局數標題、本場數、牌山剩餘
-     * 張數、立直棒累積供託數量，各行的 key 與 args 正確對應目前桌況。
+     * 驗證 [MahjongRuleModule.getRoundInfoLines] 依序回傳 3 行：場風＋局數＋本場數合併標題、立直棒
+     * 累積供託數量、牌山剩餘張數（固定排在最後），各行的 key 與 args 正確對應目前桌況。
      */
     @Test
-    fun `test getRoundInfoLines returns title combo count wall remaining and stick pot in order`() {
+    fun `test getRoundInfoLines returns title stick pot and wall remaining in order`() {
         val players = List(4) { FakeMahjongPlayerFactory.create() }
         val table = FakeTableStateFactory.create(
             players = players,
@@ -766,13 +766,29 @@ class RiichiRuleModuleTest {
 
         assertEquals(
             listOf(
-                RoundInfoLine(RiichiRuleModule.TITLE_KEY, listOf(Wind.SOUTH.ordinal, table.localRoundNumber)),
-                RoundInfoLine(RiichiRuleModule.COMBO_COUNT_KEY, listOf(1)),
-                RoundInfoLine(RiichiRuleModule.WALL_REMAINING_KEY, listOf(50)),
+                RoundInfoLine(RiichiRuleModule.TITLE_KEY, listOf(Wind.SOUTH.ordinal, table.localRoundNumber, 1)),
                 RoundInfoLine(RiichiRuleModule.STICK_POT_KEY, listOf(2)),
+                RoundInfoLine(RiichiRuleModule.WALL_REMAINING_KEY, listOf(50)),
             ),
             lines,
         )
+    }
+
+    /**
+     * 驗證場上沒有供託（[getStickPotCount] 為 0）時，[MahjongRuleModule.getRoundInfoLines] 不會產生
+     * 供託那一行——不顯示「供託：0」，避免平常沒人立直時桌面也掛著一行沒意義的數字。
+     */
+    @Test
+    fun `test getRoundInfoLines omits stick pot line when there are no sticks on the table`() {
+        val table = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create()),
+            config = module.config,
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 0),
+        )
+
+        val lines = module.getRoundInfoLines(table)
+
+        assertEquals(emptyList<RoundInfoLine>(), lines.filter { it.key == RiichiRuleModule.STICK_POT_KEY })
     }
 
     /**
