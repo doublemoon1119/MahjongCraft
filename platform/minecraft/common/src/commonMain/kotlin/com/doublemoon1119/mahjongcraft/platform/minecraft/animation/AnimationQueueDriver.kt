@@ -25,6 +25,28 @@ data class AnimationQueueTickResult<C>(
  */
 object AnimationQueueDriver {
     /**
+     * 把 [steps] 附加至 [queue]，並把相鄰的 [AnimationStep.WaitUntil] 合併成較晚的絕對時間；等待之間若有
+     * 任何實際動作就維持原序，避免改變不同動畫階段的時間語意。
+     */
+    fun <C> append(
+        queue: List<AnimationStep<C>>,
+        steps: List<AnimationStep<C>>,
+    ): List<AnimationStep<C>> = buildList {
+        addAll(queue)
+        steps.forEach { step ->
+            val previousWait = lastOrNull() as? AnimationStep.WaitUntil
+            if (step is AnimationStep.WaitUntil && previousWait != null) {
+                if (step.gameTime > previousWait.gameTime) {
+                    removeAt(lastIndex)
+                    add(step)
+                }
+            } else {
+                add(step)
+            }
+        }
+    }
+
+    /**
      * 依 [currentGameTime] 推進 [queue]：瞬間 step（[AnimationStep.Teleport]／[AnimationStep.SetInvisible]／
      * [AnimationStep.Custom]）連續處理到下一個計時 step 為止；計時 step（[AnimationStep.WaitUntil]／
      * [AnimationStep.PlayMotion]）未到期就停在原地，等下一次呼叫再檢查。[AnimationStep.WaitUntil]

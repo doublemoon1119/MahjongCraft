@@ -7,6 +7,50 @@ import kotlin.test.assertTrue
 
 /** [AnimationQueueDriver] 的到期／推進判斷測試，涵蓋 bug 根因相關的持久化恢復情境。 */
 class AnimationQueueDriverTest {
+    /** 相同絕對時間的相鄰等待只保留一個。 */
+    @Test
+    fun `test append deduplicates adjacent waits with the same game time`() {
+        val wait = AnimationStep.WaitUntil(100L)
+
+        assertEquals(listOf(wait), AnimationQueueDriver.append(listOf(wait), listOf(wait)))
+    }
+
+    /** 相鄰等待的新目標較晚時，以較晚時間取代原本等待。 */
+    @Test
+    fun `test append extends adjacent wait to the later game time`() {
+        assertEquals(
+            listOf(AnimationStep.WaitUntil(120L)),
+            AnimationQueueDriver.append(
+                listOf(AnimationStep.WaitUntil(100L)),
+                listOf(AnimationStep.WaitUntil(120L)),
+            ),
+        )
+    }
+
+    /** 相鄰等待的新目標較早時，不得縮短既有等待。 */
+    @Test
+    fun `test append never shortens an adjacent wait`() {
+        assertEquals(
+            listOf(AnimationStep.WaitUntil(120L)),
+            AnimationQueueDriver.append(
+                listOf(AnimationStep.WaitUntil(120L)),
+                listOf(AnimationStep.WaitUntil(100L)),
+            ),
+        )
+    }
+
+    /** 中間隔著實際動作的等待屬於不同動畫階段，不可跨越動作合併。 */
+    @Test
+    fun `test append does not merge waits across another step`() {
+        val teleport = AnimationStep.Teleport(1.0, 2.0, 3.0, 90.0f)
+        val initial = listOf<AnimationStep<Nothing>>(AnimationStep.WaitUntil(100L), teleport)
+
+        assertEquals(
+            initial + AnimationStep.WaitUntil(100L),
+            AnimationQueueDriver.append(initial, listOf(AnimationStep.WaitUntil(100L))),
+        )
+    }
+
     /** 佇列為空時什麼都不做，回傳空的剩餘佇列與 `null` 計時進度。 */
     @Test
     fun `test empty queue does nothing`() {

@@ -35,10 +35,12 @@ abstract class AnimatedMahjongEntity<C>(
     val isAnimating: Boolean
         get() = queue.isNotEmpty()
 
-    /** 依序附加 [steps] 到佇列尾端；只能在 server 端呼叫。 */
+    /** 依序附加 [steps] 到佇列尾端；相鄰的絕對等待會自動合併為較晚時間，只能在 server 端呼叫。 */
     fun enqueueAll(steps: List<AnimationStep<C>>) {
         check(!world.isClient) { "Animation steps must be enqueued by the server" }
-        queue.addAll(steps)
+        val normalizedQueue = AnimationQueueDriver.append(queue, steps)
+        queue.clear()
+        queue.addAll(normalizedQueue)
     }
 
     /** 附加單一 step，等同 `enqueueAll(listOf(step))`。 */
