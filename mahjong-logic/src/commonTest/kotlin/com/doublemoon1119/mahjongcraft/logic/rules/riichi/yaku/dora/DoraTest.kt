@@ -19,6 +19,18 @@ import kotlin.test.assertEquals
  */
 class DoraTest : RiichiHandValueCalculatorTestBase() {
 
+    /** 驗證三種赤五指示牌都會先視為普通五，再將同花色的六判定為寶牌。 */
+    @Test
+    fun `test red five indicators resolve to six of the same suit`() {
+        Tile.Suit.entries.forEach { suit ->
+            assertEquals(
+                Tile.Numeric(suit, 6),
+                getNextDora(RiichiTileTypes.redFive(suit)),
+                "Red five indicator should resolve to six of the same suit",
+            )
+        }
+    }
+
     /**
      * 測試寶牌計算 - 單一寶牌指示牌。
      *
@@ -52,6 +64,37 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
 
         val doraResult = result.yakuResults.find { it.yaku == YakuType.Dora }
         assertEquals(2, doraResult?.han, "Should have 2 dora (one in hand + one as winning tile)")
+    }
+
+    /** 驗證赤五指示牌在實際番數計算中，會把同花色的六計為寶牌。 */
+    @Test
+    fun `test dora calculation with red five indicator`() {
+        val hand = FakeHandFactory.create(
+            listOf(
+                Tile.Numeric(Tile.Suit.Bamboo, 1),
+                Tile.Numeric(Tile.Suit.Bamboo, 2),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Numeric(Tile.Suit.Bamboo, 6),
+                Tile.Numeric(Tile.Suit.Bamboo, 7),
+                Tile.Numeric(Tile.Suit.Bamboo, 8),
+                Tile.Numeric(Tile.Suit.Bamboo, 9),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+            ),
+        )
+        val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 6)
+        val doraIndicators = listOf(RiichiTileTypes.redFive(Tile.Suit.Bamboo))
+
+        val context =
+            FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, doraIndicators = doraIndicators)
+        val result = calculator.calculate(context)
+
+        val doraResult = result.yakuResults.find { it.yaku == YakuType.Dora }
+        assertEquals(2, doraResult?.han, "Red five bamboo indicator should count six bamboo as dora")
     }
 
     /**

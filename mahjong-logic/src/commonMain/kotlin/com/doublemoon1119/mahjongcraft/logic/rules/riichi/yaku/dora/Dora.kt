@@ -42,11 +42,11 @@ fun calculateDora(
  * @param indicator 寶牌指示牌。
  * @return 對應的寶牌。
  */
-internal fun getNextDora(indicator: Tile): Tile = when (indicator) {
+internal fun getNextDora(indicator: Tile): Tile = when (val canonicalIndicator = indicator.riichiCanonical) {
     // 數牌：循環 1-9
     is Tile.Numeric -> {
-        val nextValue = if (indicator.value == 9) 1 else indicator.value + 1
-        Tile.Numeric(indicator.suit, nextValue)
+        val nextValue = if (canonicalIndicator.value == 9) 1 else canonicalIndicator.value + 1
+        Tile.Numeric(canonicalIndicator.suit, nextValue)
     }
     // 字牌：東→南→西→北→東（循環）
     is Tile.Honor.East -> Tile.Honor.South
@@ -58,5 +58,5 @@ internal fun getNextDora(indicator: Tile): Tile = when (indicator) {
     is Tile.Honor.Green -> Tile.Honor.Red
     is Tile.Honor.Red -> Tile.Honor.White
     // 未由日麻規則明確定義的擴充牌不作為寶牌指示牌
-    is Tile.Extension -> indicator
+    is Tile.Extension -> canonicalIndicator
 }

@@ -1294,6 +1294,17 @@ class RiichiRuleModuleTest {
         assertTrue(module.isHighlightedTile(redFive, listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))))
     }
 
+    /** 驗證赤五指示牌只會強調同花色的六，不會把普通五誤標成指示寶牌。 */
+    @Test
+    fun `test isHighlightedTile canonicalizes red five dora indicators before resolving next tile`() {
+        Tile.Suit.entries.forEach { suit ->
+            val indicator = RiichiTileTypes.redFive(suit)
+
+            assertTrue(module.isHighlightedTile(Tile.Numeric(suit, 6), listOf(indicator)))
+            assertFalse(module.isHighlightedTile(Tile.Numeric(suit, 5), listOf(indicator)))
+        }
+    }
+
     /** 驗證沒有翻開任何指示牌、且不是赤寶牌時，一般的牌不成立寶牌。 */
     @Test
     fun `test isHighlightedTile returns false when nothing matches`() {
