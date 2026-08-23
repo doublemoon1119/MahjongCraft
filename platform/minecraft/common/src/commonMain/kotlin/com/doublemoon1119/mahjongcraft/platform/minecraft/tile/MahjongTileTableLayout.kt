@@ -756,6 +756,35 @@ object MahjongTileTableLayout {
     const val DISCARD_FLIGHT_DURATION_TICKS: Int = 5
 
     /**
+     * 胡牌慶祝演出中，強制理牌重排時每張牌從目前位置飛到整理後格位的動畫時長——手法比照鳴牌動畫
+     * （[DISCARD_FLIGHT_DURATION_TICKS]），是一次連續可見的短程飛行，不是瞬間傳送；沒有移動的牌
+     * （已經在整理後該在的格位）也會照樣播放這段動畫（起訖位置相同，視覺上等同無位移），維持所有牌
+     * 共用同一個絕對收斂時刻的既有慣例，理由見 `FabricMahjongPlayerAreaPresenter.scheduleDealBatchAnimation`
+     * KDoc。起始估算值，預期進遊戲後調整。
+     */
+    const val WIN_REORDER_FLIGHT_DURATION_TICKS: Int = 5
+
+    /**
+     * 胡牌慶祝演出中，牌姿態從立牌轉平放（牌面朝上）「倒下」的動畫時長，供自摸牌單獨倒下與其餘手牌
+     * 一起倒下這兩個步驟共用；位置不變，只有姿態旋轉角內插，手法比照 [DEAL_FLIP_DURATION_TICKS]。
+     * 起始估算值，預期進遊戲後調整。
+     */
+    const val WIN_LAYDOWN_DURATION_TICKS: Int = 4
+
+    /**
+     * 胡牌慶祝演出（自摸）中，自摸牌單獨倒下播完，到其餘手牌一起倒下開始之間的等待，約 0.8 秒，估算值，
+     * 實作成具名常數方便進遊戲測試後微調；榮和／搶槓情境省略自摸牌倒下這一步，這個常數改成「強制理牌
+     * 重排播完到手牌一起倒下之間」的等待。
+     */
+    const val WIN_PRE_HAND_LAYDOWN_DELAY_TICKS: Int = 16
+
+    /** 胡牌慶祝演出中，手牌一起倒下播完到降臨特效開始之間的等待，約 0.8 秒，估算值，理由同 [WIN_PRE_HAND_LAYDOWN_DELAY_TICKS]。 */
+    const val WIN_PRE_EFFECT_DELAY_TICKS: Int = 16
+
+    /** 胡牌慶祝演出降臨特效（粒子聚合光柱）的總播放時長，估算值，實測後再調。 */
+    const val WIN_EFFECT_DURATION_TICKS: Int = 30
+
+    /**
      * 牌牆角落貼齊處縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，遊戲內驗證後調整的觀感參數。
      * `internal` 而非 `private`：讓同模組的 `com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayoutTest`
      * 能直接引用同一個數值驗證預期位移量，不需要在測試裡另外複製一份可能忘記同步的常數。

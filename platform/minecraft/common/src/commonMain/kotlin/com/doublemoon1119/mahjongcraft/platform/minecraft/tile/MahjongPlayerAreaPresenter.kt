@@ -113,6 +113,41 @@ data class MahjongInitialDealPresentation(
     val extraLeadDelayTicks: Int = 0,
 )
 
+/**
+ * 已由伺服器決定的胡牌慶祝演出呈現資料——只涵蓋贏家自己這側需要重排／倒牌的立牌，不含摸牌位（贏家
+ * 手牌到此已經沒有懸而未決的摸牌位：自摸的胡牌張已經併入 [organizedStandingTileIds]，榮和／搶槓則
+ * 從頭就沒有摸牌位），也不含積棒 entity 本身生成／清除（理由同 [MahjongPlayerAreaPresentation]）。
+ *
+ * @property tableId 所屬麻將桌的穩定 UUID。
+ * @property tableLocation 麻將桌 controller 的位置。
+ * @property tableFacing 麻將桌 controller 的世界水平朝向。
+ * @property seatIndex 贏家在 `TableState.players` 的固定座位 index。
+ * @property organizedStandingTileIds 贏家目前立牌，已依規則模組的牌序整理過的目標順序（不論玩家原本
+ * 是否啟用自動整理手牌，胡牌慶祝演出一律強制整理一次）——跟 [MahjongPlayerAreaPresentation.standingTileIds]
+ * 同一套「加入時間軸、由實作端反過來對應左右座標」的慣例；自摸時 [winningTileId] 已經併入這份清單
+ * （原本的摸牌位併入立牌），榮和／搶槓時 [winningTileId] 不在這份清單裡（那張牌仍在放銃者的牌河或
+ * 副露區，不屬於贏家手牌）。
+ * @property melds 贏家目前所有副露，排列規則同 [MahjongPlayerAreaPresentation.melds]，只用來正確計算
+ * 立牌讓開副露的偏移，這個方法不重新呈現副露本身（副露的位置/姿態不受胡牌影響）。
+ * @property comboStickCount 贏家目前該顯示的積棒支數，只用來換算讓開偏移，理由同 [MahjongPlayerAreaPresentation.comboStickCount]。
+ * @property winningTileId 胡的那張牌 Uuid——自摸時是原本的摸牌位那張，此時已併入 [organizedStandingTileIds]；
+ * 榮和／搶槓時是放銃者打出的那張捨牌，或搶槓來源的那張加槓/暗槓牌，仍在放銃者／宣告者的區域。
+ * @property isTsumo `true` 代表自摸（[winningTileId] 需要先單獨倒下、再等其餘立牌一起倒下）；`false`
+ * 代表榮和／搶槓（[winningTileId] 早已是面朝上姿態，省略單獨倒下這一步，直接進入「強制理牌 → 等待 →
+ * 立牌一起倒下」）。
+ */
+data class MahjongWinCelebrationPresentation(
+    val tableId: Uuid,
+    val tableLocation: TableLocation,
+    val tableFacing: MahjongTableFacing,
+    val seatIndex: Int,
+    val organizedStandingTileIds: List<Uuid>,
+    val melds: List<MahjongMeldTileGroup>,
+    val comboStickCount: Int,
+    val winningTileId: Uuid,
+    val isTsumo: Boolean,
+)
+
 /** 正式桌角區域呈現請求的處理結果。 */
 enum class MahjongPlayerAreaPresentationResult {
     /** 已把這位玩家的手牌／摸牌位／副露更新為本次要呈現的狀態。 */
@@ -128,6 +163,20 @@ enum class MahjongPlayerAreaPresentationResult {
      */
     SPAWN_FAILED,
 }
+
+/**
+ * [MahjongPlayerAreaPresenter.presentWinCelebration] 的處理結果。
+ *
+ * @property result 跟 [MahjongPlayerAreaPresenter.present] 同一組結果分類（找不到桌子／有牌找不到既有
+ * entity）。
+ * @property handLaydownEndGameTime [MahjongWinCelebrationPresentation.organizedStandingTileIds] 全部
+ * 一起倒下播完的絕對 game time；[result] 不是 [MahjongPlayerAreaPresentationResult.PRESENTED] 時為
+ * `null`，呼叫端不應該再接續排定特效。
+ */
+data class MahjongWinCelebrationResult(
+    val result: MahjongPlayerAreaPresentationResult,
+    val handLaydownEndGameTime: Long?,
+)
 
 /**
  * 將權威手牌／摸牌位／副露呈現於 Minecraft 世界的版本 adapter 邊界。
@@ -169,6 +218,17 @@ interface MahjongPlayerAreaPresenter {
      * 跟 [present] 一樣不建立新 entity，領走 [MahjongTileWallPresenter] 已生成好的既有牌牆 entity。
      */
     fun presentInitialDeal(presentation: MahjongInitialDealPresentation): MahjongPlayerAreaPresentationResult
+
+    /**
+     * 呈現胡牌慶祝演出第一階段的「強制理牌 → （自摸牌單獨倒下 →）等待 → 立牌一起倒下」序列——不含
+     * 降臨特效本身（那是獨立的粒子排程器職責，見 `FabricWinCelebrationEffectScheduler`），但回傳算好的
+     * 「立牌全部倒下完成」絕對 game time，供呼叫端接續排定特效開始時機、並延長胡的那張牌的動畫佇列
+     * （`TablePresentationBusyTracker` 忙碌窗口），理由見 [MahjongWinCelebrationResult] KDoc。
+     *
+     * 跟 [present] 一樣不建立新 entity，只移動既有 entity；姿態轉換一律透過既有動畫步驟表達，不直接
+     * 賦值姿態欄位。
+     */
+    fun presentWinCelebration(presentation: MahjongWinCelebrationPresentation): MahjongWinCelebrationResult
 
     /** 清除指定桌子目前的正式手牌／摸牌位／副露用牌；回傳實際移除數量。 */
     fun clear(tableId: Uuid, tableLocation: TableLocation): Int

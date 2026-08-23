@@ -31,6 +31,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationResult
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -186,6 +188,9 @@ class FabricTableLifecycleServiceTest {
 
         /** 此測試不使用正式開局發牌動畫呈現。 */
         override fun presentInitialDeal(presentation: MahjongInitialDealPresentation): MahjongPlayerAreaPresentationResult = MahjongPlayerAreaPresentationResult.PRESENTED
+
+        /** 此測試不使用胡牌慶祝演出呈現。 */
+        override fun presentWinCelebration(presentation: MahjongWinCelebrationPresentation): MahjongWinCelebrationResult = MahjongWinCelebrationResult(MahjongPlayerAreaPresentationResult.PRESENTED, null)
 
         /** 記錄清理請求並回報沒有已載入桌角區域用牌。 */
         override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0

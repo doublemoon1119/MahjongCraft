@@ -4,14 +4,21 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
@@ -37,6 +44,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
 import kotlinx.coroutines.launch
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
@@ -49,6 +57,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 import kotlin.uuid.Uuid
+import kotlin.uuid.toJavaUuid
 
 /**
  * [GamePresentationPublisher] 的 Fabric 實作，薄分派層。
@@ -68,6 +77,11 @@ import kotlin.uuid.Uuid
  * @property serverHolder 目前運行中的 server，供世界／方塊狀態查詢使用。
  * @property busyTracker 查詢／標記該桌是否呈現動畫播放中，供輸入分派入口與自動操作心跳擋下操作，見
  *   [TablePresentationBusyTracker] KDoc。
+ * @property gameRepository 讀取贏家目前的權威手牌／副露內容，供 [publishWinCelebration] 算出強制理牌
+ *   重排的目標順序——這個介面本身刻意不攜帶完整手牌內容（見 [GamePresentationPublisher.publishWinCelebration]
+ *   KDoc），只讀不寫，不違反本類別 best-effort、不影響權威狀態的既有慣例。
+ * @property moduleRegistry 解析對局採用的規則模組，取得 [publishWinCelebration] 算牌序需要的 `tileOrder`。
+ * @property effectScheduler 胡牌慶祝演出降臨特效（粒子聚合光柱）的排程器。
  * @property scope 承接世界／方塊狀態查詢需要切回伺服器主執行緒的工作。
  * @property dispatchers 切回伺服器主執行緒用的 dispatcher。
  */
@@ -84,6 +98,9 @@ class FabricGamePresentationPublisher(
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
     private val busyTracker: TablePresentationBusyTracker,
+    private val gameRepository: GameRepository,
+    private val moduleRegistry: MahjongModuleRegistry,
+    private val effectScheduler: FabricWinCelebrationEffectScheduler,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
 ) : GamePresentationPublisher {
@@ -505,6 +522,81 @@ class FabricGamePresentationPublisher(
                     newlyDiscardedTileId = newlyDiscardedTileId,
                 )
                 discardPresenter.present(presentation)
+            } finally {
+                busyTracker.clearPending(gameId)
+            }
+        }
+    }
+
+    /**
+     * 讀取贏家目前的權威手牌（[gameRepository]，唯讀，不寫回任何 `TableState`）算出強制理牌重排的目標
+     * 順序（`Hand.organize`，不論贏家原本是否啟用自動整理手牌），委託
+     * [playerAreaPresenter.presentWinCelebration] 排定「重排 → （自摸牌單獨倒下 →）等待 → 立牌一起
+     * 倒下」序列，最後把算出來的「立牌全部倒下完成」絕對 game time 交給 [effectScheduler] 接續排定
+     * 降臨特效——特效鎖定的目標位置固定是 [winningTileId] 目前所在座標：自摸時它已經併入贏家手牌、
+     * 停在整理後的格位；榮和／搶槓時它仍在放銃者的牌河或副露區，天然就是「胡牌張目前所在座標」，
+     * 不需要額外判斷。
+     *
+     * 一炮多響會對每位贏家各自呼叫一次這個方法（見 [GamePresentationPublisher.publishWinCelebration]
+     * KDoc），但 [winningTileId] 對每位贏家來說是同一張牌——[effectScheduler] 內部依 [winningTileId]
+     * 去重，不會重複播放特效，見該類別 KDoc。
+     */
+    override fun publishWinCelebration(gameId: Uuid, winnerSeatIndex: Int, winningTileId: Uuid, isTsumo: Boolean) {
+        if (serverHolder.current() == null) {
+            logger.warn("publishWinCelebration gameId={} skipped: no active server", gameId)
+            return
+        }
+        busyTracker.markPending(gameId)
+        scope.launch(dispatchers.main) {
+            try {
+                val resolved = resolveTableContext(gameId, "publishWinCelebration") ?: return@launch
+                val state = gameRepository.getTableState(gameId)
+                val winner = state?.players?.getOrNull(winnerSeatIndex)
+                if (state == null || winner == null) {
+                    logger.warn("publishWinCelebration gameId={} winnerSeatIndex={} skipped: no table state or winner found", gameId, winnerSeatIndex)
+                    return@launch
+                }
+                val module = moduleRegistry.getModule(state.config)
+                val organizedHand = winner.hand.organize(module.tileOrder)
+                val dealerSeatIndex = state.players.indexOfFirst { it.currentWind == Wind.EAST }
+
+                val melds = winner.hand.melds.map { it.toPresentation(state.config.revealsClosedKanTiles) }.map { p ->
+                    MahjongMeldTileGroup(
+                        type = p.type,
+                        tileIds = p.tileIds,
+                        calledTileId = p.calledTileId,
+                        sourceDirection = p.sourceDirection,
+                        allTilesFaceDown = p.allTilesFaceDown,
+                    )
+                }
+                val presentation = MahjongWinCelebrationPresentation(
+                    tableId = gameId,
+                    tableLocation = resolved.location,
+                    tableFacing = resolved.facing,
+                    seatIndex = winnerSeatIndex,
+                    organizedStandingTileIds = organizedHand.tiles.map { it.id },
+                    melds = melds,
+                    comboStickCount = if (winnerSeatIndex == dealerSeatIndex) state.comboCount else 0,
+                    winningTileId = winningTileId,
+                    isTsumo = isTsumo,
+                )
+                val result = playerAreaPresenter.presentWinCelebration(presentation)
+                val handLaydownEndGameTime = result.handLaydownEndGameTime
+                if (handLaydownEndGameTime != null) {
+                    val effectStartGameTime = handLaydownEndGameTime + MahjongTileTableLayout.WIN_PRE_EFFECT_DELAY_TICKS
+                    val effectEndGameTime = effectStartGameTime + MahjongTileTableLayout.WIN_EFFECT_DURATION_TICKS
+                    effectScheduler.schedule(
+                        world = resolved.world,
+                        targetTileId = winningTileId,
+                        startGameTime = effectStartGameTime,
+                        endGameTime = effectEndGameTime,
+                    )
+                    // 特效本身不是掛在動畫佇列上的 step，額外對胡牌張延長它的佇列忙碌窗口到特效播完為止，
+                    // 讓 TablePresentationBusyTracker 繼續免費正確，不需要改動該類別本身，見
+                    // FabricWinCelebrationEffectScheduler KDoc。
+                    (resolved.world.getEntity(winningTileId.toJavaUuid()) as? MahjongTileEntity)
+                        ?.enqueue(AnimationStep.WaitUntil(effectEndGameTime))
+                }
             } finally {
                 busyTracker.clearPending(gameId)
             }

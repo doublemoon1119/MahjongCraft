@@ -25,8 +25,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.Fabric
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDebugAnimationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricGameCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
@@ -87,6 +89,7 @@ class MahjongCraftMod : ModInitializer {
         tableLocationValidation.registerEvents()
         koin.get<FabricDecisionTimerScheduler>().registerEvents()
         koin.get<FabricTickMonotonicClock>().registerEvents()
+        koin.get<FabricWinCelebrationEffectScheduler>().registerEvents()
 
         val serverHolder = koin.get<FabricServerHolder>()
         val appScope = koin.get<FabricAppCoroutineScope>()
@@ -131,6 +134,7 @@ class MahjongCraftMod : ModInitializer {
         koin.get<FabricServerConfigCommand>().register()
         koin.get<FabricRoomCommand>().register()
         koin.get<FabricGameCommand>().register()
+        koin.get<FabricDebugAnimationCommand>().register()
 
         logger.info(koin.get<FabricRuntimeMetadata>().initializationMessage())
     }
