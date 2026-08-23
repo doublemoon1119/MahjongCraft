@@ -53,6 +53,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的王牌追加公開集合。 */
     private val deadWallReveals = mutableMapOf<Uuid, Set<Uuid>>()
 
+    /** 依對局 Uuid 紀錄收到的每一筆胡牌慶祝演出呼叫，依呼叫順序排列——一炮多響可能同一局收到多筆。 */
+    private val winCelebrations = mutableMapOf<Uuid, MutableList<WinCelebrationContext>>()
+
     override fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int) {
         diceRolls[gameId] = dice
         diceRollContexts[gameId] = DiceRollContext(dealerSeatIndex, roundNumber, comboCount)
@@ -142,6 +145,10 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         discardPiles[gameId] = DiscardPileContext(seatIndex, discardTileIds, sidewaysMarkedTileId, newlyDiscardedTileId)
     }
 
+    override fun publishWinCelebration(gameId: Uuid, winnerSeatIndex: Int, winningTileId: Uuid, isTsumo: Boolean) {
+        winCelebrations.getOrPut(gameId) { mutableListOf() } += WinCelebrationContext(winnerSeatIndex, winningTileId, isTsumo)
+    }
+
     /** 取得指定對局最後一次收到的擲骰結果；若無紀錄則回傳 null。 */
     fun getPublishedDiceRoll(gameId: Uuid): DiceRollResult? = diceRolls[gameId]
 
@@ -180,6 +187,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 取得指定對局最後一次收到的王牌追加公開集合；若無紀錄則回傳 null。 */
     fun getPublishedDeadWallReveal(gameId: Uuid): Set<Uuid>? = deadWallReveals[gameId]
+
+    /** 取得指定對局收到的全部胡牌慶祝演出呼叫，依呼叫順序排列；若無紀錄則回傳空清單。 */
+    fun getPublishedWinCelebrations(gameId: Uuid): List<WinCelebrationContext> = winCelebrations[gameId].orEmpty()
 }
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishDiceRoll] 隨附桌況資料。 */
@@ -238,4 +248,11 @@ data class DiscardPileContext(
     val discardTileIds: List<Uuid>,
     val sidewaysMarkedTileId: Uuid?,
     val newlyDiscardedTileId: Uuid?,
+)
+
+/** [FakeGamePresentationPublisher] 紀錄的單一筆 [GamePresentationPublisher.publishWinCelebration] 呼叫資料。 */
+data class WinCelebrationContext(
+    val winnerSeatIndex: Int,
+    val winningTileId: Uuid,
+    val isTsumo: Boolean,
 )

@@ -31,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -663,6 +664,12 @@ class RespondToDiscardUseCaseTest {
             fixtures.presentationPublisher.getPublishedPlayerArea(gameId),
             "Ron doesn't claim a meld, so it should never trigger the meld-claim presentation/animation.",
         )
+
+        val celebrations = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId)
+        assertEquals(1, celebrations.size)
+        assertEquals(newState.players.indexOfFirst { it.id == responderId }, celebrations.single().winnerSeatIndex)
+        assertEquals(discardedTile.id, celebrations.single().winningTileId)
+        assertFalse(celebrations.single().isTsumo)
     }
 
     /**
@@ -853,6 +860,13 @@ class RespondToDiscardUseCaseTest {
 
         val finalDiscarder = finalState.players.first { it.id == discarderId }
         assertEquals(-80000, finalDiscarder.score, "The discarder should pay the sum of both winners' totals.")
+
+        val celebrations = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId)
+        assertEquals(2, celebrations.size, "Both multi-ron winners should each trigger their own win celebration.")
+        assertTrue(celebrations.all { it.winningTileId == discardedTile.id && !it.isTsumo })
+        val dealerWinnerSeatIndex = finalState.players.indexOfFirst { it.id == dealerWinnerId }
+        val nonDealerWinnerSeatIndex = finalState.players.indexOfFirst { it.id == responderId }
+        assertEquals(setOf(dealerWinnerSeatIndex, nonDealerWinnerSeatIndex), celebrations.map { it.winnerSeatIndex }.toSet())
     }
 
     /**

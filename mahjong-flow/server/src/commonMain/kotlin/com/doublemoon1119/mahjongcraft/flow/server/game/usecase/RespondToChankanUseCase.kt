@@ -102,7 +102,14 @@ class RespondToChankanUseCase(
                         )
                         val newState = resolved?.copy(pendingChankan = null)
                             ?: state.copy(pendingChankan = newPending)
-                        newState to Outcome.Success(ChankanResult(newState, drawHappened = false))
+                        newState to Outcome.Success(
+                            ChankanResult(
+                                tableState = newState,
+                                drawHappened = false,
+                                ronWinnerIds = if (resolved != null) ronWinnerIds else emptySet(),
+                                ronWinningTileId = if (resolved != null) pending.robbedTile.id else null,
+                            ),
+                        )
                     } else {
                         // 全員放過：槓真的成立，補做副露套用，並讓宣告者摸嶺上牌。
                         val applied = KanDeclarationApplier.apply(state, pending.declarerId, pending.kanAction, pending.robbedTile, module)
@@ -152,13 +159,29 @@ class RespondToChankanUseCase(
             }
         }
 
+        // 觸發平台呈現層：胡牌慶祝演出——搶槓成功時 result.ronWinnerIds 可能不只一人，各自觸發一次；
+        // winningTileId 對每位贏家來說都是同一張被搶的加槓/暗槓牌。
+        result.ronWinningTileId?.let { winningTileId ->
+            result.ronWinnerIds.forEach { winnerId ->
+                val winnerSeatIndex = newState.players.indexOfFirst { it.id == winnerId }
+                presentationPublisher.publishWinCelebration(gameId, winnerSeatIndex, winningTileId, isTsumo = false)
+            }
+        }
+
         return Outcome.Success(Unit)
     }
 
     /**
      * `update` 區塊內部用的中繼結果。[drawHappened] 為 true 代表「全員放過、槓真的成立」，這時才有
-     * 嶺上摸牌，需要廣播 [GameAction.Draw]；[declarerId]（槓的宣告者）也只在這種情況才有值。搶槓
-     * 成功的情況兩者都維持預設（false／null）。
+     * 嶺上摸牌，需要廣播 [GameAction.Draw]；[declarerId]（槓的宣告者）也只在這種情況才有值。[ronWinnerIds]／
+     * [ronWinningTileId] 只在搶槓成功時非空，供呼叫端逐一觸發胡牌慶祝演出——跟 [declarerId] 是互斥的
+     * 兩個視窗，同一次結算只會有其中一種非空。
      */
-    private data class ChankanResult(val tableState: TableState, val drawHappened: Boolean, val declarerId: Uuid? = null)
+    private data class ChankanResult(
+        val tableState: TableState,
+        val drawHappened: Boolean,
+        val declarerId: Uuid? = null,
+        val ronWinnerIds: Set<Uuid> = emptySet(),
+        val ronWinningTileId: Uuid? = null,
+    )
 }

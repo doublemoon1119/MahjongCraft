@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -30,6 +31,7 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與點數結算邏輯。
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property eventPublisher 對局通知服務。
+ * @property presentationPublisher 對局 in-process 呈現觸發器，用於觸發胡牌慶祝演出。
  */
 @Factory
 class DeclareTsumoUseCase(
@@ -37,6 +39,7 @@ class DeclareTsumoUseCase(
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
+    @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 執行自摸宣告邏輯。
@@ -117,6 +120,13 @@ class DeclareTsumoUseCase(
         // 3. 通知對局內的所有玩家：廣播自摸事件
         newState.players.forEach { player ->
             eventPublisher.publish(gameId, player.id, playerId, GameAction.Tsumo)
+        }
+
+        // 4. 觸發平台呈現層：胡牌慶祝演出——手牌不受這個 use case 影響（只改分數與 actionHistory），
+        // 贏家的 lastDrawn 此時仍是自摸那張牌。
+        val winnerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
+        newState.players[winnerSeatIndex].hand.lastDrawn?.let { winningTile ->
+            presentationPublisher.publishWinCelebration(gameId, winnerSeatIndex, winningTile.id, isTsumo = true)
         }
 
         return Outcome.Success(Unit)

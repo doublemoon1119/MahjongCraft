@@ -178,6 +178,15 @@ class RespondToDiscardUseCase(
             }
         }
 
+        // 觸發平台呈現層：胡牌慶祝演出——一炮多響時 result.ronWinnerIds 可能不只一人，各自觸發一次；
+        // winningTileId 對每位贏家來說都是同一張放銃的捨牌。
+        result.ronWinningTileId?.let { winningTileId ->
+            result.ronWinnerIds.forEach { winnerId ->
+                val winnerSeatIndex = newState.players.indexOfFirst { it.id == winnerId }
+                presentationPublisher.publishWinCelebration(gameId, winnerSeatIndex, winningTileId, isTsumo = false)
+            }
+        }
+
         return Outcome.Success(Unit)
     }
 
@@ -188,12 +197,17 @@ class RespondToDiscardUseCase(
      * [discarderId] 只在碰/吃/明槓得標、實際對丟牌者的 `discardPile` 呼叫過 `takeLast()` 時才有值
      * （全員過牌與榮和都不會呼叫 `takeLast()`），供呼叫端重新呈現該玩家的牌河。[winnerId] 跟
      * [discarderId] 同一個有效視窗（碰/吃/明槓得標時才有值），供呼叫端重新呈現得標玩家的副露。
+     * [ronWinnerIds] 只在榮和結算成立時非空（一炮多響可能不只一人），[ronWinningTileId] 是被榮和的那張
+     * 捨牌，供呼叫端逐一觸發胡牌慶祝演出；跟 [winnerId]（碰/吃/明槓得標）是互斥的兩個視窗，同一次結算
+     * 只會有其中一種非空。
      */
     private data class RespondResult(
         val tableState: TableState,
         val rinshanDrawHappened: Boolean = false,
         val discarderId: Uuid? = null,
         val winnerId: Uuid? = null,
+        val ronWinnerIds: Set<Uuid> = emptySet(),
+        val ronWinningTileId: Uuid? = null,
     )
 
     /**
@@ -217,8 +231,10 @@ class RespondToDiscardUseCase(
                 winnerIds = ronWinnerIds,
             )
             return RespondResult(
-                resolved?.copy(pendingReaction = null)
+                tableState = resolved?.copy(pendingReaction = null)
                     ?: state.copy(players = players, pendingReaction = pendingReaction),
+                ronWinnerIds = if (resolved != null) ronWinnerIds else emptySet(),
+                ronWinningTileId = if (resolved != null) discardedTile.id else null,
             )
         }
 

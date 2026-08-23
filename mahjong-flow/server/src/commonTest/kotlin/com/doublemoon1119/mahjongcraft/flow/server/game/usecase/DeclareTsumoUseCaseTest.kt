@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -50,7 +51,8 @@ class DeclareTsumoUseCaseTest {
         val snapshotRepo = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val eventPublisher = FakeGameEventPublisher()
-        val useCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher)
+        val presentationPublisher = FakeGamePresentationPublisher()
+        val useCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher)
     }
 
     // 中中、發發發、白白白、123m、55p（大三元役滿，13 張立牌）
@@ -275,6 +277,38 @@ class DeclareTsumoUseCaseTest {
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, otherPlayerId))
         assertEquals(GameAction.Tsumo, fixtures.eventPublisher.getNotifiedAction(gameId, winnerId, winnerId))
         assertEquals(GameAction.Tsumo, fixtures.eventPublisher.getNotifiedAction(gameId, otherPlayerId, winnerId))
+    }
+
+    /**
+     * 驗證自摸成功後觸發胡牌慶祝演出，帶上正確的贏家座位、胡牌張 Uuid，且 `isTsumo` 為 `true`。
+     */
+    @Test
+    fun `test declare tsumo publishes win celebration with winner seat and winning tile`() = runTest {
+        val fixtures = Fixtures()
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.SOUTH,
+            hand = daisangenHand(),
+            discardPile = priorDiscardPile(),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, winner),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 1,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, winnerId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val celebrations = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId)
+        assertEquals(1, celebrations.size)
+        assertEquals(1, celebrations.single().winnerSeatIndex)
+        assertEquals(winningTile.id, celebrations.single().winningTileId)
+        assertTrue(celebrations.single().isTsumo)
     }
 
     /**

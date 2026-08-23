@@ -29,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
@@ -135,6 +136,12 @@ class RespondToChankanUseCaseTest {
             fixtures.presentationPublisher.getPublishedPlayerArea(gameId),
             "Robbing the kan is a Ron, not a completed kan — no rinshan tile was drawn, so nothing should be presented as drawn.",
         )
+
+        val celebrations = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId)
+        assertEquals(1, celebrations.size)
+        assertEquals(newState.players.indexOfFirst { it.id == robberId }, celebrations.single().winnerSeatIndex)
+        assertEquals(robbedWhiteTile.id, celebrations.single().winningTileId)
+        assertFalse(celebrations.single().isTsumo)
     }
 
     /**
@@ -168,6 +175,10 @@ class RespondToChankanUseCaseTest {
             rinshanTile.id,
             fixtures.presentationPublisher.getPublishedPlayerArea(gameId)?.drawnTileId,
             "The rinshan tile drawn once the kan actually goes through should be presented as a drawn tile.",
+        )
+        assertTrue(
+            fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty(),
+            "A completed kan (not robbed) should never trigger a win celebration.",
         )
     }
 

@@ -299,4 +299,27 @@ interface GamePresentationPublisher {
         sidewaysMarkedTileId: Uuid?,
         newlyDiscardedTileId: Uuid? = null,
     )
+
+    /**
+     * 通知平台呈現層某玩家胡牌成立，觸發胡牌慶祝演出（強制理牌重排 → 倒牌 → 閃電擊中 → 接地放電與
+     * 水波紋）。
+     *
+     * 呼叫時機：[gameId] 的贏家結算完成、既有事件廣播之後——自摸（`DeclareTsumoUseCase`）緊接在廣播
+     * [com.doublemoon1119.mahjongcraft.logic.base.GameAction.Tsumo] 之後呼叫一次；榮和／搶槓
+     * （`RespondToDiscardUseCase`／`RespondToChankanUseCase`）在既有事件廣播之後，對每一位贏家各自
+     * 呼叫一次（一炮多響可能不只一次）。
+     *
+     * 這個方法本身不攜帶贏家手牌的完整內容——理牌重排的目標順序完全由平台實作依規則模組的牌序自行
+     * 算出（見 `FabricGamePresentationPublisher.publishWinCelebration`），呼叫端不需要另外算好排序後
+     * 再傳進來；符合本介面「只帶呈現層需要的最小資訊」的既有慣例。
+     *
+     * @param gameId 對局 Uuid。
+     * @param winnerSeatIndex 贏家在 `TableState.players` 的固定座位 index。
+     * @param winningTileId 胡的那張牌 Uuid——自摸時是原本摸牌位那張，榮和／搶槓時是放銃者打出的捨牌，
+     * 或搶槓來源的加槓/暗槓牌。
+     * @param isTsumo `true` 代表自摸，`false` 代表榮和／搶槓——決定演出時間軸是否包含「胡牌張單獨先
+     * 倒下」那一步，以及降臨特效鎖定的目標位置是贏家自己座位（自摸）還是胡牌張目前所在座標（榮和／
+     * 搶槓的牌河或副露區），見 `FabricGamePresentationPublisher.publishWinCelebration` KDoc。
+     */
+    fun publishWinCelebration(gameId: Uuid, winnerSeatIndex: Int, winningTileId: Uuid, isTsumo: Boolean)
 }
