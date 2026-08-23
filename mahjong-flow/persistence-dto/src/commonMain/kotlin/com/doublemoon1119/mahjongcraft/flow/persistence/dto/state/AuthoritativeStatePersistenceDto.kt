@@ -131,6 +131,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
         remainingReserveMillisByPlayerId = runtimeState.toRemainingReserveMillisByPlayerId(),
         forcedAutoPlayPlayerIds = runtimeState.toForcedAutoPlayPlayerIds(),
         isMatchOver = runtimeState.isMatchOver,
+        pendingTransition = runtimeState.pendingTransition?.toDomain(),
         hostId = runtimeState.hostId?.let { Uuid.parse(it) } ?: tableState.players.first().id,
     )
 }

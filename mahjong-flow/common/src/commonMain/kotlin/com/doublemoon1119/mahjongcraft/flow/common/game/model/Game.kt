@@ -20,6 +20,7 @@ import kotlin.uuid.Uuid
  *   `com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase`）。一旦成立，
  *   `tableState` 維持結束當下的樣子不再變動；`AiTurnDriver`／`ForcedAutoPlayDriver` 都會檢查這個
  *   欄位並提前跳過，避免對已經沒有牌可摸的桌況重複嘗試摸牌、重複觸發流局結算。
+ * @property pendingTransition 呈現動畫結束後尚待完成的權威流程；`null` 代表沒有待收斂的流程。
  * @property hostId 開局時的房主 Uuid，取自原本 `Room.hostId`——`com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase`
  *   把 Room 轉換成 Game 後，房主身分不再能從 `Room` 讀出，保留在這裡讓對局結束轉回 Room
  *   （見 `ReturnToRoomUseCase`）時能還原同一位房主，預設值取第一位玩家僅供未指定房主的測試情境使用；
@@ -33,6 +34,7 @@ data class Game(
     },
     val forcedAutoPlayPlayerIds: Set<Uuid> = emptySet(),
     val isMatchOver: Boolean = false,
+    val pendingTransition: PendingGameTransition? = null,
     val hostId: Uuid = tableState.players.firstOrNull()?.id ?: Uuid.random(),
 ) {
     init {

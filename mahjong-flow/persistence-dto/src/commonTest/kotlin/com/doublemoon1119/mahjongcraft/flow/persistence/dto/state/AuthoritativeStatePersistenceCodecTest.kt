@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.dto.state
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceEnvelopeDto
@@ -45,10 +46,15 @@ class AuthoritativeStatePersistenceCodecTest {
     @Test
     fun `mixed rooms and games round-trip through codec`() {
         val rooms = listOf(createRoom(), createRoom())
-        val games = listOf(Game(createGame(), GameFlowConfig()), Game(createGame(), GameFlowConfig())).map { game ->
+        val games = listOf(Game(createGame(), GameFlowConfig()), Game(createGame(), GameFlowConfig())).mapIndexed { index, game ->
             game.copy(
                 remainingReserveMillisByPlayerId = game.tableState.players.associate { player ->
                     player.id to 12_345L
+                },
+                pendingTransition = if (index == 0) {
+                    PendingGameTransition.AdvanceRound
+                } else {
+                    PendingGameTransition.ReturnToRoom
                 },
             )
         }

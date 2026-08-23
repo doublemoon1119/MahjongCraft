@@ -7,7 +7,14 @@ import net.minecraft.nbt.NbtCompound
 import net.minecraft.util.math.BlockPos
 import kotlin.uuid.Uuid
 
-/** 在 Minecraft 世界存檔中保存麻將桌穩定 UUID 的最小方塊實體。 */
+/**
+ * 麻將桌 controller 的持久化狀態。
+ *
+ * 除穩定 [tableId] 外，也作為整桌呈現時間軸的擁有者：[presentationBusyUntilGameTime] 保存目前
+ * 所有已排定呈現的最晚結束絕對 game time。它不需要 block entity ticker；即使 chunk 曾被卸載，
+ * 下次查詢時直接與世界時間比較即可正確收斂。未來 GUI／HUD 或役種演出可在同一個呈現狀態
+ * 上擴充具名 cue，但這裡不執行任何權威遊戲流程。
+ */
 class MahjongTableBlockEntity(
     pos: BlockPos,
     state: BlockState,
@@ -16,6 +23,20 @@ class MahjongTableBlockEntity(
     var tableId: Uuid = Uuid.random()
         private set
 
+    /** 整桌呈現保持忙碌的最晚絕對 game time；`0` 代表沒有額外桌級呈現等待。 */
+    var presentationBusyUntilGameTime: Long = 0L
+        private set
+
+    /** 將整桌呈現時間軸延長到 [endGameTime]，已有更晚結束時間時保留原值。 */
+    fun extendPresentationUntil(endGameTime: Long) {
+        if (endGameTime <= presentationBusyUntilGameTime) return
+        presentationBusyUntilGameTime = endGameTime
+        markDirty()
+    }
+
+    /** 以 [currentGameTime] 判斷整桌呈現時間軸是否尚未結束。 */
+    fun isPresenting(currentGameTime: Long): Boolean = currentGameTime < presentationBusyUntilGameTime
+
     /** 從方塊實體 NBT 還原穩定 UUID；損壞或缺失時保留新生成的 UUID。 */
     override fun readNbt(nbt: NbtCompound) {
         super.readNbt(nbt)
@@ -23,16 +44,19 @@ class MahjongTableBlockEntity(
             .takeIf(String::isNotBlank)
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
             ?.let { restored -> tableId = restored }
+        presentationBusyUntilGameTime = nbt.getLong(NBT_KEY_PRESENTATION_BUSY_UNTIL_GAME_TIME)
     }
 
     /** 把穩定 UUID 寫入方塊實體 NBT。 */
     override fun writeNbt(nbt: NbtCompound) {
         super.writeNbt(nbt)
         nbt.putString(NBT_KEY_TABLE_ID, tableId.toString())
+        nbt.putLong(NBT_KEY_PRESENTATION_BUSY_UNTIL_GAME_TIME, presentationBusyUntilGameTime)
     }
 
     /** 麻將桌方塊實體 NBT 欄位名稱。 */
     private companion object {
         const val NBT_KEY_TABLE_ID: String = "TableId"
+        const val NBT_KEY_PRESENTATION_BUSY_UNTIL_GAME_TIME: String = "PresentationBusyUntilGameTime"
     }
 }

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -14,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNag
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import kotlinx.coroutines.sync.Mutex
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -36,7 +38,9 @@ import kotlin.uuid.Uuid
  *    先問 `com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule.resolveSuukanNagare`——
  *    若成立，代表玩家選擇不嘗試嶺上開花（已經有機會呼叫 [GameCommand.Tsumo] 但沒有），直接改呼叫
  *    [declareSuukanNagareUseCase]，原本的捨牌/立直請求不會真的被套用。
- * 3. **連莊/過莊**：任何造成本局結束的操作完成後呼叫 [advanceRoundUseCase]。哪些命令「一定」
+ * 3. **連莊/過莊**：任何造成本局結束的操作完成後，先將 [PendingGameTransition.AdvanceRound]
+ *    寫入權威狀態；待呈現動畫結束後，再由 [resumePendingGameTransition] 呼叫 [advanceRoundUseCase]。
+ *    哪些命令「一定」
  *    結束本局（[GameCommand.Tsumo]/[GameCommand.KyuushuKyuuhai]，以及上方兩種系統銜接本身）
  *    由呼叫端結構性得知，不需要額外檢查；[GameCommand.Discard]/[GameCommand.Riichi]/
  *    [GameCommand.RespondToDiscard]/[GameCommand.RespondToChankan] 是否結束本局則要看內部
@@ -57,14 +61,15 @@ import kotlin.uuid.Uuid
  * @property declareExhaustiveDrawUseCase 一般流局結算用例。
  * @property declareSuukanNagareUseCase 四槓散了結算用例。
  * @property advanceRoundUseCase 連莊/過莊/開下一局用例。
- * @property returnToRoomUseCase 對局結束後把桌子轉回房間用例；[advanceRoundUseCase] 回報
- *   `isMatchOver` 成立時立即銜接呼叫。
+ * @property returnToRoomUseCase 對局結束後把桌子轉回房間用例；[advanceRoundUseCase] 判定對局結束時
+ *   會先持久化 [PendingGameTransition.ReturnToRoom]，再於同一次待完成流程收斂中呼叫此用例。
  * @property aiTurnDriver 找出下一個該行動的 AI 玩家與其命令。
  * @property forcedAutoPlayDriver 找出下一個必須由伺服器固定操作的真人玩家與命令。
  * @property decisionTimerManager 在每次命令完成後結算並調整玩家決策計時器。
  * @property decisionTimerSynchronizationService 立即同步命令完成後的權威計時與停止狀態。
- * @property presentationBusyGate 查詢平台呈現層是否仍在播放動畫，[driveAutomatedPlayers] 迴圈每次
- *   迭代前都會檢查，避免播放期間自動操作鏈路搶跑；實作由平台層提供，理由見 [GamePresentationBusyGate] KDoc。
+ * @property presentationBusyGate 查詢平台呈現層是否仍在播放動畫；[driveAutomatedPlayers] 與
+ *   [resumePendingGameTransition] 都會在推進權威流程前檢查，忙碌時直接返回並留待後續心跳重試；
+ *   實作由平台層提供，理由見 [GamePresentationBusyGate] KDoc。
  */
 @Factory
 class GameFlowCoordinator(
@@ -81,6 +86,9 @@ class GameFlowCoordinator(
     private val decisionTimerSynchronizationService: DecisionTimerSynchronizationService,
     @Provided private val presentationBusyGate: GamePresentationBusyGate,
 ) {
+    /** 避免玩家命令與恢復心跳同時重複執行同一個待完成流程。 */
+    private val pendingTransitionMutex = Mutex()
+
     /**
      * 分派 [command] 並自動銜接對應的系統觸發 use case，完成後接著驅動所有需要行動的 AI 玩家
      * （見 [driveAutomatedPlayers]）。
@@ -166,11 +174,22 @@ class GameFlowCoordinator(
     suspend fun driveAutomatedPlayers(gameId: Uuid) {
         repeat(MAX_ITERATIONS) {
             if (presentationBusyGate.isBusy(gameId)) return
+            if (resumePendingGameTransition(gameId)) {
+                val resumedGame = gameRepository.getGame(gameId) ?: return
+                if (resumedGame.pendingTransition != null || presentationBusyGate.isBusy(gameId)) return
+                return@repeat
+            }
             val forcedAction = forcedAutoPlayDriver.resolveNextAction(gameId)
             val (playerId, command) = forcedAction ?: aiTurnDriver.resolveNextAction(gameId) ?: return
             if (forcedAction != null) clearForcedAutoPlay(gameId, playerId)
             val stateBefore = gameRepository.getTableState(gameId)
             dispatchAndReconcile(gameId, playerId, command)
+            if (presentationBusyGate.isBusy(gameId)) return
+            if (resumePendingGameTransition(gameId)) {
+                val resumedGame = gameRepository.getGame(gameId) ?: return
+                if (resumedGame.pendingTransition != null || presentationBusyGate.isBusy(gameId)) return
+                return@repeat
+            }
             val stateAfter = gameRepository.getTableState(gameId)
             if (stateBefore == stateAfter) return
         }
@@ -178,6 +197,41 @@ class GameFlowCoordinator(
             "driveAutomatedPlayers did not converge for game $gameId after $MAX_ITERATIONS iterations; " +
                 "automated player chain is likely stuck",
         )
+    }
+
+    /**
+     * 收斂權威狀態中尚待完成的遊戲流程。
+     *
+     * [Game.pendingTransition] 會持久化，因此正常執行期間與 server 重啟後都可由平台心跳重複呼叫
+     * 本方法：根據明確的 [PendingGameTransition] 補做 [advanceRoundUseCase] 或
+     * [returnToRoomUseCase]，不從桌況或呈現實作反推權威意圖。
+     *
+     * 方法只在呈現已經閒置時收斂，不會自行掛起等待，適合每次心跳輪詢。回傳 `true`
+     * 代表偵測到待完成的流程（即使這次 best-effort use case 失敗），呼叫端這一輪不應再驅動
+     * 任何自動操作，留待下次心跳重試。
+     *
+     * @param gameId 欲收斂待完成流程的對局。
+     * @return 是否偵測到待完成的遊戲流程。
+     */
+    suspend fun resumePendingGameTransition(gameId: Uuid): Boolean {
+        if (presentationBusyGate.isBusy(gameId)) return false
+        pendingTransitionMutex.lock()
+        try {
+            val transition = gameRepository.getGame(gameId)?.pendingTransition ?: return false
+            when (transition) {
+                PendingGameTransition.AdvanceRound -> {
+                    val result = advanceRoundUseCase(gameId)
+                    if (result is Outcome.Success && result.value.isMatchOver) {
+                        returnToRoomUseCase(gameId)
+                    }
+                }
+
+                PendingGameTransition.ReturnToRoom -> returnToRoomUseCase(gameId)
+            }
+            return true
+        } finally {
+            pendingTransitionMutex.unlock()
+        }
     }
 
     /**
@@ -236,13 +290,13 @@ class GameFlowCoordinator(
     }
 
     /**
-     * 呼叫 [advanceRoundUseCase]，若回報整場對局已結束，緊接著呼叫 [returnToRoomUseCase] 把桌子轉回
-     * 房間。三個呼叫點（一般流局、四槓散了、一般結束本局判斷）共用這個方法，確保銜接時機一致。
+     * 持久化「待進入下一局」意圖後立即返回；真正的 [advanceRoundUseCase] 由平台心跳在呈現結束後
+     * 透過 [resumePendingGameTransition] 收斂。三個呼叫點（一般流局、四槓散了、一般結束本局判斷）
+     * 共用這個方法，正常遊玩與 server 重啟恢復走完全相同的路徑。
      */
     private suspend fun chainAdvanceRound(gameId: Uuid) {
-        val result = advanceRoundUseCase(gameId)
-        if (result is Outcome.Success && result.value.isMatchOver) {
-            returnToRoomUseCase(gameId)
+        gameRepository.updateGame(gameId) { game ->
+            game?.copy(pendingTransition = PendingGameTransition.AdvanceRound) to Unit
         }
     }
 
@@ -275,12 +329,17 @@ class GameFlowCoordinator(
         is GameCommand.RespondToDiscard, is GameCommand.RespondToChankan,
         -> {
             val state = gameRepository.getTableState(gameId)
-            state?.players?.any { player ->
-                player.actionHistory.any { it is GameAction.Tsumo || it is GameAction.Ron || it is GameAction.ExhaustiveDraw }
-            } == true
+            state?.hasEndedHand() == true
         }
 
         else -> false
+    }
+
+    /** 本局是否已留下可持久化的結束記錄，可供重啟後重建尚未完成的推進。 */
+    private fun com.doublemoon1119.mahjongcraft.logic.table.TableState.hasEndedHand(): Boolean = players.any { player ->
+        player.actionHistory.any { action ->
+            action is GameAction.Tsumo || action is GameAction.Ron || action is GameAction.ExhaustiveDraw
+        }
     }
 
     private companion object {

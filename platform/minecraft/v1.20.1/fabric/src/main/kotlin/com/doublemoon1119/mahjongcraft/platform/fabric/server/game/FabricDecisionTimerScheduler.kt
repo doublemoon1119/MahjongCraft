@@ -68,6 +68,9 @@ class FabricDecisionTimerScheduler(
                         // 再繼續，避免玩家看到牌局狀態搶在畫面之前推進。決策逾時計時器本身不受影響，
                         // 只是這一輪不驅動——理由見 TablePresentationBusyTracker KDoc。
                         if (busyTracker.isBusy(gameId)) return@forEach
+                        // 胡牌／流局結算後的待完成流程與呈現時間軸都會持久化。呈現播完後
+                        // 先從權威狀態補完流程；這一輪若有待收斂的流程，就不再驅動玩家操作。
+                        if (gameFlowCoordinator.resumePendingGameTransition(gameId)) return@forEach
                         gameFlowCoordinator.driveAutomatedPlayers(gameId)
                         autoDrawService.checkAndAutoDraw(gameId)
                     }

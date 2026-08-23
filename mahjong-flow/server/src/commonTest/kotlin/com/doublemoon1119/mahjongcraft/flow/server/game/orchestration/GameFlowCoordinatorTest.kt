@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
@@ -535,6 +536,71 @@ class GameFlowCoordinatorTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertTrue(newState.players.first { it.id == respondentId }.actionHistory.isEmpty())
+    }
+
+    /**
+     * 迴歸測試：驗證榮和呈現尚未完成時不會先進入下一局；呈現恢復閒置後才銜接
+     * [AdvanceRoundUseCase]。
+     */
+    @Test
+    fun `test ron waits for presentation before chaining advance round`() = runTest {
+        val fixtures = Fixtures()
+        val discarderId = Uuid.random()
+        val respondentId = Uuid.random()
+        val table = discardReactionTable(discarderId, respondentId, ronReadyHand())
+        fixtures.gameRepo.setTableState(table)
+        fixtures.presentationBusyGate.setBusy(gameId, true)
+        val whiteTileId = table.pendingReaction!!.tileId
+
+        val result = fixtures.coordinator(gameId, respondentId, GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId)))
+
+        assertTrue(result is Outcome.Success)
+        val settledState = fixtures.gameRepo.getTableState(gameId)!!
+        assertTrue(
+            settledState.players.first { it.id == respondentId }.actionHistory.any { it is GameAction.Ron },
+            "Winning settlement should be retained until the presentation finishes.",
+        )
+        assertEquals(PendingGameTransition.AdvanceRound, fixtures.gameRepo.getGame(gameId)!!.pendingTransition)
+
+        fixtures.presentationBusyGate.setBusy(gameId, false)
+        assertTrue(fixtures.coordinator.resumePendingGameTransition(gameId))
+        val advancedState = fixtures.gameRepo.getTableState(gameId)!!
+        assertTrue(advancedState.players.first { it.id == respondentId }.actionHistory.isEmpty())
+    }
+
+    /**
+     * 迴歸測試：模擬 server 在榮和結算與待推進流程已持久化、但呈現尚未結束時重啟；
+     * 新 session 可單純從權威桌況補完推進，且重複恢復不會再推進一次。
+     */
+    @Test
+    fun `test persisted ron settlement resumes round transition after restart`() = runTest {
+        val fixtures = Fixtures()
+        val discarderId = Uuid.random()
+        val respondentId = Uuid.random()
+        val table = discardReactionTable(discarderId, respondentId, ronReadyHand())
+        fixtures.gameRepo.setTableState(table)
+        val whiteTileId = table.pendingReaction!!.tileId
+
+        val settlement = fixtures.router(
+            gameId,
+            respondentId,
+            GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId)),
+        )
+        assertTrue(settlement is Outcome.Success)
+        assertTrue(
+            fixtures.gameRepo.getTableState(gameId)!!.players
+                .first { it.id == respondentId }
+                .actionHistory
+                .any { it is GameAction.Ron },
+        )
+        fixtures.gameRepo.updateGame(gameId) { game ->
+            game!!.copy(pendingTransition = PendingGameTransition.AdvanceRound) to Unit
+        }
+
+        assertTrue(fixtures.coordinator.resumePendingGameTransition(gameId))
+        val advancedState = fixtures.gameRepo.getTableState(gameId)!!
+        assertTrue(advancedState.players.first { it.id == respondentId }.actionHistory.isEmpty())
+        assertTrue(!fixtures.coordinator.resumePendingGameTransition(gameId))
     }
 
     /**

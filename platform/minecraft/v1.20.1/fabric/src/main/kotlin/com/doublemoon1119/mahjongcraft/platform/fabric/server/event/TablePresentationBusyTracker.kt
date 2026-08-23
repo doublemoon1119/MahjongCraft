@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.AnimatedMahjongEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
@@ -22,7 +23,8 @@ import kotlin.uuid.Uuid
  * 心跳（`FabricDecisionTimerScheduler`）查詢是否要暫時擋下這桌的操作——動畫播放期間刻意不讓玩家操作
  * 或 AI／強制自動操作搶在畫面之前推進，避免出現牌局狀態跟畫面不一致的情況。
  *
- * `isBusy` 直接查詢這桌**目前管理中的 entity 是否還有任何一個 [AnimatedMahjongEntity.isAnimating]**
+ * `isBusy` 先查詢 controller [MahjongTableBlockEntity] 的持久化整桌呈現時間軸，再查詢這桌
+ * **目前管理中的 entity 是否還有任何一個 [AnimatedMahjongEntity.isAnimating]**
  * （掃描範圍與篩選方式比照各 presenter 既有的 `findManagedTiles`／`findManagedDice`），不再像過去那樣
  * 由呼叫端手動算一次「這批動畫總共要幾個 tick」再呼叫 `markBusyFor`——動畫佇列本身（見
  * [AnimatedMahjongEntity]）已經是「這桌是否還在忙」唯一需要的資訊來源，重複算一次總時長只是把同一份
@@ -61,6 +63,8 @@ class TablePresentationBusyTracker(
         val location = tableLocationRegistry.get(tableId)?.location ?: return false
         val world = resolveWorld(location) ?: return false
         val controllerPos = BlockPos(location.x, location.y, location.z)
+        val table = world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity
+        if (table?.tableId == tableId && table.isPresenting(world.time)) return true
         val searchBox = Box(controllerPos).expand(TABLE_SEARCH_HORIZONTAL, TABLE_SEARCH_VERTICAL, TABLE_SEARCH_HORIZONTAL)
         val tileAnimating = world.getEntitiesByClass(MahjongTileEntity::class.java, searchBox) { tile ->
             tile.managedTableId == tableId && tile.isAnimating

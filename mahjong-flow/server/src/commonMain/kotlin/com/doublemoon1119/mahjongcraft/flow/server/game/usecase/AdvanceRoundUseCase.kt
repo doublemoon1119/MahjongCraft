@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -120,7 +121,11 @@ class AdvanceRoundUseCase(
                         )
                         // 對局已經結束：記下這個事實，讓 AiTurnDriver／ForcedAutoPlayDriver 之後都
                         // 跳過這場對局，不會對已經沒有牌可摸的桌況繼續重複嘗試、重複觸發流局結算。
-                        game.copy(tableState = finalState, isMatchOver = true) to Outcome.Success(advanceOutcome)
+                        game.copy(
+                            tableState = finalState,
+                            isMatchOver = true,
+                            pendingTransition = PendingGameTransition.ReturnToRoom,
+                        ) to Outcome.Success(advanceOutcome)
                     } else {
                         val initializationResult = GameInitializer.startNextRound(
                             gameId = gameId,
@@ -149,7 +154,7 @@ class AdvanceRoundUseCase(
                             wallStructure = initializationResult.wallStructure,
                             dealOrderHandTileIdsBySeatIndex = dealOrderHandTileIdsBySeatIndex,
                         )
-                        game.copy(tableState = newState) to Outcome.Success(advanceOutcome)
+                        game.copy(tableState = newState, pendingTransition = null) to Outcome.Success(advanceOutcome)
                     }
                 }
             }

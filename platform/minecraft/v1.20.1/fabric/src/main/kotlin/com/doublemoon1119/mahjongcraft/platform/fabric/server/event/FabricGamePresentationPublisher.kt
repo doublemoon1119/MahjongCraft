@@ -12,13 +12,12 @@ import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
-import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
@@ -57,7 +56,6 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
 
 /**
  * [GamePresentationPublisher] 的 Fabric 實作，薄分派層。
@@ -591,11 +589,7 @@ class FabricGamePresentationPublisher(
                         startGameTime = effectStartGameTime,
                         endGameTime = effectEndGameTime,
                     )
-                    // 特效本身不是掛在動畫佇列上的 step，額外對胡牌張延長它的佇列忙碌窗口到特效播完為止，
-                    // 讓 TablePresentationBusyTracker 繼續免費正確，不需要改動該類別本身，見
-                    // FabricWinCelebrationEffectScheduler KDoc。
-                    (resolved.world.getEntity(winningTileId.toJavaUuid()) as? MahjongTileEntity)
-                        ?.enqueue(AnimationStep.WaitUntil(effectEndGameTime))
+                    resolved.table.extendPresentationUntil(effectEndGameTime)
                 }
             } finally {
                 busyTracker.clearPending(gameId)
@@ -639,8 +633,13 @@ class FabricGamePresentationPublisher(
             )
             return null
         }
+        val table = world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity
+        if (table?.tableId != gameId) {
+            logger.warn("$methodName gameId={} skipped: controller block entity is missing or belongs to another table", gameId)
+            return null
+        }
         val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
-        return ResolvedTableContext(world, location, facing)
+        return ResolvedTableContext(world, location, facing, table)
     }
 
     /** [resolveTableContext] 的解析結果。 */
@@ -648,6 +647,7 @@ class FabricGamePresentationPublisher(
         val world: ServerWorld,
         val location: TableLocation,
         val facing: MahjongTableFacing,
+        val table: MahjongTableBlockEntity,
     )
 
     /** 正式擲骰／開局呈現使用的固定參數。 */

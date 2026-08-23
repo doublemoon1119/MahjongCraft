@@ -11,6 +11,7 @@ import kotlin.uuid.Uuid
  * @property remainingReserveMillisByPlayerId 以玩家 UUID 字串索引的剩餘保留思考時間毫秒數。
  * @property forcedAutoPlayPlayerIds 已進入強制自動操作的玩家 UUID 字串集合。
  * @property isMatchOver 整場對局是否已結束，見 [Game.isMatchOver]。
+ * @property pendingTransition 呈現結束後尚待完成的權威流程，見 [Game.pendingTransition]。
  * @property hostId 開局時的房主 UUID 字串，見 [Game.hostId]；早於此欄位新增的既有存檔沒有這筆資料，
  *   還原時退回第一位玩家（見 [AuthoritativeStatePersistenceDto]）。
  */
@@ -19,6 +20,7 @@ data class GameRuntimeStatePersistenceDto(
     val remainingReserveMillisByPlayerId: Map<String, Long>,
     val forcedAutoPlayPlayerIds: Set<String> = emptySet(),
     val isMatchOver: Boolean = false,
+    val pendingTransition: PendingGameTransitionPersistenceDto? = null,
     val hostId: String? = null,
 )
 
@@ -27,6 +29,7 @@ fun Game.toRuntimeStatePersistenceDto(): GameRuntimeStatePersistenceDto = GameRu
     remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId.mapKeys { (playerId, _) -> playerId.toString() },
     forcedAutoPlayPlayerIds = forcedAutoPlayPlayerIds.mapTo(mutableSetOf(), Uuid::toString),
     isMatchOver = isMatchOver,
+    pendingTransition = pendingTransition?.toPersistenceDto(),
     hostId = hostId.toString(),
 )
 
