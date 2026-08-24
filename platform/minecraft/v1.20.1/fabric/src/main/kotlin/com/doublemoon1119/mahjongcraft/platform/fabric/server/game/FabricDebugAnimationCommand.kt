@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimens
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAssetKey
+import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
@@ -30,6 +31,7 @@ import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.world.ServerWorld
+import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Single
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.random.Random
@@ -68,6 +70,7 @@ import kotlin.uuid.toKotlinUuid
 class FabricDebugAnimationCommand(
     private val minecraftEnvironment: MinecraftEnvironment,
     private val effectScheduler: FabricWinCelebrationEffectScheduler,
+    private val showcaseScheduler: FabricWinCelebrationShowcaseScheduler,
 ) {
     /** 每個子指令自行排定的清除任務，見 [scheduleCleanup] KDoc。 */
     private val cleanupTasks = ConcurrentLinkedQueue<CleanupTask>()
@@ -85,6 +88,32 @@ class FabricDebugAnimationCommand(
                             literal(WIN_SUBCOMMAND)
                                 .then(withOptionalTileArgument(literal(TSUMO_ARGUMENT)) { source, tileArg -> previewWin(source, isTsumo = true, tileArg) })
                                 .then(withOptionalTileArgument(literal(RON_ARGUMENT)) { source, tileArg -> previewWin(source, isTsumo = false, tileArg) }),
+                        )
+                        .then(
+                            literal(SHOWCASE_SUBCOMMAND)
+                                .then(withOptionalCueArgument(literal(TSUMO_ARGUMENT)) { source, cue -> previewShowcase(source, isTsumo = true, listOf(cue ?: DEFAULT_SHOWCASE_CUE)) })
+                                .then(
+                                    withOptionalCueArgument(literal(RON_ARGUMENT)) { source, cues ->
+                                        previewShowcase(source, isTsumo = false, (cues ?: DEFAULT_SHOWCASE_CUE).split(",").take(3))
+                                    },
+                                )
+                                .then(
+                                    literal(MULTI_RON_ARGUMENT).then(
+                                        argument(WINNER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 3))
+                                            .executes { context ->
+                                                val count = IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT)
+                                                previewShowcase(context.source, isTsumo = false, List(count) { DEFAULT_SHOWCASE_CUE })
+                                            }
+                                            .then(
+                                                argument(CUE_ARGUMENT, StringArgumentType.word()).executes { context ->
+                                                    val count = IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT)
+                                                    val supplied = StringArgumentType.getString(context, CUE_ARGUMENT).split(",").filter(String::isNotBlank)
+                                                    val cues = List(count) { supplied.getOrNull(it) ?: DEFAULT_SHOWCASE_CUE }
+                                                    previewShowcase(context.source, isTsumo = false, cues)
+                                                },
+                                            ),
+                                    ),
+                                ),
                         )
                         .then(literal(DICE_SUBCOMMAND).executes { ctx -> previewDice(ctx.source) })
                         .then(withOptionalTileArgument(literal(DEAL_SUBCOMMAND), ::previewDeal))
@@ -114,6 +143,51 @@ class FabricDebugAnimationCommand(
             argument(TILE_ARGUMENT, StringArgumentType.word())
                 .executes { ctx -> onExecute(ctx.source, StringArgumentType.getString(ctx, TILE_ARGUMENT)) },
         )
+
+    /** 幫 showcase 節點掛上可選的 cue 或逗號分隔 cue 清單。 */
+    private fun withOptionalCueArgument(
+        node: LiteralArgumentBuilder<ServerCommandSource>,
+        onExecute: (ServerCommandSource, String?) -> Int,
+    ): LiteralArgumentBuilder<ServerCommandSource> = node
+        .executes { ctx -> onExecute(ctx.source, null) }
+        .then(argument(CUE_ARGUMENT, StringArgumentType.word()).executes { ctx -> onExecute(ctx.source, StringArgumentType.getString(ctx, CUE_ARGUMENT)) })
+
+    /** `showcase <tsumo|ron>`：在玩家面前生成一至三翼完整鞘翅煙火 showcase。 */
+    private fun previewShowcase(source: ServerCommandSource, isTsumo: Boolean, cues: List<String>): Int {
+        val player = source.player ?: return COMMAND_FAILURE
+        val world = player.serverWorld
+        val layout = virtualTableLayout(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
+        val controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ)
+        val tableId = Uuid.random()
+        val wingTiles = cues.mapIndexed { seat, cue ->
+            val tiles = List(DEFAULT_RULE_CONFIG.initialHandSize) { index ->
+                val asset = ALL_TILE_ASSET_KEYS.dropLast(1)[(index + seat * 5) % (ALL_TILE_ASSET_KEYS.size - 1)]
+                val tile = spawnFreeTile(world, layout.handPlacement(seat, DEFAULT_RULE_CONFIG.initialHandSize, index), MahjongTilePose.STANDING, asset)
+                tile to asset
+            }
+            Triple(seat, cue.toCueKey(), tiles)
+        }
+        val winningAsset = ALL_TILE_ASSET_KEYS.first()
+        val winningPlacement = if (isTsumo) layout.drawnTilePlacement(DEFAULT_RULE_CONFIG.initialHandSize) else layout.discardPlacement(0)
+        val winningTile = spawnFreeTile(world, winningPlacement, MahjongTilePose.FACE_UP, winningAsset)
+        val end = showcaseScheduler.schedule(
+            world = world,
+            tableId = tableId,
+            controllerPos = controllerPos,
+            stagePlacement = layout.showcaseStagePlacement(),
+            startGameTime = world.time,
+            winningTileId = winningTile.uuid.toKotlinUuid(),
+            winningTileAssetKey = winningAsset,
+            wings = wingTiles.map { (seat, cue, tiles) ->
+                FabricWinCelebrationShowcaseScheduler.Wing(seat, cue, tiles.map { it.first.uuid.toKotlinUuid() to it.second })
+            },
+        ) ?: return COMMAND_FAILURE
+        scheduleCleanup(world, end, wingTiles.flatMap { it.third.map(Pair<MahjongTileEntity, String>::first) } + winningTile)
+        return COMMAND_SUCCESS
+    }
+
+    /** 將 debug 短名稱補成完整 cue key。 */
+    private fun String.toCueKey(): String = if (":" in this) this else "mahjongcraft:$this"
 
     /** 向 Fabric 登記每 tick 一次的臨時 entity 清除驅動，理由見 [scheduleCleanup] KDoc。 */
     private fun registerCleanupTicking() {
@@ -355,18 +429,24 @@ class FabricDebugAnimationCommand(
         playerBlockZ: Int,
         tableFacing: MahjongTableFacing,
     ): VirtualTableLayout {
+        val controller = virtualControllerPos(playerBlockX, playerBlockY, playerBlockZ, tableFacing)
+        return VirtualTableLayout(controller.x, controller.y, controller.z, tableFacing)
+    }
+
+    /** 算出 debug 虛擬桌 controller 方塊座標。 */
+    private fun virtualControllerPos(
+        playerBlockX: Int,
+        playerBlockY: Int,
+        playerBlockZ: Int,
+        tableFacing: MahjongTableFacing,
+    ): net.minecraft.util.math.BlockPos {
         val (offsetX, offsetZ) = when (tableFacing) {
             MahjongTableFacing.NORTH -> 0 to -VIRTUAL_CONTROLLER_FORWARD_BLOCKS
             MahjongTableFacing.EAST -> VIRTUAL_CONTROLLER_FORWARD_BLOCKS to 0
             MahjongTableFacing.SOUTH -> 0 to VIRTUAL_CONTROLLER_FORWARD_BLOCKS
             MahjongTableFacing.WEST -> -VIRTUAL_CONTROLLER_FORWARD_BLOCKS to 0
         }
-        return VirtualTableLayout(
-            controllerX = playerBlockX + offsetX,
-            controllerY = playerBlockY,
-            controllerZ = playerBlockZ + offsetZ,
-            tableFacing = tableFacing,
-        )
+        return net.minecraft.util.math.BlockPos(playerBlockX + offsetX, playerBlockY, playerBlockZ + offsetZ)
     }
 
     /** 虛擬桌的正式布局呼叫參數；不對應任何實際 controller block 或對局狀態。 */
@@ -377,15 +457,21 @@ class FabricDebugAnimationCommand(
         val tableFacing: MahjongTableFacing,
     ) {
         /** 取得座位 0 的正式手牌格位。 */
-        fun handPlacement(handSize: Int, tileIndex: Int): MahjongTileWallPlacement = MahjongTileTableLayout.handPlacement(
+        fun handPlacement(handSize: Int, tileIndex: Int): MahjongTileWallPlacement = handPlacement(DEBUG_SEAT_INDEX, handSize, tileIndex)
+
+        /** 取得指定座位的正式手牌格位，供多家和 showcase 使用。 */
+        fun handPlacement(seatIndex: Int, handSize: Int, tileIndex: Int): MahjongTileWallPlacement = MahjongTileTableLayout.handPlacement(
             controllerX = controllerX,
             controllerY = controllerY,
             controllerZ = controllerZ,
             tableFacing = tableFacing,
-            seatIndex = DEBUG_SEAT_INDEX,
+            seatIndex = seatIndex,
             handSize = handSize,
             tileIndex = tileIndex,
         )
+
+        /** 取得與正式桌面完全一致的 showcase 世界中心。 */
+        fun showcaseStagePlacement(): MahjongTileWallPlacement = MahjongTileTableLayout.showcaseStagePlacement(controllerX, controllerY, controllerZ)
 
         /** 取得座位 0 的正式摸牌格位。 */
         fun drawnTilePlacement(standingTileCount: Int): MahjongTileWallPlacement = MahjongTileTableLayout.drawnTilePlacement(
@@ -467,6 +553,11 @@ class FabricDebugAnimationCommand(
         const val DEBUG_SUBCOMMAND: String = "debug"
         const val TILE_ARGUMENT: String = "tile"
         const val WIN_SUBCOMMAND: String = "win"
+        const val SHOWCASE_SUBCOMMAND: String = "showcase"
+        const val MULTI_RON_ARGUMENT: String = "multi_ron"
+        const val WINNER_COUNT_ARGUMENT: String = "winner_count"
+        const val CUE_ARGUMENT: String = "cue"
+        const val DEFAULT_SHOWCASE_CUE: String = "kokushi_musou"
         const val TSUMO_ARGUMENT: String = "tsumo"
         const val RON_ARGUMENT: String = "ron"
         const val DICE_SUBCOMMAND: String = "dice"

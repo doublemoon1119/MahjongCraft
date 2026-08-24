@@ -105,5 +105,21 @@
   "mahjongcraft.message.tile_labels_state_off": "关闭",
   "mahjongcraft.message.hand_sort_toggle_prefix": "已将自动整理手牌切换为：",
   "mahjongcraft.message.hand_sort_state_on": "开启",
-  "mahjongcraft.message.hand_sort_state_off": "关闭"
+  "mahjongcraft.message.hand_sort_state_off": "关闭",
+  "showcase.mahjongcraft.generic": "役满",
+  "showcase.mahjongcraft.kokushi_musou": "国士无双",
+  "showcase.mahjongcraft.kokushi_musou_13": "国士无双十三面",
+  "showcase.mahjongcraft.churen_poto": "九莲宝灯",
+  "showcase.mahjongcraft.churen_poto_9": "纯正九莲宝灯",
+  "showcase.mahjongcraft.tsuuiisou": "字一色",
+  "showcase.mahjongcraft.ryuuuiisou": "绿一色",
+  "showcase.mahjongcraft.suuankou": "四暗刻",
+  "showcase.mahjongcraft.suuankou_tanki": "四暗刻单骑",
+  "showcase.mahjongcraft.sukantsu": "四杠子",
+  "showcase.mahjongcraft.shousuushi": "小四喜",
+  "showcase.mahjongcraft.daisuushii": "大四喜",
+  "showcase.mahjongcraft.daisangen": "大三元",
+  "showcase.mahjongcraft.chinroutou": "清老头",
+  "showcase.mahjongcraft.tenhou": "天和",
+  "showcase.mahjongcraft.chiihou": "地和"
 }

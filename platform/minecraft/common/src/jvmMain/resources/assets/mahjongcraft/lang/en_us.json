@@ -105,5 +105,21 @@
   "mahjongcraft.message.tile_labels_state_off": "Off",
   "mahjongcraft.message.hand_sort_toggle_prefix": "Auto-sort hand toggled: ",
   "mahjongcraft.message.hand_sort_state_on": "On",
-  "mahjongcraft.message.hand_sort_state_off": "Off"
+  "mahjongcraft.message.hand_sort_state_off": "Off",
+  "showcase.mahjongcraft.generic": "Yakuman",
+  "showcase.mahjongcraft.kokushi_musou": "Thirteen Orphans",
+  "showcase.mahjongcraft.kokushi_musou_13": "Thirteen Orphans 13-Wait",
+  "showcase.mahjongcraft.churen_poto": "Nine Gates",
+  "showcase.mahjongcraft.churen_poto_9": "Pure Nine Gates",
+  "showcase.mahjongcraft.tsuuiisou": "All Honors",
+  "showcase.mahjongcraft.ryuuuiisou": "All Green",
+  "showcase.mahjongcraft.suuankou": "Four Concealed Triplets",
+  "showcase.mahjongcraft.suuankou_tanki": "Four Concealed Triplets Single Wait",
+  "showcase.mahjongcraft.sukantsu": "Four Quads",
+  "showcase.mahjongcraft.shousuushi": "Little Four Winds",
+  "showcase.mahjongcraft.daisuushii": "Big Four Winds",
+  "showcase.mahjongcraft.daisangen": "Big Three Dragons",
+  "showcase.mahjongcraft.chinroutou": "All Terminals",
+  "showcase.mahjongcraft.tenhou": "Blessing of Heaven",
+  "showcase.mahjongcraft.chiihou": "Blessing of Earth"
 }
