@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
+import net.minecraft.block.Blocks
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker
@@ -75,7 +76,7 @@ class WinCelebrationShowcaseEntity(
     val extraSounds: List<ShowcaseSoundSnapshot>
         get() = decodeSounds(dataTracker[EXTRA_SOUNDS])
 
-    private var launchSoundPlayed = false
+    private val playedCoreSoundIndexes = mutableSetOf<Int>()
     private val playedExtraSoundIndexes = mutableSetOf<Int>()
 
     init {
@@ -117,22 +118,45 @@ class WinCelebrationShowcaseEntity(
     /** 純視覺舞台不能被選取。 */
     override fun canHit(): Boolean = false
 
-    /** 到起飛時刻播放每翼一次原版煙火音效，整段結束後自行移除。 */
+    /** 播放未錯過的核心單次音效，整段結束後自行移除。 */
     override fun tick() {
         super.tick()
-        if (!world.isClient && !launchSoundPlayed) {
-            val launchTime = startGameTime + FIREWORK_LAUNCH_TICK
-            if (world.time in launchTime..(launchTime + 1L)) {
-                wings.forEachIndexed { index, _ ->
-                    world.playSound(null, x, y, z, SoundEvents.ENTITY_FIREWORK_ROCKET_LAUNCH, SoundCategory.PLAYERS, 0.8f, 0.96f + index * 0.05f)
-                }
-                launchSoundPlayed = true
-            } else if (world.time > launchTime + 1L) {
-                launchSoundPlayed = true
-            }
+        if (!world.isClient && endGameTime - startGameTime !in MINIMUM_VALID_DURATION_TICKS..MAXIMUM_VALID_DURATION_TICKS) {
+            discard()
+            return
         }
+        if (!world.isClient) playDueCoreSounds()
         if (!world.isClient) playDueExtraSounds()
         if (endGameTime > startGameTime && world.time >= endGameTime) discard()
+    }
+
+    private fun playDueCoreSounds() {
+        playCoreEvent(0, WinCelebrationCinematicTimeline.FIREWORK_LAUNCH_TICK) {
+            wings.forEachIndexed { index, _ ->
+                world.playSound(null, x, y, z, SoundEvents.ENTITY_FIREWORK_ROCKET_LAUNCH, SoundCategory.PLAYERS, 0.75f, 0.96f + index * 0.05f)
+            }
+        }
+        playCoreSound(1, WinCelebrationCinematicTimeline.TNT_PLACEMENT_SOUND_TICK, Blocks.TNT.defaultState.soundGroup.placeSound, 0.8f, 1.0f)
+        playCoreEvent(2, WinCelebrationCinematicTimeline.IGNITION_SOUND_TICK) {
+            world.playSound(null, x, y, z, SoundEvents.ITEM_FLINTANDSTEEL_USE, SoundCategory.PLAYERS, 0.8f, 1.0f)
+            world.playSound(null, x, y, z, SoundEvents.ENTITY_TNT_PRIMED, SoundCategory.PLAYERS, 0.75f, 1.08f)
+        }
+        playCoreSound(3, WinCelebrationCinematicTimeline.EXPLOSION_SOUND_TICK, SoundEvents.ENTITY_GENERIC_EXPLODE, 0.95f, 0.82f)
+        playCoreSound(4, WinCelebrationCinematicTimeline.TITLE_REVEAL_SOUND_TICK, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 0.35f, 0.9f)
+    }
+
+    private fun playCoreSound(index: Int, tickOffset: Long, sound: net.minecraft.sound.SoundEvent, volume: Float, pitch: Float) {
+        playCoreEvent(index, tickOffset) {
+            world.playSound(null, x, y, z, sound, SoundCategory.PLAYERS, volume, pitch)
+        }
+    }
+
+    private fun playCoreEvent(index: Int, tickOffset: Long, action: () -> Unit) {
+        if (index in playedCoreSoundIndexes) return
+        val playTime = startGameTime + tickOffset
+        if (world.time < playTime) return
+        if (world.time <= playTime + 1L) action()
+        playedCoreSoundIndexes += index
     }
 
     /** 只在正確 tick 播放未錯過的額外音效；重載後不補播過期的一次性事件。 */
@@ -170,7 +194,8 @@ class WinCelebrationShowcaseEntity(
         dataTracker.set(WINNING_TILE_SNAPSHOT, nbt.getString(NBT_KEY_WINNING_TILE_SNAPSHOT))
         dataTracker.set(WINGS, nbt.getString(NBT_KEY_WINGS))
         dataTracker.set(EXTRA_SOUNDS, nbt.getString(NBT_KEY_EXTRA_SOUNDS))
-        launchSoundPlayed = nbt.getBoolean(NBT_KEY_LAUNCH_SOUND_PLAYED)
+        playedCoreSoundIndexes.clear()
+        nbt.getIntArray(NBT_KEY_PLAYED_CORE_SOUND_INDEXES).forEach(playedCoreSoundIndexes::add)
         playedExtraSoundIndexes.clear()
         nbt.getIntArray(NBT_KEY_PLAYED_EXTRA_SOUND_INDEXES).forEach(playedExtraSoundIndexes::add)
     }
@@ -184,22 +209,25 @@ class WinCelebrationShowcaseEntity(
         nbt.putString(NBT_KEY_WINNING_TILE_SNAPSHOT, dataTracker[WINNING_TILE_SNAPSHOT])
         nbt.putString(NBT_KEY_WINGS, dataTracker[WINGS])
         nbt.putString(NBT_KEY_EXTRA_SOUNDS, dataTracker[EXTRA_SOUNDS])
-        nbt.putBoolean(NBT_KEY_LAUNCH_SOUND_PLAYED, launchSoundPlayed)
+        nbt.putIntArray(NBT_KEY_PLAYED_CORE_SOUND_INDEXES, playedCoreSoundIndexes.toIntArray())
         nbt.putIntArray(NBT_KEY_PLAYED_EXTRA_SOUND_INDEXES, playedExtraSoundIndexes.toIntArray())
     }
 
     companion object {
         /** 正式展示開始前的固定前導與 billboard 轉場長度。 */
-        const val SHOWCASE_CONTENT_START_TICK: Long = 128L
+        const val SHOWCASE_CONTENT_START_TICK: Long = 300L
 
         /** 正式展示後的固定收束淡出長度。 */
         const val FADE_OUT_TICKS: Long = 18L
 
         /** 依 definition 的正式展示時長計算整段演出長度。 */
-        fun totalDurationTicks(showcaseDurationTicks: Int): Long = SHOWCASE_CONTENT_START_TICK + showcaseDurationTicks + FADE_OUT_TICKS
+        fun totalDurationTicks(showcaseDurationTicks: Int): Long = WinCelebrationCinematicTimeline.totalDurationTicks(showcaseDurationTicks)
 
         /** 煙火推進正式發生的相對 tick。 */
-        const val FIREWORK_LAUNCH_TICK: Long = 50L
+        const val FIREWORK_LAUNCH_TICK: Long = WinCelebrationCinematicTimeline.FIREWORK_LAUNCH_TICK
+
+        private const val MINIMUM_VALID_DURATION_TICKS = SHOWCASE_CONTENT_START_TICK + 80L + FADE_OUT_TICKS
+        private const val MAXIMUM_VALID_DURATION_TICKS = SHOWCASE_CONTENT_START_TICK + 240L + FADE_OUT_TICKS
 
         /** 舞台追蹤範圍使用的非零寬度。 */
         const val WIDTH: Float = 8.0f
@@ -215,7 +243,7 @@ class WinCelebrationShowcaseEntity(
         private const val NBT_KEY_WINNING_TILE_SNAPSHOT = "WinningTileSnapshot"
         private const val NBT_KEY_WINGS = "Wings"
         private const val NBT_KEY_EXTRA_SOUNDS = "ExtraSounds"
-        private const val NBT_KEY_LAUNCH_SOUND_PLAYED = "LaunchSoundPlayed"
+        private const val NBT_KEY_PLAYED_CORE_SOUND_INDEXES = "PlayedCoreSoundIndexes"
         private const val NBT_KEY_PLAYED_EXTRA_SOUND_INDEXES = "PlayedExtraSoundIndexes"
 
         private val TABLE_ID: TrackedData<String> = DataTracker.registerData(WinCelebrationShowcaseEntity::class.java, TrackedDataHandlerRegistry.STRING)

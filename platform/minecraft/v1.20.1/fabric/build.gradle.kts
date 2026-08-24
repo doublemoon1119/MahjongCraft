@@ -6,6 +6,8 @@ plugins {
 }
 
 loom {
+    accessWidenerPath = file("src/main/resources/mahjongcraft.accesswidener")
+
     runs {
         named("client") {
             // 分離 client 與 server 的 log、設定及世界資料，避免同時測試時互相覆寫。
