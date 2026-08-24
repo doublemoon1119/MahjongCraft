@@ -15,6 +15,29 @@ class WinCelebrationShowcaseRegistryTest {
         assertEquals(160, assertNotNull(registry.find("mahjongcraft:kokushi_musou")).showcaseDurationTicks)
     }
 
+    /** cue key 快照同時包含內建與第三方 definition，且不允許呼叫端修改 registry。 */
+    @Test
+    fun exposesRegisteredCueKeySnapshot() {
+        val registry = WinCelebrationShowcaseRegistryImpl().apply {
+            registerBuiltInWinCelebrationShowcases()
+            register(definition())
+        }
+        val snapshot = registry.cueKeys
+
+        assertEquals(true, "mahjongcraft:kokushi_musou" in snapshot)
+        assertEquals(true, "test:cue" in snapshot)
+        registry.register(
+            WinCelebrationShowcaseDefinition(
+                cueKey = "test:later",
+                titleTranslationKey = "showcase.test.later",
+                titleImageResourceId = "test:textures/showcase/later.png",
+                palette = ShowcasePalette(primary = -1, secondary = -1, accent = -1),
+            ),
+        )
+        assertEquals(false, "test:later" in snapshot)
+        assertEquals(true, "test:later" in registry.cueKeys)
+    }
+
     /** 第三方展示時間限制為四至十二秒。 */
     @Test
     fun validatesExtensionDurationRange() {

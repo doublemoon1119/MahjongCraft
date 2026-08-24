@@ -5,6 +5,9 @@ interface WinCelebrationShowcaseRegistry {
     /** registry 是否已凍結。 */
     val isFrozen: Boolean
 
+    /** 目前已註冊 cue key 的唯讀快照。 */
+    val cueKeys: Set<String>
+
     /** 登記一個 cue；重複 key 會失敗。 */
     fun register(definition: WinCelebrationShowcaseDefinition)
 
@@ -20,6 +23,7 @@ class WinCelebrationShowcaseRegistryImpl : WinCelebrationShowcaseRegistry {
     private val definitions = mutableMapOf<String, WinCelebrationShowcaseDefinition>()
     override var isFrozen: Boolean = false
         private set
+    override val cueKeys: Set<String> get() = definitions.keys.toSet()
 
     override fun register(definition: WinCelebrationShowcaseDefinition) {
         check(!isFrozen) { "Win celebration showcase registry is frozen" }

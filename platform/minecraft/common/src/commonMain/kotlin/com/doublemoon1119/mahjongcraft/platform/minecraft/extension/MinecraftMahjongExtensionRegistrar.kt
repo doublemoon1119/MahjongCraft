@@ -244,6 +244,7 @@ private class RecordingWinCelebrationShowcaseRegistry(
     private val recorded: MutableList<String>,
 ) : WinCelebrationShowcaseRegistry {
     override val isFrozen: Boolean get() = delegate.isFrozen
+    override val cueKeys: Set<String> get() = delegate.cueKeys
 
     override fun register(definition: com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition) {
         delegate.register(definition)

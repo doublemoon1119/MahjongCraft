@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCinematicTimeline
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
@@ -16,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
@@ -24,6 +26,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAss
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
+import com.mojang.brigadier.context.CommandContext
+import com.mojang.brigadier.suggestion.Suggestions
+import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.entity.Entity
@@ -33,6 +38,7 @@ import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Single
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.random.Random
 import kotlin.uuid.Uuid
@@ -71,6 +77,7 @@ class FabricDebugAnimationCommand(
     private val minecraftEnvironment: MinecraftEnvironment,
     private val effectScheduler: FabricWinCelebrationEffectScheduler,
     private val showcaseScheduler: FabricWinCelebrationShowcaseScheduler,
+    private val showcaseRegistry: WinCelebrationShowcaseRegistry,
 ) {
     /** 每個子指令自行排定的清除任務，見 [scheduleCleanup] KDoc。 */
     private val cleanupTasks = ConcurrentLinkedQueue<CleanupTask>()
@@ -91,9 +98,13 @@ class FabricDebugAnimationCommand(
                         )
                         .then(
                             literal(SHOWCASE_SUBCOMMAND)
-                                .then(withOptionalCueArgument(literal(TSUMO_ARGUMENT)) { source, cue -> previewShowcase(source, isTsumo = true, listOf(cue ?: DEFAULT_SHOWCASE_CUE)) })
                                 .then(
-                                    withOptionalCueArgument(literal(RON_ARGUMENT)) { source, cues ->
+                                    withOptionalCueArgument(literal(TSUMO_ARGUMENT), allowMultiple = false) { source, cue ->
+                                        previewShowcase(source, isTsumo = true, listOf(cue ?: DEFAULT_SHOWCASE_CUE))
+                                    },
+                                )
+                                .then(
+                                    withOptionalCueArgument(literal(RON_ARGUMENT), allowMultiple = true) { source, cues ->
                                         previewShowcase(source, isTsumo = false, (cues ?: DEFAULT_SHOWCASE_CUE).split(",").take(3))
                                     },
                                 )
@@ -105,12 +116,27 @@ class FabricDebugAnimationCommand(
                                                 previewShowcase(context.source, isTsumo = false, List(count) { DEFAULT_SHOWCASE_CUE })
                                             }
                                             .then(
-                                                argument(CUE_ARGUMENT, StringArgumentType.word()).executes { context ->
-                                                    val count = IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT)
-                                                    val supplied = StringArgumentType.getString(context, CUE_ARGUMENT).split(",").filter(String::isNotBlank)
-                                                    val cues = List(count) { supplied.getOrNull(it) ?: DEFAULT_SHOWCASE_CUE }
-                                                    previewShowcase(context.source, isTsumo = false, cues)
-                                                },
+                                                argument(CUE_ARGUMENT, StringArgumentType.word())
+                                                    .suggests(::suggestShowcaseCueList)
+                                                    .executes { context ->
+                                                        val count = IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT)
+                                                        val supplied = StringArgumentType.getString(context, CUE_ARGUMENT).split(",").filter(String::isNotBlank)
+                                                        val cues = expandShowcaseCues(supplied, count, DEFAULT_SHOWCASE_CUE)
+                                                        previewShowcase(context.source, isTsumo = false, cues)
+                                                    },
+                                            ),
+                                    ),
+                                )
+                                .then(
+                                    literal(PHASE_ARGUMENT).then(
+                                        argument(PHASE_NAME_ARGUMENT, StringArgumentType.word())
+                                            .executes { context -> previewShowcasePhase(context.source, StringArgumentType.getString(context, PHASE_NAME_ARGUMENT), DEFAULT_SHOWCASE_CUE) }
+                                            .then(
+                                                argument(CUE_ARGUMENT, StringArgumentType.word())
+                                                    .suggests(::suggestSingleShowcaseCue)
+                                                    .executes { context ->
+                                                        previewShowcasePhase(context.source, StringArgumentType.getString(context, PHASE_NAME_ARGUMENT), StringArgumentType.getString(context, CUE_ARGUMENT))
+                                                    },
                                             ),
                                     ),
                                 ),
@@ -147,13 +173,40 @@ class FabricDebugAnimationCommand(
     /** 幫 showcase 節點掛上可選的 cue 或逗號分隔 cue 清單。 */
     private fun withOptionalCueArgument(
         node: LiteralArgumentBuilder<ServerCommandSource>,
+        allowMultiple: Boolean,
         onExecute: (ServerCommandSource, String?) -> Int,
     ): LiteralArgumentBuilder<ServerCommandSource> = node
         .executes { ctx -> onExecute(ctx.source, null) }
-        .then(argument(CUE_ARGUMENT, StringArgumentType.word()).executes { ctx -> onExecute(ctx.source, StringArgumentType.getString(ctx, CUE_ARGUMENT)) })
+        .then(
+            argument(CUE_ARGUMENT, StringArgumentType.word())
+                .suggests(if (allowMultiple) ::suggestShowcaseCueList else ::suggestSingleShowcaseCue)
+                .executes { ctx -> onExecute(ctx.source, StringArgumentType.getString(ctx, CUE_ARGUMENT)) },
+        )
+
+    /** 列出單一 showcase cue 的 Tab 補全候選。 */
+    private fun suggestSingleShowcaseCue(
+        context: CommandContext<ServerCommandSource>,
+        builder: SuggestionsBuilder,
+    ): CompletableFuture<Suggestions> = suggestShowcaseCues(context, builder, allowMultiple = false)
+
+    /** 列出逗號分隔 showcase cue 清單目前最後一段的 Tab 補全候選。 */
+    private fun suggestShowcaseCueList(
+        context: CommandContext<ServerCommandSource>,
+        builder: SuggestionsBuilder,
+    ): CompletableFuture<Suggestions> = suggestShowcaseCues(context, builder, allowMultiple = true)
+
+    /** 從正式 registry 建立 showcase cue 補全，不另外維護 cue 字串清單。 */
+    private fun suggestShowcaseCues(
+        context: CommandContext<ServerCommandSource>,
+        builder: SuggestionsBuilder,
+        allowMultiple: Boolean,
+    ): CompletableFuture<Suggestions> {
+        buildShowcaseCueSuggestions(builder.remaining, showcaseRegistry.cueKeys, allowMultiple).forEach(builder::suggest)
+        return builder.buildFuture()
+    }
 
     /** `showcase <tsumo|ron>`：在玩家面前生成一至三翼完整鞘翅煙火 showcase。 */
-    private fun previewShowcase(source: ServerCommandSource, isTsumo: Boolean, cues: List<String>): Int {
+    private fun previewShowcase(source: ServerCommandSource, isTsumo: Boolean, cues: List<String>, initialElapsedTicks: Int = 0): Int {
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val layout = virtualTableLayout(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
@@ -170,20 +223,35 @@ class FabricDebugAnimationCommand(
         val winningAsset = ALL_TILE_ASSET_KEYS.first()
         val winningPlacement = if (isTsumo) layout.drawnTilePlacement(DEFAULT_RULE_CONFIG.initialHandSize) else layout.discardPlacement(0)
         val winningTile = spawnFreeTile(world, winningPlacement, MahjongTilePose.FACE_UP, winningAsset)
-        val end = showcaseScheduler.schedule(
+        showcaseScheduler.schedule(
             world = world,
             tableId = tableId,
             controllerPos = controllerPos,
             stagePlacement = layout.showcaseStagePlacement(),
-            startGameTime = world.time,
+            startGameTime = world.time - initialElapsedTicks,
             winningTileId = winningTile.uuid.toKotlinUuid(),
             winningTileAssetKey = winningAsset,
             wings = wingTiles.map { (seat, cue, tiles) ->
                 FabricWinCelebrationShowcaseScheduler.Wing(seat, cue, tiles.map { it.first.uuid.toKotlinUuid() to it.second })
             },
         ) ?: return COMMAND_FAILURE
-        scheduleCleanup(world, end, wingTiles.flatMap { it.third.map(Pair<MahjongTileEntity, String>::first) } + winningTile)
+        // Stage 已同步保存所有牌面與起始位置；debug 臨時牌不必繼續 tick 到演出結束。
+        (wingTiles.flatMap { it.third.map(Pair<MahjongTileEntity, String>::first) } + winningTile).forEach(Entity::discard)
         return COMMAND_SUCCESS
+    }
+
+    /** `showcase phase <launch|orbit|place|ignite|explode|reveal>`：直接從指定 phase 開始。 */
+    private fun previewShowcasePhase(source: ServerCommandSource, phase: String, cue: String): Int {
+        val initialElapsedTicks = when (phase.lowercase()) {
+            "launch" -> WinCelebrationCinematicTimeline.LAUNCH_START
+            "orbit" -> WinCelebrationCinematicTimeline.ORBIT_BUILDUP_START
+            "place" -> WinCelebrationCinematicTimeline.TNT_PLACEMENT_START
+            "ignite" -> WinCelebrationCinematicTimeline.IGNITION_START
+            "explode" -> WinCelebrationCinematicTimeline.EXPLOSION_START
+            "reveal" -> WinCelebrationCinematicTimeline.TITLE_REVEAL_START
+            else -> return COMMAND_FAILURE
+        }
+        return previewShowcase(source, isTsumo = true, cues = listOf(cue), initialElapsedTicks = initialElapsedTicks.toInt())
     }
 
     /** 將 debug 短名稱補成完整 cue key。 */
@@ -557,6 +625,8 @@ class FabricDebugAnimationCommand(
         const val MULTI_RON_ARGUMENT: String = "multi_ron"
         const val WINNER_COUNT_ARGUMENT: String = "winner_count"
         const val CUE_ARGUMENT: String = "cue"
+        const val PHASE_ARGUMENT: String = "phase"
+        const val PHASE_NAME_ARGUMENT: String = "phase_name"
         const val DEFAULT_SHOWCASE_CUE: String = "kokushi_musou"
         const val TSUMO_ARGUMENT: String = "tsumo"
         const val RON_ARGUMENT: String = "ron"
@@ -602,4 +672,41 @@ class FabricDebugAnimationCommand(
         /** Brigadier 失敗回傳值。 */
         const val COMMAND_FAILURE: Int = 0
     }
+}
+
+/**
+ * 將 debug 指令提供的 cue 展開成指定贏家數量；單一 cue 套用至所有贏家，多個 cue 則依序對應，
+ * 未提供的尾端位置使用 [defaultCue]。
+ */
+internal fun expandShowcaseCues(
+    supplied: List<String>,
+    winnerCount: Int,
+    defaultCue: String,
+): List<String> = when (supplied.size) {
+    0 -> List(winnerCount) { defaultCue }
+    1 -> List(winnerCount) { supplied.single() }
+    else -> List(winnerCount) { index -> supplied.getOrNull(index) ?: defaultCue }
+}
+
+/**
+ * 依目前輸入內容建立 showcase cue 候選；內建 namespace 預設縮成短名稱，輸入 namespace 時則保留完整
+ * key，逗號清單只替換最後一段。
+ */
+internal fun buildShowcaseCueSuggestions(
+    remaining: String,
+    cueKeys: Set<String>,
+    allowMultiple: Boolean,
+): List<String> {
+    val separatorIndex = if (allowMultiple) remaining.lastIndexOf(',') else -1
+    val completedPrefix = remaining.takeIf { separatorIndex >= 0 }?.substring(0, separatorIndex + 1).orEmpty()
+    val currentToken = remaining.substring(separatorIndex + 1)
+    val useFullKeys = ':' in currentToken
+    return (cueKeys + "mahjongcraft:generic")
+        .asSequence()
+        .map { key -> if (!useFullKeys && key.startsWith("mahjongcraft:")) key.removePrefix("mahjongcraft:") else key }
+        .distinct()
+        .filter { candidate -> candidate.startsWith(currentToken, ignoreCase = true) }
+        .sorted()
+        .map { candidate -> completedPrefix + candidate }
+        .toList()
 }
