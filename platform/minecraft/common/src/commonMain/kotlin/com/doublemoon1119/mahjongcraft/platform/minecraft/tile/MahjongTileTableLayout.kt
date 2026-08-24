@@ -629,6 +629,17 @@ object MahjongTileTableLayout {
         yaw = 0.0f,
     )
 
+    /**
+     * 取得胡牌 showcase 的固定世界錨點：水平位置是 controller 所在桌面的幾何中心，高度落在桌面上緣。
+     * 正式對局與 debug 虛擬桌共用這個入口，避免 stage 再以胡牌張或呼叫者座標作為中心而產生偏移。
+     */
+    fun showcaseStagePlacement(controllerX: Int, controllerY: Int, controllerZ: Int): MahjongTileWallPlacement = MahjongTileWallPlacement(
+        x = controllerX + BLOCK_CENTER,
+        y = controllerY + TABLETOP_HEIGHT,
+        z = controllerZ + BLOCK_CENTER,
+        yaw = 0.0f,
+    )
+
     /** 依南→西→北→東的固定順序（跟 [seatIndexToTableSide] 同一套方向），把 [side] 往同方向推進 [steps] 步。 */
     private fun advance(side: MahjongTableSide, steps: Int): MahjongTableSide = SIDE_ORDER[(SIDE_ORDER.indexOf(side) + steps).mod(SIDE_ORDER.size)]
 

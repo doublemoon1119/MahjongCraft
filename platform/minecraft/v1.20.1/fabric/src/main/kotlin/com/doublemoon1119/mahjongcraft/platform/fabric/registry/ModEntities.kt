@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEn
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffectEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.fabric.api.`object`.builder.v1.entity.FabricEntityTypeBuilder
 import net.minecraft.entity.EntityDimensions
@@ -34,6 +35,10 @@ object ModEntities {
 
     /** 胡牌慶祝視覺效果 entity type；由 [register] 初始化。 */
     lateinit var winCelebrationEffect: EntityType<WinCelebrationEffectEntity>
+        private set
+
+    /** 役種加碼共享舞台 entity type；由 [register] 初始化。 */
+    lateinit var winCelebrationShowcase: EntityType<WinCelebrationShowcaseEntity>
         private set
 
     /** 註冊不自然生成的輕量麻將牌 entity。 */
@@ -84,6 +89,16 @@ object ModEntities {
             FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::WinCelebrationEffectEntity)
                 .dimensions(EntityDimensions.fixed(WinCelebrationEffectEntity.WIDTH, WinCelebrationEffectEntity.HEIGHT))
                 .trackRangeBlocks(16)
+                .trackedUpdateRate(1)
+                .fireImmune()
+                .build(),
+        )
+        winCelebrationShowcase = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier(MinecraftModMetadata.MOD_ID, "win_celebration_showcase"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::WinCelebrationShowcaseEntity)
+                .dimensions(EntityDimensions.fixed(WinCelebrationShowcaseEntity.WIDTH, WinCelebrationShowcaseEntity.HEIGHT))
+                .trackRangeBlocks(32)
                 .trackedUpdateRate(1)
                 .fireImmune()
                 .build(),

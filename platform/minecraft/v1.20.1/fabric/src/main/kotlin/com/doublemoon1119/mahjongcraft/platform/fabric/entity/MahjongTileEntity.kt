@@ -208,11 +208,12 @@ class MahjongTileEntity(
         if (!gameStillActive) discard()
     }
 
-    /** 依 server policy 決定是否提供物理阻擋；raycast 選取能力由 [canHit] 獨立保留。 */
-    override fun isCollidable(): Boolean = physicalCollisionEnabled
+    /** 依 server policy 決定是否提供物理阻擋；展示交接後的隱形牌不得繼續形成看不見的牆。 */
+    override fun isCollidable(): Boolean = !isInvisible && physicalCollisionEnabled
 
     /** 麻將牌彼此永遠不產生物理碰撞，其他 entity 則依目前 server policy 與原版規則處理。 */
-    override fun collidesWith(other: Entity): Boolean = physicalCollisionEnabled &&
+    override fun collidesWith(other: Entity): Boolean = !isInvisible &&
+        physicalCollisionEnabled &&
         other !is MahjongTileEntity &&
         super.collidesWith(other)
 
@@ -220,7 +221,7 @@ class MahjongTileEntity(
     override fun isPushable(): Boolean = false
 
     /** 允許玩家視線 raycast 選取麻將牌，以執行右鍵互動與後續 HUD targeting。 */
-    override fun canHit(): Boolean = !isRemoved
+    override fun canHit(): Boolean = !isInvisible && !isRemoved
 
     /** 允許麻將牌成為攻擊目標；與控制視線選取的 [canHit] 分開處理。 */
     override fun isAttackable(): Boolean = !isRemoved

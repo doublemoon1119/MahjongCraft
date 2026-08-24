@@ -573,6 +573,17 @@ class MahjongTileTableLayoutTest {
         wallRemaining = wallRemaining,
     )
 
+    /** showcase 錨點固定落在 controller 的桌面中心，不受牌張、座位或桌子朝向影響。 */
+    @Test
+    fun `showcase stage is anchored at tabletop center`() {
+        val placement = MahjongTileTableLayout.showcaseStagePlacement(controllerX = 10, controllerY = 64, controllerZ = -4)
+
+        assertEquals(CONTROLLER_CENTER_X, placement.x, ABSOLUTE_TOLERANCE)
+        assertEquals(65.0, placement.y, ABSOLUTE_TOLERANCE)
+        assertEquals(CONTROLLER_CENTER_Z, placement.z, ABSOLUTE_TOLERANCE)
+        assertEquals(0.0f, placement.yaw)
+    }
+
     /** 一張躺平牌的世界水平 footprint，用來檢查不同墩是否重疊。 */
     private data class Footprint(val minX: Double, val maxX: Double, val minZ: Double, val maxZ: Double)
 

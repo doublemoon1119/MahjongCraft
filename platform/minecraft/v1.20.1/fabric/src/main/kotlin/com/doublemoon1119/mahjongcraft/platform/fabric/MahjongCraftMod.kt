@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
@@ -42,6 +43,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -78,6 +80,8 @@ class MahjongCraftMod : ModInitializer {
             ruleModuleDisplayNameRegistry = koin.get<RuleModuleDisplayNameRegistry>(),
             tileEmojiRegistry = koin.get<TileEmojiRegistry>(),
             tileLabelRegistry = koin.get<TileLabelRegistry>(),
+            winCelebrationCueResolverRegistry = koin.get<WinCelebrationCueResolverRegistry>(),
+            showcaseRegistry = koin.get<WinCelebrationShowcaseRegistry>(),
         )
         ModItems.register()
         ModEntities.register()

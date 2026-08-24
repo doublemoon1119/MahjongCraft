@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
@@ -18,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.Fabric
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationShowcaseScheduler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
@@ -44,6 +46,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableL
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import kotlinx.coroutines.launch
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
@@ -99,6 +103,8 @@ class FabricGamePresentationPublisher(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val effectScheduler: FabricWinCelebrationEffectScheduler,
+    private val showcaseScheduler: FabricWinCelebrationShowcaseScheduler,
+    private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
 ) : GamePresentationPublisher {
@@ -539,7 +545,7 @@ class FabricGamePresentationPublisher(
      * KDoc），但 [winningTileId] 對每位贏家來說是同一張牌——[effectScheduler] 內部依 [winningTileId]
      * 去重，不會重複播放特效，見該類別 KDoc。
      */
-    override fun publishWinCelebration(gameId: Uuid, winnerSeatIndex: Int, winningTileId: Uuid, isTsumo: Boolean) {
+    override fun publishWinCelebration(gameId: Uuid, request: WinCelebrationRequest) {
         if (serverHolder.current() == null) {
             logger.warn("publishWinCelebration gameId={} skipped: no active server", gameId)
             return
@@ -549,53 +555,91 @@ class FabricGamePresentationPublisher(
             try {
                 val resolved = resolveTableContext(gameId, "publishWinCelebration") ?: return@launch
                 val state = gameRepository.getTableState(gameId)
-                val winner = state?.players?.getOrNull(winnerSeatIndex)
-                if (state == null || winner == null) {
-                    logger.warn("publishWinCelebration gameId={} winnerSeatIndex={} skipped: no table state or winner found", gameId, winnerSeatIndex)
+                if (state == null || request.winners.any { state.players.getOrNull(it.seatIndex) == null }) {
+                    logger.warn("publishWinCelebration gameId={} skipped: no table state or winner found", gameId)
                     return@launch
                 }
                 val module = moduleRegistry.getModule(state.config)
-                val organizedHand = winner.hand.organize(module.tileOrder)
                 val dealerSeatIndex = state.players.indexOfFirst { it.currentWind == Wind.EAST }
-
-                val melds = winner.hand.melds.map { it.toPresentation(state.config.revealsClosedKanTiles) }.map { p ->
-                    MahjongMeldTileGroup(
-                        type = p.type,
-                        tileIds = p.tileIds,
-                        calledTileId = p.calledTileId,
-                        sourceDirection = p.sourceDirection,
-                        allTilesFaceDown = p.allTilesFaceDown,
+                var handLaydownEndGameTime: Long? = null
+                val organizedBySeat = request.winners.associate { requestedWinner ->
+                    val winner = state.players[requestedWinner.seatIndex]
+                    val organizedHand = winner.hand.organize(module.tileOrder)
+                    val melds = winner.hand.melds.map { it.toPresentation(state.config.revealsClosedKanTiles) }.map { p ->
+                        MahjongMeldTileGroup(
+                            type = p.type,
+                            tileIds = p.tileIds,
+                            calledTileId = p.calledTileId,
+                            sourceDirection = p.sourceDirection,
+                            allTilesFaceDown = p.allTilesFaceDown,
+                        )
+                    }
+                    val presentation = MahjongWinCelebrationPresentation(
+                        tableId = gameId,
+                        tableLocation = resolved.location,
+                        tableFacing = resolved.facing,
+                        seatIndex = requestedWinner.seatIndex,
+                        organizedStandingTileIds = organizedHand.tiles.map { it.id },
+                        melds = melds,
+                        comboStickCount = if (requestedWinner.seatIndex == dealerSeatIndex) state.comboCount else 0,
+                        winningTileId = request.winningTileId,
+                        isTsumo = request.isTsumo,
                     )
+                    val result = playerAreaPresenter.presentWinCelebration(presentation)
+                    result.handLaydownEndGameTime?.let { endTime ->
+                        handLaydownEndGameTime = maxOf(handLaydownEndGameTime ?: endTime, endTime)
+                    }
+                    requestedWinner.seatIndex to organizedHand.tiles
                 }
-                val presentation = MahjongWinCelebrationPresentation(
-                    tableId = gameId,
-                    tableLocation = resolved.location,
-                    tableFacing = resolved.facing,
-                    seatIndex = winnerSeatIndex,
-                    organizedStandingTileIds = organizedHand.tiles.map { it.id },
-                    melds = melds,
-                    comboStickCount = if (winnerSeatIndex == dealerSeatIndex) state.comboCount else 0,
-                    winningTileId = winningTileId,
-                    isTsumo = isTsumo,
-                )
-                val result = playerAreaPresenter.presentWinCelebration(presentation)
-                val handLaydownEndGameTime = result.handLaydownEndGameTime
                 if (handLaydownEndGameTime != null) {
-                    val effectStartGameTime = handLaydownEndGameTime + MahjongTileTableLayout.WIN_PRE_EFFECT_DELAY_TICKS
+                    val effectStartGameTime = checkNotNull(handLaydownEndGameTime) + MahjongTileTableLayout.WIN_PRE_EFFECT_DELAY_TICKS
                     val effectEndGameTime = effectStartGameTime + MahjongTileTableLayout.WIN_EFFECT_DURATION_TICKS
                     effectScheduler.schedule(
                         world = resolved.world,
-                        targetTileId = winningTileId,
+                        targetTileId = request.winningTileId,
                         startGameTime = effectStartGameTime,
                         endGameTime = effectEndGameTime,
                     )
-                    resolved.table.extendPresentationUntil(effectEndGameTime)
+                    val eligibleWings = request.winners.filter { it.cue != null }.map { requestedWinner ->
+                        FabricWinCelebrationShowcaseScheduler.Wing(
+                            seatIndex = requestedWinner.seatIndex,
+                            cueKey = requestedWinner.cue?.key,
+                            tileIdsAndAssets = organizedBySeat.getValue(requestedWinner.seatIndex)
+                                .filterNot { it.id == request.winningTileId }
+                                .map { it.id to it.tile.toAssetKey(tileAssetRegistry) },
+                        )
+                    }
+                    val winningTile = state.findTile(request.winningTileId)
+                    val showcaseEnd = if (eligibleWings.isNotEmpty() && winningTile != null) {
+                        showcaseScheduler.schedule(
+                            world = resolved.world,
+                            tableId = gameId,
+                            controllerPos = BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
+                            stagePlacement = MahjongTileTableLayout.showcaseStagePlacement(
+                                resolved.location.x,
+                                resolved.location.y,
+                                resolved.location.z,
+                            ),
+                            startGameTime = effectEndGameTime,
+                            winningTileId = request.winningTileId,
+                            winningTileAssetKey = winningTile.tile.toAssetKey(tileAssetRegistry),
+                            wings = eligibleWings,
+                        )
+                    } else {
+                        null
+                    }
+                    resolved.table.extendPresentationUntil(showcaseEnd ?: effectEndGameTime)
                 }
             } finally {
                 busyTracker.clearPending(gameId)
             }
         }
     }
+
+    /** 依 UUID 從所有權威牌區尋找牌面。 */
+    private fun com.doublemoon1119.mahjongcraft.logic.table.TableState.findTile(tileId: Uuid): com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile? = players.asSequence().flatMap { player ->
+        (player.hand.allTiles + player.discardPile.entries.map { it.tile }).asSequence()
+    }.plus(tileWall.getAllTiles().asSequence()).plus(initialDeadWall.asSequence()).firstOrNull { it.id == tileId }
 
     /** 由版本無關 dimension ID 取得目前 server session 的世界。 */
     private fun resolveWorld(location: TableLocation): ServerWorld? {

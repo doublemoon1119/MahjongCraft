@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInTileTypes
+import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInWinCelebrationCueResolvers
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
@@ -15,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMah
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -47,6 +50,10 @@ object FabricMahjongExtensions {
         ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
         tileEmojiRegistry: TileEmojiRegistry,
         tileLabelRegistry: TileLabelRegistry,
+        winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
+            com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl(),
+        showcaseRegistry: WinCelebrationShowcaseRegistry =
+            com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl(),
     ) {
         try {
             val extensions = FabricLoader.getInstance()
@@ -62,6 +69,8 @@ object FabricMahjongExtensions {
                 ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
                 tileEmojiRegistry = tileEmojiRegistry,
                 tileLabelRegistry = tileLabelRegistry,
+                winCelebrationCueResolverRegistry = winCelebrationCueResolverRegistry,
+                showcaseRegistry = showcaseRegistry,
                 extensions = extensions,
             )
             val extensionIds = extensions.map { it.id }
@@ -122,11 +131,16 @@ object FabricMahjongExtensions {
         ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
         tileEmojiRegistry: TileEmojiRegistry,
         tileLabelRegistry: TileLabelRegistry,
+        winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
+            com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl(),
+        showcaseRegistry: WinCelebrationShowcaseRegistry =
+            com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl(),
         extensions: Iterable<MahjongExtension>,
     ): MinecraftMahjongExtensionRegistrationResult {
         moduleRegistry.registerBuiltInRuleModules()
         tileTypeRegistry.registerBuiltInTileTypes()
         networkRegistries.registerBuiltInRuleConfigDtos()
+        winCelebrationCueResolverRegistry.registerBuiltInWinCelebrationCueResolvers()
 
         MahjongExtensionRegistrar.registerAndFreeze(
             extensions = extensions,
@@ -134,6 +148,7 @@ object FabricMahjongExtensions {
             tileTypeRegistry = tileTypeRegistry,
             networkRegistries = networkRegistries,
             persistenceRegistries = persistenceRegistries,
+            winCelebrationCueResolverRegistry = winCelebrationCueResolverRegistry,
         )
 
         // 同一個第三方類別可同時實作 MahjongExtension 與 MinecraftMahjongExtension，
@@ -146,6 +161,7 @@ object FabricMahjongExtensions {
             ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
             tileLabelRegistry = tileLabelRegistry,
+            showcaseRegistry = showcaseRegistry,
         )
     }
 }

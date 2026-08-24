@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongScor
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationEffectEntityRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationShowcaseEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
@@ -28,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -72,6 +74,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val tileEmojiRegistry = koin.get<TileEmojiRegistry>()
         val tileLabelRegistry = koin.get<TileLabelRegistry>()
         val moduleRegistry = koin.get<MahjongModuleRegistry>()
+        val showcaseRegistry = koin.get<WinCelebrationShowcaseRegistry>()
         MahjongChannels.roomUpdate.registerClientReceiver(json, stateStore::apply)
         MahjongChannels.gameUpdate.registerClientReceiver(json) { payload ->
             val previousSnapshot = stateStore.gameSnapshot
@@ -106,6 +109,9 @@ class MahjongCraftModClient : ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongRoundInfo, ::MahjongRoundInfoEntityRenderer)
         EntityRendererRegistry.register(ModEntities.winCelebrationEffect, ::WinCelebrationEffectEntityRenderer)
+        EntityRendererRegistry.register(ModEntities.winCelebrationShowcase) { context ->
+            WinCelebrationShowcaseEntityRenderer(context, showcaseRegistry)
+        }
         EntityRendererRegistry.register(ModEntities.mahjongTile) { context ->
             MahjongTileEntityRenderer(context, stateStore, tileAssetRegistry, tileLabelRegistry, clientConfigStore, moduleRegistry)
         }
