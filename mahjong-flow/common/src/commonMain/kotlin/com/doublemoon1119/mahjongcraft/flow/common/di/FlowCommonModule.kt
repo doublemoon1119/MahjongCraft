@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.di
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
@@ -28,4 +30,8 @@ class FlowCommonModule {
      */
     @Single
     fun provideTileTypeRegistry(): TileTypeRegistry = TileTypeRegistryImpl()
+
+    /** 建立由 extension bootstrap 填入並凍結的胡牌展示提示 resolver registry。 */
+    @Single
+    fun provideWinCelebrationCueResolverRegistry(): WinCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl()
 }

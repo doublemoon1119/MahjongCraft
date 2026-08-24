@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResu
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
+import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
@@ -183,7 +184,7 @@ class RiichiRuleModule(
      * @return 若 [player] 尚未摸牌，或計算結果並非自摸應有的點數結算形狀（理論上不會發生，僅作防呆），
      *         則回傳 null。
      */
-    override fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinSettlementResult? {
+    override fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinResolutionResult? {
         val winningTile = player.hand.lastDrawn ?: return null
 
         // RiichiLegalActionValidator/RiichiHandDecomposer 的既有慣例是傳入的手牌「不含胡牌張」，
@@ -228,7 +229,10 @@ class RiichiRuleModule(
             is RiichiPointResult.Ron, is RiichiPointResult.PaoRon -> return null
         }
 
-        return WinSettlementResult(totalGained = result.totalPoint, paymentsByPlayerId = payments)
+        return WinResolutionResult(
+            settlement = WinSettlementResult(totalGained = result.totalPoint, paymentsByPlayerId = payments),
+            handValueResult = result,
+        )
     }
 
     /**
@@ -244,7 +248,7 @@ class RiichiRuleModule(
         winningTile: IdentifiedTile,
         discarderId: Uuid,
         isRobbingKan: Boolean,
-    ): WinSettlementResult? {
+    ): WinResolutionResult? {
         // 榮和的胡牌張本來就不在贏家自己手上（是他家的捨牌），不像自摸的 lastDrawn 那樣有
         // 重複計數的疑慮，這裡不需要額外剝離手牌。
         val context = createHandValueContextCalculator().calculate(
@@ -283,7 +287,10 @@ class RiichiRuleModule(
             is RiichiPointResult.DealerTsumo, is RiichiPointResult.NonDealerTsumo, is RiichiPointResult.PaoTsumo -> return null
         }
 
-        return WinSettlementResult(totalGained = result.totalPoint, paymentsByPlayerId = payments)
+        return WinResolutionResult(
+            settlement = WinSettlementResult(totalGained = result.totalPoint, paymentsByPlayerId = payments),
+            handValueResult = result,
+        )
     }
 
     /**

@@ -1,8 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -40,6 +44,8 @@ class DeclareTsumoUseCase(
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
     @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
+        createBuiltInWinCelebrationCueResolverRegistry(),
 ) {
     /**
      * 執行自摸宣告邏輯。
@@ -106,13 +112,14 @@ class DeclareTsumoUseCase(
                         dynamicRuleState = stickPot?.first ?: state.dynamicRuleState,
                     )
 
-                    newState to Outcome.Success(newState)
+                    newState to Outcome.Success(TsumoResult(newState, tsumoResult.handValueResult, module.id))
                 }
             }
         }
 
         if (outcome is Outcome.Error) return outcome
-        val newState = (outcome as Outcome.Success).value
+        val result = (outcome as Outcome.Success).value
+        val newState = result.tableState
 
         // 2. 同步快照給所有正在觀察的玩家
         snapshotSynchronizer.syncAll(gameId)
@@ -126,9 +133,28 @@ class DeclareTsumoUseCase(
         // 贏家的 lastDrawn 此時仍是自摸那張牌。
         val winnerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
         newState.players[winnerSeatIndex].hand.lastDrawn?.let { winningTile ->
-            presentationPublisher.publishWinCelebration(gameId, winnerSeatIndex, winningTile.id, isTsumo = true)
+            presentationPublisher.publishWinCelebration(
+                gameId,
+                WinCelebrationRequest(
+                    winningTileId = winningTile.id,
+                    isTsumo = true,
+                    winners = listOf(
+                        WinCelebrationWinner(
+                            winnerSeatIndex,
+                            winCelebrationCueResolverRegistry.resolve(result.ruleModuleId, result.handValueResult),
+                        ),
+                    ),
+                ),
+            )
         }
 
         return Outcome.Success(Unit)
     }
+
+    /** 將原子更新內取得的算役結果帶到呈現發布階段。 */
+    private data class TsumoResult(
+        val tableState: com.doublemoon1119.mahjongcraft.logic.table.TableState,
+        val handValueResult: com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult,
+        val ruleModuleId: String,
+    )
 }

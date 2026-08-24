@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
-import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -140,7 +140,7 @@ class TaiwanRuleModule(
      *
      * @return 固定回傳 null。
      */
-    override fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinSettlementResult? = null
+    override fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinResolutionResult? = null
 
     /**
      * 台灣麻將目前沒有榮和結算的實作。
@@ -153,7 +153,7 @@ class TaiwanRuleModule(
         winningTile: IdentifiedTile,
         discarderId: Uuid,
         isRobbingKan: Boolean,
-    ): WinSettlementResult? = null
+    ): WinResolutionResult? = null
 
     /**
      * 台灣麻將目前沒有立直/供託這個機制。

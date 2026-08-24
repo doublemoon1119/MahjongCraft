@@ -354,7 +354,7 @@ class RiichiRuleModuleTest {
                 totalGained = 48000,
                 paymentsByPlayerId = mapOf(south.id to 16000, west.id to 16000, north.id to 16000),
             ),
-            result,
+            result?.settlement,
         )
     }
 
@@ -383,7 +383,7 @@ class RiichiRuleModuleTest {
                 totalGained = 32000,
                 paymentsByPlayerId = mapOf(dealer.id to 16000, west.id to 8000, north.id to 8000),
             ),
-            result,
+            result?.settlement,
         )
     }
 
@@ -409,7 +409,7 @@ class RiichiRuleModuleTest {
 
         val result = module.declareTsumo(table, winner)
 
-        assertEquals(WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(paoPlayer.id to 32000)), result)
+        assertEquals(WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(paoPlayer.id to 32000)), result?.settlement)
     }
 
     /**
@@ -445,7 +445,7 @@ class RiichiRuleModuleTest {
 
         assertEquals(
             WinSettlementResult(totalGained = 48000, paymentsByPlayerId = mapOf(discarder.id to 48000)),
-            result,
+            result?.settlement,
         )
     }
 
@@ -471,7 +471,7 @@ class RiichiRuleModuleTest {
 
         assertEquals(
             WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(discarder.id to 32000)),
-            result,
+            result?.settlement,
         )
     }
 
@@ -501,7 +501,7 @@ class RiichiRuleModuleTest {
                 totalGained = 32000,
                 paymentsByPlayerId = mapOf(discarder.id to 16000, paoPlayer.id to 16000),
             ),
-            result,
+            result?.settlement,
         )
     }
 
@@ -529,7 +529,7 @@ class RiichiRuleModuleTest {
 
         assertEquals(
             WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(paoPlayer.id to 32000)),
-            result,
+            result?.settlement,
         )
     }
 
@@ -577,7 +577,7 @@ class RiichiRuleModuleTest {
                 totalGained = 96000,
                 paymentsByPlayerId = mapOf(paoPlayer.id to 64000, other1.id to 16000, other2.id to 16000),
             ),
-            result,
+            result?.settlement,
         )
     }
 
@@ -607,7 +607,7 @@ class RiichiRuleModuleTest {
                 totalGained = 64000,
                 paymentsByPlayerId = mapOf(discarder.id to 48000, paoPlayer.id to 16000),
             ),
-            result,
+            result?.settlement,
         )
     }
 
@@ -652,7 +652,7 @@ class RiichiRuleModuleTest {
                 totalGained = 64000,
                 paymentsByPlayerId = mapOf(discarder.id to 32000, paoPlayer.id to 32000),
             ),
-            result,
+            result?.settlement,
         )
     }
 

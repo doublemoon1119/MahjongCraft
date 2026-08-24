@@ -8,6 +8,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(project(":mahjong-logic"))
+            api(project(":mahjong-flow:mahjong-flow-common"))
             api(project(":mahjong-flow:mahjong-flow-network-dto"))
             api(project(":mahjong-flow:mahjong-flow-persistence-dto"))
         }

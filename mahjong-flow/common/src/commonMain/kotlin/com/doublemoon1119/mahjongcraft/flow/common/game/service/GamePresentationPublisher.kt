@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -321,5 +322,5 @@ interface GamePresentationPublisher {
      * 倒下」那一步，以及降臨特效鎖定的目標位置是贏家自己座位（自摸）還是胡牌張目前所在座標（榮和／
      * 搶槓的牌河或副露區），見 `FabricGamePresentationPublisher.publishWinCelebration` KDoc。
      */
-    fun publishWinCelebration(gameId: Uuid, winnerSeatIndex: Int, winningTileId: Uuid, isTsumo: Boolean)
+    fun publishWinCelebration(gameId: Uuid, request: WinCelebrationRequest)
 }

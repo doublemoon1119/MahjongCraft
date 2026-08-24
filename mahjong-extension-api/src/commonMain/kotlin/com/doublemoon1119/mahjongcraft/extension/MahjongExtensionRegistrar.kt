@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.extension
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -20,6 +21,8 @@ object MahjongExtensionRegistrar {
         tileTypeRegistry: TileTypeRegistry,
         networkRegistries: NetworkDtoRegistries,
         persistenceRegistries: PersistenceRegistries,
+        winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
+            com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl(),
     ) {
         val registeredExtensionIds = mutableSetOf<String>()
         extensions.forEach { extension ->
@@ -34,6 +37,7 @@ object MahjongExtensionRegistrar {
                 extension.registerTileTypes(tileTypeRegistry)
                 extension.registerNetworkDtos(networkRegistries)
                 extension.registerPersistenceDtos(persistenceRegistries)
+                extension.registerWinCelebrationCueResolvers(winCelebrationCueResolverRegistry)
             } catch (cause: Exception) {
                 throw MahjongExtensionRegistrationException(extension.id, cause)
             }
@@ -43,6 +47,7 @@ object MahjongExtensionRegistrar {
         tileTypeRegistry.freeze()
         networkRegistries.freeze()
         persistenceRegistries.freeze()
+        winCelebrationCueResolverRegistry.freeze()
     }
 }
 

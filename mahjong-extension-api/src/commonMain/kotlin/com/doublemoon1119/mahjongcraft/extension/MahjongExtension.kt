@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.extension
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -33,6 +34,9 @@ interface MahjongExtension {
      * 預設不註冊任何牌，使只提供既有 Numeric／Honor 規則的 extension 不必加入空實作。
      */
     fun registerTileTypes(registry: TileTypeRegistry) = Unit
+
+    /** 登記此規則模組的胡牌展示提示解析器。 */
+    fun registerWinCelebrationCueResolvers(registry: WinCelebrationCueResolverRegistry) = Unit
 
     /** 登記所有第三方規則需要的 network DTO mapper。 */
     fun registerNetworkDtos(registries: NetworkDtoRegistries)

@@ -1,8 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -52,6 +56,8 @@ class RespondToDiscardUseCase(
     private val handSortPreferenceStore: HandSortPreferenceStore,
     @Provided private val eventPublisher: GameEventPublisher,
     @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
+        createBuiltInWinCelebrationCueResolverRegistry(),
 ) {
     /**
      * 執行捨牌反應回應邏輯。
@@ -181,10 +187,21 @@ class RespondToDiscardUseCase(
         // 觸發平台呈現層：胡牌慶祝演出——一炮多響時 result.ronWinnerIds 可能不只一人，各自觸發一次；
         // winningTileId 對每位贏家來說都是同一張放銃的捨牌。
         result.ronWinningTileId?.let { winningTileId ->
-            result.ronWinnerIds.forEach { winnerId ->
-                val winnerSeatIndex = newState.players.indexOfFirst { it.id == winnerId }
-                presentationPublisher.publishWinCelebration(gameId, winnerSeatIndex, winningTileId, isTsumo = false)
-            }
+            presentationPublisher.publishWinCelebration(
+                gameId,
+                WinCelebrationRequest(
+                    winningTileId,
+                    isTsumo = false,
+                    winners = result.ronWinnerIds.map { winnerId ->
+                        WinCelebrationWinner(
+                            newState.players.indexOfFirst { it.id == winnerId },
+                            result.ronResolutions[winnerId]?.let {
+                                winCelebrationCueResolverRegistry.resolve(result.ruleModuleId.orEmpty(), it.handValueResult)
+                            },
+                        )
+                    },
+                ),
+            )
         }
 
         return Outcome.Success(Unit)
@@ -208,6 +225,8 @@ class RespondToDiscardUseCase(
         val winnerId: Uuid? = null,
         val ronWinnerIds: Set<Uuid> = emptySet(),
         val ronWinningTileId: Uuid? = null,
+        val ronResolutions: Map<Uuid, com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult> = emptyMap(),
+        val ruleModuleId: String? = null,
     )
 
     /**
@@ -231,10 +250,12 @@ class RespondToDiscardUseCase(
                 winnerIds = ronWinnerIds,
             )
             return RespondResult(
-                tableState = resolved?.copy(pendingReaction = null)
+                tableState = resolved?.tableState?.copy(pendingReaction = null)
                     ?: state.copy(players = players, pendingReaction = pendingReaction),
                 ronWinnerIds = if (resolved != null) ronWinnerIds else emptySet(),
                 ronWinningTileId = if (resolved != null) discardedTile.id else null,
+                ronResolutions = resolved?.resolutions.orEmpty(),
+                ruleModuleId = if (resolved != null) module.id else null,
             )
         }
 

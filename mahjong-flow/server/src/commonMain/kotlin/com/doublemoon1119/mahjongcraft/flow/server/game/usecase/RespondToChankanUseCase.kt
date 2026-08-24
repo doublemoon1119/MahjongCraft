@@ -1,8 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -46,6 +50,8 @@ class RespondToChankanUseCase(
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
     @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
+        createBuiltInWinCelebrationCueResolverRegistry(),
 ) {
     /**
      * 執行搶槓反應回應邏輯。
@@ -100,7 +106,7 @@ class RespondToChankanUseCase(
                             winnerIds = ronWinnerIds,
                             isRobbingKan = pending.kanAction.type == GameAction.KanType.ADDED_KAN,
                         )
-                        val newState = resolved?.copy(pendingChankan = null)
+                        val newState = resolved?.tableState?.copy(pendingChankan = null)
                             ?: state.copy(pendingChankan = newPending)
                         newState to Outcome.Success(
                             ChankanResult(
@@ -108,6 +114,8 @@ class RespondToChankanUseCase(
                                 drawHappened = false,
                                 ronWinnerIds = if (resolved != null) ronWinnerIds else emptySet(),
                                 ronWinningTileId = if (resolved != null) pending.robbedTile.id else null,
+                                ronResolutions = resolved?.resolutions.orEmpty(),
+                                ruleModuleId = if (resolved != null) module.id else null,
                             ),
                         )
                     } else {
@@ -162,10 +170,21 @@ class RespondToChankanUseCase(
         // 觸發平台呈現層：胡牌慶祝演出——搶槓成功時 result.ronWinnerIds 可能不只一人，各自觸發一次；
         // winningTileId 對每位贏家來說都是同一張被搶的加槓/暗槓牌。
         result.ronWinningTileId?.let { winningTileId ->
-            result.ronWinnerIds.forEach { winnerId ->
-                val winnerSeatIndex = newState.players.indexOfFirst { it.id == winnerId }
-                presentationPublisher.publishWinCelebration(gameId, winnerSeatIndex, winningTileId, isTsumo = false)
-            }
+            presentationPublisher.publishWinCelebration(
+                gameId,
+                WinCelebrationRequest(
+                    winningTileId,
+                    isTsumo = false,
+                    winners = result.ronWinnerIds.map { winnerId ->
+                        WinCelebrationWinner(
+                            newState.players.indexOfFirst { it.id == winnerId },
+                            result.ronResolutions[winnerId]?.let {
+                                winCelebrationCueResolverRegistry.resolve(result.ruleModuleId.orEmpty(), it.handValueResult)
+                            },
+                        )
+                    },
+                ),
+            )
         }
 
         return Outcome.Success(Unit)
@@ -183,5 +202,7 @@ class RespondToChankanUseCase(
         val declarerId: Uuid? = null,
         val ronWinnerIds: Set<Uuid> = emptySet(),
         val ronWinningTileId: Uuid? = null,
+        val ronResolutions: Map<Uuid, com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult> = emptyMap(),
+        val ruleModuleId: String? = null,
     )
 }

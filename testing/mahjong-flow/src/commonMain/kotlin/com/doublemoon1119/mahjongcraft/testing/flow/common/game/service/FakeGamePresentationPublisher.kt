@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.testing.flow.common.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
@@ -145,8 +146,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         discardPiles[gameId] = DiscardPileContext(seatIndex, discardTileIds, sidewaysMarkedTileId, newlyDiscardedTileId)
     }
 
-    override fun publishWinCelebration(gameId: Uuid, winnerSeatIndex: Int, winningTileId: Uuid, isTsumo: Boolean) {
-        winCelebrations.getOrPut(gameId) { mutableListOf() } += WinCelebrationContext(winnerSeatIndex, winningTileId, isTsumo)
+    override fun publishWinCelebration(gameId: Uuid, request: WinCelebrationRequest) {
+        winCelebrations.getOrPut(gameId) { mutableListOf() } += WinCelebrationContext(request)
     }
 
     /** 取得指定對局最後一次收到的擲骰結果；若無紀錄則回傳 null。 */
@@ -251,8 +252,13 @@ data class DiscardPileContext(
 )
 
 /** [FakeGamePresentationPublisher] 紀錄的單一筆 [GamePresentationPublisher.publishWinCelebration] 呼叫資料。 */
-data class WinCelebrationContext(
-    val winnerSeatIndex: Int,
-    val winningTileId: Uuid,
-    val isTsumo: Boolean,
-)
+data class WinCelebrationContext(val request: WinCelebrationRequest) {
+    /** 單一贏家測試相容用座位；多家和時為第一位。 */
+    val winnerSeatIndex: Int get() = request.winners.first().seatIndex
+
+    /** 共享胡牌張。 */
+    val winningTileId: Uuid get() = request.winningTileId
+
+    /** 是否為自摸。 */
+    val isTsumo: Boolean get() = request.isTsumo
+}

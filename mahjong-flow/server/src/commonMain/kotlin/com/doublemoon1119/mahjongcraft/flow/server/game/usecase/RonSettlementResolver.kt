@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -25,6 +26,9 @@ import kotlin.uuid.Uuid
  * 不是所有贏家均分。
  */
 internal object RonSettlementResolver {
+    /** 榮和後桌況與每位贏家的完整算役結果。 */
+    data class Result(val tableState: TableState, val resolutions: Map<Uuid, WinResolutionResult>)
+
     /**
      * @param state 目前的桌況（尚未套用本次榮和結算）。
      * @param players 目前的玩家列表（可能已套用本次回應者的過水/振聽等變化，尚未套用榮和結算）。
@@ -45,7 +49,7 @@ internal object RonSettlementResolver {
         module: MahjongRuleModule<*>,
         winnerIds: Set<Uuid>,
         isRobbingKan: Boolean = false,
-    ): TableState? {
+    ): Result? {
         val settlements = winnerIds.associateWith { winnerId ->
             val winner = players.first { it.id == winnerId }
             module.declareRon(state, winner, winningTile, discarderId, isRobbingKan)
@@ -83,9 +87,12 @@ internal object RonSettlementResolver {
             if (p.id in winnerIds) updated.recordAction(GameAction.Ron(winningTile.id)) else updated
         }
 
-        return state.copy(
-            players = updatedPlayers,
-            dynamicRuleState = stickPot?.first ?: state.dynamicRuleState,
+        return Result(
+            tableState = state.copy(
+                players = updatedPlayers,
+                dynamicRuleState = stickPot?.first ?: state.dynamicRuleState,
+            ),
+            resolutions = settlements.mapValues { checkNotNull(it.value) },
         )
     }
 }

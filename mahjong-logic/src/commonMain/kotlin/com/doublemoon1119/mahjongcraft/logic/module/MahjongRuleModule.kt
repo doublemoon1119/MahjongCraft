@@ -230,7 +230,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @param player 宣告自摸的玩家（尚未套用本次自摸結算），其 `hand.lastDrawn` 即為胡牌張。
      * @return 本次自摸的點數結算結果，若此規則不支援自摸結算、或 [player] 尚未摸牌則為 null。
      */
-    fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinSettlementResult?
+    fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinResolutionResult?
 
     /**
      * 計算一次榮和胡牌（[GameAction.Ron]）的點數結算：贏家實際獲得的點數，以及各應付款玩家
@@ -265,7 +265,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
         winningTile: IdentifiedTile,
         discarderId: Uuid,
         isRobbingKan: Boolean = false,
-    ): WinSettlementResult?
+    ): WinResolutionResult?
 
     /**
      * 胡牌時，贏家收下場上供託（如立直棒）所增加的點數，以及收下後應套用的新動態桌況狀態。

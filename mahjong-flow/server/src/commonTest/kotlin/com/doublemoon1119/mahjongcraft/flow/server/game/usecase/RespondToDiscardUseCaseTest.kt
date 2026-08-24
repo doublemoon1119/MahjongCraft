@@ -862,11 +862,15 @@ class RespondToDiscardUseCaseTest {
         assertEquals(-80000, finalDiscarder.score, "The discarder should pay the sum of both winners' totals.")
 
         val celebrations = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId)
-        assertEquals(2, celebrations.size, "Both multi-ron winners should each trigger their own win celebration.")
-        assertTrue(celebrations.all { it.winningTileId == discardedTile.id && !it.isTsumo })
+        assertEquals(1, celebrations.size, "Multi-ron winners should share one authoritative celebration request.")
+        assertEquals(discardedTile.id, celebrations.single().winningTileId)
+        assertFalse(celebrations.single().isTsumo)
         val dealerWinnerSeatIndex = finalState.players.indexOfFirst { it.id == dealerWinnerId }
         val nonDealerWinnerSeatIndex = finalState.players.indexOfFirst { it.id == responderId }
-        assertEquals(setOf(dealerWinnerSeatIndex, nonDealerWinnerSeatIndex), celebrations.map { it.winnerSeatIndex }.toSet())
+        assertEquals(
+            setOf(dealerWinnerSeatIndex, nonDealerWinnerSeatIndex),
+            celebrations.single().request.winners.map { it.seatIndex }.toSet(),
+        )
     }
 
     /**
