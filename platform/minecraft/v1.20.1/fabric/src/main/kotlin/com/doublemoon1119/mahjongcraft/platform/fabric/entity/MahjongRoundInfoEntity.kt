@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
-import net.minecraft.entity.Entity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker
 import net.minecraft.entity.data.TrackedData
@@ -24,7 +24,7 @@ import kotlin.uuid.Uuid
 class MahjongRoundInfoEntity(
     type: EntityType<out MahjongRoundInfoEntity> = ModEntities.mahjongRoundInfo,
     world: World,
-) : Entity(type, world) {
+) : AnimatedMahjongEntity<Nothing>(type, world) {
     /**
      * 要顯示的完整內容，依序顯示——`DataTracker` 只能同步基本型別，這裡編碼成
      * `"key1:1,2;key2:5"` 存進一個 `TrackedData<String>`（`:` 分隔 key 與參數列表，`,` 分隔參數
@@ -58,6 +58,9 @@ class MahjongRoundInfoEntity(
      */
     private var firstTickWorldTime: Long = Long.MIN_VALUE
 
+    /** 目前局況顯示隱形 lease 的絕對截止時間；沒有 lease 時為 [Long.MIN_VALUE]。 */
+    private var hiddenUntilGameTime: Long = Long.MIN_VALUE
+
     /**
      * fallback 自動清除——**不是主要清除路徑**。正常生命週期是跟牌牆同時生成、換局時由
      * `FabricMahjongRoundInfoPresenter.present()` 找到既有 entity 就地更新內容（不重新生成），或由
@@ -88,6 +91,34 @@ class MahjongRoundInfoEntity(
         managedTableId = tableId
     }
 
+    /**
+     * 隱形到 [gameTime]；重複呼叫只能延長期限，並以單一可持久化動畫序列取代舊期限。
+     */
+    fun hideUntil(gameTime: Long) {
+        check(!world.isClient) { "Round info visibility lease must be changed by the server" }
+        if (gameTime <= hiddenUntilGameTime) return
+        hiddenUntilGameTime = gameTime
+        replaceAnimationQueue(
+            listOf(
+                AnimationStep.SetInvisible(true),
+                AnimationStep.WaitUntil(gameTime),
+                AnimationStep.SetInvisible(false),
+            ),
+        )
+    }
+
+    /** 局況顯示沒有專屬瞬間動畫。 */
+    override fun applyCustomStep(step: Nothing) = error("Round info display has no custom animation step")
+
+    /** 局況顯示不支援位移動畫。 */
+    override fun applyPlayMotion(step: AnimationStep.PlayMotion, startGameTime: Long) = error("Round info display does not support motion animation")
+
+    /** 局況顯示沒有可序列化的專屬動畫。 */
+    override fun serializeCustomStep(step: Nothing, nbt: NbtCompound) = error("Round info display has no custom animation step")
+
+    /** 局況顯示沒有可還原的專屬動畫。 */
+    override fun deserializeCustomStep(nbt: NbtCompound): Nothing = error("Round info display has no custom animation step")
+
     override fun initDataTracker() {
         dataTracker.startTracking(LINES, "")
         dataTracker.startTracking(MANAGED_TABLE_ID, "")
@@ -98,16 +129,21 @@ class MahjongRoundInfoEntity(
         managedTableId = nbt.getString(NBT_KEY_MANAGED_TABLE_ID)
             .takeIf(String::isNotBlank)
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
+        hiddenUntilGameTime = nbt.getLong(NBT_KEY_HIDDEN_UNTIL_GAME_TIME).takeIf { it > 0L } ?: Long.MIN_VALUE
+        readAnimationQueueFromNbt(nbt)
     }
 
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         nbt.putString(NBT_KEY_LINES, dataTracker[LINES])
         managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
+        if (hiddenUntilGameTime != Long.MIN_VALUE) nbt.putLong(NBT_KEY_HIDDEN_UNTIL_GAME_TIME, hiddenUntilGameTime)
+        writeAnimationQueueToNbt(nbt)
     }
 
     companion object {
         private const val NBT_KEY_LINES = "Lines"
         private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
+        private const val NBT_KEY_HIDDEN_UNTIL_GAME_TIME = "HiddenUntilGameTime"
 
         /**
          * fallback 自動清除門檻（見 [tick]）——1 小時份的 tick 數，遠大於正常一局遊戲時長，只用來

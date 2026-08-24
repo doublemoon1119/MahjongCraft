@@ -45,6 +45,7 @@ class MahjongRoundInfoEntityRenderer(
         vertexConsumers: VertexConsumerProvider,
         light: Int,
     ) {
+        if (entity.isInvisible) return
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         val lines = entity.lines.mapNotNull(::buildLineText)
 
