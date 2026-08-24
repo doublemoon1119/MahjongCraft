@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -68,4 +69,7 @@ interface MinecraftMahjongExtension {
      * 視為不顯示標籤，不是錯誤。
      */
     fun registerTileLabels(registry: TileLabelRegistry) = Unit
+
+    /** 登記第三方宣告式胡牌 showcase 定義。 */
+    fun registerWinCelebrationShowcases(registry: WinCelebrationShowcaseRegistry) = Unit
 }

@@ -5,6 +5,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.registerBuiltInAiStrategyDisplayNames
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.registerBuiltInRuleModuleDisplayNames
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.registerBuiltInWinCelebrationShowcases
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -38,6 +41,7 @@ object MinecraftMahjongExtensionRegistrar {
         ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
         tileEmojiRegistry: TileEmojiRegistry,
         tileLabelRegistry: TileLabelRegistry,
+        showcaseRegistry: WinCelebrationShowcaseRegistry = WinCelebrationShowcaseRegistryImpl(),
     ): MinecraftMahjongExtensionRegistrationResult {
         tileAssetRegistry.registerBuiltInTileAssets()
         aiStrategyDisplayNameRegistry.registerBuiltInAiStrategyDisplayNames()
@@ -45,6 +49,7 @@ object MinecraftMahjongExtensionRegistrar {
         ruleModuleDisplayNameRegistry.registerBuiltInRuleModuleDisplayNames()
         tileEmojiRegistry.registerBuiltInTileEmojis()
         tileLabelRegistry.registerBuiltInTileLabels()
+        showcaseRegistry.registerBuiltInWinCelebrationShowcases()
 
         val thirdPartyAssetKeys = mutableListOf<String>()
         val thirdPartyAiStrategyKeys = mutableListOf<String>()
@@ -52,6 +57,7 @@ object MinecraftMahjongExtensionRegistrar {
         val thirdPartyRuleModuleDisplayNameKeys = mutableListOf<String>()
         val thirdPartyTileEmojiKeys = mutableListOf<String>()
         val thirdPartyTileLabelKeys = mutableListOf<String>()
+        val thirdPartyShowcaseKeys = mutableListOf<String>()
         val recordingTileAssetRegistry = RecordingMinecraftTileAssetRegistry(tileAssetRegistry, thirdPartyAssetKeys)
         val recordingAiStrategyDisplayNameRegistry =
             RecordingAiStrategyDisplayNameRegistry(aiStrategyDisplayNameRegistry, thirdPartyAiStrategyKeys)
@@ -61,6 +67,7 @@ object MinecraftMahjongExtensionRegistrar {
             RecordingRuleModuleDisplayNameRegistry(ruleModuleDisplayNameRegistry, thirdPartyRuleModuleDisplayNameKeys)
         val recordingTileEmojiRegistry = RecordingTileEmojiRegistry(tileEmojiRegistry, thirdPartyTileEmojiKeys)
         val recordingTileLabelRegistry = RecordingTileLabelRegistry(tileLabelRegistry, thirdPartyTileLabelKeys)
+        val recordingShowcaseRegistry = RecordingWinCelebrationShowcaseRegistry(showcaseRegistry, thirdPartyShowcaseKeys)
 
         val registeredExtensionIds = mutableSetOf<String>()
         extensions.forEach { extension ->
@@ -77,6 +84,7 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerRuleModuleDisplayNames(recordingRuleModuleDisplayNameRegistry)
                 extension.registerTileEmojis(recordingTileEmojiRegistry)
                 extension.registerTileLabels(recordingTileLabelRegistry)
+                extension.registerWinCelebrationShowcases(recordingShowcaseRegistry)
             } catch (cause: Exception) {
                 throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
             }
@@ -88,6 +96,7 @@ object MinecraftMahjongExtensionRegistrar {
         ruleModuleDisplayNameRegistry.freeze()
         tileEmojiRegistry.freeze()
         tileLabelRegistry.freeze()
+        showcaseRegistry.freeze()
         return MinecraftMahjongExtensionRegistrationResult(
             thirdPartyAssetKeys,
             thirdPartyAiStrategyKeys,
@@ -95,6 +104,7 @@ object MinecraftMahjongExtensionRegistrar {
             thirdPartyRuleModuleDisplayNameKeys,
             thirdPartyTileEmojiKeys,
             thirdPartyTileLabelKeys,
+            thirdPartyShowcaseKeys,
         )
     }
 }
@@ -117,6 +127,7 @@ data class MinecraftMahjongExtensionRegistrationResult(
     val thirdPartyRuleModuleDisplayNameKeys: List<String>,
     val thirdPartyTileEmojiKeys: List<String>,
     val thirdPartyTileLabelKeys: List<String>,
+    val thirdPartyShowcaseKeys: List<String> = emptyList(),
 )
 
 /** 表示指定第三方 Minecraft extension 無法完成 registry 註冊。 */
@@ -225,4 +236,21 @@ private class RecordingTileLabelRegistry(
     override fun freeze() = delegate.freeze()
 
     override fun find(assetKey: String): TileLabel? = delegate.find(assetKey)
+}
+
+/** 轉發 showcase 註冊並記錄第三方 cue key。 */
+private class RecordingWinCelebrationShowcaseRegistry(
+    private val delegate: WinCelebrationShowcaseRegistry,
+    private val recorded: MutableList<String>,
+) : WinCelebrationShowcaseRegistry {
+    override val isFrozen: Boolean get() = delegate.isFrozen
+
+    override fun register(definition: com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition) {
+        delegate.register(definition)
+        recorded += definition.cueKey
+    }
+
+    override fun freeze() = delegate.freeze()
+
+    override fun find(cueKey: String) = delegate.find(cueKey)
 }

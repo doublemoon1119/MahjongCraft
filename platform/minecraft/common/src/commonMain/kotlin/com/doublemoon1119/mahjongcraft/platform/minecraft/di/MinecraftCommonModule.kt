@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.di
 
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -14,6 +16,10 @@ import org.koin.core.annotation.Single
 /** Minecraft loader 與版本無關、client／server 共用的 Koin 定義。 */
 @Module
 class MinecraftCommonModule {
+    /** 建立供內建與第三方 extension 登記的胡牌 showcase registry。 */
+    @Single
+    fun provideWinCelebrationShowcaseRegistry(): WinCelebrationShowcaseRegistry = WinCelebrationShowcaseRegistryImpl()
+
     /**
      * 建立由 Koin 管理的 runtime [MinecraftTileAssetRegistry]。
      *
