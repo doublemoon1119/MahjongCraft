@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.RoundSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNagareUseCase
@@ -77,6 +78,7 @@ class GameFlowCoordinator(
     private val forcedAutoPlayDriver: ForcedAutoPlayDriver,
     private val decisionTimerManager: GameDecisionTimerManager,
     private val decisionTimerSynchronizationService: DecisionTimerSynchronizationService,
+    private val roundSettlementPresentationService: RoundSettlementPresentationService,
     @Provided private val presentationBusyGate: GamePresentationBusyGate,
 ) {
     /** 避免玩家命令與恢復心跳同時重複執行同一個待完成流程。 */
@@ -215,11 +217,17 @@ class GameFlowCoordinator(
                 PendingGameTransition.AdvanceRound -> {
                     val result = advanceRoundUseCase(gameId)
                     if (result is Outcome.Success && result.value.isMatchOver) {
+                        // TODO: 導入 MatchSettlementPresentationEntity 後，流程應為：
+                        // RoundSettlementPresentationEntity → AdvanceRound → 判定 Match Over
+                        // → MatchSettlementPresentationEntity → ReturnToRoom。整場結算展示結束前不可立即回房。
                         returnToRoomUseCase(gameId)
                     }
                 }
 
-                PendingGameTransition.ReturnToRoom -> returnToRoomUseCase(gameId)
+                PendingGameTransition.ReturnToRoom -> {
+                    // TODO: 未來須先等待 MatchSettlementPresentationEntity 完成，再執行 ReturnToRoom。
+                    returnToRoomUseCase(gameId)
+                }
             }
             return true
         } finally {
@@ -270,16 +278,33 @@ class GameFlowCoordinator(
             redirectToSuukanNagareIfPending(gameId, playerId)?.let { return it }
         }
 
+        val previousState = gameRepository.getTableState(gameId)
+            ?: return Outcome.Error(GameError.GameNotFound(gameId))
         val result = gameActionRouter(gameId, playerId, command)
 
         if (result is Outcome.Error && result.error is GameError.WallExhausted) {
             if (declareExhaustiveDrawUseCase(gameId) is Outcome.Success) {
+                val currentState = gameRepository.getTableState(gameId)
+                val module = moduleRegistry.getModule(previousState.config)
+                val settlement = module.declareExhaustiveDraw(previousState)
+                if (currentState != null && settlement != null) {
+                    roundSettlementPresentationService.publish(
+                        gameId,
+                        previousState,
+                        currentState,
+                        module,
+                        settlement.reason,
+                        settlement.tenpaiPlayerIds.takeIf { settlement.stickPotCollectorPlayerIds.isEmpty() },
+                        settlement.revealedHands,
+                    )
+                }
                 chainAdvanceRound(gameId)
             }
             return result
         }
 
         if (result is Outcome.Success && hasCommandEndedHand(gameId)) {
+            publishNewAbortiveDrawIfPresent(gameId, playerId, previousState)
             chainAdvanceRound(gameId)
         }
 
@@ -312,9 +337,38 @@ class GameFlowCoordinator(
 
         val result = declareSuukanNagareUseCase(gameId)
         if (result is Outcome.Success) {
+            publishNewAbortiveDrawIfPresent(gameId, null, state)
             chainAdvanceRound(gameId)
         }
         return result
+    }
+
+    /** 若這次狀態變更新增途中流局記錄，建立統一回合結算呈現。 */
+    private suspend fun publishNewAbortiveDrawIfPresent(
+        gameId: Uuid,
+        declarerId: Uuid?,
+        previousState: TableState,
+    ) {
+        val currentState = gameRepository.getTableState(gameId) ?: return
+        val previousReasons = previousState.players.flatMap { player ->
+            player.actionHistory.filterIsInstance<GameAction.ExhaustiveDraw>().map { it.reason }
+        }.toSet()
+        val reason = currentState.players.asSequence()
+            .flatMap { it.actionHistory.asSequence() }
+            .filterIsInstance<GameAction.ExhaustiveDraw>()
+            .map { it.reason }
+            .firstOrNull { it !in previousReasons }
+            ?: return
+        val module = moduleRegistry.getModule(currentState.config)
+        roundSettlementPresentationService.publish(
+            gameId = gameId,
+            previousState = previousState,
+            currentState = currentState,
+            module = module,
+            reason = reason,
+            tenpaiPlayerIds = null,
+            revealedHands = module.resolveAbortiveDrawRevealedHands(currentState, declarerId, reason),
+        )
     }
 
     /**

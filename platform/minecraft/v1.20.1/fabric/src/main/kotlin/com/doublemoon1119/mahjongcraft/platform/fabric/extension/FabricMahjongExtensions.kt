@@ -28,6 +28,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMah
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
@@ -63,6 +65,8 @@ object FabricMahjongExtensions {
         tileEmojiRegistry: TileEmojiRegistry,
         tileLabelRegistry: TileLabelRegistry,
         gameActionDisplayNameRegistry: GameActionDisplayNameRegistry = GameActionDisplayNameRegistryImpl(),
+        exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry =
+            ExhaustiveDrawReasonDisplayNameRegistryImpl(),
         winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
             WinCelebrationCueResolverRegistryImpl(),
         showcaseRegistry: WinCelebrationShowcaseRegistry =
@@ -86,6 +90,7 @@ object FabricMahjongExtensions {
                 tileEmojiRegistry = tileEmojiRegistry,
                 tileLabelRegistry = tileLabelRegistry,
                 gameActionDisplayNameRegistry = gameActionDisplayNameRegistry,
+                exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
                 winCelebrationCueResolverRegistry = winCelebrationCueResolverRegistry,
                 showcaseRegistry = showcaseRegistry,
                 gameActionAiRegistry = gameActionAiRegistry,
@@ -152,6 +157,8 @@ object FabricMahjongExtensions {
         tileEmojiRegistry: TileEmojiRegistry,
         tileLabelRegistry: TileLabelRegistry,
         gameActionDisplayNameRegistry: GameActionDisplayNameRegistry = GameActionDisplayNameRegistryImpl(),
+        exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry =
+            ExhaustiveDrawReasonDisplayNameRegistryImpl(),
         winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
             WinCelebrationCueResolverRegistryImpl(),
         showcaseRegistry: WinCelebrationShowcaseRegistry =
@@ -198,6 +205,7 @@ object FabricMahjongExtensions {
             tileLabelRegistry = tileLabelRegistry,
             showcaseRegistry = showcaseRegistry,
             gameActionDisplayNameRegistry = gameActionDisplayNameRegistry,
+            exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
         )
     }
 

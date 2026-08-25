@@ -83,6 +83,20 @@ class MahjongTileEntity(
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
         private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
+    /** 結算展示期間對所有觀察者公開的暫時牌面；到期後 renderer 自動忽略。 */
+    val presentationAssetKey: String get() = dataTracker[PRESENTATION_ASSET_KEY]
+
+    /** [presentationAssetKey] 的絕對到期時間。 */
+    val presentationAssetEndGameTime: Long get() = dataTracker[PRESENTATION_ASSET_END_GAME_TIME]
+
+    /** 只在 server 端建立可持久化的公開牌面 lease；重複呼叫只允許延長。 */
+    fun revealForPresentation(assetKey: String, endGameTime: Long) {
+        check(!world.isClient) { "Presentation reveal lease is server-only" }
+        if (endGameTime < presentationAssetEndGameTime) return
+        dataTracker.set(PRESENTATION_ASSET_KEY, assetKey.normalizedTileAssetKey())
+        dataTracker.set(PRESENTATION_ASSET_END_GAME_TIME, endGameTime)
+    }
+
     /**
      * 是否正在播放由伺服器啟動的運動動畫（牌牆生成掉落、發牌、摸牌、丟牌共用同一套機制，見
      * [applyPlayMotion]）。`entity` 本身固定 `refreshPositionAndAngles` 到動畫**終點**，動畫期間
@@ -333,6 +347,8 @@ class MahjongTileEntity(
         dataTracker.startTracking(ANIMATION_START_POSE_ROTATION, 0.0f)
         dataTracker.startTracking(ANIMATION_END_POSE_ROTATION, 0.0f)
         dataTracker.startTracking(ANIMATION_EASE_ROTATION, false)
+        dataTracker.startTracking(PRESENTATION_ASSET_KEY, UNKNOWN_TILE_ASSET_KEY)
+        dataTracker.startTracking(PRESENTATION_ASSET_END_GAME_TIME, 0L)
     }
 
     /**
@@ -347,6 +363,8 @@ class MahjongTileEntity(
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
         tileAssetKey = nbt.getString(NBT_KEY_TILE)
         tilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
+        dataTracker.set(PRESENTATION_ASSET_KEY, nbt.getString(NBT_KEY_PRESENTATION_ASSET))
+        dataTracker.set(PRESENTATION_ASSET_END_GAME_TIME, nbt.getLong(NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME))
         readAnimationQueueFromNbt(nbt)
     }
 
@@ -356,6 +374,8 @@ class MahjongTileEntity(
         nbt.putString(NBT_KEY_POSE, tilePose.name)
         nbt.putBoolean(NBT_KEY_MANAGED_BY_GAME, managedByGame)
         managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
+        nbt.putString(NBT_KEY_PRESENTATION_ASSET, presentationAssetKey)
+        nbt.putLong(NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME, presentationAssetEndGameTime)
         writeAnimationQueueToNbt(nbt)
     }
 
@@ -380,10 +400,18 @@ class MahjongTileEntity(
 
         /** 正式牌局所屬桌子 UUID 的世界存檔 key。 */
         private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
+        private const val NBT_KEY_PRESENTATION_ASSET = "PresentationAsset"
+        private const val NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME = "PresentationAssetEndGameTime"
 
         /** 同步牌面素材 key。 */
         private val TILE_ASSET_KEY: TrackedData<String> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
+
+        private val PRESENTATION_ASSET_KEY: TrackedData<String> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
+
+        private val PRESENTATION_ASSET_END_GAME_TIME: TrackedData<Long> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
 
         /** 同步姿態 ordinal；持久化仍使用名稱以避免 enum 重排影響存檔。 */
         private val TILE_POSE: TrackedData<Int> =

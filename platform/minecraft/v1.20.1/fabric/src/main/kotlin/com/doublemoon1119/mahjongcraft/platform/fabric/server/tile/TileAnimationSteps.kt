@@ -250,6 +250,30 @@ internal object TileAnimationSteps {
         )
     }
 
+    /**
+     * 流局時將未公開手牌由目前姿態平滑蓋成牌背朝上。姿態與動畫步驟一起寫入 entity NBT，重新載入
+     * 世界後會接續尚未完成的旋轉，不會瞬間跳到終點。
+     */
+    fun scheduleConceal(tile: MahjongTileEntity, startGameTime: Long) {
+        val startPose = tile.tilePose
+        tile.enqueueAll(
+            listOf(
+                AnimationStep.WaitUntil(startGameTime),
+                AnimationStep.Custom(MahjongTilePose.FACE_DOWN),
+                AnimationStep.PlayMotion(
+                    durationTicks = MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS,
+                    arcHeight = 0.0,
+                    startOffsetX = 0.0,
+                    startOffsetY = 0.0,
+                    startOffsetZ = 0.0,
+                    startPoseRotationDegrees = startPose.rotationDegrees,
+                    endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                    easeRotation = true,
+                ),
+            ),
+        )
+    }
+
     /** 開局發牌動畫起飛階段的相對高度，理由同 `FabricMahjongTileWallPresenter.WALL_DROP_HEIGHT`——起始估算值。 */
     private const val DEAL_LIFT_HEIGHT: Double = 0.4
 

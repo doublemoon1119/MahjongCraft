@@ -1,9 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundSettlementStatusIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundSettlementHandPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundSettlementPlayerPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
@@ -12,13 +18,16 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCinematicTimeline
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
@@ -32,11 +41,13 @@ import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
+import net.minecraft.command.argument.IdentifierArgumentType
 import net.minecraft.entity.Entity
 import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.world.ServerWorld
+import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Single
 import java.util.concurrent.CompletableFuture
@@ -79,6 +90,8 @@ class FabricDebugAnimationCommand(
     private val effectScheduler: FabricWinCelebrationEffectScheduler,
     private val showcaseScheduler: FabricWinCelebrationShowcaseScheduler,
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
+    private val roundSettlementScheduler: FabricRoundSettlementPresentationScheduler,
+    private val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
 ) {
     /** 每個子指令自行排定的清除任務，見 [scheduleCleanup] KDoc。 */
     private val cleanupTasks = ConcurrentLinkedQueue<CleanupTask>()
@@ -117,7 +130,7 @@ class FabricDebugAnimationCommand(
                                                 previewShowcase(context.source, isTsumo = false, List(count) { DEFAULT_SHOWCASE_CUE })
                                             }
                                             .then(
-                                                argument(CUE_ARGUMENT, StringArgumentType.word())
+                                                argument(CUE_ARGUMENT, StringArgumentType.greedyString())
                                                     .suggests(::suggestShowcaseCueList)
                                                     .executes { context ->
                                                         val count = IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT)
@@ -131,12 +144,17 @@ class FabricDebugAnimationCommand(
                                 .then(
                                     literal(PHASE_ARGUMENT).then(
                                         argument(PHASE_NAME_ARGUMENT, StringArgumentType.word())
+                                            .suggests(::suggestShowcasePhases)
                                             .executes { context -> previewShowcasePhase(context.source, StringArgumentType.getString(context, PHASE_NAME_ARGUMENT), DEFAULT_SHOWCASE_CUE) }
                                             .then(
-                                                argument(CUE_ARGUMENT, StringArgumentType.word())
+                                                argument(CUE_ARGUMENT, IdentifierArgumentType.identifier())
                                                     .suggests(::suggestSingleShowcaseCue)
                                                     .executes { context ->
-                                                        previewShowcasePhase(context.source, StringArgumentType.getString(context, PHASE_NAME_ARGUMENT), StringArgumentType.getString(context, CUE_ARGUMENT))
+                                                        previewShowcasePhase(
+                                                            context.source,
+                                                            StringArgumentType.getString(context, PHASE_NAME_ARGUMENT),
+                                                            IdentifierArgumentType.getIdentifier(context, CUE_ARGUMENT).toString(),
+                                                        )
                                                     },
                                             ),
                                     ),
@@ -146,6 +164,60 @@ class FabricDebugAnimationCommand(
                         .then(withOptionalTileArgument(literal(DEAL_SUBCOMMAND), ::previewDeal))
                         .then(withOptionalTileArgument(literal(DRAW_SUBCOMMAND), ::previewDraw))
                         .then(withOptionalTileArgument(literal(DISCARD_SUBCOMMAND), ::previewDiscard))
+                        .then(
+                            literal(SETTLEMENT_SUBCOMMAND)
+                                .then(
+                                    literal(NORMAL_ARGUMENT).then(
+                                        argument(TENPAI_COUNT_ARGUMENT, IntegerArgumentType.integer(0, 4)).executes { context ->
+                                            previewSettlement(
+                                                context.source,
+                                                RiichiExhaustiveDrawReason.Normal.id,
+                                                IntegerArgumentType.getInteger(context, TENPAI_COUNT_ARGUMENT),
+                                            )
+                                        }.then(
+                                            argument(PLAYER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 4)).executes { context ->
+                                                previewSettlement(
+                                                    context.source,
+                                                    RiichiExhaustiveDrawReason.Normal.id,
+                                                    IntegerArgumentType.getInteger(context, TENPAI_COUNT_ARGUMENT),
+                                                    playerCount = IntegerArgumentType.getInteger(context, PLAYER_COUNT_ARGUMENT),
+                                                )
+                                            },
+                                        ),
+                                    ),
+                                )
+                                .then(literal(KYUUSHU_ARGUMENT).executes { context -> previewSettlement(context.source, RiichiExhaustiveDrawReason.KyuushuKyuuhai.id, 1, proof = true) })
+                                .then(
+                                    literal(SCORE_ARGUMENT)
+                                        .executes { context -> previewSettlement(context.source, RiichiExhaustiveDrawReason.Normal.id, 0, scoreDelta = DEFAULT_SCORE_DELTA) }
+                                        .then(
+                                            argument(SCORE_DELTA_ARGUMENT, IntegerArgumentType.integer(1)).executes { context ->
+                                                previewSettlement(
+                                                    context.source,
+                                                    RiichiExhaustiveDrawReason.Normal.id,
+                                                    0,
+                                                    scoreDelta = IntegerArgumentType.getInteger(context, SCORE_DELTA_ARGUMENT),
+                                                )
+                                            },
+                                        ),
+                                )
+                                .then(
+                                    literal(ABORTIVE_ARGUMENT).then(
+                                        argument(REASON_ARGUMENT, IdentifierArgumentType.identifier())
+                                            .suggests(::suggestAbortiveDrawReasons)
+                                            .executes { context ->
+                                                previewSettlement(context.source, IdentifierArgumentType.getIdentifier(context, REASON_ARGUMENT).toString(), 0)
+                                            },
+                                    ),
+                                ),
+                        )
+                        .then(
+                            literal(HOVERED_TEXT_SUBCOMMAND)
+                                .then(
+                                    literal(ROUND_SETTLEMENT_ARGUMENT)
+                                        .executes { context -> previewRoundSettlementHoveredText(context.source) },
+                                ),
+                        )
                         .then(
                             literal(MELD_SUBCOMMAND)
                                 .then(withOptionalTileArgument(literal(CHI_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.CHI, tileArg) })
@@ -176,13 +248,22 @@ class FabricDebugAnimationCommand(
         node: LiteralArgumentBuilder<ServerCommandSource>,
         allowMultiple: Boolean,
         onExecute: (ServerCommandSource, String?) -> Int,
-    ): LiteralArgumentBuilder<ServerCommandSource> = node
-        .executes { ctx -> onExecute(ctx.source, null) }
-        .then(
-            argument(CUE_ARGUMENT, StringArgumentType.word())
-                .suggests(if (allowMultiple) ::suggestShowcaseCueList else ::suggestSingleShowcaseCue)
-                .executes { ctx -> onExecute(ctx.source, StringArgumentType.getString(ctx, CUE_ARGUMENT)) },
-        )
+    ): LiteralArgumentBuilder<ServerCommandSource> {
+        node.executes { ctx -> onExecute(ctx.source, null) }
+        return if (allowMultiple) {
+            node.then(
+                argument(CUE_ARGUMENT, StringArgumentType.greedyString())
+                    .suggests(::suggestShowcaseCueList)
+                    .executes { ctx -> onExecute(ctx.source, StringArgumentType.getString(ctx, CUE_ARGUMENT)) },
+            )
+        } else {
+            node.then(
+                argument(CUE_ARGUMENT, IdentifierArgumentType.identifier())
+                    .suggests(::suggestSingleShowcaseCue)
+                    .executes { ctx -> onExecute(ctx.source, IdentifierArgumentType.getIdentifier(ctx, CUE_ARGUMENT).toString()) },
+            )
+        }
+    }
 
     /** 列出單一 showcase cue 的 Tab 補全候選。 */
     private fun suggestSingleShowcaseCue(
@@ -203,6 +284,29 @@ class FabricDebugAnimationCommand(
         allowMultiple: Boolean,
     ): CompletableFuture<Suggestions> {
         buildShowcaseCueSuggestions(builder.remaining, showcaseRegistry.cueKeys, allowMultiple).forEach(builder::suggest)
+        return builder.buildFuture()
+    }
+
+    /** 補全核心 TNT 時間線可直接跳轉的固定 phase。 */
+    private fun suggestShowcasePhases(
+        context: CommandContext<ServerCommandSource>,
+        builder: SuggestionsBuilder,
+    ): CompletableFuture<Suggestions> {
+        SHOWCASE_PHASES.filter { it.startsWith(builder.remaining, ignoreCase = true) }.forEach(builder::suggest)
+        return builder.buildFuture()
+    }
+
+    /** 補全 registry 中適合由 `abortive` 入口預覽的完整途中流局原因 ID。 */
+    private fun suggestAbortiveDrawReasons(
+        context: CommandContext<ServerCommandSource>,
+        builder: SuggestionsBuilder,
+    ): CompletableFuture<Suggestions> {
+        exhaustiveDrawReasonDisplayNameRegistry.reasonIds
+            .asSequence()
+            .filterNot { it == RiichiExhaustiveDrawReason.Normal.id || it == RiichiExhaustiveDrawReason.KyuushuKyuuhai.id }
+            .filter { it.startsWith(builder.remaining, ignoreCase = true) }
+            .sorted()
+            .forEach(builder::suggest)
         return builder.buildFuture()
     }
 
@@ -254,6 +358,129 @@ class FabricDebugAnimationCommand(
             else -> return COMMAND_FAILURE
         }
         return previewShowcase(source, isTsumo = true, cues = listOf(cue), initialElapsedTicks = initialElapsedTicks.toInt())
+    }
+
+    /** `settlement`：以正式持久化 stage 預覽統一流局排行榜。 */
+    private fun previewSettlement(
+        source: ServerCommandSource,
+        reasonId: String,
+        tenpaiCount: Int,
+        proof: Boolean = false,
+        scoreDelta: Int = 0,
+        playerCount: Int = 4,
+    ): Int {
+        if (':' !in reasonId) return COMMAND_FAILURE
+        if (playerCount !in 2..4 || tenpaiCount !in 0..playerCount) return COMMAND_FAILURE
+        val player = source.player ?: return COMMAND_FAILURE
+        val layout = virtualTableLayout(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
+        val previousScores = if (scoreDelta == 0) List(playerCount) { 25_000 } else List(playerCount) { index -> 28_000 - index * 2_000 }
+        val currentScores = previousScores.toMutableList()
+        if (scoreDelta != 0) {
+            val lastPlaceSeat = previousScores.lastIndex
+            currentScores[lastPlaceSeat] += scoreDelta
+            val payingSeats = previousScores.indices.filterNot { it == lastPlaceSeat }
+            val basePayment = scoreDelta / payingSeats.size
+            val remainder = scoreDelta % payingSeats.size
+            payingSeats.forEachIndexed { index, seat -> currentScores[seat] -= basePayment + if (index < remainder) 1 else 0 }
+        }
+        val currentRanks = currentScores.indices
+            .sortedWith(compareByDescending<Int> { currentScores[it] }.thenBy { it })
+            .withIndex()
+            .associate { (rank, seat) -> seat to rank + 1 }
+        val playerIds = List(playerCount) { seat ->
+            if (seat == 0) player.uuid.toKotlinUuid() else Uuid.random()
+        }
+        val previewTilesBySeat = List(playerCount) { seat ->
+            val assets = if (proof && seat == 0) {
+                KYUUSHU_PREVIEW_ASSETS
+            } else {
+                List(DEFAULT_RULE_CONFIG.initialHandSize) { index ->
+                    ALL_TILE_ASSET_KEYS[(seat * 7 + index) % (ALL_TILE_ASSET_KEYS.size - 1)]
+                }
+            }
+            assets.mapIndexed { index, asset ->
+                spawnFreeTile(
+                    player.serverWorld,
+                    layout.handPlacement(seat, assets.size, index),
+                    MahjongTilePose.STANDING,
+                    asset,
+                ) to asset
+            }
+        }
+        val revealedAssetsById = mutableMapOf<Uuid, String>()
+        val players = List(playerCount) { seat ->
+            val handPresentation = when {
+                proof && seat == 0 -> RoundSettlementHandPresentation.REVEAL_PROOF
+                seat < tenpaiCount -> RoundSettlementHandPresentation.REVEAL_TENPAI
+                else -> RoundSettlementHandPresentation.CONCEAL
+            }
+            val handTiles = previewTilesBySeat[seat]
+            if (handPresentation != RoundSettlementHandPresentation.CONCEAL) {
+                handTiles.forEach { (tile, asset) -> revealedAssetsById[tile.uuid.toKotlinUuid()] = asset }
+            }
+            RoundSettlementPlayerPresentation(
+                playerId = playerIds[seat],
+                seatIndex = seat,
+                currentWind = Wind.entries[seat],
+                isAi = seat != 0,
+                previousScore = previousScores[seat],
+                currentScore = currentScores[seat],
+                previousRank = seat + 1,
+                currentRank = currentRanks.getValue(seat),
+                handTileIds = handTiles.map { it.first.uuid.toKotlinUuid() },
+                handPresentation = handPresentation,
+                revealedHandTileIds = if (handPresentation == RoundSettlementHandPresentation.CONCEAL) emptyList() else handTiles.map { it.first.uuid.toKotlinUuid() },
+                waitingTiles = emptyList(),
+                statusId = when {
+                    proof && seat == 0 -> BuiltInRoundSettlementStatusIds.DRAW_DECLARATION
+                    seat < tenpaiCount -> BuiltInRoundSettlementStatusIds.TENPAI
+                    reasonId.endsWith(":normal") -> BuiltInRoundSettlementStatusIds.NOTEN
+                    else -> null
+                },
+            )
+        }
+        val end = roundSettlementScheduler.schedule(
+            world = player.serverWorld,
+            tableId = Uuid.random(),
+            controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
+            placement = layout.showcaseStagePlacement(),
+            request = RoundSettlementPresentationRequest(reasonId, players),
+            waitingTileAssetsBySeat = players.filter { it.handPresentation == RoundSettlementHandPresentation.REVEAL_TENPAI }
+                .associate { it.seatIndex to DEFAULT_WAITING_TILE_ASSETS },
+            revealedTileAssetsById = revealedAssetsById,
+        ) ?: return COMMAND_FAILURE
+        scheduleCleanup(player.serverWorld, end, previewTilesBySeat.flatten().map(Pair<MahjongTileEntity, String>::first))
+        source.sendFeedback({ net.minecraft.text.Text.literal("Settlement preview active until game time $end") }, false)
+        return COMMAND_SUCCESS
+    }
+
+    /** `hovered_text round_settlement`：以正式 builder 發送一筆可懸停檢查的 round-result 訊息。 */
+    private fun previewRoundSettlementHoveredText(source: ServerCommandSource): Int {
+        val details = Text.empty()
+        HOVERED_TEXT_SAMPLE_ROWS.forEachIndexed { index, row ->
+            if (index > 0) details.append(Text.literal("\n"))
+            details.append(
+                Text.translatable(
+                    MinecraftMessageKeys.ROUND_RESULT_PLAYER_LINE,
+                    row.playerName,
+                    row.previousRank.toString(),
+                    row.currentRank.toString(),
+                    row.rankSymbol,
+                    row.previousScore.toString(),
+                    row.currentScore.toString(),
+                ),
+            )
+        }
+        source.sendFeedback(
+            {
+                buildRoundResultChatText(
+                    Text.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW),
+                    details,
+                )
+            },
+            false,
+        )
+        return COMMAND_SUCCESS
     }
 
     /** 向 Fabric 登記每 tick 一次的臨時 entity 清除驅動，理由見 [scheduleCleanup] KDoc。 */
@@ -634,9 +861,32 @@ class FabricDebugAnimationCommand(
         const val DRAW_SUBCOMMAND: String = "draw"
         const val DISCARD_SUBCOMMAND: String = "discard"
         const val MELD_SUBCOMMAND: String = "meld"
+        const val SETTLEMENT_SUBCOMMAND: String = "settlement"
+        const val HOVERED_TEXT_SUBCOMMAND: String = "hovered_text"
+        const val ROUND_SETTLEMENT_ARGUMENT: String = "round_settlement"
+        const val NORMAL_ARGUMENT: String = "normal"
+        const val KYUUSHU_ARGUMENT: String = "kyuushu"
+        const val ABORTIVE_ARGUMENT: String = "abortive"
+        const val SCORE_ARGUMENT: String = "score"
+        const val SCORE_DELTA_ARGUMENT: String = "delta"
+        const val TENPAI_COUNT_ARGUMENT: String = "tenpai_count"
+        const val PLAYER_COUNT_ARGUMENT: String = "player_count"
+        const val REASON_ARGUMENT: String = "reason"
         const val CHI_ARGUMENT: String = "chi"
         const val PON_ARGUMENT: String = "pon"
         const val KAN_ARGUMENT: String = "kan"
+        const val DEFAULT_SCORE_DELTA: Int = 9_000
+        val SHOWCASE_PHASES: List<String> = listOf("launch", "orbit", "place", "ignite", "explode", "reveal")
+        val DEFAULT_WAITING_TILE_ASSETS: List<String> = listOf("m1", "m4", "m7")
+        val KYUUSHU_PREVIEW_ASSETS: List<String> = listOf(
+            "m1", "m9", "p1", "p9", "s1", "s9", "east", "south", "west", "north", "red_dragon", "green_dragon", "white_dragon", "m1",
+        )
+        val HOVERED_TEXT_SAMPLE_ROWS: List<HoveredTextSampleRow> = listOf(
+            HoveredTextSampleRow("Player", 4, 1, "↑", 16_000, 34_000),
+            HoveredTextSampleRow("AI-1a2b", 1, 2, "↓", 31_000, 25_000),
+            HoveredTextSampleRow("AI-3c4d", 2, 3, "↓", 28_000, 22_000),
+            HoveredTextSampleRow("AI-5e6f", 3, 4, "↓", 25_000, 19_000),
+        )
 
         /** 虛擬 controller 與玩家腳下方塊的水平距離，使近側手牌落在玩家前方約一格處。 */
         const val VIRTUAL_CONTROLLER_FORWARD_BLOCKS: Int = 3
@@ -671,6 +921,16 @@ class FabricDebugAnimationCommand(
         /** Brigadier 失敗回傳值。 */
         const val COMMAND_FAILURE: Int = 0
     }
+
+    /** 正式 round-result hover builder 的單列測試資料。 */
+    private data class HoveredTextSampleRow(
+        val playerName: String,
+        val previousRank: Int,
+        val currentRank: Int,
+        val rankSymbol: String,
+        val previousScore: Int,
+        val currentScore: Int,
+    )
 }
 
 /**

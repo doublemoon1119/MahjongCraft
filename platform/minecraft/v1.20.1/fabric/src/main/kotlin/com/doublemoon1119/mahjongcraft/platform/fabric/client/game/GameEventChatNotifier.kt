@@ -4,8 +4,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -44,6 +46,7 @@ fun buildRoundResultChatMessage(
     displayNameRegistry: TileDisplayNameRegistry,
     tileAssetRegistry: MinecraftTileAssetRegistry,
     tileEmojiRegistry: TileEmojiRegistry,
+    exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
 ): Text? {
     if (action !is GameAction.Tsumo && action !is GameAction.Ron && action !is GameAction.ExhaustiveDraw) return null
     if (previousSnapshot == null) return null
@@ -54,8 +57,9 @@ fun buildRoundResultChatMessage(
         displayNameRegistry = displayNameRegistry,
         tileAssetRegistry = tileAssetRegistry,
         tileEmojiRegistry = tileEmojiRegistry,
+        exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
     )
-    val message: MutableText = Text.translatable(MinecraftMessageKeys.ROUND_RESULT_BROADCAST, actionText)
+    val details: MutableText = Text.empty()
 
     val rankBy = module.compareForRoundRanking()
     val previousRankById = previousSnapshot.players.sortedWith(rankBy).withIndex().associate { (index, p) -> p.id to index + 1 }
@@ -66,7 +70,8 @@ fun buildRoundResultChatMessage(
         val newRank = index + 1
         val previousRank = previousRankById[player.id] ?: newRank
         val previousScore = previousScoreById[player.id] ?: player.score
-        message.append(Text.literal("\n")).append(
+        if (index > 0) details.append(Text.literal("\n"))
+        details.append(
             Text.translatable(
                 MinecraftMessageKeys.ROUND_RESULT_PLAYER_LINE,
                 resolvePlayerDisplayName(player.id, player.isAi),
@@ -79,7 +84,7 @@ fun buildRoundResultChatMessage(
         )
     }
 
-    return message
+    return buildRoundResultChatText(actionText, details)
 }
 
 /** `↑`：名次數字變小（進步）；`↓`：名次數字變大（退步）；`→`：名次沒變。 */

@@ -217,7 +217,7 @@ private fun GameAction.baseToken(): String = when (this) {
 
     is GameAction.Ron -> "ron"
     GameAction.Pass -> "pass"
-    is GameAction.ExhaustiveDraw -> "kyuushu"
+    is GameAction.ExhaustiveDraw -> reason.id
     // Riichi 已被呼叫端過濾；Discard／GameStarted／RoundStarted／Draw 不會出現在合法動作清單裡。
     else -> "action"
 }

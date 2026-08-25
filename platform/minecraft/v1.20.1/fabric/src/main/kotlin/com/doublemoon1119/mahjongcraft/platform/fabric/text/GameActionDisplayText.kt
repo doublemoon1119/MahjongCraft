@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.text
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -30,6 +30,7 @@ fun GameAction.toDisplayText(
     displayNameRegistry: TileDisplayNameRegistry,
     tileAssetRegistry: MinecraftTileAssetRegistry,
     tileEmojiRegistry: TileEmojiRegistry,
+    exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
 ): Text = when (this) {
     is GameAction.Discard -> tileActionText(
         key = MinecraftMessageKeys.GAME_ACTION_DISCARD,
@@ -69,7 +70,7 @@ fun GameAction.toDisplayText(
         tileEmojiRegistry = tileEmojiRegistry,
     )
     GameAction.Pass -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_PASS)
-    is GameAction.ExhaustiveDraw -> exhaustiveDrawText()
+    is GameAction.ExhaustiveDraw -> exhaustiveDrawText(exhaustiveDrawReasonDisplayNameRegistry)
     GameAction.MatchEnded -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_MATCH_ENDED)
     is GameAction.DiceRolled -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_DICE_ROLLED)
     GameAction.GameStarted, GameAction.RoundStarted, GameAction.Draw -> Text.literal(this::class.simpleName ?: "")
@@ -97,9 +98,7 @@ private fun GameAction.KanType.toMessageKey(): String = when (this) {
     GameAction.KanType.ADDED_KAN -> MinecraftMessageKeys.GAME_ACTION_KAN_ADDED
 }
 
-/** 九種九牌顯示專屬文字，其餘規則專屬流局原因退回通用 fallback。 */
-private fun GameAction.ExhaustiveDraw.exhaustiveDrawText(): Text = if (reason == RiichiExhaustiveDrawReason.KyuushuKyuuhai) {
-    Text.translatable(MinecraftMessageKeys.GAME_ACTION_KYUUSHU_KYUUHAI)
-} else {
-    Text.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW)
-}
+/** 透過 registry 解析規則專屬流局名稱；未知原因安全退回通用流局文字。 */
+private fun GameAction.ExhaustiveDraw.exhaustiveDrawText(registry: ExhaustiveDrawReasonDisplayNameRegistry): Text = registry
+    .find(reason.id)?.let(Text::translatable)
+    ?: Text.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW)

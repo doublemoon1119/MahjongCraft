@@ -8,6 +8,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.registerBuiltInAiStrategyDisplayNames
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.registerBuiltInRuleModuleDisplayNames
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInRiichiReasons
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.registerBuiltInWinCelebrationShowcases
@@ -46,6 +49,8 @@ object MinecraftMahjongExtensionRegistrar {
         tileLabelRegistry: TileLabelRegistry,
         showcaseRegistry: WinCelebrationShowcaseRegistry = WinCelebrationShowcaseRegistryImpl(),
         gameActionDisplayNameRegistry: GameActionDisplayNameRegistry = GameActionDisplayNameRegistryImpl(),
+        exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry =
+            ExhaustiveDrawReasonDisplayNameRegistryImpl(),
     ): MinecraftMahjongExtensionRegistrationResult {
         tileAssetRegistry.registerBuiltInTileAssets()
         aiStrategyDisplayNameRegistry.registerBuiltInAiStrategyDisplayNames()
@@ -54,6 +59,7 @@ object MinecraftMahjongExtensionRegistrar {
         tileEmojiRegistry.registerBuiltInTileEmojis()
         tileLabelRegistry.registerBuiltInTileLabels()
         showcaseRegistry.registerBuiltInWinCelebrationShowcases()
+        exhaustiveDrawReasonDisplayNameRegistry.registerBuiltInRiichiReasons()
 
         val thirdPartyAssetKeys = mutableListOf<String>()
         val thirdPartyAiStrategyKeys = mutableListOf<String>()
@@ -93,6 +99,7 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerTileLabels(recordingTileLabelRegistry)
                 extension.registerWinCelebrationShowcases(recordingShowcaseRegistry)
                 extension.registerGameActionDisplayNames(recordingGameActionDisplayNameRegistry)
+                extension.registerExhaustiveDrawReasonDisplayNames(exhaustiveDrawReasonDisplayNameRegistry)
             } catch (cause: Exception) {
                 throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
             }
@@ -106,6 +113,7 @@ object MinecraftMahjongExtensionRegistrar {
         tileLabelRegistry.freeze()
         showcaseRegistry.freeze()
         gameActionDisplayNameRegistry.freeze()
+        exhaustiveDrawReasonDisplayNameRegistry.freeze()
         return MinecraftMahjongExtensionRegistrationResult(
             thirdPartyAssetKeys,
             thirdPartyAiStrategyKeys,

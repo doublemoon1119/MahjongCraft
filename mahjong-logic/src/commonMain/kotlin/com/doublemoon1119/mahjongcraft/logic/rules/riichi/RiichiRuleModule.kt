@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
@@ -318,10 +319,8 @@ class RiichiRuleModule(
      */
     override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult {
         val shantenCalculator = createShantenCalculator()
-        val tenpaiIds = tableState.players
-            .filter { shantenCalculator.calculate(it.hand) !is ShantenResult.NotTenpai }
-            .map { it.id }
-            .toSet()
+        val shantenByPlayer = tableState.players.associateWith { shantenCalculator.calculate(it.hand) }
+        val tenpaiIds = shantenByPlayer.filterValues { it !is ShantenResult.NotTenpai }.keys.map { it.id }.toSet()
 
         val nagashiManganIds = tableState.players
             .filter { player ->
@@ -342,9 +341,28 @@ class RiichiRuleModule(
         return ExhaustiveDrawSettlementResult(
             reason = RiichiExhaustiveDrawReason.Normal,
             tenpaiPlayerIds = tenpaiIds + nagashiManganIds,
+            revealedHands = if (nagashiManganIds.isEmpty()) {
+                shantenByPlayer.mapNotNull { (player, result) ->
+                    val waits = (result as? ShantenResult.Tenpai)?.winningTiles ?: return@mapNotNull null
+                    RevealedHandSettlement(player.id, waits.toSet())
+                }
+            } else {
+                emptyList()
+            },
             stickPotCollectorPlayerIds = nagashiManganIds,
             scoreDeltas = scoreDeltas,
         )
+    }
+
+    /** 九種九牌需要公開宣告者手牌作為成立證明，其餘途中流局不公開手牌。 */
+    override fun resolveAbortiveDrawRevealedHands(
+        tableState: TableState,
+        declarerId: Uuid?,
+        reason: ExhaustiveDrawReason,
+    ): List<RevealedHandSettlement> {
+        if (reason != RiichiExhaustiveDrawReason.KyuushuKyuuhai || declarerId == null) return emptyList()
+        if (tableState.players.none { it.id == declarerId }) return emptyList()
+        return listOf(RevealedHandSettlement(declarerId, emptySet()))
     }
 
     /**

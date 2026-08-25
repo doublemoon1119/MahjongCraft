@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongRoun
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongScoringStickEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.RoundSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationEffectEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationShowcaseEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand
@@ -30,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -77,6 +79,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val gameActionDisplayNames = koin.get<GameActionDisplayNameRegistry>()
         val moduleRegistry = koin.get<MahjongModuleRegistry>()
         val showcaseRegistry = koin.get<WinCelebrationShowcaseRegistry>()
+        val exhaustiveDrawReasonDisplayNames = koin.get<ExhaustiveDrawReasonDisplayNameRegistry>()
         MahjongChannels.roomUpdate.registerClientReceiver(json, stateStore::apply)
         MahjongChannels.gameUpdate.registerClientReceiver(json) { payload ->
             val previousSnapshot = stateStore.gameSnapshot
@@ -93,6 +96,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 displayNameRegistry = tileDisplayNames,
                 tileAssetRegistry = tileAssetRegistry,
                 tileEmojiRegistry = tileEmojiRegistry,
+                exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNames,
             ) ?: buildMatchResultChatMessage(action, newSnapshot, module) ?: buildDiceRolledChatMessage(action) ?: return@registerClientReceiver
             MinecraftClient.getInstance().player?.sendMessage(message)
         }
@@ -114,6 +118,9 @@ class MahjongCraftModClient : ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.winCelebrationEffect, ::WinCelebrationEffectEntityRenderer)
         EntityRendererRegistry.register(ModEntities.winCelebrationShowcase) { context ->
             WinCelebrationShowcaseEntityRenderer(context, showcaseRegistry)
+        }
+        EntityRendererRegistry.register(ModEntities.roundSettlementPresentation) { context ->
+            RoundSettlementPresentationEntityRenderer(context, exhaustiveDrawReasonDisplayNames)
         }
         EntityRendererRegistry.register(ModEntities.mahjongTile) { context ->
             MahjongTileEntityRenderer(context, stateStore, tileAssetRegistry, tileLabelRegistry, clientConfigStore, moduleRegistry)

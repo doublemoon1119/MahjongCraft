@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
@@ -18,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricRoundSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationShowcaseScheduler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresentation
@@ -104,6 +106,7 @@ class FabricGamePresentationPublisher(
     private val moduleRegistry: MahjongModuleRegistry,
     private val effectScheduler: FabricWinCelebrationEffectScheduler,
     private val showcaseScheduler: FabricWinCelebrationShowcaseScheduler,
+    private val roundSettlementScheduler: FabricRoundSettlementPresentationScheduler,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
@@ -122,6 +125,48 @@ class FabricGamePresentationPublisher(
      * （例如規則沒有牌牆）時預設視為 `0`，不強制要求呼叫順序。
      */
     private val wallDropTicksByTable = ConcurrentHashMap<Uuid, Int>()
+
+    override fun publishRoundSettlement(gameId: Uuid, request: RoundSettlementPresentationRequest) {
+        busyTracker.markPending(gameId)
+        scope.launch(dispatchers.main) {
+            try {
+                val resolved = resolveTableContext(gameId, "publishRoundSettlement") ?: return@launch
+                val waitingAssets = request.players.associate { player ->
+                    player.seatIndex to player.waitingTiles.map { it.toAssetKey(tileAssetRegistry) }
+                }
+                val tableState = gameRepository.getTableState(gameId)
+                val revealedAssets = request.players.flatMap { it.revealedHandTileIds }.distinct().mapNotNull { tileId ->
+                    tableState?.findTile(tileId)?.let { tileId to it.tile.toAssetKey(tileAssetRegistry) }
+                }.toMap()
+                val endGameTime = roundSettlementScheduler.schedule(
+                    world = resolved.world,
+                    tableId = gameId,
+                    controllerPos = BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
+                    placement = MahjongTileTableLayout.showcaseStagePlacement(
+                        resolved.location.x,
+                        resolved.location.y,
+                        resolved.location.z,
+                    ),
+                    request = request,
+                    waitingTileAssetsBySeat = waitingAssets,
+                    revealedTileAssetsById = revealedAssets,
+                )
+                if (endGameTime == null) {
+                    logger.warn("publishRoundSettlement gameId={} skipped: stage spawn failed", gameId)
+                } else {
+                    resolved.table.extendPresentationUntil(endGameTime)
+                    logger.debug(
+                        "Round settlement presentation created gameId={} reason={} players={}",
+                        gameId,
+                        request.reasonId,
+                        request.players.size,
+                    )
+                }
+            } finally {
+                busyTracker.clearPending(gameId)
+            }
+        }
+    }
 
     /**
      * 查無桌子位置、世界、或 controller 目前不是合法麻將桌方塊時直接放棄——比照本介面 best-effort

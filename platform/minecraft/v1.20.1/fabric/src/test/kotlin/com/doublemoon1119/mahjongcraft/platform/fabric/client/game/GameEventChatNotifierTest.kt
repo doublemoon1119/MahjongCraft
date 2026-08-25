@@ -7,11 +7,14 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import net.minecraft.text.HoverEvent
+import net.minecraft.text.Text
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -28,6 +31,7 @@ class GameEventChatNotifierTest {
     private val actionDisplayNameRegistry = GameActionDisplayNameRegistryImpl()
     private val tileAssetRegistry = MinecraftTileAssetRegistryImpl()
     private val tileEmojiRegistry = TileEmojiRegistryImpl()
+    private val exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl()
 
     /** 排名邏輯測的是 [MahjongRuleModule] 介面的預設實作，用哪個規則模組不影響結果——這裡沒有
      *  覆寫 `compareForRoundRanking`／`compareForMatchRanking`，借用即可，跟快照本身用的
@@ -48,6 +52,7 @@ class GameEventChatNotifierTest {
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
+            exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
         )
 
         assertNull(message)
@@ -66,6 +71,7 @@ class GameEventChatNotifierTest {
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
+            exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
         )
 
         assertNull(message)
@@ -98,12 +104,13 @@ class GameEventChatNotifierTest {
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
+            exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
         )
 
         val broadcastContent = message?.content as? TranslatableTextContent
         kotlin.test.assertEquals("mahjongcraft.message.round_result_broadcast", broadcastContent?.key)
 
-        val playerLinesById = message?.siblings
+        val playerLinesById = message?.hoverDetails()?.siblings
             .orEmpty()
             .mapNotNull { it.content as? TranslatableTextContent }
             .filter { it.key == "mahjongcraft.message.round_result_player_line" }
@@ -151,9 +158,10 @@ class GameEventChatNotifierTest {
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
+            exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
         )
 
-        val playerLines = message?.siblings
+        val playerLines = message?.hoverDetails()?.siblings
             .orEmpty()
             .mapNotNull { it.content as? TranslatableTextContent }
             .filter { it.key == "mahjongcraft.message.round_result_player_line" }
@@ -165,6 +173,10 @@ class GameEventChatNotifierTest {
             "Expected west (highest score), then south before east (tied score, south sits closer to this hand's east), then north.",
         )
     }
+
+    /** 取得簡短 round-result 訊息的 hover 詳情。 */
+    private fun Text.hoverDetails(): Text? = style.hoverEvent?.getValue(HoverEvent.Action.SHOW_TEXT)
+        ?: siblings.firstNotNullOfOrNull { it.hoverDetails() }
 
     @Test
     fun `returns null for match result when the action is not match ended`() {

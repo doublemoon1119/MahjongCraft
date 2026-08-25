@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
@@ -62,6 +63,13 @@ fun Meld.toPresentation(revealsClosedKanTiles: Boolean): MeldPresentation = Meld
  * 受影響。
  */
 interface GamePresentationPublisher {
+    /**
+     * 通知平台呈現層建立統一流局結算展示。
+     *
+     * 預設 no-op，讓沒有世界呈現能力的平台仍能只依 chat／GUI 顯示權威結算結果。
+     */
+    fun publishRoundSettlement(gameId: Uuid, request: RoundSettlementPresentationRequest) = Unit
+
     /**
      * 通知平台呈現層本局權威擲骰結果。
      *

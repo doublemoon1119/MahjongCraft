@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
@@ -40,6 +41,7 @@ import kotlin.uuid.toKotlinUuid
  * @property candidateResolver 依玩家目前桌況列出手牌／合法動作候選項目。
  * @property gameActionService 實際執行對局動作的服務。
  * @property feedbackPublisher 候選 token 無法解析時的回饋。
+ * @property exhaustiveDrawReasonDisplayNameRegistry 解析規則專屬流局動作名稱。
  * @property tileDisplayNameRegistry 解析候選 tooltip 用的牌面顯示名稱。
  * @property tileAssetRegistry 解析候選 tooltip 牌面 emoji 用的 asset key。
  * @property tileEmojiRegistry 解析候選 tooltip 牌面 emoji 字元。
@@ -51,6 +53,7 @@ class FabricGameCommand(
     private val gameActionService: MahjongTableGameActionService,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val gameActionDisplayNameRegistry: GameActionDisplayNameRegistry,
+    private val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
     private val tileDisplayNameRegistry: TileDisplayNameRegistry,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val tileEmojiRegistry: TileEmojiRegistry,
@@ -218,6 +221,7 @@ class FabricGameCommand(
                         tileDisplayNameRegistry,
                         tileAssetRegistry,
                         tileEmojiRegistry,
+                        exhaustiveDrawReasonDisplayNameRegistry,
                     ),
                 )
             }

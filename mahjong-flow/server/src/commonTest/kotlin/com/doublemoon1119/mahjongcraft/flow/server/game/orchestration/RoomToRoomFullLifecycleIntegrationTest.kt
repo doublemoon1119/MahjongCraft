@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTime
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.RoundSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -161,6 +162,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 FakeDecisionTimerUpdatePublisher(),
             ),
             presentationBusyGate = presentationBusyGate,
+            roundSettlementPresentationService = RoundSettlementPresentationService(presentationPublisher),
         )
     }
 

@@ -274,6 +274,22 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult?
 
     /**
+     * 決定途中流局成立後需要公開的手牌。
+     *
+     * 預設不公開；需要攤牌證明的規則（例如九種九牌）應回傳宣告者與其公開資料。這個 hook 只決定
+     * 權威公開資訊，不負責動畫或平台呈現。
+     *
+     * @param tableState 途中流局成立時的桌況。
+     * @param declarerId 主動宣告者 Uuid；系統判定的途中流局為 null。
+     * @param reason 本次途中流局原因。
+     */
+    fun resolveAbortiveDrawRevealedHands(
+        tableState: TableState,
+        declarerId: Uuid?,
+        reason: ExhaustiveDrawReason,
+    ): List<RevealedHandSettlement> = emptyList()
+
+    /**
      * 多家和依 [MahjongRuleConfig.multiRonPolicy] 判定為流局（[RonResolution.ABORTIVE_DRAW]）時，
      * 該規則對應的具體流局原因。
      *

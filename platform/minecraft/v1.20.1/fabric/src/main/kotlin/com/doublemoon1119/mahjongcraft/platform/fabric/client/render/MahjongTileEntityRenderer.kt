@@ -255,6 +255,7 @@ class MahjongTileEntityRenderer(
      */
     private fun MahjongTileEntity.resolvedTileAssetKey(): String {
         if (!managedByGame) return tileAssetKey
+        if (world.time < presentationAssetEndGameTime) return presentationAssetKey
         val tile = stateStore.findManagedTileSnapshot(uuid.toKotlinUuid())?.tile ?: return UNKNOWN_TILE_ASSET_KEY
         return tile.toAssetKey(tileAssetRegistry)
     }

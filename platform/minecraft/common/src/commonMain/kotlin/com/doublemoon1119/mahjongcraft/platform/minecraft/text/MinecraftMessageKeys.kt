@@ -242,6 +242,24 @@ object MinecraftMessageKeys {
     /** 其他規則專屬流局原因的通用 fallback 顯示文字，不帶參數。 */
     const val GAME_ACTION_EXHAUSTIVE_DRAW = PREFIX + "game_action_exhaustive_draw"
 
+    /** 一般荒牌流局的結算標題，不帶參數。 */
+    const val EXHAUSTIVE_DRAW_REASON_NORMAL = PREFIX + "exhaustive_draw_reason.normal"
+
+    /** round-result 訊息末尾可 hover 顯示完整結算內容的標籤。 */
+    const val ROUND_RESULT_DETAILS_LABEL = PREFIX + "round_result_details_label"
+
+    /** 四風連打，不帶參數。 */
+    const val GAME_ACTION_SUUFON_RENDA = PREFIX + "game_action_suufon_renda"
+
+    /** 四槓散了，不帶參數。 */
+    const val GAME_ACTION_SUUKAN_NAGARE = PREFIX + "game_action_suukan_nagare"
+
+    /** 四家立直，不帶參數。 */
+    const val GAME_ACTION_SUUCHA_RIICHI = PREFIX + "game_action_suucha_riichi"
+
+    /** 三家和了，不帶參數。 */
+    const val GAME_ACTION_SANCHA_HOU = PREFIX + "game_action_sancha_hou"
+
     /**
      * 回合結束廣播的標題，帶一個動作顯示文字參數（一個 `%s`，見上方 `GAME_ACTION_*`）——目前是
      * client 端聊天訊息占位呈現，之後若換成 GUI/HUD 只需要換掉呼叫端，這個 key 不受影響。
@@ -255,6 +273,27 @@ object MinecraftMessageKeys {
      * 升降跟分數增減兩種資料都在同一行裡。
      */
     const val ROUND_RESULT_PLAYER_LINE = PREFIX + "round_result_player_line"
+
+    /** 流局結算展示中的聽牌狀態。 */
+    const val ROUND_SETTLEMENT_STATUS_TENPAI = PREFIX + "round_settlement_status.tenpai"
+
+    /** 流局結算展示中的未聽狀態。 */
+    const val ROUND_SETTLEMENT_STATUS_NOTEN = PREFIX + "round_settlement_status.noten"
+
+    /** 流局結算展示中需要公開牌面的流局宣告狀態。 */
+    const val ROUND_SETTLEMENT_STATUS_DRAW_DECLARATION = PREFIX + "round_settlement_status.draw_declaration"
+
+    /** 流局結算排行榜中的東風位。 */
+    const val ROUND_SETTLEMENT_WIND_EAST = PREFIX + "round_settlement_wind.east"
+
+    /** 流局結算排行榜中的南風位。 */
+    const val ROUND_SETTLEMENT_WIND_SOUTH = PREFIX + "round_settlement_wind.south"
+
+    /** 流局結算排行榜中的西風位。 */
+    const val ROUND_SETTLEMENT_WIND_WEST = PREFIX + "round_settlement_wind.west"
+
+    /** 流局結算排行榜中的北風位。 */
+    const val ROUND_SETTLEMENT_WIND_NORTH = PREFIX + "round_settlement_wind.north"
 
     /** [GameAction.MatchEnded] 的顯示文字，不帶參數。 */
     const val GAME_ACTION_MATCH_ENDED = PREFIX + "game_action_match_ended"
@@ -441,8 +480,21 @@ object MinecraftMessageKeys {
         GAME_ACTION_PASS,
         GAME_ACTION_KYUUSHU_KYUUHAI,
         GAME_ACTION_EXHAUSTIVE_DRAW,
+        EXHAUSTIVE_DRAW_REASON_NORMAL,
+        ROUND_RESULT_DETAILS_LABEL,
+        GAME_ACTION_SUUFON_RENDA,
+        GAME_ACTION_SUUKAN_NAGARE,
+        GAME_ACTION_SUUCHA_RIICHI,
+        GAME_ACTION_SANCHA_HOU,
         ROUND_RESULT_BROADCAST,
         ROUND_RESULT_PLAYER_LINE,
+        ROUND_SETTLEMENT_STATUS_TENPAI,
+        ROUND_SETTLEMENT_STATUS_NOTEN,
+        ROUND_SETTLEMENT_STATUS_DRAW_DECLARATION,
+        ROUND_SETTLEMENT_WIND_EAST,
+        ROUND_SETTLEMENT_WIND_SOUTH,
+        ROUND_SETTLEMENT_WIND_WEST,
+        ROUND_SETTLEMENT_WIND_NORTH,
         GAME_ACTION_MATCH_ENDED,
         MATCH_RESULT_BROADCAST,
         RANKING_LINE,
