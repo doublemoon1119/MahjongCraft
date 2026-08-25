@@ -866,7 +866,7 @@ class RiichiRuleModuleTest {
     )
 
     /**
-     * 全為么九牌、皆未被鳴走的牌河，成立流局滿貫的必要條件，供 [declareExhaustiveDraw] 測試共用。
+     * 全為么九牌、皆未被鳴走的牌河，成立流局滿貫的必要條件，供 [resolveNagashiMangan] 測試共用。
      */
     private fun allYaochuuDiscardPile() = RiichiDiscardPile()
         .discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
@@ -959,7 +959,7 @@ class RiichiRuleModuleTest {
      * 且即使其他玩家不聽也不進行不聽罰符收授。
      */
     @Test
-    fun `test declareExhaustiveDraw dealer nagashi mangan charges 4000 from each of the other three`() {
+    fun `test resolveNagashiMangan dealer charges 4000 from each of the other three`() {
         val dealer = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.EAST,
             hand = notTenpaiHand(),
@@ -968,19 +968,18 @@ class RiichiRuleModuleTest {
         val others = List(3) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
         val table = FakeTableStateFactory.create(players = listOf(dealer) + others, config = module.config)
 
-        val result = module.declareExhaustiveDraw(table)
+        val result = (module as RiichiRuleModule).resolveNagashiMangan(table)
 
-        assertEquals(setOf(dealer.id), result?.stickPotCollectorPlayerIds)
-        assertTrue(dealer.id in requireNotNull(result).tenpaiPlayerIds)
+        assertEquals(setOf(dealer.id), result?.achieverPlayerIds)
         val expectedDeltas = mapOf(dealer.id to 12000) + others.associate { it.id to -4000 }
-        assertEquals(expectedDeltas, result.scoreDeltas)
+        assertEquals(expectedDeltas, result?.scoreDeltas)
     }
 
     /**
      * 驗證閒家成立流局滿貫時，視為自摸滿貫，莊家付 4000 點、其餘兩位閒家各付 2000 點（總額 8000）。
      */
     @Test
-    fun `test declareExhaustiveDraw non-dealer nagashi mangan charges dealer double`() {
+    fun `test resolveNagashiMangan non-dealer charges dealer double`() {
         val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, hand = notTenpaiHand())
         val achiever = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.SOUTH,
@@ -991,9 +990,9 @@ class RiichiRuleModuleTest {
         val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, hand = notTenpaiHand())
         val table = FakeTableStateFactory.create(players = listOf(dealer, achiever, west, north), config = module.config)
 
-        val result = module.declareExhaustiveDraw(table)
+        val result = (module as RiichiRuleModule).resolveNagashiMangan(table)
 
-        assertEquals(setOf(achiever.id), result?.stickPotCollectorPlayerIds)
+        assertEquals(setOf(achiever.id), result?.achieverPlayerIds)
         val expectedDeltas = mapOf(achiever.id to 8000, dealer.id to -4000, west.id to -2000, north.id to -2000)
         assertEquals(expectedDeltas, result?.scoreDeltas)
     }
@@ -1002,7 +1001,7 @@ class RiichiRuleModuleTest {
      * 驗證牌河中有一張么九牌被鳴走時，流局滿貫不成立，退回一般聽牌/不聽罰符路徑。
      */
     @Test
-    fun `test declareExhaustiveDraw nagashi mangan does not apply when a discard was taken`() {
+    fun `test resolveNagashiMangan does not apply when a discard was taken`() {
         val discardPile = allYaochuuDiscardPile().takeLast()
         val player = FakeMahjongPlayerFactory.create(hand = tenpaiHand(), discardPile = discardPile)
         val notenPlayers = List(3) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
@@ -1018,7 +1017,7 @@ class RiichiRuleModuleTest {
      * 驗證牌河中含有非么九牌時，流局滿貫不成立，退回一般聽牌/不聽罰符路徑。
      */
     @Test
-    fun `test declareExhaustiveDraw nagashi mangan does not apply when a non-yaochuu tile was discarded`() {
+    fun `test resolveNagashiMangan does not apply when a non-yaochuu tile was discarded`() {
         val discardPile = RiichiDiscardPile()
             .discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
             .discardTile(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)))
@@ -1037,7 +1036,7 @@ class RiichiRuleModuleTest {
      * 兩位成立者彼此之間互為對方結算裡的付款方，需要疊加而非互相覆蓋。
      */
     @Test
-    fun `test declareExhaustiveDraw aggregates deltas when multiple non-dealers achieve nagashi mangan`() {
+    fun `test resolveNagashiMangan aggregates deltas for multiple non-dealers`() {
         val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, hand = notTenpaiHand())
         val south = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.SOUTH,
@@ -1052,9 +1051,9 @@ class RiichiRuleModuleTest {
         val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, hand = notTenpaiHand())
         val table = FakeTableStateFactory.create(players = listOf(dealer, south, west, north), config = module.config)
 
-        val result = module.declareExhaustiveDraw(table)
+        val result = (module as RiichiRuleModule).resolveNagashiMangan(table)
 
-        assertEquals(setOf(south.id, west.id), result?.stickPotCollectorPlayerIds)
+        assertEquals(setOf(south.id, west.id), result?.achieverPlayerIds)
         val expectedDeltas = mapOf(
             dealer.id to -8000,
             south.id to 6000,

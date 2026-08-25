@@ -312,46 +312,42 @@ class RiichiRuleModule(
 
     /**
      * 計算一般流局（牌山摸盡）的點數結算：聽牌判定（[ShantenResult] 非 [ShantenResult.NotTenpai]
-     * 皆視為聽牌，`Complete` 理論上不會在流局判定時出現，僅作寬鬆處理）、流局滿貫偵測
-     * （牌河非空、且全部為么九牌、且沒有任何一張被鳴走），以及依兩者互斥決定的點數異動：
-     * 流局滿貫成立時視為自摸滿貫（見 [buildNagashiManganDeltas]），否則為不聽罰符
-     * （見 [buildNotenPenaltyDeltas]）。
+     * 皆視為聽牌，`Complete` 理論上不會在流局判定時出現，僅作寬鬆處理），並依
+     * [buildNotenPenaltyDeltas] 計算不聽罰符。流局滿貫已由 [resolveNagashiMangan] 在普通流局之前判定。
      */
     override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult {
         val shantenCalculator = createShantenCalculator()
         val shantenByPlayer = tableState.players.associateWith { shantenCalculator.calculate(it.hand) }
         val tenpaiIds = shantenByPlayer.filterValues { it !is ShantenResult.NotTenpai }.keys.map { it.id }.toSet()
 
-        val nagashiManganIds = tableState.players
+        return ExhaustiveDrawSettlementResult(
+            reason = RiichiExhaustiveDrawReason.Normal,
+            tenpaiPlayerIds = tenpaiIds,
+            revealedHands = shantenByPlayer.mapNotNull { (player, result) ->
+                val waits = (result as? ShantenResult.Tenpai)?.winningTiles ?: return@mapNotNull null
+                RevealedHandSettlement(player.id, waits.toSet())
+            },
+            stickPotCollectorPlayerIds = emptySet(),
+            scoreDeltas = buildNotenPenaltyDeltas(tableState, tenpaiIds),
+        )
+    }
+
+    /**
+     * 判定流局滿貫並計算自摸滿貫式收支；沒有任何人成立時回傳 `null`。
+     *
+     * 成立條件為牌河非空、全部是么九牌且從未被鳴走。此函式不修改桌況，也不收取供託。
+     */
+    fun resolveNagashiMangan(tableState: TableState): NagashiManganResolution? {
+        val achieverIds = tableState.players
             .filter { player ->
                 player.discardPile.entries.isNotEmpty() &&
                     player.discardPile.entries.all { entry ->
                         !entry.isTaken && (entry.tile.tile.isTerminal || entry.tile.tile.isHonor)
                     }
             }
-            .map { it.id }
-            .toSet()
-
-        val scoreDeltas = if (nagashiManganIds.isNotEmpty()) {
-            buildNagashiManganDeltas(tableState, nagashiManganIds)
-        } else {
-            buildNotenPenaltyDeltas(tableState, tenpaiIds)
-        }
-
-        return ExhaustiveDrawSettlementResult(
-            reason = RiichiExhaustiveDrawReason.Normal,
-            tenpaiPlayerIds = tenpaiIds + nagashiManganIds,
-            revealedHands = if (nagashiManganIds.isEmpty()) {
-                shantenByPlayer.mapNotNull { (player, result) ->
-                    val waits = (result as? ShantenResult.Tenpai)?.winningTiles ?: return@mapNotNull null
-                    RevealedHandSettlement(player.id, waits.toSet())
-                }
-            } else {
-                emptyList()
-            },
-            stickPotCollectorPlayerIds = nagashiManganIds,
-            scoreDeltas = scoreDeltas,
-        )
+            .mapTo(linkedSetOf()) { it.id }
+        if (achieverIds.isEmpty()) return null
+        return NagashiManganResolution(achieverIds, buildNagashiManganDeltas(tableState, achieverIds))
     }
 
     /** 九種九牌需要公開宣告者手牌作為成立證明，其餘途中流局不公開手牌。 */
@@ -372,7 +368,7 @@ class RiichiRuleModule(
      * （同一位玩家可能同時是多位成立者的付款對象）。
      */
     private fun buildNagashiManganDeltas(tableState: TableState, nagashiManganIds: Set<Uuid>): Map<Uuid, Int> {
-        val deltas = mutableMapOf<Uuid, Int>()
+        val deltas = tableState.players.associate { it.id to 0 }.toMutableMap()
         nagashiManganIds.forEach { achieverId ->
             val achiever = tableState.players.first { it.id == achieverId }
             val isDealer = achiever.currentWind == Wind.EAST

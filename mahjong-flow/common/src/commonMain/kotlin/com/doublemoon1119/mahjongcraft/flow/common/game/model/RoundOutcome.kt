@@ -1,7 +1,14 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import kotlin.uuid.Uuid
+
+/** MahjongCraft 內建特殊 round outcome 的完整識別碼。 */
+object BuiltInRoundOutcomeIds {
+    /** 日麻流局滿貫。 */
+    val NAGASHI_MANGAN: String = MahjongCraftMetadata.id("nagashi_mangan")
+}
 
 /** 第三方 outcome 可攜帶、並由 extension DTO registry 負責序列化的強型別詳細資料。 */
 interface ExtensionRoundOutcomeDetail

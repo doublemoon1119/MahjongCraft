@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.registerRiichiG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiGameCommandHandler
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiNagashiManganOutcomeResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
@@ -182,6 +183,7 @@ object FabricMahjongExtensions {
             moduleRegistry = moduleRegistry,
             gameActionAiRegistry = gameActionAiRegistry,
             gameCommandRegistry = gameCommandRegistry,
+            postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
             gameActionDisplayNameRegistry = gameActionDisplayNameRegistry,
             declareRiichiUseCase = declareRiichiUseCase,
             networkRegistries = networkRegistries,
@@ -221,6 +223,7 @@ object FabricMahjongExtensions {
         moduleRegistry: MahjongModuleRegistry,
         gameActionAiRegistry: ExtensionGameActionAiRegistry,
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry,
+        postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry,
         gameActionDisplayNameRegistry: GameActionDisplayNameRegistry,
         declareRiichiUseCase: DeclareRiichiUseCase,
         networkRegistries: NetworkDtoRegistries,
@@ -230,6 +233,7 @@ object FabricMahjongExtensions {
         persistenceRegistries.extensionGameActions.registerRiichiGameActionPersistenceDto()
         gameActionAiRegistry.registerRiichiGameActionHandler(moduleRegistry)
         gameCommandRegistry.registerRiichiGameCommandHandler(declareRiichiUseCase)
+        postReactionRoundOutcomeResolverRegistry.registerRiichiNagashiManganOutcomeResolver()
         gameActionDisplayNameRegistry.registerRiichiGameActionDisplayName()
     }
 }

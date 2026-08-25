@@ -18,21 +18,21 @@ import kotlin.uuid.Uuid
 /**
  * 宣告一般流局（牌山摸盡）的實例化用例。
  *
- * 這是「流局判定」系列子項的第一塊：處理牌山摸盡觸發的一般流局結算（聽牌/不聽罰符，或流局滿貫
- * 成立時視為自摸滿貫），是後續子項（九種九牌、三家和了流局、四風連打+四家立直）共用的機制骨架。
+ * 這是「流局判定」系列子項的第一塊：處理牌山摸盡觸發的一般流局結算（如聽牌／不聽罰符），
+ * 是後續子項（九種九牌、三家和了流局、四風連打、四家立直）共用的機制骨架。
  *
  * 系統觸發、無 `playerId` 參數——一般流局不是玩家主動發起的操作，理由與
  * [AdvanceRoundUseCase] 相同。由誰、在什麼時機呼叫本用例（例如伺服器捕捉到 [DrawTileUseCase]
  * 回傳 [GameError.WallExhausted] 後接著呼叫）是更外層（伺服器流程編排）的決定，不在這裡處理；
  * 呼叫前應確認牌山確實已經摸盡。
  *
- * 聽牌判定、流局滿貫偵測與點數換算、不聽罰符拆分等規則相關的計算完全交給
+ * 聽牌判定與不聽罰符拆分等規則相關的計算完全交給
  * [MahjongRuleModule.declareExhaustiveDraw]
  * 處理——這裡刻意不轉型成任何規則專屬的具體型別，理由與 [DeclareTsumoUseCase] 相同。
  *
- * 只把 [GameAction.ExhaustiveDraw] 記錄進聽牌玩家（含流局滿貫成立者）的 `actionHistory`，
+ * 只把 [GameAction.ExhaustiveDraw] 記錄進聽牌玩家的 `actionHistory`，
  * 不聽的玩家不記錄——[AdvanceRoundUseCase] 判斷連莊與否時，只要檢查莊家的 `actionHistory`
- * 裡有沒有 `ExhaustiveDraw`，就能同時涵蓋「莊家聽牌」與「莊家流局滿貫」兩種連莊依據。
+ * 裡有沒有 `ExhaustiveDraw`，即可暫時涵蓋尚未遷移為明確 transition directive 的普通流局連莊依據。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
