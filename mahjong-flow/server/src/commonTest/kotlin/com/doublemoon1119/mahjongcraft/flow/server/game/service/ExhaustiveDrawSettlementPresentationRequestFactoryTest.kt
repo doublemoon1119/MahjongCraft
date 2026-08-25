@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundSettlementHandPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementHandPresentation
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -13,8 +13,8 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** [RoundSettlementPresentationRequestFactory] 的手牌公開策略與玩家數測試。 */
-class RoundSettlementPresentationRequestFactoryTest {
+/** [ExhaustiveDrawSettlementPresentationRequestFactory] 的手牌公開策略與玩家數測試。 */
+class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
     private val config = RiichiRuleConfig()
     private val module = RiichiRuleModule("mahjongcraft:riichi", config)
 
@@ -23,7 +23,7 @@ class RoundSettlementPresentationRequestFactoryTest {
     fun `normal draw reveals tenpai hands and conceals noten hands`() {
         val state = tableState(4)
         val tenpaiPlayer = state.players.first()
-        val request = RoundSettlementPresentationRequestFactory.create(
+        val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
             previousState = state,
             currentState = state,
             module = module,
@@ -32,8 +32,8 @@ class RoundSettlementPresentationRequestFactoryTest {
             revealedHands = listOf(RevealedHandSettlement(tenpaiPlayer.id, setOf(Tile.Numeric(Tile.Suit.Character, 1)))),
         )
 
-        assertEquals(RoundSettlementHandPresentation.REVEAL_TENPAI, request.players.first().handPresentation)
-        assertEquals(RoundSettlementHandPresentation.CONCEAL, request.players[1].handPresentation)
+        assertEquals(ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI, request.players.first().handPresentation)
+        assertEquals(ExhaustiveDrawSettlementHandPresentation.CONCEAL, request.players[1].handPresentation)
         assertEquals(tenpaiPlayer.hand.allTiles.map { it.id }, request.players.first().revealedHandTileIds)
         assertEquals(emptyList(), request.players[1].revealedHandTileIds)
     }
@@ -43,7 +43,7 @@ class RoundSettlementPresentationRequestFactoryTest {
     fun `abortive proof reveals declarer and conceals other hands`() {
         val state = tableState(4)
         val declarer = state.players[2]
-        val request = RoundSettlementPresentationRequestFactory.create(
+        val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
             previousState = state,
             currentState = state,
             module = module,
@@ -52,9 +52,9 @@ class RoundSettlementPresentationRequestFactoryTest {
             revealedHands = listOf(RevealedHandSettlement(declarer.id, emptySet())),
         )
 
-        assertEquals(RoundSettlementHandPresentation.REVEAL_PROOF, request.players[2].handPresentation)
-        request.players.filterNot { it.playerId == declarer.id }.forEach { player ->
-            assertEquals(RoundSettlementHandPresentation.CONCEAL, player.handPresentation)
+        assertEquals(ExhaustiveDrawSettlementHandPresentation.REVEAL_PROOF, request.players[2].handPresentation)
+        request.players.filterNot { it.ranking.playerId == declarer.id }.forEach { player ->
+            assertEquals(ExhaustiveDrawSettlementHandPresentation.CONCEAL, player.handPresentation)
         }
     }
 
@@ -63,7 +63,7 @@ class RoundSettlementPresentationRequestFactoryTest {
     fun `request preserves actual player count`() {
         (2..4).forEach { playerCount ->
             val state = tableState(playerCount)
-            val request = RoundSettlementPresentationRequestFactory.create(
+            val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
                 previousState = state,
                 currentState = state,
                 module = module,
@@ -74,7 +74,7 @@ class RoundSettlementPresentationRequestFactoryTest {
 
             assertEquals(playerCount, request.players.size)
             request.players.forEach { player ->
-                assertEquals(RoundSettlementHandPresentation.CONCEAL, player.handPresentation)
+                assertEquals(ExhaustiveDrawSettlementHandPresentation.CONCEAL, player.handPresentation)
             }
         }
     }

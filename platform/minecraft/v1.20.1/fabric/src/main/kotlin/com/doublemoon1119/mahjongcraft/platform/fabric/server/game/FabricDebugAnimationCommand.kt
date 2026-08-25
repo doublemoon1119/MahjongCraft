@@ -1,10 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundSettlementStatusIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInExhaustiveDrawSettlementStatusIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundSettlementHandPresentation
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundSettlementPlayerPresentation
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementHandPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPlayerPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -90,7 +91,7 @@ class FabricDebugAnimationCommand(
     private val effectScheduler: FabricWinCelebrationEffectScheduler,
     private val showcaseScheduler: FabricWinCelebrationShowcaseScheduler,
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
-    private val roundSettlementScheduler: FabricRoundSettlementPresentationScheduler,
+    private val exhaustiveDrawSettlementScheduler: FabricExhaustiveDrawSettlementPresentationScheduler,
     private val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
 ) {
     /** 每個子指令自行排定的清除任務，見 [scheduleCleanup] KDoc。 */
@@ -214,8 +215,8 @@ class FabricDebugAnimationCommand(
                         .then(
                             literal(HOVERED_TEXT_SUBCOMMAND)
                                 .then(
-                                    literal(ROUND_SETTLEMENT_ARGUMENT)
-                                        .executes { context -> previewRoundSettlementHoveredText(context.source) },
+                                    literal(EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT)
+                                        .executes { context -> previewExhaustiveDrawSettlementHoveredText(context.source) },
                                 ),
                         )
                         .then(
@@ -410,43 +411,45 @@ class FabricDebugAnimationCommand(
         val revealedAssetsById = mutableMapOf<Uuid, String>()
         val players = List(playerCount) { seat ->
             val handPresentation = when {
-                proof && seat == 0 -> RoundSettlementHandPresentation.REVEAL_PROOF
-                seat < tenpaiCount -> RoundSettlementHandPresentation.REVEAL_TENPAI
-                else -> RoundSettlementHandPresentation.CONCEAL
+                proof && seat == 0 -> ExhaustiveDrawSettlementHandPresentation.REVEAL_PROOF
+                seat < tenpaiCount -> ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI
+                else -> ExhaustiveDrawSettlementHandPresentation.CONCEAL
             }
             val handTiles = previewTilesBySeat[seat]
-            if (handPresentation != RoundSettlementHandPresentation.CONCEAL) {
+            if (handPresentation != ExhaustiveDrawSettlementHandPresentation.CONCEAL) {
                 handTiles.forEach { (tile, asset) -> revealedAssetsById[tile.uuid.toKotlinUuid()] = asset }
             }
-            RoundSettlementPlayerPresentation(
-                playerId = playerIds[seat],
-                seatIndex = seat,
+            ExhaustiveDrawSettlementPlayerPresentation(
+                ranking = ScoreRankingPlayer(
+                    playerId = playerIds[seat],
+                    seatIndex = seat,
+                    isAi = seat != 0,
+                    previousScore = previousScores[seat],
+                    currentScore = currentScores[seat],
+                    previousRank = seat + 1,
+                    currentRank = currentRanks.getValue(seat),
+                ),
                 currentWind = Wind.entries[seat],
-                isAi = seat != 0,
-                previousScore = previousScores[seat],
-                currentScore = currentScores[seat],
-                previousRank = seat + 1,
-                currentRank = currentRanks.getValue(seat),
                 handTileIds = handTiles.map { it.first.uuid.toKotlinUuid() },
                 handPresentation = handPresentation,
-                revealedHandTileIds = if (handPresentation == RoundSettlementHandPresentation.CONCEAL) emptyList() else handTiles.map { it.first.uuid.toKotlinUuid() },
+                revealedHandTileIds = if (handPresentation == ExhaustiveDrawSettlementHandPresentation.CONCEAL) emptyList() else handTiles.map { it.first.uuid.toKotlinUuid() },
                 waitingTiles = emptyList(),
                 statusId = when {
-                    proof && seat == 0 -> BuiltInRoundSettlementStatusIds.DRAW_DECLARATION
-                    seat < tenpaiCount -> BuiltInRoundSettlementStatusIds.TENPAI
-                    reasonId.endsWith(":normal") -> BuiltInRoundSettlementStatusIds.NOTEN
+                    proof && seat == 0 -> BuiltInExhaustiveDrawSettlementStatusIds.DRAW_DECLARATION
+                    seat < tenpaiCount -> BuiltInExhaustiveDrawSettlementStatusIds.TENPAI
+                    reasonId.endsWith(":normal") -> BuiltInExhaustiveDrawSettlementStatusIds.NOTEN
                     else -> null
                 },
             )
         }
-        val end = roundSettlementScheduler.schedule(
+        val end = exhaustiveDrawSettlementScheduler.schedule(
             world = player.serverWorld,
             tableId = Uuid.random(),
             controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
             placement = layout.showcaseStagePlacement(),
-            request = RoundSettlementPresentationRequest(reasonId, players),
-            waitingTileAssetsBySeat = players.filter { it.handPresentation == RoundSettlementHandPresentation.REVEAL_TENPAI }
-                .associate { it.seatIndex to DEFAULT_WAITING_TILE_ASSETS },
+            request = ExhaustiveDrawSettlementPresentationRequest(reasonId, players),
+            waitingTileAssetsBySeat = players.filter { it.handPresentation == ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI }
+                .associate { it.ranking.seatIndex to DEFAULT_WAITING_TILE_ASSETS },
             revealedTileAssetsById = revealedAssetsById,
         ) ?: return COMMAND_FAILURE
         scheduleCleanup(player.serverWorld, end, previewTilesBySeat.flatten().map(Pair<MahjongTileEntity, String>::first))
@@ -454,8 +457,8 @@ class FabricDebugAnimationCommand(
         return COMMAND_SUCCESS
     }
 
-    /** `hovered_text round_settlement`：以正式 builder 發送一筆可懸停檢查的 round-result 訊息。 */
-    private fun previewRoundSettlementHoveredText(source: ServerCommandSource): Int {
+    /** `hovered_text exhaustive_draw_settlement`：以正式 builder 發送一筆可懸停檢查的 round-result 訊息。 */
+    private fun previewExhaustiveDrawSettlementHoveredText(source: ServerCommandSource): Int {
         val details = Text.empty()
         HOVERED_TEXT_SAMPLE_ROWS.forEachIndexed { index, row ->
             if (index > 0) details.append(Text.literal("\n"))
@@ -863,7 +866,7 @@ class FabricDebugAnimationCommand(
         const val MELD_SUBCOMMAND: String = "meld"
         const val SETTLEMENT_SUBCOMMAND: String = "settlement"
         const val HOVERED_TEXT_SUBCOMMAND: String = "hovered_text"
-        const val ROUND_SETTLEMENT_ARGUMENT: String = "round_settlement"
+        const val EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT: String = "exhaustive_draw_settlement"
         const val NORMAL_ARGUMENT: String = "normal"
         const val KYUUSHU_ARGUMENT: String = "kyuushu"
         const val ABORTIVE_ARGUMENT: String = "abortive"

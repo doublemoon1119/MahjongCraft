@@ -8,8 +8,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.RoundSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNagareUseCase
@@ -78,7 +78,7 @@ class GameFlowCoordinator(
     private val forcedAutoPlayDriver: ForcedAutoPlayDriver,
     private val decisionTimerManager: GameDecisionTimerManager,
     private val decisionTimerSynchronizationService: DecisionTimerSynchronizationService,
-    private val roundSettlementPresentationService: RoundSettlementPresentationService,
+    private val exhaustiveDrawSettlementPresentationService: ExhaustiveDrawSettlementPresentationService,
     @Provided private val presentationBusyGate: GamePresentationBusyGate,
 ) {
     /** 避免玩家命令與恢復心跳同時重複執行同一個待完成流程。 */
@@ -218,7 +218,7 @@ class GameFlowCoordinator(
                     val result = advanceRoundUseCase(gameId)
                     if (result is Outcome.Success && result.value.isMatchOver) {
                         // TODO: 導入 MatchSettlementPresentationEntity 後，流程應為：
-                        // RoundSettlementPresentationEntity → AdvanceRound → 判定 Match Over
+                        // ExhaustiveDrawSettlementPresentationEntity → AdvanceRound → 判定 Match Over
                         // → MatchSettlementPresentationEntity → ReturnToRoom。整場結算展示結束前不可立即回房。
                         returnToRoomUseCase(gameId)
                     }
@@ -288,7 +288,7 @@ class GameFlowCoordinator(
                 val module = moduleRegistry.getModule(previousState.config)
                 val settlement = module.declareExhaustiveDraw(previousState)
                 if (currentState != null && settlement != null) {
-                    roundSettlementPresentationService.publish(
+                    exhaustiveDrawSettlementPresentationService.publish(
                         gameId,
                         previousState,
                         currentState,
@@ -360,7 +360,7 @@ class GameFlowCoordinator(
             .firstOrNull { it !in previousReasons }
             ?: return
         val module = moduleRegistry.getModule(currentState.config)
-        roundSettlementPresentationService.publish(
+        exhaustiveDrawSettlementPresentationService.publish(
             gameId = gameId,
             previousState = previousState,
             currentState = currentState,

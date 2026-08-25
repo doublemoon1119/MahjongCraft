@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.testing.flow.common.game.service
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
@@ -17,7 +17,7 @@ import kotlin.uuid.Uuid
  */
 class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次統一流局結算呈現。 */
-    private val roundSettlements = mutableMapOf<Uuid, RoundSettlementPresentationRequest>()
+    private val exhaustiveDrawSettlements = mutableMapOf<Uuid, ExhaustiveDrawSettlementPresentationRequest>()
 
     /** 依對局 Uuid 紀錄最後一次收到的擲骰結果。 */
     private val diceRolls = mutableMapOf<Uuid, DiceRollResult>()
@@ -61,8 +61,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄收到的每一筆胡牌慶祝演出呼叫，依呼叫順序排列——一炮多響可能同一局收到多筆。 */
     private val winCelebrations = mutableMapOf<Uuid, MutableList<WinCelebrationContext>>()
 
-    override fun publishRoundSettlement(gameId: Uuid, request: RoundSettlementPresentationRequest) {
-        roundSettlements[gameId] = request
+    override fun publishExhaustiveDrawSettlement(gameId: Uuid, request: ExhaustiveDrawSettlementPresentationRequest) {
+        exhaustiveDrawSettlements[gameId] = request
     }
 
     override fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int) {
@@ -201,7 +201,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     fun getPublishedWinCelebrations(gameId: Uuid): List<WinCelebrationContext> = winCelebrations[gameId].orEmpty()
 
     /** 取得指定對局最後一次統一流局結算呈現。 */
-    fun getPublishedRoundSettlement(gameId: Uuid): RoundSettlementPresentationRequest? = roundSettlements[gameId]
+    fun getPublishedExhaustiveDrawSettlement(gameId: Uuid): ExhaustiveDrawSettlementPresentationRequest? = exhaustiveDrawSettlements[gameId]
 }
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishDiceRoll] 隨附桌況資料。 */

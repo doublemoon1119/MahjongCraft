@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import kotlin.uuid.Uuid
 
 /** 內建回合結算玩家狀態 ID。 */
-object BuiltInRoundSettlementStatusIds {
+object BuiltInExhaustiveDrawSettlementStatusIds {
     /** 一般荒牌流局的聽牌者。 */
     val TENPAI: String = MahjongCraftMetadata.id("tenpai")
 
@@ -18,7 +18,7 @@ object BuiltInRoundSettlementStatusIds {
 }
 
 /** 流局結算時一副手牌應採用的公開動畫策略。 */
-enum class RoundSettlementHandPresentation {
+enum class ExhaustiveDrawSettlementHandPresentation {
     /** 公開聽牌手牌並顯示規則提供的等待牌。 */
     REVEAL_TENPAI,
 
@@ -32,31 +32,19 @@ enum class RoundSettlementHandPresentation {
 /**
  * 單一玩家的回合結算呈現關鍵影格。
  *
- * @property playerId 玩家 Uuid。
- * @property seatIndex 固定座位 index。
+ * @property ranking 規則中立的分數排行關鍵影格。
  * @property currentWind 結算當下風位。
- * @property isAi 是否由 AI 操控。
- * @property previousScore 結算前總分。
- * @property currentScore 結算後總分。
- * @property previousRank 結算前名次，從 1 開始。
- * @property currentRank 結算後名次，從 1 開始。
  * @property handTileIds 這名玩家完整手牌的 Uuid，僅供結算動畫定位，不包含副露或牌河。
  * @property handPresentation 這副手牌在結算時採用的公開動畫策略。
  * @property revealedHandTileIds 規則要求公開的完整手牌 Uuid；空集合代表不推牌。
  * @property waitingTiles 規則已計算完成的等待牌；空集合代表不顯示等待牌。
  * @property statusId 玩家狀態的 namespaced ID；不需要額外狀態時為 null。
  */
-data class RoundSettlementPlayerPresentation(
-    val playerId: Uuid,
-    val seatIndex: Int,
+data class ExhaustiveDrawSettlementPlayerPresentation(
+    val ranking: ScoreRankingPlayer,
     val currentWind: Wind,
-    val isAi: Boolean,
-    val previousScore: Int,
-    val currentScore: Int,
-    val previousRank: Int,
-    val currentRank: Int,
     val handTileIds: List<Uuid>,
-    val handPresentation: RoundSettlementHandPresentation,
+    val handPresentation: ExhaustiveDrawSettlementHandPresentation,
     val revealedHandTileIds: List<Uuid>,
     val waitingTiles: List<Tile>,
     val statusId: String?,
@@ -68,7 +56,10 @@ data class RoundSettlementPlayerPresentation(
  * @property reasonId 規則提供的完整流局原因 ID。
  * @property players 依固定座位順序排列的玩家結算資料。
  */
-data class RoundSettlementPresentationRequest(
+data class ExhaustiveDrawSettlementPresentationRequest(
     val reasonId: String,
-    val players: List<RoundSettlementPlayerPresentation>,
-)
+    val players: List<ExhaustiveDrawSettlementPlayerPresentation>,
+) {
+    /** 流局專屬玩家資料投影出的共用分數排行呈現。 */
+    val scoreRanking: ScoreRankingPresentation = ScoreRankingPresentation(players.map(ExhaustiveDrawSettlementPlayerPresentation::ranking))
+}

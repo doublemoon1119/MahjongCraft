@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
 
 /** 將權威流局結算資料轉為平台呈現請求的應用服務。 */
 @Factory
-class RoundSettlementPresentationService(
+class ExhaustiveDrawSettlementPresentationService(
     @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
     /** 建立並發布一次統一流局結算呈現。 */
@@ -24,9 +24,9 @@ class RoundSettlementPresentationService(
         tenpaiPlayerIds: Set<Uuid>?,
         revealedHands: List<RevealedHandSettlement>,
     ) {
-        presentationPublisher.publishRoundSettlement(
+        presentationPublisher.publishExhaustiveDrawSettlement(
             gameId,
-            RoundSettlementPresentationRequestFactory.create(
+            ExhaustiveDrawSettlementPresentationRequestFactory.create(
                 previousState = previousState,
                 currentState = currentState,
                 module = module,

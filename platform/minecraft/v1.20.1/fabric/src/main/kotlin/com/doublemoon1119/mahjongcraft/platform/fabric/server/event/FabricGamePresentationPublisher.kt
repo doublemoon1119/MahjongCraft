@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
@@ -19,7 +19,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricRoundSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricExhaustiveDrawSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationShowcaseScheduler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresentation
@@ -106,7 +106,7 @@ class FabricGamePresentationPublisher(
     private val moduleRegistry: MahjongModuleRegistry,
     private val effectScheduler: FabricWinCelebrationEffectScheduler,
     private val showcaseScheduler: FabricWinCelebrationShowcaseScheduler,
-    private val roundSettlementScheduler: FabricRoundSettlementPresentationScheduler,
+    private val exhaustiveDrawSettlementScheduler: FabricExhaustiveDrawSettlementPresentationScheduler,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
@@ -126,19 +126,19 @@ class FabricGamePresentationPublisher(
      */
     private val wallDropTicksByTable = ConcurrentHashMap<Uuid, Int>()
 
-    override fun publishRoundSettlement(gameId: Uuid, request: RoundSettlementPresentationRequest) {
+    override fun publishExhaustiveDrawSettlement(gameId: Uuid, request: ExhaustiveDrawSettlementPresentationRequest) {
         busyTracker.markPending(gameId)
         scope.launch(dispatchers.main) {
             try {
-                val resolved = resolveTableContext(gameId, "publishRoundSettlement") ?: return@launch
+                val resolved = resolveTableContext(gameId, "publishExhaustiveDrawSettlement") ?: return@launch
                 val waitingAssets = request.players.associate { player ->
-                    player.seatIndex to player.waitingTiles.map { it.toAssetKey(tileAssetRegistry) }
+                    player.ranking.seatIndex to player.waitingTiles.map { it.toAssetKey(tileAssetRegistry) }
                 }
                 val tableState = gameRepository.getTableState(gameId)
                 val revealedAssets = request.players.flatMap { it.revealedHandTileIds }.distinct().mapNotNull { tileId ->
                     tableState?.findTile(tileId)?.let { tileId to it.tile.toAssetKey(tileAssetRegistry) }
                 }.toMap()
-                val endGameTime = roundSettlementScheduler.schedule(
+                val endGameTime = exhaustiveDrawSettlementScheduler.schedule(
                     world = resolved.world,
                     tableId = gameId,
                     controllerPos = BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
@@ -152,7 +152,7 @@ class FabricGamePresentationPublisher(
                     revealedTileAssetsById = revealedAssets,
                 )
                 if (endGameTime == null) {
-                    logger.warn("publishRoundSettlement gameId={} skipped: stage spawn failed", gameId)
+                    logger.warn("publishExhaustiveDrawSettlement gameId={} skipped: stage spawn failed", gameId)
                 } else {
                     resolved.table.extendPresentationUntil(endGameTime)
                     logger.debug(

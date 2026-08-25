@@ -14,7 +14,7 @@ sealed interface PendingGameTransition {
     /**
      * 整場結束後待回房的持久化意圖。
      *
-     * TODO: 未來流程為 `RoundSettlementPresentationEntity → AdvanceRound → MatchSettlementPresentationEntity
+     * TODO: 未來流程為 `ExhaustiveDrawSettlementPresentationEntity → AdvanceRound → MatchSettlementPresentationEntity
      * → ReturnToRoom`；match-over 展示完成前不得消費此 transition。
      */
     data object ReturnToRoom : PendingGameTransition

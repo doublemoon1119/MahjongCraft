@@ -13,7 +13,7 @@ import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
 /** 單一玩家在流局結算排行榜中的可持久化關鍵影格。 */
-data class RoundSettlementPlayerSnapshot(
+data class ExhaustiveDrawSettlementPlayerSnapshot(
     val playerId: String,
     val seatIndex: Int,
     val wind: String,
@@ -31,8 +31,8 @@ data class RoundSettlementPlayerSnapshot(
 /**
  * 統一流局結算舞台。Entity 只同步起訖關鍵影格；client 依絕對遊戲時間重建分數與排行動畫。
  */
-class RoundSettlementPresentationEntity(
-    type: EntityType<out RoundSettlementPresentationEntity> = ModEntities.roundSettlementPresentation,
+class ExhaustiveDrawSettlementPresentationEntity(
+    type: EntityType<out ExhaustiveDrawSettlementPresentationEntity> = ModEntities.exhaustiveDrawSettlementPresentation,
     world: World,
 ) : Entity(type, world) {
     private var playedCoreSoundMask: Int = 0
@@ -51,7 +51,7 @@ class RoundSettlementPresentationEntity(
     val reasonId: String get() = dataTracker[REASON_ID]
 
     /** 全部座位的排行關鍵影格。 */
-    val players: List<RoundSettlementPlayerSnapshot>
+    val players: List<ExhaustiveDrawSettlementPlayerSnapshot>
         get() = decodePlayers(dataTracker[PLAYERS])
 
     /** 是否需要先呈現實際等待牌；單純的流局宣告不占用獨立階段。 */
@@ -66,7 +66,7 @@ class RoundSettlementPresentationEntity(
         tableId: Uuid,
         startGameTime: Long,
         reasonId: String,
-        players: List<RoundSettlementPlayerSnapshot>,
+        players: List<ExhaustiveDrawSettlementPlayerSnapshot>,
     ) {
         check(!world.isClient) { "Round settlement stage must be configured by the server" }
         require(players.isNotEmpty()) { "Round settlement must contain at least one player" }
@@ -149,7 +149,7 @@ class RoundSettlementPresentationEntity(
     }
 
     /** 取得第一階段實際顯示的玩家，必須與 client renderer 的公開資訊篩選條件一致。 */
-    private fun informationPlayers(): List<RoundSettlementPlayerSnapshot> = players.filter { player ->
+    private fun informationPlayers(): List<ExhaustiveDrawSettlementPlayerSnapshot> = players.filter { player ->
         player.waitingTileAssetKeys.isNotEmpty()
     }
 
@@ -241,7 +241,7 @@ class RoundSettlementPresentationEntity(
         private const val RANKING_SETTLED_SOUND_PITCH = 0.95f
 
         /** 依內容決定是否保留等待牌資訊階段。 */
-        fun durationTicks(players: List<RoundSettlementPlayerSnapshot>): Long = if (players.any { it.waitingTileAssetKeys.isNotEmpty() }) {
+        fun durationTicks(players: List<ExhaustiveDrawSettlementPlayerSnapshot>): Long = if (players.any { it.waitingTileAssetKeys.isNotEmpty() }) {
             DURATION_TICKS
         } else {
             RANKING_ONLY_DURATION_TICKS
@@ -263,27 +263,27 @@ class RoundSettlementPresentationEntity(
             index.coerceAtLeast(0) * INFORMATION_ROW_REVEAL_INTERVAL_TICKS
 
         private val TABLE_ID: TrackedData<String> = DataTracker.registerData(
-            RoundSettlementPresentationEntity::class.java,
+            ExhaustiveDrawSettlementPresentationEntity::class.java,
             TrackedDataHandlerRegistry.STRING,
         )
         private val START_GAME_TIME: TrackedData<Long> = DataTracker.registerData(
-            RoundSettlementPresentationEntity::class.java,
+            ExhaustiveDrawSettlementPresentationEntity::class.java,
             TrackedDataHandlerRegistry.LONG,
         )
         private val END_GAME_TIME: TrackedData<Long> = DataTracker.registerData(
-            RoundSettlementPresentationEntity::class.java,
+            ExhaustiveDrawSettlementPresentationEntity::class.java,
             TrackedDataHandlerRegistry.LONG,
         )
         private val REASON_ID: TrackedData<String> = DataTracker.registerData(
-            RoundSettlementPresentationEntity::class.java,
+            ExhaustiveDrawSettlementPresentationEntity::class.java,
             TrackedDataHandlerRegistry.STRING,
         )
         private val PLAYERS: TrackedData<String> = DataTracker.registerData(
-            RoundSettlementPresentationEntity::class.java,
+            ExhaustiveDrawSettlementPresentationEntity::class.java,
             TrackedDataHandlerRegistry.STRING,
         )
 
-        private fun encodePlayers(players: List<RoundSettlementPlayerSnapshot>): String = players.joinToString(ROW_SEPARATOR.toString()) { player ->
+        private fun encodePlayers(players: List<ExhaustiveDrawSettlementPlayerSnapshot>): String = players.joinToString(ROW_SEPARATOR.toString()) { player ->
             listOf(
                 player.playerId,
                 player.seatIndex,
@@ -300,12 +300,12 @@ class RoundSettlementPresentationEntity(
             ).joinToString(FIELD_SEPARATOR.toString())
         }
 
-        private fun decodePlayers(encoded: String): List<RoundSettlementPlayerSnapshot> = encoded
+        private fun decodePlayers(encoded: String): List<ExhaustiveDrawSettlementPlayerSnapshot> = encoded
             .split(ROW_SEPARATOR)
             .mapNotNull { row ->
                 val fields = row.split(FIELD_SEPARATOR)
                 if (fields.size != 12) return@mapNotNull null
-                RoundSettlementPlayerSnapshot(
+                ExhaustiveDrawSettlementPlayerSnapshot(
                     playerId = fields[0],
                     seatIndex = fields[1].toIntOrNull() ?: return@mapNotNull null,
                     wind = fields[2],

@@ -14,12 +14,12 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRi
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.RoundSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -144,7 +144,7 @@ class MahjongAutoDrawServiceTest {
                 FakeDecisionTimerUpdatePublisher(),
             ),
             presentationBusyGate = presentationBusyGate,
-            roundSettlementPresentationService = RoundSettlementPresentationService(presentationPublisher),
+            exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
         )
         val feedbackPublisher = FakeMinecraftPlayerFeedbackPublisher()
         val membershipRepository = PlayerMembershipRepositoryImpl()

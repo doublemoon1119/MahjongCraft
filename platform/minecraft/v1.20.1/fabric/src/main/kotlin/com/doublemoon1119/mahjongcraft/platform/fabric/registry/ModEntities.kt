@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.RoundSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffectEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
@@ -43,7 +43,7 @@ object ModEntities {
         private set
 
     /** 統一流局結算排行舞台 entity type；由 [register] 初始化。 */
-    lateinit var roundSettlementPresentation: EntityType<RoundSettlementPresentationEntity>
+    lateinit var exhaustiveDrawSettlementPresentation: EntityType<ExhaustiveDrawSettlementPresentationEntity>
         private set
 
     /** 註冊不自然生成的輕量麻將牌 entity。 */
@@ -108,11 +108,11 @@ object ModEntities {
                 .fireImmune()
                 .build(),
         )
-        roundSettlementPresentation = Registry.register(
+        exhaustiveDrawSettlementPresentation = Registry.register(
             Registries.ENTITY_TYPE,
-            Identifier(MinecraftModMetadata.MOD_ID, "round_settlement_presentation"),
-            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::RoundSettlementPresentationEntity)
-                .dimensions(EntityDimensions.fixed(RoundSettlementPresentationEntity.WIDTH, RoundSettlementPresentationEntity.HEIGHT))
+            Identifier(MinecraftModMetadata.MOD_ID, "exhaustive_draw_settlement_presentation"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::ExhaustiveDrawSettlementPresentationEntity)
+                .dimensions(EntityDimensions.fixed(ExhaustiveDrawSettlementPresentationEntity.WIDTH, ExhaustiveDrawSettlementPresentationEntity.HEIGHT))
                 .trackRangeBlocks(32)
                 .trackedUpdateRate(1)
                 .fireImmune()

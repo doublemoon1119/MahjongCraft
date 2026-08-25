@@ -8,14 +8,14 @@ import net.minecraft.util.Identifier
 import java.util.concurrent.ConcurrentHashMap
 
 /** 中央結算面板的牌面材質層；正常測試並寫入深度，與排行榜背景採相同的世界空間規則。 */
-internal object RoundSettlementTileFaceRenderLayer {
+internal object ExhaustiveDrawSettlementTileFaceRenderLayer {
     private val layers = ConcurrentHashMap<Identifier, RenderLayer>()
 
     /** 取得指定牌面材質的 full-bright 半透明層；同一材質只建立一次。 */
     fun get(texture: Identifier): RenderLayer = layers.computeIfAbsent(texture, ::create)
 
     private fun create(texture: Identifier): RenderLayer = RenderLayer.of(
-        "mahjongcraft_round_settlement_tile_face",
+        "mahjongcraft_exhaustive_draw_settlement_tile_face",
         VertexFormats.POSITION_COLOR_TEXTURE_LIGHT,
         VertexFormat.DrawMode.QUADS,
         BUFFER_SIZE,

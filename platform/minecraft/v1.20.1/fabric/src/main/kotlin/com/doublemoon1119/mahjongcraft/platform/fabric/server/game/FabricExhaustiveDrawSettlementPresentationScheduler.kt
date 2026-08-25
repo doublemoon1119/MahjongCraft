@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundSettlementHandPresentation
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementHandPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPlayerSnapshot
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.RoundSettlementPlayerSnapshot
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.RoundSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import net.minecraft.server.world.ServerWorld
@@ -17,35 +17,36 @@ import kotlin.uuid.toJavaUuid
 
 /** 統一流局結算舞台的生成與 round-info visibility lease 交接。 */
 @Single
-class FabricRoundSettlementPresentationScheduler {
+class FabricExhaustiveDrawSettlementPresentationScheduler {
     /** 成功生成時回傳固定結束時間；失敗則不隱藏 round info。 */
     fun schedule(
         world: ServerWorld,
         tableId: Uuid,
         controllerPos: BlockPos,
         placement: MahjongTileWallPlacement,
-        request: RoundSettlementPresentationRequest,
+        request: ExhaustiveDrawSettlementPresentationRequest,
         waitingTileAssetsBySeat: Map<Int, List<String>>,
         revealedTileAssetsById: Map<Uuid, String>,
     ): Long? {
         val startGameTime = world.time
         val playerSnapshots = request.players.map { player ->
-            RoundSettlementPlayerSnapshot(
-                playerId = player.playerId.toString(),
-                seatIndex = player.seatIndex,
+            val ranking = player.ranking
+            ExhaustiveDrawSettlementPlayerSnapshot(
+                playerId = ranking.playerId.toString(),
+                seatIndex = ranking.seatIndex,
                 wind = player.currentWind.name,
-                isAi = player.isAi,
-                previousScore = player.previousScore,
-                currentScore = player.currentScore,
-                previousRank = player.previousRank,
-                currentRank = player.currentRank,
+                isAi = ranking.isAi,
+                previousScore = ranking.previousScore,
+                currentScore = ranking.currentScore,
+                previousRank = ranking.previousRank,
+                currentRank = ranking.currentRank,
                 statusId = player.statusId,
                 revealedHandTileIds = player.revealedHandTileIds.map(Uuid::toString),
                 revealedHandAssetKeys = player.revealedHandTileIds.mapNotNull(revealedTileAssetsById::get),
-                waitingTileAssetKeys = waitingTileAssetsBySeat[player.seatIndex].orEmpty(),
+                waitingTileAssetKeys = waitingTileAssetsBySeat[ranking.seatIndex].orEmpty(),
             )
         }
-        val stage = RoundSettlementPresentationEntity(world = world).apply {
+        val stage = ExhaustiveDrawSettlementPresentationEntity(world = world).apply {
             configure(
                 tableId = tableId,
                 startGameTime = startGameTime,
@@ -55,19 +56,19 @@ class FabricRoundSettlementPresentationScheduler {
             refreshPositionAndAngles(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
         }
         if (!world.spawnEntity(stage)) return null
-        val endGameTime = startGameTime + RoundSettlementPresentationEntity.durationTicks(playerSnapshots)
+        val endGameTime = startGameTime + ExhaustiveDrawSettlementPresentationEntity.durationTicks(playerSnapshots)
         request.players.forEach { player ->
             player.handTileIds.distinct().forEach { tileId ->
                 val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity ?: return@forEach
                 when (player.handPresentation) {
-                    RoundSettlementHandPresentation.REVEAL_TENPAI,
-                    RoundSettlementHandPresentation.REVEAL_PROOF,
+                    ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI,
+                    ExhaustiveDrawSettlementHandPresentation.REVEAL_PROOF,
                     -> {
                         revealedTileAssetsById[tileId]?.let { asset -> tile.revealForPresentation(asset, endGameTime) }
                         TileAnimationSteps.scheduleLaydown(tile, startGameTime + HAND_LAYDOWN_START_TICK)
                     }
 
-                    RoundSettlementHandPresentation.CONCEAL ->
+                    ExhaustiveDrawSettlementHandPresentation.CONCEAL ->
                         TileAnimationSteps.scheduleConceal(tile, startGameTime + HAND_LAYDOWN_START_TICK)
                 }
             }

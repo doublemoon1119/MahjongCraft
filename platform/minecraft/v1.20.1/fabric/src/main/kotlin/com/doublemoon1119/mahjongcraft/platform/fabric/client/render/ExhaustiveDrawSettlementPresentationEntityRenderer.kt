@@ -1,7 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.RoundSettlementPlayerSnapshot
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.RoundSettlementPresentationEntity
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingAnimation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPlayerSnapshot
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
@@ -25,18 +28,19 @@ import org.joml.Matrix4f
 import org.slf4j.LoggerFactory
 import java.util.UUID
 import kotlin.math.roundToInt
+import kotlin.uuid.Uuid as KotlinUuid
 
 /** 統一流局結算的 client-only billboard 排行榜。 */
-class RoundSettlementPresentationEntityRenderer(
+class ExhaustiveDrawSettlementPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
     private val reasonDisplayNames: ExhaustiveDrawReasonDisplayNameRegistry,
-) : EntityRenderer<RoundSettlementPresentationEntity>(context) {
+) : EntityRenderer<ExhaustiveDrawSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
     private val tileTextures = mutableMapOf<String, Identifier>()
     private val warnedUnknownReasonIds = mutableSetOf<String>()
 
     override fun render(
-        entity: RoundSettlementPresentationEntity,
+        entity: ExhaustiveDrawSettlementPresentationEntity,
         yaw: Float,
         tickDelta: Float,
         matrices: MatrixStack,
@@ -58,7 +62,6 @@ class RoundSettlementPresentationEntityRenderer(
         if (panelAlpha <= 0f) return
         val scoreAnimationStart = if (hasInformationPhase) 130.0 else 70.0
         val scoreProgress = ((elapsed - scoreAnimationStart) / 40.0).coerceIn(0.0, 1.0)
-        val eased = 1.0 - (1.0 - scoreProgress) * (1.0 - scoreProgress) * (1.0 - scoreProgress)
         val rankingLayout = measureLayout(entity.players)
         val informationPlayers = informationPlayers(entity.players)
         val informationLayout = measureInformationLayout(informationPlayers)
@@ -85,17 +88,19 @@ class RoundSettlementPresentationEntityRenderer(
                 )
             }
         }
-        val animatedRows = entity.players.sortedBy { it.previousRank }.mapIndexed { rowIndex, player ->
+        val rankingPresentation = ScoreRankingPresentation(entity.players.map { player -> player.toScoreRankingPlayer() })
+        val scoreRows = ScoreRankingAnimation.rows(rankingPresentation, scoreProgress)
+        val liveRanks = ScoreRankingAnimation.liveRanks(scoreRows)
+        val snapshotsById = entity.players.associateBy { KotlinUuid.parse(it.playerId) }
+        val animatedRows = scoreRows.sortedBy { it.player.previousRank }.mapIndexed { rowIndex, row ->
             AnimatedRow(
-                player = player,
+                player = snapshotsById.getValue(row.player.playerId),
                 revealIndex = rowIndex,
-                position = lerp(player.previousRank.toDouble(), player.currentRank.toDouble(), eased),
+                score = row.score,
+                delta = row.delta,
+                position = row.position,
             )
         }
-        val liveRanks = animatedRows
-            .sortedWith(compareBy<AnimatedRow> { it.position }.thenBy { it.player.previousRank })
-            .mapIndexed { index, row -> row.player.playerId to index + 1 }
-            .toMap()
         animatedRows.forEach { row ->
             val player = row.player
             val rowProgress = rowRevealProgress(elapsed, row.revealIndex, hasInformationPhase)
@@ -103,9 +108,10 @@ class RoundSettlementPresentationEntityRenderer(
             val targetY = FIRST_ROW_Y + (row.position - 1.0).toFloat() * ROW_HEIGHT
             drawRow(
                 player,
-                liveRanks.getValue(player.playerId),
+                liveRanks.getValue(KotlinUuid.parse(player.playerId)),
                 rankingLayout,
-                eased,
+                row.score,
+                row.delta,
                 targetY - (1f - rowProgress) * ROW_REVEAL_OFFSET,
                 rankingAlpha * rowProgress,
                 matrices,
@@ -123,7 +129,7 @@ class RoundSettlementPresentationEntityRenderer(
         vertexConsumers: VertexConsumerProvider,
     ) {
         val matrix = matrices.peek().positionMatrix
-        val buffer = vertexConsumers.getBuffer(RoundSettlementPanelRenderLayer.layer)
+        val buffer = vertexConsumers.getBuffer(ExhaustiveDrawSettlementPanelRenderLayer.layer)
         val panelAlpha = (alpha * PANEL_ALPHA * 255).roundToInt()
         buffer.vertex(matrix, -panelHalfWidth, PANEL_TOP, PANEL_Z).color(0, 0, 0, panelAlpha).next()
         buffer.vertex(matrix, panelHalfWidth, PANEL_TOP, PANEL_Z).color(0, 0, 0, panelAlpha).next()
@@ -140,17 +146,16 @@ class RoundSettlementPresentationEntityRenderer(
     }
 
     private fun drawRow(
-        player: RoundSettlementPlayerSnapshot,
+        player: ExhaustiveDrawSettlementPlayerSnapshot,
         displayedRank: Int,
         layout: TableLayout,
-        progress: Double,
+        score: Int,
+        delta: Int,
         y: Float,
         alpha: Float,
         matrices: MatrixStack,
         vertexConsumers: VertexConsumerProvider,
     ) {
-        val score = lerp(player.previousScore.toDouble(), player.currentScore.toDouble(), progress).roundToInt()
-        val delta = lerp(0.0, (player.currentScore - player.previousScore).toDouble(), progress).roundToInt()
         val deltaText = formatDelta(delta)
         val deltaColor = when {
             delta > 0 -> 0x80FF80
@@ -170,7 +175,7 @@ class RoundSettlementPresentationEntityRenderer(
 
     /** 第一階段的公開資訊列：玩家身分、狀態與全部等待牌使用固定欄位對齊。 */
     private fun drawInformationRow(
-        player: RoundSettlementPlayerSnapshot,
+        player: ExhaustiveDrawSettlementPlayerSnapshot,
         layout: InformationLayout,
         y: Float,
         alpha: Float,
@@ -208,7 +213,7 @@ class RoundSettlementPresentationEntityRenderer(
 
     /** 真人只繪製正方形 skin 正面臉部；AI 暫時統一使用 unknown 牌面，等待日後 Seat Actor 提供正式外觀。 */
     private fun renderPortrait(
-        player: RoundSettlementPlayerSnapshot,
+        player: ExhaustiveDrawSettlementPlayerSnapshot,
         x: Float,
         y: Float,
         alpha: Float,
@@ -252,7 +257,7 @@ class RoundSettlementPresentationEntityRenderer(
         vertexConsumers: VertexConsumerProvider,
     ) {
         val texture = resolveTileTexture(assetKey)
-        val buffer = vertexConsumers.getBuffer(RoundSettlementTileFaceRenderLayer.get(texture))
+        val buffer = vertexConsumers.getBuffer(ExhaustiveDrawSettlementTileFaceRenderLayer.get(texture))
         val matrix = matrices.peek().positionMatrix
         val left = centerX - width / 2f
         val right = centerX + width / 2f
@@ -330,7 +335,7 @@ class RoundSettlementPresentationEntityRenderer(
         return textRenderer.trimToWidth(name, NAME_MAX_WIDTH - textRenderer.getWidth(suffix)) + suffix
     }
 
-    private fun resolvePlayerName(player: RoundSettlementPlayerSnapshot): String {
+    private fun resolvePlayerName(player: ExhaustiveDrawSettlementPlayerSnapshot): String {
         if (player.isAi) return "AI-${player.playerId.take(6)}"
         val uuid = runCatching { UUID.fromString(player.playerId) }.getOrNull()
         return uuid?.let { MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(it)?.profile?.name } ?: player.playerId.take(8)
@@ -342,33 +347,33 @@ class RoundSettlementPresentationEntityRenderer(
     }
 
     private fun statusTranslationKey(statusId: String?): String? = when (statusId?.substringAfter(':')) {
-        "tenpai" -> MinecraftMessageKeys.ROUND_SETTLEMENT_STATUS_TENPAI
-        "noten" -> MinecraftMessageKeys.ROUND_SETTLEMENT_STATUS_NOTEN
-        "draw_declaration" -> MinecraftMessageKeys.ROUND_SETTLEMENT_STATUS_DRAW_DECLARATION
+        "tenpai" -> MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI
+        "noten" -> MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN
+        "draw_declaration" -> MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_DRAW_DECLARATION
         else -> null
     }
 
     /** 中央排行榜只顯示語意狀態；等待牌由手牌上方的獨立牌面面板承擔。 */
-    private fun settlementStatusText(player: RoundSettlementPlayerSnapshot): Text? = statusTranslationKey(player.statusId)?.let(Text::translatable)
+    private fun settlementStatusText(player: ExhaustiveDrawSettlementPlayerSnapshot): Text? = statusTranslationKey(player.statusId)?.let(Text::translatable)
 
     private fun rowRevealProgress(elapsed: Double, rowIndex: Int, hasInformationPhase: Boolean): Float {
-        val start = RoundSettlementPresentationEntity.rowRevealTick(rowIndex, hasInformationPhase).toDouble()
+        val start = ExhaustiveDrawSettlementPresentationEntity.rowRevealTick(rowIndex, hasInformationPhase).toDouble()
         return ((elapsed - start) / ROW_REVEAL_DURATION).coerceIn(0.0, 1.0).toFloat()
     }
 
     /** 手牌完成翻開後逐列顯示公開資訊。 */
     private fun informationRowRevealProgress(elapsed: Double, rowIndex: Int): Float {
-        val start = RoundSettlementPresentationEntity.informationRowRevealTick(rowIndex).toDouble()
+        val start = ExhaustiveDrawSettlementPresentationEntity.informationRowRevealTick(rowIndex).toDouble()
         return ((elapsed - start) / INFORMATION_ROW_REVEAL_DURATION).coerceIn(0.0, 1.0).toFloat()
     }
 
     /** 取得第一階段值得列出的玩家；未聽者已由桌上的蓋牌清楚表達，不重複占用面板。 */
-    private fun informationPlayers(players: List<RoundSettlementPlayerSnapshot>): List<RoundSettlementPlayerSnapshot> = players.filter { player ->
+    private fun informationPlayers(players: List<ExhaustiveDrawSettlementPlayerSnapshot>): List<ExhaustiveDrawSettlementPlayerSnapshot> = players.filter { player ->
         player.waitingTileAssetKeys.isNotEmpty()
     }
 
     /** 建立集中式公開資訊欄位，最多十三張等待牌仍維持單列且不壓縮玩家名稱。 */
-    private fun measureInformationLayout(players: List<RoundSettlementPlayerSnapshot>): InformationLayout {
+    private fun measureInformationLayout(players: List<ExhaustiveDrawSettlementPlayerSnapshot>): InformationLayout {
         val maximumWaitingTileCount = players.maxOfOrNull { it.waitingTileAssetKeys.size } ?: 0
         val waitingTilesWidth = maximumWaitingTileCount * WAIT_TILE_WIDTH +
             (maximumWaitingTileCount - 1).coerceAtLeast(0) * WAIT_TILE_GAP
@@ -388,7 +393,7 @@ class RoundSettlementPresentationEntityRenderer(
     }
 
     /** 依所有起訖數值及本地化狀態的實際像素寬度建立穩定欄位；動畫中途不會改變面板尺寸。 */
-    private fun measureLayout(players: List<RoundSettlementPlayerSnapshot>): TableLayout {
+    private fun measureLayout(players: List<ExhaustiveDrawSettlementPlayerSnapshot>): TableLayout {
         val scoreContentWidth = players.maxOfOrNull { player ->
             maxOf(textRenderer.getWidth(player.previousScore.toString()), textRenderer.getWidth(player.currentScore.toString()))
         } ?: 0
@@ -422,6 +427,17 @@ class RoundSettlementPresentationEntityRenderer(
         else -> "±0"
     }
 
+    /** 將可持久化 Fabric snapshot 投影為 Flow 層共用的規則中立排行關鍵影格。 */
+    private fun ExhaustiveDrawSettlementPlayerSnapshot.toScoreRankingPlayer(): ScoreRankingPlayer = ScoreRankingPlayer(
+        playerId = KotlinUuid.parse(playerId),
+        seatIndex = seatIndex,
+        isAi = isAi,
+        previousScore = previousScore,
+        currentScore = currentScore,
+        previousRank = previousRank,
+        currentRank = currentRank,
+    )
+
     private fun phaseAlpha(elapsed: Double, fadeInStart: Double, fadeInEnd: Double, fadeOutStart: Double, fadeOutEnd: Double): Float = when {
         elapsed < fadeInStart || elapsed >= fadeOutEnd -> 0f
         elapsed < fadeInEnd -> ((elapsed - fadeInStart) / (fadeInEnd - fadeInStart)).toFloat()
@@ -429,9 +445,8 @@ class RoundSettlementPresentationEntityRenderer(
         else -> 1f
     }
 
-    private fun lerp(start: Double, end: Double, progress: Double): Double = start + (end - start) * progress
     private fun withAlpha(rgb: Int, alpha: Float): Int = ((alpha.coerceIn(0f, 1f) * 255).roundToInt() shl 24) or (rgb and 0xFFFFFF)
-    override fun getTexture(entity: RoundSettlementPresentationEntity): Identifier? = null
+    override fun getTexture(entity: ExhaustiveDrawSettlementPresentationEntity): Identifier? = null
 
     private enum class Alignment { LEFT, CENTER, RIGHT }
 
@@ -447,8 +462,10 @@ class RoundSettlementPresentationEntityRenderer(
     )
 
     private data class AnimatedRow(
-        val player: RoundSettlementPlayerSnapshot,
+        val player: ExhaustiveDrawSettlementPlayerSnapshot,
         val revealIndex: Int,
+        val score: Int,
+        val delta: Int,
         val position: Double,
     )
 
@@ -462,7 +479,7 @@ class RoundSettlementPresentationEntityRenderer(
     )
 
     private companion object {
-        val logger = LoggerFactory.getLogger(RoundSettlementPresentationEntityRenderer::class.java)
+        val logger = LoggerFactory.getLogger(ExhaustiveDrawSettlementPresentationEntityRenderer::class.java)
         const val TEXT_SCALE = 0.02f
         const val TITLE_SCALE = 1.3f
         const val TITLE_Y = -49f

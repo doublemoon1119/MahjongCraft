@@ -275,25 +275,25 @@ object MinecraftMessageKeys {
     const val ROUND_RESULT_PLAYER_LINE = PREFIX + "round_result_player_line"
 
     /** 流局結算展示中的聽牌狀態。 */
-    const val ROUND_SETTLEMENT_STATUS_TENPAI = PREFIX + "round_settlement_status.tenpai"
+    const val EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI = PREFIX + "exhaustive_draw_settlement_status.tenpai"
 
     /** 流局結算展示中的未聽狀態。 */
-    const val ROUND_SETTLEMENT_STATUS_NOTEN = PREFIX + "round_settlement_status.noten"
+    const val EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN = PREFIX + "exhaustive_draw_settlement_status.noten"
 
     /** 流局結算展示中需要公開牌面的流局宣告狀態。 */
-    const val ROUND_SETTLEMENT_STATUS_DRAW_DECLARATION = PREFIX + "round_settlement_status.draw_declaration"
+    const val EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_DRAW_DECLARATION = PREFIX + "exhaustive_draw_settlement_status.draw_declaration"
 
     /** 流局結算排行榜中的東風位。 */
-    const val ROUND_SETTLEMENT_WIND_EAST = PREFIX + "round_settlement_wind.east"
+    const val EXHAUSTIVE_DRAW_SETTLEMENT_WIND_EAST = PREFIX + "exhaustive_draw_settlement_wind.east"
 
     /** 流局結算排行榜中的南風位。 */
-    const val ROUND_SETTLEMENT_WIND_SOUTH = PREFIX + "round_settlement_wind.south"
+    const val EXHAUSTIVE_DRAW_SETTLEMENT_WIND_SOUTH = PREFIX + "exhaustive_draw_settlement_wind.south"
 
     /** 流局結算排行榜中的西風位。 */
-    const val ROUND_SETTLEMENT_WIND_WEST = PREFIX + "round_settlement_wind.west"
+    const val EXHAUSTIVE_DRAW_SETTLEMENT_WIND_WEST = PREFIX + "exhaustive_draw_settlement_wind.west"
 
     /** 流局結算排行榜中的北風位。 */
-    const val ROUND_SETTLEMENT_WIND_NORTH = PREFIX + "round_settlement_wind.north"
+    const val EXHAUSTIVE_DRAW_SETTLEMENT_WIND_NORTH = PREFIX + "exhaustive_draw_settlement_wind.north"
 
     /** [GameAction.MatchEnded] 的顯示文字，不帶參數。 */
     const val GAME_ACTION_MATCH_ENDED = PREFIX + "game_action_match_ended"
@@ -488,13 +488,13 @@ object MinecraftMessageKeys {
         GAME_ACTION_SANCHA_HOU,
         ROUND_RESULT_BROADCAST,
         ROUND_RESULT_PLAYER_LINE,
-        ROUND_SETTLEMENT_STATUS_TENPAI,
-        ROUND_SETTLEMENT_STATUS_NOTEN,
-        ROUND_SETTLEMENT_STATUS_DRAW_DECLARATION,
-        ROUND_SETTLEMENT_WIND_EAST,
-        ROUND_SETTLEMENT_WIND_SOUTH,
-        ROUND_SETTLEMENT_WIND_WEST,
-        ROUND_SETTLEMENT_WIND_NORTH,
+        EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI,
+        EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN,
+        EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_DRAW_DECLARATION,
+        EXHAUSTIVE_DRAW_SETTLEMENT_WIND_EAST,
+        EXHAUSTIVE_DRAW_SETTLEMENT_WIND_SOUTH,
+        EXHAUSTIVE_DRAW_SETTLEMENT_WIND_WEST,
+        EXHAUSTIVE_DRAW_SETTLEMENT_WIND_NORTH,
         GAME_ACTION_MATCH_ENDED,
         MATCH_RESULT_BROADCAST,
         RANKING_LINE,
