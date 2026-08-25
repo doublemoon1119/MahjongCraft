@@ -28,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseC
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
@@ -143,6 +144,12 @@ class RoomToRoomFullLifecycleIntegrationTest {
             gameRepository = gameRepo,
             moduleRegistry = moduleRegistry,
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
+            resolvePostReactionRoundOutcomeUseCase = ResolvePostReactionRoundOutcomeUseCase(
+                gameRepo,
+                moduleRegistry,
+                PostReactionRoundOutcomeResolverRegistry().apply { freeze() },
+                snapshotSynchronizer,
+            ),
             declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
             advanceRoundUseCase = AdvanceRoundUseCase(
                 gameRepo,

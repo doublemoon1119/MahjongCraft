@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.flow.common.di.FlowCommonModule
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Single
@@ -29,6 +30,10 @@ class FlowServerModule {
     /** 建立已包含內建規則、並開放 extension 啟動期登記的 AI action registry。 */
     @Single
     fun extensionGameActionAiRegistry(): ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry()
+
+    /** 建立供規則 extension 登記最終捨牌後特殊結果的 registry。 */
+    @Single
+    fun postReactionRoundOutcomeResolverRegistry(): PostReactionRoundOutcomeResolverRegistry = PostReactionRoundOutcomeResolverRegistry()
 
     @Single
     fun mahjongAiStrategyRegistry(extensionActionRegistry: ExtensionGameActionAiRegistry): MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply {

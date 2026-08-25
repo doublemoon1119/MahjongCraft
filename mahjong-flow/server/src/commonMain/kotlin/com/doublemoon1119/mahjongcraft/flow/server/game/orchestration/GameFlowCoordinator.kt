@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTime
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNagareUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -31,9 +32,8 @@ import kotlin.uuid.Uuid
  * 後者只做單純分派，不含這裡的自動銜接邏輯。
  *
  * 三種銜接時機：
- * 1. **一般流局**：任一命令的結果為 [GameError.WallExhausted] 時，立即呼叫
- *    [declareExhaustiveDrawUseCase]（不開任何等待窗口——`WallExhausted` 代表玩家根本沒摸到牌，
- *    不存在「先讓玩家自摸」的中間狀態）。
+ * 1. **最終反應後 outcome／一般流局**：任一命令的結果為 [GameError.WallExhausted] 時，先呼叫
+ *    [resolvePostReactionRoundOutcomeUseCase]；沒有 extension outcome 成立才呼叫 [declareExhaustiveDrawUseCase]。
  * 2. **槓後流局**：[GameCommand.Discard] 或明確宣告需要先結算槓後流局的 extension command，在送進
  *    [GameActionRouter] 前先詢問規則模組；若成立，原命令不會套用，改由規則既有流局流程收斂。
  * 3. **連莊/過莊**：任何造成本局結束的操作完成後，先將 [PendingGameTransition.AdvanceRound]
@@ -71,6 +71,7 @@ class GameFlowCoordinator(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val declareExhaustiveDrawUseCase: DeclareExhaustiveDrawUseCase,
+    private val resolvePostReactionRoundOutcomeUseCase: ResolvePostReactionRoundOutcomeUseCase,
     private val declareSuukanNagareUseCase: DeclareSuukanNagareUseCase,
     private val advanceRoundUseCase: AdvanceRoundUseCase,
     private val returnToRoomUseCase: ReturnToRoomUseCase,
@@ -283,6 +284,11 @@ class GameFlowCoordinator(
         val result = gameActionRouter(gameId, playerId, command)
 
         if (result is Outcome.Error && result.error is GameError.WallExhausted) {
+            val specialOutcome = resolvePostReactionRoundOutcomeUseCase(gameId)
+            if (specialOutcome is Outcome.Success && specialOutcome.value != null) {
+                chainAdvanceRound(gameId)
+                return result
+            }
             if (declareExhaustiveDrawUseCase(gameId) is Outcome.Success) {
                 val currentState = gameRepository.getTableState(gameId)
                 val module = moduleRegistry.getModule(previousState.config)

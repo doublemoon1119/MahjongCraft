@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -35,10 +36,11 @@ import kotlin.uuid.Uuid
  * 自動觸發，或由前端明確請求）是更外層（伺服器流程編排）的決定，不在這裡處理；呼叫前應確認本局
  * 已經結算完畢（沒有 `pendingReaction`）。
  *
- * 「莊家是否連莊」目前能偵測「莊家胡牌」與「莊家一般流局時聽牌（含流局滿貫）」兩條依據：
+ * 「莊家是否連莊」優先使用 [Game.roundTransitionDirective] 保存的明確規則決策；尚未遷移到 outcome
+ * resolver 的既有胡牌與流局路徑才暫時回退到以下歷史紀錄：
  * [DeclareTsumoUseCase]/[RespondToDiscardUseCase] 會把 [GameAction.Tsumo]/[GameAction.Ron] 記錄進
  * 贏家的 `actionHistory`；[DeclareExhaustiveDrawUseCase] 則只把 [GameAction.ExhaustiveDraw] 記錄進
- * 聽牌玩家（含流局滿貫成立者）的 `actionHistory`，不聽的玩家不記錄。
+ * 聽牌玩家的 `actionHistory`，不聽的玩家不記錄。
  * [GameInitializer.startNextRound] 每次開新的一局都會把 `actionHistory` 重置成空，所以「這局的
  * `actionHistory` 裡有沒有 Tsumo/Ron/ExhaustiveDraw」可以直接拿來判斷「莊家這局是不是贏家之一，
  * 或流局時是否聽牌」。九種九牌等途中流局的連莊依據（莊家固定連莊，不需要判斷聽牌與否）留給
@@ -84,8 +86,12 @@ class AdvanceRoundUseCase(
                 else -> {
                     val module = moduleRegistry.getModule(state.config)
                     val dealer = state.players.first { it.currentWind == Wind.EAST }
-                    val dealerRepeats = dealer.actionHistory.any {
-                        it is GameAction.Tsumo || it is GameAction.Ron || it is GameAction.ExhaustiveDraw
+                    val dealerRepeats = when (game.roundTransitionDirective) {
+                        RoundTransitionDirective.REPEAT_DEALER -> true
+                        RoundTransitionDirective.ADVANCE_DEALER -> false
+                        null -> dealer.actionHistory.any {
+                            it is GameAction.Tsumo || it is GameAction.Ron || it is GameAction.ExhaustiveDraw
+                        }
                     }
                     val roundAdvancement = state.advanceRound(dealerRepeats)
                     // 除了 GameLength.totalRounds（已經反映在 roundAdvancement.isMatchOver）之外，
@@ -125,6 +131,7 @@ class AdvanceRoundUseCase(
                             tableState = finalState,
                             isMatchOver = true,
                             pendingTransition = PendingGameTransition.ReturnToRoom,
+                            roundTransitionDirective = null,
                         ) to Outcome.Success(advanceOutcome)
                     } else {
                         val initializationResult = GameInitializer.startNextRound(
@@ -154,7 +161,11 @@ class AdvanceRoundUseCase(
                             wallStructure = initializationResult.wallStructure,
                             dealOrderHandTileIdsBySeatIndex = dealOrderHandTileIdsBySeatIndex,
                         )
-                        game.copy(tableState = newState, pendingTransition = null) to Outcome.Success(advanceOutcome)
+                        game.copy(
+                            tableState = newState,
+                            pendingTransition = null,
+                            roundTransitionDirective = null,
+                        ) to Outcome.Success(advanceOutcome)
                     }
                 }
             }

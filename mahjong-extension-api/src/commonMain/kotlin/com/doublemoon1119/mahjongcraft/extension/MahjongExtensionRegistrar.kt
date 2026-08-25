@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCu
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 
@@ -27,6 +28,8 @@ object MahjongExtensionRegistrar {
             com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl(),
         gameActionAiRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
+        postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
+            PostReactionRoundOutcomeResolverRegistry(),
     ) {
         val registeredExtensionIds = mutableSetOf<String>()
         extensions.forEach { extension ->
@@ -44,6 +47,7 @@ object MahjongExtensionRegistrar {
                 extension.registerWinCelebrationCueResolvers(winCelebrationCueResolverRegistry)
                 extension.registerGameActionAiHandlers(gameActionAiRegistry)
                 extension.registerGameCommandHandlers(gameCommandRegistry)
+                extension.registerPostReactionRoundOutcomeResolvers(postReactionRoundOutcomeResolverRegistry)
             } catch (cause: Exception) {
                 throw MahjongExtensionRegistrationException(extension.id, cause)
             }
@@ -56,6 +60,7 @@ object MahjongExtensionRegistrar {
         winCelebrationCueResolverRegistry.freeze()
         gameActionAiRegistry.freeze()
         gameCommandRegistry.freeze()
+        postReactionRoundOutcomeResolverRegistry.freeze()
     }
 }
 

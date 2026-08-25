@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCu
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
@@ -51,4 +52,7 @@ interface MahjongExtension {
 
     /** 登記規則擴充命令的伺服器執行 handler。 */
     fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistry) = Unit
+
+    /** 登記最後捨牌反應結束後才判定的特殊 round outcome resolver。 */
+    fun registerPostReactionRoundOutcomeResolvers(registry: PostReactionRoundOutcomeResolverRegistry) = Unit
 }

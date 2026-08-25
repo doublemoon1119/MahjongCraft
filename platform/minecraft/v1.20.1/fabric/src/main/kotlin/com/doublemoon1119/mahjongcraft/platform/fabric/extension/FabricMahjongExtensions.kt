@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.registerRiichiGameActionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiGameCommandHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -73,6 +74,8 @@ object FabricMahjongExtensions {
             WinCelebrationShowcaseRegistryImpl(),
         gameActionAiRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
+        postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
+            PostReactionRoundOutcomeResolverRegistry(),
         declareRiichiUseCase: DeclareRiichiUseCase,
     ) {
         try {
@@ -95,6 +98,7 @@ object FabricMahjongExtensions {
                 showcaseRegistry = showcaseRegistry,
                 gameActionAiRegistry = gameActionAiRegistry,
                 gameCommandRegistry = gameCommandRegistry,
+                postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
                 declareRiichiUseCase = declareRiichiUseCase,
                 extensions = extensions,
             )
@@ -165,6 +169,8 @@ object FabricMahjongExtensions {
             WinCelebrationShowcaseRegistryImpl(),
         gameActionAiRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
+        postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
+            PostReactionRoundOutcomeResolverRegistry(),
         declareRiichiUseCase: DeclareRiichiUseCase,
         extensions: Iterable<MahjongExtension>,
     ): MinecraftMahjongExtensionRegistrationResult {
@@ -191,6 +197,7 @@ object FabricMahjongExtensions {
             winCelebrationCueResolverRegistry = winCelebrationCueResolverRegistry,
             gameActionAiRegistry = gameActionAiRegistry,
             gameCommandRegistry = gameCommandRegistry,
+            postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
         )
 
         // 同一個第三方類別可同時實作 MahjongExtension 與 MinecraftMahjongExtension，
