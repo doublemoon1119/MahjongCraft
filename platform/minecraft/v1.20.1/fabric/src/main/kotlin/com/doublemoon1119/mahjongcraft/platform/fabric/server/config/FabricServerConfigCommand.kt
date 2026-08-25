@@ -1,15 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.bracketedInteractiveLabel
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowHoverText
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.prefixedConfigMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
@@ -64,15 +62,15 @@ class FabricServerConfigCommand(
      * 聊天欄），理由見 [configShowHoverText] KDoc。
      */
     private fun show(source: ServerCommandSource): Int {
-        logger.info("Effective server config displayed to {}", source.name)
+        logger.debug(
+            "Effective server config hover displayedTo={} path={} config={}",
+            source.name,
+            configManager.displayPath,
+            configManager.formattedCurrentToml(),
+        )
         source.sendFeedback(
             {
-                prefixedConfigMessage("Effective server config ", Formatting.AQUA).append(
-                    bracketedInteractiveLabel(
-                        Text.literal("Details"),
-                        configShowHoverText(configManager.displayPath, configManager.formattedCurrentToml()),
-                    ),
-                )
+                configShowMessage("Effective server config ", configManager.displayPath, configManager.formattedCurrentToml())
             },
             false,
         )

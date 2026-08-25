@@ -1,11 +1,16 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInExhaustiveDrawSettlementStatusIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementHandPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPlayerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -17,9 +22,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCinematicTimeline
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
@@ -28,7 +35,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
@@ -40,6 +50,8 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.command.argument.IdentifierArgumentType
@@ -50,6 +62,7 @@ import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
+import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -93,6 +106,10 @@ class FabricDebugAnimationCommand(
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
     private val exhaustiveDrawSettlementScheduler: FabricExhaustiveDrawSettlementPresentationScheduler,
     private val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
+    private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
+    private val serverConfigManager: FabricServerConfigManager,
+    @Provided private val json: Json,
+    @Provided private val networkRegistries: NetworkDtoRegistries,
 ) {
     /** 每個子指令自行排定的清除任務，見 [scheduleCleanup] KDoc。 */
     private val cleanupTasks = ConcurrentLinkedQueue<CleanupTask>()
@@ -217,7 +234,15 @@ class FabricDebugAnimationCommand(
                                 .then(
                                     literal(EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT)
                                         .executes { context -> previewExhaustiveDrawSettlementHoveredText(context.source) },
-                                ),
+                                )
+                                .then(literal(GAME_CREATED_LOCATION_ARGUMENT).executes { context -> previewGameCreatedLocationHoveredText(context.source) })
+                                .then(
+                                    literal(GAME_CONFIG_ARGUMENT)
+                                        .then(literal(SHOW_ARGUMENT).executes { context -> previewGameConfigHoveredText(context.source, SHOW_ARGUMENT) })
+                                        .then(literal(CHANGED_ARGUMENT).executes { context -> previewGameConfigHoveredText(context.source, CHANGED_ARGUMENT) })
+                                        .then(literal(UNCHANGED_ARGUMENT).executes { context -> previewGameConfigHoveredText(context.source, UNCHANGED_ARGUMENT) }),
+                                )
+                                .then(literal(SERVER_CONFIG_ARGUMENT).executes { context -> previewServerConfigHoveredText(context.source) }),
                         )
                         .then(
                             literal(MELD_SUBCOMMAND)
@@ -479,6 +504,54 @@ class FabricDebugAnimationCommand(
                 buildRoundResultChatText(
                     Text.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW),
                     details,
+                )
+            },
+            false,
+        )
+        return COMMAND_SUCCESS
+    }
+
+    /** 使用正式 feedback publisher 發送建立牌桌位置的 hover 預覽。 */
+    private fun previewGameCreatedLocationHoveredText(source: ServerCommandSource): Int {
+        val player = source.player ?: return COMMAND_FAILURE
+        feedbackPublisher.publish(
+            player.uuid.toKotlinUuid(),
+            MinecraftPlayerFeedback.GameCreated(
+                TableLocation(
+                    dimensionId = player.world.registryKey.value.toString(),
+                    x = player.blockX,
+                    y = player.blockY,
+                    z = player.blockZ,
+                ),
+            ),
+        )
+        return COMMAND_SUCCESS
+    }
+
+    /** 使用正式 feedback publisher 發送遊戲設定 show／changed／unchanged hover 預覽。 */
+    private fun previewGameConfigHoveredText(source: ServerCommandSource, variant: String): Int {
+        val player = source.player ?: return COMMAND_FAILURE
+        val current = json.encodeToString(GameConfig(DEFAULT_RULE_CONFIG).toDto(networkRegistries))
+        val changed = json.encodeToString(
+            GameConfig(DEFAULT_RULE_CONFIG, GameFlowConfig(timeControl = ActionTimeControl.Short)).toDto(networkRegistries),
+        )
+        val feedback = when (variant) {
+            CHANGED_ARGUMENT -> MinecraftPlayerFeedback.GameConfigChanged(current, changed)
+            UNCHANGED_ARGUMENT -> MinecraftPlayerFeedback.GameConfigUnchanged(current)
+            else -> MinecraftPlayerFeedback.ShowGameConfig(current)
+        }
+        feedbackPublisher.publish(player.uuid.toKotlinUuid(), feedback)
+        return COMMAND_SUCCESS
+    }
+
+    /** 使用正式 config builder 發送目前 server config 的 hover 預覽。 */
+    private fun previewServerConfigHoveredText(source: ServerCommandSource): Int {
+        source.sendFeedback(
+            {
+                configShowMessage(
+                    "Effective server config ",
+                    serverConfigManager.displayPath,
+                    serverConfigManager.formattedCurrentToml(),
                 )
             },
             false,
@@ -867,6 +940,12 @@ class FabricDebugAnimationCommand(
         const val SETTLEMENT_SUBCOMMAND: String = "settlement"
         const val HOVERED_TEXT_SUBCOMMAND: String = "hovered_text"
         const val EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT: String = "exhaustive_draw_settlement"
+        const val GAME_CREATED_LOCATION_ARGUMENT: String = "game_created_location"
+        const val GAME_CONFIG_ARGUMENT: String = "game_config"
+        const val SERVER_CONFIG_ARGUMENT: String = "server_config"
+        const val SHOW_ARGUMENT: String = "show"
+        const val CHANGED_ARGUMENT: String = "changed"
+        const val UNCHANGED_ARGUMENT: String = "unchanged"
         const val NORMAL_ARGUMENT: String = "normal"
         const val KYUUSHU_ARGUMENT: String = "kyuushu"
         const val ABORTIVE_ARGUMENT: String = "abortive"

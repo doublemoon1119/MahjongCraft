@@ -3,14 +3,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROOT
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.bracketedInteractiveLabel
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowHoverText
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.prefixedConfigMessage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
-import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
@@ -31,6 +30,7 @@ import org.slf4j.LoggerFactory
 @Single
 class FabricClientConfigCommand(
     private val configStore: MahjongClientConfigStore,
+    private val minecraftEnvironment: MinecraftEnvironment,
 ) {
     /** 記錄 config 指令執行結果，對稱 server 端 `FabricServerConfigCommand` 的 logger。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -38,19 +38,34 @@ class FabricClientConfigCommand(
     /** 註冊指令；只能在 client entrypoint 呼叫。 */
     fun register() {
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
-            dispatcher.register(
-                ClientCommandManager.literal(CLIENT_COMMAND_ROOT).then(
-                    ClientCommandManager.literal(CONFIG_SUBCOMMAND)
-                        .then(
-                            ClientCommandManager.literal(RELOAD_SUBCOMMAND)
-                                .executes { context -> reload(context.source) },
-                        )
-                        .then(
-                            ClientCommandManager.literal(SHOW_SUBCOMMAND).executes { context -> show(context.source) },
-                        ),
-                ),
+            val root = ClientCommandManager.literal(CLIENT_COMMAND_ROOT).then(
+                ClientCommandManager.literal(CONFIG_SUBCOMMAND)
+                    .then(
+                        ClientCommandManager.literal(RELOAD_SUBCOMMAND)
+                            .executes { context -> reload(context.source) },
+                    )
+                    .then(
+                        ClientCommandManager.literal(SHOW_SUBCOMMAND).executes { context -> show(context.source) },
+                    ),
             )
+            if (minecraftEnvironment.isDevelopment) {
+                root.then(
+                    ClientCommandManager.literal(DEBUG_SUBCOMMAND).then(
+                        ClientCommandManager.literal(HOVERED_TEXT_SUBCOMMAND).then(
+                            ClientCommandManager.literal(CLIENT_CONFIG_ARGUMENT)
+                                .executes { context -> previewHoveredText(context.source) },
+                        ),
+                    ),
+                )
+            }
+            dispatcher.register(root)
         }
+    }
+
+    /** 以正式 config builder 發送 client config hovered-text 預覽。 */
+    private fun previewHoveredText(source: FabricClientCommandSource): Int {
+        source.sendFeedback(configShowMessage("Effective client config ", configStore.displayPath, configStore.formattedCurrentToml()))
+        return COMMAND_SUCCESS
     }
 
     /** 重新載入設定並向執行者回報結果。 */
@@ -73,14 +88,13 @@ class FabricClientConfigCommand(
      * 聊天欄），理由見 [configShowHoverText] KDoc。
      */
     private fun show(source: FabricClientCommandSource): Int {
-        logger.info("Effective client config displayed")
+        logger.debug(
+            "Effective client config hover path={} config={}",
+            configStore.displayPath,
+            configStore.formattedCurrentToml(),
+        )
         source.sendFeedback(
-            prefixedConfigMessage("Effective client config ", Formatting.AQUA).append(
-                bracketedInteractiveLabel(
-                    Text.literal("Details"),
-                    configShowHoverText(configStore.displayPath, configStore.formattedCurrentToml()),
-                ),
-            ),
+            configShowMessage("Effective client config ", configStore.displayPath, configStore.formattedCurrentToml()),
         )
         return COMMAND_SUCCESS
     }
@@ -94,6 +108,15 @@ class FabricClientConfigCommand(
 
         /** `show` 子指令節點。 */
         const val SHOW_SUBCOMMAND: String = "show"
+
+        /** 開發期診斷子指令。 */
+        const val DEBUG_SUBCOMMAND: String = "debug"
+
+        /** 可懸停正式訊息的診斷子指令。 */
+        const val HOVERED_TEXT_SUBCOMMAND: String = "hovered_text"
+
+        /** Client config 正式 hover 預覽。 */
+        const val CLIENT_CONFIG_ARGUMENT: String = "client_config"
 
         /** Brigadier 成功回傳值。 */
         const val COMMAND_SUCCESS: Int = 1

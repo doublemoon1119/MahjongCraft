@@ -32,6 +32,7 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
+import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 
 /**
@@ -56,6 +57,8 @@ class FabricPlayerFeedbackPublisher(
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) : MinecraftPlayerFeedbackPublisher {
+    /** 記錄包含大量 hover 資訊的正式回饋原始資料。 */
+    private val logger = LoggerFactory.getLogger(FabricPlayerFeedbackPublisher::class.java)
 
     /** 用來把設定 hover 顯示成 TOML 的 codec；序列化模組須與 [json] 共用，才認得到多型規則設定。 */
     private val toml = Toml(serializersModule = buildMahjongDtoSerializersModule(networkRegistries))
@@ -68,8 +71,19 @@ class FabricPlayerFeedbackPublisher(
             when (feedback) {
                 MinecraftPlayerFeedback.GameAlreadyStarted ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_ALREADY_STARTED), true)
-                is MinecraftPlayerFeedback.GameCreated ->
+                is MinecraftPlayerFeedback.GameCreated -> {
+                    feedback.location?.let { location ->
+                        logger.debug(
+                            "Game-created hover playerId={} dimension={} position=({}, {}, {})",
+                            playerId,
+                            location.dimensionId,
+                            location.x,
+                            location.y,
+                            location.z,
+                        )
+                    }
                     player.sendMessage(gameCreatedMessage(feedback.location))
+                }
                 MinecraftPlayerFeedback.GameJoined ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_JOINED))
                 MinecraftPlayerFeedback.PlayerNotInGame ->
@@ -120,16 +134,27 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.TARGET_NOT_AI), true)
                 MinecraftPlayerFeedback.ChangeAiStrategyFailed ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.CHANGE_AI_STRATEGY_FAILED), true)
-                is MinecraftPlayerFeedback.GameConfigChanged ->
+                is MinecraftPlayerFeedback.GameConfigChanged -> {
+                    logger.debug(
+                        "Game-config-changed hover playerId={} oldConfig={} newConfig={}",
+                        playerId,
+                        feedback.oldConfigJson,
+                        feedback.newConfigJson,
+                    )
                     player.sendMessage(gameConfigChangedMessage(feedback))
-                is MinecraftPlayerFeedback.GameConfigUnchanged ->
+                }
+                is MinecraftPlayerFeedback.GameConfigUnchanged -> {
+                    logger.debug("Game-config-unchanged hover playerId={} config={}", playerId, feedback.configJson)
                     player.sendMessage(gameConfigUnchangedMessage(feedback))
+                }
                 MinecraftPlayerFeedback.InvalidGameConfig ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.INVALID_GAME_CONFIG), true)
                 MinecraftPlayerFeedback.ChangeGameConfigFailed ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.CHANGE_GAME_CONFIG_FAILED), true)
-                is MinecraftPlayerFeedback.ShowGameConfig ->
+                is MinecraftPlayerFeedback.ShowGameConfig -> {
+                    logger.debug("Game-config-show hover playerId={} config={}", playerId, feedback.configJson)
                     player.sendMessage(showGameConfigMessage(feedback))
+                }
                 is MinecraftPlayerFeedback.GameActionPerformed ->
                     player.sendMessage(gameActionPerformedMessage(feedback), true)
                 MinecraftPlayerFeedback.NotYourTurn ->

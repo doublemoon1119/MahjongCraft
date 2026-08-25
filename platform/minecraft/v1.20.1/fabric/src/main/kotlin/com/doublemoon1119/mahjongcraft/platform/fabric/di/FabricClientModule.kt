@@ -10,6 +10,6 @@ import org.koin.core.annotation.Module
  * 此 module 只由 Minecraft client graph 載入，可掃描 HUD、renderer 與其他 client-only adapter；
  * dedicated server graph 不會 include 此 module。
  */
-@Module(includes = [FlowClientModule::class])
+@Module(includes = [FlowClientModule::class, FabricCommonModule::class])
 @ComponentScan("com.doublemoon1119.mahjongcraft.platform.fabric.client")
 class FabricClientModule

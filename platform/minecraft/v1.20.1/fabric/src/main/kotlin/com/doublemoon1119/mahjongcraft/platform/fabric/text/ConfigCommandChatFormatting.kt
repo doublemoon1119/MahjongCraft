@@ -69,3 +69,11 @@ fun configShowHoverText(displayPath: String, formattedToml: String): MutableText
     }
     return hoverText
 }
+
+/** 建立 server／client config show 與開發期預覽共用的正式單行 hover 訊息。 */
+fun configShowMessage(label: String, displayPath: String, formattedToml: String): MutableText = prefixedConfigMessage(label, Formatting.AQUA).append(
+    bracketedInteractiveLabel(
+        Text.literal("Details"),
+        configShowHoverText(displayPath, formattedToml),
+    ),
+)

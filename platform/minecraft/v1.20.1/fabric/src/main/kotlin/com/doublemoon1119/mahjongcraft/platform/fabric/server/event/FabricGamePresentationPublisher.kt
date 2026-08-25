@@ -127,6 +127,24 @@ class FabricGamePresentationPublisher(
     private val wallDropTicksByTable = ConcurrentHashMap<Uuid, Int>()
 
     override fun publishExhaustiveDrawSettlement(gameId: Uuid, request: ExhaustiveDrawSettlementPresentationRequest) {
+        logger.debug(
+            "Exhaustive draw settlement gameId={} reason={} players={}",
+            gameId,
+            request.reasonId,
+            request.players.map { player ->
+                val ranking = player.ranking
+                mapOf(
+                    "playerId" to ranking.playerId,
+                    "seatIndex" to ranking.seatIndex,
+                    "previousScore" to ranking.previousScore,
+                    "currentScore" to ranking.currentScore,
+                    "previousRank" to ranking.previousRank,
+                    "currentRank" to ranking.currentRank,
+                    "handPresentation" to player.handPresentation,
+                    "waitingTiles" to player.waitingTiles.map(Any::toString),
+                )
+            },
+        )
         busyTracker.markPending(gameId)
         scope.launch(dispatchers.main) {
             try {
@@ -155,12 +173,7 @@ class FabricGamePresentationPublisher(
                     logger.warn("publishExhaustiveDrawSettlement gameId={} skipped: stage spawn failed", gameId)
                 } else {
                     resolved.table.extendPresentationUntil(endGameTime)
-                    logger.debug(
-                        "Round settlement presentation created gameId={} reason={} players={}",
-                        gameId,
-                        request.reasonId,
-                        request.players.size,
-                    )
+                    logger.debug("Exhaustive draw settlement presentation created gameId={} endGameTime={}", gameId, endGameTime)
                 }
             } finally {
                 busyTracker.clearPending(gameId)
