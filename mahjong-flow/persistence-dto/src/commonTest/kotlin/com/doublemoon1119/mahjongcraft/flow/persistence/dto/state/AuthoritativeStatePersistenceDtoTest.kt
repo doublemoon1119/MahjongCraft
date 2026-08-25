@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceEnve
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildDiscardPilePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildDynamicRuleStatePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildExhaustiveDrawReasonPersistenceRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildExtensionGameActionPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildPlayerRuleStatePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildRuleConfigPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
@@ -42,6 +43,9 @@ class AuthoritativeStatePersistenceDtoTest {
 
     /** 內建流局原因的 persistence registry。 */
     private val exhaustiveDrawReasonRegistry = buildExhaustiveDrawReasonPersistenceRegistry()
+
+    /** 內建擴充動作的 persistence registry。 */
+    private val extensionGameActionRegistry = buildExtensionGameActionPersistenceRegistry()
 
     /** 驗證多個 Room 與 Game 能在同一 envelope 中完整編解碼。 */
     @Test
@@ -193,6 +197,7 @@ class AuthoritativeStatePersistenceDtoTest {
             playerRuleStateRegistry = playerRuleStateRegistry,
             dynamicRuleStateRegistry = dynamicRuleStateRegistry,
             exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
             json = json,
         )
 
@@ -202,6 +207,7 @@ class AuthoritativeStatePersistenceDtoTest {
             playerRuleStateRegistry,
             dynamicRuleStateRegistry,
             exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry,
             json,
         ).getValue(game.id)
 
@@ -259,6 +265,7 @@ class AuthoritativeStatePersistenceDtoTest {
         playerRuleStateRegistry,
         dynamicRuleStateRegistry,
         exhaustiveDrawReasonRegistry,
+        extensionGameActionRegistry,
         json,
     )
 
@@ -269,6 +276,7 @@ class AuthoritativeStatePersistenceDtoTest {
         playerRuleStateRegistry,
         dynamicRuleStateRegistry,
         exhaustiveDrawReasonRegistry,
+        extensionGameActionRegistry,
         json,
     ).mapValues { it.value.tableState }
 }

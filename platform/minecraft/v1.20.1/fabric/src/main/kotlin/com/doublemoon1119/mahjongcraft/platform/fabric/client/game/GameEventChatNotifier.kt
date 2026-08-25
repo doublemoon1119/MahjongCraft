@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -39,6 +40,7 @@ fun buildRoundResultChatMessage(
     previousSnapshot: TableStateSnapshot?,
     newSnapshot: TableStateSnapshot,
     module: MahjongRuleModule<*>,
+    actionDisplayNameRegistry: GameActionDisplayNameRegistry,
     displayNameRegistry: TileDisplayNameRegistry,
     tileAssetRegistry: MinecraftTileAssetRegistry,
     tileEmojiRegistry: TileEmojiRegistry,
@@ -48,6 +50,7 @@ fun buildRoundResultChatMessage(
 
     val actionText = action.toDisplayText(
         referenceTile = null,
+        actionDisplayNameRegistry = actionDisplayNameRegistry,
         displayNameRegistry = displayNameRegistry,
         tileAssetRegistry = tileAssetRegistry,
         tileEmojiRegistry = tileEmojiRegistry,

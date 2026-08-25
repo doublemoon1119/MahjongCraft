@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.text
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -25,6 +26,7 @@ import net.minecraft.text.Text
  */
 fun GameAction.toDisplayText(
     referenceTile: Tile?,
+    actionDisplayNameRegistry: GameActionDisplayNameRegistry,
     displayNameRegistry: TileDisplayNameRegistry,
     tileAssetRegistry: MinecraftTileAssetRegistry,
     tileEmojiRegistry: TileEmojiRegistry,
@@ -36,7 +38,7 @@ fun GameAction.toDisplayText(
         tileAssetRegistry = tileAssetRegistry,
         tileEmojiRegistry = tileEmojiRegistry,
     )
-    GameAction.Riichi -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_RIICHI)
+    is GameAction.Extension -> extensionDisplayText(actionDisplayNameRegistry)
     GameAction.Tsumo -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_TSUMO)
     is GameAction.Chi -> tileActionText(
         key = MinecraftMessageKeys.GAME_ACTION_CHI,
@@ -72,6 +74,9 @@ fun GameAction.toDisplayText(
     is GameAction.DiceRolled -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_DICE_ROLLED)
     GameAction.GameStarted, GameAction.RoundStarted, GameAction.Draw -> Text.literal(this::class.simpleName ?: "")
 }
+
+/** 透過 registry 顯示規則擴充動作；未知動作安全顯示其穩定 ID。 */
+private fun GameAction.Extension.extensionDisplayText(registry: GameActionDisplayNameRegistry): Text = registry.find(value)?.let(Text::translatable) ?: Text.literal(value.id)
 
 /** 組出「動作 + 牌面」形式的顯示文字，[referenceTile] 為 null 時退回顯示 `?`。 */
 private fun tileActionText(

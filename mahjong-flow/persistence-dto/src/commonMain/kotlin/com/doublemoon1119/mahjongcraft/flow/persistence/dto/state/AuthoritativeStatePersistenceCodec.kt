@@ -47,6 +47,7 @@ class AuthoritativeStatePersistenceCodec(
             playerRuleStateRegistry = registries.playerRuleStates,
             dynamicRuleStateRegistry = registries.dynamicRuleStates,
             exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
+            extensionGameActionRegistry = registries.extensionGameActions,
             json = json,
         )
         return json.encodeToString(PersistenceEnvelopeDto.serializer(), state.toEnvelope(json))
@@ -65,6 +66,7 @@ class AuthoritativeStatePersistenceCodec(
                 playerRuleStateRegistry = registries.playerRuleStates,
                 dynamicRuleStateRegistry = registries.dynamicRuleStates,
                 exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
+                extensionGameActionRegistry = registries.extensionGameActions,
                 json = json,
             ),
         )

@@ -74,7 +74,7 @@ class RiichiLegalActionValidatorRiichiTest {
         )
 
         // 驗證
-        assertTrue(actions.any { it is GameAction.Riichi })
+        assertTrue(actions.any { it == RIICHI_GAME_ACTION })
     }
 
     /**
@@ -120,7 +120,7 @@ class RiichiLegalActionValidatorRiichiTest {
         )
 
         // 驗證
-        assertTrue(actions.any { it is GameAction.Riichi })
+        assertTrue(actions.any { it == RIICHI_GAME_ACTION })
     }
 
     /**
@@ -166,7 +166,7 @@ class RiichiLegalActionValidatorRiichiTest {
         )
 
         // 驗證
-        assertFalse(actions.any { it is GameAction.Riichi })
+        assertFalse(actions.any { it == RIICHI_GAME_ACTION })
     }
 
     /**
@@ -209,7 +209,7 @@ class RiichiLegalActionValidatorRiichiTest {
         )
 
         // 驗證
-        assertTrue(actions.any { it is GameAction.Riichi })
+        assertTrue(actions.any { it == RIICHI_GAME_ACTION })
     }
 
     /**
@@ -255,7 +255,7 @@ class RiichiLegalActionValidatorRiichiTest {
         )
 
         // 驗證
-        assertFalse(actions.any { it is GameAction.Riichi })
+        assertFalse(actions.any { it == RIICHI_GAME_ACTION })
     }
 
     /**
@@ -301,7 +301,7 @@ class RiichiLegalActionValidatorRiichiTest {
         )
 
         // 驗證
-        assertFalse(actions.any { it is GameAction.Riichi })
+        assertFalse(actions.any { it == RIICHI_GAME_ACTION })
     }
 
     /**

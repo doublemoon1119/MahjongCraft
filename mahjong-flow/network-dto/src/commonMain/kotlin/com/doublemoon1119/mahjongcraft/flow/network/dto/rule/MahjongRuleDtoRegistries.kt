@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.rule
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
@@ -12,7 +14,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
+import kotlinx.serialization.modules.SerializersModuleBuilder
+import kotlin.reflect.KClass
 
 /**
  * [MahjongRuleConfig] 的網路 DTO——刻意維持開放介面（不是 sealed），對應領域層本身就是開放介面、
@@ -48,6 +51,14 @@ interface DiscardPileDto
 @Polymorphic
 interface ExhaustiveDrawReasonDto
 
+/** 見 [MahjongRuleConfigDto] 的說明，[ExtensionGameAction] 的網路 DTO。 */
+@Polymorphic
+interface ExtensionGameActionDto
+
+/** 見 [MahjongRuleConfigDto] 的說明，[ExtensionGameCommand] 的網路 DTO。 */
+@Polymorphic
+interface ExtensionGameCommandDto
+
 /**
  * 領域層開放介面 ↔ DTO 的註冊表集合。建構時全部是空的，比照 [MahjongModuleRegistryImpl] 的既有精神——
  * [com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos] 把日麻/台麻已有的實作註冊進來，第三方規則模組要支援序列化，
@@ -75,6 +86,12 @@ interface NetworkDtoRegistries {
     /** 流局原因 DTO registry。 */
     val exhaustiveDrawReason: DtoRegistry<ExhaustiveDrawReason, ExhaustiveDrawReasonDto>
 
+    /** 擴充遊戲動作 DTO registry。 */
+    val extensionGameAction: DtoRegistry<ExtensionGameAction, ExtensionGameActionDto>
+
+    /** 擴充遊戲命令 DTO registry。 */
+    val extensionGameCommand: DtoRegistry<ExtensionGameCommand, ExtensionGameCommandDto>
+
     /** 凍結所有 registry；凍結後不得新增或覆寫 mapper。 */
     fun freeze()
 }
@@ -88,6 +105,8 @@ class DefaultNetworkDtoRegistries : NetworkDtoRegistries {
     override val playerRuleState = DtoRegistry<PlayerRuleState, PlayerRuleStateDto>()
     override val discardPile = DtoRegistry<DiscardPile<*>, DiscardPileDto>()
     override val exhaustiveDrawReason = DtoRegistry<ExhaustiveDrawReason, ExhaustiveDrawReasonDto>()
+    override val extensionGameAction = DtoRegistry<ExtensionGameAction, ExtensionGameActionDto>()
+    override val extensionGameCommand = DtoRegistry<ExtensionGameCommand, ExtensionGameCommandDto>()
 
     override fun freeze() {
         ruleConfig.freeze()
@@ -97,22 +116,38 @@ class DefaultNetworkDtoRegistries : NetworkDtoRegistries {
         playerRuleState.freeze()
         discardPile.freeze()
         exhaustiveDrawReason.freeze()
+        extensionGameAction.freeze()
+        extensionGameCommand.freeze()
     }
 }
 
 /**
- * 依 [registries] 目前已註冊的內容動態組成 `SerializersModule`——每次
- * `register(...)` 之後都要重新取得（呼叫端通常在 [registerBuiltInRuleConfigDtos] 執行完、
- * 所有第三方規則模組也註冊完畢後，才建構真正要用的 `Json` 實例）。
+ * 建立以 [registries] 為動態來源的 `SerializersModule`。模組本身可以早於 extension bootstrap
+ * 建立；每次 polymorphic 編解碼都會查詢同一個 registry，因此後續完成的內建與第三方 DTO
+ * 註冊會立即可見，不必重建 `Json`。
  */
 fun buildMahjongDtoSerializersModule(registries: NetworkDtoRegistries): SerializersModule = SerializersModule {
-    polymorphic(MahjongRuleConfigDto::class) { registries.ruleConfig.registerSubclasses(this) }
-    polymorphic(ScoreConfigDto::class) { registries.scoreConfig.registerSubclasses(this) }
-    polymorphic(GameLengthDto::class) { registries.gameLength.registerSubclasses(this) }
-    polymorphic(DynamicRuleStateDto::class) { registries.dynamicRuleState.registerSubclasses(this) }
-    polymorphic(PlayerRuleStateDto::class) { registries.playerRuleState.registerSubclasses(this) }
-    polymorphic(DiscardPileDto::class) { registries.discardPile.registerSubclasses(this) }
-    polymorphic(ExhaustiveDrawReasonDto::class) { registries.exhaustiveDrawReason.registerSubclasses(this) }
+    dynamicPolymorphic(MahjongRuleConfigDto::class, registries.ruleConfig)
+    dynamicPolymorphic(ScoreConfigDto::class, registries.scoreConfig)
+    dynamicPolymorphic(GameLengthDto::class, registries.gameLength)
+    dynamicPolymorphic(DynamicRuleStateDto::class, registries.dynamicRuleState)
+    dynamicPolymorphic(PlayerRuleStateDto::class, registries.playerRuleState)
+    dynamicPolymorphic(DiscardPileDto::class, registries.discardPile)
+    dynamicPolymorphic(ExhaustiveDrawReasonDto::class, registries.exhaustiveDrawReason)
+    dynamicPolymorphic(ExtensionGameActionDto::class, registries.extensionGameAction)
+    dynamicPolymorphic(ExtensionGameCommandDto::class, registries.extensionGameCommand)
+}
+
+/**
+ * 建立會在每次編解碼時查詢 [registry] 的 polymorphic provider，而非在 [SerializersModule]
+ * 建立當下複製靜態 subclass 清單。
+ */
+private fun <Dto : Any> SerializersModuleBuilder.dynamicPolymorphic(
+    baseClass: KClass<Dto>,
+    registry: DtoRegistry<*, Dto>,
+) {
+    polymorphicDefaultSerializer(baseClass) { dto -> registry.serializerFor(dto) }
+    polymorphicDefaultDeserializer(baseClass) { serialName -> serialName?.let(registry::serializerFor) }
 }
 
 fun MahjongRuleConfig.toDto(registries: NetworkDtoRegistries): MahjongRuleConfigDto = registries.ruleConfig.toDto(this)
@@ -137,3 +172,15 @@ fun DiscardPileDto.toDomain(registries: NetworkDtoRegistries): DiscardPile<*> = 
 fun ExhaustiveDrawReason.toDto(registries: NetworkDtoRegistries): ExhaustiveDrawReasonDto = registries.exhaustiveDrawReason.toDto(this)
 
 fun ExhaustiveDrawReasonDto.toDomain(registries: NetworkDtoRegistries): ExhaustiveDrawReason = registries.exhaustiveDrawReason.toDomain(this)
+
+/** 將擴充遊戲動作轉換成已註冊的網路 DTO。 */
+fun ExtensionGameAction.toDto(registries: NetworkDtoRegistries): ExtensionGameActionDto = registries.extensionGameAction.toDto(this)
+
+/** 將已註冊的擴充遊戲動作 DTO 還原成領域物件。 */
+fun ExtensionGameActionDto.toDomain(registries: NetworkDtoRegistries): ExtensionGameAction = registries.extensionGameAction.toDomain(this)
+
+/** 將擴充遊戲命令轉換成已註冊的網路 DTO。 */
+fun ExtensionGameCommand.toDto(registries: NetworkDtoRegistries): ExtensionGameCommandDto = registries.extensionGameCommand.toDto(this)
+
+/** 將已註冊的擴充遊戲命令 DTO 還原成領域物件。 */
+fun ExtensionGameCommandDto.toDomain(registries: NetworkDtoRegistries): ExtensionGameCommand = registries.extensionGameCommand.toDomain(this)

@@ -8,6 +8,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.command.GameActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.GameCommandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
@@ -19,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerRiichiGameActionDtos
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
@@ -77,8 +81,28 @@ class DtoRoundTripTest {
 
     @BeforeTest
     fun setUp() {
-        registries = DefaultNetworkDtoRegistries().apply { registerBuiltInRuleConfigDtos() }
+        registries = DefaultNetworkDtoRegistries().apply {
+            registerBuiltInRuleConfigDtos()
+            registerRiichiGameActionDtos()
+        }
         json = Json { serializersModule = buildMahjongDtoSerializersModule(registries) }
+    }
+
+    @Test
+    fun `test Json created before DTO registration observes later registrations`() {
+        val lateRegistries = DefaultNetworkDtoRegistries()
+        val earlyJson = Json {
+            serializersModule = buildMahjongDtoSerializersModule(lateRegistries)
+        }
+        lateRegistries.registerBuiltInRuleConfigDtos()
+        lateRegistries.registerRiichiGameActionDtos()
+        lateRegistries.freeze()
+
+        val config = GameConfig(RiichiRuleConfig())
+        val encoded = earlyJson.encodeToString(GameConfigDto.serializer(), config.toDto(lateRegistries))
+        val decoded = earlyJson.decodeFromString(GameConfigDto.serializer(), encoded).toDomain(lateRegistries)
+
+        assertEquals(config, decoded)
     }
 
     @Test
@@ -87,12 +111,12 @@ class DtoRoundTripTest {
         val commands = listOf(
             GameCommand.Draw,
             GameCommand.Discard(tileId),
-            GameCommand.Riichi(tileId),
+            GameCommand.Extension(com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand(tileId)),
             GameCommand.Tsumo,
             GameCommand.Kan(GameAction.KanType.CLOSED_KAN, tileId),
             GameCommand.RespondToDiscard(GameAction.Ron(tileId)),
-            GameCommand.RespondToChankan(GameAction.Pass),
-            GameCommand.KyuushuKyuuhai,
+            GameCommand.RespondToKan(GameAction.Pass),
+            GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai),
         )
 
         commands.forEach { command ->
@@ -116,7 +140,7 @@ class DtoRoundTripTest {
             GameAction.Kan(GameAction.KanType.OPEN_KAN, tileId, withTiles),
             GameAction.Ron(tileId),
             GameAction.Tsumo,
-            GameAction.Riichi,
+            com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION,
             GameAction.Pass,
             GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.Normal),
             GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai),

@@ -3,17 +3,18 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 
 /** 日麻規則提供的擴充牌種穩定 ID。 */
 object RiichiTileTypes {
     /** 赤五萬。 */
-    val RED_FIVE_CHARACTER: TileTypeId = TileTypeId.parse("mahjongcraft:riichi/red_five_character")
+    val RED_FIVE_CHARACTER: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("riichi/red_five_character"))
 
     /** 赤五筒。 */
-    val RED_FIVE_DOT: TileTypeId = TileTypeId.parse("mahjongcraft:riichi/red_five_dot")
+    val RED_FIVE_DOT: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("riichi/red_five_dot"))
 
     /** 赤五條。 */
-    val RED_FIVE_BAMBOO: TileTypeId = TileTypeId.parse("mahjongcraft:riichi/red_five_bamboo")
+    val RED_FIVE_BAMBOO: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("riichi/red_five_bamboo"))
 
     /** 依萬、筒、條順序排列的全部內建赤五 ID。 */
     val ALL: List<TileTypeId> = listOf(RED_FIVE_CHARACTER, RED_FIVE_DOT, RED_FIVE_BAMBOO)

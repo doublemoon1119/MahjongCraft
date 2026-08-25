@@ -11,9 +11,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -83,7 +84,7 @@ class GetLegalActionsUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val actions = result.value
-        assertTrue(actions.any { it is GameAction.Riichi }, "Riichi should be legal from the incomingTile=null query.")
+        assertTrue(actions.any { it == RIICHI_GAME_ACTION }, "Riichi should be legal from the incomingTile=null query.")
         assertTrue(
             actions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN },
             "Closed kan should be legal from the incomingTile=lastDrawn query.",
@@ -142,7 +143,7 @@ class GetLegalActionsUseCaseTest {
             players = listOf(declarer, robber),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingChankan = PendingChankanReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
+            pendingKanReaction = PendingKanReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -172,7 +173,7 @@ class GetLegalActionsUseCaseTest {
             players = listOf(declarer, robber),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingChankan = PendingChankanReaction(
+            pendingKanReaction = PendingKanReaction(
                 declarerId,
                 kanAction,
                 robbedWhiteTile,

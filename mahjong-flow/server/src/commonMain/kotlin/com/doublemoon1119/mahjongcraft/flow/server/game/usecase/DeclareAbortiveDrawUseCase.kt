@@ -10,17 +10,13 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
- * 宣告九種九牌（Kyuushu Kyuuhai）的實例化用例。
- *
- * 這是「流局判定」系列子項的第二塊：接上 [RiichiLegalActionValidator] 早就已經有的
- * 偵測邏輯（第一巡摸牌後，手牌含摸到的牌擁有 9 種以上么九牌），讓玩家真正能夠宣告這個流局。
+ * 宣告由規則模組提供之途中流局原因的實例化用例。
  *
  * 是否合法完全交給該規則模組自己的 `LegalActionValidator`：現在
  * [GameAction.ExhaustiveDraw] 是不是合法動作——這裡不重新實作么九牌計數或第一巡判斷，理由與
@@ -35,20 +31,25 @@ import kotlin.uuid.Uuid
  * @property eventPublisher 對局通知服務。
  */
 @Factory
-class DeclareKyuushuKyuuhaiUseCase(
+class DeclareAbortiveDrawUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
 ) {
     /**
-     * 執行九種九牌宣告邏輯。
+     * 執行指定原因的途中流局宣告邏輯。
      *
      * @param gameId 對局 Uuid。
      * @param playerId 發起宣告的玩家 Uuid。
+     * @param reason 玩家選擇的途中流局原因。
      * @return 宣告結果，成功時為 [Unit]，失敗時為 [GameError]。
      */
-    suspend operator fun invoke(gameId: Uuid, playerId: Uuid): Outcome<Unit, GameError> {
+    suspend operator fun invoke(
+        gameId: Uuid,
+        playerId: Uuid,
+        reason: ExhaustiveDrawReason,
+    ): Outcome<Unit, GameError> {
         // 1. 以原子方式讀取桌況、驗證業務規則並寫回
         val outcome = gameRepository.update(gameId) { state ->
             when {
@@ -78,7 +79,8 @@ class DeclareKyuushuKyuuhaiUseCase(
                         sourceDirection = RelativeDirection.Self,
                         incomingTile = incomingTile,
                     )
-                    val exhaustiveDraw = legalActions.filterIsInstance<GameAction.ExhaustiveDraw>().firstOrNull()
+                    val exhaustiveDraw = legalActions.filterIsInstance<GameAction.ExhaustiveDraw>()
+                        .firstOrNull { it.reason == reason }
                         ?: return@update state to Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
 
                     // 途中流局：莊家固定連莊、不結算任何點數，供託延續到下一局。把 ExhaustiveDraw
@@ -88,7 +90,7 @@ class DeclareKyuushuKyuuhaiUseCase(
                         state.players.map { it.recordAction(GameAction.ExhaustiveDraw(exhaustiveDraw.reason)) }
                     val newState = state.copy(players = updatedPlayers)
 
-                    newState to Outcome.Success(KyuushuKyuuhaiResult(newState, exhaustiveDraw.reason))
+                    newState to Outcome.Success(AbortiveDrawResult(newState, exhaustiveDraw.reason))
                 }
             }
         }
@@ -113,5 +115,5 @@ class DeclareKyuushuKyuuhaiUseCase(
      * `gameRepository.update` 的作用域，供廣播事件時使用（[reason] 不是 [TableState] 的欄位，
      * 無法在作用域外從 [tableState] 反推）。
      */
-    private data class KyuushuKyuuhaiResult(val tableState: TableState, val reason: ExhaustiveDrawReason)
+    private data class AbortiveDrawResult(val tableState: TableState, val reason: ExhaustiveDrawReason)
 }

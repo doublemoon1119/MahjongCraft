@@ -1,9 +1,12 @@
 package com.doublemoon1119.mahjongcraft.extension
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DiscardPileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DynamicRuleStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExhaustiveDrawReasonDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameActionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameCommandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.GameLengthDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
@@ -12,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ScoreConfigDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
@@ -151,6 +155,8 @@ private class TestNetworkDtoRegistries : NetworkDtoRegistries {
     override val playerRuleState = DtoRegistry<PlayerRuleState, PlayerRuleStateDto>()
     override val discardPile = DtoRegistry<DiscardPile<*>, DiscardPileDto>()
     override val exhaustiveDrawReason = DtoRegistry<ExhaustiveDrawReason, ExhaustiveDrawReasonDto>()
+    override val extensionGameAction = DtoRegistry<ExtensionGameAction, ExtensionGameActionDto>()
+    override val extensionGameCommand = DtoRegistry<ExtensionGameCommand, ExtensionGameCommandDto>()
 
     override fun freeze() {
         ruleConfig.freeze()
@@ -160,5 +166,7 @@ private class TestNetworkDtoRegistries : NetworkDtoRegistries {
         playerRuleState.freeze()
         discardPile.freeze()
         exhaustiveDrawReason.freeze()
+        extensionGameAction.freeze()
+        extensionGameCommand.freeze()
     }
 }

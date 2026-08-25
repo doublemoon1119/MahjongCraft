@@ -69,6 +69,7 @@ class RiichiHandValueCalculator(
                 MeldType.OPEN_KAN -> Mentsu.Minkan(tile)
                 MeldType.CLOSED_KAN -> Mentsu.Ankan(tile)
                 MeldType.ADDED_KAN -> Mentsu.Kakan(tile)
+                is MeldType.Extension -> error("Unsupported extension meld type in riichi calculator: ${meld.type.typeId}")
             }
             Fuuro(
                 mentsu = mentsu,

@@ -3,12 +3,14 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
@@ -74,7 +76,7 @@ class MahjongTableGameActionService(
         scope.launch {
             val gameId = resolveGameId(playerId) ?: return@launch
             val tile = findHandTile(gameId, playerId, tileId)
-            execute(gameId, playerId, GameCommand.Riichi(tileId), GameAction.Riichi, tile)
+            execute(gameId, playerId, GameCommand.Extension(RiichiGameCommand(tileId)), RIICHI_GAME_ACTION, tile)
         }
     }
 
@@ -89,7 +91,7 @@ class MahjongTableGameActionService(
                 return@launch
             }
             val command = when (GameActionCandidateResolver.resolvePendingMode(state, playerId)) {
-                GamePendingMode.CHANKAN -> GameCommand.RespondToChankan(candidate.action)
+                GamePendingMode.KAN_REACTION -> GameCommand.RespondToKan(candidate.action)
                 GamePendingMode.DISCARD_REACTION -> GameCommand.RespondToDiscard(candidate.action)
                 GamePendingMode.OWN_TURN -> toOwnTurnCommand(candidate.action)
                 GamePendingMode.NONE -> null
@@ -134,7 +136,7 @@ class MahjongTableGameActionService(
     private fun toOwnTurnCommand(action: GameAction): GameCommand? = when (action) {
         GameAction.Tsumo -> GameCommand.Tsumo
         is GameAction.Kan -> GameCommand.Kan(action.type, action.tileId)
-        is GameAction.ExhaustiveDraw -> GameCommand.KyuushuKyuuhai
+        is GameAction.ExhaustiveDraw -> GameCommand.DeclareExhaustiveDraw(action.reason)
         else -> null
     }
 

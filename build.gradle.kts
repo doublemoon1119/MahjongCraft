@@ -12,10 +12,10 @@ plugins {
     alias(libs.plugins.ktlint) apply false
 }
 
-val modId = "mahjongcraft"
-val modName = "MahjongCraft"
-extra["mahjongcraftModId"] = modId
-extra["mahjongcraftModName"] = modName
+val projectId = "mahjongcraft"
+val projectDisplayName = "MahjongCraft"
+extra["projectId"] = projectId
+extra["projectDisplayName"] = projectDisplayName
 
 allprojects {
     group = "com.doublemoon1119.mahjongcraft"
@@ -68,7 +68,7 @@ allprojects {
         val loader = projectDir.name
         val mcVersion = projectDir.parentFile.name.removePrefix("v")
         extensions.configure<BasePluginExtension> {
-            archivesName.set("$modId-$loader-$mcVersion")
+            archivesName.set("$projectId-$loader-$mcVersion")
         }
     }
 
@@ -101,8 +101,8 @@ allprojects {
     tasks.withType<ProcessResources>().configureEach {
         val props = mapOf(
             "version" to project.version,
-            "id" to modId,
-            "name" to modName,
+            "id" to projectId,
+            "name" to projectDisplayName,
             "description" to "Play Japanese (Riichi) Mahjong with your friends.",
             "license" to "MIT",
             "author" to "doublemoon1119",

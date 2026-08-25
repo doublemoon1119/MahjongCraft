@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.dto.game
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildDiscardPilePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildDynamicRuleStatePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildExhaustiveDrawReasonPersistenceRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildExtensionGameActionPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildPlayerRuleStatePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildRuleConfigPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -15,7 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -42,6 +43,9 @@ class TableStatePersistenceTest {
 
     /** 內建動態牌桌狀態的 persistence registry。 */
     private val dynamicRuleStateRegistry = buildDynamicRuleStatePersistenceRegistry()
+
+    /** 內建擴充動作的 persistence registry。 */
+    private val extensionGameActionRegistry = buildExtensionGameActionPersistenceRegistry()
 
     /** 內建流局原因的 persistence registry。 */
     private val exhaustiveDrawReasonRegistry = buildExhaustiveDrawReasonPersistenceRegistry()
@@ -87,7 +91,7 @@ class TableStatePersistenceTest {
 
         assertEncodedRoundTrip(
             state.copy(
-                pendingChankan = PendingChankanReaction(
+                pendingKanReaction = PendingKanReaction(
                     declarerId = declarerId,
                     kanAction = kanAction,
                     robbedTile = robbedTile,
@@ -125,7 +129,7 @@ class TableStatePersistenceTest {
             playerRuleState = RiichiPlayerState(riichiTile = humanDiscard, isIppatsu = true),
             score = 24_000,
             passedTilesInRound = setOf(Tile.Honor.White),
-            actionHistory = listOf(GameAction.Riichi, GameAction.Discard(humanDiscard.id)),
+            actionHistory = listOf(com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION, GameAction.Discard(humanDiscard.id)),
         )
         val ai = MahjongPlayer(
             id = Uuid.random(),
@@ -164,7 +168,7 @@ class TableStatePersistenceTest {
         assertEquals(expectedDto, restored.toPersistenceDto())
         assertEquals(state.tileWall.getAllTiles(), restored.tileWall.getAllTiles())
         assertEquals(state.pendingReaction, restored.pendingReaction)
-        assertEquals(state.pendingChankan, restored.pendingChankan)
+        assertEquals(state.pendingKanReaction, restored.pendingKanReaction)
     }
 
     /** 使用所有內建 registry 將 [TableState] 轉換成 persistence DTO。 */
@@ -174,6 +178,7 @@ class TableStatePersistenceTest {
         playerRuleStateRegistry,
         dynamicRuleStateRegistry,
         exhaustiveDrawReasonRegistry,
+        extensionGameActionRegistry,
         json,
     )
 
@@ -184,6 +189,7 @@ class TableStatePersistenceTest {
         playerRuleStateRegistry,
         dynamicRuleStateRegistry,
         exhaustiveDrawReasonRegistry,
+        extensionGameActionRegistry,
         json,
     )
 

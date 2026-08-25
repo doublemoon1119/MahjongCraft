@@ -2,32 +2,33 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 
 /** 台灣麻將內建八張花牌的穩定 ID 與既有規則判讀。 */
 object TaiwanTileTypes {
     /** 春。 */
-    val SPRING: TileTypeId = TileTypeId.parse("mahjongcraft:taiwan/spring")
+    val SPRING: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/spring"))
 
     /** 夏。 */
-    val SUMMER: TileTypeId = TileTypeId.parse("mahjongcraft:taiwan/summer")
+    val SUMMER: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/summer"))
 
     /** 秋。 */
-    val AUTUMN: TileTypeId = TileTypeId.parse("mahjongcraft:taiwan/autumn")
+    val AUTUMN: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/autumn"))
 
     /** 冬。 */
-    val WINTER: TileTypeId = TileTypeId.parse("mahjongcraft:taiwan/winter")
+    val WINTER: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/winter"))
 
     /** 梅。 */
-    val PLUM: TileTypeId = TileTypeId.parse("mahjongcraft:taiwan/plum")
+    val PLUM: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/plum"))
 
     /** 蘭。 */
-    val ORCHID: TileTypeId = TileTypeId.parse("mahjongcraft:taiwan/orchid")
+    val ORCHID: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/orchid"))
 
     /** 竹。 */
-    val BAMBOO: TileTypeId = TileTypeId.parse("mahjongcraft:taiwan/bamboo")
+    val BAMBOO: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/bamboo"))
 
     /** 菊。 */
-    val CHRYSANTHEMUM: TileTypeId = TileTypeId.parse("mahjongcraft:taiwan/chrysanthemum")
+    val CHRYSANTHEMUM: TileTypeId = TileTypeId.parse(MahjongCraftMetadata.id("taiwan/chrysanthemum"))
 
     /** 依春、夏、秋、冬、梅、蘭、菊、竹排列的全部內建花牌 ID。 */
     val ALL: List<TileTypeId> = listOf(SPRING, SUMMER, AUTUMN, WINTER, PLUM, ORCHID, CHRYSANTHEMUM, BAMBOO)

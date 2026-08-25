@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
  * 這裡完全不依賴 `:mahjong-flow-server` 的 use case 層。
  *
  * `decide` 回傳 [GameCommand] 而非 [GameAction]：兩者形狀不是一對一
- * （例如 `GameAction.Riichi` 不帶欲宣告的捨牌張，但 `GameCommand.Riichi` 需要；捨牌本身也不在
+ * （例如某些擴充動作還需要由規則提供的 AI mapper 補齊命令參數；捨牌本身也不在
  * [AiDecisionContext.legalActions] 裡），AI 選完合法動作後還要自己決定「打哪張牌」，這個轉換
  * 本身就是策略的一部分，不能交給呼叫端做。
  *

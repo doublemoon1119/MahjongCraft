@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
@@ -49,6 +50,7 @@ class FabricGameCommand(
     private val candidateResolver: GameActionCandidateResolver,
     private val gameActionService: MahjongTableGameActionService,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
+    private val gameActionDisplayNameRegistry: GameActionDisplayNameRegistry,
     private val tileDisplayNameRegistry: TileDisplayNameRegistry,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val tileEmojiRegistry: TileEmojiRegistry,
@@ -210,7 +212,13 @@ class FabricGameCommand(
             candidateResolver.listActionCandidates(player.uuid.toKotlinUuid()).forEach { candidate ->
                 builder.suggest(
                     StringArgumentType.escapeIfRequired(candidate.token),
-                    candidate.action.toDisplayText(candidate.referenceTile, tileDisplayNameRegistry, tileAssetRegistry, tileEmojiRegistry),
+                    candidate.action.toDisplayText(
+                        candidate.referenceTile,
+                        gameActionDisplayNameRegistry,
+                        tileDisplayNameRegistry,
+                        tileAssetRegistry,
+                        tileEmojiRegistry,
+                    ),
                 )
             }
             future.complete(builder.build())

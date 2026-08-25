@@ -24,8 +24,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToChankanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
@@ -42,7 +42,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
-import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -167,7 +167,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             players = state.players.map { player ->
                 if (player.id == firstResponder.id) player.copy(hand = readyHand) else player
             },
-            pendingChankan = PendingChankanReaction(
+            pendingKanReaction = PendingKanReaction(
                 declarerId = declarer.id,
                 kanAction = GameAction.Kan(
                     type = GameAction.KanType.ADDED_KAN,
@@ -180,12 +180,12 @@ class AuthoritativeStateRecoveryIntegrationTest {
         )
         runtime.restore(runtime.snapshotWith(pendingState))
 
-        val result = runtime.respondToChankan(pendingState.id, firstResponder.id)
+        val result = runtime.respondToKan(pendingState.id, firstResponder.id)
 
         assertIs<Outcome.Success<Unit>>(result)
         assertEquals(
             GameAction.Pass,
-            runtime.gameRepository.getTableState(pendingState.id)?.pendingChankan?.responses?.get(firstResponder.id),
+            runtime.gameRepository.getTableState(pendingState.id)?.pendingKanReaction?.responses?.get(firstResponder.id),
         )
     }
 
@@ -312,7 +312,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
         )(gameId, playerId, GameAction.Pass)
 
         /** 使用恢復後 repository 提交搶槓反應 Pass。 */
-        suspend fun respondToChankan(gameId: Uuid, playerId: Uuid): Outcome<Unit, *> = RespondToChankanUseCase(
+        suspend fun respondToKan(gameId: Uuid, playerId: Uuid): Outcome<Unit, *> = RespondToKanUseCase(
             gameRepository,
             moduleRegistry,
             snapshotSynchronizer,

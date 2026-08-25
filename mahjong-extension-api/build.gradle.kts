@@ -11,6 +11,8 @@ kotlin {
             api(project(":mahjong-flow:mahjong-flow-common"))
             api(project(":mahjong-flow:mahjong-flow-network-dto"))
             api(project(":mahjong-flow:mahjong-flow-persistence-dto"))
+            api(project(":mahjong-ai"))
+            api(project(":mahjong-flow:mahjong-flow-server"))
         }
 
         commonTest.dependencies {

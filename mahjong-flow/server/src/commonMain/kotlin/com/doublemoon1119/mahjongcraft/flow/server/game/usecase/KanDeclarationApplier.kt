@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  * 套用暗槓/加槓副露並從死牌區補摸嶺上牌。
  *
  * 從 [DeclareKanUseCase] 抽出的共用邏輯：無人可搶槓時直接套用、以及有人可搶槓但全員選擇放過
- * （[RespondToChankanUseCase]）時「補做」原本被暫緩的套用，兩處需要完全相同的一段邏輯，抽成
+ * （[RespondToKanUseCase]）時「補做」原本被暫緩的套用，兩處需要完全相同的一段邏輯，抽成
  * 共用物件避免重複。依序 `recordAction(kanAction)` → 補摸嶺上牌 → `recordAction(GameAction.Draw)`，
  * 讓 [RiichiHandValueContextCalculator] 既有的嶺上開花偵測邏輯（依賴 `actionHistory` 最後兩筆是否恰為 `[Kan, Draw]`）能真正被觸發，
  * 並呼叫 `module.onMeldClaimed` 清除全場一發。

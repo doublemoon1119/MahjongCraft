@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.dto.game
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlinx.serialization.Serializable
@@ -60,9 +61,9 @@ sealed interface GameActionPersistenceDto {
     @Serializable
     data object Tsumo : GameActionPersistenceDto
 
-    /** [GameAction.Riichi] 的 persistence DTO。 */
+    /** [GameAction.Extension] 的 persistence DTO。 */
     @Serializable
-    data object Riichi : GameActionPersistenceDto
+    data class Extension(val value: TypedPersistenceDto) : GameActionPersistenceDto
 
     /** [GameAction.Pass] 的 persistence DTO。 */
     @Serializable
@@ -80,8 +81,10 @@ enum class KanTypePersistenceDto { OPEN_KAN, CLOSED_KAN, ADDED_KAN }
 /** 將 [GameAction] 轉換成 persistence DTO。 */
 fun GameAction.toPersistenceDto(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
+    extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
     json: Json = Json,
 ): GameActionPersistenceDto = when (this) {
+    is GameAction.Extension -> GameActionPersistenceDto.Extension(extensionGameActionRegistry.encode(value, json))
     GameAction.GameStarted -> GameActionPersistenceDto.GameStarted
     GameAction.RoundStarted -> GameActionPersistenceDto.RoundStarted
     GameAction.MatchEnded -> GameActionPersistenceDto.MatchEnded
@@ -93,7 +96,6 @@ fun GameAction.toPersistenceDto(
     is GameAction.Kan -> toPersistenceDto()
     is GameAction.Ron -> GameActionPersistenceDto.Ron(tileId.toString())
     GameAction.Tsumo -> GameActionPersistenceDto.Tsumo
-    GameAction.Riichi -> GameActionPersistenceDto.Riichi
     GameAction.Pass -> GameActionPersistenceDto.Pass
     is GameAction.ExhaustiveDraw -> GameActionPersistenceDto.ExhaustiveDraw(
         exhaustiveDrawReasonRegistry.encode(reason, json),
@@ -103,8 +105,10 @@ fun GameAction.toPersistenceDto(
 /** 將 [GameActionPersistenceDto] 還原成 [GameAction]。 */
 fun GameActionPersistenceDto.toDomain(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
+    extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
     json: Json = Json,
 ): GameAction = when (this) {
+    is GameActionPersistenceDto.Extension -> GameAction.Extension(extensionGameActionRegistry.decode(value, json))
     GameActionPersistenceDto.GameStarted -> GameAction.GameStarted
     GameActionPersistenceDto.RoundStarted -> GameAction.RoundStarted
     GameActionPersistenceDto.MatchEnded -> GameAction.MatchEnded
@@ -116,7 +120,6 @@ fun GameActionPersistenceDto.toDomain(
     is GameActionPersistenceDto.Kan -> toDomain()
     is GameActionPersistenceDto.Ron -> GameAction.Ron(Uuid.parse(tileId))
     GameActionPersistenceDto.Tsumo -> GameAction.Tsumo
-    GameActionPersistenceDto.Riichi -> GameAction.Riichi
     GameActionPersistenceDto.Pass -> GameAction.Pass
     is GameActionPersistenceDto.ExhaustiveDraw -> GameAction.ExhaustiveDraw(
         exhaustiveDrawReasonRegistry.decode(reason, json),

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.di
 
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
@@ -14,6 +15,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
  * 不具特權；第三方規則可在各自的組裝處另行呼叫 `registry.register(...)`。
  */
 fun MahjongModuleRegistry.registerBuiltInRuleModules() {
-    register(RiichiRuleConfig::class, "mahjongcraft:riichi") { config, id -> RiichiRuleModule(id, config) }
-    register(TaiwanRuleConfig::class, "mahjongcraft:taiwan") { config, id -> TaiwanRuleModule(id, config) }
+    register(RiichiRuleConfig::class, BuiltInRuleModuleIds.RIICHI) { config, id -> RiichiRuleModule(id, config) }
+    register(TaiwanRuleConfig::class, BuiltInRuleModuleIds.TAIWAN) { config, id -> TaiwanRuleModule(id, config) }
 }

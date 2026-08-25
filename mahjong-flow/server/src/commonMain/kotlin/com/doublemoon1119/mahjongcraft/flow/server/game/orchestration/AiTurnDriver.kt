@@ -49,10 +49,10 @@ class AiTurnDriver(
         if (game.isMatchOver) return null
         val state = game.tableState
 
-        val pendingChankan = state.pendingChankan
-        if (pendingChankan != null) {
-            val aiId = findEligibleAi(state, pendingChankan.eligiblePlayerIds, pendingChankan.responses.keys)
-            if (aiId != null) return aiId to decide(gameId, game, aiId, AiDecisionPhase.RespondingToChankan)
+        val pendingKanReaction = state.pendingKanReaction
+        if (pendingKanReaction != null) {
+            val aiId = findEligibleAi(state, pendingKanReaction.eligiblePlayerIds, pendingKanReaction.responses.keys)
+            if (aiId != null) return aiId to decide(gameId, game, aiId, AiDecisionPhase.RespondingToKan)
         }
 
         val pendingReaction = state.pendingReaction
@@ -61,7 +61,7 @@ class AiTurnDriver(
             if (aiId != null) return aiId to decide(gameId, game, aiId, AiDecisionPhase.RespondingToDiscard)
         }
 
-        if (pendingChankan == null && pendingReaction == null) {
+        if (pendingKanReaction == null && pendingReaction == null) {
             val current = state.currentPlayer
             if (current.isAi) {
                 // 明槓/暗槓/加槓皆會在套用副露的同一次呼叫裡立即補摸嶺上牌，套用後 lastDrawn 必定

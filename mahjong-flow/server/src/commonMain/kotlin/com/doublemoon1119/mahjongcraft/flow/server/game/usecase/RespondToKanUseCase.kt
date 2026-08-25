@@ -27,7 +27,7 @@ import kotlin.uuid.Uuid
  * [GameAction.Ron] 的其他玩家。搶槓的本質是「用宣告者這張要拿去槓的牌榮和」，所以搶槓成功時，
  * 宣告者的身分變成榮和結算裡的放銃者，不是槓的宣告者——這跟一般槓牌完全是兩回事。
  *
- * 對應 [DeclareKanUseCase] 開啟的 `TableState.pendingChankan`：每位有資格搶槓的玩家各自呼叫一次
+ * 對應 [DeclareKanUseCase] 開啟的 `TableState.pendingKanReaction`：每位有資格搶槓的玩家各自呼叫一次
  * 本用例記錄自己的回應，等全部人都回應完才結算，結算只有兩種結果：
  * - **有人搶槓成功**：這次暗槓/加槓視為沒發生，改用 [RonSettlementResolver] 結算榮和。
  * - **全員放過**：槓真的成立，這時才呼叫 [KanDeclarationApplier] 補做原本暫緩的副露套用，並讓
@@ -44,7 +44,7 @@ import kotlin.uuid.Uuid
  * @property presentationPublisher 對局 in-process 呈現觸發器。
  */
 @Factory
-class RespondToChankanUseCase(
+class RespondToKanUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
@@ -63,7 +63,7 @@ class RespondToChankanUseCase(
      */
     suspend operator fun invoke(gameId: Uuid, playerId: Uuid, action: GameAction): Outcome<Unit, GameError> {
         val outcome = gameRepository.update(gameId) { state ->
-            val pending = state?.pendingChankan
+            val pending = state?.pendingKanReaction
             when {
                 state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
                 state.players.none { it.id == playerId } ->
@@ -90,7 +90,7 @@ class RespondToChankanUseCase(
 
                     val newPending = pending.copy(responses = pending.responses + (playerId to action))
                     if (!newPending.isComplete) {
-                        val newState = state.copy(pendingChankan = newPending)
+                        val newState = state.copy(pendingKanReaction = newPending)
                         return@update newState to Outcome.Success(ChankanResult(newState, drawHappened = false))
                     }
 
@@ -106,8 +106,8 @@ class RespondToChankanUseCase(
                             winnerIds = ronWinnerIds,
                             isRobbingKan = pending.kanAction.type == GameAction.KanType.ADDED_KAN,
                         )
-                        val newState = resolved?.tableState?.copy(pendingChankan = null)
-                            ?: state.copy(pendingChankan = newPending)
+                        val newState = resolved?.tableState?.copy(pendingKanReaction = null)
+                            ?: state.copy(pendingKanReaction = newPending)
                         newState to Outcome.Success(
                             ChankanResult(
                                 tableState = newState,
@@ -124,7 +124,7 @@ class RespondToChankanUseCase(
                         if (applied.rinshanTile == null) {
                             return@update state to Outcome.Error(GameError.WallExhausted(gameId))
                         }
-                        val newState = applied.tableState.copy(pendingChankan = null)
+                        val newState = applied.tableState.copy(pendingKanReaction = null)
                         newState to Outcome.Success(
                             ChankanResult(newState, drawHappened = true, declarerId = pending.declarerId),
                         )

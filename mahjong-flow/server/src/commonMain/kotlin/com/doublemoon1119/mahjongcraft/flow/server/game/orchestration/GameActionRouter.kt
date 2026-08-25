@@ -3,14 +3,13 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKyuushuKyuuhaiUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToChankanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
@@ -27,23 +26,23 @@ import kotlin.uuid.Uuid
  *
  * @property drawTileUseCase 摸牌用例。
  * @property discardTileUseCase 捨牌用例。
- * @property declareRiichiUseCase 立直宣告用例。
  * @property declareTsumoUseCase 自摸宣告用例。
  * @property declareKanUseCase 暗槓/加槓宣告用例。
  * @property respondToDiscardUseCase 回應捨牌反應視窗用例。
- * @property respondToChankanUseCase 回應搶槓反應視窗用例。
- * @property declareKyuushuKyuuhaiUseCase 九種九牌宣告用例。
+ * @property respondToKanUseCase 回應搶槓反應視窗用例。
+ * @property declareAbortiveDrawUseCase 通用途中流局宣告用例。
+ * @property extensionCommandRegistry 規則擴充命令 handler registry。
  */
 @Factory
 class GameActionRouter(
     private val drawTileUseCase: DrawTileUseCase,
     private val discardTileUseCase: DiscardTileUseCase,
-    private val declareRiichiUseCase: DeclareRiichiUseCase,
     private val declareTsumoUseCase: DeclareTsumoUseCase,
     private val declareKanUseCase: DeclareKanUseCase,
     private val respondToDiscardUseCase: RespondToDiscardUseCase,
-    private val respondToChankanUseCase: RespondToChankanUseCase,
-    private val declareKyuushuKyuuhaiUseCase: DeclareKyuushuKyuuhaiUseCase,
+    private val respondToKanUseCase: RespondToKanUseCase,
+    private val declareAbortiveDrawUseCase: DeclareAbortiveDrawUseCase,
+    private val extensionCommandRegistry: ExtensionGameCommandExecutorRegistry,
 ) {
     /**
      * 分派 [command] 到對應的 use case 執行。
@@ -58,13 +57,14 @@ class GameActionRouter(
         playerId: Uuid,
         command: GameCommand,
     ): Outcome<Unit, GameError> = when (command) {
+        is GameCommand.Extension -> extensionCommandRegistry.execute(gameId, playerId, command.value)
         GameCommand.Draw -> drawTileUseCase(gameId, playerId)
         is GameCommand.Discard -> discardTileUseCase(gameId, playerId, command.tileId)
-        is GameCommand.Riichi -> declareRiichiUseCase(gameId, playerId, command.tileId)
         GameCommand.Tsumo -> declareTsumoUseCase(gameId, playerId)
         is GameCommand.Kan -> declareKanUseCase(gameId, playerId, command.type, command.tileId)
         is GameCommand.RespondToDiscard -> respondToDiscardUseCase(gameId, playerId, command.action)
-        is GameCommand.RespondToChankan -> respondToChankanUseCase(gameId, playerId, command.action)
-        GameCommand.KyuushuKyuuhai -> declareKyuushuKyuuhaiUseCase(gameId, playerId)
+        is GameCommand.RespondToKan -> respondToKanUseCase(gameId, playerId, command.action)
+        is GameCommand.DeclareExhaustiveDraw ->
+            declareAbortiveDrawUseCase(gameId, playerId, command.reason)
     }
 }

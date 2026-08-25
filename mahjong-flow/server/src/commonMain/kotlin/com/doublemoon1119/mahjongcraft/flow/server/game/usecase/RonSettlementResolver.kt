@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  * 清除反應視窗。手牌到此結束，不套用任何副露、不標記捨牌已被鳴走、不推進 `currentPlayerIndex`、
  * 不清除一發（一發是否失效在手牌已結束的情況下沒有意義）——這些皆與碰/吃/槓的結算路徑不同。
  *
- * 從 [RespondToDiscardUseCase] 抽出的共用邏輯：一般捨牌榮和與搶槓榮和（[RespondToChankanUseCase]）
+ * 從 [RespondToDiscardUseCase] 抽出的共用邏輯：一般捨牌榮和與搶槓榮和（[RespondToKanUseCase]）
  * 的結算方式完全相同，差異只在「誰扮演放銃者角色」（一般捨牌是真正的放銃者；搶槓則是暗槓/加槓的
  * 宣告者）與是否要額外計入搶槓役種，這兩者都已經是規則無關的參數，不需要各自重寫一份。
  *
@@ -37,7 +37,7 @@ internal object RonSettlementResolver {
      * @param module 該對局採用的規則模組。
      * @param winnerIds 本次榮和的贏家 Uuid 集合。
      * @param isRobbingKan 這次榮和是否為搶槓（搶加槓），透傳給 [MahjongRuleModule.declareRon]。
-     * @return 套用榮和結算後的新 [TableState]（`pendingReaction`/`pendingChankan` 皆不動，由呼叫端
+     * @return 套用榮和結算後的新 [TableState]（`pendingReaction`/`pendingKanReaction` 皆不動，由呼叫端
      *         視回傳值清除）；理論上不會發生的防呆情況（`declareRon` 回傳 null）則回傳 null，
      *         代表呼叫端應維持反應視窗不變、不清除。
      */

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
@@ -24,6 +25,7 @@ import kotlin.test.assertNull
 class GameEventChatNotifierTest {
 
     private val displayNameRegistry = TileDisplayNameRegistryImpl()
+    private val actionDisplayNameRegistry = GameActionDisplayNameRegistryImpl()
     private val tileAssetRegistry = MinecraftTileAssetRegistryImpl()
     private val tileEmojiRegistry = TileEmojiRegistryImpl()
 
@@ -42,6 +44,7 @@ class GameEventChatNotifierTest {
             previousSnapshot = previous,
             newSnapshot = current,
             module = module,
+            actionDisplayNameRegistry = actionDisplayNameRegistry,
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
@@ -59,6 +62,7 @@ class GameEventChatNotifierTest {
             previousSnapshot = null,
             newSnapshot = current,
             module = module,
+            actionDisplayNameRegistry = actionDisplayNameRegistry,
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
@@ -90,6 +94,7 @@ class GameEventChatNotifierTest {
             previousSnapshot = previous,
             newSnapshot = current,
             module = module,
+            actionDisplayNameRegistry = actionDisplayNameRegistry,
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
@@ -142,6 +147,7 @@ class GameEventChatNotifierTest {
             previousSnapshot = previous,
             newSnapshot = current,
             module = module,
+            actionDisplayNameRegistry = actionDisplayNameRegistry,
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,

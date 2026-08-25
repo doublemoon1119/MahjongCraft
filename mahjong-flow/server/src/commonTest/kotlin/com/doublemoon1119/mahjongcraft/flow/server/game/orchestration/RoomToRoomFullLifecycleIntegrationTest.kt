@@ -18,17 +18,17 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKyuushuKyuuhaiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNagareUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToChankanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
@@ -95,6 +95,11 @@ class RoomToRoomFullLifecycleIntegrationTest {
             presentationPublisher,
         )
 
+        val declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, handSortPreferenceStore, gameEventPublisher, presentationPublisher)
+        val extensionCommandRegistry = ExtensionGameCommandExecutorRegistry().apply {
+            registerRiichiGameCommandHandler(declareRiichiUseCase)
+        }
+
         val router = GameActionRouter(
             drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
             discardTileUseCase = DiscardTileUseCase(
@@ -105,7 +110,6 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 gameEventPublisher,
                 presentationPublisher,
             ),
-            declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, handSortPreferenceStore, gameEventPublisher, presentationPublisher),
             declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
             respondToDiscardUseCase = RespondToDiscardUseCase(
@@ -116,8 +120,9 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 gameEventPublisher,
                 presentationPublisher,
             ),
-            respondToChankanUseCase = RespondToChankanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
-            declareKyuushuKyuuhaiUseCase = DeclareKyuushuKyuuhaiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
+            respondToKanUseCase = RespondToKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
+            declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
+            extensionCommandRegistry = extensionCommandRegistry,
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = FakeAiStrategy.KEY).apply {
@@ -133,6 +138,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         )
         val coordinator = GameFlowCoordinator(
             gameActionRouter = router,
+            extensionCommandRegistry = extensionCommandRegistry,
             gameRepository = gameRepo,
             moduleRegistry = moduleRegistry,
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
@@ -268,9 +274,9 @@ class RoomToRoomFullLifecycleIntegrationTest {
         val state = game.tableState
         val visibilityPolicy = GameVisibilityPolicyImpl()
 
-        val pendingChankan = state.pendingChankan
-        if (pendingChankan != null && hostId in pendingChankan.eligiblePlayerIds && hostId !in pendingChankan.responses) {
-            val command = decideFor(gameId, game, hostId, AiDecisionPhase.RespondingToChankan, strategy, visibilityPolicy)
+        val pendingKanReaction = state.pendingKanReaction
+        if (pendingKanReaction != null && hostId in pendingKanReaction.eligiblePlayerIds && hostId !in pendingKanReaction.responses) {
+            val command = decideFor(gameId, game, hostId, AiDecisionPhase.RespondingToKan, strategy, visibilityPolicy)
             coordinator(gameId, hostId, command)
             return true
         }
@@ -282,7 +288,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
             return true
         }
 
-        if (pendingChankan == null && pendingReaction == null && state.currentPlayer.id == hostId) {
+        if (pendingKanReaction == null && pendingReaction == null && state.currentPlayer.id == hostId) {
             val current = state.currentPlayer
             val command = if (current.hand.lastDrawn == null && !current.justClaimedMeld) {
                 GameCommand.Draw
@@ -335,8 +341,8 @@ class RoomToRoomFullLifecycleIntegrationTest {
             AiDecisionPhase.RespondingToDiscard ->
                 GameCommand.RespondToDiscard(context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass)
 
-            AiDecisionPhase.RespondingToChankan ->
-                GameCommand.RespondToChankan(context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass)
+            AiDecisionPhase.RespondingToKan ->
+                GameCommand.RespondToKan(context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass)
 
             AiDecisionPhase.OwnTurn -> {
                 if (context.legalActions.contains(GameAction.Tsumo)) {

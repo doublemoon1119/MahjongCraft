@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseCardSnapshot
@@ -57,8 +58,8 @@ class FabricWinCelebrationShowcaseScheduler(
             startYaw = winningTile.yaw,
         )
         val snapshots = wings.mapIndexed { wingIndex, wing ->
-            val cue = wing.cueKey?.takeIf { showcaseRegistry.find(it) != null } ?: GENERIC_CUE
-            if (wing.cueKey != null && cue == GENERIC_CUE && warnedUnknownCues.add(wing.cueKey)) {
+            val cue = wing.cueKey?.takeIf { showcaseRegistry.find(it) != null } ?: BuiltInWinCelebrationCueIds.GENERIC
+            if (wing.cueKey != null && cue == BuiltInWinCelebrationCueIds.GENERIC && warnedUnknownCues.add(wing.cueKey)) {
                 logger.warn("Unknown win celebration showcase cue {}; using generic fallback", wing.cueKey)
             }
             ShowcaseWingSnapshot(
@@ -103,7 +104,6 @@ class FabricWinCelebrationShowcaseScheduler(
     }.firstOrNull()
 
     private companion object {
-        const val GENERIC_CUE = "mahjongcraft:generic"
         const val DEFAULT_SHOWCASE_DURATION_TICKS = 160
     }
 }

@@ -22,7 +22,7 @@ import kotlin.uuid.Uuid
  * @property eligiblePlayerIds 有資格搶槓的玩家 Uuid 集合。
  * @property responses 目前已收到的回應（只會是 [GameAction.Ron] 或 [GameAction.Pass]），鍵為玩家 Uuid。
  */
-data class PendingChankanReaction(
+data class PendingKanReaction(
     val declarerId: Uuid,
     val kanAction: GameAction.Kan,
     val robbedTile: IdentifiedTile,

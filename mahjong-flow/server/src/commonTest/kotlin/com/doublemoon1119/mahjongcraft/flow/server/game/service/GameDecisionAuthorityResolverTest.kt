@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -46,7 +46,7 @@ class GameDecisionAuthorityResolverTest {
         val game = Game(
             tableState = FakeTableStateFactory.create(
                 players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
-                pendingChankan = PendingChankanReaction(
+                pendingKanReaction = PendingKanReaction(
                     declarerId = Uuid.random(),
                     kanAction = GameAction.Kan(
                         type = GameAction.KanType.ADDED_KAN,
@@ -61,7 +61,7 @@ class GameDecisionAuthorityResolverTest {
         )
 
         assertEquals(
-            mapOf(playerId to PlayerDecisionPhase.CHANKAN_REACTION),
+            mapOf(playerId to PlayerDecisionPhase.KAN_REACTION),
             GameDecisionAuthorityResolver().resolve(game),
         )
     }

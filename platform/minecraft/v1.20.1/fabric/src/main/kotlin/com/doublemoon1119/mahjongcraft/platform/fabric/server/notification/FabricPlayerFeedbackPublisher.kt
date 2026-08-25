@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.resolveDisplayText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.bracketedInteractiveLabel
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
@@ -44,6 +45,7 @@ import kotlin.uuid.Uuid
 class FabricPlayerFeedbackPublisher(
     private val serverHolder: FabricServerHolder,
     private val aiStrategyDisplayNames: AiStrategyDisplayNameRegistry,
+    private val gameActionDisplayNames: GameActionDisplayNameRegistry,
     private val tileDisplayNames: TileDisplayNameRegistry,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val tileEmojiRegistry: TileEmojiRegistry,
@@ -255,7 +257,7 @@ class FabricPlayerFeedbackPublisher(
     /** 建立「已執行對局動作」訊息，例如「已執行：打出 五筒」。 */
     private fun gameActionPerformedMessage(feedback: MinecraftPlayerFeedback.GameActionPerformed): MutableText = Text.translatable(
         MinecraftMessageKeys.GAME_ACTION_PERFORMED,
-        feedback.action.toDisplayText(feedback.referenceTile, tileDisplayNames, tileAssetRegistry, tileEmojiRegistry),
+        feedback.action.toDisplayText(feedback.referenceTile, gameActionDisplayNames, tileDisplayNames, tileAssetRegistry, tileEmojiRegistry),
     )
 
     /**
@@ -291,7 +293,7 @@ class FabricPlayerFeedbackPublisher(
         } else {
             feedback.legalActions.forEachIndexed { index, (action, referenceTile) ->
                 message.append(Text.literal(" ${index + 1}:"))
-                    .append(action.toDisplayText(referenceTile, tileDisplayNames, tileAssetRegistry, tileEmojiRegistry))
+                    .append(action.toDisplayText(referenceTile, gameActionDisplayNames, tileDisplayNames, tileAssetRegistry, tileEmojiRegistry))
             }
         }
         return message

@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.registry
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.modules.PolymorphicModuleBuilder
 import kotlin.reflect.KClass
 
 /**
@@ -14,32 +13,24 @@ import kotlin.reflect.KClass
  *
  * 領域層的這幾組型別本來就刻意設計成開放介面（讓第三方能註冊自己的規則），DTO 層如果寫死成
  * `sealed interface` 會讓第三方規則完全無法被序列化，因此這裡改用執行期註冊表 +
- * [registerSubclasses] 動態組成 `SerializersModule` 的多型清單，而不是編譯期窮舉。
+ * 動態 polymorphic provider 在每次編解碼時查詢 registry，而不是使用編譯期窮舉或在
+ * `SerializersModule` 建立時複製一份靜態清單。
  *
  * @param Domain 領域層的開放介面型別。
  * @param Dto 對應的 DTO 開放介面型別。
  */
 class DtoRegistry<Domain : Any, Dto : Any> {
 
-    /**
-     * 用 inner class（而非一般 nested class）宣告，讓 [D]/[T] 能直接綁定外層的 [Domain]/[Dto]
-     * 型別上界——這樣 [registerSubclass] 呼叫 kotlinx 的 `subclass(KClass<T>, KSerializer<T>)`
-     * 時，[T] 是同一個具體型別參數，不會因為之後從 `Map<*, Entry<*, *>>` 取出時被拆成兩個各自獨立、
-     * 編譯器無法證明相關的萬用字元擷取型別。
-     */
+    /** 將具體 DTO serializer 與雙向 mapper 綁在同一筆註冊資料。 */
     private inner class Entry<D : Domain, T : Dto>(
-        val dtoClass: KClass<T>,
         val serializer: KSerializer<T>,
         val toDto: (D) -> T,
         val toDomain: (T) -> D,
-    ) {
-        fun registerSubclass(builder: PolymorphicModuleBuilder<Dto>) {
-            builder.subclass(dtoClass, serializer)
-        }
-    }
+    )
 
     private val byDomainClass = mutableMapOf<KClass<out Domain>, Entry<*, *>>()
     private val byDtoClass = mutableMapOf<KClass<out Dto>, Entry<*, *>>()
+    private val bySerialName = mutableMapOf<String, Entry<*, *>>()
 
     /** 是否已禁止後續註冊。 */
     private var frozen = false
@@ -63,9 +54,12 @@ class DtoRegistry<Domain : Any, Dto : Any> {
         check(!frozen) { "Network DTO registry is frozen" }
         require(domainClass !in byDomainClass) { "Network DTO already registered for $domainClass" }
         require(dtoClass !in byDtoClass) { "Network domain mapping already registered for $dtoClass" }
-        val entry = Entry(dtoClass, serializer, toDto, toDomain)
+        val serialName = serializer.descriptor.serialName
+        require(serialName !in bySerialName) { "Network DTO serial name already registered: $serialName" }
+        val entry = Entry(serializer, toDto, toDomain)
         byDomainClass[domainClass] = entry
         byDtoClass[dtoClass] = entry
+        bySerialName[serialName] = entry
     }
 
     /** 凍結註冊表；凍結後不得新增或覆寫 DTO mapper。 */
@@ -98,10 +92,17 @@ class DtoRegistry<Domain : Any, Dto : Any> {
     }
 
     /**
-     * 把目前已註冊的每個具體 DTO 類別與其序列化器登記進 `SerializersModule` 的
-     * `polymorphic { }` 區塊。
+     * 依執行期 DTO 型別取得 serializer。
+     *
+     * 這個查詢刻意保留動態性：即使 `Json` 早於 extension bootstrap 建立，之後完成的 DTO
+     * 註冊仍可由 polymorphic default provider 看見。
      */
-    fun registerSubclasses(builder: PolymorphicModuleBuilder<Dto>) {
-        byDtoClass.values.forEach { it.registerSubclass(builder) }
-    }
+    @Suppress("UNCHECKED_CAST")
+    fun serializerFor(dto: Dto): KSerializer<Dto>? = (byDtoClass[dto::class] as? Entry<Domain, Dto>)?.serializer
+
+    /**
+     * 依序列化資料中的 discriminator 名稱取得 serializer，供動態 polymorphic 解碼使用。
+     */
+    @Suppress("UNCHECKED_CAST")
+    fun serializerFor(serialName: String): KSerializer<out Dto>? = (bySerialName[serialName] as? Entry<Domain, Dto>)?.serializer
 }

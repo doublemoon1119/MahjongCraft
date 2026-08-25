@@ -1,12 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric
 
+import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SetHandSortPreferenceUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -38,6 +41,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableR
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
@@ -80,8 +84,12 @@ class MahjongCraftMod : ModInitializer {
             ruleModuleDisplayNameRegistry = koin.get<RuleModuleDisplayNameRegistry>(),
             tileEmojiRegistry = koin.get<TileEmojiRegistry>(),
             tileLabelRegistry = koin.get<TileLabelRegistry>(),
+            gameActionDisplayNameRegistry = koin.get<GameActionDisplayNameRegistry>(),
             winCelebrationCueResolverRegistry = koin.get<WinCelebrationCueResolverRegistry>(),
             showcaseRegistry = koin.get<WinCelebrationShowcaseRegistry>(),
+            gameActionAiRegistry = koin.get<ExtensionGameActionAiRegistry>(),
+            gameCommandRegistry = koin.get<ExtensionGameCommandExecutorRegistry>(),
+            declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
         )
         ModItems.register()
         ModEntities.register()

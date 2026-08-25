@@ -30,13 +30,13 @@ import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /**
- * [DeclareKyuushuKyuuhaiUseCase] 的單元測試類別。
+ * [DeclareAbortiveDrawUseCase] 的九種九牌單元測試類別。
  *
  * 驗證九種九牌宣告的合法性驗證（第一巡、么九牌種類數）、途中流局的結算行為
  * （莊家固定連莊、不結算任何點數、`ExhaustiveDraw` 記錄進全員的 `actionHistory`），
  * 以及快照與事件的同步行為。
  */
-class DeclareKyuushuKyuuhaiUseCaseTest {
+class DeclareAbortiveDrawUseCaseTest {
 
     private val gameId = Uuid.random()
     private val playerId = Uuid.random()
@@ -47,7 +47,7 @@ class DeclareKyuushuKyuuhaiUseCaseTest {
         val snapshotRepo = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val eventPublisher = FakeGameEventPublisher()
-        val useCase = DeclareKyuushuKyuuhaiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher)
+        val useCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher)
     }
 
     // 手牌（13 張，含 8 種么九牌 + 5 張非么九牌），供九種九牌測試共用
@@ -99,7 +99,7 @@ class DeclareKyuushuKyuuhaiUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, playerId)
+        val result = fixtures.useCase(gameId, playerId, RiichiExhaustiveDrawReason.KyuushuKyuuhai)
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -125,7 +125,7 @@ class DeclareKyuushuKyuuhaiUseCaseTest {
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(declarer), config = RiichiRuleConfig(), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, playerId)
+        val result = fixtures.useCase(gameId, playerId, RiichiExhaustiveDrawReason.KyuushuKyuuhai)
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.UnsupportedAction(gameId, playerId), result.error)
@@ -147,7 +147,7 @@ class DeclareKyuushuKyuuhaiUseCaseTest {
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(declarer), config = RiichiRuleConfig(), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, playerId)
+        val result = fixtures.useCase(gameId, playerId, RiichiExhaustiveDrawReason.KyuushuKyuuhai)
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.UnsupportedAction(gameId, playerId), result.error)
@@ -163,7 +163,7 @@ class DeclareKyuushuKyuuhaiUseCaseTest {
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(declarer), config = RiichiRuleConfig(), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, playerId)
+        val result = fixtures.useCase(gameId, playerId, RiichiExhaustiveDrawReason.KyuushuKyuuhai)
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.UnsupportedAction(gameId, playerId), result.error)
@@ -190,7 +190,7 @@ class DeclareKyuushuKyuuhaiUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, playerId)
+        val result = fixtures.useCase(gameId, playerId, RiichiExhaustiveDrawReason.KyuushuKyuuhai)
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.NotPlayersTurn(playerId, gameId), result.error)
@@ -206,7 +206,7 @@ class DeclareKyuushuKyuuhaiUseCaseTest {
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(declarer), config = RiichiRuleConfig())
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, playerId)
+        val result = fixtures.useCase(gameId, playerId, RiichiExhaustiveDrawReason.KyuushuKyuuhai)
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.PlayerNotInGame(playerId, gameId), result.error)
@@ -219,7 +219,7 @@ class DeclareKyuushuKyuuhaiUseCaseTest {
     fun `test declare kyuushu kyuuhai fails when game not found`() = runTest {
         val fixtures = Fixtures()
 
-        val result = fixtures.useCase(gameId, playerId)
+        val result = fixtures.useCase(gameId, playerId, RiichiExhaustiveDrawReason.KyuushuKyuuhai)
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.GameNotFound(gameId), result.error)
@@ -244,7 +244,7 @@ class DeclareKyuushuKyuuhaiUseCaseTest {
         fixtures.snapshotRepo.setSnapshot(playerId, table.toSnapshot(setOf(playerId)))
         fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(setOf(otherId)))
 
-        fixtures.useCase(gameId, playerId)
+        fixtures.useCase(gameId, playerId, RiichiExhaustiveDrawReason.KyuushuKyuuhai)
 
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, playerId))
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, otherId))

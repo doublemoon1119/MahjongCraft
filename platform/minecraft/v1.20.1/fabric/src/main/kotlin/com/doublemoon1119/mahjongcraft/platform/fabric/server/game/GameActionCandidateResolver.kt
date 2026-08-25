@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
@@ -25,7 +26,7 @@ data class HandTileCandidate(val tileId: Uuid, val token: String, val tile: Tile
  * （沒有任何額外動作可做，只能被動等待）。
  */
 enum class GamePendingMode {
-    CHANKAN,
+    KAN_REACTION,
     DISCARD_REACTION,
     OWN_TURN,
     NONE,
@@ -33,7 +34,7 @@ enum class GamePendingMode {
 
     /** 對應到 [GameTurnStatus] 的粗粒度分類，供 [MinecraftPlayerFeedback.ShowHand] 顯示提示文字使用。 */
     fun toTurnStatus(): GameTurnStatus = when (this) {
-        CHANKAN, DISCARD_REACTION -> GameTurnStatus.AWAITING_RESPONSE
+        KAN_REACTION, DISCARD_REACTION -> GameTurnStatus.AWAITING_RESPONSE
         OWN_TURN -> GameTurnStatus.OWN_TURN
         NONE -> GameTurnStatus.WAITING
     }
@@ -91,7 +92,7 @@ class GameActionCandidateResolver(
         val gameId = membershipRepository.getTableId(playerId) ?: return emptyList()
 
         val legalActionsOutcome = getLegalActions(gameId, playerId)
-        val riichiPossible = legalActionsOutcome is Outcome.Success && legalActionsOutcome.value.any { it is GameAction.Riichi }
+        val riichiPossible = legalActionsOutcome is Outcome.Success && RIICHI_GAME_ACTION in legalActionsOutcome.value
         if (!riichiPossible) return emptyList()
 
         val calculator = moduleRegistry.getModule(state.config).createShantenCalculator()
@@ -102,7 +103,7 @@ class GameActionCandidateResolver(
     }
 
     /**
-     * 列出玩家目前合法的特殊動作作為 `action` 的候選項目，過濾掉 [GameAction.Riichi]——它不帶
+     * 列出玩家目前合法的特殊動作作為 `action` 的候選項目，過濾掉 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION]——它不帶
      * tileId，由專屬的 `riichi` 指令另外處理，不透過這裡的候選機制送出。
      */
     suspend fun listActionCandidates(playerId: Uuid): List<GameActionCandidate> {
@@ -113,7 +114,7 @@ class GameActionCandidateResolver(
         val outcome = getLegalActions(gameId, playerId)
         if (outcome !is Outcome.Success) return emptyList()
 
-        val actions = outcome.value.filterNot { it is GameAction.Riichi }
+        val actions = outcome.value.filterNot { it == RIICHI_GAME_ACTION }
         return disambiguateTokens(actions, GameAction::baseToken) { action, token ->
             GameActionCandidate(action, token, referenceTile)
         }
@@ -135,7 +136,7 @@ class GameActionCandidateResolver(
 
     /** 找出該情境下「進來的那張牌」，供候選動作清單共用的 [referenceTile][GameActionCandidate.referenceTile]。 */
     private fun resolveReferenceTile(state: TableState, playerId: Uuid): Tile? = when (resolvePendingMode(state, playerId)) {
-        GamePendingMode.CHANKAN -> state.pendingChankan?.robbedTile?.tile
+        GamePendingMode.KAN_REACTION -> state.pendingKanReaction?.robbedTile?.tile
         GamePendingMode.DISCARD_REACTION -> {
             val pendingReaction = state.pendingReaction
             val discarder = state.players.first { it.id == pendingReaction?.discarderId }
@@ -161,12 +162,12 @@ class GameActionCandidateResolver(
          * 因此獨立成 companion 函式供兩處共用，避免各自複製一份。
          */
         fun resolvePendingMode(state: TableState, playerId: Uuid): GamePendingMode {
-            val pendingChankan = state.pendingChankan
+            val pendingKanReaction = state.pendingKanReaction
             val pendingReaction = state.pendingReaction
             return when {
-                pendingChankan != null &&
-                    playerId in pendingChankan.eligiblePlayerIds &&
-                    playerId !in pendingChankan.responses -> GamePendingMode.CHANKAN
+                pendingKanReaction != null &&
+                    playerId in pendingKanReaction.eligiblePlayerIds &&
+                    playerId !in pendingKanReaction.responses -> GamePendingMode.KAN_REACTION
 
                 pendingReaction != null &&
                     playerId in pendingReaction.eligiblePlayerIds &&
@@ -174,7 +175,7 @@ class GameActionCandidateResolver(
 
                 state.currentPlayer.id == playerId &&
                     state.players.first { it.id == playerId }.hand.lastDrawn != null &&
-                    pendingChankan == null &&
+                    pendingKanReaction == null &&
                     pendingReaction == null -> GamePendingMode.OWN_TURN
 
                 else -> GamePendingMode.NONE

@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNag
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlinx.coroutines.sync.Mutex
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -32,21 +33,12 @@ import kotlin.uuid.Uuid
  * 1. **一般流局**：任一命令的結果為 [GameError.WallExhausted] 時，立即呼叫
  *    [declareExhaustiveDrawUseCase]（不開任何等待窗口——`WallExhausted` 代表玩家根本沒摸到牌，
  *    不存在「先讓玩家自摸」的中間狀態）。
- * 2. **四槓散了**：[GameCommand.Discard]/[GameCommand.Riichi] 在送進
- *    [GameActionRouter]（進而是 [DiscardTileUseCase] 或
- *    `com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase`）之前，
- *    先問 `com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule.resolveSuukanNagare`——
- *    若成立，代表玩家選擇不嘗試嶺上開花（已經有機會呼叫 [GameCommand.Tsumo] 但沒有），直接改呼叫
- *    [declareSuukanNagareUseCase]，原本的捨牌/立直請求不會真的被套用。
+ * 2. **槓後流局**：[GameCommand.Discard] 或明確宣告需要先結算槓後流局的 extension command，在送進
+ *    [GameActionRouter] 前先詢問規則模組；若成立，原命令不會套用，改由規則既有流局流程收斂。
  * 3. **連莊/過莊**：任何造成本局結束的操作完成後，先將 [PendingGameTransition.AdvanceRound]
  *    寫入權威狀態；待呈現動畫結束後，再由 [resumePendingGameTransition] 呼叫 [advanceRoundUseCase]。
- *    哪些命令「一定」
- *    結束本局（[GameCommand.Tsumo]/[GameCommand.KyuushuKyuuhai]，以及上方兩種系統銜接本身）
- *    由呼叫端結構性得知，不需要額外檢查；[GameCommand.Discard]/[GameCommand.Riichi]/
- *    [GameCommand.RespondToDiscard]/[GameCommand.RespondToChankan] 是否結束本局則要看內部
- *    分支結果（榮和、或內嵌的四風連打/四家立直/三家和了流局），這裡透過檢查桌上是否有任一玩家
- *    的 `actionHistory` 剛記錄了 `Tsumo`/`Ron`/`ExhaustiveDraw` 判斷（[GameCommand.Draw]/
- *    [GameCommand.Kan] 的一般成功路徑則不會結束本局，不檢查）。
+ *    任一命令成功後，統一從權威桌況的 `actionHistory` 判斷是否已留下胡牌或流局記錄，不依命令型別
+ *    猜測規則結果，因此第三方 extension command 也能沿用相同收斂流程。
  *
  * 銜接呼叫皆為 best-effort：若銜接呼叫本身失敗，不會覆蓋原始命令的執行結果——玩家自己那次操作
  * 是否成功，跟後續系統銜接是否成功，是兩件事。
@@ -74,6 +66,7 @@ import kotlin.uuid.Uuid
 @Factory
 class GameFlowCoordinator(
     private val gameActionRouter: GameActionRouter,
+    private val extensionCommandRegistry: ExtensionGameCommandExecutorRegistry,
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val declareExhaustiveDrawUseCase: DeclareExhaustiveDrawUseCase,
@@ -269,7 +262,11 @@ class GameFlowCoordinator(
      * 直接呼叫——AI 送出的命令也必須經過同一套四槓散了攔截與系統銜接邏輯，不能繞過去。
      */
     private suspend fun dispatchAndChain(gameId: Uuid, playerId: Uuid, command: GameCommand): Outcome<Unit, GameError> {
-        if (command is GameCommand.Discard || command is GameCommand.Riichi) {
+        if (
+            command is GameCommand.Discard ||
+            command is GameCommand.Extension &&
+            extensionCommandRegistry.resolvesPendingKanDrawBeforeExecution(command.value)
+        ) {
             redirectToSuukanNagareIfPending(gameId, playerId)?.let { return it }
         }
 
@@ -282,7 +279,7 @@ class GameFlowCoordinator(
             return result
         }
 
-        if (result is Outcome.Success && commandMayHaveEndedHand(command, gameId)) {
+        if (result is Outcome.Success && hasCommandEndedHand(gameId)) {
             chainAdvanceRound(gameId)
         }
 
@@ -308,7 +305,7 @@ class GameFlowCoordinator(
     private suspend fun redirectToSuukanNagareIfPending(gameId: Uuid, playerId: Uuid): Outcome<Unit, GameError>? {
         val state = gameRepository.getTableState(gameId) ?: return null
         if (state.currentPlayer.id != playerId) return null
-        if (state.pendingReaction != null || state.pendingChankan != null) return null
+        if (state.pendingReaction != null || state.pendingKanReaction != null) return null
 
         val module = moduleRegistry.getModule(state.config)
         if (module.resolveSuukanNagare(state) == null) return null
@@ -323,20 +320,13 @@ class GameFlowCoordinator(
     /**
      * [command] 成功執行後，是否可能已經結束本局，需要銜接 [advanceRoundUseCase]。
      */
-    private suspend fun commandMayHaveEndedHand(command: GameCommand, gameId: Uuid): Boolean = when (command) {
-        GameCommand.Tsumo, GameCommand.KyuushuKyuuhai -> true
-        is GameCommand.Discard, is GameCommand.Riichi,
-        is GameCommand.RespondToDiscard, is GameCommand.RespondToChankan,
-        -> {
-            val state = gameRepository.getTableState(gameId)
-            state?.hasEndedHand() == true
-        }
-
-        else -> false
+    private suspend fun hasCommandEndedHand(gameId: Uuid): Boolean {
+        val state = gameRepository.getTableState(gameId)
+        return state?.hasEndedHand() == true
     }
 
     /** 本局是否已留下可持久化的結束記錄，可供重啟後重建尚未完成的推進。 */
-    private fun com.doublemoon1119.mahjongcraft.logic.table.TableState.hasEndedHand(): Boolean = players.any { player ->
+    private fun TableState.hasEndedHand(): Boolean = players.any { player ->
         player.actionHistory.any { action ->
             action is GameAction.Tsumo || action is GameAction.Ron || action is GameAction.ExhaustiveDraw
         }

@@ -17,8 +17,8 @@ class NetworkDtoModule {
     /**
      * 建立 network 與 snapshot 共用的 [Json]。
      *
-     * [registries] 必須在第一次解析 [Json] 前完成 extension bootstrap；Koin single 採延遲建立，因此
-     * bootstrap 與序列化會使用相同的 registry 實例。
+     * [Json] 與 extension bootstrap 使用相同的 [registries]；動態 polymorphic provider 會在每次
+     * 編解碼時查詢 registry，因此即使其他 Koin 依賴提前解析 [Json]，稍後完成的 DTO 註冊仍然可見。
      */
     @Single
     fun provideJson(registries: NetworkDtoRegistries): Json = Json {

@@ -23,7 +23,7 @@ import kotlin.uuid.Uuid
  * @property currentPlayerIndex 目前輪到執行動作的玩家索引。
  * @property dynamicRuleState 規則特有的動態狀態實體（如日麻的立直棒、供託）。
  * @property pendingReaction 目前尚待其他玩家回應（吃/碰/槓/過）的捨牌反應視窗，若無則為 null。
- * @property pendingChankan 目前尚待其他玩家回應（搶槓/過）的暗槓/加槓反應視窗，若無則為 null。
+ * @property pendingKanReaction 目前尚待其他玩家回應（搶槓/過）的暗槓/加槓反應視窗，若無則為 null。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
  * @property initialDeadWall 開局瞬間的王牌快照，依規則定義的固定內部順序保存；規則尚未支援開門
  * 流程時為空清單。這只是初始狀態，不代表王牌整局固定不變——見 [TileWallLayoutResult.initialDeadWall]。
@@ -39,7 +39,7 @@ data class TableState(
     val currentPlayerIndex: Int = 0,
     val dynamicRuleState: DynamicRuleState? = null,
     val pendingReaction: PendingReaction? = null,
-    val pendingChankan: PendingChankanReaction? = null,
+    val pendingKanReaction: PendingKanReaction? = null,
     val wallOpening: WallOpening? = null,
     val initialDeadWall: List<IdentifiedTile> = emptyList(),
 ) {

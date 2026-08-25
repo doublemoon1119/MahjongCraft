@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
@@ -37,7 +38,7 @@ sealed interface GameActionDto {
 
     @Serializable data object Tsumo : GameActionDto
 
-    @Serializable data object Riichi : GameActionDto
+    @Serializable data class Extension(@Polymorphic val value: com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameActionDto) : GameActionDto
 
     @Serializable data object Pass : GameActionDto
 
@@ -59,7 +60,7 @@ fun GameAction.toDto(registries: NetworkDtoRegistries): GameActionDto = when (th
     is GameAction.Kan -> GameActionDto.Kan(type.toDto(), tileId.toString(), withTiles.map { it.toString() })
     is GameAction.Ron -> GameActionDto.Ron(tileId.toString())
     GameAction.Tsumo -> GameActionDto.Tsumo
-    GameAction.Riichi -> GameActionDto.Riichi
+    is GameAction.Extension -> GameActionDto.Extension(value.toDto(registries))
     GameAction.Pass -> GameActionDto.Pass
     is GameAction.ExhaustiveDraw -> GameActionDto.ExhaustiveDraw(reason.toDto(registries))
 }
@@ -76,7 +77,7 @@ fun GameActionDto.toDomain(registries: NetworkDtoRegistries): GameAction = when 
     is GameActionDto.Kan -> GameAction.Kan(kanType.toDomain(), Uuid.parse(tileId), withTiles.map { Uuid.parse(it) })
     is GameActionDto.Ron -> GameAction.Ron(Uuid.parse(tileId))
     GameActionDto.Tsumo -> GameAction.Tsumo
-    GameActionDto.Riichi -> GameAction.Riichi
+    is GameActionDto.Extension -> GameAction.Extension(value.toDomain(registries))
     GameActionDto.Pass -> GameAction.Pass
     is GameActionDto.ExhaustiveDraw -> GameAction.ExhaustiveDraw(reason.toDomain(registries))
 }

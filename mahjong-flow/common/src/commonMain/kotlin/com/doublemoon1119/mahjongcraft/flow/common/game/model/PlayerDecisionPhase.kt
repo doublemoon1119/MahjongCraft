@@ -14,5 +14,5 @@ enum class PlayerDecisionPhase {
     DISCARD_REACTION,
 
     /** 玩家正在回應暗槓或加槓的搶槓視窗。 */
-    CHANKAN_REACTION,
+    KAN_REACTION,
 }

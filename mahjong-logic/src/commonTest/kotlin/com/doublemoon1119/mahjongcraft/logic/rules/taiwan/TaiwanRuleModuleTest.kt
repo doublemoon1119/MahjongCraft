@@ -114,20 +114,6 @@ class TaiwanRuleModuleTest {
     }
 
     /**
-     * 驗證台灣麻將目前沒有立直宣告這個機制，回傳 null。
-     */
-    @Test
-    fun `test declareRiichi returns null`() {
-        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
-        val hand = Hand(lastDrawn = discardedTile)
-        val discardResult = hand.discardById(discardedTile.id)!!
-        val player = FakeMahjongPlayerFactory.create(hand = hand)
-        val table = FakeTableStateFactory.create(players = listOf(player))
-
-        assertNull(module.declareRiichi(table, player, discardResult))
-    }
-
-    /**
      * 驗證台灣麻將目前沒有摸牌後需要清除的規則特有狀態，直接回傳玩家本身。
      */
     @Test

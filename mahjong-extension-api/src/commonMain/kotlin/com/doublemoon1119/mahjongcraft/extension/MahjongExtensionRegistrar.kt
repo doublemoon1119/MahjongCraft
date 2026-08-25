@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.extension
 
+import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 
@@ -23,6 +25,8 @@ object MahjongExtensionRegistrar {
         persistenceRegistries: PersistenceRegistries,
         winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
             com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl(),
+        gameActionAiRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
+        gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
     ) {
         val registeredExtensionIds = mutableSetOf<String>()
         extensions.forEach { extension ->
@@ -38,6 +42,8 @@ object MahjongExtensionRegistrar {
                 extension.registerNetworkDtos(networkRegistries)
                 extension.registerPersistenceDtos(persistenceRegistries)
                 extension.registerWinCelebrationCueResolvers(winCelebrationCueResolverRegistry)
+                extension.registerGameActionAiHandlers(gameActionAiRegistry)
+                extension.registerGameCommandHandlers(gameCommandRegistry)
             } catch (cause: Exception) {
                 throw MahjongExtensionRegistrationException(extension.id, cause)
             }
@@ -48,6 +54,8 @@ object MahjongExtensionRegistrar {
         networkRegistries.freeze()
         persistenceRegistries.freeze()
         winCelebrationCueResolverRegistry.freeze()
+        gameActionAiRegistry.freeze()
+        gameCommandRegistry.freeze()
     }
 }
 

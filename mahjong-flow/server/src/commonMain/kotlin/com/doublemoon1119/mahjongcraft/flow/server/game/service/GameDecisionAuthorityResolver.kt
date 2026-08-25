@@ -28,12 +28,12 @@ class GameDecisionAuthorityResolver {
         if (game.isMatchOver) return emptyMap()
         val state = game.tableState
         val humanPlayerIds = state.players.filterNot { it.isAi }.mapTo(mutableSetOf()) { it.id }
-        state.pendingChankan?.let { pending ->
+        state.pendingKanReaction?.let { pending ->
             return pending.eligiblePlayerIds
                 .filter { it in humanPlayerIds }
                 .filterNot { it in pending.responses }
                 .filterNot { it in game.forcedAutoPlayPlayerIds }
-                .associateWith { PlayerDecisionPhase.CHANKAN_REACTION }
+                .associateWith { PlayerDecisionPhase.KAN_REACTION }
         }
         state.pendingReaction?.let { pending ->
             return pending.eligiblePlayerIds

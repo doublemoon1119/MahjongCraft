@@ -149,28 +149,6 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun createInitialPlayerRuleState(): PlayerRuleState?
 
     /**
-     * 套用一次立直宣告（[GameAction.Riichi]）的規則特有狀態變化：把捨牌紀錄標記為立直宣告牌、
-     * 更新玩家的規則狀態（立直/雙立直/一發資格）、更新桌況的動態規則狀態（如立直棒數量）。
-     *
-     * 呼叫前應已確認 [GameAction.Riichi] 目前合法（例如透過 [createLegalActionValidator]），
-     * 且 [discardResult] 對應的捨牌後手牌仍聽牌——這兩者是規則無關的驗證，由呼叫端負責；
-     * 這裡只處理套用規則特有狀態的部分，因此呼叫端（如 `:mahjong-flow` 的 use case）永遠
-     * 不需要知道、也不需要轉型成任何規則專屬的具體型別。
-     *
-     * 不支援立直宣告的規則應回傳 null。
-     *
-     * @param tableState 目前的桌況（尚未套用本次宣告）。
-     * @param player 宣告立直的玩家（尚未套用本次宣告）。
-     * @param discardResult 打出宣告牌的捨牌結果。
-     * @return 套用宣告後的新玩家實例與新的動態規則狀態，若此規則不支援立直宣告則為 null。
-     */
-    fun declareRiichi(
-        tableState: TableState,
-        player: MahjongPlayer,
-        discardResult: Hand.DiscardResult,
-    ): RiichiDeclarationResult?
-
-    /**
      * 因應「玩家摸牌」事件，套用規則特有的狀態清除。
      *
      * 例如日麻：摸牌代表一發窗口已經結束（本巡未能胡牌），需清除玩家的一發資格。

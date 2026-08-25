@@ -10,6 +10,13 @@ import kotlin.uuid.Uuid
  */
 sealed class GameAction {
     /**
+     * 規則模組自訂的遊戲動作。
+     *
+     * @property value 規則模組提供的強型別動作內容。
+     */
+    data class Extension(val value: ExtensionGameAction) : GameAction()
+
+    /**
      * 對局開始。
      * 用於開局時對外廣播「本局已開始」事件，不代表任何玩家的主動操作。
      */
@@ -87,12 +94,6 @@ sealed class GameAction {
     data object Tsumo : GameAction()
 
     /**
-     * 立直動作。
-     * 玩家宣告立直。
-     */
-    data object Riichi : GameAction()
-
-    /**
      * 過牌動作。
      * 玩家選擇不執行任何鳴牌或胡牌動作。
      */
@@ -114,4 +115,10 @@ sealed class GameAction {
         CLOSED_KAN, // 暗槓
         ADDED_KAN, // 加槓 (小明槓)
     }
+}
+
+/** 規則模組可擴充的強型別遊戲動作。 */
+interface ExtensionGameAction {
+    /** 跨網路、存檔與呈現層保持穩定的 namespaced ID。 */
+    val id: String
 }

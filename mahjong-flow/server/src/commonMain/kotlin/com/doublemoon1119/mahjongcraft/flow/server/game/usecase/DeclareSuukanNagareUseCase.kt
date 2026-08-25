@@ -22,7 +22,7 @@ import kotlin.uuid.Uuid
  * 途中流局（莊家固定連莊、不結算任何點數），比照「流局判定」大項已落實的途中流局處理慣例。
  *
  * 系統觸發、無 `playerId` 參數，理由與 [DeclareExhaustiveDrawUseCase] 相同——四槓散了不是玩家
- * 主動發起的操作。**刻意不內嵌在 [DeclareKanUseCase]/[RespondToChankanUseCase] 套用嶺上摸牌的
+ * 主動發起的操作。**刻意不內嵌在 [DeclareKanUseCase]/[RespondToKanUseCase] 套用嶺上摸牌的
  * 同一次呼叫裡**：達成第 4 個槓子的那次槓牌，摸到嶺上牌後，玩家理論上應該有機會先嘗試嶺上開花
  * 自摸（[DeclareTsumoUseCase]，玩家後續另外呼叫的動作）——若在同一次呼叫裡就自動判斷四槓散了
  * 並結束此局，會讓玩家完全沒有機會宣告嶺上開花。由誰、在什麼時機呼叫本用例（例如伺服器偵測到

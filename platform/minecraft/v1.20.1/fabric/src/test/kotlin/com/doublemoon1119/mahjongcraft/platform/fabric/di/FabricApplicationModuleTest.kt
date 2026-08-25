@@ -1,16 +1,21 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.di
 
+import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.state.AuthoritativeStatePersistenceCodec
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
@@ -29,11 +34,13 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableR
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTableCleanupService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -43,6 +50,7 @@ import org.koin.plugin.module.dsl.startKoin
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -70,6 +78,11 @@ class FabricApplicationModuleTest {
         val ruleModuleDisplayNameRegistry = koin.get<RuleModuleDisplayNameRegistry>()
         val tileEmojiRegistry = koin.get<TileEmojiRegistry>()
         val tileLabelRegistry = koin.get<TileLabelRegistry>()
+        val gameActionAiRegistry = koin.get<ExtensionGameActionAiRegistry>()
+        val gameCommandRegistry = koin.get<ExtensionGameCommandExecutorRegistry>()
+        val gameActionDisplayNameRegistry = koin.get<GameActionDisplayNameRegistry>()
+        assertFalse(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
+        assertFalse(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
         FabricMahjongExtensions.initialize(
             moduleRegistry = moduleRegistry,
             tileTypeRegistry = tileTypeRegistry,
@@ -81,6 +94,10 @@ class FabricApplicationModuleTest {
             ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
             tileLabelRegistry = tileLabelRegistry,
+            gameActionAiRegistry = gameActionAiRegistry,
+            gameCommandRegistry = gameCommandRegistry,
+            gameActionDisplayNameRegistry = gameActionDisplayNameRegistry,
+            declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
             extensions = emptyList(),
         )
 
@@ -101,6 +118,9 @@ class FabricApplicationModuleTest {
         assertTrue(ruleModuleDisplayNameRegistry.isFrozen)
         assertTrue(tileEmojiRegistry.isFrozen)
         assertTrue(tileLabelRegistry.isFrozen)
+        assertTrue(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
+        assertTrue(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
+        assertEquals(MinecraftMessageKeys.GAME_ACTION_RIICHI, gameActionDisplayNameRegistry.find(RiichiGameAction.Riichi))
         koin.get<GameFlowCoordinator>()
         koin.get<GameEventPublisher>()
         koin.get<DecisionTimerUpdatePublisher>()

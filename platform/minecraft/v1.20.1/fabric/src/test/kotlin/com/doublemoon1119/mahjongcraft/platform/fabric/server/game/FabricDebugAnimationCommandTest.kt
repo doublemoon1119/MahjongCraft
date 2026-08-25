@@ -40,7 +40,7 @@ class FabricDebugAnimationCommandTest {
         )
     }
 
-    /** 內建 cue 使用短名稱，第三方 cue 保留 namespace，並提供 generic fallback。 */
+    /** 所有 cue 一律使用完整 namespace，generic fallback 也不例外。 */
     @Test
     fun `lists built-in extension and generic cues`() {
         val suggestions = buildShowcaseCueSuggestions(
@@ -49,7 +49,7 @@ class FabricDebugAnimationCommandTest {
             allowMultiple = false,
         )
 
-        assertEquals(listOf("example:custom", "generic", "kokushi_musou"), suggestions)
+        assertEquals(listOf("example:custom", "mahjongcraft:generic", "mahjongcraft:kokushi_musou"), suggestions)
     }
 
     /** 輸入 namespace 時改用完整 cue key 補全。 */
@@ -68,12 +68,12 @@ class FabricDebugAnimationCommandTest {
     @Test
     fun `completes only the last cue in a comma separated list`() {
         val suggestions = buildShowcaseCueSuggestions(
-            remaining = "kokushi_musou,chu",
+            remaining = "mahjongcraft:kokushi_musou,mahjongcraft:chu",
             cueKeys = setOf("mahjongcraft:kokushi_musou", "mahjongcraft:churen_poto", "mahjongcraft:chiihou"),
             allowMultiple = true,
         )
 
-        assertEquals(listOf("kokushi_musou,churen_poto"), suggestions)
+        assertEquals(listOf("mahjongcraft:kokushi_musou,mahjongcraft:churen_poto"), suggestions)
     }
 
     /** 單一 cue 欄位不把逗號視為可補全的分隔符。 */

@@ -1,10 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.server.di
 
+import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.flow.common.di.FlowCommonModule
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Single
@@ -20,6 +22,16 @@ import org.koin.core.annotation.Single
 @Module(includes = [FlowCommonModule::class])
 @ComponentScan("com.doublemoon1119.mahjongcraft.flow.server")
 class FlowServerModule {
+    /** 建立供 bundled 與第三方規則 extension 在 bootstrap 階段登記 handler 的 registry。 */
     @Single
-    fun mahjongAiStrategyRegistry(): MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply { registerBuiltInAiStrategies() }
+    fun extensionGameCommandExecutorRegistry(): ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry()
+
+    /** 建立已包含內建規則、並開放 extension 啟動期登記的 AI action registry。 */
+    @Single
+    fun extensionGameActionAiRegistry(): ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry()
+
+    @Single
+    fun mahjongAiStrategyRegistry(extensionActionRegistry: ExtensionGameActionAiRegistry): MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply {
+        registerBuiltInAiStrategies(extensionActionRegistry)
+    }
 }

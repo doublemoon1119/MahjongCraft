@@ -1,11 +1,13 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.game
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildExhaustiveDrawReasonPersistenceRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildExtensionGameActionPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
-import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -20,6 +22,9 @@ class PendingReactionPersistenceTest {
 
     /** 內建流局原因的 persistence registry。 */
     private val exhaustiveDrawReasonRegistry = buildExhaustiveDrawReasonPersistenceRegistry()
+
+    /** 內建擴充動作的 persistence registry。 */
+    private val extensionGameActionRegistry = buildExtensionGameActionPersistenceRegistry()
 
     /** 驗證所有 [GameAction] 變體都能完整還原。 */
     @Test
@@ -36,7 +41,7 @@ class PendingReactionPersistenceTest {
             GameAction.Kan(GameAction.KanType.ADDED_KAN, tileId, withTileIds),
             GameAction.Ron(tileId),
             GameAction.Tsumo,
-            GameAction.Riichi,
+            RIICHI_GAME_ACTION,
             GameAction.Pass,
             GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SuukanNagare),
         )
@@ -44,10 +49,10 @@ class PendingReactionPersistenceTest {
 
         val encoded = json.encodeToString(
             serializer,
-            actions.map { it.toPersistenceDto(exhaustiveDrawReasonRegistry, json) },
+            actions.map { it.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json) },
         )
         val restored = json.decodeFromString(serializer, encoded).map {
-            it.toDomain(exhaustiveDrawReasonRegistry, json)
+            it.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json)
         }
 
         assertEquals(actions, restored)
@@ -69,10 +74,10 @@ class PendingReactionPersistenceTest {
 
         val encoded = json.encodeToString(
             PendingReactionPersistenceDto.serializer(),
-            reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, json),
+            reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
         )
         val restored = json.decodeFromString(PendingReactionPersistenceDto.serializer(), encoded)
-            .toDomain(exhaustiveDrawReasonRegistry, json)
+            .toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json)
 
         assertEquals(reaction, restored)
     }
@@ -89,7 +94,7 @@ class PendingReactionPersistenceTest {
             tileId = robbedTile.id,
             withTiles = List(3) { Uuid.random() },
         )
-        val reaction = PendingChankanReaction(
+        val reaction = PendingKanReaction(
             declarerId = declarerId,
             kanAction = kanAction,
             robbedTile = robbedTile,
@@ -98,11 +103,11 @@ class PendingReactionPersistenceTest {
         )
 
         val encoded = json.encodeToString(
-            PendingChankanReactionPersistenceDto.serializer(),
-            reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, json),
+            PendingKanReactionPersistenceDto.serializer(),
+            reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
         )
-        val restored = json.decodeFromString(PendingChankanReactionPersistenceDto.serializer(), encoded)
-            .toDomain(exhaustiveDrawReasonRegistry, json)
+        val restored = json.decodeFromString(PendingKanReactionPersistenceDto.serializer(), encoded)
+            .toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json)
 
         assertEquals(reaction, restored)
     }

@@ -155,7 +155,7 @@ class RiichiRuleModuleTest {
             dynamicRuleState = RiichiDynamicState(),
         )
 
-        val result = module.declareRiichi(table, player, discardResult)
+        val result = applyRiichiDeclaration(table, player, discardResult)
 
         requireNotNull(result)
         val riichiState = result.player.playerRuleState as RiichiPlayerState
@@ -180,7 +180,7 @@ class RiichiRuleModuleTest {
         val player = FakeMahjongPlayerFactory.create(hand = hand, playerRuleState = null)
         val table = FakeTableStateFactory.create(players = listOf(player), dynamicRuleState = RiichiDynamicState())
 
-        assertNull(module.declareRiichi(table, player, discardResult))
+        assertNull(applyRiichiDeclaration(table, player, discardResult))
     }
 
     /**
@@ -199,7 +199,7 @@ class RiichiRuleModuleTest {
         )
         val table = FakeTableStateFactory.create(players = listOf(player), dynamicRuleState = RiichiDynamicState())
 
-        assertNull(module.declareRiichi(table, player, discardResult))
+        assertNull(applyRiichiDeclaration(table, player, discardResult))
     }
 
     /**
@@ -218,7 +218,7 @@ class RiichiRuleModuleTest {
         )
         val table = FakeTableStateFactory.create(players = listOf(player), dynamicRuleState = null)
 
-        assertNull(module.declareRiichi(table, player, discardResult))
+        assertNull(applyRiichiDeclaration(table, player, discardResult))
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -207,6 +208,7 @@ class FabricDebugAnimationCommand(
 
     /** `showcase <tsumo|ron>`：在玩家面前生成一至三翼完整鞘翅煙火 showcase。 */
     private fun previewShowcase(source: ServerCommandSource, isTsumo: Boolean, cues: List<String>, initialElapsedTicks: Int = 0): Int {
+        if (cues.any { showcaseRegistry.find(it) == null }) return COMMAND_FAILURE
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val layout = virtualTableLayout(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
@@ -218,7 +220,7 @@ class FabricDebugAnimationCommand(
                 val tile = spawnFreeTile(world, layout.handPlacement(seat, DEFAULT_RULE_CONFIG.initialHandSize, index), MahjongTilePose.STANDING, asset)
                 tile to asset
             }
-            Triple(seat, cue.toCueKey(), tiles)
+            Triple(seat, cue, tiles)
         }
         val winningAsset = ALL_TILE_ASSET_KEYS.first()
         val winningPlacement = if (isTsumo) layout.drawnTilePlacement(DEFAULT_RULE_CONFIG.initialHandSize) else layout.discardPlacement(0)
@@ -253,9 +255,6 @@ class FabricDebugAnimationCommand(
         }
         return previewShowcase(source, isTsumo = true, cues = listOf(cue), initialElapsedTicks = initialElapsedTicks.toInt())
     }
-
-    /** 將 debug 短名稱補成完整 cue key。 */
-    private fun String.toCueKey(): String = if (":" in this) this else "mahjongcraft:$this"
 
     /** 向 Fabric 登記每 tick 一次的臨時 entity 清除驅動，理由見 [scheduleCleanup] KDoc。 */
     private fun registerCleanupTicking() {
@@ -627,7 +626,7 @@ class FabricDebugAnimationCommand(
         const val CUE_ARGUMENT: String = "cue"
         const val PHASE_ARGUMENT: String = "phase"
         const val PHASE_NAME_ARGUMENT: String = "phase_name"
-        const val DEFAULT_SHOWCASE_CUE: String = "kokushi_musou"
+        val DEFAULT_SHOWCASE_CUE: String = BuiltInWinCelebrationCueIds.riichiYakuman("kokushi_musou")
         const val TSUMO_ARGUMENT: String = "tsumo"
         const val RON_ARGUMENT: String = "ron"
         const val DICE_SUBCOMMAND: String = "dice"
@@ -689,8 +688,7 @@ internal fun expandShowcaseCues(
 }
 
 /**
- * 依目前輸入內容建立 showcase cue 候選；內建 namespace 預設縮成短名稱，輸入 namespace 時則保留完整
- * key，逗號清單只替換最後一段。
+ * 依目前輸入內容建立完整 showcase cue key 候選；逗號清單只替換最後一段。
  */
 internal fun buildShowcaseCueSuggestions(
     remaining: String,
@@ -700,10 +698,8 @@ internal fun buildShowcaseCueSuggestions(
     val separatorIndex = if (allowMultiple) remaining.lastIndexOf(',') else -1
     val completedPrefix = remaining.takeIf { separatorIndex >= 0 }?.substring(0, separatorIndex + 1).orEmpty()
     val currentToken = remaining.substring(separatorIndex + 1)
-    val useFullKeys = ':' in currentToken
-    return (cueKeys + "mahjongcraft:generic")
+    return (cueKeys + BuiltInWinCelebrationCueIds.GENERIC)
         .asSequence()
-        .map { key -> if (!useFullKeys && key.startsWith("mahjongcraft:")) key.removePrefix("mahjongcraft:") else key }
         .distinct()
         .filter { candidate -> candidate.startsWith(currentToken, ignoreCase = true) }
         .sorted()

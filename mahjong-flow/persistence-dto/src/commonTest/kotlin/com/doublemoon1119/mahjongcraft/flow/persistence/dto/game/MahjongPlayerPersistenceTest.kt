@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.game
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildDiscardPilePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildExhaustiveDrawReasonPersistenceRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildExtensionGameActionPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildPlayerRuleStatePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -9,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -40,6 +42,9 @@ class MahjongPlayerPersistenceTest {
     /** 內建流局原因的 persistence registry。 */
     private val exhaustiveDrawReasonRegistry = buildExhaustiveDrawReasonPersistenceRegistry()
 
+    /** 內建擴充動作的 persistence registry。 */
+    private val extensionGameActionRegistry = buildExtensionGameActionPersistenceRegistry()
+
     /** 驗證日麻玩家的隱藏狀態、牌河與動作歷史皆能完整還原。 */
     @Test
     fun `riichi player round-trips with all authoritative state`() {
@@ -65,7 +70,7 @@ class MahjongPlayerPersistenceTest {
             currentWind = Wind.SOUTH,
             passedTilesInRound = setOf(Tile.Honor.White, Tile.Numeric(Tile.Suit.Dot, 5)),
             actionHistory = listOf(
-                GameAction.Riichi,
+                RIICHI_GAME_ACTION,
                 GameAction.Discard(riichiTile.id),
                 GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.Normal),
             ),
@@ -109,6 +114,7 @@ class MahjongPlayerPersistenceTest {
                 discardPileRegistry,
                 playerRuleStateRegistry,
                 exhaustiveDrawReasonRegistry,
+                extensionGameActionRegistry,
                 json,
             ),
         )
@@ -116,6 +122,7 @@ class MahjongPlayerPersistenceTest {
             discardPileRegistry,
             playerRuleStateRegistry,
             exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry,
             json,
         )
     }

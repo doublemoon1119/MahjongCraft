@@ -20,13 +20,13 @@ import kotlin.uuid.Uuid
  * 呼叫端只給 [gameId]/[playerId]，這裡會依 [TableState]
  * 現況自動判斷屬於以下哪一種情境，並組出正確的 `sourceAction`/`sourceDirection`/`incomingTile` 參數：
  *
- * 1. 有資格搶槓、且尚未回應（`pendingChankan` 非 null）：比照 [RespondToChankanUseCase] 的既有慣例，
+ * 1. 有資格搶槓、且尚未回應（`pendingKanReaction` 非 null）：比照 [RespondToKanUseCase] 的既有慣例，
  *    過濾只留 [GameAction.Ron]/[GameAction.Pass]（`getLegalActions` 的「反應」分支不分辨
  *    `sourceAction` 種類，會一併算出吃/碰/明槓資格，這裡都不合法）。
  * 2. 有資格回應捨牌、且尚未回應（`pendingReaction` 非 null）：不過濾，Chi/Pon/Kan/Ron/Pass 皆可能合法。
  * 3. 輪到自己回合、且已經摸牌：`RiichiLegalActionValidator.getLegalActions` 對「自己回合」情境
  *    需要呼叫兩次才能拿到完整清單——一次 `incomingTile = null`（未剝離 `lastDrawn` 的原始手牌，
- *    只檢查 [GameAction.Riichi] 資格）、一次 `incomingTile = 剝離後的 lastDrawn`（檢查
+ *    只檢查 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION] 資格）、一次 `incomingTile = 剝離後的 lastDrawn`（檢查
  *    Tsumo/Kan/KyuushuKyuuhai 等資格），兩次結果需要合併，缺一次會漏掉對應的合法動作。
  * 4. 以上皆非：回傳空清單（不是錯誤——單純這個玩家現在沒有除了被動等待以外的事可做）。
  *
@@ -57,19 +57,19 @@ class GetLegalActionsUseCase(
 
         val module = moduleRegistry.getModule(state.config)
         val validator = module.createLegalActionValidator()
-        val pendingChankan = state.pendingChankan
+        val pendingKanReaction = state.pendingKanReaction
         val pendingReaction = state.pendingReaction
 
         val actions = when {
-            pendingChankan != null &&
-                playerId in pendingChankan.eligiblePlayerIds &&
-                playerId !in pendingChankan.responses -> {
+            pendingKanReaction != null &&
+                playerId in pendingKanReaction.eligiblePlayerIds &&
+                playerId !in pendingKanReaction.responses -> {
                 validator.getLegalActions(
                     tableState = state,
                     player = player,
-                    sourceAction = pendingChankan.kanAction,
-                    sourceDirection = state.relativeDirectionOf(playerId, pendingChankan.declarerId),
-                    incomingTile = pendingChankan.robbedTile,
+                    sourceAction = pendingKanReaction.kanAction,
+                    sourceDirection = state.relativeDirectionOf(playerId, pendingKanReaction.declarerId),
+                    incomingTile = pendingKanReaction.robbedTile,
                 ).filter { it is GameAction.Ron || it == GameAction.Pass }
             }
 
@@ -89,7 +89,7 @@ class GetLegalActionsUseCase(
 
             state.currentPlayer.id == playerId &&
                 player.hand.lastDrawn != null &&
-                pendingChankan == null &&
+                pendingKanReaction == null &&
                 pendingReaction == null -> {
                 val lastDrawn = player.hand.lastDrawn
                 val riichiCheck = validator.getLegalActions(

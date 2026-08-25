@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
+import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.registerBuiltInAiStrategyDisplayNames
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
@@ -42,6 +45,7 @@ object MinecraftMahjongExtensionRegistrar {
         tileEmojiRegistry: TileEmojiRegistry,
         tileLabelRegistry: TileLabelRegistry,
         showcaseRegistry: WinCelebrationShowcaseRegistry = WinCelebrationShowcaseRegistryImpl(),
+        gameActionDisplayNameRegistry: GameActionDisplayNameRegistry = GameActionDisplayNameRegistryImpl(),
     ): MinecraftMahjongExtensionRegistrationResult {
         tileAssetRegistry.registerBuiltInTileAssets()
         aiStrategyDisplayNameRegistry.registerBuiltInAiStrategyDisplayNames()
@@ -58,6 +62,7 @@ object MinecraftMahjongExtensionRegistrar {
         val thirdPartyTileEmojiKeys = mutableListOf<String>()
         val thirdPartyTileLabelKeys = mutableListOf<String>()
         val thirdPartyShowcaseKeys = mutableListOf<String>()
+        val thirdPartyGameActionIds = mutableListOf<String>()
         val recordingTileAssetRegistry = RecordingMinecraftTileAssetRegistry(tileAssetRegistry, thirdPartyAssetKeys)
         val recordingAiStrategyDisplayNameRegistry =
             RecordingAiStrategyDisplayNameRegistry(aiStrategyDisplayNameRegistry, thirdPartyAiStrategyKeys)
@@ -68,6 +73,8 @@ object MinecraftMahjongExtensionRegistrar {
         val recordingTileEmojiRegistry = RecordingTileEmojiRegistry(tileEmojiRegistry, thirdPartyTileEmojiKeys)
         val recordingTileLabelRegistry = RecordingTileLabelRegistry(tileLabelRegistry, thirdPartyTileLabelKeys)
         val recordingShowcaseRegistry = RecordingWinCelebrationShowcaseRegistry(showcaseRegistry, thirdPartyShowcaseKeys)
+        val recordingGameActionDisplayNameRegistry =
+            RecordingGameActionDisplayNameRegistry(gameActionDisplayNameRegistry, thirdPartyGameActionIds)
 
         val registeredExtensionIds = mutableSetOf<String>()
         extensions.forEach { extension ->
@@ -85,6 +92,7 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerTileEmojis(recordingTileEmojiRegistry)
                 extension.registerTileLabels(recordingTileLabelRegistry)
                 extension.registerWinCelebrationShowcases(recordingShowcaseRegistry)
+                extension.registerGameActionDisplayNames(recordingGameActionDisplayNameRegistry)
             } catch (cause: Exception) {
                 throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
             }
@@ -97,6 +105,7 @@ object MinecraftMahjongExtensionRegistrar {
         tileEmojiRegistry.freeze()
         tileLabelRegistry.freeze()
         showcaseRegistry.freeze()
+        gameActionDisplayNameRegistry.freeze()
         return MinecraftMahjongExtensionRegistrationResult(
             thirdPartyAssetKeys,
             thirdPartyAiStrategyKeys,
@@ -105,6 +114,7 @@ object MinecraftMahjongExtensionRegistrar {
             thirdPartyTileEmojiKeys,
             thirdPartyTileLabelKeys,
             thirdPartyShowcaseKeys,
+            thirdPartyGameActionIds,
         )
     }
 }
@@ -119,6 +129,7 @@ object MinecraftMahjongExtensionRegistrar {
  *   不含內建映射。
  * @property thirdPartyTileEmojiKeys 依 extension 順序登記的第三方牌面 emoji asset key，不含內建映射。
  * @property thirdPartyTileLabelKeys 依 extension 順序登記的第三方牌面角落標籤 asset key，不含內建映射。
+ * @property thirdPartyGameActionIds 依 extension 順序登記的第三方規則擴充動作 ID，不含內建映射。
  */
 data class MinecraftMahjongExtensionRegistrationResult(
     val thirdPartyTileAssetKeys: List<String>,
@@ -128,6 +139,7 @@ data class MinecraftMahjongExtensionRegistrationResult(
     val thirdPartyTileEmojiKeys: List<String>,
     val thirdPartyTileLabelKeys: List<String>,
     val thirdPartyShowcaseKeys: List<String> = emptyList(),
+    val thirdPartyGameActionIds: List<String> = emptyList(),
 )
 
 /** 表示指定第三方 Minecraft extension 無法完成 registry 註冊。 */
@@ -135,6 +147,23 @@ class MinecraftMahjongExtensionRegistrationException(
     extensionId: String,
     cause: Throwable,
 ) : IllegalStateException("Failed to register Minecraft Mahjong extension: $extensionId", cause)
+
+/** 轉發擴充動作顯示名稱註冊並記錄第三方動作 ID。 */
+private class RecordingGameActionDisplayNameRegistry(
+    private val delegate: GameActionDisplayNameRegistry,
+    private val recorded: MutableList<String>,
+) : GameActionDisplayNameRegistry {
+    override val isFrozen: Boolean get() = delegate.isFrozen
+
+    override fun register(actionId: String, translationKey: String) {
+        delegate.register(actionId, translationKey)
+        recorded += actionId
+    }
+
+    override fun find(action: ExtensionGameAction): String? = delegate.find(action)
+
+    override fun freeze() = delegate.freeze()
+}
 
 /** 轉發至 [delegate]，並額外把第三方註冊的 asset key 記錄進 [recorded]，供診斷用途。 */
 private class RecordingMinecraftTileAssetRegistry(

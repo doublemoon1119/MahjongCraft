@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.showcase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+
 /** 宣告式胡牌展示定義註冊中心。 */
 interface WinCelebrationShowcaseRegistry {
     /** registry 是否已凍結。 */
@@ -44,9 +47,9 @@ fun WinCelebrationShowcaseRegistry.registerBuiltInWinCelebrationShowcases() {
     BUILT_IN_CUES.forEach { cue ->
         register(
             WinCelebrationShowcaseDefinition(
-                cueKey = "mahjongcraft:$cue",
+                cueKey = BuiltInWinCelebrationCueIds.riichiYakuman(cue),
                 titleTranslationKey = "showcase.mahjongcraft.$cue",
-                titleImageResourceId = "mahjongcraft:textures/showcase/$cue.png",
+                titleImageResourceId = "${MinecraftModMetadata.MOD_ID}:textures/showcase/$cue.png",
                 palette = ShowcasePalette(primary = 0xFFFFD45A.toInt(), secondary = 0xFFC32128.toInt(), accent = 0xFFFFFFFF.toInt()),
             ),
         )

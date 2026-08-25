@@ -21,17 +21,17 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKyuushuKyuuhaiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNagareUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToChankanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -42,11 +42,12 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -88,6 +89,10 @@ class GameFlowCoordinatorTest {
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val presentationBusyGate = FakeGamePresentationBusyGate()
+        val declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, handSortPreferenceStore, eventPublisher, presentationPublisher)
+        val extensionCommandRegistry = ExtensionGameCommandExecutorRegistry().apply {
+            registerRiichiGameCommandHandler(declareRiichiUseCase)
+        }
         val router = GameActionRouter(
             drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
             discardTileUseCase = DiscardTileUseCase(
@@ -98,7 +103,6 @@ class GameFlowCoordinatorTest {
                 eventPublisher,
                 presentationPublisher,
             ),
-            declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, handSortPreferenceStore, eventPublisher, presentationPublisher),
             declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
             respondToDiscardUseCase = RespondToDiscardUseCase(
@@ -109,8 +113,9 @@ class GameFlowCoordinatorTest {
                 eventPublisher,
                 presentationPublisher,
             ),
-            respondToChankanUseCase = RespondToChankanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
-            declareKyuushuKyuuhaiUseCase = DeclareKyuushuKyuuhaiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
+            respondToKanUseCase = RespondToKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
+            extensionCommandRegistry = extensionCommandRegistry,
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply { registerBuiltInAiStrategies() }
@@ -124,6 +129,7 @@ class GameFlowCoordinatorTest {
         )
         val coordinator = GameFlowCoordinator(
             gameActionRouter = router,
+            extensionCommandRegistry = extensionCommandRegistry,
             gameRepository = gameRepo,
             moduleRegistry = moduleRegistry,
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
@@ -329,7 +335,11 @@ class GameFlowCoordinatorTest {
         val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         fixtures.gameRepo.setTableState(suukanNagareTable(dealerId, otherId, lastDrawn))
 
-        val result = fixtures.coordinator(gameId, dealerId, GameCommand.Riichi(lastDrawn.id))
+        val result = fixtures.coordinator(
+            gameId,
+            dealerId,
+            GameCommand.Extension(com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand(lastDrawn.id)),
+        )
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -424,7 +434,7 @@ class GameFlowCoordinatorTest {
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(player), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, playerId, GameCommand.KyuushuKyuuhai)
+        val result = fixtures.coordinator(gameId, playerId, GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -646,12 +656,12 @@ class GameFlowCoordinatorTest {
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
             initialDeadWall = initialDeadWall,
             currentPlayerIndex = 0,
-            pendingChankan = PendingChankanReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
+            pendingKanReaction = PendingKanReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
         )
     }
 
     /**
-     * 驗證 [RespondToChankanUseCase] 解析為榮和時，`AdvanceRoundUseCase` 會被銜接。
+     * 驗證 [RespondToKanUseCase] 解析為榮和時，`AdvanceRoundUseCase` 會被銜接。
      */
     @Test
     fun `test respond to chankan resolving as ron chains advance round`() = runTest {
@@ -660,9 +670,9 @@ class GameFlowCoordinatorTest {
         val robberId = Uuid.random()
         val table = chankanTable(declarerId, robberId, emptyList(), ronReadyHand())
         fixtures.gameRepo.setTableState(table)
-        val robbedTileId = table.pendingChankan!!.robbedTile.id
+        val robbedTileId = table.pendingKanReaction!!.robbedTile.id
 
-        val result = fixtures.coordinator(gameId, robberId, GameCommand.RespondToChankan(GameAction.Ron(robbedTileId)))
+        val result = fixtures.coordinator(gameId, robberId, GameCommand.RespondToKan(GameAction.Ron(robbedTileId)))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -670,7 +680,7 @@ class GameFlowCoordinatorTest {
     }
 
     /**
-     * 驗證 [RespondToChankanUseCase] 全員放過、補做套用副露（未結束本局）時，`AdvanceRoundUseCase`
+     * 驗證 [RespondToKanUseCase] 全員放過、補做套用副露（未結束本局）時，`AdvanceRoundUseCase`
      * 不會被誤觸發。
      */
     @Test
@@ -682,7 +692,7 @@ class GameFlowCoordinatorTest {
         val table = chankanTable(declarerId, robberId, listOf(rinshanTile), ronReadyHand())
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, robberId, GameCommand.RespondToChankan(GameAction.Pass))
+        val result = fixtures.coordinator(gameId, robberId, GameCommand.RespondToKan(GameAction.Pass))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!

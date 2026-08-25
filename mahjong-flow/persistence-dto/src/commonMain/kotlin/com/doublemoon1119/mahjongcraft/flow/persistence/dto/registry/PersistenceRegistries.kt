@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildExhaustive
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildPlayerRuleStatePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildRuleConfigPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
@@ -27,6 +28,7 @@ data class PersistenceRegistries(
     val playerRuleStates: PersistenceDtoRegistry<PlayerRuleState>,
     val dynamicRuleStates: PersistenceDtoRegistry<DynamicRuleState>,
     val exhaustiveDrawReasons: PersistenceDtoRegistry<ExhaustiveDrawReason>,
+    val extensionGameActions: PersistenceDtoRegistry<ExtensionGameAction>,
 ) {
     /** 凍結所有 registry；凍結後不得新增 persistence mapper。 */
     fun freeze() {
@@ -35,6 +37,7 @@ data class PersistenceRegistries(
         playerRuleStates.freeze()
         dynamicRuleStates.freeze()
         exhaustiveDrawReasons.freeze()
+        extensionGameActions.freeze()
     }
 }
 
@@ -45,4 +48,5 @@ fun buildBuiltInPersistenceRegistries(): PersistenceRegistries = PersistenceRegi
     playerRuleStates = buildPlayerRuleStatePersistenceRegistry(),
     dynamicRuleStates = buildDynamicRuleStatePersistenceRegistry(),
     exhaustiveDrawReasons = buildExhaustiveDrawReasonPersistenceRegistry(),
+    extensionGameActions = PersistenceDtoRegistry(),
 )

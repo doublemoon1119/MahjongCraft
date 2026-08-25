@@ -16,7 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValidator
-import com.doublemoon1119.mahjongcraft.logic.table.PendingChankanReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -29,11 +29,11 @@ import kotlin.uuid.Uuid
  *
  * 是否合法完全交給該規則模組自己的 `LegalActionValidator`——這裡不重新實作暗槓/加槓的偵測邏輯
  * （含立直後暗槓「不能改變聽牌」的限制），理由與 [DeclareRiichiUseCase]、
- * [DeclareKyuushuKyuuhaiUseCase] 相同。合法性確認後，先檢查有沒有其他玩家可以搶槓
+ * [DeclareAbortiveDrawUseCase] 相同。合法性確認後，先檢查有沒有其他玩家可以搶槓
  * （[GameAction.Kan.type] 為 [GameAction.KanType.ADDED_KAN] 時常見；暗槓只有國士無雙能搶，見
  * [RiichiLegalActionValidator] 既有邏輯）：
- * 有人可以搶時開一次反應視窗（[TableState.pendingChankan]，副露暫緩套用，交給
- * [RespondToChankanUseCase] 解析）；沒人可以搶時直接套用（[KanDeclarationApplier]）。多位玩家同時
+ * 有人可以搶時開一次反應視窗（[TableState.pendingKanReaction]，副露暫緩套用，交給
+ * [RespondToKanUseCase] 解析）；沒人可以搶時直接套用（[KanDeclarationApplier]）。多位玩家同時
  * 可搶時（罕見），依 [MahjongRuleConfig.multiRonPolicy] 決定實際開放
  * 給誰，與一般捨牌榮和共用同一套判定（見 [DiscardReactionResolver]）；判定為途中流局時，這次
  * 加槓視為未成立，不開反應視窗、不套用副露。
@@ -89,7 +89,7 @@ class DeclareKanUseCase(
                 state.currentPlayer.id != playerId ->
                     state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
 
-                state.pendingChankan != null ->
+                state.pendingKanReaction != null ->
                     state to Outcome.Error(
                         GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
                     )
@@ -103,7 +103,7 @@ class DeclareKanUseCase(
 
                     // LegalActionValidator 的既有慣例是傳入的手牌「不含胡牌張」，胡牌張只透過
                     // incomingTile 參數單獨傳入；剝離手法與 DeclareTsumoUseCase/
-                    // DeclareKyuushuKyuuhaiUseCase 相同（見規劃紀錄：暗槓判定 closedKanCount 若不
+                    // DeclareAbortiveDrawUseCase 相同（見規劃紀錄：暗槓判定 closedKanCount 若不
                     // 剝離 lastDrawn 會多算一張）。
                     val playerForCheck =
                         state.currentPlayer.copy(hand = state.currentPlayer.hand.copy(lastDrawn = null))
@@ -162,7 +162,7 @@ class DeclareKanUseCase(
                     }
 
                     if (abortiveDrawReason != null) {
-                        // 多響流局：這次加槓視為未成立（比照 RespondToChankanUseCase 既有的「搶槓
+                        // 多響流局：這次加槓視為未成立（比照 RespondToKanUseCase 既有的「搶槓
                         // 成功時，暗槓/加槓視為未成立」原則），不套用 KanDeclarationApplier、不補
                         // 嶺上牌，直接記錄流局。
                         val newState = state.copy(
@@ -180,7 +180,7 @@ class DeclareKanUseCase(
 
                     if (ronWinningPlayerIds.isNotEmpty()) {
                         val newState = state.copy(
-                            pendingChankan = PendingChankanReaction(
+                            pendingKanReaction = PendingKanReaction(
                                 playerId,
                                 kanAction,
                                 incomingTile,

@@ -89,7 +89,7 @@ class RiichiLegalActionValidator(
                     ),
                 )
                 if (result is ShantenResult.Tenpai) {
-                    legalActions.add(GameAction.Riichi)
+                    legalActions.add(RIICHI_GAME_ACTION)
                 }
             }
 

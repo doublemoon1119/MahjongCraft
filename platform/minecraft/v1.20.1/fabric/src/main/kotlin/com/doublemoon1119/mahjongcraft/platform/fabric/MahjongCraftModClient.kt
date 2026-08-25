@@ -28,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickI
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
@@ -73,6 +74,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val tileAssetRegistry = koin.get<MinecraftTileAssetRegistry>()
         val tileEmojiRegistry = koin.get<TileEmojiRegistry>()
         val tileLabelRegistry = koin.get<TileLabelRegistry>()
+        val gameActionDisplayNames = koin.get<GameActionDisplayNameRegistry>()
         val moduleRegistry = koin.get<MahjongModuleRegistry>()
         val showcaseRegistry = koin.get<WinCelebrationShowcaseRegistry>()
         MahjongChannels.roomUpdate.registerClientReceiver(json, stateStore::apply)
@@ -87,6 +89,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 previousSnapshot = previousSnapshot,
                 newSnapshot = newSnapshot,
                 module = module,
+                actionDisplayNameRegistry = gameActionDisplayNames,
                 displayNameRegistry = tileDisplayNames,
                 tileAssetRegistry = tileAssetRegistry,
                 tileEmojiRegistry = tileEmojiRegistry,

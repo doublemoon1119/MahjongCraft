@@ -25,7 +25,7 @@ class FakeGameEventPublisher : GameEventPublisher {
      * 獲取特定玩家收到的「最後一次」事件動作內容。
      *
      * 若同一組 (gameId, targetPlayerId, actorId) 曾收到多次通知（例如立直宣告會依序廣播
-     * [GameAction.Riichi] 再廣播 [GameAction.Discard]），只會回傳最後一次；需要驗證完整順序時
+     * [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION] 再廣播 [GameAction.Discard]），只會回傳最後一次；需要驗證完整順序時
      * 請改用 [getNotifiedActions]。
      *
      * @param gameId 對局 Uuid。

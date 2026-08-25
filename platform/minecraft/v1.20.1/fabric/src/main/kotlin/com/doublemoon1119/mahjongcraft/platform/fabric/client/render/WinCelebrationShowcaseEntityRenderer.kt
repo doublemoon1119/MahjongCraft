@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseCardSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCinematicTimeline
@@ -956,7 +957,7 @@ class WinCelebrationShowcaseEntityRenderer(
     }
 
     private fun fallbackDefinition(cue: String) = WinCelebrationShowcaseDefinition(
-        cueKey = cue.ifBlank { "mahjongcraft:generic" },
+        cueKey = cue.ifBlank { BuiltInWinCelebrationCueIds.GENERIC },
         titleTranslationKey = "showcase.mahjongcraft.generic",
         titleImageResourceId = FALLBACK_TITLE_IMAGE.toString(),
         palette = ShowcasePalette(0xFFFFD45A.toInt(), 0xFFC32128.toInt(), -1),

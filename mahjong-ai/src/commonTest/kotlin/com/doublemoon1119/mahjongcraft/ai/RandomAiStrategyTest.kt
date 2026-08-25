@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -19,8 +20,8 @@ import kotlin.uuid.Uuid
 /**
  * [RandomAiStrategy] 的單元測試類別。
  *
- * 驗證三種 [AiDecisionPhase] 下的行為，以及「立直永遠不被選擇、預設捨牌」這個 Dummy 策略的
- * 既有限制。含機率性行為的分支（是否選擇 Tsumo/Kan/九種九牌）透過多次試驗驗證兩種結果都可能出現，
+ * 驗證三種 [AiDecisionPhase] 下的行為，以及未登記擴充動作的安全回退。
+ * 含機率性行為的分支（是否選擇 Tsumo/Kan/九種九牌）透過多次試驗驗證兩種結果都可能出現，
  * 不依賴特定亂數種子的具體輸出序列。
  */
 class RandomAiStrategyTest {
@@ -72,18 +73,18 @@ class RandomAiStrategyTest {
     }
 
     /**
-     * 驗證回應搶槓反應視窗時，回傳的 [GameCommand.RespondToChankan] 攜帶的動作確實來自
+     * 驗證回應搶槓反應視窗時，回傳的 [GameCommand.RespondToKan] 攜帶的動作確實來自
      * [AiDecisionContext.legalActions]。
      */
     @Test
     fun `test responding to chankan picks one of the legal actions`() = runTest {
         val strategy = RandomAiStrategy(Random(1))
         val ronAction = GameAction.Ron(Uuid.random())
-        val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToChankan, listOf(ronAction, GameAction.Pass))
+        val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToKan, listOf(ronAction, GameAction.Pass))
 
         val result = strategy.decide(context)
 
-        assertTrue(result is GameCommand.RespondToChankan)
+        assertTrue(result is GameCommand.RespondToKan)
         assertTrue(result.action == ronAction || result.action == GameAction.Pass)
     }
 
@@ -93,15 +94,15 @@ class RandomAiStrategyTest {
     @Test
     fun `test responding to chankan defaults to pass when legal actions is empty`() = runTest {
         val strategy = RandomAiStrategy(Random(1))
-        val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToChankan, emptyList())
+        val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToKan, emptyList())
 
         val result = strategy.decide(context)
 
-        assertEquals(GameCommand.RespondToChankan(GameAction.Pass), result)
+        assertEquals(GameCommand.RespondToKan(GameAction.Pass), result)
     }
 
     /**
-     * 驗證自己回合時，若合法動作清單只有 [GameAction.Riichi]/[GameAction.Pass]（過濾後視同沒有
+     * 驗證自己回合時，若合法動作清單只有 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION]/[GameAction.Pass]（過濾後視同沒有
      * 可選的特殊動作），一律捨牌——這個判斷不涉及機率（`actionableOptions.isEmpty()` 短路），
      * 不需要固定亂數種子即可穩定驗證。
      */
@@ -110,7 +111,7 @@ class RandomAiStrategyTest {
         val strategy = RandomAiStrategy(Random(1))
         val onlyTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val hand = Hand(tiles = listOf(onlyTile))
-        val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(GameAction.Riichi, GameAction.Pass))
+        val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION, GameAction.Pass))
 
         val result = strategy.decide(context)
 
@@ -174,7 +175,7 @@ class RandomAiStrategyTest {
     }
 
     /**
-     * 驗證自己回合有九種九牌資格時，多次試驗下會選到 [GameCommand.KyuushuKyuuhai]。
+     * 驗證自己回合有九種九牌資格時，多次試驗下會選到 [GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai)]。
      */
     @Test
     fun `test own turn can select kyuushu kyuuhai when legal across many trials`() = runTest {
@@ -187,24 +188,23 @@ class RandomAiStrategyTest {
             strategy.decide(context)
         }
 
-        assertTrue(results.any { it == GameCommand.KyuushuKyuuhai }, "KyuushuKyuuhai should be selected at least once across many trials.")
+        assertTrue(results.any { it == GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai) }, "KyuushuKyuuhai should be selected at least once across many trials.")
         assertTrue(results.any { it is GameCommand.Discard }, "Discard should still occur at least once across many trials.")
     }
 
     /**
-     * 驗證自己回合即使 [GameAction.Riichi] 出現在合法動作清單裡，也永遠不會被選擇——這個 Dummy
-     * 策略刻意略過立直（見 [RandomAiStrategy] 的 KDoc 說明）。
+     * 驗證未登記 AI handler 的擴充動作會被安全略過。
      */
     @Test
-    fun `test own turn never selects riichi even when legal`() = runTest {
+    fun `test own turn skips unregistered extension action`() = runTest {
         val strategy = RandomAiStrategy(Random(42))
         val tile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val hand = Hand(tiles = listOf(tile))
         val results = List(200) {
-            val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(GameAction.Riichi, GameAction.Tsumo))
+            val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(RIICHI_GAME_ACTION, GameAction.Tsumo))
             strategy.decide(context)
         }
 
-        assertTrue(results.none { it is GameCommand.Riichi }, "Riichi should never be selected by this Dummy strategy.")
+        assertTrue(results.none { it is GameCommand.Extension }, "Unregistered extension actions must not produce commands.")
     }
 }

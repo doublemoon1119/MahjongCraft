@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
@@ -38,6 +39,9 @@ interface MinecraftMahjongExtension {
      * 預設不註冊任何映射，使不提供 AI 策略的 extension 不必加入空實作。
      */
     fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) = Unit
+
+    /** 登記規則擴充動作在 Minecraft 中使用的本地化顯示名稱。 */
+    fun registerGameActionDisplayNames(registry: GameActionDisplayNameRegistry) = Unit
 
     /**
      * 登記第三方牌種對應的顯示名稱。

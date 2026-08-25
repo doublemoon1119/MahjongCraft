@@ -14,7 +14,19 @@ data class IdentifiedTilePersistenceDto(val id: String, val tile: TilePersistenc
 
 /** [MeldType] 的 persistence DTO。 */
 @Serializable
-enum class MeldTypePersistenceDto { CHI, PON, OPEN_KAN, CLOSED_KAN, ADDED_KAN }
+sealed interface MeldTypePersistenceDto {
+    @Serializable data object Chi : MeldTypePersistenceDto
+
+    @Serializable data object Pon : MeldTypePersistenceDto
+
+    @Serializable data object OpenKan : MeldTypePersistenceDto
+
+    @Serializable data object ClosedKan : MeldTypePersistenceDto
+
+    @Serializable data object AddedKan : MeldTypePersistenceDto
+
+    @Serializable data class Extension(val typeId: String) : MeldTypePersistenceDto
+}
 
 /** [RelativeDirection] 的 persistence DTO。 */
 @Serializable
@@ -45,7 +57,7 @@ fun IdentifiedTilePersistenceDto.toDomain(): IdentifiedTile = IdentifiedTile(Uui
 
 /** 將 [Meld] 轉換成 persistence DTO。 */
 fun Meld.toPersistenceDto(): MeldPersistenceDto = MeldPersistenceDto(
-    type = MeldTypePersistenceDto.valueOf(type.name),
+    type = type.toPersistenceDto(),
     tiles = tiles.map(IdentifiedTile::toPersistenceDto),
     sourceTile = sourceTile?.toPersistenceDto(),
     sourceDirection = sourceDirection.toPersistenceDto(),
@@ -53,11 +65,33 @@ fun Meld.toPersistenceDto(): MeldPersistenceDto = MeldPersistenceDto(
 
 /** 將 [MeldPersistenceDto] 還原成 [Meld]。 */
 fun MeldPersistenceDto.toDomain(): Meld = Meld(
-    type = MeldType.valueOf(type.name),
+    type = type.toDomain(),
     tiles = tiles.map(IdentifiedTilePersistenceDto::toDomain),
     sourceTile = sourceTile?.toDomain(),
     sourceDirection = sourceDirection.toDomain(),
 )
+
+/** 將副露種類轉成 persistence DTO。 */
+private fun MeldType.toPersistenceDto(): MeldTypePersistenceDto = when (this) {
+    MeldType.CHI -> MeldTypePersistenceDto.Chi
+    MeldType.PON -> MeldTypePersistenceDto.Pon
+    MeldType.OPEN_KAN -> MeldTypePersistenceDto.OpenKan
+    MeldType.CLOSED_KAN -> MeldTypePersistenceDto.ClosedKan
+    MeldType.ADDED_KAN -> MeldTypePersistenceDto.AddedKan
+    is MeldType.Extension -> MeldTypePersistenceDto.Extension(typeId.toString())
+}
+
+/** 將 persistence DTO 還原成副露種類。 */
+private fun MeldTypePersistenceDto.toDomain(): MeldType = when (this) {
+    MeldTypePersistenceDto.Chi -> MeldType.CHI
+    MeldTypePersistenceDto.Pon -> MeldType.PON
+    MeldTypePersistenceDto.OpenKan -> MeldType.OPEN_KAN
+    MeldTypePersistenceDto.ClosedKan -> MeldType.CLOSED_KAN
+    MeldTypePersistenceDto.AddedKan -> MeldType.ADDED_KAN
+    is MeldTypePersistenceDto.Extension -> MeldType.Extension(
+        com.doublemoon1119.mahjongcraft.logic.base.MeldTypeId.parse(typeId),
+    )
+}
 
 /** 將 [Hand] 轉換成 persistence DTO。 */
 fun Hand.toPersistenceDto(): HandPersistenceDto = HandPersistenceDto(

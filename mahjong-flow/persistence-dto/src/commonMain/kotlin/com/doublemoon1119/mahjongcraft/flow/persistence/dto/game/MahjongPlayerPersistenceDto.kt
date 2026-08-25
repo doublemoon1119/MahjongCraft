@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.dto.game
 
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.TypedPersistenceDto
+import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
@@ -33,7 +35,8 @@ data class MahjongPlayerPersistenceDto(
 fun MahjongPlayer.toPersistenceDto(
     discardPileRegistry: PersistenceDtoRegistry<DiscardPile<*>>,
     playerRuleStateRegistry: PersistenceDtoRegistry<PlayerRuleState>,
-    exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason>,
+    exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
+    extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
     json: Json = Json,
 ): MahjongPlayerPersistenceDto = MahjongPlayerPersistenceDto(
     id = id.toString(),
@@ -45,14 +48,15 @@ fun MahjongPlayer.toPersistenceDto(
     aiStrategyKey = aiStrategyKey,
     currentWind = WindPersistenceDto.valueOf(currentWind.name),
     passedTilesInRound = passedTilesInRound.map { it.toPersistenceDto() },
-    actionHistory = actionHistory.map { it.toPersistenceDto(exhaustiveDrawReasonRegistry, json) },
+    actionHistory = actionHistory.map { it.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json) },
 )
 
 /** 將 [MahjongPlayerPersistenceDto] 還原成 [MahjongPlayer]。 */
 fun MahjongPlayerPersistenceDto.toDomain(
     discardPileRegistry: PersistenceDtoRegistry<DiscardPile<*>>,
     playerRuleStateRegistry: PersistenceDtoRegistry<PlayerRuleState>,
-    exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason>,
+    exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
+    extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
     json: Json = Json,
 ): MahjongPlayer = MahjongPlayer(
     id = Uuid.parse(id),
@@ -64,5 +68,5 @@ fun MahjongPlayerPersistenceDto.toDomain(
     aiStrategyKey = aiStrategyKey,
     currentWind = Wind.valueOf(currentWind.name),
     passedTilesInRound = passedTilesInRound.mapTo(mutableSetOf()) { it.toDomain() },
-    actionHistory = actionHistory.map { it.toDomain(exhaustiveDrawReasonRegistry, json) },
+    actionHistory = actionHistory.map { it.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json) },
 )

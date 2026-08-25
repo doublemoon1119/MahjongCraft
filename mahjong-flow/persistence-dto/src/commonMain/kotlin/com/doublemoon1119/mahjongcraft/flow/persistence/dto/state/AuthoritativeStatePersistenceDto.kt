@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.room.RoomPersistence
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.room.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.room.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
@@ -76,6 +77,7 @@ fun createAuthoritativeStatePersistenceDto(
     playerRuleStateRegistry: PersistenceDtoRegistry<PlayerRuleState>,
     dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
+    extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
     json: Json = Json,
 ): AuthoritativeStatePersistenceDto {
     require(rooms.map(Room::id).distinct().size == rooms.size) { "Room IDs must be unique" }
@@ -92,6 +94,7 @@ fun createAuthoritativeStatePersistenceDto(
                 playerRuleStateRegistry,
                 dynamicRuleStateRegistry,
                 exhaustiveDrawReasonRegistry,
+                extensionGameActionRegistry,
                 json,
             )
         },
@@ -113,6 +116,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
     playerRuleStateRegistry: PersistenceDtoRegistry<PlayerRuleState>,
     dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
+    extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
     json: Json = Json,
 ): Map<Uuid, Game> = games.values.associate { game ->
     val id = Uuid.parse(game.id)
@@ -122,6 +126,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
         playerRuleStateRegistry,
         dynamicRuleStateRegistry,
         exhaustiveDrawReasonRegistry,
+        extensionGameActionRegistry,
         json,
     )
     val runtimeState = gameRuntimeStates.getValue(id.toString())

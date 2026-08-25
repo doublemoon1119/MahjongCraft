@@ -1,13 +1,15 @@
 package com.doublemoon1119.mahjongcraft.flow.common.di
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationCue
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolver
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 
 /** 內建日麻規則模組 ID。 */
-const val RIICHI_RULE_MODULE_ID: String = "mahjongcraft:riichi"
+val RIICHI_RULE_MODULE_ID: String = BuiltInRuleModuleIds.RIICHI
 
 /** 註冊內建規則的胡牌展示提示解析器。 */
 fun WinCelebrationCueResolverRegistry.registerBuiltInWinCelebrationCueResolvers() {
@@ -28,7 +30,7 @@ private object RiichiWinCelebrationCueResolver : WinCelebrationCueResolver {
             .filter { it.isYakuman }
             .maxWithOrNull(compareBy({ -it.han }, { -priority.getValue(it.yaku) }))
             ?: return null
-        return WinCelebrationCue("mahjongcraft:${primary.yaku.name.toSnakeCase()}")
+        return WinCelebrationCue(BuiltInWinCelebrationCueIds.riichiYakuman(primary.yaku.name.toSnakeCase()))
     }
 
     private val priority: Map<YakuType, Int> = listOf(

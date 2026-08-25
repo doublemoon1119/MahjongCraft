@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.registerRiichiGameActionDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
@@ -21,6 +23,7 @@ import kotlin.uuid.Uuid
 class GameActionDisplayTextTest {
 
     private val displayNameRegistry = TileDisplayNameRegistryImpl().apply { registerBuiltInTileDisplayNames() }
+    private val actionDisplayNameRegistry = GameActionDisplayNameRegistryImpl().apply { registerRiichiGameActionDisplayName() }
     private val assetRegistry = MinecraftTileAssetRegistryImpl().apply { registerBuiltInTileAssets() }
     private val emojiRegistry = TileEmojiRegistryImpl().apply { registerBuiltInTileEmojis() }
     private val fiveDot = Tile.Numeric(Tile.Suit.Dot, 5)
@@ -29,7 +32,7 @@ class GameActionDisplayTextTest {
     @Test
     fun `discard action includes resolved tile as argument`() {
         val content = GameAction.Discard(Uuid.random())
-            .toDisplayText(fiveDot, displayNameRegistry, assetRegistry, emojiRegistry).content as TranslatableTextContent
+            .toDisplayText(fiveDot, actionDisplayNameRegistry, displayNameRegistry, assetRegistry, emojiRegistry).content as TranslatableTextContent
         assertEquals("mahjongcraft.message.game_action_discard", content.key)
         val tileArg = content.args.single() as Text
         assertEquals("🀝 ", (tileArg.content as LiteralTextContent).string())
@@ -40,7 +43,7 @@ class GameActionDisplayTextTest {
     /** 驗證不涉及特定牌面的動作（自摸）不需要 referenceTile 也能組出文字。 */
     @Test
     fun `tsumo action does not require a reference tile`() {
-        val content = GameAction.Tsumo.toDisplayText(null, displayNameRegistry, assetRegistry, emojiRegistry).content as TranslatableTextContent
+        val content = GameAction.Tsumo.toDisplayText(null, actionDisplayNameRegistry, displayNameRegistry, assetRegistry, emojiRegistry).content as TranslatableTextContent
         assertEquals("mahjongcraft.message.game_action_tsumo", content.key)
     }
 
@@ -49,15 +52,15 @@ class GameActionDisplayTextTest {
     fun `each kan type maps to its own key`() {
         val openKey = (
             GameAction.Kan(GameAction.KanType.OPEN_KAN, Uuid.random(), emptyList())
-                .toDisplayText(fiveDot, displayNameRegistry, assetRegistry, emojiRegistry).content as TranslatableTextContent
+                .toDisplayText(fiveDot, actionDisplayNameRegistry, displayNameRegistry, assetRegistry, emojiRegistry).content as TranslatableTextContent
             ).key
         val closedKey = (
             GameAction.Kan(GameAction.KanType.CLOSED_KAN, Uuid.random(), emptyList())
-                .toDisplayText(fiveDot, displayNameRegistry, assetRegistry, emojiRegistry).content as TranslatableTextContent
+                .toDisplayText(fiveDot, actionDisplayNameRegistry, displayNameRegistry, assetRegistry, emojiRegistry).content as TranslatableTextContent
             ).key
         val addedKey = (
             GameAction.Kan(GameAction.KanType.ADDED_KAN, Uuid.random(), emptyList())
-                .toDisplayText(fiveDot, displayNameRegistry, assetRegistry, emojiRegistry).content as TranslatableTextContent
+                .toDisplayText(fiveDot, actionDisplayNameRegistry, displayNameRegistry, assetRegistry, emojiRegistry).content as TranslatableTextContent
             ).key
 
         assertEquals("mahjongcraft.message.game_action_kan_open", openKey)
@@ -69,7 +72,7 @@ class GameActionDisplayTextTest {
     @Test
     fun `kyuushu kyuuhai resolves its dedicated key`() {
         val content = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai)
-            .toDisplayText(null, displayNameRegistry, assetRegistry, emojiRegistry).content as TranslatableTextContent
+            .toDisplayText(null, actionDisplayNameRegistry, displayNameRegistry, assetRegistry, emojiRegistry).content as TranslatableTextContent
         assertEquals("mahjongcraft.message.game_action_kyuushu_kyuuhai", content.key)
     }
 
@@ -78,7 +81,7 @@ class GameActionDisplayTextTest {
     fun `other exhaustive draw reasons fall back to the generic key`() {
         val otherReason = object : ExhaustiveDrawReason {}
         val content = GameAction.ExhaustiveDraw(otherReason)
-            .toDisplayText(null, displayNameRegistry, assetRegistry, emojiRegistry).content as TranslatableTextContent
+            .toDisplayText(null, actionDisplayNameRegistry, displayNameRegistry, assetRegistry, emojiRegistry).content as TranslatableTextContent
         assertEquals("mahjongcraft.message.game_action_exhaustive_draw", content.key)
     }
 }

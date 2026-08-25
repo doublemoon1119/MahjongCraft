@@ -307,7 +307,7 @@ interface GamePresentationPublisher {
      *
      * 呼叫時機：[gameId] 的贏家結算完成、既有事件廣播之後——自摸（`DeclareTsumoUseCase`）緊接在廣播
      * [com.doublemoon1119.mahjongcraft.logic.base.GameAction.Tsumo] 之後呼叫一次；榮和／搶槓
-     * （`RespondToDiscardUseCase`／`RespondToChankanUseCase`）在既有事件廣播之後，對每一位贏家各自
+     * （`RespondToDiscardUseCase`／`RespondToKanUseCase`）在既有事件廣播之後，對每一位贏家各自
      * 呼叫一次（一炮多響可能不只一次）。
      *
      * 這個方法本身不攜帶贏家手牌的完整內容——理牌重排的目標順序完全由平台實作依規則模組的牌序自行

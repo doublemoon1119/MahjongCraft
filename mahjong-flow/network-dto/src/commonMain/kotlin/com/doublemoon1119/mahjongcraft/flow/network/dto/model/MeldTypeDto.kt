@@ -5,20 +5,34 @@ import kotlinx.serialization.Serializable
 
 /** [MeldType] 的網路 DTO。 */
 @Serializable
-enum class MeldTypeDto { CHI, PON, OPEN_KAN, CLOSED_KAN, ADDED_KAN }
+sealed interface MeldTypeDto {
+    @Serializable data object Chi : MeldTypeDto
+
+    @Serializable data object Pon : MeldTypeDto
+
+    @Serializable data object OpenKan : MeldTypeDto
+
+    @Serializable data object ClosedKan : MeldTypeDto
+
+    @Serializable data object AddedKan : MeldTypeDto
+
+    @Serializable data class Extension(val typeId: String) : MeldTypeDto
+}
 
 fun MeldType.toDto(): MeldTypeDto = when (this) {
-    MeldType.CHI -> MeldTypeDto.CHI
-    MeldType.PON -> MeldTypeDto.PON
-    MeldType.OPEN_KAN -> MeldTypeDto.OPEN_KAN
-    MeldType.CLOSED_KAN -> MeldTypeDto.CLOSED_KAN
-    MeldType.ADDED_KAN -> MeldTypeDto.ADDED_KAN
+    MeldType.CHI -> MeldTypeDto.Chi
+    MeldType.PON -> MeldTypeDto.Pon
+    MeldType.OPEN_KAN -> MeldTypeDto.OpenKan
+    MeldType.CLOSED_KAN -> MeldTypeDto.ClosedKan
+    MeldType.ADDED_KAN -> MeldTypeDto.AddedKan
+    is MeldType.Extension -> MeldTypeDto.Extension(typeId.toString())
 }
 
 fun MeldTypeDto.toDomain(): MeldType = when (this) {
-    MeldTypeDto.CHI -> MeldType.CHI
-    MeldTypeDto.PON -> MeldType.PON
-    MeldTypeDto.OPEN_KAN -> MeldType.OPEN_KAN
-    MeldTypeDto.CLOSED_KAN -> MeldType.CLOSED_KAN
-    MeldTypeDto.ADDED_KAN -> MeldType.ADDED_KAN
+    MeldTypeDto.Chi -> MeldType.CHI
+    MeldTypeDto.Pon -> MeldType.PON
+    MeldTypeDto.OpenKan -> MeldType.OPEN_KAN
+    MeldTypeDto.ClosedKan -> MeldType.CLOSED_KAN
+    MeldTypeDto.AddedKan -> MeldType.ADDED_KAN
+    is MeldTypeDto.Extension -> MeldType.Extension(com.doublemoon1119.mahjongcraft.logic.base.MeldTypeId.parse(typeId))
 }

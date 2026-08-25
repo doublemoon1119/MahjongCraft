@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
+import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import kotlin.uuid.Uuid
 
@@ -11,19 +12,33 @@ import kotlin.uuid.Uuid
  * 這是一個雙方都要建構/認識的共用字彙：除了 `GameActionRouter` 會消費它，`:mahjong-ai` 的
  * AI 策略也需要建構它作為決策的最終輸出，且不該為此依賴整個 `:mahjong-flow-server` 的 use case 層。
  *
- * 每個變體對應恰好一個玩家發起的 Game Use Case 及其所需參數。不直接重用
- * [GameAction]：[Riichi] 需要攜帶欲宣告的捨牌張（`GameAction.Riichi` 本身不帶欄位）、
- * [KyuushuKyuuhai] 不需要任何規則專屬的 payload、且 [RespondToDiscard]/[RespondToChankan]
- * 需要由呼叫端明確表達「這次回應是針對捨牌反應視窗還是搶槓反應視窗」，單靠 [GameAction] 本身
- * 無法區分這三件事。
+ * 規則專屬操作以 [Extension] 包裝強型別命令；核心不窮舉立直、拔北或特定途中流局。
  */
 sealed interface GameCommand {
+    /** 規則 extension 提供的強型別命令。 */
+    data class Extension(val value: ExtensionGameCommand) : GameCommand
+
+    /** 摸牌命令。 */
     data object Draw : GameCommand
+
+    /** 捨棄指定牌的命令。 */
     data class Discard(val tileId: Uuid) : GameCommand
-    data class Riichi(val tileId: Uuid) : GameCommand
+
+    /** 自摸命令。 */
     data object Tsumo : GameCommand
+
+    /** 槓指定牌的命令。 */
     data class Kan(val type: GameAction.KanType, val tileId: Uuid) : GameCommand
+
+    /** 回應捨牌反應窗口的命令。 */
     data class RespondToDiscard(val action: GameAction) : GameCommand
-    data class RespondToChankan(val action: GameAction) : GameCommand
-    data object KyuushuKyuuhai : GameCommand
+
+    /** 回應槓牌反應窗口的規則中立命令。 */
+    data class RespondToKan(val action: GameAction) : GameCommand
+
+    /** 以具體原因宣告途中流局的命令。 */
+    data class DeclareExhaustiveDraw(val reason: ExhaustiveDrawReason) : GameCommand
 }
+
+/** 規則 extension 可提供的強型別遊戲命令。 */
+interface ExtensionGameCommand

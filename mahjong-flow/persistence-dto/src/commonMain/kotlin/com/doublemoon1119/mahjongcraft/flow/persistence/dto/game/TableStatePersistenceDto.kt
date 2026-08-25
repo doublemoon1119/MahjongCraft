@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.dto.game
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
@@ -26,7 +27,7 @@ import kotlin.uuid.Uuid
  * @property currentPlayerIndex 目前行動玩家的索引。
  * @property dynamicRuleState 規則專屬牌桌狀態；沒有狀態時為 null。
  * @property pendingReaction 尚未完成的捨牌反應視窗。
- * @property pendingChankan 尚未完成的搶槓反應視窗。
+ * @property pendingKanReaction 尚未完成的搶槓反應視窗。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
  * @property initialDeadWall 開局瞬間的王牌快照；規則尚未支援開門流程時為空清單。
  */
@@ -42,7 +43,7 @@ data class TableStatePersistenceDto(
     val currentPlayerIndex: Int,
     val dynamicRuleState: TypedPersistenceDto?,
     val pendingReaction: PendingReactionPersistenceDto?,
-    val pendingChankan: PendingChankanReactionPersistenceDto?,
+    val pendingKanReaction: PendingKanReactionPersistenceDto?,
     val wallOpening: WallOpeningPersistenceDto?,
     val initialDeadWall: List<IdentifiedTilePersistenceDto>,
 )
@@ -54,11 +55,18 @@ fun TableState.toPersistenceDto(
     playerRuleStateRegistry: PersistenceDtoRegistry<PlayerRuleState>,
     dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
+    extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
     json: Json = Json,
 ): TableStatePersistenceDto = TableStatePersistenceDto(
     id = id.toString(),
     players = players.map {
-        it.toPersistenceDto(discardPileRegistry, playerRuleStateRegistry, exhaustiveDrawReasonRegistry, json)
+        it.toPersistenceDto(
+            discardPileRegistry,
+            playerRuleStateRegistry,
+            exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry,
+            json,
+        )
     },
     config = ruleConfigRegistry.encode(config, json),
     tileWall = tileWall.toPersistenceDto(),
@@ -67,8 +75,8 @@ fun TableState.toPersistenceDto(
     comboCount = comboCount,
     currentPlayerIndex = currentPlayerIndex,
     dynamicRuleState = dynamicRuleState?.let { dynamicRuleStateRegistry.encode(it, json) },
-    pendingReaction = pendingReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, json),
-    pendingChankan = pendingChankan?.toPersistenceDto(exhaustiveDrawReasonRegistry, json),
+    pendingReaction = pendingReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
+    pendingKanReaction = pendingKanReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
     wallOpening = wallOpening?.toPersistenceDto(),
     initialDeadWall = initialDeadWall.map { it.toPersistenceDto() },
 )
@@ -80,11 +88,18 @@ fun TableStatePersistenceDto.toDomain(
     playerRuleStateRegistry: PersistenceDtoRegistry<PlayerRuleState>,
     dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
+    extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
     json: Json = Json,
 ): TableState = TableState(
     id = Uuid.parse(id),
     players = players.map {
-        it.toDomain(discardPileRegistry, playerRuleStateRegistry, exhaustiveDrawReasonRegistry, json)
+        it.toDomain(
+            discardPileRegistry,
+            playerRuleStateRegistry,
+            exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry,
+            json,
+        )
     },
     config = ruleConfigRegistry.decode(config, json),
     tileWall = tileWall.toDomain(),
@@ -93,8 +108,8 @@ fun TableStatePersistenceDto.toDomain(
     comboCount = comboCount,
     currentPlayerIndex = currentPlayerIndex,
     dynamicRuleState = dynamicRuleState?.let { dynamicRuleStateRegistry.decode(it, json) },
-    pendingReaction = pendingReaction?.toDomain(exhaustiveDrawReasonRegistry, json),
-    pendingChankan = pendingChankan?.toDomain(exhaustiveDrawReasonRegistry, json),
+    pendingReaction = pendingReaction?.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
+    pendingKanReaction = pendingKanReaction?.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
     wallOpening = wallOpening?.toDomain(),
     initialDeadWall = initialDeadWall.map { it.toDomain() },
 )

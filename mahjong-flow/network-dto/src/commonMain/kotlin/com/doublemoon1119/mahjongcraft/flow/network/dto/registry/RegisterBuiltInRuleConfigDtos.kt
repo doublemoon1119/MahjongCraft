@@ -1,9 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.registry
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiDiscardPileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiDynamicStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiExhaustiveDrawReasonDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiGameActionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiGameCommandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiGameLengthDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPlayerStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiRuleConfigDto
@@ -19,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toTaiwanDto
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -27,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanScoreConfig
+import kotlin.uuid.Uuid
 
 /**
  * 註冊 `:mahjong-flow-network-dto` 內建支援的規則模組（日麻、台麻）的 DTO 對照。
@@ -36,6 +41,29 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanScoreConfig
  * 序列化，可在各自的組裝處另行呼叫對應 registry 的 `register(...)`。
  */
 fun NetworkDtoRegistries.registerBuiltInRuleConfigDtos() {
+    registerBuiltInRuleDtos()
+}
+
+/** 登記內建立直 extension action 與 command 的網路 DTO。 */
+fun NetworkDtoRegistries.registerRiichiGameActionDtos() {
+    extensionGameAction.register(
+        RiichiGameAction.Riichi::class,
+        RiichiGameActionDto::class,
+        RiichiGameActionDto.serializer(),
+        { RiichiGameActionDto },
+        { RiichiGameAction.Riichi },
+    )
+    extensionGameCommand.register(
+        RiichiGameCommand::class,
+        RiichiGameCommandDto::class,
+        RiichiGameCommandDto.serializer(),
+        { RiichiGameCommandDto(it.tileId.toString()) },
+        { RiichiGameCommand(Uuid.parse(it.tileId)) },
+    )
+}
+
+/** 登記內建日麻與台麻規則狀態的網路 DTO。 */
+private fun NetworkDtoRegistries.registerBuiltInRuleDtos() {
     this.ruleConfig.register(
         RiichiRuleConfig::class,
         RiichiRuleConfigDto::class,

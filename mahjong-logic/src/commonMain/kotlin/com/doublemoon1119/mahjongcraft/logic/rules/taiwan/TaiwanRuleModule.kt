@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
@@ -10,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.module.RiichiDeclarationResult
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
@@ -98,17 +96,6 @@ class TaiwanRuleModule(
      * @return 固定回傳 null。
      */
     override fun createInitialPlayerRuleState(): PlayerRuleState? = null
-
-    /**
-     * 台灣麻將目前沒有立直宣告這個機制。
-     *
-     * @return 固定回傳 null。
-     */
-    override fun declareRiichi(
-        tableState: TableState,
-        player: MahjongPlayer,
-        discardResult: Hand.DiscardResult,
-    ): RiichiDeclarationResult? = null
 
     /**
      * 台灣麻將目前沒有摸牌後需要清除的規則特有狀態。
