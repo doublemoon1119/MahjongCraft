@@ -577,6 +577,28 @@ class FabricDebugAnimationCommand(
             val kanIds = List(4) { Uuid.random().also { id -> tileAssetsById[id] = "p8" } }
             val winningTileId = Uuid.random().also { tileAssetsById[it] = if (winnerIndex == 0) "m1" else "p${winnerIndex + 1}" }
             val yakuman = preview == WinSettlementPreview.YAKUMAN
+            val regularYakuEntries = if (preview == WinSettlementPreview.RON && winnerIndex == 0) {
+                listOf(
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.reach", "1"),
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.ippatsu", "1"),
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.tsumo", "1"),
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.pinfu", "1"),
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.tanyao", "1"),
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.ipeiko", "1"),
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.sanshokudohjun", "2"),
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.ikkitsukan", "2"),
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.chanta", "2"),
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.toitoiho", "2"),
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.honitsu", "3"),
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.chinitsu", "6"),
+                )
+            } else {
+                listOf(
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.reach", "1"),
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.ippatsu", "1"),
+                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.pinfu", "1"),
+                )
+            }
             WinSettlementWinnerPresentation(
                 playerId = playerIds[winnerIndex],
                 seatIndex = winnerIndex,
@@ -600,13 +622,18 @@ class FabricDebugAnimationCommand(
                             "mahjongcraft:riichi_yaku",
                             WinSettlementDetailValue.Entries(
                                 if (yakuman) {
-                                    listOf(WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.kokushimuso"))
-                                } else if (preview != WinSettlementPreview.NAGASHI) {
                                     listOf(
-                                        WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.reach", "1"),
-                                        WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.ippatsu", "1"),
-                                        WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.pinfu", "1"),
+                                        WinSettlementDetailValue.Entries.Entry(
+                                            translationKey = "mahjongcraft.game.yaku.kokushimuso_jusanmenmachi",
+                                            trailingTranslationKey = "mahjongcraft.game.score.yakuman_2x",
+                                        ),
+                                        WinSettlementDetailValue.Entries.Entry(
+                                            translationKey = "mahjongcraft.game.yaku.daisangen",
+                                            trailingTranslationKey = "mahjongcraft.game.score.yakuman_1x",
+                                        ),
                                     )
+                                } else if (preview != WinSettlementPreview.NAGASHI) {
+                                    regularYakuEntries
                                 } else {
                                     listOf(WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.nagashi_mangan"))
                                 },
@@ -614,7 +641,10 @@ class FabricDebugAnimationCommand(
                         ),
                     )
                     if (!yakuman && preview != WinSettlementPreview.NAGASHI) {
-                        add(WinSettlementDetailField("mahjongcraft:riichi_han_fu", WinSettlementDetailValue.Text("settlement.mahjongcraft.han_fu", listOf("3", "30"))))
+                        val totalHan = regularYakuEntries.sumOf { it.trailingText.toIntOrNull() ?: 0 }
+                        add(WinSettlementDetailField("mahjongcraft:riichi_han_fu", WinSettlementDetailValue.Text("settlement.mahjongcraft.han_fu", listOf(totalHan.toString(), "30"))))
+                    } else if (yakuman) {
+                        add(WinSettlementDetailField("mahjongcraft:riichi_yakuman_total", WinSettlementDetailValue.Text("mahjongcraft.game.score.yakuman_3x")))
                     }
                     add(WinSettlementDetailField("mahjongcraft:riichi_dora", WinSettlementDetailValue.Tiles(handIds.take(2))))
                     add(WinSettlementDetailField("mahjongcraft:riichi_ura_dora", WinSettlementDetailValue.Tiles(handIds.drop(2).take(1))))

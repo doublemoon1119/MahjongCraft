@@ -8,7 +8,21 @@ sealed interface WinSettlementDetailValue {
     data class Text(val translationKey: String, val arguments: List<String> = emptyList()) : WinSettlementDetailValue
     data class Tiles(val tileIds: List<Uuid>) : WinSettlementDetailValue
     data class Entries(val entries: List<Entry>) : WinSettlementDetailValue {
-        data class Entry(val translationKey: String, val trailingText: String = "")
+        /**
+         * 可逐項揭曉的條目。右側可選擇顯示既有純文字，或以 [trailingTranslationKey] 顯示本地化
+         * 等級；兩者不得同時提供。
+         */
+        data class Entry(
+            val translationKey: String,
+            val trailingText: String = "",
+            val trailingTranslationKey: String? = null,
+            val trailingTranslationArgument: String? = null,
+        ) {
+            init {
+                require(trailingText.isBlank() || trailingTranslationKey == null)
+                require(trailingTranslationArgument == null || trailingTranslationKey != null)
+            }
+        }
     }
 }
 

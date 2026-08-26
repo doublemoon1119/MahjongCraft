@@ -198,5 +198,12 @@
   "settlement.mahjongcraft.score_ranking": "Score Ranking",
   "settlement.mahjongcraft.han": "%s han",
   "settlement.mahjongcraft.han_fu": "%s han %s fu",
+  "mahjongcraft.game.score.yakuman_1x": "Yakuman",
+  "mahjongcraft.game.score.yakuman_2x": "Double Yakuman",
+  "mahjongcraft.game.score.yakuman_3x": "Triple Yakuman",
+  "mahjongcraft.game.score.yakuman_4x": "Quadruple Yakuman",
+  "mahjongcraft.game.score.yakuman_5x": "5x Yakuman",
+  "mahjongcraft.game.score.yakuman_6x": "6x Yakuman",
+  "mahjongcraft.game.score.yakuman_nx": "%sx Yakuman",
   "settlement.mahjongcraft.nagashi_mangan": "Nagashi Mangan"
 }

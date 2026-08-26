@@ -138,13 +138,32 @@ object WinSettlementPresentationRequestFactory {
                     RIICHI_YAKU_FIELD,
                     WinSettlementDetailValue.Entries(
                         result.yakuResults.map { yaku ->
-                            WinSettlementDetailValue.Entries.Entry(yakuTranslationKey(yaku.yaku), if (result.isYakuman) "" else yaku.han.toString())
+                            if (result.isYakuman) {
+                                WinSettlementDetailValue.Entries.Entry(
+                                    translationKey = yakuTranslationKey(yaku.yaku),
+                                    trailingTranslationKey = yakumanMultiplierTranslationKey(-yaku.han),
+                                    trailingTranslationArgument = (-yaku.han).takeIf { it !in 1..6 }?.toString(),
+                                )
+                            } else {
+                                WinSettlementDetailValue.Entries.Entry(yakuTranslationKey(yaku.yaku), yaku.han.toString())
+                            }
                         },
                     ),
                 ),
             )
             if (!result.isYakuman) {
                 add(WinSettlementDetailField(RIICHI_HAN_FU_FIELD, WinSettlementDetailValue.Text("settlement.mahjongcraft.han_fu", listOf(result.totalHan.toString(), result.totalFu.toString()))))
+            } else {
+                val multiplier = -result.totalHan
+                add(
+                    WinSettlementDetailField(
+                        RIICHI_YAKUMAN_TOTAL_FIELD,
+                        WinSettlementDetailValue.Text(
+                            yakumanMultiplierTranslationKey(multiplier),
+                            multiplier.takeIf { it !in 1..6 }?.let { listOf(it.toString()) }.orEmpty(),
+                        ),
+                    ),
+                )
             }
             add(WinSettlementDetailField(RIICHI_DORA_FIELD, WinSettlementDetailValue.Tiles(indicators?.first.orEmpty().map { it.id })))
             add(WinSettlementDetailField(RIICHI_URA_DORA_FIELD, WinSettlementDetailValue.Tiles(indicators?.second.orEmpty().map { it.id })))
@@ -160,8 +179,15 @@ object WinSettlementPresentationRequestFactory {
     const val GENERIC_TEMPLATE_KEY = "mahjongcraft:generic"
     const val RIICHI_YAKU_FIELD = "mahjongcraft:riichi_yaku"
     const val RIICHI_HAN_FU_FIELD = "mahjongcraft:riichi_han_fu"
+    const val RIICHI_YAKUMAN_TOTAL_FIELD = "mahjongcraft:riichi_yakuman_total"
     const val RIICHI_DORA_FIELD = "mahjongcraft:riichi_dora"
     const val RIICHI_URA_DORA_FIELD = "mahjongcraft:riichi_ura_dora"
+
+    private fun yakumanMultiplierTranslationKey(multiplier: Int): String = if (multiplier in 1..6) {
+        "mahjongcraft.game.score.yakuman_${multiplier}x"
+    } else {
+        "mahjongcraft.game.score.yakuman_nx"
+    }
 
     private val YAKU_TRANSLATION_PATHS = mapOf(
         YakuType.Dora to "dora",

@@ -198,5 +198,12 @@
   "settlement.mahjongcraft.score_ranking": "分數排行",
   "settlement.mahjongcraft.han": "%s 翻",
   "settlement.mahjongcraft.han_fu": "%s翻 %s符",
+  "mahjongcraft.game.score.yakuman_1x": "役滿",
+  "mahjongcraft.game.score.yakuman_2x": "雙倍役滿",
+  "mahjongcraft.game.score.yakuman_3x": "三倍役滿",
+  "mahjongcraft.game.score.yakuman_4x": "四倍役滿",
+  "mahjongcraft.game.score.yakuman_5x": "五倍役滿",
+  "mahjongcraft.game.score.yakuman_6x": "六倍役滿",
+  "mahjongcraft.game.score.yakuman_nx": "%s 倍役滿",
   "settlement.mahjongcraft.nagashi_mangan": "流局滿貫"
 }

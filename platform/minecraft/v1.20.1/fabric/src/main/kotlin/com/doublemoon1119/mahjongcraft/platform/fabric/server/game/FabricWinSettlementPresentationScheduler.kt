@@ -61,7 +61,14 @@ class FabricWinSettlementPresentationScheduler(
                         is WinSettlementDetailValue.Entries -> WinSettlementDetailSnapshot(
                             field.id,
                             WinSettlementPresentationEntity.DETAIL_ENTRIES,
-                            value.entries.flatMap { listOf(it.translationKey, it.trailingText) },
+                            value.entries.flatMap {
+                                listOf(
+                                    it.translationKey,
+                                    it.trailingText,
+                                    it.trailingTranslationKey.orEmpty(),
+                                    it.trailingTranslationArgument.orEmpty(),
+                                )
+                            },
                         )
                     }
                 },
@@ -98,14 +105,15 @@ class FabricWinSettlementPresentationScheduler(
         var winnerStart = 0L
         return buildList {
             winners.forEach { winner ->
-                val entries = winner.details.filter { it.type == WinSettlementPresentationEntity.DETAIL_ENTRIES }.sumOf { it.values.size / 2 }
+                val entries = winner.details.filter { it.type == WinSettlementPresentationEntity.DETAIL_ENTRIES }
+                    .sumOf { it.values.size / WinSettlementPresentationEntity.ENTRY_VALUE_COUNT }
                 reveal.sounds.forEach { cue ->
                     val anchorTick = when (cue.anchor) {
                         PresentationTimelineAnchor.PANEL_START -> 0L
                         PresentationTimelineAnchor.ENTRIES_START -> timing.initialFadeTicks.toLong()
                         PresentationTimelineAnchor.AFTER_ENTRIES -> timing.initialFadeTicks + entries.toLong() * timing.entryStaggerTicks
                         PresentationTimelineAnchor.SCORE_REVEAL -> timing.initialFadeTicks + entries.toLong() * timing.entryStaggerTicks +
-                            if (winner.details.any { it.id.endsWith(":riichi_han_fu") }) WinSettlementPresentationEntity.HAN_FU_REVEAL_TICKS else 0L
+                            if (winner.hasPostEntrySummary) WinSettlementPresentationEntity.HAN_FU_REVEAL_TICKS else 0L
                     }
                     add(WinSettlementSoundCueSnapshot(winnerStart + anchorTick + cue.offsetTicks, cue.soundId, cue.volume, cue.pitch))
                 }
@@ -139,4 +147,7 @@ class FabricWinSettlementPresentationScheduler(
     private companion object {
         const val STAGE_HEIGHT_OFFSET = 1.6
     }
+
+    private val WinSettlementWinnerSnapshot.hasPostEntrySummary: Boolean
+        get() = details.any { it.id.endsWith(":riichi_han_fu") || it.id.endsWith(":riichi_yakuman_total") }
 }

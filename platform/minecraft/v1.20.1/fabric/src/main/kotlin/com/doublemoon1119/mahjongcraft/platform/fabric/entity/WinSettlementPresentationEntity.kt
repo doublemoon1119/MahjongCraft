@@ -124,7 +124,7 @@ class WinSettlementPresentationEntity(
         var eventIndex = 0
         winners.forEachIndexed { winnerIndex, winner ->
             val start = winnerStartTick(winnerIndex)
-            val entries = winner.details.filter { it.type == DETAIL_ENTRIES }.sumOf { it.values.size / 2 }
+            val entries = winner.details.filter { it.type == DETAIL_ENTRIES }.sumOf { it.values.size / ENTRY_VALUE_COUNT }
             repeat(entries) { entryIndex ->
                 playOnce(
                     eventIndex++,
@@ -138,7 +138,7 @@ class WinSettlementPresentationEntity(
                         ).coerceAtMost(1.55f),
                 )
             }
-            if (winner.hasHanFu) {
+            if (winner.hasPostEntrySummary) {
                 playOnce(
                     eventIndex++,
                     start + revealTiming.initialFadeTicks + entries * revealTiming.entryStaggerTicks,
@@ -151,7 +151,7 @@ class WinSettlementPresentationEntity(
                         ).coerceAtMost(1.55f),
                 )
             }
-            val scoreTick = start + revealTiming.initialFadeTicks + (entries + if (winner.hasHanFu) 1 else 0) * revealTiming.entryStaggerTicks
+            val scoreTick = start + revealTiming.initialFadeTicks + (entries + if (winner.hasPostEntrySummary) 1 else 0) * revealTiming.entryStaggerTicks
             SettlementPresentationSoundSpec.TOTAL_SCORE_MELODY_PITCHES.forEachIndexed { noteIndex, pitch ->
                 playOnce(
                     eventIndex++,
@@ -281,19 +281,20 @@ class WinSettlementPresentationEntity(
         const val DETAIL_TEXT = "T"
         const val DETAIL_TILES = "L"
         const val DETAIL_ENTRIES = "E"
+        const val ENTRY_VALUE_COUNT = 4
         private const val F = '\u001f'
         private const val R = '\u001e'
         private const val L = '\u001d'
         private const val G = '\u001c'
 
         fun winnerDurationTicks(winner: WinSettlementWinnerSnapshot, timing: WinSettlementRevealTimingSnapshot): Long {
-            val entries = winner.details.filter { it.type == DETAIL_ENTRIES }.sumOf { it.values.size / 2 }
+            val entries = winner.details.filter { it.type == DETAIL_ENTRIES }.sumOf { it.values.size / ENTRY_VALUE_COUNT }
             return timing.initialFadeTicks + entries * timing.entryStaggerTicks +
-                (if (winner.hasHanFu) HAN_FU_REVEAL_TICKS else 0L) + timing.scoreRevealTicks + timing.readingTicks + TRANSITION_TICKS
+                (if (winner.hasPostEntrySummary) HAN_FU_REVEAL_TICKS else 0L) + timing.scoreRevealTicks + timing.readingTicks + TRANSITION_TICKS
         }
 
-        private val WinSettlementWinnerSnapshot.hasHanFu: Boolean
-            get() = details.any { it.id.endsWith(":riichi_han_fu") }
+        private val WinSettlementWinnerSnapshot.hasPostEntrySummary: Boolean
+            get() = details.any { it.id.endsWith(":riichi_han_fu") || it.id.endsWith(":riichi_yakuman_total") }
 
         fun durationTicks(winners: List<WinSettlementWinnerSnapshot>, timing: WinSettlementRevealTimingSnapshot): Long = winners
             .sumOf { winnerDurationTicks(it, timing) } + RANKING_TICKS + FADE_OUT_TICKS

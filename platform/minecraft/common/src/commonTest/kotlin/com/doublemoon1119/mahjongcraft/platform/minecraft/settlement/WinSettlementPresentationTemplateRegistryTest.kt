@@ -78,6 +78,10 @@ class WinSettlementPresentationTemplateRegistryTest {
         assertFailsWith<IllegalArgumentException> {
             PresentationLayout.Weighted(PresentationLayout.Spacer(), weight = 0f)
         }
+        assertEquals(
+            PresentationAlignment.CENTER,
+            PresentationLayout.RepeatEntries(PresentationFieldId("example:entries")).verticalAlignment,
+        )
     }
 
     @Test

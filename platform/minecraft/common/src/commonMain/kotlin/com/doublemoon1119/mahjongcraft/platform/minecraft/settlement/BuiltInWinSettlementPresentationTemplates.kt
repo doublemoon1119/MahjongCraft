@@ -128,6 +128,7 @@ fun WinSettlementPresentationTemplateRegistry.registerBuiltInWinSettlementTempla
 private fun WinSettlementPresentationTemplateRegistry.registerBuiltInRiichiWinSettlementTemplate() {
     val yaku = PresentationFieldId("${MinecraftModMetadata.MOD_ID}:riichi_yaku")
     val hanFu = PresentationFieldId("${MinecraftModMetadata.MOD_ID}:riichi_han_fu")
+    val yakumanTotal = PresentationFieldId("${MinecraftModMetadata.MOD_ID}:riichi_yakuman_total")
     val dora = PresentationFieldId("${MinecraftModMetadata.MOD_ID}:riichi_dora")
     val uraDora = PresentationFieldId("${MinecraftModMetadata.MOD_ID}:riichi_ura_dora")
     val panel = PresentationContainerStyle(
@@ -171,10 +172,11 @@ private fun WinSettlementPresentationTemplateRegistry.registerBuiltInRiichiWinSe
                         horizontalAnchor = PresentationAlignment.CENTER,
                     ),
                     PresentationLayout.Positioned(
-                        PresentationLayout.Animated(
-                            PresentationLayout.Text(hanFu, argb = 0xFFE5E5E5.toInt()),
-                            PresentationTimeline(PresentationTimelineAnchor.AFTER_ENTRIES, durationTicks = 6),
-                            listOf(PresentationAnimationEffect.Fade()),
+                        PresentationLayout.Row(
+                            listOf(
+                                postEntrySummary(hanFu, 0xFFE5E5E5.toInt()),
+                                postEntrySummary(yakumanTotal, 0xFFFFC247.toInt()),
+                            ),
                         ),
                         44f,
                         141f,
@@ -195,7 +197,7 @@ private fun WinSettlementPresentationTemplateRegistry.registerBuiltInRiichiWinSe
             ),
         ),
     )
-    listOf(yaku, hanFu).forEach { id ->
+    listOf(yaku, hanFu, yakumanTotal).forEach { id ->
         registerFieldProvider(id) { snapshot -> snapshot.extensionField(id) }
     }
     listOf(dora, uraDora).forEach { id ->
@@ -210,6 +212,15 @@ private fun WinSettlementPresentationTemplateRegistry.registerBuiltInRiichiWinSe
         }
     }
 }
+
+private fun postEntrySummary(fieldId: PresentationFieldId, argb: Int): PresentationLayout = PresentationLayout.IfPresent(
+    fieldId,
+    PresentationLayout.Animated(
+        PresentationLayout.Text(fieldId, argb = argb),
+        PresentationTimeline(PresentationTimelineAnchor.AFTER_ENTRIES, durationTicks = 6),
+        listOf(PresentationAnimationEffect.Fade()),
+    ),
+)
 
 private fun playerRelationship(): PresentationLayout = PresentationLayout.Row(
     children = listOf(

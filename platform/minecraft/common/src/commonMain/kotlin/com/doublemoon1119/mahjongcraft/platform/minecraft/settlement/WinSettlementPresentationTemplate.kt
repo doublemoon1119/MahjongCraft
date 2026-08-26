@@ -36,7 +36,12 @@ sealed interface PresentationValue {
     /** 可逐項揭曉的文字條目。 */
     data class EntryListValue(val entries: List<Entry>) : PresentationValue {
         /** 單一條目的本地化名稱與右側值。 */
-        data class Entry(val translationKey: String, val trailingText: String = "")
+        data class Entry(
+            val translationKey: String,
+            val trailingText: String = "",
+            val trailingTranslationKey: String? = null,
+            val trailingTranslationArgument: String? = null,
+        )
     }
 }
 
@@ -179,6 +184,7 @@ sealed interface PresentationLayout {
         val entriesPerColumn: Int = 4,
         val width: Float = 232f,
         val rowHeight: Float = 11f,
+        val verticalAlignment: PresentationAlignment = PresentationAlignment.CENTER,
     ) : PresentationLayout {
         init {
             require(entriesPerColumn > 0 && width > 0f && rowHeight > 0f)

@@ -117,7 +117,16 @@ class WinSettlementPresentationEntityRenderer(
                 WinSettlementPresentationEntity.DETAIL_TEXT -> PresentationValue.TextValue(detail.values.firstOrNull().orEmpty(), detail.values.drop(1))
                 WinSettlementPresentationEntity.DETAIL_TILES -> PresentationValue.TileListValue(detail.values)
                 WinSettlementPresentationEntity.DETAIL_ENTRIES -> PresentationValue.EntryListValue(
-                    detail.values.chunked(2).filter { it.size == 2 }.map { PresentationValue.EntryListValue.Entry(it[0], it[1]) },
+                    detail.values.chunked(WinSettlementPresentationEntity.ENTRY_VALUE_COUNT)
+                        .filter { it.size == WinSettlementPresentationEntity.ENTRY_VALUE_COUNT }
+                        .map {
+                            PresentationValue.EntryListValue.Entry(
+                                translationKey = it[0],
+                                trailingText = it[1],
+                                trailingTranslationKey = it[2].ifBlank { null },
+                                trailingTranslationArgument = it[3].ifBlank { null },
+                            )
+                        },
                 )
                 else -> return@mapNotNull null
             }
@@ -295,23 +304,28 @@ class WinSettlementPresentationEntityRenderer(
                 val reveal = ((local - snapshot.initialFadeTicks - index * snapshot.entryStaggerTicks) / 6.0).coerceIn(0.0, 1.0).toFloat()
                 if (reveal <= MIN_VISIBLE_ALPHA) return@forEachIndexed
                 val entryScale = 0.85f
+                val emphasisScale = if (entry.trailingTranslationKey == null) 1f else lerp(1.08f, 1f, reveal)
                 val count = (resolve(layout, snapshot) as? PresentationValue.EntryListValue)?.entries?.size ?: 0
                 val columns = ((count + layout.entriesPerColumn - 1) / layout.entriesPerColumn).coerceAtLeast(1)
                 val columnWidth = layout.width / columns
                 val column = index / layout.entriesPerColumn
                 val row = index % layout.entriesPerColumn
-                drawFitted(
-                    Text.translatable(entry.translationKey),
-                    x + column * columnWidth,
-                    y + row * layout.rowHeight,
-                    columnWidth - 44f,
-                    color(0xFFFFFF, alpha * reveal),
-                    entryScale,
-                    matrices,
-                    consumers,
-                )
-                val trailing = entry.trailingText.takeIf(String::isNotBlank)?.let { Text.translatable("settlement.mahjongcraft.han", it) }
-                if (trailing != null) draw(trailing, x + (column + 1) * columnWidth - 5f, y + row * layout.rowHeight, Align.RIGHT, color(0xFFE08A, alpha * reveal), entryScale, matrices, consumers)
+                val rowX = x + column * columnWidth
+                val rowY = y + row * layout.rowHeight
+                val title = Text.translatable(entry.translationKey)
+                val titleScale = fittedTextScale(title, columnWidth - 44f, entryScale)
+                val titleY = rowY + crossAxisOffset(layout.rowHeight, textRenderer.fontHeight * titleScale, layout.verticalAlignment)
+                val trailing = entry.trailingTranslationKey?.let { key ->
+                    entry.trailingTranslationArgument?.let { Text.translatable(key, it) } ?: Text.translatable(key)
+                } ?: entry.trailingText.takeIf(String::isNotBlank)?.let { Text.translatable("settlement.mahjongcraft.han", it) }
+                val trailingY = rowY + crossAxisOffset(layout.rowHeight, textRenderer.fontHeight * entryScale, layout.verticalAlignment)
+                matrices.push()
+                matrices.translate(rowX, rowY + layout.rowHeight / 2f, 0f)
+                matrices.scale(emphasisScale, emphasisScale, 1f)
+                matrices.translate(-rowX, -(rowY + layout.rowHeight / 2f), 0f)
+                draw(title, rowX, titleY, Align.LEFT, color(if (entry.trailingTranslationKey == null) 0xFFFFFF else 0xFFD45A, alpha * reveal), titleScale, matrices, consumers)
+                if (trailing != null) draw(trailing, x + (column + 1) * columnWidth - 5f, trailingY, Align.RIGHT, color(if (entry.trailingTranslationKey == null) 0xFFE08A else 0xFF8C42, alpha * reveal), entryScale, matrices, consumers)
+                matrices.pop()
             }
             is PresentationLayout.Row -> {
                 renderContainer(layout.style, x, y, size, alpha, matrices, consumers)
@@ -421,7 +435,7 @@ class WinSettlementPresentationEntityRenderer(
             PresentationTimelineAnchor.AFTER_ENTRIES -> snapshot.initialFadeTicks + entries * snapshot.entryStaggerTicks
             PresentationTimelineAnchor.SCORE_REVEAL -> {
                 snapshot.initialFadeTicks + entries * snapshot.entryStaggerTicks +
-                    if (snapshot.extensionFields.any { it.id.value.endsWith(":riichi_han_fu") }) {
+                    if (snapshot.extensionFields.any { it.id.value.endsWith(":riichi_han_fu") || it.id.value.endsWith(":riichi_yakuman_total") }) {
                         WinSettlementPresentationEntity.HAN_FU_REVEAL_TICKS.toInt()
                     } else {
                         0
@@ -711,7 +725,8 @@ class WinSettlementPresentationEntityRenderer(
     }
 
     private fun renderEntries(detail: WinSettlementDetailSnapshot?, local: Double, panelAlpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider, startY: Float) {
-        val pairs = detail?.values.orEmpty().chunked(2).filter { it.size == 2 }
+        val pairs = detail?.values.orEmpty().chunked(WinSettlementPresentationEntity.ENTRY_VALUE_COUNT)
+            .filter { it.size == WinSettlementPresentationEntity.ENTRY_VALUE_COUNT }
         val columnCount = ((pairs.size + 3) / 4).coerceAtLeast(1)
         val columnWidth = ENTRY_AREA_WIDTH / columnCount
         pairs.forEachIndexed { index, pair ->
@@ -721,7 +736,9 @@ class WinSettlementPresentationEntityRenderer(
             val row = index % 4
             val x = -ENTRY_AREA_WIDTH / 2f + column * columnWidth
             val y = startY + row * 11f
-            val trailing = pair[1].takeIf(String::isNotBlank)?.let { Text.translatable("settlement.mahjongcraft.han", it) }
+            val trailing = pair[2].takeIf(String::isNotBlank)?.let { key ->
+                pair[3].takeIf(String::isNotBlank)?.let { Text.translatable(key, it) } ?: Text.translatable(key)
+            } ?: pair[1].takeIf(String::isNotBlank)?.let { Text.translatable("settlement.mahjongcraft.han", it) }
             val trailingWidth = trailing?.let(textRenderer::getWidth)?.times(0.85f) ?: 0f
             drawFitted(
                 Text.translatable(pair[0]),
@@ -733,7 +750,7 @@ class WinSettlementPresentationEntityRenderer(
                 matrices,
                 consumers,
             )
-            if (pair[1].isNotBlank()) {
+            if (trailing != null) {
                 draw(requireNotNull(trailing), x + columnWidth - ENTRY_COLUMN_PADDING, y, Align.RIGHT, color(0xFFE08A, panelAlpha * reveal), 0.85f, matrices, consumers)
             }
         }
@@ -926,8 +943,12 @@ class WinSettlementPresentationEntityRenderer(
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
     ) {
+        draw(text, x, y, Align.LEFT, color, fittedTextScale(text, maxWidth, preferredScale), matrices, consumers)
+    }
+
+    private fun fittedTextScale(text: Text, maxWidth: Float, preferredScale: Float): Float {
         val naturalWidth = textRenderer.getWidth(text).toFloat().coerceAtLeast(1f)
-        draw(text, x, y, Align.LEFT, color, minOf(preferredScale, maxWidth.coerceAtLeast(1f) / naturalWidth), matrices, consumers)
+        return minOf(preferredScale, maxWidth.coerceAtLeast(1f) / naturalWidth)
     }
 
     private fun phaseAlpha(value: Double, inStart: Double, inEnd: Double, outStart: Double, outEnd: Double): Float = when {
