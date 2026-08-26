@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
@@ -22,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.Fabric
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricExhaustiveDrawSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricMatchSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationShowcaseScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSettlementPresentationScheduler
@@ -111,6 +113,7 @@ class FabricGamePresentationPublisher(
     private val showcaseScheduler: FabricWinCelebrationShowcaseScheduler,
     private val exhaustiveDrawSettlementScheduler: FabricExhaustiveDrawSettlementPresentationScheduler,
     private val winSettlementScheduler: FabricWinSettlementPresentationScheduler,
+    private val matchSettlementScheduler: FabricMatchSettlementPresentationScheduler,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
@@ -179,6 +182,43 @@ class FabricGamePresentationPublisher(
                     resolved.table.extendPresentationUntil(endGameTime)
                     logger.debug("Exhaustive draw settlement presentation created gameId={} endGameTime={}", gameId, endGameTime)
                 }
+            } finally {
+                busyTracker.clearPending(gameId)
+            }
+        }
+    }
+
+    override fun publishMatchSettlement(gameId: Uuid, request: MatchSettlementPresentationRequest) {
+        logger.debug(
+            "Match settlement gameId={} template={} players={}",
+            gameId,
+            request.templateKey,
+            request.players.map { player ->
+                mapOf(
+                    "playerId" to player.playerId,
+                    "seatIndex" to player.seatIndex,
+                    "initialSeat" to player.initialSeat,
+                    "finalScore" to player.finalScore,
+                    "finalRank" to player.finalRank,
+                )
+            },
+        )
+        if (serverHolder.current() == null) return
+        busyTracker.markPending(gameId)
+        scope.launch(dispatchers.main) {
+            try {
+                val resolved = resolveTableContext(gameId, "publishMatchSettlement") ?: return@launch
+                val end = matchSettlementScheduler.schedule(
+                    world = resolved.world,
+                    tableId = gameId,
+                    controllerPos = BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
+                    placement = MahjongTileTableLayout.showcaseStagePlacement(resolved.location.x, resolved.location.y, resolved.location.z),
+                    earliestStartGameTime = resolved.table.presentationBusyUntilGameTime,
+                    request = request,
+                )
+                if (end != null) resolved.table.extendPresentationUntil(end)
+            } catch (cause: Exception) {
+                logger.warn("Failed to publish match settlement for gameId={}", gameId, cause)
             } finally {
                 busyTracker.clearPending(gameId)
             }

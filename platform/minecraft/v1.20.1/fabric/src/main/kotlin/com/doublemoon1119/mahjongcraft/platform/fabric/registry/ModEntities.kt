@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffectEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
@@ -49,6 +50,10 @@ object ModEntities {
 
     /** 胡牌詳情與最終排行舞台 entity type。 */
     lateinit var winSettlementPresentation: EntityType<WinSettlementPresentationEntity>
+        private set
+
+    /** 終局最終排行舞台 entity type。 */
+    lateinit var matchSettlementPresentation: EntityType<MatchSettlementPresentationEntity>
         private set
 
     /** 註冊不自然生成的輕量麻將牌 entity。 */
@@ -128,6 +133,16 @@ object ModEntities {
             Identifier(MinecraftModMetadata.MOD_ID, "win_settlement_presentation"),
             FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::WinSettlementPresentationEntity)
                 .dimensions(EntityDimensions.fixed(WinSettlementPresentationEntity.WIDTH, WinSettlementPresentationEntity.HEIGHT))
+                .trackRangeBlocks(32)
+                .trackedUpdateRate(1)
+                .fireImmune()
+                .build(),
+        )
+        matchSettlementPresentation = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier(MinecraftModMetadata.MOD_ID, "match_settlement_presentation"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MatchSettlementPresentationEntity)
+                .dimensions(EntityDimensions.fixed(MatchSettlementPresentationEntity.WIDTH, MatchSettlementPresentationEntity.HEIGHT))
                 .trackRangeBlocks(32)
                 .trackedUpdateRate(1)
                 .fireImmune()

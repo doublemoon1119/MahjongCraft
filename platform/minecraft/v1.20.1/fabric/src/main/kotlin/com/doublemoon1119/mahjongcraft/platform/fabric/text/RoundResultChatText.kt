@@ -12,3 +12,9 @@ fun buildRoundResultChatText(actionText: Text, details: Text): MutableText = Tex
     .translatable(MinecraftMessageKeys.ROUND_RESULT_BROADCAST, actionText)
     .append(Text.literal(" "))
     .append(bracketedInteractiveLabel(Text.translatable(MinecraftMessageKeys.ROUND_RESULT_DETAILS_LABEL), details))
+
+/** 建立正式的單行 match-result 訊息，詳細最終排行收進中括號 hover 標籤。 */
+fun buildMatchResultChatText(details: Text): MutableText = Text
+    .translatable(MinecraftMessageKeys.MATCH_RESULT_BROADCAST)
+    .append(Text.literal(" "))
+    .append(bracketedInteractiveLabel(Text.translatable(MinecraftMessageKeys.ROUND_RESULT_DETAILS_LABEL), details))

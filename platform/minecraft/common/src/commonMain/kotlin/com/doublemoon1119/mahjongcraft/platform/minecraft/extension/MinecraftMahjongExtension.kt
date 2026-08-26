@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDispl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
@@ -84,4 +85,7 @@ interface MinecraftMahjongExtension {
 
     /** 登記第三方胡牌結算欄位 provider 與完整宣告式模板。 */
     fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistry) = Unit
+
+    /** 登記第三方終局排行面板模板。 */
+    fun registerMatchSettlementPresentationTemplates(registry: MatchSettlementPresentationTemplateRegistry) = Unit
 }

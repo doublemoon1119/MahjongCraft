@@ -10,8 +10,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.registerBuiltInRuleModuleDisplayNames
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInMatchSettlementTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInRiichiReasons
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInWinSettlementTemplates
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
@@ -56,6 +59,8 @@ object MinecraftMahjongExtensionRegistrar {
             ExhaustiveDrawReasonDisplayNameRegistryImpl(),
         winSettlementTemplateRegistry: WinSettlementPresentationTemplateRegistry =
             WinSettlementPresentationTemplateRegistryImpl(),
+        matchSettlementTemplateRegistry: MatchSettlementPresentationTemplateRegistry =
+            MatchSettlementPresentationTemplateRegistryImpl(),
     ): MinecraftMahjongExtensionRegistrationResult {
         tileAssetRegistry.registerBuiltInTileAssets()
         aiStrategyDisplayNameRegistry.registerBuiltInAiStrategyDisplayNames()
@@ -66,6 +71,7 @@ object MinecraftMahjongExtensionRegistrar {
         showcaseRegistry.registerBuiltInWinCelebrationShowcases()
         exhaustiveDrawReasonDisplayNameRegistry.registerBuiltInRiichiReasons()
         winSettlementTemplateRegistry.registerBuiltInWinSettlementTemplates()
+        matchSettlementTemplateRegistry.registerBuiltInMatchSettlementTemplate()
 
         val thirdPartyAssetKeys = mutableListOf<String>()
         val thirdPartyAiStrategyKeys = mutableListOf<String>()
@@ -107,6 +113,7 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerGameActionDisplayNames(recordingGameActionDisplayNameRegistry)
                 extension.registerExhaustiveDrawReasonDisplayNames(exhaustiveDrawReasonDisplayNameRegistry)
                 extension.registerWinSettlementPresentationTemplates(winSettlementTemplateRegistry)
+                extension.registerMatchSettlementPresentationTemplates(matchSettlementTemplateRegistry)
             } catch (cause: Exception) {
                 throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
             }
@@ -122,6 +129,7 @@ object MinecraftMahjongExtensionRegistrar {
         gameActionDisplayNameRegistry.freeze()
         exhaustiveDrawReasonDisplayNameRegistry.freeze()
         winSettlementTemplateRegistry.freeze()
+        matchSettlementTemplateRegistry.freeze()
         return MinecraftMahjongExtensionRegistrationResult(
             thirdPartyAssetKeys,
             thirdPartyAiStrategyKeys,

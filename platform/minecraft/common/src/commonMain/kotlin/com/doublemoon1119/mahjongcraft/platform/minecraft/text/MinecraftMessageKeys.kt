@@ -304,6 +304,12 @@ object MinecraftMessageKeys {
      */
     const val MATCH_RESULT_BROADCAST = PREFIX + "match_result_broadcast"
 
+    /** 終局結算面板的標題，不帶參數。 */
+    const val MATCH_SETTLEMENT_TITLE = PREFIX + "match_settlement.title"
+
+    /** 終局頒獎面板的名次文字，帶一個名次參數（`%s`）。 */
+    const val MATCH_SETTLEMENT_RANK = PREFIX + "match_settlement.rank"
+
     /** 對局結束排名清單內每一行，帶名次、玩家名稱、最終分數三個參數（三個 `%s`）。 */
     const val RANKING_LINE = PREFIX + "ranking_line"
 
@@ -497,6 +503,8 @@ object MinecraftMessageKeys {
         EXHAUSTIVE_DRAW_SETTLEMENT_WIND_NORTH,
         GAME_ACTION_MATCH_ENDED,
         MATCH_RESULT_BROADCAST,
+        MATCH_SETTLEMENT_TITLE,
+        MATCH_SETTLEMENT_RANK,
         RANKING_LINE,
         GAME_ACTION_DICE_ROLLED,
         DICE_ROLLED_BROADCAST,

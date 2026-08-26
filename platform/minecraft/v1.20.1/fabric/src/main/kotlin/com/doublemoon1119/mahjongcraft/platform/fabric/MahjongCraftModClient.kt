@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongRoun
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongScoringStickEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MatchSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationEffectEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationShowcaseEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinSettlementPresentationEntityRenderer
@@ -33,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
@@ -83,6 +85,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val showcaseRegistry = koin.get<WinCelebrationShowcaseRegistry>()
         val exhaustiveDrawReasonDisplayNames = koin.get<ExhaustiveDrawReasonDisplayNameRegistry>()
         val winSettlementTemplates = koin.get<WinSettlementPresentationTemplateRegistry>()
+        val matchSettlementTemplates = koin.get<MatchSettlementPresentationTemplateRegistry>()
         MahjongChannels.roomUpdate.registerClientReceiver(json, stateStore::apply)
         MahjongChannels.gameUpdate.registerClientReceiver(json) { payload ->
             val previousSnapshot = stateStore.gameSnapshot
@@ -127,6 +130,9 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         EntityRendererRegistry.register(ModEntities.winSettlementPresentation) { context ->
             WinSettlementPresentationEntityRenderer(context, winSettlementTemplates)
+        }
+        EntityRendererRegistry.register(ModEntities.matchSettlementPresentation) { context ->
+            MatchSettlementPresentationEntityRenderer(context, matchSettlementTemplates)
         }
         EntityRendererRegistry.register(ModEntities.mahjongTile) { context ->
             MahjongTileEntityRenderer(context, stateStore, tileAssetRegistry, tileLabelRegistry, clientConfigStore, moduleRegistry)

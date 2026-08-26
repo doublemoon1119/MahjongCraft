@@ -204,7 +204,7 @@ class GameEventChatNotifierTest {
 
         val message = buildMatchResultChatMessage(GameAction.MatchEnded, snapshot, module)
 
-        val rankingLines = message?.siblings
+        val rankingLines = message?.hoverDetails()?.siblings
             .orEmpty()
             .mapNotNull { it.content as? TranslatableTextContent }
             .filter { it.key == "mahjongcraft.message.ranking_line" }

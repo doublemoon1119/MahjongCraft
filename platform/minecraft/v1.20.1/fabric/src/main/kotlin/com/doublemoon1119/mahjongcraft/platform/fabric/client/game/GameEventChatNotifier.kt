@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildMatchResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
@@ -105,9 +106,9 @@ private fun rankChangeSymbol(previousRank: Int, newRank: Int): String = when {
 fun buildMatchResultChatMessage(action: GameAction, newSnapshot: TableStateSnapshot, module: MahjongRuleModule<*>): Text? {
     if (action !is GameAction.MatchEnded) return null
 
-    val message: MutableText = Text.translatable(MinecraftMessageKeys.MATCH_RESULT_BROADCAST)
-    appendRankingLines(message, newSnapshot.players.sortedWith(module.compareForMatchRanking()))
-    return message
+    val details = Text.empty()
+    appendRankingLines(details, newSnapshot.players.sortedWith(module.compareForMatchRanking()))
+    return buildMatchResultChatText(details)
 }
 
 /**

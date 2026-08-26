@@ -9,6 +9,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSett
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPlayerPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
@@ -33,6 +35,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCine
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildMatchResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
@@ -114,6 +117,7 @@ class FabricDebugAnimationCommand(
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
     private val exhaustiveDrawSettlementScheduler: FabricExhaustiveDrawSettlementPresentationScheduler,
     private val winSettlementScheduler: FabricWinSettlementPresentationScheduler,
+    private val matchSettlementScheduler: FabricMatchSettlementPresentationScheduler,
     private val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val serverConfigManager: FabricServerConfigManager,
@@ -248,6 +252,10 @@ class FabricDebugAnimationCommand(
                                     literal(WIN_SETTLEMENT_SUBCOMMAND)
                                         .executes { context -> previewWinSettlementHoveredText(context.source) },
                                 )
+                                .then(
+                                    literal(MATCH_SETTLEMENT_SUBCOMMAND)
+                                        .executes { context -> previewMatchSettlementHoveredText(context.source) },
+                                )
                                 .then(literal(GAME_CREATED_LOCATION_ARGUMENT).executes { context -> previewGameCreatedLocationHoveredText(context.source) })
                                 .then(
                                     literal(GAME_CONFIG_ARGUMENT)
@@ -275,6 +283,19 @@ class FabricDebugAnimationCommand(
                                 )
                                 .then(literal(YAKUMAN_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.YAKUMAN, 1) })
                                 .then(literal(NAGASHI_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.NAGASHI, 1) }),
+                        )
+                        .then(
+                            literal(MATCH_SETTLEMENT_SUBCOMMAND)
+                                .executes { context -> previewMatchSettlement(context.source, 4) }
+                                .then(
+                                    argument(PLAYER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 4))
+                                        .executes { context ->
+                                            previewMatchSettlement(
+                                                context.source,
+                                                IntegerArgumentType.getInteger(context, PLAYER_COUNT_ARGUMENT),
+                                            )
+                                        },
+                                ),
                         )
                         .then(
                             literal(MELD_SUBCOMMAND)
@@ -555,6 +576,49 @@ class FabricDebugAnimationCommand(
             { buildRoundResultChatText(Text.translatable("settlement.mahjongcraft.ron"), details) },
             false,
         )
+        return COMMAND_SUCCESS
+    }
+
+    /** `hovered_text match_settlement`：以正式 match-result builder 預覽最終排行 hover。 */
+    private fun previewMatchSettlementHoveredText(source: ServerCommandSource): Int {
+        val details = Text.empty()
+        listOf("PlayerLongName123" to "120000", "AI-debug" to "45000", "PlayerC" to "25000", "PlayerD" to "-12000")
+            .forEachIndexed { index, (name, score) ->
+                if (index > 0) details.append(Text.literal("\n"))
+                details.append(Text.translatable(MinecraftMessageKeys.RANKING_LINE, (index + 1).toString(), name, score))
+            }
+        source.sendFeedback({ buildMatchResultChatText(details) }, false)
+        return COMMAND_SUCCESS
+    }
+
+    /** 走正式 scheduler 預覽末位至第一名的終局揭曉。 */
+    private fun previewMatchSettlement(source: ServerCommandSource, playerCount: Int): Int {
+        val player = source.player ?: return COMMAND_FAILURE
+        val world = player.serverWorld
+        val layout = virtualTableLayout(player.blockX, player.blockY, player.blockZ, player.horizontalFacing.toMahjongTableFacing())
+        val scores = listOf(120_000, 45_000, 25_000, -12_000).take(playerCount)
+        val playerIds = List(playerCount) { index -> if (index == 0) player.uuid.toKotlinUuid() else Uuid.random() }
+        val request = MatchSettlementPresentationRequest(
+            players = List(playerCount) { seatIndex ->
+                MatchSettlementPlayerPresentation(
+                    playerId = playerIds[seatIndex],
+                    seatIndex = seatIndex,
+                    isAi = seatIndex != 0,
+                    initialSeat = Wind.entries[seatIndex],
+                    finalScore = scores[seatIndex],
+                    finalRank = seatIndex + 1,
+                )
+            },
+        )
+        val end = matchSettlementScheduler.schedule(
+            world = world,
+            tableId = Uuid.random(),
+            controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
+            placement = layout.showcaseStagePlacement(),
+            earliestStartGameTime = world.time,
+            request = request,
+        ) ?: return COMMAND_FAILURE
+        source.sendFeedback({ Text.literal("Match settlement preview active until game time $end") }, false)
         return COMMAND_SUCCESS
     }
 
@@ -1118,6 +1182,7 @@ class FabricDebugAnimationCommand(
         const val MELD_SUBCOMMAND: String = "meld"
         const val EXHAUSTIVE_DRAW_SETTLEMENT_SUBCOMMAND: String = "exhaustive_draw_settlement"
         const val WIN_SETTLEMENT_SUBCOMMAND: String = "win_settlement"
+        const val MATCH_SETTLEMENT_SUBCOMMAND: String = "match_settlement"
         const val HOVERED_TEXT_SUBCOMMAND: String = "hovered_text"
         const val EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT: String = "exhaustive_draw_settlement"
         const val GAME_CREATED_LOCATION_ARGUMENT: String = "game_created_location"

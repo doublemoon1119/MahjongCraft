@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
@@ -308,7 +309,8 @@ class MahjongAutoDrawServiceTest {
     }
 
     /**
-     * 迴歸測試：驗證對局結束後，桌子真的從 Game 轉回 Room（不是只標記 [Game.isMatchOver]）——
+     * 迴歸測試：驗證對局結束後先停在可持久化的終局呈現邊界，之後桌子真的從 Game
+     * 轉回 Room（不是只標記 [Game.isMatchOver]）——
      * 兩者共用同一個 [AuthoritativeStateStore]，用來驗證 `ReturnToRoomUseCase` 真的接得到
      * `GameFlowCoordinator` 銜接的呼叫，而不是像 `GameFlowCoordinatorTest` 那樣用互不相通的
      * 假物件（那邊只驗證編排時機，不驗證轉移本身）。
@@ -340,6 +342,12 @@ class MahjongAutoDrawServiceTest {
         fixtures.gameRepo.updateGame(gameId) { game -> game!!.copy(hostId = hostId) to Unit }
 
         fixtures.coordinator.driveAutomatedPlayers(gameId)
+
+        val settledGame = fixtures.store.getGame(gameId)
+        assertNotNull(settledGame, "Game must remain available while the match settlement presentation is pending.")
+        assertTrue(settledGame.isMatchOver)
+        assertEquals(PendingGameTransition.ReturnToRoom, settledGame.pendingTransition)
+        assertTrue(fixtures.coordinator.resumePendingGameTransition(gameId))
 
         assertNull(fixtures.store.getGame(gameId), "Game record must be removed once the match ends.")
         val room = fixtures.store.getRoom(gameId)
