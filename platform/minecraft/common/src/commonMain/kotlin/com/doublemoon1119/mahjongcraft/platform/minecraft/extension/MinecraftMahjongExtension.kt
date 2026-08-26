@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDispl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -80,4 +81,7 @@ interface MinecraftMahjongExtension {
 
     /** 登記第三方宣告式胡牌 showcase 定義。 */
     fun registerWinCelebrationShowcases(registry: WinCelebrationShowcaseRegistry) = Unit
+
+    /** 登記第三方胡牌結算欄位 provider 與完整宣告式模板。 */
+    fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistry) = Unit
 }

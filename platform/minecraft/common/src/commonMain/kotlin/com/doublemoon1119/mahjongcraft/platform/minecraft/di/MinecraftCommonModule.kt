@@ -6,6 +6,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDispl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
@@ -20,6 +22,10 @@ import org.koin.core.annotation.Single
 /** Minecraft loader 與版本無關、client／server 共用的 Koin 定義。 */
 @Module
 class MinecraftCommonModule {
+    /** 建立供內建與第三方 extension 登記的胡牌結算模板 registry。 */
+    @Single
+    fun provideWinSettlementPresentationTemplateRegistry(): WinSettlementPresentationTemplateRegistry = WinSettlementPresentationTemplateRegistryImpl()
+
     /** 建立供內建與第三方 extension 登記的流局原因名稱 registry。 */
     @Single
     fun provideExhaustiveDrawReasonDisplayNameRegistry(): ExhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl()
