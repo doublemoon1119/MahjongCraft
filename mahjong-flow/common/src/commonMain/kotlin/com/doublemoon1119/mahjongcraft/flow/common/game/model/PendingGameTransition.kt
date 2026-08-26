@@ -10,12 +10,6 @@ sealed interface PendingGameTransition {
     /** 本局已結算，待呈現結束後進入下一局或判定終局。 */
     data object AdvanceRound : PendingGameTransition
 
-    /** 整場對局已結束，待呈現結束後返回房間。 */
-    /**
-     * 整場結束後待回房的持久化意圖。
-     *
-     * TODO: 未來流程為 `ExhaustiveDrawSettlementPresentationEntity → AdvanceRound → MatchSettlementPresentationEntity
-     * → ReturnToRoom`；match-over 展示完成前不得消費此 transition。
-     */
+    /** 整場對局已結束，待呈現結束後返回房間的持久化意圖。 */
     data object ReturnToRoom : PendingGameTransition
 }
