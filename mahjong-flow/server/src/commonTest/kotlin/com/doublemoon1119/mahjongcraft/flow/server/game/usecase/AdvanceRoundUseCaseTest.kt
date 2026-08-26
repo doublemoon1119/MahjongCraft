@@ -262,6 +262,16 @@ class AdvanceRoundUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val advanceResult = result.value
         assertEquals(true, advanceResult.isMatchOver)
+        val matchSettlement = assertNotNull(fixtures.presentationPublisher.getPublishedMatchSettlement(gameId))
+        assertEquals(advanceResult.tableState.players.size, matchSettlement.players.size)
+        assertEquals(
+            advanceResult.tableState.players.map { it.score },
+            matchSettlement.players.map { it.finalScore },
+        )
+        assertEquals(
+            (1..advanceResult.tableState.players.size).toList(),
+            matchSettlement.players.map { it.finalRank }.sorted(),
+        )
         assertEquals(
             table,
             advanceResult.tableState,

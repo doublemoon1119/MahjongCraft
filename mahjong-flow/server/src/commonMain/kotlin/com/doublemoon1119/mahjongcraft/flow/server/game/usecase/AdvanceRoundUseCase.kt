@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPlayerPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
@@ -184,6 +186,25 @@ class AdvanceRoundUseCase(
             newState.players.forEach { player ->
                 eventPublisher.publish(gameId, player.id, lastDealerId, GameAction.MatchEnded)
             }
+            val presentationModule = moduleRegistry.getModule(newState.config)
+            val finalRankById = newState.players.sortedWith(presentationModule.compareForMatchRanking())
+                .mapIndexed { index, player -> player.id to index + 1 }
+                .toMap()
+            presentationPublisher.publishMatchSettlement(
+                gameId,
+                MatchSettlementPresentationRequest(
+                    players = newState.players.mapIndexed { seatIndex, player ->
+                        MatchSettlementPlayerPresentation(
+                            playerId = player.id,
+                            seatIndex = seatIndex,
+                            isAi = player.isAi,
+                            initialSeat = player.initialSeat,
+                            finalScore = player.score,
+                            finalRank = finalRankById.getValue(player.id),
+                        )
+                    },
+                ),
+            )
             return Outcome.Success(result)
         }
 

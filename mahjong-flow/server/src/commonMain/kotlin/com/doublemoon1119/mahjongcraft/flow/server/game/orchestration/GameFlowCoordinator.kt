@@ -220,17 +220,10 @@ class GameFlowCoordinator(
             val transition = gameRepository.getGame(gameId)?.pendingTransition ?: return false
             when (transition) {
                 PendingGameTransition.AdvanceRound -> {
-                    val result = advanceRoundUseCase(gameId)
-                    if (result is Outcome.Success && result.value.isMatchOver) {
-                        // TODO: 導入 MatchSettlementPresentationEntity 後，流程應為：
-                        // ExhaustiveDrawSettlementPresentationEntity → AdvanceRound → 判定 Match Over
-                        // → MatchSettlementPresentationEntity → ReturnToRoom。整場結算展示結束前不可立即回房。
-                        returnToRoomUseCase(gameId)
-                    }
+                    advanceRoundUseCase(gameId)
                 }
 
                 PendingGameTransition.ReturnToRoom -> {
-                    // TODO: 未來須先等待 MatchSettlementPresentationEntity 完成，再執行 ReturnToRoom。
                     returnToRoomUseCase(gameId)
                 }
             }

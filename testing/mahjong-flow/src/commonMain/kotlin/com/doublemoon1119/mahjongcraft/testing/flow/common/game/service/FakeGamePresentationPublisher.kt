@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.testing.flow.common.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
@@ -16,6 +17,9 @@ import kotlin.uuid.Uuid
  * 正確觸發呈現。
  */
 class FakeGamePresentationPublisher : GamePresentationPublisher {
+    /** 依對局 Uuid 紀錄最後一次終局結算呈現。 */
+    private val matchSettlements = mutableMapOf<Uuid, MatchSettlementPresentationRequest>()
+
     /** 依對局 Uuid 紀錄最後一次統一流局結算呈現。 */
     private val exhaustiveDrawSettlements = mutableMapOf<Uuid, ExhaustiveDrawSettlementPresentationRequest>()
 
@@ -63,6 +67,10 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     override fun publishExhaustiveDrawSettlement(gameId: Uuid, request: ExhaustiveDrawSettlementPresentationRequest) {
         exhaustiveDrawSettlements[gameId] = request
+    }
+
+    override fun publishMatchSettlement(gameId: Uuid, request: MatchSettlementPresentationRequest) {
+        matchSettlements[gameId] = request
     }
 
     override fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int) {
@@ -202,6 +210,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 取得指定對局最後一次統一流局結算呈現。 */
     fun getPublishedExhaustiveDrawSettlement(gameId: Uuid): ExhaustiveDrawSettlementPresentationRequest? = exhaustiveDrawSettlements[gameId]
+
+    /** 取得指定對局最後一次終局結算呈現。 */
+    fun getPublishedMatchSettlement(gameId: Uuid): MatchSettlementPresentationRequest? = matchSettlements[gameId]
 }
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishDiceRoll] 隨附桌況資料。 */

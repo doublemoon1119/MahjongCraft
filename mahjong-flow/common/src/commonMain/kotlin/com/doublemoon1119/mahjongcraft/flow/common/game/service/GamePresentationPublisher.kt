@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -70,6 +71,9 @@ interface GamePresentationPublisher {
      * 預設 no-op，讓沒有世界呈現能力的平台仍能只依 chat／GUI 顯示權威結算結果。
      */
     fun publishExhaustiveDrawSettlement(gameId: Uuid, request: ExhaustiveDrawSettlementPresentationRequest) = Unit
+
+    /** 通知平台在整場對局結束後顯示權威最終排行，完成後才可返回房間。 */
+    fun publishMatchSettlement(gameId: Uuid, request: MatchSettlementPresentationRequest) = Unit
 
     /**
      * 通知平台呈現層本局權威擲骰結果。
