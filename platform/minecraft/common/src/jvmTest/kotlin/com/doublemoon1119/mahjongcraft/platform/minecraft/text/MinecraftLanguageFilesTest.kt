@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -16,6 +17,12 @@ class MinecraftLanguageFilesTest {
 
     /** MahjongCraft 玩家訊息 translation key 的命名空間前綴。 */
     private val messagePrefix = MinecraftModMetadata.MOD_ID + ".message."
+
+    /** MahjongCraft 胡牌結算 translation key 的命名空間前綴。 */
+    private val settlementPrefix = MinecraftModMetadata.MOD_ID + ".settlement."
+
+    /** MahjongCraft 役滿 showcase translation key 的命名空間前綴。 */
+    private val showcasePrefix = MinecraftModMetadata.MOD_ID + ".showcase."
 
     /** 驗證所有語系檔具有相同 key，且每個翻譯都是非空字串。 */
     @Test
@@ -43,6 +50,34 @@ class MinecraftLanguageFilesTest {
                 MinecraftMessageKeys.ALL,
                 messageKeys,
                 "$locale message keys do not match the production message schema",
+            )
+        }
+    }
+
+    /** 驗證語系檔中的胡牌結算 key 與呈現協定定義完全一致。 */
+    @Test
+    fun `language settlement keys match the production settlement key schema`() {
+        locales.forEach { locale ->
+            val settlementKeys = loadTranslations(locale).keys.filterTo(mutableSetOf()) { it.startsWith(settlementPrefix) }
+
+            assertEquals(
+                WinSettlementTranslationKeys.ALL,
+                settlementKeys,
+                "$locale settlement keys do not match the production settlement schema",
+            )
+        }
+    }
+
+    /** 驗證語系檔中的內建 showcase key 與程式碼定義完全一致。 */
+    @Test
+    fun `language showcase keys match the production showcase key schema`() {
+        locales.forEach { locale ->
+            val showcaseKeys = loadTranslations(locale).keys.filterTo(mutableSetOf()) { it.startsWith(showcasePrefix) }
+
+            assertEquals(
+                MinecraftShowcaseKeys.ALL,
+                showcaseKeys,
+                "$locale showcase keys do not match the production showcase schema",
             )
         }
     }

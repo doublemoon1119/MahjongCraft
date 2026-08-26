@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.ShowcasePalet
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.ShowcaseVisualLayer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftShowcaseKeys
 import net.minecraft.block.Blocks
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.model.ModelPart
@@ -958,7 +959,7 @@ class WinCelebrationShowcaseEntityRenderer(
 
     private fun fallbackDefinition(cue: String) = WinCelebrationShowcaseDefinition(
         cueKey = cue.ifBlank { BuiltInWinCelebrationCueIds.GENERIC },
-        titleTranslationKey = "showcase.mahjongcraft.generic",
+        titleTranslationKey = MinecraftShowcaseKeys.GENERIC,
         titleImageResourceId = FALLBACK_TITLE_IMAGE.toString(),
         palette = ShowcasePalette(0xFFFFD45A.toInt(), 0xFFC32128.toInt(), -1),
     )

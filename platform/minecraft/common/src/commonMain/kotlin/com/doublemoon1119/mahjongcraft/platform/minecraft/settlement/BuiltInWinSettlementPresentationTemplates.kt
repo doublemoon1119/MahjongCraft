@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 
 /** 規則中立的內建胡牌結算欄位。 */
@@ -77,9 +78,9 @@ fun WinSettlementPresentationTemplateRegistry.registerBuiltInWinSettlementTempla
     registerFieldProvider(BuiltInWinSettlementFieldIds.OUTCOME_TITLE) { snapshot ->
         PresentationValue.TextValue(
             when {
-                snapshot.outcomeId == BuiltInRoundOutcomeIds.NAGASHI_MANGAN -> "settlement.mahjongcraft.nagashi_mangan"
-                snapshot.isTsumo -> "settlement.mahjongcraft.tsumo"
-                else -> "settlement.mahjongcraft.ron"
+                snapshot.outcomeId == BuiltInRoundOutcomeIds.NAGASHI_MANGAN -> WinSettlementTranslationKeys.NAGASHI_MANGAN
+                snapshot.isTsumo -> WinSettlementTranslationKeys.TSUMO
+                else -> WinSettlementTranslationKeys.RON
             },
         )
     }
@@ -88,7 +89,7 @@ fun WinSettlementPresentationTemplateRegistry.registerBuiltInWinSettlementTempla
             PresentationValue.TextValue("%s", listOf(snapshot.winnerDisplayName))
         } else {
             PresentationValue.TextValue(
-                "settlement.mahjongcraft.ron_relationship",
+                WinSettlementTranslationKeys.RON_RELATIONSHIP,
                 listOf(snapshot.winnerDisplayName, snapshot.responsiblePlayerDisplayName.orEmpty()),
             )
         }
@@ -106,20 +107,20 @@ fun WinSettlementPresentationTemplateRegistry.registerBuiltInWinSettlementTempla
         }
     }
     registerFieldProvider(BuiltInWinSettlementFieldIds.RELATION_ARROW) { snapshot ->
-        snapshot.responsiblePlayerId?.let { PresentationValue.TextValue("settlement.mahjongcraft.relationship_arrow") }
+        snapshot.responsiblePlayerId?.let { PresentationValue.TextValue(WinSettlementTranslationKeys.RELATIONSHIP_ARROW) }
     }
     registerFieldProvider(BuiltInWinSettlementFieldIds.DORA_LABEL) {
-        PresentationValue.TextValue("settlement.mahjongcraft.dora")
+        PresentationValue.TextValue(WinSettlementTranslationKeys.DORA)
     }
     registerFieldProvider(BuiltInWinSettlementFieldIds.URA_DORA_LABEL) {
-        PresentationValue.TextValue("settlement.mahjongcraft.ura_dora")
+        PresentationValue.TextValue(WinSettlementTranslationKeys.URA_DORA)
     }
     registerFieldProvider(BuiltInWinSettlementFieldIds.PAYMENT_SUMMARY) { null }
     registerFieldProvider(BuiltInWinSettlementFieldIds.WINNING_TILE) { snapshot ->
         snapshot.winningTileAssetKey?.let(PresentationValue::TileValue)
     }
     registerFieldProvider(BuiltInWinSettlementFieldIds.TOTAL_SCORE) { snapshot ->
-        PresentationValue.TextValue("settlement.mahjongcraft.total_score", listOf(snapshot.totalScore.toString()))
+        PresentationValue.TextValue(WinSettlementTranslationKeys.TOTAL_SCORE, listOf(snapshot.totalScore.toString()))
     }
     registerBuiltInRiichiWinSettlementTemplate()
 }

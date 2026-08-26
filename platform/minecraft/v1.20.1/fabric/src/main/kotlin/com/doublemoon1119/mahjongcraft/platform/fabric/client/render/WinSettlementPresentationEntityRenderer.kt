@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingAnimation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementDetailSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementRankingSnapshot
@@ -317,7 +318,7 @@ class WinSettlementPresentationEntityRenderer(
                 val titleY = rowY + crossAxisOffset(layout.rowHeight, textRenderer.fontHeight * titleScale, layout.verticalAlignment)
                 val trailing = entry.trailingTranslationKey?.let { key ->
                     entry.trailingTranslationArgument?.let { Text.translatable(key, it) } ?: Text.translatable(key)
-                } ?: entry.trailingText.takeIf(String::isNotBlank)?.let { Text.translatable("settlement.mahjongcraft.han", it) }
+                } ?: entry.trailingText.takeIf(String::isNotBlank)?.let { Text.translatable(WinSettlementTranslationKeys.HAN, it) }
                 val trailingY = rowY + crossAxisOffset(layout.rowHeight, textRenderer.fontHeight * entryScale, layout.verticalAlignment)
                 matrices.push()
                 matrices.translate(rowX, rowY + layout.rowHeight / 2f, 0f)
@@ -605,7 +606,7 @@ class WinSettlementPresentationEntityRenderer(
         } else {
             val tileSlotsWidth = INDICATOR_SLOT_COUNT * INDICATOR_TILE_WIDTH +
                 (INDICATOR_SLOT_COUNT - 1) * INDICATOR_TILE_GAP
-            val labelWidths = listOf("settlement.mahjongcraft.dora", "settlement.mahjongcraft.ura_dora")
+            val labelWidths = listOf(WinSettlementTranslationKeys.DORA, WinSettlementTranslationKeys.URA_DORA)
                 .sumOf { textRenderer.getWidth(Text.translatable(it)).toDouble() }.toFloat() * 0.82f
             labelWidths + tileSlotsWidth * 2f + INDICATOR_LABEL_GAP * 2f + INDICATOR_MINIMUM_SPACE * 3f
         }
@@ -738,7 +739,7 @@ class WinSettlementPresentationEntityRenderer(
             val y = startY + row * 11f
             val trailing = pair[2].takeIf(String::isNotBlank)?.let { key ->
                 pair[3].takeIf(String::isNotBlank)?.let { Text.translatable(key, it) } ?: Text.translatable(key)
-            } ?: pair[1].takeIf(String::isNotBlank)?.let { Text.translatable("settlement.mahjongcraft.han", it) }
+            } ?: pair[1].takeIf(String::isNotBlank)?.let { Text.translatable(WinSettlementTranslationKeys.HAN, it) }
             val trailingWidth = trailing?.let(textRenderer::getWidth)?.times(0.85f) ?: 0f
             drawFitted(
                 Text.translatable(pair[0]),
@@ -762,7 +763,7 @@ class WinSettlementPresentationEntityRenderer(
         val layout = measureRankingLayout(entity.rankings)
         val panelBottom = -20f + entity.rankings.size * 16f + 8f
         renderPanel(layout.panelHalfWidth, -55f, panelBottom, alpha, matrices, consumers)
-        draw(Text.translatable("settlement.mahjongcraft.score_ranking"), 0f, -42f, Align.CENTER, color(0xFFD45A, alpha), 1.25f, matrices, consumers)
+        draw(Text.translatable(WinSettlementTranslationKeys.SCORE_RANKING), 0f, -42f, Align.CENTER, color(0xFFD45A, alpha), 1.25f, matrices, consumers)
         val progress = ((local - 35.0) / 48.0).coerceIn(0.0, 1.0)
         val presentation = ScoreRankingPresentation(entity.rankings.map { it.toRankingPlayer() })
         val rows = ScoreRankingAnimation.rows(presentation, progress)

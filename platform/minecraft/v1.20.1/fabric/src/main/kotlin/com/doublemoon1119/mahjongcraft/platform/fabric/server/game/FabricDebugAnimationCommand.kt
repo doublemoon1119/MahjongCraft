@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresen
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
@@ -567,13 +568,13 @@ class FabricDebugAnimationCommand(
     /** `hovered_text win_settlement`：以正式 round-result builder 預覽胡牌結算摘要。 */
     private fun previewWinSettlementHoveredText(source: ServerCommandSource): Int {
         val details = Text.empty()
-            .append(Text.translatable("settlement.mahjongcraft.ron_summary", "Player", "AI-debug"))
+            .append(Text.translatable(WinSettlementTranslationKeys.RON_SUMMARY, "Player", "AI-debug"))
             .append(Text.literal("\n"))
-            .append(Text.translatable("settlement.mahjongcraft.han_fu", "3", "30"))
+            .append(Text.translatable(WinSettlementTranslationKeys.HAN_FU, "3", "30"))
             .append(Text.literal("\n"))
-            .append(Text.translatable("settlement.mahjongcraft.total_score", "7700"))
+            .append(Text.translatable(WinSettlementTranslationKeys.TOTAL_SCORE, "7700"))
         source.sendFeedback(
-            { buildRoundResultChatText(Text.translatable("settlement.mahjongcraft.ron"), details) },
+            { buildRoundResultChatText(Text.translatable(WinSettlementTranslationKeys.RON), details) },
             false,
         )
         return COMMAND_SUCCESS
@@ -706,7 +707,7 @@ class FabricDebugAnimationCommand(
                     )
                     if (!yakuman && preview != WinSettlementPreview.NAGASHI) {
                         val totalHan = regularYakuEntries.sumOf { it.trailingText.toIntOrNull() ?: 0 }
-                        add(WinSettlementDetailField("mahjongcraft:riichi_han_fu", WinSettlementDetailValue.Text("settlement.mahjongcraft.han_fu", listOf(totalHan.toString(), "30"))))
+                        add(WinSettlementDetailField("mahjongcraft:riichi_han_fu", WinSettlementDetailValue.Text(WinSettlementTranslationKeys.HAN_FU, listOf(totalHan.toString(), "30"))))
                     } else if (yakuman) {
                         add(WinSettlementDetailField("mahjongcraft:riichi_yakuman_total", WinSettlementDetailValue.Text("mahjongcraft.game.score.yakuman_3x")))
                     }

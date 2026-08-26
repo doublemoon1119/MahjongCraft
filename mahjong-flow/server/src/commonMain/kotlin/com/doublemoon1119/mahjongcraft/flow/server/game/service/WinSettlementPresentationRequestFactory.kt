@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresen
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -152,7 +153,7 @@ object WinSettlementPresentationRequestFactory {
                 ),
             )
             if (!result.isYakuman) {
-                add(WinSettlementDetailField(RIICHI_HAN_FU_FIELD, WinSettlementDetailValue.Text("settlement.mahjongcraft.han_fu", listOf(result.totalHan.toString(), result.totalFu.toString()))))
+                add(WinSettlementDetailField(RIICHI_HAN_FU_FIELD, WinSettlementDetailValue.Text(WinSettlementTranslationKeys.HAN_FU, listOf(result.totalHan.toString(), result.totalFu.toString()))))
             } else {
                 val multiplier = -result.totalHan
                 add(
