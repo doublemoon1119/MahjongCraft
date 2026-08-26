@@ -165,6 +165,7 @@ class GameFlowCoordinatorTest {
             ),
             presentationBusyGate = presentationBusyGate,
             exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
+            presentationPublisher = presentationPublisher,
         )
     }
 

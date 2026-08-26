@@ -153,6 +153,7 @@ class MahjongAutoDrawServiceTest {
             ),
             presentationBusyGate = presentationBusyGate,
             exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
+            presentationPublisher = presentationPublisher,
         )
         val feedbackPublisher = FakeMinecraftPlayerFeedbackPublisher()
         val membershipRepository = PlayerMembershipRepositoryImpl()

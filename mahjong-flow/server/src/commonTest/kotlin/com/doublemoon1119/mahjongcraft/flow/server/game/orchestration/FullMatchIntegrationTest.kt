@@ -182,6 +182,7 @@ class FullMatchIntegrationTest {
             ),
             presentationBusyGate = presentationBusyGate,
             exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
+            presentationPublisher = presentationPublisher,
         )
     }
 

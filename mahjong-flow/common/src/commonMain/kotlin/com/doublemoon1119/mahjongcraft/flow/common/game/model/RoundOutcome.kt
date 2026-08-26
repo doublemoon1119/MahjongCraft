@@ -6,6 +6,12 @@ import kotlin.uuid.Uuid
 
 /** MahjongCraft 內建特殊 round outcome 的完整識別碼。 */
 object BuiltInRoundOutcomeIds {
+    /** 一般自摸。 */
+    val TSUMO: String = MahjongCraftMetadata.id("tsumo")
+
+    /** 一般榮和（含搶槓）。 */
+    val RON: String = MahjongCraftMetadata.id("ron")
+
     /** 日麻流局滿貫。 */
     val NAGASHI_MANGAN: String = MahjongCraftMetadata.id("nagashi_mangan")
 }

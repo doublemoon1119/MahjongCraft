@@ -4,12 +4,15 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNagareUseCase
@@ -80,6 +83,7 @@ class GameFlowCoordinator(
     private val decisionTimerManager: GameDecisionTimerManager,
     private val decisionTimerSynchronizationService: DecisionTimerSynchronizationService,
     private val exhaustiveDrawSettlementPresentationService: ExhaustiveDrawSettlementPresentationService,
+    @Provided private val presentationPublisher: GamePresentationPublisher,
     @Provided private val presentationBusyGate: GamePresentationBusyGate,
 ) {
     /** 避免玩家命令與恢復心跳同時重複執行同一個待完成流程。 */
@@ -286,6 +290,17 @@ class GameFlowCoordinator(
         if (result is Outcome.Error && result.error is GameError.WallExhausted) {
             val specialOutcome = resolvePostReactionRoundOutcomeUseCase(gameId)
             if (specialOutcome is Outcome.Success && specialOutcome.value != null) {
+                val resolved = requireNotNull(specialOutcome.value)
+                if (resolved.presentationClassification == RoundOutcomePresentationClassification.WIN_EQUIVALENT) {
+                    presentationPublisher.publishWinSettlement(
+                        gameId,
+                        WinSettlementPresentationRequestFactory.createSpecialOutcome(
+                            previousState,
+                            resolved,
+                            moduleRegistry.getModule(previousState.config),
+                        ),
+                    )
+                }
                 chainAdvanceRound(gameId)
                 return result
             }

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -331,4 +332,7 @@ interface GamePresentationPublisher {
      * 搶槓的牌河或副露區），見 `FabricGamePresentationPublisher.publishWinCelebration` KDoc。
      */
     fun publishWinCelebration(gameId: Uuid, request: WinCelebrationRequest)
+
+    /** 通知平台在既有胡牌／役滿演出之後顯示逐位贏家詳情與共用分數排行。 */
+    fun publishWinSettlement(gameId: Uuid, request: WinSettlementPresentationRequest) = Unit
 }

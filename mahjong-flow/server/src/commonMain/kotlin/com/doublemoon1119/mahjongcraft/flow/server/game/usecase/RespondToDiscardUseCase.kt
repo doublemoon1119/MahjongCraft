@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
@@ -12,6 +13,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -58,6 +62,8 @@ class RespondToDiscardUseCase(
     @Provided private val presentationPublisher: GamePresentationPublisher,
     private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
         createBuiltInWinCelebrationCueResolverRegistry(),
+    private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
+        createBuiltInWinSettlementDetailResolverRegistry(),
 ) {
     /**
      * 執行捨牌反應回應邏輯。
@@ -202,6 +208,21 @@ class RespondToDiscardUseCase(
                     },
                 ),
             )
+            val module = moduleRegistry.getModule(newState.config)
+            presentationPublisher.publishWinSettlement(
+                gameId,
+                WinSettlementPresentationRequestFactory.create(
+                    previousState = checkNotNull(result.previousTableState),
+                    currentState = newState,
+                    module = module,
+                    outcomeId = BuiltInRoundOutcomeIds.RON,
+                    isTsumo = false,
+                    winningTileId = winningTileId,
+                    responsiblePlayerId = result.ronDiscarderId,
+                    resolutions = result.ronResolutions,
+                    detailResolverRegistry = winSettlementDetailResolverRegistry,
+                ),
+            )
         }
 
         return Outcome.Success(Unit)
@@ -227,6 +248,8 @@ class RespondToDiscardUseCase(
         val ronWinningTileId: Uuid? = null,
         val ronResolutions: Map<Uuid, com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult> = emptyMap(),
         val ruleModuleId: String? = null,
+        val previousTableState: TableState? = null,
+        val ronDiscarderId: Uuid? = null,
     )
 
     /**
@@ -256,6 +279,8 @@ class RespondToDiscardUseCase(
                 ronWinningTileId = if (resolved != null) discardedTile.id else null,
                 ronResolutions = resolved?.resolutions.orEmpty(),
                 ruleModuleId = if (resolved != null) module.id else null,
+                previousTableState = if (resolved != null) state.copy(players = players) else null,
+                ronDiscarderId = if (resolved != null) pendingReaction.discarderId else null,
             )
         }
 

@@ -170,6 +170,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
             ),
             presentationBusyGate = presentationBusyGate,
             exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
+            presentationPublisher = presentationPublisher,
         )
     }
 
