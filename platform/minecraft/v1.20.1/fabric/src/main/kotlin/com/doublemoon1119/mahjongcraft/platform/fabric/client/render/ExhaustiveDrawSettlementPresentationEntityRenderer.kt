@@ -106,6 +106,11 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
             val rowProgress = rowRevealProgress(elapsed, row.revealIndex, hasInformationPhase)
             if (rowProgress <= 0f) return@forEach
             val targetY = FIRST_ROW_Y + (row.position - 1.0).toFloat() * ROW_HEIGHT
+            val settledEffect = SettlementRankingSettledEffect.resolve(
+                elapsed,
+                ExhaustiveDrawSettlementPresentationEntity.rankingSettledSoundTick(hasInformationPhase).toDouble(),
+                player.previousRank != player.currentRank,
+            )
             drawRow(
                 player,
                 liveRanks.getValue(KotlinUuid.parse(player.playerId)),
@@ -114,6 +119,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
                 row.delta,
                 targetY - (1f - rowProgress) * ROW_REVEAL_OFFSET,
                 rankingAlpha * rowProgress,
+                settledEffect,
                 matrices,
                 vertexConsumers,
             )
@@ -153,6 +159,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         delta: Int,
         y: Float,
         alpha: Float,
+        settledEffect: SettlementRankingSettledEffect.State,
         matrices: MatrixStack,
         vertexConsumers: VertexConsumerProvider,
     ) {
@@ -163,14 +170,80 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
             else -> 0xC8C8C8
         }
 
-        drawText(Text.literal(displayedRank.toString()), layout.rankRightX, y, Alignment.RIGHT, withAlpha(0xFFD86A, alpha), matrices, vertexConsumers)
-        renderPortrait(player, layout.faceLeftX, y - FACE_TEXT_CENTER_OFFSET, alpha, matrices, vertexConsumers)
-        drawText(Text.literal(fitPlayerName(resolvePlayerName(player))), layout.nameLeftX, y, Alignment.LEFT, withAlpha(0xFFFFFF, alpha), matrices, vertexConsumers)
+        renderRankingSettledHighlight(layout.panelHalfWidth, y, alpha, settledEffect, matrices, vertexConsumers)
+        matrices.push()
+        matrices.translate(0f, y, 0f)
+        matrices.scale(settledEffect.rowScale, settledEffect.rowScale, 1f)
+        matrices.push()
+        matrices.translate(layout.rankRightX, 0f, 0f)
+        matrices.scale(settledEffect.rankScale, settledEffect.rankScale, 1f)
+        drawText(
+            Text.literal(displayedRank.toString()),
+            0f,
+            0f,
+            Alignment.RIGHT,
+            withAlpha(mixRgb(0xFFD86A, 0xFFFFFF, settledEffect.rankWhiteness), alpha),
+            matrices,
+            vertexConsumers,
+        )
+        matrices.pop()
+        renderPortrait(player, layout.faceLeftX, -FACE_TEXT_CENTER_OFFSET, alpha, matrices, vertexConsumers)
+        drawText(Text.literal(fitPlayerName(resolvePlayerName(player))), layout.nameLeftX, 0f, Alignment.LEFT, withAlpha(0xFFFFFF, alpha), matrices, vertexConsumers)
         settlementStatusText(player)?.let { statusText ->
-            drawText(statusText, layout.statusCenterX, y, Alignment.CENTER, withAlpha(0xFFE08A, alpha), matrices, vertexConsumers)
+            drawText(statusText, layout.statusCenterX, 0f, Alignment.CENTER, withAlpha(0xFFE08A, alpha), matrices, vertexConsumers)
         }
-        drawText(Text.literal(score.toString()), layout.scoreRightX, y, Alignment.RIGHT, withAlpha(0xFFF3C4, alpha), matrices, vertexConsumers)
-        drawText(Text.literal(deltaText), layout.deltaRightX, y, Alignment.RIGHT, withAlpha(deltaColor, alpha), matrices, vertexConsumers)
+        drawText(Text.literal(score.toString()), layout.scoreRightX, 0f, Alignment.RIGHT, withAlpha(0xFFF3C4, alpha), matrices, vertexConsumers)
+        drawText(Text.literal(deltaText), layout.deltaRightX, 0f, Alignment.RIGHT, withAlpha(deltaColor, alpha), matrices, vertexConsumers)
+        matrices.pop()
+    }
+
+    private fun renderRankingSettledHighlight(
+        panelHalfWidth: Float,
+        y: Float,
+        alpha: Float,
+        effect: SettlementRankingSettledEffect.State,
+        matrices: MatrixStack,
+        vertexConsumers: VertexConsumerProvider,
+    ) {
+        if (!effect.active) return
+        val left = -panelHalfWidth + 5f
+        val right = panelHalfWidth - 5f
+        renderHighlightQuad(left, right, y - 3f, y + 11f, alpha * effect.highlightAlpha, matrices, vertexConsumers)
+        val sweepCenter = left + (right - left) * effect.sweepProgress
+        renderHighlightQuad(
+            maxOf(left, sweepCenter - RANKING_SWEEP_HALF_WIDTH),
+            minOf(right, sweepCenter + RANKING_SWEEP_HALF_WIDTH),
+            y - 3f,
+            y + 11f,
+            alpha * effect.highlightAlpha * 1.6f,
+            matrices,
+            vertexConsumers,
+        )
+    }
+
+    private fun renderHighlightQuad(
+        left: Float,
+        right: Float,
+        top: Float,
+        bottom: Float,
+        alpha: Float,
+        matrices: MatrixStack,
+        vertexConsumers: VertexConsumerProvider,
+    ) {
+        if (right <= left || alpha <= 0f) return
+        val matrix = matrices.peek().positionMatrix
+        val buffer = vertexConsumers.getBuffer(ExhaustiveDrawSettlementPanelRenderLayer.layer)
+        val a = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
+        buffer.vertex(matrix, left, top, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).next()
+        buffer.vertex(matrix, right, top, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).next()
+        buffer.vertex(matrix, right, bottom, RANKING_HIGHLIGHT_Z).color(255, 238, 178, a).next()
+        buffer.vertex(matrix, left, bottom, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).next()
+    }
+
+    private fun mixRgb(from: Int, to: Int, progress: Float): Int {
+        val amount = progress.coerceIn(0f, 1f)
+        fun channel(shift: Int): Int = (((from shr shift) and 0xFF) + ((((to shr shift) and 0xFF) - ((from shr shift) and 0xFF)) * amount)).roundToInt()
+        return (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
     }
 
     /** 第一階段的公開資訊列：玩家身分、狀態與全部等待牌使用固定欄位對齊。 */
@@ -514,5 +587,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         const val WAIT_TILE_HEIGHT = 16f
         const val WAIT_TILE_GAP = 2f
         const val TILE_FACE_Z = 0f
+        const val RANKING_SWEEP_HALF_WIDTH = 18f
+        const val RANKING_HIGHLIGHT_Z = 0.25f
     }
 }

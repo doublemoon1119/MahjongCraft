@@ -109,7 +109,7 @@ class ExhaustiveDrawSettlementPresentationEntity(
             val elapsed = world.time - startGameTime
             if (elapsed < revealTick) return@forEach
             playedCoreSoundMask = playedCoreSoundMask or bit
-            if (elapsed <= revealTick + SOUND_EVENT_GRACE_TICKS) {
+            if (elapsed <= revealTick + SettlementPresentationSoundSpec.EVENT_GRACE_TICKS) {
                 world.playSound(
                     null,
                     x,
@@ -117,8 +117,8 @@ class ExhaustiveDrawSettlementPresentationEntity(
                     z,
                     SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
                     SoundCategory.PLAYERS,
-                    INFORMATION_ROW_SOUND_VOLUME,
-                    INFORMATION_ROW_SOUND_BASE_PITCH + index * INFORMATION_ROW_SOUND_PITCH_STEP,
+                    SettlementPresentationSoundSpec.DETAIL_VOLUME,
+                    SettlementPresentationSoundSpec.DETAIL_BASE_PITCH + index * SettlementPresentationSoundSpec.DETAIL_PITCH_STEP,
                 )
             }
         }
@@ -133,7 +133,7 @@ class ExhaustiveDrawSettlementPresentationEntity(
             val elapsed = world.time - startGameTime
             if (elapsed < revealTick) return@forEach
             playedCoreSoundMask = playedCoreSoundMask or bit
-            if (elapsed <= revealTick + SOUND_EVENT_GRACE_TICKS) {
+            if (elapsed <= revealTick + SettlementPresentationSoundSpec.EVENT_GRACE_TICKS) {
                 world.playSound(
                     null,
                     x,
@@ -141,8 +141,8 @@ class ExhaustiveDrawSettlementPresentationEntity(
                     z,
                     SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
                     SoundCategory.PLAYERS,
-                    ROW_SOUND_VOLUME,
-                    ROW_SOUND_BASE_PITCH + index * ROW_SOUND_PITCH_STEP,
+                    SettlementPresentationSoundSpec.ROW_VOLUME,
+                    SettlementPresentationSoundSpec.ROW_BASE_PITCH + index * SettlementPresentationSoundSpec.ROW_PITCH_STEP,
                 )
             }
         }
@@ -153,24 +153,23 @@ class ExhaustiveDrawSettlementPresentationEntity(
         player.waitingTileAssetKeys.isNotEmpty()
     }
 
-    /** 分數與排行抵達最終值時播放一次確認音；載入時若已錯過則只標記完成。 */
+    /** 分數與排行抵達最終值時播放四音確認旋律；載入時若已錯過則只標記完成。 */
     private fun playPendingRankingSettledSound() {
-        if (playedCoreSoundMask and RANKING_SETTLED_SOUND_BIT != 0) return
         val elapsed = world.time - startGameTime
         val settledTick = rankingSettledSoundTick(hasInformationPhase)
-        if (elapsed < settledTick) return
-        playedCoreSoundMask = playedCoreSoundMask or RANKING_SETTLED_SOUND_BIT
         val rankingChanged = players.any { it.previousRank != it.currentRank }
-        if (rankingChanged && elapsed <= settledTick + SOUND_EVENT_GRACE_TICKS) {
+        if (playedCoreSoundMask and RANKING_SETTLED_SOUND_BIT != 0 || elapsed < settledTick) return
+        playedCoreSoundMask = playedCoreSoundMask or RANKING_SETTLED_SOUND_BIT
+        if (rankingChanged && elapsed <= settledTick + SettlementPresentationSoundSpec.EVENT_GRACE_TICKS) {
             world.playSound(
                 null,
                 x,
                 y,
                 z,
-                SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(),
+                SoundEvents.ENTITY_PLAYER_LEVELUP,
                 SoundCategory.PLAYERS,
-                RANKING_SETTLED_SOUND_VOLUME,
-                RANKING_SETTLED_SOUND_PITCH,
+                SettlementPresentationSoundSpec.RANKING_SETTLED_VOLUME,
+                SettlementPresentationSoundSpec.RANKING_SETTLED_PITCH,
             )
         }
     }
@@ -223,22 +222,13 @@ class ExhaustiveDrawSettlementPresentationEntity(
         private const val NBT_REASON_ID = "ReasonId"
         private const val NBT_PLAYERS = "Players"
         private const val NBT_PLAYED_CORE_SOUND_MASK = "PlayedCoreSoundMask"
-        private const val SOUND_EVENT_GRACE_TICKS = 1L
-        private const val ROW_SOUND_VOLUME = 0.25f
-        private const val ROW_SOUND_BASE_PITCH = 0.85f
-        private const val ROW_SOUND_PITCH_STEP = 0.1f
-        private const val INFORMATION_ROW_SOUND_VOLUME = 0.18f
-        private const val INFORMATION_ROW_SOUND_BASE_PITCH = 1.05f
-        private const val INFORMATION_ROW_SOUND_PITCH_STEP = 0.08f
         private const val INFORMATION_ROW_REVEAL_START_TICK = 40L
         private const val INFORMATION_ROW_REVEAL_INTERVAL_TICKS = 6L
         private const val ROW_REVEAL_INTERVAL_TICKS = 4L
         private const val RANKING_ROW_SOUND_BIT_OFFSET = 8
         private const val RANKING_SETTLED_SOUND_TICK = 170L
         private const val RANKING_ONLY_SETTLED_SOUND_TICK = 110L
-        private const val RANKING_SETTLED_SOUND_BIT = 1 shl 30
-        private const val RANKING_SETTLED_SOUND_VOLUME = 0.3f
-        private const val RANKING_SETTLED_SOUND_PITCH = 0.95f
+        private const val RANKING_SETTLED_SOUND_BIT = 1 shl 24
 
         /** 依內容決定是否保留等待牌資訊階段。 */
         fun durationTicks(players: List<ExhaustiveDrawSettlementPlayerSnapshot>): Long = if (players.any { it.waitingTileAssetKeys.isNotEmpty() }) {

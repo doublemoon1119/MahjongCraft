@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
@@ -22,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTabl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricExhaustiveDrawSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationShowcaseScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
@@ -107,6 +110,7 @@ class FabricGamePresentationPublisher(
     private val effectScheduler: FabricWinCelebrationEffectScheduler,
     private val showcaseScheduler: FabricWinCelebrationShowcaseScheduler,
     private val exhaustiveDrawSettlementScheduler: FabricExhaustiveDrawSettlementPresentationScheduler,
+    private val winSettlementScheduler: FabricWinSettlementPresentationScheduler,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
@@ -688,6 +692,42 @@ class FabricGamePresentationPublisher(
                     }
                     resolved.table.extendPresentationUntil(showcaseEnd ?: effectEndGameTime)
                 }
+            } finally {
+                busyTracker.clearPending(gameId)
+            }
+        }
+    }
+
+    override fun publishWinSettlement(gameId: Uuid, request: WinSettlementPresentationRequest) {
+        if (serverHolder.current() == null) return
+        busyTracker.markPending(gameId)
+        scope.launch(dispatchers.main) {
+            try {
+                val resolved = resolveTableContext(gameId, "publishWinSettlement") ?: return@launch
+                val state = gameRepository.getTableState(gameId) ?: return@launch
+                val tileIds = buildSet {
+                    request.winners.forEach { winner ->
+                        addAll(winner.handTileIds)
+                        winner.melds.forEach { addAll(it.tileIds) }
+                        winner.winningTileId?.let(::add)
+                        winner.detailFields.forEach { field ->
+                            (field.value as? WinSettlementDetailValue.Tiles)?.let { addAll(it.tileIds) }
+                        }
+                    }
+                }
+                val assets = tileIds.mapNotNull { id -> state.findTile(id)?.let { id to it.tile.toAssetKey(tileAssetRegistry) } }.toMap()
+                val end = winSettlementScheduler.schedule(
+                    world = resolved.world,
+                    tableId = gameId,
+                    controllerPos = BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
+                    placement = MahjongTileTableLayout.showcaseStagePlacement(resolved.location.x, resolved.location.y, resolved.location.z),
+                    earliestStartGameTime = resolved.table.presentationBusyUntilGameTime,
+                    request = request,
+                    tileAssetsById = assets,
+                )
+                if (end != null) resolved.table.extendPresentationUntil(end)
+            } catch (cause: Exception) {
+                logger.warn("Failed to publish win settlement for gameId={}", gameId, cause)
             } finally {
                 busyTracker.clearPending(gameId)
             }

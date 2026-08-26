@@ -18,6 +18,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiGameCommandHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiNagashiManganOutcomeResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
@@ -32,6 +34,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
@@ -73,10 +77,14 @@ object FabricMahjongExtensions {
             WinCelebrationCueResolverRegistryImpl(),
         showcaseRegistry: WinCelebrationShowcaseRegistry =
             WinCelebrationShowcaseRegistryImpl(),
+        winSettlementTemplateRegistry: WinSettlementPresentationTemplateRegistry =
+            WinSettlementPresentationTemplateRegistryImpl(),
         gameActionAiRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
             PostReactionRoundOutcomeResolverRegistry(),
+        winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
+            createBuiltInWinSettlementDetailResolverRegistry(),
         declareRiichiUseCase: DeclareRiichiUseCase,
     ) {
         try {
@@ -97,9 +105,11 @@ object FabricMahjongExtensions {
                 exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
                 winCelebrationCueResolverRegistry = winCelebrationCueResolverRegistry,
                 showcaseRegistry = showcaseRegistry,
+                winSettlementTemplateRegistry = winSettlementTemplateRegistry,
                 gameActionAiRegistry = gameActionAiRegistry,
                 gameCommandRegistry = gameCommandRegistry,
                 postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
+                winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 declareRiichiUseCase = declareRiichiUseCase,
                 extensions = extensions,
             )
@@ -168,10 +178,14 @@ object FabricMahjongExtensions {
             WinCelebrationCueResolverRegistryImpl(),
         showcaseRegistry: WinCelebrationShowcaseRegistry =
             WinCelebrationShowcaseRegistryImpl(),
+        winSettlementTemplateRegistry: WinSettlementPresentationTemplateRegistry =
+            WinSettlementPresentationTemplateRegistryImpl(),
         gameActionAiRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
             PostReactionRoundOutcomeResolverRegistry(),
+        winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
+            createBuiltInWinSettlementDetailResolverRegistry(),
         declareRiichiUseCase: DeclareRiichiUseCase,
         extensions: Iterable<MahjongExtension>,
     ): MinecraftMahjongExtensionRegistrationResult {
@@ -200,6 +214,7 @@ object FabricMahjongExtensions {
             gameActionAiRegistry = gameActionAiRegistry,
             gameCommandRegistry = gameCommandRegistry,
             postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
+            winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
         )
 
         // 同一個第三方類別可同時實作 MahjongExtension 與 MinecraftMahjongExtension，
@@ -215,6 +230,7 @@ object FabricMahjongExtensions {
             showcaseRegistry = showcaseRegistry,
             gameActionDisplayNameRegistry = gameActionDisplayNameRegistry,
             exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
+            winSettlementTemplateRegistry = winSettlementTemplateRegistry,
         )
     }
 

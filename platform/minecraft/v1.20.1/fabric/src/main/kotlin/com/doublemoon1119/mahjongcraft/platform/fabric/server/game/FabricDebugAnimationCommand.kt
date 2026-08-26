@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInExhaustiveDrawSettlementStatusIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementHandPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPlayerPresentation
@@ -9,8 +10,15 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSett
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -105,6 +113,7 @@ class FabricDebugAnimationCommand(
     private val showcaseScheduler: FabricWinCelebrationShowcaseScheduler,
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
     private val exhaustiveDrawSettlementScheduler: FabricExhaustiveDrawSettlementPresentationScheduler,
+    private val winSettlementScheduler: FabricWinSettlementPresentationScheduler,
     private val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val serverConfigManager: FabricServerConfigManager,
@@ -183,7 +192,7 @@ class FabricDebugAnimationCommand(
                         .then(withOptionalTileArgument(literal(DRAW_SUBCOMMAND), ::previewDraw))
                         .then(withOptionalTileArgument(literal(DISCARD_SUBCOMMAND), ::previewDiscard))
                         .then(
-                            literal(SETTLEMENT_SUBCOMMAND)
+                            literal(EXHAUSTIVE_DRAW_SETTLEMENT_SUBCOMMAND)
                                 .then(
                                     literal(NORMAL_ARGUMENT).then(
                                         argument(TENPAI_COUNT_ARGUMENT, IntegerArgumentType.integer(0, 4)).executes { context ->
@@ -235,6 +244,10 @@ class FabricDebugAnimationCommand(
                                     literal(EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT)
                                         .executes { context -> previewExhaustiveDrawSettlementHoveredText(context.source) },
                                 )
+                                .then(
+                                    literal(WIN_SETTLEMENT_SUBCOMMAND)
+                                        .executes { context -> previewWinSettlementHoveredText(context.source) },
+                                )
                                 .then(literal(GAME_CREATED_LOCATION_ARGUMENT).executes { context -> previewGameCreatedLocationHoveredText(context.source) })
                                 .then(
                                     literal(GAME_CONFIG_ARGUMENT)
@@ -243,6 +256,25 @@ class FabricDebugAnimationCommand(
                                         .then(literal(UNCHANGED_ARGUMENT).executes { context -> previewGameConfigHoveredText(context.source, UNCHANGED_ARGUMENT) }),
                                 )
                                 .then(literal(SERVER_CONFIG_ARGUMENT).executes { context -> previewServerConfigHoveredText(context.source) }),
+                        )
+                        .then(
+                            literal(WIN_SETTLEMENT_SUBCOMMAND)
+                                .then(literal(TSUMO_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.TSUMO, 1) })
+                                .then(
+                                    literal(RON_ARGUMENT)
+                                        .executes { context -> previewWinSettlement(context.source, WinSettlementPreview.RON, 1) }
+                                        .then(
+                                            argument(WINNER_COUNT_ARGUMENT, IntegerArgumentType.integer(1, 3)).executes { context ->
+                                                previewWinSettlement(
+                                                    context.source,
+                                                    WinSettlementPreview.RON,
+                                                    IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT),
+                                                )
+                                            },
+                                        ),
+                                )
+                                .then(literal(YAKUMAN_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.YAKUMAN, 1) })
+                                .then(literal(NAGASHI_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.NAGASHI, 1) }),
                         )
                         .then(
                             literal(MELD_SUBCOMMAND)
@@ -386,7 +418,7 @@ class FabricDebugAnimationCommand(
         return previewShowcase(source, isTsumo = true, cues = listOf(cue), initialElapsedTicks = initialElapsedTicks.toInt())
     }
 
-    /** `settlement`：以正式持久化 stage 預覽統一流局排行榜。 */
+    /** `exhaustive_draw_settlement`：以正式持久化 stage 預覽統一流局排行榜。 */
     private fun previewSettlement(
         source: ServerCommandSource,
         reasonId: String,
@@ -478,7 +510,7 @@ class FabricDebugAnimationCommand(
             revealedTileAssetsById = revealedAssetsById,
         ) ?: return COMMAND_FAILURE
         scheduleCleanup(player.serverWorld, end, previewTilesBySeat.flatten().map(Pair<MahjongTileEntity, String>::first))
-        source.sendFeedback({ net.minecraft.text.Text.literal("Settlement preview active until game time $end") }, false)
+        source.sendFeedback({ net.minecraft.text.Text.literal("Exhaustive draw settlement preview active until game time $end") }, false)
         return COMMAND_SUCCESS
     }
 
@@ -509,6 +541,123 @@ class FabricDebugAnimationCommand(
             false,
         )
         return COMMAND_SUCCESS
+    }
+
+    /** `hovered_text win_settlement`：以正式 round-result builder 預覽胡牌結算摘要。 */
+    private fun previewWinSettlementHoveredText(source: ServerCommandSource): Int {
+        val details = Text.empty()
+            .append(Text.translatable("settlement.mahjongcraft.ron_summary", "Player", "AI-debug"))
+            .append(Text.literal("\n"))
+            .append(Text.translatable("settlement.mahjongcraft.han_fu", "3", "30"))
+            .append(Text.literal("\n"))
+            .append(Text.translatable("settlement.mahjongcraft.total_score", "7700"))
+        source.sendFeedback(
+            { buildRoundResultChatText(Text.translatable("settlement.mahjongcraft.ron"), details) },
+            false,
+        )
+        return COMMAND_SUCCESS
+    }
+
+    /** 走正式 scheduler 預覽一至三位贏家的完整胡牌結算與最終排行。 */
+    private fun previewWinSettlement(
+        source: ServerCommandSource,
+        preview: WinSettlementPreview,
+        winnerCount: Int,
+    ): Int {
+        val player = source.player ?: return COMMAND_FAILURE
+        val world = player.serverWorld
+        val layout = virtualTableLayout(player.blockX, player.blockY, player.blockZ, player.horizontalFacing.toMahjongTableFacing())
+        val playerIds = List(4) { index -> if (index == 0) player.uuid.toKotlinUuid() else Uuid.random() }
+        val tileAssetsById = mutableMapOf<Uuid, String>()
+        val winners = List(winnerCount) { winnerIndex ->
+            val handIds = List(DEFAULT_RULE_CONFIG.initialHandSize - 7) { tileIndex ->
+                Uuid.random().also { tileAssetsById[it] = ALL_TILE_ASSET_KEYS[(winnerIndex * 7 + tileIndex) % (ALL_TILE_ASSET_KEYS.size - 1)] }
+            }
+            val ponIds = List(3) { Uuid.random().also { id -> tileAssetsById[id] = "s3" } }
+            val kanIds = List(4) { Uuid.random().also { id -> tileAssetsById[id] = "p8" } }
+            val winningTileId = Uuid.random().also { tileAssetsById[it] = if (winnerIndex == 0) "m1" else "p${winnerIndex + 1}" }
+            val yakuman = preview == WinSettlementPreview.YAKUMAN
+            WinSettlementWinnerPresentation(
+                playerId = playerIds[winnerIndex],
+                seatIndex = winnerIndex,
+                responsiblePlayerId = playerIds.getOrNull(winnerCount),
+                totalScore = if (yakuman) {
+                    32_000
+                } else if (preview == WinSettlementPreview.NAGASHI) {
+                    8_000
+                } else {
+                    7_700
+                },
+                handTileIds = handIds,
+                melds = listOf(
+                    MeldPresentation(MeldType.PON, ponIds, ponIds.first(), RelativeDirection.Left, false),
+                    MeldPresentation(MeldType.CLOSED_KAN, kanIds, null, RelativeDirection.Self, false),
+                ),
+                winningTileId = winningTileId,
+                detailFields = buildList {
+                    add(
+                        WinSettlementDetailField(
+                            "mahjongcraft:riichi_yaku",
+                            WinSettlementDetailValue.Entries(
+                                if (yakuman) {
+                                    listOf(WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.kokushimuso"))
+                                } else if (preview != WinSettlementPreview.NAGASHI) {
+                                    listOf(
+                                        WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.reach", "1"),
+                                        WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.ippatsu", "1"),
+                                        WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.pinfu", "1"),
+                                    )
+                                } else {
+                                    listOf(WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.nagashi_mangan"))
+                                },
+                            ),
+                        ),
+                    )
+                    if (!yakuman && preview != WinSettlementPreview.NAGASHI) {
+                        add(WinSettlementDetailField("mahjongcraft:riichi_han_fu", WinSettlementDetailValue.Text("settlement.mahjongcraft.han_fu", listOf("3", "30"))))
+                    }
+                    add(WinSettlementDetailField("mahjongcraft:riichi_dora", WinSettlementDetailValue.Tiles(handIds.take(2))))
+                    add(WinSettlementDetailField("mahjongcraft:riichi_ura_dora", WinSettlementDetailValue.Tiles(handIds.drop(2).take(1))))
+                },
+            )
+        }
+        val ranking = ScoreRankingPresentation(
+            listOf(31_000, 28_000, 24_000, 17_000).zip(listOf(26_000, 23_000, 19_000, 32_000)).mapIndexed { seatIndex, (before, after) ->
+                ScoreRankingPlayer(playerIds[seatIndex], seatIndex, seatIndex != 0, before, after, seatIndex + 1, listOf(2, 3, 4, 1)[seatIndex])
+            },
+        )
+        val request = WinSettlementPresentationRequest(
+            outcomeId = if (preview == WinSettlementPreview.NAGASHI) {
+                BuiltInRoundOutcomeIds.NAGASHI_MANGAN
+            } else if (preview == WinSettlementPreview.TSUMO) {
+                BuiltInRoundOutcomeIds.TSUMO
+            } else {
+                BuiltInRoundOutcomeIds.RON
+            },
+            templateKey = if (preview == WinSettlementPreview.NAGASHI) {
+                WinSettlementPresentationRequestFactory.RIICHI_TEMPLATE_KEY
+            } else {
+                WinSettlementPresentationRequestFactory.RIICHI_TEMPLATE_KEY
+            },
+            isTsumo = preview == WinSettlementPreview.TSUMO,
+            winners = winners,
+            ranking = ranking,
+        )
+        return if (
+            winSettlementScheduler.schedule(
+                world,
+                Uuid.random(),
+                BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
+                layout.showcaseStagePlacement(),
+                world.time,
+                request,
+                tileAssetsById,
+            ) != null
+        ) {
+            COMMAND_SUCCESS
+        } else {
+            COMMAND_FAILURE
+        }
     }
 
     /** 使用正式 feedback publisher 發送建立牌桌位置的 hover 預覽。 */
@@ -937,7 +1086,8 @@ class FabricDebugAnimationCommand(
         const val DRAW_SUBCOMMAND: String = "draw"
         const val DISCARD_SUBCOMMAND: String = "discard"
         const val MELD_SUBCOMMAND: String = "meld"
-        const val SETTLEMENT_SUBCOMMAND: String = "settlement"
+        const val EXHAUSTIVE_DRAW_SETTLEMENT_SUBCOMMAND: String = "exhaustive_draw_settlement"
+        const val WIN_SETTLEMENT_SUBCOMMAND: String = "win_settlement"
         const val HOVERED_TEXT_SUBCOMMAND: String = "hovered_text"
         const val EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT: String = "exhaustive_draw_settlement"
         const val GAME_CREATED_LOCATION_ARGUMENT: String = "game_created_location"
@@ -948,6 +1098,8 @@ class FabricDebugAnimationCommand(
         const val UNCHANGED_ARGUMENT: String = "unchanged"
         const val NORMAL_ARGUMENT: String = "normal"
         const val KYUUSHU_ARGUMENT: String = "kyuushu"
+        const val YAKUMAN_ARGUMENT: String = "yakuman"
+        const val NAGASHI_ARGUMENT: String = "nagashi"
         const val ABORTIVE_ARGUMENT: String = "abortive"
         const val SCORE_ARGUMENT: String = "score"
         const val SCORE_DELTA_ARGUMENT: String = "delta"
@@ -1013,6 +1165,13 @@ class FabricDebugAnimationCommand(
         val previousScore: Int,
         val currentScore: Int,
     )
+
+    private enum class WinSettlementPreview {
+        RON,
+        TSUMO,
+        YAKUMAN,
+        NAGASHI,
+    }
 }
 
 /**
