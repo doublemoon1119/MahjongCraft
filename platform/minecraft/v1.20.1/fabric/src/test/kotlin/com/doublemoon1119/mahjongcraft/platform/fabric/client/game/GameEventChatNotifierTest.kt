@@ -204,6 +204,7 @@ class GameEventChatNotifierTest {
 
         val message = buildMatchResultChatMessage(GameAction.MatchEnded, snapshot, module)
 
+        assertEquals(false, message?.hoverDetails()?.string?.startsWith("\n"))
         val rankingLines = message?.hoverDetails()?.siblings
             .orEmpty()
             .mapNotNull { it.content as? TranslatableTextContent }

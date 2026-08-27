@@ -125,7 +125,8 @@ fun buildDiceRolledChatMessage(action: GameAction): Text? {
 /** 把 [rankedPlayers]（已排好序）依序編號附加到 [message]，兩種排名訊息共用同一種每行格式。 */
 private fun appendRankingLines(message: MutableText, rankedPlayers: List<MahjongPlayerSnapshot>) {
     rankedPlayers.forEachIndexed { index, player ->
-        message.append(Text.literal("\n")).append(
+        if (index > 0) message.append(Text.literal("\n"))
+        message.append(
             Text.translatable(
                 MinecraftMessageKeys.RANKING_LINE,
                 (index + 1).toString(),
