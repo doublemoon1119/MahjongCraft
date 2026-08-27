@@ -32,6 +32,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCa
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundContinuationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
@@ -82,7 +83,9 @@ class GameFlowCoordinatorTest {
 
     private val gameId = Uuid.random()
 
-    private class Fixtures {
+    private class Fixtures(
+        winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry().apply { freeze() },
+    ) {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
@@ -139,6 +142,12 @@ class GameFlowCoordinatorTest {
                 gameRepo,
                 moduleRegistry,
                 PostReactionRoundOutcomeResolverRegistry().apply { freeze() },
+                snapshotSynchronizer,
+            ),
+            resolveWinRoundContinuationUseCase = ResolveWinRoundContinuationUseCase(
+                gameRepo,
+                moduleRegistry,
+                winRoundContinuationResolverRegistry,
                 snapshotSynchronizer,
             ),
             declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
@@ -417,6 +426,62 @@ class GameFlowCoordinatorTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertTrue(newState.players.first { it.id == winnerId }.actionHistory.isEmpty(), "A fresh hand's actionHistory should be empty.")
         assertEquals(1, newState.comboCount, "The winner is the dealer, so the dealer should repeat.")
+    }
+
+    /**
+     * 驗證規則模組登記了 [WinRoundContinuationResolver] 且回傳 [com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective.ContinueRound]
+     * 時，自摸不會結束本局：不銜接 `AdvanceRoundUseCase`（`pendingTransition` 維持 null、贏家的
+     * `Tsumo` 記錄原樣保留，不會被新一手牌重置），改為原子套用 `finishedPlayerIds`／
+     * `currentPlayerIndex` 的變化。
+     */
+    @Test
+    fun `test tsumo command does not chain advance round when a resolver returns ContinueRound`() = runTest {
+        val ruleModuleId = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }.getModule(RiichiRuleConfig()).id
+        val winnerId = Uuid.random()
+        val otherId = Uuid.random()
+        val continuationRegistry = WinRoundContinuationResolverRegistry().apply {
+            register(
+                object : WinRoundContinuationResolver {
+                    override val id: String = "test:continue"
+                    override val ruleModuleId: String = ruleModuleId
+                    override val priority: Int = 0
+
+                    override fun resolve(
+                        context: com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext,
+                        ruleModule: com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule<*>,
+                    ) = com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective.ContinueRound(
+                        newlyFinishedPlayerIds = setOf(winnerId),
+                        nextPlayerId = otherId,
+                        presentationMode = com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinPresentationMode.FULL,
+                    )
+                },
+            )
+            freeze()
+        }
+        val fixtures = Fixtures(winRoundContinuationResolverRegistry = continuationRegistry)
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = daisangenTiles.map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
+            discardPile = FakeDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        ).copy(score = 25000)
+        val other = FakeMahjongPlayerFactory.create(id = otherId, initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState()).copy(score = 25000)
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(winner, other), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator(gameId, winnerId, GameCommand.Tsumo)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertEquals(null, fixtures.gameRepo.getGame(gameId)!!.pendingTransition, "ContinueRound must not chain AdvanceRound.")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertTrue(
+            newState.players.first { it.id == winnerId }.actionHistory.any { it is GameAction.Tsumo },
+            "The hand did not end, so the Tsumo record must not be reset by a fresh deal.",
+        )
+        assertEquals(setOf(winnerId), newState.finishedPlayerIds)
+        assertEquals(1, newState.currentPlayerIndex, "Turn should be handed to nextPlayerId from the directive.")
     }
 
     /**

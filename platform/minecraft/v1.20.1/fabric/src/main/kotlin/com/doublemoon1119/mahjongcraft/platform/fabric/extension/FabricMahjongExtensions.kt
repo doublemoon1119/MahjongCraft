@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.Persistence
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.registerRiichiGameActionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiGameCommandHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiNagashiManganOutcomeResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
@@ -87,6 +88,8 @@ object FabricMahjongExtensions {
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
             PostReactionRoundOutcomeResolverRegistry(),
+        winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry =
+            WinRoundContinuationResolverRegistry(),
         winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
             createBuiltInWinSettlementDetailResolverRegistry(),
         declareRiichiUseCase: DeclareRiichiUseCase,
@@ -114,6 +117,7 @@ object FabricMahjongExtensions {
                 gameActionAiRegistry = gameActionAiRegistry,
                 gameCommandRegistry = gameCommandRegistry,
                 postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
+                winRoundContinuationResolverRegistry = winRoundContinuationResolverRegistry,
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 declareRiichiUseCase = declareRiichiUseCase,
                 extensions = extensions,
@@ -191,6 +195,8 @@ object FabricMahjongExtensions {
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
             PostReactionRoundOutcomeResolverRegistry(),
+        winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry =
+            WinRoundContinuationResolverRegistry(),
         winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
             createBuiltInWinSettlementDetailResolverRegistry(),
         declareRiichiUseCase: DeclareRiichiUseCase,
@@ -221,6 +227,7 @@ object FabricMahjongExtensions {
             gameActionAiRegistry = gameActionAiRegistry,
             gameCommandRegistry = gameCommandRegistry,
             postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
+            winRoundContinuationResolverRegistry = winRoundContinuationResolverRegistry,
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
         )
 

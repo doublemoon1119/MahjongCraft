@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.Persistence
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
@@ -98,6 +99,7 @@ class MahjongCraftMod : ModInitializer {
             gameActionAiRegistry = koin.get<ExtensionGameActionAiRegistry>(),
             gameCommandRegistry = koin.get<ExtensionGameCommandExecutorRegistry>(),
             postReactionRoundOutcomeResolverRegistry = koin.get<PostReactionRoundOutcomeResolverRegistry>(),
+            winRoundContinuationResolverRegistry = koin.get<WinRoundContinuationResolverRegistry>(),
             winSettlementDetailResolverRegistry = koin.get<WinSettlementDetailResolverRegistry>(),
             declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
         )

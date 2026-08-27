@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ForcedAuto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionRouter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiGameCommandHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
@@ -33,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCa
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundContinuationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
@@ -132,6 +134,12 @@ class MahjongAutoDrawServiceTest {
                 gameRepo,
                 moduleRegistry,
                 PostReactionRoundOutcomeResolverRegistry().apply { freeze() },
+                snapshotSynchronizer,
+            ),
+            resolveWinRoundContinuationUseCase = ResolveWinRoundContinuationUseCase(
+                gameRepo,
+                moduleRegistry,
+                WinRoundContinuationResolverRegistry().apply { freeze() },
                 snapshotSynchronizer,
             ),
             declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),

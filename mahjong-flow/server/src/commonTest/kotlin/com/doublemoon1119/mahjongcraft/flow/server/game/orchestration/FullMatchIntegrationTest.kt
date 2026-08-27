@@ -27,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCa
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundContinuationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
@@ -147,6 +148,12 @@ class FullMatchIntegrationTest {
                 gameRepo,
                 moduleRegistry,
                 PostReactionRoundOutcomeResolverRegistry().apply { freeze() },
+                snapshotSynchronizer,
+            ),
+            resolveWinRoundContinuationUseCase = ResolveWinRoundContinuationUseCase(
+                gameRepo,
+                moduleRegistry,
+                WinRoundContinuationResolverRegistry().apply { freeze() },
                 snapshotSynchronizer,
             ),
             declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(

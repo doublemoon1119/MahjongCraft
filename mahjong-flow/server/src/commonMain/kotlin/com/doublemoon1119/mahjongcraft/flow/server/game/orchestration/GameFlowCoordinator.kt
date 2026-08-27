@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -17,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseC
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNagareUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundContinuationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -55,6 +57,8 @@ import kotlin.uuid.Uuid
  * @property gameRepository 權威對局數據倉庫，用於判斷是否需要銜接。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析四槓散了判定。
  * @property declareExhaustiveDrawUseCase 一般流局結算用例。
+ * @property resolveWinRoundContinuationUseCase 胡牌即時結算完成後，判定本局後續是否結束的用例；
+ *   見 [ResolveWinRoundContinuationUseCase] KDoc。
  * @property declareSuukanNagareUseCase 四槓散了結算用例。
  * @property advanceRoundUseCase 連莊/過莊/開下一局用例。
  * @property returnToRoomUseCase 對局結束後把桌子轉回房間用例；[advanceRoundUseCase] 判定對局結束時
@@ -75,6 +79,7 @@ class GameFlowCoordinator(
     private val moduleRegistry: MahjongModuleRegistry,
     private val declareExhaustiveDrawUseCase: DeclareExhaustiveDrawUseCase,
     private val resolvePostReactionRoundOutcomeUseCase: ResolvePostReactionRoundOutcomeUseCase,
+    private val resolveWinRoundContinuationUseCase: ResolveWinRoundContinuationUseCase,
     private val declareSuukanNagareUseCase: DeclareSuukanNagareUseCase,
     private val advanceRoundUseCase: AdvanceRoundUseCase,
     private val returnToRoomUseCase: ReturnToRoomUseCase,
@@ -317,9 +322,8 @@ class GameFlowCoordinator(
             return result
         }
 
-        if (result is Outcome.Success && hasCommandEndedHand(gameId)) {
-            publishNewAbortiveDrawIfPresent(gameId, playerId, previousState)
-            chainAdvanceRound(gameId)
+        if (result is Outcome.Success) {
+            handleHandConclusionIfPresent(gameId, playerId, previousState)
         }
 
         return result
@@ -386,17 +390,43 @@ class GameFlowCoordinator(
     }
 
     /**
-     * [command] 成功執行後，是否可能已經結束本局，需要銜接 [advanceRoundUseCase]。
+     * 命令成功執行後，若這次新增了流局或胡牌記錄，銜接對應的後續流程。
+     *
+     * 兩者都必須依這次命令**新增**的記錄判斷（跟 [previousState] 逐位比對 `actionHistory` 長度），
+     * 不能像過去那樣直接掃描目前完整的 `actionHistory`——一旦某次胡牌經
+     * [resolveWinRoundContinuationUseCase] 判定為 [WinRoundDirective.ContinueRound]，本局會繼續
+     * 累積更多 `Tsumo`／`Ron` 記錄而不结束，若仍用「完整歷史裡有沒有」判斷，會讓本局稍後任何一次
+     * 成功命令都被舊記錄誤判成「本局已結束」，重複觸發銜接。
+     *
+     * 流局（[GameAction.ExhaustiveDraw]）不屬於本次胡牌延續擴充的範圍，一律維持既有行為立即結束
+     * 本局；胡牌（[GameAction.Tsumo]／[GameAction.Ron]）才會詢問 [resolveWinRoundContinuationUseCase]，
+     * 只有取得 [WinRoundDirective.EndRound]（含未註冊 resolver 的規則）才銜接 [chainAdvanceRound]——
+     * [WinRoundDirective.ContinueRound] 的桌況變化已經由該用例原子套用完畢，這裡不需要再做任何事。
      */
-    private suspend fun hasCommandEndedHand(gameId: Uuid): Boolean {
-        val state = gameRepository.getTableState(gameId)
-        return state?.hasEndedHand() == true
-    }
+    private suspend fun handleHandConclusionIfPresent(gameId: Uuid, playerId: Uuid, previousState: TableState) {
+        val currentState = gameRepository.getTableState(gameId) ?: return
+        val newlyRecordedActionsByPlayerId = currentState.players.associate { player ->
+            val previousActionCount = previousState.players.firstOrNull { it.id == player.id }?.actionHistory?.size ?: 0
+            player.id to player.actionHistory.drop(previousActionCount)
+        }
 
-    /** 本局是否已留下可持久化的結束記錄，可供重啟後重建尚未完成的推進。 */
-    private fun TableState.hasEndedHand(): Boolean = players.any { player ->
-        player.actionHistory.any { action ->
-            action is GameAction.Tsumo || action is GameAction.Ron || action is GameAction.ExhaustiveDraw
+        val hasNewExhaustiveDraw = newlyRecordedActionsByPlayerId.values.any { actions ->
+            actions.any { it is GameAction.ExhaustiveDraw }
+        }
+        if (hasNewExhaustiveDraw) {
+            publishNewAbortiveDrawIfPresent(gameId, playerId, previousState)
+            chainAdvanceRound(gameId)
+            return
+        }
+
+        val newWinnerPlayerIds = newlyRecordedActionsByPlayerId
+            .filterValues { actions -> actions.any { it is GameAction.Tsumo || it is GameAction.Ron } }
+            .keys
+        if (newWinnerPlayerIds.isEmpty()) return
+
+        val directive = resolveWinRoundContinuationUseCase(gameId, previousState, newWinnerPlayerIds)
+        if (directive !is Outcome.Success || directive.value is WinRoundDirective.EndRound) {
+            chainAdvanceRound(gameId)
         }
     }
 

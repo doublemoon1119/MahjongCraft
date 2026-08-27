@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -56,6 +57,9 @@ interface MahjongExtension {
 
     /** 登記最後捨牌反應結束後才判定的特殊 round outcome resolver。 */
     fun registerPostReactionRoundOutcomeResolvers(registry: PostReactionRoundOutcomeResolverRegistry) = Unit
+
+    /** 登記胡牌即時結算完成後、判斷本局是否結束的 resolver。 */
+    fun registerWinRoundContinuationResolvers(registry: WinRoundContinuationResolverRegistry) = Unit
 
     /** 登記規則專屬胡牌詳情欄位與其宣告式模板鍵。 */
     fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistry) = Unit
