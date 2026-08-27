@@ -11,11 +11,19 @@ import kotlin.uuid.Uuid
  */
 class FakeGamePresentationBusyGate : GamePresentationBusyGate {
     private val busyGameIds = mutableSetOf<Uuid>()
+    private val presentingContinuingWinGameIds = mutableSetOf<Uuid>()
 
     override fun isBusy(gameId: Uuid): Boolean = gameId in busyGameIds
+
+    override fun isPresentingContinuingWin(gameId: Uuid): Boolean = gameId in presentingContinuingWinGameIds
 
     /** 將 [gameId] 標記為忙碌（[busy] 為 `true`）或不忙碌。 */
     fun setBusy(gameId: Uuid, busy: Boolean) {
         if (busy) busyGameIds += gameId else busyGameIds -= gameId
+    }
+
+    /** 將 [gameId] 標記為正在播放中途胡牌演出（[presenting] 為 `true`）或已播完。 */
+    fun setPresentingContinuingWin(gameId: Uuid, presenting: Boolean) {
+        if (presenting) presentingContinuingWinGameIds += gameId else presentingContinuingWinGameIds -= gameId
     }
 }

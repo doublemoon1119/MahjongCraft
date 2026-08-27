@@ -8,4 +8,6 @@ import kotlin.uuid.Uuid
 @Single(binds = [GamePresentationBusyGate::class])
 class FabricGamePresentationBusyGate(private val tracker: TablePresentationBusyTracker) : GamePresentationBusyGate {
     override fun isBusy(gameId: Uuid): Boolean = tracker.isBusy(gameId)
+
+    override fun isPresentingContinuingWin(gameId: Uuid): Boolean = tracker.isPresentingContinuingWin(gameId)
 }

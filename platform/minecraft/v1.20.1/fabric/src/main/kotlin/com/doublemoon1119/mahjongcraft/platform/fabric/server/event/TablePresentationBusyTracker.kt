@@ -66,13 +66,31 @@ class TablePresentationBusyTracker(
         val table = world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity
         if (table?.tableId == tableId && table.isPresenting(world.time)) return true
         val searchBox = Box(controllerPos).expand(TABLE_SEARCH_HORIZONTAL, TABLE_SEARCH_VERTICAL, TABLE_SEARCH_HORIZONTAL)
+        // 用 blocksTableBusy 而不是直接看 isAnimating：中途胡牌會在已完成玩家的真實牌上排入理牌、
+        // 倒牌、隱形、恢復顯示與蓋牌動畫，那些動畫持有「不阻塞全桌」的 lease，不該擋住其他仍在本局
+        // 中的玩家（見 MahjongTileEntity.nonBlockingPresentationUntilGameTime）。沒有 lease 的動畫
+        // （發牌、摸牌、捨牌等）一律讓整桌忙碌。
         val tileAnimating = world.getEntitiesByClass(MahjongTileEntity::class.java, searchBox) { tile ->
-            tile.managedTableId == tableId && tile.isAnimating
+            tile.managedTableId == tableId && tile.blocksTableBusy(world.time)
         }.isNotEmpty()
         if (tileAnimating) return true
         return world.getEntitiesByClass(MahjongDiceEntity::class.java, searchBox) { dice ->
             dice.managedTableId == tableId && dice.isAnimating
         }.isNotEmpty()
+    }
+
+    /**
+     * [tableId] 是否仍在播放中途胡牌演出。
+     *
+     * 刻意只看 [MahjongTableBlockEntity.continuingWinPresentationBusyUntilGameTime] 這條獨立時間軸，
+     * 完全不看 [isBusy] 會看的實體動畫與整桌時間軸——中途胡牌演出的用意就是「不擋其他人繼續打」，
+     * 只用來讓本局延後換局。
+     */
+    fun isPresentingContinuingWin(tableId: Uuid): Boolean {
+        val location = tableLocationRegistry.get(tableId)?.location ?: return false
+        val world = resolveWorld(location) ?: return false
+        val table = world.getBlockEntity(BlockPos(location.x, location.y, location.z)) as? MahjongTableBlockEntity
+        return table?.tableId == tableId && table.isPresentingContinuingWin(world.time)
     }
 
     /** 由版本無關 dimension ID 取得目前 server session 的世界。 */

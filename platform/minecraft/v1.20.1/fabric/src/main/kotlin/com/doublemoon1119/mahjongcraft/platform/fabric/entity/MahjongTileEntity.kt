@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.TablePresentationBusyPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
@@ -96,6 +97,41 @@ class MahjongTileEntity(
         dataTracker.set(PRESENTATION_ASSET_KEY, assetKey.normalizedTileAssetKey())
         dataTracker.set(PRESENTATION_ASSET_END_GAME_TIME, endGameTime)
     }
+
+    /**
+     * 這張牌的動畫**不**列入整桌忙碌判定的絕對到期時間；`0` 代表沒有這種豁免（一般情況）。
+     *
+     * 存在的理由：中途胡牌（本局在胡牌後仍繼續）會在已完成玩家的真實牌上排入理牌、倒牌、隱形、恢復
+     * 顯示與蓋牌動畫。這些動畫**不該**阻擋其他仍在本局中的玩家繼續摸打，但
+     * [TablePresentationBusyTracker][com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker]
+     * 的整桌忙碌判定是掃描「這桌有沒有任何牌正在動畫」，光靠呈現層不標記整桌 pending 攔不住。
+     *
+     * 刻意用「到期時間」而不是布林旗標：跟牌桌呈現時間軸與動畫佇列一樣是絕對 game time，寫進 entity
+     * NBT 後跨重啟語意不變，也不需要任何人負責事後清除——時間到了自然失效。
+     */
+    var nonBlockingPresentationUntilGameTime: Long = 0L
+        private set
+
+    /**
+     * 只在 server 端建立可持久化的「動畫不阻塞全桌」lease；重複呼叫只允許延長。
+     *
+     * 呼叫端負責涵蓋整段中途胡牌演出（含收尾的蓋牌動畫），見
+     * `FabricGamePresentationPublisher.publishWinPresentation`。
+     */
+    fun exemptFromTableBusyUntil(endGameTime: Long) {
+        check(!world.isClient) { "Non-blocking presentation lease is server-only" }
+        if (endGameTime <= nonBlockingPresentationUntilGameTime) return
+        nonBlockingPresentationUntilGameTime = endGameTime
+    }
+
+    /**
+     * 這張牌目前的動畫是否應該讓整桌進入忙碌狀態；判斷規則本身見 [TablePresentationBusyPolicy]。
+     */
+    fun blocksTableBusy(currentGameTime: Long): Boolean = TablePresentationBusyPolicy.tileBlocksTableBusy(
+        isAnimating = isAnimating,
+        nonBlockingUntilGameTime = nonBlockingPresentationUntilGameTime,
+        currentGameTime = currentGameTime,
+    )
 
     /**
      * 是否正在播放由伺服器啟動的運動動畫（牌牆生成掉落、發牌、摸牌、丟牌共用同一套機制，見
@@ -365,6 +401,7 @@ class MahjongTileEntity(
         tilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
         dataTracker.set(PRESENTATION_ASSET_KEY, nbt.getString(NBT_KEY_PRESENTATION_ASSET))
         dataTracker.set(PRESENTATION_ASSET_END_GAME_TIME, nbt.getLong(NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME))
+        nonBlockingPresentationUntilGameTime = NonBlockingPresentationLeaseCodec.read(nbt)
         readAnimationQueueFromNbt(nbt)
     }
 
@@ -376,6 +413,7 @@ class MahjongTileEntity(
         managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
         nbt.putString(NBT_KEY_PRESENTATION_ASSET, presentationAssetKey)
         nbt.putLong(NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME, presentationAssetEndGameTime)
+        NonBlockingPresentationLeaseCodec.write(nbt, nonBlockingPresentationUntilGameTime)
         writeAnimationQueueToNbt(nbt)
     }
 

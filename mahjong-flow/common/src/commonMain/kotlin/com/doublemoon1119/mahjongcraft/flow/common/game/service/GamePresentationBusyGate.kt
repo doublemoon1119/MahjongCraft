@@ -16,4 +16,16 @@ import kotlin.uuid.Uuid
 interface GamePresentationBusyGate {
     /** [gameId] 目前是否仍在播放呈現動畫，自動操作鏈路應該暫停等待。 */
     fun isBusy(gameId: Uuid): Boolean
+
+    /**
+     * [gameId] 是否仍在播放中途胡牌演出（[PresentationTimeline.CONTINUING_WIN]）。
+     *
+     * 與 [isBusy] 的關鍵差異：這種演出刻意**不**阻擋其他仍在本局中的玩家繼續摸打——否則已完成玩家
+     * 的結算面板會讓整桌乾等。但本局必須等它播完才能換局，否則排隊中的結算面板會被新一局的發牌
+     * 動畫直接蓋掉。因此只有 `GameFlowCoordinator.resumePendingGameTransition` 查詢這一項，
+     * `driveAutomatedPlayers` 不查。
+     *
+     * 預設回傳 `false`，讓不支援這個概念的平台實作零改動。
+     */
+    fun isPresentingContinuingWin(gameId: Uuid): Boolean = false
 }
