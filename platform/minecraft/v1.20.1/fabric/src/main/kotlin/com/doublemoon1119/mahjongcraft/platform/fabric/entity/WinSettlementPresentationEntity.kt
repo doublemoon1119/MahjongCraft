@@ -77,6 +77,14 @@ class WinSettlementPresentationEntity(
         setNoGravity(true)
     }
 
+    /**
+     * 設定這面結算面板的完整內容。
+     *
+     * [winners] **允許為空**：中途胡牌（本局在胡牌後仍繼續）用的精簡收尾會跳過贏家段，面板一開場就
+     * 是分數變動動畫（見 `WinSettlementPresentationRequest.isBrief`）。此時 [rankingStartTick] 為 0，
+     * client 端 renderer 的 `elapsed < rankingStart` 分支永遠不成立，贏家段的繪製不會被進入。
+     * [rankings] 則一定要有內容——分數變動是這面面板唯一不可省略的部分。
+     */
     fun configure(
         tableId: Uuid,
         startGameTime: Long,
@@ -89,7 +97,7 @@ class WinSettlementPresentationEntity(
         customSoundCues: List<WinSettlementSoundCueSnapshot>,
     ) {
         check(!world.isClient)
-        require(winners.isNotEmpty() && rankings.isNotEmpty())
+        require(rankings.isNotEmpty()) { "A settlement panel must always show the score changes" }
         dataTracker.set(TABLE_ID, tableId.toString())
         dataTracker.set(START_GAME_TIME, startGameTime)
         dataTracker.set(REVEAL_TIMING, encodeRevealTiming(revealTiming))

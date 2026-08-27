@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -18,15 +19,21 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationState
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinShowcaseOverride
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricExhaustiveDrawSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricMatchSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationShowcaseScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.WinPresentationCleanupPlan
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
@@ -67,6 +74,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 import kotlin.uuid.Uuid
+import kotlin.uuid.toJavaUuid
 
 /**
  * [GamePresentationPublisher] 的 Fabric 實作，薄分派層。
@@ -107,6 +115,8 @@ class FabricGamePresentationPublisher(
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
     private val busyTracker: TablePresentationBusyTracker,
+    private val debugWinShowcaseOverride: DebugWinShowcaseOverride,
+    private val debugWinRoundContinuationState: DebugWinRoundContinuationState,
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val effectScheduler: FabricWinCelebrationEffectScheduler,
@@ -203,6 +213,10 @@ class FabricGamePresentationPublisher(
                 )
             },
         )
+        // 對局結束：清掉這桌的開發用中途胡牌設定與尚未用掉的 showcase 覆寫，不讓它們跨到下一場。
+        // 兩者都以 tableId 為鍵，而本專案的 gameId 就是該桌的 tableId（整個呈現層都以它查桌）。
+        debugWinRoundContinuationState.clear(gameId)
+        debugWinShowcaseOverride.clear(gameId)
         if (serverHolder.current() == null) return
         busyTracker.markPending(gameId)
         scope.launch(dispatchers.main) {
@@ -644,135 +658,298 @@ class FabricGamePresentationPublisher(
      * 不需要額外判斷。
      *
      * 一炮多響會對每位贏家各自呼叫一次這個方法（見 [GamePresentationPublisher.publishWinCelebration]
-     * KDoc），但 [winningTileId] 對每位贏家來說是同一張牌——[effectScheduler] 內部依 [winningTileId]
-     * 去重，不會重複播放特效，見該類別 KDoc。
+     * KDoc），但 `winningTileId` 對每位贏家來說是同一張牌——[effectScheduler] 內部依它去重，不會重複
+     * 播放特效，見該類別 KDoc。
      */
     override fun publishWinCelebration(gameId: Uuid, request: WinCelebrationRequest) {
+        publish(gameId, "publishWinCelebration", blocksTable = true) { resolved, state, startAt ->
+            runCelebration(gameId, resolved, state, request, startAt)?.endGameTime
+                ?.also { resolved.table.extendPresentationUntil(it) }
+        }
+    }
+
+    /** 通知平台顯示逐位贏家詳情與共用分數排行。 */
+    override fun publishWinSettlement(gameId: Uuid, request: WinSettlementPresentationRequest) {
+        publish(gameId, "publishWinSettlement", blocksTable = true) { resolved, state, startAt ->
+            runSettlement(gameId, resolved, state, request, startAt)?.also { resolved.table.extendPresentationUntil(it) }
+        }
+    }
+
+    /**
+     * 一次排定慶祝演出與結算面板，順序由本方法內部保證——兩段在**同一個** coroutine 內依序算完，
+     * 第一段的結束時間直接當成第二段的起點，不依賴兩次獨立非同步呼叫的先後順序。
+     *
+     * 阻塞策略（見 [WinPresentationRequest] KDoc）：
+     * - `roundContinues == false`：整段獨佔全桌，維持既有行為。
+     * - `roundContinues == true`：只有役滿 showcase 那一段延展整桌共用時間軸（暫停玩家／AI／強制自動
+     *   操作／決策計時器）；一般倒牌特效與**整個結算面板**都只延展中途胡牌時間軸，不阻塞其他人。
+     *
+     * `roundContinues == true` 時，整段結束後一律把贏家真實手牌收尾（恢復可見、蓋成牌背）——即使這次
+     * 兩個請求都是 null（`NONE` 模式）也一樣，否則已完成玩家的手牌會一直立在桌上。
+     */
+    override fun publishWinPresentation(gameId: Uuid, request: WinPresentationRequest) {
+        // 開發用的一次性 showcase 覆寫必須在 hasWatchableShowcase／blocksTable 判定之前套用，之後
+        // 整段流程（阻塞判定、兩條時間軸的切分、收尾恢復可見的範圍）才會一致，見
+        // DebugWinShowcaseOverride KDoc。正式產物裡這一步永遠是原樣回傳。
+        val effectiveRequest = request.copy(celebration = debugWinShowcaseOverride.applyTo(gameId, request.celebration))
+        val blocksTable = !effectiveRequest.roundContinues || effectiveRequest.hasWatchableShowcase
+        publish(gameId, "publishWinPresentation", blocksTable) { resolved, state, startAt ->
+            var cursor = startAt
+            val celebration = runCelebration(gameId, resolved, state, effectiveRequest.celebration, cursor)
+            celebration?.let { cursor = it.endGameTime }
+            val settlementEnd = runSettlement(gameId, resolved, state, effectiveRequest.settlement, cursor)
+            settlementEnd?.let { cursor = it }
+
+            if (effectiveRequest.roundContinues) {
+                // 只有需要觀看的役滿 showcase 才擋住全桌；其餘（含結算面板）走不阻塞的那條時間軸。
+                celebration?.showcaseEndGameTime?.let { resolved.table.extendPresentationUntil(it) }
+                resolved.table.extendContinuingWinPresentationUntil(cursor)
+                // 這一步同時替所有牽涉到的真實牌建立「動畫不阻塞全桌」lease。lease 涵蓋整段演出（含前面
+                // 已經排好的理牌／倒牌動畫），在這裡才套用是安全的：整個 block 在伺服器主執行緒上一次
+                // 跑完，而 isBusy 的呼叫端（輸入分派、心跳）也都在同一條執行緒，觀察不到中間狀態。
+                restoreAndConcealWinnerHands(resolved, state, effectiveRequest, celebration, cursor)
+            } else if (celebration != null || settlementEnd != null) {
+                resolved.table.extendPresentationUntil(cursor)
+            }
+            cursor
+        }
+    }
+
+    /**
+     * 共用的呈現派發樣板：解析桌況、切回主執行緒、依 [blocksTable] 決定要不要標記整桌忙碌，並把兩條
+     * 呈現時間軸中較晚的那個結束時間當成本次演出最早可開始的時刻——這樣同一桌接連發生的胡牌演出
+     * 一定依序播放，不會疊在一起。
+     */
+    private fun publish(
+        gameId: Uuid,
+        operation: String,
+        blocksTable: Boolean,
+        block: (ResolvedTableContext, com.doublemoon1119.mahjongcraft.logic.table.TableState, Long) -> Long?,
+    ) {
         if (serverHolder.current() == null) {
-            logger.warn("publishWinCelebration gameId={} skipped: no active server", gameId)
+            logger.warn("{} gameId={} skipped: no active server", operation, gameId)
             return
         }
-        busyTracker.markPending(gameId)
+        if (blocksTable) busyTracker.markPending(gameId)
         scope.launch(dispatchers.main) {
             try {
-                val resolved = resolveTableContext(gameId, "publishWinCelebration") ?: return@launch
-                val state = gameRepository.getTableState(gameId)
-                if (state == null || request.winners.any { state.players.getOrNull(it.seatIndex) == null }) {
-                    logger.warn("publishWinCelebration gameId={} skipped: no table state or winner found", gameId)
-                    return@launch
-                }
-                val module = moduleRegistry.getModule(state.config)
-                val dealerSeatIndex = state.players.indexOfFirst { it.currentWind == Wind.EAST }
-                var handLaydownEndGameTime: Long? = null
-                val organizedBySeat = request.winners.associate { requestedWinner ->
-                    val winner = state.players[requestedWinner.seatIndex]
-                    val organizedHand = winner.hand.organize(module.tileOrder)
-                    val melds = winner.hand.melds.map { it.toPresentation(state.config.revealsClosedKanTiles) }.map { p ->
-                        MahjongMeldTileGroup(
-                            type = p.type,
-                            tileIds = p.tileIds,
-                            calledTileId = p.calledTileId,
-                            sourceDirection = p.sourceDirection,
-                            allTilesFaceDown = p.allTilesFaceDown,
-                        )
-                    }
-                    val presentation = MahjongWinCelebrationPresentation(
-                        tableId = gameId,
-                        tableLocation = resolved.location,
-                        tableFacing = resolved.facing,
-                        seatIndex = requestedWinner.seatIndex,
-                        organizedStandingTileIds = organizedHand.tiles.map { it.id },
-                        melds = melds,
-                        comboStickCount = if (requestedWinner.seatIndex == dealerSeatIndex) state.comboCount else 0,
-                        winningTileId = request.winningTileId,
-                        isTsumo = request.isTsumo,
-                    )
-                    val result = playerAreaPresenter.presentWinCelebration(presentation)
-                    result.handLaydownEndGameTime?.let { endTime ->
-                        handLaydownEndGameTime = maxOf(handLaydownEndGameTime ?: endTime, endTime)
-                    }
-                    requestedWinner.seatIndex to organizedHand.tiles
-                }
-                if (handLaydownEndGameTime != null) {
-                    val effectStartGameTime = checkNotNull(handLaydownEndGameTime) + MahjongTileTableLayout.WIN_PRE_EFFECT_DELAY_TICKS
-                    val effectEndGameTime = effectStartGameTime + MahjongTileTableLayout.WIN_EFFECT_DURATION_TICKS
-                    effectScheduler.schedule(
-                        world = resolved.world,
-                        targetTileId = request.winningTileId,
-                        startGameTime = effectStartGameTime,
-                        endGameTime = effectEndGameTime,
-                    )
-                    val eligibleWings = request.winners.filter { it.cue != null }.map { requestedWinner ->
-                        FabricWinCelebrationShowcaseScheduler.Wing(
-                            seatIndex = requestedWinner.seatIndex,
-                            cueKey = requestedWinner.cue?.key,
-                            tileIdsAndAssets = organizedBySeat.getValue(requestedWinner.seatIndex)
-                                .filterNot { it.id == request.winningTileId }
-                                .map { it.id to it.tile.toAssetKey(tileAssetRegistry) },
-                        )
-                    }
-                    val winningTile = state.findTile(request.winningTileId)
-                    val showcaseEnd = if (eligibleWings.isNotEmpty() && winningTile != null) {
-                        showcaseScheduler.schedule(
-                            world = resolved.world,
-                            tableId = gameId,
-                            controllerPos = BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
-                            stagePlacement = MahjongTileTableLayout.showcaseStagePlacement(
-                                resolved.location.x,
-                                resolved.location.y,
-                                resolved.location.z,
-                            ),
-                            startGameTime = effectEndGameTime,
-                            winningTileId = request.winningTileId,
-                            winningTileAssetKey = winningTile.tile.toAssetKey(tileAssetRegistry),
-                            wings = eligibleWings,
-                        )
-                    } else {
-                        null
-                    }
-                    resolved.table.extendPresentationUntil(showcaseEnd ?: effectEndGameTime)
-                }
+                val resolved = resolveTableContext(gameId, operation) ?: return@launch
+                val state = gameRepository.getTableState(gameId) ?: return@launch
+                val startAt = maxOf(
+                    resolved.world.time,
+                    resolved.table.presentationBusyUntilGameTime,
+                    resolved.table.continuingWinPresentationBusyUntilGameTime,
+                )
+                block(resolved, state, startAt)
+            } catch (cause: Exception) {
+                logger.warn("Failed to run {} for gameId={}", operation, gameId, cause)
             } finally {
-                busyTracker.clearPending(gameId)
+                if (blocksTable) busyTracker.clearPending(gameId)
             }
         }
     }
 
-    override fun publishWinSettlement(gameId: Uuid, request: WinSettlementPresentationRequest) {
-        if (serverHolder.current() == null) return
-        busyTracker.markPending(gameId)
-        scope.launch(dispatchers.main) {
-            try {
-                val resolved = resolveTableContext(gameId, "publishWinSettlement") ?: return@launch
-                val state = gameRepository.getTableState(gameId) ?: return@launch
-                val tileIds = buildSet {
-                    request.winners.forEach { winner ->
-                        addAll(winner.handTileIds)
-                        winner.melds.forEach { addAll(it.tileIds) }
-                        winner.winningTileId?.let(::add)
-                        winner.detailFields.forEach { field ->
-                            (field.value as? WinSettlementDetailValue.Tiles)?.let { addAll(it.tileIds) }
-                        }
-                    }
-                }
-                val assets = tileIds.mapNotNull { id -> state.findTile(id)?.let { id to it.tile.toAssetKey(tileAssetRegistry) } }.toMap()
-                val end = winSettlementScheduler.schedule(
+    /**
+     * [runCelebration] 的結果。
+     *
+     * @property endGameTime 整段慶祝演出的結束時間。
+     * @property showcaseEndGameTime 役滿 showcase 的結束時間；沒播 showcase 時為 null。
+     * @property showcaseHiddenTileIds 實際交接給 showcase 舞台、因而被設成隱形的真實牌——收尾時要恢復
+     * 可見的就是**這一組**，不能拿手牌全集去猜（副露從頭到尾沒有被 showcase 碰過）。沒播 showcase
+     * 時為空集合。
+     */
+    private data class CelebrationSegment(
+        val endGameTime: Long,
+        val showcaseEndGameTime: Long?,
+        val showcaseHiddenTileIds: Set<Uuid>,
+    )
+
+    /**
+     * 排定一次慶祝演出（強制理牌 → 倒牌 → 降臨特效 → 役滿 showcase），整段接在
+     * [earliestStartGameTime] 之後開始；回傳各段結束時間，呼叫端負責延展時間軸與銜接後續。
+     */
+    private fun runCelebration(
+        gameId: Uuid,
+        resolved: ResolvedTableContext,
+        state: com.doublemoon1119.mahjongcraft.logic.table.TableState,
+        request: WinCelebrationRequest,
+        earliestStartGameTime: Long,
+    ): CelebrationSegment? {
+        if (request.winners.any { state.players.getOrNull(it.seatIndex) == null }) {
+            logger.warn("runCelebration gameId={} skipped: winner seat not found", gameId)
+            return null
+        }
+        val module = moduleRegistry.getModule(state.config)
+        val dealerSeatIndex = state.players.indexOfFirst { it.currentWind == Wind.EAST }
+        var handLaydownEndGameTime: Long? = null
+        val organizedBySeat = request.winners.associate { requestedWinner ->
+            val winner = state.players[requestedWinner.seatIndex]
+            val organizedHand = winner.hand.organize(module.tileOrder)
+            val melds = winner.hand.melds.map { it.toPresentation(state.config.revealsClosedKanTiles) }.map { p ->
+                MahjongMeldTileGroup(
+                    type = p.type,
+                    tileIds = p.tileIds,
+                    calledTileId = p.calledTileId,
+                    sourceDirection = p.sourceDirection,
+                    allTilesFaceDown = p.allTilesFaceDown,
+                )
+            }
+            val presentation = MahjongWinCelebrationPresentation(
+                tableId = gameId,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
+                seatIndex = requestedWinner.seatIndex,
+                organizedStandingTileIds = organizedHand.tiles.map { it.id },
+                melds = melds,
+                comboStickCount = if (requestedWinner.seatIndex == dealerSeatIndex) state.comboCount else 0,
+                winningTileId = request.winningTileId,
+                isTsumo = request.isTsumo,
+                earliestStartGameTime = earliestStartGameTime,
+            )
+            val result = playerAreaPresenter.presentWinCelebration(presentation)
+            result.handLaydownEndGameTime?.let { endTime ->
+                handLaydownEndGameTime = maxOf(handLaydownEndGameTime ?: endTime, endTime)
+            }
+            requestedWinner.seatIndex to organizedHand.tiles
+        }
+        if (handLaydownEndGameTime != null) {
+            val effectStartGameTime = checkNotNull(handLaydownEndGameTime) + MahjongTileTableLayout.WIN_PRE_EFFECT_DELAY_TICKS
+            val effectEndGameTime = effectStartGameTime + MahjongTileTableLayout.WIN_EFFECT_DURATION_TICKS
+            effectScheduler.schedule(
+                world = resolved.world,
+                targetTileId = request.winningTileId,
+                startGameTime = effectStartGameTime,
+                endGameTime = effectEndGameTime,
+            )
+            val eligibleWings = request.winners.filter { it.cue != null }.map { requestedWinner ->
+                FabricWinCelebrationShowcaseScheduler.Wing(
+                    seatIndex = requestedWinner.seatIndex,
+                    cueKey = requestedWinner.cue?.key,
+                    tileIdsAndAssets = organizedBySeat.getValue(requestedWinner.seatIndex)
+                        .filterNot { it.id == request.winningTileId }
+                        .map { it.id to it.tile.toAssetKey(tileAssetRegistry) },
+                )
+            }
+            val winningTile = state.findTile(request.winningTileId)
+            // showcase 會把這些真實牌設成隱形交接給舞台代理（見 FabricWinCelebrationShowcaseScheduler），
+            // 收尾時要恢復可見的就是這一組。
+            val showcaseHiddenTileIds = if (eligibleWings.isNotEmpty() && winningTile != null) {
+                eligibleWings.flatMapTo(mutableSetOf()) { wing -> wing.tileIdsAndAssets.map { it.first } } +
+                    request.winningTileId
+            } else {
+                emptySet()
+            }
+            val showcaseEnd = if (eligibleWings.isNotEmpty() && winningTile != null) {
+                showcaseScheduler.schedule(
                     world = resolved.world,
                     tableId = gameId,
                     controllerPos = BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
-                    placement = MahjongTileTableLayout.showcaseStagePlacement(resolved.location.x, resolved.location.y, resolved.location.z),
-                    earliestStartGameTime = resolved.table.presentationBusyUntilGameTime,
-                    request = request,
-                    tileAssetsById = assets,
+                    stagePlacement = MahjongTileTableLayout.showcaseStagePlacement(
+                        resolved.location.x,
+                        resolved.location.y,
+                        resolved.location.z,
+                    ),
+                    startGameTime = effectEndGameTime,
+                    winningTileId = request.winningTileId,
+                    winningTileAssetKey = winningTile.tile.toAssetKey(tileAssetRegistry),
+                    wings = eligibleWings,
                 )
-                if (end != null) resolved.table.extendPresentationUntil(end)
-            } catch (cause: Exception) {
-                logger.warn("Failed to publish win settlement for gameId={}", gameId, cause)
-            } finally {
-                busyTracker.clearPending(gameId)
+            } else {
+                null
+            }
+            return CelebrationSegment(
+                endGameTime = showcaseEnd ?: effectEndGameTime,
+                showcaseEndGameTime = showcaseEnd,
+                showcaseHiddenTileIds = if (showcaseEnd != null) showcaseHiddenTileIds else emptySet(),
+            )
+        }
+        return null
+    }
+
+    /** 排定一次結算面板，接在 [earliestStartGameTime] 之後開始；回傳面板結束時間。 */
+    private fun runSettlement(
+        gameId: Uuid,
+        resolved: ResolvedTableContext,
+        state: com.doublemoon1119.mahjongcraft.logic.table.TableState,
+        request: WinSettlementPresentationRequest,
+        earliestStartGameTime: Long,
+    ): Long? {
+        val tileIds = buildSet {
+            request.winners.forEach { winner ->
+                addAll(winner.handTileIds)
+                winner.melds.forEach { addAll(it.tileIds) }
+                winner.winningTileId?.let(::add)
+                winner.detailFields.forEach { field ->
+                    (field.value as? WinSettlementDetailValue.Tiles)?.let { addAll(it.tileIds) }
+                }
             }
         }
+        val assets = tileIds.mapNotNull { id -> state.findTile(id)?.let { id to it.tile.toAssetKey(tileAssetRegistry) } }.toMap()
+        val end = winSettlementScheduler.schedule(
+            world = resolved.world,
+            tableId = gameId,
+            controllerPos = BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
+            placement = MahjongTileTableLayout.showcaseStagePlacement(resolved.location.x, resolved.location.y, resolved.location.z),
+            earliestStartGameTime = earliestStartGameTime,
+            request = request,
+            tileAssetsById = assets,
+        )
+        return end
     }
+
+    /**
+     * 中途胡牌整段演出結束（[endGameTime]）後，把牽涉到的真實牌收尾乾淨。
+     *
+     * 兩件事都必須做，缺一不可：
+     * 1. **恢復可見**——役滿 showcase 會把參與展示的真實牌 `SetInvisible(true)` 交接給舞台代理
+     *    （見 [FabricWinCelebrationShowcaseScheduler]），而它本身從不還原。本局結束的胡牌不會有事，
+     *    因為下一局會重新發牌；但本局繼續時這些牌會永遠隱形，連帶永久失去碰撞
+     *    （`MahjongTileEntity.isCollidable` = `!isInvisible && physicalCollisionEnabled`）。恢復的對象
+     *    刻意取 [CelebrationSegment.showcaseHiddenTileIds]——也就是**實際交接出去的那一組**，不是拿
+     *    手牌全集去猜；沒播 showcase 時這組是空的，不會有多餘的動畫。
+     * 2. **蓋成牌背**——已完成的玩家不再行動，立牌不該繼續攤著。
+     *
+     * 蓋牌範圍只取 `hand.standingTiles`，**絕不包含副露**：吃、碰、明槓、暗槓本來就是公開資訊，蓋起來
+     * 既不合規則，也會摧毀既有的牌面、橫置方向與加槓疊牌版面（見 [MahjongTileTableLayout]）。副露從
+     * 頭到尾沒有被慶祝演出或 showcase 碰過，因此這裡也不需要為它們做任何事。
+     *
+     * 榮和的胡牌張不屬於贏家立牌（它留在放銃者的牌河），因此只會出現在恢復可見那一組，維持原本的
+     * 牌河姿態與位置，不跟著蓋牌。
+     *
+     * 兩者都以絕對時間排進各張牌自己的動畫佇列後就不再追蹤——佇列寫進 entity NBT，重啟會自己接續
+     * 播完，沿用 `FabricExhaustiveDrawSettlementPresentationScheduler` 對流局手牌的既有做法。
+     */
+    private fun restoreAndConcealWinnerHands(
+        resolved: ResolvedTableContext,
+        state: com.doublemoon1119.mahjongcraft.logic.table.TableState,
+        request: WinPresentationRequest,
+        celebration: CelebrationSegment?,
+        endGameTime: Long,
+    ) {
+        val plan = WinPresentationCleanupPlan.of(
+            winnerHands = request.winnerPlayerIds.mapNotNull { winnerId ->
+                state.players.firstOrNull { it.id == winnerId }?.hand
+            },
+            showcaseHiddenTileIds = celebration?.showcaseHiddenTileIds.orEmpty(),
+        )
+        // 收尾動畫本身也要算進豁免範圍，否則蓋牌那幾 tick 又會讓整桌忙碌。
+        val exemptUntil = endGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
+        plan.animatedTileIds.forEach { tileId ->
+            resolved.findTile(tileId)?.exemptFromTableBusyUntil(exemptUntil)
+        }
+        // 先還原可見度再蓋牌：兩者排進同一條佇列，順序不能顛倒。
+        plan.restoreVisibleTileIds.forEach { tileId ->
+            resolved.findTile(tileId)?.enqueueAll(
+                listOf(AnimationStep.WaitUntil(endGameTime), AnimationStep.SetInvisible(false)),
+            )
+        }
+        plan.concealTileIds.forEach { tileId ->
+            resolved.findTile(tileId)?.let { tile -> TileAnimationSteps.scheduleConceal(tile, endGameTime) }
+        }
+    }
+
+    /** 依 UUID 取得這桌世界裡的牌實體。 */
+    private fun ResolvedTableContext.findTile(tileId: Uuid): MahjongTileEntity? = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity
 
     /** 依 UUID 從所有權威牌區尋找牌面。 */
     private fun com.doublemoon1119.mahjongcraft.logic.table.TableState.findTile(tileId: Uuid): com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile? = players.asSequence().flatMap { player ->

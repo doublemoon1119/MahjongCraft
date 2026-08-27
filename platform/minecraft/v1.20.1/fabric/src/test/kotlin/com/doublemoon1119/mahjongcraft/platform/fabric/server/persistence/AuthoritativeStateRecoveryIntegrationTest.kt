@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTime
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
@@ -309,6 +310,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             HandSortPreferenceStore(),
             FakeGameEventPublisher(),
             FakeGamePresentationPublisher(),
+            WinPresentationHandoff(),
         )(gameId, playerId, GameAction.Pass)
 
         /** 使用恢復後 repository 提交搶槓反應 Pass。 */
@@ -318,6 +320,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             snapshotSynchronizer,
             FakeGameEventPublisher(),
             FakeGamePresentationPublisher(),
+            WinPresentationHandoff(),
         )(gameId, playerId, GameAction.Pass)
     }
 }

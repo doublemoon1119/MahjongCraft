@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTime
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -82,6 +83,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         val gameSnapshotRepo = FakeGameSnapshotRepository()
         val gameEventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
+        val winPresentationHandoff = WinPresentationHandoff()
         val presentationBusyGate = FakeGamePresentationBusyGate()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, gameSnapshotRepo, GameVisibilityPolicyImpl())
@@ -113,7 +115,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 gameEventPublisher,
                 presentationPublisher,
             ),
-            declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
+            declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher, winPresentationHandoff),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
             respondToDiscardUseCase = RespondToDiscardUseCase(
                 gameRepo,
@@ -122,8 +124,9 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 handSortPreferenceStore,
                 gameEventPublisher,
                 presentationPublisher,
+                winPresentationHandoff,
             ),
-            respondToKanUseCase = RespondToKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
+            respondToKanUseCase = RespondToKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher, winPresentationHandoff),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
             extensionCommandRegistry = extensionCommandRegistry,
         )
@@ -177,6 +180,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
             ),
             presentationBusyGate = presentationBusyGate,
             exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
+            winPresentationHandoff = winPresentationHandoff,
             presentationPublisher = presentationPublisher,
         )
     }

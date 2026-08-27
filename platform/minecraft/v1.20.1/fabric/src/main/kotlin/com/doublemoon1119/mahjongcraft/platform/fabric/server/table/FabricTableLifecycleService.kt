@@ -3,6 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationState
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinShowcaseOverride
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.TableBreakPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.allowsTableBreak
@@ -29,6 +31,8 @@ import kotlin.uuid.Uuid
 class FabricTableLifecycleService(
     private val store: AuthoritativeStateStore,
     private val locations: TableLocationRegistry,
+    private val debugWinRoundContinuationState: DebugWinRoundContinuationState,
+    private val debugWinShowcaseOverride: DebugWinShowcaseOverride,
     private val cleanupService: OrphanedTableCleanupService,
     private val configState: MinecraftServerConfigState,
     private val diceRollPresenter: MahjongDiceRollPresenter,
@@ -108,6 +112,10 @@ class FabricTableLifecycleService(
             )
             return null
         }
+        // 桌子已被移除：一併清掉這桌的開發用 debug 設定，不讓條目累積（這兩個容器只在開發環境
+        // 才會有內容，見 DebugWinShowcaseOverride／DebugWinRoundContinuationState KDoc）。
+        debugWinRoundContinuationState.clear(tableId)
+        debugWinShowcaseOverride.clear(tableId)
         val result = cleanupService.cleanupPlayerBroken(tableId, entry.revision)
         logger.debug("Handled player-broken Mahjong table {} with cleanup result {}", tableId, result)
         return result

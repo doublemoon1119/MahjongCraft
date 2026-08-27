@@ -283,7 +283,9 @@ class FabricMahjongPlayerAreaPresenter(
             hasDrawnTile = presentation.isTsumo,
         )
 
-        val reorderStartGameTime = world.time
+        // 整條慶祝動畫鏈都由這個起點推導；接在呼叫端指定的時間軸之後，讓同一條時間軸上的連續胡牌
+        // 演出依序播放而不重疊（預設 0 等同 world.time，維持既有行為）。
+        val reorderStartGameTime = maxOf(world.time, presentation.earliestStartGameTime)
         val reorderEndGameTime = reorderStartGameTime + MahjongTileTableLayout.WIN_REORDER_FLIGHT_DURATION_TICKS
 
         val claimedStandingTiles = linkedMapOf<Uuid, MahjongTileEntity>()

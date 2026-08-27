@@ -27,6 +27,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.uuid.Uuid
 
 /** 驗證完整 Game 權威狀態的 encoded persistence round-trip。 */
@@ -139,6 +140,15 @@ class TableStatePersistenceTest {
         val decoded = this.json.decodeFromJsonElement(TableStatePersistenceDto.serializer(), withoutFinishedPlayerIds)
 
         assertEquals(emptySet(), decoded.finishedPlayerIds)
+    }
+
+    /** 存檔裡的 `finishedPlayerIds` 含不在座玩家時，還原成領域型別的當下就該被不變式擋下。 */
+    @Test
+    fun `restoring a table state whose finishedPlayerIds contains an outsider fails fast`() {
+        val dto = createTableState().toPersistenceDto()
+        val corrupted = dto.copy(finishedPlayerIds = setOf(Uuid.random().toString()))
+
+        assertFailsWith<IllegalArgumentException> { corrupted.toDomain() }
     }
 
     /** 建立同時包含人類、AI、隱藏手牌、牌河與動態牌桌狀態的測試牌局。 */

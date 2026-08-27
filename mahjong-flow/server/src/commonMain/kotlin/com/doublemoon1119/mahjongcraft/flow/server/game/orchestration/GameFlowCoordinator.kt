@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
@@ -8,11 +9,13 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresen
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -67,6 +70,7 @@ import kotlin.uuid.Uuid
  * @property forcedAutoPlayDriver 找出下一個必須由伺服器固定操作的真人玩家與命令。
  * @property decisionTimerManager 在每次命令完成後結算並調整玩家決策計時器。
  * @property decisionTimerSynchronizationService 立即同步命令完成後的權威計時與停止狀態。
+ * @property winPresentationHandoff 胡牌 use case 建構好的演出內容交接點，見 [WinPresentationHandoff]。
  * @property presentationBusyGate 查詢平台呈現層是否仍在播放動畫；[driveAutomatedPlayers] 與
  *   [resumePendingGameTransition] 都會在推進權威流程前檢查，忙碌時直接返回並留待後續心跳重試；
  *   實作由平台層提供，理由見 [GamePresentationBusyGate] KDoc。
@@ -88,6 +92,7 @@ class GameFlowCoordinator(
     private val decisionTimerManager: GameDecisionTimerManager,
     private val decisionTimerSynchronizationService: DecisionTimerSynchronizationService,
     private val exhaustiveDrawSettlementPresentationService: ExhaustiveDrawSettlementPresentationService,
+    private val winPresentationHandoff: WinPresentationHandoff,
     @Provided private val presentationPublisher: GamePresentationPublisher,
     @Provided private val presentationBusyGate: GamePresentationBusyGate,
 ) {
@@ -220,6 +225,9 @@ class GameFlowCoordinator(
      */
     suspend fun resumePendingGameTransition(gameId: Uuid): Boolean {
         if (presentationBusyGate.isBusy(gameId)) return false
+        // 中途胡牌演出不阻塞其他玩家繼續摸打（因此 driveAutomatedPlayers 刻意不查這一項），但本局要等
+        // 它播完才真的換局，否則還在播的結算面板會被新一局的發牌動畫直接蓋掉。
+        if (presentationBusyGate.isPresentingContinuingWin(gameId)) return false
         pendingTransitionMutex.lock()
         try {
             val transition = gameRepository.getGame(gameId)?.pendingTransition ?: return false
@@ -424,8 +432,33 @@ class GameFlowCoordinator(
             .keys
         if (newWinnerPlayerIds.isEmpty()) return
 
-        val directive = resolveWinRoundContinuationUseCase(gameId, previousState, newWinnerPlayerIds)
-        if (directive !is Outcome.Success || directive.value is WinRoundDirective.EndRound) {
+        // 無論後續判定成不成功都先取走交接內容，避免失敗時殘留到下一次胡牌；贏家不符的殘留值會被
+        // WinPresentationHandoff.take 自行丟棄並回傳 null。
+        val presentation = winPresentationHandoff.take(gameId, newWinnerPlayerIds)
+        val result = resolveWinRoundContinuationUseCase(gameId, previousState, newWinnerPlayerIds)
+        val directive = (result as? Outcome.Success)?.value
+
+        if (presentation != null) {
+            val continuing = directive as? WinRoundDirective.ContinueRound
+            // 「面板多詳細」由 settlementMode 決定；「是否中斷遊戲」由 roundContinues 加上這次是否帶
+            // 役滿 cue 決定（見 WinPresentationRequest KDoc），兩者互不牽連。
+            val mode = continuing?.settlementMode ?: ContinuingWinSettlementMode.FULL
+            presentationPublisher.publishWinPresentation(
+                gameId,
+                WinPresentationRequest(
+                    winnerPlayerIds = presentation.winnerPlayerIds,
+                    // 胡牌演出在任何模式下都完整播放（見 ContinuingWinSettlementMode KDoc）；模式
+                    // 只決定結算面板的詳細程度。
+                    celebration = presentation.celebration,
+                    settlement = presentation.settlement.copy(
+                        isBrief = mode == ContinuingWinSettlementMode.BRIEF,
+                    ),
+                    roundContinues = continuing != null,
+                ),
+            )
+        }
+
+        if (directive == null || directive is WinRoundDirective.EndRound) {
             chainAdvanceRound(gameId)
         }
     }

@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
@@ -67,6 +68,7 @@ class GameActionRouterTest {
         val handSortPreferenceStore = HandSortPreferenceStore()
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
+        val winPresentationHandoff = WinPresentationHandoff()
         val declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, handSortPreferenceStore, eventPublisher, presentationPublisher)
         val extensionCommandRegistry = ExtensionGameCommandExecutorRegistry().apply {
             registerRiichiGameCommandHandler(declareRiichiUseCase)
@@ -81,7 +83,7 @@ class GameActionRouterTest {
                 eventPublisher,
                 presentationPublisher,
             ),
-            declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, winPresentationHandoff),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
             respondToDiscardUseCase = RespondToDiscardUseCase(
                 gameRepo,
@@ -90,8 +92,9 @@ class GameActionRouterTest {
                 handSortPreferenceStore,
                 eventPublisher,
                 presentationPublisher,
+                winPresentationHandoff,
             ),
-            respondToKanUseCase = RespondToKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            respondToKanUseCase = RespondToKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, winPresentationHandoff),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             extensionCommandRegistry = extensionCommandRegistry,
         )

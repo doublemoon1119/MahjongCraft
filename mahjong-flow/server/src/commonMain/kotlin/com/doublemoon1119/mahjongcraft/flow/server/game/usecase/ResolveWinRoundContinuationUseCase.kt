@@ -22,9 +22,9 @@ import kotlin.uuid.Uuid
  * 一炮多響已經在 `RonSettlementResolver` 收斂成單一結算，因此 [winnerPlayerIds] 在此時已包含這次
  * 一起成立的所有贏家，本用例只呼叫一次 [WinRoundContinuationResolverRegistry.resolve]。
  *
- * 回傳 [WinRoundDirective.EndRound] 時完全不修改 [Game][com.doublemoon1119.mahjongcraft.flow.common.game.model.Game]；
- * 回傳 [WinRoundDirective.ContinueRound] 時原子套用 `finishedPlayerIds`／`currentPlayerIndex` 的變化並
- * 同步快照，呼叫端據此決定是否仍要銜接 `AdvanceRoundUseCase`。
+ * 只負責「本局要不要繼續」這個權威決策，不碰任何呈現：[WinRoundDirective.EndRound] 不修改任何桌況；
+ * [WinRoundDirective.ContinueRound] 原子套用 `finishedPlayerIds`／`currentPlayerIndex` 的變化並同步
+ * 快照。呼叫端據此決定是否銜接 `AdvanceRoundUseCase`，以及這次胡牌演出要用什麼方式播放。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
@@ -59,11 +59,14 @@ class ResolveWinRoundContinuationUseCase(
             val directive = resolverRegistry.resolve(context, module)
             when (directive) {
                 WinRoundDirective.EndRound -> game to Outcome.Success(directive)
+
                 is WinRoundDirective.ContinueRound ->
                     game.copy(tableState = directive.applyTo(settledTableState)) to Outcome.Success(directive)
             }
         }
-        if (result is Outcome.Success && result.value is WinRoundDirective.ContinueRound) snapshotSynchronizer.syncAll(gameId)
+        if (result is Outcome.Success && result.value is WinRoundDirective.ContinueRound) {
+            snapshotSynchronizer.syncAll(gameId)
+        }
         return result
     }
 

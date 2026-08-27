@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
@@ -52,7 +53,8 @@ class DeclareTsumoUseCaseTest {
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
-        val useCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher)
+        val winPresentationHandoff = WinPresentationHandoff()
+        val useCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, winPresentationHandoff)
     }
 
     // 中中、發發發、白白白、123m、55p（大三元役滿，13 張立牌）
@@ -280,10 +282,14 @@ class DeclareTsumoUseCaseTest {
     }
 
     /**
-     * 驗證自摸成功後觸發胡牌慶祝演出，帶上正確的贏家座位、胡牌張 Uuid，且 `isTsumo` 為 `true`。
+     * 驗證自摸成功後把胡牌演出寫進 `Game.pendingWinPresentation` 交接槽（而不是直接發布），帶上正確的
+     * 贏家座位、胡牌張 Uuid，且 `isTsumo` 為 `true`。
+     *
+     * 刻意不直接發布：本局是否就此結束要等 `ResolveWinRoundContinuationUseCase` 詢問過規則模組才知道，
+     * 由它決定要立即播放或排隊延後播放——「最終有沒有真的發布出去」由 `GameFlowCoordinatorTest` 驗證。
      */
     @Test
-    fun `test declare tsumo publishes win celebration with winner seat and winning tile`() = runTest {
+    fun `test declare tsumo stages win presentation with winner seat and winning tile`() = runTest {
         val fixtures = Fixtures()
         val winner = FakeMahjongPlayerFactory.create(
             id = winnerId,
@@ -304,11 +310,15 @@ class DeclareTsumoUseCaseTest {
         val result = fixtures.useCase(gameId, winnerId)
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        val celebrations = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId)
-        assertEquals(1, celebrations.size)
-        assertEquals(1, celebrations.single().winnerSeatIndex)
-        assertEquals(winningTile.id, celebrations.single().winningTileId)
-        assertTrue(celebrations.single().isTsumo)
+        assertTrue(
+            fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty(),
+            "The use case must stage the presentation, not publish it directly.",
+        )
+        val staged = assertNotNull(fixtures.winPresentationHandoff.take(gameId, setOf(winnerId)))
+        assertEquals(setOf(winnerId), staged.winnerPlayerIds)
+        assertEquals(listOf(1), staged.celebration.winners.map { it.seatIndex })
+        assertEquals(winningTile.id, staged.celebration.winningTileId)
+        assertTrue(staged.celebration.isTsumo)
     }
 
     /**

@@ -32,6 +32,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.Fabric
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDebugAnimationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricGameCommand
@@ -48,6 +49,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDispl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
@@ -102,6 +104,8 @@ class MahjongCraftMod : ModInitializer {
             winRoundContinuationResolverRegistry = koin.get<WinRoundContinuationResolverRegistry>(),
             winSettlementDetailResolverRegistry = koin.get<WinSettlementDetailResolverRegistry>(),
             declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
+            debugWinRoundContinuationState = koin.get<DebugWinRoundContinuationState>(),
+            minecraftEnvironment = koin.get<MinecraftEnvironment>(),
         )
         ModItems.register()
         ModEntities.register()

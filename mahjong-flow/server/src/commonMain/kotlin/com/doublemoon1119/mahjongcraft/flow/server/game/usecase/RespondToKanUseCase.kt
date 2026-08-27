@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
@@ -12,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWinSettlementDetailResolverRegistry
@@ -54,6 +56,7 @@ class RespondToKanUseCase(
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
     @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val winPresentationHandoff: WinPresentationHandoff,
     private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
         createBuiltInWinCelebrationCueResolverRegistry(),
     private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
@@ -175,12 +178,13 @@ class RespondToKanUseCase(
             }
         }
 
-        // 觸發平台呈現層：胡牌慶祝演出——搶槓成功時 result.ronWinnerIds 可能不只一人，各自觸發一次；
-        // winningTileId 對每位贏家來說都是同一張被搶的加槓/暗槓牌。
+        // 建構胡牌演出內容並寫進交接槽——搶槓成功時 result.ronWinnerIds 可能不只一人，打包成同一筆；
+        // winningTileId 對每位贏家來說都是同一張被搶的加槓/暗槓牌。刻意不直接發布，理由同 DeclareTsumoUseCase。
         result.ronWinningTileId?.let { winningTileId ->
-            presentationPublisher.publishWinCelebration(
-                gameId,
-                WinCelebrationRequest(
+            val module = moduleRegistry.getModule(newState.config)
+            val presentation = SettledWinPresentation(
+                winnerPlayerIds = result.ronWinnerIds,
+                celebration = WinCelebrationRequest(
                     winningTileId,
                     isTsumo = false,
                     winners = result.ronWinnerIds.map { winnerId ->
@@ -192,11 +196,7 @@ class RespondToKanUseCase(
                         )
                     },
                 ),
-            )
-            val module = moduleRegistry.getModule(newState.config)
-            presentationPublisher.publishWinSettlement(
-                gameId,
-                WinSettlementPresentationRequestFactory.create(
+                settlement = WinSettlementPresentationRequestFactory.create(
                     previousState = checkNotNull(result.previousTableState),
                     currentState = newState,
                     module = module,
@@ -208,6 +208,7 @@ class RespondToKanUseCase(
                     detailResolverRegistry = winSettlementDetailResolverRegistry,
                 ),
             )
+            winPresentationHandoff.stage(gameId, presentation)
         }
 
         return Outcome.Success(Unit)

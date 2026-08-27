@@ -24,10 +24,13 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWin
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationState
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.registerDebugWinRoundContinuationResolvers
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.registerRiichiGameActionDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrationResult
@@ -93,6 +96,8 @@ object FabricMahjongExtensions {
         winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
             createBuiltInWinSettlementDetailResolverRegistry(),
         declareRiichiUseCase: DeclareRiichiUseCase,
+        debugWinRoundContinuationState: DebugWinRoundContinuationState,
+        minecraftEnvironment: MinecraftEnvironment,
     ) {
         try {
             val extensions = FabricLoader.getInstance()
@@ -120,6 +125,8 @@ object FabricMahjongExtensions {
                 winRoundContinuationResolverRegistry = winRoundContinuationResolverRegistry,
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 declareRiichiUseCase = declareRiichiUseCase,
+                debugWinRoundContinuationState = debugWinRoundContinuationState,
+                minecraftEnvironment = minecraftEnvironment,
                 extensions = extensions,
             )
             val extensionIds = extensions.map { it.id }
@@ -200,6 +207,10 @@ object FabricMahjongExtensions {
         winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
             createBuiltInWinSettlementDetailResolverRegistry(),
         declareRiichiUseCase: DeclareRiichiUseCase,
+        debugWinRoundContinuationState: DebugWinRoundContinuationState = DebugWinRoundContinuationState(),
+        // 預設不註冊開發用的中途胡牌 resolver：這個多載的其他測試呼叫端只關心依賴圖，正式呼叫端
+        // （MahjongCraftMod）會傳入真正的 MinecraftEnvironment。
+        minecraftEnvironment: MinecraftEnvironment = NonDevelopmentEnvironment,
         extensions: Iterable<MahjongExtension>,
     ): MinecraftMahjongExtensionRegistrationResult {
         moduleRegistry.registerBuiltInRuleModules()
@@ -216,6 +227,13 @@ object FabricMahjongExtensions {
             networkRegistries = networkRegistries,
             persistenceRegistries = persistenceRegistries,
         )
+        // 開發環境限定：讓「胡牌後本局繼續」這條路徑在還沒有任何規則支援它時就能進遊戲驗證，
+        // 比照 FabricDebugAnimationCommand 的 gating——正式產物裡根本沒註冊過。預設 inert。
+        if (minecraftEnvironment.isDevelopment) {
+            winRoundContinuationResolverRegistry.registerDebugWinRoundContinuationResolvers(
+                state = debugWinRoundContinuationState,
+            )
+        }
 
         MahjongExtensionRegistrar.registerAndFreeze(
             extensions = extensions,
@@ -247,6 +265,11 @@ object FabricMahjongExtensions {
             winSettlementTemplateRegistry = winSettlementTemplateRegistry,
             matchSettlementTemplateRegistry = matchSettlementTemplateRegistry,
         )
+    }
+
+    /** [initialize] 預設使用的環境查詢：一律回報非開發環境，見該參數上方註解。 */
+    private object NonDevelopmentEnvironment : MinecraftEnvironment {
+        override val isDevelopment: Boolean = false
     }
 
     /** 將日麻限定的 action／command 整合集中安裝為 bundled Riichi extension。 */

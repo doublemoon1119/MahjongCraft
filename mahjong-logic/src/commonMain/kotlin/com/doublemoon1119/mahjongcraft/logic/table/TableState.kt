@@ -49,9 +49,15 @@ data class TableState(
     val finishedPlayerIds: Set<Uuid> = emptySet(),
 ) {
     init {
-        if (players.isNotEmpty() && finishedPlayerIds.isNotEmpty()) {
-            require(currentPlayer.id !in finishedPlayerIds) {
-                "currentPlayerIndex must not point at a finished player: ${currentPlayer.id}"
+        if (finishedPlayerIds.isNotEmpty()) {
+            val playerIds = players.mapTo(mutableSetOf()) { it.id }
+            require(finishedPlayerIds.all { it in playerIds }) {
+                "finishedPlayerIds must belong to this table: ${finishedPlayerIds - playerIds}"
+            }
+            if (players.isNotEmpty()) {
+                require(currentPlayer.id !in finishedPlayerIds) {
+                    "currentPlayerIndex must not point at a finished player: ${currentPlayer.id}"
+                }
             }
         }
     }
@@ -65,8 +71,14 @@ data class TableState(
     /** 尚未完成本局、仍參與後續回合的玩家，依 [players] 原本的座位順序排列。 */
     val activePlayers: List<MahjongPlayer> get() = players.filterNot { it.id in finishedPlayerIds }
 
-    /** [playerId] 是否仍在本局中（尚未被標記為 [finishedPlayerIds]）。 */
-    fun isPlayerActive(playerId: Uuid): Boolean = playerId !in finishedPlayerIds
+    /**
+     * [playerId] 是否為本桌仍在本局中的玩家（在座、且尚未被標記為 [finishedPlayerIds]）。
+     *
+     * 不在本桌的 Uuid 一律回傳 `false`，而不是因為「不在 finished 集合裡」就當成 active——
+     * 這個函式的呼叫端全都是在問「這個人現在還能不能行動」，把陌生 Uuid 當成可以行動會讓打錯的
+     * 識別碼安靜地通過檢查。
+     */
+    fun isPlayerActive(playerId: Uuid): Boolean = players.any { it.id == playerId } && playerId !in finishedPlayerIds
 
     /**
      * [roundNumber] 換算成目前場風（[prevalentWind]）內的第幾局（`1` 起算）——[roundNumber] 本身是

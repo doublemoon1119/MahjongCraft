@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTime
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -85,6 +86,7 @@ class MahjongAutoDrawServiceTest {
         val handSortPreferenceStore = HandSortPreferenceStore()
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
+        val winPresentationHandoff = WinPresentationHandoff()
         val presentationBusyGate = FakeGamePresentationBusyGate()
         val declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, handSortPreferenceStore, eventPublisher, presentationPublisher)
         val extensionCommandRegistry = ExtensionGameCommandExecutorRegistry().apply {
@@ -100,7 +102,7 @@ class MahjongAutoDrawServiceTest {
                 eventPublisher,
                 presentationPublisher,
             ),
-            declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, winPresentationHandoff),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
             respondToDiscardUseCase = RespondToDiscardUseCase(
                 gameRepo,
@@ -109,8 +111,9 @@ class MahjongAutoDrawServiceTest {
                 handSortPreferenceStore,
                 eventPublisher,
                 presentationPublisher,
+                winPresentationHandoff,
             ),
-            respondToKanUseCase = RespondToKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            respondToKanUseCase = RespondToKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, winPresentationHandoff),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             extensionCommandRegistry = extensionCommandRegistry,
         )
@@ -162,6 +165,7 @@ class MahjongAutoDrawServiceTest {
             ),
             presentationBusyGate = presentationBusyGate,
             exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
+            winPresentationHandoff = winPresentationHandoff,
             presentationPublisher = presentationPublisher,
         )
         val feedbackPublisher = FakeMinecraftPlayerFeedbackPublisher()

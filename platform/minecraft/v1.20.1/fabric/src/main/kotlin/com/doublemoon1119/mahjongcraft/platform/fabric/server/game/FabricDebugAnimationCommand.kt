@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInExhaustiveDrawSettlementStatusIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
@@ -22,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -62,6 +65,8 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
@@ -113,6 +118,11 @@ import kotlin.uuid.toKotlinUuid
 @Single
 class FabricDebugAnimationCommand(
     private val minecraftEnvironment: MinecraftEnvironment,
+    private val debugWinRoundContinuationState: DebugWinRoundContinuationState,
+    private val debugWinShowcaseOverride: DebugWinShowcaseOverride,
+    private val membershipRepository: PlayerMembershipRepository,
+    private val scope: AppCoroutineScope,
+    private val dispatchers: CoroutineDispatchers,
     private val effectScheduler: FabricWinCelebrationEffectScheduler,
     private val showcaseScheduler: FabricWinCelebrationShowcaseScheduler,
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
@@ -303,10 +313,100 @@ class FabricDebugAnimationCommand(
                                 .then(withOptionalTileArgument(literal(CHI_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.CHI, tileArg) })
                                 .then(withOptionalTileArgument(literal(PON_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.PON, tileArg) })
                                 .then(withOptionalTileArgument(literal(KAN_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.OPEN_KAN, tileArg) }),
+                        )
+                        .then(
+                            DebugWinRoundContinuationMode.entries.fold(
+                                literal(CONTINUING_WIN_SUBCOMMAND)
+                                    .executes { context -> reportContinuingWinMode(context.source) },
+                            ) { node, mode ->
+                                node.then(
+                                    literal(mode.name.lowercase()).executes { context ->
+                                        setContinuingWinMode(context.source, mode)
+                                    },
+                                )
+                            },
+                        )
+                        .then(
+                            withOptionalCueArgument(
+                                literal(WIN_SHOWCASE_OVERRIDE_SUBCOMMAND).then(
+                                    literal(CLEAR_ARGUMENT).executes { context -> clearWinShowcaseOverride(context.source) },
+                                ),
+                                allowMultiple = false,
+                            ) { source, cue -> armWinShowcaseOverride(source, cue) },
                         ),
                 ),
             )
         }
+    }
+
+    /**
+     * 切換**執行者目前所在那一桌**的中途胡牌（胡牌後本局繼續）開發用模式，見
+     * [DebugWinRoundContinuationResolver]。
+     *
+     * 跟這個類別的其他子指令不同，這一個**不**臨時生成任何 entity、也不預覽任何動畫——它只翻一個開關，
+     * 之後在那一桌正常胡牌就會走中途胡牌流程。中途胡牌牽涉的是整條遊戲流程（已完成玩家被跳過、演出走
+     * 獨立時間軸不擋其他玩家、換局延後），本來就不可能靠臨時 entity 預覽出來。
+     *
+     * 刻意以桌為範圍而非全伺服器：同一個開發伺服器上可能同時有多桌，全域開關會讓其他桌莫名其妙進入
+     * 中途胡牌流程，而且開啟後會一直有效到有人記得手動關掉。因此執行者必須已經坐在某一桌上。
+     */
+    private fun setContinuingWinMode(source: ServerCommandSource, mode: DebugWinRoundContinuationMode): Int = withPlayerTable(source) { tableId ->
+        debugWinRoundContinuationState.setMode(tableId, mode)
+        "Continuing-win debug mode for table $tableId set to ${mode.name}"
+    }
+
+    /** 回報執行者目前所在那一桌的中途胡牌模式，並一併列出全伺服器其他仍有設定的桌子。 */
+    private fun reportContinuingWinMode(source: ServerCommandSource): Int = withPlayerTable(source) { tableId ->
+        buildString {
+            append("Continuing-win debug mode for table $tableId is ${debugWinRoundContinuationState.modeFor(tableId).name}")
+            val others = debugWinRoundContinuationState.activeTableIds() - tableId
+            if (others.isNotEmpty()) append("; also active on: ${others.joinToString()}")
+            val armed = debugWinShowcaseOverride.armedTableIds()
+            if (armed.isNotEmpty()) append("; showcase override armed on: ${armed.joinToString()}")
+        }
+    }
+
+    /**
+     * 替執行者目前所在那一桌武裝一次性的役滿 showcase 覆寫，見 [DebugWinShowcaseOverride]——只覆寫
+     * 呈現用的 cue，動不到權威役種、番數、分數或結算結果。
+     */
+    private fun armWinShowcaseOverride(source: ServerCommandSource, cueKey: String?): Int = withPlayerTable(source) { tableId ->
+        val resolvedCue = cueKey ?: DEFAULT_SHOWCASE_CUE
+        if (debugWinShowcaseOverride.arm(tableId, resolvedCue)) {
+            "Next win on table $tableId will play showcase cue $resolvedCue (presentation only, one-shot)"
+        } else {
+            "Showcase override is available in development environments only"
+        }
+    }
+
+    /** 解除執行者目前所在那一桌尚未用掉的 showcase 覆寫武裝。 */
+    private fun clearWinShowcaseOverride(source: ServerCommandSource): Int = withPlayerTable(source) { tableId ->
+        debugWinShowcaseOverride.clear(tableId)
+        "Showcase override for table $tableId cleared"
+    }
+
+    /**
+     * 解析執行者目前占用的麻將桌後在伺服器主執行緒上執行 [action]，並把它回傳的訊息回饋給執行者。
+     *
+     * 桌歸屬查詢是 suspend 的，而 Brigadier 的執行是同步的，因此結果透過協程非同步回饋——比照
+     * `FabricGameCommand` 橋接 suspend 查詢與 Brigadier 同步 API 的既有做法。
+     */
+    private fun withPlayerTable(source: ServerCommandSource, action: (Uuid) -> String): Int {
+        val player = source.player ?: run {
+            source.sendError(Text.literal("This debug subcommand must be run by a player seated at a table"))
+            return 0
+        }
+        scope.launch {
+            val tableId = membershipRepository.getTableId(player.uuid.toKotlinUuid())
+            withContext(dispatchers.main) {
+                if (tableId == null) {
+                    source.sendError(Text.literal("You are not seated at any mahjong table"))
+                } else {
+                    source.sendFeedback({ Text.literal(action(tableId)) }, true)
+                }
+            }
+        }
+        return 1
     }
 
     /**
@@ -1181,6 +1281,9 @@ class FabricDebugAnimationCommand(
         const val DRAW_SUBCOMMAND: String = "draw"
         const val DISCARD_SUBCOMMAND: String = "discard"
         const val MELD_SUBCOMMAND: String = "meld"
+        const val CONTINUING_WIN_SUBCOMMAND: String = "continuing_win"
+        const val WIN_SHOWCASE_OVERRIDE_SUBCOMMAND: String = "win_showcase_override"
+        const val CLEAR_ARGUMENT: String = "clear"
         const val EXHAUSTIVE_DRAW_SETTLEMENT_SUBCOMMAND: String = "exhaustive_draw_settlement"
         const val WIN_SETTLEMENT_SUBCOMMAND: String = "win_settlement"
         const val MATCH_SETTLEMENT_SUBCOMMAND: String = "match_settlement"

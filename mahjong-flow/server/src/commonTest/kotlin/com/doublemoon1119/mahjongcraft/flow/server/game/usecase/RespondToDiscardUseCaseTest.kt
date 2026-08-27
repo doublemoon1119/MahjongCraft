@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -57,6 +58,7 @@ class RespondToDiscardUseCaseTest {
         val handSortPreferenceStore = HandSortPreferenceStore()
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
+        val winPresentationHandoff = WinPresentationHandoff()
         val useCase = RespondToDiscardUseCase(
             gameRepo,
             moduleRegistry,
@@ -64,6 +66,7 @@ class RespondToDiscardUseCaseTest {
             handSortPreferenceStore,
             eventPublisher,
             presentationPublisher,
+            winPresentationHandoff,
         )
     }
 
@@ -703,11 +706,16 @@ class RespondToDiscardUseCaseTest {
             "Ron doesn't claim a meld, so it should never trigger the meld-claim presentation/animation.",
         )
 
-        val celebrations = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId)
-        assertEquals(1, celebrations.size)
-        assertEquals(newState.players.indexOfFirst { it.id == responderId }, celebrations.single().winnerSeatIndex)
-        assertEquals(discardedTile.id, celebrations.single().winningTileId)
-        assertFalse(celebrations.single().isTsumo)
+        // 演出寫進交接槽而非直接發布，理由見 DeclareTsumoUseCaseTest 對應案例的 KDoc。
+        assertTrue(fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty())
+        val staged = assertNotNull(fixtures.winPresentationHandoff.take(gameId, setOf(responderId)))
+        assertEquals(setOf(responderId), staged.winnerPlayerIds)
+        assertEquals(
+            listOf(newState.players.indexOfFirst { it.id == responderId }),
+            staged.celebration.winners.map { it.seatIndex },
+        )
+        assertEquals(discardedTile.id, staged.celebration.winningTileId)
+        assertFalse(staged.celebration.isTsumo)
     }
 
     /**
@@ -899,15 +907,19 @@ class RespondToDiscardUseCaseTest {
         val finalDiscarder = finalState.players.first { it.id == discarderId }
         assertEquals(-80000, finalDiscarder.score, "The discarder should pay the sum of both winners' totals.")
 
-        val celebrations = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId)
-        assertEquals(1, celebrations.size, "Multi-ron winners should share one authoritative celebration request.")
-        assertEquals(discardedTile.id, celebrations.single().winningTileId)
-        assertFalse(celebrations.single().isTsumo)
+        // 演出寫進交接槽而非直接發布，理由見 DeclareTsumoUseCaseTest 對應案例的 KDoc。
+        val staged = assertNotNull(
+            fixtures.winPresentationHandoff.take(gameId, setOf(dealerWinnerId, responderId)),
+            "Multi-ron winners should share one authoritative staged presentation.",
+        )
+        assertEquals(setOf(dealerWinnerId, responderId), staged.winnerPlayerIds)
+        assertEquals(discardedTile.id, staged.celebration.winningTileId)
+        assertFalse(staged.celebration.isTsumo)
         val dealerWinnerSeatIndex = finalState.players.indexOfFirst { it.id == dealerWinnerId }
         val nonDealerWinnerSeatIndex = finalState.players.indexOfFirst { it.id == responderId }
         assertEquals(
             setOf(dealerWinnerSeatIndex, nonDealerWinnerSeatIndex),
-            celebrations.single().request.winners.map { it.seatIndex }.toSet(),
+            staged.celebration.winners.map { it.seatIndex }.toSet(),
         )
     }
 

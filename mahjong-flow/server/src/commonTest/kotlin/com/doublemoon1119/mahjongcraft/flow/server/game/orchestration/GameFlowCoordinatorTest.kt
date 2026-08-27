@@ -4,12 +4,16 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -21,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTime
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -60,6 +65,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDeci
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.WinPresentationSegment
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -69,6 +75,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -93,6 +100,7 @@ class GameFlowCoordinatorTest {
         val handSortPreferenceStore = HandSortPreferenceStore()
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
+        val winPresentationHandoff = WinPresentationHandoff()
         val presentationBusyGate = FakeGamePresentationBusyGate()
         val declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, handSortPreferenceStore, eventPublisher, presentationPublisher)
         val extensionCommandRegistry = ExtensionGameCommandExecutorRegistry().apply {
@@ -108,7 +116,7 @@ class GameFlowCoordinatorTest {
                 eventPublisher,
                 presentationPublisher,
             ),
-            declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, winPresentationHandoff),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
             respondToDiscardUseCase = RespondToDiscardUseCase(
                 gameRepo,
@@ -117,8 +125,9 @@ class GameFlowCoordinatorTest {
                 handSortPreferenceStore,
                 eventPublisher,
                 presentationPublisher,
+                winPresentationHandoff,
             ),
-            respondToKanUseCase = RespondToKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            respondToKanUseCase = RespondToKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, winPresentationHandoff),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             extensionCommandRegistry = extensionCommandRegistry,
         )
@@ -174,6 +183,7 @@ class GameFlowCoordinatorTest {
             ),
             presentationBusyGate = presentationBusyGate,
             exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
+            winPresentationHandoff = winPresentationHandoff,
             presentationPublisher = presentationPublisher,
         )
     }
@@ -426,6 +436,20 @@ class GameFlowCoordinatorTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertTrue(newState.players.first { it.id == winnerId }.actionHistory.isEmpty(), "A fresh hand's actionHistory should be empty.")
         assertEquals(1, newState.comboCount, "The winner is the dealer, so the dealer should repeat.")
+        // 胡牌演出由 use case 交給 handoff、再由 coordinator 在取得 EndRound 後立即發布到整桌共用
+        // 時間軸——這是既有規則一直以來的可觀察行為，只是呼叫點從 use case 內部移到了這裡。
+        val celebrations = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId)
+        assertEquals(1, celebrations.size)
+        assertEquals(winningTile.id, celebrations.single().winningTileId)
+        assertTrue(celebrations.single().isTsumo)
+        val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
+        assertTrue(!published.roundContinues, "The round ended, so the whole presentation owns the table.")
+        assertEquals(
+            listOf(listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT)),
+            fixtures.presentationPublisher.getWinPresentationSegmentOrder(gameId),
+            "Celebration must always be ordered before settlement.",
+        )
+        assertEquals(null, fixtures.winPresentationHandoff.take(gameId, setOf(winnerId)), "The handoff must be consumed.")
     }
 
     /**
@@ -436,9 +460,204 @@ class GameFlowCoordinatorTest {
      */
     @Test
     fun `test tsumo command does not chain advance round when a resolver returns ContinueRound`() = runTest {
-        val ruleModuleId = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }.getModule(RiichiRuleConfig()).id
         val winnerId = Uuid.random()
         val otherId = Uuid.random()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val fixtures = runContinuingWinTsumo(
+            winnerId = winnerId,
+            otherId = otherId,
+            winningTile = winningTile,
+            settlementMode = ContinuingWinSettlementMode.FULL,
+        )
+        val game = fixtures.gameRepo.getGame(gameId)!!
+        assertEquals(null, game.pendingTransition, "ContinueRound must not chain AdvanceRound.")
+        val newState = game.tableState
+        assertTrue(
+            newState.players.first { it.id == winnerId }.actionHistory.any { it is GameAction.Tsumo },
+            "The hand did not end, so the Tsumo record must not be reset by a fresh deal.",
+        )
+        assertEquals(setOf(winnerId), newState.finishedPlayerIds)
+        assertEquals(1, newState.currentPlayerIndex, "Turn should be handed to nextPlayerId from the directive.")
+
+        // FULL 模式：演出照樣發布，但改走中途胡牌專用時間軸——它不列入整桌忙碌判定，因此其他仍在
+        // 本局中的玩家可以繼續摸打，只有換局要等它播完。
+        val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
+        assertTrue(published.roundContinues, "A continuing win must tell the platform the round goes on.")
+        assertTrue(
+            published.hasWatchableShowcase,
+            "Daisangen is a yakuman, so this continuing win still has a showcase that must be watched.",
+        )
+        assertEquals(setOf(winnerId), published.winnerPlayerIds)
+        assertEquals(
+            listOf(listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT)),
+            fixtures.presentationPublisher.getWinPresentationSegmentOrder(gameId),
+            "Celebration must always be ordered before settlement.",
+        )
+        assertEquals(null, fixtures.winPresentationHandoff.take(gameId, setOf(winnerId)), "The handoff must be consumed.")
+
+        // 中途胡牌演出還在播時本局不該換局；播完後才會真的推進。
+        fixtures.gameRepo.updateGame(gameId) { current ->
+            current!!.copy(pendingTransition = PendingGameTransition.AdvanceRound) to Unit
+        }
+        fixtures.presentationBusyGate.setPresentingContinuingWin(gameId, true)
+        assertTrue(!fixtures.coordinator.resumePendingGameTransition(gameId))
+        fixtures.presentationBusyGate.setPresentingContinuingWin(gameId, false)
+        assertTrue(
+            fixtures.coordinator.resumePendingGameTransition(gameId),
+            "Once the queue drains, the pending round transition should finally run.",
+        )
+    }
+
+    /**
+     * 驗證 [ContinuingWinSettlementMode.BRIEF]：胡牌演出**完全照常**（理牌、攤牌、降臨特效，役滿時還有
+     * showcase），只有結算面板換成精簡版。
+     *
+     * 這正是這組 enum 的設計重點：胡牌演出是「這個人胡了、退出本局」在世界裡唯一的視覺訊號，其他仍在
+     * 局中的玩家必須看見，任何模式都不可省略；真正依情境調整的只有面板，因為面板是要**讀**的。
+     */
+    @Test
+    fun `test continuing win in brief mode only shrinks the settlement panel`() = runTest {
+        val fixtures = runContinuingWinTsumo(
+            winnerId = Uuid.random(),
+            otherId = Uuid.random(),
+            winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red),
+            settlementMode = ContinuingWinSettlementMode.BRIEF,
+        )
+
+        val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
+        assertTrue(published.settlement.isBrief, "BRIEF must ask the platform for the shortened panel.")
+        assertTrue(published.roundContinues)
+        assertEquals(
+            listOf(listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT)),
+            fixtures.presentationPublisher.getWinPresentationSegmentOrder(gameId),
+            "The win celebration is never skipped, whatever the settlement mode.",
+        )
+        // 手牌是大三元役滿：即使面板精簡，showcase 照樣播、照樣暫停全桌。
+        assertTrue(
+            published.hasWatchableShowcase,
+            "A yakuman showcase must still be watched even when the panel is brief.",
+        )
+    }
+
+    // 234m 567m 234p 567p 5s（斷么九，13 張立牌）——一般役，**不是**役滿，因此不會有 showcase cue。
+    private val tanyaoTiles = listOf(
+        Tile.Numeric(Tile.Suit.Character, 2), Tile.Numeric(Tile.Suit.Character, 3), Tile.Numeric(Tile.Suit.Character, 4),
+        Tile.Numeric(Tile.Suit.Character, 5), Tile.Numeric(Tile.Suit.Character, 6), Tile.Numeric(Tile.Suit.Character, 7),
+        Tile.Numeric(Tile.Suit.Dot, 2), Tile.Numeric(Tile.Suit.Dot, 3), Tile.Numeric(Tile.Suit.Dot, 4),
+        Tile.Numeric(Tile.Suit.Dot, 5), Tile.Numeric(Tile.Suit.Dot, 6), Tile.Numeric(Tile.Suit.Dot, 7),
+        Tile.Numeric(Tile.Suit.Bamboo, 5),
+    )
+
+    /**
+     * 驗證**一般**（非役滿）中途胡牌不需要中斷遊戲：沒有 showcase cue，因此
+     * `hasWatchableShowcase == false`，平台不會暫停其他仍在本局中的玩家。
+     */
+    @Test
+    fun `test ordinary continuing win does not need to pause the other players`() = runTest {
+        val fixtures = runContinuingWinTsumo(
+            winnerId = Uuid.random(),
+            otherId = Uuid.random(),
+            winningTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
+            settlementMode = ContinuingWinSettlementMode.FULL,
+            handTiles = tanyaoTiles,
+        )
+
+        val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
+        assertTrue(published.roundContinues)
+        assertNotNull(published.celebration)
+        assertTrue(
+            published.celebration!!.winners.all { it.cue == null },
+            "Tanyao is not a yakuman, so no showcase cue should be resolved.",
+        )
+        assertTrue(
+            !published.hasWatchableShowcase,
+            "An ordinary continuing win must not pause the players who are still in the round.",
+        )
+    }
+
+    /**
+     * 驗證含役滿 cue 的中途胡牌會被標記成「需要觀看」——平台據此暫停玩家／AI／強制自動操作／決策
+     * 計時器直到 showcase 播完（見 [WinPresentationRequest] KDoc）。
+     *
+     * 跟上一個測試的唯一差別就是手牌：大三元是役滿，`cue` 只在役滿成立時才非 null。
+     */
+    @Test
+    fun `test continuing win carrying a yakuman cue is marked as needing to pause play`() = runTest {
+        val fixtures = runContinuingWinTsumo(
+            winnerId = Uuid.random(),
+            otherId = Uuid.random(),
+            winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red),
+            settlementMode = ContinuingWinSettlementMode.FULL,
+        )
+
+        val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
+        assertTrue(published.roundContinues, "The round continues, so most of this presentation must not block.")
+        assertNotNull(published.celebration)
+        assertTrue(
+            published.celebration!!.winners.any { it.cue != null },
+            "Daisangen is a yakuman, so the celebration must carry a showcase cue.",
+        )
+        assertTrue(
+            published.hasWatchableShowcase,
+            "A continuing win with a yakuman showcase must still pause players for that segment.",
+        )
+    }
+
+    /**
+     * 驗證同一局內連續兩次中途胡牌各自送出一次完整呈現請求，順序與贏家都正確——排隊播放本身由平台的
+     * 呈現時間軸負責（見 `FabricGamePresentationPublisher`），這裡驗證的是 flow 層確實逐次送出、
+     * 沒有把兩次合併或漏掉任何一次。
+     */
+    @Test
+    fun `test consecutive continuing wins each publish their own presentation in order`() = runTest {
+        val firstWinnerId = Uuid.random()
+        val secondWinnerId = Uuid.random()
+        val fixtures = runContinuingWinTsumo(
+            winnerId = firstWinnerId,
+            otherId = secondWinnerId,
+            winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red),
+            settlementMode = ContinuingWinSettlementMode.FULL,
+        )
+        // 第二位玩家接著自摸：沿用同一份 fixtures（含同一個 resolver registry）再跑一次。
+        val secondWinningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        fixtures.gameRepo.updateGame(gameId) { game ->
+            val state = game!!.tableState
+            val updated = state.players.map { player ->
+                if (player.id == secondWinnerId) {
+                    player.copy(hand = Hand(tiles = daisangenTiles.map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = secondWinningTile))
+                } else {
+                    player
+                }
+            }
+            game.copy(tableState = state.copy(players = updated)) to Unit
+        }
+
+        fixtures.coordinator(gameId, secondWinnerId, GameCommand.Tsumo)
+
+        val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId)
+        assertEquals(2, published.size, "Each continuing win must publish its own presentation, never merged.")
+        assertEquals(setOf(firstWinnerId), published[0].winnerPlayerIds)
+        assertEquals(setOf(secondWinnerId), published[1].winnerPlayerIds)
+        assertEquals(
+            List(2) { listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT) },
+            fixtures.presentationPublisher.getWinPresentationSegmentOrder(gameId),
+            "Celebration must precede settlement within every publish.",
+        )
+    }
+
+    /**
+     * 以指定的 [settlementMode] 跑一次「規則判定本局繼續」的自摸，回傳執行後的 fixtures 供斷言。
+     *
+     * 兩種結算面板模式的測試共用同一份桌況與 resolver 設定，差別只在 [settlementMode]。
+     */
+    private suspend fun runContinuingWinTsumo(
+        winnerId: Uuid,
+        otherId: Uuid,
+        winningTile: com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile,
+        settlementMode: ContinuingWinSettlementMode,
+        handTiles: List<Tile> = daisangenTiles,
+    ): Fixtures {
+        val ruleModuleId = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }.getModule(RiichiRuleConfig()).id
         val continuationRegistry = WinRoundContinuationResolverRegistry().apply {
             register(
                 object : WinRoundContinuationResolver {
@@ -447,41 +666,45 @@ class GameFlowCoordinatorTest {
                     override val priority: Int = 0
 
                     override fun resolve(
-                        context: com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext,
+                        context: WinRoundContinuationContext,
                         ruleModule: com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule<*>,
-                    ) = com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective.ContinueRound(
-                        newlyFinishedPlayerIds = setOf(winnerId),
-                        nextPlayerId = otherId,
-                        presentationMode = com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinPresentationMode.FULL,
-                    )
+                    ): WinRoundDirective {
+                        // 從 context 取本次贏家，讓同一份 registry 能重複用於同一局內的連續胡牌。
+                        val settled = context.settledTableState
+                        val nextActive = settled.players
+                            .first { it.id !in context.winnerPlayerIds && settled.isPlayerActive(it.id) }
+                        return WinRoundDirective.ContinueRound(
+                            newlyFinishedPlayerIds = context.winnerPlayerIds,
+                            nextPlayerId = nextActive.id,
+                            settlementMode = settlementMode,
+                        )
+                    }
                 },
             )
             freeze()
         }
         val fixtures = Fixtures(winRoundContinuationResolverRegistry = continuationRegistry)
-        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
         val winner = FakeMahjongPlayerFactory.create(
             id = winnerId,
             initialSeat = Wind.EAST,
-            hand = Hand(tiles = daisangenTiles.map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
+            hand = Hand(tiles = handTiles.map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
             discardPile = FakeDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
             playerRuleState = RiichiPlayerState(),
         ).copy(score = 25000)
         val other = FakeMahjongPlayerFactory.create(id = otherId, initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState()).copy(score = 25000)
-        val table = FakeTableStateFactory.create(id = gameId, players = listOf(winner, other), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 0)
+        // 三人桌：連續兩次中途胡牌之後仍必須留下至少一位 active 玩家，否則 ContinueRound 不合法。
+        val bystander = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, playerRuleState = RiichiPlayerState()).copy(score = 25000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(winner, other, bystander),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            currentPlayerIndex = 0,
+        )
         fixtures.gameRepo.setTableState(table)
 
         val result = fixtures.coordinator(gameId, winnerId, GameCommand.Tsumo)
-
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        assertEquals(null, fixtures.gameRepo.getGame(gameId)!!.pendingTransition, "ContinueRound must not chain AdvanceRound.")
-        val newState = fixtures.gameRepo.getTableState(gameId)!!
-        assertTrue(
-            newState.players.first { it.id == winnerId }.actionHistory.any { it is GameAction.Tsumo },
-            "The hand did not end, so the Tsumo record must not be reset by a fresh deal.",
-        )
-        assertEquals(setOf(winnerId), newState.finishedPlayerIds)
-        assertEquals(1, newState.currentPlayerIndex, "Turn should be handed to nextPlayerId from the directive.")
+        return fixtures
     }
 
     /**

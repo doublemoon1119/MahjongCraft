@@ -339,4 +339,66 @@ interface GamePresentationPublisher {
 
     /** 通知平台在既有胡牌／役滿演出之後顯示逐位贏家詳情與共用分數排行。 */
     fun publishWinSettlement(gameId: Uuid, request: WinSettlementPresentationRequest) = Unit
+
+    /**
+     * 通知平台播放一次完整的胡牌呈現：慶祝演出與結算面板**依序**播放。
+     *
+     * 跟分別呼叫 [publishWinCelebration] 與 [publishWinSettlement] 的關鍵差異是**順序是 API 契約**：
+     * 實作必須保證結算面板排在慶祝演出結束之後才開始，不得依賴兩次獨立非同步呼叫的先後順序碰運氣。
+     * 呼叫端只送出一次，實作內部自行把第一段算出的結束時間交給第二段。
+     *
+     * 分別呼叫的那兩個方法保留給不成對的既有呼叫點（例如流局特殊結果只需要結算面板）。
+     */
+    fun publishWinPresentation(gameId: Uuid, request: WinPresentationRequest) = Unit
+}
+
+/**
+ * 一次胡牌的完整呈現請求。
+ *
+ * **顯示什麼**與**是否中斷遊戲**是兩個獨立的維度，刻意分開建模：
+ * - 顯示什麼：[celebration]／[settlement] 各自是否為 null（對應
+ *   `ContinuingWinSettlementMode` 的 FULL／SETTLEMENT_ONLY／NONE）。
+ * - 是否中斷：由 [roundContinues] 與 [celebration] 本身是否帶役滿 cue 共同決定，見下方說明。
+ *
+ * @property winnerPlayerIds 這次一起成立的所有贏家；**不受顯示模式影響**，[roundContinues] 時實作
+ * 一律要用它把這些玩家的真實手牌收尾（恢復可見、蓋成牌背），即使兩個請求都是 null 也一樣。
+ * @property celebration 胡牌演出：強制理牌重排、把贏家立牌倒下攤開（FACE_UP）、降臨特效，以及役滿
+ * 成立時的 showcase。整段不可省略、也不拆開——它是「這個人胡了」在世界裡唯一的視覺訊號。
+ * @property settlement 結算面板；詳細或精簡由
+ * [com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode] 決定，反映在
+ * [WinSettlementPresentationRequest.isBrief] 上。
+ * @property settlement 結算面板；不顯示面板的模式為 null。
+ * @property roundContinues 本局是否在這次胡牌之後仍然繼續（已完成玩家退出、其他人續打）。
+ *
+ * `false`（本局就此結束）時整段演出都獨佔全桌，維持既有行為——反正沒有人還要繼續打。
+ *
+ * `true` 時實作必須做到：**只有真正需要玩家停下來觀看的段落才中斷遊戲**。具體來說，
+ * [celebration] 的 `winners` 中只要有任何非 null 的 `cue`，就代表這次會播役滿 showcase，那一段
+ * 必須暫停玩家輸入、AI、強制自動操作與決策計時器；其餘段落（一般倒牌特效、以及**整個結算面板**）
+ * 都不得阻塞，其他仍在本局中的玩家要能照常摸打。
+ *
+ * `true` 時實作還必須在整段演出結束後把贏家的真實手牌收尾乾淨（恢復可見、蓋成牌背），
+ * 見 `GamePresentationBusyGate.isPresentingContinuingWin`。
+ */
+data class WinPresentationRequest(
+    val winnerPlayerIds: Set<Uuid>,
+    val celebration: WinCelebrationRequest,
+    val settlement: WinSettlementPresentationRequest,
+    val roundContinues: Boolean,
+) {
+    init {
+        require(winnerPlayerIds.isNotEmpty()) { "A win presentation must have at least one winner" }
+    }
+
+    /**
+     * 這次演出是否包含需要玩家停下來觀看的役滿 showcase。
+     *
+     * `cue` 只在役滿成立時才非 null（見內建的胡牌展示提示解析器），因此這個判斷等同「這次會不會播
+     * 役滿 showcase」。
+     *
+     * [roundContinues] 時，**只有這一段**需要暫停全桌：役滿 showcase 一旦開始就必須讓所有人看完。
+     * 攤牌、降臨特效與結算面板（不論完整或精簡）都不阻塞，其他仍在局中的玩家照常摸打。
+     */
+    val hasWatchableShowcase: Boolean
+        get() = celebration.winners.any { it.cue != null }
 }

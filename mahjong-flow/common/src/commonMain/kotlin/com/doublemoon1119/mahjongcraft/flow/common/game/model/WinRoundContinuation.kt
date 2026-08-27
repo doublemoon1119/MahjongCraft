@@ -32,16 +32,56 @@ data class WinRoundContinuationContext(
     val winningTileId: Uuid,
 )
 
-/** 中途胡牌演出的規則中立呈現模式。 */
-enum class ContinuingWinPresentationMode {
-    /** 既有胡牌／役滿演出，再接既有 win settlement 面板。 */
+/**
+ * 中途胡牌的規則中立**結算面板**詳細程度。
+ *
+ * 刻意只描述面板，不描述整段演出：胡牌演出本身（強制理牌重排、把贏家立牌倒下攤開、降臨特效，以及
+ * 役滿成立時的 showcase）在任何模式下都完整播放，不可省略——它是「這個人胡了、退出本局」在世界裡
+ * 唯一的視覺訊號，其他仍在局中的玩家必須看見，否則會有玩家憑空從本局消失。真正需要依情境調整的
+ * 是面板：它是要**讀**的，會讓其他人乾等。
+ */
+enum class ContinuingWinSettlementMode {
+    /** 既有的完整結算面板：役種、番符明細、手牌重現與名次變動。 */
     FULL,
 
-    /** 略過胡牌特效，只顯示既有結算面板。 */
-    SETTLEMENT_ONLY,
+    /**
+     * 跳過贏家詳情，面板直接顯示分數變動。
+     *
+     * 手牌、胡牌張、寶牌與役種明細一律不重現——牌桌上已經攤開了，面板再畫一次只是拖時間，而
+     * 「誰放銃給誰」從分數增減本來就看得出來。中途胡牌可能一局發生好幾次，面板是唯一會讓其他仍在
+     * 局中的玩家乾等的東西，因此這裡選最快的收尾。
+     */
+    BRIEF,
+}
 
-    /** 不建立世界演出，但保留 chat、同步與權威分數。 */
-    NONE,
+/**
+ * 一次胡牌剛結算完成、但還沒決定該立即播放或延後播放的完整呈現內容。
+ *
+ * 由 `DeclareTsumoUseCase`／`RespondToDiscardUseCase`／`RespondToKanUseCase` 建構後交給
+ * `WinPresentationHandoff` 暫存（而不是直接發布），再由 `ResolveWinRoundContinuationUseCase` 依本次
+ * 的 [WinRoundDirective] 取走。
+ *
+ * 之所以需要一個暫存交接點，而不是讓 use case 直接回傳給呼叫端：`GameActionRouter` 對所有指令（含
+ * 第三方擴充指令）統一回傳 `Outcome<Unit, GameError>`，要讓演出內容穿過它就得改動每一種指令的回傳
+ * 型別，連與胡牌無關的摸牌／捨牌都會被迫認識胡牌演出型別。走交接點則讓建構邏輯留在原本就持有所需
+ * registry 的 use case 內。
+ *
+ * 交接點刻意**不持久化**：它只在單次指令派發內存活（use case 寫入、同一次派發的收斂階段就取走），
+ * 重啟後也沒有任何路徑會去消費殘留值，持久化換不到任何恢復能力。真正需要跨重啟的是演出本身，
+ * 而那已經由 `MahjongTableBlockEntity` 的呈現時間軸與各實體自己的 NBT 動畫佇列負責。
+ *
+ * @property winnerPlayerIds 這次一起成立的所有贏家。
+ * @property celebration 胡牌特效／役滿展示請求。
+ * @property settlement 結算面板請求。
+ */
+data class SettledWinPresentation(
+    val winnerPlayerIds: Set<Uuid>,
+    val celebration: WinCelebrationRequest,
+    val settlement: WinSettlementPresentationRequest,
+) {
+    init {
+        require(winnerPlayerIds.isNotEmpty()) { "A settled win presentation must have at least one winner" }
+    }
 }
 
 /** 一次胡牌即時結算完成後，本局後續應採取的權威決策。 */
@@ -55,13 +95,12 @@ sealed interface WinRoundDirective {
      * @property newlyFinishedPlayerIds 這次新標記為已完成的玩家；必須屬於本桌且尚未列在
      * [TableState.finishedPlayerIds]，見 [applyTo]。
      * @property nextPlayerId 套用後應輪到的玩家；必須仍是 active（不在套用後的 finished 集合內）。
-     * @property presentationMode 這次胡牌的呈現模式；目前只保留欄位供未來的演出佇列擴充使用，尚未
-     * 影響任何實際呈現行為。
+     * @property settlementMode 這次胡牌的結算面板詳細程度；整段胡牌演出不受它影響，一律完整播放。
      */
     data class ContinueRound(
         val newlyFinishedPlayerIds: Set<Uuid>,
         val nextPlayerId: Uuid,
-        val presentationMode: ContinuingWinPresentationMode,
+        val settlementMode: ContinuingWinSettlementMode,
     ) : WinRoundDirective
 }
 

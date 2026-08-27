@@ -39,7 +39,7 @@ class WinRoundContinuationResolverRegistryTest {
         val expectedDirective = WinRoundDirective.ContinueRound(
             newlyFinishedPlayerIds = setOf(winner.id),
             nextPlayerId = winner.id,
-            presentationMode = com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinPresentationMode.NONE,
+            settlementMode = com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode.BRIEF,
         )
         val registry = WinRoundContinuationResolverRegistry().apply {
             register(recordingResolver("test:z", module.id, 20, calls, null))

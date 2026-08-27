@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinPresentationMode
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -33,6 +34,7 @@ class ResolveWinRoundContinuationUseCaseTest {
     private val gameRepo = FakeGameRepository()
     private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
     private val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl())
+    private val winPresentationHandoff = WinPresentationHandoff()
     private val ruleModuleId = moduleRegistry.getModule(RiichiRuleConfig()).id
 
     /** 未替該規則模組登記任何 resolver 時，回傳 EndRound 且完全不修改已結算的桌況。 */
@@ -118,7 +120,7 @@ class ResolveWinRoundContinuationUseCaseTest {
                     WinRoundDirective.ContinueRound(
                         newlyFinishedPlayerIds = setOf(winner.id),
                         nextPlayerId = nextPlayer.id,
-                        presentationMode = ContinuingWinPresentationMode.FULL,
+                        settlementMode = ContinuingWinSettlementMode.FULL,
                     ),
                 ),
             )

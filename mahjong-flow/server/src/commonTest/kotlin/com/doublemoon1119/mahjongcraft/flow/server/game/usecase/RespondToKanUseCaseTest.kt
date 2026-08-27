@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -30,6 +31,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
@@ -54,7 +56,8 @@ class RespondToKanUseCaseTest {
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
-        val useCase = RespondToKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher)
+        val winPresentationHandoff = WinPresentationHandoff()
+        val useCase = RespondToKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, winPresentationHandoff)
     }
 
     private val whiteTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
@@ -137,11 +140,16 @@ class RespondToKanUseCaseTest {
             "Robbing the kan is a Ron, not a completed kan — no rinshan tile was drawn, so nothing should be presented as drawn.",
         )
 
-        val celebrations = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId)
-        assertEquals(1, celebrations.size)
-        assertEquals(newState.players.indexOfFirst { it.id == robberId }, celebrations.single().winnerSeatIndex)
-        assertEquals(robbedWhiteTile.id, celebrations.single().winningTileId)
-        assertFalse(celebrations.single().isTsumo)
+        // 演出寫進交接槽而非直接發布，理由見 DeclareTsumoUseCaseTest 對應案例的 KDoc。
+        assertTrue(fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty())
+        val staged = assertNotNull(fixtures.winPresentationHandoff.take(gameId, setOf(robberId)))
+        assertEquals(setOf(robberId), staged.winnerPlayerIds)
+        assertEquals(
+            listOf(newState.players.indexOfFirst { it.id == robberId }),
+            staged.celebration.winners.map { it.seatIndex },
+        )
+        assertEquals(robbedWhiteTile.id, staged.celebration.winningTileId)
+        assertFalse(staged.celebration.isTsumo)
     }
 
     /**
@@ -179,6 +187,10 @@ class RespondToKanUseCaseTest {
         assertTrue(
             fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty(),
             "A completed kan (not robbed) should never trigger a win celebration.",
+        )
+        assertNull(
+            fixtures.winPresentationHandoff.take(gameId, setOf(robberId)),
+            "A completed kan (not robbed) should never stage a win presentation either.",
         )
     }
 

@@ -49,13 +49,25 @@ data class WinSettlementWinnerPresentation(
     }
 }
 
-/** 胡牌演出之後依序顯示贏家詳情、最後顯示共用排行的 request。 */
+/**
+ * 胡牌演出之後依序顯示贏家詳情、最後顯示共用排行的 request。
+ *
+ * @property isBrief 這次是否**跳過贏家詳情、只顯示分數變動**。
+ *
+ * 中途胡牌（本局在胡牌後仍繼續）用的模式：贏家的牌已經在牌桌上攤開了，面板再重現一次手牌、胡牌張、
+ * 寶牌與役種明細只是讓其他仍在局中的玩家乾等，而「誰放銃給誰」從分數增減本來就看得出來。因此平台
+ * 直接不建立贏家段，面板一開場就是分數變動動畫。
+ *
+ * 刻意做成與 [templateKey] **正交**的旗標：[templateKey] 表達的是「這是哪一套規則的面板」，跳不跳過
+ * 贏家段是另一條軸，而且跳過之後那個 key 根本用不到。
+ */
 data class WinSettlementPresentationRequest(
     val outcomeId: String,
     val templateKey: String,
     val isTsumo: Boolean,
     val winners: List<WinSettlementWinnerPresentation>,
     val ranking: ScoreRankingPresentation,
+    val isBrief: Boolean = false,
 ) {
     init {
         require(winners.isNotEmpty())

@@ -3,8 +3,10 @@ package com.doublemoon1119.mahjongcraft.testing.flow.common.game.service
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
@@ -64,6 +66,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 依對局 Uuid 紀錄收到的每一筆胡牌慶祝演出呼叫，依呼叫順序排列——一炮多響可能同一局收到多筆。 */
     private val winCelebrations = mutableMapOf<Uuid, MutableList<WinCelebrationContext>>()
+    private val winSettlements = mutableMapOf<Uuid, MutableList<WinSettlementContext>>()
+    private val winPresentations = mutableMapOf<Uuid, MutableList<WinPresentationRequest>>()
+    private val publishOrder = mutableMapOf<Uuid, MutableList<List<WinPresentationSegment>>>()
 
     override fun publishExhaustiveDrawSettlement(gameId: Uuid, request: ExhaustiveDrawSettlementPresentationRequest) {
         exhaustiveDrawSettlements[gameId] = request
@@ -166,6 +171,22 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         winCelebrations.getOrPut(gameId) { mutableListOf() } += WinCelebrationContext(request)
     }
 
+    override fun publishWinSettlement(gameId: Uuid, request: WinSettlementPresentationRequest) {
+        winSettlements.getOrPut(gameId) { mutableListOf() } += WinSettlementContext(request)
+    }
+
+    override fun publishWinPresentation(gameId: Uuid, request: WinPresentationRequest) {
+        winPresentations.getOrPut(gameId) { mutableListOf() } += request
+        // 依序記錄成兩段，讓既有斷言與「celebration 一定先於 settlement」的驗證都能直接沿用。
+        request.celebration?.let { winCelebrations.getOrPut(gameId) { mutableListOf() } += WinCelebrationContext(it) }
+        request.settlement?.let { winSettlements.getOrPut(gameId) { mutableListOf() } += WinSettlementContext(it) }
+        val segments = buildList {
+            if (request.celebration != null) add(WinPresentationSegment.CELEBRATION)
+            if (request.settlement != null) add(WinPresentationSegment.SETTLEMENT)
+        }
+        publishOrder.getOrPut(gameId) { mutableListOf() }.add(segments)
+    }
+
     /** 取得指定對局最後一次收到的擲骰結果；若無紀錄則回傳 null。 */
     fun getPublishedDiceRoll(gameId: Uuid): DiceRollResult? = diceRolls[gameId]
 
@@ -207,6 +228,15 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 取得指定對局收到的全部胡牌慶祝演出呼叫，依呼叫順序排列；若無紀錄則回傳空清單。 */
     fun getPublishedWinCelebrations(gameId: Uuid): List<WinCelebrationContext> = winCelebrations[gameId].orEmpty()
+
+    /** 取得指定對局收到的全部胡牌結算面板呼叫，依呼叫順序排列；若無紀錄則回傳空清單。 */
+    fun getPublishedWinSettlements(gameId: Uuid): List<WinSettlementContext> = winSettlements[gameId].orEmpty()
+
+    /** 取得指定對局收到的全部完整胡牌呈現請求，依呼叫順序排列；若無紀錄則回傳空清單。 */
+    fun getPublishedWinPresentations(gameId: Uuid): List<WinPresentationRequest> = winPresentations[gameId].orEmpty()
+
+    /** 取得每次 [publishWinPresentation] 內部實際包含的段落順序，供驗證 celebration 永遠先於 settlement。 */
+    fun getWinPresentationSegmentOrder(gameId: Uuid): List<List<WinPresentationSegment>> = publishOrder[gameId].orEmpty()
 
     /** 取得指定對局最後一次統一流局結算呈現。 */
     fun getPublishedExhaustiveDrawSettlement(gameId: Uuid): ExhaustiveDrawSettlementPresentationRequest? = exhaustiveDrawSettlements[gameId]
@@ -274,6 +304,12 @@ data class DiscardPileContext(
 )
 
 /** [FakeGamePresentationPublisher] 紀錄的單一筆 [GamePresentationPublisher.publishWinCelebration] 呼叫資料。 */
+data class WinSettlementContext(val request: WinSettlementPresentationRequest)
+
+/** 一次完整胡牌呈現裡的段落種類，依實際排定順序記錄。 */
+enum class WinPresentationSegment { CELEBRATION, SETTLEMENT }
+
+/** 一次胡牌慶祝演出呼叫的紀錄。 */
 data class WinCelebrationContext(val request: WinCelebrationRequest) {
     /** 單一贏家測試相容用座位；多家和時為第一位。 */
     val winnerSeatIndex: Int get() = request.winners.first().seatIndex

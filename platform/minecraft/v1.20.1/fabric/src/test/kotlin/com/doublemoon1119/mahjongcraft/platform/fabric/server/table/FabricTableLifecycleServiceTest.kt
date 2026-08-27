@@ -7,12 +7,15 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationState
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinShowcaseOverride
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
@@ -135,17 +138,24 @@ class FabricTableLifecycleServiceTest {
 
         /** 受測生命週期服務。 */
         val lifecycleService = FabricTableLifecycleService(
-            store,
-            locations,
-            cleanupService,
-            configState,
-            diceRollPresenter,
-            tileWallPresenter,
-            playerAreaPresenter,
-            scoringStickPresenter,
-            discardPresenter,
-            roundInfoPresenter,
+            store = store,
+            locations = locations,
+            debugWinRoundContinuationState = DebugWinRoundContinuationState(),
+            debugWinShowcaseOverride = DebugWinShowcaseOverride(NonDevelopmentEnvironment),
+            cleanupService = cleanupService,
+            configState = configState,
+            diceRollPresenter = diceRollPresenter,
+            tileWallPresenter = tileWallPresenter,
+            playerAreaPresenter = playerAreaPresenter,
+            scoringStickPresenter = scoringStickPresenter,
+            discardPresenter = discardPresenter,
+            roundInfoPresenter = roundInfoPresenter,
         )
+
+        /** 這個測試不驗證 debug 覆寫，一律回報非開發環境讓它保持 inert。 */
+        object NonDevelopmentEnvironment : MinecraftEnvironment {
+            override val isDevelopment: Boolean = false
+        }
 
         /** 建立包含測試 Room 與 membership 的初始狀態。 */
         suspend fun initialize() {

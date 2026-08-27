@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
@@ -11,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCu
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWinSettlementDetailResolverRegistry
@@ -48,6 +50,7 @@ class DeclareTsumoUseCase(
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     @Provided private val eventPublisher: GameEventPublisher,
     @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val winPresentationHandoff: WinPresentationHandoff,
     private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
         createBuiltInWinCelebrationCueResolverRegistry(),
     private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
@@ -135,13 +138,15 @@ class DeclareTsumoUseCase(
             eventPublisher.publish(gameId, player.id, playerId, GameAction.Tsumo)
         }
 
-        // 4. 觸發平台呈現層：胡牌慶祝演出——手牌不受這個 use case 影響（只改分數與 actionHistory），
-        // 贏家的 lastDrawn 此時仍是自摸那張牌。
+        // 4. 建構胡牌演出內容並寫進交接槽——手牌不受這個 use case 影響（只改分數與 actionHistory），
+        // 贏家的 lastDrawn 此時仍是自摸那張牌。刻意不直接發布：本局是否就此結束，要等
+        // ResolveWinRoundContinuationUseCase 詢問過規則模組才知道，由它決定要立即播放或排隊延後播放。
         val winnerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
         newState.players[winnerSeatIndex].hand.lastDrawn?.let { winningTile ->
-            presentationPublisher.publishWinCelebration(
-                gameId,
-                WinCelebrationRequest(
+            val module = moduleRegistry.getModule(newState.config)
+            val presentation = SettledWinPresentation(
+                winnerPlayerIds = setOf(playerId),
+                celebration = WinCelebrationRequest(
                     winningTileId = winningTile.id,
                     isTsumo = true,
                     winners = listOf(
@@ -151,11 +156,7 @@ class DeclareTsumoUseCase(
                         ),
                     ),
                 ),
-            )
-            val module = moduleRegistry.getModule(newState.config)
-            presentationPublisher.publishWinSettlement(
-                gameId,
-                WinSettlementPresentationRequestFactory.create(
+                settlement = WinSettlementPresentationRequestFactory.create(
                     previousState = result.previousTableState,
                     currentState = newState,
                     module = module,
@@ -167,6 +168,7 @@ class DeclareTsumoUseCase(
                     detailResolverRegistry = winSettlementDetailResolverRegistry,
                 ),
             )
+            winPresentationHandoff.stage(gameId, presentation)
         }
 
         return Outcome.Success(Unit)

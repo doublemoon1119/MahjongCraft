@@ -93,6 +93,35 @@ class TableStateTest {
         assertEquals(fourPlayers[3], state.nextActivePlayerAfter(fourPlayers[3].id))
     }
 
+    /**
+     * 不在本桌的 Uuid 一律不是 active——不能因為「不在 finished 集合裡」就當成可以行動，那會讓打錯的
+     * 識別碼安靜地通過檢查。
+     */
+    @Test
+    fun `test isPlayerActive is false for a player who is not seated at this table`() {
+        val seated = FakeTableStateFactory.create(players = fourPlayers)
+        assertTrue(!seated.isPlayerActive(Uuid.random()))
+
+        val withFinished = FakeTableStateFactory.create(
+            players = fourPlayers,
+            currentPlayerIndex = 0,
+            finishedPlayerIds = setOf(fourPlayers[1].id),
+        )
+        assertTrue(!withFinished.isPlayerActive(Uuid.random()))
+    }
+
+    /** `finishedPlayerIds` 內含不屬於本桌的玩家時，建構當下就該拋出例外。 */
+    @Test
+    fun `test constructing TableState throws when finishedPlayerIds contains an outsider`() {
+        assertFailsWith<IllegalArgumentException> {
+            FakeTableStateFactory.create(
+                players = fourPlayers,
+                currentPlayerIndex = 0,
+                finishedPlayerIds = setOf(fourPlayers[1].id, Uuid.random()),
+            )
+        }
+    }
+
     /** 起算玩家不在桌上時應拋出例外。 */
     @Test
     fun `test nextActivePlayerAfter throws when starting player is not seated`() {
