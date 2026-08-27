@@ -75,12 +75,13 @@ class FabricExhaustiveDrawSettlementPresentationScheduler {
         }
         world.getEntitiesByClass(MahjongRoundInfoEntity::class.java, Box(controllerPos).expand(2.0, 2.0, 2.0)) {
             it.managedTableId == tableId
-        }.firstOrNull()?.hideUntil(endGameTime)
+        }.firstOrNull()?.hideUntil(endGameTime + PRESENTATION_HANDOFF_GRACE_TICKS)
         return endGameTime
     }
 
     private companion object {
         const val HAND_LAYDOWN_START_TICK = 30L
         const val STAGE_HEIGHT_OFFSET = 1.4
+        const val PRESENTATION_HANDOFF_GRACE_TICKS = 5L
     }
 }

@@ -55,7 +55,7 @@ class FabricMatchSettlementPresentationScheduler(
         val endGameTime = stage.endGameTime
         world.getEntitiesByClass(MahjongRoundInfoEntity::class.java, Box(controllerPos).expand(2.0, 2.0, 2.0)) {
             it.managedTableId == tableId
-        }.firstOrNull()?.hideUntil(endGameTime)
+        }.firstOrNull()?.hideUntilRemoved()
         return endGameTime
     }
 

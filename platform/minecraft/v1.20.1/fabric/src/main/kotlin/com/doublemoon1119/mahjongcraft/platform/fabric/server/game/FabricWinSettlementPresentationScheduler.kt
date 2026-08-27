@@ -95,7 +95,7 @@ class FabricWinSettlementPresentationScheduler(
         if (!world.spawnEntity(stage)) return null
         world.getEntitiesByClass(MahjongRoundInfoEntity::class.java, Box(controllerPos).expand(2.0, 2.0, 2.0)) {
             it.managedTableId == tableId
-        }.firstOrNull()?.hideUntil(stage.endGameTime)
+        }.firstOrNull()?.hideUntil(stage.endGameTime + PRESENTATION_HANDOFF_GRACE_TICKS)
         return stage.endGameTime
     }
 
@@ -149,6 +149,7 @@ class FabricWinSettlementPresentationScheduler(
 
     private companion object {
         const val STAGE_HEIGHT_OFFSET = 1.6
+        const val PRESENTATION_HANDOFF_GRACE_TICKS = 5L
     }
 
     private val WinSettlementWinnerSnapshot.hasPostEntrySummary: Boolean

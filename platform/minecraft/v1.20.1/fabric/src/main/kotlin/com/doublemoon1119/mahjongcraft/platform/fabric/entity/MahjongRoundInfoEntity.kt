@@ -107,6 +107,17 @@ class MahjongRoundInfoEntity(
         )
     }
 
+    /**
+     * 保持隱形直到管理此顯示的牌局清除 entity。
+     *
+     * 終局面板結束後會立即返回房間，不應先恢復局況顯示再清除；此方法以可持久化動畫佇列保存該語意。
+     */
+    fun hideUntilRemoved() {
+        check(!world.isClient) { "Round info visibility lease must be changed by the server" }
+        hiddenUntilGameTime = Long.MAX_VALUE
+        replaceAnimationQueue(listOf(AnimationStep.SetInvisible(true)))
+    }
+
     /** 局況顯示沒有專屬瞬間動畫。 */
     override fun applyCustomStep(step: Nothing) = error("Round info display has no custom animation step")
 
