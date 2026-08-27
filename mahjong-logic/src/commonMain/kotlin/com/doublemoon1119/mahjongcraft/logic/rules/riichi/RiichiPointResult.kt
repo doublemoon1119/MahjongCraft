@@ -54,7 +54,7 @@ sealed interface RiichiPointResult {
      *           倍、大四喜 2 倍，見 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult.doubleYakuman]），不是整體役滿倍數。
      * @property remainder 若和了同時疊加其他役滿（例如大四喜 + 四暗刻），超出包牌範圍的那部分改走
      *           正常自摸結算（[DealerTsumo]/[NonDealerTsumo]），由呼叫端疊加進正常付款對象；沒有
-     *           疊加時為 null，行為與過去完全相同。
+     *           疊加時為 null，全額都在包牌範圍內。
      */
     data class PaoTsumo(val paoPayment: Int, val remainder: RiichiPointResult? = null) : RiichiPointResult {
         override val total: Int get() = paoPayment + (remainder?.total ?: 0)
@@ -66,7 +66,7 @@ sealed interface RiichiPointResult {
      * @property paymentEach 兩人各自支付的點數（依觸發包牌的役滿本身倍數換算，理由同
      *           [PaoTsumo.paoPayment]）。
      * @property remainder 若和了同時疊加其他役滿，超出包牌範圍的那部分改走正常榮和結算（[Ron]），
-     *           由放銃者全額支付、疊加進正常付款對象；沒有疊加時為 null，行為與過去完全相同。
+     *           由放銃者全額支付、疊加進正常付款對象；沒有疊加時為 null，全額都在包牌範圍內。
      */
     data class PaoRon(val paymentEach: Int, val remainder: RiichiPointResult? = null) : RiichiPointResult {
         override val total: Int get() = paymentEach * 2 + (remainder?.total ?: 0)

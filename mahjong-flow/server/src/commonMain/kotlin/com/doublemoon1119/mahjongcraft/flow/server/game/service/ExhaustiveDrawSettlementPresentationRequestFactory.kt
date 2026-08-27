@@ -35,6 +35,10 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
             players = currentState.players.mapIndexed { seatIndex, player ->
                 val previousPlayer = previousState.players.first { it.id == player.id }
                 val reveal = revealedByPlayer[player.id]
+                // 本局已經胡牌退場的玩家（見 TableState.finishedPlayerIds）只保留分數排行的那一列：
+                // 手牌在他胡牌時就已經收尾蓋好了，這裡不能再排一次動畫，也不該被標成聽牌／不聽——
+                // 他根本沒有參與這次流局。
+                val isFinished = player.id in currentState.finishedPlayerIds
                 val handPresentation = when {
                     reveal == null -> ExhaustiveDrawSettlementHandPresentation.CONCEAL
                     tenpaiPlayerIds != null && player.id in tenpaiPlayerIds -> ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI
@@ -51,11 +55,14 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
                         currentRank = currentRanks.getValue(player.id),
                     ),
                     currentWind = player.currentWind,
-                    handTileIds = player.hand.allTiles.map { it.id },
+                    // 只取立牌：副露是公開資訊，蓋起來既不合規則，也會摧毀既有的牌面、橫置方向與
+                    // 加槓疊牌版面（這個欄位的契約本來就寫明不含副露）。
+                    handTileIds = if (isFinished) emptyList() else player.hand.standingTiles.map { it.id },
                     handPresentation = handPresentation,
                     revealedHandTileIds = if (handPresentation == ExhaustiveDrawSettlementHandPresentation.CONCEAL) emptyList() else player.hand.allTiles.map { it.id },
                     waitingTiles = reveal?.waitingTiles.orEmpty().toList(),
                     statusId = when {
+                        isFinished -> null
                         tenpaiPlayerIds != null && player.id in tenpaiPlayerIds && reveal != null ->
                             BuiltInExhaustiveDrawSettlementStatusIds.TENPAI
                         tenpaiPlayerIds != null && player.id !in tenpaiPlayerIds ->

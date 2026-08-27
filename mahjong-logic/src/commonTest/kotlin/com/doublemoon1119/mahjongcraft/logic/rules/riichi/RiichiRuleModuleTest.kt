@@ -824,6 +824,50 @@ class RiichiRuleModuleTest {
     }
 
     /**
+     * 本局已胡牌退場的玩家（[TableState.finishedPlayerIds]）完全不參與流局計算：不判聽牌、不收付
+     * 不聽罰符，罰符總額也改以仍在局中的人數計算。
+     */
+    @Test
+    fun `test declareExhaustiveDraw excludes players who already finished the round`() {
+        val finishedTenpai = FakeMahjongPlayerFactory.create(hand = tenpaiHand())
+        val activeTenpai = FakeMahjongPlayerFactory.create(hand = tenpaiHand())
+        val activeNoten = List(2) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(
+            players = listOf(activeTenpai) + activeNoten + finishedTenpai,
+            config = module.config,
+        ).copy(finishedPlayerIds = setOf(finishedTenpai.id))
+
+        val result = module.declareExhaustiveDraw(table)
+
+        assertEquals(
+            setOf(activeTenpai.id),
+            result?.tenpaiPlayerIds,
+            "A finished player must not be judged tenpai even with a tenpai hand.",
+        )
+        assertEquals(
+            null,
+            result?.scoreDeltas?.get(finishedTenpai.id),
+            "A finished player must neither collect nor pay the noten penalty.",
+        )
+        // 仍在局中的只有 3 人，因此總額是 1000 * (3 - 1) = 2000，由唯一聽牌者收取、兩位不聽者均分支付。
+        assertEquals(2000, result?.scoreDeltas?.get(activeTenpai.id))
+        activeNoten.forEach { assertEquals(-1000, result?.scoreDeltas?.get(it.id)) }
+    }
+
+    /** 已退場玩家的牌河不得成立流局滿貫——他早就不再摸打，牌河只是停在退場那一刻的樣子。 */
+    @Test
+    fun `test resolveNagashiMangan ignores players who already finished the round`() {
+        val finished = FakeMahjongPlayerFactory.create(discardPile = allYaochuuDiscardPile())
+        val others = List(3) { FakeMahjongPlayerFactory.create() }
+        val table = FakeTableStateFactory.create(
+            players = others + finished,
+            config = module.config,
+        ).copy(finishedPlayerIds = setOf(finished.id))
+
+        assertEquals(null, (module as RiichiRuleModule).resolveNagashiMangan(table))
+    }
+
+    /**
      * 聽牌手牌：1112345678999m（聽 1m 對倒），供 [declareExhaustiveDraw] 測試共用。
      */
     private fun tenpaiHand() = FakeHandFactory.create(

@@ -314,10 +314,14 @@ class RiichiRuleModule(
      * 計算一般流局（牌山摸盡）的點數結算：聽牌判定（[ShantenResult] 非 [ShantenResult.NotTenpai]
      * 皆視為聽牌，`Complete` 理論上不會在流局判定時出現，僅作寬鬆處理），並依
      * [buildNotenPenaltyDeltas] 計算不聽罰符。流局滿貫已由 [resolveNagashiMangan] 在普通流局之前判定。
+     *
+     * 只計入 [TableState.activePlayers]：本局已經胡牌退場的玩家（見 [TableState.finishedPlayerIds]）
+     * 手牌早已收起、也不再摸打，既不該被判聽牌／不聽，也不該收付不聽罰符。沒有玩家中途退場時，
+     * [TableState.activePlayers] 就是全體玩家。
      */
     override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult {
         val shantenCalculator = createShantenCalculator()
-        val shantenByPlayer = tableState.players.associateWith { shantenCalculator.calculate(it.hand) }
+        val shantenByPlayer = tableState.activePlayers.associateWith { shantenCalculator.calculate(it.hand) }
         val tenpaiIds = shantenByPlayer.filterValues { it !is ShantenResult.NotTenpai }.keys.map { it.id }.toSet()
 
         return ExhaustiveDrawSettlementResult(
@@ -336,9 +340,12 @@ class RiichiRuleModule(
      * 判定流局滿貫並計算自摸滿貫式收支；沒有任何人成立時回傳 `null`。
      *
      * 成立條件為牌河非空、全部是么九牌且從未被鳴走。此函式不修改桌況，也不收取供託。
+     *
+     * 只計入 [TableState.activePlayers]：本局已胡牌退場的玩家不再參與流局計算，其牌河也不該成立
+     * 流局滿貫。
      */
     fun resolveNagashiMangan(tableState: TableState): NagashiManganResolution? {
-        val achieverIds = tableState.players
+        val achieverIds = tableState.activePlayers
             .filter { player ->
                 player.discardPile.entries.isNotEmpty() &&
                     player.discardPile.entries.all { entry ->
@@ -366,6 +373,10 @@ class RiichiRuleModule(
      * 固定走滿貫的 `basicPoint = 2000` 分支，`fu` 不影響結果），依莊/閒身分換算成付款 map；
      * 多位成立者時（罕見邊界情況）比照多家和的既有作法，把各自的付款加總到同一份 `scoreDeltas`
      * （同一位玩家可能同時是多位成立者的付款對象）。
+     *
+     * 付款者只取 [TableState.activePlayers]：本局已胡牌退場的玩家不再參與流局計算。莊家身分仍由座風
+     * 判定（座位不會因退場而消失），只是莊家若已退場就不在付款者之列。回傳的 map 仍涵蓋全部玩家，
+     * 退場者的差額為 0。
      */
     private fun buildNagashiManganDeltas(tableState: TableState, nagashiManganIds: Set<Uuid>): Map<Uuid, Int> {
         val deltas = tableState.players.associate { it.id to 0 }.toMutableMap()
@@ -375,13 +386,13 @@ class RiichiRuleModule(
             val pointResult = PointCalculator.calculateNonYakumanPoint(han = 5, fu = 0, isDealer = isDealer, isTsumo = true)
             val payments: Map<Uuid, Int> = when (pointResult) {
                 is RiichiPointResult.DealerTsumo ->
-                    tableState.players
+                    tableState.activePlayers
                         .filter { it.id != achieverId }
                         .associate { it.id to pointResult.paymentPerNonDealer }
 
                 is RiichiPointResult.NonDealerTsumo -> {
                     val dealerId = tableState.players.first { it.currentWind == Wind.EAST }.id
-                    tableState.players
+                    tableState.activePlayers
                         .filter { it.id != achieverId }
                         .associate { it.id to if (it.id == dealerId) pointResult.dealerPayment else pointResult.otherNonDealerPayment }
                 }
@@ -401,12 +412,16 @@ class RiichiRuleModule(
      * 3000），由聽牌者均分收取、不聽者均分支付（皆為淨額，不需要逐筆算聽牌者與不聽者之間的
      * 個別配對金額）。無人聽牌、全員聽牌、或（理論上不會發生的）無人不聽時，回傳空 map
      * （沒有任何點數交換）。
+     *
+     * 本局已胡牌退場的玩家完全不參與：既不列入聽牌／不聽，總額也改以**仍在局中的人數**計算。
+     * 沒有玩家中途退場時，仍在局中的人數就是對局人數。
      */
     private fun buildNotenPenaltyDeltas(tableState: TableState, tenpaiIds: Set<Uuid>): Map<Uuid, Int> {
-        val notenIds = tableState.players.map { it.id }.toSet() - tenpaiIds
+        val activeCount = tableState.activePlayers.size
+        val notenIds = tableState.activePlayers.map { it.id }.toSet() - tenpaiIds
         if (tenpaiIds.isEmpty() || notenIds.isEmpty()) return emptyMap()
 
-        val total = config.scoreConfig.notenPenaltyUnit * (tableState.playerCount - 1)
+        val total = config.scoreConfig.notenPenaltyUnit * (activeCount - 1)
         val gainPerTenpai = total / tenpaiIds.size
         val lossPerNoten = total / notenIds.size
 
