@@ -16,6 +16,8 @@ import kotlin.uuid.Uuid
  * @property comboCount 當前連莊次數
  * @property currentPlayerIndex 當前回合玩家的索引
  * @property dynamicRuleState 規則特定的動態桌況狀態
+ * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合，供 HUD、牌面與觀戰
+ * 呈現使用。
  */
 data class TableStateSnapshot(
     val id: Uuid,
@@ -27,6 +29,7 @@ data class TableStateSnapshot(
     val comboCount: Int,
     val currentPlayerIndex: Int,
     val dynamicRuleState: DynamicRuleState?,
+    val finishedPlayerIds: Set<Uuid>,
 )
 
 /**
@@ -53,5 +56,6 @@ fun TableState.toSnapshot(visibleHandPlayerIds: Set<Uuid>): TableStateSnapshot {
         comboCount = this.comboCount,
         currentPlayerIndex = this.currentPlayerIndex,
         dynamicRuleState = this.dynamicRuleState,
+        finishedPlayerIds = this.finishedPlayerIds,
     )
 }

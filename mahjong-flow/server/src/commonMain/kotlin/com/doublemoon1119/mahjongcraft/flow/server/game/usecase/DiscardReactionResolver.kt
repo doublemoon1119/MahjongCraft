@@ -49,7 +49,7 @@ internal object DiscardReactionResolver {
         // 先為每位其他玩家各算一次合法動作清單，因為榮和資格需要「先看過全部人」才能
         // 判斷是否為一炮多響，不能像吃/碰/槓一樣邊算邊篩。
         val legalActionsByOtherPlayer = stateAfterDiscard.players
-            .filter { it.id != discarderId }
+            .filter { it.id != discarderId && stateAfterDiscard.isPlayerActive(it.id) }
             .associate { otherPlayer ->
                 otherPlayer.id to validator.getLegalActions(
                     tableState = stateAfterDiscard,
@@ -98,7 +98,8 @@ internal object DiscardReactionResolver {
         } else {
             val eligiblePlayerIds = meldEligiblePlayerIds + ronWinningPlayerIds
             if (eligiblePlayerIds.isEmpty()) {
-                stateAfterDiscard.copy(currentPlayerIndex = (stateBeforeDiscard.currentPlayerIndex + 1) % stateBeforeDiscard.playerCount)
+                val nextPlayer = stateAfterDiscard.nextActivePlayerAfter(discarderId)
+                stateAfterDiscard.copy(currentPlayerIndex = stateAfterDiscard.players.indexOf(nextPlayer))
             } else {
                 stateAfterDiscard.copy(
                     pendingReaction = PendingReaction(

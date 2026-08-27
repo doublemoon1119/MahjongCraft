@@ -1076,4 +1076,88 @@ class DiscardTileUseCaseTest {
         assertNotNull(newState.pendingReaction, "A reaction window should open since south can pon.")
         newState.players.forEach { player -> assertTrue(player.actionHistory.none { it is GameAction.ExhaustiveDraw }) }
     }
+
+    /**
+     * 驗證已標記為 finished 的玩家即使手牌湊滿碰牌條件，也不會被納入反應資格，且回合推進時
+     * 會跳過他，直接輪到下一位仍在本局中的玩家（座位表上物理相鄰的下一位是 finished 玩家）。
+     */
+    @Test
+    fun `test discard tile excludes finished player from pon eligibility and skips them when advancing turn`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = discardedTile),
+        )
+        val finishedPlayerId = otherPlayerId
+        // 手牌中有兩張東風，本應湊滿碰牌條件，但這位玩家已經 finished，不該被納入反應資格。
+        val finishedPlayer = FakeMahjongPlayerFactory.create(
+            id = finishedPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(
+                tiles = listOf(
+                    FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                ),
+            ),
+        )
+        val nextActivePlayerId = Uuid.random()
+        val nextActivePlayer = FakeMahjongPlayerFactory.create(id = nextActivePlayerId, initialSeat = Wind.WEST)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, finishedPlayer, nextActivePlayer),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            finishedPlayerIds = setOf(finishedPlayerId),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, discardedTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNull(newState.pendingReaction, "The finished player's pon eligibility must not open a reaction window.")
+        assertEquals(2, newState.currentPlayerIndex, "Turn should skip the finished player and go to the next active one.")
+    }
+
+    /**
+     * 驗證已標記為 finished 的玩家即使聽牌，也不會被納入榮和資格。
+     */
+    @Test
+    fun `test discard tile excludes finished player from ron eligibility`() = runTest {
+        val fixtures = Fixtures()
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = winningTile),
+        )
+        val finishedPlayerId = otherPlayerId
+        // 單騎聽中，本應可以榮和，但這位玩家已經 finished，不該被納入榮和資格。
+        val finishedPlayer = FakeMahjongPlayerFactory.create(
+            id = finishedPlayerId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = ronTankiWaitTiles().map { FakeIdentifiedTileFactory.create(it) }),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, finishedPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+            finishedPlayerIds = setOf(finishedPlayerId),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, winningTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+
+        val newState = fixtures.gameRepo.getTableState(gameId)
+        assertNotNull(newState)
+        assertNull(newState.pendingReaction, "The finished player's ron eligibility must not open a reaction window.")
+    }
 }

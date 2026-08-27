@@ -149,4 +149,22 @@ class TableStateSnapshotTest {
 
         assertEquals(tableId, snapshot.id)
     }
+
+    /**
+     * 驗證快照正確傳遞 [TableState.finishedPlayerIds]，供 HUD、牌面與觀戰呈現使用。
+     */
+    @Test
+    fun `test snapshot preserves finishedPlayerIds`() {
+        val finishedPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val activePlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
+        val table = FakeTableStateFactory.create(
+            players = listOf(finishedPlayer, activePlayer),
+            currentPlayerIndex = 1,
+            finishedPlayerIds = setOf(finishedPlayer.id),
+        )
+
+        val snapshot = table.toSnapshot(setOf(finishedPlayer.id, activePlayer.id))
+
+        assertEquals(setOf(finishedPlayer.id), snapshot.finishedPlayerIds)
+    }
 }

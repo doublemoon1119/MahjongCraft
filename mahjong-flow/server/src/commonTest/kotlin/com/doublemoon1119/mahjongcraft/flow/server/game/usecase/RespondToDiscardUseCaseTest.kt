@@ -108,6 +108,44 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
+     * 驗證全員過牌、推進回合時會跳過座位表上物理相鄰但已 finished 的玩家，直接輪到下一位
+     * 仍在本局中的玩家。
+     */
+    @Test
+    fun `test pass advances turn past a finished player to the next active one`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val finishedPlayerId = Uuid.random()
+        val finishedPlayer = FakeMahjongPlayerFactory.create(id = finishedPlayerId, initialSeat = Wind.SOUTH)
+        val responder = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.White), FakeIdentifiedTileFactory.create(Tile.Honor.White))),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, finishedPlayer, responder),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            finishedPlayerIds = setOf(finishedPlayerId),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, responderId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertNull(newState.pendingReaction)
+        assertEquals(2, newState.currentPlayerIndex, "Turn should skip the finished player and go to the next active one.")
+    }
+
+    /**
      * 驗證單一有資格的玩家選擇碰牌時，正確套用副露、標記捨牌已被鳴走，並將回合交給碰牌的玩家。
      */
     @Test

@@ -27,6 +27,10 @@ import kotlin.uuid.Uuid
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
  * @property initialDeadWall 開局瞬間的王牌快照，依規則定義的固定內部順序保存；規則尚未支援開門
  * 流程時為空清單。這只是初始狀態，不代表王牌整局固定不變——見 [TileWallLayoutResult.initialDeadWall]。
+ * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合。供第三方規則實作
+ * 「胡牌後本局可能不結束」的擴充（如持續胡牌局）；核心規則預設不會寫入這個集合，因此對現有
+ * 規則永遠是空集合、行為不變。座位、分數、快照仍保留這些玩家；見 [isPlayerActive]、[activePlayers]、
+ * [nextActivePlayerAfter]。
  */
 data class TableState(
     val id: Uuid,
@@ -42,12 +46,27 @@ data class TableState(
     val pendingKanReaction: PendingKanReaction? = null,
     val wallOpening: WallOpening? = null,
     val initialDeadWall: List<IdentifiedTile> = emptyList(),
+    val finishedPlayerIds: Set<Uuid> = emptySet(),
 ) {
+    init {
+        if (players.isNotEmpty() && finishedPlayerIds.isNotEmpty()) {
+            require(currentPlayer.id !in finishedPlayerIds) {
+                "currentPlayerIndex must not point at a finished player: ${currentPlayer.id}"
+            }
+        }
+    }
+
     /** 獲取參與遊戲的總人數。 */
     val playerCount: Int get() = players.size
 
     /** 獲取目前輪到執行動作的玩家。 */
     val currentPlayer: MahjongPlayer get() = players[currentPlayerIndex]
+
+    /** 尚未完成本局、仍參與後續回合的玩家，依 [players] 原本的座位順序排列。 */
+    val activePlayers: List<MahjongPlayer> get() = players.filterNot { it.id in finishedPlayerIds }
+
+    /** [playerId] 是否仍在本局中（尚未被標記為 [finishedPlayerIds]）。 */
+    fun isPlayerActive(playerId: Uuid): Boolean = playerId !in finishedPlayerIds
 
     /**
      * [roundNumber] 換算成目前場風（[prevalentWind]）內的第幾局（`1` 起算）——[roundNumber] 本身是
@@ -78,6 +97,32 @@ data class TableState(
         val index = players.indexOf(player)
         require(index != -1) { "Player not found in this table" }
         return players[(index + 1) % playerCount]
+    }
+
+    /**
+     * 找出從 [afterPlayerId] 起算、下一位仍在本局中（未列入 [finishedPlayerIds]）的玩家。
+     *
+     * 與 [getNextPlayer] 的差異：[getNextPlayer] 回傳座位表上物理相鄰的下一位，不論其是否已完成
+     * 本局；此函式跳過 finished 玩家，用於決定「回合真正輪到誰」。座位相對方向（[relativeDirectionOf]）
+     * 與供託歸屬（[nearestPlayerInTurnOrder]）仍應使用 [getNextPlayer] 那套完整座位順序，不應改用
+     * 這個函式。
+     *
+     * @param afterPlayerId 作為起算基準的玩家 Uuid（本身不必是 active）。
+     * @return 座位順序中，[afterPlayerId] 之後第一位 active 的玩家。
+     * @throws IllegalArgumentException [afterPlayerId] 不在本桌，或本桌沒有任何 active 玩家。
+     */
+    fun nextActivePlayerAfter(afterPlayerId: Uuid): MahjongPlayer {
+        val startIndex = players.indexOfFirst { it.id == afterPlayerId }
+        require(startIndex != -1) { "Player not found in this table: $afterPlayerId" }
+        require(activePlayers.isNotEmpty()) { "No active players remain in this table" }
+
+        var index = startIndex
+        repeat(playerCount) {
+            index = (index + 1) % playerCount
+            val candidate = players[index]
+            if (isPlayerActive(candidate.id)) return candidate
+        }
+        error("Unreachable: activePlayers is non-empty but no active player found after $afterPlayerId")
     }
 
     /**

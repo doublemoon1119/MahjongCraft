@@ -23,6 +23,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
@@ -113,6 +115,30 @@ class TableStatePersistenceTest {
                 initialDeadWall = listOf(identified(Tile.Honor.White), identified(Tile.Honor.Green)),
             ),
         )
+    }
+
+    /**
+     * 驗證已標記為 finished 的玩家集合正確保留（不影響 `currentPlayerIndex` 所指向的 active 玩家，
+     * 標記 human 而非 currentPlayerIndex 指向的 ai）。
+     */
+    @Test
+    fun `finished players round-trip in complete game state`() {
+        val state = createTableState()
+        val humanId = state.players.first().id
+
+        assertEncodedRoundTrip(state.copy(finishedPlayerIds = setOf(humanId)))
+    }
+
+    /** 驗證舊存檔缺少 `finishedPlayerIds` 欄位時，解碼後預設為空集合。 */
+    @Test
+    fun `decoding a persistence dto without finishedPlayerIds defaults to empty set`() {
+        val state = createTableState()
+        val json = this.json.encodeToJsonElement(TableStatePersistenceDto.serializer(), state.toPersistenceDto())
+        val withoutFinishedPlayerIds = JsonObject(json.jsonObject.filterKeys { it != "finishedPlayerIds" })
+
+        val decoded = this.json.decodeFromJsonElement(TableStatePersistenceDto.serializer(), withoutFinishedPlayerIds)
+
+        assertEquals(emptySet(), decoded.finishedPlayerIds)
     }
 
     /** 建立同時包含人類、AI、隱藏手牌、牌河與動態牌桌狀態的測試牌局。 */

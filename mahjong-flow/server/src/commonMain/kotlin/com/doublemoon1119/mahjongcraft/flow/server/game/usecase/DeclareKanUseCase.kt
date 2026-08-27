@@ -123,7 +123,7 @@ class DeclareKanUseCase(
                     // 就能判斷是否能榮和它，不需要先套用副露。「反應」分支不分辨 sourceAction 種類，
                     // 會一併算出 Pon/Chi/OpenKan 資格，但搶槓情境下這些都不合法，只看 Ron。
                     val ronEligiblePlayerIds = state.players
-                        .filter { it.id != playerId }
+                        .filter { it.id != playerId && state.isPlayerActive(it.id) }
                         .filter { candidate ->
                             module.createLegalActionValidator().getLegalActions(
                                 tableState = state,

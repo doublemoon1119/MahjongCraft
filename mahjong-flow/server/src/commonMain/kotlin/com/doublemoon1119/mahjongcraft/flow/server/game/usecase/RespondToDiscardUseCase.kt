@@ -288,12 +288,12 @@ class RespondToDiscardUseCase(
             ?: pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Chi }
 
         if (winningEntry == null) {
-            // 所有人皆過牌：行為與捨牌時「無人可反應」相同，直接推進到下一位玩家
-            val discarderIndex = players.indexOfFirst { it.id == pendingReaction.discarderId }
+            // 所有人皆過牌：行為與捨牌時「無人可反應」相同，直接推進到下一位仍在本局中的玩家
+            val stateWithPlayers = state.copy(players = players)
+            val nextPlayer = stateWithPlayers.nextActivePlayerAfter(pendingReaction.discarderId)
             return RespondResult(
-                state.copy(
-                    players = players,
-                    currentPlayerIndex = (discarderIndex + 1) % state.playerCount,
+                stateWithPlayers.copy(
+                    currentPlayerIndex = players.indexOf(nextPlayer),
                     pendingReaction = null,
                 ),
             )

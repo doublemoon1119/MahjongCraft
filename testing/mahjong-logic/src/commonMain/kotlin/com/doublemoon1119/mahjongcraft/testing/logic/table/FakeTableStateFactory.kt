@@ -41,6 +41,7 @@ object FakeTableStateFactory {
         pendingReaction: PendingReaction? = null,
         pendingKanReaction: PendingKanReaction? = null,
         initialDeadWall: List<IdentifiedTile> = emptyList(),
+        finishedPlayerIds: Set<Uuid> = emptySet(),
     ): TableState = TableState(
         id = id,
         players = players,
@@ -54,6 +55,7 @@ object FakeTableStateFactory {
         pendingReaction = pendingReaction,
         pendingKanReaction = pendingKanReaction,
         initialDeadWall = initialDeadWall,
+        finishedPlayerIds = finishedPlayerIds,
     )
 
     /** [tileWall] 預設張數——遠高於一般測試的玩家人數，避免不小心撞到摸牌相關的邊界判斷。 */

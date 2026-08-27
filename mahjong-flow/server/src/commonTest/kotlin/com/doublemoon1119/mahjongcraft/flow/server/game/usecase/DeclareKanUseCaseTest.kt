@@ -34,6 +34,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -467,6 +468,43 @@ class DeclareKanUseCaseTest {
             fixtures.eventPublisher.getNotifiedActions(gameId, robberId, playerId),
             "Only the Kan declaration should be broadcast; Draw hasn't happened yet.",
         )
+    }
+
+    /**
+     * 驗證即使某玩家聽牌、本應有資格搶槓，只要已標記為 finished，就不應被納入 `eligiblePlayerIds`，
+     * 也就不會開啟搶槓反應視窗。
+     */
+    @Test
+    fun `test declare added kan excludes a finished player from chankan eligibility`() = runTest {
+        val fixtures = Fixtures()
+        val white1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left)
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(melds = listOf(existingPon), lastDrawn = white4),
+        )
+        val finishedRobberId = Uuid.random()
+        val finishedRobber = createChankanRobber(finishedRobberId, Wind.SOUTH, Tile.Honor.White)
+        val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer, finishedRobber),
+            config = RiichiRuleConfig(),
+            initialDeadWall = listOf(rinshanTile),
+            currentPlayerIndex = 0,
+            finishedPlayerIds = setOf(finishedRobberId),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.ADDED_KAN, white4.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertNull(newState.pendingKanReaction, "The finished player's chankan eligibility must not open a reaction window.")
     }
 
     /**

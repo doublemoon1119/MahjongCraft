@@ -24,6 +24,7 @@ data class TableStateSnapshotDto(
     val comboCount: Int,
     val currentPlayerIndex: Int,
     val dynamicRuleState: DynamicRuleStateDto?,
+    val finishedPlayerIds: Set<String>,
 )
 
 fun TableStateSnapshot.toDto(registries: NetworkDtoRegistries): TableStateSnapshotDto = TableStateSnapshotDto(
@@ -36,6 +37,7 @@ fun TableStateSnapshot.toDto(registries: NetworkDtoRegistries): TableStateSnapsh
     comboCount = comboCount,
     currentPlayerIndex = currentPlayerIndex,
     dynamicRuleState = dynamicRuleState?.toDto(registries),
+    finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
 )
 
 fun TableStateSnapshotDto.toDomain(registries: NetworkDtoRegistries): TableStateSnapshot = TableStateSnapshot(
@@ -48,4 +50,5 @@ fun TableStateSnapshotDto.toDomain(registries: NetworkDtoRegistries): TableState
     comboCount = comboCount,
     currentPlayerIndex = currentPlayerIndex,
     dynamicRuleState = dynamicRuleState?.toDomain(registries),
+    finishedPlayerIds = finishedPlayerIds.map(Uuid::parse).toSet(),
 )

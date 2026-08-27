@@ -30,6 +30,8 @@ import kotlin.uuid.Uuid
  * @property pendingKanReaction 尚未完成的搶槓反應視窗。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
  * @property initialDeadWall 開局瞬間的王牌快照；規則尚未支援開門流程時為空清單。
+ * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合；舊存檔缺少此欄位時
+ * 預設空集合。
  */
 @Serializable
 data class TableStatePersistenceDto(
@@ -46,6 +48,7 @@ data class TableStatePersistenceDto(
     val pendingKanReaction: PendingKanReactionPersistenceDto?,
     val wallOpening: WallOpeningPersistenceDto?,
     val initialDeadWall: List<IdentifiedTilePersistenceDto>,
+    val finishedPlayerIds: Set<String> = emptySet(),
 )
 
 /** 將 [TableState] 轉換成完整權威 persistence DTO。 */
@@ -79,6 +82,7 @@ fun TableState.toPersistenceDto(
     pendingKanReaction = pendingKanReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
     wallOpening = wallOpening?.toPersistenceDto(),
     initialDeadWall = initialDeadWall.map { it.toPersistenceDto() },
+    finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
 )
 
 /** 將 [TableStatePersistenceDto] 驗證並還原成完整權威 [TableState]。 */
@@ -112,4 +116,5 @@ fun TableStatePersistenceDto.toDomain(
     pendingKanReaction = pendingKanReaction?.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
     wallOpening = wallOpening?.toDomain(),
     initialDeadWall = initialDeadWall.map { it.toDomain() },
+    finishedPlayerIds = finishedPlayerIds.map(Uuid::parse).toSet(),
 )
