@@ -133,19 +133,25 @@ class RiichiLegalActionValidator(
             // 立直後暗槓限制：
             // - 暗槓前跟暗槓後聽的牌必須一模一樣才能暗槓
             // - 需要計算暗槓後的聽牌列表，與暗槓前的聽牌列表比對
-            val closedKanCount = player.hand.standingTiles.count { it.tile.riichiCanonical == incomingBaseTile }
-            if (canDeclareAnotherKan && wallHasMoreTiles && closedKanCount == 3) {
-                val withTiles =
-                    player.hand.standingTiles.filter { it.tile.riichiCanonical == incomingBaseTile }.map { it.id }
-
-                // 若已宣告立直，檢查暗槓後聽牌是否不變
-                if (isRiichi) {
-                    if (checkClosedKanAfterRiichi(player, incomingTile)) {
-                        legalActions.add(GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, withTiles))
+            if (canDeclareAnotherKan && wallHasMoreTiles) {
+                val closedKanCandidates = (player.hand.standingTiles + incomingTile)
+                    .groupBy { it.tile.riichiCanonical }
+                    .values
+                    .filter { it.size == 4 }
+                closedKanCandidates.forEach { candidate ->
+                    val includesIncomingTile = candidate.any { it.id == incomingTile.id }
+                    // 立直後手牌固定，只能以本次摸入牌組成暗槓，並且暗槓前後聽牌必須相同。
+                    if (isRiichi && (!includesIncomingTile || !checkClosedKanAfterRiichi(player, incomingTile))) {
+                        return@forEach
                     }
-                } else {
-                    // 未立直，正常允許暗槓
-                    legalActions.add(GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, withTiles))
+                    val triggerTile = candidate.firstOrNull { it.id == incomingTile.id } ?: candidate.first()
+                    legalActions.add(
+                        GameAction.Kan(
+                            GameAction.KanType.CLOSED_KAN,
+                            triggerTile.id,
+                            candidate.filterNot { it.id == triggerTile.id }.map { it.id },
+                        ),
+                    )
                 }
             }
 

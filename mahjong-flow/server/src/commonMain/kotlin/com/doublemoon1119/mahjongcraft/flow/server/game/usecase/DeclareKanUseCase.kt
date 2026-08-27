@@ -18,7 +18,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -70,7 +69,7 @@ class DeclareKanUseCase(
      * @param gameId 對局 Uuid。
      * @param playerId 發起宣告的玩家 Uuid。
      * @param kanType 欲宣告的槓牌種類（僅支援 [GameAction.KanType.CLOSED_KAN]／[GameAction.KanType.ADDED_KAN]）。
-     * @param tileId 觸發槓牌的牌的唯一識別碼，必須等於玩家目前的 `hand.lastDrawn.id`。
+     * @param tileId 合法槓牌候選中作為觸發牌的唯一識別碼；暗槓候選可位於既有立牌中。
      * @return 宣告結果，成功時為 [Unit]，失敗時為 [GameError]。
      */
     suspend operator fun invoke(
@@ -95,7 +94,7 @@ class DeclareKanUseCase(
                     )
 
                 else -> {
-                    val incomingTile = state.currentPlayer.hand.lastDrawn?.takeIf { it.id == tileId }
+                    val incomingTile = state.currentPlayer.hand.lastDrawn
                         ?: return@update state to Outcome.Error(
                             GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
                         )
@@ -114,7 +113,13 @@ class DeclareKanUseCase(
                         sourceDirection = RelativeDirection.Self,
                         incomingTile = incomingTile,
                     )
-                    val kanAction = legalActions.filterIsInstance<GameAction.Kan>().firstOrNull { it.type == kanType }
+                    val kanAction = legalActions.filterIsInstance<GameAction.Kan>().firstOrNull {
+                        it.type == kanType && it.tileId == tileId
+                    }
+                        ?: return@update state to Outcome.Error(
+                            GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
+                        )
+                    val declaredTile = state.currentPlayer.hand.standingTiles.firstOrNull { it.id == kanAction.tileId }
                         ?: return@update state to Outcome.Error(
                             GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
                         )
@@ -130,7 +135,7 @@ class DeclareKanUseCase(
                                 player = candidate,
                                 sourceAction = kanAction,
                                 sourceDirection = state.relativeDirectionOf(candidate.id, playerId),
-                                incomingTile = incomingTile,
+                                incomingTile = declaredTile,
                             ).any { it is GameAction.Ron }
                         }
                         .map { it.id }
@@ -183,18 +188,25 @@ class DeclareKanUseCase(
                             pendingKanReaction = PendingKanReaction(
                                 playerId,
                                 kanAction,
-                                incomingTile,
+                                declaredTile,
                                 ronWinningPlayerIds,
                             ),
                         )
                         return@update newState to Outcome.Success(KanResult(newState, kanAction, drawHappened = false))
                     }
 
-                    val applied = KanDeclarationApplier.apply(state, playerId, kanAction, incomingTile, module)
+                    val applied = KanDeclarationApplier.apply(state, playerId, kanAction, declaredTile, module)
                     if (applied.rinshanTile == null) {
                         return@update state to Outcome.Error(GameError.WallExhausted(gameId))
                     }
-                    applied.tableState to Outcome.Success(KanResult(applied.tableState, kanAction, drawHappened = true))
+                    applied.tableState to Outcome.Success(
+                        KanResult(
+                            applied.tableState,
+                            kanAction,
+                            drawHappened = true,
+                            newlyRevealedDeadWallTileIds = newlyRevealedDeadWallTileIds(state, applied.tableState),
+                        ),
+                    )
                 }
             }
         }
@@ -245,8 +257,8 @@ class DeclareKanUseCase(
             )
             // 槓牌成立後可能翻開新的一張寶牌指示牌（例如日麻的槓寶牌）；不支援 TileWallRevealable
             // 的規則永遠算出空集合，呼叫這個方法沒有任何效果。
-            (newState.dynamicRuleState as? TileWallRevealable)?.let { revealable ->
-                presentationPublisher.publishDeadWallRevealUpdated(gameId, revealable.getVisibleTileIds(newState))
+            if (result.newlyRevealedDeadWallTileIds.isNotEmpty()) {
+                presentationPublisher.publishDeadWallRevealUpdated(gameId, result.newlyRevealedDeadWallTileIds)
             }
         }
 
@@ -265,5 +277,6 @@ class DeclareKanUseCase(
         val kanAction: GameAction.Kan,
         val drawHappened: Boolean,
         val abortiveDrawReason: ExhaustiveDrawReason? = null,
+        val newlyRevealedDeadWallTileIds: Set<Uuid> = emptySet(),
     )
 }

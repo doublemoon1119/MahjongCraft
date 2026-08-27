@@ -65,8 +65,13 @@ internal object KanDeclarationApplier {
         }
 
         val rinshanTile = drawRinshanTile(state) ?: return Result(state, null)
+        // 暗槓四張既有立牌時，本次摸入牌不屬於槓組；補摸嶺上牌前必須先把它併回立牌，否則下方
+        // 設定新的 lastDrawn 會覆蓋並遺失原摸入牌；槓組包含摸入牌時 lastDrawn 已被 call 移除。
+        val handReadyForRinshan = handAfterMeld.lastDrawn?.let { drawnTile ->
+            handAfterMeld.copy(tiles = handAfterMeld.tiles + drawnTile, lastDrawn = null)
+        } ?: handAfterMeld
 
-        val declarerAfterMeld = declarer.copy(hand = handAfterMeld).recordAction(kanAction)
+        val declarerAfterMeld = declarer.copy(hand = handReadyForRinshan).recordAction(kanAction)
         val declarerAfterDraw = declarerAfterMeld
             .copy(hand = declarerAfterMeld.hand.copy(lastDrawn = rinshanTile))
             .clearPassedTiles()

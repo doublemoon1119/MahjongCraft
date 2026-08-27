@@ -141,10 +141,57 @@ class DeclareKanUseCaseTest {
         val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, east4.id)
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        assertNotNull(
-            fixtures.presentationPublisher.getPublishedDeadWallReveal(gameId),
-            "A kan-dora reveal should have been published for a rule that implements TileWallRevealable.",
+        val currentState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(
+            RiichiDynamicState().getVisibleTileIds(currentState) - RiichiDynamicState().getVisibleTileIds(table),
+            assertNotNull(
+                fixtures.presentationPublisher.getPublishedDeadWallReveal(gameId),
+                "A kan-dora reveal should have been published for a rule that implements TileWallRevealable.",
+            ),
+            "Only the newly exposed indicator should be published for animation.",
         )
+    }
+
+    /** 驗證第二次槓只發布第二次新增的指示牌，不讓第一張已公開指示牌重播動畫。 */
+    @Test
+    fun `test second kan does not republish the first revealed indicator`() = runTest {
+        val fixtures = Fixtures()
+        val previousKanTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.South) }
+        val eastTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.East) }
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(
+                tiles = eastTiles.take(3),
+                melds = listOf(
+                    Meld(
+                        MeldType.CLOSED_KAN,
+                        previousKanTiles,
+                        sourceDirection = RelativeDirection.Self,
+                    ),
+                ),
+                lastDrawn = eastTiles.last(),
+            ),
+        )
+        val deadWall = List(14) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)) }
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer),
+            config = RiichiRuleConfig(),
+            initialDeadWall = deadWall,
+            currentPlayerIndex = 0,
+            dynamicRuleState = RiichiDynamicState(),
+        )
+        val previouslyVisible = RiichiDynamicState().getVisibleTileIds(table)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, eastTiles.last().id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val currentState = fixtures.gameRepo.getTableState(gameId)!!
+        val published = assertNotNull(fixtures.presentationPublisher.getPublishedDeadWallReveal(gameId))
+        assertEquals(RiichiDynamicState().getVisibleTileIds(currentState) - previouslyVisible, published)
+        assertTrue(published.intersect(previouslyVisible).isEmpty(), "Previously revealed indicators must not be republished")
     }
 
     /**
@@ -232,9 +279,37 @@ class DeclareKanUseCaseTest {
         )
     }
 
-    /**
-     * 驗證 `tileId` 與 `lastDrawn.id` 不符時回傳 [GameError.IllegalAction]。
-     */
+    /** 驗證四張相同牌原本都在立牌中時，摸入其他牌後仍可選擇該組暗槓。 */
+    @Test
+    fun `test closed kan can use four standing tiles after drawing a different tile`() = runTest {
+        val fixtures = Fixtures()
+        val eastTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.East) }
+        val unrelatedDraw = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = eastTiles, lastDrawn = unrelatedDraw),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer),
+            config = RiichiRuleConfig(),
+            initialDeadWall = listOf(rinshanTile),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, eastTiles.first().id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val hand = fixtures.gameRepo.getTableState(gameId)!!.currentPlayer.hand
+        assertEquals(MeldType.CLOSED_KAN, hand.melds.single().type)
+        assertEquals(eastTiles.map { it.id }.toSet(), hand.melds.single().tiles.map { it.id }.toSet())
+        assertTrue(hand.tiles.any { it.id == unrelatedDraw.id }, "The unrelated drawn tile must remain in the hand")
+        assertEquals(rinshanTile.id, hand.lastDrawn?.id)
+    }
+
+    /** 驗證 `tileId` 不屬於任何合法槓牌候選時回傳 [GameError.IllegalAction]。 */
     @Test
     fun `test declare kan fails when tileId does not match lastDrawn`() = runTest {
         val fixtures = Fixtures()

@@ -27,7 +27,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -186,10 +185,8 @@ class RespondToDiscardUseCase(
             )
             // 明槓得標可能翻開新的一張寶牌指示牌，理由同 DeclareKanUseCase；吃/碰不構成槓，不需要
             // 檢查——只看剛成立的那組副露（永遠是 melds 的最後一組）是不是明槓。
-            if (winner.hand.melds.lastOrNull()?.type == MeldType.OPEN_KAN) {
-                (newState.dynamicRuleState as? TileWallRevealable)?.let { revealable ->
-                    presentationPublisher.publishDeadWallRevealUpdated(gameId, revealable.getVisibleTileIds(newState))
-                }
+            if (result.newlyRevealedDeadWallTileIds.isNotEmpty()) {
+                presentationPublisher.publishDeadWallRevealUpdated(gameId, result.newlyRevealedDeadWallTileIds)
             }
         }
 
@@ -251,6 +248,7 @@ class RespondToDiscardUseCase(
         val ruleModuleId: String? = null,
         val previousTableState: TableState? = null,
         val ronDiscarderId: Uuid? = null,
+        val newlyRevealedDeadWallTileIds: Set<Uuid> = emptySet(),
     )
 
     /**
@@ -388,6 +386,14 @@ class RespondToDiscardUseCase(
             rinshanDrawHappened = rinshanTile != null,
             discarderId = pendingReaction.discarderId,
             winnerId = winnerId,
+            newlyRevealedDeadWallTileIds = newlyRevealedDeadWallTileIds(
+                state,
+                state.copy(
+                    players = playersWithRinshanDraw,
+                    currentPlayerIndex = winnerIndex,
+                    pendingReaction = null,
+                ),
+            ),
         )
     }
 }

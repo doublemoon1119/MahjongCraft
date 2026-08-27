@@ -20,7 +20,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWin
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -137,7 +136,12 @@ class RespondToKanUseCase(
                         }
                         val newState = applied.tableState.copy(pendingKanReaction = null)
                         newState to Outcome.Success(
-                            ChankanResult(newState, drawHappened = true, declarerId = pending.declarerId),
+                            ChankanResult(
+                                newState,
+                                drawHappened = true,
+                                declarerId = pending.declarerId,
+                                newlyRevealedDeadWallTileIds = newlyRevealedDeadWallTileIds(state, newState),
+                            ),
                         )
                     }
                 }
@@ -173,8 +177,8 @@ class RespondToKanUseCase(
                 comboStickCount = if (declarerSeatIndex == dealerSeatIndex) newState.comboCount else 0,
             )
             // 槓牌真的成立後可能翻開新的一張寶牌指示牌，理由同 DeclareKanUseCase。
-            (newState.dynamicRuleState as? TileWallRevealable)?.let { revealable ->
-                presentationPublisher.publishDeadWallRevealUpdated(gameId, revealable.getVisibleTileIds(newState))
+            if (result.newlyRevealedDeadWallTileIds.isNotEmpty()) {
+                presentationPublisher.publishDeadWallRevealUpdated(gameId, result.newlyRevealedDeadWallTileIds)
             }
         }
 
@@ -230,5 +234,6 @@ class RespondToKanUseCase(
         val ruleModuleId: String? = null,
         val previousTableState: TableState? = null,
         val ronDiscarderId: Uuid? = null,
+        val newlyRevealedDeadWallTileIds: Set<Uuid> = emptySet(),
     )
 }
