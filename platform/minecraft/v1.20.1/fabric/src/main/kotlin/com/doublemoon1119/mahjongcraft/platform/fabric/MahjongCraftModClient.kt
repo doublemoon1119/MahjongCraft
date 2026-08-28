@@ -116,6 +116,7 @@ class MahjongCraftModClient : ClientModInitializer {
             stateStore.applyGameSnapshot(
                 Uuid.parse(payload.gameId),
                 payload.snapshot.toDomain(networkRegistries),
+                payload.roundPreparation?.toDomain(),
             )
         }
         EntityRendererRegistry.register(ModEntities.mahjongDice, ::MahjongDiceEntityRenderer)

@@ -6,6 +6,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDispl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.registerBuiltInAiStrategyDisplayNames
+import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.registerBuiltInRuleModuleDisplayNames
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
@@ -57,6 +59,8 @@ object MinecraftMahjongExtensionRegistrar {
         gameActionDisplayNameRegistry: GameActionDisplayNameRegistry = GameActionDisplayNameRegistryImpl(),
         exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry =
             ExhaustiveDrawReasonDisplayNameRegistryImpl(),
+        roundPreparationDisplayNameRegistry: RoundPreparationDisplayNameRegistry =
+            RoundPreparationDisplayNameRegistryImpl(),
         winSettlementTemplateRegistry: WinSettlementPresentationTemplateRegistry =
             WinSettlementPresentationTemplateRegistryImpl(),
         matchSettlementTemplateRegistry: MatchSettlementPresentationTemplateRegistry =
@@ -112,6 +116,7 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerWinCelebrationShowcases(recordingShowcaseRegistry)
                 extension.registerGameActionDisplayNames(recordingGameActionDisplayNameRegistry)
                 extension.registerExhaustiveDrawReasonDisplayNames(exhaustiveDrawReasonDisplayNameRegistry)
+                extension.registerRoundPreparationDisplayNames(roundPreparationDisplayNameRegistry)
                 extension.registerWinSettlementPresentationTemplates(winSettlementTemplateRegistry)
                 extension.registerMatchSettlementPresentationTemplates(matchSettlementTemplateRegistry)
             } catch (cause: Exception) {
@@ -128,6 +133,7 @@ object MinecraftMahjongExtensionRegistrar {
         showcaseRegistry.freeze()
         gameActionDisplayNameRegistry.freeze()
         exhaustiveDrawReasonDisplayNameRegistry.freeze()
+        roundPreparationDisplayNameRegistry.freeze()
         winSettlementTemplateRegistry.freeze()
         matchSettlementTemplateRegistry.freeze()
         return MinecraftMahjongExtensionRegistrationResult(

@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.Persistence
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
@@ -51,6 +52,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
@@ -94,6 +96,7 @@ class MahjongCraftMod : ModInitializer {
             tileLabelRegistry = koin.get<TileLabelRegistry>(),
             gameActionDisplayNameRegistry = koin.get<GameActionDisplayNameRegistry>(),
             exhaustiveDrawReasonDisplayNameRegistry = koin.get<ExhaustiveDrawReasonDisplayNameRegistry>(),
+            roundPreparationDisplayNameRegistry = koin.get<RoundPreparationDisplayNameRegistry>(),
             winCelebrationCueResolverRegistry = koin.get<WinCelebrationCueResolverRegistry>(),
             showcaseRegistry = koin.get<WinCelebrationShowcaseRegistry>(),
             winSettlementTemplateRegistry = koin.get<WinSettlementPresentationTemplateRegistry>(),
@@ -102,6 +105,7 @@ class MahjongCraftMod : ModInitializer {
             gameCommandRegistry = koin.get<ExtensionGameCommandExecutorRegistry>(),
             postReactionRoundOutcomeResolverRegistry = koin.get<PostReactionRoundOutcomeResolverRegistry>(),
             winRoundContinuationResolverRegistry = koin.get<WinRoundContinuationResolverRegistry>(),
+            roundPreparationResolverRegistry = koin.get<RoundPreparationResolverRegistry>(),
             winSettlementDetailResolverRegistry = koin.get<WinSettlementDetailResolverRegistry>(),
             declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
             debugWinRoundContinuationState = koin.get<DebugWinRoundContinuationState>(),

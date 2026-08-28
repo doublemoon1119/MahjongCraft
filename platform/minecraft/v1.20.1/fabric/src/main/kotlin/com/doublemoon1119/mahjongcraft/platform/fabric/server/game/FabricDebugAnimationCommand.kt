@@ -9,10 +9,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrat
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementHandPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPlayerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPlayerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
@@ -23,6 +27,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinne
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -121,6 +128,9 @@ class FabricDebugAnimationCommand(
     private val debugWinRoundContinuationState: DebugWinRoundContinuationState,
     private val debugWinShowcaseOverride: DebugWinShowcaseOverride,
     private val membershipRepository: PlayerMembershipRepository,
+    private val gameRepository: GameRepository,
+    private val gameFlowCoordinator: GameFlowCoordinator,
+    private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
     private val effectScheduler: FabricWinCelebrationEffectScheduler,
@@ -333,10 +343,171 @@ class FabricDebugAnimationCommand(
                                 ),
                                 allowMultiple = false,
                             ) { source, cue -> armWinShowcaseOverride(source, cue) },
-                        ),
+                        )
+                        .then(preparationCommand()),
                 ),
             )
         }
+    }
+
+    /** 建立 development-only round preparation 測試指令樹。 */
+    private fun preparationCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(PREPARATION_SUBCOMMAND)
+        .then(
+            literal(START_ARGUMENT)
+                .then(literal(CONFIRM_ARGUMENT).executes { startPreparation(it.source, PreparationPreview.CONFIRM) })
+                .then(literal(CHOICE_ARGUMENT).executes { startPreparation(it.source, PreparationPreview.CHOICE) })
+                .then(literal(TILES_ARGUMENT).executes { startPreparation(it.source, PreparationPreview.TILES) }),
+        )
+        .then(
+            literal(SUBMIT_ARGUMENT)
+                .then(literal(CONFIRM_ARGUMENT).executes { submitPreparation(it.source, RoundPreparationSubmission.Confirmed) })
+                .then(
+                    literal(CHOICE_ARGUMENT).then(
+                        argument(OPTION_ID_ARGUMENT, IdentifierArgumentType.identifier())
+                            .suggests(::suggestPreparationOptions)
+                            .executes { context ->
+                                submitPreparation(
+                                    context.source,
+                                    RoundPreparationSubmission.Choice(
+                                        IdentifierArgumentType.getIdentifier(context, OPTION_ID_ARGUMENT).toString(),
+                                    ),
+                                )
+                            },
+                    ),
+                )
+                .then(
+                    literal(TILES_ARGUMENT).then(
+                        argument(TILE_IDS_ARGUMENT, StringArgumentType.greedyString())
+                            .suggests(::suggestPreparationTileIds)
+                            .executes { context ->
+                                val tileIds = StringArgumentType.getString(context, TILE_IDS_ARGUMENT)
+                                    .split(' ')
+                                    .filter(String::isNotBlank)
+                                    .map { Uuid.parse(it) }
+                                    .toSet()
+                                submitPreparation(context.source, RoundPreparationSubmission.Tiles(tileIds))
+                            },
+                    ),
+                ),
+        )
+        .then(literal(TIMEOUT_ARGUMENT).executes(::timeoutPreparation))
+        .then(literal(CANCEL_ARGUMENT).executes(::cancelPreparation))
+
+    /** 只補全執行者目前 preparation 步驟允許選擇的完整 option ID。 */
+    private fun suggestPreparationOptions(
+        context: CommandContext<ServerCommandSource>,
+        builder: SuggestionsBuilder,
+    ): CompletableFuture<Suggestions> = suggestFromPlayerPreparation(context.source, builder) { input, _, suggestions ->
+        val options = (input as? RoundPreparationInputSpec.SingleChoice)?.optionIds.orEmpty()
+        options
+            .filter { it.startsWith(suggestions.remaining, ignoreCase = true) }
+            .forEach(suggestions::suggest)
+    }
+
+    /**
+     * 只補全執行者目前可選的手牌 UUID；已輸入的 UUID 不重複建議，達到最大張數後停止補全。
+     */
+    private fun suggestPreparationTileIds(
+        context: CommandContext<ServerCommandSource>,
+        builder: SuggestionsBuilder,
+    ): CompletableFuture<Suggestions> = suggestFromPlayerPreparation(context.source, builder) { input, _, suggestions ->
+        val tileSelection = input as? RoundPreparationInputSpec.TileSelection ?: return@suggestFromPlayerPreparation
+        val rawInput = suggestions.remaining
+        val endsWithSpace = rawInput.lastOrNull()?.isWhitespace() == true
+        val tokens = rawInput.trim().split(Regex("\\s+")).filter(String::isNotBlank)
+        val completedTokens = if (endsWithSpace) tokens else tokens.dropLast(1)
+        if (completedTokens.size >= tileSelection.maxCount) return@suggestFromPlayerPreparation
+
+        val currentToken = if (endsWithSpace) "" else tokens.lastOrNull().orEmpty()
+        tileSelection.eligibleTileIds
+            .asSequence()
+            .map(Uuid::toString)
+            .filterNot(completedTokens::contains)
+            .filter { it.startsWith(currentToken, ignoreCase = true) }
+            .sorted()
+            .map { (completedTokens + it).joinToString(" ") }
+            .forEach(suggestions::suggest)
+    }
+
+    /**
+     * 非同步解析執行者所在牌桌的私有 preparation input，讓 Brigadier suggestions 不阻塞伺服器執行緒。
+     */
+    private fun suggestFromPlayerPreparation(
+        source: ServerCommandSource,
+        builder: SuggestionsBuilder,
+        appendSuggestions: (
+            input: RoundPreparationInputSpec,
+            pending: PendingRoundPreparation,
+            builder: SuggestionsBuilder,
+        ) -> Unit,
+    ): CompletableFuture<Suggestions> {
+        val future = CompletableFuture<Suggestions>()
+        val player = source.player
+        if (player == null) {
+            future.complete(builder.build())
+            return future
+        }
+        scope.launch {
+            val playerId = player.uuid.toKotlinUuid()
+            val tableId = membershipRepository.getTableId(playerId)
+            val pending = tableId?.let { gameRepository.getGame(it)?.pendingRoundPreparation }
+            val input = pending?.inputSpecsByPlayerId?.get(playerId)
+            if (input != null && playerId !in pending.submissionsByPlayerId) {
+                appendSuggestions(input, pending, builder)
+            }
+            future.complete(builder.build())
+        }
+        return future
+    }
+
+    /** 建立指定形狀的測試 preparation state。 */
+    private fun startPreparation(source: ServerCommandSource, preview: PreparationPreview): Int = withPlayerTableSuspend(source) { tableId, playerId ->
+        val changed = gameRepository.updateGame(tableId) { game ->
+            if (game == null) return@updateGame null to false
+            val input = when (preview) {
+                PreparationPreview.CONFIRM -> RoundPreparationInputSpec.Confirmation
+                PreparationPreview.CHOICE -> RoundPreparationInputSpec.SingleChoice(DEBUG_OPTION_IDS)
+                PreparationPreview.TILES -> RoundPreparationInputSpec.TileSelection(
+                    eligibleTileIds = game.tableState.players.first { it.id == playerId }.hand.allTiles
+                        .mapTo(linkedSetOf()) { it.id },
+                    minCount = 3,
+                    maxCount = 3,
+                )
+            }
+            game.copy(
+                pendingRoundPreparation = PendingRoundPreparation(
+                    stepId = "${MinecraftModMetadata.MOD_ID}:debug_${preview.name.lowercase()}",
+                    stepIndex = 0,
+                    inputSpecsByPlayerId = mapOf(playerId to input),
+                ),
+            ) to true
+        }
+        if (changed) snapshotSynchronizer.syncAll(tableId)
+        "Round preparation ${preview.name.lowercase()} preview ${if (changed) "started" else "failed"}"
+    }
+
+    /** 透過正式 coordinator 提交測試 preparation 選擇。 */
+    private fun submitPreparation(source: ServerCommandSource, submission: RoundPreparationSubmission): Int = withPlayerTableSuspend(source) { tableId, playerId ->
+        gameFlowCoordinator(tableId, playerId, GameCommand.SubmitRoundPreparation(submission))
+        "Round preparation submission sent"
+    }
+
+    /** 將執行者標記為逾時，讓正式 fallback driver 在下一次推進時代為提交。 */
+    private fun timeoutPreparation(context: CommandContext<ServerCommandSource>): Int = withPlayerTableSuspend(context.source) { tableId, playerId ->
+        gameRepository.updateGame(tableId) { game ->
+            game?.copy(forcedAutoPlayPlayerIds = game.forcedAutoPlayPlayerIds + playerId) to Unit
+        }
+        gameFlowCoordinator.driveAutomatedPlayers(tableId)
+        "Round preparation timeout fallback requested"
+    }
+
+    /** 清除 development-only 測試 preparation state。 */
+    private fun cancelPreparation(context: CommandContext<ServerCommandSource>): Int = withPlayerTableSuspend(context.source) { tableId, _ ->
+        gameRepository.updateGame(tableId) { game ->
+            game?.copy(pendingRoundPreparation = null) to Unit
+        }
+        snapshotSynchronizer.syncAll(tableId)
+        "Round preparation preview cancelled"
     }
 
     /**
@@ -403,6 +574,30 @@ class FabricDebugAnimationCommand(
                     source.sendError(Text.literal("You are not seated at any mahjong table"))
                 } else {
                     source.sendFeedback({ Text.literal(action(tableId)) }, true)
+                }
+            }
+        }
+        return 1
+    }
+
+    /** 在協程中解析玩家與桌子，供需要呼叫 suspend flow service 的 debug 指令使用。 */
+    private fun withPlayerTableSuspend(
+        source: ServerCommandSource,
+        action: suspend (tableId: Uuid, playerId: Uuid) -> String,
+    ): Int {
+        val player = source.player ?: run {
+            source.sendError(Text.literal("This debug subcommand must be run by a player seated at a table"))
+            return 0
+        }
+        scope.launch {
+            val playerId = player.uuid.toKotlinUuid()
+            val tableId = membershipRepository.getTableId(playerId)
+            val message = tableId?.let { action(it, playerId) }
+            withContext(dispatchers.main) {
+                if (message == null) {
+                    source.sendError(Text.literal("You are not seated at any mahjong table"))
+                } else {
+                    source.sendFeedback({ Text.literal(message) }, true)
                 }
             }
         }
@@ -1283,6 +1478,16 @@ class FabricDebugAnimationCommand(
         const val MELD_SUBCOMMAND: String = "meld"
         const val CONTINUING_WIN_SUBCOMMAND: String = "continuing_win"
         const val WIN_SHOWCASE_OVERRIDE_SUBCOMMAND: String = "win_showcase_override"
+        const val PREPARATION_SUBCOMMAND: String = "preparation"
+        const val START_ARGUMENT: String = "start"
+        const val SUBMIT_ARGUMENT: String = "submit"
+        const val CONFIRM_ARGUMENT: String = "confirm"
+        const val CHOICE_ARGUMENT: String = "choice"
+        const val TILES_ARGUMENT: String = "tiles"
+        const val TIMEOUT_ARGUMENT: String = "timeout"
+        const val CANCEL_ARGUMENT: String = "cancel"
+        const val OPTION_ID_ARGUMENT: String = "option_id"
+        const val TILE_IDS_ARGUMENT: String = "tile_ids"
         const val CLEAR_ARGUMENT: String = "clear"
         const val EXHAUSTIVE_DRAW_SETTLEMENT_SUBCOMMAND: String = "exhaustive_draw_settlement"
         const val WIN_SETTLEMENT_SUBCOMMAND: String = "win_settlement"
@@ -1311,6 +1516,7 @@ class FabricDebugAnimationCommand(
         const val DEFAULT_SCORE_DELTA: Int = 9_000
         val SHOWCASE_PHASES: List<String> = listOf("launch", "orbit", "place", "ignite", "explode", "reveal")
         val DEFAULT_WAITING_TILE_ASSETS: List<String> = listOf("m1", "m4", "m7")
+        val DEBUG_OPTION_IDS: List<String> = listOf("mahjongcraft:alpha", "mahjongcraft:beta", "mahjongcraft:gamma")
         val KYUUSHU_PREVIEW_ASSETS: List<String> = listOf(
             "m1", "m9", "p1", "p9", "s1", "s9", "east", "south", "west", "north", "red_dragon", "green_dragon", "white_dragon", "m1",
         )
@@ -1326,6 +1532,13 @@ class FabricDebugAnimationCommand(
 
         /** 預覽固定使用座位 0，對應虛擬桌面向玩家的近側。 */
         const val DEBUG_SEAT_INDEX: Int = 0
+
+        /** Development preparation 測試步驟種類。 */
+        enum class PreparationPreview {
+            CONFIRM,
+            CHOICE,
+            TILES,
+        }
 
         /** 標準四人日麻共 136 張牌，四面各 17 墩。 */
         const val STANDARD_WALL_STACKS_PER_SIDE: Int = 17

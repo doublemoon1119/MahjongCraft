@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
@@ -48,6 +49,9 @@ interface MinecraftMahjongExtension {
 
     /** 登記第三方流局原因在 Minecraft 中使用的本地化顯示名稱。 */
     fun registerExhaustiveDrawReasonDisplayNames(registry: ExhaustiveDrawReasonDisplayNameRegistry) = Unit
+
+    /** 登記第三方開局準備 step／option 的本地化顯示名稱。 */
+    fun registerRoundPreparationDisplayNames(registry: RoundPreparationDisplayNameRegistry) = Unit
 
     /**
      * 登記第三方牌種對應的顯示名稱。

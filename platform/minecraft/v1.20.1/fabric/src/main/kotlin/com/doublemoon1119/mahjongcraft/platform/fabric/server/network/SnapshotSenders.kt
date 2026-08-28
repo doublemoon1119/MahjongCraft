@@ -45,10 +45,11 @@ class GameSnapshotSender(
     suspend fun send(gameId: Uuid, playerId: Uuid) {
         val player = serverHolder.findPlayer(playerId) ?: return
         val snapshot = snapshots.getSnapshot(gameId, playerId) ?: return
+        val preparation = snapshots.getRoundPreparationSnapshot(gameId, playerId)
         MahjongChannels.gameSnapshot.sendTo(
             player,
             json,
-            GameSnapshotSyncPayloadDto(gameId.toString(), snapshot.toDto(networkRegistries)),
+            GameSnapshotSyncPayloadDto(gameId.toString(), snapshot.toDto(networkRegistries), preparation?.toDto()),
         )
     }
 }

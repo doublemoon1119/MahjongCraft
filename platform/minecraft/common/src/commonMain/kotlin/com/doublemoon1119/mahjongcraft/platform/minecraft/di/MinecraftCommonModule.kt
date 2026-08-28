@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
@@ -24,6 +26,10 @@ import org.koin.core.annotation.Single
 /** Minecraft loader 與版本無關、client／server 共用的 Koin 定義。 */
 @Module
 class MinecraftCommonModule {
+    /** 建立供第三方 preparation step／option 登記本地化名稱的 registry。 */
+    @Single
+    fun provideRoundPreparationDisplayNameRegistry(): RoundPreparationDisplayNameRegistry = RoundPreparationDisplayNameRegistryImpl()
+
     /** 建立供內建與第三方 extension 登記的終局結算模板 registry。 */
     @Single
     fun provideMatchSettlementPresentationTemplateRegistry(): MatchSettlementPresentationTemplateRegistry = MatchSettlementPresentationTemplateRegistryImpl()

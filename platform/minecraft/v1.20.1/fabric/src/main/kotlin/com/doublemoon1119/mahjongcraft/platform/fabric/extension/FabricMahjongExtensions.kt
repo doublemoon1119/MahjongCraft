@@ -16,14 +16,17 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.Persistence
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.registerRiichiGameActionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiGameCommandHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiNagashiManganOutcomeResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugRoundPreparationResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.registerDebugWinRoundContinuationResolvers
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
@@ -35,6 +38,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMah
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
@@ -79,6 +84,8 @@ object FabricMahjongExtensions {
         gameActionDisplayNameRegistry: GameActionDisplayNameRegistry = GameActionDisplayNameRegistryImpl(),
         exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry =
             ExhaustiveDrawReasonDisplayNameRegistryImpl(),
+        roundPreparationDisplayNameRegistry: RoundPreparationDisplayNameRegistry =
+            RoundPreparationDisplayNameRegistryImpl(),
         winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
             WinCelebrationCueResolverRegistryImpl(),
         showcaseRegistry: WinCelebrationShowcaseRegistry =
@@ -91,6 +98,7 @@ object FabricMahjongExtensions {
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
             PostReactionRoundOutcomeResolverRegistry(),
+        roundPreparationResolverRegistry: RoundPreparationResolverRegistry = RoundPreparationResolverRegistry(),
         winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry =
             WinRoundContinuationResolverRegistry(),
         winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
@@ -115,6 +123,7 @@ object FabricMahjongExtensions {
                 tileLabelRegistry = tileLabelRegistry,
                 gameActionDisplayNameRegistry = gameActionDisplayNameRegistry,
                 exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
+                roundPreparationDisplayNameRegistry = roundPreparationDisplayNameRegistry,
                 winCelebrationCueResolverRegistry = winCelebrationCueResolverRegistry,
                 showcaseRegistry = showcaseRegistry,
                 winSettlementTemplateRegistry = winSettlementTemplateRegistry,
@@ -122,6 +131,7 @@ object FabricMahjongExtensions {
                 gameActionAiRegistry = gameActionAiRegistry,
                 gameCommandRegistry = gameCommandRegistry,
                 postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
+                roundPreparationResolverRegistry = roundPreparationResolverRegistry,
                 winRoundContinuationResolverRegistry = winRoundContinuationResolverRegistry,
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 declareRiichiUseCase = declareRiichiUseCase,
@@ -190,6 +200,8 @@ object FabricMahjongExtensions {
         gameActionDisplayNameRegistry: GameActionDisplayNameRegistry = GameActionDisplayNameRegistryImpl(),
         exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry =
             ExhaustiveDrawReasonDisplayNameRegistryImpl(),
+        roundPreparationDisplayNameRegistry: RoundPreparationDisplayNameRegistry =
+            RoundPreparationDisplayNameRegistryImpl(),
         winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
             WinCelebrationCueResolverRegistryImpl(),
         showcaseRegistry: WinCelebrationShowcaseRegistry =
@@ -202,6 +214,7 @@ object FabricMahjongExtensions {
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
             PostReactionRoundOutcomeResolverRegistry(),
+        roundPreparationResolverRegistry: RoundPreparationResolverRegistry = RoundPreparationResolverRegistry(),
         winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry =
             WinRoundContinuationResolverRegistry(),
         winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
@@ -230,6 +243,11 @@ object FabricMahjongExtensions {
         // 開發環境限定：讓「胡牌後本局繼續」這條路徑在還沒有任何規則支援它時就能進遊戲驗證，
         // 比照 FabricDebugAnimationCommand 的 gating——正式產物裡根本沒註冊過。預設 inert。
         if (minecraftEnvironment.isDevelopment) {
+            listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.TAIWAN).forEach { ruleModuleId ->
+                if (roundPreparationResolverRegistry.find(ruleModuleId) == null) {
+                    roundPreparationResolverRegistry.register(DebugRoundPreparationResolver(ruleModuleId))
+                }
+            }
             winRoundContinuationResolverRegistry.registerDebugWinRoundContinuationResolvers(
                 state = debugWinRoundContinuationState,
             )
@@ -245,6 +263,7 @@ object FabricMahjongExtensions {
             gameActionAiRegistry = gameActionAiRegistry,
             gameCommandRegistry = gameCommandRegistry,
             postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
+            roundPreparationResolverRegistry = roundPreparationResolverRegistry,
             winRoundContinuationResolverRegistry = winRoundContinuationResolverRegistry,
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
         )
@@ -262,6 +281,7 @@ object FabricMahjongExtensions {
             showcaseRegistry = showcaseRegistry,
             gameActionDisplayNameRegistry = gameActionDisplayNameRegistry,
             exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
+            roundPreparationDisplayNameRegistry = roundPreparationDisplayNameRegistry,
             winSettlementTemplateRegistry = winSettlementTemplateRegistry,
             matchSettlementTemplateRegistry = matchSettlementTemplateRegistry,
         )

@@ -12,7 +12,10 @@ internal object MinecraftGameFeedbackResolver {
         is GameError.NotPlayersTurn -> MinecraftPlayerFeedback.NotYourTurn
         is GameError.IllegalAction -> MinecraftPlayerFeedback.IllegalGameAction
         is GameError.WallExhausted -> MinecraftPlayerFeedback.WallExhausted
-        is GameError.UnsupportedAction -> MinecraftPlayerFeedback.UnsupportedGameAction
+        is GameError.UnsupportedAction,
+        is GameError.RoundPreparationUnavailable,
+        is GameError.InvalidRoundPreparationSubmission,
+        -> MinecraftPlayerFeedback.UnsupportedGameAction
         // 只會由伺服器內部的 ReturnToRoomUseCase 觸發，不會出現在任何玩家指令的回饋路徑上；
         // 這裡沒有專屬訊息，退回同一種通用「動作不支援」回饋只是為了滿足窮舉。
         is GameError.MatchNotOver -> MinecraftPlayerFeedback.UnsupportedGameAction

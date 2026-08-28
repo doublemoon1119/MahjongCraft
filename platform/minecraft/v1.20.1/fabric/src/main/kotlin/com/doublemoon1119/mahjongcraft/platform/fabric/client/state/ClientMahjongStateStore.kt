@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.state
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
@@ -28,6 +29,10 @@ class ClientMahjongStateStore(
             field = value
             managedTileSnapshotsByTileId = buildManagedTileIndex(value)
         }
+
+    /** 目前觀看者可見的開局準備狀態。 */
+    var roundPreparationSnapshot: RoundPreparationSnapshot? = null
+        private set
 
     /**
      * 依管理中麻將牌 entity UUID（等同 `IdentifiedTile.id`）索引的快照，隨每次 [gameSnapshot] 更新
@@ -62,6 +67,7 @@ class ClientMahjongStateStore(
     fun apply(payload: RoomUpdatePayloadDto) {
         roomSnapshot = payload.snapshot.toDomain(networkRegistries)
         gameSnapshot = null
+        roundPreparationSnapshot = null
     }
 
     /** 接收帶動作的遊戲更新並保存其最新快照。 */
@@ -78,9 +84,14 @@ class ClientMahjongStateStore(
     }
 
     /** 保存沒有伴隨遊戲動作的主動同步快照。 */
-    fun applyGameSnapshot(gameId: Uuid, snapshot: TableStateSnapshot) {
+    fun applyGameSnapshot(
+        gameId: Uuid,
+        snapshot: TableStateSnapshot,
+        roundPreparation: RoundPreparationSnapshot? = null,
+    ) {
         require(snapshot.id == gameId) { "Game snapshot ID does not match its payload ID." }
         gameSnapshot = snapshot
+        roundPreparationSnapshot = roundPreparation
         roomSnapshot = null
     }
 
@@ -91,5 +102,6 @@ class ClientMahjongStateStore(
     fun clear() {
         roomSnapshot = null
         gameSnapshot = null
+        roundPreparationSnapshot = null
     }
 }
