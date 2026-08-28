@@ -178,12 +178,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     override fun publishWinPresentation(gameId: Uuid, request: WinPresentationRequest) {
         winPresentations.getOrPut(gameId) { mutableListOf() } += request
         // 依序記錄成兩段，讓既有斷言與「celebration 一定先於 settlement」的驗證都能直接沿用。
-        request.celebration?.let { winCelebrations.getOrPut(gameId) { mutableListOf() } += WinCelebrationContext(it) }
-        request.settlement?.let { winSettlements.getOrPut(gameId) { mutableListOf() } += WinSettlementContext(it) }
-        val segments = buildList {
-            if (request.celebration != null) add(WinPresentationSegment.CELEBRATION)
-            if (request.settlement != null) add(WinPresentationSegment.SETTLEMENT)
-        }
+        winCelebrations.getOrPut(gameId) { mutableListOf() } += WinCelebrationContext(request.celebration)
+        winSettlements.getOrPut(gameId) { mutableListOf() } += WinSettlementContext(request.settlement)
+        val segments = listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT)
         publishOrder.getOrPut(gameId) { mutableListOf() }.add(segments)
     }
 
