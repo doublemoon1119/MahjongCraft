@@ -803,7 +803,7 @@ class FabricDebugAnimationCommand(
                     previousRank = seat + 1,
                     currentRank = currentRanks.getValue(seat),
                 ),
-                currentWind = Wind.entries[seat],
+                seatWind = Wind.entries[seat],
                 handTileIds = handTiles.map { it.first.uuid.toKotlinUuid() },
                 handPresentation = handPresentation,
                 revealedHandTileIds = if (handPresentation == ExhaustiveDrawSettlementHandPresentation.CONCEAL) emptyList() else handTiles.map { it.first.uuid.toKotlinUuid() },
@@ -900,7 +900,7 @@ class FabricDebugAnimationCommand(
                     playerId = playerIds[seatIndex],
                     seatIndex = seatIndex,
                     isAi = seatIndex != 0,
-                    initialSeat = Wind.entries[seatIndex],
+                    initialSeatIndex = seatIndex,
                     finalScore = scores[seatIndex],
                     finalRank = seatIndex + 1,
                 )

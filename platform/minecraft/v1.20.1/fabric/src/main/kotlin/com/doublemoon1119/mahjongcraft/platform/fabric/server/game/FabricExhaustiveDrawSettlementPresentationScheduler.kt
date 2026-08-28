@@ -34,7 +34,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler {
             ExhaustiveDrawSettlementPlayerSnapshot(
                 playerId = ranking.playerId.toString(),
                 seatIndex = ranking.seatIndex,
-                wind = player.currentWind.name,
+                wind = player.seatWind.name,
                 isAi = ranking.isAi,
                 previousScore = ranking.previousScore,
                 currentScore = ranking.currentScore,

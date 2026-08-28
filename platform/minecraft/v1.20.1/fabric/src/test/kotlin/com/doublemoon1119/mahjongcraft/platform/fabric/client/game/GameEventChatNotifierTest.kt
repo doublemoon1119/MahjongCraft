@@ -133,18 +133,18 @@ class GameEventChatNotifierTest {
         val southId = kotlin.uuid.Uuid.random()
         val westId = kotlin.uuid.Uuid.random()
         val northId = kotlin.uuid.Uuid.random()
-        // 東家跟南家同分；起家（initialSeat）刻意跟這一局的座位（currentWind）反過來排——南家的
-        // initialSeat 是西、currentWind 是東，東家的 initialSeat 是東、currentWind 是南——如果
-        // 用錯欄位（誤用 initialSeat），排序會反過來，藉此確認回合排名真的是比 currentWind。
+        // 東家跟南家同分；起家（initialSeat）刻意跟這一局的座位（seatWind）反過來排——南家的
+        // initialSeat 是西、seatWind 是東，東家的 initialSeat 是東、seatWind 是南——如果
+        // 用錯欄位（誤用 initialSeat），排序會反過來，藉此確認回合排名真的是比 seatWind。
         val players = listOf(
             FakeMahjongPlayerFactory.create(id = eastId, initialSeat = Wind.EAST, aiStrategyKey = "fake")
-                .copy(score = 25000, currentWind = Wind.SOUTH),
+                .copy(score = 25000, seatWind = Wind.SOUTH),
             FakeMahjongPlayerFactory.create(id = southId, initialSeat = Wind.WEST, aiStrategyKey = "fake")
-                .copy(score = 25000, currentWind = Wind.EAST),
+                .copy(score = 25000, seatWind = Wind.EAST),
             FakeMahjongPlayerFactory.create(id = westId, initialSeat = Wind.SOUTH, aiStrategyKey = "fake")
-                .copy(score = 30000, currentWind = Wind.WEST),
+                .copy(score = 30000, seatWind = Wind.WEST),
             FakeMahjongPlayerFactory.create(id = northId, initialSeat = Wind.NORTH, aiStrategyKey = "fake")
-                .copy(score = 20000, currentWind = Wind.NORTH),
+                .copy(score = 20000, seatWind = Wind.NORTH),
         )
         val previous = FakeTableStateFactory.create(players = players).toSnapshot(visibleHandPlayerIds = emptySet())
         val current = FakeTableStateFactory.create(players = players.map { it.copy(score = it.score + 1) }).toSnapshot(visibleHandPlayerIds = emptySet())
@@ -191,13 +191,15 @@ class GameEventChatNotifierTest {
         val southId = kotlin.uuid.Uuid.random()
         val westId = kotlin.uuid.Uuid.random()
         val northId = kotlin.uuid.Uuid.random()
-        // 南家跟北家同分（25000），照座位規則南家名次要在北家前面；東家分數最高排第一，
-        // 西家分數最低排最後，藉此確認「同分才比座位、分數優先」沒有被弄反。
+        // 起家第二位跟第三位同分（25000），照固定起家順位第二位名次要在第三位前面；
+        // 同時刻意把兩人的本局風位反過來，確認終局同分判準不受 seatWind 影響。
         val snapshot = FakeTableStateFactory.create(
             players = listOf(
                 FakeMahjongPlayerFactory.create(id = eastId, initialSeat = Wind.EAST, aiStrategyKey = "fake").copy(score = 30000),
-                FakeMahjongPlayerFactory.create(id = northId, initialSeat = Wind.NORTH, aiStrategyKey = "fake").copy(score = 25000),
-                FakeMahjongPlayerFactory.create(id = southId, initialSeat = Wind.SOUTH, aiStrategyKey = "fake").copy(score = 25000),
+                FakeMahjongPlayerFactory.create(id = southId, initialSeat = Wind.SOUTH, aiStrategyKey = "fake")
+                    .copy(score = 25000, seatWind = Wind.NORTH),
+                FakeMahjongPlayerFactory.create(id = northId, initialSeat = Wind.NORTH, aiStrategyKey = "fake")
+                    .copy(score = 25000, seatWind = Wind.SOUTH),
                 FakeMahjongPlayerFactory.create(id = westId, initialSeat = Wind.WEST, aiStrategyKey = "fake").copy(score = 20000),
             ),
         ).toSnapshot(visibleHandPlayerIds = emptySet())
@@ -214,7 +216,7 @@ class GameEventChatNotifierTest {
         assertEquals(
             listOf(eastId, southId, northId, westId).map { it.toString().take(4) },
             orderedPlayerIdPrefixes.map { it.removePrefix("AI-") },
-            "Expected east, then south before north (tied score broken by seat), then west.",
+            "Expected the second initial seat before the third when their final scores are tied.",
         )
     }
 

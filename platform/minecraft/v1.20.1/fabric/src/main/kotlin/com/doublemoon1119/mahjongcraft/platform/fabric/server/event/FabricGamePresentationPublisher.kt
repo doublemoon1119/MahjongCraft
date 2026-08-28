@@ -15,7 +15,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
@@ -207,7 +206,7 @@ class FabricGamePresentationPublisher(
                 mapOf(
                     "playerId" to player.playerId,
                     "seatIndex" to player.seatIndex,
-                    "initialSeat" to player.initialSeat,
+                    "initialSeatIndex" to player.initialSeatIndex,
                     "finalScore" to player.finalScore,
                     "finalRank" to player.finalRank,
                 )
@@ -780,7 +779,7 @@ class FabricGamePresentationPublisher(
             return null
         }
         val module = moduleRegistry.getModule(state.config)
-        val dealerSeatIndex = state.players.indexOfFirst { it.currentWind == Wind.EAST }
+        val dealerSeatIndex = state.dealerIndex
         var handLaydownEndGameTime: Long? = null
         val organizedBySeat = request.winners.associate { requestedWinner ->
             val winner = state.players[requestedWinner.seatIndex]

@@ -20,7 +20,7 @@ data class MatchSettlementPlayerSnapshot(
     val playerId: String,
     val seatIndex: Int,
     val isAi: Boolean,
-    val initialSeat: String,
+    val initialSeatIndex: Int,
     val finalScore: Int,
     val finalRank: Int,
 )
@@ -230,7 +230,7 @@ class MatchSettlementPresentationEntity(
         private val CHAMPION_SOUND_ID: TrackedData<String> = DataTracker.registerData(MatchSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
         private fun encodePlayers(players: List<MatchSettlementPlayerSnapshot>): String = players.joinToString(ROW_SEPARATOR.toString()) { player ->
-            listOf(player.playerId, player.seatIndex, if (player.isAi) 1 else 0, player.initialSeat, player.finalScore, player.finalRank)
+            listOf(player.playerId, player.seatIndex, if (player.isAi) 1 else 0, player.initialSeatIndex, player.finalScore, player.finalRank)
                 .joinToString(FIELD_SEPARATOR.toString())
         }
 
@@ -241,7 +241,7 @@ class MatchSettlementPresentationEntity(
                 playerId = fields[0],
                 seatIndex = fields[1].toIntOrNull() ?: return@mapNotNull null,
                 isAi = fields[2] == "1",
-                initialSeat = fields[3],
+                initialSeatIndex = fields[3].toInt(),
                 finalScore = fields[4].toIntOrNull() ?: return@mapNotNull null,
                 finalRank = fields[5].toIntOrNull() ?: return@mapNotNull null,
             )

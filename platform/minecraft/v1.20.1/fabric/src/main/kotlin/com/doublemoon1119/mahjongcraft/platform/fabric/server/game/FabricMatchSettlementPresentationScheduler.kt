@@ -42,7 +42,7 @@ class FabricMatchSettlementPresentationScheduler(
                 playerId = player.playerId.toString(),
                 seatIndex = player.seatIndex,
                 isAi = player.isAi,
-                initialSeat = player.initialSeat.name,
+                initialSeatIndex = player.initialSeatIndex,
                 finalScore = player.finalScore,
                 finalRank = player.finalRank,
             )
