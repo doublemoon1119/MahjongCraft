@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.command
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RoundPreparationSubmissionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
@@ -16,6 +19,8 @@ import kotlin.uuid.Uuid
  */
 @Serializable
 sealed interface GameCommandDto {
+    @Serializable data class SubmitRoundPreparation(val submission: RoundPreparationSubmissionDto) : GameCommandDto
+
     @Serializable data class Extension(@Polymorphic val value: com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameCommandDto) : GameCommandDto
 
     @Serializable data object Draw : GameCommandDto
@@ -34,6 +39,7 @@ sealed interface GameCommandDto {
 }
 
 fun GameCommand.toDto(registries: NetworkDtoRegistries): GameCommandDto = when (this) {
+    is GameCommand.SubmitRoundPreparation -> GameCommandDto.SubmitRoundPreparation(submission.toDto())
     is GameCommand.Extension -> GameCommandDto.Extension(value.toDto(registries))
     GameCommand.Draw -> GameCommandDto.Draw
     is GameCommand.Discard -> GameCommandDto.Discard(tileId.toString())
@@ -45,6 +51,7 @@ fun GameCommand.toDto(registries: NetworkDtoRegistries): GameCommandDto = when (
 }
 
 fun GameCommandDto.toDomain(registries: NetworkDtoRegistries): GameCommand = when (this) {
+    is GameCommandDto.SubmitRoundPreparation -> GameCommand.SubmitRoundPreparation(submission.toDomain())
     is GameCommandDto.Extension -> GameCommand.Extension(value.toDomain(registries))
     GameCommandDto.Draw -> GameCommand.Draw
     is GameCommandDto.Discard -> GameCommand.Discard(Uuid.parse(tileId))

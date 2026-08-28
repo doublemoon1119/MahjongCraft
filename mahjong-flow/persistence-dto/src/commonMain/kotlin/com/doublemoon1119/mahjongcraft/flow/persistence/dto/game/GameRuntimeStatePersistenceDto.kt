@@ -24,6 +24,7 @@ data class GameRuntimeStatePersistenceDto(
     val isMatchOver: Boolean = false,
     val pendingTransition: PendingGameTransitionPersistenceDto? = null,
     val roundTransitionDirective: RoundTransitionDirectivePersistenceDto? = null,
+    val pendingRoundPreparation: PendingRoundPreparationPersistenceDto? = null,
     val hostId: String? = null,
 )
 
@@ -34,6 +35,7 @@ fun Game.toRuntimeStatePersistenceDto(): GameRuntimeStatePersistenceDto = GameRu
     isMatchOver = isMatchOver,
     pendingTransition = pendingTransition?.toPersistenceDto(),
     roundTransitionDirective = roundTransitionDirective?.toPersistenceDto(),
+    pendingRoundPreparation = pendingRoundPreparation?.toPersistenceDto(),
     hostId = hostId.toString(),
 )
 

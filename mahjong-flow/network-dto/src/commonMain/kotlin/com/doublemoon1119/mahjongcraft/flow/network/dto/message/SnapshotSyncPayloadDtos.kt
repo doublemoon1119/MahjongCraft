@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.message
 
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.RoomSnapshotDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.RoundPreparationSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.TableStateSnapshotDto
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import kotlinx.serialization.Serializable
@@ -22,4 +23,6 @@ data class GameSnapshotSyncPayloadDto(
     val gameId: String,
     /** 指定 observer 當下可見的完整遊戲快照。 */
     val snapshot: TableStateSnapshotDto,
+    /** 指定 observer 可見的開局準備狀態。 */
+    val roundPreparation: RoundPreparationSnapshotDto? = null,
 )

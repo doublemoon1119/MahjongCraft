@@ -81,4 +81,10 @@ sealed interface GameError : ApplicationError {
      * @param playerId 發起操作的玩家 Uuid；系統觸發（無玩家發起者，例如流局結算）的情境下為 null。
      */
     data class UnsupportedAction(val gameId: Uuid, val playerId: Uuid? = null) : GameError
+
+    /** 對局目前沒有可由指定玩家提交的開局準備步驟。 */
+    data class RoundPreparationUnavailable(val gameId: Uuid, val playerId: Uuid) : GameError
+
+    /** 開局準備提交不符合輸入結構或規則語意。 */
+    data class InvalidRoundPreparationSubmission(val gameId: Uuid, val playerId: Uuid) : GameError
 }

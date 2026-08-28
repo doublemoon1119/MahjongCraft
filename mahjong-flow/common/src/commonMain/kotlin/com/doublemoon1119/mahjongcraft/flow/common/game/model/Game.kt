@@ -22,6 +22,7 @@ import kotlin.uuid.Uuid
  *   欄位並提前跳過，避免對已經沒有牌可摸的桌況重複嘗試摸牌、重複觸發流局結算。
  * @property pendingTransition 呈現動畫結束後尚待完成的權威流程；`null` 代表沒有待收斂的流程。
  * @property roundTransitionDirective 最近一次本局結算明確指定的莊家推進決策；進入下一局後清除。
+ * @property pendingRoundPreparation 發牌後、正常摸打前尚待完成的規則準備步驟；沒有步驟時為 null。
  * @property hostId 開局時的房主 Uuid，取自原本 `Room.hostId`——`com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase`
  *   把 Room 轉換成 Game 後，房主身分不再能從 `Room` 讀出，保留在這裡讓對局結束轉回 Room
  *   （見 `ReturnToRoomUseCase`）時能還原同一位房主，預設值取第一位玩家僅供未指定房主的測試情境使用；
@@ -37,6 +38,7 @@ data class Game(
     val isMatchOver: Boolean = false,
     val pendingTransition: PendingGameTransition? = null,
     val roundTransitionDirective: RoundTransitionDirective? = null,
+    val pendingRoundPreparation: PendingRoundPreparation? = null,
     val hostId: Uuid = tableState.players.firstOrNull()?.id ?: Uuid.random(),
 ) {
     init {
@@ -49,6 +51,9 @@ data class Game(
         }
         require(forcedAutoPlayPlayerIds.all { it in playerIds }) {
             "Forced auto-play players must belong to the game"
+        }
+        require(pendingRoundPreparation?.participantPlayerIds?.all { it in playerIds } != false) {
+            "Round preparation participants must belong to the game"
         }
         require(playerIds.isEmpty() || hostId in playerIds) {
             "Host must belong to the game"

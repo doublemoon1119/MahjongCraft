@@ -15,6 +15,9 @@ import kotlin.uuid.Uuid
  * 規則專屬操作以 [Extension] 包裝強型別命令；核心不窮舉立直、拔北或特定途中流局。
  */
 sealed interface GameCommand {
+    /** 提交目前的開局準備選擇。 */
+    data class SubmitRoundPreparation(val submission: RoundPreparationSubmission) : GameCommand
+
     /** 規則 extension 提供的強型別命令。 */
     data class Extension(val value: ExtensionGameCommand) : GameCommand
 
