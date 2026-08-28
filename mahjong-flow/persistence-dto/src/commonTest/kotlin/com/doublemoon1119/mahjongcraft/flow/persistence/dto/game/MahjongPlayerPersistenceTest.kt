@@ -57,7 +57,7 @@ class MahjongPlayerPersistenceTest {
             .discard(RiichiDiscardEntry(takenDiscard, isTaken = true))
         val player = MahjongPlayer(
             id = Uuid.random(),
-            initialSeat = Wind.WEST,
+            initialSeatIndex = Wind.WEST.ordinal,
             hand = Hand(tiles = listOf(standingTile), lastDrawn = lastDrawn),
             discardPile = discardPile,
             playerRuleState = RiichiPlayerState(
@@ -67,7 +67,7 @@ class MahjongPlayerPersistenceTest {
             ),
             score = 31_200,
             aiStrategyKey = "random",
-            currentWind = Wind.SOUTH,
+            seatWind = Wind.SOUTH,
             passedTilesInRound = setOf(Tile.Honor.White, Tile.Numeric(Tile.Suit.Dot, 5)),
             actionHistory = listOf(
                 RIICHI_GAME_ACTION,
@@ -92,7 +92,8 @@ class MahjongPlayerPersistenceTest {
         val discard = identified(Tile.Extension(TaiwanTileTypes.PLUM))
         val player = MahjongPlayer(
             id = Uuid.random(),
-            initialSeat = Wind.EAST,
+            initialSeatIndex = Wind.EAST.ordinal,
+            seatWind = Wind.EAST,
             discardPile = TaiwanDiscardPile().discard(DiscardPile.DiscardEntry(discard, isTaken = true)),
             score = 16,
         )
@@ -130,11 +131,11 @@ class MahjongPlayerPersistenceTest {
     /** 比對不依賴牌河具體實作的玩家權威狀態。 */
     private fun assertPlayerCommonState(expected: MahjongPlayer, actual: MahjongPlayer) {
         assertEquals(expected.id, actual.id)
-        assertEquals(expected.initialSeat, actual.initialSeat)
+        assertEquals(expected.initialSeatIndex, actual.initialSeatIndex)
         assertEquals(expected.hand, actual.hand)
         assertEquals(expected.score, actual.score)
         assertEquals(expected.aiStrategyKey, actual.aiStrategyKey)
-        assertEquals(expected.currentWind, actual.currentWind)
+        assertEquals(expected.seatWind, actual.seatWind)
         assertEquals(expected.passedTilesInRound, actual.passedTilesInRound)
         assertEquals(expected.actionHistory, actual.actionHistory)
     }

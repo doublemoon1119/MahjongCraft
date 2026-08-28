@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * @property isMenzen 是否有門前清（無副露）。
  * @property roundWind 圈風。
  * @property seatWind 自風。
+ * @property isDealer 胡牌者是否為本局權威莊家。
  * @property isRiichi 是否已宣告立直。
  * @property isDoubleRiichi 是否為兩立直（雙立直）。
  * @property isIppatsu 是否為一發。
@@ -36,6 +37,7 @@ data class RiichiHandValueContext(
     override val isMenzen: Boolean = true,
     override val roundWind: Wind = Wind.EAST,
     override val seatWind: Wind = Wind.EAST,
+    val isDealer: Boolean,
     val isRiichi: Boolean = false,
     val isDoubleRiichi: Boolean = false,
     val isIppatsu: Boolean = false,

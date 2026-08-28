@@ -11,9 +11,7 @@ import kotlin.test.assertEquals
 /**
  * [RiichiHandValueCalculator] 對莊家判定的整合測試。
  *
- * 驗證莊家判定不會跟著場風（圈風）誤判：莊家的自風永遠是東，即使場風已經推進到南場，
- * 只要自風仍是東就應該正確判定為莊家；反之，自風恰好等於場風（例如南場時自風為南）的
- * 玩家不應被誤判為莊家。
+ * 驗證莊家點數只讀取權威 `isDealer`，不會從場風或規則可變的自風反推。
  *
  * @see PointCalculator
  */
@@ -37,17 +35,17 @@ class RiichiHandValueCalculatorDealerTest : RiichiHandValueCalculatorTestBase() 
     )
 
     /**
-     * 驗證南場時，自風仍為東的玩家（即莊家）自摸應套用莊家點數倍率，
-     * 不會因為場風（南）跟自風（東）不同就被誤判為非莊家。
+     * 驗證開門定風讓莊家取得南風時，仍套用莊家點數倍率。
      */
     @Test
-    fun `test dealer with seat wind east still gets dealer multiplier during south round`() {
+    fun `test authoritative dealer with south seat wind gets dealer multiplier`() {
         val context = FakeRiichiHandValueContextFactory.create(
             hand = daisangenHand(),
             winningTile = Tile.Honor.Red,
             isTsumo = true,
             roundWind = Wind.SOUTH,
-            seatWind = Wind.EAST,
+            seatWind = Wind.SOUTH,
+            isDealer = true,
         )
 
         val result = calculator.calculate(context)
@@ -56,18 +54,17 @@ class RiichiHandValueCalculatorDealerTest : RiichiHandValueCalculatorTestBase() 
     }
 
     /**
-     * 驗證南場時，自風恰好也是南（等於場風）的玩家自摸應套用非莊家點數倍率，
-     * 不會因為自風跟場風剛好相同就被誤判為莊家（這正是連風牌／雙東成立的條件，
-     * 跟「是否為莊家」是兩件不同的事）。
+     * 驗證非莊家即使取得東風，也不會被誤判為莊家。
      */
     @Test
-    fun `test player whose seat wind matches round wind is not misidentified as dealer`() {
+    fun `test non dealer with east seat wind keeps non dealer multiplier`() {
         val context = FakeRiichiHandValueContextFactory.create(
             hand = daisangenHand(),
             winningTile = Tile.Honor.Red,
             isTsumo = true,
             roundWind = Wind.SOUTH,
-            seatWind = Wind.SOUTH,
+            seatWind = Wind.EAST,
+            isDealer = false,
         )
 
         val result = calculator.calculate(context)

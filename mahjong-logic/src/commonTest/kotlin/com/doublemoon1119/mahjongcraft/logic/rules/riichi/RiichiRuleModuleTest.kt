@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
@@ -164,8 +165,8 @@ class RiichiRuleModuleTest {
         assertTrue(riichiState.isIppatsu)
         assertEquals(24000, result.player.score)
         assertEquals(2, result.player.discardPile.entries.size)
-        assertTrue((result.player.discardPile.entries.last() as RiichiDiscardEntry).isRiichi)
-        assertEquals(1, (result.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+        assertTrue(assertIs<RiichiDiscardEntry>(result.player.discardPile.entries.last()).isRiichi)
+        assertEquals(1, result.dynamicRuleState.riichiStickCount)
     }
 
     /**
@@ -793,18 +794,18 @@ class RiichiRuleModuleTest {
 
     /**
      * 驗證 [MahjongRuleModule.compareForRoundRanking] 預設實作：分數優先，同分時依這一局的座位
-     * （`currentWind`）決定順序，越接近這一局東家名次越前面——`RiichiRuleModule` 沒有覆寫這個 hook，
+     * （`seatWind`）決定順序，越接近這一局東家名次越前面——`RiichiRuleModule` 沒有覆寫這個 hook，
      * 這裡測的就是介面本身的預設慣例。
      */
     @Test
-    fun `test compareForRoundRanking breaks ties by currentWind`() {
-        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH).copy(score = 25000, currentWind = Wind.EAST)
-        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST).copy(score = 25000, currentWind = Wind.SOUTH)
-        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 30000, currentWind = Wind.WEST)
+    fun `test compareForRoundRanking breaks ties by seatWind`() {
+        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH).copy(score = 25000, seatWind = Wind.EAST)
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST).copy(score = 25000, seatWind = Wind.SOUTH)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 30000, seatWind = Wind.WEST)
 
         val ranked = listOf(south, west, east).sortedWith(module.compareForRoundRanking())
 
-        assertEquals(listOf(west, east, south), ranked, "Highest score first; tied scores broken by this hand's seat (currentWind), not initialSeat.")
+        assertEquals(listOf(west, east, south), ranked, "Highest score first; tied scores broken by this hand's seat (seatWind), not initialSeat.")
     }
 
     /**
@@ -813,14 +814,14 @@ class RiichiRuleModuleTest {
      */
     @Test
     fun `test compareForMatchRanking breaks ties by initialSeat`() {
-        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST).copy(score = 24000, currentWind = Wind.SOUTH)
-        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH).copy(score = 24000, currentWind = Wind.EAST)
-        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH).copy(score = 20000, currentWind = Wind.NORTH)
-        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 32000, currentWind = Wind.WEST)
+        val east = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST).copy(score = 24000, seatWind = Wind.SOUTH)
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH).copy(score = 24000, seatWind = Wind.EAST)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH).copy(score = 20000, seatWind = Wind.NORTH)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 32000, seatWind = Wind.WEST)
 
         val ranked = listOf(north, south, west, east).sortedWith(module.compareForMatchRanking())
 
-        assertEquals(listOf(west, east, south, north), ranked, "Highest score first; tied scores broken by initialSeat, not currentWind.")
+        assertEquals(listOf(west, east, south, north), ranked, "Highest score first; tied scores broken by initialSeat, not seatWind.")
     }
 
     /**

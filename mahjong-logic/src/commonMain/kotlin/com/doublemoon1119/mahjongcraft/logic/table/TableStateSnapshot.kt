@@ -11,6 +11,7 @@ import kotlin.uuid.Uuid
  * @property players 所有玩家的快照列表
  * @property config 當前桌局使用的規則配置
  * @property tileWall 牌山快照，僅包含規則定義下應公開可見的牌張
+ * @property dealerPlayerId 本局權威莊家 Uuid。
  * @property prevalentWind 當前場風
  * @property roundNumber 當前局數
  * @property comboCount 當前連莊次數
@@ -24,6 +25,7 @@ data class TableStateSnapshot(
     val players: List<MahjongPlayerSnapshot>,
     val config: MahjongRuleConfig,
     val tileWall: TileWallSnapshot,
+    val dealerPlayerId: Uuid,
     val prevalentWind: Wind,
     val roundNumber: Int,
     val comboCount: Int,
@@ -51,6 +53,7 @@ fun TableState.toSnapshot(visibleHandPlayerIds: Set<Uuid>): TableStateSnapshot {
         },
         config = this.config,
         tileWall = this.tileWall.toSnapshot(visibleTileIds = visibleTileIds, deadWallTiles = this.initialDeadWall),
+        dealerPlayerId = this.dealerPlayerId,
         prevalentWind = this.prevalentWind,
         roundNumber = this.roundNumber,
         comboCount = this.comboCount,

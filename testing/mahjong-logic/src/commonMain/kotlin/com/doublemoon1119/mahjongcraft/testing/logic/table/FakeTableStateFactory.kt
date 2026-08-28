@@ -30,7 +30,11 @@ object FakeTableStateFactory {
      */
     fun create(
         id: Uuid = Uuid.random(),
-        players: List<MahjongPlayer> = emptyList(),
+        players: List<MahjongPlayer> = listOf(
+            FakeMahjongPlayerFactory.create(Wind.EAST),
+            FakeMahjongPlayerFactory.create(Wind.SOUTH),
+        ),
+        dealerPlayerId: Uuid = players.firstOrNull()?.id ?: Uuid.random(),
         config: MahjongRuleConfig = FakeMahjongRuleConfig(),
         tileWall: TileWall = TileWall(List(DEFAULT_WALL_SIZE) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)) }),
         prevalentWind: Wind = Wind.EAST,
@@ -42,21 +46,31 @@ object FakeTableStateFactory {
         pendingKanReaction: PendingKanReaction? = null,
         initialDeadWall: List<IdentifiedTile> = emptyList(),
         finishedPlayerIds: Set<Uuid> = emptySet(),
-    ): TableState = TableState(
-        id = id,
-        players = players,
-        config = config,
-        tileWall = tileWall,
-        prevalentWind = prevalentWind,
-        roundNumber = roundNumber,
-        comboCount = comboCount,
-        currentPlayerIndex = currentPlayerIndex,
-        dynamicRuleState = dynamicRuleState,
-        pendingReaction = pendingReaction,
-        pendingKanReaction = pendingKanReaction,
-        initialDeadWall = initialDeadWall,
-        finishedPlayerIds = finishedPlayerIds,
-    )
+    ): TableState {
+        val hasDuplicateWinds = players.map { it.seatWind }.distinct().size != players.size
+        val normalizedPlayers = players.mapIndexed { index, player ->
+            player.copy(
+                initialSeatIndex = index,
+                seatWind = if (hasDuplicateWinds) Wind.entries[index] else player.seatWind,
+            )
+        }
+        return TableState(
+            id = id,
+            players = normalizedPlayers,
+            config = config,
+            tileWall = tileWall,
+            dealerPlayerId = dealerPlayerId,
+            prevalentWind = prevalentWind,
+            roundNumber = roundNumber,
+            comboCount = comboCount,
+            currentPlayerIndex = currentPlayerIndex,
+            dynamicRuleState = dynamicRuleState,
+            pendingReaction = pendingReaction,
+            pendingKanReaction = pendingKanReaction,
+            initialDeadWall = initialDeadWall,
+            finishedPlayerIds = finishedPlayerIds,
+        )
+    }
 
     /** [tileWall] 預設張數——遠高於一般測試的玩家人數，避免不小心撞到摸牌相關的邊界判斷。 */
     private const val DEFAULT_WALL_SIZE = 70

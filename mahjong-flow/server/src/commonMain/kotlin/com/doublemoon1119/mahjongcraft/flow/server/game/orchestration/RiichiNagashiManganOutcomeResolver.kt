@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import kotlin.uuid.Uuid
 
 /** 將日麻流局滿貫判定轉為 Flow 的 win-equivalent round outcome。 */
@@ -32,7 +31,7 @@ class RiichiNagashiManganOutcomeResolver : PostReactionRoundOutcomeResolver {
             },
             dynamicRuleState = stickPot?.first ?: tableState.dynamicRuleState,
         )
-        val dealerId = tableState.players.first { it.currentWind == Wind.EAST }.id
+        val dealerId = tableState.dealerPlayerId
         return ResolvedRoundOutcome(
             id = id,
             settledTableState = settledState,
@@ -52,7 +51,7 @@ class RiichiNagashiManganOutcomeResolver : PostReactionRoundOutcomeResolver {
     private fun chooseStickPotCollector(tableState: TableState, achieverIds: Set<Uuid>): Uuid? {
         if (achieverIds.isEmpty()) return null
         if (achieverIds.size == 1) return achieverIds.first()
-        val dealerId = tableState.players.first { it.currentWind == Wind.EAST }.id
+        val dealerId = tableState.dealerPlayerId
         return tableState.nearestPlayerInTurnOrder(dealerId, achieverIds)
     }
 }

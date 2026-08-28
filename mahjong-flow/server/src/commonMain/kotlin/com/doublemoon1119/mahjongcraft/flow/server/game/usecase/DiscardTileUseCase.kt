@@ -15,7 +15,6 @@ import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -177,7 +176,7 @@ class DiscardTileUseCase(
         // 沒變，仍要一併帶上讓手牌讓開偏移量算得準），並把捨棄的牌移到牌河
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val discarder = newState.players[seatIndex]
-        val dealerSeatIndex = newState.players.indexOfFirst { it.currentWind == Wind.EAST }
+        val dealerSeatIndex = newState.dealerIndex
         presentationPublisher.publishPlayerAreaUpdated(
             gameId,
             seatIndex,

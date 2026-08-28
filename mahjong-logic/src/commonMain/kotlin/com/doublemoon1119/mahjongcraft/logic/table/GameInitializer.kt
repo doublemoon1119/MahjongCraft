@@ -9,6 +9,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer.buildOpenedWa
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
+import com.doublemoon1119.mahjongcraft.logic.table.seat.SeatWindAssignmentContext
+import com.doublemoon1119.mahjongcraft.logic.table.seat.assignValidated
 import kotlin.uuid.Uuid
 
 /**
@@ -43,16 +45,18 @@ object GameInitializer {
                 "(${module.config.minPlayers}..${module.config.maxPlayers})"
         }
 
-        val seats = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).take(playerIds.size)
         val shuffledPlayerIds = playerIds.shuffled()
+        val dealerPlayerId = shuffledPlayerIds.first()
 
         val openedWall = module.buildOpenedWall()
-        // 洗座位當下 shuffledPlayerIds[0] 就是莊家（seats[0] = EAST），順序本來就是正確的發牌輪轉順序。
+        val seatWinds = module.assignSeatWinds(shuffledPlayerIds, dealerPlayerId, openedWall)
+        // 洗座位當下 shuffledPlayerIds[0] 就是莊家，順序本來就是正確的發牌輪轉順序。
         val (hands, remainingWall) = module.dealInitialHands(openedWall.wall, shuffledPlayerIds)
         val players = shuffledPlayerIds.mapIndexed { index, playerId ->
             MahjongPlayer(
                 id = playerId,
-                initialSeat = seats[index],
+                initialSeatIndex = index,
+                seatWind = seatWinds.getValue(playerId),
                 hand = Hand(tiles = hands[index]),
                 discardPile = module.createDiscardPile(),
                 playerRuleState = module.createInitialPlayerRuleState(),
@@ -65,6 +69,7 @@ object GameInitializer {
             players = players,
             config = module.config,
             tileWall = remainingWall,
+            dealerPlayerId = dealerPlayerId,
             dynamicRuleState = module.createInitialDynamicState(),
             wallOpening = openedWall.wallOpening,
             initialDeadWall = openedWall.initialDeadWall,
@@ -106,14 +111,17 @@ object GameInitializer {
         // TableState.players 順序整場對局固定不變、不是從莊家開始排的，發牌輪轉順序需要另外把玩家
         // 列表依莊家旋轉過（見 dealInitialHands KDoc 對 playerIds 順序的要求），發完牌後再依原本固定
         // 順序組回 players 列表，不能直接沿用旋轉過的順序。
-        val dealerIndex = roundAdvancement.players.indexOfFirst { it.currentWind == Wind.EAST }
+        val dealerIndex = roundAdvancement.players.indexOfFirst { it.id == roundAdvancement.dealerPlayerId }
         val dealOrderPlayerIds = List(roundAdvancement.players.size) { offset ->
             roundAdvancement.players[(dealerIndex + offset) % roundAdvancement.players.size].id
         }
         val (hands, remainingWall) = module.dealInitialHands(openedWall.wall, dealOrderPlayerIds)
         val handsByPlayerId = dealOrderPlayerIds.zip(hands).toMap()
+        val playerIdsInTurnOrder = roundAdvancement.players.map { it.id }
+        val seatWinds = module.assignSeatWinds(playerIdsInTurnOrder, roundAdvancement.dealerPlayerId, openedWall)
         val players = roundAdvancement.players.map { player ->
             player.copy(
+                seatWind = seatWinds.getValue(player.id),
                 hand = Hand(tiles = handsByPlayerId.getValue(player.id)),
                 discardPile = module.createDiscardPile(),
                 playerRuleState = module.createInitialPlayerRuleState(),
@@ -127,6 +135,7 @@ object GameInitializer {
             players = players,
             config = module.config,
             tileWall = remainingWall,
+            dealerPlayerId = roundAdvancement.dealerPlayerId,
             prevalentWind = roundAdvancement.prevalentWind,
             roundNumber = roundAdvancement.roundNumber,
             comboCount = roundAdvancement.comboCount,
@@ -142,6 +151,20 @@ object GameInitializer {
             wallStructure = openedWall.structure,
         )
     }
+
+    /** 依規則 policy 指派並驗證本局所有玩家的自風。 */
+    private fun MahjongRuleModule<*>.assignSeatWinds(
+        playerIdsInTurnOrder: List<Uuid>,
+        dealerPlayerId: Uuid,
+        openedWall: OpenedWall,
+    ): Map<Uuid, Wind> = createSeatWindAssignmentPolicy().assignValidated(
+        SeatWindAssignmentContext(
+            playerIdsInTurnOrder = playerIdsInTurnOrder,
+            dealerPlayerId = dealerPlayerId,
+            diceRoll = openedWall.diceRoll,
+            wallOpening = openedWall.wallOpening,
+        ),
+    )
 
     /**
      * 建立一副已套用開門結果的牌山：洗牌、（若規則同時提供 [MahjongRuleModule.createWallOpeningPolicy]

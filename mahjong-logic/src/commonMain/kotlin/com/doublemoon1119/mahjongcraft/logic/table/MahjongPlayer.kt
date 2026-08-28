@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  * 而是回傳一個反映變更後狀態的新 [MahjongPlayer] 實例。
  *
  * @property id 玩家的唯一識別碼（通常對應 Minecraft 玩家的 Uuid）。
- * @property initialSeat 初始座位方位。
+ * @property initialSeatIndex 整場固定的起家座位順位，從 `0` 起算。
  * @property hand 該玩家的手牌實體。
  * @property discardPile 該玩家的牌河實體，其具體類型由遊戲規則決定。
  * @property playerRuleState 用於儲存規則特有的玩家狀態（如立直、振聽等）。
@@ -25,7 +25,7 @@ import kotlin.uuid.Uuid
  *                依開局時的 AI 玩家名單標記，此後隨玩家實例透過既有的 `.copy()` 機制自然延續。實際
  *                策略的解析（key → `MahjongAiStrategy` 實例）不在這一層，見 `:mahjong-ai` 的
  *                `MahjongAiStrategyRegistry`。
- * @property currentWind 玩家目前的方位。隨連莊或過莊改變，用於判定當前局數中的親家/子家關係。
+ * @property seatWind 玩家本局由規則指派的自風／門風；不得用來反推莊家。
  * @property passedTilesInRound 當前巡迴中玩家放過的牌（用於過水碰及同巡振聽判定）：
  *                              放過碰牌機會 → 過水碰（之後不能碰）；放過榮和機會 → 同巡振聽（之後不能榮和）。
  *                              當玩家摸牌時（新的巡迴開始）應清除此集合。
@@ -33,16 +33,20 @@ import kotlin.uuid.Uuid
  */
 data class MahjongPlayer(
     val id: Uuid,
-    override val initialSeat: Wind,
+    override val initialSeatIndex: Int,
     val hand: Hand = Hand(),
     val discardPile: DiscardPile<*>,
     val playerRuleState: PlayerRuleState? = null,
     override val score: Int = 0,
     val aiStrategyKey: String? = null,
-    override val currentWind: Wind = initialSeat,
+    override val seatWind: Wind,
     val passedTilesInRound: Set<Tile> = emptySet(),
     val actionHistory: List<GameAction> = emptyList(),
 ) : RankablePlayer {
+    init {
+        require(initialSeatIndex >= 0) { "initialSeatIndex must not be negative" }
+    }
+
     /** 是否由 AI 操控——[aiStrategyKey] 非 null 即代表是 AI，不需要另外存一個 Boolean。 */
     val isAi: Boolean get() = aiStrategyKey != null
 

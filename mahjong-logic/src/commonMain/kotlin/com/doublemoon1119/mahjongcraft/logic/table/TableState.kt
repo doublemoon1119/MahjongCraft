@@ -17,6 +17,7 @@ import kotlin.uuid.Uuid
  * @property players 參與遊戲的玩家列表。
  * @property config 當前遊戲的規則配置，包含物理參數與計分規則。
  * @property tileWall 當前遊戲使用的牌山。
+ * @property dealerPlayerId 本局權威莊家 Uuid；莊家身分與自風彼此獨立。
  * @property prevalentWind 當前的場風（圈風）。
  * @property roundNumber 當前的局數。
  * @property comboCount 連莊次數（日麻：本場數；台麻：連幾）。
@@ -37,6 +38,7 @@ data class TableState(
     val players: List<MahjongPlayer>,
     val config: MahjongRuleConfig,
     val tileWall: TileWall,
+    val dealerPlayerId: Uuid,
     val prevalentWind: Wind = Wind.EAST,
     val roundNumber: Int = 1,
     val comboCount: Int = 0,
@@ -49,6 +51,14 @@ data class TableState(
     val finishedPlayerIds: Set<Uuid> = emptySet(),
 ) {
     init {
+        require(players.map { it.id }.distinct().size == players.size) { "Table players must have unique IDs" }
+        require(players.any { it.id == dealerPlayerId }) { "dealerPlayerId must belong to this table" }
+        require(players.map { it.initialSeatIndex }.sorted() == players.indices.toList()) {
+            "initialSeatIndex values must form a complete zero-based sequence"
+        }
+        require(players.map { it.seatWind }.distinct().size == players.size) {
+            "Players must have unique seat winds"
+        }
         if (finishedPlayerIds.isNotEmpty()) {
             val playerIds = players.mapTo(mutableSetOf()) { it.id }
             require(finishedPlayerIds.all { it in playerIds }) {
@@ -67,6 +77,15 @@ data class TableState(
 
     /** 獲取目前輪到執行動作的玩家。 */
     val currentPlayer: MahjongPlayer get() = players[currentPlayerIndex]
+
+    /** 本局權威莊家。 */
+    val dealer: MahjongPlayer get() = players[dealerIndex]
+
+    /** 本局權威莊家在固定座位順序中的索引。 */
+    val dealerIndex: Int get() = players.indexOfFirst { it.id == dealerPlayerId }
+
+    /** [playerId] 是否為本局權威莊家。 */
+    fun isDealer(playerId: Uuid): Boolean = playerId == dealerPlayerId
 
     /** 尚未完成本局、仍參與後續回合的玩家，依 [players] 原本的座位順序排列。 */
     val activePlayers: List<MahjongPlayer> get() = players.filterNot { it.id in finishedPlayerIds }
@@ -99,7 +118,7 @@ data class TableState(
     }
 
     /**
-     * 根據指定玩家獲取其下家（逆時針下一位玩家）。
+     * 根據指定玩家獲取其下家（回合順序中的下一位玩家）。
      *
      * @param player 指定的玩家。
      * @return 該玩家的下家。
@@ -192,14 +211,14 @@ data class TableState(
     }
 
     /**
-     * 依「莊家是否連莊」計算連莊/過莊後的局數、本場數、場風與各玩家方位，並判斷整場對局是否已結束。
+     * 依「莊家是否連莊」計算下一局莊家、局數、本場數與場風，並判斷整場對局是否已結束。
      *
      * 連莊/過莊本身的判斷依據（莊家胡牌、或流局聽牌/流局滿貫）由呼叫端決定，這裡只接受已經決定好的
      * [dealerRepeats]，不在這裡重新判斷——呼叫端（`AdvanceRoundUseCase`）目前是檢查莊家的
      * `actionHistory` 裡有沒有 `Tsumo`/`Ron`/`ExhaustiveDraw`，這個函式本身不需要因此跟著改。
      *
-     * 莊家判定為 `players` 中 `currentWind == Wind.EAST` 的那一位；過莊時把莊家換成座位順序中的
-     * 下一位（[getNextPlayer] 方向），並重新指派所有玩家的 [MahjongPlayer.currentWind]。
+     * 過莊時把 [dealerPlayerId] 移交給固定座位順序中的下一位；自風要等下一局重新擲骰開門後，
+     * 再由規則的 seat-wind policy 指派。
      *
      * @param dealerRepeats 本局是否應該連莊。
      * @return 套用連莊或過莊後的結果。
@@ -212,6 +231,7 @@ data class TableState(
             // 莊家（含 RON），對局就會無限連莊下去，永遠打不完，這是實際遊戲內驗證過的問題。
             return RoundAdvancementResult(
                 players = players,
+                dealerPlayerId = dealerPlayerId,
                 roundNumber = roundNumber,
                 comboCount = comboCount + 1,
                 prevalentWind = prevalentWind,
@@ -220,18 +240,15 @@ data class TableState(
         }
 
         val newRoundNumber = roundNumber + 1
-        val currentDealerIndex = players.indexOfFirst { it.currentWind == Wind.EAST }
-        val newDealerIndex = (currentDealerIndex + 1) % playerCount
+        val newDealerIndex = (dealerIndex + 1) % playerCount
         val winds = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).take(playerCount)
-        val rotatedPlayers = players.mapIndexed { index, player ->
-            player.copy(currentWind = winds[(index - newDealerIndex).mod(playerCount)])
-        }
         // 若 newRoundNumber 已經超過 totalRounds（isMatchOver = true），這裡算出的場風理論上
         // 不會再被使用；coerceAtMost 純粹避免此時的陣列界外存取，屬防呆。
         val windIndex = ((newRoundNumber - 1) / playerCount).coerceAtMost(winds.size - 1)
 
         return RoundAdvancementResult(
-            players = rotatedPlayers,
+            players = players,
+            dealerPlayerId = players[newDealerIndex].id,
             roundNumber = newRoundNumber,
             comboCount = 0,
             prevalentWind = winds[windIndex],

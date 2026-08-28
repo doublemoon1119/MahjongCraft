@@ -16,8 +16,8 @@ import kotlin.uuid.Uuid
 @Serializable
 data class MahjongPlayerSnapshotDto(
     val id: String,
-    val initialSeat: WindDto,
-    val currentWind: WindDto,
+    val initialSeatIndex: Int,
+    val seatWind: WindDto,
     val hand: HandSnapshotDto,
     val discardPile: DiscardPileDto,
     val playerRuleState: PlayerRuleStateDto?,
@@ -27,8 +27,8 @@ data class MahjongPlayerSnapshotDto(
 
 fun MahjongPlayerSnapshot.toDto(registries: NetworkDtoRegistries): MahjongPlayerSnapshotDto = MahjongPlayerSnapshotDto(
     id = id.toString(),
-    initialSeat = initialSeat.toDto(),
-    currentWind = currentWind.toDto(),
+    initialSeatIndex = initialSeatIndex,
+    seatWind = seatWind.toDto(),
     hand = hand.toDto(),
     discardPile = discardPile.toDto(registries),
     playerRuleState = playerRuleState?.toDto(registries),
@@ -38,8 +38,8 @@ fun MahjongPlayerSnapshot.toDto(registries: NetworkDtoRegistries): MahjongPlayer
 
 fun MahjongPlayerSnapshotDto.toDomain(registries: NetworkDtoRegistries): MahjongPlayerSnapshot = MahjongPlayerSnapshot(
     id = Uuid.parse(id),
-    initialSeat = initialSeat.toDomain(),
-    currentWind = currentWind.toDomain(),
+    initialSeatIndex = initialSeatIndex,
+    seatWind = seatWind.toDomain(),
     hand = hand.toDomain(),
     discardPile = discardPile.toDomain(registries),
     playerRuleState = playerRuleState?.toDomain(registries),

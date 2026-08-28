@@ -878,6 +878,7 @@ class RespondToDiscardUseCaseTest {
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(discarder, dealerWinner, nonDealerWinner),
+            dealerPlayerId = dealerWinnerId,
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(dealerWinnerId, responderId)),
@@ -961,6 +962,7 @@ class RespondToDiscardUseCaseTest {
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(discarder, dealerWinner, nonDealerWinner1, nonDealerWinner2),
+            dealerPlayerId = dealerWinnerId,
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(
@@ -1065,6 +1067,7 @@ class RespondToDiscardUseCaseTest {
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(discarder, dealerWinner, nonDealerWinner),
+            dealerPlayerId = dealerWinnerId,
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
             currentPlayerIndex = 0,

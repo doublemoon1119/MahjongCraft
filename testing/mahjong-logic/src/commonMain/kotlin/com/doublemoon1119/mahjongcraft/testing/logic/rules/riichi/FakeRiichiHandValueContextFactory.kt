@@ -28,6 +28,7 @@ object FakeRiichiHandValueContextFactory {
      * @param uraDoraIndicators 裡寶牌指示牌列表，預設為空。
      * @param roundWind 場風，預設為東風。
      * @param seatWind 自風，預設為東風。
+     * @param isDealer 是否為本局權威莊家；預設沿用既有測試中東家為莊家的設定。
      * @param isLastDraw 是否為海底摸月，預設為 false。
      * @param isLastDiscard 是否為河底撈魚，預設為 false。
      * @param isRobbingKan 是否為槍槓，預設為 false。
@@ -48,6 +49,7 @@ object FakeRiichiHandValueContextFactory {
         uraDoraIndicators: List<Tile> = emptyList(),
         roundWind: Wind = Wind.EAST,
         seatWind: Wind = Wind.EAST,
+        isDealer: Boolean = seatWind == Wind.EAST,
         isLastDraw: Boolean = false,
         isLastDiscard: Boolean = false,
         isRobbingKan: Boolean = false,
@@ -67,6 +69,7 @@ object FakeRiichiHandValueContextFactory {
         uraDoraIndicators = uraDoraIndicators,
         roundWind = roundWind,
         seatWind = seatWind,
+        isDealer = isDealer,
         isLastDraw = isLastDraw,
         isLastDiscard = isLastDiscard,
         isRobbingKan = isRobbingKan,

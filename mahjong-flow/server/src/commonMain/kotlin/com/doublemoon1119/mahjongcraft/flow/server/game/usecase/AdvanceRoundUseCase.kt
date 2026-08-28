@@ -19,7 +19,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import org.koin.core.annotation.Factory
@@ -88,7 +87,7 @@ class AdvanceRoundUseCase(
                 game == null || state == null -> game to Outcome.Error(GameError.GameNotFound(gameId))
                 else -> {
                     val module = moduleRegistry.getModule(state.config)
-                    val dealer = state.players.first { it.currentWind == Wind.EAST }
+                    val dealer = state.dealer
                     val dealerRepeats = when (game.roundTransitionDirective) {
                         RoundTransitionDirective.REPEAT_DEALER -> true
                         RoundTransitionDirective.ADVANCE_DEALER -> false
@@ -183,7 +182,7 @@ class AdvanceRoundUseCase(
             // 對局已結束：仍要同步最終快照、廣播 MatchEnded，讓客戶端能讀到最終分數組出排名畫面，
             // 但不做開下一局才需要的 RoundStarted 廣播或擲骰／牌牆呈現。
             snapshotSynchronizer.syncAll(gameId)
-            val lastDealerId = newState.players.first { it.currentWind == Wind.EAST }.id
+            val lastDealerId = newState.dealerPlayerId
             newState.players.forEach { player ->
                 eventPublisher.publish(gameId, player.id, lastDealerId, GameAction.MatchEnded)
             }
@@ -199,7 +198,7 @@ class AdvanceRoundUseCase(
                             playerId = player.id,
                             seatIndex = seatIndex,
                             isAi = player.isAi,
-                            initialSeat = player.initialSeat,
+                            initialSeatIndex = player.initialSeatIndex,
                             finalScore = player.score,
                             finalRank = finalRankById.getValue(player.id),
                         )
@@ -214,7 +213,7 @@ class AdvanceRoundUseCase(
 
         // 3. 廣播「下一局已開始」事件；RoundStarted 沒有實際執行者，比照 GameStarted 的既有慣例，
         //    填入新莊家的 Uuid
-        val newDealerId = newState.players.first { it.currentWind == Wind.EAST }.id
+        val newDealerId = newState.dealerPlayerId
         newState.players.forEach { player ->
             eventPublisher.publish(gameId, player.id, newDealerId, GameAction.RoundStarted)
         }

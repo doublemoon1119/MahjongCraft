@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -88,7 +87,7 @@ class DrawTileUseCase(
         // GamePresentationPublisher.publishPlayerAreaUpdated 的同名參數 KDoc。
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val drawnPlayer = newState.players[seatIndex]
-        val dealerSeatIndex = newState.players.indexOfFirst { it.currentWind == Wind.EAST }
+        val dealerSeatIndex = newState.dealerIndex
         presentationPublisher.publishPlayerAreaUpdated(
             gameId,
             seatIndex,

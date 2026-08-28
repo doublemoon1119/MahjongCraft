@@ -20,13 +20,13 @@ enum class WindPersistenceDto { EAST, SOUTH, WEST, NORTH }
 @Serializable
 data class MahjongPlayerPersistenceDto(
     val id: String,
-    val initialSeat: WindPersistenceDto,
+    val initialSeatIndex: Int,
     val hand: HandPersistenceDto,
     val discardPile: TypedPersistenceDto,
     val playerRuleState: TypedPersistenceDto?,
     val score: Int,
     val aiStrategyKey: String?,
-    val currentWind: WindPersistenceDto,
+    val seatWind: WindPersistenceDto,
     val passedTilesInRound: List<TilePersistenceDto>,
     val actionHistory: List<GameActionPersistenceDto>,
 )
@@ -40,13 +40,13 @@ fun MahjongPlayer.toPersistenceDto(
     json: Json = Json,
 ): MahjongPlayerPersistenceDto = MahjongPlayerPersistenceDto(
     id = id.toString(),
-    initialSeat = WindPersistenceDto.valueOf(initialSeat.name),
+    initialSeatIndex = initialSeatIndex,
     hand = hand.toPersistenceDto(),
     discardPile = discardPileRegistry.encode(discardPile, json),
     playerRuleState = playerRuleState?.let { playerRuleStateRegistry.encode(it, json) },
     score = score,
     aiStrategyKey = aiStrategyKey,
-    currentWind = WindPersistenceDto.valueOf(currentWind.name),
+    seatWind = WindPersistenceDto.valueOf(seatWind.name),
     passedTilesInRound = passedTilesInRound.map { it.toPersistenceDto() },
     actionHistory = actionHistory.map { it.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json) },
 )
@@ -60,13 +60,13 @@ fun MahjongPlayerPersistenceDto.toDomain(
     json: Json = Json,
 ): MahjongPlayer = MahjongPlayer(
     id = Uuid.parse(id),
-    initialSeat = Wind.valueOf(initialSeat.name),
+    initialSeatIndex = initialSeatIndex,
     hand = hand.toDomain(),
     discardPile = discardPileRegistry.decode(discardPile, json),
     playerRuleState = playerRuleState?.let { playerRuleStateRegistry.decode(it, json) },
     score = score,
     aiStrategyKey = aiStrategyKey,
-    currentWind = Wind.valueOf(currentWind.name),
+    seatWind = Wind.valueOf(seatWind.name),
     passedTilesInRound = passedTilesInRound.mapTo(mutableSetOf()) { it.toDomain() },
     actionHistory = actionHistory.map { it.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json) },
 )

@@ -37,8 +37,8 @@ class MahjongPlayerTest {
 
         // 驗證屬性賦值
         assertEquals(uuid, player.id, "Player ID should match the provided UUID.")
-        assertEquals(seat, player.initialSeat, "Initial seat should be correctly assigned.")
-        assertEquals(seat, player.currentWind, "Current wind should be equal to initial seat upon initialization.")
+        assertEquals(seat.ordinal, player.initialSeatIndex, "Initial seat index should be correctly assigned.")
+        assertEquals(seat, player.seatWind, "Current wind should be equal to initial seat upon initialization.")
         assertEquals(0, player.score, "Initial score should be 0 by default.")
 
         // 驗證牌河是否已正確持有（透過工廠注入）
@@ -58,8 +58,8 @@ class MahjongPlayerTest {
         assertEquals(25000, player.score, "Player score should be updatable.")
 
         // 測試方位變更 (例如過莊)
-        player = player.copy(currentWind = Wind.SOUTH)
-        assertEquals(Wind.SOUTH, player.currentWind, "Player's current wind should be updatable.")
+        player = player.copy(seatWind = Wind.SOUTH)
+        assertEquals(Wind.SOUTH, player.seatWind, "Player's current wind should be updatable.")
     }
 
     /**

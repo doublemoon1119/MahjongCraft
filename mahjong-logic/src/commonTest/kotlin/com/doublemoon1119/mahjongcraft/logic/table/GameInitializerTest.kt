@@ -39,7 +39,7 @@ class GameInitializerTest {
         val table = GameInitializer.initialize(gameId, playerIds, module).tableState
 
         assertEquals(4, table.players.size)
-        assertEquals(setOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH), table.players.map { it.initialSeat }.toSet())
+        assertEquals((0..3).toSet(), table.players.map { it.initialSeatIndex }.toSet())
         assertEquals(playerIds.toSet(), table.players.map { it.id }.toSet())
     }
 
@@ -147,7 +147,7 @@ class GameInitializerTest {
 
         val firstPlayerSeats = List(20) {
             GameInitializer.initialize(Uuid.random(), playerIds, module)
-                .tableState.players.first { it.id == playerIds[0] }.initialSeat
+                .tableState.players.first { it.id == playerIds[0] }.initialSeatIndex
         }
 
         assertTrue(firstPlayerSeats.toSet().size > 1, "Seat assignment should vary across multiple initializations.")
@@ -202,6 +202,7 @@ class GameInitializerTest {
         val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(score = 25000)
         val roundAdvancement = RoundAdvancementResult(
             players = listOf(p1, p2, p3, p4),
+            dealerPlayerId = p1.id,
             roundNumber = 2,
             comboCount = 0,
             prevalentWind = Wind.EAST,
@@ -227,6 +228,7 @@ class GameInitializerTest {
         val p4 = FakeMahjongPlayerFactory.create(Wind.WEST)
         val roundAdvancement = RoundAdvancementResult(
             players = listOf(p1, p2, p3, p4),
+            dealerPlayerId = p2.id,
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
@@ -243,12 +245,13 @@ class GameInitializerTest {
      */
     @Test
     fun `test startNextRound applies round advancement result`() {
-        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST).copy(currentWind = Wind.NORTH)
-        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(currentWind = Wind.EAST)
-        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST).copy(currentWind = Wind.SOUTH)
-        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(currentWind = Wind.WEST)
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST).copy(seatWind = Wind.NORTH)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(seatWind = Wind.EAST)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST).copy(seatWind = Wind.SOUTH)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(seatWind = Wind.WEST)
         val roundAdvancement = RoundAdvancementResult(
             players = listOf(p1, p2, p3, p4),
+            dealerPlayerId = p2.id,
             roundNumber = 3,
             comboCount = 1,
             prevalentWind = Wind.SOUTH,
@@ -260,23 +263,24 @@ class GameInitializerTest {
         assertEquals(3, table.roundNumber)
         assertEquals(1, table.comboCount)
         assertEquals(Wind.SOUTH, table.prevalentWind)
-        assertEquals(Wind.NORTH, table.players.first { it.id == p1.id }.currentWind)
-        assertEquals(Wind.EAST, table.players.first { it.id == p2.id }.currentWind)
-        assertEquals(Wind.SOUTH, table.players.first { it.id == p3.id }.currentWind)
-        assertEquals(Wind.WEST, table.players.first { it.id == p4.id }.currentWind)
+        assertEquals(Wind.NORTH, table.players.first { it.id == p1.id }.seatWind)
+        assertEquals(Wind.EAST, table.players.first { it.id == p2.id }.seatWind)
+        assertEquals(Wind.SOUTH, table.players.first { it.id == p3.id }.seatWind)
+        assertEquals(Wind.WEST, table.players.first { it.id == p4.id }.seatWind)
     }
 
     /**
-     * 驗證 [GameInitializer.startNextRound] 的 `currentPlayerIndex` 指向新莊家（`currentWind == EAST`）。
+     * 驗證 [GameInitializer.startNextRound] 的 `currentPlayerIndex` 指向新莊家（`seatWind == EAST`）。
      */
     @Test
     fun `test startNextRound sets currentPlayerIndex to the new dealer`() {
-        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST).copy(currentWind = Wind.SOUTH)
-        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(currentWind = Wind.WEST)
-        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST).copy(currentWind = Wind.NORTH)
-        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(currentWind = Wind.EAST)
+        val p1 = FakeMahjongPlayerFactory.create(Wind.EAST).copy(seatWind = Wind.SOUTH)
+        val p2 = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(seatWind = Wind.WEST)
+        val p3 = FakeMahjongPlayerFactory.create(Wind.WEST).copy(seatWind = Wind.NORTH)
+        val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH).copy(seatWind = Wind.EAST)
         val roundAdvancement = RoundAdvancementResult(
             players = listOf(p1, p2, p3, p4),
+            dealerPlayerId = p4.id,
             roundNumber = 2,
             comboCount = 0,
             prevalentWind = Wind.EAST,
@@ -309,6 +313,7 @@ class GameInitializerTest {
         val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
         val roundAdvancement = RoundAdvancementResult(
             players = listOf(dirtyPlayer, p2, p3, p4),
+            dealerPlayerId = dirtyPlayer.id,
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
@@ -334,6 +339,7 @@ class GameInitializerTest {
         val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(it) }
         val roundAdvancement = RoundAdvancementResult(
             players = players,
+            dealerPlayerId = players.first().id,
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
@@ -354,6 +360,7 @@ class GameInitializerTest {
         val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(it) }
         val roundAdvancement = RoundAdvancementResult(
             players = players,
+            dealerPlayerId = players.first().id,
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
@@ -374,6 +381,7 @@ class GameInitializerTest {
         val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(it) }
         val roundAdvancement = RoundAdvancementResult(
             players = players,
+            dealerPlayerId = players.first().id,
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
@@ -396,6 +404,7 @@ class GameInitializerTest {
         val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(it) }
         val roundAdvancement = RoundAdvancementResult(
             players = players,
+            dealerPlayerId = players.first().id,
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,

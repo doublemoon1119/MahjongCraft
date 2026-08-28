@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -24,7 +26,10 @@ class RiichiTableStateTest {
         val riichiDynamic = RiichiDynamicState(riichiStickCount = 5)
 
         val table = FakeTableStateFactory.create(
-            players = emptyList(),
+            players = listOf(
+                FakeMahjongPlayerFactory.create(Wind.EAST),
+                FakeMahjongPlayerFactory.create(Wind.SOUTH),
+            ),
             config = RiichiRuleConfig(),
             dynamicRuleState = riichiDynamic,
         )

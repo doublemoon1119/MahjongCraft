@@ -32,7 +32,10 @@ class RiichiDynamicStateTest {
      */
     private fun createTableStateWithWall(
         deadWallTiles: List<IdentifiedTile>,
-        players: List<MahjongPlayer> = emptyList(),
+        players: List<MahjongPlayer> = listOf(
+            FakeMahjongPlayerFactory.create(Wind.EAST),
+            FakeMahjongPlayerFactory.create(Wind.SOUTH),
+        ),
     ): TableState {
         val config = FakeMahjongRuleConfig(
             deadTileCount = deadWallTiles.size,

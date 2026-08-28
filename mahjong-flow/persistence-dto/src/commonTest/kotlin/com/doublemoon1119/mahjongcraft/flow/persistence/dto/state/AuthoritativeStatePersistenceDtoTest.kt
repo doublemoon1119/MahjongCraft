@@ -240,18 +240,21 @@ class AuthoritativeStatePersistenceDtoTest {
     }
 
     /** 建立使用台麻規則的最小進行中 Game。 */
-    private fun createGame(id: Uuid = Uuid.random()): TableState = TableState(
-        id = id,
-        players = listOf(
-            MahjongPlayer(
-                id = Uuid.random(),
-                initialSeat = Wind.EAST,
-                discardPile = TaiwanDiscardPile(),
-            ),
-        ),
-        config = TaiwanRuleConfig(),
-        tileWall = TileWall(emptyList()),
-    )
+    private fun createGame(id: Uuid = Uuid.random()): TableState {
+        val player = MahjongPlayer(
+            id = Uuid.random(),
+            initialSeatIndex = Wind.EAST.ordinal,
+            seatWind = Wind.EAST,
+            discardPile = TaiwanDiscardPile(),
+        )
+        return TableState(
+            id = id,
+            players = listOf(player),
+            config = TaiwanRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            dealerPlayerId = player.id,
+        )
+    }
 
     /** 使用所有內建 registry 建立伺服器權威狀態 DTO。 */
     private fun createState(

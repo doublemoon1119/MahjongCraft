@@ -17,7 +17,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.applyRiichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -207,7 +206,7 @@ class DeclareRiichiUseCase(
         val module = moduleRegistry.getModule(newState.config)
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val discarder = newState.players[seatIndex]
-        val dealerSeatIndex = newState.players.indexOfFirst { it.currentWind == Wind.EAST }
+        val dealerSeatIndex = newState.dealerIndex
         presentationPublisher.publishPlayerAreaUpdated(
             gameId,
             seatIndex,

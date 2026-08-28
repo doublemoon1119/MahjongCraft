@@ -21,6 +21,7 @@ import kotlin.uuid.Uuid
  * @property players 所有玩家的完整權威狀態。
  * @property config 完整且帶穩定 type key 的規則配置。
  * @property tileWall 依原始順序保存的完整牌山。
+ * @property dealerPlayerId 本局權威莊家 Uuid。
  * @property prevalentWind 當前場風。
  * @property roundNumber 當前局數。
  * @property comboCount 當前連莊次數。
@@ -39,6 +40,7 @@ data class TableStatePersistenceDto(
     val players: List<MahjongPlayerPersistenceDto>,
     val config: TypedPersistenceDto,
     val tileWall: TileWallPersistenceDto,
+    val dealerPlayerId: String,
     val prevalentWind: WindPersistenceDto,
     val roundNumber: Int,
     val comboCount: Int,
@@ -73,6 +75,7 @@ fun TableState.toPersistenceDto(
     },
     config = ruleConfigRegistry.encode(config, json),
     tileWall = tileWall.toPersistenceDto(),
+    dealerPlayerId = dealerPlayerId.toString(),
     prevalentWind = WindPersistenceDto.valueOf(prevalentWind.name),
     roundNumber = roundNumber,
     comboCount = comboCount,
@@ -107,6 +110,7 @@ fun TableStatePersistenceDto.toDomain(
     },
     config = ruleConfigRegistry.decode(config, json),
     tileWall = tileWall.toDomain(),
+    dealerPlayerId = Uuid.parse(dealerPlayerId),
     prevalentWind = Wind.valueOf(prevalentWind.name),
     roundNumber = roundNumber,
     comboCount = comboCount,

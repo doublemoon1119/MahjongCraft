@@ -262,9 +262,10 @@ class GameFlowCoordinatorTest {
         val fixtures = Fixtures()
         val playerId = Uuid.random()
         val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
+        val otherPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
         val table = FakeTableStateFactory.create(
             id = gameId,
-            players = listOf(player),
+            players = listOf(player, otherPlayer),
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
             tileWall = TileWall(emptyList()),
             currentPlayerIndex = 0,
@@ -349,7 +350,7 @@ class GameFlowCoordinatorTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(1, newState.comboCount, "Suukan nagare is an abortive draw; the dealer always repeats.")
-        assertEquals(Wind.EAST, newState.players.first { it.id == dealerId }.currentWind)
+        assertEquals(Wind.EAST, newState.players.first { it.id == dealerId }.seatWind)
         assertTrue(newState.players.first { it.id == dealerId }.hand.melds.isEmpty(), "A fresh hand should have no melds left over.")
     }
 
@@ -564,9 +565,9 @@ class GameFlowCoordinatorTest {
 
         val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
         assertTrue(published.roundContinues)
-        assertNotNull(published.celebration)
+        val celebration = assertNotNull(published.celebration)
         assertTrue(
-            published.celebration!!.winners.all { it.cue == null },
+            celebration.winners.all { it.cue == null },
             "Tanyao is not a yakuman, so no showcase cue should be resolved.",
         )
         assertTrue(
@@ -592,9 +593,9 @@ class GameFlowCoordinatorTest {
 
         val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
         assertTrue(published.roundContinues, "The round continues, so most of this presentation must not block.")
-        assertNotNull(published.celebration)
+        val celebration = assertNotNull(published.celebration)
         assertTrue(
-            published.celebration!!.winners.any { it.cue != null },
+            celebration.winners.any { it.cue != null },
             "Daisangen is a yakuman, so the celebration must carry a showcase cue.",
         )
         assertTrue(
@@ -729,7 +730,13 @@ class GameFlowCoordinatorTest {
             initialSeat = Wind.EAST,
             hand = Hand(tiles = kyuushuTiles.map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = drawn),
         )
-        val table = FakeTableStateFactory.create(id = gameId, players = listOf(player), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 0)
+        val otherPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(player, otherPlayer),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            currentPlayerIndex = 0,
+        )
         fixtures.gameRepo.setTableState(table)
 
         val result = fixtures.coordinator(gameId, playerId, GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai))

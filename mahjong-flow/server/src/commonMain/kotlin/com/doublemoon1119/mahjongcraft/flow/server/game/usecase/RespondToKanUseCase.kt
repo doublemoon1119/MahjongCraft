@@ -20,7 +20,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWin
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -167,7 +166,7 @@ class RespondToKanUseCase(
         result.declarerId?.let { declarerId ->
             val declarerSeatIndex = newState.players.indexOfFirst { it.id == declarerId }
             val declarer = newState.players[declarerSeatIndex]
-            val dealerSeatIndex = newState.players.indexOfFirst { it.currentWind == Wind.EAST }
+            val dealerSeatIndex = newState.dealerIndex
             presentationPublisher.publishPlayerAreaUpdated(
                 gameId,
                 declarerSeatIndex,

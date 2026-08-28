@@ -10,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -103,7 +102,7 @@ class DeclareExhaustiveDrawUseCase(
         snapshotSynchronizer.syncAll(gameId)
 
         // 3. 廣播流局事件；跟 GameAction.RoundStarted 一樣沒有實際執行者，比照既有慣例填入莊家 Uuid
-        val dealerId = newState.players.first { it.currentWind == Wind.EAST }.id
+        val dealerId = newState.dealerPlayerId
         newState.players.forEach { player ->
             eventPublisher.publish(gameId, player.id, dealerId, GameAction.ExhaustiveDraw(result.reason))
         }
@@ -124,7 +123,7 @@ class DeclareExhaustiveDrawUseCase(
         if (stickPotCollectorPlayerIds.isEmpty() || stickPotAmount == 0) return emptyMap()
         if (stickPotCollectorPlayerIds.size == 1) return mapOf(stickPotCollectorPlayerIds.first() to stickPotAmount)
 
-        val dealerId = state.players.first { it.currentWind == Wind.EAST }.id
+        val dealerId = state.dealerPlayerId
         val collectorId = state.nearestPlayerInTurnOrder(dealerId, stickPotCollectorPlayerIds)
         return mapOf(collectorId to stickPotAmount)
     }

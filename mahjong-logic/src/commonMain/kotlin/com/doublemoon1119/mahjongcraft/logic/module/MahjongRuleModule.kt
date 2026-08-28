@@ -23,6 +23,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayout
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpeningPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.seat.DealerAnchoredSeatWindAssignmentPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.seat.SeatWindAssignmentPolicy
 import com.doublemoon1119.mahjongcraft.logic.tile.IdentityTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
 import kotlin.uuid.Uuid
@@ -67,6 +69,13 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 此規則的 [WallOpeningPolicy]，若尚未支援權威開門流程則為 null。
      */
     fun createWallOpeningPolicy(): WallOpeningPolicy? = null
+
+    /**
+     * 建立本規則每局用來指派自風／門風的 policy。
+     *
+     * 預設以莊家為東並依實際玩家數分配風位；使用開門定風或其他風位規則的模組可覆寫。
+     */
+    fun createSeatWindAssignmentPolicy(): SeatWindAssignmentPolicy = DealerAnchoredSeatWindAssignmentPolicy
 
     /**
      * 建立適用於該規則的牌牆布局能力，將洗牌後的完整牌組依開門結果排列成正式的摸牌順序與結構。
@@ -409,7 +418,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      */
     fun compareForRoundRanking(): Comparator<RankablePlayer> {
         val byScoreDescending = compareByDescending<RankablePlayer> { it.score }
-        return byScoreDescending.thenBy { it.currentWind.ordinal }
+        return byScoreDescending.thenBy { it.seatWind.ordinal }
     }
 
     /**
@@ -420,7 +429,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      */
     fun compareForMatchRanking(): Comparator<RankablePlayer> {
         val byScoreDescending = compareByDescending<RankablePlayer> { it.score }
-        return byScoreDescending.thenBy { it.initialSeat.ordinal }
+        return byScoreDescending.thenBy { it.initialSeatIndex }
     }
 
     /**

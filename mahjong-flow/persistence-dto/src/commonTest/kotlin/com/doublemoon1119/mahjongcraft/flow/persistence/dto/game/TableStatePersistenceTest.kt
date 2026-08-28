@@ -156,7 +156,8 @@ class TableStatePersistenceTest {
         val humanDiscard = identified(Tile.Honor.East)
         val human = MahjongPlayer(
             id = Uuid.random(),
-            initialSeat = Wind.EAST,
+            initialSeatIndex = Wind.EAST.ordinal,
+            seatWind = Wind.EAST,
             hand = Hand(
                 tiles = listOf(identified(Tile.Numeric(Tile.Suit.Character, 1))),
                 lastDrawn = identified(Tile.Numeric(Tile.Suit.Character, 2)),
@@ -169,7 +170,8 @@ class TableStatePersistenceTest {
         )
         val ai = MahjongPlayer(
             id = Uuid.random(),
-            initialSeat = Wind.SOUTH,
+            initialSeatIndex = Wind.SOUTH.ordinal,
+            seatWind = Wind.SOUTH,
             hand = Hand(tiles = listOf(identified(Tile.Numeric(Tile.Suit.Bamboo, 9)))),
             discardPile = RiichiDiscardPile(),
             playerRuleState = RiichiPlayerState(),
@@ -186,6 +188,7 @@ class TableStatePersistenceTest {
                     identified(RiichiTileTypes.redFive(Tile.Suit.Dot)),
                 ),
             ),
+            dealerPlayerId = human.id,
             prevalentWind = Wind.SOUTH,
             roundNumber = 5,
             comboCount = 2,

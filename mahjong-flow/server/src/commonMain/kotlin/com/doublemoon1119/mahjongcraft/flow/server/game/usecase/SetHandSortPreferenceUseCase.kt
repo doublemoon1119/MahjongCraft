@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -47,7 +46,7 @@ class SetHandSortPreferenceUseCase(
 
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val player = newState.players[seatIndex]
-        val dealerSeatIndex = newState.players.indexOfFirst { it.currentWind == Wind.EAST }
+        val dealerSeatIndex = newState.dealerIndex
         presentationPublisher.publishPlayerAreaUpdated(
             gameId,
             seatIndex,

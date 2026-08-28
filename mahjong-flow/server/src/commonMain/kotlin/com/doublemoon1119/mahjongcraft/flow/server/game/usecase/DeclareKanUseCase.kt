@@ -18,7 +18,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -236,7 +235,7 @@ class DeclareKanUseCase(
         if (result.drawHappened) {
             val declarerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
             val declarer = newState.players[declarerSeatIndex]
-            val dealerSeatIndex = newState.players.indexOfFirst { it.currentWind == Wind.EAST }
+            val dealerSeatIndex = newState.dealerIndex
             // 暗槓是整組一次成立的新副露（附加到 exposedMelds 尾端），組內全部牌都該播放鳴牌動畫；
             // 加槓是把新牌插進一組既有副露（Hand.upgradeToAddedKan 原地修改，不是加到尾端），只有新
             // 插入的那一張該播放，既有三張碰的牌本來就已經在正確位置，不需要重新移動——理由見

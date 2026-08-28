@@ -18,6 +18,8 @@ object FakeMahjongPlayerFactory {
      * 建立一個測試用的玩家。
      *
      * @param initialSeat 初始座位方位，預設為 [Wind.EAST]。
+     * @param initialSeatIndex 整場固定起家順位；預設沿用 [initialSeat] 的列舉順位。
+     * @param seatWind 本局自風；預設沿用 [initialSeat]，方便既有測試描述座位。
      * @param id 玩家唯一識別碼，預設隨機產生。
      * @param hand 初始手牌，預設建立新的空 [Hand]。
      * @param discardPile 該玩家的牌河實體，預設為 [FakeDiscardPile]。
@@ -27,6 +29,8 @@ object FakeMahjongPlayerFactory {
      */
     fun create(
         initialSeat: Wind = Wind.EAST,
+        initialSeatIndex: Int = initialSeat.ordinal,
+        seatWind: Wind = initialSeat,
         id: Uuid = Uuid.random(),
         hand: Hand = Hand(),
         discardPile: DiscardPile<*> = FakeDiscardPile(),
@@ -34,7 +38,8 @@ object FakeMahjongPlayerFactory {
         aiStrategyKey: String? = null,
     ): MahjongPlayer = MahjongPlayer(
         id = id,
-        initialSeat = initialSeat,
+        initialSeatIndex = initialSeatIndex,
+        seatWind = seatWind,
         hand = hand,
         discardPile = discardPile,
         playerRuleState = playerRuleState,

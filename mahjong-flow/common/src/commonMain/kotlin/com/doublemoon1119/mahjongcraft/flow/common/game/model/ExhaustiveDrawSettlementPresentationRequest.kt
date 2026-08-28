@@ -33,7 +33,7 @@ enum class ExhaustiveDrawSettlementHandPresentation {
  * 單一玩家的回合結算呈現關鍵影格。
  *
  * @property ranking 規則中立的分數排行關鍵影格。
- * @property currentWind 結算當下風位。
+ * @property seatWind 結算當下風位。
  * @property handTileIds 這名玩家完整手牌的 Uuid，僅供結算動畫定位，不包含副露或牌河。
  * @property handPresentation 這副手牌在結算時採用的公開動畫策略。
  * @property revealedHandTileIds 規則要求公開的完整手牌 Uuid；空集合代表不推牌。
@@ -42,7 +42,7 @@ enum class ExhaustiveDrawSettlementHandPresentation {
  */
 data class ExhaustiveDrawSettlementPlayerPresentation(
     val ranking: ScoreRankingPlayer,
-    val currentWind: Wind,
+    val seatWind: Wind,
     val handTileIds: List<Uuid>,
     val handPresentation: ExhaustiveDrawSettlementHandPresentation,
     val revealedHandTileIds: List<Uuid>,

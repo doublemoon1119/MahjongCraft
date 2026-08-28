@@ -108,7 +108,7 @@ class AdvanceRoundUseCaseTest {
         )
         assertEquals(
             dealerId,
-            newState.players.first { it.currentWind == Wind.EAST }.id,
+            newState.dealerPlayerId,
             "Dealer should stay the same on a repeat.",
         )
         newState.players.forEach { player ->
@@ -155,7 +155,7 @@ class AdvanceRoundUseCaseTest {
         assertEquals(Wind.EAST, newState.prevalentWind)
         assertEquals(
             nextDealerId,
-            newState.players.first { it.currentWind == Wind.EAST }.id,
+            newState.dealerPlayerId,
             "P2 (South) should become the new dealer.",
         )
     }
@@ -193,7 +193,7 @@ class AdvanceRoundUseCaseTest {
         assertEquals(1, newState.roundNumber)
         assertEquals(
             dealerId,
-            newState.players.first { it.currentWind == Wind.EAST }.id,
+            newState.dealerPlayerId,
             "Dealer should stay the same when tenpai at exhaustive draw.",
         )
     }
@@ -231,7 +231,7 @@ class AdvanceRoundUseCaseTest {
         assertEquals(2, newState.roundNumber)
         assertEquals(
             nextDealerId,
-            newState.players.first { it.currentWind == Wind.EAST }.id,
+            newState.dealerPlayerId,
             "P2 (South) should become the new dealer.",
         )
     }

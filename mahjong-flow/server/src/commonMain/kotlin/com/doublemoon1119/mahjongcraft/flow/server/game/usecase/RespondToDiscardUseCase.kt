@@ -27,7 +27,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -171,7 +170,7 @@ class RespondToDiscardUseCase(
         result.winnerId?.let { winnerId ->
             val winnerSeatIndex = newState.players.indexOfFirst { it.id == winnerId }
             val winner = newState.players[winnerSeatIndex]
-            val dealerSeatIndex = newState.players.indexOfFirst { it.currentWind == Wind.EAST }
+            val dealerSeatIndex = newState.dealerIndex
             presentationPublisher.publishPlayerAreaUpdated(
                 gameId,
                 winnerSeatIndex,

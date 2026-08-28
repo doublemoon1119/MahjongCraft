@@ -21,7 +21,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.getNextDora
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
 import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
@@ -174,7 +173,7 @@ class RiichiRuleModule(
                     .associate { it.id to pointResult.paymentPerNonDealer }
 
             is RiichiPointResult.NonDealerTsumo -> {
-                val dealerId = tableState.players.first { it.currentWind == tableState.prevalentWind }.id
+                val dealerId = tableState.dealerPlayerId
                 tableState.players
                     .filter { it.id != player.id }
                     .associate { it.id to if (it.id == dealerId) pointResult.dealerPayment else pointResult.otherNonDealerPayment }
@@ -274,7 +273,7 @@ class RiichiRuleModule(
             is RiichiPointResult.DealerTsumo ->
                 tableState.players.filter { it.id != winnerId }.associate { it.id to remainder.paymentPerNonDealer }
             is RiichiPointResult.NonDealerTsumo -> {
-                val dealerId = tableState.players.first { it.currentWind == tableState.prevalentWind }.id
+                val dealerId = tableState.dealerPlayerId
                 tableState.players.filter { it.id != winnerId }
                     .associate { it.id to if (it.id == dealerId) remainder.dealerPayment else remainder.otherNonDealerPayment }
             }
@@ -382,7 +381,7 @@ class RiichiRuleModule(
         val deltas = tableState.players.associate { it.id to 0 }.toMutableMap()
         nagashiManganIds.forEach { achieverId ->
             val achiever = tableState.players.first { it.id == achieverId }
-            val isDealer = achiever.currentWind == Wind.EAST
+            val isDealer = tableState.isDealer(achiever.id)
             val pointResult = PointCalculator.calculateNonYakumanPoint(han = 5, fu = 0, isDealer = isDealer, isTsumo = true)
             val payments: Map<Uuid, Int> = when (pointResult) {
                 is RiichiPointResult.DealerTsumo ->
@@ -391,7 +390,7 @@ class RiichiRuleModule(
                         .associate { it.id to pointResult.paymentPerNonDealer }
 
                 is RiichiPointResult.NonDealerTsumo -> {
-                    val dealerId = tableState.players.first { it.currentWind == Wind.EAST }.id
+                    val dealerId = tableState.dealerPlayerId
                     tableState.activePlayers
                         .filter { it.id != achieverId }
                         .associate { it.id to if (it.id == dealerId) pointResult.dealerPayment else pointResult.otherNonDealerPayment }

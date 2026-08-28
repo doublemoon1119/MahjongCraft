@@ -10,7 +10,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證 [TableState.localRoundNumber] 換算邏輯，以及 [TableState] 的 active/finished 玩家概念。 */
 class TableStateTest {
-    private val fourPlayers = List(4) { FakeMahjongPlayerFactory.create() }
+    private val fourPlayers = Wind.entries.map { FakeMahjongPlayerFactory.create(it) }
 
     /** 場風內第一局（跨場風累計局數等於玩家人數的整數倍加一）應換算回 `1`。 */
     @Test
@@ -120,6 +120,44 @@ class TableStateTest {
                 finishedPlayerIds = setOf(fourPlayers[1].id, Uuid.random()),
             )
         }
+    }
+
+    /** 莊家必須是桌上玩家，固定起家順位與本局風位也都必須形成無重複的完整配置。 */
+    @Test
+    fun `test constructing TableState validates dealer seats and winds`() {
+        val validState = FakeTableStateFactory.create(players = fourPlayers)
+
+        assertFailsWith<IllegalArgumentException> {
+            validState.copy(dealerPlayerId = Uuid.random())
+        }
+        assertFailsWith<IllegalArgumentException> {
+            validState.copy(
+                players = validState.players.mapIndexed { index, player ->
+                    player.copy(initialSeatIndex = if (index == 3) 2 else index)
+                },
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            validState.copy(
+                players = validState.players.mapIndexed { index, player ->
+                    player.copy(seatWind = if (index == 3) Wind.WEST else player.seatWind)
+                },
+            )
+        }
+    }
+
+    /** 三人桌過莊只依固定玩家順序移交莊家，且不擅自改寫由下一局 policy 負責的自風。 */
+    @Test
+    fun `test three player round advancement rotates explicit dealer without changing seat winds`() {
+        val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST).map { FakeMahjongPlayerFactory.create(it) }
+        val state = FakeTableStateFactory.create(players = players, dealerPlayerId = players[0].id)
+
+        val repeated = state.advanceRound(dealerRepeats = true)
+        val advanced = state.advanceRound(dealerRepeats = false)
+
+        assertEquals(players[0].id, repeated.dealerPlayerId)
+        assertEquals(players[1].id, advanced.dealerPlayerId)
+        assertEquals(players.map { it.seatWind }, advanced.players.map { it.seatWind })
     }
 
     /** 起算玩家不在桌上時應拋出例外。 */
