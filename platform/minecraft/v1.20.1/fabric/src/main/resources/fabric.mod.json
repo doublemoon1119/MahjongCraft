@@ -13,6 +13,7 @@
     "issues": "${issues}"
   },
   "license": "${license}",
+  "icon": "assets/${id}/icon.png",
   "environment": "*",
   "accessWidener": "mahjongcraft.accesswidener",
   "entrypoints": {

@@ -30,10 +30,12 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
             }
         }
         tasks.withType<ProcessResources>().configureEach {
+            val projectId = rootProject.extensions.extraProperties["projectId"].toString()
+            val projectLogo = rootProject.layout.projectDirectory.file("docs/assets/branding/logo.png")
             val metadata = provider {
                 mapOf(
                     "version" to version.toString(),
-                    "id" to rootProject.extensions.extraProperties["projectId"].toString(),
+                    "id" to projectId,
                     "name" to rootProject.extensions.extraProperties["projectDisplayName"].toString(),
                     "description" to "Play Japanese (Riichi) Mahjong with your friends.",
                     "license" to "MIT",
@@ -42,6 +44,11 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
                     "sources" to "https://github.com/doublemoon1119/MahjongCraft",
                     "issues" to "https://github.com/doublemoon1119/MahjongCraft/issues",
                 )
+            }
+            inputs.file(projectLogo).withPropertyName("projectLogo")
+            from(projectLogo) {
+                into("assets/$projectId")
+                rename { "icon.png" }
             }
             inputs.property("modMetadata", metadata)
             filesMatching(listOf("fabric.mod.json", "META-INF/neoforge.mods.toml")) {

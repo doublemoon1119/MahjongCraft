@@ -1,10 +1,15 @@
-# MahjongCraft
+<p align="center"><img src="docs/assets/branding/logo.png" alt="MahjongCraft logo" width="200"></p>
+<h1 align="center">MahjongCraft  <br>
+	<a href="https://www.curseforge.com/minecraft/mc-mods/mahjongcraft"><img src="https://img.shields.io/curseforge/dt/544804?logo=curseforge&label=&suffix=%20&style=flat&color=242629&labelColor=F16436&logoColor=1C1C1C" alt="CurseForge"></a>
+	<a href="https://modrinth.com/mod/mahjongcraft"><img src="https://img.shields.io/modrinth/dt/mahjongcraft?logo=modrinth&label=&suffix=%20&style=flat&color=242629&labelColor=5CA424&logoColor=1C1C1C" alt="Modrinth"></a>
+	<br>
+</h1>
 
 MahjongCraft is a Kotlin Multiplatform mahjong rules engine and an in-development Minecraft mod. The current playable platform target provides Japanese mahjong on Fabric for Minecraft 1.20.1, backed by reusable logic, flow, AI, persistence, networking, and extension modules.
 
 The project is under active development. This documentation describes the code that exists today and does not promise future rules, platforms, interfaces, or release schedules.
 
-## Project map
+## 🗺️ Project map
 
 | Area | Purpose |
 | --- | --- |
@@ -16,7 +21,7 @@ The project is under active development. This documentation describes the code t
 | [Testing](testing/README.md) | Shared test fixtures for logic and flow modules. |
 | [Build logic](build-logic/README.md) | Gradle conventions and platform-target selection. |
 
-## Building
+## 🛠️ Building
 
 Run a core-only build with:
 
@@ -32,11 +37,11 @@ Run the current Minecraft Fabric build with:
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, target selection, conventions, and verification commands.
 
-## License
+## 📄 License
 
 MahjongCraft is available under the [MIT License](LICENSE).
 
-## Support
+## 💬 Support
 Please report any issues to [the issue tracker](https://github.com/doublemoon1119/MahjongCraft/issues) on Github.
 
 我是臺灣人，除了英文以外你也可用中文發表 [問題](https://github.com/doublemoon1119/MahjongCraft/issues) 或留言
