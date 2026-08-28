@@ -52,13 +52,13 @@ class AiTurnDriver(
         val pendingKanReaction = state.pendingKanReaction
         if (pendingKanReaction != null) {
             val aiId = findEligibleAi(state, pendingKanReaction.eligiblePlayerIds, pendingKanReaction.responses.keys)
-            if (aiId != null) return aiId to decide(gameId, game, aiId, AiDecisionPhase.RespondingToKan)
+            if (aiId != null) return aiId to decideGameCommand(gameId, game, aiId, AiDecisionPhase.RespondingToKan)
         }
 
         val pendingReaction = state.pendingReaction
         if (pendingReaction != null) {
             val aiId = findEligibleAi(state, pendingReaction.eligiblePlayerIds, pendingReaction.responses.keys)
-            if (aiId != null) return aiId to decide(gameId, game, aiId, AiDecisionPhase.RespondingToDiscard)
+            if (aiId != null) return aiId to decideGameCommand(gameId, game, aiId, AiDecisionPhase.RespondingToDiscard)
         }
 
         if (pendingKanReaction == null && pendingReaction == null) {
@@ -69,7 +69,7 @@ class AiTurnDriver(
                 return if (current.hand.lastDrawn == null && !current.justClaimedMeld) {
                     current.id to GameCommand.Draw
                 } else {
-                    current.id to decide(gameId, game, current.id, AiDecisionPhase.OwnTurn)
+                    current.id to decideGameCommand(gameId, game, current.id, AiDecisionPhase.OwnTurn)
                 }
             }
         }
@@ -86,7 +86,7 @@ class AiTurnDriver(
      * 依 [aiId] 自己的 `aiStrategyKey` 從 [aiStrategyRegistry] 解析出策略，組出 [AiDecisionContext]
      * 並問它該怎麼行動。
      */
-    private suspend fun decide(
+    private suspend fun decideGameCommand(
         gameId: Uuid,
         game: Game,
         aiId: Uuid,
@@ -102,6 +102,6 @@ class AiTurnDriver(
             phase = phase,
             legalActions = legalActions,
         )
-        return aiStrategyRegistry.resolve(strategyKey).decide(context)
+        return aiStrategyRegistry.resolve(strategyKey).decideGameCommand(context)
     }
 }

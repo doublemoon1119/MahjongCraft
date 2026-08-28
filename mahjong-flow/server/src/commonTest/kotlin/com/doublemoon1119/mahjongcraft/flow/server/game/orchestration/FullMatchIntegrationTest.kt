@@ -249,7 +249,7 @@ class FullMatchIntegrationTest {
             const val KEY = "fake-deterministic"
         }
 
-        override suspend fun decide(context: AiDecisionContext): GameCommand = when (context.phase) {
+        override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
             AiDecisionPhase.RespondingToDiscard ->
                 GameCommand.RespondToDiscard(
                     context.legalActions.firstOrNull { it is GameAction.Ron }

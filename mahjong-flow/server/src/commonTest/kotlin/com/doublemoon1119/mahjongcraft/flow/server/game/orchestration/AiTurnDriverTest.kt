@@ -45,7 +45,7 @@ class AiTurnDriverTest {
         var callCount: Int = 0
             private set
 
-        override suspend fun decide(context: AiDecisionContext): GameCommand {
+        override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand {
             lastContext = context
             callCount++
             return command

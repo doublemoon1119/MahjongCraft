@@ -22,7 +22,7 @@ class RandomAiStrategy(
         const val KEY = "random"
     }
 
-    override suspend fun decide(context: AiDecisionContext): GameCommand = when (context.phase) {
+    override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
         AiDecisionPhase.RespondingToDiscard ->
             GameCommand.RespondToDiscard(context.legalActions.randomOrNull(random) ?: GameAction.Pass)
         AiDecisionPhase.RespondingToKan ->

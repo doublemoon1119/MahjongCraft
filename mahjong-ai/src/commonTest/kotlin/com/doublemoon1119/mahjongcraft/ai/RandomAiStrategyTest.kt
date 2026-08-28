@@ -53,7 +53,7 @@ class RandomAiStrategyTest {
         val ronAction = GameAction.Ron(Uuid.random())
         val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToDiscard, listOf(ronAction, GameAction.Pass))
 
-        val result = strategy.decide(context)
+        val result = strategy.decideGameCommand(context)
 
         assertTrue(result is GameCommand.RespondToDiscard)
         assertTrue(result.action == ronAction || result.action == GameAction.Pass)
@@ -67,7 +67,7 @@ class RandomAiStrategyTest {
         val strategy = RandomAiStrategy(Random(1))
         val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToDiscard, emptyList())
 
-        val result = strategy.decide(context)
+        val result = strategy.decideGameCommand(context)
 
         assertEquals(GameCommand.RespondToDiscard(GameAction.Pass), result)
     }
@@ -82,7 +82,7 @@ class RandomAiStrategyTest {
         val ronAction = GameAction.Ron(Uuid.random())
         val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToKan, listOf(ronAction, GameAction.Pass))
 
-        val result = strategy.decide(context)
+        val result = strategy.decideGameCommand(context)
 
         assertTrue(result is GameCommand.RespondToKan)
         assertTrue(result.action == ronAction || result.action == GameAction.Pass)
@@ -96,7 +96,7 @@ class RandomAiStrategyTest {
         val strategy = RandomAiStrategy(Random(1))
         val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToKan, emptyList())
 
-        val result = strategy.decide(context)
+        val result = strategy.decideGameCommand(context)
 
         assertEquals(GameCommand.RespondToKan(GameAction.Pass), result)
     }
@@ -113,7 +113,7 @@ class RandomAiStrategyTest {
         val hand = Hand(tiles = listOf(onlyTile))
         val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION, GameAction.Pass))
 
-        val result = strategy.decide(context)
+        val result = strategy.decideGameCommand(context)
 
         assertEquals(GameCommand.Discard(onlyTile.id), result)
     }
@@ -129,7 +129,7 @@ class RandomAiStrategyTest {
         val hand = Hand(tiles = listOf(standingTile), lastDrawn = lastDrawn)
         val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, emptyList())
 
-        val result = strategy.decide(context)
+        val result = strategy.decideGameCommand(context)
 
         assertTrue(result is GameCommand.Discard)
         assertTrue(result.tileId == standingTile.id || result.tileId == lastDrawn.id)
@@ -146,7 +146,7 @@ class RandomAiStrategyTest {
         val hand = Hand(tiles = listOf(tile))
         val results = List(200) {
             val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(GameAction.Tsumo))
-            strategy.decide(context)
+            strategy.decideGameCommand(context)
         }
 
         assertTrue(results.any { it == GameCommand.Tsumo }, "Tsumo should be selected at least once across many trials.")
@@ -164,7 +164,7 @@ class RandomAiStrategyTest {
         val kanAction = GameAction.Kan(GameAction.KanType.CLOSED_KAN, tile.id, emptyList())
         val results = List(200) {
             val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(kanAction))
-            strategy.decide(context)
+            strategy.decideGameCommand(context)
         }
 
         assertTrue(
@@ -185,7 +185,7 @@ class RandomAiStrategyTest {
         val exhaustiveDrawAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai)
         val results = List(200) {
             val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(exhaustiveDrawAction))
-            strategy.decide(context)
+            strategy.decideGameCommand(context)
         }
 
         assertTrue(results.any { it == GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai) }, "KyuushuKyuuhai should be selected at least once across many trials.")
@@ -202,7 +202,7 @@ class RandomAiStrategyTest {
         val hand = Hand(tiles = listOf(tile))
         val results = List(200) {
             val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(RIICHI_GAME_ACTION, GameAction.Tsumo))
-            strategy.decide(context)
+            strategy.decideGameCommand(context)
         }
 
         assertTrue(results.none { it is GameCommand.Extension }, "Unregistered extension actions must not produce commands.")

@@ -340,7 +340,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
             phase = phase,
             legalActions = legalActions,
         )
-        return strategy.decide(context)
+        return strategy.decideGameCommand(context)
     }
 
     private companion object {
@@ -358,7 +358,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
             const val KEY = "fake-deterministic-lifecycle"
         }
 
-        override suspend fun decide(context: AiDecisionContext): GameCommand = when (context.phase) {
+        override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
             AiDecisionPhase.RespondingToDiscard ->
                 GameCommand.RespondToDiscard(context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass)
 

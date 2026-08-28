@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.ai
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 
 /**
@@ -9,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
  * 只負責「決定要做什麼」，不負責「怎麼把決定套用到桌況」——那是呼叫端（伺服器端的協調邏輯）的事，
  * 這裡完全不依賴 `:mahjong-flow-server` 的 use case 層。
  *
- * `decide` 回傳 [GameCommand] 而非 [GameAction]：兩者形狀不是一對一
+ * [decideGameCommand] 回傳 [GameCommand] 而非 [GameAction]：兩者形狀不是一對一
  * （例如某些擴充動作還需要由規則提供的 AI mapper 補齊命令參數；捨牌本身也不在
  * [AiDecisionContext.legalActions] 裡），AI 選完合法動作後還要自己決定「打哪張牌」，這個轉換
  * 本身就是策略的一部分，不能交給呼叫端做。
@@ -22,5 +23,8 @@ interface MahjongAiStrategy {
     /**
      * 依 [context] 決定這位 AI 玩家接下來要執行的操作。
      */
-    suspend fun decide(context: AiDecisionContext): GameCommand
+    suspend fun decideGameCommand(context: AiDecisionContext): GameCommand
+
+    /** 依 [context] 決定開局準備步驟的提交內容。 */
+    suspend fun decideRoundPreparation(context: RoundPreparationAiContext): RoundPreparationSubmission = context.defaultSubmission()
 }
