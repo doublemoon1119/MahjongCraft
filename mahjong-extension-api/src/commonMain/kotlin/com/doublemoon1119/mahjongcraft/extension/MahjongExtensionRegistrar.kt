@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWinSettlementDetailResolverRegistry
@@ -33,6 +34,7 @@ object MahjongExtensionRegistrar {
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
             PostReactionRoundOutcomeResolverRegistry(),
+        roundPreparationResolverRegistry: RoundPreparationResolverRegistry = RoundPreparationResolverRegistry(),
         winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry =
             WinRoundContinuationResolverRegistry(),
         winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
@@ -55,6 +57,7 @@ object MahjongExtensionRegistrar {
                 extension.registerGameActionAiHandlers(gameActionAiRegistry)
                 extension.registerGameCommandHandlers(gameCommandRegistry)
                 extension.registerPostReactionRoundOutcomeResolvers(postReactionRoundOutcomeResolverRegistry)
+                extension.registerRoundPreparationResolvers(roundPreparationResolverRegistry)
                 extension.registerWinRoundContinuationResolvers(winRoundContinuationResolverRegistry)
                 extension.registerWinSettlementDetailResolvers(winSettlementDetailResolverRegistry)
             } catch (cause: Exception) {
@@ -70,6 +73,7 @@ object MahjongExtensionRegistrar {
         gameActionAiRegistry.freeze()
         gameCommandRegistry.freeze()
         postReactionRoundOutcomeResolverRegistry.freeze()
+        roundPreparationResolverRegistry.freeze()
         winRoundContinuationResolverRegistry.freeze()
         winSettlementDetailResolverRegistry.freeze()
     }
