@@ -1,9 +1,11 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.mahjongcraft.minecraft.loader)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.fabric.loom)
     alias(libs.plugins.koin.compiler)
 }
+
+version = libs.versions.minecraft.mod.version.get()
 
 loom {
     accessWidenerPath = file("src/main/resources/mahjongcraft.accesswidener")

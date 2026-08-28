@@ -1,8 +1,10 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.mahjongcraft.kotlin.multiplatform)
 }
+
+version = libs.versions.logic.version.get()
 
 val generatedProjectMetadataDir = layout.buildDirectory.dir("generated/sources/projectMetadata/commonMain/kotlin")
 val generateProjectMetadata = tasks.register("generateProjectMetadata") {

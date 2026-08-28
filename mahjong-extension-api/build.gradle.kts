@@ -1,6 +1,8 @@
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.mahjongcraft.kotlin.multiplatform)
 }
+
+version = libs.versions.extension.api.version.get()
 
 kotlin {
     jvm()

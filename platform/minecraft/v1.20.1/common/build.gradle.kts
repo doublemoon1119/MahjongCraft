@@ -4,8 +4,10 @@
 // 嘗試共用同一份跨版本。模型／材質／語言檔目前沒有證據顯示會隨版本破版，維持放在 :minecraft_common。
 
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.mahjongcraft.minecraft.version.common)
 }
+
+version = libs.versions.minecraft.mod.version.get()
 
 kotlin {
     jvm()

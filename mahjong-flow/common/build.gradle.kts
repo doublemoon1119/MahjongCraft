@@ -1,7 +1,9 @@
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.mahjongcraft.kotlin.multiplatform)
     alias(libs.plugins.koin.compiler)
 }
+
+version = libs.versions.flow.version.get()
 
 kotlin {
     jvm()

@@ -1,4 +1,5 @@
 plugins {
-    alias(libs.plugins.kotlin.multiplatform) apply false
-    alias(libs.plugins.koin.compiler) apply false
+    alias(libs.plugins.mahjongcraft.base)
 }
+
+version = libs.versions.flow.version.get()

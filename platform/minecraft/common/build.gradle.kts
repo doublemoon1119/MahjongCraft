@@ -1,8 +1,10 @@
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.mahjongcraft.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.koin.compiler)
 }
+
+version = libs.versions.minecraft.mod.version.get()
 
 kotlin {
     jvm()

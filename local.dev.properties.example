@@ -1,26 +1,10 @@
-# Development Environment Configuration Example
-# ---------------------------------------------
-# This file serves as a template. Copy this file and rename it to 'local.dev.properties'
-# for your actual configuration. 'local.dev.properties' is ignored by Git to prevent
-# local settings from being committed.
+# Local Development Target
+# ------------------------
+# Copy this file to local.dev.properties. The local file is ignored by Git.
+# Run `./gradlew listPlatformTargets` to list valid target IDs.
 #
-# Parameters can also be overridden via Gradle command-line arguments, e.g.:
-# ./gradlew build -PtargetPlatform=minecraft -PtargetMinecraftVersion=v1.20.1 -PtargetMinecraftLoader=fabric
+# Override priority:
+# -PmahjongcraftTarget > ORG_GRADLE_PROJECT_mahjongcraftTarget >
+# MAHJONGCRAFT_TARGET > this file > core
 
-# The target platform for development.
-# This determines which set of platform-specific modules will be included.
-# Example: minecraft, hytale (for future expansion)
-targetPlatform=minecraft
-
-# --- Minecraft Specific Parameters ---
-# These parameters are only relevant when 'targetPlatform' is set to 'minecraft'.
-
-# The target Minecraft version folder name.
-# This corresponds to the version-specific common module and loader-specific modules.
-# Example: v1.20.1, v1.21.1
-targetMinecraftVersion=v1.20.1
-
-# The target mod loader name for the specified Minecraft version.
-# This corresponds to the loader-specific module.
-# Example: fabric, neoforge
-targetMinecraftLoader=fabric
+mahjongcraftTarget=minecraft-v1.20.1-fabric

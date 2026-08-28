@@ -1,0 +1,16 @@
+schema-version = 1
+
+[[targets]]
+id = "minecraft-v1.20.1-fabric"
+platform = "minecraft"
+java-toolchain = 17
+java-release = 17
+modules = [
+    "platform/minecraft/common",
+    "platform/minecraft/v1.20.1/common",
+    "platform/minecraft/v1.20.1/fabric",
+]
+
+[targets.attributes]
+minecraft-version = "v1.20.1"
+loader = "fabric"
