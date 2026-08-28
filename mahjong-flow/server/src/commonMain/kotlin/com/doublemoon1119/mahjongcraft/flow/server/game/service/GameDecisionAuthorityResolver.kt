@@ -28,6 +28,13 @@ class GameDecisionAuthorityResolver {
         if (game.isMatchOver) return emptyMap()
         val state = game.tableState
         val humanPlayerIds = state.players.filterNot { it.isAi }.mapTo(mutableSetOf()) { it.id }
+        game.pendingRoundPreparation?.let { preparation ->
+            return preparation.participantPlayerIds
+                .filter { it in humanPlayerIds }
+                .filterNot { it in preparation.completedPlayerIds }
+                .filterNot { it in game.forcedAutoPlayPlayerIds }
+                .associateWith { PlayerDecisionPhase.ROUND_PREPARATION }
+        }
         state.pendingKanReaction?.let { pending ->
             return pending.eligiblePlayerIds
                 .filter { it in humanPlayerIds }

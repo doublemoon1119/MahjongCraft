@@ -72,6 +72,7 @@ class AdvanceRoundUseCase(
     private val handSortPreferenceStore: HandSortPreferenceStore,
     @Provided private val eventPublisher: GameEventPublisher,
     @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val beginRoundPreparationUseCase: BeginRoundPreparationUseCase? = null,
 ) {
     /**
      * 執行連莊/過莊、開下一局邏輯。
@@ -268,6 +269,7 @@ class AdvanceRoundUseCase(
             dealBatchSizes = newState.config.dealBatchSizes(),
             diceCount = advanceOutcome.diceRoll?.values?.size ?: 0,
         )
+        beginRoundPreparationUseCase?.invoke(gameId)
 
         return Outcome.Success(result)
     }

@@ -7,6 +7,9 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.model
  * 它不代表麻將規則中的動作種類，也不直接作為網路 schema。
  */
 enum class PlayerDecisionPhase {
+    /** 玩家正在提交發牌後、正常摸打前的規則準備選擇。 */
+    ROUND_PREPARATION,
+
     /** 玩家自己的回合，已完成摸牌或剛完成吃碰而需要選擇動作。 */
     OWN_TURN,
 

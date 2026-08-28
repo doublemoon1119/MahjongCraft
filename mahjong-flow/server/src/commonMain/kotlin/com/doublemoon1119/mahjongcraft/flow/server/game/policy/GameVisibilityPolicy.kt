@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.policy
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import kotlin.uuid.Uuid
 
@@ -14,4 +15,17 @@ interface GameVisibilityPolicy {
      * @return 指定讀取者可取得的遊戲快照。
      */
     fun snapshotFor(game: Game, observerId: Uuid): TableStateSnapshot
+
+    /** 產生只向本人公開輸入與提交內容的開局準備快照。 */
+    fun roundPreparationSnapshotFor(game: Game, observerId: Uuid): RoundPreparationSnapshot? {
+        val preparation = game.pendingRoundPreparation ?: return null
+        return RoundPreparationSnapshot(
+            stepId = preparation.stepId,
+            stepIndex = preparation.stepIndex,
+            participantPlayerIds = preparation.participantPlayerIds,
+            completedPlayerIds = preparation.completedPlayerIds,
+            ownInputSpec = preparation.inputSpecsByPlayerId[observerId],
+            ownSubmission = preparation.submissionsByPlayerId[observerId],
+        )
+    }
 }

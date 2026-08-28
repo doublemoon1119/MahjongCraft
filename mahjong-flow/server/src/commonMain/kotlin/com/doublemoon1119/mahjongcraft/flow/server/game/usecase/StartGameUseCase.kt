@@ -41,6 +41,7 @@ class StartGameUseCase(
     private val handSortPreferenceStore: HandSortPreferenceStore,
     @Provided private val eventPublisher: GameEventPublisher,
     @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val beginRoundPreparationUseCase: BeginRoundPreparationUseCase? = null,
 ) {
     /**
      * 執行開始遊戲邏輯。
@@ -162,6 +163,7 @@ class StartGameUseCase(
             diceCount = initializationResult.diceRoll?.values?.size ?: 0,
         )
         presentationPublisher.publishGameStarted(roomId, tableState.players.map { it.id })
+        beginRoundPreparationUseCase?.invoke(roomId)
 
         return Outcome.Success(roomId)
     }

@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCa
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SubmitRoundPreparationUseCase
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
@@ -43,6 +44,7 @@ class GameActionRouter(
     private val respondToKanUseCase: RespondToKanUseCase,
     private val declareAbortiveDrawUseCase: DeclareAbortiveDrawUseCase,
     private val extensionCommandRegistry: ExtensionGameCommandExecutorRegistry,
+    private val submitRoundPreparationUseCase: SubmitRoundPreparationUseCase? = null,
 ) {
     /**
      * 分派 [command] 到對應的 use case 執行。
@@ -57,6 +59,8 @@ class GameActionRouter(
         playerId: Uuid,
         command: GameCommand,
     ): Outcome<Unit, GameError> = when (command) {
+        is GameCommand.SubmitRoundPreparation -> submitRoundPreparationUseCase?.invoke(gameId, playerId, command.submission)
+            ?: Outcome.Error(GameError.RoundPreparationUnavailable(gameId, playerId))
         is GameCommand.Extension -> extensionCommandRegistry.execute(gameId, playerId, command.value)
         GameCommand.Draw -> drawTileUseCase(gameId, playerId)
         is GameCommand.Discard -> discardTileUseCase(gameId, playerId, command.tileId)

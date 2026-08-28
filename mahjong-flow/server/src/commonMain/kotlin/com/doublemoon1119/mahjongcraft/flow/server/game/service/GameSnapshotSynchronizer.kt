@@ -21,6 +21,11 @@ class GameSnapshotSynchronizer(
     suspend fun sync(gameId: Uuid, observerId: Uuid): Boolean {
         val game = gameRepository.getGame(gameId) ?: return false
         snapshotRepository.setSnapshot(observerId, visibilityPolicy.snapshotFor(game, observerId))
+        snapshotRepository.setRoundPreparationSnapshot(
+            gameId,
+            observerId,
+            visibilityPolicy.roundPreparationSnapshotFor(game, observerId),
+        )
         return true
     }
 

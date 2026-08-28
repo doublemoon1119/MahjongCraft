@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSe
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomaticRoundPreparationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNagareUseCase
@@ -95,6 +96,8 @@ class GameFlowCoordinator(
     private val winPresentationHandoff: WinPresentationHandoff,
     @Provided private val presentationPublisher: GamePresentationPublisher,
     @Provided private val presentationBusyGate: GamePresentationBusyGate,
+    private val roundPreparationAiDriver: RoundPreparationAiDriver? = null,
+    private val advanceAutomaticRoundPreparationUseCase: AdvanceAutomaticRoundPreparationUseCase? = null,
 ) {
     /** 避免玩家命令與恢復心跳同時重複執行同一個待完成流程。 */
     private val pendingTransitionMutex = Mutex()
@@ -189,6 +192,16 @@ class GameFlowCoordinator(
                 if (resumedGame.pendingTransition != null || presentationBusyGate.isBusy(gameId)) return
                 return@repeat
             }
+            if (advanceAutomaticRoundPreparationUseCase?.invoke(gameId) == true) return@repeat
+            val preparationAction = roundPreparationAiDriver?.resolveNextAction(gameId)
+            if (preparationAction != null) {
+                if (preparationAction.clearsForcedAutoPlay) clearForcedAutoPlay(gameId, preparationAction.playerId)
+                val gameBefore = gameRepository.getGame(gameId)
+                dispatchAndReconcile(gameId, preparationAction.playerId, preparationAction.command)
+                val gameAfter = gameRepository.getGame(gameId)
+                if (gameBefore == gameAfter) return
+                return@repeat
+            }
             val forcedAction = forcedAutoPlayDriver.resolveNextAction(gameId)
             val (playerId, command) = forcedAction ?: aiTurnDriver.resolveNextAction(gameId) ?: return
             if (forcedAction != null) clearForcedAutoPlay(gameId, playerId)
@@ -281,6 +294,11 @@ class GameFlowCoordinator(
      * 直接呼叫——AI 送出的命令也必須經過同一套四槓散了攔截與系統銜接邏輯，不能繞過去。
      */
     private suspend fun dispatchAndChain(gameId: Uuid, playerId: Uuid, command: GameCommand): Outcome<Unit, GameError> {
+        val game = gameRepository.getGame(gameId)
+            ?: return Outcome.Error(GameError.GameNotFound(gameId))
+        if (game.pendingRoundPreparation != null && command !is GameCommand.SubmitRoundPreparation) {
+            return Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
+        }
         if (
             command is GameCommand.Discard ||
             command is GameCommand.Extension &&
