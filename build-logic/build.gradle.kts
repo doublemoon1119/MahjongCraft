@@ -41,6 +41,10 @@ gradlePlugin {
             id = "mahjongcraft.target-management"
             implementationClass = "com.doublemoon1119.mahjongcraft.buildlogic.TargetManagementPlugin"
         }
+        register("repositoryVerification") {
+            id = "mahjongcraft.repository-verification"
+            implementationClass = "com.doublemoon1119.mahjongcraft.buildlogic.RepositoryVerificationPlugin"
+        }
     }
 }
 

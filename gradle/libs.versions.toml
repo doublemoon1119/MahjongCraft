@@ -70,6 +70,7 @@ mahjongcraft-kotlin-multiplatform = { id = "mahjongcraft.kotlin-multiplatform" }
 mahjongcraft-minecraft-version-common = { id = "mahjongcraft.minecraft-version-common" }
 mahjongcraft-minecraft-loader = { id = "mahjongcraft.minecraft-loader" }
 mahjongcraft-target-management = { id = "mahjongcraft.target-management" }
+mahjongcraft-repository-verification = { id = "mahjongcraft.repository-verification" }
 
 # Kotlin and general build plugins
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
