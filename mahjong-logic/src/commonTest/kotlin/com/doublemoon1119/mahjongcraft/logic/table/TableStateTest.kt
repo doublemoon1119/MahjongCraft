@@ -152,8 +152,10 @@ class TableStateTest {
         val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST).map { FakeMahjongPlayerFactory.create(it) }
         val state = FakeTableStateFactory.create(players = players, dealerPlayerId = players[0].id)
 
-        val repeated = state.advanceRound(dealerRepeats = true)
-        val advanced = state.advanceRound(dealerRepeats = false)
+        val repeated = state.advanceRound(MatchRoundTransition.RepeatCurrentRound)
+        val advanced = state.advanceRound(
+            MatchRoundTransition.AdvanceTo(MatchRoundPosition(1, Wind.EAST, 2)),
+        )
 
         assertEquals(players[0].id, repeated.dealerPlayerId)
         assertEquals(players[1].id, advanced.dealerPlayerId)

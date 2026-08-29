@@ -239,18 +239,6 @@ class TaiwanRuleModuleTest {
     }
 
     /**
-     * 驗證台灣麻將目前沒有實作任何額外結束對局的條件，即使有玩家分數為負也回傳 false。
-     */
-    @Test
-    fun `test hasAdditionalMatchEndCondition returns false`() {
-        val table = FakeTableStateFactory.create(
-            players = listOf(FakeMahjongPlayerFactory.create().copy(score = -100)),
-        )
-
-        assertFalse(module.hasAdditionalMatchEndCondition(table))
-    }
-
-    /**
      * 驗證台灣麻將沒有寶牌概念，不覆寫 [MahjongRuleModule.isHighlightedTile]，固定回傳預設值 false。
      */
     @Test

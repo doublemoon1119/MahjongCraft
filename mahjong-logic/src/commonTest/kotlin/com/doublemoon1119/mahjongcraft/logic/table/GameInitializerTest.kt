@@ -206,7 +206,6 @@ class GameInitializerTest {
             roundNumber = 2,
             comboCount = 0,
             prevalentWind = Wind.EAST,
-            isMatchOver = false,
         )
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
@@ -232,7 +231,6 @@ class GameInitializerTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
-            isMatchOver = false,
         )
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
@@ -255,7 +253,6 @@ class GameInitializerTest {
             roundNumber = 3,
             comboCount = 1,
             prevalentWind = Wind.SOUTH,
-            isMatchOver = false,
         )
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
@@ -284,7 +281,6 @@ class GameInitializerTest {
             roundNumber = 2,
             comboCount = 0,
             prevalentWind = Wind.EAST,
-            isMatchOver = false,
         )
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
@@ -317,7 +313,6 @@ class GameInitializerTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
-            isMatchOver = false,
         )
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
@@ -343,7 +338,6 @@ class GameInitializerTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
-            isMatchOver = false,
         )
         val carriedOverState = RiichiDynamicState(riichiStickCount = 2)
 
@@ -364,7 +358,6 @@ class GameInitializerTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
-            isMatchOver = false,
         )
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
@@ -385,7 +378,6 @@ class GameInitializerTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
-            isMatchOver = false,
         )
         val totalTileCount = module.createWallFactory().create().remainingCount
 
@@ -408,7 +400,6 @@ class GameInitializerTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
-            isMatchOver = false,
         )
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState

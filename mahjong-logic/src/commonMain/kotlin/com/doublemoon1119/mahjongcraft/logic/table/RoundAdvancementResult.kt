@@ -8,7 +8,7 @@ package com.doublemoon1119.mahjongcraft.logic.table
  * @property roundNumber 套用後的局數。
  * @property comboCount 套用後的本場數。
  * @property prevalentWind 套用後的場風。
- * @property isMatchOver 整場對局是否已依規則的 `GameLength` 結束。
+ * @property roundPosition 套用後的權威局位。
  */
 data class RoundAdvancementResult(
     val players: List<MahjongPlayer>,
@@ -16,5 +16,9 @@ data class RoundAdvancementResult(
     val roundNumber: Int,
     val comboCount: Int,
     val prevalentWind: Wind,
-    val isMatchOver: Boolean,
+    val roundPosition: MatchRoundPosition = MatchRoundPosition(
+        sequenceIndex = roundNumber - 1,
+        prevalentWind = prevalentWind,
+        localRoundNumber = ((roundNumber - 1) % players.size) + 1,
+    ),
 )

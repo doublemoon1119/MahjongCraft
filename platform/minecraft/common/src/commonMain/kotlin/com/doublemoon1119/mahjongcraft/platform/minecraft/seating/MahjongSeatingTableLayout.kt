@@ -34,7 +34,7 @@ data class MahjongSeatPlacement(
  * 的方向，跟牌牆自身組裝用的逆時針 `SIDE_ORDER` 是刻意不同的兩套獨立方向，見該函式 KDoc）——這是
  * 為了讓回合順序中的下一位玩家（`TableState.getNextPlayer()`，下家）physically 站在目前玩家的右手邊，
  * 符合真實麻將慣例。座位 index 對應 [TableState.players] 固定不變的座位順序——
- * `TableState.advanceRound()` 只轉動每個 index 位置玩家的自風，不重排 index，因此這裡的座位 index
+ * `TableState.advanceRound()` 只移交權威莊家、不重排 index；下一局自風由規則 policy 重新指派，因此這裡的座位 index
  * 必須跟規則層的玩家座位 index 一一對應，順序不能任意調整。
  *
  * 旋轉合成與 [MahjongTileTableLayout.handPlacement]

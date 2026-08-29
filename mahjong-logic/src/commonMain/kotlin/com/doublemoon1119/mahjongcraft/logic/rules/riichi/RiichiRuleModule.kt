@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpr
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.getNextDora
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
@@ -38,6 +39,9 @@ class RiichiRuleModule(
 ) : MahjongRuleModule<RiichiRuleConfig> {
     /** 日本麻將手牌整理排序規則。 */
     override val tileOrder: TileOrder = RiichiTileOrder
+
+    /** 建立支援南入、西入、驟死、和了止め與擊飛的日麻 progression policy。 */
+    override fun createMatchProgressionPolicy(): MatchProgressionPolicy = RiichiMatchProgressionPolicy(config)
 
     /**
      * 建立日本麻將牌山工廠。
@@ -470,11 +474,6 @@ class RiichiRuleModule(
         val isSinglePlayerAllKans = kanCountsByPlayer.any { it == totalKans }
         return if (isSinglePlayerAllKans) null else RiichiExhaustiveDrawReason.SuukanNagare
     }
-
-    /**
-     * 擊飛（飛び/Tobi）：任一玩家分數低於 0 分時，立即強制結束整場對局，不再繼續連莊或換莊。
-     */
-    override fun hasAdditionalMatchEndCondition(tableState: TableState): Boolean = tableState.players.any { it.score < 0 }
 
     /**
      * 日本麻將的特殊視覺強調對象是寶牌：赤寶牌（[RiichiTileInterpretationPolicy.isRedDora]，跟指示牌

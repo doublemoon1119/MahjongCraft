@@ -20,6 +20,7 @@ import kotlin.uuid.Uuid
  * @property dealerPlayerId 本局權威莊家 Uuid；莊家身分與自風彼此獨立。
  * @property prevalentWind 當前的場風（圈風）。
  * @property roundNumber 當前的局數。
+ * @property roundPosition 整場對局中的權威局位；既有場風與絕對局數欄位必須與它一致。
  * @property comboCount 連莊次數（日麻：本場數；台麻：連幾）。
  * @property currentPlayerIndex 目前輪到執行動作的玩家索引。
  * @property dynamicRuleState 規則特有的動態狀態實體（如日麻的立直棒、供託）。
@@ -41,6 +42,11 @@ data class TableState(
     val dealerPlayerId: Uuid,
     val prevalentWind: Wind = Wind.EAST,
     val roundNumber: Int = 1,
+    val roundPosition: MatchRoundPosition = MatchRoundPosition(
+        sequenceIndex = roundNumber - 1,
+        prevalentWind = prevalentWind,
+        localRoundNumber = ((roundNumber - 1) % players.size) + 1,
+    ),
     val comboCount: Int = 0,
     val currentPlayerIndex: Int = 0,
     val dynamicRuleState: DynamicRuleState? = null,
@@ -59,6 +65,8 @@ data class TableState(
         require(players.map { it.seatWind }.distinct().size == players.size) {
             "Players must have unique seat winds"
         }
+        require(roundPosition.prevalentWind == prevalentWind) { "prevalentWind must match roundPosition" }
+        require(roundPosition.roundNumber == roundNumber) { "roundNumber must match roundPosition" }
         if (finishedPlayerIds.isNotEmpty()) {
             val playerIds = players.mapTo(mutableSetOf()) { it.id }
             require(finishedPlayerIds.all { it in playerIds }) {
@@ -104,7 +112,7 @@ data class TableState(
      * 跨場風累計的絕對局數（例如四人桌東 4 局結束後，南 1 局的 [roundNumber] 是 `5`），這個屬性把它
      * 換算回場風內慣用的「東1局」那種局數表示法，供呈現層使用。
      */
-    val localRoundNumber: Int get() = ((roundNumber - 1) % playerCount) + 1
+    val localRoundNumber: Int get() = roundPosition.localRoundNumber
 
     /**
      * 初始化對局。
@@ -211,48 +219,34 @@ data class TableState(
     }
 
     /**
-     * 依「莊家是否連莊」計算下一局莊家、局數、本場數與場風，並判斷整場對局是否已結束。
+     * 套用已由 [MatchProgressionPolicy] 決定的連莊或明確下一局位，不在此重新判斷終局。
      *
-     * 連莊/過莊本身的判斷依據（莊家胡牌、或流局聽牌/流局滿貫）由呼叫端決定，這裡只接受已經決定好的
-     * [dealerRepeats]，不在這裡重新判斷——呼叫端（`AdvanceRoundUseCase`）目前是檢查莊家的
-     * `actionHistory` 裡有沒有 `Tsumo`/`Ron`/`ExhaustiveDraw`，這個函式本身不需要因此跟著改。
-     *
-     * 過莊時把 [dealerPlayerId] 移交給固定座位順序中的下一位；自風要等下一局重新擲骰開門後，
-     * 再由規則的 seat-wind policy 指派。
-     *
-     * @param dealerRepeats 本局是否應該連莊。
-     * @return 套用連莊或過莊後的結果。
+     * @param transition 已驗證的局位變化。
+     * @return 下一局初始化所需的權威資料。
      */
-    fun advanceRound(dealerRepeats: Boolean): RoundAdvancementResult {
-        if (dealerRepeats) {
-            // 連莊時 roundNumber 不會遞增，但如果連莊發生在已經是最後一局（例如一局戰／東風戰打完
-            // 最後一局時莊家還贏），整場對局仍然應該結束，不能因為「連莊」這個分支就無條件跳過
-            // totalRounds 的檢查——先前版本這裡固定回傳 false，導致設定一局戰時，只要贏家剛好是
-            // 莊家（含 RON），對局就會無限連莊下去，永遠打不完，這是實際遊戲內驗證過的問題。
-            return RoundAdvancementResult(
+    fun advanceRound(transition: MatchRoundTransition): RoundAdvancementResult = when (transition) {
+        MatchRoundTransition.RepeatCurrentRound -> RoundAdvancementResult(
+            players = players,
+            dealerPlayerId = dealerPlayerId,
+            roundNumber = roundNumber,
+            comboCount = comboCount + 1,
+            prevalentWind = prevalentWind,
+            roundPosition = roundPosition,
+        )
+
+        is MatchRoundTransition.AdvanceTo -> {
+            require(transition.nextPosition.sequenceIndex > roundPosition.sequenceIndex) {
+                "Advanced match round position must move forward"
+            }
+            val newDealerIndex = (dealerIndex + 1) % playerCount
+            RoundAdvancementResult(
                 players = players,
-                dealerPlayerId = dealerPlayerId,
-                roundNumber = roundNumber,
-                comboCount = comboCount + 1,
-                prevalentWind = prevalentWind,
-                isMatchOver = roundNumber >= config.gameLength.totalRounds,
+                dealerPlayerId = players[newDealerIndex].id,
+                roundNumber = transition.nextPosition.roundNumber,
+                comboCount = 0,
+                prevalentWind = transition.nextPosition.prevalentWind,
+                roundPosition = transition.nextPosition,
             )
         }
-
-        val newRoundNumber = roundNumber + 1
-        val newDealerIndex = (dealerIndex + 1) % playerCount
-        val winds = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).take(playerCount)
-        // 若 newRoundNumber 已經超過 totalRounds（isMatchOver = true），這裡算出的場風理論上
-        // 不會再被使用；coerceAtMost 純粹避免此時的陣列界外存取，屬防呆。
-        val windIndex = ((newRoundNumber - 1) / playerCount).coerceAtMost(winds.size - 1)
-
-        return RoundAdvancementResult(
-            players = players,
-            dealerPlayerId = players[newDealerIndex].id,
-            roundNumber = newRoundNumber,
-            comboCount = 0,
-            prevalentWind = winds[windIndex],
-            isMatchOver = newRoundNumber > config.gameLength.totalRounds,
-        )
     }
 }

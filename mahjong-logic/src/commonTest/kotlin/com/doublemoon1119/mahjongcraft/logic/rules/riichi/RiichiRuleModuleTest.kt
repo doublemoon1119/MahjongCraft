@@ -1275,38 +1275,6 @@ class RiichiRuleModuleTest {
         assertNull(module.resolveSuukanNagare(table))
     }
 
-    /**
-     * 驗證擊飛（Tobi）：任一玩家分數低於 0 時，成立額外結束對局的條件。
-     */
-    @Test
-    fun `test hasAdditionalMatchEndCondition returns true when any player score is negative`() {
-        val players = listOf(
-            FakeMahjongPlayerFactory.create().copy(score = -100),
-            FakeMahjongPlayerFactory.create().copy(score = 30000),
-            FakeMahjongPlayerFactory.create().copy(score = 25000),
-            FakeMahjongPlayerFactory.create().copy(score = 25000),
-        )
-        val table = FakeTableStateFactory.create(players = players, config = module.config)
-
-        assertTrue(module.hasAdditionalMatchEndCondition(table))
-    }
-
-    /**
-     * 驗證所有玩家分數皆為 0 分或以上時，不成立擊飛。
-     */
-    @Test
-    fun `test hasAdditionalMatchEndCondition returns false when no player score is negative`() {
-        val players = listOf(
-            FakeMahjongPlayerFactory.create().copy(score = 0),
-            FakeMahjongPlayerFactory.create().copy(score = 30000),
-            FakeMahjongPlayerFactory.create().copy(score = 25000),
-            FakeMahjongPlayerFactory.create().copy(score = 25000),
-        )
-        val table = FakeTableStateFactory.create(players = players, config = module.config)
-
-        assertFalse(module.hasAdditionalMatchEndCondition(table))
-    }
-
     /** 驗證指示牌的下一張數牌被判定為寶牌，循環邊界（9 → 1）也一併驗證。 */
     @Test
     fun `test isHighlightedTile matches the tile following a numeric dora indicator`() {

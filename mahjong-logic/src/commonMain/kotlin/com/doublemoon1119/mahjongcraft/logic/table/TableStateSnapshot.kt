@@ -14,6 +14,7 @@ import kotlin.uuid.Uuid
  * @property dealerPlayerId 本局權威莊家 Uuid。
  * @property prevalentWind 當前場風
  * @property roundNumber 當前局數
+ * @property roundPosition 當前權威局位。
  * @property comboCount 當前連莊次數
  * @property currentPlayerIndex 當前回合玩家的索引
  * @property dynamicRuleState 規則特定的動態桌況狀態
@@ -28,6 +29,7 @@ data class TableStateSnapshot(
     val dealerPlayerId: Uuid,
     val prevalentWind: Wind,
     val roundNumber: Int,
+    val roundPosition: MatchRoundPosition,
     val comboCount: Int,
     val currentPlayerIndex: Int,
     val dynamicRuleState: DynamicRuleState?,
@@ -56,6 +58,7 @@ fun TableState.toSnapshot(visibleHandPlayerIds: Set<Uuid>): TableStateSnapshot {
         dealerPlayerId = this.dealerPlayerId,
         prevalentWind = this.prevalentWind,
         roundNumber = this.roundNumber,
+        roundPosition = this.roundPosition,
         comboCount = this.comboCount,
         currentPlayerIndex = this.currentPlayerIndex,
         dynamicRuleState = this.dynamicRuleState,
