@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
@@ -16,6 +17,10 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -56,6 +61,52 @@ class AdvanceRoundUseCaseTest {
             eventPublisher,
             presentationPublisher,
         )
+
+        /** 以測試桌況中的正式結算記錄建立權威本局摘要。 */
+        suspend fun setCompletedState(
+            tableState: TableState,
+            remainingReserveMillisByPlayerId: Map<Uuid, Long>? = null,
+        ) {
+            val winners = tableState.players.filter { player ->
+                player.actionHistory.any { it is GameAction.Tsumo || it is GameAction.Ron }
+            }.mapTo(mutableSetOf()) { it.id }
+            val drawPlayers = tableState.players.filter { player ->
+                player.actionHistory.any { it is GameAction.ExhaustiveDraw }
+            }.mapTo(mutableSetOf()) { it.id }
+            val directive = if (tableState.dealerPlayerId in winners || tableState.dealerPlayerId in drawPlayers) {
+                RoundTransitionDirective.REPEAT_DEALER
+            } else {
+                RoundTransitionDirective.ADVANCE_DEALER
+            }
+            val drawReason = tableState.players.asSequence()
+                .flatMap { it.actionHistory.asSequence() }
+                .filterIsInstance<GameAction.ExhaustiveDraw>()
+                .firstOrNull()?.reason
+            val completion = RoundCompletionSummary(
+                outcomeId = when {
+                    drawReason != null -> drawReason.id
+                    tableState.players.any { player -> player.actionHistory.any { it is GameAction.Ron } } -> BuiltInRoundOutcomeIds.RON
+                    else -> BuiltInRoundOutcomeIds.TSUMO
+                },
+                classification = if (drawReason == null) {
+                    RoundCompletionClassification.WIN
+                } else {
+                    RoundCompletionClassification.EXHAUSTIVE_DRAW
+                },
+                beneficiaryPlayerIds = winners + drawPlayers,
+                transitionDirective = directive,
+                settledScoresByPlayerId = tableState.players.associate { it.id to it.score },
+            )
+            gameRepo.setGame(
+                Game(
+                    tableState = tableState,
+                    flowConfig = GameFlowConfig(),
+                    remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId
+                        ?: tableState.players.associate { it.id to GameFlowConfig().timeControl.reserveSeconds * 1_000L },
+                    roundCompletion = completion,
+                ),
+            )
+        }
     }
 
     /**
@@ -85,13 +136,7 @@ class AdvanceRoundUseCaseTest {
             prevalentWind = Wind.EAST,
         )
         val remainingReserveMillisByPlayerId = players.associate { it.id to 12_345L }
-        fixtures.gameRepo.setGame(
-            Game(
-                tableState = table,
-                flowConfig = GameFlowConfig(),
-                remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId,
-            ),
-        )
+        fixtures.setCompletedState(table, remainingReserveMillisByPlayerId)
 
         val result = fixtures.useCase(gameId)
 
@@ -142,7 +187,7 @@ class AdvanceRoundUseCaseTest {
             comboCount = 2,
             prevalentWind = Wind.EAST,
         )
-        fixtures.gameRepo.setTableState(table)
+        fixtures.setCompletedState(table)
 
         val result = fixtures.useCase(gameId)
 
@@ -181,7 +226,7 @@ class AdvanceRoundUseCaseTest {
             comboCount = 0,
             prevalentWind = Wind.EAST,
         )
-        fixtures.gameRepo.setTableState(table)
+        fixtures.setCompletedState(table)
 
         val result = fixtures.useCase(gameId)
 
@@ -219,7 +264,7 @@ class AdvanceRoundUseCaseTest {
             comboCount = 2,
             prevalentWind = Wind.EAST,
         )
-        fixtures.gameRepo.setTableState(table)
+        fixtures.setCompletedState(table)
 
         val result = fixtures.useCase(gameId)
 
@@ -255,7 +300,7 @@ class AdvanceRoundUseCaseTest {
             comboCount = 0,
             prevalentWind = Wind.EAST,
         )
-        fixtures.gameRepo.setTableState(table)
+        fixtures.setCompletedState(table)
 
         val result = fixtures.useCase(gameId)
 
@@ -300,7 +345,7 @@ class AdvanceRoundUseCaseTest {
             prevalentWind = Wind.EAST,
             dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
         )
-        fixtures.gameRepo.setTableState(table)
+        fixtures.setCompletedState(table)
 
         val result = fixtures.useCase(gameId)
 
@@ -338,7 +383,7 @@ class AdvanceRoundUseCaseTest {
             prevalentWind = Wind.EAST,
             dynamicRuleState = RiichiDynamicState(riichiStickCount = 1),
         )
-        fixtures.gameRepo.setTableState(table)
+        fixtures.setCompletedState(table)
 
         val result = fixtures.useCase(gameId)
 
@@ -369,7 +414,7 @@ class AdvanceRoundUseCaseTest {
             prevalentWind = Wind.EAST,
             dynamicRuleState = RiichiDynamicState(riichiStickCount = 0),
         )
-        fixtures.gameRepo.setTableState(table)
+        fixtures.setCompletedState(table)
 
         val result = fixtures.useCase(gameId)
 
@@ -380,7 +425,7 @@ class AdvanceRoundUseCaseTest {
     }
 
     /**
-     * 驗證擊飛（`RiichiRuleModule.hasAdditionalMatchEndCondition`）：即使局數遠未達
+     * 驗證 progression policy 的擊飛判定：即使局數遠未達
      * [GameLength.totalRounds] 上限，只要有玩家分數低於 0，整場對局也應該立即結束，不開新的一局。
      */
     @Test
@@ -398,7 +443,7 @@ class AdvanceRoundUseCaseTest {
             comboCount = 0,
             prevalentWind = Wind.EAST,
         )
-        fixtures.gameRepo.setTableState(table)
+        fixtures.setCompletedState(table)
 
         val result = fixtures.useCase(gameId)
 
@@ -427,7 +472,7 @@ class AdvanceRoundUseCaseTest {
             // 用 OneGame 會讓這局直接結束對局，走進完全不同（也不會有 RoundStarted）的分支。
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
         )
-        fixtures.gameRepo.setTableState(table)
+        fixtures.setCompletedState(table)
         fixtures.snapshotRepo.setSnapshot(dealerId, table.toSnapshot(setOf(dealerId)))
         fixtures.snapshotRepo.setSnapshot(p2.id, table.toSnapshot(setOf(p2.id)))
 

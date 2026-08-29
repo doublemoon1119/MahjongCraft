@@ -9,6 +9,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -53,15 +56,16 @@ class DeclareExhaustiveDrawUseCase(
      */
     suspend operator fun invoke(gameId: Uuid): Outcome<Unit, GameError> {
         // 1. 以原子方式讀取桌況、計算流局結算並寫回
-        val outcome = gameRepository.update(gameId) { state ->
+        val outcome = gameRepository.updateGame(gameId) { game ->
+            val state = game?.tableState
             when {
-                state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
+                game == null || state == null -> game to Outcome.Error(GameError.GameNotFound(gameId))
                 else -> {
                     val module = moduleRegistry.getModule(state.config)
 
                     // 這個規則不支援流局結算時 declareExhaustiveDraw 回傳 null。
                     val settlement = module.declareExhaustiveDraw(state)
-                        ?: return@update state to Outcome.Error(GameError.UnsupportedAction(gameId))
+                        ?: return@updateGame game to Outcome.Error(GameError.UnsupportedAction(gameId))
 
                     // 這次流局若有玩家該收下場上所有供託（如立直棒，例如日麻的流局滿貫成立者），
                     // 不支援供託機制的規則回傳 null
@@ -89,7 +93,21 @@ class DeclareExhaustiveDrawUseCase(
                         dynamicRuleState = stickPot?.first ?: state.dynamicRuleState,
                     )
 
-                    newState to Outcome.Success(ExhaustiveDrawResult(newState, settlement.reason))
+                    val transitionDirective = if (state.dealerPlayerId in settlement.tenpaiPlayerIds) {
+                        RoundTransitionDirective.REPEAT_DEALER
+                    } else {
+                        RoundTransitionDirective.ADVANCE_DEALER
+                    }
+                    game.copy(
+                        tableState = newState,
+                        roundCompletion = RoundCompletionSummary(
+                            outcomeId = settlement.reason.id,
+                            classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
+                            beneficiaryPlayerIds = settlement.tenpaiPlayerIds,
+                            transitionDirective = transitionDirective,
+                            settledScoresByPlayerId = newState.players.associate { it.id to it.score },
+                        ),
+                    ) to Outcome.Success(ExhaustiveDrawResult(newState, settlement.reason))
                 }
             }
         }

@@ -22,12 +22,14 @@ data class TableStateSnapshotDto(
     val dealerPlayerId: String,
     val prevalentWind: WindDto,
     val roundNumber: Int,
+    val roundPosition: MatchRoundPositionDto,
     val comboCount: Int,
     val currentPlayerIndex: Int,
     val dynamicRuleState: DynamicRuleStateDto?,
     val finishedPlayerIds: Set<String>,
 )
 
+/** 將 observer-specific 桌況快照轉成網路 DTO。 */
 fun TableStateSnapshot.toDto(registries: NetworkDtoRegistries): TableStateSnapshotDto = TableStateSnapshotDto(
     id = id.toString(),
     players = players.map { it.toDto(registries) },
@@ -36,12 +38,14 @@ fun TableStateSnapshot.toDto(registries: NetworkDtoRegistries): TableStateSnapsh
     dealerPlayerId = dealerPlayerId.toString(),
     prevalentWind = prevalentWind.toDto(),
     roundNumber = roundNumber,
+    roundPosition = roundPosition.toDto(),
     comboCount = comboCount,
     currentPlayerIndex = currentPlayerIndex,
     dynamicRuleState = dynamicRuleState?.toDto(registries),
     finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
 )
 
+/** 將網路 DTO 還原成 observer-specific 桌況快照。 */
 fun TableStateSnapshotDto.toDomain(registries: NetworkDtoRegistries): TableStateSnapshot = TableStateSnapshot(
     id = Uuid.parse(id),
     players = players.map { it.toDomain(registries) },
@@ -50,6 +54,7 @@ fun TableStateSnapshotDto.toDomain(registries: NetworkDtoRegistries): TableState
     dealerPlayerId = Uuid.parse(dealerPlayerId),
     prevalentWind = prevalentWind.toDomain(),
     roundNumber = roundNumber,
+    roundPosition = roundPosition.toDomain(),
     comboCount = comboCount,
     currentPlayerIndex = currentPlayerIndex,
     dynamicRuleState = dynamicRuleState?.toDomain(registries),

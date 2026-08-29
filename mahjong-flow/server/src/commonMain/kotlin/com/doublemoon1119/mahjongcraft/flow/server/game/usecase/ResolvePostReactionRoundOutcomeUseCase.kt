@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReacti
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
@@ -36,7 +38,19 @@ class ResolvePostReactionRoundOutcomeUseCase(
             require(resolved.scoreDeltas == actualDeltas) { "Resolved outcome score deltas do not match settled table state" }
             game.copy(
                 tableState = resolved.settledTableState,
-                roundTransitionDirective = resolved.transitionDirective,
+                roundCompletion = RoundCompletionSummary(
+                    outcomeId = resolved.id,
+                    classification = when (resolved.presentationClassification) {
+                        com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification.WIN_EQUIVALENT ->
+                            RoundCompletionClassification.WIN
+                        com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification.EXHAUSTIVE_DRAW_EQUIVALENT ->
+                            RoundCompletionClassification.EXTENSION
+                    },
+                    beneficiaryPlayerIds = resolved.beneficiaryPlayerIds,
+                    responsiblePlayerIds = resolved.responsiblePlayerIds,
+                    transitionDirective = resolved.transitionDirective,
+                    settledScoresByPlayerId = resolved.settledTableState.players.associate { it.id to it.score },
+                ),
             ) to Outcome.Success(resolved)
         }
         if (result is Outcome.Success && result.value != null) snapshotSynchronizer.syncAll(gameId)

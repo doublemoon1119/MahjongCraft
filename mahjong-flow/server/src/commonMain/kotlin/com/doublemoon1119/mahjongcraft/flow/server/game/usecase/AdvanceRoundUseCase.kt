@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPlayerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -16,7 +15,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
-import com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult
+import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionContext
+import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionDecision
+import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundTransition
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
@@ -26,29 +28,13 @@ import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
- * 連莊/過莊、開下一局的實例化用例。
+ * 依規則的 Match progression 決定終局、連莊或明確下一局位的實例化用例。
  *
- * 這是「連莊/過莊/開下一局」系列子項的最後一塊：把前面各自獨立寫好、測好的
- * [TableState.advanceRound]（連莊/過莊判定與局數/本場數/場風推進）
- * 與 [GameInitializer.startNextRound]（開下一局的新初始化路徑）串起來，
- * 做成一個真正會寫回 [GameRepository] 的 use case。
+ * 呼叫前必須已有 [Game.roundCompletion]；本用例不讀取 `actionHistory` 猜測連莊，也不以固定局數
+ * 自行判斷終局。它把結算後桌況、權威結果摘要與規則 comparator 產生的排行交給
+ * `MatchProgressionPolicy`，驗證其決策後才原子寫回終局或下一局。
  *
- * 由誰、在什麼時機呼叫本用例（例如接在 [DeclareTsumoUseCase]/[RespondToDiscardUseCase] 成功之後
- * 自動觸發，或由前端明確請求）是更外層（伺服器流程編排）的決定，不在這裡處理；呼叫前應確認本局
- * 已經結算完畢（沒有 `pendingReaction`）。
- *
- * 「莊家是否連莊」優先使用 [Game.roundTransitionDirective] 保存的明確規則決策；尚未遷移到 outcome
- * resolver 的既有胡牌與流局路徑才暫時回退到以下歷史紀錄：
- * [DeclareTsumoUseCase]/[RespondToDiscardUseCase] 會把 [GameAction.Tsumo]/[GameAction.Ron] 記錄進
- * 贏家的 `actionHistory`；[DeclareExhaustiveDrawUseCase] 則只把 [GameAction.ExhaustiveDraw] 記錄進
- * 聽牌玩家的 `actionHistory`，不聽的玩家不記錄。
- * [GameInitializer.startNextRound] 每次開新的一局都會把 `actionHistory` 重置成空，所以「這局的
- * `actionHistory` 裡有沒有 Tsumo/Ron/ExhaustiveDraw」可以直接拿來判斷「莊家這局是不是贏家之一，
- * 或流局時是否聽牌」。九種九牌等途中流局的連莊依據（莊家固定連莊，不需要判斷聽牌與否）留給
- * 對應子項擴充。
- *
- * 整場對局已結束（[RoundAdvancementResult.isMatchOver]）
- * 時，本用例把這個事實記到 [Game.isMatchOver]，
+ * 終局時，本用例把事實與完整 reason ID 寫回 [Game]，
  * 並同步最終桌況快照、廣播 [GameAction.MatchEnded]（帶著最終分數的快照，供呼叫端／客戶端組出排名
  * 呈現）——但不會開新的一局；`TableState` 除了「桌上未被收下的供託歸給最終第一名」這個結算之外
  * 維持呼叫前的樣子不變（見 `MahjongRuleModule.collectStickPot` 的呼叫）。房間清理（把桌子從 Game
@@ -62,6 +48,7 @@ import kotlin.uuid.Uuid
  * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
+ * @property beginRoundPreparationUseCase 新局發牌後啟動規則準備步驟的 use case；未注入時略過。
  */
 @Factory
 class AdvanceRoundUseCase(
@@ -87,22 +74,30 @@ class AdvanceRoundUseCase(
                 game == null || state == null -> game to Outcome.Error(GameError.GameNotFound(gameId))
                 else -> {
                     val module = moduleRegistry.getModule(state.config)
-                    val dealer = state.dealer
-                    val dealerRepeats = when (game.roundTransitionDirective) {
-                        RoundTransitionDirective.REPEAT_DEALER -> true
-                        RoundTransitionDirective.ADVANCE_DEALER -> false
-                        null -> dealer.actionHistory.any {
-                            it is GameAction.Tsumo || it is GameAction.Ron || it is GameAction.ExhaustiveDraw
-                        }
+                    val completion = game.roundCompletion
+                        ?: return@updateGame game to Outcome.Error(
+                            GameError.InvalidMatchProgression(gameId, "Missing round completion summary"),
+                        )
+                    if (completion.settledScoresByPlayerId != state.players.associate { it.id to it.score }) {
+                        return@updateGame game to Outcome.Error(
+                            GameError.InvalidMatchProgression(gameId, "Round completion scores do not match table state"),
+                        )
                     }
-                    val roundAdvancement = state.advanceRound(dealerRepeats)
-                    // 除了 GameLength.totalRounds（已經反映在 roundAdvancement.isMatchOver）之外，
-                    // 規則模組可能還有額外造成對局立即結束的條件（例如日麻的擊飛），見
-                    // MahjongRuleModule.hasAdditionalMatchEndCondition KDoc。用「本局結算完畢後」的
-                    // state（分數已是最終值）判斷，只會讓對局比 totalRounds 更早結束，不會延後。
-                    val isMatchOver = roundAdvancement.isMatchOver || module.hasAdditionalMatchEndCondition(state)
+                    val decision = runCatching {
+                        module.createMatchProgressionPolicy().decide(
+                            MatchProgressionContext(
+                                tableState = state,
+                                completion = completion,
+                                rankedPlayerIds = state.players.sortedWith(module.compareForMatchRanking()).map { it.id },
+                            ),
+                        )
+                    }.getOrElse { error ->
+                        return@updateGame game to Outcome.Error(
+                            GameError.InvalidMatchProgression(gameId, error.message ?: error::class.simpleName.orEmpty()),
+                        )
+                    }
 
-                    if (isMatchOver) {
+                    if (decision is MatchProgressionDecision.EndMatch) {
                         // 整場對局結束時，桌上未被任何人收下的供託（如立直棒）歸給最終第一名——排名
                         // 判準交給 module.compareForMatchRanking()，跟用戶端的終局排名呈現邏輯共用
                         // 同一支規則 hook（見 GameEventChatNotifier）。沿用既有的 collectStickPot
@@ -133,9 +128,27 @@ class AdvanceRoundUseCase(
                             tableState = finalState,
                             isMatchOver = true,
                             pendingTransition = PendingGameTransition.ReturnToRoom,
-                            roundTransitionDirective = null,
+                            roundCompletion = null,
+                            matchEndReasonId = decision.reasonId,
                         ) to Outcome.Success(advanceOutcome)
                     } else {
+                        val transition = (decision as MatchProgressionDecision.ContinueMatch).transition
+                        val directiveMatches = when (transition) {
+                            MatchRoundTransition.RepeatCurrentRound ->
+                                completion.transitionDirective == RoundTransitionDirective.REPEAT_DEALER
+                            is MatchRoundTransition.AdvanceTo ->
+                                completion.transitionDirective == RoundTransitionDirective.ADVANCE_DEALER
+                        }
+                        if (!directiveMatches) {
+                            return@updateGame game to Outcome.Error(
+                                GameError.InvalidMatchProgression(gameId, "Progression decision conflicts with dealer directive"),
+                            )
+                        }
+                        val roundAdvancement = runCatching { state.advanceRound(transition) }.getOrElse { error ->
+                            return@updateGame game to Outcome.Error(
+                                GameError.InvalidMatchProgression(gameId, error.message ?: error::class.simpleName.orEmpty()),
+                            )
+                        }
                         val initializationResult = GameInitializer.startNextRound(
                             gameId = gameId,
                             roundAdvancement = roundAdvancement,
@@ -166,7 +179,8 @@ class AdvanceRoundUseCase(
                         game.copy(
                             tableState = newState,
                             pendingTransition = null,
-                            roundTransitionDirective = null,
+                            roundCompletion = null,
+                            matchEndReasonId = null,
                         ) to Outcome.Success(advanceOutcome)
                     }
                 }
@@ -278,7 +292,7 @@ class AdvanceRoundUseCase(
      *
      * @property tableState 套用後的桌況——整場對局已結束時，除了「桌上未被收下的供託歸給最終第一名」
      *           這個結算之外維持呼叫前的桌況不變（不會開新的一局）；否則為已經開始下一局的新桌況。
-     * @property isMatchOver 整場對局是否已依規則的 `GameLength` 結束。
+     * @property isMatchOver 整場對局是否已依規則的 progression policy 結束。
      */
     data class AdvanceRoundResult(val tableState: TableState, val isMatchOver: Boolean)
 

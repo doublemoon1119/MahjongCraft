@@ -10,6 +10,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -51,21 +54,22 @@ class DeclareAbortiveDrawUseCase(
         reason: ExhaustiveDrawReason,
     ): Outcome<Unit, GameError> {
         // 1. 以原子方式讀取桌況、驗證業務規則並寫回
-        val outcome = gameRepository.update(gameId) { state ->
+        val outcome = gameRepository.updateGame(gameId) { game ->
+            val state = game?.tableState
             when {
-                state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
+                game == null || state == null -> game to Outcome.Error(GameError.GameNotFound(gameId))
                 state.players.none { it.id == playerId } ->
-                    state to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
+                    game to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
 
                 state.currentPlayer.id != playerId ->
-                    state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
+                    game to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
 
                 state.currentPlayer.hand.lastDrawn == null ->
-                    state to Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
+                    game to Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
 
                 else -> {
                     val incomingTile = state.currentPlayer.hand.lastDrawn
-                        ?: return@update state to Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
+                        ?: return@updateGame game to Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
                     val module = moduleRegistry.getModule(state.config)
 
                     // LegalActionValidator 的既有慣例是傳入的手牌「不含胡牌張」，胡牌張只透過
@@ -81,7 +85,7 @@ class DeclareAbortiveDrawUseCase(
                     )
                     val exhaustiveDraw = legalActions.filterIsInstance<GameAction.ExhaustiveDraw>()
                         .firstOrNull { it.reason == reason }
-                        ?: return@update state to Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
+                        ?: return@updateGame game to Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
 
                     // 途中流局：莊家固定連莊、不結算任何點數，供託延續到下一局。把 ExhaustiveDraw
                     // 記錄進全員（不只莊家）的 actionHistory，讓 AdvanceRoundUseCase 既有的判斷式
@@ -90,7 +94,16 @@ class DeclareAbortiveDrawUseCase(
                         state.players.map { it.recordAction(GameAction.ExhaustiveDraw(exhaustiveDraw.reason)) }
                     val newState = state.copy(players = updatedPlayers)
 
-                    newState to Outcome.Success(AbortiveDrawResult(newState, exhaustiveDraw.reason))
+                    game.copy(
+                        tableState = newState,
+                        roundCompletion = RoundCompletionSummary(
+                            outcomeId = exhaustiveDraw.reason.id,
+                            classification = RoundCompletionClassification.ABORTIVE_DRAW,
+                            beneficiaryPlayerIds = emptySet(),
+                            transitionDirective = RoundTransitionDirective.REPEAT_DEALER,
+                            settledScoresByPlayerId = newState.players.associate { it.id to it.score },
+                        ),
+                    ) to Outcome.Success(AbortiveDrawResult(newState, exhaustiveDraw.reason))
                 }
             }
         }

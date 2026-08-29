@@ -26,6 +26,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundC
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlinx.coroutines.sync.Mutex
 import org.koin.core.annotation.Factory
@@ -440,6 +443,7 @@ class GameFlowCoordinator(
             actions.any { it is GameAction.ExhaustiveDraw }
         }
         if (hasNewExhaustiveDraw) {
+            ensureRecordedDrawCompletion(gameId, currentState, newlyRecordedActionsByPlayerId)
             publishNewAbortiveDrawIfPresent(gameId, playerId, previousState)
             chainAdvanceRound(gameId)
             return
@@ -478,6 +482,45 @@ class GameFlowCoordinator(
 
         if (directive == null || directive is WinRoundDirective.EndRound) {
             chainAdvanceRound(gameId)
+        }
+    }
+
+    /**
+     * 為由反應 resolver 直接產生的途中流局補上權威摘要；正式流局 use case 已寫入摘要時不覆蓋。
+     */
+    private suspend fun ensureRecordedDrawCompletion(
+        gameId: Uuid,
+        state: TableState,
+        newActionsByPlayerId: Map<Uuid, List<GameAction>>,
+    ) {
+        gameRepository.updateGame(gameId) { game ->
+            if (game == null || game.roundCompletion != null) return@updateGame game to Unit
+            val affectedPlayerIds = newActionsByPlayerId.filterValues { actions ->
+                actions.any { it is GameAction.ExhaustiveDraw }
+            }.keys
+            val reason = newActionsByPlayerId.values.asSequence()
+                .flatten()
+                .filterIsInstance<GameAction.ExhaustiveDraw>()
+                .first().reason
+            val isAbortive = affectedPlayerIds.size == state.playerCount
+            val directive = if (isAbortive || state.dealerPlayerId in affectedPlayerIds) {
+                RoundTransitionDirective.REPEAT_DEALER
+            } else {
+                RoundTransitionDirective.ADVANCE_DEALER
+            }
+            game.copy(
+                roundCompletion = RoundCompletionSummary(
+                    outcomeId = reason.id,
+                    classification = if (isAbortive) {
+                        RoundCompletionClassification.ABORTIVE_DRAW
+                    } else {
+                        RoundCompletionClassification.EXHAUSTIVE_DRAW
+                    },
+                    beneficiaryPlayerIds = if (isAbortive) emptySet() else affectedPlayerIds,
+                    transitionDirective = directive,
+                    settledScoresByPlayerId = state.players.associate { it.id to it.score },
+                ),
+            ) to Unit
         }
     }
 

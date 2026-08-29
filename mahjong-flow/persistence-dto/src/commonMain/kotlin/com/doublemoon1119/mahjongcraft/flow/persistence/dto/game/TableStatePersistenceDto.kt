@@ -24,6 +24,7 @@ import kotlin.uuid.Uuid
  * @property dealerPlayerId 本局權威莊家 Uuid。
  * @property prevalentWind 當前場風。
  * @property roundNumber 當前局數。
+ * @property roundPosition 當前權威局位。
  * @property comboCount 當前連莊次數。
  * @property currentPlayerIndex 目前行動玩家的索引。
  * @property dynamicRuleState 規則專屬牌桌狀態；沒有狀態時為 null。
@@ -43,6 +44,7 @@ data class TableStatePersistenceDto(
     val dealerPlayerId: String,
     val prevalentWind: WindPersistenceDto,
     val roundNumber: Int,
+    val roundPosition: MatchRoundPositionPersistenceDto,
     val comboCount: Int,
     val currentPlayerIndex: Int,
     val dynamicRuleState: TypedPersistenceDto?,
@@ -78,6 +80,7 @@ fun TableState.toPersistenceDto(
     dealerPlayerId = dealerPlayerId.toString(),
     prevalentWind = WindPersistenceDto.valueOf(prevalentWind.name),
     roundNumber = roundNumber,
+    roundPosition = roundPosition.toPersistenceDto(),
     comboCount = comboCount,
     currentPlayerIndex = currentPlayerIndex,
     dynamicRuleState = dynamicRuleState?.let { dynamicRuleStateRegistry.encode(it, json) },
@@ -113,6 +116,7 @@ fun TableStatePersistenceDto.toDomain(
     dealerPlayerId = Uuid.parse(dealerPlayerId),
     prevalentWind = Wind.valueOf(prevalentWind.name),
     roundNumber = roundNumber,
+    roundPosition = roundPosition.toDomain(),
     comboCount = comboCount,
     currentPlayerIndex = currentPlayerIndex,
     dynamicRuleState = dynamicRuleState?.let { dynamicRuleStateRegistry.decode(it, json) },

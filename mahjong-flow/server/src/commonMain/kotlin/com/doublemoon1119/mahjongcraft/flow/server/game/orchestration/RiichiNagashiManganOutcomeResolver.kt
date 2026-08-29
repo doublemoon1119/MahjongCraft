@@ -3,10 +3,10 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 

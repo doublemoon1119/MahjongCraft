@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
@@ -57,6 +58,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -806,7 +810,7 @@ class GameFlowCoordinatorTest {
     private fun discardReactionTable(discarderId: Uuid, respondentId: Uuid, respondentHand: Hand): TableState {
         val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         // score 給一個一般起始分數（而非工廠預設的 0），避免放銃付款後分數跌破 0 誤觸「擊飛」
-        // （MahjongRuleModule.hasAdditionalMatchEndCondition）而讓對局提早結束，干擾這裡真正要測的
+        // （RiichiMatchProgressionPolicy 的擊飛條件）而讓對局提早結束，干擾這裡真正要測的
         // 「Ron 後有沒有正確銜接 AdvanceRoundUseCase」。
         val discarder = FakeMahjongPlayerFactory.create(
             id = discarderId,
@@ -909,7 +913,23 @@ class GameFlowCoordinatorTest {
                 .any { it is GameAction.Ron },
         )
         fixtures.gameRepo.updateGame(gameId) { game ->
-            game!!.copy(pendingTransition = PendingGameTransition.AdvanceRound) to Unit
+            val state = game!!.tableState
+            val directive = if (state.dealerPlayerId == respondentId) {
+                RoundTransitionDirective.REPEAT_DEALER
+            } else {
+                RoundTransitionDirective.ADVANCE_DEALER
+            }
+            game.copy(
+                pendingTransition = PendingGameTransition.AdvanceRound,
+                roundCompletion = RoundCompletionSummary(
+                    outcomeId = BuiltInRoundOutcomeIds.RON,
+                    classification = RoundCompletionClassification.WIN,
+                    beneficiaryPlayerIds = setOf(respondentId),
+                    responsiblePlayerIds = setOf(discarderId),
+                    transitionDirective = directive,
+                    settledScoresByPlayerId = state.players.associate { it.id to it.score },
+                ),
+            ) to Unit
         }
 
         assertTrue(fixtures.coordinator.resumePendingGameTransition(gameId))

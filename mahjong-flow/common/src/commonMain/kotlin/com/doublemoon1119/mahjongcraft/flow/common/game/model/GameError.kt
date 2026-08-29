@@ -87,4 +87,7 @@ sealed interface GameError : ApplicationError {
 
     /** 開局準備提交不符合輸入結構或規則語意。 */
     data class InvalidRoundPreparationSubmission(val gameId: Uuid, val playerId: Uuid) : GameError
+
+    /** 本局缺少權威完成摘要，或規則回傳互相矛盾的 progression decision。 */
+    data class InvalidMatchProgression(val gameId: Uuid, val reason: String) : GameError
 }

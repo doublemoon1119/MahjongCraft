@@ -137,7 +137,8 @@ fun AuthoritativeStatePersistenceDto.toGames(
         forcedAutoPlayPlayerIds = runtimeState.toForcedAutoPlayPlayerIds(),
         isMatchOver = runtimeState.isMatchOver,
         pendingTransition = runtimeState.pendingTransition?.toDomain(),
-        roundTransitionDirective = runtimeState.roundTransitionDirective?.toDomain(),
+        roundCompletion = runtimeState.roundCompletion?.toDomain(),
+        matchEndReasonId = runtimeState.matchEndReasonId,
         pendingRoundPreparation = runtimeState.pendingRoundPreparation?.toDomain(),
         hostId = runtimeState.hostId?.let { Uuid.parse(it) } ?: tableState.players.first().id,
     )

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import kotlin.uuid.Uuid
@@ -26,15 +27,6 @@ enum class RoundOutcomePresentationClassification {
 
     /** 外觀與流局結算等價。 */
     EXHAUSTIVE_DRAW_EQUIVALENT,
-}
-
-/** 本局結算後應採用的明確莊家推進決策。 */
-enum class RoundTransitionDirective {
-    /** 莊家連莊。 */
-    REPEAT_DEALER,
-
-    /** 莊家過莊。 */
-    ADVANCE_DEALER,
 }
 
 /**
