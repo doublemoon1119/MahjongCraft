@@ -1,11 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.notification
 
-import com.akuleshov7.ktoml.Toml
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.resolveDisplayText
@@ -23,14 +19,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import kotlinx.coroutines.launch
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import net.minecraft.text.ClickEvent
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
-import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
@@ -52,16 +44,12 @@ class FabricPlayerFeedbackPublisher(
     private val tileDisplayNames: TileDisplayNameRegistry,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val tileEmojiRegistry: TileEmojiRegistry,
+    private val gameConfigFormatter: FabricGameConfigTextFormatter,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
-    @Provided private val json: Json,
-    @Provided private val networkRegistries: NetworkDtoRegistries,
 ) : MinecraftPlayerFeedbackPublisher {
     /** 記錄包含大量 hover 資訊的正式回饋原始資料。 */
     private val logger = LoggerFactory.getLogger(FabricPlayerFeedbackPublisher::class.java)
-
-    /** 用來把設定 hover 顯示成 TOML 的 codec；序列化模組須與 [json] 共用，才認得到多型規則設定。 */
-    private val toml = Toml(serializersModule = buildMahjongDtoSerializersModule(networkRegistries))
 
     /** 切換至 server thread，並在玩家仍在線時傳送目前版本選定的回饋。 */
     override fun publish(playerId: Uuid, feedback: MinecraftPlayerFeedback) {
@@ -227,11 +215,15 @@ class FabricPlayerFeedbackPublisher(
         )
     }
 
-    /** 建立「已變更遊戲設定」訊息，格式比照 [aiStrategyChangedMessage] 的「舊設定 → 新設定」配色慣例。 */
+    /** 建立「已變更遊戲設定」訊息；實際的「舊值 → 新值」差異位於可互動標籤的 hover。 */
     private fun gameConfigChangedMessage(feedback: MinecraftPlayerFeedback.GameConfigChanged): MutableText = Text.translatable(
         MinecraftMessageKeys.GAME_CONFIG_CHANGED,
-        gameConfigText(feedback.oldConfigJson, Formatting.RED),
-        gameConfigText(feedback.newConfigJson, Formatting.GREEN),
+        bracketedInteractiveLabel(
+            Text.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
+            gameConfigFormatter.changes(feedback.oldConfigJson, feedback.newConfigJson),
+            ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_ROOM_CONFIG_SCREEN_COMMAND),
+            Formatting.AQUA,
+        ),
     )
 
     /** 建立「新設定與目前設定相同」訊息，比照 [aiStrategyChangedMessage] 對新舊相同時的特殊處理，維持無色。 */
@@ -254,32 +246,16 @@ class FabricPlayerFeedbackPublisher(
         ),
     )
 
-    /**
-     * 將一段設定 JSON 轉成可互動文字：點擊把原始 JSON 複製到剪貼簿（可以直接貼回設定編輯畫面），這
-     * 部分已經定案不會再變。hover 顯示的 TOML 版本則只是暫時方案，見 [gameConfigHoverText]。[color]
-     * 預設沿用一般可互動文字的 AQUA；「舊 → 新」類訊息才需要另外指定綠／紅。
-     */
+    /** 將設定轉成可開啟 RoomScreen 的互動標籤，hover 顯示本地化完整內容。 */
     private fun gameConfigText(configJson: String, color: Formatting = Formatting.AQUA): MutableText = bracketedInteractiveLabel(
         Text.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
         gameConfigHoverText(configJson),
-        ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, configJson),
+        ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_ROOM_CONFIG_SCREEN_COMMAND),
         color,
     )
 
-    /**
-     * 將一段設定 JSON 轉成 hover 顯示用的 TOML 版本（較適合人眼閱讀），供 [gameConfigText] 與
-     * [showGameConfigMessage] 共用。目前是原始欄位名稱（例如 `baseSeconds`），不是「起始點數」這種對
-     * 玩家友善的顯示名稱；TOML 轉換失敗時（理論上不會發生，因為這段 JSON 本來就是同一份程式碼序列化
-     * 出來的）退回顯示原始 JSON。
-     *
-     * TODO: 這部分還會再調整——需要一套「設定欄位 → 翻譯後顯示名稱」的對照（GUI 顯示設定時也會用到
-     *   同一套對照），屆時應該抽成共用元件，不要各自複製一份。
-     */
-    private fun gameConfigHoverText(configJson: String): MutableText = try {
-        Text.literal(toml.encodeToString(json.decodeFromString<GameConfigDto>(configJson)))
-    } catch (_: Exception) {
-        Text.literal(configJson)
-    }
+    /** 將設定轉成本地化 hover 文字，與 RoomScreen 共用宣告式設定 schema。 */
+    private fun gameConfigHoverText(configJson: String): MutableText = gameConfigFormatter.full(configJson)
 
     /** 建立「已執行對局動作」訊息，例如「已執行：打出 五筒」。 */
     private fun gameActionPerformedMessage(feedback: MinecraftPlayerFeedback.GameActionPerformed): MutableText = Text.translatable(

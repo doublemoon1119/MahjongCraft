@@ -1,10 +1,17 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.FabricPlayerFeedbackPublisher
+import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
@@ -17,7 +24,7 @@ import org.koin.core.annotation.Single
 /**
  * 純 client-only 指令 `/🀇 open_room_config_screen`：由 [FabricPlayerFeedbackPublisher]
  * 印出的「所在麻將遊戲的規則」訊息點擊觸發，不會送到伺服器（Fabric client command 在到達網路層之前就
- * 被攔截處理），純粹當開啟 [GameConfigScreen] 的觸發器，不是給玩家手動輸入。
+ * 被攔截處理），純粹當開啟 [RoomScreen] 設定頁的觸發器，不是給玩家手動輸入。
  *
  * 類別與指令名稱刻意明確標成「room config」（房間規則設定），不是單純的「config screen」——之後如果要
  * 加入 client 端自己的設定畫面（例如牌面輔助標籤的圖形化開關，見 [FabricTileLabelCommand]），
@@ -28,13 +35,20 @@ import org.koin.core.annotation.Single
  * 本身只當 Brigadier 指令字面值使用，不會被渲染成聊天文字，因此跟未來把麻將字元透過自訂字型換成牌面
  * 材質這件事無關，不會互相干擾。
  *
- * 開畫面前先用客戶端本地已經同步好的 [ClientMahjongStateStore.roomSnapshot] 做資格檢查（是否在房間內、
- * 是否為房主），避免非房主也能打開編輯畫面；這只是提升體驗用的前置檢查，伺服器端
- * `UpdateConfigUseCase` 原本的房主驗證依然是唯一的權威判斷。
+ * 開畫面前先用客戶端本地已同步好的 [ClientMahjongStateStore.roomSnapshot] 確認玩家仍在房間內；一般
+ * 成員會開啟唯讀設定，只有房主能編輯。伺服器端 `UpdateConfigUseCase` 的房主驗證仍是唯一權威判斷。
  */
 @Single
 class FabricOpenRoomConfigScreenCommand(
     private val stateStore: ClientMahjongStateStore,
+    @Provided private val configPresentations: GameConfigPresentationRegistry,
+    @Provided private val configResolver: GameConfigPresentationResolver,
+    @Provided private val ruleNames: RuleModuleDisplayNameRegistry,
+    private val portraitRenderer: PlayerPortraitRenderer,
+    @Provided private val aiStrategies: MahjongAiStrategyRegistry,
+    @Provided private val aiStrategyNames: AiStrategyDisplayNameRegistry,
+    @Provided private val appearanceSources: RoomMemberAppearanceSourceRegistry,
+    private val indicatorTextResolver: PublicPlayerIndicatorTextResolver,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) {
@@ -60,12 +74,22 @@ class FabricOpenRoomConfigScreenCommand(
             client.inGameHud.setOverlayMessage(Text.translatable(MinecraftMessageKeys.PLAYER_NOT_IN_GAME), false)
             return
         }
-        if (!snapshot.isHost) {
-            client.inGameHud.setOverlayMessage(Text.translatable(MinecraftMessageKeys.NOT_GAME_HOST), false)
-            return
-        }
-        val configJson = json.encodeToString(snapshot.gameConfig.toDto(networkRegistries))
-        client.setScreen(GameConfigScreen(configJson, json))
+        client.setScreen(
+            RoomScreen(
+                stateStore,
+                configPresentations,
+                configResolver,
+                ruleNames,
+                portraitRenderer,
+                aiStrategies,
+                aiStrategyNames,
+                appearanceSources,
+                indicatorTextResolver,
+                json,
+                networkRegistries,
+                openSettings = true,
+            ),
+        )
     }
 
     private companion object {

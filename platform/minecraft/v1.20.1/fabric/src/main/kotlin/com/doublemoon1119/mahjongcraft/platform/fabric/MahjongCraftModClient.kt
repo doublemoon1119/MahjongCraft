@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric
 
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDomain
@@ -22,10 +23,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MatchSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationEffectEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationShowcaseEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.RoomScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
@@ -34,9 +37,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
@@ -90,9 +96,14 @@ class MahjongCraftModClient : ClientModInitializer {
         val exhaustiveDrawReasonDisplayNames = koin.get<ExhaustiveDrawReasonDisplayNameRegistry>()
         val winSettlementTemplates = koin.get<WinSettlementPresentationTemplateRegistry>()
         val matchSettlementTemplates = koin.get<MatchSettlementPresentationTemplateRegistry>()
-        val portraitSources = koin.get<PlayerPortraitSourceRegistry>()
-        val portraitRenderer = PlayerPortraitRenderer(portraitSources)
-        val indicatorDisplays = koin.get<PublicPlayerIndicatorDisplayRegistry>()
+        val portraitRenderer = koin.get<PlayerPortraitRenderer>()
+        val indicatorTextResolver = koin.get<PublicPlayerIndicatorTextResolver>()
+        val configPresentations = koin.get<GameConfigPresentationRegistry>()
+        val configResolver = koin.get<GameConfigPresentationResolver>()
+        val ruleNames = koin.get<RuleModuleDisplayNameRegistry>()
+        val aiStrategies = koin.get<MahjongAiStrategyRegistry>()
+        val aiStrategyNames = koin.get<AiStrategyDisplayNameRegistry>()
+        val appearanceSources = koin.get<RoomMemberAppearanceSourceRegistry>()
         MahjongChannels.roomUpdate.registerClientReceiver(json, stateStore::apply)
         MahjongChannels.gameUpdate.registerClientReceiver(json) { payload ->
             val previousSnapshot = stateStore.gameSnapshot
@@ -119,6 +130,27 @@ class MahjongCraftModClient : ClientModInitializer {
                 payload.snapshot.toDomain(networkRegistries),
             )
         }
+        MahjongChannels.tableLobby.registerClientReceiver(json) { payload ->
+            stateStore.apply(payload)
+            val client = MinecraftClient.getInstance()
+            if (client.currentScreen !is RoomScreen) {
+                client.setScreen(
+                    RoomScreen(
+                        stateStore,
+                        configPresentations,
+                        configResolver,
+                        ruleNames,
+                        portraitRenderer,
+                        aiStrategies,
+                        aiStrategyNames,
+                        appearanceSources,
+                        indicatorTextResolver,
+                        json,
+                        networkRegistries,
+                    ),
+                )
+            }
+        }
         MahjongChannels.gameSnapshot.registerClientReceiver(json) { payload ->
             stateStore.applyGameSnapshot(
                 Uuid.parse(payload.gameId),
@@ -130,7 +162,7 @@ class MahjongCraftModClient : ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongRoundInfo, ::MahjongRoundInfoEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongPlayerInfo) { context ->
-            MahjongPlayerInfoEntityRenderer(context, portraitRenderer, indicatorDisplays)
+            MahjongPlayerInfoEntityRenderer(context, portraitRenderer, indicatorTextResolver)
         }
         EntityRendererRegistry.register(ModEntities.winCelebrationEffect, ::WinCelebrationEffectEntityRenderer)
         EntityRendererRegistry.register(ModEntities.winCelebrationShowcase) { context ->

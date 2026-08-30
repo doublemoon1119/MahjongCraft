@@ -2,8 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.state
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTileSnapshot
@@ -19,6 +22,10 @@ import kotlin.uuid.Uuid
 class ClientMahjongStateStore(
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) {
+    /** 目前 RoomScreen 所觀察麻將桌的公開 lobby 狀態。 */
+    var tableLobby: TableLobbyPayloadDto? = null
+        private set
+
     /** 目前已同步的房間快照；尚未進入房間時為 null。 */
     var roomSnapshot: RoomSnapshot? = null
         private set
@@ -66,13 +73,24 @@ class ClientMahjongStateStore(
     /** 接收帶事件的房間更新並保存其最新快照；同一張桌子不會同時是房間又是對局，一併清掉舊的遊戲快照。 */
     fun apply(payload: RoomUpdatePayloadDto) {
         roomSnapshot = payload.snapshot.toDomain(networkRegistries)
+        tableLobby = tableLobby?.takeIf { it.tableId == payload.roomId }
+            ?.copy(phase = TableLobbyPhaseDto.WAITING)
         gameSnapshot = null
         roundPreparationSnapshot = null
     }
 
+    /** 保存 RoomScreen 的桌級狀態；等待房間 payload 同時更新其內嵌快照。 */
+    fun apply(payload: TableLobbyPayloadDto) {
+        tableLobby = payload
+        payload.roomSnapshot?.let { roomSnapshot = it.toDomain(networkRegistries) }
+    }
+
     /** 接收帶動作的遊戲更新並保存其最新快照。 */
     fun apply(payload: GameUpdatePayloadDto) {
+        val waitingConfig = roomSnapshot?.gameConfig?.toDto(networkRegistries)
         gameSnapshot = payload.snapshot.toDomain(networkRegistries)
+        tableLobby = tableLobby?.takeIf { it.tableId == payload.gameId }
+            ?.copy(phase = TableLobbyPhaseDto.PLAYING, playingGameConfig = tableLobby?.playingGameConfig ?: waitingConfig)
         roomSnapshot = null
     }
 
@@ -80,6 +98,8 @@ class ClientMahjongStateStore(
     fun applyRoomSnapshot(roomId: Uuid, snapshot: RoomSnapshot) {
         require(snapshot.id == roomId) { "Room snapshot ID does not match its payload ID." }
         roomSnapshot = snapshot
+        tableLobby = tableLobby?.takeIf { it.tableId == roomId.toString() }
+            ?.copy(phase = TableLobbyPhaseDto.WAITING)
         gameSnapshot = null
     }
 
@@ -90,7 +110,10 @@ class ClientMahjongStateStore(
         roundPreparation: RoundPreparationSnapshot? = null,
     ) {
         require(snapshot.id == gameId) { "Game snapshot ID does not match its payload ID." }
+        val waitingConfig = roomSnapshot?.gameConfig?.toDto(networkRegistries)
         gameSnapshot = snapshot
+        tableLobby = tableLobby?.takeIf { it.tableId == gameId.toString() }
+            ?.copy(phase = TableLobbyPhaseDto.PLAYING, playingGameConfig = tableLobby?.playingGameConfig ?: waitingConfig)
         roundPreparationSnapshot = roundPreparation
         roomSnapshot = null
     }
@@ -100,6 +123,7 @@ class ClientMahjongStateStore(
 
     /** 清除離開伺服器後不再有效的 client-side 狀態。 */
     fun clear() {
+        tableLobby = null
         roomSnapshot = null
         gameSnapshot = null
         roundPreparationSnapshot = null

@@ -15,14 +15,17 @@ import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.util.DefaultSkinHelper
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.util.Identifier
+import org.koin.core.annotation.Provided
+import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
 /** 所有世界結算與桌級面板共用的無帽子 FACE／牌面／texture portrait renderer。 */
+@Single
 class PlayerPortraitRenderer(
-    private val sources: PlayerPortraitSourceRegistry,
+    @Provided private val sources: PlayerPortraitSourceRegistry,
 ) {
     private val logger = LoggerFactory.getLogger(PlayerPortraitRenderer::class.java)
     private val warnedProviderIds = mutableSetOf<String>()

@@ -4,10 +4,15 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
-import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
+import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomScreenActionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
@@ -25,6 +30,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.ToggleReadyUseCa
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.UpdateConfigUseCase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongAutoDrawService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
@@ -32,7 +39,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import kotlinx.coroutines.launch
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
@@ -52,6 +58,7 @@ import kotlin.uuid.toKotlinUuid
 class MahjongTableRoomService(
     private val scope: AppCoroutineScope,
     private val roomRepository: RoomRepository,
+    private val roomSnapshotRepository: RoomSnapshotRepository,
     private val gameRepository: GameRepository,
     private val membershipRepository: PlayerMembershipRepository,
     private val createRoom: CreateRoomUseCase,
@@ -72,9 +79,210 @@ class MahjongTableRoomService(
     private val memberCandidateResolver: RoomMemberCandidateResolver,
     private val gameFlowCoordinator: GameFlowCoordinator,
     private val autoDrawService: MahjongAutoDrawService,
+    private val serverHolder: FabricServerHolder,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) {
+    /** 將 RoomScreen 的強型別操作路由到既有權威 use case；封包中的玩家身分一律忽略。 */
+    fun handleRoomScreenAction(player: ServerPlayerEntity, action: RoomScreenActionDto) {
+        val tableId = runCatching { Uuid.parse(action.tableId) }.getOrNull() ?: return
+        when (action) {
+            is RoomScreenActionDto.Create -> createFromScreen(tableId, player)
+            is RoomScreenActionDto.Join -> joinFromScreen(tableId, player)
+            is RoomScreenActionDto.ToggleReady -> withMatchingMembership(player, tableId, ::ready)
+            is RoomScreenActionDto.Start -> withMatchingMembership(player, tableId, ::start)
+            is RoomScreenActionDto.Leave,
+            is RoomScreenActionDto.Disband,
+            -> leaveFromScreen(tableId, player)
+            is RoomScreenActionDto.Close -> closeRoomScreen(tableId, player)
+            is RoomScreenActionDto.AddAi -> withMatchingMembership(player, tableId) { addAi(it, action.strategyKey) }
+            is RoomScreenActionDto.ChangeAiStrategy -> withMatchingMembership(player, tableId) {
+                val targetId = runCatching { Uuid.parse(action.targetPlayerId) }.getOrNull() ?: return@withMatchingMembership
+                changeAiStrategy(it, targetId, action.strategyKey)
+            }
+            is RoomScreenActionDto.Kick -> withMatchingMembership(player, tableId) {
+                val targetId = runCatching { Uuid.parse(action.targetPlayerId) }.getOrNull() ?: return@withMatchingMembership
+                kick(it, targetId)
+            }
+            is RoomScreenActionDto.UpdateConfig -> withMatchingMembership(player, tableId) {
+                updateConfig(it, action.config.toDomain(networkRegistries))
+            }
+        }
+    }
+
+    /** 關閉畫面時只清除非成員建立的暫時 observer。 */
+    private fun closeRoomScreen(tableId: Uuid, player: ServerPlayerEntity) {
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            val room = roomRepository.getRoom(tableId)
+            if (room == null || playerId !in room.playerIds) {
+                roomSnapshotRepository.removeSnapshot(tableId, playerId)
+            }
+        }
+    }
+
+    /** 防止客戶端以另一張桌子的 ID 操作自己目前所在的房間。 */
+    private fun withMatchingMembership(player: ServerPlayerEntity, tableId: Uuid, action: (ServerPlayerEntity) -> Unit) {
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            if (membershipRepository.getTableId(playerId) == tableId) {
+                action(player)
+            } else {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
+            }
+        }
+    }
+
+    /** 只同步桌子的公開 lobby 狀態並開啟 RoomScreen，不建立、加入或離開房間。 */
+    fun openRoomScreen(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
+        val tableId = table.tableId
+        val playerId = player.uuid.toKotlinUuid()
+        val location = tableLocationRegistry.get(tableId)?.location
+        scope.launch {
+            val runtimeGame = gameRepository.getGame(tableId)
+            val game = runtimeGame?.tableState
+            if (game != null) {
+                MahjongChannels.tableLobby.sendTo(
+                    player,
+                    json,
+                    TableLobbyPayloadDto(
+                        tableId = tableId.toString(),
+                        phase = TableLobbyPhaseDto.PLAYING,
+                        playingPlayerIds = game.players.map { it.id.toString() },
+                        playingAiPlayerIds = game.players.filter { it.isAi }.map { it.id.toString() },
+                        playingGameConfig = GameConfig(game.config, runtimeGame.flowConfig).toDto(networkRegistries),
+                        dimensionId = location?.dimensionId,
+                        tableX = location?.x,
+                        tableY = location?.y,
+                        tableZ = location?.z,
+                    ),
+                )
+                return@launch
+            }
+
+            val room = roomRepository.getRoom(tableId)
+            if (room == null) {
+                MahjongChannels.tableLobby.sendTo(
+                    player,
+                    json,
+                    TableLobbyPayloadDto(
+                        tableId.toString(),
+                        TableLobbyPhaseDto.EMPTY,
+                        dimensionId = location?.dimensionId,
+                        tableX = location?.x,
+                        tableY = location?.y,
+                        tableZ = location?.z,
+                    ),
+                )
+                return@launch
+            }
+
+            syncRoom(tableId, playerId)
+            roomSnapshotSender.send(tableId, playerId)
+            MahjongChannels.tableLobby.sendTo(
+                player,
+                json,
+                TableLobbyPayloadDto(
+                    tableId.toString(),
+                    TableLobbyPhaseDto.WAITING,
+                    room.toSnapshot(playerId).toDto(networkRegistries),
+                    dimensionId = location?.dimensionId,
+                    tableX = location?.x,
+                    tableY = location?.y,
+                    tableZ = location?.z,
+                ),
+            )
+        }
+    }
+
+    /** RoomScreen 明確建立空桌房間。 */
+    fun createFromScreen(tableId: Uuid, player: ServerPlayerEntity) {
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            if (!isTableReachable(tableId, player)) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.TableNotReachable)
+                return@launch
+            }
+            when (val result = createRoom(tableId, playerId, GameConfig(RiichiRuleConfig()))) {
+                is Outcome.Success -> {
+                    syncRoom(tableId, playerId)
+                    roomSnapshotSender.send(tableId, playerId)
+                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameCreated(tableLocationRegistry.get(tableId)?.location))
+                }
+                is Outcome.Error -> publishRoomError(playerId, result.error)
+            }
+        }
+    }
+
+    /** RoomScreen 明確加入既有等待房間。 */
+    fun joinFromScreen(tableId: Uuid, player: ServerPlayerEntity) {
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            if (!isTableReachable(tableId, player)) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.TableNotReachable)
+                return@launch
+            }
+            syncRoom(tableId, playerId)
+            when (val result = joinRoom(tableId, playerId)) {
+                is Outcome.Success -> feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameJoined)
+                is Outcome.Error -> publishRoomError(playerId, result.error)
+            }
+        }
+    }
+
+    /** 建立與加入屬於桌旁操作，拒絕偽造的遠端 table ID。 */
+    private fun isTableReachable(tableId: Uuid, player: ServerPlayerEntity): Boolean {
+        val location = tableLocationRegistry.get(tableId)?.location ?: return false
+        if (player.serverWorld.registryKey.value.toString() != location.dimensionId) return false
+        return player.squaredDistanceTo(location.x + 0.5, location.y + 0.5, location.z + 0.5) <= MAX_ROOM_SCREEN_DISTANCE_SQUARED
+    }
+
+    /** RoomScreen 明確離開等待房間；房主會沿用既有語意解散房間。 */
+    private fun leaveFromScreen(tableId: Uuid, player: ServerPlayerEntity) {
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            if (membershipRepository.getTableId(playerId) != tableId) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
+                return@launch
+            }
+            val room = roomRepository.getRoom(tableId)
+            if (room == null) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameLeaveDeniedWhilePlaying)
+                return@launch
+            }
+            val wasHost = room.hostId == playerId
+            when (leaveRoom(tableId, playerId)) {
+                is Outcome.Success -> {
+                    feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.successfulLeave(wasHost))
+                    if (wasHost) {
+                        roomSnapshotRepository.removeSnapshot(tableId, playerId)
+                        MahjongChannels.tableLobby.sendTo(
+                            player,
+                            json,
+                            TableLobbyPayloadDto(tableId.toString(), TableLobbyPhaseDto.EMPTY),
+                        )
+                    } else {
+                        val updatedRoom = roomRepository.getRoom(tableId)
+                        if (updatedRoom != null) {
+                            syncRoom(tableId, playerId)
+                            roomSnapshotSender.send(tableId, playerId)
+                            MahjongChannels.tableLobby.sendTo(
+                                player,
+                                json,
+                                TableLobbyPayloadDto(
+                                    tableId.toString(),
+                                    TableLobbyPhaseDto.WAITING,
+                                    updatedRoom.toSnapshot(playerId).toDto(networkRegistries),
+                                ),
+                            )
+                        }
+                    }
+                }
+                is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameLeaveFailed)
+            }
+        }
+    }
+
     /** 依麻將桌目前處於空桌、等待室或遊戲階段，建立、加入或重新同步玩家狀態。 */
     fun interact(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
         val tableId = table.tableId
@@ -258,6 +466,21 @@ class MahjongTableRoomService(
                 is Outcome.Success -> {
                     feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerKicked)
                     feedbackPublisher.publish(targetPlayerId, MinecraftPlayerFeedback.KickedFromGame)
+                    val target = serverHolder.findPlayer(targetPlayerId)
+                    val updatedRoom = roomRepository.getRoom(tableId)
+                    if (target != null && updatedRoom != null) {
+                        syncRoom(tableId, targetPlayerId)
+                        roomSnapshotSender.send(tableId, targetPlayerId)
+                        MahjongChannels.tableLobby.sendTo(
+                            target,
+                            json,
+                            TableLobbyPayloadDto(
+                                tableId.toString(),
+                                TableLobbyPhaseDto.WAITING,
+                                updatedRoom.toSnapshot(targetPlayerId).toDto(networkRegistries),
+                            ),
+                        )
+                    }
                 }
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.kickError(result.error))
             }
@@ -315,22 +538,14 @@ class MahjongTableRoomService(
     }
 
     /**
-     * 讓房主以 JSON 字串更新目前所在房間的完整遊戲設定。同樣以玩家目前的房間歸屬解析目標房間。
-     *
-     * @param configJson 玩家輸入的 JSON 字串，須能解析成 [GameConfigDto]。
+     * 讓房主以強型別設定更新目前所在房間。同樣以玩家目前的房間歸屬解析目標房間。
      */
-    fun updateConfig(player: ServerPlayerEntity, configJson: String) {
+    fun updateConfig(player: ServerPlayerEntity, newConfig: GameConfig) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             val tableId = membershipRepository.getTableId(playerId)
             if (tableId == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
-                return@launch
-            }
-            val newConfig = try {
-                json.decodeFromString<GameConfigDto>(configJson).toDomain(networkRegistries)
-            } catch (_: Exception) {
-                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.InvalidGameConfig)
                 return@launch
             }
             val room = roomRepository.getRoom(tableId)
@@ -361,5 +576,9 @@ class MahjongTableRoomService(
     /** 將可辨識的房間錯誤映射成結構化回饋，其餘錯誤使用通用加入失敗提示。 */
     private fun publishRoomError(playerId: Uuid, error: RoomError) {
         feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.joinError(error))
+    }
+
+    private companion object {
+        const val MAX_ROOM_SCREEN_DISTANCE_SQUARED: Double = 64.0
     }
 }

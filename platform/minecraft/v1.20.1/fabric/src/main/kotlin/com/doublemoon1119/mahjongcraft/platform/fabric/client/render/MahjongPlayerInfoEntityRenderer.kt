@@ -1,12 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
-import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicatorValue
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
-import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import net.minecraft.client.render.VertexConsumerProvider
@@ -16,7 +13,6 @@ import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.RotationAxis
-import org.slf4j.LoggerFactory
 import kotlin.math.max
 import kotlin.uuid.Uuid
 
@@ -24,11 +20,9 @@ import kotlin.uuid.Uuid
 class MahjongPlayerInfoEntityRenderer(
     context: EntityRendererFactory.Context,
     private val portraits: PlayerPortraitRenderer,
-    private val indicatorDisplays: PublicPlayerIndicatorDisplayRegistry,
+    private val indicatorTextResolver: PublicPlayerIndicatorTextResolver,
 ) : EntityRenderer<MahjongPlayerInfoEntity>(context) {
     private val textRenderer = context.textRenderer
-    private val warnedIndicatorIds = mutableSetOf<String>()
-    private val logger = LoggerFactory.getLogger(MahjongPlayerInfoEntityRenderer::class.java)
 
     override fun render(
         entity: MahjongPlayerInfoEntity,
@@ -68,7 +62,7 @@ class MahjongPlayerInfoEntityRenderer(
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
     ) {
-        val indicators = player.indicators.map(::indicatorText)
+        val indicators = player.indicators.map(indicatorTextResolver::resolve)
         val height = PANEL_PADDING * 2 + FIRST_ROW_HEIGHT + SCORE_ROW_HEIGHT + indicators.size * INDICATOR_ROW_HEIGHT
         val left = -width / 2f
         WorldPanelRenderer.drawBackground(left, -height / 2f, left + width, height / 2f, BACKGROUND, 0f, matrices, consumers)
@@ -107,23 +101,12 @@ class MahjongPlayerInfoEntityRenderer(
                 textRenderer.getWidth(player.playerName.take(MAX_NAME_CHARACTERS)) + COLUMN_GAP + textRenderer.getWidth(windText(player.seatWind)) +
                 if (player.playerId == dealerPlayerId) textRenderer.getWidth(DEALER_MARK) + COLUMN_GAP else 0f
             val score = PANEL_PADDING * 2 + textRenderer.getWidth(player.score.toString())
-            val indicator = player.indicators.maxOfOrNull { PANEL_PADDING * 2 + textRenderer.getWidth(indicatorText(it).first) } ?: 0f
+            val indicator = player.indicators.maxOfOrNull {
+                PANEL_PADDING * 2 + textRenderer.getWidth(indicatorTextResolver.resolve(it).first)
+            } ?: 0f
             width = max(width, max(header, max(score, indicator)))
         }
         return width.coerceAtMost(MAX_PANEL_WIDTH)
-    }
-
-    private fun indicatorText(indicator: PublicPlayerIndicator): Pair<Text, Int> {
-        val valueId = (indicator.indicatorValue as? PublicPlayerIndicatorValue.Option)?.optionId
-        val id = valueId ?: indicator.id
-        val display = indicatorDisplays.find(id)
-        if (display == null && warnedIndicatorIds.add(id)) logger.warn("Unknown public player indicator display: {}", id)
-        val base = display?.let { Text.translatable(it.translationKey) } ?: Text.literal(id)
-        val text = when (val indicatorValue = indicator.indicatorValue) {
-            is PublicPlayerIndicatorValue.Count -> Text.literal("${base.string} ×${indicatorValue.value}")
-            else -> base
-        }
-        return text to (0xFF000000.toInt() or (display?.colorRgb ?: 0xFFE08A))
     }
 
     private fun windText(wind: Wind): Text = Text.translatable(

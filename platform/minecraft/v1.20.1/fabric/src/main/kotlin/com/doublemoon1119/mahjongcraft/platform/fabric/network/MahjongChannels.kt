@@ -4,16 +4,17 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerUpd
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameCommandEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomScreenActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPayloadDto
 import kotlinx.serialization.builtins.serializer
 
 /** `mahjongcraft:` 命名空間下實際使用的命令、事件更新與主動快照同步頻道。 */
 object MahjongChannels {
     val gameCommand = C2SChannel("game_command", GameCommandEnvelopeDto.serializer())
 
-    /** 設定編輯畫面送出的原始 JSON 字串，見 `MahjongTableRoomService.updateConfig`。 */
-    val updateGameConfig = C2SChannel("update_game_config", String.serializer())
+    val roomScreenAction = C2SChannel("room_screen_action", RoomScreenActionDto.serializer())
 
     /**
      * 玩家（重新）加入世界後，主動向伺服器要求補送一份目前歸屬的房間／對局快照，見
@@ -34,4 +35,5 @@ object MahjongChannels {
     val roomUpdate = S2CChannel("room_update", RoomUpdatePayloadDto.serializer())
     val gameSnapshot = S2CChannel("game_snapshot", GameSnapshotSyncPayloadDto.serializer())
     val roomSnapshot = S2CChannel("room_snapshot", RoomSnapshotSyncPayloadDto.serializer())
+    val tableLobby = S2CChannel("table_lobby", TableLobbyPayloadDto.serializer())
 }

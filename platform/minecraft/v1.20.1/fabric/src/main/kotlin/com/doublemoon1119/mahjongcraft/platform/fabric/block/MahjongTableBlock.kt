@@ -152,7 +152,7 @@ class MahjongTableBlock(
         super.onStateReplaced(state, world, pos, newState, moved)
     }
 
-    /** 在伺服器端把任意 part 的右鍵交給 controller；蹲下右鍵則嘗試離開等待中的遊戲。 */
+    /** 在伺服器端把任意 part 的右鍵交給 controller；蹲下與否都只開啟 RoomScreen。 */
     @Suppress("OVERRIDE_DEPRECATION")
     override fun onUse(
         state: BlockState,
@@ -169,7 +169,7 @@ class MahjongTableBlock(
                 return ActionResult.FAIL
             }
             val serverPlayer = player as ServerPlayerEntity
-            if (player.isSneaking) roomService.leave(table, serverPlayer) else roomService.interact(table, serverPlayer)
+            roomService.openRoomScreen(table, serverPlayer)
         }
         return ActionResult.SUCCESS
     }

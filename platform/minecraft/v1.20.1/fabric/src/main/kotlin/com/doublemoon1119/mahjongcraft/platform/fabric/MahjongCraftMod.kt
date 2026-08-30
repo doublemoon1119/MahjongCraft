@@ -55,6 +55,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
@@ -105,6 +107,8 @@ class MahjongCraftMod : ModInitializer {
             matchSettlementTemplateRegistry = koin.get<MatchSettlementPresentationTemplateRegistry>(),
             playerPortraitSourceRegistry = koin.get<PlayerPortraitSourceRegistry>(),
             publicPlayerIndicatorDisplayRegistry = koin.get<PublicPlayerIndicatorDisplayRegistry>(),
+            gameConfigPresentationRegistry = koin.get<GameConfigPresentationRegistry>(),
+            roomMemberAppearanceSourceRegistry = koin.get<RoomMemberAppearanceSourceRegistry>(),
             gameActionAiRegistry = koin.get<ExtensionGameActionAiRegistry>(),
             gameCommandRegistry = koin.get<ExtensionGameCommandExecutorRegistry>(),
             postReactionRoundOutcomeResolverRegistry = koin.get<PostReactionRoundOutcomeResolverRegistry>(),
@@ -163,7 +167,7 @@ class MahjongCraftMod : ModInitializer {
         }
 
         registerGameCommandReceiver(koin)
-        registerUpdateGameConfigReceiver(koin)
+        registerRoomScreenActionReceiver(koin)
         registerRequestSnapshotReceiver(koin)
         registerSetAutoSortHandReceiver(koin)
         registerPlayerConnectionEvents(koin)
@@ -173,6 +177,15 @@ class MahjongCraftMod : ModInitializer {
         koin.get<FabricDebugAnimationCommand>().register()
 
         logger.info(koin.get<FabricRuntimeMetadata>().initializationMessage())
+    }
+
+    /** 將 RoomScreen 的受控操作交給桌級房間服務執行。 */
+    private fun registerRoomScreenActionReceiver(koin: Koin) {
+        val json = koin.get<Json>()
+        val service = koin.get<MahjongTableRoomService>()
+        MahjongChannels.roomScreenAction.registerServerReceiver(json) { _, player, action ->
+            service.handleRoomScreenAction(player, action)
+        }
     }
 
     /** 依目前 Fabric environment 啟動 dedicated-server 或 client/integrated-server graph。 */
@@ -235,17 +248,6 @@ class MahjongCraftMod : ModInitializer {
                     command = envelope.command.toDomain(networkRegistries),
                 )
             }
-        }
-    }
-
-    /**
-     * 接收設定編輯畫面送出的原始 JSON 字串，直接轉呼叫既有的 [MahjongTableRoomService.updateConfig]
-     * （內部已自行 launch 協程，這裡不需要額外包一層）。
-     */
-    private fun registerUpdateGameConfigReceiver(koin: Koin) {
-        val json = koin.get<Json>()
-        MahjongChannels.updateGameConfig.registerServerReceiver(json) { _, player, configJson ->
-            koin.get<MahjongTableRoomService>().updateConfig(player, configJson)
         }
     }
 
