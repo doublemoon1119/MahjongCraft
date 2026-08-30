@@ -43,4 +43,7 @@ object MinecraftRoomScreenKeys {
     const val NONE = "mahjongcraft.room.config.value.none"
     const val TRUE = "mahjongcraft.room.config.value.true"
     const val FALSE = "mahjongcraft.room.config.value.false"
+    const val LOBBY_WAITING = "mahjongcraft.lobby.info.waiting"
+    const val LOBBY_SUMMARY = "mahjongcraft.lobby.info.summary"
+    const val LOBBY_VIEW_DETAILS = "mahjongcraft.lobby.info.view_details"
 }

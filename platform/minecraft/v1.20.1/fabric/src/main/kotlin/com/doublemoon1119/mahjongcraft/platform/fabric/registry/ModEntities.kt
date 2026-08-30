@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongLobbyInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
@@ -39,6 +40,10 @@ object ModEntities {
 
     /** 桌級玩家公開資訊 entity type；由 [register] 初始化。 */
     lateinit var mahjongPlayerInfo: EntityType<MahjongPlayerInfoEntity>
+        private set
+
+    /** 等待中遊戲提示 entity type；由 [register] 初始化。 */
+    lateinit var mahjongLobbyInfo: EntityType<MahjongLobbyInfoEntity>
         private set
 
     /** 胡牌慶祝視覺效果 entity type；由 [register] 初始化。 */
@@ -110,6 +115,16 @@ object ModEntities {
                 .dimensions(EntityDimensions.fixed(MahjongPlayerInfoEntity.WIDTH, MahjongPlayerInfoEntity.HEIGHT))
                 .trackRangeBlocks(32)
                 .trackedUpdateRate(10)
+                .fireImmune()
+                .build(),
+        )
+        mahjongLobbyInfo = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_lobby_info"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongLobbyInfoEntity)
+                .dimensions(EntityDimensions.fixed(MahjongLobbyInfoEntity.WIDTH, MahjongLobbyInfoEntity.HEIGHT))
+                .trackRangeBlocks(32)
+                .trackedUpdateRate(1)
                 .fireImmune()
                 .build(),
         )

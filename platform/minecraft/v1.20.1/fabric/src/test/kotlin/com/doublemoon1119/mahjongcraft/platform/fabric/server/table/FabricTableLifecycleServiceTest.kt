@@ -7,8 +7,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinShowcaseOverride
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
@@ -156,6 +159,7 @@ class FabricTableLifecycleServiceTest {
             discardPresenter = discardPresenter,
             roundInfoPresenter = roundInfoPresenter,
             playerInfoPresenter = playerInfoPresenter,
+            lobbyInfoPresenter = FabricMahjongLobbyInfoPresenter(FabricServerHolder(), locations, MahjongModuleRegistryImpl()),
         )
 
         /** 這個測試不驗證 debug 覆寫，一律回報非開發環境讓它保持 inert。 */

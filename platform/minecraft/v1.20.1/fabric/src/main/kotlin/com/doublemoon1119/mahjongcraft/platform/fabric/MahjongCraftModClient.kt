@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildRoundRes
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ExhaustiveDrawSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongDiceEntityRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongLobbyInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongPlayerInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongRoundInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongScoringStickEntityRenderer
@@ -163,6 +164,9 @@ class MahjongCraftModClient : ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.mahjongRoundInfo, ::MahjongRoundInfoEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongPlayerInfo) { context ->
             MahjongPlayerInfoEntityRenderer(context, portraitRenderer, indicatorTextResolver)
+        }
+        EntityRendererRegistry.register(ModEntities.mahjongLobbyInfo) { context ->
+            MahjongLobbyInfoEntityRenderer(context, ruleNames)
         }
         EntityRendererRegistry.register(ModEntities.winCelebrationEffect, ::WinCelebrationEffectEntityRenderer)
         EntityRendererRegistry.register(ModEntities.winCelebrationShowcase) { context ->

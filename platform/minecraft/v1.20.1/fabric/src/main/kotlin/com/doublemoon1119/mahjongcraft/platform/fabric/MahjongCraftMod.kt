@@ -41,6 +41,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCele
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricRoomCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
@@ -127,6 +128,7 @@ class MahjongCraftMod : ModInitializer {
         ModItemGroups.register()
         tableLifecycleService.registerEvents()
         tableLocationValidation.registerEvents()
+        koin.get<FabricMahjongLobbyInfoLifecycleService>().registerEvents()
         koin.get<FabricDecisionTimerScheduler>().registerEvents()
         koin.get<FabricTickMonotonicClock>().registerEvents()
         koin.get<FabricWinCelebrationEffectScheduler>().registerEvents()

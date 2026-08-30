@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoPresenter
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
@@ -27,6 +28,7 @@ import kotlin.uuid.Uuid
 class RoomEventPublisherImpl(
     private val roomSnapshotRepository: RoomSnapshotRepository,
     private val serverHolder: FabricServerHolder,
+    private val lobbyInfoPresenter: FabricMahjongLobbyInfoPresenter,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) : RoomEventPublisher {
@@ -35,7 +37,14 @@ class RoomEventPublisherImpl(
     }
 
     override suspend fun publishLeave(roomId: Uuid, targetPlayerId: Uuid, leftPlayerId: Uuid, reason: LeaveReason) {
-        send(roomId, targetPlayerId, RoomUpdateEventDto.Leave(leftPlayerId.toString(), reason.toDto()))
+        val dissolved = reason == LeaveReason.Dissolved
+        if (dissolved) lobbyInfoPresenter.clear(roomId)
+        send(
+            roomId,
+            targetPlayerId,
+            RoomUpdateEventDto.Leave(leftPlayerId.toString(), reason.toDto()),
+            refreshLobbyInfo = !dissolved,
+        )
     }
 
     override suspend fun publishReady(roomId: Uuid, targetPlayerId: Uuid, readyPlayerId: Uuid, isReady: Boolean) {
@@ -46,9 +55,15 @@ class RoomEventPublisherImpl(
         send(roomId, targetPlayerId, RoomUpdateEventDto.ConfigChanged(newConfig.toDto(networkRegistries)))
     }
 
-    private suspend fun send(roomId: Uuid, targetPlayerId: Uuid, event: RoomUpdateEventDto) {
-        val player = serverHolder.findPlayer(targetPlayerId) ?: return
+    private suspend fun send(
+        roomId: Uuid,
+        targetPlayerId: Uuid,
+        event: RoomUpdateEventDto,
+        refreshLobbyInfo: Boolean = true,
+    ) {
         val snapshot = roomSnapshotRepository.getSnapshot(roomId, targetPlayerId) ?: return
+        if (refreshLobbyInfo) lobbyInfoPresenter.present(roomId, snapshot.gameConfig, snapshot.playerIds.size)
+        val player = serverHolder.findPlayer(targetPlayerId) ?: return
         val payload = RoomUpdatePayloadDto(
             roomId = roomId.toString(),
             event = event,
