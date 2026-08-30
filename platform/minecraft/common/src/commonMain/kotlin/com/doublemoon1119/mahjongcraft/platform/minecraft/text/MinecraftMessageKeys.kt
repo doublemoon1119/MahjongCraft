@@ -104,6 +104,9 @@ object MinecraftMessageKeys {
     /** 目標玩家不是 AI，無法更換策略。 */
     const val TARGET_NOT_AI = PREFIX + "target_not_ai"
 
+    /** 玩家公開資訊面板中的立直狀態。 */
+    const val PLAYER_INDICATOR_RIICHI = PREFIX + "player_indicator_riichi"
+
     /** 更換 AI 策略失敗。 */
     const val CHANGE_AI_STRATEGY_FAILED = PREFIX + "change_ai_strategy_failed"
 
@@ -449,6 +452,7 @@ object MinecraftMessageKeys {
         AI_STRATEGY_CHANGED,
         AI_STRATEGY_UNCHANGED,
         TARGET_NOT_AI,
+        PLAYER_INDICATOR_RIICHI,
         CHANGE_AI_STRATEGY_FAILED,
         GAME_CONFIG_CHANGED,
         GAME_CONFIG_UNCHANGED,

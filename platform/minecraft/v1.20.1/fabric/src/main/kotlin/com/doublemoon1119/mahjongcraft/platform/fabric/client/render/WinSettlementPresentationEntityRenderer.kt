@@ -25,17 +25,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetP
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.render.LightmapTextureManager
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.RenderLayer
-import net.minecraft.client.render.VertexConsumer
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRenderer
 import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.util.DefaultSkinHelper
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.text.Text
 import net.minecraft.util.Identifier
-import org.joml.Matrix4f
 import java.util.UUID
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
@@ -44,6 +39,7 @@ import kotlin.uuid.Uuid
 class WinSettlementPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
     private val templateRegistry: WinSettlementPresentationTemplateRegistry,
+    private val portraitRenderer: PlayerPortraitRenderer,
 ) : EntityRenderer<WinSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
     private val tileTextures = mutableMapOf<String, Identifier>()
@@ -632,30 +628,17 @@ class WinSettlementPresentationEntityRenderer(
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
         size: Float = FACE_SIZE,
-    ) {
-        if (isAi) {
-            renderTile(UNKNOWN_TILE_ASSET_KEY, x + size / 2f, y + size / 2f, size * 0.75f, size, alpha, matrices, consumers)
-            return
-        }
-        val uuid = runCatching { UUID.fromString(playerId) }.getOrNull()
-        val texture = uuid?.let { MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(it)?.skinTexture }
-            ?: uuid?.let(DefaultSkinHelper::getTexture)
-            ?: DefaultSkinHelper.getTexture(UUID(0L, 0L))
-        val buffer = consumers.getBuffer(RenderLayer.getEntityTranslucent(texture))
-        drawFaceLayer(buffer, matrices.peek().positionMatrix, x, y, size, alpha)
-    }
-
-    private fun drawFaceLayer(buffer: VertexConsumer, matrix: Matrix4f, x: Float, y: Float, size: Float, alpha: Float) {
-        val a = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
-        fun vertex(px: Float, py: Float, u: Float, v: Float) {
-            buffer.vertex(matrix, px, py, 0f).color(255, 255, 255, a).texture(u / 64f, v / 64f)
-                .overlay(OverlayTexture.DEFAULT_UV).light(LightmapTextureManager.MAX_LIGHT_COORDINATE).normal(0f, 0f, 1f).next()
-        }
-        vertex(x, y, 8f, 8f)
-        vertex(x + size, y, 16f, 8f)
-        vertex(x + size, y + size, 16f, 16f)
-        vertex(x, y + size, 8f, 16f)
-    }
+    ) = portraitRenderer.render(
+        playerId = Uuid.parse(playerId),
+        isAi = isAi,
+        x = x,
+        y = y,
+        size = size,
+        alpha = alpha,
+        z = 0f,
+        matrices = matrices,
+        consumers = consumers,
+    )
 
     private fun renderContainer(style: PresentationContainerStyle, x: Float, y: Float, size: NodeSize, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         if ((style.backgroundArgb ushr 24) == 0 && style.borderWidth <= 0f) return

@@ -4,6 +4,10 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
@@ -26,6 +30,14 @@ import org.koin.core.annotation.Single
 /** Minecraft loader 與版本無關、client／server 共用的 Koin 定義。 */
 @Module
 class MinecraftCommonModule {
+    /** 建立公開玩家 indicator 的本地化顯示 registry。 */
+    @Single
+    fun providePublicPlayerIndicatorDisplayRegistry(): PublicPlayerIndicatorDisplayRegistry = PublicPlayerIndicatorDisplayRegistryImpl()
+
+    /** 建立供第三方宣告玩家頭像來源的凍結式 registry。 */
+    @Single
+    fun providePlayerPortraitSourceRegistry(): PlayerPortraitSourceRegistry = PlayerPortraitSourceRegistryImpl()
+
     /** 建立供第三方 preparation step／option 登記本地化名稱的 registry。 */
     @Single
     fun provideRoundPreparationDisplayNameRegistry(): RoundPreparationDisplayNameRegistry = RoundPreparationDisplayNameRegistryImpl()

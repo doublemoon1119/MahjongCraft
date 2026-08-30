@@ -141,6 +141,7 @@
   "mahjongcraft.message.not_game_host": "只有遊戲主持人可以開始對局",
   "mahjongcraft.message.not_your_turn": "還沒輪到你",
   "mahjongcraft.message.player_already_in_game": "你已經加入另一場麻將遊戲",
+  "mahjongcraft.message.player_indicator_riichi": "立直",
   "mahjongcraft.message.player_kicked": "已將該玩家移出遊戲",
   "mahjongcraft.message.player_not_in_game": "你不在這場麻將遊戲中",
   "mahjongcraft.message.ranking_line": "第 %s 名 %s：%s",

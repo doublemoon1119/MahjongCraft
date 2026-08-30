@@ -15,11 +15,13 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildRoundRes
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ExhaustiveDrawSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongDiceEntityRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongPlayerInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongRoundInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongScoringStickEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MatchSettlementPresentationEntityRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationEffectEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationShowcaseEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinSettlementPresentationEntityRenderer
@@ -33,6 +35,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
@@ -86,6 +90,9 @@ class MahjongCraftModClient : ClientModInitializer {
         val exhaustiveDrawReasonDisplayNames = koin.get<ExhaustiveDrawReasonDisplayNameRegistry>()
         val winSettlementTemplates = koin.get<WinSettlementPresentationTemplateRegistry>()
         val matchSettlementTemplates = koin.get<MatchSettlementPresentationTemplateRegistry>()
+        val portraitSources = koin.get<PlayerPortraitSourceRegistry>()
+        val portraitRenderer = PlayerPortraitRenderer(portraitSources)
+        val indicatorDisplays = koin.get<PublicPlayerIndicatorDisplayRegistry>()
         MahjongChannels.roomUpdate.registerClientReceiver(json, stateStore::apply)
         MahjongChannels.gameUpdate.registerClientReceiver(json) { payload ->
             val previousSnapshot = stateStore.gameSnapshot
@@ -122,18 +129,21 @@ class MahjongCraftModClient : ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.mahjongDice, ::MahjongDiceEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongRoundInfo, ::MahjongRoundInfoEntityRenderer)
+        EntityRendererRegistry.register(ModEntities.mahjongPlayerInfo) { context ->
+            MahjongPlayerInfoEntityRenderer(context, portraitRenderer, indicatorDisplays)
+        }
         EntityRendererRegistry.register(ModEntities.winCelebrationEffect, ::WinCelebrationEffectEntityRenderer)
         EntityRendererRegistry.register(ModEntities.winCelebrationShowcase) { context ->
             WinCelebrationShowcaseEntityRenderer(context, showcaseRegistry)
         }
         EntityRendererRegistry.register(ModEntities.exhaustiveDrawSettlementPresentation) { context ->
-            ExhaustiveDrawSettlementPresentationEntityRenderer(context, exhaustiveDrawReasonDisplayNames)
+            ExhaustiveDrawSettlementPresentationEntityRenderer(context, exhaustiveDrawReasonDisplayNames, portraitRenderer)
         }
         EntityRendererRegistry.register(ModEntities.winSettlementPresentation) { context ->
-            WinSettlementPresentationEntityRenderer(context, winSettlementTemplates)
+            WinSettlementPresentationEntityRenderer(context, winSettlementTemplates, portraitRenderer)
         }
         EntityRendererRegistry.register(ModEntities.matchSettlementPresentation) { context ->
-            MatchSettlementPresentationEntityRenderer(context, matchSettlementTemplates)
+            MatchSettlementPresentationEntityRenderer(context, matchSettlementTemplates, portraitRenderer)
         }
         EntityRendererRegistry.register(ModEntities.mahjongTile) { context ->
             MahjongTileEntityRenderer(context, stateStore, tileAssetRegistry, tileLabelRegistry, clientConfigStore, moduleRegistry)

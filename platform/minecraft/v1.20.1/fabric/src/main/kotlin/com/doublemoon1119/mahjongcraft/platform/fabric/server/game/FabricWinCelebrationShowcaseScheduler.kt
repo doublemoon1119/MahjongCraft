@@ -1,19 +1,18 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseCardSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseSoundSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseWingSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseWinningTileSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
 import kotlin.random.Random
@@ -24,6 +23,7 @@ import kotlin.uuid.toJavaUuid
 @Single
 class FabricWinCelebrationShowcaseScheduler(
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
+    private val overlays: PersistentTableOverlayCoordinator,
 ) {
     private val logger = LoggerFactory.getLogger(FabricWinCelebrationShowcaseScheduler::class.java)
     private val warnedUnknownCues = mutableSetOf<String>()
@@ -95,13 +95,9 @@ class FabricWinCelebrationShowcaseScheduler(
                 listOf(AnimationStep.WaitUntil(startGameTime), AnimationStep.SetInvisible(true)),
             )
         }
-        findRoundInfo(world, tableId, controllerPos)?.hideUntil(endGameTime)
+        overlays.hideUntil(world, tableId, controllerPos, endGameTime)
         return endGameTime
     }
-
-    private fun findRoundInfo(world: ServerWorld, tableId: Uuid, controllerPos: BlockPos): MahjongRoundInfoEntity? = world.getEntitiesByClass(MahjongRoundInfoEntity::class.java, Box(controllerPos).expand(2.0, 2.0, 2.0)) {
-        it.managedTableId == tableId
-    }.firstOrNull()
 
     private companion object {
         const val DEFAULT_SHOWCASE_DURATION_TICKS = 160

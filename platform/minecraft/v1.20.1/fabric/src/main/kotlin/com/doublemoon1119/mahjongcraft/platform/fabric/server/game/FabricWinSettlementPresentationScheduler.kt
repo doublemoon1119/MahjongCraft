@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementDetailSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementMeldSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
@@ -11,13 +10,13 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementRanki
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementRevealTimingSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementSoundCueSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementWinnerSnapshot
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTimelineAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRevealSequence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
@@ -25,6 +24,7 @@ import kotlin.uuid.Uuid
 @Single
 class FabricWinSettlementPresentationScheduler(
     private val templateRegistry: WinSettlementPresentationTemplateRegistry,
+    private val overlays: PersistentTableOverlayCoordinator,
 ) {
     fun schedule(
         world: ServerWorld,
@@ -93,9 +93,11 @@ class FabricWinSettlementPresentationScheduler(
             refreshPositionAndAngles(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
         }
         if (!world.spawnEntity(stage)) return null
-        world.getEntitiesByClass(MahjongRoundInfoEntity::class.java, Box(controllerPos).expand(2.0, 2.0, 2.0)) {
-            it.managedTableId == tableId
-        }.firstOrNull()?.hideUntil(stage.endGameTime + PRESENTATION_HANDOFF_GRACE_TICKS)
+        if (request.isBrief) {
+            overlays.hideUntil(world, tableId, controllerPos, stage.endGameTime + BRIEF_PRESENTATION_HANDOFF_GRACE_TICKS)
+        } else {
+            overlays.hideUntilRemoved(world, tableId, controllerPos)
+        }
         return stage.endGameTime
     }
 
@@ -149,7 +151,7 @@ class FabricWinSettlementPresentationScheduler(
 
     private companion object {
         const val STAGE_HEIGHT_OFFSET = 1.6
-        const val PRESENTATION_HANDOFF_GRACE_TICKS = 5L
+        const val BRIEF_PRESENTATION_HANDOFF_GRACE_TICKS = 5L
     }
 
     private val WinSettlementWinnerSnapshot.hasPostEntrySummary: Boolean

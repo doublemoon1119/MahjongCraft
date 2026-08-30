@@ -13,8 +13,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationR
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
@@ -30,6 +32,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricMatchSe
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationShowcaseScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.WinPresentationCleanupPlan
@@ -45,6 +48,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongRiichiSti
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongRiichiStickPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationFactory
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -111,6 +116,7 @@ class FabricGamePresentationPublisher(
     private val scoringStickPresenter: MahjongScoringStickPresenter,
     private val riichiStickPresenter: MahjongRiichiStickPresenter,
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
+    private val playerInfoPresenter: MahjongPlayerInfoPresenter,
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
     private val busyTracker: TablePresentationBusyTracker,
@@ -123,6 +129,7 @@ class FabricGamePresentationPublisher(
     private val exhaustiveDrawSettlementScheduler: FabricExhaustiveDrawSettlementPresentationScheduler,
     private val winSettlementScheduler: FabricWinSettlementPresentationScheduler,
     private val matchSettlementScheduler: FabricMatchSettlementPresentationScheduler,
+    private val tableOverlayCoordinator: PersistentTableOverlayCoordinator,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
@@ -455,6 +462,13 @@ class FabricGamePresentationPublisher(
                 lines = lines,
             )
             roundInfoPresenter.present(presentation)
+            val game = gameRepository.getGame(gameId) ?: return@launch
+            val module = moduleRegistry.getModule(game.tableState.config)
+            val playerInfo = MahjongPlayerInfoPresentationFactory.create(game.tableState, module) { player ->
+                serverHolder.findPlayer(player.id)?.gameProfile?.name
+                    ?: if (player.isAi) "AI-${player.id.toString().take(6)}" else player.id.toString().take(8)
+            }
+            playerInfoPresenter.present(playerInfo, resolved.location, resolved.facing)
         }
     }
 
@@ -528,6 +542,11 @@ class FabricGamePresentationPublisher(
                     extraLeadDelayTicks = wallDropTicks + diceTicks,
                 )
                 playerAreaPresenter.presentInitialDeal(presentation)
+                tableOverlayCoordinator.showNow(
+                    resolved.world,
+                    gameId,
+                    BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
+                )
             } finally {
                 busyTracker.clearPending(gameId)
             }
@@ -599,6 +618,7 @@ class FabricGamePresentationPublisher(
             scoringStickPresenter.clear(gameId, location)
             riichiStickPresenter.clear(gameId, location)
             roundInfoPresenter.clear(gameId, location)
+            playerInfoPresenter.clear(gameId, location)
         }
     }
 
@@ -723,7 +743,7 @@ class FabricGamePresentationPublisher(
         gameId: Uuid,
         operation: String,
         blocksTable: Boolean,
-        block: (ResolvedTableContext, com.doublemoon1119.mahjongcraft.logic.table.TableState, Long) -> Long?,
+        block: (ResolvedTableContext, TableState, Long) -> Long?,
     ) {
         if (serverHolder.current() == null) {
             logger.warn("{} gameId={} skipped: no active server", operation, gameId)
@@ -770,7 +790,7 @@ class FabricGamePresentationPublisher(
     private fun runCelebration(
         gameId: Uuid,
         resolved: ResolvedTableContext,
-        state: com.doublemoon1119.mahjongcraft.logic.table.TableState,
+        state: TableState,
         request: WinCelebrationRequest,
         earliestStartGameTime: Long,
     ): CelebrationSegment? {
@@ -856,6 +876,12 @@ class FabricGamePresentationPublisher(
             } else {
                 null
             }
+            tableOverlayCoordinator.hideUntil(
+                resolved.world,
+                gameId,
+                BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
+                showcaseEnd ?: effectEndGameTime,
+            )
             return CelebrationSegment(
                 endGameTime = showcaseEnd ?: effectEndGameTime,
                 showcaseEndGameTime = showcaseEnd,
@@ -869,7 +895,7 @@ class FabricGamePresentationPublisher(
     private fun runSettlement(
         gameId: Uuid,
         resolved: ResolvedTableContext,
-        state: com.doublemoon1119.mahjongcraft.logic.table.TableState,
+        state: TableState,
         request: WinSettlementPresentationRequest,
         earliestStartGameTime: Long,
     ): Long? {
@@ -920,7 +946,7 @@ class FabricGamePresentationPublisher(
      */
     private fun restoreAndConcealWinnerHands(
         resolved: ResolvedTableContext,
-        state: com.doublemoon1119.mahjongcraft.logic.table.TableState,
+        state: TableState,
         request: WinPresentationRequest,
         celebration: CelebrationSegment?,
         endGameTime: Long,
@@ -951,7 +977,7 @@ class FabricGamePresentationPublisher(
     private fun ResolvedTableContext.findTile(tileId: Uuid): MahjongTileEntity? = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity
 
     /** 依 UUID 從所有權威牌區尋找牌面。 */
-    private fun com.doublemoon1119.mahjongcraft.logic.table.TableState.findTile(tileId: Uuid): com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile? = players.asSequence().flatMap { player ->
+    private fun TableState.findTile(tileId: Uuid): IdentifiedTile? = players.asSequence().flatMap { player ->
         (player.hand.allTiles + player.discardPile.entries.map { it.tile }).asSequence()
     }.plus(tileWall.getAllTiles().asSequence()).plus(initialDeadWall.asSequence()).firstOrNull { it.id == tileId }
 

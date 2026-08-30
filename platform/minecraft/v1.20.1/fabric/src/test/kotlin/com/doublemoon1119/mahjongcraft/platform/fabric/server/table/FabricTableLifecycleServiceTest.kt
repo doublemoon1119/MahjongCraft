@@ -15,10 +15,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
@@ -135,6 +139,7 @@ class FabricTableLifecycleServiceTest {
 
         /** 記錄清理呼叫的桌面局況顯示 presenter fake。 */
         private val roundInfoPresenter = RecordingRoundInfoPresenter()
+        private val playerInfoPresenter = RecordingPlayerInfoPresenter()
 
         /** 受測生命週期服務。 */
         val lifecycleService = FabricTableLifecycleService(
@@ -150,6 +155,7 @@ class FabricTableLifecycleServiceTest {
             scoringStickPresenter = scoringStickPresenter,
             discardPresenter = discardPresenter,
             roundInfoPresenter = roundInfoPresenter,
+            playerInfoPresenter = playerInfoPresenter,
         )
 
         /** 這個測試不驗證 debug 覆寫，一律回報非開發環境讓它保持 inert。 */
@@ -230,6 +236,19 @@ class FabricTableLifecycleServiceTest {
         override fun present(presentation: MahjongRoundInfoPresentation): MahjongRoundInfoPresentationResult = MahjongRoundInfoPresentationResult.PRESENTED
 
         /** 記錄清理請求並回報沒有已載入局況顯示。 */
+        override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
+    }
+
+    /** 此測試只需要滿足玩家公開資訊清理邊界。 */
+    private class RecordingPlayerInfoPresenter : MahjongPlayerInfoPresenter {
+        override fun present(
+            presentation: MahjongPlayerInfoPresentation,
+            tableLocation: TableLocation,
+            tableFacing: MahjongTableFacing,
+        ): MahjongPlayerInfoPresentationResult = MahjongPlayerInfoPresentationResult.PRESENTED
+
+        override fun hideUntil(tableId: Uuid, tableLocation: TableLocation, gameTime: Long) = Unit
+
         override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
     }
 }

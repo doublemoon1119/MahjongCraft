@@ -52,6 +52,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
@@ -101,6 +103,8 @@ class MahjongCraftMod : ModInitializer {
             showcaseRegistry = koin.get<WinCelebrationShowcaseRegistry>(),
             winSettlementTemplateRegistry = koin.get<WinSettlementPresentationTemplateRegistry>(),
             matchSettlementTemplateRegistry = koin.get<MatchSettlementPresentationTemplateRegistry>(),
+            playerPortraitSourceRegistry = koin.get<PlayerPortraitSourceRegistry>(),
+            publicPlayerIndicatorDisplayRegistry = koin.get<PublicPlayerIndicatorDisplayRegistry>(),
             gameActionAiRegistry = koin.get<ExtensionGameActionAiRegistry>(),
             gameCommandRegistry = koin.get<ExtensionGameCommandExecutorRegistry>(),
             postReactionRoundOutcomeResolverRegistry = koin.get<PostReactionRoundOutcomeResolverRegistry>(),

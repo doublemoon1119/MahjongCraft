@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
@@ -37,6 +38,9 @@ class RiichiRuleModule(
     override val id: String,
     override val config: RiichiRuleConfig,
 ) : MahjongRuleModule<RiichiRuleConfig> {
+    /** 日麻首版只公開已經能從桌面立直棒觀察到的立直狀態。 */
+    override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = if (isPlayerInRiichi(player)) listOf(PublicPlayerIndicator(RIICHI_INDICATOR_ID)) else emptyList()
+
     /** 日本麻將手牌整理排序規則。 */
     override val tileOrder: TileOrder = RiichiTileOrder
 
@@ -517,6 +521,9 @@ class RiichiRuleModule(
     }
 
     companion object {
+        /** 玩家已公開宣告立直的 indicator ID。 */
+        const val RIICHI_INDICATOR_ID = "mahjongcraft:riichi"
+
         /** [getRoundInfoLines] 場風＋局數＋本場數合併標題行的 key，供呈現層辨識。 */
         const val TITLE_KEY = "riichiTitle"
 

@@ -4,20 +4,21 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSett
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Box
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
 /** 統一流局結算舞台的生成與 round-info visibility lease 交接。 */
 @Single
-class FabricExhaustiveDrawSettlementPresentationScheduler {
+class FabricExhaustiveDrawSettlementPresentationScheduler(
+    private val overlays: PersistentTableOverlayCoordinator,
+) {
     /** 成功生成時回傳固定結束時間；失敗則不隱藏 round info。 */
     fun schedule(
         world: ServerWorld,
@@ -73,15 +74,12 @@ class FabricExhaustiveDrawSettlementPresentationScheduler {
                 }
             }
         }
-        world.getEntitiesByClass(MahjongRoundInfoEntity::class.java, Box(controllerPos).expand(2.0, 2.0, 2.0)) {
-            it.managedTableId == tableId
-        }.firstOrNull()?.hideUntil(endGameTime + PRESENTATION_HANDOFF_GRACE_TICKS)
+        overlays.hideUntilRemoved(world, tableId, controllerPos)
         return endGameTime
     }
 
     private companion object {
         const val HAND_LAYDOWN_START_TICK = 30L
         const val STAGE_HEIGHT_OFFSET = 1.4
-        const val PRESENTATION_HANDOFF_GRACE_TICKS = 5L
     }
 }

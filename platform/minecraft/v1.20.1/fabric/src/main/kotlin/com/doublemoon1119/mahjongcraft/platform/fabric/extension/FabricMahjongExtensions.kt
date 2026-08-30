@@ -38,6 +38,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMah
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
@@ -94,6 +98,9 @@ object FabricMahjongExtensions {
             WinSettlementPresentationTemplateRegistryImpl(),
         matchSettlementTemplateRegistry: MatchSettlementPresentationTemplateRegistry =
             MatchSettlementPresentationTemplateRegistryImpl(),
+        playerPortraitSourceRegistry: PlayerPortraitSourceRegistry = PlayerPortraitSourceRegistryImpl(),
+        publicPlayerIndicatorDisplayRegistry: PublicPlayerIndicatorDisplayRegistry =
+            PublicPlayerIndicatorDisplayRegistryImpl(),
         gameActionAiRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
@@ -128,6 +135,8 @@ object FabricMahjongExtensions {
                 showcaseRegistry = showcaseRegistry,
                 winSettlementTemplateRegistry = winSettlementTemplateRegistry,
                 matchSettlementTemplateRegistry = matchSettlementTemplateRegistry,
+                playerPortraitSourceRegistry = playerPortraitSourceRegistry,
+                publicPlayerIndicatorDisplayRegistry = publicPlayerIndicatorDisplayRegistry,
                 gameActionAiRegistry = gameActionAiRegistry,
                 gameCommandRegistry = gameCommandRegistry,
                 postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
@@ -210,6 +219,9 @@ object FabricMahjongExtensions {
             WinSettlementPresentationTemplateRegistryImpl(),
         matchSettlementTemplateRegistry: MatchSettlementPresentationTemplateRegistry =
             MatchSettlementPresentationTemplateRegistryImpl(),
+        playerPortraitSourceRegistry: PlayerPortraitSourceRegistry = PlayerPortraitSourceRegistryImpl(),
+        publicPlayerIndicatorDisplayRegistry: PublicPlayerIndicatorDisplayRegistry =
+            PublicPlayerIndicatorDisplayRegistryImpl(),
         gameActionAiRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
@@ -284,6 +296,8 @@ object FabricMahjongExtensions {
             roundPreparationDisplayNameRegistry = roundPreparationDisplayNameRegistry,
             winSettlementTemplateRegistry = winSettlementTemplateRegistry,
             matchSettlementTemplateRegistry = matchSettlementTemplateRegistry,
+            playerPortraitSourceRegistry = playerPortraitSourceRegistry,
+            publicPlayerIndicatorDisplayRegistry = publicPlayerIndicatorDisplayRegistry,
         )
     }
 

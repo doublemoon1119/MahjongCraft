@@ -382,6 +382,13 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun isPlayerInRiichi(player: MahjongPlayer): Boolean = false
 
     /**
+     * 取得可公開給全桌與旁觀者的玩家狀態；預設不公開任何 indicator。
+     *
+     * 實作不得回傳振聽、手牌或其他只有本人可見的資訊。
+     */
+    fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = emptyList()
+
+    /**
      * 場上目前尚未被任何人收下的供託數量——純查詢，不像 [collectStickPot] 會連帶把狀態歸零，用來讓
      * 呈現層在收下之前（例如流局延續到下一局、或宣告供託當下）也能知道場上目前累積多少供託。是供託
      * 本身的數量（例如日麻立直棒的支數），不是換算後的點數——換算成點數是 [collectStickPot] 的職責。

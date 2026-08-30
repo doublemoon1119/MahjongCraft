@@ -8,6 +8,7 @@ import net.minecraft.entity.data.DataTracker
 import net.minecraft.entity.data.TrackedData
 import net.minecraft.entity.data.TrackedDataHandlerRegistry
 import net.minecraft.nbt.NbtCompound
+import net.minecraft.util.math.Box
 import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
@@ -85,6 +86,16 @@ class MahjongRoundInfoEntity(
 
     override fun canHit(): Boolean = false
 
+    /** 覆蓋 billboard 的實際顯示範圍，避免攝影機只依 entity 錨點附近的小範圍進行視錐裁切。 */
+    override fun getVisibilityBoundingBox(): Box = Box(
+        x - WIDTH / 2.0,
+        y - HEIGHT / 2.0,
+        z - WIDTH / 2.0,
+        x + WIDTH / 2.0,
+        y + HEIGHT / 2.0,
+        z + WIDTH / 2.0,
+    )
+
     /** 將 entity 標記為指定正式牌局桌子管理。 */
     fun assignToTable(tableId: Uuid) {
         check(!world.isClient) { "Managed round info display must be assigned by the server" }
@@ -116,6 +127,14 @@ class MahjongRoundInfoEntity(
         check(!world.isClient) { "Round info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MAX_VALUE
         replaceAnimationQueue(listOf(AnimationStep.SetInvisible(true)))
+    }
+
+    /** 新局已確定開始時解除所有舊 presentation lease，立即恢復局況顯示。 */
+    fun showNow() {
+        check(!world.isClient) { "Round info visibility lease must be changed by the server" }
+        hiddenUntilGameTime = Long.MIN_VALUE
+        replaceAnimationQueue(emptyList())
+        setInvisible(false)
     }
 
     /** 局況顯示沒有專屬瞬間動畫。 */
@@ -152,6 +171,12 @@ class MahjongRoundInfoEntity(
     }
 
     companion object {
+        /** 足以涵蓋目前三行本地化文字面板的水平 debug／追蹤寬度。 */
+        const val WIDTH: Float = 3.0f
+
+        /** 足以涵蓋目前三行本地化文字面板的垂直 debug／追蹤高度。 */
+        const val HEIGHT: Float = 1.5f
+
         private const val NBT_KEY_LINES = "Lines"
         private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
         private const val NBT_KEY_HIDDEN_UNTIL_GAME_TIME = "HiddenUntilGameTime"

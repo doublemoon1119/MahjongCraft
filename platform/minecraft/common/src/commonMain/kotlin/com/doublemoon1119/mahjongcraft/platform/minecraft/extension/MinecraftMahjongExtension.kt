@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
@@ -92,4 +94,10 @@ interface MinecraftMahjongExtension {
 
     /** 登記第三方終局排行面板模板。 */
     fun registerMatchSettlementPresentationTemplates(registry: MatchSettlementPresentationTemplateRegistry) = Unit
+
+    /** 登記第三方玩家頭像來源；來源只能是 skin、牌面或 texture region。 */
+    fun registerPlayerPortraitSources(registry: PlayerPortraitSourceRegistry) = Unit
+
+    /** 登記規則公開 indicator／option 的本地化顯示。 */
+    fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistry) = Unit
 }

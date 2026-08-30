@@ -54,21 +54,31 @@ class MahjongRoundInfoEntityRenderer(
         matrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
         val lineHeight = textRenderer.fontHeight + LINE_SPACING
         val totalHeight = lineHeight * lines.size
+        val maxWidth = lines.maxOfOrNull(textRenderer::getWidth) ?: 0
+        WorldPanelRenderer.drawBackground(
+            -maxWidth / 2f - PANEL_PADDING,
+            -totalHeight / 2f - PANEL_PADDING,
+            maxWidth / 2f + PANEL_PADDING,
+            totalHeight / 2f + PANEL_PADDING,
+            BACKGROUND_COLOR,
+            0f,
+            matrices,
+            vertexConsumers,
+        )
         lines.forEachIndexed { index, line ->
             val width = textRenderer.getWidth(line)
             val x = -width / 2.0f
             val y = -totalHeight / 2.0f + index * lineHeight
-            textRenderer.draw(
+            WorldPanelRenderer.drawText(
+                textRenderer,
                 line,
                 x,
                 y,
                 TEXT_COLOR,
-                false,
-                matrices.peek().positionMatrix,
-                vertexConsumers,
-                TextRenderer.TextLayerType.NORMAL,
-                BACKGROUND_COLOR,
+                TEXT_Z,
                 light,
+                matrices,
+                vertexConsumers,
             )
         }
         matrices.pop()
@@ -105,10 +115,16 @@ class MahjongRoundInfoEntityRenderer(
         /** 相鄰兩行文字之間的額外間距（像素，縮放前）。 */
         private const val LINE_SPACING: Int = 2
 
+        /** 單一背景四周的像素 padding。 */
+        private const val PANEL_PADDING: Float = 5f
+
         /** 文字顏色，不透明白色。 */
         private const val TEXT_COLOR: Int = 0xFFFFFFFF.toInt()
 
+        /** 文字相對背景向觀看者方向移動的距離，避免兩者位於同一深度而閃爍。 */
+        private const val TEXT_Z: Float = -0.02f
+
         /** 文字背景色板，半透明黑底，比照 vanilla 名牌背景慣例，提升可讀性。 */
-        private const val BACKGROUND_COLOR: Int = 0x60000000
+        private const val BACKGROUND_COLOR: Int = 0xB01A2232.toInt()
     }
 }

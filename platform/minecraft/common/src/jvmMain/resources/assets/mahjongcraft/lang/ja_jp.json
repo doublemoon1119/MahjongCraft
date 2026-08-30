@@ -141,6 +141,7 @@
   "mahjongcraft.message.not_game_host": "ゲームマネージャーのみがゲームを開始できます",
   "mahjongcraft.message.not_your_turn": "まだあなたの番ではありません",
   "mahjongcraft.message.player_already_in_game": "すでに別の麻雀ゲームに参加しています",
+  "mahjongcraft.message.player_indicator_riichi": "立直",
   "mahjongcraft.message.player_kicked": "そのプレイヤーをゲームから追放しました",
   "mahjongcraft.message.player_not_in_game": "この麻雀ゲームには参加していません",
   "mahjongcraft.message.ranking_line": "%s位 %s：%s",

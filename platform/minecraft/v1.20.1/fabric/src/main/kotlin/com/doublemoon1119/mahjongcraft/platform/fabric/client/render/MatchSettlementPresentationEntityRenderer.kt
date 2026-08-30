@@ -12,13 +12,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetP
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.render.LightmapTextureManager
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.RenderLayer
 import net.minecraft.client.render.VertexConsumer
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRenderer
 import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.util.DefaultSkinHelper
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.text.Text
 import net.minecraft.util.Identifier
@@ -26,11 +23,13 @@ import org.joml.Matrix4f
 import org.slf4j.LoggerFactory
 import java.util.UUID
 import kotlin.math.roundToInt
+import kotlin.uuid.Uuid
 
 /** 與回合結算共用視覺語言，但以冠軍為主角的 client-only 終局頒獎面板。 */
 class MatchSettlementPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
     private val templates: MatchSettlementPresentationTemplateRegistry,
+    private val portraitRenderer: PlayerPortraitRenderer,
 ) : EntityRenderer<MatchSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
     private val warnedUnknownTemplateKeys = mutableSetOf<String>()
@@ -201,7 +200,7 @@ class MatchSettlementPresentationEntityRenderer(
         buffer.vertex(matrix, -layout.panelHalfWidth, layout.panelBottom, PANEL_Z).color(red, green, blue, a).next()
     }
 
-    /** 真人顯示無帽子層的正方形 FACE，AI 暫以 unknown 牌面作 fallback。 */
+    /** 交由共用 renderer 解析第三方來源與真人／AI fallback。 */
     private fun renderPortrait(
         player: MatchSettlementPlayerSnapshot,
         x: Float,
@@ -210,41 +209,17 @@ class MatchSettlementPresentationEntityRenderer(
         alpha: Float,
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
-    ) {
-        if (player.isAi) {
-            val buffer = consumers.getBuffer(ExhaustiveDrawSettlementTileFaceRenderLayer.get(unknownTileTexture))
-            val matrix = matrices.peek().positionMatrix
-            val a = (alpha * 255).roundToInt()
-            fun vertex(px: Float, py: Float, u: Float, v: Float) {
-                buffer.vertex(matrix, px, py, FACE_Z).color(255, 255, 255, a).texture(u, v)
-                    .light(LightmapTextureManager.MAX_LIGHT_COORDINATE).next()
-            }
-            vertex(x + size * 0.125f, y, 0f, 0f)
-            vertex(x + size * 0.875f, y, 1f, 0f)
-            vertex(x + size * 0.875f, y + size, 1f, 1f)
-            vertex(x + size * 0.125f, y + size, 0f, 1f)
-            return
-        }
-        val uuid = runCatching { UUID.fromString(player.playerId) }.getOrNull()
-        val texture = uuid?.let { MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(it)?.skinTexture }
-            ?: uuid?.let(DefaultSkinHelper::getTexture)
-            ?: DefaultSkinHelper.getTexture(UUID(0L, 0L))
-        val buffer = consumers.getBuffer(RenderLayer.getEntityTranslucent(texture))
-        drawFaceLayer(buffer, matrices.peek().positionMatrix, x, y, size, alpha)
-    }
-
-    /** 繪製 skin 的正面臉部，不包含帽子 layer。 */
-    private fun drawFaceLayer(buffer: VertexConsumer, matrix: Matrix4f, x: Float, y: Float, size: Float, alpha: Float) {
-        val a = (alpha * 255).roundToInt()
-        fun vertex(px: Float, py: Float, u: Float, v: Float) {
-            buffer.vertex(matrix, px, py, FACE_Z).color(255, 255, 255, a).texture(u / 64f, v / 64f)
-                .overlay(OverlayTexture.DEFAULT_UV).light(LightmapTextureManager.MAX_LIGHT_COORDINATE).normal(0f, 0f, 1f).next()
-        }
-        vertex(x, y, 8f, 8f)
-        vertex(x + size, y, 16f, 8f)
-        vertex(x + size, y + size, 16f, 16f)
-        vertex(x, y + size, 8f, 16f)
-    }
+    ) = portraitRenderer.render(
+        playerId = Uuid.parse(player.playerId),
+        isAi = player.isAi,
+        x = x,
+        y = y,
+        size = size,
+        alpha = alpha,
+        z = FACE_Z,
+        matrices = matrices,
+        consumers = consumers,
+    )
 
     /** 依玩家數建立冠軍居中、其餘名次分層的自適應頒獎位置。 */
     private fun measureLayout(playerCount: Int): Layout {

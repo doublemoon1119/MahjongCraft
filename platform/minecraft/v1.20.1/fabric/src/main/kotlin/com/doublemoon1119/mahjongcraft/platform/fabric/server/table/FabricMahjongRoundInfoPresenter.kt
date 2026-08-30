@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
@@ -24,7 +25,7 @@ import kotlin.uuid.Uuid
 
 /**
  * 使用 Fabric 1.20.1 entity 呈現桌面中央局況顯示——比照
- * [com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter] 的
+ * [FabricMahjongTileWallPresenter] 的
  * 「找到既有的就更新，找不到才生成」模式，不是每次都整批換新（見 [MahjongRoundInfoPresenter] KDoc）。
  */
 @Single(binds = [MahjongRoundInfoPresenter::class])
@@ -107,17 +108,13 @@ class FabricMahjongRoundInfoPresenter(
         controllerPos: BlockPos,
     ): MahjongRoundInfoEntity? = world.getEntitiesByClass(
         MahjongRoundInfoEntity::class.java,
-        Box(controllerPos).expand(DISPLAY_SEARCH_HORIZONTAL, DISPLAY_SEARCH_VERTICAL, DISPLAY_SEARCH_HORIZONTAL),
+        Box(controllerPos).expand(
+            TableOverlayEntitySearch.HORIZONTAL_RADIUS,
+            TableOverlayEntitySearch.VERTICAL_RADIUS,
+            TableOverlayEntitySearch.HORIZONTAL_RADIUS,
+        ),
     ) { display -> display.managedTableId == tableId }.firstOrNull()
 
     /** 將版本無關 table location 轉回 Fabric 方塊座標。 */
     private fun TableLocation.toBlockPos(): BlockPos = BlockPos(x, y, z)
-
-    private companion object {
-        /** controller 周圍查詢局況顯示 entity 的水平半徑。 */
-        const val DISPLAY_SEARCH_HORIZONTAL: Double = 2.0
-
-        /** controller 周圍查詢局況顯示 entity 的垂直半徑。 */
-        const val DISPLAY_SEARCH_VERTICAL: Double = 2.0
-    }
 }

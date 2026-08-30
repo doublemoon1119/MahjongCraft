@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
@@ -34,6 +35,10 @@ object ModEntities {
 
     /** 桌面中央局況顯示 entity type；由 [register] 初始化。 */
     lateinit var mahjongRoundInfo: EntityType<MahjongRoundInfoEntity>
+        private set
+
+    /** 桌級玩家公開資訊 entity type；由 [register] 初始化。 */
+    lateinit var mahjongPlayerInfo: EntityType<MahjongPlayerInfoEntity>
         private set
 
     /** 胡牌慶祝視覺效果 entity type；由 [register] 初始化。 */
@@ -92,8 +97,18 @@ object ModEntities {
             Registries.ENTITY_TYPE,
             Identifier(MinecraftModMetadata.MOD_ID, "mahjong_round_info"),
             FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongRoundInfoEntity)
-                .dimensions(EntityDimensions.fixed(ROUND_INFO_SIZE, ROUND_INFO_SIZE))
+                .dimensions(EntityDimensions.fixed(MahjongRoundInfoEntity.WIDTH, MahjongRoundInfoEntity.HEIGHT))
                 .trackRangeBlocks(16)
+                .trackedUpdateRate(10)
+                .fireImmune()
+                .build(),
+        )
+        mahjongPlayerInfo = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_player_info"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongPlayerInfoEntity)
+                .dimensions(EntityDimensions.fixed(MahjongPlayerInfoEntity.WIDTH, MahjongPlayerInfoEntity.HEIGHT))
+                .trackRangeBlocks(32)
                 .trackedUpdateRate(10)
                 .fireImmune()
                 .build(),
@@ -158,5 +173,4 @@ object ModEntities {
      * 後透過 IDE 斷點確認 `MahjongRoundInfoEntityRenderer.render()` 完全沒被呼叫到，改回非零值後才
      * 正常。
      */
-    private const val ROUND_INFO_SIZE: Float = 0.1f
 }

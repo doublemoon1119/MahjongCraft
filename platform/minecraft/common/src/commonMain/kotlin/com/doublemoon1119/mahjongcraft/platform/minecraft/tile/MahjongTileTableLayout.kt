@@ -683,7 +683,7 @@ object MahjongTileTableLayout {
      * 桌面中央局況顯示（[roundInfoDisplayPlacement]）懸浮高度，明顯高於牌牆／骰子等其他桌面機關的
      * 最高點，避免文字被擋住，起始估算值，預期進遊戲後調整。
      */
-    private const val ROUND_INFO_HEIGHT_ABOVE_TABLE: Double = 1.5
+    private const val ROUND_INFO_HEIGHT_ABOVE_TABLE: Double = 2.25
 
     /**
      * 牌牆生成掉落動畫中，同一面牌牆相鄰兩墩（`stack` 差 1）開始掉落的時間差，供 [wallDropAnimationTicks]

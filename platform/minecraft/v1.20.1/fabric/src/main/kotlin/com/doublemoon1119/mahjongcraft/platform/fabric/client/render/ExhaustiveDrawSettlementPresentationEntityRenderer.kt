@@ -13,18 +13,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetP
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.render.LightmapTextureManager
-import net.minecraft.client.render.OverlayTexture
-import net.minecraft.client.render.RenderLayer
-import net.minecraft.client.render.VertexConsumer
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRenderer
 import net.minecraft.client.render.entity.EntityRendererFactory
-import net.minecraft.client.util.DefaultSkinHelper
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.Identifier
-import org.joml.Matrix4f
 import org.slf4j.LoggerFactory
 import java.util.UUID
 import kotlin.math.roundToInt
@@ -34,6 +29,7 @@ import kotlin.uuid.Uuid as KotlinUuid
 class ExhaustiveDrawSettlementPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
     private val reasonDisplayNames: ExhaustiveDrawReasonDisplayNameRegistry,
+    private val portraitRenderer: PlayerPortraitRenderer,
 ) : EntityRenderer<ExhaustiveDrawSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
     private val tileTextures = mutableMapOf<String, Identifier>()
@@ -284,7 +280,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         }
     }
 
-    /** 真人只繪製正方形 skin 正面臉部；AI 暫時統一使用 unknown 牌面，等待日後 Seat Actor 提供正式外觀。 */
+    /** 交由共用 renderer 解析第三方來源與真人／AI fallback。 */
     private fun renderPortrait(
         player: ExhaustiveDrawSettlementPlayerSnapshot,
         x: Float,
@@ -292,28 +288,17 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         alpha: Float,
         matrices: MatrixStack,
         vertexConsumers: VertexConsumerProvider,
-    ) {
-        if (player.isAi) {
-            renderTileFace(
-                assetKey = UNKNOWN_TILE_ASSET_KEY,
-                centerX = x + FACE_SIZE / 2f,
-                centerY = y + FACE_SIZE / 2f,
-                width = AI_PORTRAIT_TILE_WIDTH,
-                height = AI_PORTRAIT_TILE_HEIGHT,
-                alpha = alpha,
-                matrices = matrices,
-                vertexConsumers = vertexConsumers,
-            )
-            return
-        }
-        val uuid = runCatching { UUID.fromString(player.playerId) }.getOrNull()
-        val texture = uuid?.let { MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(it)?.skinTexture }
-            ?: uuid?.let(DefaultSkinHelper::getTexture)
-            ?: DefaultSkinHelper.getTexture(UUID(0L, 0L))
-        val buffer = vertexConsumers.getBuffer(RenderLayer.getEntityTranslucent(texture))
-        val matrix = matrices.peek().positionMatrix
-        drawFaceLayer(buffer, matrix, x, y, FACE_SIZE, 8f, 8f, 16f, 16f, alpha)
-    }
+    ) = portraitRenderer.render(
+        playerId = KotlinUuid.parse(player.playerId),
+        isAi = player.isAi,
+        x = x,
+        y = y,
+        size = FACE_SIZE,
+        alpha = alpha,
+        z = FACE_Z,
+        matrices = matrices,
+        consumers = vertexConsumers,
+    )
 
     /**
      * 直接將既有麻將牌正面材質繪製成指定尺寸的 quad，避免 ItemRenderer 的 HEAD transform 再次縮小
@@ -358,29 +343,6 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         } else {
             Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath(UNKNOWN_TILE_ASSET_KEY))
         }
-    }
-
-    private fun drawFaceLayer(
-        buffer: VertexConsumer,
-        matrix: Matrix4f,
-        x: Float,
-        y: Float,
-        size: Float,
-        u0: Float,
-        v0: Float,
-        u1: Float,
-        v1: Float,
-        alpha: Float,
-    ) {
-        val a = (alpha * 255).roundToInt()
-        fun vertex(px: Float, py: Float, u: Float, v: Float) {
-            buffer.vertex(matrix, px, py, FACE_Z).color(255, 255, 255, a).texture(u / 64f, v / 64f)
-                .overlay(OverlayTexture.DEFAULT_UV).light(LightmapTextureManager.MAX_LIGHT_COORDINATE).normal(0f, 0f, 1f).next()
-        }
-        vertex(x, y, u0, v0)
-        vertex(x + size, y, u1, v0)
-        vertex(x + size, y + size, u1, v1)
-        vertex(x, y + size, u0, v1)
     }
 
     private fun drawText(

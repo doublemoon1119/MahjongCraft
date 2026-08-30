@@ -2,10 +2,18 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.registerBuiltInAiStrategyDisplayNames
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceContext
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
@@ -19,9 +27,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInMatchSettlementTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInRiichiReasons
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInWinSettlementTemplates
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.registerBuiltInWinCelebrationShowcases
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -35,14 +45,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTi
 /**
  * 將平台發現的第三方 [MinecraftMahjongExtension] 登記至 runtime 實際使用的
  * [MinecraftTileAssetRegistry]／[AiStrategyDisplayNameRegistry]／[TileDisplayNameRegistry]／
- * [RuleModuleDisplayNameRegistry]／[TileEmojiRegistry]／[TileLabelRegistry]，完成後凍結六者。
+ * [RuleModuleDisplayNameRegistry]／[TileEmojiRegistry]／[TileLabelRegistry] 及其他 Minecraft 呈現 registry，
+ * 完成後統一凍結。
  *
  * 版本與 loader 無關；loader adapter 只負責發現 extension 並呼叫此物件，不自行實作註冊順序或凍結
  * 時機。
  */
 object MinecraftMahjongExtensionRegistrar {
     /**
-     * 先註冊內建映射，再依 [extensions] 順序登記第三方映射，全部成功後凍結全部五個 registry。
+     * 先註冊內建映射，再依 [extensions] 順序登記第三方映射，全部成功後凍結所有 registry。
      *
      * @return 依 [extensions] 順序登記的第三方映射，不含內建映射，供呼叫端記錄診斷資訊。
      * @throws MinecraftMahjongExtensionRegistrationException 若任一 extension 註冊失敗。
@@ -65,6 +76,9 @@ object MinecraftMahjongExtensionRegistrar {
             WinSettlementPresentationTemplateRegistryImpl(),
         matchSettlementTemplateRegistry: MatchSettlementPresentationTemplateRegistry =
             MatchSettlementPresentationTemplateRegistryImpl(),
+        playerPortraitSourceRegistry: PlayerPortraitSourceRegistry = PlayerPortraitSourceRegistryImpl(),
+        publicPlayerIndicatorDisplayRegistry: PublicPlayerIndicatorDisplayRegistry =
+            PublicPlayerIndicatorDisplayRegistryImpl(),
     ): MinecraftMahjongExtensionRegistrationResult {
         tileAssetRegistry.registerBuiltInTileAssets()
         aiStrategyDisplayNameRegistry.registerBuiltInAiStrategyDisplayNames()
@@ -76,6 +90,10 @@ object MinecraftMahjongExtensionRegistrar {
         exhaustiveDrawReasonDisplayNameRegistry.registerBuiltInRiichiReasons()
         winSettlementTemplateRegistry.registerBuiltInWinSettlementTemplates()
         matchSettlementTemplateRegistry.registerBuiltInMatchSettlementTemplate()
+        publicPlayerIndicatorDisplayRegistry.register(
+            RiichiRuleModule.RIICHI_INDICATOR_ID,
+            PublicPlayerIndicatorDisplay(MinecraftMessageKeys.PLAYER_INDICATOR_RIICHI),
+        )
 
         val thirdPartyAssetKeys = mutableListOf<String>()
         val thirdPartyAiStrategyKeys = mutableListOf<String>()
@@ -85,6 +103,7 @@ object MinecraftMahjongExtensionRegistrar {
         val thirdPartyTileLabelKeys = mutableListOf<String>()
         val thirdPartyShowcaseKeys = mutableListOf<String>()
         val thirdPartyGameActionIds = mutableListOf<String>()
+        val thirdPartyPortraitProviderIds = mutableListOf<String>()
         val recordingTileAssetRegistry = RecordingMinecraftTileAssetRegistry(tileAssetRegistry, thirdPartyAssetKeys)
         val recordingAiStrategyDisplayNameRegistry =
             RecordingAiStrategyDisplayNameRegistry(aiStrategyDisplayNameRegistry, thirdPartyAiStrategyKeys)
@@ -97,6 +116,8 @@ object MinecraftMahjongExtensionRegistrar {
         val recordingShowcaseRegistry = RecordingWinCelebrationShowcaseRegistry(showcaseRegistry, thirdPartyShowcaseKeys)
         val recordingGameActionDisplayNameRegistry =
             RecordingGameActionDisplayNameRegistry(gameActionDisplayNameRegistry, thirdPartyGameActionIds)
+        val recordingPortraitRegistry =
+            RecordingPlayerPortraitSourceRegistry(playerPortraitSourceRegistry, thirdPartyPortraitProviderIds)
 
         val registeredExtensionIds = mutableSetOf<String>()
         extensions.forEach { extension ->
@@ -119,6 +140,8 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerRoundPreparationDisplayNames(roundPreparationDisplayNameRegistry)
                 extension.registerWinSettlementPresentationTemplates(winSettlementTemplateRegistry)
                 extension.registerMatchSettlementPresentationTemplates(matchSettlementTemplateRegistry)
+                extension.registerPlayerPortraitSources(recordingPortraitRegistry)
+                extension.registerPublicPlayerIndicatorDisplays(publicPlayerIndicatorDisplayRegistry)
             } catch (cause: Exception) {
                 throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
             }
@@ -136,6 +159,8 @@ object MinecraftMahjongExtensionRegistrar {
         roundPreparationDisplayNameRegistry.freeze()
         winSettlementTemplateRegistry.freeze()
         matchSettlementTemplateRegistry.freeze()
+        playerPortraitSourceRegistry.freeze()
+        publicPlayerIndicatorDisplayRegistry.freeze()
         return MinecraftMahjongExtensionRegistrationResult(
             thirdPartyAssetKeys,
             thirdPartyAiStrategyKeys,
@@ -145,6 +170,7 @@ object MinecraftMahjongExtensionRegistrar {
             thirdPartyTileLabelKeys,
             thirdPartyShowcaseKeys,
             thirdPartyGameActionIds,
+            thirdPartyPortraitProviderIds,
         )
     }
 }
@@ -160,6 +186,7 @@ object MinecraftMahjongExtensionRegistrar {
  * @property thirdPartyTileEmojiKeys 依 extension 順序登記的第三方牌面 emoji asset key，不含內建映射。
  * @property thirdPartyTileLabelKeys 依 extension 順序登記的第三方牌面角落標籤 asset key，不含內建映射。
  * @property thirdPartyGameActionIds 依 extension 順序登記的第三方規則擴充動作 ID，不含內建映射。
+ * @property thirdPartyPortraitProviderIds 依 extension 順序登記的第三方 portrait provider ID，不含內建 fallback。
  */
 data class MinecraftMahjongExtensionRegistrationResult(
     val thirdPartyTileAssetKeys: List<String>,
@@ -170,7 +197,26 @@ data class MinecraftMahjongExtensionRegistrationResult(
     val thirdPartyTileLabelKeys: List<String>,
     val thirdPartyShowcaseKeys: List<String> = emptyList(),
     val thirdPartyGameActionIds: List<String> = emptyList(),
+    val thirdPartyPortraitProviderIds: List<String> = emptyList(),
 )
+
+/** 轉發 portrait provider 註冊並記錄第三方 provider ID。 */
+private class RecordingPlayerPortraitSourceRegistry(
+    private val delegate: PlayerPortraitSourceRegistry,
+    private val recorded: MutableList<String>,
+) : PlayerPortraitSourceRegistry {
+    override val isFrozen: Boolean get() = delegate.isFrozen
+    override val providerIds: Set<String> get() = delegate.providerIds
+
+    override fun register(providerId: String, priority: Int, provider: PlayerPortraitSourceProvider) {
+        delegate.register(providerId, priority, provider)
+        recorded += providerId
+    }
+
+    override fun resolve(context: PlayerPortraitSourceContext) = delegate.resolve(context)
+
+    override fun freeze() = delegate.freeze()
+}
 
 /** 表示指定第三方 Minecraft extension 無法完成 registry 註冊。 */
 class MinecraftMahjongExtensionRegistrationException(
@@ -305,7 +351,7 @@ private class RecordingWinCelebrationShowcaseRegistry(
     override val isFrozen: Boolean get() = delegate.isFrozen
     override val cueKeys: Set<String> get() = delegate.cueKeys
 
-    override fun register(definition: com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition) {
+    override fun register(definition: WinCelebrationShowcaseDefinition) {
         delegate.register(definition)
         recorded += definition.cueKey
     }
