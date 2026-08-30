@@ -151,15 +151,6 @@ object MinecraftMessageKeys {
      */
     const val SHOW_GAME_CONFIG = PREFIX + "show_game_config"
 
-    /** 設定編輯畫面的標題。 */
-    const val GAME_CONFIG_SCREEN_TITLE = PREFIX + "game_config_screen_title"
-
-    /** 設定編輯畫面「套用」按鈕：送出後畫面保持開啟。 */
-    const val GAME_CONFIG_SCREEN_APPLY = PREFIX + "game_config_screen_apply"
-
-    /** 設定編輯畫面「確認」按鈕：送出後關閉畫面。 */
-    const val GAME_CONFIG_SCREEN_CONFIRM = PREFIX + "game_config_screen_confirm"
-
     // ── 麻將牌顯示文字（見 MahjongTileDisplayText.kt） ──────────────────────
 
     /** 萬子數牌顯示文字，帶一個數值參數（一個 `%s`）。 */
@@ -460,9 +451,6 @@ object MinecraftMessageKeys {
         CHANGE_GAME_CONFIG_FAILED,
         GAME_CONFIG_LABEL,
         SHOW_GAME_CONFIG,
-        GAME_CONFIG_SCREEN_TITLE,
-        GAME_CONFIG_SCREEN_APPLY,
-        GAME_CONFIG_SCREEN_CONFIRM,
         TILE_SUIT_CHARACTER,
         TILE_SUIT_DOT,
         TILE_SUIT_BAMBOO,

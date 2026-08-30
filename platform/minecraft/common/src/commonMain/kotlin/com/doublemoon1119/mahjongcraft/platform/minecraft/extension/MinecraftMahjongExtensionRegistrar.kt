@@ -16,6 +16,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerInd
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.registerBuiltInGameConfigPresentations
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.registerBuiltInRuleModuleDisplayNames
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
@@ -79,6 +84,8 @@ object MinecraftMahjongExtensionRegistrar {
         playerPortraitSourceRegistry: PlayerPortraitSourceRegistry = PlayerPortraitSourceRegistryImpl(),
         publicPlayerIndicatorDisplayRegistry: PublicPlayerIndicatorDisplayRegistry =
             PublicPlayerIndicatorDisplayRegistryImpl(),
+        gameConfigPresentationRegistry: GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(),
+        roomMemberAppearanceSourceRegistry: RoomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(),
     ): MinecraftMahjongExtensionRegistrationResult {
         tileAssetRegistry.registerBuiltInTileAssets()
         aiStrategyDisplayNameRegistry.registerBuiltInAiStrategyDisplayNames()
@@ -94,6 +101,7 @@ object MinecraftMahjongExtensionRegistrar {
             RiichiRuleModule.RIICHI_INDICATOR_ID,
             PublicPlayerIndicatorDisplay(MinecraftMessageKeys.PLAYER_INDICATOR_RIICHI),
         )
+        gameConfigPresentationRegistry.registerBuiltInGameConfigPresentations()
 
         val thirdPartyAssetKeys = mutableListOf<String>()
         val thirdPartyAiStrategyKeys = mutableListOf<String>()
@@ -142,6 +150,8 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerMatchSettlementPresentationTemplates(matchSettlementTemplateRegistry)
                 extension.registerPlayerPortraitSources(recordingPortraitRegistry)
                 extension.registerPublicPlayerIndicatorDisplays(publicPlayerIndicatorDisplayRegistry)
+                extension.registerGameConfigPresentations(gameConfigPresentationRegistry)
+                extension.registerRoomMemberAppearanceSources(roomMemberAppearanceSourceRegistry)
             } catch (cause: Exception) {
                 throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
             }
@@ -161,6 +171,8 @@ object MinecraftMahjongExtensionRegistrar {
         matchSettlementTemplateRegistry.freeze()
         playerPortraitSourceRegistry.freeze()
         publicPlayerIndicatorDisplayRegistry.freeze()
+        gameConfigPresentationRegistry.freeze()
+        roomMemberAppearanceSourceRegistry.freeze()
         return MinecraftMahjongExtensionRegistrationResult(
             thirdPartyAssetKeys,
             thirdPartyAiStrategyKeys,

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.di
 
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
@@ -10,6 +11,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerInd
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
@@ -25,11 +31,27 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistryImpl
 import org.koin.core.annotation.Module
+import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 
 /** Minecraft loader 與版本無關、client／server 共用的 Koin 定義。 */
 @Module
 class MinecraftCommonModule {
+    /** 建立 GUI 與聊天 hover 共用的設定解析器。 */
+    @Single
+    fun provideGameConfigPresentationResolver(
+        registry: GameConfigPresentationRegistry,
+        @Provided moduleRegistry: MahjongModuleRegistry,
+    ): GameConfigPresentationResolver = GameConfigPresentationResolver(registry, moduleRegistry)
+
+    /** 建立房間規則設定的宣告式呈現 registry。 */
+    @Single
+    fun provideGameConfigPresentationRegistry(): GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl()
+
+    /** 建立房間成員外觀來源 registry。 */
+    @Single
+    fun provideRoomMemberAppearanceSourceRegistry(): RoomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl()
+
     /** 建立公開玩家 indicator 的本地化顯示 registry。 */
     @Single
     fun providePublicPlayerIndicatorDisplayRegistry(): PublicPlayerIndicatorDisplayRegistry = PublicPlayerIndicatorDisplayRegistryImpl()

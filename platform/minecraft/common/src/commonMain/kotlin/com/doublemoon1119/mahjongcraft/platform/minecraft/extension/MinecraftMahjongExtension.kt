@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
@@ -100,4 +102,10 @@ interface MinecraftMahjongExtension {
 
     /** 登記規則公開 indicator／option 的本地化顯示。 */
     fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistry) = Unit
+
+    /** 登記第三方規則的宣告式房間設定欄位。 */
+    fun registerGameConfigPresentations(registry: GameConfigPresentationRegistry) = Unit
+
+    /** 登記第三方房間成員外觀來源；完整 entity factory 留待 SeatActorProvider 階段。 */
+    fun registerRoomMemberAppearanceSources(registry: RoomMemberAppearanceSourceRegistry) = Unit
 }
