@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisibility
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
@@ -46,13 +48,23 @@ class UpdateConfigUseCase(
         operatorId: Uuid,
         newConfig: GameConfig,
     ): Outcome<GameConfig, RoomError> {
+        val normalizedConfig = newConfig.withConsistentSpectatorVisibility()
         // 1. 以原子方式讀取房間、驗證權限並寫回，避免與其他房間操作產生競態
         val outcome = roomRepository.update(roomId) { room ->
             when {
                 room == null -> room to Outcome.Error(RoomError.RoomNotFound(roomId))
                 operatorId != room.hostId -> room to Outcome.Error(RoomError.NotHost(operatorId))
+                room.playerIds.size > normalizedConfig.ruleConfig.maxPlayers ->
+                    room to Outcome.Error(RoomError.RoomPlayerCountInvalid(roomId))
                 else -> {
-                    val updatedRoom = room.copy(gameConfig = newConfig)
+                    val updatedRoom = if (room.gameConfig == normalizedConfig) {
+                        room
+                    } else {
+                        room.copy(
+                            gameConfig = normalizedConfig,
+                            readyPlayerIds = room.aiPlayerIds,
+                        )
+                    }
                     updatedRoom to Outcome.Success(updatedRoom)
                 }
             }
@@ -81,5 +93,15 @@ class UpdateConfigUseCase(
                 Outcome.Success(updatedRoom.gameConfig)
             }
         }
+    }
+
+    /** 禁止在旁觀關閉時保留可公開所有手牌的矛盾設定。 */
+    private fun GameConfig.withConsistentSpectatorVisibility(): GameConfig = if (
+        flowConfig.spectatingPolicy == SpectatingPolicy.DISABLED &&
+        flowConfig.spectatorHandVisibility != SpectatorHandVisibility.HIDDEN
+    ) {
+        copy(flowConfig = flowConfig.copy(spectatorHandVisibility = SpectatorHandVisibility.HIDDEN))
+    } else {
+        this
     }
 }

@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisibility
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
@@ -115,5 +118,66 @@ class UpdateConfigUseCaseTest {
         // Act & Assert
         val result = useCase(roomId, hostId, GameConfig(newConfig))
         assertTrue(result is Outcome.Error, "Expected Error but got $result")
+    }
+
+    @Test
+    fun `changed config clears human ready state but preserves AI ready state`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val snapshotRepo = FakeRoomSnapshotRepository()
+        val useCase = UpdateConfigUseCase(roomRepo, snapshotRepo, FakeRoomEventPublisher())
+        val humanId = Uuid.random()
+        val aiId = Uuid.random()
+        roomRepo.setRoom(
+            Room(
+                id = roomId,
+                hostId = hostId,
+                gameConfig = GameConfig(initialConfig),
+                playerIds = listOf(hostId, humanId, aiId),
+                readyPlayerIds = listOf(humanId, aiId),
+                aiPlayerStrategyKeys = mapOf(aiId to "mahjongcraft:default"),
+            ),
+        )
+
+        assertTrue(useCase(roomId, hostId, GameConfig(FakeMahjongRuleConfig(minimumWinConstraint = 2))) is Outcome.Success)
+
+        assertEquals(listOf(aiId), roomRepo.getRoom(roomId)?.readyPlayerIds)
+    }
+
+    @Test
+    fun `config with smaller maximum player count is rejected atomically`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val useCase = UpdateConfigUseCase(roomRepo, FakeRoomSnapshotRepository(), FakeRoomEventPublisher())
+        val original = Room(
+            id = roomId,
+            hostId = hostId,
+            gameConfig = GameConfig(initialConfig),
+            playerIds = listOf(hostId, Uuid.random(), Uuid.random()),
+        )
+        roomRepo.setRoom(original)
+
+        val result = useCase(roomId, hostId, GameConfig(FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 2)))
+
+        assertTrue(result is Outcome.Error)
+        assertEquals(original.gameConfig, roomRepo.getRoom(roomId)?.gameConfig)
+    }
+
+    @Test
+    fun `disabling spectating also hides spectator hands`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val useCase = UpdateConfigUseCase(roomRepo, FakeRoomSnapshotRepository(), FakeRoomEventPublisher())
+        roomRepo.setRoom(Room(roomId, hostId, GameConfig(initialConfig), listOf(hostId)))
+        val contradictory = GameConfig(
+            newConfig,
+            GameFlowConfig(
+                spectatingPolicy = SpectatingPolicy.DISABLED,
+                spectatorHandVisibility = SpectatorHandVisibility.REVEALED,
+            ),
+        )
+
+        val result = useCase(roomId, hostId, contradictory)
+
+        assertTrue(result is Outcome.Success)
+        assertEquals(SpectatorHandVisibility.HIDDEN, result.value.flowConfig.spectatorHandVisibility)
+        assertEquals(SpectatorHandVisibility.HIDDEN, roomRepo.getRoom(roomId)?.gameConfig?.flowConfig?.spectatorHandVisibility)
     }
 }

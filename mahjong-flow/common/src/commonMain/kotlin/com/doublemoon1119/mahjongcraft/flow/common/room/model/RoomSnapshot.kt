@@ -15,6 +15,7 @@ import kotlin.uuid.Uuid
  * @property playerIds 目前房間內所有玩家（含房主與 AI）的 Uuid，依加入房間的順序排列。
  * @property readyPlayerIds 已標記為「準備完成」的玩家 Uuid。
  * @property aiPlayerIds 由房主新增的 AI 玩家 Uuid，依加入房間的順序排列。
+ * @property aiPlayerStrategyKeys AI 玩家與目前策略 key 的公開映射。
  * @property canStart 房間是否符合開局條件。
  * @property isHost 此快照的觀察者是否為房主。
  * @property isInRoom 此快照的觀察者目前是否身處該房間內。
@@ -26,6 +27,7 @@ data class RoomSnapshot(
     val playerIds: List<Uuid>,
     val readyPlayerIds: List<Uuid>,
     val aiPlayerIds: List<Uuid>,
+    val aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
     val canStart: Boolean,
     val isHost: Boolean,
     val isInRoom: Boolean,
@@ -44,6 +46,7 @@ fun Room.toSnapshot(observerId: Uuid): RoomSnapshot = RoomSnapshot(
     playerIds = playerIds,
     readyPlayerIds = readyPlayerIds,
     aiPlayerIds = aiPlayerIds,
+    aiPlayerStrategyKeys = aiPlayerStrategyKeys,
     canStart = canStart,
     isHost = observerId == hostId,
     isInRoom = playerIds.contains(observerId),
