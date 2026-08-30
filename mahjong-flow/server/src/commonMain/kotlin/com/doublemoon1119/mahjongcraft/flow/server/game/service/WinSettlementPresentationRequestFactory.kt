@@ -153,7 +153,7 @@ object WinSettlementPresentationRequestFactory {
                 ),
             )
             if (!result.isYakuman) {
-                add(WinSettlementDetailField(RIICHI_HAN_FU_FIELD, WinSettlementDetailValue.Text(WinSettlementTranslationKeys.HAN_FU, listOf(result.totalHan.toString(), result.totalFu.toString()))))
+                add(WinSettlementDetailField(RIICHI_HAN_FU_FIELD, riichiHanFuValue(result.totalHan, result.totalFu)))
             } else {
                 val multiplier = -result.totalHan
                 add(
@@ -172,6 +172,19 @@ object WinSettlementPresentationRequestFactory {
     }
 
     private fun ranks(state: TableState, module: MahjongRuleModule<*>): Map<Uuid, Int> = state.players.sortedWith(module.compareForRoundRanking()).mapIndexed { index, player -> player.id to index + 1 }.toMap()
+
+    /** 建立一般胡牌的翻符顯示；滿貫以上沒有權威符數時只顯示翻數。 */
+    internal fun riichiHanFuValue(totalHan: Int, totalFu: Int): WinSettlementDetailValue.Text = if (totalFu > 0) {
+        WinSettlementDetailValue.Text(
+            WinSettlementTranslationKeys.HAN_FU,
+            listOf(totalHan.toString(), totalFu.toString()),
+        )
+    } else {
+        WinSettlementDetailValue.Text(
+            WinSettlementTranslationKeys.HAN,
+            listOf(totalHan.toString()),
+        )
+    }
 
     /** 對應既有玩家可見役種翻譯鍵；名稱差異集中在這裡，不由 renderer 猜測 enum 名稱。 */
     private fun yakuTranslationKey(type: YakuType): String = "mahjongcraft.game.yaku.${YAKU_TRANSLATION_PATHS.getValue(type)}"
