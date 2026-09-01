@@ -47,6 +47,7 @@ data class DecisionTimerStatusDto(
     val phase: PlayerDecisionPhaseDto,
     val baseRemainingMillis: Long,
     val reserveRemainingMillis: Long,
+    val prompt: PlayerDecisionPromptDto? = null,
 )
 
 /**
