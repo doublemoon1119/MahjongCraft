@@ -16,6 +16,9 @@
   "icon": "assets/${id}/icon.png",
   "environment": "*",
   "accessWidener": "mahjongcraft.accesswidener",
+  "mixins": [
+    "mahjongcraft.client.mixins.json"
+  ],
   "entrypoints": {
     "main": [
       {
