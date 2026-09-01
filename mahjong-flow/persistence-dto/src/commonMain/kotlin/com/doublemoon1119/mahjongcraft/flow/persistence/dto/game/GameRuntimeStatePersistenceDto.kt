@@ -16,6 +16,7 @@ import kotlin.uuid.Uuid
  * @property matchEndReasonId 整場終局的完整 namespaced 原因；尚未終局時為 null。
  * @property hostId 開局時的房主 UUID 字串，見 [Game.hostId]；早於此欄位新增的既有存檔沒有這筆資料，
  *   還原時退回第一位玩家（見 [AuthoritativeStatePersistenceDto]）。
+ * @property roomPlayerIds 開局前房間成員的固定顯示順序。
  */
 @Serializable
 data class GameRuntimeStatePersistenceDto(
@@ -27,6 +28,7 @@ data class GameRuntimeStatePersistenceDto(
     val matchEndReasonId: String? = null,
     val pendingRoundPreparation: PendingRoundPreparationPersistenceDto? = null,
     val hostId: String? = null,
+    val roomPlayerIds: List<String>? = null,
 )
 
 /** 將 [Game] 的 runtime 狀態轉換成 persistence DTO。 */
@@ -39,6 +41,7 @@ fun Game.toRuntimeStatePersistenceDto(): GameRuntimeStatePersistenceDto = GameRu
     matchEndReasonId = matchEndReasonId,
     pendingRoundPreparation = pendingRoundPreparation?.toPersistenceDto(),
     hostId = hostId.toString(),
+    roomPlayerIds = roomPlayerIds.map(Uuid::toString),
 )
 
 /** 將 persistence DTO 中的剩餘保留思考時間還原成以玩家 UUID 索引的資料。 */

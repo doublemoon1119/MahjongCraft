@@ -92,6 +92,7 @@ class StartGameUseCase(
                                     tableState = organizedState,
                                     flowConfig = room.gameConfig.flowConfig,
                                     hostId = room.hostId,
+                                    roomPlayerIds = room.playerIds,
                                 )
                                 ),
                         ),

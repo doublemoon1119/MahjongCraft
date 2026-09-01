@@ -61,7 +61,7 @@ class ReturnToRoomUseCase(
                         id = gameId,
                         hostId = game.hostId,
                         gameConfig = GameConfig(ruleConfig = tableState.config, flowConfig = game.flowConfig),
-                        playerIds = tableState.players.map { it.id },
+                        playerIds = game.roomPlayerIds,
                         readyPlayerIds = aiPlayerIds,
                         aiPlayerStrategyKeys = tableState.players
                             .filter { it.isAi }

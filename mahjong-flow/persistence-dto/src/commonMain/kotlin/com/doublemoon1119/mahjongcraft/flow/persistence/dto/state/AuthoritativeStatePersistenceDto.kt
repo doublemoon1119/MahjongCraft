@@ -141,6 +141,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
         matchEndReasonId = runtimeState.matchEndReasonId,
         pendingRoundPreparation = runtimeState.pendingRoundPreparation?.toDomain(),
         hostId = runtimeState.hostId?.let { Uuid.parse(it) } ?: tableState.players.first().id,
+        roomPlayerIds = runtimeState.roomPlayerIds?.map(Uuid::parse) ?: tableState.players.map { it.id },
     )
 }
 

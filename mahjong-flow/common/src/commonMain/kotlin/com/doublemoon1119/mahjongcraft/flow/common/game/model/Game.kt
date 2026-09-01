@@ -29,6 +29,7 @@ import kotlin.uuid.Uuid
  *   把 Room 轉換成 Game 後，房主身分不再能從 `Room` 讀出，保留在這裡讓對局結束轉回 Room
  *   （見 `ReturnToRoomUseCase`）時能還原同一位房主，預設值取第一位玩家僅供未指定房主的測試情境使用；
  *   `tableState` 沒有任何玩家時（同樣僅見於測試情境）退回隨機值，不受下方驗證約束。
+ * @property roomPlayerIds 開局前房間成員的固定顯示順序；牌桌座位洗牌不得覆寫此順序。
  */
 data class Game(
     val tableState: TableState,
@@ -43,6 +44,7 @@ data class Game(
     val matchEndReasonId: String? = null,
     val pendingRoundPreparation: PendingRoundPreparation? = null,
     val hostId: Uuid = tableState.players.firstOrNull()?.id ?: Uuid.random(),
+    val roomPlayerIds: List<Uuid> = tableState.players.map { it.id },
 ) {
     init {
         val playerIds = tableState.players.mapTo(mutableSetOf()) { it.id }
@@ -60,6 +62,9 @@ data class Game(
         }
         require(playerIds.isEmpty() || hostId in playerIds) {
             "Host must belong to the game"
+        }
+        require(roomPlayerIds.size == playerIds.size && roomPlayerIds.toSet() == playerIds) {
+            "Room player order must contain every game player exactly once"
         }
         require(roundCompletion?.settledScoresByPlayerId?.keys?.let { it == playerIds } != false) {
             "Round completion scores must contain exactly the game players"
