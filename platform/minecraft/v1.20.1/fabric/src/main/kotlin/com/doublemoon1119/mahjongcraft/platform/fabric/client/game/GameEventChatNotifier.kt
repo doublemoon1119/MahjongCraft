@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
@@ -48,24 +49,30 @@ fun buildRoundResultChatMessage(
     tileAssetRegistry: MinecraftTileAssetRegistry,
     tileEmojiRegistry: TileEmojiRegistry,
     exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
+    playerDisplayName: ((Uuid, Boolean) -> String)? = null,
 ): Text? {
     if (action !is GameAction.Tsumo && action !is GameAction.Ron && action !is GameAction.ExhaustiveDraw) return null
     if (previousSnapshot == null) return null
 
-    val actionText = action.toDisplayText(
-        referenceTile = null,
-        actionDisplayNameRegistry = actionDisplayNameRegistry,
-        displayNameRegistry = displayNameRegistry,
-        tileAssetRegistry = tileAssetRegistry,
-        tileEmojiRegistry = tileEmojiRegistry,
-        exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
-    )
+    val actionText = if (action is GameAction.Ron) {
+        Text.translatable(WinSettlementTranslationKeys.RON)
+    } else {
+        action.toDisplayText(
+            referenceTile = null,
+            actionDisplayNameRegistry = actionDisplayNameRegistry,
+            displayNameRegistry = displayNameRegistry,
+            tileAssetRegistry = tileAssetRegistry,
+            tileEmojiRegistry = tileEmojiRegistry,
+            exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
+        )
+    }
     val details: MutableText = Text.empty()
 
     val rankBy = module.compareForRoundRanking()
     val previousRankById = previousSnapshot.players.sortedWith(rankBy).withIndex().associate { (index, p) -> p.id to index + 1 }
     val previousScoreById = previousSnapshot.players.associate { it.id to it.score }
     val newRanked = newSnapshot.players.sortedWith(rankBy)
+    val orderedAiPlayerIds = newSnapshot.players.filter { it.isAi }.map { it.id }
 
     newRanked.forEachIndexed { index, player ->
         val newRank = index + 1
@@ -75,7 +82,8 @@ fun buildRoundResultChatMessage(
         details.append(
             Text.translatable(
                 MinecraftMessageKeys.ROUND_RESULT_PLAYER_LINE,
-                resolvePlayerDisplayName(player.id, player.isAi),
+                playerDisplayName?.invoke(player.id, player.isAi)
+                    ?: resolvePlayerDisplayName(player.id, player.isAi, orderedAiPlayerIds),
                 previousRank.toString(),
                 newRank.toString(),
                 rankChangeSymbol(previousRank, newRank),
@@ -103,11 +111,16 @@ private fun rankChangeSymbol(previousRank: Int, newRank: Int): String = when {
  *
  * @return 不是對局結束事件時回傳 null，代表呼叫端不需要顯示任何訊息。
  */
-fun buildMatchResultChatMessage(action: GameAction, newSnapshot: TableStateSnapshot, module: MahjongRuleModule<*>): Text? {
+fun buildMatchResultChatMessage(
+    action: GameAction,
+    newSnapshot: TableStateSnapshot,
+    module: MahjongRuleModule<*>,
+    playerDisplayName: ((Uuid, Boolean) -> String)? = null,
+): Text? {
     if (action !is GameAction.MatchEnded) return null
 
     val details = Text.empty()
-    appendRankingLines(details, newSnapshot.players.sortedWith(module.compareForMatchRanking()))
+    appendRankingLines(details, newSnapshot.players.sortedWith(module.compareForMatchRanking()), playerDisplayName)
     return buildMatchResultChatText(details)
 }
 
@@ -123,14 +136,20 @@ fun buildDiceRolledChatMessage(action: GameAction): Text? {
 }
 
 /** 把 [rankedPlayers]（已排好序）依序編號附加到 [message]，兩種排名訊息共用同一種每行格式。 */
-private fun appendRankingLines(message: MutableText, rankedPlayers: List<MahjongPlayerSnapshot>) {
+private fun appendRankingLines(
+    message: MutableText,
+    rankedPlayers: List<MahjongPlayerSnapshot>,
+    playerDisplayName: ((Uuid, Boolean) -> String)?,
+) {
+    val orderedAiPlayerIds = rankedPlayers.filter { it.isAi }.sortedBy { it.initialSeatIndex }.map { it.id }
     rankedPlayers.forEachIndexed { index, player ->
         if (index > 0) message.append(Text.literal("\n"))
         message.append(
             Text.translatable(
                 MinecraftMessageKeys.RANKING_LINE,
                 (index + 1).toString(),
-                resolvePlayerDisplayName(player.id, player.isAi),
+                playerDisplayName?.invoke(player.id, player.isAi)
+                    ?: resolvePlayerDisplayName(player.id, player.isAi, orderedAiPlayerIds),
                 player.score.toString(),
             ),
         )
@@ -141,8 +160,8 @@ private fun appendRankingLines(message: MutableText, rankedPlayers: List<Mahjong
  * 真人玩家的麻將 Uuid 就是其 Minecraft 帳號 Uuid（見 `MahjongTableRoomService.join`），可以直接查
  * 玩家清單解析出真實 ID；查不到（不在同一伺服器可見範圍）或是 AI 玩家則退回顯示短 ID 佔位。
  */
-private fun resolvePlayerDisplayName(id: Uuid, isAi: Boolean): String {
-    if (isAi) return "AI-" + id.toString().take(4)
+private fun resolvePlayerDisplayName(id: Uuid, isAi: Boolean, orderedAiPlayerIds: List<Uuid>): String {
+    if (isAi) return com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName(id, orderedAiPlayerIds)
     val name = MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(id.toJavaUuid())?.profile?.name
     return name ?: id.toString().take(8)
 }

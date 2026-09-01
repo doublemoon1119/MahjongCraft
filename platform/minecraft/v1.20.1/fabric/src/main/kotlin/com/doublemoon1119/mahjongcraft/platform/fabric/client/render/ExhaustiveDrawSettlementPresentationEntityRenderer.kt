@@ -3,14 +3,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingAnimation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetPath
-import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.render.LightmapTextureManager
 import net.minecraft.client.render.VertexConsumerProvider
@@ -21,7 +18,6 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.Identifier
 import org.slf4j.LoggerFactory
-import java.util.UUID
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid as KotlinUuid
 
@@ -30,9 +26,10 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
     private val reasonDisplayNames: ExhaustiveDrawReasonDisplayNameRegistry,
     private val portraitRenderer: PlayerPortraitRenderer,
+    private val tileFaceRenderer: MahjongTileFaceRenderer,
+    private val playerNames: ClientPlayerDisplayNameResolver,
 ) : EntityRenderer<ExhaustiveDrawSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
-    private val tileTextures = mutableMapOf<String, Identifier>()
     private val warnedUnknownReasonIds = mutableSetOf<String>()
 
     override fun render(
@@ -314,35 +311,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         matrices: MatrixStack,
         vertexConsumers: VertexConsumerProvider,
     ) {
-        val texture = resolveTileTexture(assetKey)
-        val buffer = vertexConsumers.getBuffer(ExhaustiveDrawSettlementTileFaceRenderLayer.get(texture))
-        val matrix = matrices.peek().positionMatrix
-        val left = centerX - width / 2f
-        val right = centerX + width / 2f
-        val top = centerY - height / 2f
-        val bottom = centerY + height / 2f
-        val a = (alpha.coerceIn(0f, 1f) * 255).roundToInt()
-        fun vertex(x: Float, y: Float, u: Float, v: Float) {
-            buffer.vertex(matrix, x, y, TILE_FACE_Z)
-                .color(255, 255, 255, a)
-                .texture(u, v)
-                .light(LightmapTextureManager.MAX_LIGHT_COORDINATE)
-                .next()
-        }
-        vertex(left, top, 0f, 0f)
-        vertex(right, top, 1f, 0f)
-        vertex(right, bottom, 1f, 1f)
-        vertex(left, bottom, 0f, 1f)
-    }
-
-    /** 解析牌面材質；資源不存在時統一退回內建 unknown。 */
-    private fun resolveTileTexture(assetKey: String): Identifier = tileTextures.getOrPut(assetKey) {
-        val requested = Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath(assetKey))
-        if (MinecraftClient.getInstance().resourceManager.getResource(requested).isPresent) {
-            requested
-        } else {
-            Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath(UNKNOWN_TILE_ASSET_KEY))
-        }
+        tileFaceRenderer.renderWorldPanel(assetKey, centerX, centerY, width, height, alpha, TILE_FACE_Z, matrices, vertexConsumers)
     }
 
     private fun drawText(
@@ -370,11 +339,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         return textRenderer.trimToWidth(name, NAME_MAX_WIDTH - textRenderer.getWidth(suffix)) + suffix
     }
 
-    private fun resolvePlayerName(player: ExhaustiveDrawSettlementPlayerSnapshot): String {
-        if (player.isAi) return "AI-${player.playerId.take(6)}"
-        val uuid = runCatching { UUID.fromString(player.playerId) }.getOrNull()
-        return uuid?.let { MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(it)?.profile?.name } ?: player.playerId.take(8)
-    }
+    private fun resolvePlayerName(player: ExhaustiveDrawSettlementPlayerSnapshot): String = playerNames.resolve(player.playerId, player.isAi)
 
     private fun reasonText(reasonId: String): Text = reasonDisplayNames.find(reasonId)?.let(Text::translatable) ?: run {
         if (warnedUnknownReasonIds.add(reasonId)) logger.warn("Unknown exhaustive-draw reason display name: {}", reasonId)

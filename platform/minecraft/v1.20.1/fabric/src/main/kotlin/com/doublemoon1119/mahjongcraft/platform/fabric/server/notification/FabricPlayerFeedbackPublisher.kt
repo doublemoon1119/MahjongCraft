@@ -143,8 +143,6 @@ class FabricPlayerFeedbackPublisher(
                     logger.debug("Game-config-show hover playerId={} config={}", playerId, feedback.configJson)
                     player.sendMessage(showGameConfigMessage(feedback))
                 }
-                is MinecraftPlayerFeedback.GameActionPerformed ->
-                    player.sendMessage(gameActionPerformedMessage(feedback), true)
                 MinecraftPlayerFeedback.NotYourTurn ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.NOT_YOUR_TURN), true)
                 MinecraftPlayerFeedback.ForcedAutoPlayActive ->
@@ -256,19 +254,6 @@ class FabricPlayerFeedbackPublisher(
 
     /** 將設定轉成本地化 hover 文字，與 RoomScreen 共用宣告式設定 schema。 */
     private fun gameConfigHoverText(configJson: String): MutableText = gameConfigFormatter.full(configJson)
-
-    /** 建立「已執行對局動作」訊息，例如「已執行：打出 五筒」。 */
-    private fun gameActionPerformedMessage(feedback: MinecraftPlayerFeedback.GameActionPerformed): MutableText = Text.translatable(
-        MinecraftMessageKeys.GAME_ACTION_PERFORMED,
-        feedback.action.toDisplayText(
-            feedback.referenceTile,
-            gameActionDisplayNames,
-            tileDisplayNames,
-            tileAssetRegistry,
-            tileEmojiRegistry,
-            exhaustiveDrawReasonDisplayNames,
-        ),
-    )
 
     /**
      * 建立 `/mahjongcraft game hand` 的手牌畫面：手牌列表、副露（有的話）、目前可執行的特殊動作

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerUpd
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameCommandEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomScreenActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
@@ -13,6 +14,7 @@ import kotlinx.serialization.builtins.serializer
 /** `mahjongcraft:` 命名空間下實際使用的命令、事件更新與主動快照同步頻道。 */
 object MahjongChannels {
     val gameCommand = C2SChannel("game_command", GameCommandEnvelopeDto.serializer())
+    val decisionSelection = C2SChannel("decision_selection", PlayerDecisionSelectionDto.serializer())
 
     val roomScreenAction = C2SChannel("room_screen_action", RoomScreenActionDto.serializer())
 

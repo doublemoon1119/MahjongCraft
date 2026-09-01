@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
@@ -9,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetPath
-import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.render.LightmapTextureManager
 import net.minecraft.client.render.VertexConsumer
@@ -21,7 +21,6 @@ import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 import org.joml.Matrix4f
 import org.slf4j.LoggerFactory
-import java.util.UUID
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 
@@ -30,6 +29,7 @@ class MatchSettlementPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
     private val templates: MatchSettlementPresentationTemplateRegistry,
     private val portraitRenderer: PlayerPortraitRenderer,
+    private val playerNames: ClientPlayerDisplayNameResolver,
 ) : EntityRenderer<MatchSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
     private val warnedUnknownTemplateKeys = mutableSetOf<String>()
@@ -259,11 +259,7 @@ class MatchSettlementPresentationEntityRenderer(
     }
 
     /** 從 client player list 解析名稱，AI 與離線玩家使用穩定 fallback。 */
-    private fun resolvePlayerName(player: MatchSettlementPlayerSnapshot): String {
-        if (player.isAi) return "AI-${player.playerId.take(6)}"
-        val uuid = runCatching { UUID.fromString(player.playerId) }.getOrNull()
-        return uuid?.let { MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(it)?.profile?.name } ?: player.playerId.take(8)
-    }
+    private fun resolvePlayerName(player: MatchSettlementPlayerSnapshot): String = playerNames.resolve(player.playerId, player.isAi)
 
     /** 計算面板淡入、閱讀與淡出透明度。 */
     private fun panelAlpha(elapsed: Double, duration: Double): Float = when {

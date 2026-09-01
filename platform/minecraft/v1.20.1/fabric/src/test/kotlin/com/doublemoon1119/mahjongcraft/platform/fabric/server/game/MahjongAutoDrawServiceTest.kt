@@ -39,7 +39,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundC
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
@@ -49,8 +48,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -61,7 +58,6 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoom
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -168,30 +164,16 @@ class MahjongAutoDrawServiceTest {
             winPresentationHandoff = winPresentationHandoff,
             presentationPublisher = presentationPublisher,
         )
-        val feedbackPublisher = FakeMinecraftPlayerFeedbackPublisher()
-        val membershipRepository = PlayerMembershipRepositoryImpl()
-        val candidateResolver = GameActionCandidateResolver(gameRepo, membershipRepository, getLegalActionsUseCase, moduleRegistry)
         val autoDrawService = MahjongAutoDrawService(
             gameRepo,
             coordinator,
-            feedbackPublisher,
             TablePresentationBusyTracker(FabricServerHolder(), TableLocationRegistry()),
-            candidateResolver,
         )
     }
 
     /** 提供固定時間的假時鐘，避免測試依賴真實系統時間。 */
     private class MutableMonotonicClock : MonotonicClock {
         override fun nowMillis(): Long = 0L
-    }
-
-    /** 記錄每次 [publish] 呼叫，供測試驗證 [MahjongAutoDrawService] 是否正確發布輪到自己的通知。 */
-    private class FakeMinecraftPlayerFeedbackPublisher : MinecraftPlayerFeedbackPublisher {
-        val published = mutableListOf<Pair<Uuid, MinecraftPlayerFeedback>>()
-
-        override fun publish(playerId: Uuid, feedback: MinecraftPlayerFeedback) {
-            published += playerId to feedback
-        }
     }
 
     /** 建立一場已開局、尚未有任何玩家摸牌的真局；莊家（東家）維持真人。 */
@@ -210,10 +192,8 @@ class MahjongAutoDrawServiceTest {
     }
 
     /**
-     * 驗證真人莊家尚未摸牌時，`checkAndAutoDraw` 會實際幫他摸到一張牌，並依序發布
-     * [MinecraftPlayerFeedback.YourTurn] 通知他輪到自己了、緊接著發布
-     * [MinecraftPlayerFeedback.ShowHand] 讓他不需要另外手動查詢 `/mahjongcraft game hand`
-     * 就能看到目前的手牌與合法動作。
+     * 驗證真人莊家尚未摸牌時，`checkAndAutoDraw` 會實際幫他摸到一張牌。輪次與合法動作改由私人
+     * 操作 HUD prompt 呈現，因此不再驗證舊的自動聊天訊息。
      */
     @Test
     fun `test checkAndAutoDraw draws for human player who has not drawn yet`() = runTest {
@@ -226,17 +206,6 @@ class MahjongAutoDrawServiceTest {
         assertNotNull(state)
         val drawnTile = state.currentPlayer.hand.lastDrawn
         assertNotNull(drawnTile, "Human dealer should have been auto-drawn a tile.")
-
-        assertEquals(2, fixtures.feedbackPublisher.published.size)
-        val (notifiedPlayerId, yourTurnFeedback) = fixtures.feedbackPublisher.published[0]
-        assertEquals(state.currentPlayer.id, notifiedPlayerId)
-        val yourTurn = assertIs<MinecraftPlayerFeedback.YourTurn>(yourTurnFeedback)
-        assertEquals(drawnTile.tile, yourTurn.drawnTile)
-
-        val (showHandPlayerId, showHandFeedback) = fixtures.feedbackPublisher.published[1]
-        assertEquals(state.currentPlayer.id, showHandPlayerId)
-        val showHand = assertIs<MinecraftPlayerFeedback.ShowHand>(showHandFeedback)
-        assertEquals(state.currentPlayer.hand.standingTiles.map { it.tile }, showHand.standingTiles)
     }
 
     /** 驗證目前玩家是 AI 時，`checkAndAutoDraw` 不會介入（交給 `driveAutomatedPlayers` 處理）。 */

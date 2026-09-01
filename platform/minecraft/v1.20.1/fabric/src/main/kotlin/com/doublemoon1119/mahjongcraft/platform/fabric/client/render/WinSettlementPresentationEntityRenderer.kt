@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingAnimat
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementDetailSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementRankingSnapshot
@@ -20,9 +21,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.Presentatio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetPath
-import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.render.LightmapTextureManager
 import net.minecraft.client.render.VertexConsumerProvider
@@ -31,7 +29,6 @@ import net.minecraft.client.render.entity.EntityRendererFactory
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.text.Text
 import net.minecraft.util.Identifier
-import java.util.UUID
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 
@@ -40,9 +37,10 @@ class WinSettlementPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
     private val templateRegistry: WinSettlementPresentationTemplateRegistry,
     private val portraitRenderer: PlayerPortraitRenderer,
+    private val tileFaceRenderer: MahjongTileFaceRenderer,
+    private val playerNames: ClientPlayerDisplayNameResolver,
 ) : EntityRenderer<WinSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
-    private val tileTextures = mutableMapOf<String, Identifier>()
 
     override fun render(
         entity: WinSettlementPresentationEntity,
@@ -870,9 +868,7 @@ class WinSettlementPresentationEntityRenderer(
 
     private fun WinSettlementDetailSnapshot.text(): Text = Text.translatable(values.firstOrNull().orEmpty(), *values.drop(1).toTypedArray())
     private fun WinSettlementRankingSnapshot.toRankingPlayer() = ScoreRankingPlayer(Uuid.parse(playerId), seatIndex, isAi, previousScore, currentScore, previousRank, currentRank)
-    private fun playerName(id: String): String = runCatching { java.util.UUID.fromString(id) }.getOrNull()?.let { uuid ->
-        MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(uuid)?.profile?.name
-    } ?: id.take(8)
+    private fun playerName(id: String): String = playerNames.resolve(id)
 
     private fun renderPanel(halfWidth: Float, top: Float, bottom: Float, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         val matrix = matrices.peek().positionMatrix
@@ -885,22 +881,7 @@ class WinSettlementPresentationEntityRenderer(
     }
 
     private fun renderTile(asset: String, cx: Float, cy: Float, width: Float, height: Float, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
-        val texture = tileTextures.getOrPut(asset) {
-            val requested = Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath(asset))
-            if (MinecraftClient.getInstance().resourceManager.getResource(requested).isPresent) {
-                requested
-            } else {
-                Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath(UNKNOWN_TILE_ASSET_KEY))
-            }
-        }
-        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementTileFaceRenderLayer.get(texture))
-        val matrix = matrices.peek().positionMatrix
-        val a = (alpha * 255).roundToInt()
-        fun vertex(x: Float, y: Float, u: Float, v: Float) = buffer.vertex(matrix, x, y, 0f).color(255, 255, 255, a).texture(u, v).light(LightmapTextureManager.MAX_LIGHT_COORDINATE).next()
-        vertex(cx - width / 2f, cy - height / 2f, 0f, 0f)
-        vertex(cx + width / 2f, cy - height / 2f, 1f, 0f)
-        vertex(cx + width / 2f, cy + height / 2f, 1f, 1f)
-        vertex(cx - width / 2f, cy + height / 2f, 0f, 1f)
+        tileFaceRenderer.renderWorldPanel(asset, cx, cy, width, height, alpha, 0f, matrices, consumers)
     }
 
     private fun draw(text: Text, x: Float, y: Float, align: Align, color: Int, scale: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {

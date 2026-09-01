@@ -3,14 +3,15 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 import net.minecraft.server.network.ServerPlayerEntity
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -56,17 +58,91 @@ class MahjongTableGameActionService(
     private val candidateResolver: GameActionCandidateResolver,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val busyTracker: TablePresentationBusyTracker,
+    private val promptFactory: PlayerDecisionPromptFactory,
 ) {
     /** 對局命令與自動銜接失敗時的專用 logger。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+
+    /** 已由操作 HUD 選擇立直、正等待玩家點擊合法宣告牌的玩家。 */
+    private val riichiSelectionPlayerIds = ConcurrentHashMap.newKeySet<Uuid>()
+
+    /** 處理實體手牌右鍵；已進入立直選牌時改送立直，否則維持一般捨牌。 */
+    fun interactWithHandTile(player: ServerPlayerEntity, tileId: Uuid) {
+        val playerId = player.uuid.toKotlinUuid()
+        if (playerId in riichiSelectionPlayerIds) {
+            scope.launch {
+                val legal = candidateResolver.listRiichiTileCandidates(playerId).any { it.tileId == tileId }
+                if (legal) {
+                    riichiSelectionPlayerIds.remove(playerId)
+                    riichi(player, tileId)
+                } else {
+                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
+                }
+            }
+        } else {
+            discard(player, tileId)
+        }
+    }
+
+    /** 驗證 decision key 後執行操作 HUD 提交的受控選擇。 */
+    fun select(player: ServerPlayerEntity, selection: PlayerDecisionSelectionDto) {
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch {
+            val gameId = runCatching { Uuid.parse(selection.gameId) }.getOrNull() ?: return@launch
+            val state = gameRepository.getTableState(gameId) ?: return@launch
+            val mode = GameActionCandidateResolver.resolvePendingMode(state, playerId)
+            val phase = when (mode) {
+                GamePendingMode.KAN_REACTION -> com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase.KAN_REACTION
+                GamePendingMode.DISCARD_REACTION -> com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase.DISCARD_REACTION
+                GamePendingMode.OWN_TURN -> com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase.OWN_TURN
+                GamePendingMode.NONE -> com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase.ROUND_PREPARATION
+            }
+            val prompt = promptFactory.create(gameId, playerId, phase) ?: return@launch
+            if (prompt.decisionKey != selection.decisionKey) return@launch
+            when (selection.kind) {
+                PlayerDecisionSelectionKindDto.ACTION -> {
+                    val candidate = candidateResolver.listActionCandidates(playerId).firstOrNull { it.token == selection.token }
+                        ?: return@launch
+                    act(player, candidate)
+                }
+
+                PlayerDecisionSelectionKindDto.BEGIN_RIICHI -> {
+                    if (prompt.riichiTileIds.isNotEmpty()) riichiSelectionPlayerIds.add(playerId)
+                }
+
+                PlayerDecisionSelectionKindDto.PREPARATION_CONFIRM -> gameFlowCoordinator(
+                    gameId,
+                    playerId,
+                    GameCommand.SubmitRoundPreparation(RoundPreparationSubmission.Confirmed),
+                )
+
+                PlayerDecisionSelectionKindDto.PREPARATION_CHOICE -> {
+                    val option = selection.token ?: return@launch
+                    gameFlowCoordinator(
+                        gameId,
+                        playerId,
+                        GameCommand.SubmitRoundPreparation(RoundPreparationSubmission.Choice(option)),
+                    )
+                }
+
+                PlayerDecisionSelectionKindDto.PREPARATION_TILES -> {
+                    val tileIds = selection.tileIds.mapNotNull { runCatching { Uuid.parse(it) }.getOrNull() }.toSet()
+                    gameFlowCoordinator(
+                        gameId,
+                        playerId,
+                        GameCommand.SubmitRoundPreparation(RoundPreparationSubmission.Tiles(tileIds)),
+                    )
+                }
+            }
+        }
+    }
 
     /** 打出 [tileId] 這張牌。 */
     fun discard(player: ServerPlayerEntity, tileId: Uuid) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             val gameId = resolveGameId(playerId) ?: return@launch
-            val tile = findHandTile(gameId, playerId, tileId)
-            execute(gameId, playerId, GameCommand.Discard(tileId), GameAction.Discard(tileId), tile)
+            execute(gameId, playerId, GameCommand.Discard(tileId))
         }
     }
 
@@ -75,8 +151,7 @@ class MahjongTableGameActionService(
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             val gameId = resolveGameId(playerId) ?: return@launch
-            val tile = findHandTile(gameId, playerId, tileId)
-            execute(gameId, playerId, GameCommand.Extension(RiichiGameCommand(tileId)), RIICHI_GAME_ACTION, tile)
+            execute(gameId, playerId, GameCommand.Extension(RiichiGameCommand(tileId)))
         }
     }
 
@@ -100,7 +175,7 @@ class MahjongTableGameActionService(
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
                 return@launch
             }
-            execute(gameId, playerId, command, candidate.action, candidate.referenceTile)
+            execute(gameId, playerId, command)
         }
     }
 
@@ -140,22 +215,8 @@ class MahjongTableGameActionService(
         else -> null
     }
 
-    /**
-     * 分派 [command]，成功時先發布這次操作本身的成功回饋，才驅動 AI／強制自動操作連鎖與真人自動摸牌；
-     * 失敗時發布對應錯誤回饋。順序很重要，且不只一處：
-     * - [autoDrawService] 可能會在下一輪又輪回同一位玩家時發布 [MinecraftPlayerFeedback.YourTurn]，
-     *   如果先呼叫它，「輪到你了」會搶在「已執行：打出 X」這句之前送達。
-     * - 這次操作本身若觸發流局／連莊（例如打出的正好是最後一張牌，導致牌山耗盡），
-     *   [GameFlowCoordinator.driveAutomatedPlayers] 內部會廣播回合結束事件；如果在驅動自動連鎖之前
-     *   還沒發布這次操作的回饋，玩家會先看到「本局結束」才看到「已執行：打出 X」，讀起來像是這次
-     *   操作發生在對局結束之後。
-     *
-     * 因此這裡刻意不用 [GameFlowCoordinator] 一次到位的 `invoke`，改拆成 [GameFlowCoordinator.dispatch]
-     * （只分派這次操作，不驅動自動連鎖）→ 發布這次操作的回饋 → [GameFlowCoordinator.driveAutomatedPlayers]
-     * （驅動 AI／強制自動操作直到輪到下一位真人為止）三個步驟依序執行。自動連鎖那段迴圈若拋出未預期
-     * 例外，攔下來記錄，避免協程靜默死掉、對局卡在半途卻沒有任何 log 可查。
-     */
-    private suspend fun execute(gameId: Uuid, playerId: Uuid, command: GameCommand, action: GameAction, referenceTile: Tile?) {
+    /** 分派動作並驅動後續流程；實體捨牌本身已提供明確回饋，因此不再額外傳送成功聊天訊息。 */
+    private suspend fun execute(gameId: Uuid, playerId: Uuid, command: GameCommand) {
         if (busyTracker.isBusy(gameId)) {
             feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.TableAnimationBusy)
             return
@@ -163,7 +224,7 @@ class MahjongTableGameActionService(
         try {
             val result = gameFlowCoordinator.dispatch(gameId, playerId, command)
             when (result) {
-                is Outcome.Success -> feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameActionPerformed(action, referenceTile))
+                is Outcome.Success -> Unit
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftGameFeedbackResolver.actionError(result.error))
             }
             // 被拒絕的命令視為完全沒發生過，不驅動自動連鎖——跟 GameFlowCoordinator.invoke() 對
@@ -186,12 +247,5 @@ class MahjongTableGameActionService(
             return null
         }
         return tableId
-    }
-
-    /** 從玩家目前手牌（含剛摸到的牌）中找出 [tileId] 對應的牌面，找不到時回傳 null。 */
-    private suspend fun findHandTile(gameId: Uuid, playerId: Uuid, tileId: Uuid): Tile? {
-        val state = gameRepository.getTableState(gameId) ?: return null
-        val player = state.players.firstOrNull { it.id == playerId } ?: return null
-        return player.hand.standingTiles.firstOrNull { it.id == tileId }?.tile
     }
 }

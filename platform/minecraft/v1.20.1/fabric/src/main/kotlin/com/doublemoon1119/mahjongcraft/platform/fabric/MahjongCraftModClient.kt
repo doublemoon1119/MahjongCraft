@@ -10,10 +10,13 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigUpdateResult
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.ClientDecisionPromptStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.PlayerDecisionHudController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildDiceRolledChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildMatchResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildRoundResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ExhaustiveDrawSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongDiceEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongLobbyInfoEntityRenderer
@@ -21,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongPlay
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongRoundInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongScoringStickEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MatchSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
@@ -82,15 +86,18 @@ class MahjongCraftModClient : ClientModInitializer {
         koin.get<FabricTileLabelCommand>().register()
         koin.get<FabricHandSortCommand>().register()
         koin.get<FabricClientConfigCommand>().register()
+        koin.get<PlayerDecisionHudController>().registerEvents()
 
         val json = koin.get<kotlinx.serialization.json.Json>()
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val stateStore = koin.get<ClientMahjongStateStore>()
         val decisionTimerStore = koin.get<ClientDecisionTimerStateStore>()
+        val decisionPromptStore = koin.get<ClientDecisionPromptStore>()
         val tileDisplayNames = koin.get<TileDisplayNameRegistry>()
         val tileAssetRegistry = koin.get<MinecraftTileAssetRegistry>()
         val tileEmojiRegistry = koin.get<TileEmojiRegistry>()
         val tileLabelRegistry = koin.get<TileLabelRegistry>()
+        val tileFaceRenderer = koin.get<MahjongTileFaceRenderer>()
         val gameActionDisplayNames = koin.get<GameActionDisplayNameRegistry>()
         val moduleRegistry = koin.get<MahjongModuleRegistry>()
         val showcaseRegistry = koin.get<WinCelebrationShowcaseRegistry>()
@@ -105,6 +112,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val aiStrategies = koin.get<MahjongAiStrategyRegistry>()
         val aiStrategyNames = koin.get<AiStrategyDisplayNameRegistry>()
         val appearanceSources = koin.get<RoomMemberAppearanceSourceRegistry>()
+        val playerNames = koin.get<ClientPlayerDisplayNameResolver>()
         MahjongChannels.roomUpdate.registerClientReceiver(json, stateStore::apply)
         MahjongChannels.gameUpdate.registerClientReceiver(json) { payload ->
             val previousSnapshot = stateStore.gameSnapshot
@@ -122,7 +130,12 @@ class MahjongCraftModClient : ClientModInitializer {
                 tileAssetRegistry = tileAssetRegistry,
                 tileEmojiRegistry = tileEmojiRegistry,
                 exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNames,
-            ) ?: buildMatchResultChatMessage(action, newSnapshot, module) ?: buildDiceRolledChatMessage(action) ?: return@registerClientReceiver
+                playerDisplayName = { id, isAi -> playerNames.resolve(id.toString(), isAi) },
+            ) ?: buildMatchResultChatMessage(
+                action,
+                newSnapshot,
+                module,
+            ) { id, isAi -> playerNames.resolve(id.toString(), isAi) } ?: buildDiceRolledChatMessage(action) ?: return@registerClientReceiver
             MinecraftClient.getInstance().player?.sendMessage(message)
         }
         MahjongChannels.roomSnapshot.registerClientReceiver(json) { payload ->
@@ -170,25 +183,33 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         EntityRendererRegistry.register(ModEntities.winCelebrationEffect, ::WinCelebrationEffectEntityRenderer)
         EntityRendererRegistry.register(ModEntities.winCelebrationShowcase) { context ->
-            WinCelebrationShowcaseEntityRenderer(context, showcaseRegistry)
+            WinCelebrationShowcaseEntityRenderer(context, showcaseRegistry, tileFaceRenderer)
         }
         EntityRendererRegistry.register(ModEntities.exhaustiveDrawSettlementPresentation) { context ->
-            ExhaustiveDrawSettlementPresentationEntityRenderer(context, exhaustiveDrawReasonDisplayNames, portraitRenderer)
+            ExhaustiveDrawSettlementPresentationEntityRenderer(context, exhaustiveDrawReasonDisplayNames, portraitRenderer, tileFaceRenderer, playerNames)
         }
         EntityRendererRegistry.register(ModEntities.winSettlementPresentation) { context ->
-            WinSettlementPresentationEntityRenderer(context, winSettlementTemplates, portraitRenderer)
+            WinSettlementPresentationEntityRenderer(context, winSettlementTemplates, portraitRenderer, tileFaceRenderer, playerNames)
         }
         EntityRendererRegistry.register(ModEntities.matchSettlementPresentation) { context ->
-            MatchSettlementPresentationEntityRenderer(context, matchSettlementTemplates, portraitRenderer)
+            MatchSettlementPresentationEntityRenderer(context, matchSettlementTemplates, portraitRenderer, playerNames)
         }
         EntityRendererRegistry.register(ModEntities.mahjongTile) { context ->
-            MahjongTileEntityRenderer(context, stateStore, tileAssetRegistry, tileLabelRegistry, clientConfigStore, moduleRegistry)
+            MahjongTileEntityRenderer(
+                context,
+                stateStore,
+                tileAssetRegistry,
+                tileFaceRenderer,
+                moduleRegistry,
+                decisionPromptStore,
+            )
         }
         MahjongChannels.decisionTimerUpdate.registerClientReceiver(json) { payload ->
             val gameId = Uuid.parse(payload.gameId)
             val status = payload.status
             if (status == null) {
                 decisionTimerStore.stop(gameId)
+                decisionPromptStore.stop(gameId)
             } else {
                 decisionTimerStore.apply(
                     gameId = gameId,
@@ -196,6 +217,7 @@ class MahjongCraftModClient : ClientModInitializer {
                     baseRemainingMillis = status.baseRemainingMillis,
                     reserveRemainingMillis = status.reserveRemainingMillis,
                 )
+                decisionPromptStore.apply(gameId, status.prompt)
             }
         }
         ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
@@ -207,6 +229,7 @@ class MahjongCraftModClient : ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
             stateStore.clear()
             decisionTimerStore.clear()
+            decisionPromptStore.clear()
         }
     }
 

@@ -43,6 +43,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableL
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongRiichiStickPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongRiichiStickPresenter
@@ -464,9 +465,10 @@ class FabricGamePresentationPublisher(
             roundInfoPresenter.present(presentation)
             val game = gameRepository.getGame(gameId) ?: return@launch
             val module = moduleRegistry.getModule(game.tableState.config)
+            val orderedAiPlayerIds = game.roomPlayerIds.filter { id -> game.tableState.players.any { it.id == id && it.isAi } }
             val playerInfo = MahjongPlayerInfoPresentationFactory.create(game.tableState, module) { player ->
                 serverHolder.findPlayer(player.id)?.gameProfile?.name
-                    ?: if (player.isAi) "AI-${player.id.toString().take(6)}" else player.id.toString().take(8)
+                    ?: if (player.isAi) aiPlayerDisplayName(player.id, orderedAiPlayerIds) else player.id.toString().take(8)
             }
             playerInfoPresenter.present(playerInfo, resolved.location, resolved.facing)
         }

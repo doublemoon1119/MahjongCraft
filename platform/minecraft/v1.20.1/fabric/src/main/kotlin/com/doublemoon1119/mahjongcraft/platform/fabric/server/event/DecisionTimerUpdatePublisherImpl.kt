@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerUpd
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
@@ -21,6 +22,7 @@ import kotlin.uuid.Uuid
 @Single(binds = [DecisionTimerUpdatePublisher::class])
 class DecisionTimerUpdatePublisherImpl(
     private val serverHolder: FabricServerHolder,
+    private val promptFactory: PlayerDecisionPromptFactory,
     @Provided private val json: Json,
 ) : DecisionTimerUpdatePublisher {
     /** 只向目前在線的目標玩家送出權威計時更新。 */
@@ -33,6 +35,7 @@ class DecisionTimerUpdatePublisherImpl(
                     phase = update.phase.toDto(),
                     baseRemainingMillis = update.baseRemainingMillis,
                     reserveRemainingMillis = update.reserveRemainingMillis,
+                    prompt = promptFactory.create(update.gameId, targetPlayerId, update.phase),
                 ),
             )
 

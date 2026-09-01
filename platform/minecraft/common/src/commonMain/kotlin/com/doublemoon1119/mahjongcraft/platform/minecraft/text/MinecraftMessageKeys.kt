@@ -322,7 +322,6 @@ object MinecraftMessageKeys {
     // ── 對局階段指令回饋 ──────────────────────────────────────────────────
 
     /** 已成功執行對局操作，帶一個動作顯示文字參數（一個 `%s`，見上方 `GAME_ACTION_*`）。 */
-    const val GAME_ACTION_PERFORMED = PREFIX + "game_action_performed"
 
     /** 還沒輪到該玩家的回合。 */
     const val NOT_YOUR_TURN = PREFIX + "not_your_turn"
@@ -500,7 +499,6 @@ object MinecraftMessageKeys {
         RANKING_LINE,
         GAME_ACTION_DICE_ROLLED,
         DICE_ROLLED_BROADCAST,
-        GAME_ACTION_PERFORMED,
         NOT_YOUR_TURN,
         FORCED_AUTO_PLAY_ACTIVE,
         ILLEGAL_GAME_ACTION,

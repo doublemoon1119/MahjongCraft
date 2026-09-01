@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjon
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigFieldDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
@@ -710,7 +711,7 @@ class RoomScreen(
         return snapshot.players.mapIndexed { index, player ->
             MahjongPlayerInfoEntry(
                 playerId = player.id,
-                playerName = memberName(player.id, player.isAi, index).string,
+                playerName = memberName(player.id, player.isAi, snapshot.players.filter { it.isAi }.map { it.id }).string,
                 isAi = player.isAi,
                 seatIndex = index,
                 seatWind = player.seatWind,
@@ -751,7 +752,7 @@ class RoomScreen(
             renderMemberAppearance(context, playerId, ai, x, y, cardWidth, mouseX, mouseY)
             context.drawCenteredTextWithShadow(
                 textRenderer,
-                fitText(memberName(playerId, ai, index), cardWidth - 12),
+                fitText(memberName(playerId, ai, playerIds.filter(aiIds::contains)), cardWidth - 12),
                 x + cardWidth / 2,
                 y + MEMBER_NAME_OFFSET,
                 0xFFFFFF,
@@ -928,8 +929,8 @@ class RoomScreen(
     private fun currentConfig(): GameConfig? = stateStore.roomSnapshot?.gameConfig
         ?: stateStore.tableLobby?.playingGameConfig?.let { dto -> dto.toDomain(networkRegistries) }
 
-    private fun memberName(playerId: Uuid, ai: Boolean, index: Int): Text {
-        if (ai) return Text.literal("AI ${index + 1}")
+    private fun memberName(playerId: Uuid, ai: Boolean, orderedAiPlayerIds: List<Uuid>): Text {
+        if (ai) return Text.literal(aiPlayerDisplayName(playerId, orderedAiPlayerIds))
         val name = client?.networkHandler?.getPlayerListEntry(playerId.toJavaUuid())?.profile?.name
         return Text.literal(name ?: playerId.toString().take(8))
     }

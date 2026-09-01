@@ -2,13 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
-import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
@@ -22,26 +18,18 @@ import kotlin.uuid.Uuid
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property gameFlowCoordinator 對局命令的分派與自動銜接入口。
- * @property feedbackPublisher 摸牌成功後主動通知玩家輪到自己了——真人玩家的摸牌是全自動觸發，沒有
- *   這則通知玩家完全不會知道輪到自己，只能自己反覆查詢 `/mahjongcraft game hand`。
  * @property busyTracker 呈現動畫播放期間查詢是否要暫時擋下自動摸牌，避免開局擲骰動畫還沒播完，
- *   莊家自動摸牌／「輪到你了」通知就已經搶先發生。
- * @property candidateResolver 摸牌後緊接著查詢這位玩家目前的合法動作清單，一併主動推播——真人玩家
- *   摸到能暗槓/加槓/自摸的牌時，同樣不會主動意識到要去查 `/mahjongcraft game hand`，跟摸牌本身
- *   一樣需要主動提示，不能只靠玩家自己想到。
+ *   莊家自動摸牌就已經搶先發生。輪次與合法動作改由私人操作 HUD prompt 呈現，不再主動推送聊天訊息。
  */
 @Single
 class MahjongAutoDrawService(
     private val gameRepository: GameRepository,
     private val gameFlowCoordinator: GameFlowCoordinator,
-    private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val busyTracker: TablePresentationBusyTracker,
-    private val candidateResolver: GameActionCandidateResolver,
 ) {
     /**
      * 檢查目前是不是輪到真人玩家、且尚未摸牌，是的話代替他送出 [GameCommand.Draw]，成功後發布
-     * [MinecraftPlayerFeedback.YourTurn] 通知，緊接著再發布一次跟 `/mahjongcraft game hand` 同一套
-     * 邏輯組出的 [MinecraftPlayerFeedback.ShowHand]——見 [candidateResolver] KDoc。
+     * 私人操作 HUD 由決策計時同步建立 prompt，因此這裡不再額外推送「輪到你」或手牌聊天訊息。
      *
      * 判斷邏輯比照 `AiTurnDriver.resolveNextAction` 對 AI 回合的既有判斷，只是條件反過來套用到真人：
      * 有反應視窗開著、目前玩家是 AI、已經摸過牌、或剛碰/吃成立準備直接捨牌時都不觸發。已進入強制
@@ -62,24 +50,7 @@ class MahjongAutoDrawService(
         if (current.isAi || current.id in game.forcedAutoPlayPlayerIds) return
 
         if (current.hand.lastDrawn == null && !current.justClaimedMeld) {
-            val result = gameFlowCoordinator(gameId, current.id, GameCommand.Draw)
-            if (result is Outcome.Success) {
-                val stateAfterDraw = gameRepository.getTableState(gameId) ?: return
-                val playerAfterDraw = stateAfterDraw.players.firstOrNull { it.id == current.id } ?: return
-                val drawnTile = playerAfterDraw.hand.lastDrawn?.tile ?: return
-                feedbackPublisher.publish(current.id, MinecraftPlayerFeedback.YourTurn(drawnTile))
-
-                val legalActions = candidateResolver.listActionCandidates(current.id).map { it.action to it.referenceTile }
-                feedbackPublisher.publish(
-                    current.id,
-                    MinecraftPlayerFeedback.ShowHand(
-                        standingTiles = playerAfterDraw.hand.standingTiles.map { it.tile },
-                        melds = playerAfterDraw.hand.exposedMelds,
-                        turnStatus = GameTurnStatus.OWN_TURN,
-                        legalActions = legalActions,
-                    ),
-                )
-            }
+            gameFlowCoordinator(gameId, current.id, GameCommand.Draw)
         }
     }
 }

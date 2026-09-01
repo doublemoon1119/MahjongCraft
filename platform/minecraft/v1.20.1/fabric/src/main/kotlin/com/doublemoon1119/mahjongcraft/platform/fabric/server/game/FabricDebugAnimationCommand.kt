@@ -26,6 +26,16 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTrans
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerStatusDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPhaseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -52,6 +62,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCinematicTimeline
+import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
@@ -156,6 +167,9 @@ class FabricDebugAnimationCommand(
 ) {
     /** 每個子指令自行排定的清除任務，見 [scheduleCleanup] KDoc。 */
     private val cleanupTasks = ConcurrentLinkedQueue<CleanupTask>()
+
+    /** 每位測試者最後一次 HUD 預覽的虛擬 game ID，供 clear 精確停止同一份 client state。 */
+    private val debugDecisionGameIds = mutableMapOf<java.util.UUID, String>()
 
     /** 註冊整組 debug 指令樹；只有開發環境才真的呼叫 `dispatcher.register`，見類別 KDoc。 */
     fun register() {
@@ -328,6 +342,7 @@ class FabricDebugAnimationCommand(
                                 ),
                         )
                         .then(matchProgressionCommand())
+                        .then(decisionHudCommand())
                         .then(
                             literal(MELD_SUBCOMMAND)
                                 .then(withOptionalTileArgument(literal(CHI_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.CHI, tileArg) })
@@ -358,6 +373,66 @@ class FabricDebugAnimationCommand(
                 ),
             )
         }
+    }
+
+    /** 建立涵蓋操作、立直、分析及 preparation 的 HUD 預覽指令；literal 節點同時提供完整 tab 補全。 */
+    private fun decisionHudCommand(): LiteralArgumentBuilder<ServerCommandSource> = DecisionHudPreview.entries.fold(
+        literal(DECISION_HUD_SUBCOMMAND).then(literal(CLEAR_ARGUMENT).executes { clearDecisionHud(it.source) }),
+    ) { node, preview ->
+        node.then(literal(preview.commandName).executes { context -> previewDecisionHud(context.source, preview) })
+    }
+
+    /** 直接傳送正式 S2C prompt DTO，讓 client 使用與真實對局相同的 HUD renderer。 */
+    private fun previewDecisionHud(source: ServerCommandSource, preview: DecisionHudPreview): Int {
+        val player = source.player ?: return 0
+        val gameId = Uuid.random().toString()
+        debugDecisionGameIds[player.uuid] = gameId
+        val analysisTileId = if (preview.isDiscardAnalysis) {
+            val direction = player.rotationVector
+            MahjongTileEntity(world = source.world).also { tile ->
+                tile.uuid = Uuid.random().toJavaUuid()
+                tile.refreshPositionAndAngles(
+                    player.x + direction.x * 2.0,
+                    player.eyeY - 0.5,
+                    player.z + direction.z * 2.0,
+                    player.yaw,
+                    0f,
+                )
+                tile.tilePose = MahjongTilePose.FACE_UP
+                tile.tileAssetKey = "m9"
+                source.world.spawnEntity(tile)
+                scheduleCleanup(source.world, source.world.time + DEBUG_HUD_DURATION_TICKS, listOf(tile))
+            }.uuid.toString()
+        } else {
+            null
+        }
+        MahjongChannels.decisionTimerUpdate.sendTo(
+            player,
+            json,
+            DecisionTimerUpdatePayloadDto(
+                gameId,
+                DecisionTimerStatusDto(
+                    phase = preview.phase,
+                    baseRemainingMillis = 8_000,
+                    reserveRemainingMillis = 15_000,
+                    prompt = preview.prompt("debug:$gameId", analysisTileId),
+                ),
+            ),
+        )
+        source.sendFeedback({ Text.literal("Decision HUD preview: ${preview.commandName}") }, false)
+        return COMMAND_SUCCESS
+    }
+
+    /** 清除 HUD 預覽使用的 client timer/prompt。 */
+    private fun clearDecisionHud(source: ServerCommandSource): Int {
+        val player = source.player ?: return 0
+        val gameId = debugDecisionGameIds.remove(player.uuid) ?: return COMMAND_SUCCESS
+        MahjongChannels.decisionTimerUpdate.sendTo(
+            player,
+            json,
+            DecisionTimerUpdatePayloadDto(gameId, null),
+        )
+        return COMMAND_SUCCESS
     }
 
     /** 建立 development-only round preparation 測試指令樹。 */
@@ -915,7 +990,7 @@ class FabricDebugAnimationCommand(
     /** `hovered_text win_settlement`：以正式 round-result builder 預覽胡牌結算摘要。 */
     private fun previewWinSettlementHoveredText(source: ServerCommandSource): Int {
         val details = Text.empty()
-            .append(Text.translatable(WinSettlementTranslationKeys.RON_SUMMARY, "Player", "AI-debug"))
+            .append(Text.translatable(WinSettlementTranslationKeys.RON_SUMMARY, "Player", "AI 1"))
             .append(Text.literal("\n"))
             .append(Text.translatable(WinSettlementTranslationKeys.HAN_FU, "3", "30"))
             .append(Text.literal("\n"))
@@ -930,7 +1005,7 @@ class FabricDebugAnimationCommand(
     /** `hovered_text match_settlement`：以正式 match-result builder 預覽最終排行 hover。 */
     private fun previewMatchSettlementHoveredText(source: ServerCommandSource): Int {
         val details = Text.empty()
-        listOf("PlayerLongName123" to "120000", "AI-debug" to "45000", "PlayerC" to "25000", "PlayerD" to "-12000")
+        listOf("PlayerLongName123" to "120000", "AI 1" to "45000", "PlayerC" to "25000", "PlayerD" to "-12000")
             .forEachIndexed { index, (name, score) ->
                 if (index > 0) details.append(Text.literal("\n"))
                 details.append(Text.translatable(MinecraftMessageKeys.RANKING_LINE, (index + 1).toString(), name, score))
@@ -1509,6 +1584,102 @@ class FabricDebugAnimationCommand(
     /** 見 [scheduleCleanup] KDoc。 */
     private data class CleanupTask(val world: ServerWorld, val endGameTime: Long, val entities: List<Entity>)
 
+    /** `/debug decision_hud` 的固定、可補全測試情境。 */
+    private enum class DecisionHudPreview(
+        val commandName: String,
+        val phase: PlayerDecisionPhaseDto = PlayerDecisionPhaseDto.OWN_TURN,
+        val isDiscardAnalysis: Boolean = false,
+    ) {
+        TIMER("timer"),
+        CHI("chi", PlayerDecisionPhaseDto.DISCARD_REACTION),
+        PON("pon", PlayerDecisionPhaseDto.DISCARD_REACTION),
+        KAN("kan", PlayerDecisionPhaseDto.DISCARD_REACTION),
+        RON("ron", PlayerDecisionPhaseDto.DISCARD_REACTION),
+        TSUMO("tsumo"),
+        RIICHI("riichi"),
+        KYUUSHU("kyuushu"),
+        MIXED("mixed", PlayerDecisionPhaseDto.DISCARD_REACTION),
+        DISCARD_ANALYSIS("discard_analysis", isDiscardAnalysis = true),
+        DISCARD_FURITEN("discard_furiten", isDiscardAnalysis = true),
+        DISCARD_MANY_WAITS("discard_many_waits", isDiscardAnalysis = true),
+        PREPARATION_CONFIRM("preparation_confirm", PlayerDecisionPhaseDto.ROUND_PREPARATION),
+        PREPARATION_CHOICE("preparation_choice", PlayerDecisionPhaseDto.ROUND_PREPARATION),
+        PREPARATION_TILES("preparation_tiles", PlayerDecisionPhaseDto.ROUND_PREPARATION),
+        ;
+
+        fun prompt(decisionKey: String, analysisTileId: String?): PlayerDecisionPromptDto = PlayerDecisionPromptDto(
+            decisionKey = decisionKey,
+            actions = actions(),
+            triggerTileAssetKey = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "s5" else null,
+            triggerPlayerId = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) Uuid.random().toString() else null,
+            triggerPlayerName = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "AI 1" else null,
+            triggerPlayerRelation = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) DecisionPlayerRelationDto.LEFT else null,
+            triggerActionId = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "mahjongcraft:discard" else null,
+            riichiTileIds = if (this == RIICHI || this == MIXED) List(9) { Uuid.random().toString() } else emptyList(),
+            riichiTileAssetKeys = if (this == RIICHI || this == MIXED) listOf("m1", "m4", "m7", "p2", "p5", "p8", "s3", "s6", "s9") else emptyList(),
+            preparation = preparation(),
+            discardAnalyses = analysisTileId?.let { listOf(analysis(it)) }.orEmpty(),
+        )
+
+        private fun actions(): List<PlayerDecisionActionDto> {
+            fun action(id: String, tiles: List<String>, claimedIndex: Int? = null) = PlayerDecisionActionDto(
+                token = "$commandName:$id",
+                actionId = "mahjongcraft:$id",
+                previewTileAssetKeys = tiles,
+                claimedTileIndex = claimedIndex,
+                claimedTileOrientation = if (claimedIndex == null) DecisionTileOrientationDto.UPRIGHT else DecisionTileOrientationDto.ROTATED_LEFT,
+            )
+            return when (this) {
+                CHI -> listOf(action("chi", listOf("s4", "s5", "s6"), 0))
+                PON -> listOf(action("pon", listOf("p5", "p5", "p5"), 0))
+                KAN -> listOf(action("kan_open", listOf("m9", "m9", "m9", "m9"), 0))
+                RON -> listOf(action("ron", listOf("s5")))
+                TSUMO -> listOf(action("tsumo", listOf("red_dragon")))
+                KYUUSHU -> listOf(
+                    action(
+                        "kyuushu_kyuuhai",
+                        listOf("m1", "m9", "p1", "p9", "s1", "s9", "east", "south", "west", "north", "white_dragon", "green_dragon"),
+                    ),
+                )
+                MIXED -> listOf(
+                    action("chi", listOf("s4", "s5", "s6"), 0),
+                    action("pon", listOf("s5", "s5", "s5"), 0),
+                    action("kan_open", listOf("s5", "s5", "s5", "s5"), 0),
+                    action("ron", listOf("s5")),
+                    action("pass", emptyList()),
+                )
+                else -> emptyList()
+            }
+        }
+
+        private fun preparation(): RoundPreparationPromptDto? = when (this) {
+            PREPARATION_CONFIRM -> RoundPreparationPromptDto.Confirmation
+            PREPARATION_CHOICE -> RoundPreparationPromptDto.SingleChoice(listOf("mahjongcraft:alpha", "mahjongcraft:beta", "mahjongcraft:gamma"))
+            PREPARATION_TILES -> RoundPreparationPromptDto.TileSelection(
+                eligibleTileIds = List(14) { Uuid.random().toString() },
+                eligibleTileAssetKeys = listOf(
+                    "m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "p1", "p2", "p3", "p4", "p5",
+                ),
+                minCount = 3,
+                maxCount = 3,
+            )
+            else -> null
+        }
+
+        private fun analysis(discardTileId: String): DiscardReadinessAnalysisDto {
+            val assets = if (this == DISCARD_MANY_WAITS) {
+                listOf("m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "p1", "p9", "s1", "s9")
+            } else {
+                listOf("m2", "m5", "m8")
+            }
+            return DiscardReadinessAnalysisDto(
+                discardTileId,
+                assets.mapIndexed { index, asset -> WaitingTileAvailabilityDto(asset, (3 - index).coerceAtLeast(0)) },
+                if (this == DISCARD_FURITEN) "mahjongcraft:discard_furiten" else null,
+            )
+        }
+    }
+
     private companion object {
         const val OP_PERMISSION_LEVEL: Int = 2
         const val DEBUG_SUBCOMMAND: String = "debug"
@@ -1545,6 +1716,8 @@ class FabricDebugAnimationCommand(
         const val WIN_SETTLEMENT_SUBCOMMAND: String = "win_settlement"
         const val MATCH_SETTLEMENT_SUBCOMMAND: String = "match_settlement"
         const val MATCH_PROGRESSION_SUBCOMMAND: String = "match_progression"
+        const val DECISION_HUD_SUBCOMMAND: String = "decision_hud"
+        const val DEBUG_HUD_DURATION_TICKS: Long = 20L * 30L
         const val HOVERED_TEXT_SUBCOMMAND: String = "hovered_text"
         const val EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT: String = "exhaustive_draw_settlement"
         const val GAME_CREATED_LOCATION_ARGUMENT: String = "game_created_location"
@@ -1575,9 +1748,9 @@ class FabricDebugAnimationCommand(
         )
         val HOVERED_TEXT_SAMPLE_ROWS: List<HoveredTextSampleRow> = listOf(
             HoveredTextSampleRow("Player", 4, 1, "↑", 16_000, 34_000),
-            HoveredTextSampleRow("AI-1a2b", 1, 2, "↓", 31_000, 25_000),
-            HoveredTextSampleRow("AI-3c4d", 2, 3, "↓", 28_000, 22_000),
-            HoveredTextSampleRow("AI-5e6f", 3, 4, "↓", 25_000, 19_000),
+            HoveredTextSampleRow("AI 1", 1, 2, "↓", 31_000, 25_000),
+            HoveredTextSampleRow("AI 2", 2, 3, "↓", 28_000, 22_000),
+            HoveredTextSampleRow("AI 3", 3, 4, "↓", 25_000, 19_000),
         )
 
         /** 虛擬 controller 與玩家腳下方塊的水平距離，使近側手牌落在玩家前方約一格處。 */

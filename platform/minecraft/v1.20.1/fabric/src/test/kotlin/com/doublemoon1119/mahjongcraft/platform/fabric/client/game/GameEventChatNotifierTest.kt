@@ -53,6 +53,7 @@ class GameEventChatNotifierTest {
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
             exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
+            playerDisplayName = { id, _ -> id.toString().take(4) },
         )
 
         assertNull(message)
@@ -72,6 +73,7 @@ class GameEventChatNotifierTest {
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
             exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
+            playerDisplayName = { id, _ -> id.toString().take(4) },
         )
 
         assertNull(message)
@@ -105,6 +107,7 @@ class GameEventChatNotifierTest {
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
             exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
+            playerDisplayName = { id, _ -> id.toString().take(4) },
         )
 
         val broadcastContent = message?.content as? TranslatableTextContent
@@ -159,6 +162,7 @@ class GameEventChatNotifierTest {
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
             exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
+            playerDisplayName = { id, _ -> id.toString().take(4) },
         )
 
         val playerLines = message?.hoverDetails()?.siblings
@@ -204,7 +208,11 @@ class GameEventChatNotifierTest {
             ),
         ).toSnapshot(visibleHandPlayerIds = emptySet())
 
-        val message = buildMatchResultChatMessage(GameAction.MatchEnded, snapshot, module)
+        val message = buildMatchResultChatMessage(
+            GameAction.MatchEnded,
+            snapshot,
+            module,
+        ) { id, _ -> id.toString().take(4) }
 
         assertEquals(false, message?.hoverDetails()?.string?.startsWith("\n"))
         val rankingLines = message?.hoverDetails()?.siblings

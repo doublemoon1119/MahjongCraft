@@ -34,7 +34,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
  *   不是最終呈現方式；屆時這裡的回饋語意不需要更動，只需要改 adapter 端怎麼呈現：
  *   - 房間階段的回饋（[GameCreated]／[ReadyToggled]／[AiAdded]／[PlayerKicked]／
  *     [AiStrategyChanged]／[ShowGameConfig]／[GameConfigChanged] 等）將由「房間等待室 GUI」取代。
- *   - 對局階段的回饋（[GameActionPerformed]／[ShowHand]／[YourTurn]／[NotYourTurn] 等）將由
+ *   - 對局階段的回饋（[ShowHand]／[YourTurn]／[NotYourTurn] 等）將由
  *     「遊戲桌面 GUI」與思考時間 HUD 取代／補強。
  *   單純的操作失敗提示（例如 [GameJoinFailed]／[KickFailed]）預期即使有了 GUI 仍會保留 chat 或類似
  *   的一次性錯誤提示，不在此列。
@@ -174,16 +174,6 @@ sealed interface MinecraftPlayerFeedback {
      * @property configJson 目前設定的 JSON 序列化文字。
      */
     data class ShowGameConfig(val configJson: String) : MinecraftPlayerFeedback
-
-    /**
-     * 已成功執行一次對局操作。
-     *
-     * @property action 實際執行的動作。
-     * @property referenceTile 該動作涉及的牌面（例如捨牌／吃／碰／槓/榮和的目標牌），呈現端組訊息用；
-     *   [GameAction.Tsumo]／[GameAction.Pass]／[GameAction.ExhaustiveDraw] 等不涉及特定牌面的動作
-     *   為 null。
-     */
-    data class GameActionPerformed(val action: GameAction, val referenceTile: Tile?) : MinecraftPlayerFeedback
 
     /** 還沒輪到該玩家的回合。 */
     data object NotYourTurn : MinecraftPlayerFeedback

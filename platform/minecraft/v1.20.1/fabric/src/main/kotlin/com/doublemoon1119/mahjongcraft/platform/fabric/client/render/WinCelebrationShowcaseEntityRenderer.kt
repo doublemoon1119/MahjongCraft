@@ -45,6 +45,7 @@ import kotlin.math.sqrt
 class WinCelebrationShowcaseEntityRenderer(
     context: EntityRendererFactory.Context,
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
+    private val tileFaceRenderer: MahjongTileFaceRenderer,
 ) : EntityRenderer<WinCelebrationShowcaseEntity>(context) {
     private val itemRenderer = context.itemRenderer
     private val blockRenderManager: BlockRenderManager = context.blockRenderManager
@@ -314,6 +315,7 @@ class WinCelebrationShowcaseEntityRenderer(
         val scale = (fadeScale * entranceBounce).toFloat()
         matrices.scale(scale, scale, scale)
         itemRenderer.renderItem(tileStack(entity.winningTileAssetKey), ModelTransformationMode.HEAD, light, OverlayTexture.DEFAULT_UV, matrices, consumers, entity.world, 9000)
+        tileFaceRenderer.renderModelLabels(entity.winningTileAssetKey, matrices, consumers, light)
         matrices.pop()
     }
 
@@ -444,6 +446,7 @@ class WinCelebrationShowcaseEntityRenderer(
             matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((sin(phase * SHAKE_SECONDARY_FREQUENCY_RATIO + PI / 3.0) * SHAKE_SECONDARY_TILT_DEGREES * envelope).toFloat()))
         }
         itemRenderer.renderItem(tileStack(card.assetKey), ModelTransformationMode.HEAD, light, OverlayTexture.DEFAULT_UV, matrices, vertexConsumers, entity.world, card.order)
+        tileFaceRenderer.renderModelLabels(card.assetKey, matrices, vertexConsumers, light)
         if (elapsed in ELYTRA_APPEAR_TICK..<ELYTRA_FADE_END_TICK) {
             renderElytra(elapsed, matrices, vertexConsumers, light)
         }

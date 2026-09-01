@@ -343,7 +343,7 @@ class MahjongTileEntity(
             return ActionResult.CONSUME
         }
 
-        GlobalContext.get().get<MahjongTableGameActionService>().discard(serverPlayer, tileId)
+        GlobalContext.get().get<MahjongTableGameActionService>().interactWithHandTile(serverPlayer, tileId)
         return ActionResult.CONSUME
     }
 

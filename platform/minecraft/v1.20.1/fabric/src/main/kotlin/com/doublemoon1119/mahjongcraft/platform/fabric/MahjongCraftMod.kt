@@ -38,6 +38,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDebugAn
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricGameCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
@@ -132,6 +133,7 @@ class MahjongCraftMod : ModInitializer {
         koin.get<FabricDecisionTimerScheduler>().registerEvents()
         koin.get<FabricTickMonotonicClock>().registerEvents()
         koin.get<FabricWinCelebrationEffectScheduler>().registerEvents()
+        registerDecisionSelectionReceiver(koin)
 
         val serverHolder = koin.get<FabricServerHolder>()
         val appScope = koin.get<FabricAppCoroutineScope>()
@@ -250,6 +252,15 @@ class MahjongCraftMod : ModInitializer {
                     command = envelope.command.toDomain(networkRegistries),
                 )
             }
+        }
+    }
+
+    /** 接收操作 HUD 的候選選擇，實際合法性仍由伺服器目前 prompt 與正式流程驗證。 */
+    private fun registerDecisionSelectionReceiver(koin: Koin) {
+        val json = koin.get<Json>()
+        val service = koin.get<MahjongTableGameActionService>()
+        MahjongChannels.decisionSelection.registerServerReceiver(json) { _, player, selection ->
+            service.select(player, selection)
         }
     }
 
