@@ -10,6 +10,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomScreenAction
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
@@ -75,8 +77,11 @@ class RoomScreen(
     private var playingInfoScroll = 0
     private var draggingPlayingInfoScrollbar = false
     private var applyButton: ButtonWidget? = null
-    private var cancelButton: ButtonWidget? = null
+    private var undoButton: ButtonWidget? = null
     private var resetButton: ButtonWidget? = null
+    private var doneButton: ButtonWidget? = null
+    private var returnToRoomAfterApply = false
+    private var rebuildRequested = false
     private var lastRoomSnapshot = stateStore.roomSnapshot
     private var lastLobby = stateStore.tableLobby
     private var wasWaitingRoomMember = stateStore.tableLobby?.phase == TableLobbyPhaseDto.WAITING && stateStore.roomSnapshot?.isInRoom == true
@@ -85,10 +90,10 @@ class RoomScreen(
     private val warnedAppearanceProviderIds = mutableSetOf<String>()
 
     override fun init() {
-        clearChildren()
         applyButton = null
-        cancelButton = null
+        undoButton = null
         resetButton = null
+        doneButton = null
         addDrawableChild(tabButton(width / 2 - 102, MinecraftRoomScreenKeys.PAGE_ROOM, Page.ROOM))
         addDrawableChild(
             tabButton(width / 2 + 2, MinecraftRoomScreenKeys.PAGE_SETTINGS, Page.SETTINGS).also {
@@ -103,7 +108,7 @@ class RoomScreen(
 
     private fun tabButton(x: Int, key: String, target: Page): ButtonWidget = RestartableMarqueeButtonWidget.builder(Text.translatable(key)) {
         page = target
-        init(client, width, height)
+        rebuild()
     }.dimensions(x, 24, 100, 20).build().also { it.active = page != target }
 
     private fun initRoomPage() {
@@ -111,14 +116,11 @@ class RoomScreen(
         val room = stateStore.roomSnapshot
         val bottom = height - 30
         when (lobby.phase) {
-            TableLobbyPhaseDto.EMPTY -> addActionButton(
-                width / 2 - 75,
+            TableLobbyPhaseDto.EMPTY -> addCenteredActions(
+                listOf(ActionButton(MinecraftRoomScreenKeys.CREATE, RoomScreenActionDto.Create(lobby.tableId), true)),
                 bottom,
-                150,
-                MinecraftRoomScreenKeys.CREATE,
-                RoomScreenActionDto.Create(lobby.tableId),
             )
-            TableLobbyPhaseDto.PLAYING -> Unit
+            TableLobbyPhaseDto.PLAYING -> addCenteredActions(emptyList(), bottom)
             TableLobbyPhaseDto.WAITING -> {
                 if (room == null) return
                 val actions = mutableListOf<ActionButton>()
@@ -192,7 +194,7 @@ class RoomScreen(
                 RestartableMarqueeButtonWidget.builder(Text.translatable(category.nameTranslationKey)) {
                     selectedCategoryId = category.id
                     fieldScroll = 0
-                    init(client, width, height)
+                    rebuild()
                 }.dimensions(18, categoryY, 112, 20).build().also { it.active = selectedCategoryId != category.id },
             )
             categoryY += 24
@@ -207,33 +209,43 @@ class RoomScreen(
         }
         if (editable) {
             val defaultConfig = GameConfig(definition.defaultRuleConfig()).withConsistentSpectatorVisibility()
-            val reset = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.RESET)) {
+            val footer = settingsFooterLayout()
+            val reset = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS_BUTTON)) {
                 draftConfig = defaultConfig
                 invalidFieldIds.clear()
                 validationFailed = false
-                init(client, width, height)
-            }.dimensions(width - 254, height - 30, 74, 20).build().also {
+                rebuild()
+            }.dimensions(footer.resetX, height - 30, footer.resetWidth, 20).build().also {
                 it.tooltip = Tooltip.of(resetTooltip())
             }
             resetButton = reset
             addDrawableChild(reset)
+            val undo = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.UNDO)) {
+                restoreAuthoritativeDraft(authoritative)
+            }.dimensions(footer.undoX, height - 30, footer.actionWidth, 20).build().also {
+                it.tooltip = Tooltip.of(undoTooltip())
+            }
+            undoButton = undo
+            addDrawableChild(undo)
             val apply = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.APPLY)) { applyDraft() }
-                .dimensions(width - 174, height - 30, 74, 20).build()
+                .dimensions(footer.applyX, height - 30, footer.actionWidth, 20).build()
             applyButton = apply
             addDrawableChild(apply)
-            val cancel = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.CANCEL)) {
-                draftConfig = authoritative
-                authoritativeConfigAtDraftStart = authoritative
-                invalidFieldIds.clear()
-                validationFailed = false
-                draftStale = false
-                init(client, width, height)
-            }.dimensions(width - 94, height - 30, 74, 20).build().also {
-                it.tooltip = Tooltip.of(cancelTooltip())
+            val done = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.DONE)) {
+                finishSettings()
+            }.dimensions(footer.doneX, height - 30, footer.actionWidth, 20).build().also {
+                it.active = !draftStale && !validationFailed
             }
-            cancelButton = cancel
-            addDrawableChild(cancel)
+            doneButton = done
+            addDrawableChild(done)
             refreshDraftButtons(config, authoritative, defaultConfig)
+        } else {
+            addDrawableChild(
+                RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.DONE)) {
+                    page = Page.ROOM
+                    rebuild()
+                }.dimensions(width - 94, height - 30, 74, 20).build(),
+            )
         }
     }
 
@@ -314,7 +326,7 @@ class RoomScreen(
         if (updated == null) invalidFieldIds.add(field.id) else invalidFieldIds.remove(field.id)
         validationFailed = invalidFieldIds.isNotEmpty()
         if (updated != null) draftConfig = updated.withConsistentSpectatorVisibility()
-        init(client, width, height)
+        rebuild()
     }
 
     /** 直接輸入整數時保留焦點，只更新草稿與驗證狀態。 */
@@ -367,7 +379,7 @@ class RoomScreen(
                 fieldScroll = 0
                 invalidFieldIds.clear()
                 validationFailed = false
-                init(client, width, height)
+                rebuild()
             }.dimensions(18, 54, 112, 20).build().also { button ->
                 button.active = canEdit && candidates.count { configPresentations.find(it)?.selectable == true } > 1
                 button.tooltip = Tooltip.of(
@@ -439,15 +451,31 @@ class RoomScreen(
 
     /** 依目前實際按鈕數量將底部操作列整組置中。 */
     private fun addCenteredActions(actions: List<ActionButton>, y: Int) {
-        if (actions.isEmpty()) return
-        val buttonWidth = 88
+        val buttonCount = actions.size + 1
         val gap = 6
-        val totalWidth = actions.size * buttonWidth + (actions.size - 1) * gap
+        val buttonWidth = minOf(88, (width - 16 - (buttonCount - 1) * gap) / buttonCount)
+        val totalWidth = buttonCount * buttonWidth + (buttonCount - 1) * gap
         var x = width / 2 - totalWidth / 2
         actions.forEach { action ->
             addActionButton(x, y, buttonWidth, action.key, action.action, action.active)
             x += buttonWidth + gap
         }
+        addDrawableChild(
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.CLOSE)) {
+                closeEntireScreen()
+            }.dimensions(x, y, buttonWidth, 20).build(),
+        )
+    }
+
+    /** 依實際畫面寬度配置固定單行的設定頁 footer。 */
+    private fun settingsFooterLayout(): SettingsFooterLayout {
+        val availableWidth = width - 20
+        return SettingsFooterLayout.create(
+            left = 10,
+            availableWidth = availableWidth,
+            preferredResetWidth = 104,
+            gap = 6,
+        )
     }
 
     private fun aiStrategyTooltip(current: String?): Text = Text.empty()
@@ -467,7 +495,31 @@ class RoomScreen(
         val lobby = stateStore.tableLobby ?: return
         val config = draftConfig ?: return
         MahjongChannels.roomScreenAction.sendToServer(json, RoomScreenActionDto.UpdateConfig(lobby.tableId, config.toDto(networkRegistries)))
-        authoritativeConfigAtDraftStart = config
+    }
+
+    /** 有變更時提交並等待權威 snapshot，沒有變更時立即返回玩家頁。 */
+    private fun finishSettings() {
+        val authoritative = currentConfig() ?: return
+        val draft = draftConfig ?: authoritative
+        if (draft == authoritative) {
+            page = Page.ROOM
+            rebuild()
+            return
+        }
+        returnToRoomAfterApply = true
+        applyDraft()
+    }
+
+    /** 將草稿恢復成目前權威設定。 */
+    private fun restoreAuthoritativeDraft(authoritative: GameConfig? = currentConfig()) {
+        val resolvedAuthoritative = authoritative ?: return
+        draftConfig = resolvedAuthoritative
+        authoritativeConfigAtDraftStart = resolvedAuthoritative
+        invalidFieldIds.clear()
+        validationFailed = false
+        draftStale = false
+        returnToRoomAfterApply = false
+        rebuild()
     }
 
     /** 依草稿、權威值與預設值同步儲存、取消及重設按鈕狀態。 */
@@ -480,17 +532,18 @@ class RoomScreen(
     ) {
         val hasUnsavedChanges = draft != null && authoritative != null && draft != authoritative
         applyButton?.active = hasUnsavedChanges && !draftStale && !validationFailed
-        cancelButton?.active = hasUnsavedChanges || draftStale || validationFailed
+        undoButton?.active = hasUnsavedChanges || draftStale || validationFailed
         resetButton?.active = draft != null && defaults != null && draft != defaults
+        doneButton?.active = !draftStale && !validationFailed
     }
 
-    private fun cancelTooltip(): Text = Text.empty()
-        .append(Text.translatable(MinecraftRoomScreenKeys.CANCEL).formatted(Formatting.GOLD))
-        .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.CANCEL_DISCARD).formatted(Formatting.WHITE))
-        .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.CANCEL_RESTORE).formatted(Formatting.GRAY))
+    private fun undoTooltip(): Text = Text.empty()
+        .append(Text.translatable(MinecraftRoomScreenKeys.UNDO).formatted(Formatting.GOLD))
+        .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.UNDO_DISCARD).formatted(Formatting.WHITE))
+        .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.UNDO_RESTORE).formatted(Formatting.GRAY))
 
     private fun resetTooltip(): Text = Text.empty()
-        .append(Text.translatable(MinecraftRoomScreenKeys.RESET).formatted(Formatting.GOLD))
+        .append(Text.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS_BUTTON).formatted(Formatting.GOLD))
         .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS).formatted(Formatting.WHITE))
         .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.RESET_NOT_SAVED).formatted(Formatting.GRAY))
 
@@ -526,7 +579,7 @@ class RoomScreen(
         if (amount == 0.0) return super.mouseScrolled(mouseX, mouseY, amount)
         if (page == Page.SETTINGS) {
             fieldScroll = (fieldScroll + if (amount < 0) 1 else -1).coerceAtLeast(0)
-            init(client, width, height)
+            rebuild()
             return true
         }
         if (page == Page.ROOM && stateStore.tableLobby?.phase == TableLobbyPhaseDto.PLAYING) {
@@ -572,8 +625,13 @@ class RoomScreen(
 
     override fun tick() {
         super.tick()
+        if (rebuildRequested) {
+            rebuildRequested = false
+            clearAndInit()
+            return
+        }
         if (!isTableStillReachable()) {
-            close()
+            closeEntireScreen()
             return
         }
         if (stateStore.tableLobby != lastLobby || stateStore.roomSnapshot != lastRoomSnapshot) {
@@ -588,11 +646,18 @@ class RoomScreen(
                 currentLobby?.phase == TableLobbyPhaseDto.PLAYING &&
                 wasWaitingRoomMember
             ) {
-                close()
+                closeEntireScreen()
                 return
             }
             lastLobby = stateStore.tableLobby
             lastRoomSnapshot = stateStore.roomSnapshot
+            if (returnToRoomAfterApply && currentConfig() == draftConfig) {
+                val authoritative = currentConfig()
+                draftConfig = authoritative
+                authoritativeConfigAtDraftStart = authoritative
+                returnToRoomAfterApply = false
+                page = Page.ROOM
+            }
             if (stateStore.tableLobby?.phase == TableLobbyPhaseDto.EMPTY) {
                 wasWaitingRoomMember = false
                 page = Page.ROOM
@@ -601,7 +666,7 @@ class RoomScreen(
                 invalidFieldIds.clear()
                 validationFailed = false
             }
-            init(client, width, height)
+            rebuild()
             return
         }
         val authoritative = currentConfig() ?: return
@@ -611,9 +676,14 @@ class RoomScreen(
             draftConfig = authoritative
             authoritativeConfigAtDraftStart = authoritative
             draftStale = false
-            init(client, width, height)
+            if (returnToRoomAfterApply) {
+                returnToRoomAfterApply = false
+                page = Page.ROOM
+            }
+            rebuild()
         } else {
             draftStale = true
+            returnToRoomAfterApply = false
             refreshDraftButtons()
         }
     }
@@ -980,7 +1050,7 @@ class RoomScreen(
         val next = (fraction * maximumScroll).toInt()
         if (next != fieldScroll) {
             fieldScroll = next
-            init(client, width, height)
+            rebuild()
             draggingScrollbar = true
         }
     }
@@ -1018,6 +1088,27 @@ class RoomScreen(
 
     /** Tooltip 使用固定且不受系統語系影響的千分位，輸入框仍保留純整數。 */
     private fun formatInteger(number: Int): String = String.format(Locale.ROOT, "%,d", number)
+
+    /** Esc 在設定頁放棄未套用草稿並返回玩家頁；玩家頁才離開整個畫面。 */
+    override fun close() {
+        if (page == Page.SETTINGS) {
+            restoreAuthoritativeDraft()
+            page = Page.ROOM
+            rebuild()
+        } else {
+            closeEntireScreen()
+        }
+    }
+
+    /** 關閉整個 RoomScreen，不套用設定頁的階層式 Esc 行為。 */
+    private fun closeEntireScreen() {
+        client?.setScreen(null)
+    }
+
+    /** 在目前輸入事件完成後安全重建 widgets，避免舊 widget 被重新設為 focus。 */
+    private fun rebuild() {
+        rebuildRequested = true
+    }
 
     override fun shouldPause(): Boolean = false
 

@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.ClientDecisionPromptStore
@@ -83,6 +84,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val clientConfigStore = koin.get<MahjongClientConfigStore>()
         koin.get<FabricOpenRoomConfigScreenCommand>().register()
         initializeClientConfig(clientConfigStore)
+        koin.get<MahjongClientConfigScreenController>().register()
         koin.get<FabricTileLabelCommand>().register()
         koin.get<FabricHandSortCommand>().register()
         koin.get<FabricClientConfigCommand>().register()

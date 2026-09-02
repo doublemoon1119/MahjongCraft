@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
+package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
