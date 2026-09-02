@@ -57,6 +57,9 @@ sealed interface MinecraftPlayerFeedback {
     /** 玩家不在指定麻將遊戲中。 */
     data object PlayerNotInGame : MinecraftPlayerFeedback
 
+    /** 玩家目前不屬於任何麻將遊戲。 */
+    data object PlayerNotInAnyGame : MinecraftPlayerFeedback
+
     /** 對局進行中禁止主動離開。 */
     data object GameLeaveDeniedWhilePlaying : MinecraftPlayerFeedback
 

@@ -5,10 +5,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.gameConfigPresentationText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationValue
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -48,7 +47,8 @@ class FabricGameConfigTextFormatter(
             changed.forEachIndexed { index, field ->
                 if (index > 0) result.append("\n")
                 result.append(Text.translatable(field.nameTranslationKey)).append(Text.literal(": "))
-                    .append(valueText(field.read(old))).append(Text.literal(" → ")).append(valueText(field.read(new)))
+                    .append(gameConfigPresentationText(field.read(old))).append(Text.literal(" → "))
+                    .append(gameConfigPresentationText(field.read(new)))
             }
         }
     }.getOrElse { Text.literal(newConfigJson) }
@@ -62,20 +62,10 @@ class FabricGameConfigTextFormatter(
             result.append("\n\n").append(Text.translatable(category.nameTranslationKey))
             definition.fields.filter { it.categoryId == category.id }.forEach { field ->
                 result.append("\n").append(Text.translatable(field.nameTranslationKey))
-                    .append(Text.literal(": ")).append(valueText(requireNotNull(resolved.valuesByFieldId[field.id])))
+                    .append(Text.literal(": ")).append(gameConfigPresentationText(requireNotNull(resolved.valuesByFieldId[field.id])))
             }
         }
         return result
-    }
-
-    private fun valueText(value: GameConfigPresentationValue): Text = when (value) {
-        is GameConfigPresentationValue.BooleanValue -> Text.translatable(
-            if (value.enabled) MinecraftRoomScreenKeys.TRUE else MinecraftRoomScreenKeys.FALSE,
-        )
-        is GameConfigPresentationValue.IntegerValue -> value.number?.let { Text.literal(it.toString()) }
-            ?: Text.translatable(MinecraftRoomScreenKeys.NONE)
-        is GameConfigPresentationValue.ChoiceValue ->
-            Text.translatable("mahjongcraft.room.config.option.${value.optionId.substringAfter(':')}")
     }
 
     private fun ruleName(moduleId: String): Text = ruleNames.find(moduleId)?.let(Text::translatable) ?: Text.literal(moduleId)

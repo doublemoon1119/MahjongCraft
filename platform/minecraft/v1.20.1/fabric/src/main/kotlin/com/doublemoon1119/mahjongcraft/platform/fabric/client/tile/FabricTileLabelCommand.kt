@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClie
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.FabricPlayerFeedbackPublisher
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.configSaveFailureMessage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
@@ -46,13 +48,22 @@ class FabricTileLabelCommand(
     /** 切換開關、立即持久化，並在本地聊天欄回饋「切換前狀態 → 切換後狀態」。 */
     private fun toggle(): Int {
         val enabled = !configStore.current.tileLabelsEnabled
-        return when (configStore.setTileLabelsEnabled(enabled)) {
+        return when (val result = configStore.setTileLabelsEnabled(enabled)) {
             is MahjongClientConfigUpdateResult.Success -> {
                 MinecraftClient.getInstance().player?.sendMessage(tileLabelsToggledMessage(enabled), false)
                 COMMAND_SUCCESS
             }
 
-            is MahjongClientConfigUpdateResult.Failure -> COMMAND_FAILURE
+            is MahjongClientConfigUpdateResult.Failure -> {
+                MinecraftClient.getInstance().player?.sendMessage(
+                    configSaveFailureMessage(
+                        Text.translatable(MinecraftClientConfigScreenKeys.TILE_LABELS),
+                        result.message,
+                    ),
+                    false,
+                )
+                COMMAND_FAILURE
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigTomlCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
@@ -32,6 +33,10 @@ class FabricServerConfigManager(
     /** 目前 server config TOML 可供指令輸出的安全邏輯路徑。 */
     val displayPath: String
         get() = requireLocation().displayPath
+
+    /** 目前記憶體內實際生效的 server config。 */
+    val current: MinecraftServerConfig
+        get() = state.current
 
     /** 綁定 [server] 的設定位置、重設前一個 session 的值並載入設定。 */
     fun attach(server: MinecraftServer): MinecraftServerConfigUpdateResult = attach(pathProvider.get(server))

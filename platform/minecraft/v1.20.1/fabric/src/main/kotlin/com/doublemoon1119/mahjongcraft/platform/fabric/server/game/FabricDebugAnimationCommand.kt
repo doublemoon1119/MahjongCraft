@@ -69,6 +69,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimation
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildMatchResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowMessage
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.serverConfigEntries
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
@@ -1215,9 +1217,9 @@ class FabricDebugAnimationCommand(
         source.sendFeedback(
             {
                 configShowMessage(
-                    "Effective server config ",
+                    Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG),
                     serverConfigManager.displayPath,
-                    serverConfigManager.formattedCurrentToml(),
+                    serverConfigEntries(serverConfigManager.current),
                 )
             },
             false,

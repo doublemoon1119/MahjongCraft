@@ -1,7 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.text
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPlayerPolicy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.TableBreakPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.minecraft.text.ClickEvent
 import net.minecraft.text.HoverEvent
@@ -10,38 +15,110 @@ import net.minecraft.text.Style
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 
-/**
- * `config reload`／`config show` 這類設定診斷指令共用的聊天訊息格式，
- * 供 [FabricServerConfigCommand]（server端）與 [FabricClientConfigCommand]（client端）共用，
- * 讓兩邊指令效果完全一致，不各自維護一份相同的格式化邏輯。
- */
+/** 設定指令 hover 使用的一個本地化欄位與格式化值。 */
+data class ConfigPresentationEntry(
+    /** 欄位名稱。 */
+    val name: Text,
+    /** 欄位目前值。 */
+    val displayedValue: Text,
+)
 
 /** 建立統一帶有 mod 名稱前綴的 config 指令回饋。 */
-fun prefixedConfigMessage(message: String, color: Formatting): MutableText = Text
+fun prefixedConfigMessage(message: Text, color: Formatting): MutableText = Text
     .literal("[${MinecraftModMetadata.MOD_NAME}] ")
     .formatted(Formatting.GOLD)
-    .append(Text.literal(message).formatted(color))
+    .append(message.copy().formatted(color))
 
-/** 以 section、key 與 value 套用不同顏色格式化單行 TOML，空行則維持空白。 */
-fun formatTomlLine(line: String): MutableText = when {
-    line.isBlank() -> Text.empty()
-    line.startsWith("[") -> Text.literal(line).formatted(Formatting.AQUA)
-    " = " in line -> {
-        val (key, value) = line.split(" = ", limit = 2)
-        Text.literal(key).formatted(Formatting.GRAY)
-            .append(Text.literal(" = ").formatted(Formatting.DARK_GRAY))
-            .append(Text.literal(value).formatted(Formatting.GREEN))
+/** 建立 client 設定的本地化欄位，名稱和值與 Client Config Screen 共用。 */
+fun clientConfigEntries(config: MahjongClientConfigState): List<ConfigPresentationEntry> = listOf(
+    ConfigPresentationEntry(
+        Text.translatable(MinecraftClientConfigScreenKeys.AUTO_SORT_HAND),
+        clientBooleanText(config.autoSortHandEnabled),
+    ),
+    ConfigPresentationEntry(
+        Text.translatable(MinecraftClientConfigScreenKeys.TILE_LABELS),
+        clientBooleanText(config.tileLabelsEnabled),
+    ),
+)
+
+/** 建立 server 設定的本地化欄位。 */
+fun serverConfigEntries(config: MinecraftServerConfig): List<ConfigPresentationEntry> = listOf(
+    ConfigPresentationEntry(
+        Text.translatable(MinecraftConfigCommandKeys.DISCONNECTED_PLAYER_POLICY),
+        Text.translatable(config.disconnectedPlayerPolicy.translationKey),
+    ),
+    ConfigPresentationEntry(
+        Text.translatable(MinecraftConfigCommandKeys.DISCONNECTED_PLAYER_TIMEOUT),
+        Text.literal(config.disconnectedPlayerTimeoutSeconds.toString()),
+    ),
+    ConfigPresentationEntry(
+        Text.translatable(MinecraftConfigCommandKeys.TABLE_BREAK_POLICY),
+        Text.translatable(config.tableBreakPolicy.translationKey),
+    ),
+    ConfigPresentationEntry(
+        Text.translatable(MinecraftConfigCommandKeys.ORPHANED_TABLE_POLICY),
+        Text.translatable(config.orphanedTablePolicy.translationKey),
+    ),
+    ConfigPresentationEntry(
+        Text.translatable(MinecraftConfigCommandKeys.TILE_COLLISION),
+        clientBooleanText(config.mahjongTilePhysicalCollisionEnabled),
+    ),
+)
+
+/** 建立 server／client config reload 失敗的本地化訊息，技術原因只放在 hover。 */
+fun configReloadFailureMessage(configName: Text, details: String): MutableText = prefixedConfigMessage(
+    Text.translatable(
+        MinecraftConfigCommandKeys.RELOAD_FAILED,
+        configName,
+        bracketedInteractiveLabel(
+            Text.translatable(MinecraftConfigCommandKeys.DETAILS),
+            Text.literal(details).formatted(Formatting.RED),
+            color = Formatting.RED,
+        ),
+    ),
+    Formatting.RED,
+)
+
+/** 建立 client 設定欄位保存失敗的本地化訊息。 */
+fun configSaveFailureMessage(settingName: Text, details: String): MutableText = prefixedConfigMessage(
+    Text.translatable(
+        MinecraftConfigCommandKeys.SAVE_FAILED,
+        settingName,
+        bracketedInteractiveLabel(
+            Text.translatable(MinecraftConfigCommandKeys.DETAILS),
+            Text.literal(details).formatted(Formatting.RED),
+            color = Formatting.RED,
+        ),
+    ),
+    Formatting.RED,
+)
+
+/** 建立 server／client config show 的本地化單行訊息。 */
+fun configShowMessage(configName: Text, displayPath: String, entries: List<ConfigPresentationEntry>): MutableText = prefixedConfigMessage(
+    Text.translatable(
+        MinecraftConfigCommandKeys.CURRENT,
+        configName,
+        bracketedInteractiveLabel(
+            Text.translatable(MinecraftConfigCommandKeys.DETAILS),
+            configShowHoverText(displayPath, entries),
+        ),
+    ),
+    Formatting.AQUA,
+)
+
+/** 建立設定指令的本地化 hover 內容。 */
+fun configShowHoverText(displayPath: String, entries: List<ConfigPresentationEntry>): MutableText = Text
+    .translatable(MinecraftConfigCommandKeys.PATH, displayPath)
+    .formatted(Formatting.DARK_GRAY)
+    .also { hover ->
+        entries.forEach { entry ->
+            hover.append("\n").append(entry.name.copy().formatted(Formatting.GRAY))
+                .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
+                .append(entry.displayedValue.copy().formatted(Formatting.GREEN))
+        }
     }
 
-    else -> Text.literal(line)
-}
-
-/**
- * 依 vanilla「中括號 + 顏色 = 可 hover／可點擊」的慣例（例如成就、物品連結訊息），把 [label] 包成
- * `[標籤]`。中括號本身與 [label] 套用同一個 [Style]，確保滑鼠移到中括號上也會觸發 hover，不會只有文字
- * 本身才有效果；[clickEvent] 省略時只有 hover，沒有點擊行為；[color] 預設 AQUA，作為一般可互動文字的
- * 配色。
- */
+/** 建立帶中括號、hover 與選用 click event 的互動標籤。 */
 fun bracketedInteractiveLabel(
     label: Text,
     hoverText: Text,
@@ -49,31 +126,37 @@ fun bracketedInteractiveLabel(
     color: Formatting = Formatting.AQUA,
 ): MutableText {
     var style = Style.EMPTY.withColor(color).withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverText))
-    if (clickEvent != null) {
-        style = style.withClickEvent(clickEvent)
-    }
+    if (clickEvent != null) style = style.withClickEvent(clickEvent)
     return Text.literal("[").setStyle(style)
         .append(label.copy().setStyle(style))
         .append(Text.literal("]").setStyle(style))
 }
 
-/**
- * 建立 `config show` 指令共用的 hover 內容：檔案路徑（灰色）+ 換行後依 [formatTomlLine] 逐行上色的
- * 完整 TOML，供 server／client 兩邊的 `show` 指令共用，把原本直接洗版聊天欄的多行輸出收進同一個
- * hover tooltip。
- */
-fun configShowHoverText(displayPath: String, formattedToml: String): MutableText {
-    var hoverText: MutableText = Text.literal("Path: $displayPath").formatted(Formatting.DARK_GRAY)
-    formattedToml.lineSequence().forEach { line ->
-        hoverText = hoverText.append("\n").append(formatTomlLine(line))
-    }
-    return hoverText
-}
-
-/** 建立 server／client config show 與開發期預覽共用的正式單行 hover 訊息。 */
-fun configShowMessage(label: String, displayPath: String, formattedToml: String): MutableText = prefixedConfigMessage(label, Formatting.AQUA).append(
-    bracketedInteractiveLabel(
-        Text.literal("Details"),
-        configShowHoverText(displayPath, formattedToml),
-    ),
+/** Client 設定 Boolean 的共用本地化文字。 */
+private fun clientBooleanText(enabled: Boolean): Text = Text.translatable(
+    if (enabled) MinecraftClientConfigScreenKeys.ENABLED else MinecraftClientConfigScreenKeys.DISABLED,
 )
+
+/** 斷線玩家政策的本地化選項鍵。 */
+private val DisconnectedPlayerPolicy.translationKey: String
+    get() = when (this) {
+        DisconnectedPlayerPolicy.KEEP_SEAT -> MinecraftConfigCommandKeys.KEEP_SEAT
+        DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY -> MinecraftConfigCommandKeys.LEAVE_IMMEDIATELY
+        DisconnectedPlayerPolicy.LEAVE_AFTER_TIMEOUT -> MinecraftConfigCommandKeys.LEAVE_AFTER_TIMEOUT
+    }
+
+/** 麻將桌破壞政策的本地化選項鍵。 */
+private val TableBreakPolicy.translationKey: String
+    get() = when (this) {
+        TableBreakPolicy.DENY_WHILE_OCCUPIED -> MinecraftConfigCommandKeys.DENY_WHILE_OCCUPIED
+        TableBreakPolicy.ALLOW_WAITING_ROOM_ONLY -> MinecraftConfigCommandKeys.ALLOW_WAITING_ROOM_ONLY
+        TableBreakPolicy.ALLOW_AND_TERMINATE -> MinecraftConfigCommandKeys.ALLOW_AND_TERMINATE
+    }
+
+/** 缺失麻將桌政策的本地化選項鍵。 */
+private val OrphanedTablePolicy.translationKey: String
+    get() = when (this) {
+        OrphanedTablePolicy.KEEP_AND_WARN -> MinecraftConfigCommandKeys.KEEP_AND_WARN
+        OrphanedTablePolicy.REMOVE_WAITING_ROOM -> MinecraftConfigCommandKeys.REMOVE_WAITING_ROOM
+        OrphanedTablePolicy.REMOVE_ALL -> MinecraftConfigCommandKeys.REMOVE_ALL
+    }

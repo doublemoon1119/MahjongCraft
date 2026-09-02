@@ -71,7 +71,7 @@ class FabricOpenRoomConfigScreenCommand(
         val client = MinecraftClient.getInstance()
         val snapshot = stateStore.roomSnapshot
         if (snapshot == null || !snapshot.isInRoom) {
-            client.inGameHud.setOverlayMessage(Text.translatable(MinecraftMessageKeys.PLAYER_NOT_IN_GAME), false)
+            client.inGameHud.setOverlayMessage(Text.translatable(MinecraftMessageKeys.PLAYER_NOT_IN_ANY_GAME), false)
             return
         }
         client.setScreen(

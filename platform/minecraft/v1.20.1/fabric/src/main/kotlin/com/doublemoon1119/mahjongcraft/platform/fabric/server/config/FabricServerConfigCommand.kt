@@ -1,13 +1,17 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.configReloadFailureMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.prefixedConfigMessage
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.serverConfigEntries
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
@@ -47,19 +51,31 @@ class FabricServerConfigCommand(
         is MinecraftServerConfigUpdateResult.Success -> {
             mahjongTileCollisionService.applyToLoaded(source.server, result.config)
             logger.info("Server config reloaded by {}", source.name)
-            source.sendFeedback({ prefixedConfigMessage("Server config reloaded", Formatting.GREEN) }, false)
+            source.sendFeedback(
+                {
+                    prefixedConfigMessage(
+                        Text.translatable(
+                            MinecraftConfigCommandKeys.RELOADED,
+                            Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG),
+                        ),
+                        Formatting.GREEN,
+                    )
+                },
+                false,
+            )
             COMMAND_SUCCESS
         }
         is MinecraftServerConfigUpdateResult.Failure -> {
             logger.warn("Server config reload requested by {} failed: {}", source.name, result.message)
-            source.sendError(prefixedConfigMessage(result.message, Formatting.RED))
+            source.sendError(
+                configReloadFailureMessage(Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG), result.message),
+            )
             COMMAND_FAILURE
         }
     }
 
     /**
-     * 顯示目前記憶體內實際生效的標準 TOML；收進單行可 hover 的中括號標籤裡（而不是直接把每一行都貼進
-     * 聊天欄），理由見 [configShowHoverText] KDoc。
+     * 顯示目前記憶體內實際生效的本地化設定欄位；完整內容收進單行可 hover 的詳情標籤。
      */
     private fun show(source: ServerCommandSource): Int {
         logger.debug(
@@ -70,7 +86,11 @@ class FabricServerConfigCommand(
         )
         source.sendFeedback(
             {
-                configShowMessage("Effective server config ", configManager.displayPath, configManager.formattedCurrentToml())
+                configShowMessage(
+                    Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG),
+                    configManager.displayPath,
+                    serverConfigEntries(configManager.current),
+                )
             },
             false,
         )

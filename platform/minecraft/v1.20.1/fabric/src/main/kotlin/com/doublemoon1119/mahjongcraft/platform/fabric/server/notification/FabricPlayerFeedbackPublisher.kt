@@ -76,6 +76,8 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_JOINED))
                 MinecraftPlayerFeedback.PlayerNotInGame ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.PLAYER_NOT_IN_GAME), true)
+                MinecraftPlayerFeedback.PlayerNotInAnyGame ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.PLAYER_NOT_IN_ANY_GAME), true)
                 MinecraftPlayerFeedback.GameLeaveDeniedWhilePlaying ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_LEAVE_DENIED_WHILE_PLAYING), true)
                 MinecraftPlayerFeedback.GameDissolved ->

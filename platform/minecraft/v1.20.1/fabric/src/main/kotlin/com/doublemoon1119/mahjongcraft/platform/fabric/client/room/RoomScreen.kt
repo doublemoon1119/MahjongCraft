@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlaye
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.gameConfigPresentationText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
@@ -441,11 +442,7 @@ class RoomScreen(
         return result
     }
 
-    private fun presentationText(value: GameConfigPresentationValue): Text = when (value) {
-        is GameConfigPresentationValue.BooleanValue -> booleanText(value.enabled)
-        is GameConfigPresentationValue.ChoiceValue -> optionText(value.optionId)
-        is GameConfigPresentationValue.IntegerValue -> integerText(value.number, null)
-    }
+    private fun presentationText(value: GameConfigPresentationValue): Text = gameConfigPresentationText(value)
 
     private fun ruleName(moduleId: String): Text = ruleNames.find(moduleId)?.let(Text::translatable) ?: Text.literal(moduleId)
 

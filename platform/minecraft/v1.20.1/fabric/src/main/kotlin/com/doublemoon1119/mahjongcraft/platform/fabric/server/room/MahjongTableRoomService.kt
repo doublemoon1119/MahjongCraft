@@ -531,7 +531,7 @@ class MahjongTableRoomService(
             val tableId = membershipRepository.getTableId(playerId)
             val room = tableId?.let { roomRepository.getRoom(it) }
             if (room == null) {
-                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInAnyGame)
                 return@launch
             }
             val configJson = json.encodeToString(room.gameConfig.toDto(networkRegistries))

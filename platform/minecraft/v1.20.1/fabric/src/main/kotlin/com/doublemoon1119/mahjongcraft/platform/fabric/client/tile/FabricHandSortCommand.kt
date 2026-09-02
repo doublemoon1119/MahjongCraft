@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClie
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.FabricPlayerFeedbackPublisher
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.configSaveFailureMessage
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
@@ -45,14 +47,23 @@ class FabricHandSortCommand(
     /** 切換開關、立即持久化並同步給伺服器，並在本地聊天欄回饋「切換前狀態 → 切換後狀態」。 */
     private fun toggle(): Int {
         val enabled = !configStore.current.autoSortHandEnabled
-        return when (configStore.setAutoSortHandEnabled(enabled)) {
+        return when (val result = configStore.setAutoSortHandEnabled(enabled)) {
             is MahjongClientConfigUpdateResult.Success -> {
                 MahjongChannels.setAutoSortHand.sendToServer(json, enabled)
                 MinecraftClient.getInstance().player?.sendMessage(handSortToggledMessage(enabled), false)
                 COMMAND_SUCCESS
             }
 
-            is MahjongClientConfigUpdateResult.Failure -> COMMAND_FAILURE
+            is MahjongClientConfigUpdateResult.Failure -> {
+                MinecraftClient.getInstance().player?.sendMessage(
+                    configSaveFailureMessage(
+                        Text.translatable(MinecraftClientConfigScreenKeys.AUTO_SORT_HAND),
+                        result.message,
+                    ),
+                    false,
+                )
+                COMMAND_FAILURE
+            }
         }
     }
 

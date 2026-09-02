@@ -23,6 +23,9 @@ object MinecraftMessageKeys {
     /** 玩家不在指定麻將遊戲中。 */
     const val PLAYER_NOT_IN_GAME = PREFIX + "player_not_in_game"
 
+    /** 玩家目前不屬於任何麻將遊戲。 */
+    const val PLAYER_NOT_IN_ANY_GAME = PREFIX + "player_not_in_any_game"
+
     /** 對局進行中禁止主動離開。 */
     const val GAME_LEAVE_DENIED_WHILE_PLAYING = PREFIX + "game_leave_denied_while_playing"
 
@@ -415,6 +418,7 @@ object MinecraftMessageKeys {
         GAME_CREATED_LOCATION_LABEL,
         GAME_JOINED,
         PLAYER_NOT_IN_GAME,
+        PLAYER_NOT_IN_ANY_GAME,
         GAME_LEAVE_DENIED_WHILE_PLAYING,
         GAME_DISSOLVED,
         GAME_LEFT,
