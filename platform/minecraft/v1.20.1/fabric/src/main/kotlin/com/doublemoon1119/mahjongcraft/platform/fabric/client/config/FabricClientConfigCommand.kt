@@ -15,7 +15,7 @@ import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
 
 /**
- * 純 client-only 指令 `/mahjongcraft_client config reload|show`：跟 server 端
+ * 純 client-only 指令 `/mahjongcraft_client config reload|show|screen`：跟 server 端
  * `/mahjongcraft config reload|show`（見 [FabricServerConfigCommand]）效果
  * 完全一致——`reload` 重新讀取玩家手動編輯過的 `client.toml`，`show` 把目前記憶體內實際生效的標準
  * TOML 收進單行可 hover 的中括號標籤裡；訊息格式（`[MahjongCraft] ...` 前綴、成功綠色／失敗紅色／
@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory
 @Single
 class FabricClientConfigCommand(
     private val configStore: MahjongClientConfigStore,
+    private val screenController: MahjongClientConfigScreenController,
     private val minecraftEnvironment: MinecraftEnvironment,
 ) {
     /** 記錄 config 指令執行結果，對稱 server 端 `FabricServerConfigCommand` 的 logger。 */
@@ -46,6 +47,11 @@ class FabricClientConfigCommand(
                     )
                     .then(
                         ClientCommandManager.literal(SHOW_SUBCOMMAND).executes { context -> show(context.source) },
+                    ).then(
+                        ClientCommandManager.literal(SCREEN_SUBCOMMAND).executes {
+                            screenController.openFromCommand()
+                            COMMAND_SUCCESS
+                        },
                     ),
             )
             if (minecraftEnvironment.isDevelopment) {
@@ -108,6 +114,9 @@ class FabricClientConfigCommand(
 
         /** `show` 子指令節點。 */
         const val SHOW_SUBCOMMAND: String = "show"
+
+        /** `screen` 子指令節點。 */
+        const val SCREEN_SUBCOMMAND: String = "screen"
 
         /** 開發期診斷子指令。 */
         const val DEBUG_SUBCOMMAND: String = "debug"

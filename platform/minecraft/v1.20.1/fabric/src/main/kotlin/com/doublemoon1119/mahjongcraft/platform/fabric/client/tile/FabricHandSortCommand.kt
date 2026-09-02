@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.tile
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROOT
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.FabricPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
@@ -34,10 +35,7 @@ class FabricHandSortCommand(
             dispatcher.register(
                 ClientCommandManager.literal(CLIENT_COMMAND_ROOT).then(
                     ClientCommandManager.literal(HAND_SORT_SUBCOMMAND).then(
-                        ClientCommandManager.literal(TOGGLE_SUBCOMMAND).executes {
-                            toggle()
-                            COMMAND_SUCCESS
-                        },
+                        ClientCommandManager.literal(TOGGLE_SUBCOMMAND).executes { toggle() },
                     ),
                 ),
             )
@@ -45,11 +43,17 @@ class FabricHandSortCommand(
     }
 
     /** 切換開關、立即持久化並同步給伺服器，並在本地聊天欄回饋「切換前狀態 → 切換後狀態」。 */
-    private fun toggle() {
+    private fun toggle(): Int {
         val enabled = !configStore.current.autoSortHandEnabled
-        configStore.setAutoSortHandEnabled(enabled)
-        MahjongChannels.setAutoSortHand.sendToServer(json, enabled)
-        MinecraftClient.getInstance().player?.sendMessage(handSortToggledMessage(enabled), false)
+        return when (configStore.setAutoSortHandEnabled(enabled)) {
+            is MahjongClientConfigUpdateResult.Success -> {
+                MahjongChannels.setAutoSortHand.sendToServer(json, enabled)
+                MinecraftClient.getInstance().player?.sendMessage(handSortToggledMessage(enabled), false)
+                COMMAND_SUCCESS
+            }
+
+            is MahjongClientConfigUpdateResult.Failure -> COMMAND_FAILURE
+        }
     }
 
     /**
@@ -79,5 +83,8 @@ class FabricHandSortCommand(
 
         /** Brigadier 成功回傳值。 */
         const val COMMAND_SUCCESS: Int = 1
+
+        /** Brigadier 失敗回傳值。 */
+        const val COMMAND_FAILURE: Int = 0
     }
 }
