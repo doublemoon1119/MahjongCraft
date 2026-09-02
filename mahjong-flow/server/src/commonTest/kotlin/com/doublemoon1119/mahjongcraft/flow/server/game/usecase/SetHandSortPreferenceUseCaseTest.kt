@@ -48,13 +48,37 @@ class SetHandSortPreferenceUseCaseTest {
         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3)),
     )
 
+    /** 重連恢復偏好時只更新暫存值，不得整理手牌或覆蓋尚未完成的開局發牌呈現。 */
+    @Test
+    fun `test restoring preference does not organize or present the hand`() = runTest {
+        val fixtures = Fixtures()
+        val player = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = unsortedTiles),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.useCase(playerId, true, HandSortPreferenceUpdateMode.RESTORE)
+
+        assertTrue(fixtures.preferenceStore.isEnabled(playerId))
+        assertEquals(unsortedTiles, fixtures.gameRepo.getTableState(gameId)?.players?.single()?.hand?.tiles)
+        assertNull(fixtures.presentationPublisher.getPublishedPlayerArea(gameId))
+    }
+
     /** 停用時只更新偏好本身，不觸碰手牌，也不重新呈現。 */
     @Test
     fun `test disabling only records the preference`() = runTest {
         val fixtures = Fixtures()
         fixtures.preferenceStore.set(playerId, true)
 
-        fixtures.useCase(playerId, false)
+        fixtures.useCase(playerId, false, HandSortPreferenceUpdateMode.USER_CHANGE)
 
         assertFalse(fixtures.preferenceStore.isEnabled(playerId))
         assertNull(fixtures.presentationPublisher.getPublishedPlayerArea(gameId))
@@ -77,7 +101,7 @@ class SetHandSortPreferenceUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        fixtures.useCase(playerId, true)
+        fixtures.useCase(playerId, true, HandSortPreferenceUpdateMode.USER_CHANGE)
 
         assertTrue(fixtures.preferenceStore.isEnabled(playerId))
         val newState = fixtures.gameRepo.getTableState(gameId)
@@ -104,7 +128,7 @@ class SetHandSortPreferenceUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        fixtures.useCase(playerId, true)
+        fixtures.useCase(playerId, true, HandSortPreferenceUpdateMode.USER_CHANGE)
 
         assertTrue(fixtures.preferenceStore.isEnabled(playerId))
         val newState = fixtures.gameRepo.getTableState(gameId)

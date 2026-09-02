@@ -227,7 +227,7 @@ class MahjongCraftModClient : ClientModInitializer {
             MahjongChannels.requestSnapshot.sendToServer(json, Unit)
             // 伺服器端的自動整理手牌偏好純記憶體、不撐過伺服器重啟（見 HandSortPreferenceStore KDoc），
             // 每次加入世界都重送一次 client 本地記得的偏好，確保重啟後不需要玩家手動再切一次。
-            MahjongChannels.setAutoSortHand.sendToServer(json, clientConfigStore.current.autoSortHandEnabled)
+            MahjongChannels.restoreAutoSortHand.sendToServer(json, clientConfigStore.current.autoSortHandEnabled)
         }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
             stateStore.clear()

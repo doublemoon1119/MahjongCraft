@@ -27,7 +27,12 @@ object MahjongChannels {
     val requestSnapshot = C2SChannel("request_snapshot", Unit.serializer())
 
     /**
-     * 切換「自動整理手牌」偏好時送出，見 `MahjongCraftMod.registerSetAutoSortHandReceiver`／
+     * 玩家重新加入世界時恢復伺服器記憶體中的自動理牌偏好；這個同步不得移動或翻起任何手牌。
+     */
+    val restoreAutoSortHand = C2SChannel("restore_auto_sort_hand", Boolean.serializer())
+
+    /**
+     * 玩家實際切換「自動整理手牌」偏好時送出，見 `MahjongCraftMod.registerSetAutoSortHandReceiver`／
      * `SetHandSortPreferenceUseCase`——手牌 tile entity 是伺服器端共用的實體，這個偏好必須讓伺服器
      * 知道才能實際重新排列座標，不像牌角標籤那種純客戶端疊加。
      */

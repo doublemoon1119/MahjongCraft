@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.HandSortPreferenceUpdateMode
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SetHandSortPreferenceUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -278,8 +279,15 @@ class MahjongCraftMod : ModInitializer {
         val json = koin.get<Json>()
         val useCase = koin.get<SetHandSortPreferenceUseCase>()
         val scope = koin.get<AppCoroutineScope>()
+        MahjongChannels.restoreAutoSortHand.registerServerReceiver(json) { _, player, enabled ->
+            scope.launch {
+                useCase(player.uuid.toKotlinUuid(), enabled, HandSortPreferenceUpdateMode.RESTORE)
+            }
+        }
         MahjongChannels.setAutoSortHand.registerServerReceiver(json) { _, player, enabled ->
-            scope.launch { useCase(player.uuid.toKotlinUuid(), enabled) }
+            scope.launch {
+                useCase(player.uuid.toKotlinUuid(), enabled, HandSortPreferenceUpdateMode.USER_CHANGE)
+            }
         }
     }
 }

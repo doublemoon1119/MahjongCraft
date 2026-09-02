@@ -9,6 +9,15 @@ import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
+/** 自動理牌偏好更新的來源意圖，決定是否允許立即整理並重新呈現手牌。 */
+enum class HandSortPreferenceUpdateMode {
+    /** 重新連線時只恢復伺服器端暫存偏好，不改動目前世界呈現。 */
+    RESTORE,
+
+    /** 玩家主動變更設定，允許在安全情況下立即整理並重新呈現手牌。 */
+    USER_CHANGE,
+}
+
 /**
  * 設定「是否自動整理手牌」偏好（[HandSortPreferenceStore]），並在玩家目前正坐在進行中對局時立即套用
  * 一次整理，讓切換開關這個動作本身就能看到手牌重新排序，不用等到下一次摸牌/打牌才生效。
@@ -24,8 +33,19 @@ class SetHandSortPreferenceUseCase(
     private val preferenceStore: HandSortPreferenceStore,
     @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
-    suspend operator fun invoke(playerId: Uuid, enabled: Boolean) {
+    /**
+     * 依 [mode] 更新 [enabled] 偏好；重連恢復只更新暫存值，玩家主動變更才會立即整理與發布世界呈現。
+     *
+     * 重連可能發生在開局發牌動畫尚未完成時；若誤當成 [HandSortPreferenceUpdateMode.USER_CHANGE]，
+     * 一般 player-area 更新會把該玩家尚在牌牆中的手牌提前設為直立，破壞持久化動畫原本的蓋牌狀態。
+     */
+    suspend operator fun invoke(
+        playerId: Uuid,
+        enabled: Boolean,
+        mode: HandSortPreferenceUpdateMode,
+    ) {
         preferenceStore.set(playerId, enabled)
+        if (mode == HandSortPreferenceUpdateMode.RESTORE) return
         if (!enabled) return
 
         val gameId = gameRepository.getAllGameIds().firstOrNull { id ->
