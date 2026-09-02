@@ -310,17 +310,11 @@ object MinecraftMessageKeys {
     /** 對局結束排名清單內每一行，帶名次、玩家名稱、最終分數三個參數（三個 `%s`）。 */
     const val RANKING_LINE = PREFIX + "ranking_line"
 
-    /**
-     * [GameAction.DiceRolled] 的顯示文字，不帶參數——
-     * 實際點數由 [DICE_ROLLED_BROADCAST] 承載，這裡只是滿足 `GameActionDisplayText` 窮舉 `when`。
-     */
+    /** [GameAction.DiceRolled] 的一般動作顯示文字，不帶參數。 */
     const val GAME_ACTION_DICE_ROLLED = PREFIX + "game_action_dice_rolled"
 
-    /**
-     * 擲骰結果廣播，帶一個已格式化的骰子點數清單參數（一個 `%s`，例如「5、5」）——目前是 client 端
-     * 聊天訊息占位呈現，之後若換成 HUD 只需要換掉呼叫端，這個 key 不受影響。
-     */
-    const val DICE_ROLLED_BROADCAST = PREFIX + "dice_rolled_broadcast"
+    /** 擲骰結果 3D 面板的合計文字，帶一個整數參數。 */
+    const val DICE_ROLL_TOTAL = PREFIX + "dice_roll.total"
 
     // ── 對局階段指令回饋 ──────────────────────────────────────────────────
 
@@ -502,7 +496,7 @@ object MinecraftMessageKeys {
         MATCH_SETTLEMENT_RANK,
         RANKING_LINE,
         GAME_ACTION_DICE_ROLLED,
-        DICE_ROLLED_BROADCAST,
+        DICE_ROLL_TOTAL,
         NOT_YOUR_TURN,
         FORCED_AUTO_PLAY_ACTIVE,
         ILLEGAL_GAME_ACTION,

@@ -57,6 +57,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
@@ -237,7 +238,12 @@ class FabricDebugAnimationCommand(
                                     ),
                                 ),
                         )
-                        .then(literal(DICE_SUBCOMMAND).executes { ctx -> previewDice(ctx.source) })
+                        .then(
+                            literal(DICE_SUBCOMMAND)
+                                .executes { ctx -> previewDice(ctx.source, DEFAULT_DEBUG_DICE_COUNT) }
+                                .then(literal(TWO_DICE_ARGUMENT).executes { ctx -> previewDice(ctx.source, 2) })
+                                .then(literal(THREE_DICE_ARGUMENT).executes { ctx -> previewDice(ctx.source, 3) }),
+                        )
                         .then(withOptionalTileArgument(literal(DEAL_SUBCOMMAND), ::previewDeal))
                         .then(withOptionalTileArgument(literal(DRAW_SUBCOMMAND), ::previewDraw))
                         .then(withOptionalTileArgument(literal(DISCARD_SUBCOMMAND), ::previewDiscard))
@@ -1303,8 +1309,8 @@ class FabricDebugAnimationCommand(
         return COMMAND_SUCCESS
     }
 
-    /** `dice`：臨時生成 [DEBUG_DICE_COUNT] 顆骰子，重播擲骰動畫；動畫（含觀看緩衝）播完後自行清除。 */
-    private fun previewDice(source: ServerCommandSource): Int {
+    /** `dice [2|3]`：臨時生成完整桌面骰子與聚合結果面板，結束後自行清除。 */
+    private fun previewDice(source: ServerCommandSource, diceCount: Int): Int {
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val layout = virtualTableLayout(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
@@ -1317,8 +1323,11 @@ class FabricDebugAnimationCommand(
             tableFacing = layout.tableFacing,
             throwSide = MahjongTableSide.SOUTH,
             rollSequence = 0,
-            diceCount = DEBUG_DICE_COUNT,
+            diceCount = diceCount,
         )
+        val points = List(diceCount) { index -> MahjongDicePoint.entries[(index + DEBUG_DICE_POINT_OFFSET) % MahjongDicePoint.entries.size] }
+        val revealGameTime = world.time + MahjongDiceTableLayout.maxStartDelayTicks(diceCount) + DiceRollAnimationSpec.DEFAULT_DURATION_TICKS
+        val endGameTime = revealGameTime + DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
         val dice = placements.map { placement ->
             MahjongDiceEntity(world = world).apply {
                 refreshPositionAndAngles(
@@ -1330,16 +1339,28 @@ class FabricDebugAnimationCommand(
                 )
             }.also(world::spawnEntity)
         }
-        dice.zip(placements).forEach { (entity, placement) ->
+        dice.zip(placements).zip(points).forEach { (entityAndPlacement, point) ->
+            val (entity, placement) = entityAndPlacement
             entity.startRoll(
-                finalPoint = MahjongDicePoint.entries.random(),
+                finalPoint = point,
                 seed = Random.nextLong(),
                 startDelayTicks = placement.startDelayTicks,
                 startOffset = placement.startOffset,
+                sharedViewingEndGameTime = endGameTime,
             )
         }
-        val lifetimeTicks = DiceRollAnimationSpec.DEFAULT_DURATION_TICKS + DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
-        scheduleCleanup(world, world.time + lifetimeTicks, dice)
+        val stage = DiceRollPresentationEntity(world = world).apply {
+            refreshPositionAndAngles(
+                layout.controllerX + DEBUG_BLOCK_CENTER,
+                layout.controllerY + DEBUG_TABLETOP_HEIGHT + DiceRollPresentationEntity.HEIGHT_ABOVE_TABLETOP,
+                layout.controllerZ + DEBUG_BLOCK_CENTER,
+                0.0f,
+                0.0f,
+            )
+            configure(tableId, points.map(MahjongDicePoint::value), revealGameTime, endGameTime)
+        }
+        world.spawnEntity(stage)
+        scheduleCleanup(world, endGameTime, dice + stage)
         return COMMAND_SUCCESS
     }
 
@@ -1697,6 +1718,8 @@ class FabricDebugAnimationCommand(
         const val TSUMO_ARGUMENT: String = "tsumo"
         const val RON_ARGUMENT: String = "ron"
         const val DICE_SUBCOMMAND: String = "dice"
+        const val TWO_DICE_ARGUMENT: String = "2"
+        const val THREE_DICE_ARGUMENT: String = "3"
         const val DEAL_SUBCOMMAND: String = "deal"
         const val DRAW_SUBCOMMAND: String = "draw"
         const val DISCARD_SUBCOMMAND: String = "discard"
@@ -1780,8 +1803,17 @@ class FabricDebugAnimationCommand(
         /** 預覽牌數跟隨標準日麻規則的單一設定來源。 */
         val DEFAULT_RULE_CONFIG: RiichiRuleConfig = RiichiRuleConfig()
 
-        /** `dice` 一次生成的骰子數量。 */
-        const val DEBUG_DICE_COUNT: Int = 2
+        /** 未指定參數時使用的擲骰數量。 */
+        const val DEFAULT_DEBUG_DICE_COUNT: Int = 2
+
+        /** 固定結果點數從三點開始排列所需的 enum offset。 */
+        const val DEBUG_DICE_POINT_OFFSET: Int = 2
+
+        /** 虛擬桌 controller 的水平中心偏移。 */
+        const val DEBUG_BLOCK_CENTER: Double = 0.5
+
+        /** 虛擬桌桌面相對 controller 的高度。 */
+        const val DEBUG_TABLETOP_HEIGHT: Double = 1.0
 
         /** 動畫播完到實際清除臨時 entity 之間的觀看緩衝，理由同正式對局的觀看緩衝設計。 */
         const val PREVIEW_VIEWING_BUFFER_TICKS: Int = 20

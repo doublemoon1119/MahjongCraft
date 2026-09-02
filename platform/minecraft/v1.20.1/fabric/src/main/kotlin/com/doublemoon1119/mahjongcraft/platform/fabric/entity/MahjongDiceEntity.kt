@@ -102,6 +102,8 @@ class MahjongDiceEntity(
      * （例如等牌牆掉落動畫播完），以動畫佇列的 [AnimationStep.WaitUntil] 表達，不再需要呼叫端另外用
      * `FabricTickMonotonicClock.scheduleAfter` 延遲呼叫這個方法本身——這個延遲本身現在會持久化，
      * 撐得過伺服器重啟，理由見 [AnimatedMahjongEntity] KDoc。
+     * [sharedViewingEndGameTime] 可讓同一次投擲中不同 stagger 的骰子維持到相同絕對截止時間；未提供時
+     * 沿用單顆骰子的自然截止時間。
      *
      * 動畫播完後額外接一段 [DiceRollAnimationSpec.EXTRA_VIEWING_TICKS] 的等待，讓佇列（[isAnimating]）
      * 在點數落定後繼續維持「還在忙」一小段時間，給玩家看清楚點數的緩衝——這段緩衝過去是
@@ -113,6 +115,7 @@ class MahjongDiceEntity(
         seed: Long,
         startDelayTicks: Int,
         startOffset: DiceAnimationVector,
+        sharedViewingEndGameTime: Long? = null,
     ) {
         check(!world.isClient) { "Dice rolls must be started by the server" }
         point = finalPoint
@@ -121,7 +124,10 @@ class MahjongDiceEntity(
         dataTracker.set(ANIMATION_START_OFFSET_Y, startOffset.y.toFloat())
         dataTracker.set(ANIMATION_START_OFFSET_Z, startOffset.z.toFloat())
         val rollStartGameTime = world.time + startDelayTicks
-        val viewingEndGameTime = rollStartGameTime + DiceRollAnimationSpec.DEFAULT_DURATION_TICKS + DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
+        val naturalViewingEndGameTime = rollStartGameTime + DiceRollAnimationSpec.DEFAULT_DURATION_TICKS + DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
+        val viewingEndGameTime = sharedViewingEndGameTime?.also { sharedEnd ->
+            require(sharedEnd >= naturalViewingEndGameTime) { "Shared dice viewing end must not shorten the presentation" }
+        } ?: naturalViewingEndGameTime
         enqueueAll(
             listOf(
                 AnimationStep.SetInvisible(true),

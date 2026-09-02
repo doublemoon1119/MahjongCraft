@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.AnimatedMahjongEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
@@ -74,8 +75,12 @@ class TablePresentationBusyTracker(
             tile.managedTableId == tableId && tile.blocksTableBusy(world.time)
         }.isNotEmpty()
         if (tileAnimating) return true
-        return world.getEntitiesByClass(MahjongDiceEntity::class.java, searchBox) { dice ->
+        val diceAnimating = world.getEntitiesByClass(MahjongDiceEntity::class.java, searchBox) { dice ->
             dice.managedTableId == tableId && dice.isAnimating
+        }.isNotEmpty()
+        if (diceAnimating) return true
+        return world.getEntitiesByClass(DiceRollPresentationEntity::class.java, searchBox) { stage ->
+            stage.managedTableId == tableId && world.time < stage.endGameTime
         }.isNotEmpty()
     }
 

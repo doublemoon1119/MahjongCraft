@@ -113,7 +113,7 @@
   "mahjongcraft.message.cannot_kick_self": "You cannot remove yourself",
   "mahjongcraft.message.change_ai_strategy_failed": "Could not change that AI player's strategy",
   "mahjongcraft.message.change_game_config_failed": "Could not change the game rules",
-  "mahjongcraft.message.dice_rolled_broadcast": "Dice: %s",
+  "mahjongcraft.message.dice_roll.total": "Total: %s",
   "mahjongcraft.message.exhaustive_draw_reason.normal": "Exhaustive draw",
   "mahjongcraft.message.exhaustive_draw_settlement_status.draw_declaration": "Draw declaration",
   "mahjongcraft.message.exhaustive_draw_settlement_status.noten": "Noten",

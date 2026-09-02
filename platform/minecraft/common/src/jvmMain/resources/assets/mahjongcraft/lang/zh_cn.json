@@ -113,7 +113,7 @@
   "mahjongcraft.message.cannot_kick_self": "不能将自己移出游戏",
   "mahjongcraft.message.change_ai_strategy_failed": "无法更换该 AI 玩家的策略",
   "mahjongcraft.message.change_game_config_failed": "无法变更游戏规则",
-  "mahjongcraft.message.dice_rolled_broadcast": "骰子点数：%s",
+  "mahjongcraft.message.dice_roll.total": "合计：%s",
   "mahjongcraft.message.exhaustive_draw_reason.normal": "流局",
   "mahjongcraft.message.exhaustive_draw_settlement_status.draw_declaration": "流局宣告",
   "mahjongcraft.message.exhaustive_draw_settlement_status.noten": "未听",

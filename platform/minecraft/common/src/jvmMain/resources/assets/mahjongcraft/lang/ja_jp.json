@@ -113,7 +113,7 @@
   "mahjongcraft.message.cannot_kick_self": "自分自身を追放することはできません",
   "mahjongcraft.message.change_ai_strategy_failed": "そのAIの戦略を変更できません",
   "mahjongcraft.message.change_game_config_failed": "ゲームルールを変更できません",
-  "mahjongcraft.message.dice_rolled_broadcast": "サイコロの目：%s",
+  "mahjongcraft.message.dice_roll.total": "合計：%s",
   "mahjongcraft.message.exhaustive_draw_reason.normal": "流局",
   "mahjongcraft.message.exhaustive_draw_settlement_status.draw_declaration": "流局宣言",
   "mahjongcraft.message.exhaustive_draw_settlement_status.noten": "ノーテン",

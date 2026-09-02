@@ -28,6 +28,20 @@ class MahjongDiceTableLayoutTest {
         assertFailsWith<IllegalArgumentException> { placements(diceCount = 4) }
     }
 
+    /** 總時間應涵蓋最大 stagger、翻滾動畫與完整兩秒結果面板。 */
+    @Test
+    fun `total animation time includes shared result presentation`() {
+        listOf(2, 3).forEach { diceCount ->
+            assertEquals(
+                MahjongDiceTableLayout.maxStartDelayTicks(diceCount) +
+                    DiceRollAnimationSpec.DEFAULT_DURATION_TICKS +
+                    DiceRollAnimationSpec.EXTRA_VIEWING_TICKS,
+                MahjongDiceTableLayout.totalAnimationTicks(diceCount),
+            )
+        }
+        assertEquals(40, DiceRollAnimationSpec.EXTRA_VIEWING_TICKS)
+    }
+
     /** 同一桌的前四次投擲應使用四組不同 layout，第五次回到第一組。 */
     @Test
     fun `table uuid defines stable cyclic variant order`() {

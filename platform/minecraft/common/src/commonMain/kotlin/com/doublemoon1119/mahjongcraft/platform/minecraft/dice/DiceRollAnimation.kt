@@ -34,11 +34,10 @@ data class DiceRollAnimationSpec(
         const val DEFAULT_DURATION_TICKS = 30
 
         /**
-         * 動畫播完後，額外多留給玩家看清楚點數的 tick 數（1.25 秒 @ 20 TPS）——單一來源，供骰子
-         * entity 自我判斷何時該消失（版本層 `MahjongDiceEntity.tick()`）與遊戲流程忙碌狀態時長計算
-         * （版本層 `FabricGamePresentationPublisher`）共用，避免兩處各自寫一份相同的數字。
+         * 最後一顆骰子停穩後顯示聚合結果面板的 tick 數（2 秒 @ 20 TPS）——單一來源，供桌面骰子共同
+         * 消失時間、結果 presentation 與後續發牌延遲共用，避免三條時間線各自維護不同常數。
          */
-        const val EXTRA_VIEWING_TICKS = 25
+        const val EXTRA_VIEWING_TICKS = 40
     }
 }
 

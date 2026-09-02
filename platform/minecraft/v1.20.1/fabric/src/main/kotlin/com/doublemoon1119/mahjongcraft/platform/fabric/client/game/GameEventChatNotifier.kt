@@ -124,17 +124,6 @@ fun buildMatchResultChatMessage(
     return buildMatchResultChatText(details)
 }
 
-/**
- * 把擲骰結果事件（[GameAction.DiceRolled]）組成一則列出點數的聊天訊息，占位呈現理由同
- * [buildRoundResultChatMessage]——之後要換成 HUD 只需要換掉呼叫端。
- *
- * @return 不是擲骰結果事件時回傳 null，代表呼叫端不需要顯示任何訊息。
- */
-fun buildDiceRolledChatMessage(action: GameAction): Text? {
-    if (action !is GameAction.DiceRolled) return null
-    return Text.translatable(MinecraftMessageKeys.DICE_ROLLED_BROADCAST, action.dice.values.joinToString("、"))
-}
-
 /** 把 [rankedPlayers]（已排好序）依序編號附加到 [message]，兩種排名訊息共用同一種每行格式。 */
 private fun appendRankingLines(
     message: MutableText,

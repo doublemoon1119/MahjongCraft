@@ -3,9 +3,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.dice
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
@@ -48,6 +50,10 @@ class FabricMahjongDiceRollPresenter(
             diceCount = presentation.dice.size,
         )
         val oldDice = findManagedDice(world, presentation.tableId, controllerPos)
+        val oldStages = findManagedStages(world, presentation.tableId, controllerPos)
+        val revealGameTime = world.time + presentation.extraLeadDelayTicks +
+            MahjongDiceTableLayout.maxStartDelayTicks(presentation.dice.size) + DiceRollAnimationSpec.DEFAULT_DURATION_TICKS
+        val endGameTime = revealGameTime + DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
         val newDice = placements.zip(presentation.dice).map { (placement, dicePresentation) ->
             MahjongDiceEntity(world = world).apply {
                 refreshPositionAndAngles(
@@ -63,8 +69,24 @@ class FabricMahjongDiceRollPresenter(
                     seed = dicePresentation.animationSeed,
                     startDelayTicks = presentation.extraLeadDelayTicks + placement.startDelayTicks,
                     startOffset = placement.startOffset,
+                    sharedViewingEndGameTime = endGameTime,
                 )
             }
+        }
+        val stage = DiceRollPresentationEntity(world = world).apply {
+            refreshPositionAndAngles(
+                controllerPos.x + BLOCK_CENTER,
+                controllerPos.y + TABLETOP_HEIGHT + DiceRollPresentationEntity.HEIGHT_ABOVE_TABLETOP,
+                controllerPos.z + BLOCK_CENTER,
+                0.0f,
+                0.0f,
+            )
+            configure(
+                tableId = presentation.tableId,
+                points = presentation.dice.map { it.point },
+                revealGameTime = revealGameTime,
+                endGameTime = endGameTime,
+            )
         }
         val spawnedDice = mutableListOf<MahjongDiceEntity>()
         newDice.forEach { dice ->
@@ -74,7 +96,12 @@ class FabricMahjongDiceRollPresenter(
             }
             spawnedDice += dice
         }
+        if (!world.spawnEntity(stage)) {
+            spawnedDice.forEach(MahjongDiceEntity::discard)
+            return MahjongDiceRollPresentationResult.SPAWN_FAILED
+        }
         oldDice.forEach(MahjongDiceEntity::discard)
+        oldStages.forEach(DiceRollPresentationEntity::discard)
         table.markDirty()
         return MahjongDiceRollPresentationResult.PRESENTED
     }
@@ -83,8 +110,10 @@ class FabricMahjongDiceRollPresenter(
     override fun clear(tableId: Uuid, tableLocation: TableLocation): Int {
         val world = resolveWorld(tableLocation) ?: return 0
         val dice = findManagedDice(world, tableId, tableLocation.toBlockPos())
+        val stages = findManagedStages(world, tableId, tableLocation.toBlockPos())
         dice.forEach(MahjongDiceEntity::discard)
-        return dice.size
+        stages.forEach(DiceRollPresentationEntity::discard)
+        return dice.size + stages.size
     }
 
     /** 由版本無關 dimension ID 取得目前 server session 的世界。 */
@@ -120,6 +149,16 @@ class FabricMahjongDiceRollPresenter(
         Box(controllerPos).expand(DICE_SEARCH_HORIZONTAL, DICE_SEARCH_VERTICAL, DICE_SEARCH_HORIZONTAL),
     ) { dice -> dice.managedTableId == tableId }
 
+    /** 只查詢桌子附近並以 UUID 精確篩選正式擲骰結果舞台。 */
+    private fun findManagedStages(
+        world: ServerWorld,
+        tableId: Uuid,
+        controllerPos: BlockPos,
+    ): List<DiceRollPresentationEntity> = world.getEntitiesByClass(
+        DiceRollPresentationEntity::class.java,
+        Box(controllerPos).expand(DICE_SEARCH_HORIZONTAL, DICE_SEARCH_VERTICAL, DICE_SEARCH_HORIZONTAL),
+    ) { stage -> stage.managedTableId == tableId }
+
     /** 將版本無關 table location 轉回 Fabric 方塊座標。 */
     private fun TableLocation.toBlockPos(): BlockPos = BlockPos(x, y, z)
 
@@ -133,5 +172,11 @@ class FabricMahjongDiceRollPresenter(
 
         /** controller 周圍查詢正式骰子的垂直半徑。 */
         const val DICE_SEARCH_VERTICAL: Double = 2.0
+
+        /** 方塊中心座標偏移。 */
+        const val BLOCK_CENTER: Double = 0.5
+
+        /** 麻將桌桌面相對 controller 的高度。 */
+        const val TABLETOP_HEIGHT: Double = 1.0
     }
 }

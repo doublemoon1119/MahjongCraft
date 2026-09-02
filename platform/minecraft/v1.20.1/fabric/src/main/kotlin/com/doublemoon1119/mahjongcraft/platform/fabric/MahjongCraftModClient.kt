@@ -13,11 +13,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClie
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.ClientDecisionPromptStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.PlayerDecisionHudController
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildDiceRolledChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildMatchResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildRoundResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.DiceRollPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ExhaustiveDrawSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongDiceEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongLobbyInfoEntityRenderer
@@ -137,7 +137,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 action,
                 newSnapshot,
                 module,
-            ) { id, isAi -> playerNames.resolve(id.toString(), isAi) } ?: buildDiceRolledChatMessage(action) ?: return@registerClientReceiver
+            ) { id, isAi -> playerNames.resolve(id.toString(), isAi) } ?: return@registerClientReceiver
             MinecraftClient.getInstance().player?.sendMessage(message)
         }
         MahjongChannels.roomSnapshot.registerClientReceiver(json) { payload ->
@@ -175,6 +175,7 @@ class MahjongCraftModClient : ClientModInitializer {
             )
         }
         EntityRendererRegistry.register(ModEntities.mahjongDice, ::MahjongDiceEntityRenderer)
+        EntityRendererRegistry.register(ModEntities.diceRollPresentation, ::DiceRollPresentationEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongRoundInfo, ::MahjongRoundInfoEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongPlayerInfo) { context ->

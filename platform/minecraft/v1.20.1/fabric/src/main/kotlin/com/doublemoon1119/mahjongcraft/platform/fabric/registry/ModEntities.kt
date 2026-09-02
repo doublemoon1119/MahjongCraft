@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongLobbyInfoEntity
@@ -24,6 +25,10 @@ import net.minecraft.util.Identifier
 object ModEntities {
     /** 麻將骰子 entity type；由 [register] 初始化。 */
     lateinit var mahjongDice: EntityType<MahjongDiceEntity>
+        private set
+
+    /** 擲骰聚合結果面板 entity type；由 [register] 初始化。 */
+    lateinit var diceRollPresentation: EntityType<DiceRollPresentationEntity>
         private set
 
     /** 麻將牌 entity type；由 [register] 初始化。 */
@@ -75,6 +80,16 @@ object ModEntities {
                 .dimensions(EntityDimensions.fixed(MahjongDiceEntity.SIZE, MahjongDiceEntity.SIZE))
                 .trackRangeBlocks(16)
                 .trackedUpdateRate(10)
+                .fireImmune()
+                .build(),
+        )
+        diceRollPresentation = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier(MinecraftModMetadata.MOD_ID, "dice_roll_presentation"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::DiceRollPresentationEntity)
+                .dimensions(EntityDimensions.fixed(DiceRollPresentationEntity.WIDTH, DiceRollPresentationEntity.HEIGHT))
+                .trackRangeBlocks(32)
+                .trackedUpdateRate(1)
                 .fireImmune()
                 .build(),
         )
