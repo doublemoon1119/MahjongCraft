@@ -82,6 +82,40 @@ class PlayerDecisionTimerTest {
         )
     }
 
+    /**
+     * 驗證供 [ActionTimeControl.startDecisionTimer] 接續中斷決策的 `resumedBaseMillis`、使用中斷時剩餘的基本思考時間，而不是重新取得完整基本思考時間。
+     *
+     * 這是重連不會免費重置思考倒數的直接依據：新計時器的 `baseDurationMillis` 必須是接續剩餘量，不能回到
+     * [ActionTimeControl.baseSeconds] 定義的完整值。
+     */
+    @Test
+    fun `test resumed base millis is used instead of a fresh base duration`() {
+        val timer = ActionTimeControl.Custom(baseSeconds = 5, reserveSeconds = 20).startDecisionTimer(
+            playerId = Uuid.random(),
+            remainingReserveMillis = 20_000L,
+            startedAtMillis = 1_000L,
+            resumedBaseMillis = 1_200L,
+        )
+
+        assertEquals(1_200L, timer.baseDurationMillis)
+        assertEquals(
+            DecisionTimeStatus(baseRemainingMillis = 700L, reserveRemainingMillis = 20_000L, isTimedOut = false),
+            timer.statusAt(1_500L),
+        )
+    }
+
+    /** 驗證未指定 `resumedBaseMillis` 時仍取得 [ActionTimeControl.baseSeconds] 定義的完整基本思考時間。 */
+    @Test
+    fun `test omitted resumed base millis grants a fresh base duration`() {
+        val timer = ActionTimeControl.Custom(baseSeconds = 5, reserveSeconds = 20).startDecisionTimer(
+            playerId = Uuid.random(),
+            remainingReserveMillis = 20_000L,
+            startedAtMillis = 1_000L,
+        )
+
+        assertEquals(5_000L, timer.baseDurationMillis)
+    }
+
     /** 驗證負數時間輸入會被拒絕。 */
     @Test
     fun `test negative timer values are rejected`() {

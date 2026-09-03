@@ -214,6 +214,64 @@ class AuthoritativeStatePersistenceDtoTest {
         assertEquals(setOf(playerId), restored.forcedAutoPlayPlayerIds)
     }
 
+    /**
+     * 驗證中斷基本思考時間能完整存檔與還原，不受存在於還原後 `Game.interruptedBaseMillisByPlayerId` 上的 mock 影響，
+     * 以免玩家退出重進 server session 後這筆權威資料實際逐行遺失。
+     */
+    @Test
+    fun `interrupted base time round-trips`() {
+        val tableState = createGame()
+        val playerId = tableState.players.single().id
+        val game = Game(
+            tableState = tableState,
+            flowConfig = GameFlowConfig(),
+            interruptedBaseMillisByPlayerId = mapOf(playerId to 3_500L),
+        )
+        val state = createAuthoritativeStatePersistenceDto(
+            rooms = emptyList(),
+            games = listOf(game),
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            playerRuleStateRegistry = playerRuleStateRegistry,
+            dynamicRuleStateRegistry = dynamicRuleStateRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            json = json,
+        )
+
+        val restored = state.toGames(
+            ruleConfigRegistry,
+            discardPileRegistry,
+            playerRuleStateRegistry,
+            dynamicRuleStateRegistry,
+            exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry,
+            json,
+        ).getValue(game.id)
+
+        assertEquals(mapOf(playerId to 3_500L), restored.interruptedBaseMillisByPlayerId)
+    }
+
+    /** 驗證早於此欄位新增的既有存檔沒有這筆資料時，還原後退回空 map，不影響玩家下一次取得決策權。 */
+    @Test
+    fun `missing interrupted base time defaults to empty on legacy saves`() {
+        val state = createState(emptyList(), listOf(createGame()))
+        val gameIdString = state.games.keys.single()
+        assertTrue(state.gameRuntimeStates.getValue(gameIdString).interruptedBaseMillisByPlayerId.isEmpty())
+
+        val restored = state.toGames(
+            ruleConfigRegistry,
+            discardPileRegistry,
+            playerRuleStateRegistry,
+            dynamicRuleStateRegistry,
+            exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry,
+            json,
+        ).getValue(Uuid.parse(gameIdString))
+
+        assertTrue(restored.interruptedBaseMillisByPlayerId.isEmpty())
+    }
+
     /** 驗證強制自動操作索引不得包含遊戲以外的玩家。 */
     @Test
     fun `unknown forced auto play player is rejected`() {
