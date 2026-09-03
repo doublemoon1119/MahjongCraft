@@ -19,6 +19,10 @@
   `docs/temp/` references (see Temp File Management).
 - If it fails on ktlint violations, run `./gradlew ktlintFormat` to auto-fix them instead of fixing
   them by hand.
+- `./gradlew build` also verifies the Minecraft language files (`platform/minecraft/common/.../lang/`)
+  are sorted by translation key. If it fails, run `./gradlew sortMinecraftLangFiles` to auto-fix instead
+  of reordering entries by hand. This check reads that fixed directory directly and always runs
+  regardless of the currently loaded target, unlike the per-module checks above.
 - "Currently loaded module" means the core modules plus whichever platform target is active per
   `local.dev.properties`, `-PmahjongcraftTarget`, or `MAHJONGCRAFT_TARGET`. Run
   `./gradlew listPlatformTargets` to list valid targets. All of the checks above — including the

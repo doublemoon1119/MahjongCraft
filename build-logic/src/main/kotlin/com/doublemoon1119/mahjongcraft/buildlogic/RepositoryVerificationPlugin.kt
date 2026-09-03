@@ -33,11 +33,23 @@ class RepositoryVerificationPlugin : Plugin<Project> {
             group = "verification"
             description = "Verifies that every module and platform index has an exact README.md file."
         }
+        project.tasks.register("sortMinecraftLangFiles", SortMinecraftLangFilesTask::class.java) {
+            group = "formatting"
+            description = "Sorts MahjongCraft Minecraft language files by translation key."
+        }
+        val verifyMinecraftLangFileKeyOrder = project.tasks.register(
+            "verifyMinecraftLangFileKeyOrder",
+            VerifyMinecraftLangFileKeyOrderTask::class.java,
+        ) {
+            group = "verification"
+            description = "Verifies MahjongCraft Minecraft language files are sorted by translation key."
+        }
         project.tasks.named("check").configure {
             dependsOn(
                 verifyNoDocsTempReferences,
                 verifyProjectVersionPolicy,
                 verifyModuleReadmes,
+                verifyMinecraftLangFileKeyOrder,
             )
         }
     }
@@ -133,6 +145,58 @@ abstract class VerifyModuleReadmesTask : DefaultTask() {
             )
         }
     }
+}
+
+/** 依 key 字典序重新排列所有 Minecraft 語系檔。 */
+abstract class SortMinecraftLangFilesTask : DefaultTask() {
+    /** 逐檔改寫排序後的內容。 */
+    @TaskAction
+    fun sort() {
+        minecraftLangFiles(project).forEach { file -> file.writeText(sortedLangFileText(file.readText())) }
+    }
+}
+
+/** 驗證所有 Minecraft 語系檔已依 key 字典序排列。 */
+abstract class VerifyMinecraftLangFileKeyOrderTask : DefaultTask() {
+    /** 逐檔比對排序前後內容，回報未排序的檔案。 */
+    @TaskAction
+    fun verifyOrder() {
+        val violations = minecraftLangFiles(project).filter { it.readText() != sortedLangFileText(it.readText()) }
+        if (violations.isNotEmpty()) {
+            throw GradleException(
+                "Language files are not sorted by translation key (run ./gradlew sortMinecraftLangFiles to fix):\n" +
+                    violations.joinToString("\n") { "  - ${it.relativeTo(project.rootDir).invariantSeparatorsPath}" },
+            )
+        }
+    }
+}
+
+/** Minecraft 平台的語系檔目錄；模組未載入時目錄仍在磁碟上，不受目前 target 選擇影響。 */
+internal fun minecraftLangFiles(project: Project): List<File> {
+    val dir = project.rootDir.resolve("platform/minecraft/common/src/jvmMain/resources/assets/mahjongcraft/lang")
+    if (!dir.isDirectory) return emptyList()
+    return dir.listFiles { file -> file.isFile && file.extension == "json" }
+        ?.sortedBy { it.name }
+        ?: emptyList()
+}
+
+/**
+ * 將語系檔內容依 key 字典序重排。
+ *
+ * 每個條目固定佔一整行（`  "key": "value",`），排序只搬動整行，不解析或改寫 value 內容與跳脫字元。
+ * 純文字轉換，不特定於任何平台的語系檔格式。
+ *
+ * @throws IllegalArgumentException [original] 不符合這個固定的單行條目格式。
+ */
+internal fun sortedLangFileText(original: String): String {
+    val lines = original.split("\n")
+    require(lines.firstOrNull() == "{" && lines.getOrNull(lines.size - 2) == "}" && lines.lastOrNull() == "") {
+        "Language file does not match the expected single-entry-per-line format"
+    }
+    val entries = lines.subList(1, lines.size - 2).map { it.removeSuffix(",") }
+    val sortedEntries = entries.sortedBy { line -> line.substringAfter('"').substringBefore('"') }
+    val body = sortedEntries.mapIndexed { index, line -> if (index == sortedEntries.lastIndex) line else "$line," }
+    return (listOf("{") + body + listOf("}", "")).joinToString("\n")
 }
 
 /** 即使在大小寫不敏感的檔案系統，也只接受精確的 `README.md` 名稱。 */
