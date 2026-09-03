@@ -69,14 +69,19 @@ internal data class MahjongHudToolbarLayout(
         mouseY >= SCROLLBAR_TOP &&
         mouseY < SCROLLBAR_TOP + SCROLLBAR_HEIGHT
 
-    /** 依可見比例與目前捲動量計算 scrollbar thumb 邊界。 */
+    /**
+     * 依可見比例與目前捲動量計算 scrollbar thumb 邊界。
+     *
+     * 高 GUI scale 搭配小解析度時 [viewportWidth] 可能比 [MIN_THUMB_WIDTH] 還窄，此時最小寬度本身
+     * 必須先讓給可見寬度，否則下界會大於上界。
+     */
     fun thumb(scroll: Double): MahjongHudToolbarThumb {
         val thumbWidth = if (contentWidth <= 0) {
             viewportWidth
         } else {
             (viewportWidth.toDouble() * viewportWidth / contentWidth)
                 .roundToInt()
-                .coerceIn(MIN_THUMB_WIDTH, viewportWidth)
+                .coerceIn(MIN_THUMB_WIDTH.coerceAtMost(viewportWidth), viewportWidth)
         }
         val travel = viewportWidth - thumbWidth
         val left = MARGIN + if (maximumScroll == 0.0) 0 else (scroll / maximumScroll * travel).roundToInt()
