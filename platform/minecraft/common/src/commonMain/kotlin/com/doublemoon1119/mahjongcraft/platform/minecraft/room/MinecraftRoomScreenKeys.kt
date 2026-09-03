@@ -48,4 +48,14 @@ object MinecraftRoomScreenKeys {
     const val LOBBY_WAITING = "mahjongcraft.lobby.info.waiting"
     const val LOBBY_SUMMARY = "mahjongcraft.lobby.info.summary"
     const val LOBBY_VIEW_DETAILS = "mahjongcraft.lobby.info.view_details"
+
+    /** 單選欄位選項的翻譯鍵前綴；實際 key 由 [configOption] 依去掉命名空間的選項 ID 組成。 */
+    private const val CONFIG_OPTION_PREFIX = "mahjongcraft.room.config.option."
+
+    /**
+     * 取得單選欄位某個選項的翻譯鍵。
+     *
+     * @param optionId 帶命名空間的選項 ID（例如 `mahjongcraft:none`）；命名空間不進翻譯鍵。
+     */
+    fun configOption(optionId: String): String = CONFIG_OPTION_PREFIX + optionId.substringAfter(':')
 }

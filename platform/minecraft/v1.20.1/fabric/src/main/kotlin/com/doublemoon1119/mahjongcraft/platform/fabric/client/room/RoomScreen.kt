@@ -1085,7 +1085,7 @@ class RoomScreen(
         if (enabled) MinecraftRoomScreenKeys.TRUE else MinecraftRoomScreenKeys.FALSE,
     )
 
-    private fun optionText(optionId: String): Text = Text.translatable("mahjongcraft.room.config.option.${optionId.substringAfter(':')}")
+    private fun optionText(optionId: String): Text = Text.translatable(MinecraftRoomScreenKeys.configOption(optionId))
 
     private fun integerText(number: Int?, unit: String?): Text = when {
         number == null -> Text.translatable(MinecraftRoomScreenKeys.NONE)

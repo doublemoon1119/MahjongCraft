@@ -1,10 +1,19 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.registerBuiltInGameConfigPresentations
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import java.lang.reflect.Modifier
+import kotlin.reflect.KClass
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -90,6 +99,92 @@ class MinecraftLanguageFilesTest {
                 MinecraftItemGroupKeys.MAIN in loadTranslations(locale),
                 "$locale language file does not contain the main item group translation",
             )
+        }
+    }
+
+    /**
+     * 驗證畫面與指令 key 物件宣告的每一個翻譯鍵都在所有語系檔中有對應翻譯。
+     *
+     * 這幾個 key 物件沒有 `ALL` 常數，改以反射列舉其字串常數：新增欄位時不需要同步維護第二份清單，
+     * 忘記補翻譯會直接讓這個測試失敗，而不是等到遊戲中顯示未格式化的原始 key。
+     */
+    @Test
+    fun `all declared screen and command keys have translations in every language`() {
+        val declared = keyHolders.flatMap { holder -> declaredTranslationKeys(holder).map { holder.simpleName to it } }
+        assertTrue(declared.isNotEmpty(), "no translation keys were discovered on the key holder objects")
+
+        locales.forEach { locale ->
+            val translations = loadTranslations(locale)
+            declared.forEach { (holder, key) ->
+                assertTrue(key in translations, "$locale is missing $key declared by $holder")
+            }
+        }
+    }
+
+    /**
+     * 驗證內建遊戲設定 schema 產生的每一個翻譯鍵都在所有語系檔中有對應翻譯。
+     *
+     * 這些鍵不是程式碼中的字面值，而是由 [GameConfigPresentationRegistry] 的分類、欄位、單位與單選
+     * 選項定義推導出來的，靜態掃描看不到；新增一個設定欄位卻沒補上四種語言的名稱與說明時，這裡會
+     * 失敗。
+     */
+    @Test
+    fun `all built-in game config presentation keys have translations in every language`() {
+        val keys = builtInGameConfigTranslationKeys()
+        assertTrue(keys.isNotEmpty(), "built-in game config presentations produced no translation keys")
+
+        locales.forEach { locale ->
+            val translations = loadTranslations(locale)
+            keys.forEach { key ->
+                assertTrue(key in translations, "$locale is missing game config key $key")
+            }
+        }
+    }
+
+    /** 沒有 `ALL` 常數、改以反射檢查的翻譯鍵物件。 */
+    private val keyHolders = listOf(
+        MinecraftRoomScreenKeys::class,
+        MinecraftClientConfigScreenKeys::class,
+        MinecraftConfigCommandKeys::class,
+    )
+
+    /**
+     * 以反射列舉 Kotlin `object` 上所有 MahjongCraft 命名空間的字串常數。
+     *
+     * 以 `.` 結尾的常數是組成完整鍵用的前綴（例如單選選項前綴），本身不是翻譯鍵，不納入檢查。
+     */
+    private fun declaredTranslationKeys(holder: KClass<*>): List<String> = holder.java.declaredFields
+        .filter { Modifier.isStatic(it.modifiers) && it.type == String::class.java }
+        .mapNotNull { field ->
+            field.isAccessible = true
+            (field.get(null) as? String)
+                ?.takeIf { it.startsWith(MinecraftModMetadata.MOD_ID + ".") && !it.endsWith(".") }
+        }
+
+    /** 收集內建設定 schema 的分類、欄位、說明、單位與單選選項翻譯鍵。 */
+    private fun builtInGameConfigTranslationKeys(): Set<String> {
+        val registry = GameConfigPresentationRegistryImpl().apply {
+            registerBuiltInGameConfigPresentations()
+            freeze()
+        }
+
+        return buildSet {
+            registry.ruleModuleIds.forEach { ruleModuleId ->
+                val definition = checkNotNull(registry.find(ruleModuleId)) { "Missing presentation: $ruleModuleId" }
+                add(definition.descriptionTranslationKey)
+                definition.unavailableReasonTranslationKey?.let(::add)
+                definition.categories.forEach { add(it.nameTranslationKey) }
+                definition.fields.forEach { field ->
+                    add(field.nameTranslationKey)
+                    add(field.descriptionTranslationKey)
+                    when (val editor = field.editor) {
+                        GameConfigEditorSpec.BooleanToggle -> Unit
+                        is GameConfigEditorSpec.IntegerInput -> editor.unitTranslationKey?.let(::add)
+                        is GameConfigEditorSpec.SingleChoice ->
+                            editor.optionIds.forEach { add(MinecraftRoomScreenKeys.configOption(it)) }
+                    }
+                }
+            }
         }
     }
 
