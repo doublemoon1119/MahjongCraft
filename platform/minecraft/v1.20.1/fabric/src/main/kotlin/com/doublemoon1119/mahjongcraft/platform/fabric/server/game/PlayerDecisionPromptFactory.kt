@@ -174,13 +174,21 @@ private fun RoundPreparationInputSpec.toPrompt(resolveAssetKey: (Uuid) -> String
     }
 }
 
-/** 將內建與第三方動作轉成穩定顯示 ID。 */
-private fun GameAction.presentationId(): String = when (this) {
+/**
+ * 將內建與第三方動作轉成穩定顯示 ID，client 端 [translationKey] 依此組出完整翻譯鍵。
+ *
+ * 槓的三種類型字尾須與語系檔 `hud.action.kan_open`／`kan_closed`／`kan_added` 一致。
+ */
+internal fun GameAction.presentationId(): String = when (this) {
     GameAction.Tsumo -> "mahjongcraft:tsumo"
     is GameAction.Ron -> "mahjongcraft:ron"
     is GameAction.Chi -> "mahjongcraft:chi"
     is GameAction.Pon -> "mahjongcraft:pon"
-    is GameAction.Kan -> "mahjongcraft:kan_${type.name.lowercase()}"
+    is GameAction.Kan -> when (type) {
+        GameAction.KanType.OPEN_KAN -> "mahjongcraft:kan_open"
+        GameAction.KanType.CLOSED_KAN -> "mahjongcraft:kan_closed"
+        GameAction.KanType.ADDED_KAN -> "mahjongcraft:kan_added"
+    }
     GameAction.Pass -> "mahjongcraft:pass"
     is GameAction.ExhaustiveDraw -> reason.id
     is GameAction.Extension -> value.id

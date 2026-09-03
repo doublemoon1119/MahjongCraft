@@ -841,7 +841,7 @@ private val PlayerDecisionPromptDto.isInteractive: Boolean
     get() = actions.isNotEmpty() || riichiTileIds.isNotEmpty() || preparation != null
 
 /** 將 namespaced ID 映射至內建語言鍵，未知 ID 仍以完整 ID 顯示。 */
-private fun String.translationKey(): String = when (this) {
+internal fun String.translationKey(): String = when (this) {
     "mahjongcraft:discard_furiten" -> "mahjongcraft.hud.furiten.discard"
     "mahjongcraft:temporary_furiten" -> "mahjongcraft.hud.furiten.temporary"
     "mahjongcraft:permanent_furiten" -> "mahjongcraft.hud.furiten.permanent"
