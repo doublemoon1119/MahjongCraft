@@ -31,7 +31,16 @@ class MahjongClientConfigStoreTest {
                 .replace("tile-labels-enabled = false", "tile-labels-enabled   =   false # Inline note") +
                 "\n# User note\n",
         )
-        val requested = MahjongClientConfigState(tileLabelsEnabled = true, autoSortHandEnabled = false)
+        val requested = MahjongClientConfigState(
+            tileLabelsEnabled = true,
+            autoSortHandEnabled = false,
+            hudLayout = MahjongHudLayoutConfig(
+                decisionPanelY = 0.25,
+                compactPromptX = 0.75,
+                compactPromptY = 0.4,
+                discardAnalysisY = 0.6,
+            ),
+        )
 
         assertIs<MahjongClientConfigUpdateResult.Success>(store.save(requested))
 
@@ -39,6 +48,8 @@ class MahjongClientConfigStoreTest {
         assertTrue(content.contains("# User note"))
         assertTrue(content.contains("tile-labels-enabled   =   true # Inline note"))
         assertTrue(content.contains("auto-sort-hand-enabled = false"))
+        assertTrue(content.contains("decision-panel-y = 0.25"))
+        assertTrue(content.contains("compact-prompt-x = 0.75"))
         assertEquals(requested, store.current)
         assertEquals(2L, store.revision)
         assertEquals(requested, assertIs<MahjongClientConfigUpdateResult.Success>(store.load()).config)
@@ -78,6 +89,23 @@ class MahjongClientConfigStoreTest {
         assertEquals(missingField, Files.readString(path))
         assertEquals(MahjongClientConfigState(), store.current)
         assertEquals(1L, store.revision)
+    }
+
+    /** 舊版設定缺少整個 HUD section 時，首次保存應保留舊內容並附加預設結構。 */
+    @Test
+    fun `save upgrades a legacy config without hud layout fields`() = withTemporaryConfig { store, path ->
+        assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
+        val legacy = Files.readString(path).substringBefore("\n# HUD positions") + "\n# Legacy note\n"
+        Files.writeString(path, legacy)
+        assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
+
+        val requested = store.current.copy(tileLabelsEnabled = true)
+        assertIs<MahjongClientConfigUpdateResult.Success>(store.save(requested))
+
+        val updated = Files.readString(path)
+        assertTrue(updated.contains("# Legacy note"))
+        assertTrue(updated.contains("[hud-layout]"))
+        assertEquals(requested, store.current)
     }
 
     /** 建立隔離設定路徑並於測試結束後清理。 */

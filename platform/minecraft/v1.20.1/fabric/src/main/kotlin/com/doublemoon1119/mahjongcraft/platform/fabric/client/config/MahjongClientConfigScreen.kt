@@ -91,9 +91,19 @@ class MahjongClientConfigScreen(
     /** 設定畫面不暫停整合伺服器或單人遊戲。 */
     override fun shouldPause(): Boolean = false
 
-    /** Esc 與 Cancel 均放棄草稿並返回原畫面。 */
+    /** Esc 在無變更時返回；有未套用草稿時顯示明確的三選項確認畫面。 */
     override fun close() {
-        client?.setScreen(parent)
+        if (draftStale || draft == baseline) {
+            client?.setScreen(parent)
+        } else {
+            client?.setScreen(
+                ClientConfigUnsavedChangesScreen(
+                    this,
+                    { applyDraft(closeAfterSave = true) },
+                    { client?.setScreen(parent) },
+                ),
+            )
+        }
     }
 
     /** 偵測畫面開啟期間由 reload／指令造成的外部設定變更。 */
@@ -192,13 +202,17 @@ class MahjongClientConfigScreen(
                 row.valueText(draft)
             }
             val button = RestartableMarqueeButtonWidget.builder(message) {
-                row.update?.let { update ->
-                    draft = update(draft)
-                    saveFailed = false
-                    rebuild()
+                if (row.onActivate != null) {
+                    row.onActivate.invoke()
+                } else {
+                    row.update?.let { update ->
+                        draft = update(draft)
+                        saveFailed = false
+                        rebuild()
+                    }
                 }
             }.dimensions(bounds.controlLeft, y, bounds.controlWidth, BUTTON_HEIGHT).build().also {
-                it.active = row.update != null && !draftStale
+                it.active = (row.update != null || row.onActivate != null) && !draftStale
                 it.tooltip = Tooltip.of(Text.translatable(row.descriptionKey))
             }
             addDrawableChild(button)
@@ -240,10 +254,14 @@ class MahjongClientConfigScreen(
     }
 
     /** 原子保存草稿；自動整理偏好變更時才同步伺服器。 */
-    private fun applyDraft(closeAfterSave: Boolean) {
-        if (draftStale || draft == baseline) return
+    private fun applyDraft(closeAfterSave: Boolean): Boolean {
+        if (draftStale) return false
+        if (draft == baseline) {
+            if (closeAfterSave) close()
+            return true
+        }
         val previous = configStore.current
-        when (configStore.save(draft)) {
+        return when (configStore.save(draft)) {
             is MahjongClientConfigUpdateResult.Success -> {
                 if (previous.autoSortHandEnabled != draft.autoSortHandEnabled && client?.networkHandler != null) {
                     MahjongChannels.setAutoSortHand.sendToServer(json, draft.autoSortHandEnabled)
@@ -252,13 +270,24 @@ class MahjongClientConfigScreen(
                 baselineRevision = configStore.revision
                 saveFailed = false
                 if (closeAfterSave) close() else rebuild()
+                true
             }
 
             is MahjongClientConfigUpdateResult.Failure -> {
                 saveFailed = true
                 refreshButtons()
+                false
             }
         }
+    }
+
+    /** 目前完整草稿，供 HUD editor 在不建立第二份設定來源的情況下承接。 */
+    internal fun currentDraft(): MahjongClientConfigState = draft
+
+    /** 將 HUD 配置併入完整草稿並透過既有原子保存流程套用。 */
+    internal fun applyHudLayout(layout: MahjongHudLayoutConfig): Boolean {
+        draft = draft.copy(hudLayout = layout)
+        return applyDraft(closeAfterSave = false)
     }
 
     /** 依目前草稿、預設值與 revision 更新底部按鈕狀態。 */
@@ -266,6 +295,9 @@ class MahjongClientConfigScreen(
         resetButton?.active = !draftStale && draft != MahjongClientConfigState()
         applyButton?.active = !draftStale && draft != baseline
         undoButton?.active = draftStale || draft != baseline
+        val changes = if (!draftStale && draft != baseline) Tooltip.of(clientConfigDifferenceText(baseline, draft)) else null
+        applyButton?.tooltip = changes
+        undoButton?.tooltip = changes
     }
 
     /** 復原未套用變更；草稿過期時改以 store 最新權威值為基準。 */
@@ -374,9 +406,11 @@ class MahjongClientConfigScreen(
             ),
             ConfigRow(
                 MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT,
-                MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT_UNAVAILABLE,
+                MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT_DESCRIPTION,
                 { Text.translatable(MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT) },
-                null,
+                onActivate = {
+                    client?.setScreen(MahjongHudLayoutEditorScreen(this, currentDraft().hudLayout))
+                },
             ),
         )
     }
@@ -431,7 +465,9 @@ class MahjongClientConfigScreen(
         /** 依草稿產生目前值文字。 */
         val valueText: (MahjongClientConfigState) -> Text,
         /** 不可變更新函式；`null` 表示唯讀入口。 */
-        val update: ((MahjongClientConfigState) -> MahjongClientConfigState)?,
+        val update: ((MahjongClientConfigState) -> MahjongClientConfigState)? = null,
+        /** 非設定值切換的入口動作。 */
+        val onActivate: (() -> Unit)? = null,
     )
 
     /** 中央面板邊界。 */
@@ -574,5 +610,52 @@ class MahjongClientConfigScreen(
 
         /** 一般文字色。 */
         const val TEXT_COLOR = 0xFFFFFF
+    }
+}
+
+/** Client Config Screen 離開時使用的三選項未保存變更確認畫面。 */
+private class ClientConfigUnsavedChangesScreen(
+    private val settings: MahjongClientConfigScreen,
+    private val apply: () -> Unit,
+    private val discard: () -> Unit,
+) : Screen(Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_UNSAVED_TITLE)) {
+    /** 建立套用、放棄與繼續編輯按鈕。 */
+    override fun init() {
+        val buttonWidth = minOf(160, width - 24)
+        val left = (width - buttonWidth) / 2
+        addDrawableChild(
+            ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.APPLY_AND_BACK)) { apply() }
+                .dimensions(left, height / 2, buttonWidth, 20).build(),
+        )
+        addDrawableChild(
+            ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.DISCARD_CHANGES)) { discard() }
+                .dimensions(left, height / 2 + 24, buttonWidth, 20).build(),
+        )
+        addDrawableChild(
+            ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.CONTINUE_EDITING)) { client?.setScreen(settings) }
+                .dimensions(left, height / 2 + 48, buttonWidth, 20).build(),
+        )
+    }
+
+    /** 確認畫面不暫停遊戲。 */
+    override fun shouldPause(): Boolean = false
+
+    /** Esc 返回設定畫面，避免無聲放棄草稿。 */
+    override fun close() {
+        client?.setScreen(settings)
+    }
+
+    /** 繪製確認標題與說明。 */
+    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+        context.fill(0, 0, width, height, 0xAA000000.toInt())
+        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, height / 2 - 42, 0xFFD54F)
+        context.drawCenteredTextWithShadow(
+            textRenderer,
+            Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_UNSAVED_MESSAGE),
+            width / 2,
+            height / 2 - 26,
+            0xFFFFFF,
+        )
+        super.render(context, mouseX, mouseY, delta)
     }
 }

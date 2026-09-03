@@ -119,8 +119,13 @@ class MahjongClientConfigStore() {
         return try {
             createDefaultFileIfMissing()
             val original = Files.readString(path, StandardCharsets.UTF_8)
-            val updated = updateBoolean(original, TILE_LABELS_ENABLED_KEY, TILE_LABELS_ENABLED_LINE, config.tileLabelsEnabled)
+            val updated = ensureHudLayoutFields(original)
+                .let { updateBoolean(it, TILE_LABELS_ENABLED_KEY, TILE_LABELS_ENABLED_LINE, config.tileLabelsEnabled) }
                 .let { updateBoolean(it, AUTO_SORT_HAND_ENABLED_KEY, AUTO_SORT_HAND_ENABLED_LINE, config.autoSortHandEnabled) }
+                .let { updateDouble(it, DECISION_PANEL_Y_KEY, DECISION_PANEL_Y_LINE, config.hudLayout.decisionPanelY) }
+                .let { updateDouble(it, COMPACT_PROMPT_X_KEY, COMPACT_PROMPT_X_LINE, config.hudLayout.compactPromptX) }
+                .let { updateDouble(it, COMPACT_PROMPT_Y_KEY, COMPACT_PROMPT_Y_LINE, config.hudLayout.compactPromptY) }
+                .let { updateDouble(it, DISCARD_ANALYSIS_Y_KEY, DISCARD_ANALYSIS_Y_LINE, config.hudLayout.discardAnalysisY) }
             check(toml.decodeFromString<MahjongClientConfigState>(updated) == config) {
                 "Updated client config did not decode to the requested state"
             }
@@ -148,6 +153,23 @@ class MahjongClientConfigStore() {
         return lineRegex.replace(content) { match ->
             match.groupValues[1] + enabled + match.groupValues[2]
         }
+    }
+
+    /** 只替換一個受控 Double 欄位，缺少欄位時拒絕猜測 TOML section。 */
+    private fun updateDouble(content: String, key: String, lineRegex: Regex, number: Double): String {
+        check(lineRegex.containsMatchIn(content)) { "Missing controlled client config field '$key'" }
+        return lineRegex.replace(content) { match -> match.groupValues[1] + number + match.groupValues[2] }
+    }
+
+    /**
+     * 舊版 client config 沒有 HUD section 時附加受控預設欄位；既有文件內容與註解保持不變。
+     * 只要任一 HUD 欄位已存在便交由後續完整驗證拒絕不完整 section，避免猜測人工修改內容。
+     */
+    private fun ensureHudLayoutFields(content: String): String {
+        val fieldCount = HUD_LAYOUT_LINES.count { it.containsMatchIn(content) }
+        if (fieldCount == HUD_LAYOUT_LINES.size) return content
+        check(fieldCount == 0) { "Incomplete controlled client config section '$HUD_LAYOUT_SECTION'" }
+        return content.trimEnd() + "\n\n" + DEFAULT_HUD_LAYOUT_SECTION + "\n"
     }
 
     /** 在設定檔缺少時原樣複製打包的帶註解 template。 */
@@ -187,6 +209,57 @@ class MahjongClientConfigStore() {
         /** 比對檔案中 [AUTO_SORT_HAND_ENABLED_KEY] 那一行，用於 [setAutoSortHandEnabled] 的原地替換。 */
         val AUTO_SORT_HAND_ENABLED_LINE = Regex(
             """(?m)^(\s*$AUTO_SORT_HAND_ENABLED_KEY\s*=\s*)\S+(\s*(?:#.*)?)$""",
+        )
+
+        /** 操作面板垂直比例的 TOML 欄位鍵。 */
+        const val DECISION_PANEL_Y_KEY: String = "decision-panel-y"
+
+        /** 一般倒數水平比例的 TOML 欄位鍵。 */
+        const val COMPACT_PROMPT_X_KEY: String = "compact-prompt-x"
+
+        /** 一般倒數垂直比例的 TOML 欄位鍵。 */
+        const val COMPACT_PROMPT_Y_KEY: String = "compact-prompt-y"
+
+        /** 打牌分析垂直比例的 TOML 欄位鍵。 */
+        const val DISCARD_ANALYSIS_Y_KEY: String = "discard-analysis-y"
+
+        /** HUD layout TOML section 名稱。 */
+        const val HUD_LAYOUT_SECTION: String = "hud-layout"
+
+        /** 比對操作面板垂直比例欄位。 */
+        val DECISION_PANEL_Y_LINE = doubleLine(DECISION_PANEL_Y_KEY)
+
+        /** 比對一般倒數水平比例欄位。 */
+        val COMPACT_PROMPT_X_LINE = doubleLine(COMPACT_PROMPT_X_KEY)
+
+        /** 比對一般倒數垂直比例欄位。 */
+        val COMPACT_PROMPT_Y_LINE = doubleLine(COMPACT_PROMPT_Y_KEY)
+
+        /** 比對打牌分析垂直比例欄位。 */
+        val DISCARD_ANALYSIS_Y_LINE = doubleLine(DISCARD_ANALYSIS_Y_KEY)
+
+        /** 所有受控 HUD 欄位比對式。 */
+        val HUD_LAYOUT_LINES: List<Regex> = listOf(
+            DECISION_PANEL_Y_LINE,
+            COMPACT_PROMPT_X_LINE,
+            COMPACT_PROMPT_Y_LINE,
+            DISCARD_ANALYSIS_Y_LINE,
+        )
+
+        /** 舊設定保存時附加的預設 HUD section。 */
+        val DEFAULT_HUD_LAYOUT_SECTION: String = """
+            # HUD positions are ratios inside the area where the complete HUD can fit on screen.
+            # 0.0 means the left/top edge and 1.0 means the right/bottom edge.
+            [$HUD_LAYOUT_SECTION]
+            $DECISION_PANEL_Y_KEY = 0.88
+            $COMPACT_PROMPT_X_KEY = 0.5
+            $COMPACT_PROMPT_Y_KEY = 0.9
+            $DISCARD_ANALYSIS_Y_KEY = 0.86
+        """.trimIndent()
+
+        /** 建立保留行尾註解與空白的 Double 欄位比對式。 */
+        private fun doubleLine(key: String): Regex = Regex(
+            """(?m)^(\s*$key\s*=\s*)[-+]?\d+(?:\.\d+)?(\s*(?:#.*)?)$""",
         )
     }
 }

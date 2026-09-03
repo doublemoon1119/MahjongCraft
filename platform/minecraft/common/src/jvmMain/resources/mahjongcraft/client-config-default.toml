@@ -19,3 +19,11 @@ tile-labels-enabled = false
 # Unlike the label toggle above, this preference is also sent to the server: your hand tiles are
 # shared entities positioned by the server, so sorting them has to happen there.
 auto-sort-hand-enabled = true
+
+# HUD positions are ratios inside the area where the complete HUD can fit on screen.
+# 0.0 means the left/top edge and 1.0 means the right/bottom edge.
+[hud-layout]
+decision-panel-y = 0.88
+compact-prompt-x = 0.5
+compact-prompt-y = 0.9
+discard-analysis-y = 0.86

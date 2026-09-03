@@ -7,6 +7,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPr
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -30,6 +33,7 @@ class PlayerDecisionHudController(
     private val timerStore: ClientDecisionTimerStateStore,
     private val promptStore: ClientDecisionPromptStore,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
+    private val configStore: MahjongClientConfigStore,
     @Provided private val json: Json,
 ) {
     /** 玩家以 Esc 暫時收起的 decision key。 */
@@ -95,6 +99,9 @@ class PlayerDecisionHudController(
     ) {
         tileFaceRenderer.renderGui(context, assetKey, x, y, tileWidth, tileHeight, orientation)
     }
+
+    /** 取得目前已套用的 HUD 配置。 */
+    fun hudLayout() = configStore.current.hudLayout
 
     /** 傳送一個以目前 decision key 約束的受控選擇。 */
     fun submit(prompt: PlayerDecisionPromptDto, kind: PlayerDecisionSelectionKindDto, token: String? = null) {
@@ -193,6 +200,7 @@ class PlayerDecisionHudController(
     private fun renderBeforeChat(context: DrawContext) {
         val client = MinecraftClient.getInstance()
         if (client.options.hudHidden) return
+        if (client.currentScreen is MahjongHudLayoutEditorScreen) return
         if (client.currentScreen !is PlayerDecisionScreen) {
             renderCompactDecisionHud(context)
         }
@@ -204,37 +212,46 @@ class PlayerDecisionHudController(
     private fun renderCompactDecisionHud(context: DrawContext) {
         val client = MinecraftClient.getInstance()
         if (client.options.hudHidden || timerStore.reading() == null) return
-        val timerY = context.scaledWindowHeight - 57
-        renderTimerOverlay(context, timerY)
         val prompt = promptStore.prompt
+        val groupWidth = COMPACT_HUD_WIDTH.coerceAtMost(context.scaledWindowWidth)
+        val groupHeight = if (prompt != null && dismissedDecisionKey == prompt.decisionKey && prompt.isInteractive) {
+            COMPACT_HUD_EXPANDED_HEIGHT
+        } else {
+            COMPACT_HUD_TIMER_HEIGHT
+        }
+        val layout = configStore.current.hudLayout
+        val groupLeft = hudCoordinate(layout.compactPromptX, context.scaledWindowWidth, groupWidth)
+        val groupTop = hudCoordinate(layout.compactPromptY, context.scaledWindowHeight, groupHeight)
+        val centerX = groupLeft + groupWidth / 2
+        val timerY = groupTop + groupHeight - COMPACT_HUD_TIMER_HEIGHT
+        renderTimerOverlay(context, timerY, centerX)
         if (prompt != null && dismissedDecisionKey == prompt.decisionKey && prompt.isInteractive) {
             context.drawCenteredTextWithShadow(
                 client.textRenderer,
                 Text.translatable("mahjongcraft.hud.waiting_for_action"),
-                context.scaledWindowWidth / 2,
-                timerY - 24,
+                centerX,
+                groupTop,
                 0xFFD54F,
             )
             context.drawCenteredTextWithShadow(
                 client.textRenderer,
                 Text.translatable("mahjongcraft.hud.reopen_action"),
-                context.scaledWindowWidth / 2,
-                timerY - 13,
+                centerX,
+                groupTop + 11,
                 0xFFFFFF,
             )
         }
     }
 
     /** 在一般 HUD 或操作畫面的最上層繪製同一份權威倒數，避免被 Screen 背景遮住。 */
-    fun renderTimerOverlay(context: DrawContext, y: Int, alignRight: Boolean = false, leftX: Int? = null) {
+    fun renderTimerOverlay(context: DrawContext, y: Int, centerX: Int = context.scaledWindowWidth / 2) {
         val reading = timerStore.reading() ?: return
         renderDecisionTimer(
             context,
             ceil(reading.baseRemainingMillis / 1_000.0).toInt(),
             ceil(reading.reserveRemainingMillis / 1_000.0).toInt(),
             y,
-            alignRight,
-            leftX,
+            centerX,
         )
     }
 
@@ -244,8 +261,7 @@ class PlayerDecisionHudController(
         baseSeconds: Int,
         reserveSeconds: Int,
         y: Int,
-        alignRight: Boolean,
-        leftX: Int?,
+        centerX: Int,
     ) {
         val renderer = MinecraftClient.getInstance().textRenderer
         val consumingReserve = baseSeconds <= 0 && reserveSeconds > 0
@@ -265,13 +281,7 @@ class PlayerDecisionHudController(
         val width = parts.sumOf { renderer.getWidth(it.first) }
         context.matrices.push()
         context.matrices.scale(TIMER_SCALE, TIMER_SCALE, 1f)
-        var x = if (leftX != null) {
-            leftX / TIMER_SCALE
-        } else if (alignRight) {
-            (context.scaledWindowWidth - TIMER_MARGIN) / TIMER_SCALE - width
-        } else {
-            context.scaledWindowWidth / TIMER_SCALE / 2 - width / 2f
-        }
+        var x = centerX / TIMER_SCALE - width / 2f
         parts.forEach { (text, color) ->
             context.drawTextWithShadow(renderer, text, x.toInt(), (y / TIMER_SCALE).toInt(), color)
             x += renderer.getWidth(text)
@@ -289,7 +299,11 @@ class PlayerDecisionHudController(
         val panelWidth = PADDING * 2 + columns * CELL_WIDTH
         val panelHeight = PADDING * 2 + statusHeight + rowCount * (TILE_HEIGHT + COUNT_HEIGHT)
         val left = (context.scaledWindowWidth - panelWidth) / 2
-        val top = context.scaledWindowHeight - 64 - panelHeight
+        val top = hudCoordinate(
+            configStore.current.hudLayout.discardAnalysisY,
+            context.scaledWindowHeight,
+            panelHeight,
+        )
         context.fill(left, top, left + panelWidth, top + panelHeight, 0xCC101820.toInt())
         analysis.statusIndicatorId?.let { indicator ->
             val text = Text.translatable(indicator.translationKey())
@@ -351,7 +365,9 @@ class PlayerDecisionHudController(
         private const val STATUS_HEIGHT = STATUS_TEXT_HEIGHT + STATUS_DIVIDER_GAP + 1 + STATUS_TILE_GAP
         private const val STATUS_DIVIDER_COLOR = 0x66708088
         private const val TIMER_SCALE = 1.5f
-        private const val TIMER_MARGIN = 12
+        private const val COMPACT_HUD_WIDTH = 220
+        private const val COMPACT_HUD_TIMER_HEIGHT = 14
+        private const val COMPACT_HUD_EXPANDED_HEIGHT = 38
     }
 }
 
@@ -651,9 +667,26 @@ private class PlayerDecisionScreen(
     }
 
     /** 讓固定高度操作板位於 hotbar 上方並保留觸發牌空間。 */
-    private fun panelTop(): Int = height - panelHeight() - PANEL_BOTTOM_RESERVED_HEIGHT
+    private fun panelTop(): Int = groupTop() + triggerAreaHeight()
 
     private fun panelBottom(): Int = panelTop() + panelHeight()
+
+    /** 操作面板、觸發牌與倒數形成的完整群組上界。 */
+    private fun groupTop(): Int = hudCoordinate(controller.hudLayout().decisionPanelY, height, groupHeight())
+
+    /** 完整操作群組高度，確保拖曳設定後所有內容都留在畫面內。 */
+    private fun groupHeight(): Int = triggerAreaHeight() + panelHeight() + TIMER_PANEL_GAP + TIMER_HEIGHT
+
+    /** 觸發牌面板存在時保留其完整高度與間距。 */
+    private fun triggerAreaHeight(): Int {
+        val assetKey = prompt.triggerTileAssetKey ?: return 0
+        if (assetKey.isEmpty()) return 0
+        val lines = triggerText()?.let {
+            textRenderer.wrapLines(it, (width - SCREEN_MARGIN * 2 - TRIGGER_PADDING * 2).coerceAtLeast(1))
+        }.orEmpty()
+        val textHeight = if (lines.isEmpty()) 0 else lines.size * TEXT_LINE_HEIGHT + TRIGGER_GAP
+        return TRIGGER_PADDING * 2 + textHeight + PREVIEW_TILE_HEIGHT + PANEL_GAP
+    }
 
     /** 選項數量只增加內容寬度，不再增加面板高度。 */
     private fun panelHeight(): Int = PANEL_PADDING * 2 + HEADER_HEIGHT + rowHeight() +
@@ -790,8 +823,8 @@ private class PlayerDecisionScreen(
         const val PANEL_GAP = 5
         const val SCREEN_MARGIN = 8
         const val TEXT_LINE_HEIGHT = 10
-        const val PANEL_BOTTOM_RESERVED_HEIGHT = 56
         const val TIMER_PANEL_GAP = 5
+        const val TIMER_HEIGHT = 14
         const val SCROLLBAR_GAP = 4
         const val SCROLLBAR_HEIGHT = 4
         const val MIN_SCROLLBAR_THUMB_WIDTH = 18

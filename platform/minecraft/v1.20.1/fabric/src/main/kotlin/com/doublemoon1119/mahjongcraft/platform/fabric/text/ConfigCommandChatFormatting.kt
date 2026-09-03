@@ -14,6 +14,7 @@ import net.minecraft.text.MutableText
 import net.minecraft.text.Style
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
+import kotlin.math.roundToInt
 
 /** 設定指令 hover 使用的一個本地化欄位與格式化值。 */
 data class ConfigPresentationEntry(
@@ -39,7 +40,22 @@ fun clientConfigEntries(config: MahjongClientConfigState): List<ConfigPresentati
         Text.translatable(MinecraftClientConfigScreenKeys.TILE_LABELS),
         clientBooleanText(config.tileLabelsEnabled),
     ),
+    ConfigPresentationEntry(
+        Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_DECISION_PANEL),
+        Text.literal("Y ${config.hudLayout.decisionPanelY.asPercent()}%"),
+    ),
+    ConfigPresentationEntry(
+        Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_COMPACT_PROMPT),
+        Text.literal("X ${config.hudLayout.compactPromptX.asPercent()}%, Y ${config.hudLayout.compactPromptY.asPercent()}%"),
+    ),
+    ConfigPresentationEntry(
+        Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_DISCARD_ANALYSIS),
+        Text.literal("Y ${config.hudLayout.discardAnalysisY.asPercent()}%"),
+    ),
 )
+
+/** 將 HUD 比例轉換為不受系統語系影響的整數百分比。 */
+private fun Double.asPercent(): Int = (this * 100).roundToInt()
 
 /** 建立 server 設定的本地化欄位。 */
 fun serverConfigEntries(config: MinecraftServerConfig): List<ConfigPresentationEntry> = listOf(
