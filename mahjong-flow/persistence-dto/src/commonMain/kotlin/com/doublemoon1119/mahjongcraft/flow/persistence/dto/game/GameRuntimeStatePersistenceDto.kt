@@ -17,6 +17,9 @@ import kotlin.uuid.Uuid
  * @property hostId 開局時的房主 UUID 字串，見 [Game.hostId]；早於此欄位新增的既有存檔沒有這筆資料，
  *   還原時退回第一位玩家（見 [AuthoritativeStatePersistenceDto]）。
  * @property roomPlayerIds 開局前房間成員的固定顯示順序。
+ * @property interruptedBaseMillisByPlayerId 因 server session 結束而中斷的那一次決策，其尚未使用的
+ *   基本思考時間毫秒數，以玩家 UUID 字串索引；早於此欄位新增的既有存檔沒有這筆資料，
+ *   還原時退回空 map。
  */
 @Serializable
 data class GameRuntimeStatePersistenceDto(
@@ -29,6 +32,7 @@ data class GameRuntimeStatePersistenceDto(
     val pendingRoundPreparation: PendingRoundPreparationPersistenceDto? = null,
     val hostId: String? = null,
     val roomPlayerIds: List<String>? = null,
+    val interruptedBaseMillisByPlayerId: Map<String, Long> = emptyMap(),
 )
 
 /** 將 [Game] 的 runtime 狀態轉換成 persistence DTO。 */
@@ -42,6 +46,7 @@ fun Game.toRuntimeStatePersistenceDto(): GameRuntimeStatePersistenceDto = GameRu
     pendingRoundPreparation = pendingRoundPreparation?.toPersistenceDto(),
     hostId = hostId.toString(),
     roomPlayerIds = roomPlayerIds.map(Uuid::toString),
+    interruptedBaseMillisByPlayerId = interruptedBaseMillisByPlayerId.mapKeys { (playerId, _) -> playerId.toString() },
 )
 
 /** 將 persistence DTO 中的剩餘保留思考時間還原成以玩家 UUID 索引的資料。 */
@@ -52,3 +57,6 @@ fun GameRuntimeStatePersistenceDto.toForcedAutoPlayPlayerIds(): Set<Uuid> = forc
     mutableSetOf(),
     Uuid::parse,
 )
+
+/** 將 persistence DTO 中的中斷基本思考時間還原成以玩家 UUID 索引的資料。 */
+fun GameRuntimeStatePersistenceDto.toInterruptedBaseMillisByPlayerId(): Map<Uuid, Long> = interruptedBaseMillisByPlayerId.mapKeys { (playerId, _) -> Uuid.parse(playerId) }

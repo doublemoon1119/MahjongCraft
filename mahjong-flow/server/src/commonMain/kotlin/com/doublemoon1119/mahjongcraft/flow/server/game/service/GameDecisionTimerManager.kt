@@ -93,10 +93,19 @@ class GameDecisionTimerManager(
                     .statusAt(settledAtMillis)
                     .reserveRemainingMillis
             }
+            // 保留上一個 session 中斷的基本思考時間供下方建立計時器使用，但權威狀態本身直接消耗掉：
+            // 已結算的決策不再接續，而重建過的計時器也只能接續一次，否則下一次 reconcile 會重複套用。
+            val keptPlayerIds = previousTimers.filterKeys { playerId ->
+                playerId != completedPlayerId && targets[playerId] == previousTimers.getValue(playerId).phase
+            }.keys
+            val resumeBaseMillisByPlayerId = currentGame.interruptedBaseMillisByPlayerId
+                .filterKeys { it in targets.keys && it !in keptPlayerIds }
             val updatedGame = currentGame.copy(
                 remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId,
+                interruptedBaseMillisByPlayerId = currentGame.interruptedBaseMillisByPlayerId -
+                    resumeBaseMillisByPlayerId.keys - timersToSettle.keys,
             )
-            updatedGame to Reconciliation(updatedGame, targets)
+            updatedGame to Reconciliation(updatedGame, targets, resumeBaseMillisByPlayerId)
         }
 
         if (reconciliation == null) {
@@ -109,7 +118,11 @@ class GameDecisionTimerManager(
                 ?.takeIf { playerId != completedPlayerId && it.phase == phase }
                 ?: ActiveDecisionTimer(
                     phase = phase,
-                    timer = timerFactory.create(reconciliation.game, playerId),
+                    timer = timerFactory.create(
+                        game = reconciliation.game,
+                        playerId = playerId,
+                        resumedBaseMillis = reconciliation.resumeBaseMillisByPlayerId[playerId],
+                    ),
                 )
         }
         if (nextTimers.isEmpty()) {
@@ -184,13 +197,24 @@ class GameDecisionTimerManager(
             gameRepository.updateGame(gameId) { currentGame ->
                 if (currentGame == null) return@updateGame null to Unit
                 val remainingReserveMillisByPlayerId = currentGame.remainingReserveMillisByPlayerId.toMutableMap()
+                val interruptedBaseMillisByPlayerId = currentGame.interruptedBaseMillisByPlayerId.toMutableMap()
+                val exhaustedPlayerIds = mutableSetOf<Uuid>()
                 timers.forEach { (playerId, activeTimer) ->
-                    remainingReserveMillisByPlayerId[playerId] = activeTimer.timer
-                        .statusAt(settledAtMillis)
-                        .reserveRemainingMillis
+                    val status = activeTimer.timer.statusAt(settledAtMillis)
+                    remainingReserveMillisByPlayerId[playerId] = status.reserveRemainingMillis
+                    if (status.isTimedOut) {
+                        // 已耗盡全部思考時間卻還沒被 scheduler 取走的決策，直接比照 claimTimedOutDecisions
+                        // 進入強制自動操作；不寫入中斷的基本思考時間，下一個 session 也不會再為它建計時器。
+                        exhaustedPlayerIds += playerId
+                        interruptedBaseMillisByPlayerId -= playerId
+                    } else {
+                        interruptedBaseMillisByPlayerId[playerId] = status.baseRemainingMillis
+                    }
                 }
                 currentGame.copy(
                     remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId,
+                    forcedAutoPlayPlayerIds = currentGame.forcedAutoPlayPlayerIds + exhaustedPlayerIds,
+                    interruptedBaseMillisByPlayerId = interruptedBaseMillisByPlayerId,
                 ) to Unit
             }
         }
@@ -218,12 +242,14 @@ class GameDecisionTimerManager(
     /**
      * 一次 repository reconciliation 取得的更新後遊戲與決策目標。
      *
-     * @property game 已結算失效 timer 所消耗 B 的權威遊戲狀態。
+     * @property game 已結算失效 timer 所消耗保留思考時間的權威遊戲狀態。
      * @property targets 目前仍需要計時的玩家與階段。
+     * @property resumeBaseMillisByPlayerId 本次重建計時器時該接續的剩餘基本思考時間；已從 [game] 消耗。
      */
     private data class Reconciliation(
         val game: Game,
         val targets: Map<Uuid, PlayerDecisionPhase>,
+        val resumeBaseMillisByPlayerId: Map<Uuid, Long>,
     )
 
     /**

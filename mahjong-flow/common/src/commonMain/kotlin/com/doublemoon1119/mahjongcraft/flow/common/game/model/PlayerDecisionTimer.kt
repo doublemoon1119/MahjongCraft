@@ -75,15 +75,18 @@ data class DecisionTimeStatus(
  * @param playerId 目前具有決策權的玩家。
  * @param remainingReserveMillis 玩家在決策開始時剩餘的保留思考時間毫秒數。
  * @param startedAtMillis 此次決策開始的單調時間毫秒數。
+ * @param resumedBaseMillis 接續被中斷的同一次決策時，其尚未使用的基本思考時間毫秒數；
+ *   `null` 代表這是一次全新的決策，重新取得完整基本思考時間。
  * @return 新建立的 [PlayerDecisionTimer]。
  */
 fun ActionTimeControl.startDecisionTimer(
     playerId: Uuid,
     remainingReserveMillis: Long,
     startedAtMillis: Long,
+    resumedBaseMillis: Long? = null,
 ): PlayerDecisionTimer = PlayerDecisionTimer(
     playerId = playerId,
     startedAtMillis = startedAtMillis,
-    baseDurationMillis = baseSeconds * 1_000L,
+    baseDurationMillis = resumedBaseMillis ?: (baseSeconds * 1_000L),
     reserveAtStartMillis = remainingReserveMillis,
 )

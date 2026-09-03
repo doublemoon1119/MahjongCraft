@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.GameRuntimeStat
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.TableStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toForcedAutoPlayPlayerIds
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toInterruptedBaseMillisByPlayerId
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toRemainingReserveMillisByPlayerId
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toRuntimeStatePersistenceDto
@@ -142,6 +143,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
         pendingRoundPreparation = runtimeState.pendingRoundPreparation?.toDomain(),
         hostId = runtimeState.hostId?.let { Uuid.parse(it) } ?: tableState.players.first().id,
         roomPlayerIds = runtimeState.roomPlayerIds?.map(Uuid::parse) ?: tableState.players.map { it.id },
+        interruptedBaseMillisByPlayerId = runtimeState.toInterruptedBaseMillisByPlayerId(),
     )
 }
 
