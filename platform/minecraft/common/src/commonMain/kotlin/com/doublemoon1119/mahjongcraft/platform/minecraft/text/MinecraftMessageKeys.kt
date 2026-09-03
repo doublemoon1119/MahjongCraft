@@ -139,9 +139,6 @@ object MinecraftMessageKeys {
      */
     const val GAME_CONFIG_UNCHANGED = PREFIX + "game_config_unchanged"
 
-    /** 提供的 JSON 無法解析成合法的遊戲設定。 */
-    const val INVALID_GAME_CONFIG = PREFIX + "invalid_game_config"
-
     /** 變更遊戲設定失敗。 */
     const val CHANGE_GAME_CONFIG_FAILED = PREFIX + "change_game_config_failed"
 
@@ -358,12 +355,6 @@ object MinecraftMessageKeys {
     /** 還沒輪到自己、也沒有資格回應時的提示，避免誤以為隨時都能 `discard`。 */
     const val HAND_WAITING = PREFIX + "hand_waiting"
 
-    /**
-     * 輪到自己回合、伺服器已代為摸牌的主動通知，帶一個摸到的牌面顯示文字參數（一個 `%s`）——沒有這則
-     * 訊息玩家不會知道輪到自己了。
-     */
-    const val YOUR_TURN = PREFIX + "your_turn"
-
     // ── 牌面輔助標籤指令（`/mahjongcraft_client label toggle`，純 client-only） ─────
 
     // ── 桌面中央局況顯示（見 `MahjongRoundInfoEntityRenderer`） ────────────────
@@ -444,7 +435,6 @@ object MinecraftMessageKeys {
         CHANGE_AI_STRATEGY_FAILED,
         GAME_CONFIG_CHANGED,
         GAME_CONFIG_UNCHANGED,
-        INVALID_GAME_CONFIG,
         CHANGE_GAME_CONFIG_FAILED,
         GAME_CONFIG_LABEL,
         SHOW_GAME_CONFIG,
@@ -509,7 +499,6 @@ object MinecraftMessageKeys {
         HAND_NO_LEGAL_ACTIONS,
         HAND_NO_RESPONSE_AVAILABLE,
         HAND_WAITING,
-        YOUR_TURN,
         ROUND_INFO_TITLE,
         ROUND_INFO_WALL_REMAINING,
         ROUND_INFO_RIICHI_STICK_POT,

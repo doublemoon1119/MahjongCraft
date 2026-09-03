@@ -137,8 +137,6 @@ class FabricPlayerFeedbackPublisher(
                     logger.debug("Game-config-unchanged hover playerId={} config={}", playerId, feedback.configJson)
                     player.sendMessage(gameConfigUnchangedMessage(feedback))
                 }
-                MinecraftPlayerFeedback.InvalidGameConfig ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.INVALID_GAME_CONFIG), true)
                 MinecraftPlayerFeedback.ChangeGameConfigFailed ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.CHANGE_GAME_CONFIG_FAILED), true)
                 is MinecraftPlayerFeedback.ShowGameConfig -> {
@@ -159,14 +157,6 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.TABLE_ANIMATION_BUSY), true)
                 is MinecraftPlayerFeedback.ShowHand ->
                     player.sendMessage(showHandMessage(feedback))
-                is MinecraftPlayerFeedback.YourTurn ->
-                    player.sendMessage(
-                        Text.translatable(
-                            MinecraftMessageKeys.YOUR_TURN,
-                            feedback.drawnTile.toDisplayText(tileDisplayNames, tileAssetRegistry, tileEmojiRegistry),
-                        ),
-                        true,
-                    )
             }
         }
     }

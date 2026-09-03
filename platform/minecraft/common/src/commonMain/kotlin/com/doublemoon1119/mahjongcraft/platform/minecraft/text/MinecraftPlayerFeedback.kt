@@ -30,14 +30,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
  * 持續存在的 HUD 狀態應由 snapshot／client store 驅動；需要玩家回答的動作詢問應使用具備識別碼、
  * 合法動作與逾時資訊的 request／response 協議，兩者都不屬於此一次性回饋模型。
  *
- * TODO: 目前 1.20.1 Fabric adapter 一律轉成 chat 訊息，是等對應 GUI／HUD 做出來之前的暫時方案，
- *   不是最終呈現方式；屆時這裡的回饋語意不需要更動，只需要改 adapter 端怎麼呈現：
- *   - 房間階段的回饋（[GameCreated]／[ReadyToggled]／[AiAdded]／[PlayerKicked]／
- *     [AiStrategyChanged]／[ShowGameConfig]／[GameConfigChanged] 等）將由「房間等待室 GUI」取代。
- *   - 對局階段的回饋（[ShowHand]／[YourTurn]／[NotYourTurn] 等）將由
- *     「遊戲桌面 GUI」與思考時間 HUD 取代／補強。
- *   單純的操作失敗提示（例如 [GameJoinFailed]／[KickFailed]）預期即使有了 GUI 仍會保留 chat 或類似
- *   的一次性錯誤提示，不在此列。
+ * 房間等待室 GUI（`RoomScreen`）與對局操作 HUD 都已完成，原本為了填補它們尚未存在而加上的自動
+ * chat 通知（輪到自己、可執行動作、決策倒數）已全部移除。保留下來的回饋都是刻意的一次性訊息：
+ *   - 指令明確要求的輸出，例如 [ShowHand]／[ShowGameConfig]。
+ *   - 操作被拒絕的原因，例如 [NotYourTurn]／[IllegalGameAction]／[GameJoinFailed]／[KickFailed]。
+ *   - 遊戲建立、加入、離開與設定變更的結果，例如 [GameCreated]／[ReadyToggled]／
+ *     [AiStrategyChanged]／[GameConfigChanged]。
+ *
+ * 捨牌、摸牌這類高頻操作的回饋走 action bar 而非聊天欄，避免洗版；呈現方式由各 Minecraft 版本
+ * adapter 自行決定，回饋本身不攜帶 translation key 或顯示 channel。
  */
 sealed interface MinecraftPlayerFeedback {
     /** 對局已開始，玩家無法中途加入。 */
@@ -164,9 +165,6 @@ sealed interface MinecraftPlayerFeedback {
      */
     data class GameConfigUnchanged(val configJson: String) : MinecraftPlayerFeedback
 
-    /** 提供的 JSON 無法解析成合法的遊戲設定。 */
-    data object InvalidGameConfig : MinecraftPlayerFeedback
-
     /** 變更遊戲設定失敗。 */
     data object ChangeGameConfigFailed : MinecraftPlayerFeedback
 
@@ -215,16 +213,4 @@ sealed interface MinecraftPlayerFeedback {
         val turnStatus: GameTurnStatus,
         val legalActions: List<Pair<GameAction, Tile?>>,
     ) : MinecraftPlayerFeedback
-
-    /**
-     * 輪到自己回合，伺服器已代為摸牌完成。真人玩家的摸牌是全自動觸發（見
-     * `MahjongAutoDrawService`），沒有這則主動通知的話玩家完全不會知道輪到自己了，只能自己反覆查詢
-     * `/mahjongcraft game hand`。
-     *
-     * TODO: 目前刻意只做一次性 chat 訊息，不是持續顯示的倒數計時；之後只對目前決策玩家顯示的思考
-     *   時間 HUD 會取代／補強這裡，現在不需要為了倒數顯示另外設計機制。
-     *
-     * @property drawnTile 這次自動摸到的牌。
-     */
-    data class YourTurn(val drawnTile: Tile) : MinecraftPlayerFeedback
 }
