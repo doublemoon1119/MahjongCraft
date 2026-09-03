@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementYakuTranslationKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
@@ -52,7 +53,7 @@ object WinSettlementPresentationRequestFactory {
                             WinSettlementDetailField(
                                 RIICHI_YAKU_FIELD,
                                 WinSettlementDetailValue.Entries(
-                                    listOf(WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.nagashi_mangan")),
+                                    listOf(WinSettlementDetailValue.Entries.Entry(WinSettlementYakuTranslationKeys.NAGASHI_MANGAN)),
                                 ),
                             ),
                         )
@@ -186,8 +187,8 @@ object WinSettlementPresentationRequestFactory {
         )
     }
 
-    /** 對應既有玩家可見役種翻譯鍵；名稱差異集中在這裡，不由 renderer 猜測 enum 名稱。 */
-    private fun yakuTranslationKey(type: YakuType): String = "mahjongcraft.game.yaku.${YAKU_TRANSLATION_PATHS.getValue(type)}"
+    /** 對應既有玩家可見役種翻譯鍵；名稱差異單一來源見 [WinSettlementYakuTranslationKeys]。 */
+    private fun yakuTranslationKey(type: YakuType): String = WinSettlementYakuTranslationKeys.keyFor(type)
 
     const val RIICHI_TEMPLATE_KEY = "mahjongcraft:riichi"
     const val GENERIC_TEMPLATE_KEY = "mahjongcraft:generic"
@@ -202,53 +203,4 @@ object WinSettlementPresentationRequestFactory {
     } else {
         "mahjongcraft.game.score.yakuman_nx"
     }
-
-    private val YAKU_TRANSLATION_PATHS = mapOf(
-        YakuType.Dora to "dora",
-        YakuType.UraDora to "uradora",
-        YakuType.AkaDora to "red_five",
-        YakuType.Tanyao to "tanyao",
-        YakuType.Pinfu to "pinfu",
-        YakuType.Iipeikou to "ipeiko",
-        YakuType.Riichi to "reach",
-        YakuType.DoubleRiichi to "double_reach",
-        YakuType.Ippatsu to "ippatsu",
-        YakuType.RinshanKaihou to "rinshankaihoh",
-        YakuType.Haitei to "haitei",
-        YakuType.Houtei to "houtei",
-        YakuType.Chankan to "chankan",
-        YakuType.Menzentsumo to "tsumo",
-        YakuType.Toitoi to "toitoiho",
-        YakuType.Sanankou to "sananko",
-        YakuType.Sankantsu to "sankantsu",
-        YakuType.SanshokuDokoku to "sanshokudohko",
-        YakuType.SanshokuDoujun to "sanshokudohjun",
-        YakuType.Honchan to "chanta",
-        YakuType.Junchan to "junchan",
-        YakuType.Honitsu to "honitsu",
-        YakuType.Ryanpeikou to "ryanpeiko",
-        YakuType.Ittuitsu to "ikkitsukan",
-        YakuType.Honroutou to "honrohtoh",
-        YakuType.Chinitsu to "chinitsu",
-        YakuType.Shousangen to "shosangen",
-        YakuType.Chiitoitsu to "chitoitsu",
-        YakuType.RoundWind to "bakaze",
-        YakuType.SeatWind to "jikaze",
-        YakuType.Dragon to "chun",
-        YakuType.KokushiMusou to "kokushimuso",
-        YakuType.ChurenPoto to "churenpohto",
-        YakuType.Tsuuiisou to "tsuiso",
-        YakuType.Ryuuuiisou to "ryuiso",
-        YakuType.Suuankou to "suanko",
-        YakuType.Sukantsu to "sukantsu",
-        YakuType.Shousuushi to "shosushi",
-        YakuType.Daisangen to "daisangen",
-        YakuType.Chinroutou to "chinroto",
-        YakuType.Tenhou to "tenho",
-        YakuType.Chiihou to "chiho",
-        YakuType.KokushiMusou13 to "kokushimuso_jusanmenmachi",
-        YakuType.ChurenPoto9 to "junsei_churenpohto",
-        YakuType.SuuankouTanki to "suanko_tanki",
-        YakuType.Daisuushii to "daisushi",
-    )
 }
