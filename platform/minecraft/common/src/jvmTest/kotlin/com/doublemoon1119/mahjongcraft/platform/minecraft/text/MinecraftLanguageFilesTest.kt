@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementYakuTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
@@ -32,6 +33,9 @@ class MinecraftLanguageFilesTest {
 
     /** MahjongCraft 役滿 showcase translation key 的命名空間前綴。 */
     private val showcasePrefix = MinecraftModMetadata.MOD_ID + ".showcase."
+
+    /** MahjongCraft 役種 translation key 的命名空間前綴。 */
+    private val yakuPrefix = MinecraftModMetadata.MOD_ID + ".game.yaku."
 
     /** 驗證所有語系檔具有相同 key，且每個翻譯都是非空字串。 */
     @Test
@@ -87,6 +91,20 @@ class MinecraftLanguageFilesTest {
                 MinecraftShowcaseKeys.ALL,
                 showcaseKeys,
                 "$locale showcase keys do not match the production showcase schema",
+            )
+        }
+    }
+
+    /** 驗證語系檔中的役種 key 與役種列舉推導出的完整 key 集合完全一致。 */
+    @Test
+    fun `language yaku keys match the production yaku key schema`() {
+        locales.forEach { locale ->
+            val yakuKeys = loadTranslations(locale).keys.filterTo(mutableSetOf()) { it.startsWith(yakuPrefix) }
+
+            assertEquals(
+                WinSettlementYakuTranslationKeys.ALL,
+                yakuKeys,
+                "$locale yaku keys do not match the production yaku schema",
             )
         }
     }
