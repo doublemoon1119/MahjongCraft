@@ -8,6 +8,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSnapshot
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
@@ -42,10 +46,12 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
@@ -56,6 +62,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** 由 Minecraft NBT 建立全新 server session 後繼續執行 Room／Game 流程的整合測試。 */
@@ -208,6 +215,159 @@ class AuthoritativeStateRecoveryIntegrationTest {
         assertEquals(RandomAiStrategy.KEY, runtime.gameRepository.getTableState(state.id)?.currentPlayer?.aiStrategyKey)
     }
 
+    /**
+     * 開局準備進行中經 NBT 恢復後，每位參與者都應重新取得只屬於自己的準備快照。
+     *
+     * 準備步驟未完成時流程會拒絕其他指令，因此如果恢復後沒有重建這份快照，玩家會既收不到提示、也無法
+     * 操作；參與者與已完成名單是公開資訊，輸入內容與提交結果則只對本人公開。
+     */
+    @Test
+    fun `round preparation restores through NBT and stays private to each participant`() = runTest {
+        val runtime = RuntimeFixture()
+        val state = runtime.createGame()
+        val confirming = state.players[0]
+        val choosing = state.players[1]
+        val choices = listOf("mahjongcraft:first", "mahjongcraft:second")
+        val preparation = PendingRoundPreparation(
+            stepId = "mahjongcraft:test_step",
+            stepIndex = 0,
+            inputSpecsByPlayerId = mapOf(
+                confirming.id to RoundPreparationInputSpec.Confirmation,
+                choosing.id to RoundPreparationInputSpec.SingleChoice(choices),
+            ),
+        )
+
+        runtime.restore(runtime.snapshotWith(state, pendingRoundPreparation = preparation))
+
+        val confirmingSnapshot = assertNotNull(
+            runtime.gameSnapshots.getRoundPreparationSnapshot(state.id, confirming.id),
+            "confirming participant lost its round preparation snapshot across the restart",
+        )
+        val choosingSnapshot = assertNotNull(
+            runtime.gameSnapshots.getRoundPreparationSnapshot(state.id, choosing.id),
+            "choosing participant lost its round preparation snapshot across the restart",
+        )
+
+        assertEquals(preparation.stepId, confirmingSnapshot.stepId)
+        assertEquals(setOf(confirming.id, choosing.id), confirmingSnapshot.participantPlayerIds)
+        assertEquals(emptySet(), confirmingSnapshot.completedPlayerIds)
+        assertEquals(RoundPreparationInputSpec.Confirmation, confirmingSnapshot.ownInputSpec)
+        assertEquals(RoundPreparationInputSpec.SingleChoice(choices), choosingSnapshot.ownInputSpec)
+        assertNull(confirmingSnapshot.ownSubmission)
+    }
+
+    /** 沒有參與準備步驟的玩家不應取得任何一位參與者的輸入內容。 */
+    @Test
+    fun `restored round preparation hides participant input from non participants`() = runTest {
+        val runtime = RuntimeFixture()
+        val state = runtime.createGame()
+        val participant = state.players[0]
+        val bystander = state.players[1]
+        val preparation = PendingRoundPreparation(
+            stepId = "mahjongcraft:test_step",
+            stepIndex = 0,
+            inputSpecsByPlayerId = mapOf(participant.id to RoundPreparationInputSpec.Confirmation),
+            submissionsByPlayerId = mapOf(participant.id to RoundPreparationSubmission.Confirmed),
+        )
+
+        runtime.restore(runtime.snapshotWith(state, pendingRoundPreparation = preparation))
+
+        val bystanderSnapshot = assertNotNull(runtime.gameSnapshots.getRoundPreparationSnapshot(state.id, bystander.id))
+
+        assertEquals(setOf(participant.id), bystanderSnapshot.participantPlayerIds)
+        assertEquals(setOf(participant.id), bystanderSnapshot.completedPlayerIds)
+        assertNull(bystanderSnapshot.ownInputSpec, "a non participant must not receive an input spec")
+        assertNull(bystanderSnapshot.ownSubmission, "a non participant must not receive another player's submission")
+    }
+
+    /** 沒有進行中的準備步驟時，恢復後不得留下上一個步驟的過期快照。 */
+    @Test
+    fun `restore clears round preparation snapshots when no step is pending`() = runTest {
+        val runtime = RuntimeFixture()
+        val state = runtime.createGame()
+        val player = state.players[0]
+        runtime.gameSnapshots.setRoundPreparationSnapshot(
+            gameId = state.id,
+            observerId = player.id,
+            snapshot = RoundPreparationSnapshot(
+                stepId = "mahjongcraft:stale_step",
+                stepIndex = 0,
+                participantPlayerIds = setOf(player.id),
+                completedPlayerIds = emptySet(),
+                ownInputSpec = RoundPreparationInputSpec.Confirmation,
+                ownSubmission = null,
+            ),
+        )
+
+        runtime.restore(runtime.snapshotWith(state))
+
+        assertNull(runtime.gameSnapshots.getRoundPreparationSnapshot(state.id, player.id))
+    }
+
+    /**
+     * 經 NBT 恢復後，每位玩家的快照只應公開自己的手牌；其他人的立牌與未摸到的牌山必須維持隱藏。
+     *
+     * 隱藏的牌在快照中保留 Uuid 但不帶牌面（`tile` 為 null），呈現層才能沿用同一個 entity 顯示成蓋牌。
+     */
+    @Test
+    fun `restored snapshots keep other hands and the wall concealed`() = runTest {
+        val runtime = RuntimeFixture()
+        val state = runtime.createGame()
+        val observer = state.players[0]
+        val opponent = state.players[1]
+
+        runtime.restore(runtime.snapshotWith(state))
+
+        val snapshot = assertNotNull(runtime.gameSnapshots.getSnapshot(state.id, observer.id))
+        val ownHand = snapshot.players.single { it.id == observer.id }.hand
+        val opponentHand = snapshot.players.single { it.id == opponent.id }.hand
+
+        assertTrue(ownHand.standingTiles.isNotEmpty(), "the observer must still see its own dealt hand")
+        assertTrue(ownHand.standingTiles.all { it.tile != null }, "the observer must see every tile it was dealt")
+        assertTrue(opponentHand.standingTiles.isNotEmpty(), "an opponent hand must keep its tile identities")
+        assertTrue(opponentHand.standingTiles.all { it.tile == null }, "an opponent hand must stay concealed")
+        val liveWallTileIds = state.tileWall.getAllTiles().mapTo(mutableSetOf()) { it.id }
+        val visibleWallTiles = snapshot.tileWall.tiles.filter { it.tile != null }
+
+        assertTrue(
+            snapshot.tileWall.tiles.filter { it.id in liveWallTileIds }.all { it.tile == null },
+            "undrawn wall tiles must stay concealed after a restart",
+        )
+        assertTrue(
+            visibleWallTiles.none { it.id in liveWallTileIds },
+            "no live wall tile may become visible after a restart",
+        )
+        assertEquals(
+            state.dynamicRuleState.let { it as TileWallRevealable }.getVisibleTileIds(state),
+            visibleWallTiles.mapTo(mutableSetOf()) { it.id },
+            "only the rule's revealed dead wall indicators may stay visible",
+        )
+    }
+
+    /**
+     * 已結束的對局經 NBT 恢復後，終局旗標與結算摘要必須原樣保留。
+     *
+     * 這些欄位是流程判斷「是否要回到房間」與「是否已結算過」的依據，遺失會讓新 session 重跑一次結算或
+     * 讓桌子永遠停在對局狀態。
+     */
+    @Test
+    fun `finished match restores its terminal state`() = runTest {
+        val runtime = RuntimeFixture()
+        val state = runtime.createGame()
+        val finished = Game(
+            tableState = state,
+            flowConfig = GameFlowConfig(),
+            isMatchOver = true,
+            matchEndReasonId = BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED,
+        )
+
+        runtime.restore(AuthoritativeStateSnapshot(games = mapOf(state.id to finished)))
+
+        val restored = assertNotNull(runtime.gameRepository.getGame(state.id))
+        assertTrue(restored.isMatchOver, "a finished match must stay finished across a restart")
+        assertEquals(BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED, restored.matchEndReasonId)
+    }
+
     /** 建立跨 persistence 與 server session 邊界的全新 runtime。 */
     private class RuntimeFixture {
         /** 內建 persistence codec。 */
@@ -229,7 +389,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
         val roomSnapshots = RoomSnapshotRepositoryImpl()
 
         /** 恢復後使用的 Game snapshot repository。 */
-        private val gameSnapshots = GameSnapshotRepositoryImpl()
+        val gameSnapshots = GameSnapshotRepositoryImpl()
 
         /** 恢復後使用的 membership repository。 */
         val memberships = PlayerMembershipRepositoryImpl()
@@ -288,9 +448,18 @@ class AuthoritativeStateRecoveryIntegrationTest {
             aiPlayerStrategyKeys = aiPlayerStrategyKeys,
         ).tableState
 
-        /** 將單一 [state] 包裝成權威 snapshot。 */
-        fun snapshotWith(state: TableState): AuthoritativeStateSnapshot = AuthoritativeStateSnapshot(
-            games = mapOf(state.id to Game(state, GameFlowConfig())),
+        /** 將單一 [state] 包裝成權威 snapshot，可選帶上進行中的開局準備步驟。 */
+        fun snapshotWith(
+            state: TableState,
+            pendingRoundPreparation: PendingRoundPreparation? = null,
+        ): AuthoritativeStateSnapshot = AuthoritativeStateSnapshot(
+            games = mapOf(
+                state.id to Game(
+                    tableState = state,
+                    flowConfig = GameFlowConfig(),
+                    pendingRoundPreparation = pendingRoundPreparation,
+                ),
+            ),
         )
 
         /** 使用恢復後 repository 執行摸牌。 */
