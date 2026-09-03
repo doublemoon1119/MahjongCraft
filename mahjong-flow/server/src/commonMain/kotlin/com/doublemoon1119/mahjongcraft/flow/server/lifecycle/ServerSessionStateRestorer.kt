@@ -50,6 +50,11 @@ class ServerSessionStateRestorer(
         state.games.values.forEach { game ->
             game.tableState.players.filter { it.aiStrategyKey == null }.forEach { player ->
                 gameSnapshots.setSnapshot(player.id, gameVisibilityPolicy.snapshotFor(game, player.id))
+                gameSnapshots.setRoundPreparationSnapshot(
+                    gameId = game.id,
+                    observerId = player.id,
+                    snapshot = gameVisibilityPolicy.roundPreparationSnapshotFor(game, player.id),
+                )
             }
             decisionTimerManager.reconcile(game.id)
         }
