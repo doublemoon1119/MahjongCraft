@@ -275,17 +275,16 @@ class RoomScreen(
                 val number = (value as GameConfigPresentationValue.IntegerValue).number
                 addDrawableChild(
                     RestartableMarqueeButtonWidget.builder(Text.literal("−")) {
-                        val adjustment = editor.step * if (hasShiftDown()) 10 else 1
-                        val next = when {
-                            number == null -> null
-                            editor.nullable && number <= editor.minimum -> null
-                            else -> (number - adjustment).coerceAtLeast(editor.minimum)
-                        }
+                        val next = RoomConfigIntegerControl.decrement(
+                            current = number,
+                            editor = editor,
+                            shiftHeld = hasShiftDown(),
+                        )
                         updateDraft(field, GameConfigPresentationValue.IntegerValue(next))
                     }.dimensions(width - 212, controlY, 24, 20).build().withFieldTooltip(
                         field,
                         config,
-                        editable && canDecreaseInteger(number, editor),
+                        editable && RoomConfigIntegerControl.canDecrease(current = number, editor = editor),
                     ),
                 )
                 val input = CenteredIntegerTextFieldWidget(
@@ -311,31 +310,21 @@ class RoomScreen(
                 addDrawableChild(input)
                 addDrawableChild(
                     RestartableMarqueeButtonWidget.builder(Text.literal("+")) {
-                        val adjustment = editor.step * if (hasShiftDown()) 10 else 1
-                        val next = if (number == null) editor.minimum else (number + adjustment).coerceAtMost(editor.maximum)
+                        val next = RoomConfigIntegerControl.increment(
+                            current = number,
+                            editor = editor,
+                            shiftHeld = hasShiftDown(),
+                        )
                         updateDraft(field, GameConfigPresentationValue.IntegerValue(next))
                     }.dimensions(width - 52, controlY, 24, 20).build().withFieldTooltip(
                         field,
                         config,
-                        editable && canIncreaseInteger(number, editor),
+                        editable && RoomConfigIntegerControl.canIncrease(current = number, editor = editor),
                     ),
                 )
             }
         }
     }
-
-    /** 判斷整數欄位是否仍有更低的合法狀態。 */
-    private fun canDecreaseInteger(number: Int?, editor: GameConfigEditorSpec.IntegerInput): Boolean = when {
-        number == null -> false
-        number > editor.minimum -> true
-        else -> editor.nullable
-    }
-
-    /** 判斷整數欄位是否仍有更高的合法狀態。 */
-    private fun canIncreaseInteger(
-        number: Int?,
-        editor: GameConfigEditorSpec.IntegerInput,
-    ): Boolean = number == null || number < editor.maximum
 
     private fun ButtonWidget.withFieldTooltip(field: GameConfigFieldDefinition, config: GameConfig, active: Boolean): ButtonWidget = apply {
         this.active = active
