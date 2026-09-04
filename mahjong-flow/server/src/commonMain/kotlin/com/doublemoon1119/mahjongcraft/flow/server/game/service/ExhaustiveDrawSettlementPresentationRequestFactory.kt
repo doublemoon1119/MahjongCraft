@@ -57,7 +57,13 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
                     seatWind = player.seatWind,
                     // 只取立牌：副露是公開資訊，蓋起來既不合規則，也會摧毀既有的牌面、橫置方向與
                     // 加槓疊牌版面（這個欄位的契約本來就寫明不含副露）。
-                    handTileIds = if (isFinished) emptyList() else player.hand.standingTiles.map { it.id },
+                    handTileIds = if (isFinished) {
+                        emptyList()
+                    } else {
+                        player.hand.standingTiles
+                            .sortedWith(compareBy(module.tileOrder) { it.tile })
+                            .map { it.id }
+                    },
                     handPresentation = handPresentation,
                     revealedHandTileIds = if (handPresentation == ExhaustiveDrawSettlementHandPresentation.CONCEAL) emptyList() else player.hand.allTiles.map { it.id },
                     waitingTiles = reveal?.waitingTiles.orEmpty().toList(),

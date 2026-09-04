@@ -124,6 +124,36 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         }
     }
 
+    /** 流局展示會依規則牌序整理立牌，避免 AI 或未開啟自動理牌的手牌以雜亂順序倒下。 */
+    @Test
+    fun `settlement hand tiles follow the rule tile order`() {
+        val nineCharacters = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
+        val oneCharacters = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+        val east = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val player = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(east, nineCharacters, oneCharacters)),
+        )
+        val state = FakeTableStateFactory.create(
+            players = listOf(player) + List(3) { FakeMahjongPlayerFactory.create() },
+            config = config,
+        )
+
+        val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
+            previousState = state,
+            currentState = state,
+            module = module,
+            reason = RiichiExhaustiveDrawReason.Normal,
+            tenpaiPlayerIds = emptySet(),
+            revealedHands = emptyList(),
+        )
+
+        assertEquals(
+            listOf(oneCharacters.id, nineCharacters.id, east.id),
+            request.players.first().handTileIds,
+        )
+    }
+
     /**
      * 本局已胡牌退場的玩家不參與流局收尾：手牌在他胡牌時就收好了，不能再排一次動畫，也不該被標成
      * 不聽——他根本沒有參與這次流局。分數排行那一列仍然保留。
