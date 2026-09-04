@@ -37,7 +37,7 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
                     "version" to version.toString(),
                     "id" to projectId,
                     "name" to rootProject.extensions.extraProperties["projectDisplayName"].toString(),
-                    "description" to "Play Japanese (Riichi) Mahjong with your friends.",
+                    "description" to "Bring Mahjong to Minecraft and play with your friends.",
                     "license" to "MIT",
                     "author" to "doublemoon1119",
                     "homepage" to "https://github.com/doublemoon1119/MahjongCraft",
