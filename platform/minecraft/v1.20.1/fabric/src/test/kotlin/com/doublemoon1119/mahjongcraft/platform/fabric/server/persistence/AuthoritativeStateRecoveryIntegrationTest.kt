@@ -426,6 +426,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             GetLegalActionsUseCase(gameRepository, moduleRegistry),
             MahjongAiStrategyRegistryImpl(RandomAiStrategy.KEY).apply { registerBuiltInAiStrategies() },
             GameVisibilityPolicyImpl(),
+            moduleRegistry,
         )
 
         /** 將 [source] 寫入 NBT，再由新 adapter 載入目前 runtime。 */

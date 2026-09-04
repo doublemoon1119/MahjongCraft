@@ -382,6 +382,18 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun isPlayerInRiichi(player: MahjongPlayer): Boolean = false
 
     /**
+     * 取得規則要求玩家本次一般捨牌必須打出的牌；預設不限制。
+     *
+     * 這項限制供 AI 與其他自動決策者使用，避免它們反覆提交形狀合法、但違反規則狀態的捨牌命令。
+     * 呼叫端仍必須讓正式捨牌用例執行完整權威驗證。
+     *
+     * @param tableState 目前的權威桌況。
+     * @param player 即將捨牌的玩家。
+     * @return 必須捨棄的牌 ID；`null` 表示規則未限制。
+     */
+    fun forcedDiscardTileId(tableState: TableState, player: MahjongPlayer): Uuid? = null
+
+    /**
      * 取得可公開給全桌與旁觀者的玩家狀態；預設不公開任何 indicator。
      *
      * 實作不得回傳振聽、手牌或其他只有本人可見的資訊。

@@ -129,7 +129,7 @@ class FullMatchIntegrationTest {
             register(FakeAiStrategy.KEY) { FakeAiStrategy() }
         }
         val aiTurnDriver =
-            AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl())
+            AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(), moduleRegistry)
         val clock = MonotonicClockImpl()
         val decisionTimerManager = GameDecisionTimerManager(
             gameRepository = gameRepo,

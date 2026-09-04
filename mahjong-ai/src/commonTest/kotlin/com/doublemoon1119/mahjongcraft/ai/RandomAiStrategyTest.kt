@@ -32,6 +32,7 @@ class RandomAiStrategyTest {
         hand: Hand,
         phase: AiDecisionPhase,
         legalActions: List<GameAction>,
+        forcedDiscardTileId: Uuid? = null,
     ): AiDecisionContext {
         val self = FakeMahjongPlayerFactory.create(id = selfId, hand = hand)
         val table = FakeTableStateFactory.create(players = listOf(self))
@@ -40,6 +41,7 @@ class RandomAiStrategyTest {
             selfId = selfId,
             phase = phase,
             legalActions = legalActions,
+            forcedDiscardTileId = forcedDiscardTileId,
         )
     }
 
@@ -133,6 +135,27 @@ class RandomAiStrategyTest {
 
         assertTrue(result is GameCommand.Discard)
         assertTrue(result.tileId == standingTile.id || result.tileId == lastDrawn.id)
+    }
+
+    /**
+     * 驗證規則指定強制捨牌時，隨機策略不會從其他手牌中選牌。
+     */
+    @Test
+    fun `test own turn obeys forced discard tile`() = runTest {
+        val strategy = RandomAiStrategy(Random(1))
+        val standingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val forcedTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val hand = Hand(tiles = listOf(standingTile), lastDrawn = forcedTile)
+        val context = contextWithHand(
+            hand = hand,
+            phase = AiDecisionPhase.OwnTurn,
+            legalActions = emptyList(),
+            forcedDiscardTileId = forcedTile.id,
+        )
+
+        val result = strategy.decideGameCommand(context)
+
+        assertEquals(GameCommand.Discard(forcedTile.id), result)
     }
 
     /**

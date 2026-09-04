@@ -17,10 +17,12 @@ import kotlin.uuid.Uuid
  *           `com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase`
  *           算好的結果，AI 不重新實作規則判斷。捨牌本身不在清單裡（`LegalActionValidator` 既有
  *           慣例：捨牌是永遠可用的預設動作，見該慣例對應的既有 KDoc 說明）。
+ * @property forcedDiscardTileId 規則要求本次一般捨牌必須打出的牌；`null` 表示規則未限制。
  */
 data class AiDecisionContext(
     val snapshot: TableStateSnapshot,
     val selfId: Uuid,
     val phase: AiDecisionPhase,
     val legalActions: List<GameAction>,
+    val forcedDiscardTileId: Uuid? = null,
 )

@@ -58,6 +58,7 @@ class RandomAiStrategy(
      * 從 [AiDecisionContext.snapshot] 裡這位 AI 自己的手牌（立牌 + 剛摸到的牌）隨機挑一張捨棄。
      */
     private fun discardRandomTile(context: AiDecisionContext): GameCommand {
+        context.forcedDiscardTileId?.let { return GameCommand.Discard(it) }
         val hand = context.snapshot.players.first { it.id == context.selfId }.hand
         val candidateIds = hand.standingTiles.map { it.id } + listOfNotNull(hand.lastDrawn?.id)
         return GameCommand.Discard(candidateIds.random(random))

@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
@@ -25,6 +26,7 @@ import kotlin.uuid.Uuid
  * @property aiStrategyRegistry AI 策略登記中心，依每位 AI 玩家自己的 `aiStrategyKey` 解析出實際
  *           要問的策略——每局、每個 AI 玩家可以各自使用不同策略，不是全伺服器共用一個。
  * @property visibilityPolicy 依 AI 玩家視角建立決策用快照的觀看政策。
+ * @property moduleRegistry 規則模組註冊中心，用於提供規則特有但規則中立的決策限制。
  */
 @Factory
 class AiTurnDriver(
@@ -32,6 +34,7 @@ class AiTurnDriver(
     private val getLegalActionsUseCase: GetLegalActionsUseCase,
     private val aiStrategyRegistry: MahjongAiStrategyRegistry,
     private val visibilityPolicy: GameVisibilityPolicy,
+    private val moduleRegistry: MahjongModuleRegistry,
 ) {
     /**
      * 找出目前桌況下下一個該行動的 AI 玩家與其命令；若沒有任何 AI 需要行動則回傳 null。
@@ -95,12 +98,14 @@ class AiTurnDriver(
         val state = game.tableState
         val legalActionsResult = getLegalActionsUseCase(gameId, aiId)
         val legalActions = (legalActionsResult as? Outcome.Success)?.value ?: emptyList()
-        val strategyKey = state.players.first { it.id == aiId }.aiStrategyKey
+        val player = state.players.first { it.id == aiId }
+        val strategyKey = player.aiStrategyKey
         val context = AiDecisionContext(
             snapshot = visibilityPolicy.snapshotFor(game, aiId),
             selfId = aiId,
             phase = phase,
             legalActions = legalActions,
+            forcedDiscardTileId = moduleRegistry.getModule(state.config).forcedDiscardTileId(state, player),
         )
         return aiStrategyRegistry.resolve(strategyKey).decideGameCommand(context)
     }

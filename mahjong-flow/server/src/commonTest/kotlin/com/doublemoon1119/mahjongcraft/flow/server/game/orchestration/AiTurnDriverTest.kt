@@ -65,6 +65,7 @@ class AiTurnDriverTest {
             GetLegalActionsUseCase(gameRepo, moduleRegistry),
             strategyRegistry,
             GameVisibilityPolicyImpl(),
+            moduleRegistry,
         )
     }
 
@@ -277,6 +278,31 @@ class AiTurnDriverTest {
         assertEquals(aiId to strategyCommand, result)
         assertEquals(AiDecisionPhase.OwnTurn, fixtures.strategy.lastContext?.phase)
         assertEquals(aiId, fixtures.strategy.lastContext?.selfId)
+        assertNull(fixtures.strategy.lastContext?.forcedDiscardTileId)
+    }
+
+    /**
+     * 驗證日麻 AI 立直後，決策情境會要求摸切剛摸入的牌。
+     */
+    @Test
+    fun `test riichi ai receives last drawn as forced discard`() = runTest {
+        val fixtures = Fixtures(strategyCommand = GameCommand.Discard(Uuid.random()))
+        val aiId = Uuid.random()
+        val riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val ai = FakeMahjongPlayerFactory.create(
+            id = aiId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = lastDrawn),
+            aiStrategyKey = strategyKey,
+            playerRuleState = RiichiPlayerState(riichiTile = riichiTile),
+        )
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(ai), config = RiichiRuleConfig(), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.driver.resolveNextAction(gameId)
+
+        assertEquals(lastDrawn.id, fixtures.strategy.lastContext?.forcedDiscardTileId)
     }
 
     /**
