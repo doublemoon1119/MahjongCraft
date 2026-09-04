@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -89,6 +90,23 @@ class GameDecisionAuthorityResolverTest {
     @Test
     fun `test current player without draw or claimed meld has no decision`() {
         val game = game(listOf(Uuid.random()))
+
+        assertEquals(emptyMap(), GameDecisionAuthorityResolver().resolve(game))
+    }
+
+    /** 驗證本局已進入結算交接後，不會替仍留在桌況中的原決策者重新建立計時器。 */
+    @Test
+    fun `test pending round transition clears decision authority`() {
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            hand = Hand(lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.East)),
+        )
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(player)),
+            flowConfig = GameFlowConfig(),
+            pendingTransition = PendingGameTransition.AdvanceRound,
+        )
 
         assertEquals(emptyMap(), GameDecisionAuthorityResolver().resolve(game))
     }

@@ -21,11 +21,11 @@ class GameDecisionAuthorityResolver {
      * `ForcedAutoPlayDriver` 的固定邏輯接管，而不是它自己的 AI 策略。
      *
      * @param game 目前的權威遊戲狀態。
-     * @return 以玩家識別碼索引的決策階段，只包含真人玩家；對局已結束時一律回傳空 map，不再需要
-     *   任何決策計時器。
+     * @return 以玩家識別碼索引的決策階段，只包含真人玩家；對局已結束或本局已進入結算交接時一律
+     *   回傳空 map，不再需要任何決策計時器。
      */
     fun resolve(game: Game): Map<Uuid, PlayerDecisionPhase> {
-        if (game.isMatchOver) return emptyMap()
+        if (game.isMatchOver || game.pendingTransition != null) return emptyMap()
         val state = game.tableState
         val humanPlayerIds = state.players.filterNot { it.isAi }.mapTo(mutableSetOf()) { it.id }
         game.pendingRoundPreparation?.let { preparation ->
