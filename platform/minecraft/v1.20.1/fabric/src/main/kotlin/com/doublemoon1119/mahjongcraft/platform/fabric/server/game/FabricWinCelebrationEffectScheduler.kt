@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongAnimationSounds
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongVisualEffectKeys
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffectEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.world.ServerWorld
 import org.koin.core.annotation.Single
@@ -52,6 +54,15 @@ class FabricWinCelebrationEffectScheduler {
                 animationSeed = Random.nextLong(),
                 startGameTime = startGameTime,
                 endGameTime = endGameTime,
+            )
+            enqueue(
+                AnimationStep.PlaySound(
+                    soundId = MahjongAnimationSounds.WIN_LIGHTNING_THUNDER,
+                    volume = 0.4f,
+                    pitch = 1.0f,
+                    playAtGameTime = startGameTime,
+                    expiresAtGameTime = startGameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
+                ),
             )
             refreshPositionAndAngles(tile.x, tile.y, tile.z, 0.0f, 0.0f)
         }

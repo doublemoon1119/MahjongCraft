@@ -1,15 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
-import net.minecraft.entity.Entity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker
 import net.minecraft.entity.data.TrackedDataHandlerRegistry
 import net.minecraft.nbt.NbtCompound
-import net.minecraft.registry.Registries
-import net.minecraft.sound.SoundCategory
-import net.minecraft.sound.SoundEvents
-import net.minecraft.util.Identifier
 import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
@@ -60,8 +56,7 @@ data class WinSettlementSoundCueSnapshot(
 class WinSettlementPresentationEntity(
     type: EntityType<out WinSettlementPresentationEntity> = ModEntities.winSettlementPresentation,
     world: World,
-) : Entity(type, world) {
-    private val playedSoundIndexes = mutableSetOf<Int>()
+) : SimpleAnimatedMahjongEntity(type, world) {
     val managedTableId: Uuid? get() = dataTracker[TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
     val startGameTime: Long get() = dataTracker[START_GAME_TIME]
     val endGameTime: Long get() = dataTracker[END_GAME_TIME]
@@ -108,6 +103,7 @@ class WinSettlementPresentationEntity(
         dataTracker.set(IS_TSUMO, isTsumo)
         dataTracker.set(WINNERS, encodeWinners(winners))
         dataTracker.set(RANKINGS, encodeRankings(rankings))
+        enqueueSettlementSounds(startGameTime)
     }
 
     fun elapsedTicks(tickDelta: Float): Double = world.time + tickDelta.toDouble() - startGameTime
@@ -118,112 +114,84 @@ class WinSettlementPresentationEntity(
     override fun tick() {
         super.tick()
         if (world.isClient) return
-        val elapsed = world.time - startGameTime
-        if (elapsed >= 0) playPendingSounds(elapsed)
         if (endGameTime > startGameTime && world.time >= endGameTime) discard()
     }
 
-    private fun playPendingSounds(elapsed: Long) {
-        if (customSoundCues.isNotEmpty()) {
-            playCustomSounds(elapsed)
-            playRankingSounds(elapsed, customSoundCues.size)
-            return
-        }
-        var eventIndex = 0
+    /** 將贏家詳情、自訂 cue 與排行聲音統一排入可持久化動畫佇列。 */
+    private fun enqueueSettlementSounds(startGameTime: Long) {
+        val cues = if (customSoundCues.isNotEmpty()) customSoundCues else defaultWinnerSoundCues()
+        enqueueAll((cues + rankingSoundCues()).map { cue -> cue.toAnimationStep(startGameTime) })
+    }
+
+    /** 建立沒有自訂聲音模板時的既有贏家詳情聲音。 */
+    private fun defaultWinnerSoundCues(): List<WinSettlementSoundCueSnapshot> = buildList {
         winners.forEachIndexed { winnerIndex, winner ->
-            val start = winnerStartTick(winnerIndex)
+            val winnerStart = winnerStartTick(winnerIndex)
             val entries = winner.details.filter { it.type == DETAIL_ENTRIES }.sumOf { it.values.size / ENTRY_VALUE_COUNT }
-            repeat(entries) { entryIndex ->
-                playOnce(
-                    eventIndex++,
-                    start + revealTiming.initialFadeTicks + entryIndex * revealTiming.entryStaggerTicks,
-                    elapsed,
-                    SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
-                    SettlementPresentationSoundSpec.DETAIL_VOLUME,
-                    (
-                        SettlementPresentationSoundSpec.DETAIL_BASE_PITCH +
-                            entryIndex * SettlementPresentationSoundSpec.DETAIL_PITCH_STEP
-                        ).coerceAtMost(1.55f),
+            val summaryCount = if (winner.hasPostEntrySummary) 1 else 0
+            repeat(entries + summaryCount) { entryIndex ->
+                add(
+                    WinSettlementSoundCueSnapshot(
+                        eventTick = winnerStart + revealTiming.initialFadeTicks + entryIndex * revealTiming.entryStaggerTicks,
+                        soundId = DETAIL_SOUND_ID,
+                        volume = SettlementPresentationSoundSpec.DETAIL_VOLUME,
+                        pitch = (
+                            SettlementPresentationSoundSpec.DETAIL_BASE_PITCH +
+                                entryIndex * SettlementPresentationSoundSpec.DETAIL_PITCH_STEP
+                            ).coerceAtMost(1.55f),
+                    ),
                 )
             }
-            if (winner.hasPostEntrySummary) {
-                playOnce(
-                    eventIndex++,
-                    start + revealTiming.initialFadeTicks + entries * revealTiming.entryStaggerTicks,
-                    elapsed,
-                    SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
-                    SettlementPresentationSoundSpec.DETAIL_VOLUME,
-                    (
-                        SettlementPresentationSoundSpec.DETAIL_BASE_PITCH +
-                            entries * SettlementPresentationSoundSpec.DETAIL_PITCH_STEP
-                        ).coerceAtMost(1.55f),
-                )
-            }
-            val scoreTick = start + revealTiming.initialFadeTicks + (entries + if (winner.hasPostEntrySummary) 1 else 0) * revealTiming.entryStaggerTicks
+            val scoreTick = winnerStart + revealTiming.initialFadeTicks +
+                (entries + summaryCount) * revealTiming.entryStaggerTicks
             SettlementPresentationSoundSpec.TOTAL_SCORE_MELODY_PITCHES.forEachIndexed { noteIndex, pitch ->
-                playOnce(
-                    eventIndex++,
-                    scoreTick + noteIndex * SettlementPresentationSoundSpec.TOTAL_SCORE_MELODY_INTERVAL_TICKS,
-                    elapsed,
-                    SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
-                    SettlementPresentationSoundSpec.TOTAL_SCORE_VOLUME,
-                    pitch,
+                add(
+                    WinSettlementSoundCueSnapshot(
+                        eventTick = scoreTick + noteIndex * SettlementPresentationSoundSpec.TOTAL_SCORE_MELODY_INTERVAL_TICKS,
+                        soundId = DETAIL_SOUND_ID,
+                        volume = SettlementPresentationSoundSpec.TOTAL_SCORE_VOLUME,
+                        pitch = pitch,
+                    ),
                 )
             }
         }
-        playRankingSounds(elapsed, eventIndex)
     }
 
-    private fun playCustomSounds(elapsed: Long) {
-        customSoundCues.forEachIndexed { index, cue ->
-            val identifier = Identifier.tryParse(cue.soundId) ?: return@forEachIndexed
-            if (!Registries.SOUND_EVENT.containsId(identifier)) return@forEachIndexed
-            val sound = Registries.SOUND_EVENT.get(identifier) ?: return@forEachIndexed
-            playOnce(index, cue.eventTick, elapsed, sound, cue.volume, cue.pitch)
-        }
-    }
-
-    private fun playRankingSounds(elapsed: Long, firstEventIndex: Int) {
-        var eventIndex = firstEventIndex
+    /** 建立分數排行逐列揭示及排行落定聲音。 */
+    private fun rankingSoundCues(): List<WinSettlementSoundCueSnapshot> = buildList {
         val rankingStart = rankingStartTick()
         rankings.indices.forEach { rowIndex ->
-            playOnce(
-                eventIndex++,
-                rankingStart + RANKING_ROW_START_TICKS + rowIndex * RANKING_ROW_STAGGER_TICKS,
-                elapsed,
-                SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
-                SettlementPresentationSoundSpec.ROW_VOLUME,
-                SettlementPresentationSoundSpec.ROW_BASE_PITCH + rowIndex * SettlementPresentationSoundSpec.ROW_PITCH_STEP,
+            add(
+                WinSettlementSoundCueSnapshot(
+                    eventTick = rankingStart + RANKING_ROW_START_TICKS + rowIndex * RANKING_ROW_STAGGER_TICKS,
+                    soundId = DETAIL_SOUND_ID,
+                    volume = SettlementPresentationSoundSpec.ROW_VOLUME,
+                    pitch = SettlementPresentationSoundSpec.ROW_BASE_PITCH +
+                        rowIndex * SettlementPresentationSoundSpec.ROW_PITCH_STEP,
+                ),
             )
         }
-        val rankingChanged = rankings.any { it.previousRank != it.currentRank }
-        if (rankingChanged) {
-            playOnce(
-                eventIndex,
-                rankingStart + RANKING_SETTLED_SOUND_TICKS,
-                elapsed,
-                SoundEvents.ENTITY_PLAYER_LEVELUP,
-                SettlementPresentationSoundSpec.RANKING_SETTLED_VOLUME,
-                SettlementPresentationSoundSpec.RANKING_SETTLED_PITCH,
+        if (rankings.any { it.previousRank != it.currentRank }) {
+            add(
+                WinSettlementSoundCueSnapshot(
+                    eventTick = rankingStart + RANKING_SETTLED_SOUND_TICKS,
+                    soundId = RANKING_SETTLED_SOUND_ID,
+                    volume = SettlementPresentationSoundSpec.RANKING_SETTLED_VOLUME,
+                    pitch = SettlementPresentationSoundSpec.RANKING_SETTLED_PITCH,
+                ),
             )
         }
     }
 
-    private fun playOnce(index: Int, eventTick: Long, elapsed: Long, sound: net.minecraft.sound.SoundEvent, volume: Float, pitch: Float) {
-        if (!playedSoundIndexes.add(index) || elapsed < eventTick) {
-            if (elapsed < eventTick) playedSoundIndexes.remove(index)
-            return
-        }
-        if (elapsed > eventTick + SettlementPresentationSoundSpec.EVENT_GRACE_TICKS) return
-        world.playSound(
-            null,
-            x,
-            y,
-            z,
-            sound,
-            SoundCategory.PLAYERS,
-            volume,
-            pitch,
+    /** 將相對 presentation 時間的聲音 cue 轉為絕對動畫 step。 */
+    private fun WinSettlementSoundCueSnapshot.toAnimationStep(startGameTime: Long): AnimationStep.PlaySound {
+        val playAtGameTime = startGameTime + eventTick
+        return AnimationStep.PlaySound(
+            soundId = soundId,
+            volume = volume,
+            pitch = pitch,
+            playAtGameTime = playAtGameTime,
+            expiresAtGameTime = playAtGameTime + SettlementPresentationSoundSpec.EVENT_GRACE_TICKS,
         )
     }
 
@@ -255,7 +223,7 @@ class WinSettlementPresentationEntity(
         dataTracker.set(RANKINGS, nbt.getString("Rankings"))
         dataTracker.set(REVEAL_TIMING, nbt.getString("RevealTiming"))
         dataTracker.set(CUSTOM_SOUND_CUES, nbt.getString("CustomSoundCues"))
-        playedSoundIndexes += nbt.getIntArray("PlayedSoundIndexes").toSet()
+        readAnimationQueueFromNbt(nbt)
     }
 
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
@@ -269,7 +237,7 @@ class WinSettlementPresentationEntity(
         nbt.putString("Rankings", dataTracker[RANKINGS])
         nbt.putString("RevealTiming", dataTracker[REVEAL_TIMING])
         nbt.putString("CustomSoundCues", dataTracker[CUSTOM_SOUND_CUES])
-        nbt.putIntArray("PlayedSoundIndexes", playedSoundIndexes.toIntArray())
+        writeAnimationQueueToNbt(nbt)
     }
 
     companion object {
@@ -288,6 +256,8 @@ class WinSettlementPresentationEntity(
         const val RANKING_SETTLED_SOUND_TICKS = 83L
         const val DETAIL_TEXT = "T"
         const val DETAIL_TILES = "L"
+        private const val DETAIL_SOUND_ID = "minecraft:entity.experience_orb.pickup"
+        private const val RANKING_SETTLED_SOUND_ID = "minecraft:entity.player.levelup"
         const val DETAIL_ENTRIES = "E"
         const val ENTRY_VALUE_COUNT = 4
         private const val F = '\u001f'

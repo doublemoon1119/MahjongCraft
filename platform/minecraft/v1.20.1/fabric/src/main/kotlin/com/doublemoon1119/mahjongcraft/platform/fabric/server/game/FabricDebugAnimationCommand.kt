@@ -955,6 +955,7 @@ class FabricDebugAnimationCommand(
             world = player.serverWorld,
             tableId = Uuid.random(),
             controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
+            tableFacing = layout.tableFacing,
             placement = layout.showcaseStagePlacement(),
             request = ExhaustiveDrawSettlementPresentationRequest(reasonId, players),
             waitingTileAssetsBySeat = players.filter { it.handPresentation == ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI }
@@ -1276,7 +1277,13 @@ class FabricDebugAnimationCommand(
 
         val reorderStartGameTime = world.time
         val reorderEndGameTime = reorderStartGameTime + MahjongTileTableLayout.WIN_REORDER_FLIGHT_DURATION_TICKS
-        handTiles.forEachIndexed { index, tile -> TileAnimationSteps.scheduleReorder(tile, sortedPlacements[index], reorderStartGameTime) }
+        handTiles.forEachIndexed { index, tile ->
+            TileAnimationSteps.scheduleReorder(
+                tile,
+                sortedPlacements[index],
+                reorderStartGameTime,
+            )
+        }
 
         val winningTile: MahjongTileEntity
         val handLaydownEndGameTime: Long
@@ -1284,15 +1291,20 @@ class FabricDebugAnimationCommand(
             winningTile = handTiles.first()
             val winTileLaydownStartGameTime = reorderEndGameTime
             val winTileLaydownEndGameTime = winTileLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
-            TileAnimationSteps.scheduleLaydown(winningTile, winTileLaydownStartGameTime)
+            TileAnimationSteps.scheduleLaydown(winningTile, winTileLaydownStartGameTime, playGroupSound = true)
             val restLaydownStartGameTime = winTileLaydownEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
-            (handTiles - winningTile).forEach { tile -> TileAnimationSteps.scheduleLaydown(tile, restLaydownStartGameTime) }
+            val restTiles = handTiles - winningTile
+            restTiles.forEachIndexed { index, tile ->
+                TileAnimationSteps.scheduleLaydown(tile, restLaydownStartGameTime, playGroupSound = index == restTiles.size / 2)
+            }
             handLaydownEndGameTime = restLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
         } else {
             val discardedPlacement = layout.discardPlacement(discardIndex = 0)
             winningTile = spawnFreeTile(world, discardedPlacement, MahjongTilePose.FACE_UP, assetKey)
             val handLaydownStartGameTime = reorderEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
-            handTiles.forEach { tile -> TileAnimationSteps.scheduleLaydown(tile, handLaydownStartGameTime) }
+            handTiles.forEachIndexed { index, tile ->
+                TileAnimationSteps.scheduleLaydown(tile, handLaydownStartGameTime, playGroupSound = index == handTiles.size / 2)
+            }
             handLaydownEndGameTime = handLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
         }
 
@@ -1339,7 +1351,7 @@ class FabricDebugAnimationCommand(
                 )
             }.also(world::spawnEntity)
         }
-        dice.zip(placements).zip(points).forEach { (entityAndPlacement, point) ->
+        dice.zip(placements).zip(points).forEachIndexed { index, (entityAndPlacement, point) ->
             val (entity, placement) = entityAndPlacement
             entity.startRoll(
                 finalPoint = point,
@@ -1347,6 +1359,7 @@ class FabricDebugAnimationCommand(
                 startDelayTicks = placement.startDelayTicks,
                 startOffset = placement.startOffset,
                 sharedViewingEndGameTime = endGameTime,
+                playThrowSound = index == 0,
             )
         }
         val stage = DiceRollPresentationEntity(world = world).apply {
@@ -1392,7 +1405,15 @@ class FabricDebugAnimationCommand(
             MahjongTileTableLayout.DEAL_DROP_DURATION_TICKS +
             MahjongTileTableLayout.DEAL_FLIP_GAP_TICKS
         tiles.forEachIndexed { index, tile ->
-            TileAnimationSteps.scheduleDealBatch(tile, finalPlacements[index], finalPlacements[index], liftAbsoluteGameTime, flipAbsoluteGameTime)
+            TileAnimationSteps.scheduleDealBatch(
+                tile,
+                finalPlacements[index],
+                finalPlacements[index],
+                liftAbsoluteGameTime,
+                flipAbsoluteGameTime,
+                playDealSound = index == 0,
+                playFlipSound = index == 0,
+            )
         }
         val endGameTime = flipAbsoluteGameTime + MahjongTileTableLayout.DEAL_FLIP_DURATION_TICKS + PREVIEW_VIEWING_BUFFER_TICKS
         scheduleCleanup(world, endGameTime, tiles)
@@ -1454,7 +1475,14 @@ class FabricDebugAnimationCommand(
         }
         val finalPlacements = layout.meldPlacements(type = type, tileCount = tileCount)
         val tiles = sourcePlacements.map { placement -> spawnFreeTile(world, placement, MahjongTilePose.STANDING, assetKey) }
-        tiles.forEachIndexed { index, tile -> TileAnimationSteps.scheduleMeldClaim(tile, finalPlacements[index], MahjongTilePose.FACE_UP) }
+        tiles.forEachIndexed { index, tile ->
+            TileAnimationSteps.scheduleMeldClaim(
+                tile,
+                finalPlacements[index],
+                MahjongTilePose.FACE_UP,
+                playLandingSound = index == 0,
+            )
+        }
         val endGameTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS + PREVIEW_VIEWING_BUFFER_TICKS
         scheduleCleanup(world, endGameTime, tiles)
         return COMMAND_SUCCESS

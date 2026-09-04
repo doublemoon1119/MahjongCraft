@@ -34,6 +34,7 @@ class MahjongDiceItem(settings: Settings) : Item(settings) {
                         y = visualStart.y - hitPos.y,
                         z = visualStart.z - hitPos.z,
                     ),
+                    playThrowSound = true,
                 )
             }
         }

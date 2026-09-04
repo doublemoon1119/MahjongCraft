@@ -54,7 +54,7 @@ class FabricMahjongDiceRollPresenter(
         val revealGameTime = world.time + presentation.extraLeadDelayTicks +
             MahjongDiceTableLayout.maxStartDelayTicks(presentation.dice.size) + DiceRollAnimationSpec.DEFAULT_DURATION_TICKS
         val endGameTime = revealGameTime + DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
-        val newDice = placements.zip(presentation.dice).map { (placement, dicePresentation) ->
+        val newDice = placements.zip(presentation.dice).mapIndexed { index, (placement, dicePresentation) ->
             MahjongDiceEntity(world = world).apply {
                 refreshPositionAndAngles(
                     placement.finalPosition.x,
@@ -70,6 +70,7 @@ class FabricMahjongDiceRollPresenter(
                     startDelayTicks = presentation.extraLeadDelayTicks + placement.startDelayTicks,
                     startOffset = placement.startOffset,
                     sharedViewingEndGameTime = endGameTime,
+                    playThrowSound = index == 0,
                 )
             }
         }

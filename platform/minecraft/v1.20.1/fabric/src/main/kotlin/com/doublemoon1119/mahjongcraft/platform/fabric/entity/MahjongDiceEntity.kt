@@ -116,6 +116,7 @@ class MahjongDiceEntity(
         startDelayTicks: Int,
         startOffset: DiceAnimationVector,
         sharedViewingEndGameTime: Long? = null,
+        playThrowSound: Boolean = false,
     ) {
         check(!world.isClient) { "Dice rolls must be started by the server" }
         point = finalPoint
@@ -128,22 +129,47 @@ class MahjongDiceEntity(
         val viewingEndGameTime = sharedViewingEndGameTime?.also { sharedEnd ->
             require(sharedEnd >= naturalViewingEndGameTime) { "Shared dice viewing end must not shorten the presentation" }
         } ?: naturalViewingEndGameTime
+        val firstLandingGameTime = rollStartGameTime + FIRST_LANDING_TICK
         enqueueAll(
-            listOf(
-                AnimationStep.SetInvisible(true),
-                AnimationStep.WaitUntil(rollStartGameTime),
-                AnimationStep.SetInvisible(false),
-                AnimationStep.PlayMotion(
-                    durationTicks = DiceRollAnimationSpec.DEFAULT_DURATION_TICKS,
-                    arcHeight = 0.0,
-                    startOffsetX = 0.0,
-                    startOffsetY = 0.0,
-                    startOffsetZ = 0.0,
-                    startPoseRotationDegrees = 0.0f,
-                    endPoseRotationDegrees = 0.0f,
-                ),
-                AnimationStep.WaitUntil(viewingEndGameTime),
-            ),
+            buildList {
+                if (playThrowSound) {
+                    add(
+                        AnimationStep.PlaySound(
+                            soundId = MahjongAnimationSounds.DICE_THROW,
+                            volume = 0.7f,
+                            pitch = 1.0f,
+                            playAtGameTime = rollStartGameTime,
+                            expiresAtGameTime = rollStartGameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
+                        ),
+                    )
+                }
+                add(
+                    AnimationStep.PlaySound(
+                        soundId = MahjongAnimationSounds.DICE_LAND,
+                        volume = 0.9f,
+                        pitch = 0.95f,
+                        playAtGameTime = firstLandingGameTime,
+                        expiresAtGameTime = firstLandingGameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
+                    ),
+                )
+                addAll(
+                    listOf(
+                        AnimationStep.SetInvisible(true),
+                        AnimationStep.WaitUntil(rollStartGameTime),
+                        AnimationStep.SetInvisible(false),
+                        AnimationStep.PlayMotion(
+                            durationTicks = DiceRollAnimationSpec.DEFAULT_DURATION_TICKS,
+                            arcHeight = 0.0,
+                            startOffsetX = 0.0,
+                            startOffsetY = 0.0,
+                            startOffsetZ = 0.0,
+                            startPoseRotationDegrees = 0.0f,
+                            endPoseRotationDegrees = 0.0f,
+                        ),
+                        AnimationStep.WaitUntil(viewingEndGameTime),
+                    ),
+                )
+            },
         )
     }
 
@@ -188,9 +214,6 @@ class MahjongDiceEntity(
     override fun tick() {
         super.tick()
         if (world.isClient) return
-        if (rolling && world.time - animationStartGameTime == FIRST_LANDING_TICK) {
-            playSound(SoundEvents.ENTITY_ITEM_FRAME_PLACE, 1.0f, 1.0f)
-        }
         if (managedByGame && !isAnimating) discard()
     }
 

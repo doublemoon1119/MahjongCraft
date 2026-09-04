@@ -143,6 +143,8 @@ class FabricMahjongPlayerAreaPresenter(
             }
         }
 
+        var meldSoundsScheduled = false
+
         fun placeMeldTile(
             tileId: Uuid,
             alongOffsetFromCorner: Double,
@@ -163,7 +165,13 @@ class FabricMahjongPlayerAreaPresenter(
             )
             tile.assignToTable(presentation.tableId)
             if (tileId in presentation.animatedMeldClaimTileIds) {
-                TileAnimationSteps.scheduleMeldClaim(tile, placement, pose)
+                TileAnimationSteps.scheduleMeldClaim(
+                    tile,
+                    placement,
+                    pose,
+                    playLandingSound = !meldSoundsScheduled,
+                )
+                meldSoundsScheduled = true
             } else {
                 tile.tilePose = pose
                 tile.teleportExistingManagedTile(placement)
@@ -319,7 +327,11 @@ class FabricMahjongPlayerAreaPresenter(
                     cornerYieldShift = cornerYieldShift,
                 )
                 tile.assignToTable(presentation.tableId)
-                TileAnimationSteps.scheduleReorder(tile, placement, reorderStartGameTime)
+                TileAnimationSteps.scheduleReorder(
+                    tile,
+                    placement,
+                    reorderStartGameTime,
+                )
             }
         } else {
             claimTile(presentation.winningTileId)
@@ -329,16 +341,20 @@ class FabricMahjongPlayerAreaPresenter(
             if (presentation.isTsumo) {
                 val winTileLaydownStartGameTime = reorderEndGameTime
                 val winTileLaydownEndGameTime = winTileLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
-                TileAnimationSteps.scheduleLaydown(winningTile, winTileLaydownStartGameTime)
+                TileAnimationSteps.scheduleLaydown(winningTile, winTileLaydownStartGameTime, playGroupSound = true)
 
                 val restLaydownStartGameTime = winTileLaydownEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
-                (claimedStandingTiles - presentation.winningTileId).values.forEach { tile ->
-                    TileAnimationSteps.scheduleLaydown(tile, restLaydownStartGameTime)
+                val restTiles = (claimedStandingTiles - presentation.winningTileId).values.toList()
+                restTiles.forEachIndexed { index, tile ->
+                    TileAnimationSteps.scheduleLaydown(tile, restLaydownStartGameTime, playGroupSound = index == restTiles.size / 2)
                 }
                 restLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
             } else {
                 val handLaydownStartGameTime = reorderEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
-                claimedStandingTiles.values.forEach { tile -> TileAnimationSteps.scheduleLaydown(tile, handLaydownStartGameTime) }
+                val handTiles = claimedStandingTiles.values.toList()
+                handTiles.forEachIndexed { index, tile ->
+                    TileAnimationSteps.scheduleLaydown(tile, handLaydownStartGameTime, playGroupSound = index == handTiles.size / 2)
+                }
                 handLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
             }
         }
@@ -421,6 +437,7 @@ class FabricMahjongPlayerAreaPresenter(
         val flipAbsoluteGameTime = world.time + presentation.extraLeadDelayTicks +
             MahjongTileTableLayout.dealFlipStartDelayTicks(totalTurnCount)
         var batchStart = 0
+        val flipSoundSeatIndices = mutableSetOf<Int>()
         presentation.dealBatchSizes.forEachIndexed { batchIndex, batchSize ->
             dealOrderSeatIndices.forEachIndexed { turnOffset, seatIndex ->
                 val tileIds = presentation.handTileIdsBySeatIndex.getValue(seatIndex)
@@ -430,6 +447,7 @@ class FabricMahjongPlayerAreaPresenter(
                 // 得比較久的牌會被拖慢、晚起飛，導致同一次抓的牌看起來分批起飛而不是一起。
                 val liftAbsoluteGameTime = world.time + presentation.extraLeadDelayTicks +
                     MahjongTileTableLayout.dealBatchStartDelayTicks(globalTurnIndex)
+                var dealSoundScheduled = false
                 tileIds.drop(batchStart).take(batchSize).forEachIndexed { indexInBatch, tileId ->
                     val tile = claimTile(tileId) ?: return@forEachIndexed
                     val orderIndex = batchStart + indexInBatch
@@ -455,7 +473,17 @@ class FabricMahjongPlayerAreaPresenter(
                         cornerYieldShift = cornerYieldShiftBySeat.getValue(seatIndex),
                     )
                     tile.assignToTable(presentation.tableId)
-                    TileAnimationSteps.scheduleDealBatch(tile, placement, postFlipPlacement, liftAbsoluteGameTime, flipAbsoluteGameTime)
+                    TileAnimationSteps.scheduleDealBatch(
+                        tile,
+                        placement,
+                        postFlipPlacement,
+                        liftAbsoluteGameTime,
+                        flipAbsoluteGameTime,
+                        playDealSound = !dealSoundScheduled,
+                        playFlipSound = seatIndex !in flipSoundSeatIndices,
+                    )
+                    dealSoundScheduled = true
+                    flipSoundSeatIndices += seatIndex
                 }
             }
             batchStart += batchSize

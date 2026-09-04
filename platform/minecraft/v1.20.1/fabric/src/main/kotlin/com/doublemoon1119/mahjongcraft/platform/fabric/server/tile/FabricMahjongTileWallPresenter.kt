@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongAnimationSounds
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
@@ -153,6 +154,10 @@ class FabricMahjongTileWallPresenter(
                     endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
                 ),
             )
+            if (position.layer == WALL_STACK_SOUND_LAYER) {
+                val landingGameTime = world.time + startDelayTicks + TileMotionAnimationSpec.DEFAULT_DURATION_TICKS
+                steps += wallStackLandingSound(landingGameTime)
+            }
             val tileId = tile.uuid.toKotlinUuid()
             if (revealAbsoluteGameTime != null && tileId in presentation.deadWallTileIds) {
                 val openPlacement = MahjongTileTableLayout.wallPlacement(
@@ -174,6 +179,15 @@ class FabricMahjongTileWallPresenter(
             tile.enqueueAll(steps)
         }
     }
+
+    /** 建立一墩牌牆落桌時的小音量聲音 step；同墩只由上層牌播放一次。 */
+    private fun wallStackLandingSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
+        soundId = MahjongAnimationSounds.WALL_STACK_LAND,
+        volume = 0.18f,
+        pitch = 0.9f,
+        playAtGameTime = gameTime,
+        expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
+    )
 
     /**
      * 寶牌指示牌翻面公開的「起飛→翻面→落下」步驟：牌原地（[x]／[z]／[yaw] 不變）往上抬起，在半空中
@@ -314,6 +328,9 @@ class FabricMahjongTileWallPresenter(
 
         /** 牌牆生成掉落動畫的半空起點高度，相對掉落終點的世界 Y 偏移；遊戲內驗證後從 1.5 調低。 */
         const val WALL_DROP_HEIGHT: Double = 0.8
+
+        /** 每墩負責播放落桌聲音的牌牆層數。 */
+        private const val WALL_STACK_SOUND_LAYER: Int = 1
 
         /** 寶牌指示牌翻面動畫的起飛高度，理由同 [WALL_DROP_HEIGHT]。 */
         const val REVEAL_LIFT_HEIGHT: Double = 0.4

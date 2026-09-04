@@ -1,14 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
-import net.minecraft.entity.Entity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker
 import net.minecraft.entity.data.TrackedData
 import net.minecraft.entity.data.TrackedDataHandlerRegistry
 import net.minecraft.nbt.NbtCompound
-import net.minecraft.sound.SoundCategory
-import net.minecraft.sound.SoundEvents
 import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
@@ -34,8 +32,7 @@ data class ExhaustiveDrawSettlementPlayerSnapshot(
 class ExhaustiveDrawSettlementPresentationEntity(
     type: EntityType<out ExhaustiveDrawSettlementPresentationEntity> = ModEntities.exhaustiveDrawSettlementPresentation,
     world: World,
-) : Entity(type, world) {
-    private var playedCoreSoundMask: Int = 0
+) : SimpleAnimatedMahjongEntity(type, world) {
 
     /** 所屬麻將桌。 */
     val managedTableId: Uuid?
@@ -76,6 +73,7 @@ class ExhaustiveDrawSettlementPresentationEntity(
         dataTracker.set(END_GAME_TIME, startGameTime + durationTicks(players))
         dataTracker.set(REASON_ID, reasonId)
         dataTracker.set(PLAYERS, encodePlayers(players))
+        enqueueSettlementSounds(startGameTime)
     }
 
     /** 取得含 tick delta 的相對演出時間。 */
@@ -94,84 +92,60 @@ class ExhaustiveDrawSettlementPresentationEntity(
             discard()
             return
         }
-        playPendingInformationRowSounds()
-        playPendingRankingRowSounds()
-        playPendingRankingSettledSound()
         if (endGameTime > startGameTime && world.time >= endGameTime) discard()
     }
 
-    /** 公開資訊逐列淡入時播放低音量提示音；若載入時已越過事件 tick，僅標記完成而不補播。 */
-    private fun playPendingInformationRowSounds() {
-        informationPlayers().indices.forEach { index ->
-            val revealTick = informationRowRevealTick(index)
-            val bit = 1 shl index
-            if (playedCoreSoundMask and bit != 0) return@forEach
-            val elapsed = world.time - startGameTime
-            if (elapsed < revealTick) return@forEach
-            playedCoreSoundMask = playedCoreSoundMask or bit
-            if (elapsed <= revealTick + SettlementPresentationSoundSpec.EVENT_GRACE_TICKS) {
-                world.playSound(
-                    null,
-                    x,
-                    y,
-                    z,
-                    SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
-                    SoundCategory.PLAYERS,
-                    SettlementPresentationSoundSpec.DETAIL_VOLUME,
-                    SettlementPresentationSoundSpec.DETAIL_BASE_PITCH + index * SettlementPresentationSoundSpec.DETAIL_PITCH_STEP,
+    /** 依揭示時間一次建立全部可持久化聲音 cue。 */
+    private fun enqueueSettlementSounds(startGameTime: Long) {
+        val sounds = buildList {
+            informationPlayers().indices.forEach { index ->
+                add(
+                    soundStep(
+                        startGameTime + informationRowRevealTick(index),
+                        DETAIL_SOUND_ID,
+                        SettlementPresentationSoundSpec.DETAIL_VOLUME,
+                        SettlementPresentationSoundSpec.DETAIL_BASE_PITCH +
+                            index * SettlementPresentationSoundSpec.DETAIL_PITCH_STEP,
+                    ),
+                )
+            }
+            players.indices.forEach { index ->
+                add(
+                    soundStep(
+                        startGameTime + rowRevealTick(index, hasInformationPhase),
+                        DETAIL_SOUND_ID,
+                        SettlementPresentationSoundSpec.ROW_VOLUME,
+                        SettlementPresentationSoundSpec.ROW_BASE_PITCH +
+                            index * SettlementPresentationSoundSpec.ROW_PITCH_STEP,
+                    ),
+                )
+            }
+            if (players.any { it.previousRank != it.currentRank }) {
+                add(
+                    soundStep(
+                        startGameTime + rankingSettledSoundTick(hasInformationPhase),
+                        RANKING_SETTLED_SOUND_ID,
+                        SettlementPresentationSoundSpec.RANKING_SETTLED_VOLUME,
+                        SettlementPresentationSoundSpec.RANKING_SETTLED_PITCH,
+                    ),
                 )
             }
         }
+        enqueueAll(sounds)
     }
 
-    /** 排行榜逐列播放低音量提示音；若載入時已越過事件 tick，僅標記完成而不補播。 */
-    private fun playPendingRankingRowSounds() {
-        players.indices.forEach { index ->
-            val revealTick = rowRevealTick(index, hasInformationPhase)
-            val bit = 1 shl (RANKING_ROW_SOUND_BIT_OFFSET + index)
-            if (playedCoreSoundMask and bit != 0) return@forEach
-            val elapsed = world.time - startGameTime
-            if (elapsed < revealTick) return@forEach
-            playedCoreSoundMask = playedCoreSoundMask or bit
-            if (elapsed <= revealTick + SettlementPresentationSoundSpec.EVENT_GRACE_TICKS) {
-                world.playSound(
-                    null,
-                    x,
-                    y,
-                    z,
-                    SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
-                    SoundCategory.PLAYERS,
-                    SettlementPresentationSoundSpec.ROW_VOLUME,
-                    SettlementPresentationSoundSpec.ROW_BASE_PITCH + index * SettlementPresentationSoundSpec.ROW_PITCH_STEP,
-                )
-            }
-        }
-    }
+    /** 建立使用結算 presentation 共用寬限的聲音 cue。 */
+    private fun soundStep(gameTime: Long, soundId: String, volume: Float, pitch: Float): AnimationStep.PlaySound = AnimationStep.PlaySound(
+        soundId = soundId,
+        volume = volume,
+        pitch = pitch,
+        playAtGameTime = gameTime,
+        expiresAtGameTime = gameTime + SettlementPresentationSoundSpec.EVENT_GRACE_TICKS,
+    )
 
     /** 取得第一階段實際顯示的玩家，必須與 client renderer 的公開資訊篩選條件一致。 */
     private fun informationPlayers(): List<ExhaustiveDrawSettlementPlayerSnapshot> = players.filter { player ->
         player.waitingTileAssetKeys.isNotEmpty()
-    }
-
-    /** 分數與排行抵達最終值時播放四音確認旋律；載入時若已錯過則只標記完成。 */
-    private fun playPendingRankingSettledSound() {
-        val elapsed = world.time - startGameTime
-        val settledTick = rankingSettledSoundTick(hasInformationPhase)
-        val rankingChanged = players.any { it.previousRank != it.currentRank }
-        if (playedCoreSoundMask and RANKING_SETTLED_SOUND_BIT != 0 || elapsed < settledTick) return
-        playedCoreSoundMask = playedCoreSoundMask or RANKING_SETTLED_SOUND_BIT
-        if (rankingChanged && elapsed <= settledTick + SettlementPresentationSoundSpec.EVENT_GRACE_TICKS) {
-            world.playSound(
-                null,
-                x,
-                y,
-                z,
-                SoundEvents.ENTITY_PLAYER_LEVELUP,
-                SoundCategory.PLAYERS,
-                SettlementPresentationSoundSpec.RANKING_SETTLED_VOLUME,
-                SettlementPresentationSoundSpec.RANKING_SETTLED_PITCH,
-            )
-        }
     }
 
     override fun initDataTracker() {
@@ -188,7 +162,7 @@ class ExhaustiveDrawSettlementPresentationEntity(
         dataTracker.set(END_GAME_TIME, nbt.getLong(NBT_END_GAME_TIME))
         dataTracker.set(REASON_ID, nbt.getString(NBT_REASON_ID))
         dataTracker.set(PLAYERS, nbt.getString(NBT_PLAYERS))
-        playedCoreSoundMask = nbt.getInt(NBT_PLAYED_CORE_SOUND_MASK)
+        readAnimationQueueFromNbt(nbt)
     }
 
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
@@ -197,7 +171,7 @@ class ExhaustiveDrawSettlementPresentationEntity(
         nbt.putLong(NBT_END_GAME_TIME, endGameTime)
         nbt.putString(NBT_REASON_ID, reasonId)
         nbt.putString(NBT_PLAYERS, dataTracker[PLAYERS])
-        nbt.putInt(NBT_PLAYED_CORE_SOUND_MASK, playedCoreSoundMask)
+        writeAnimationQueueToNbt(nbt)
     }
 
     companion object {
@@ -221,14 +195,13 @@ class ExhaustiveDrawSettlementPresentationEntity(
         private const val NBT_END_GAME_TIME = "EndGameTime"
         private const val NBT_REASON_ID = "ReasonId"
         private const val NBT_PLAYERS = "Players"
-        private const val NBT_PLAYED_CORE_SOUND_MASK = "PlayedCoreSoundMask"
+        private const val DETAIL_SOUND_ID = "minecraft:entity.experience_orb.pickup"
+        private const val RANKING_SETTLED_SOUND_ID = "minecraft:entity.player.levelup"
         private const val INFORMATION_ROW_REVEAL_START_TICK = 40L
         private const val INFORMATION_ROW_REVEAL_INTERVAL_TICKS = 6L
         private const val ROW_REVEAL_INTERVAL_TICKS = 4L
-        private const val RANKING_ROW_SOUND_BIT_OFFSET = 8
         private const val RANKING_SETTLED_SOUND_TICK = 170L
         private const val RANKING_ONLY_SETTLED_SOUND_TICK = 110L
-        private const val RANKING_SETTLED_SOUND_BIT = 1 shl 24
 
         /** 依內容決定是否保留等待牌資訊階段。 */
         fun durationTicks(players: List<ExhaustiveDrawSettlementPlayerSnapshot>): Long = if (players.any { it.waitingTileAssetKeys.isNotEmpty() }) {

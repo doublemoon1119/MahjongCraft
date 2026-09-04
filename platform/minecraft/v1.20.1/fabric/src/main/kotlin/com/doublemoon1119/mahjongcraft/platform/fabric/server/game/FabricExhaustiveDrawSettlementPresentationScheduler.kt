@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSett
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
@@ -24,6 +26,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
         world: ServerWorld,
         tableId: Uuid,
         controllerPos: BlockPos,
+        tableFacing: MahjongTableFacing,
         placement: MahjongTileWallPlacement,
         request: ExhaustiveDrawSettlementPresentationRequest,
         waitingTileAssetsBySeat: Map<Int, List<String>>,
@@ -59,18 +62,41 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
         if (!world.spawnEntity(stage)) return null
         val endGameTime = startGameTime + ExhaustiveDrawSettlementPresentationEntity.durationTicks(playerSnapshots)
         request.players.forEach { player ->
-            player.handTileIds.distinct().forEach { tileId ->
-                val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity ?: return@forEach
+            val handTileIds = player.handTileIds.distinct()
+            handTileIds.forEachIndexed { orderIndex, tileId ->
+                val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity ?: return@forEachIndexed
+                val sortedPlacement = MahjongTileTableLayout.handPlacement(
+                    controllerX = controllerPos.x,
+                    controllerY = controllerPos.y,
+                    controllerZ = controllerPos.z,
+                    tableFacing = tableFacing,
+                    seatIndex = player.ranking.seatIndex,
+                    handSize = handTileIds.size,
+                    tileIndex = handTileIds.size - 1 - orderIndex,
+                    cornerYieldShift = 0.0,
+                )
+                TileAnimationSteps.scheduleReorder(tile, sortedPlacement, startGameTime + HAND_REORDER_START_TICK)
                 when (player.handPresentation) {
                     ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI,
                     ExhaustiveDrawSettlementHandPresentation.REVEAL_PROOF,
                     -> {
-                        revealedTileAssetsById[tileId]?.let { asset -> tile.revealForPresentation(asset, endGameTime) }
-                        TileAnimationSteps.scheduleLaydown(tile, startGameTime + HAND_LAYDOWN_START_TICK)
+                        revealedTileAssetsById[tileId]?.let { asset ->
+                            tile.revealForPresentation(asset, endGameTime + PRESENTATION_REVEAL_GRACE_TICKS)
+                        }
+                        TileAnimationSteps.scheduleLaydown(
+                            tile,
+                            startGameTime + HAND_LAYDOWN_START_TICK,
+                            playGroupSound = orderIndex == handTileIds.size / 2,
+                        )
                     }
 
-                    ExhaustiveDrawSettlementHandPresentation.CONCEAL ->
-                        TileAnimationSteps.scheduleConceal(tile, startGameTime + HAND_LAYDOWN_START_TICK)
+                    ExhaustiveDrawSettlementHandPresentation.CONCEAL -> {
+                        TileAnimationSteps.scheduleConceal(
+                            tile,
+                            startGameTime + HAND_LAYDOWN_START_TICK,
+                            playGroupSound = orderIndex == handTileIds.size / 2,
+                        )
+                    }
                 }
             }
         }
@@ -80,6 +106,10 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
 
     private companion object {
         const val HAND_LAYDOWN_START_TICK = 30L
+        const val HAND_REORDER_START_TICK = 5L
         const val STAGE_HEIGHT_OFFSET = 1.4
+
+        /** 讓牌面公開 lease 涵蓋面板到期與下一個 server tick 的清場交接。 */
+        const val PRESENTATION_REVEAL_GRACE_TICKS = 20L
     }
 }

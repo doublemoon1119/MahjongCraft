@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.animation
 
 /**
  * 一次 [AnimationQueueDriver.tick] 呼叫的結果：依序套用的瞬間動作（[appliedInstantSteps]，只含
- * [AnimationStep.Teleport]／[AnimationStep.SetInvisible]／[AnimationStep.Custom]，不含
+ * [AnimationStep.Teleport]／[AnimationStep.SetInvisible]／[AnimationStep.PlaySound]／[AnimationStep.Custom]，不含
  * [AnimationStep.WaitUntil]——純等待沒有任何可套用的動作），以及套用後的佇列／計時進度快照。
  *
  * [startedPlayMotion] 非 `null` 代表這個 tick 有一段 [AnimationStep.PlayMotion] 剛開始播放，呼叫端
@@ -47,9 +47,10 @@ object AnimationQueueDriver {
     }
 
     /**
-     * 依 [currentGameTime] 推進 [queue]：瞬間 step（[AnimationStep.Teleport]／[AnimationStep.SetInvisible]／
-     * [AnimationStep.Custom]）連續處理到下一個計時 step 為止；計時 step（[AnimationStep.WaitUntil]／
-     * [AnimationStep.PlayMotion]）未到期就停在原地，等下一次呼叫再檢查。[AnimationStep.WaitUntil]
+     * 依 [currentGameTime] 推進 [queue]：到期的 [AnimationStep.PlaySound] 不受結構型 step 阻擋，其他瞬間
+     * step（[AnimationStep.Teleport]／[AnimationStep.SetInvisible]／[AnimationStep.Custom]）連續處理到下一個
+     * 計時 step 為止；計時 step（[AnimationStep.WaitUntil]／[AnimationStep.PlayMotion]）未到期就停在原地，
+     * 等下一次呼叫再檢查。[AnimationStep.WaitUntil]
      * 本身就攜帶絕對到期時間，不需要 [activeStepEndGameTime] 追蹤；[activeStepEndGameTime] 只用來記錄
      * [AnimationStep.PlayMotion] 是不是剛開始（讓呼叫端只在啟動當下同步一次 render 用欄位），存的是
      * 絕對 game time，跨存讀檔正確恢復。
@@ -59,9 +60,14 @@ object AnimationQueueDriver {
         activeStepEndGameTime: Long?,
         currentGameTime: Long,
     ): AnimationQueueTickResult<C> {
-        val remaining = ArrayDeque(queue)
+        val dueSounds = queue.filterIsInstance<AnimationStep.PlaySound>()
+            .filter { sound -> currentGameTime >= sound.playAtGameTime }
+        val futureSounds = queue.filterIsInstance<AnimationStep.PlaySound>()
+            .filter { sound -> currentGameTime < sound.playAtGameTime }
+        val remaining = ArrayDeque(queue.filterNot { step -> step is AnimationStep.PlaySound })
         var endGameTime = activeStepEndGameTime
         val appliedInstantSteps = mutableListOf<AnimationStep<C>>()
+        appliedInstantSteps += dueSounds
         var startedPlayMotion: AnimationStep.PlayMotion? = null
         var completedPlayMotion = false
 
@@ -77,6 +83,8 @@ object AnimationQueueDriver {
                     if (currentGameTime < step.gameTime) break
                     remaining.removeFirst()
                 }
+
+                is AnimationStep.PlaySound -> error("Scheduled sound cues must be separated before structural queue processing")
 
                 is AnimationStep.PlayMotion -> {
                     val justStarted = endGameTime == null
@@ -95,7 +103,7 @@ object AnimationQueueDriver {
             appliedInstantSteps = appliedInstantSteps,
             startedPlayMotion = startedPlayMotion,
             completedPlayMotion = completedPlayMotion,
-            remainingQueue = remaining,
+            remainingQueue = futureSounds + remaining,
             activeStepEndGameTime = endGameTime,
         )
     }

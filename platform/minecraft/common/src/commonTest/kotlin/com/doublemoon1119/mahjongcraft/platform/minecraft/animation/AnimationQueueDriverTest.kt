@@ -149,6 +149,36 @@ class AnimationQueueDriverTest {
         assertTrue(result.remainingQueue.isEmpty())
     }
 
+    /** 尚未到達播放時間的聲音不阻擋後方運動 step 啟動。 */
+    @Test
+    fun `test scheduled sound does not block motion`() {
+        val sound = AnimationStep.PlaySound("minecraft:block.note_block.harp", 1.0f, 1.0f, 5L, 7L)
+        val motion = AnimationStep.PlayMotion(4, 0.0, 0.0, 0.0, 0.0, 0.0f, 0.0f)
+
+        val result = AnimationQueueDriver.tick(listOf(sound, motion), null, currentGameTime = 0L)
+
+        assertEquals(motion, result.startedPlayMotion)
+        assertEquals(listOf(sound, motion), result.remainingQueue)
+        assertTrue(result.appliedInstantSteps.isEmpty())
+    }
+
+    /** 到期聲音只套用一次，並且不會中斷仍在播放的運動 step。 */
+    @Test
+    fun `test due sound applies once during active motion`() {
+        val sound = AnimationStep.PlaySound("minecraft:block.note_block.harp", 1.0f, 1.0f, 2L, 4L)
+        val motion = AnimationStep.PlayMotion(4, 0.0, 0.0, 0.0, 0.0, 0.0f, 0.0f)
+        val started = AnimationQueueDriver.tick(listOf(sound, motion), null, currentGameTime = 0L)
+
+        val due = AnimationQueueDriver.tick(started.remainingQueue, started.activeStepEndGameTime, currentGameTime = 2L)
+
+        assertEquals(listOf(sound), due.appliedInstantSteps)
+        assertEquals(listOf(motion), due.remainingQueue)
+        assertNull(due.startedPlayMotion)
+
+        val next = AnimationQueueDriver.tick(due.remainingQueue, due.activeStepEndGameTime, currentGameTime = 3L)
+        assertTrue(next.appliedInstantSteps.isEmpty())
+    }
+
     /**
      * [AnimationStep.WaitUntil] 停在原地直到 `currentGameTime` 到達攜帶的絕對 game time 為止，不需要
      * 額外的 `activeStepEndGameTime` 追蹤——這正是它適合用來讓多個不同 entity 收斂到同一個絕對時刻的

@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker
 import net.minecraft.entity.data.TrackedData
@@ -19,7 +18,7 @@ import kotlin.uuid.toJavaUuid
 abstract class AnimatedVisualEffectEntity(
     type: EntityType<out AnimatedVisualEffectEntity>,
     world: World,
-) : Entity(type, world) {
+) : SimpleAnimatedMahjongEntity(type, world) {
     /** 選擇具體視覺公式的穩定 key。 */
     val effectKey: String
         get() = dataTracker[EFFECT_KEY]
@@ -121,6 +120,7 @@ abstract class AnimatedVisualEffectEntity(
         dataTracker.set(ANIMATION_SEED, nbt.getLong(NBT_KEY_ANIMATION_SEED))
         dataTracker.set(START_GAME_TIME, nbt.getLong(NBT_KEY_START_GAME_TIME))
         dataTracker.set(END_GAME_TIME, nbt.getLong(NBT_KEY_END_GAME_TIME))
+        readAnimationQueueFromNbt(nbt)
     }
 
     /** 將效果描述與絕對時間軸寫入世界存檔；位置與 entity UUID 由原版 entity 序列化負責。 */
@@ -130,6 +130,7 @@ abstract class AnimatedVisualEffectEntity(
         nbt.putLong(NBT_KEY_ANIMATION_SEED, animationSeed)
         nbt.putLong(NBT_KEY_START_GAME_TIME, startGameTime)
         nbt.putLong(NBT_KEY_END_GAME_TIME, endGameTime)
+        writeAnimationQueueToNbt(nbt)
     }
 
     companion object {

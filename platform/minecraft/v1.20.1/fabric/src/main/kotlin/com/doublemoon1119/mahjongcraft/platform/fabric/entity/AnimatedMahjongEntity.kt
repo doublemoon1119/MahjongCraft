@@ -8,8 +8,12 @@ import net.minecraft.nbt.NbtCompound
 import net.minecraft.nbt.NbtElement
 import net.minecraft.nbt.NbtList
 import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket
+import net.minecraft.registry.Registries
 import net.minecraft.server.world.ServerWorld
+import net.minecraft.sound.SoundCategory
+import net.minecraft.util.Identifier
 import net.minecraft.world.World
+import org.slf4j.LoggerFactory
 
 /**
  * 動畫佇列共用的驅動基底：把動畫播放任務（含期間的等待）持久化掛在 entity 自己身上，透過既有的
@@ -86,8 +90,9 @@ abstract class AnimatedMahjongEntity<C>(
     protected abstract fun deserializeCustomStep(nbt: NbtCompound): C
 
     /**
-     * 依序處理佇列最前面的 step：瞬間動作（[AnimationStep.Teleport]／[AnimationStep.SetInvisible]／
-     * [AnimationStep.Custom]）連續處理到下一個計時 step 為止，計時 step（[AnimationStep.WaitUntil]／
+     * 依序處理佇列中的 step：到期的 [AnimationStep.PlaySound] 不受運動或等待阻擋；其他瞬間動作
+     * （[AnimationStep.Teleport]／[AnimationStep.SetInvisible]／[AnimationStep.Custom]）連續處理到下一個計時
+     * step 為止，計時 step（[AnimationStep.WaitUntil]／
      * [AnimationStep.PlayMotion]）未到期就停在原地、等下一個 tick 再檢查——同一個 tick 內可以連續
      * 吃掉好幾個瞬間 step，銜接「隱形＋傳送同一瞬間發生」這類設計。
      *
@@ -117,6 +122,7 @@ abstract class AnimatedMahjongEntity<C>(
                 }
 
                 is AnimationStep.SetInvisible -> isInvisible = step.invisible
+                is AnimationStep.PlaySound -> playAnimationSound(step)
                 is AnimationStep.Custom -> applyCustomStep(step.step)
                 is AnimationStep.WaitUntil, is AnimationStep.PlayMotion ->
                     error("AnimationQueueDriver must never report a WaitUntil/PlayMotion step as an instant step")
@@ -127,6 +133,19 @@ abstract class AnimatedMahjongEntity<C>(
         queue.clear()
         queue.addAll(result.remainingQueue)
         activeStepEndGameTime = result.activeStepEndGameTime
+    }
+
+    /** 播放尚未過期且可由目前 Minecraft registry 解析的動畫聲音。 */
+    private fun playAnimationSound(step: AnimationStep.PlaySound) {
+        if (world.time > step.expiresAtGameTime) return
+        val id = Identifier.tryParse(step.soundId)
+        if (id == null || !Registries.SOUND_EVENT.containsId(id)) {
+            if (unknownSoundIds.add(step.soundId)) {
+                LOGGER.warn("Skipped unknown animation sound ID: {}", step.soundId)
+            }
+            return
+        }
+        world.playSound(null, x, y, z, Registries.SOUND_EVENT.get(id), SoundCategory.PLAYERS, step.volume, step.pitch)
     }
 
     /**
@@ -204,6 +223,15 @@ abstract class AnimatedMahjongEntity<C>(
                 stepNbt.putBoolean(NBT_KEY_INVISIBLE, step.invisible)
             }
 
+            is AnimationStep.PlaySound -> {
+                stepNbt.putString(NBT_KEY_TYPE, TYPE_PLAY_SOUND)
+                stepNbt.putString(NBT_KEY_SOUND_ID, step.soundId)
+                stepNbt.putFloat(NBT_KEY_VOLUME, step.volume)
+                stepNbt.putFloat(NBT_KEY_PITCH, step.pitch)
+                stepNbt.putLong(NBT_KEY_PLAY_AT_GAME_TIME, step.playAtGameTime)
+                stepNbt.putLong(NBT_KEY_EXPIRES_AT_GAME_TIME, step.expiresAtGameTime)
+            }
+
             is AnimationStep.PlayMotion -> {
                 stepNbt.putString(NBT_KEY_TYPE, TYPE_PLAY_MOTION)
                 stepNbt.putInt(NBT_KEY_DURATION_TICKS, step.durationTicks)
@@ -235,6 +263,14 @@ abstract class AnimatedMahjongEntity<C>(
 
         TYPE_SET_INVISIBLE -> AnimationStep.SetInvisible(stepNbt.getBoolean(NBT_KEY_INVISIBLE))
 
+        TYPE_PLAY_SOUND -> AnimationStep.PlaySound(
+            soundId = stepNbt.getString(NBT_KEY_SOUND_ID),
+            volume = stepNbt.getFloat(NBT_KEY_VOLUME),
+            pitch = stepNbt.getFloat(NBT_KEY_PITCH),
+            playAtGameTime = stepNbt.getLong(NBT_KEY_PLAY_AT_GAME_TIME),
+            expiresAtGameTime = stepNbt.getLong(NBT_KEY_EXPIRES_AT_GAME_TIME),
+        )
+
         TYPE_PLAY_MOTION -> AnimationStep.PlayMotion(
             durationTicks = stepNbt.getInt(NBT_KEY_DURATION_TICKS),
             arcHeight = stepNbt.getDouble(NBT_KEY_ARC_HEIGHT),
@@ -262,6 +298,7 @@ abstract class AnimatedMahjongEntity<C>(
         const val TYPE_WAIT_UNTIL = "WaitUntil"
         const val TYPE_TELEPORT = "Teleport"
         const val TYPE_SET_INVISIBLE = "SetInvisible"
+        const val TYPE_PLAY_SOUND = "PlaySound"
         const val TYPE_PLAY_MOTION = "PlayMotion"
         const val TYPE_CUSTOM = "Custom"
 
@@ -271,6 +308,11 @@ abstract class AnimatedMahjongEntity<C>(
         const val NBT_KEY_Z = "Z"
         const val NBT_KEY_YAW = "Yaw"
         const val NBT_KEY_INVISIBLE = "Invisible"
+        const val NBT_KEY_SOUND_ID = "SoundId"
+        const val NBT_KEY_VOLUME = "Volume"
+        const val NBT_KEY_PITCH = "Pitch"
+        const val NBT_KEY_PLAY_AT_GAME_TIME = "PlayAtGameTime"
+        const val NBT_KEY_EXPIRES_AT_GAME_TIME = "ExpiresAtGameTime"
         const val NBT_KEY_DURATION_TICKS = "DurationTicks"
         const val NBT_KEY_ARC_HEIGHT = "ArcHeight"
         const val NBT_KEY_START_OFFSET_X = "StartOffsetX"
@@ -279,5 +321,11 @@ abstract class AnimatedMahjongEntity<C>(
         const val NBT_KEY_START_POSE_ROTATION = "StartPoseRotation"
         const val NBT_KEY_END_POSE_ROTATION = "EndPoseRotation"
         const val NBT_KEY_EASE_ROTATION = "EaseRotation"
+
+        /** 無效聲音 ID 的去重警告集合。 */
+        private val unknownSoundIds = mutableSetOf<String>()
+
+        /** 動畫聲音解析失敗時使用的 logger。 */
+        private val LOGGER = LoggerFactory.getLogger(AnimatedMahjongEntity::class.java)
     }
 }

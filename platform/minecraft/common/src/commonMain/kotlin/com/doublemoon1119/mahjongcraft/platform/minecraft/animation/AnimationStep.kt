@@ -27,6 +27,29 @@ sealed interface AnimationStep<out C> {
     data class SetInvisible(val invisible: Boolean) : AnimationStep<Nothing>
 
     /**
+     * 在 entity 目前的世界座標播放一次聲音。[soundId] 必須是完整 namespaced ID；
+     * [playAtGameTime] 是預定播放的絕對 server game time，[expiresAtGameTime] 是允許播放的最後時間，
+     * 避免 chunk 長時間卸載後補播已過期事件。聲音 cue 不阻塞同一佇列中的運動 step。
+     */
+    data class PlaySound(
+        val soundId: String,
+        val volume: Float,
+        val pitch: Float,
+        val playAtGameTime: Long,
+        val expiresAtGameTime: Long,
+    ) : AnimationStep<Nothing> {
+        init {
+            require(soundId.substringBefore(':', "").isNotBlank() && soundId.substringAfter(':', "").isNotBlank()) {
+                "Animation sound ID must be namespaced: $soundId"
+            }
+            require(volume.isFinite() && volume >= 0.0f) { "Animation sound volume must be finite and non-negative" }
+            require(pitch.isFinite() && pitch > 0.0f) { "Animation sound pitch must be finite and positive" }
+            require(playAtGameTime >= 0L) { "Animation sound time must not be negative" }
+            require(expiresAtGameTime >= playAtGameTime) { "Animation sound expiry must not precede its play time" }
+        }
+    }
+
+    /**
      * 播放一段既有的運動動畫（起飛／落下等視覺位移，對應各平台既有 `startMotionAnimation` 的參數
      * 語意）：真實座標不受影響，只驅動 render 端的位移／姿態內插；[durationTicks] 到期前這個 step
      * 會讓佇列停在原地，不處理後續 step。

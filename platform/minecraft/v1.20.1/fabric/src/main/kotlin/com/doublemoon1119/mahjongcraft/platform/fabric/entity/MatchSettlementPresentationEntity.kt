@@ -1,17 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementRevealOrder
-import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker
 import net.minecraft.entity.data.TrackedData
 import net.minecraft.entity.data.TrackedDataHandlerRegistry
 import net.minecraft.nbt.NbtCompound
-import net.minecraft.registry.Registries
-import net.minecraft.sound.SoundCategory
-import net.minecraft.util.Identifier
 import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
@@ -29,8 +26,7 @@ data class MatchSettlementPlayerSnapshot(
 class MatchSettlementPresentationEntity(
     type: EntityType<out MatchSettlementPresentationEntity> = ModEntities.matchSettlementPresentation,
     world: World,
-) : Entity(type, world) {
-    private var playedSoundMask = 0
+) : SimpleAnimatedMahjongEntity(type, world) {
 
     /** 所屬麻將桌。 */
     val managedTableId: Uuid?
@@ -79,9 +75,20 @@ class MatchSettlementPresentationEntity(
         dataTracker.set(REVEAL_ORDER, template.revealOrder.name)
         dataTracker.set(ROW_REVEAL_INTERVAL, template.rowRevealIntervalTicks)
         dataTracker.set(READING_TICKS, template.readingTicks)
-        dataTracker.set(ROW_SOUND_ID, template.rowSoundId)
-        dataTracker.set(CHAMPION_SOUND_ID, template.championSoundId)
         dataTracker.set(END_GAME_TIME, startGameTime + durationTicks(players.size, template.rowRevealIntervalTicks, template.readingTicks))
+        enqueueAll(
+            revealSequence().mapIndexed { index, player ->
+                val playAtGameTime = startGameTime + rowRevealTick(index, template.rowRevealIntervalTicks)
+                val champion = player.finalRank == 1
+                AnimationStep.PlaySound(
+                    soundId = if (champion) template.championSoundId else template.rowSoundId,
+                    volume = if (champion) 0.28f else 0.1f,
+                    pitch = if (champion) 1.0f else 0.78f + index * 0.08f,
+                    playAtGameTime = playAtGameTime,
+                    expiresAtGameTime = playAtGameTime + EVENT_GRACE_TICKS,
+                )
+            },
+        )
     }
 
     /** 取得含 tick delta 的相對演出時間。 */
@@ -106,34 +113,7 @@ class MatchSettlementPresentationEntity(
             discard()
             return
         }
-        playPendingRevealSounds()
         if (endGameTime > startGameTime && world.time >= endGameTime) discard()
-    }
-
-    /** 在各列揭曉時播放受控聲音，重載越過事件後只標記、不補播。 */
-    private fun playPendingRevealSounds() {
-        revealSequence().forEachIndexed { index, player ->
-            val bit = 1 shl index
-            if (playedSoundMask and bit != 0) return@forEachIndexed
-            val revealTick = rowRevealTick(index, rowRevealIntervalTicks)
-            val elapsed = world.time - startGameTime
-            if (elapsed < revealTick) return@forEachIndexed
-            playedSoundMask = playedSoundMask or bit
-            if (elapsed > revealTick + EVENT_GRACE_TICKS) return@forEachIndexed
-            val champion = player.finalRank == 1
-            val soundId = if (champion) dataTracker[CHAMPION_SOUND_ID] else dataTracker[ROW_SOUND_ID]
-            val sound = runCatching { Registries.SOUND_EVENT.get(Identifier(soundId)) }.getOrNull() ?: return@forEachIndexed
-            world.playSound(
-                null,
-                x,
-                y,
-                z,
-                sound,
-                SoundCategory.PLAYERS,
-                if (champion) 0.28f else 0.1f,
-                if (champion) 1f else 0.78f + index * 0.08f,
-            )
-        }
     }
 
     override fun initDataTracker() {
@@ -145,8 +125,6 @@ class MatchSettlementPresentationEntity(
         dataTracker.startTracking(REVEAL_ORDER, MatchSettlementRevealOrder.LAST_TO_FIRST.name)
         dataTracker.startTracking(ROW_REVEAL_INTERVAL, 12)
         dataTracker.startTracking(READING_TICKS, 100)
-        dataTracker.startTracking(ROW_SOUND_ID, "minecraft:entity.experience_orb.pickup")
-        dataTracker.startTracking(CHAMPION_SOUND_ID, "minecraft:ui.toast.challenge_complete")
     }
 
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
@@ -158,9 +136,7 @@ class MatchSettlementPresentationEntity(
         dataTracker.set(REVEAL_ORDER, nbt.getString(NBT_REVEAL_ORDER))
         dataTracker.set(ROW_REVEAL_INTERVAL, nbt.getInt(NBT_ROW_REVEAL_INTERVAL))
         dataTracker.set(READING_TICKS, nbt.getInt(NBT_READING_TICKS))
-        dataTracker.set(ROW_SOUND_ID, nbt.getString(NBT_ROW_SOUND_ID))
-        dataTracker.set(CHAMPION_SOUND_ID, nbt.getString(NBT_CHAMPION_SOUND_ID))
-        playedSoundMask = nbt.getInt(NBT_PLAYED_SOUND_MASK)
+        readAnimationQueueFromNbt(nbt)
     }
 
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
@@ -172,9 +148,7 @@ class MatchSettlementPresentationEntity(
         nbt.putString(NBT_REVEAL_ORDER, dataTracker[REVEAL_ORDER])
         nbt.putInt(NBT_ROW_REVEAL_INTERVAL, rowRevealIntervalTicks)
         nbt.putInt(NBT_READING_TICKS, readingTicks)
-        nbt.putString(NBT_ROW_SOUND_ID, dataTracker[ROW_SOUND_ID])
-        nbt.putString(NBT_CHAMPION_SOUND_ID, dataTracker[CHAMPION_SOUND_ID])
-        nbt.putInt(NBT_PLAYED_SOUND_MASK, playedSoundMask)
+        writeAnimationQueueToNbt(nbt)
     }
 
     companion object {
@@ -207,9 +181,6 @@ class MatchSettlementPresentationEntity(
         private const val NBT_REVEAL_ORDER = "RevealOrder"
         private const val NBT_ROW_REVEAL_INTERVAL = "RowRevealInterval"
         private const val NBT_READING_TICKS = "ReadingTicks"
-        private const val NBT_ROW_SOUND_ID = "RowSoundId"
-        private const val NBT_CHAMPION_SOUND_ID = "ChampionSoundId"
-        private const val NBT_PLAYED_SOUND_MASK = "PlayedSoundMask"
 
         /** 依玩家數與模板時間計算完整生命週期。 */
         fun durationTicks(playerCount: Int, revealInterval: Int, readingTicks: Int): Long = rowRevealTick((playerCount - 1).coerceAtLeast(0), revealInterval) +
@@ -226,8 +197,6 @@ class MatchSettlementPresentationEntity(
         private val REVEAL_ORDER: TrackedData<String> = DataTracker.registerData(MatchSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
         private val ROW_REVEAL_INTERVAL: TrackedData<Int> = DataTracker.registerData(MatchSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
         private val READING_TICKS: TrackedData<Int> = DataTracker.registerData(MatchSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
-        private val ROW_SOUND_ID: TrackedData<String> = DataTracker.registerData(MatchSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
-        private val CHAMPION_SOUND_ID: TrackedData<String> = DataTracker.registerData(MatchSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
         private fun encodePlayers(players: List<MatchSettlementPlayerSnapshot>): String = players.joinToString(ROW_SEPARATOR.toString()) { player ->
             listOf(player.playerId, player.seatIndex, if (player.isAi) 1 else 0, player.initialSeatIndex, player.finalScore, player.finalRank)

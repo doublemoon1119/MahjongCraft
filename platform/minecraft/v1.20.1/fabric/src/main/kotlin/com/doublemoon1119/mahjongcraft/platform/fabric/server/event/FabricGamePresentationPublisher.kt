@@ -184,6 +184,7 @@ class FabricGamePresentationPublisher(
                     world = resolved.world,
                     tableId = gameId,
                     controllerPos = BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
+                    tableFacing = resolved.facing,
                     placement = MahjongTileTableLayout.showcaseStagePlacement(
                         resolved.location.x,
                         resolved.location.y,
