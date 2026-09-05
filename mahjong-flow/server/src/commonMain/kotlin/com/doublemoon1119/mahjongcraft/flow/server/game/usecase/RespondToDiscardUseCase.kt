@@ -168,6 +168,9 @@ class RespondToDiscardUseCase(
         // 額外判斷——合併呼叫後也順便補上先前缺漏的手牌重新呈現（吃/碰/明槓後手牌張數變少，先前完全
         // 沒有重新呈現手牌列）。
         result.winnerId?.let { winnerId ->
+            result.resolvedAction?.let { resolvedAction ->
+                presentationPublisher.publishGameActionSound(gameId, winnerId, resolvedAction)
+            }
             val winnerSeatIndex = newState.players.indexOfFirst { it.id == winnerId }
             val winner = newState.players[winnerSeatIndex]
             val dealerSeatIndex = newState.dealerIndex
@@ -192,6 +195,9 @@ class RespondToDiscardUseCase(
         // 建構胡牌演出內容並寫進交接槽——一炮多響時 result.ronWinnerIds 可能不只一人，打包成同一筆；
         // winningTileId 對每位贏家來說都是同一張放銃的捨牌。刻意不直接發布，理由同 DeclareTsumoUseCase。
         result.ronWinningTileId?.let { winningTileId ->
+            result.ronWinnerIds.forEach { winnerId ->
+                presentationPublisher.publishGameActionSound(gameId, winnerId, GameAction.Ron(winningTileId))
+            }
             val module = moduleRegistry.getModule(newState.config)
             val presentation = SettledWinPresentation(
                 winnerPlayerIds = result.ronWinnerIds,
@@ -241,6 +247,7 @@ class RespondToDiscardUseCase(
         val rinshanDrawHappened: Boolean = false,
         val discarderId: Uuid? = null,
         val winnerId: Uuid? = null,
+        val resolvedAction: GameAction? = null,
         val ronWinnerIds: Set<Uuid> = emptySet(),
         val ronWinningTileId: Uuid? = null,
         val ronResolutions: Map<Uuid, com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult> = emptyMap(),
@@ -354,6 +361,7 @@ class RespondToDiscardUseCase(
                 ),
                 discarderId = pendingReaction.discarderId,
                 winnerId = winnerId,
+                resolvedAction = winnerAction,
             )
         }
 
@@ -385,6 +393,7 @@ class RespondToDiscardUseCase(
             rinshanDrawHappened = rinshanTile != null,
             discarderId = pendingReaction.discarderId,
             winnerId = winnerId,
+            resolvedAction = winnerAction,
             newlyRevealedDeadWallTileIds = newlyRevealedDeadWallTileIds(
                 state,
                 state.copy(

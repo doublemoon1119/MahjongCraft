@@ -110,6 +110,10 @@ class DeclareTsumoUseCaseTest {
         assertEquals(25000 - 16000, newState.players.first { it.id == south.id }.score)
         assertEquals(25000 - 16000, newState.players.first { it.id == west.id }.score)
         assertEquals(25000 - 16000, newState.players.first { it.id == north.id }.score)
+        assertEquals(
+            listOf(com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.GameActionSoundContext(winnerId, GameAction.Tsumo)),
+            fixtures.presentationPublisher.getPublishedGameActionSounds(gameId),
+        )
     }
 
     /**

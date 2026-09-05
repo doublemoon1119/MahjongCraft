@@ -237,6 +237,7 @@ class DeclareRiichiUseCase(
         // 6. 通知平台呈現層更新桌面局況顯示——立直宣告當下供託支數馬上 +1，若不在這裡也更新一次，
         // 顯示要等到下一次摸牌才會跟著變，體驗不一致。
         presentationPublisher.publishRoundInfoUpdated(gameId, module.getRoundInfoLines(newState))
+        presentationPublisher.publishGameActionSound(gameId, playerId, RIICHI_GAME_ACTION)
 
         return Outcome.Success(Unit)
     }

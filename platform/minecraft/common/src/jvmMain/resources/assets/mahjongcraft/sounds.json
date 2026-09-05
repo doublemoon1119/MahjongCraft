@@ -35,6 +35,30 @@
     "subtitle": "subtitles.mahjongcraft.tile.wall_stack_land",
     "sounds": ["mahjongcraft:tile/wall_stack_land"]
   },
+  "voice.chii": {
+    "subtitle": "subtitles.mahjongcraft.voice.chii",
+    "sounds": ["mahjongcraft:voice/chii"]
+  },
+  "voice.kan": {
+    "subtitle": "subtitles.mahjongcraft.voice.kan",
+    "sounds": ["mahjongcraft:voice/kan"]
+  },
+  "voice.pon": {
+    "subtitle": "subtitles.mahjongcraft.voice.pon",
+    "sounds": ["mahjongcraft:voice/pon"]
+  },
+  "voice.riichi": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi",
+    "sounds": ["mahjongcraft:voice/riichi"]
+  },
+  "voice.ron": {
+    "subtitle": "subtitles.mahjongcraft.voice.ron",
+    "sounds": ["mahjongcraft:voice/ron"]
+  },
+  "voice.tsumo": {
+    "subtitle": "subtitles.mahjongcraft.voice.tsumo",
+    "sounds": ["mahjongcraft:voice/tsumo"]
+  },
   "win.lightning": {
     "subtitle": "subtitles.mahjongcraft.win.lightning",
     "sounds": ["mahjongcraft:win/lightning"]

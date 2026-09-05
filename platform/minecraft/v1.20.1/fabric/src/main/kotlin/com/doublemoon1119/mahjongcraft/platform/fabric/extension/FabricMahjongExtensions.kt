@@ -57,6 +57,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -107,6 +109,8 @@ object FabricMahjongExtensions {
             PublicPlayerIndicatorDisplayRegistryImpl(),
         gameConfigPresentationRegistry: GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(),
         roomMemberAppearanceSourceRegistry: RoomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(),
+        gameActionSoundPresentationRegistry: GameActionSoundPresentationRegistry =
+            GameActionSoundPresentationRegistryImpl(),
         gameActionAiRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
@@ -145,6 +149,7 @@ object FabricMahjongExtensions {
                 publicPlayerIndicatorDisplayRegistry = publicPlayerIndicatorDisplayRegistry,
                 gameConfigPresentationRegistry = gameConfigPresentationRegistry,
                 roomMemberAppearanceSourceRegistry = roomMemberAppearanceSourceRegistry,
+                gameActionSoundPresentationRegistry = gameActionSoundPresentationRegistry,
                 gameActionAiRegistry = gameActionAiRegistry,
                 gameCommandRegistry = gameCommandRegistry,
                 postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
@@ -232,6 +237,8 @@ object FabricMahjongExtensions {
             PublicPlayerIndicatorDisplayRegistryImpl(),
         gameConfigPresentationRegistry: GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(),
         roomMemberAppearanceSourceRegistry: RoomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(),
+        gameActionSoundPresentationRegistry: GameActionSoundPresentationRegistry =
+            GameActionSoundPresentationRegistryImpl(),
         gameActionAiRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
@@ -310,6 +317,7 @@ object FabricMahjongExtensions {
             publicPlayerIndicatorDisplayRegistry = publicPlayerIndicatorDisplayRegistry,
             gameConfigPresentationRegistry = gameConfigPresentationRegistry,
             roomMemberAppearanceSourceRegistry = roomMemberAppearanceSourceRegistry,
+            gameActionSoundPresentationRegistry = gameActionSoundPresentationRegistry,
         )
     }
 

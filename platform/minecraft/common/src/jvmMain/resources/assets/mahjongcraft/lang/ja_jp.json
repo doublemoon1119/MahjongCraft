@@ -401,5 +401,11 @@
   "subtitles.mahjongcraft.tile.hand_turn": "手牌を倒す",
   "subtitles.mahjongcraft.tile.meld_land": "副露牌を置く",
   "subtitles.mahjongcraft.tile.wall_stack_land": "牌山を積む",
+  "subtitles.mahjongcraft.voice.chii": "チーを宣言",
+  "subtitles.mahjongcraft.voice.kan": "カンを宣言",
+  "subtitles.mahjongcraft.voice.pon": "ポンを宣言",
+  "subtitles.mahjongcraft.voice.riichi": "リーチを宣言",
+  "subtitles.mahjongcraft.voice.ron": "ロンを宣言",
+  "subtitles.mahjongcraft.voice.tsumo": "ツモを宣言",
   "subtitles.mahjongcraft.win.lightning": "雷が落ちる"
 }

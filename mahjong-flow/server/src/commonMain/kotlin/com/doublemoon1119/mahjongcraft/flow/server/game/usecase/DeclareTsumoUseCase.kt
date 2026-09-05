@@ -171,6 +171,7 @@ class DeclareTsumoUseCase(
             winPresentationHandoff.stage(gameId, presentation)
         }
 
+        presentationPublisher.publishGameActionSound(gameId, playerId, GameAction.Tsumo)
         return Outcome.Success(Unit)
     }
 

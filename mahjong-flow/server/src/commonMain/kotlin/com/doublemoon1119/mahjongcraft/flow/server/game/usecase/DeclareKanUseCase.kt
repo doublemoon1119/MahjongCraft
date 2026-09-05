@@ -261,6 +261,7 @@ class DeclareKanUseCase(
             }
         }
 
+        presentationPublisher.publishGameActionSound(gameId, playerId, result.kanAction)
         return Outcome.Success(Unit)
     }
 

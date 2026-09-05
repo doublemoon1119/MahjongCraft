@@ -184,6 +184,9 @@ class RespondToKanUseCase(
         // 建構胡牌演出內容並寫進交接槽——搶槓成功時 result.ronWinnerIds 可能不只一人，打包成同一筆；
         // winningTileId 對每位贏家來說都是同一張被搶的加槓/暗槓牌。刻意不直接發布，理由同 DeclareTsumoUseCase。
         result.ronWinningTileId?.let { winningTileId ->
+            result.ronWinnerIds.forEach { winnerId ->
+                presentationPublisher.publishGameActionSound(gameId, winnerId, GameAction.Ron(winningTileId))
+            }
             val module = moduleRegistry.getModule(newState.config)
             val presentation = SettledWinPresentation(
                 winnerPlayerIds = result.ronWinnerIds,

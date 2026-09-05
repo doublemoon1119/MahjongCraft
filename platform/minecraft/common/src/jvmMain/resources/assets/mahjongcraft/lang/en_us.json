@@ -401,5 +401,11 @@
   "subtitles.mahjongcraft.tile.hand_turn": "Tiles turn",
   "subtitles.mahjongcraft.tile.meld_land": "Meld placed",
   "subtitles.mahjongcraft.tile.wall_stack_land": "Tile wall built",
+  "subtitles.mahjongcraft.voice.chii": "Chii declared",
+  "subtitles.mahjongcraft.voice.kan": "Kan declared",
+  "subtitles.mahjongcraft.voice.pon": "Pon declared",
+  "subtitles.mahjongcraft.voice.riichi": "Riichi declared",
+  "subtitles.mahjongcraft.voice.ron": "Ron declared",
+  "subtitles.mahjongcraft.voice.tsumo": "Tsumo declared",
   "subtitles.mahjongcraft.win.lightning": "Lightning strikes"
 }

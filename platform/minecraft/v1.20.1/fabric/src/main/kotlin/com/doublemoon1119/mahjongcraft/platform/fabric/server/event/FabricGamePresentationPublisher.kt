@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationR
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
@@ -20,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongSoundTimelineEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
@@ -45,6 +47,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongRiichiStickPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongRiichiStickPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentation
@@ -132,6 +135,7 @@ class FabricGamePresentationPublisher(
     private val matchSettlementScheduler: FabricMatchSettlementPresentationScheduler,
     private val tableOverlayCoordinator: PersistentTableOverlayCoordinator,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
+    private val gameActionSoundPresentationRegistry: GameActionSoundPresentationRegistry,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
 ) : GamePresentationPublisher {
@@ -149,6 +153,32 @@ class FabricGamePresentationPublisher(
      * （例如規則沒有牌牆）時預設視為 `0`，不強制要求呼叫順序。
      */
     private val wallDropTicksByTable = ConcurrentHashMap<Uuid, Int>()
+
+    override fun publishGameActionSound(gameId: Uuid, actorId: Uuid, action: GameAction) {
+        publish(gameId, "publishGameActionSound", blocksTable = false) { resolved, state, _ ->
+            val actorSeatIndex = state.players.indexOfFirst { player -> player.id == actorId }
+            if (actorSeatIndex < 0) return@publish null
+            val ruleModuleId = moduleRegistry.getModule(state.config).id
+            val sound = gameActionSoundPresentationRegistry.find(ruleModuleId, action) ?: return@publish null
+            val placement = MahjongTileTableLayout.handPlacement(
+                controllerX = resolved.location.x,
+                controllerY = resolved.location.y,
+                controllerZ = resolved.location.z,
+                tableFacing = resolved.facing,
+                seatIndex = actorSeatIndex,
+                handSize = 1,
+                tileIndex = 0,
+            )
+            val entity = MahjongSoundTimelineEntity(world = resolved.world).apply {
+                refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+                configure(sound.soundId, sound.volume, sound.pitch, resolved.world.time)
+            }
+            if (!resolved.world.spawnEntity(entity)) {
+                logger.warn("publishGameActionSound gameId={} actorId={} failed to spawn sound timeline", gameId, actorId)
+            }
+            null
+        }
+    }
 
     override fun publishExhaustiveDrawSettlement(gameId: Uuid, request: ExhaustiveDrawSettlementPresentationRequest) {
         logger.debug(

@@ -401,5 +401,11 @@
   "subtitles.mahjongcraft.tile.hand_turn": "手牌翻動",
   "subtitles.mahjongcraft.tile.meld_land": "副露落桌",
   "subtitles.mahjongcraft.tile.wall_stack_land": "牌牆落桌",
+  "subtitles.mahjongcraft.voice.chii": "宣告吃牌",
+  "subtitles.mahjongcraft.voice.kan": "宣告槓牌",
+  "subtitles.mahjongcraft.voice.pon": "宣告碰牌",
+  "subtitles.mahjongcraft.voice.riichi": "宣告立直",
+  "subtitles.mahjongcraft.voice.ron": "宣告榮和",
+  "subtitles.mahjongcraft.voice.tsumo": "宣告自摸",
   "subtitles.mahjongcraft.win.lightning": "閃電擊落"
 }

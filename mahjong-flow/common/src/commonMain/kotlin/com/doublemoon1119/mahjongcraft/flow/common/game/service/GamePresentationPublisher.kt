@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSett
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -65,6 +66,9 @@ fun Meld.toPresentation(revealsClosedKanTiles: Boolean): MeldPresentation = Meld
  * 受影響。
  */
 interface GamePresentationPublisher {
+    /** 在權威遊戲動作成立後，從執行者座位播放規則所定義的宣告語音。 */
+    fun publishGameActionSound(gameId: Uuid, actorId: Uuid, action: GameAction) = Unit
+
     /**
      * 通知平台呈現層建立統一流局結算展示。
      *

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongAnimationSounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionVoiceSoundIds
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -61,6 +62,12 @@ class ModSoundResourceTest {
         MahjongAnimationSounds.TILE_HAND_TURN to "mahjongcraft:tile/hand_turn",
         MahjongAnimationSounds.TILE_MELD_LAND to "mahjongcraft:tile/meld_land",
         MahjongAnimationSounds.WALL_STACK_LAND to "mahjongcraft:tile/wall_stack_land",
+        BuiltInGameActionVoiceSoundIds.CHII to "mahjongcraft:voice/chii",
+        BuiltInGameActionVoiceSoundIds.KAN to "mahjongcraft:voice/kan",
+        BuiltInGameActionVoiceSoundIds.PON to "mahjongcraft:voice/pon",
+        BuiltInGameActionVoiceSoundIds.RIICHI to "mahjongcraft:voice/riichi",
+        BuiltInGameActionVoiceSoundIds.RON to "mahjongcraft:voice/ron",
+        BuiltInGameActionVoiceSoundIds.TSUMO to "mahjongcraft:voice/tsumo",
         MahjongAnimationSounds.WIN_LIGHTNING to "mahjongcraft:win/lightning",
     )
 

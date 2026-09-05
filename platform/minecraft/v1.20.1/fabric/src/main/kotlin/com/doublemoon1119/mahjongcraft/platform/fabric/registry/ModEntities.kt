@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongLobbyInfoEn
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongSoundTimelineEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffectEntity
@@ -23,6 +24,10 @@ import net.minecraft.util.Identifier
 
 /** MahjongCraft Fabric entity type 的集中註冊點。 */
 object ModEntities {
+    /** 無形且可持久化的單次聲音時間線 entity type；由 [register] 初始化。 */
+    lateinit var mahjongSoundTimeline: EntityType<MahjongSoundTimelineEntity>
+        private set
+
     /** 麻將骰子 entity type；由 [register] 初始化。 */
     lateinit var mahjongDice: EntityType<MahjongDiceEntity>
         private set
@@ -73,6 +78,16 @@ object ModEntities {
 
     /** 註冊不自然生成的輕量麻將牌 entity。 */
     fun register() {
+        mahjongSoundTimeline = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_sound_timeline"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongSoundTimelineEntity)
+                .dimensions(EntityDimensions.fixed(MahjongSoundTimelineEntity.SIZE, MahjongSoundTimelineEntity.SIZE))
+                .trackRangeBlocks(32)
+                .trackedUpdateRate(1)
+                .fireImmune()
+                .build(),
+        )
         mahjongDice = Registry.register(
             Registries.ENTITY_TYPE,
             Identifier(MinecraftModMetadata.MOD_ID, "mahjong_dice"),

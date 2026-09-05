@@ -36,6 +36,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebratio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.registerBuiltInWinCelebrationShowcases
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.registerBuiltInRiichiActionSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -86,6 +89,8 @@ object MinecraftMahjongExtensionRegistrar {
             PublicPlayerIndicatorDisplayRegistryImpl(),
         gameConfigPresentationRegistry: GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(),
         roomMemberAppearanceSourceRegistry: RoomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(),
+        gameActionSoundPresentationRegistry: GameActionSoundPresentationRegistry =
+            GameActionSoundPresentationRegistryImpl(),
     ): MinecraftMahjongExtensionRegistrationResult {
         tileAssetRegistry.registerBuiltInTileAssets()
         aiStrategyDisplayNameRegistry.registerBuiltInAiStrategyDisplayNames()
@@ -102,6 +107,7 @@ object MinecraftMahjongExtensionRegistrar {
             PublicPlayerIndicatorDisplay(MinecraftMessageKeys.PLAYER_INDICATOR_RIICHI),
         )
         gameConfigPresentationRegistry.registerBuiltInGameConfigPresentations()
+        gameActionSoundPresentationRegistry.registerBuiltInRiichiActionSounds()
 
         val thirdPartyAssetKeys = mutableListOf<String>()
         val thirdPartyAiStrategyKeys = mutableListOf<String>()
@@ -144,6 +150,7 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerTileLabels(recordingTileLabelRegistry)
                 extension.registerWinCelebrationShowcases(recordingShowcaseRegistry)
                 extension.registerGameActionDisplayNames(recordingGameActionDisplayNameRegistry)
+                extension.registerGameActionSounds(gameActionSoundPresentationRegistry)
                 extension.registerExhaustiveDrawReasonDisplayNames(exhaustiveDrawReasonDisplayNameRegistry)
                 extension.registerRoundPreparationDisplayNames(roundPreparationDisplayNameRegistry)
                 extension.registerWinSettlementPresentationTemplates(winSettlementTemplateRegistry)
@@ -173,6 +180,7 @@ object MinecraftMahjongExtensionRegistrar {
         publicPlayerIndicatorDisplayRegistry.freeze()
         gameConfigPresentationRegistry.freeze()
         roomMemberAppearanceSourceRegistry.freeze()
+        gameActionSoundPresentationRegistry.freeze()
         return MinecraftMahjongExtensionRegistrationResult(
             thirdPartyAssetKeys,
             thirdPartyAiStrategyKeys,

@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPrese
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
@@ -19,6 +20,13 @@ import kotlin.uuid.Uuid
  * 正確觸發呈現。
  */
 class FakeGamePresentationPublisher : GamePresentationPublisher {
+    /** 依對局 Uuid 紀錄所有已成立的動作語音請求。 */
+    private val gameActionSounds = mutableMapOf<Uuid, MutableList<GameActionSoundContext>>()
+
+    override fun publishGameActionSound(gameId: Uuid, actorId: Uuid, action: GameAction) {
+        gameActionSounds.getOrPut(gameId, ::mutableListOf).add(GameActionSoundContext(actorId, action))
+    }
+
     /** 依對局 Uuid 紀錄最後一次終局結算呈現。 */
     private val matchSettlements = mutableMapOf<Uuid, MatchSettlementPresentationRequest>()
 
@@ -187,6 +195,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 取得指定對局最後一次收到的擲骰結果；若無紀錄則回傳 null。 */
     fun getPublishedDiceRoll(gameId: Uuid): DiceRollResult? = diceRolls[gameId]
 
+    /** 取得指定對局依序收到的已成立動作語音請求。 */
+    fun getPublishedGameActionSounds(gameId: Uuid): List<GameActionSoundContext> = gameActionSounds[gameId].orEmpty()
+
     /** 取得指定對局最後一次收到的擲骰隨附桌況資料；若無紀錄則回傳 null。 */
     fun getPublishedDiceRollContext(gameId: Uuid): DiceRollContext? = diceRollContexts[gameId]
 
@@ -241,6 +252,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 取得指定對局最後一次終局結算呈現。 */
     fun getPublishedMatchSettlement(gameId: Uuid): MatchSettlementPresentationRequest? = matchSettlements[gameId]
 }
+
+/** 單筆已成立動作語音請求。 */
+data class GameActionSoundContext(val actorId: Uuid, val action: GameAction)
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishDiceRoll] 隨附桌況資料。 */
 data class DiceRollContext(

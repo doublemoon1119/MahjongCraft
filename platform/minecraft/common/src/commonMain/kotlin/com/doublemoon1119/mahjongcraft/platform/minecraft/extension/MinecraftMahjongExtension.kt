@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveD
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -50,6 +51,9 @@ interface MinecraftMahjongExtension {
 
     /** 登記規則擴充動作在 Minecraft 中使用的本地化顯示名稱。 */
     fun registerGameActionDisplayNames(registry: GameActionDisplayNameRegistry) = Unit
+
+    /** 登記規則動作成立後在 Minecraft 世界中播放的宣告式語音。 */
+    fun registerGameActionSounds(registry: GameActionSoundPresentationRegistry) = Unit
 
     /** 登記第三方流局原因在 Minecraft 中使用的本地化顯示名稱。 */
     fun registerExhaustiveDrawReasonDisplayNames(registry: ExhaustiveDrawReasonDisplayNameRegistry) = Unit
