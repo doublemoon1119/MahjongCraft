@@ -116,7 +116,6 @@ class MahjongDiceEntity(
         startDelayTicks: Int,
         startOffset: DiceAnimationVector,
         sharedViewingEndGameTime: Long? = null,
-        playThrowSound: Boolean = false,
     ) {
         check(!world.isClient) { "Dice rolls must be started by the server" }
         point = finalPoint
@@ -129,29 +128,20 @@ class MahjongDiceEntity(
         val viewingEndGameTime = sharedViewingEndGameTime?.also { sharedEnd ->
             require(sharedEnd >= naturalViewingEndGameTime) { "Shared dice viewing end must not shorten the presentation" }
         } ?: naturalViewingEndGameTime
-        val firstLandingGameTime = rollStartGameTime + FIRST_LANDING_TICK
         enqueueAll(
             buildList {
-                if (playThrowSound) {
+                DiceRollAnimationSpec().landingSoundCues(seed).forEach { cue ->
+                    val playAtGameTime = rollStartGameTime + cue.tickOffset
                     add(
                         AnimationStep.PlaySound(
-                            soundId = MahjongAnimationSounds.DICE_THROW,
-                            volume = 0.7f,
-                            pitch = 1.0f,
-                            playAtGameTime = rollStartGameTime,
-                            expiresAtGameTime = rollStartGameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
+                            soundId = MahjongAnimationSounds.DICE_LAND,
+                            volume = cue.volume,
+                            pitch = cue.pitch,
+                            playAtGameTime = playAtGameTime,
+                            expiresAtGameTime = playAtGameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
                         ),
                     )
                 }
-                add(
-                    AnimationStep.PlaySound(
-                        soundId = MahjongAnimationSounds.DICE_LAND,
-                        volume = 0.9f,
-                        pitch = 0.95f,
-                        playAtGameTime = firstLandingGameTime,
-                        expiresAtGameTime = firstLandingGameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
-                    ),
-                )
                 addAll(
                     listOf(
                         AnimationStep.SetInvisible(true),
@@ -291,9 +281,6 @@ class MahjongDiceEntity(
 
         /** 投擲動畫起點 Z 偏移世界存檔 key。 */
         private const val NBT_KEY_ANIMATION_START_OFFSET_Z = "AnimationStartOffsetZ"
-
-        /** 拋物線第一次抵達落點的 server tick。 */
-        private const val FIRST_LANDING_TICK = 17L
 
         /** 同步目前朝上的點數值。 */
         private val POINT: TrackedData<Int> =

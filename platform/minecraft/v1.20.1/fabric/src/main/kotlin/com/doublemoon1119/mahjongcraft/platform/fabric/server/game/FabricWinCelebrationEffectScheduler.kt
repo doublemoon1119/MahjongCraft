@@ -57,8 +57,8 @@ class FabricWinCelebrationEffectScheduler {
             )
             enqueue(
                 AnimationStep.PlaySound(
-                    soundId = MahjongAnimationSounds.WIN_LIGHTNING_THUNDER,
-                    volume = 0.4f,
+                    soundId = MahjongAnimationSounds.WIN_LIGHTNING,
+                    volume = 0.9f,
                     pitch = 1.0f,
                     playAtGameTime = startGameTime,
                     expiresAtGameTime = startGameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,

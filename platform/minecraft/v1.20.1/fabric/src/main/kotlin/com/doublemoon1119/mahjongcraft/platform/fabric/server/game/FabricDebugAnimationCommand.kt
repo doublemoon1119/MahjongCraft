@@ -1351,7 +1351,7 @@ class FabricDebugAnimationCommand(
                 )
             }.also(world::spawnEntity)
         }
-        dice.zip(placements).zip(points).forEachIndexed { index, (entityAndPlacement, point) ->
+        dice.zip(placements).zip(points).forEach { (entityAndPlacement, point) ->
             val (entity, placement) = entityAndPlacement
             entity.startRoll(
                 finalPoint = point,
@@ -1359,7 +1359,6 @@ class FabricDebugAnimationCommand(
                 startDelayTicks = placement.startDelayTicks,
                 startOffset = placement.startOffset,
                 sharedViewingEndGameTime = endGameTime,
-                playThrowSound = index == 0,
             )
         }
         val stage = DiceRollPresentationEntity(world = world).apply {

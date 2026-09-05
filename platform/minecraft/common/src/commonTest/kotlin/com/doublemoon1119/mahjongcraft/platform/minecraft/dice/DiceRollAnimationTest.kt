@@ -102,6 +102,27 @@ class DiceRollAnimationTest {
         assertNotEquals(first.rotation, second.rotation)
     }
 
+    /** 驗證預設動畫在三次桌面接觸後依序降低音量。 */
+    @Test
+    fun `landing sound cues follow visual contacts with decreasing volume`() {
+        val cues = DiceRollAnimationSpec().landingSoundCues(seed = 42L)
+
+        assertEquals(listOf(17, 24, 28), cues.map(DiceLandingSoundCue::tickOffset))
+        assertEquals(listOf(1.0f, 0.55f, 0.30f), cues.map(DiceLandingSoundCue::volume))
+        assertTrue(cues.all { cue -> cue.pitch in 0.97f..1.03f })
+    }
+
+    /** 驗證相同 seed 可重建相同音高，而不同 seed 會產生不同提示。 */
+    @Test
+    fun `landing sound cue pitches are deterministic per seed`() {
+        val first = DiceRollAnimationSpec().landingSoundCues(seed = 123L)
+        val repeated = DiceRollAnimationSpec().landingSoundCues(seed = 123L)
+        val different = DiceRollAnimationSpec().landingSoundCues(seed = 456L)
+
+        assertEquals(first, repeated)
+        assertNotEquals(first.map(DiceLandingSoundCue::pitch), different.map(DiceLandingSoundCue::pitch))
+    }
+
     /** 驗證收斂階段在結束前已停止彈跳並逐步接近 identity。 */
     @Test
     fun `settling phase stops movement before rotation completes`() {

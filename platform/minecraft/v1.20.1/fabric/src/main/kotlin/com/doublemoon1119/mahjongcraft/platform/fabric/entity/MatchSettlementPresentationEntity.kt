@@ -82,7 +82,7 @@ class MatchSettlementPresentationEntity(
                 val champion = player.finalRank == 1
                 AnimationStep.PlaySound(
                     soundId = if (champion) template.championSoundId else template.rowSoundId,
-                    volume = if (champion) 0.28f else 0.1f,
+                    volume = if (champion) 0.24f else 0.1f,
                     pitch = if (champion) 1.0f else 0.78f + index * 0.08f,
                     playAtGameTime = playAtGameTime,
                     expiresAtGameTime = playAtGameTime + EVENT_GRACE_TICKS,

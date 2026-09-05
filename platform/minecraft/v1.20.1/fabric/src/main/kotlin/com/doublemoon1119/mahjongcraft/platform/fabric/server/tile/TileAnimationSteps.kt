@@ -89,7 +89,7 @@ internal object TileAnimationSteps {
                     ),
                 )
                 add(AnimationStep.WaitUntil(flipAbsoluteGameTime))
-                if (playFlipSound) add(tilePutDownSound(flipAbsoluteGameTime))
+                if (playFlipSound) add(handTurnSound(flipAbsoluteGameTime))
                 addAll(
                     listOf(
                         AnimationStep.Custom(MahjongTilePose.STANDING),
@@ -183,7 +183,7 @@ internal object TileAnimationSteps {
                     startPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
                     endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
                 ),
-                tilePutDownSound(tile.world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS),
+                discardLandingSound(tile.world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS),
             ),
         )
     }
@@ -219,7 +219,7 @@ internal object TileAnimationSteps {
             endPoseRotationDegrees = endPose.rotationDegrees,
         )
         if (playLandingSound) {
-            steps += tilePutDownSound(tile.world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS)
+            steps += meldLandingSound(tile.world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS)
         }
         tile.enqueueAll(steps)
     }
@@ -271,7 +271,7 @@ internal object TileAnimationSteps {
         tile.enqueueAll(
             buildList {
                 if (playGroupSound) {
-                    add(tilePutDownSound(startGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS))
+                    add(handTurnSound(startGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS))
                 }
                 addAll(
                     listOf(
@@ -301,7 +301,7 @@ internal object TileAnimationSteps {
         tile.enqueueAll(
             buildList {
                 if (playGroupSound) {
-                    add(tilePutDownSound(startGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS))
+                    add(handTurnSound(startGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS))
                 }
                 addAll(
                     listOf(
@@ -332,10 +332,28 @@ internal object TileAnimationSteps {
      */
     private const val DEAL_VIEWING_BUFFER_TICKS: Int = 25
 
-    /** 建立只在預定時刻附近有效的落桌聲音 step。 */
-    private fun tilePutDownSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
-        soundId = MahjongAnimationSounds.TILE_PUT_DOWN,
-        volume = 0.8f,
+    /** 建立只在預定時刻附近有效的捨牌落桌聲音 step。 */
+    private fun discardLandingSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
+        soundId = MahjongAnimationSounds.TILE_DISCARD_LAND,
+        volume = 1.05f,
+        pitch = 1.0f,
+        playAtGameTime = gameTime,
+        expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
+    )
+
+    /** 建立只在預定時刻附近有效的副露落桌聲音 step。 */
+    private fun meldLandingSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
+        soundId = MahjongAnimationSounds.TILE_MELD_LAND,
+        volume = 1.1f,
+        pitch = 1.0f,
+        playAtGameTime = gameTime,
+        expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
+    )
+
+    /** 建立只在預定時刻附近有效的整組手牌翻轉聲音 step。 */
+    private fun handTurnSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
+        soundId = MahjongAnimationSounds.TILE_HAND_TURN,
+        volume = 1.2f,
         pitch = 1.0f,
         playAtGameTime = gameTime,
         expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
@@ -344,7 +362,7 @@ internal object TileAnimationSteps {
     /** 建立只在預定時刻附近有效的開局發牌批次聲音 step。 */
     private fun dealBatchSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
         soundId = MahjongAnimationSounds.DEAL_BATCH,
-        volume = 0.3f,
+        volume = 0.5f,
         pitch = 1.15f,
         playAtGameTime = gameTime,
         expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
@@ -353,7 +371,7 @@ internal object TileAnimationSteps {
     /** 建立只在摸牌抵達右側摸牌位時播放的低音量聲音 step。 */
     private fun drawnTileLandingSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
         soundId = MahjongAnimationSounds.DRAW_TILE_LAND,
-        volume = 0.25f,
+        volume = 0.35f,
         pitch = 1.1f,
         playAtGameTime = gameTime,
         expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,

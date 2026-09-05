@@ -1,7 +1,21 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.dice
 
 import kotlin.math.PI
+import kotlin.math.ceil
 import kotlin.math.sin
+
+/**
+ * 單顆骰子接觸桌面時需要播放的聲音提示。
+ *
+ * @property tickOffset 相對骰子動畫開始時間的 server tick。
+ * @property volume 此次接觸相對音量。
+ * @property pitch 由動畫 seed 確定性產生的輕微音高差異。
+ */
+data class DiceLandingSoundCue(
+    val tickOffset: Int,
+    val volume: Float,
+    val pitch: Float,
+)
 
 /** 一次骰子翻滾動畫的可調整參數。 */
 data class DiceRollAnimationSpec(
@@ -29,6 +43,20 @@ data class DiceRollAnimationSpec(
         }
     }
 
+    /**
+     * 依動畫階段與 [seed] 建立三次桌面接觸的權威聲音提示；使用向上取整確保聲音不會早於畫面接觸。
+     */
+    fun landingSoundCues(seed: Long): List<DiceLandingSoundCue> {
+        val random = DeterministicDiceRandom(seed xor SOUND_PITCH_SEED)
+        return LANDING_PROGRESS.zip(LANDING_VOLUMES).map { (progress, volume) ->
+            DiceLandingSoundCue(
+                tickOffset = ceil(durationTicks * progress).toInt(),
+                volume = volume,
+                pitch = (MIN_LANDING_PITCH + random.nextDouble() * LANDING_PITCH_VARIATION).toFloat(),
+            )
+        }
+    }
+
     companion object {
         /** 預設動畫總長度，約為正常 TPS 下的 1.5 秒。 */
         const val DEFAULT_DURATION_TICKS = 30
@@ -38,6 +66,21 @@ data class DiceRollAnimationSpec(
          * 消失時間、結果 presentation 與後續發牌延遲共用，避免三條時間線各自維護不同常數。
          */
         const val EXTRA_VIEWING_TICKS = 40
+
+        /** 三次桌面接觸在完整動畫中的標準化時間。 */
+        private val LANDING_PROGRESS: List<Double> = listOf(0.55, 0.78, 0.93)
+
+        /** 三次桌面接觸依序遞減的播放音量。 */
+        private val LANDING_VOLUMES: List<Float> = listOf(1.0f, 0.55f, 0.30f)
+
+        /** 骰子桌面接觸的最低音高。 */
+        private const val MIN_LANDING_PITCH: Double = 0.97
+
+        /** 骰子桌面接觸可由 seed 改變的音高範圍。 */
+        private const val LANDING_PITCH_VARIATION: Double = 0.06
+
+        /** 將聲音音高亂數與動畫路徑亂數分離的固定 salt。 */
+        private const val SOUND_PITCH_SEED: Long = 0x534F554E44435545L
     }
 }
 

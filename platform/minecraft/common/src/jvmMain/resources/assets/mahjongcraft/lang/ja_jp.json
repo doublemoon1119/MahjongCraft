@@ -391,5 +391,15 @@
   "mahjongcraft.showcase.suuankou": "四暗刻",
   "mahjongcraft.showcase.suuankou_tanki": "四暗刻単騎",
   "mahjongcraft.showcase.tenhou": "天和",
-  "mahjongcraft.showcase.tsuuiisou": "字一色"
+  "mahjongcraft.showcase.tsuuiisou": "字一色",
+  "subtitles.mahjongcraft.dice.land": "サイコロが卓上に落ちる",
+  "subtitles.mahjongcraft.scoring_stick.place": "点棒を置く",
+  "subtitles.mahjongcraft.tile.deal_batch": "牌を配る",
+  "subtitles.mahjongcraft.tile.discard_land": "牌を捨てる",
+  "subtitles.mahjongcraft.tile.dora_reveal": "ドラ表示牌がめくられる",
+  "subtitles.mahjongcraft.tile.draw_land": "牌をツモる",
+  "subtitles.mahjongcraft.tile.hand_turn": "手牌を倒す",
+  "subtitles.mahjongcraft.tile.meld_land": "副露牌を置く",
+  "subtitles.mahjongcraft.tile.wall_stack_land": "牌山を積む",
+  "subtitles.mahjongcraft.win.lightning": "雷が落ちる"
 }

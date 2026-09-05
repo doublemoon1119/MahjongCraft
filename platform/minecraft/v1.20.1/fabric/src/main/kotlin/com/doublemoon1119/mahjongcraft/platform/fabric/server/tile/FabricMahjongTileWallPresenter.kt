@@ -138,6 +138,7 @@ class FabricMahjongTileWallPresenter(
         } else {
             null
         }
+        var revealSoundScheduled = false
         tilesWithPosition.forEach { (position, tile) ->
             val startDelayTicks = MahjongTileTableLayout.wallDropStartDelayTicks(position.stack)
             val steps = mutableListOf<AnimationStep<MahjongTilePose>>(
@@ -173,7 +174,15 @@ class FabricMahjongTileWallPresenter(
                 steps += AnimationStep.WaitUntil(revealAbsoluteGameTime)
                 steps += AnimationStep.Teleport(openPlacement.x, openPlacement.y, openPlacement.z, openPlacement.yaw)
                 if (tileId in presentation.revealedTileIds) {
-                    steps += revealFlipAnimationSteps(openPlacement.x, openPlacement.y, openPlacement.z, openPlacement.yaw)
+                    val soundGameTime = if (revealSoundScheduled) null else revealAbsoluteGameTime + REVEAL_LIFT_DURATION_TICKS
+                    steps += revealFlipAnimationSteps(
+                        openPlacement.x,
+                        openPlacement.y,
+                        openPlacement.z,
+                        openPlacement.yaw,
+                        soundGameTime,
+                    )
+                    revealSoundScheduled = true
                 }
             }
             tile.enqueueAll(steps)
@@ -183,8 +192,17 @@ class FabricMahjongTileWallPresenter(
     /** 建立一墩牌牆落桌時的小音量聲音 step；同墩只由上層牌播放一次。 */
     private fun wallStackLandingSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
         soundId = MahjongAnimationSounds.WALL_STACK_LAND,
-        volume = 0.18f,
+        volume = 0.3f,
         pitch = 0.9f,
+        playAtGameTime = gameTime,
+        expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
+    )
+
+    /** 建立只在寶牌指示牌正式開始翻面時有效的提示聲音 step。 */
+    private fun doraRevealSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
+        soundId = MahjongAnimationSounds.DORA_REVEAL,
+        volume = 0.7f,
+        pitch = 1.0f,
         playAtGameTime = gameTime,
         expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
     )
@@ -203,41 +221,54 @@ class FabricMahjongTileWallPresenter(
      * 翻面本身也有先快後慢的自然感，不是等速旋轉。這是刻意只在這個呼叫點加上的行為，不影響開局發牌
      * 翻牌／摸牌換面等其他既有呼叫點的線性旋轉手感，見 [AnimationStep.PlayMotion.easeRotation] KDoc。
      */
-    private fun revealFlipAnimationSteps(x: Double, y: Double, z: Double, yaw: Float): List<AnimationStep<MahjongTilePose>> {
+    private fun revealFlipAnimationSteps(
+        x: Double,
+        y: Double,
+        z: Double,
+        yaw: Float,
+        soundGameTime: Long?,
+    ): List<AnimationStep<MahjongTilePose>> {
         val peakY = y + REVEAL_LIFT_HEIGHT
-        return listOf(
-            AnimationStep.Teleport(x, peakY, z, yaw),
-            AnimationStep.PlayMotion(
-                durationTicks = REVEAL_LIFT_DURATION_TICKS,
-                arcHeight = 0.0,
-                startOffsetX = 0.0,
-                startOffsetY = y - peakY,
-                startOffsetZ = 0.0,
-                startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-                endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-            ),
-            AnimationStep.Custom(MahjongTilePose.FACE_UP),
-            AnimationStep.PlayMotion(
-                durationTicks = REVEAL_FLIP_DURATION_TICKS,
-                arcHeight = 0.0,
-                startOffsetX = 0.0,
-                startOffsetY = 0.0,
-                startOffsetZ = 0.0,
-                startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-                endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
-                easeRotation = true,
-            ),
-            AnimationStep.Teleport(x, y, z, yaw),
-            AnimationStep.PlayMotion(
-                durationTicks = REVEAL_DROP_DURATION_TICKS,
-                arcHeight = 0.0,
-                startOffsetX = 0.0,
-                startOffsetY = peakY - y,
-                startOffsetZ = 0.0,
-                startPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
-                endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
-            ),
-        )
+        return buildList {
+            add(AnimationStep.Teleport(x, peakY, z, yaw))
+            add(
+                AnimationStep.PlayMotion(
+                    durationTicks = REVEAL_LIFT_DURATION_TICKS,
+                    arcHeight = 0.0,
+                    startOffsetX = 0.0,
+                    startOffsetY = y - peakY,
+                    startOffsetZ = 0.0,
+                    startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                    endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                ),
+            )
+            if (soundGameTime != null) add(doraRevealSound(soundGameTime))
+            add(AnimationStep.Custom(MahjongTilePose.FACE_UP))
+            add(
+                AnimationStep.PlayMotion(
+                    durationTicks = REVEAL_FLIP_DURATION_TICKS,
+                    arcHeight = 0.0,
+                    startOffsetX = 0.0,
+                    startOffsetY = 0.0,
+                    startOffsetZ = 0.0,
+                    startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                    endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
+                    easeRotation = true,
+                ),
+            )
+            add(AnimationStep.Teleport(x, y, z, yaw))
+            add(
+                AnimationStep.PlayMotion(
+                    durationTicks = REVEAL_DROP_DURATION_TICKS,
+                    arcHeight = 0.0,
+                    startOffsetX = 0.0,
+                    startOffsetY = peakY - y,
+                    startOffsetZ = 0.0,
+                    startPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
+                    endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
+                ),
+            )
+        }
     }
 
     /**
@@ -256,8 +287,9 @@ class FabricMahjongTileWallPresenter(
         val managedTiles = findManagedTiles(world, tableId, controllerPos)
             .filter { tile -> tile.uuid.toKotlinUuid() in revealedTileIds }
             .associateBy { tile -> tile.uuid.toKotlinUuid() }
-        managedTiles.values.forEach { tile ->
-            tile.enqueueAll(revealFlipAnimationSteps(tile.x, tile.y, tile.z, tile.yaw))
+        managedTiles.values.forEachIndexed { index, tile ->
+            val soundGameTime = if (index == 0) world.time + REVEAL_LIFT_DURATION_TICKS else null
+            tile.enqueueAll(revealFlipAnimationSteps(tile.x, tile.y, tile.z, tile.yaw, soundGameTime))
         }
         val missingTileCount = revealedTileIds.size - managedTiles.size
         if (missingTileCount > 0) {

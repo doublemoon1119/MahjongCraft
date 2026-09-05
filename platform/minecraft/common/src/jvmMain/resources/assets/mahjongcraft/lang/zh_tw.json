@@ -391,5 +391,15 @@
   "mahjongcraft.showcase.suuankou": "四暗刻",
   "mahjongcraft.showcase.suuankou_tanki": "四暗刻單騎",
   "mahjongcraft.showcase.tenhou": "天和",
-  "mahjongcraft.showcase.tsuuiisou": "字一色"
+  "mahjongcraft.showcase.tsuuiisou": "字一色",
+  "subtitles.mahjongcraft.dice.land": "骰子落桌",
+  "subtitles.mahjongcraft.scoring_stick.place": "放置點棒",
+  "subtitles.mahjongcraft.tile.deal_batch": "發出手牌",
+  "subtitles.mahjongcraft.tile.discard_land": "捨牌落桌",
+  "subtitles.mahjongcraft.tile.dora_reveal": "寶牌指示牌翻開",
+  "subtitles.mahjongcraft.tile.draw_land": "摸牌落位",
+  "subtitles.mahjongcraft.tile.hand_turn": "手牌翻動",
+  "subtitles.mahjongcraft.tile.meld_land": "副露落桌",
+  "subtitles.mahjongcraft.tile.wall_stack_land": "牌牆落桌",
+  "subtitles.mahjongcraft.win.lightning": "閃電擊落"
 }

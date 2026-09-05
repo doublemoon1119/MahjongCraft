@@ -1,0 +1,42 @@
+{
+  "dice.land": {
+    "subtitle": "subtitles.mahjongcraft.dice.land",
+    "sounds": ["mahjongcraft:dice/land"]
+  },
+  "scoring_stick.place": {
+    "subtitle": "subtitles.mahjongcraft.scoring_stick.place",
+    "sounds": ["mahjongcraft:tile/draw_land"]
+  },
+  "tile.deal_batch": {
+    "subtitle": "subtitles.mahjongcraft.tile.deal_batch",
+    "sounds": ["mahjongcraft:tile/deal_batch"]
+  },
+  "tile.discard_land": {
+    "subtitle": "subtitles.mahjongcraft.tile.discard_land",
+    "sounds": ["mahjongcraft:tile/discard_land"]
+  },
+  "tile.dora_reveal": {
+    "subtitle": "subtitles.mahjongcraft.tile.dora_reveal",
+    "sounds": ["mahjongcraft:tile/draw_land"]
+  },
+  "tile.draw_land": {
+    "subtitle": "subtitles.mahjongcraft.tile.draw_land",
+    "sounds": ["mahjongcraft:tile/draw_land"]
+  },
+  "tile.hand_turn": {
+    "subtitle": "subtitles.mahjongcraft.tile.hand_turn",
+    "sounds": ["mahjongcraft:tile/hand_turn"]
+  },
+  "tile.meld_land": {
+    "subtitle": "subtitles.mahjongcraft.tile.meld_land",
+    "sounds": ["mahjongcraft:tile/meld_land"]
+  },
+  "tile.wall_stack_land": {
+    "subtitle": "subtitles.mahjongcraft.tile.wall_stack_land",
+    "sounds": ["mahjongcraft:tile/wall_stack_land"]
+  },
+  "win.lightning": {
+    "subtitle": "subtitles.mahjongcraft.win.lightning",
+    "sounds": ["mahjongcraft:win/lightning"]
+  }
+}

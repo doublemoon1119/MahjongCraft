@@ -2,12 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.item
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickDenomination
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
 import net.minecraft.item.ItemUsageContext
 import net.minecraft.server.world.ServerWorld
-import net.minecraft.sound.SoundEvents
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import net.minecraft.util.TypedActionResult
@@ -47,7 +47,7 @@ class MahjongScoringStickItem(settings: Settings) : Item(settings) {
         if (intersectsBlock || !world.spawnEntity(entity)) return ActionResult.FAIL
 
         if (!player.abilities.creativeMode) context.stack.decrement(1)
-        entity.playSound(SoundEvents.ENTITY_ITEM_FRAME_PLACE, 1.0f, 1.0f)
+        entity.playSound(ModSounds.scoringStickPlace, 1.0f, 1.0f)
         return ActionResult.CONSUME
     }
 

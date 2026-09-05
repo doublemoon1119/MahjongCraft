@@ -2,11 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.item
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
+import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
 import net.minecraft.item.Item
 import net.minecraft.item.ItemUsageContext
 import net.minecraft.server.world.ServerWorld
-import net.minecraft.sound.SoundEvents
 import net.minecraft.util.ActionResult
 import net.minecraft.util.math.Direction
 
@@ -34,7 +34,6 @@ class MahjongDiceItem(settings: Settings) : Item(settings) {
                         y = visualStart.y - hitPos.y,
                         z = visualStart.z - hitPos.z,
                     ),
-                    playThrowSound = true,
                 )
             }
         }
@@ -42,7 +41,7 @@ class MahjongDiceItem(settings: Settings) : Item(settings) {
         if (intersectsBlock || !world.spawnEntity(entity)) return ActionResult.FAIL
 
         if (!player.abilities.creativeMode) context.stack.decrement(1)
-        if (player.isSneaking) entity.playSound(SoundEvents.ENTITY_ITEM_FRAME_PLACE, 1.0f, 1.0f)
+        if (player.isSneaking) entity.playSound(ModSounds.diceLand, 1.0f, 1.0f)
         return ActionResult.CONSUME
     }
 

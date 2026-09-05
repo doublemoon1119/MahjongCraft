@@ -29,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItemGroups
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
@@ -123,6 +124,7 @@ class MahjongCraftMod : ModInitializer {
             minecraftEnvironment = koin.get<MinecraftEnvironment>(),
         )
         ModItems.register()
+        ModSounds.register()
         ModEntities.register()
         val tableLifecycleService = koin.get<FabricTableLifecycleService>()
         val tableLocationValidation = koin.get<FabricTableLocationValidationService>()

@@ -391,5 +391,15 @@
   "mahjongcraft.showcase.suuankou": "Four Concealed Triplets",
   "mahjongcraft.showcase.suuankou_tanki": "Four Concealed Triplets Single Wait",
   "mahjongcraft.showcase.tenhou": "Blessing of Heaven",
-  "mahjongcraft.showcase.tsuuiisou": "All Honors"
+  "mahjongcraft.showcase.tsuuiisou": "All Honors",
+  "subtitles.mahjongcraft.dice.land": "Dice lands",
+  "subtitles.mahjongcraft.scoring_stick.place": "Scoring stick placed",
+  "subtitles.mahjongcraft.tile.deal_batch": "Tiles dealt",
+  "subtitles.mahjongcraft.tile.discard_land": "Tile discarded",
+  "subtitles.mahjongcraft.tile.dora_reveal": "Dora indicator revealed",
+  "subtitles.mahjongcraft.tile.draw_land": "Tile drawn",
+  "subtitles.mahjongcraft.tile.hand_turn": "Tiles turn",
+  "subtitles.mahjongcraft.tile.meld_land": "Meld placed",
+  "subtitles.mahjongcraft.tile.wall_stack_land": "Tile wall built",
+  "subtitles.mahjongcraft.win.lightning": "Lightning strikes"
 }
