@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPr
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileWinAvailabilityDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
@@ -211,10 +212,15 @@ class PlayerDecisionHudController(
     /** 繪製一般遊戲畫面與聊天畫面共用的等待提示及倒數。 */
     private fun renderCompactDecisionHud(context: DrawContext) {
         val client = MinecraftClient.getInstance()
+        if (!configStore.current.presentationVisibility.compactPromptEnabled) return
         if (client.options.hudHidden || timerStore.reading() == null) return
         val prompt = promptStore.prompt
         val groupWidth = COMPACT_HUD_WIDTH.coerceAtMost(context.scaledWindowWidth)
-        val groupHeight = if (prompt != null && dismissedDecisionKey == prompt.decisionKey && prompt.isInteractive) {
+        val showReopenReminder = prompt != null &&
+            dismissedDecisionKey == prompt.decisionKey &&
+            prompt.isInteractive &&
+            !isPhysicalSelectionActive(prompt)
+        val groupHeight = if (showReopenReminder) {
             COMPACT_HUD_EXPANDED_HEIGHT
         } else {
             COMPACT_HUD_TIMER_HEIGHT
@@ -225,7 +231,7 @@ class PlayerDecisionHudController(
         val centerX = groupLeft + groupWidth / 2
         val timerY = groupTop + groupHeight - COMPACT_HUD_TIMER_HEIGHT
         renderTimerOverlay(context, timerY, centerX)
-        if (prompt != null && dismissedDecisionKey == prompt.decisionKey && prompt.isInteractive) {
+        if (showReopenReminder) {
             context.drawCenteredTextWithShadow(
                 client.textRenderer,
                 Text.translatable("mahjongcraft.hud.waiting_for_action"),
@@ -242,6 +248,11 @@ class PlayerDecisionHudController(
             )
         }
     }
+
+    /** 玩家已明確進入實體牌選擇階段時，不再顯示「重新開啟操作介面」提醒。 */
+    private fun isPhysicalSelectionActive(prompt: PlayerDecisionPromptDto): Boolean = promptStore.isRiichiSelectionActive() ||
+        preparationTileSelectionDecisionKey == prompt.decisionKey ||
+        directDiscardDecisionKey == prompt.decisionKey
 
     /** 在一般 HUD 或操作畫面的最上層繪製同一份權威倒數，避免被 Screen 背景遮住。 */
     fun renderTimerOverlay(context: DrawContext, y: Int, centerX: Int = context.scaledWindowWidth / 2) {
@@ -291,13 +302,25 @@ class PlayerDecisionHudController(
 
     /** 依準星指向的手牌 UUID 選擇一份權威分析並繪製牌面格。 */
     private fun renderDiscardAnalysis(context: DrawContext, prompt: PlayerDecisionPromptDto, hit: net.minecraft.util.hit.HitResult?) {
+        if (!configStore.current.presentationVisibility.discardAnalysisEnabled) return
         val tile = (hit as? EntityHitResult)?.entity as? MahjongTileEntity ?: return
         val analysis = prompt.discardAnalyses.firstOrNull { it.discardTileId == tile.uuid.toString() } ?: return
         val columns = minOf(MAX_WAIT_COLUMNS, analysis.waitingTiles.size.coerceAtLeast(1))
         val rowCount = (analysis.waitingTiles.size + columns - 1) / columns
-        val statusHeight = if (analysis.statusIndicatorId == null) 0 else STATUS_HEIGHT
+        val sharedAvailability = analysis.waitingTiles.map { it.winAvailability }.distinct().singleOrNull()
+            ?.takeUnless { it == WaitingTileWinAvailabilityDto.AVAILABLE }
+        val statusTexts = listOfNotNull(
+            analysis.statusIndicatorId?.let { Text.translatable(it.translationKey()) },
+            sharedAvailability?.let { Text.translatable(it.translationKey()) },
+        )
+        val statusHeight = if (statusTexts.isEmpty()) 0 else statusTexts.size * STATUS_TEXT_HEIGHT + STATUS_DIVIDER_GAP + 1
+        val mixedAvailability = sharedAvailability == null &&
+            analysis.waitingTiles.any {
+                it.winAvailability != WaitingTileWinAvailabilityDto.AVAILABLE
+            }
         val panelWidth = PADDING * 2 + columns * CELL_WIDTH
-        val panelHeight = PADDING * 2 + statusHeight + rowCount * (TILE_HEIGHT + COUNT_HEIGHT)
+        val cellHeight = TILE_HEIGHT + COUNT_HEIGHT + if (mixedAvailability) AVAILABILITY_HEIGHT else 0
+        val panelHeight = PADDING * 2 + statusHeight + rowCount * cellHeight
         val left = (context.scaledWindowWidth - panelWidth) / 2
         val top = hudCoordinate(
             configStore.current.hudLayout.discardAnalysisY,
@@ -305,16 +328,17 @@ class PlayerDecisionHudController(
             panelHeight,
         )
         context.fill(left, top, left + panelWidth, top + panelHeight, 0xCC101820.toInt())
-        analysis.statusIndicatorId?.let { indicator ->
-            val text = Text.translatable(indicator.translationKey())
+        statusTexts.forEachIndexed { index, text ->
             context.drawCenteredTextWithShadow(
                 MinecraftClient.getInstance().textRenderer,
                 text,
                 left + panelWidth / 2,
-                top + PADDING,
+                top + PADDING + index * STATUS_TEXT_HEIGHT,
                 0xFF6B6B,
             )
-            val dividerY = top + PADDING + STATUS_TEXT_HEIGHT + STATUS_DIVIDER_GAP
+        }
+        if (statusTexts.isNotEmpty()) {
+            val dividerY = top + PADDING + statusTexts.size * STATUS_TEXT_HEIGHT + STATUS_DIVIDER_GAP
             context.fill(left + PADDING, dividerY, left + panelWidth - PADDING, dividerY + 1, STATUS_DIVIDER_COLOR)
         }
         analysis.waitingTiles.forEachIndexed { index, waiting ->
@@ -322,7 +346,7 @@ class PlayerDecisionHudController(
             val column = index % columns
             val cellLeft = left + PADDING + column * CELL_WIDTH
             val tileX = cellLeft + (CELL_WIDTH - TILE_WIDTH) / 2
-            val tileY = top + PADDING + statusHeight + row * (TILE_HEIGHT + COUNT_HEIGHT)
+            val tileY = top + PADDING + statusHeight + row * cellHeight
             tileFaceRenderer.renderGui(context, waiting.tileAssetKey, tileX, tileY, TILE_WIDTH, TILE_HEIGHT)
             val count = Text.translatable("mahjongcraft.hud.remaining_tiles", waiting.remainingCount)
             val color = when (waiting.remainingCount) {
@@ -337,6 +361,15 @@ class PlayerDecisionHudController(
                 tileY + TILE_HEIGHT + 1,
                 color,
             )
+            if (mixedAvailability && waiting.winAvailability != WaitingTileWinAvailabilityDto.AVAILABLE) {
+                context.drawCenteredTextWithShadow(
+                    MinecraftClient.getInstance().textRenderer,
+                    Text.translatable(waiting.winAvailability.translationKey()),
+                    cellLeft + CELL_WIDTH / 2,
+                    tileY + TILE_HEIGHT + COUNT_HEIGHT,
+                    0xFFB05A,
+                )
+            }
         }
     }
 
@@ -356,6 +389,7 @@ class PlayerDecisionHudController(
         private const val CELL_WIDTH = 30
         private const val TILE_WIDTH = 18
         private const val TILE_HEIGHT = 24
+        private const val AVAILABILITY_HEIGHT = 10
         private const val TILE_TEXTURE_WIDTH = 48
         private const val TILE_TEXTURE_HEIGHT = 64
         private const val COUNT_HEIGHT = 11
@@ -846,6 +880,14 @@ internal fun String.translationKey(): String = when (this) {
     "mahjongcraft:temporary_furiten" -> "mahjongcraft.hud.furiten.temporary"
     "mahjongcraft:permanent_furiten" -> "mahjongcraft.hud.furiten.permanent"
     else -> if (startsWith("mahjongcraft:")) "mahjongcraft.hud.action.${substringAfter(':')}" else this
+}
+
+/** 將等待牌和牌資格映射至內建 HUD 翻譯鍵。 */
+private fun WaitingTileWinAvailabilityDto.translationKey(): String = when (this) {
+    WaitingTileWinAvailabilityDto.AVAILABLE -> "mahjongcraft.hud.win_availability.available"
+    WaitingTileWinAvailabilityDto.TSUMO_ONLY -> "mahjongcraft.hud.win_availability.tsumo_only"
+    WaitingTileWinAvailabilityDto.NO_YAKU -> "mahjongcraft.hud.win_availability.no_yaku"
+    WaitingTileWinAvailabilityDto.BELOW_MINIMUM -> "mahjongcraft.hud.win_availability.below_minimum"
 }
 
 /** 只有他家捨牌與搶槓視窗的跳過會提交正式 Pass。 */

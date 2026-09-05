@@ -9,16 +9,20 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionAc
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileWinAvailabilityDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWinAvailability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
 import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
@@ -105,6 +109,7 @@ class PlayerDecisionPromptFactory(
     ): List<DiscardReadinessAnalysisDto> {
         val player = state.players.first { it.id == playerId }
         val calculator = moduleRegistry.getModule(state.config).createShantenCalculator()
+        val validator = moduleRegistry.getModule(state.config).createLegalActionValidator() as RiichiLegalActionValidator
         val visibleTiles = buildList {
             addAll(player.hand.tiles.map { it.tile })
             state.players.forEach { tablePlayer ->
@@ -118,6 +123,7 @@ class PlayerDecisionPromptFactory(
         val riichiState = player.playerRuleState as? RiichiPlayerState
         return player.hand.standingTiles.mapNotNull { discard ->
             val result = player.hand.discardById(discard.id) ?: return@mapNotNull null
+            val hypotheticalPlayer = player.copy(hand = result.hand)
             val tenpai = calculator.calculate(Hand(result.hand.tiles, result.hand.melds)) as? ShantenResult.Tenpai
                 ?: return@mapNotNull null
             val waits = tenpai.winningTiles.map(Tile::riichiCanonical).distinct()
@@ -135,6 +141,11 @@ class PlayerDecisionPromptFactory(
                     WaitingTileAvailabilityDto(
                         tileAssetKey = tile.toAssetKey(tileAssetRegistry),
                         remainingCount = (COPIES_PER_RIICHI_TILE - (visibleTiles[tile] ?: 0)).coerceAtLeast(0),
+                        winAvailability = validator.analyzeWinAvailability(
+                            state,
+                            hypotheticalPlayer,
+                            IdentifiedTile(Uuid.random(), tile),
+                        ).toDto(),
                     )
                 },
                 statusIndicatorId = status,
@@ -157,6 +168,14 @@ class PlayerDecisionPromptFactory(
         const val TEMPORARY_FURITEN = "mahjongcraft:temporary_furiten"
         const val PERMANENT_FURITEN = "mahjongcraft:permanent_furiten"
     }
+}
+
+/** 將規則層的日麻和牌資格轉為私人 prompt 網路值。 */
+private fun RiichiWinAvailability.toDto(): WaitingTileWinAvailabilityDto = when (this) {
+    RiichiWinAvailability.AVAILABLE -> WaitingTileWinAvailabilityDto.AVAILABLE
+    RiichiWinAvailability.TSUMO_ONLY -> WaitingTileWinAvailabilityDto.TSUMO_ONLY
+    RiichiWinAvailability.NO_YAKU -> WaitingTileWinAvailabilityDto.NO_YAKU
+    RiichiWinAvailability.BELOW_MINIMUM -> WaitingTileWinAvailabilityDto.BELOW_MINIMUM
 }
 
 /** 將受控 preparation input 轉成不暴露其他玩家提交的私人 prompt。 */

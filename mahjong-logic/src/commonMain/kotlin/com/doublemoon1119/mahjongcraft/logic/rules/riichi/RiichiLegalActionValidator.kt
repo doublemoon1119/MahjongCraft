@@ -34,6 +34,28 @@ class RiichiLegalActionValidator(
 ) : LegalActionValidator {
 
     /**
+     * 分析一張完整牌型在目前桌況下的榮和與自摸資格。
+     *
+     * [player] 的手牌須為尚未加入 [incomingTile] 的十三張狀態；本方法不套用振聽，振聽仍由呼叫端
+     * 以整組等待牌判斷。
+     */
+    fun analyzeWinAvailability(
+        tableState: TableState,
+        player: MahjongPlayer,
+        incomingTile: IdentifiedTile,
+    ): RiichiWinAvailability {
+        val ronHan = qualifyingHan(tableState, player, incomingTile, isTsumo = false)
+        val tsumoHan = qualifyingHan(tableState, player, incomingTile, isTsumo = true)
+        val minimum = tableState.config.minimumWinConstraint
+        return when {
+            ronHan.satisfies(minimum) -> RiichiWinAvailability.AVAILABLE
+            tsumoHan.satisfies(minimum) -> RiichiWinAvailability.TSUMO_ONLY
+            maxOf(ronHan.value, tsumoHan.value) <= 0 -> RiichiWinAvailability.NO_YAKU
+            else -> RiichiWinAvailability.BELOW_MINIMUM
+        }
+    }
+
+    /**
      * 判斷在當前遊戲狀態下，指定玩家可以執行的合法動作列表。
      *
      * @param tableState 當前的遊戲桌況。
@@ -305,28 +327,13 @@ class RiichiLegalActionValidator(
         isRobbingKan: Boolean = false,
         isRobbingClosedKan: Boolean = false,
     ): Boolean {
-        val minimumWinConstraint = tableState.config.minimumWinConstraint
-        if (minimumWinConstraint <= 0) {
-            return true
-        }
-
-        val context = contextCalculator.calculate(
-            RiichiHandValueContextCalculator.Input(
-                tableState = tableState,
-                player = player,
-                incomingTile = incomingTile,
-                isTsumo = isTsumo,
-                isRobbingKan = isRobbingKan,
-            ),
-        )
-
-        val result = handValueCalculator.calculate(context)
+        val result = qualifyingHan(tableState, player, incomingTile, isTsumo, isRobbingKan)
 
         // 役滿（totalHan < 0）
-        if (result.totalHan < 0) {
+        if (result.yakuman) {
             // 判斷是否為國士無雙
             val isKokushiMusou =
-                result.yakuResults.any { it.yaku == YakuType.KokushiMusou || it.yaku == YakuType.KokushiMusou13 }
+                result.isKokushi
 
             return if (isRobbingClosedKan) {
                 // 國士無雙才可以搶暗槓
@@ -344,10 +351,46 @@ class RiichiLegalActionValidator(
 
         // 寶牌/裏寶牌/赤寶牌不計入最低番數限制——這裡只判斷「役種本身」夠不夠格胡牌，寶牌只在
         // result.totalHan（用來算實際點數）裡才該疊加，不能讓一手光靠寶牌湊到門檻的牌型被視為合法。
-        val hanExcludingDora = result.yakuResults
-            .filterNot { it.yaku == YakuType.Dora || it.yaku == YakuType.UraDora || it.yaku == YakuType.AkaDora }
-            .sumOf { it.han }
-        return hanExcludingDora >= minimumWinConstraint
+        return result.value >= tableState.config.minimumWinConstraint
+    }
+
+    /** 計算不含寶牌的役種番數；役滿以獨立旗標表示。 */
+    private fun qualifyingHan(
+        tableState: TableState,
+        player: MahjongPlayer,
+        incomingTile: IdentifiedTile,
+        isTsumo: Boolean,
+        isRobbingKan: Boolean = false,
+    ): QualifyingHan {
+        val context = contextCalculator.calculate(
+            RiichiHandValueContextCalculator.Input(tableState, player, incomingTile, isTsumo, isRobbingKan),
+        )
+        val result = handValueCalculator.calculate(context)
+        if (result.totalHan < 0) {
+            return QualifyingHan(
+                value = Int.MAX_VALUE,
+                yakuman = true,
+                isKokushi = result.yakuResults.any { it.yaku == YakuType.KokushiMusou || it.yaku == YakuType.KokushiMusou13 },
+            )
+        }
+        return QualifyingHan(
+            value = result.yakuResults
+                .filterNot { it.yaku == YakuType.Dora || it.yaku == YakuType.UraDora || it.yaku == YakuType.AkaDora }
+                .sumOf { it.han },
+        )
+    }
+
+    /** 起胡限制判定使用的非寶牌番數。 */
+    private data class QualifyingHan(
+        /** 非寶牌役種的總番數。 */
+        val value: Int,
+        /** 是否為役滿。 */
+        val yakuman: Boolean = false,
+        /** 是否為國士無雙役滿。 */
+        val isKokushi: Boolean = false,
+    ) {
+        /** 判斷此結果是否達到 [minimum]。 */
+        fun satisfies(minimum: Int): Boolean = yakuman || value >= minimum
     }
 
     /**

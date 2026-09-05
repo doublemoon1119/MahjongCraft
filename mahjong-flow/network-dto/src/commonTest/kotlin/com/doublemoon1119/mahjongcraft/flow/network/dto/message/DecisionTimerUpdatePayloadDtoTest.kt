@@ -39,7 +39,13 @@ class DecisionTimerUpdatePayloadDtoTest {
                         discardAnalyses = listOf(
                             DiscardReadinessAnalysisDto(
                                 discardTileId = Uuid.random().toString(),
-                                waitingTiles = listOf(WaitingTileAvailabilityDto("m2", 3)),
+                                waitingTiles = listOf(
+                                    WaitingTileAvailabilityDto(
+                                        "m2",
+                                        3,
+                                        WaitingTileWinAvailabilityDto.TSUMO_ONLY,
+                                    ),
+                                ),
                                 statusIndicatorId = "mahjongcraft:discard_furiten",
                             ),
                         ),

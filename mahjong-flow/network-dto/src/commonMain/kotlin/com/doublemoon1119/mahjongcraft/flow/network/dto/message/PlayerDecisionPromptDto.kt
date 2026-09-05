@@ -34,7 +34,24 @@ enum class DecisionPlayerRelationDto {
 data class WaitingTileAvailabilityDto(
     val tileAssetKey: String,
     val remainingCount: Int,
+    val winAvailability: WaitingTileWinAvailabilityDto = WaitingTileWinAvailabilityDto.AVAILABLE,
 )
+
+/** 等待牌在目前權威桌況下的和牌可用性。 */
+@Serializable
+enum class WaitingTileWinAvailabilityDto {
+    /** 榮和或自摸至少一種可用。 */
+    AVAILABLE,
+
+    /** 僅自摸可用。 */
+    TSUMO_ONLY,
+
+    /** 目前完成牌型沒有役。 */
+    NO_YAKU,
+
+    /** 役種番數未達起胡限制。 */
+    BELOW_MINIMUM,
+}
 
 /** 打出指定實體手牌後的聽牌分析。 */
 @Serializable
