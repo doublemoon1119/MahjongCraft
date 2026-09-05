@@ -8,8 +8,14 @@ object MinecraftClientConfigScreenKeys {
     /** 一般分類。 */
     const val CATEGORY_GENERAL: String = "mahjongcraft.client_config.category.general"
 
-    /** 顯示分類。 */
-    const val CATEGORY_DISPLAY: String = "mahjongcraft.client_config.category.display"
+    /** HUD 類別。 */
+    const val CATEGORY_HUD: String = "mahjongcraft.client_config.category.hud"
+
+    /** 遊戲面板類別。 */
+    const val CATEGORY_GAME_PANELS: String = "mahjongcraft.client_config.category.game_panels"
+
+    /** 視覺提示類別。 */
+    const val CATEGORY_VISUAL_FEEDBACK: String = "mahjongcraft.client_config.category.visual_feedback"
 
     /** 自動整理手牌欄位。 */
     const val AUTO_SORT_HAND: String = "mahjongcraft.client_config.auto_sort_hand"
@@ -22,6 +28,12 @@ object MinecraftClientConfigScreenKeys {
 
     /** 牌面輔助標籤說明。 */
     const val TILE_LABELS_DESCRIPTION: String = "mahjongcraft.client_config.tile_labels.description"
+
+    /** 建立呈現開關名稱鍵。 */
+    fun presentationName(id: String): String = "mahjongcraft.client_config.presentation.$id"
+
+    /** 建立呈現開關說明鍵。 */
+    fun presentationDescription(id: String): String = "${presentationName(id)}.description"
 
     /** HUD 位置編輯器入口。 */
     const val EDIT_HUD_LAYOUT: String = "mahjongcraft.client_config.edit_hud_layout"

@@ -40,6 +40,11 @@ class MahjongClientConfigStoreTest {
                 compactPromptY = 0.4,
                 discardAnalysisY = 0.6,
             ),
+            presentationVisibility = MahjongPresentationVisibilityConfig(
+                roundInfoEnabled = false,
+                discardAnalysisEnabled = false,
+                matchingTileHighlightEnabled = false,
+            ),
         )
 
         assertIs<MahjongClientConfigUpdateResult.Success>(store.save(requested))
@@ -50,6 +55,8 @@ class MahjongClientConfigStoreTest {
         assertTrue(content.contains("auto-sort-hand-enabled = false"))
         assertTrue(content.contains("decision-panel-y = 0.25"))
         assertTrue(content.contains("compact-prompt-x = 0.75"))
+        assertTrue(content.contains("round-info-enabled = false"))
+        assertTrue(content.contains("matching-tile-highlight-enabled = false"))
         assertEquals(requested, store.current)
         assertEquals(2L, store.revision)
         assertEquals(requested, assertIs<MahjongClientConfigUpdateResult.Success>(store.load()).config)

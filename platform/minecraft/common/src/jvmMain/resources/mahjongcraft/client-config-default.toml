@@ -20,6 +20,22 @@ tile-labels-enabled = false
 # shared entities positioned by the server, so sorting them has to happen there.
 auto-sort-hand-enabled = true
 
+# Optional HUD panels and world-space information. The decision menu is intentionally always
+# available because it is required to submit game actions.
+[presentation-visibility]
+round-info-enabled = true
+player-info-enabled = true
+lobby-info-enabled = true
+dice-result-enabled = true
+compact-prompt-enabled = true
+discard-analysis-enabled = true
+win-settlement-enabled = true
+draw-settlement-enabled = true
+match-settlement-enabled = true
+matching-tile-highlight-enabled = true
+discard-popup-enabled = true
+meld-popup-enabled = true
+
 # HUD positions are ratios inside the area where the complete HUD can fit on screen.
 # 0.0 means the left/top edge and 1.0 means the right/bottom edge.
 [hud-layout]

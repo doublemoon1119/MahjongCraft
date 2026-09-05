@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import net.minecraft.client.font.TextRenderer
@@ -33,6 +34,7 @@ import net.minecraft.util.Identifier
  */
 class MahjongRoundInfoEntityRenderer(
     context: EntityRendererFactory.Context,
+    private val configStore: MahjongClientConfigStore,
 ) : EntityRenderer<MahjongRoundInfoEntity>(context) {
     /** 共用 Vanilla text renderer，畫法比照 [MahjongTileEntityRenderer]。 */
     private val textRenderer = context.textRenderer
@@ -45,6 +47,7 @@ class MahjongRoundInfoEntityRenderer(
         vertexConsumers: VertexConsumerProvider,
         light: Int,
     ) {
+        if (!configStore.current.presentationVisibility.roundInfoEnabled) return
         if (entity.isInvisible) return
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         val lines = entity.lines.mapNotNull(::buildLineText)

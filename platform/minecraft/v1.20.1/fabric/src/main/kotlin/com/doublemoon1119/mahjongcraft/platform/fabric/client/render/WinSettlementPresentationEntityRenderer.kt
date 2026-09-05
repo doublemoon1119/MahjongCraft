@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingAnimat
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementDetailSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
@@ -39,6 +40,7 @@ class WinSettlementPresentationEntityRenderer(
     private val portraitRenderer: PlayerPortraitRenderer,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
     private val playerNames: ClientPlayerDisplayNameResolver,
+    private val configStore: MahjongClientConfigStore,
 ) : EntityRenderer<WinSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
 
@@ -50,6 +52,7 @@ class WinSettlementPresentationEntityRenderer(
         vertexConsumers: VertexConsumerProvider,
         light: Int,
     ) {
+        if (!configStore.current.presentationVisibility.winSettlementEnabled) return
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         val elapsed = entity.elapsedTicks(tickDelta)
         if (elapsed < 0.0 || elapsed > entity.endGameTime - entity.startGameTime) return

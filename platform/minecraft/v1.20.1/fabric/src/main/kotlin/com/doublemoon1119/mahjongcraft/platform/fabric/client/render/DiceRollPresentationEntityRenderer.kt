@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
@@ -20,6 +21,7 @@ import kotlin.math.sin
 /** 在桌面上方以 billboard 呈現整組放大 3D 骰子與合計點數。 */
 class DiceRollPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
+    private val configStore: MahjongClientConfigStore,
 ) : EntityRenderer<DiceRollPresentationEntity>(context) {
     /** 共用原版 item renderer，讓結果模型與桌面骰子使用相同模型及材質。 */
     private val itemRenderer = context.itemRenderer
@@ -36,6 +38,7 @@ class DiceRollPresentationEntityRenderer(
         vertexConsumers: VertexConsumerProvider,
         light: Int,
     ) {
+        if (!configStore.current.presentationVisibility.diceResultEnabled) return
         val elapsed = entity.elapsedResultTicks(tickDelta)
         val duration = (entity.endGameTime - entity.revealGameTime).toDouble()
         if (elapsed < 0.0 || elapsed >= duration) return

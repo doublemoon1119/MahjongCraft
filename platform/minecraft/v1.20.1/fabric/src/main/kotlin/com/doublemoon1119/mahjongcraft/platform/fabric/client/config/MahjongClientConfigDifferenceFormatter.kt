@@ -23,8 +23,37 @@ fun clientConfigDifferenceText(from: MahjongClientConfigState, to: MahjongClient
             booleanText(to.tileLabelsEnabled),
         )
     }
+    result.appendPresentationVisibilityChanges(from.presentationVisibility, to.presentationVisibility)
     result.appendHudLayoutChanges(from.hudLayout, to.hudLayout)
     return result
+}
+
+/** 附加所有非必要呈現開關的差異。 */
+private fun MutableText.appendPresentationVisibilityChanges(
+    from: MahjongPresentationVisibilityConfig,
+    to: MahjongPresentationVisibilityConfig,
+) {
+    val entries = listOf(
+        "round_info" to (from.roundInfoEnabled to to.roundInfoEnabled),
+        "player_info" to (from.playerInfoEnabled to to.playerInfoEnabled),
+        "lobby_info" to (from.lobbyInfoEnabled to to.lobbyInfoEnabled),
+        "dice_result" to (from.diceResultEnabled to to.diceResultEnabled),
+        "compact_prompt" to (from.compactPromptEnabled to to.compactPromptEnabled),
+        "discard_analysis" to (from.discardAnalysisEnabled to to.discardAnalysisEnabled),
+        "win_settlement" to (from.winSettlementEnabled to to.winSettlementEnabled),
+        "draw_settlement" to (from.drawSettlementEnabled to to.drawSettlementEnabled),
+        "match_settlement" to (from.matchSettlementEnabled to to.matchSettlementEnabled),
+        "matching_tile_highlight" to (from.matchingTileHighlightEnabled to to.matchingTileHighlightEnabled),
+        "discard_popup" to (from.discardPopupEnabled to to.discardPopupEnabled),
+        "meld_popup" to (from.meldPopupEnabled to to.meldPopupEnabled),
+    )
+    entries.filter { (_, values) -> values.first != values.second }.forEach { (id, values) ->
+        appendValueChange(
+            MinecraftClientConfigScreenKeys.presentationName(id),
+            booleanText(values.first),
+            booleanText(values.second),
+        )
+    }
 }
 
 /** 附加 HUD 百分比配置差異。 */

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPresentationEntity
@@ -30,6 +31,7 @@ class MatchSettlementPresentationEntityRenderer(
     private val templates: MatchSettlementPresentationTemplateRegistry,
     private val portraitRenderer: PlayerPortraitRenderer,
     private val playerNames: ClientPlayerDisplayNameResolver,
+    private val configStore: MahjongClientConfigStore,
 ) : EntityRenderer<MatchSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
     private val warnedUnknownTemplateKeys = mutableSetOf<String>()
@@ -43,6 +45,7 @@ class MatchSettlementPresentationEntityRenderer(
         vertexConsumers: VertexConsumerProvider,
         light: Int,
     ) {
+        if (!configStore.current.presentationVisibility.matchSettlementEnabled) return
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         val elapsed = entity.elapsedTicks(tickDelta)
         val duration = (entity.endGameTime - entity.startGameTime).toDouble()

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongLobbyInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
@@ -14,6 +15,7 @@ import net.minecraft.util.Identifier
 class MahjongLobbyInfoEntityRenderer(
     context: EntityRendererFactory.Context,
     private val ruleNames: RuleModuleDisplayNameRegistry,
+    private val configStore: MahjongClientConfigStore,
 ) : EntityRenderer<MahjongLobbyInfoEntity>(context) {
     private val textRenderer = context.textRenderer
 
@@ -25,6 +27,7 @@ class MahjongLobbyInfoEntityRenderer(
         vertexConsumers: VertexConsumerProvider,
         light: Int,
     ) {
+        if (!configStore.current.presentationVisibility.lobbyInfoEnabled) return
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         val ruleName = ruleNames.find(entity.ruleModuleId)?.let(Text::translatable) ?: Text.literal(entity.ruleModuleId)
         val lines = listOf(

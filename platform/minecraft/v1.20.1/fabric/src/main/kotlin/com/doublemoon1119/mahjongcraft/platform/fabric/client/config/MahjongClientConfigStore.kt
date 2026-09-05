@@ -119,13 +119,14 @@ class MahjongClientConfigStore() {
         return try {
             createDefaultFileIfMissing()
             val original = Files.readString(path, StandardCharsets.UTF_8)
-            val updated = ensureHudLayoutFields(original)
+            val updated = ensureControlledSections(original)
                 .let { updateBoolean(it, TILE_LABELS_ENABLED_KEY, TILE_LABELS_ENABLED_LINE, config.tileLabelsEnabled) }
                 .let { updateBoolean(it, AUTO_SORT_HAND_ENABLED_KEY, AUTO_SORT_HAND_ENABLED_LINE, config.autoSortHandEnabled) }
                 .let { updateDouble(it, DECISION_PANEL_Y_KEY, DECISION_PANEL_Y_LINE, config.hudLayout.decisionPanelY) }
                 .let { updateDouble(it, COMPACT_PROMPT_X_KEY, COMPACT_PROMPT_X_LINE, config.hudLayout.compactPromptX) }
                 .let { updateDouble(it, COMPACT_PROMPT_Y_KEY, COMPACT_PROMPT_Y_LINE, config.hudLayout.compactPromptY) }
                 .let { updateDouble(it, DISCARD_ANALYSIS_Y_KEY, DISCARD_ANALYSIS_Y_LINE, config.hudLayout.discardAnalysisY) }
+                .let { content -> VISIBILITY_FIELDS.fold(content) { result, field -> updateBoolean(result, field.key, field.line, field.read(config.presentationVisibility)) } }
             check(toml.decodeFromString<MahjongClientConfigState>(updated) == config) {
                 "Updated client config did not decode to the requested state"
             }
@@ -165,11 +166,15 @@ class MahjongClientConfigStore() {
      * 舊版 client config 沒有 HUD section 時附加受控預設欄位；既有文件內容與註解保持不變。
      * 只要任一 HUD 欄位已存在便交由後續完整驗證拒絕不完整 section，避免猜測人工修改內容。
      */
-    private fun ensureHudLayoutFields(content: String): String {
+    private fun ensureControlledSections(content: String): String {
         val fieldCount = HUD_LAYOUT_LINES.count { it.containsMatchIn(content) }
-        if (fieldCount == HUD_LAYOUT_LINES.size) return content
-        check(fieldCount == 0) { "Incomplete controlled client config section '$HUD_LAYOUT_SECTION'" }
-        return content.trimEnd() + "\n\n" + DEFAULT_HUD_LAYOUT_SECTION + "\n"
+        check(fieldCount == 0 || fieldCount == HUD_LAYOUT_LINES.size) { "Incomplete controlled client config section '$HUD_LAYOUT_SECTION'" }
+        val withHud = if (fieldCount == 0) content.trimEnd() + "\n\n" + DEFAULT_HUD_LAYOUT_SECTION + "\n" else content
+        val visibilityCount = VISIBILITY_FIELDS.count { it.line.containsMatchIn(withHud) }
+        check(visibilityCount == 0 || visibilityCount == VISIBILITY_FIELDS.size) {
+            "Incomplete controlled client config section '$VISIBILITY_SECTION'"
+        }
+        return if (visibilityCount == 0) withHud.trimEnd() + "\n\n" + DEFAULT_VISIBILITY_SECTION + "\n" else withHud
     }
 
     /** 在設定檔缺少時原樣複製打包的帶註解 template。 */
@@ -256,6 +261,53 @@ class MahjongClientConfigStore() {
             $COMPACT_PROMPT_Y_KEY = 0.9
             $DISCARD_ANALYSIS_Y_KEY = 0.86
         """.trimIndent()
+
+        /** 可選呈現開關的 TOML section 名稱。 */
+        const val VISIBILITY_SECTION: String = "presentation-visibility"
+
+        /** 一個可選呈現欄位的保存描述。 */
+        private data class VisibilityField(
+            /** TOML 欄位鍵。 */
+            val key: String,
+            /** 欄位所在行的比對式。 */
+            val line: Regex,
+            /** 從設定讀取欄位值。 */
+            val read: (MahjongPresentationVisibilityConfig) -> Boolean,
+        )
+
+        /** 所有可選呈現欄位。 */
+        private val VISIBILITY_FIELDS: List<VisibilityField> = listOf(
+            visibilityField("round-info-enabled", MahjongPresentationVisibilityConfig::roundInfoEnabled),
+            visibilityField("player-info-enabled", MahjongPresentationVisibilityConfig::playerInfoEnabled),
+            visibilityField("lobby-info-enabled", MahjongPresentationVisibilityConfig::lobbyInfoEnabled),
+            visibilityField("dice-result-enabled", MahjongPresentationVisibilityConfig::diceResultEnabled),
+            visibilityField("compact-prompt-enabled", MahjongPresentationVisibilityConfig::compactPromptEnabled),
+            visibilityField("discard-analysis-enabled", MahjongPresentationVisibilityConfig::discardAnalysisEnabled),
+            visibilityField("win-settlement-enabled", MahjongPresentationVisibilityConfig::winSettlementEnabled),
+            visibilityField("draw-settlement-enabled", MahjongPresentationVisibilityConfig::drawSettlementEnabled),
+            visibilityField("match-settlement-enabled", MahjongPresentationVisibilityConfig::matchSettlementEnabled),
+            visibilityField("matching-tile-highlight-enabled", MahjongPresentationVisibilityConfig::matchingTileHighlightEnabled),
+            visibilityField("discard-popup-enabled", MahjongPresentationVisibilityConfig::discardPopupEnabled),
+            visibilityField("meld-popup-enabled", MahjongPresentationVisibilityConfig::meldPopupEnabled),
+        )
+
+        /** 舊設定保存時附加的預設呈現開關 section。 */
+        private val DEFAULT_VISIBILITY_SECTION: String = buildString {
+            appendLine("# Optional HUD panels and world-space information.")
+            appendLine("[$VISIBILITY_SECTION]")
+            VISIBILITY_FIELDS.forEach { appendLine("${it.key} = true") }
+        }.trimEnd()
+
+        /** 建立一個 Boolean 呈現欄位描述。 */
+        private fun visibilityField(
+            key: String,
+            read: (MahjongPresentationVisibilityConfig) -> Boolean,
+        ): VisibilityField = VisibilityField(key, booleanLine(key), read)
+
+        /** 建立保留行尾註解與空白的 Boolean 欄位比對式。 */
+        private fun booleanLine(key: String): Regex = Regex(
+            """(?m)^(\s*$key\s*=\s*)\S+(\s*(?:#.*)?)$""",
+        )
 
         /** 建立保留行尾註解與空白的 Double 欄位比對式。 */
         private fun doubleLine(key: String): Regex = Regex(

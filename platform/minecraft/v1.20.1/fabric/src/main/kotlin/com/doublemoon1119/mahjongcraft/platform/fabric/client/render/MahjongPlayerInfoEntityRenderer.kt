@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
@@ -21,6 +22,7 @@ class MahjongPlayerInfoEntityRenderer(
     context: EntityRendererFactory.Context,
     private val portraits: PlayerPortraitRenderer,
     private val indicatorTextResolver: PublicPlayerIndicatorTextResolver,
+    private val configStore: MahjongClientConfigStore,
 ) : EntityRenderer<MahjongPlayerInfoEntity>(context) {
     private val textRenderer = context.textRenderer
 
@@ -32,6 +34,7 @@ class MahjongPlayerInfoEntityRenderer(
         vertexConsumers: VertexConsumerProvider,
         light: Int,
     ) {
+        if (!configStore.current.presentationVisibility.playerInfoEnabled) return
         if (entity.isInvisible) return
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         val players = entity.players.sortedBy { it.seatIndex }

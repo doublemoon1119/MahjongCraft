@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingAnimation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
@@ -28,6 +29,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     private val portraitRenderer: PlayerPortraitRenderer,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
     private val playerNames: ClientPlayerDisplayNameResolver,
+    private val configStore: MahjongClientConfigStore,
 ) : EntityRenderer<ExhaustiveDrawSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
     private val warnedUnknownReasonIds = mutableSetOf<String>()
@@ -40,6 +42,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         vertexConsumers: VertexConsumerProvider,
         light: Int,
     ) {
+        if (!configStore.current.presentationVisibility.drawSettlementEnabled) return
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         val elapsed = entity.elapsedTicks(tickDelta)
         val duration = (entity.endGameTime - entity.startGameTime).toDouble()
