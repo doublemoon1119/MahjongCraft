@@ -97,7 +97,7 @@ class WinPresentationHandoffTest {
                         seatIndex = 0,
                         responsiblePlayerId = null,
                         totalScore = 8000,
-                        handTileIds = emptyList(),
+                        standingTileIds = emptyList(),
                         melds = emptyList(),
                         winningTileId = winningTileId,
                         detailFields = emptyList(),

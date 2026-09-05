@@ -45,7 +45,7 @@ object WinSettlementPresentationRequestFactory {
                     seatIndex = currentState.players.indexOf(player),
                     responsiblePlayerId = outcome.responsiblePlayerIds.singleOrNull(),
                     totalScore = outcome.scoreDeltas.getValue(winnerId),
-                    handTileIds = player.hand.allTiles.map { it.id },
+                    standingTileIds = player.hand.standingTiles.map { it.id },
                     melds = player.hand.melds.map { it.toPresentation(currentState.config.revealsClosedKanTiles) },
                     winningTileId = null,
                     detailFields = if (outcome.id == BuiltInRoundOutcomeIds.NAGASHI_MANGAN) {
@@ -108,7 +108,7 @@ object WinSettlementPresentationRequestFactory {
                     seatIndex = currentState.players.indexOf(player),
                     responsiblePlayerId = responsiblePlayerId,
                     totalScore = resolution.totalGained,
-                    handTileIds = player.hand.allTiles.map { it.id }.filterNot { it == winningTileId },
+                    standingTileIds = player.hand.standingTiles.map { it.id }.filterNot { it == winningTileId },
                     melds = player.hand.melds.map { it.toPresentation(currentState.config.revealsClosedKanTiles) },
                     winningTileId = winningTileId,
                     detailFields = resolvedDetails.getValue(winnerId).fields,

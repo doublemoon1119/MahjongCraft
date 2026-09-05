@@ -952,7 +952,7 @@ class FabricGamePresentationPublisher(
     ): Long? {
         val tileIds = buildSet {
             request.winners.forEach { winner ->
-                addAll(winner.handTileIds)
+                addAll(winner.standingTileIds)
                 winner.melds.forEach { addAll(it.tileIds) }
                 winner.winningTileId?.let(::add)
                 winner.detailFields.forEach { field ->

@@ -46,7 +46,7 @@ class FabricWinSettlementPresentationScheduler(
                 isAi = request.ranking.players.first { it.playerId == winner.playerId }.isAi,
                 responsiblePlayerId = winner.responsiblePlayerId?.toString(),
                 totalScore = winner.totalScore,
-                handAssetKeys = winner.handTileIds.mapNotNull(tileAssetsById::get),
+                handAssetKeys = winner.standingTileIds.mapNotNull(tileAssetsById::get),
                 melds = winner.melds.map { meld ->
                     val assets = meld.tileIds.mapNotNull(tileAssetsById::get)
                     val concealed = when {
