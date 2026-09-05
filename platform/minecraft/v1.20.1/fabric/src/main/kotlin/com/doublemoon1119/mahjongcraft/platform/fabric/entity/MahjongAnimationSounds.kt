@@ -32,6 +32,9 @@ internal object MahjongAnimationSounds {
     /** 胡牌閃電落下時使用的雷聲。 */
     const val WIN_LIGHTNING: String = "mahjongcraft:win.lightning"
 
+    /** 引雷三叉戟插中胡牌張時使用的原版方塊命中聲。 */
+    const val TRIDENT_HIT_GROUND: String = "minecraft:item.trident.hit_ground"
+
     /** 動畫聲音預定時刻後仍允許正常 server tick 執行的寬限。 */
     const val EVENT_GRACE_TICKS: Long = 2L
 }

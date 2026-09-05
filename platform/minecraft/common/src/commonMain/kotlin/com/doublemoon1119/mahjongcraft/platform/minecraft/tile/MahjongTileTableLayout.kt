@@ -789,11 +789,20 @@ object MahjongTileTableLayout {
      */
     const val WIN_PRE_HAND_LAYDOWN_DELAY_TICKS: Int = 16
 
-    /** 胡牌慶祝演出中，手牌一起倒下播完到降臨特效開始之間的等待，約 0.8 秒，估算值，理由同 [WIN_PRE_HAND_LAYDOWN_DELAY_TICKS]。 */
+    /** 胡牌慶祝演出中，手牌一起倒下播完到引雷三叉戟開始落下之間的等待，約 0.8 秒。 */
     const val WIN_PRE_EFFECT_DELAY_TICKS: Int = 16
 
-    /** 胡牌慶祝演出降臨特效（粒子聚合光柱）的總播放時長，估算值，實測後再調。 */
-    const val WIN_EFFECT_DURATION_TICKS: Int = 30
+    /** 引雷三叉戟從牌面上方落到胡牌張的時長。 */
+    const val WIN_TRIDENT_FALL_DURATION_TICKS: Int = 6
+
+    /** 三叉戟插中胡牌張後顫動並等待閃電落下的時長。 */
+    const val WIN_TRIDENT_SETTLE_DURATION_TICKS: Int = 8
+
+    /** 胡牌閃電相對整段降臨特效開始的 tick。 */
+    const val WIN_LIGHTNING_START_TICK: Int = WIN_TRIDENT_FALL_DURATION_TICKS + WIN_TRIDENT_SETTLE_DURATION_TICKS
+
+    /** 三叉戟引雷前搖與後續閃電、環形電弧的完整播放時長。 */
+    const val WIN_EFFECT_DURATION_TICKS: Int = WIN_LIGHTNING_START_TICK + 30
 
     /**
      * 牌牆角落貼齊處縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，遊戲內驗證後調整的觀感參數。

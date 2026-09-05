@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongVisualEffectKeys
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffectEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.world.ServerWorld
 import org.koin.core.annotation.Single
@@ -57,11 +58,20 @@ class FabricWinCelebrationEffectScheduler {
             )
             enqueue(
                 AnimationStep.PlaySound(
+                    soundId = MahjongAnimationSounds.TRIDENT_HIT_GROUND,
+                    volume = 1.0f,
+                    pitch = 1.0f,
+                    playAtGameTime = startGameTime + MahjongTileTableLayout.WIN_TRIDENT_FALL_DURATION_TICKS,
+                    expiresAtGameTime = startGameTime + MahjongTileTableLayout.WIN_TRIDENT_FALL_DURATION_TICKS + MahjongAnimationSounds.EVENT_GRACE_TICKS,
+                ),
+            )
+            enqueue(
+                AnimationStep.PlaySound(
                     soundId = MahjongAnimationSounds.WIN_LIGHTNING,
                     volume = 0.9f,
                     pitch = 1.0f,
-                    playAtGameTime = startGameTime,
-                    expiresAtGameTime = startGameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
+                    playAtGameTime = startGameTime + MahjongTileTableLayout.WIN_LIGHTNING_START_TICK,
+                    expiresAtGameTime = startGameTime + MahjongTileTableLayout.WIN_LIGHTNING_START_TICK + MahjongAnimationSounds.EVENT_GRACE_TICKS,
                 ),
             )
             refreshPositionAndAngles(tile.x, tile.y, tile.z, 0.0f, 0.0f)

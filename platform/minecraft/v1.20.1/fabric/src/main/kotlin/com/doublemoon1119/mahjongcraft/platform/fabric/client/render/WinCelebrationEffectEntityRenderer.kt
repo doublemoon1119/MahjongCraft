@@ -2,16 +2,23 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongVisualEffectKeys
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffectEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
+import net.minecraft.client.render.OverlayTexture
 import net.minecraft.client.render.RenderLayer
 import net.minecraft.client.render.VertexConsumer
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRenderer
 import net.minecraft.client.render.entity.EntityRendererFactory
+import net.minecraft.client.render.entity.model.EntityModelLayers
+import net.minecraft.client.render.entity.model.TridentEntityModel
+import net.minecraft.client.render.item.ItemRenderer
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.util.Identifier
+import net.minecraft.util.math.RotationAxis
 import org.joml.Matrix4f
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.exp
 import kotlin.math.sin
 
 /**
@@ -20,7 +27,10 @@ import kotlin.math.sin
 class WinCelebrationEffectEntityRenderer(
     context: EntityRendererFactory.Context,
 ) : EntityRenderer<WinCelebrationEffectEntity>(context) {
-    /** 依同步的絕對時間提交閃電、充能電弧與波紋幾何。 */
+    /** 原版三叉戟實體模型；直接使用其明確座標，讓戟尖能穩定對準胡牌張。 */
+    private val tridentModel: TridentEntityModel = TridentEntityModel(context.getPart(EntityModelLayers.TRIDENT))
+
+    /** 依同步的絕對時間提交引雷三叉戟、閃電、充能電弧與波紋幾何。 */
     override fun render(
         entity: WinCelebrationEffectEntity,
         yaw: Float,
@@ -31,7 +41,12 @@ class WinCelebrationEffectEntityRenderer(
     ) {
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         if (entity.effectKey != MahjongVisualEffectKeys.WIN_CELEBRATION || !entity.isActive(tickDelta)) return
-        val progress = entity.progress(tickDelta)
+        val elapsedTicks = entity.world.time.toDouble() + tickDelta - entity.startGameTime
+        renderTrident(entity, elapsedTicks, matrices, vertexConsumers, light)
+
+        val lightningElapsed = elapsedTicks - LIGHTNING_START_TICK
+        if (lightningElapsed < 0.0) return
+        val progress = (lightningElapsed / LIGHTNING_DURATION_TICKS).coerceIn(0.0, 1.0)
         val envelope = sin(progress * PI).coerceAtLeast(0.0)
         if (envelope <= 0.0) return
 
@@ -61,6 +76,63 @@ class WinCelebrationEffectEntityRenderer(
                 rippleIndex = index,
             )
         }
+    }
+
+    /** 先讓縮小的原版附魔三叉戟落下，再以快速衰減的阻尼擺動表現插入後的顫動。 */
+    private fun renderTrident(
+        entity: WinCelebrationEffectEntity,
+        elapsedTicks: Double,
+        matrices: MatrixStack,
+        consumers: VertexConsumerProvider,
+        light: Int,
+    ) {
+        if (elapsedTicks !in 0.0..<TRIDENT_SHRINK_END_TICK.toDouble()) return
+        val fallProgress = (elapsedTicks / TRIDENT_FALL_DURATION_TICKS).coerceIn(0.0, 1.0)
+        val easedFall = 1.0 - (1.0 - fallProgress) * (1.0 - fallProgress) * (1.0 - fallProgress)
+        val settleProgress = ((elapsedTicks - TRIDENT_FALL_DURATION_TICKS) / TRIDENT_SETTLE_DURATION_TICKS).coerceIn(0.0, 1.0)
+        val rawShrinkProgress =
+            ((elapsedTicks - TRIDENT_SHRINK_START_TICK) / TRIDENT_SHRINK_DURATION_TICKS).coerceIn(0.0, 1.0)
+        val shrinkProgress = rawShrinkProgress * rawShrinkProgress * (3.0 - 2.0 * rawShrinkProgress)
+        val tridentScale = TRIDENT_SCALE * (1.0 - shrinkProgress).toFloat()
+        val wobble = if (elapsedTicks < TRIDENT_FALL_DURATION_TICKS) {
+            0.0
+        } else {
+            sin(settleProgress * TRIDENT_WOBBLE_CYCLES * PI * 2.0) *
+                exp(-settleProgress * TRIDENT_WOBBLE_DAMPING) * TRIDENT_WOBBLE_DEGREES
+        }
+        val seededYaw = Math.floorMod(entity.animationSeed, TRIDENT_YAW_STEPS).toFloat() /
+            TRIDENT_YAW_STEPS * FULL_ROTATION_DEGREES
+        val seededTilt =
+            TRIDENT_MIN_INSERT_ANGLE_DEGREES +
+                (
+                    (seededOffset(entity.animationSeed, TRIDENT_TILT_SALT) + 1.0) / 2.0 *
+                        (TRIDENT_MAX_INSERT_ANGLE_DEGREES - TRIDENT_MIN_INSERT_ANGLE_DEGREES)
+                    ).toFloat()
+        val fallingTilt = seededTilt * (1.0 - easedFall).toFloat()
+
+        matrices.push()
+        matrices.translate(0.0, TRIDENT_START_HEIGHT + (TRIDENT_END_HEIGHT - TRIDENT_START_HEIGHT) * easedFall, 0.0)
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(seededYaw))
+        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(fallingTilt + wobble.toFloat()))
+        matrices.scale(tridentScale, tridentScale, tridentScale)
+        matrices.translate(0.0, TRIDENT_TIP_TO_MODEL_ORIGIN, 0.0)
+        val buffer = ItemRenderer.getDirectItemGlintConsumer(
+            consumers,
+            tridentModel.getLayer(TridentEntityModel.TEXTURE),
+            false,
+            true,
+        )
+        tridentModel.render(
+            matrices,
+            buffer,
+            light,
+            OverlayTexture.DEFAULT_UV,
+            1.0f,
+            1.0f,
+            1.0f,
+            1.0f,
+        )
+        matrices.pop()
     }
 
     /** 以三層半透明帶狀幾何疊出縮小版原版閃電，並在前段切換數次形狀與明暗。 */
@@ -364,6 +436,38 @@ class WinCelebrationEffectEntityRenderer(
     override fun getTexture(entity: WinCelebrationEffectEntity): Identifier? = null
 
     companion object {
+        /** 三叉戟落下、插入停頓與後續閃電的時間分段。 */
+        private const val TRIDENT_FALL_DURATION_TICKS: Int = MahjongTileTableLayout.WIN_TRIDENT_FALL_DURATION_TICKS
+        private const val TRIDENT_SETTLE_DURATION_TICKS: Int = MahjongTileTableLayout.WIN_TRIDENT_SETTLE_DURATION_TICKS
+        private const val LIGHTNING_START_TICK: Int = MahjongTileTableLayout.WIN_LIGHTNING_START_TICK
+        private const val LIGHTNING_DURATION_TICKS: Int = MahjongTileTableLayout.WIN_EFFECT_DURATION_TICKS - LIGHTNING_START_TICK
+        private const val TRIDENT_SHRINK_DELAY_TICKS: Int = 2
+        private const val TRIDENT_SHRINK_DURATION_TICKS: Int = 8
+        private const val TRIDENT_SHRINK_START_TICK: Int = LIGHTNING_START_TICK + TRIDENT_SHRINK_DELAY_TICKS
+        private const val TRIDENT_SHRINK_END_TICK: Int = TRIDENT_SHRINK_START_TICK + TRIDENT_SHRINK_DURATION_TICKS
+
+        /** 三叉戟的世界高度、尺寸與 seed 控制的插入角度範圍。 */
+        private const val TRIDENT_START_HEIGHT: Double = 1.8
+        private const val TRIDENT_END_HEIGHT: Double = 0.075
+        private const val TRIDENT_SCALE: Float = 0.2f
+        private const val TRIDENT_TIP_TO_MODEL_ORIGIN: Double = 3.0 / 16.0
+        private const val TRIDENT_MIN_INSERT_ANGLE_DEGREES: Float = 8.0f
+        private const val TRIDENT_MAX_INSERT_ANGLE_DEGREES: Float = 20.0f
+
+        /** 插入後的阻尼顫動參數。 */
+        private const val TRIDENT_WOBBLE_CYCLES: Double = 2.5
+        private const val TRIDENT_WOBBLE_DAMPING: Double = 3.8
+        private const val TRIDENT_WOBBLE_DEGREES: Double = 7.0
+
+        /** 持久化 seed 映射至三叉戟水平朝向時使用的離散精度。 */
+        private const val TRIDENT_YAW_STEPS: Long = 360L
+
+        /** 由持久化 seed 取得三叉戟傾角時使用的獨立雜湊 salt。 */
+        private const val TRIDENT_TILT_SALT: Int = 8731
+
+        /** 完整一圈的角度。 */
+        private const val FULL_ROTATION_DEGREES: Float = 360.0f
+
         /** 圓環線段數，兼顧圓滑度與頂點數。 */
         private const val RING_SEGMENTS: Int = 32
 

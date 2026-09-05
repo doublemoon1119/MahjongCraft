@@ -13,10 +13,10 @@ class WinCelebrationEffectEntity(
     world: World,
 ) : AnimatedVisualEffectEntity(type, world) {
     companion object {
-        /** 視錐剔除使用的非零寬度，涵蓋 renderer 的最大水平半徑。 */
-        const val WIDTH: Float = 0.6f
+        /** 視錐剔除使用的非零寬度，涵蓋 renderer 的三叉戟與最大水平半徑。 */
+        const val WIDTH: Float = 1.0f
 
-        /** 視錐剔除使用的高度，涵蓋完整收束光帶。 */
-        const val HEIGHT: Float = 0.65f
+        /** 視錐剔除使用的高度，涵蓋三叉戟完整落下路徑。 */
+        const val HEIGHT: Float = 2.4f
     }
 }
