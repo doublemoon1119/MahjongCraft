@@ -210,6 +210,23 @@ class FabricGamePresentationPublisher(
                 val revealedAssets = request.players.flatMap { it.revealedHandTileIds }.distinct().mapNotNull { tileId ->
                     tableState?.findTile(tileId)?.let { tileId to it.tile.toAssetKey(tileAssetRegistry) }
                 }.toMap()
+                val reservedCornerWidths = tableState?.players?.mapIndexed { seatIndex, player ->
+                    val melds = player.hand.melds.map { meld -> meld.toPresentation(tableState.config.revealsClosedKanTiles) }
+                        .map { presentation ->
+                            MahjongMeldTileGroup(
+                                presentation.type,
+                                presentation.tileIds,
+                                presentation.calledTileId,
+                                presentation.sourceDirection,
+                                presentation.allTilesFaceDown,
+                            )
+                        }
+                    val comboStickCount = if (seatIndex == tableState.dealerIndex) tableState.comboCount else 0
+                    seatIndex to (
+                        MahjongTileTableLayout.stickAreaWidth(comboStickCount) +
+                            MahjongTileTableLayout.meldAreaWidth(melds)
+                        )
+                }?.toMap().orEmpty()
                 val endGameTime = exhaustiveDrawSettlementScheduler.schedule(
                     world = resolved.world,
                     tableId = gameId,
@@ -223,6 +240,7 @@ class FabricGamePresentationPublisher(
                     request = request,
                     waitingTileAssetsBySeat = waitingAssets,
                     revealedTileAssetsById = revealedAssets,
+                    reservedCornerWidthsBySeat = reservedCornerWidths,
                 )
                 if (endGameTime == null) {
                     logger.warn("publishExhaustiveDrawSettlement gameId={} skipped: stage spawn failed", gameId)

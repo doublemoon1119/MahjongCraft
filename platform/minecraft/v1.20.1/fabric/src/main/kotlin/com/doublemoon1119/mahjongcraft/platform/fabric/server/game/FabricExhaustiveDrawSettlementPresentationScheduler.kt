@@ -31,6 +31,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
         request: ExhaustiveDrawSettlementPresentationRequest,
         waitingTileAssetsBySeat: Map<Int, List<String>>,
         revealedTileAssetsById: Map<Uuid, String>,
+        reservedCornerWidthsBySeat: Map<Int, Double>,
     ): Long? {
         val startGameTime = world.time
         val playerSnapshots = request.players.map { player ->
@@ -63,6 +64,10 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
         val endGameTime = startGameTime + ExhaustiveDrawSettlementPresentationEntity.durationTicks(playerSnapshots)
         request.players.forEach { player ->
             val handTileIds = player.handTileIds.distinct()
+            val cornerYieldShift = MahjongTileTableLayout.handCornerYieldShift(
+                handSize = handTileIds.size,
+                reservedCornerWidth = reservedCornerWidthsBySeat[player.ranking.seatIndex] ?: 0.0,
+            )
             handTileIds.forEachIndexed { orderIndex, tileId ->
                 val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity ?: return@forEachIndexed
                 val sortedPlacement = MahjongTileTableLayout.handPlacement(
@@ -73,7 +78,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
                     seatIndex = player.ranking.seatIndex,
                     handSize = handTileIds.size,
                     tileIndex = handTileIds.size - 1 - orderIndex,
-                    cornerYieldShift = 0.0,
+                    cornerYieldShift = cornerYieldShift,
                 )
                 TileAnimationSteps.scheduleReorder(tile, sortedPlacement, startGameTime + HAND_REORDER_START_TICK)
                 when (player.handPresentation) {

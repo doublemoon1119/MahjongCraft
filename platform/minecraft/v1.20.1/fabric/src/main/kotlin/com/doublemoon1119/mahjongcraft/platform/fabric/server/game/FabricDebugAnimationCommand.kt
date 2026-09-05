@@ -85,6 +85,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageK
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
@@ -267,6 +268,20 @@ class FabricDebugAnimationCommand(
                                                 )
                                             },
                                         ),
+                                    ),
+                                )
+                                .then(
+                                    literal(MELDS_ARGUMENT).then(
+                                        argument(MELD_COUNT_ARGUMENT, IntegerArgumentType.integer(1, MAX_DEBUG_MELD_COUNT))
+                                            .suggests(::suggestDebugMeldCounts)
+                                            .executes { context ->
+                                                previewSettlement(
+                                                    context.source,
+                                                    RiichiExhaustiveDrawReason.Normal.id,
+                                                    tenpaiCount = 1,
+                                                    meldCount = IntegerArgumentType.getInteger(context, MELD_COUNT_ARGUMENT),
+                                                )
+                                            },
                                     ),
                                 )
                                 .then(literal(KYUUSHU_ARGUMENT).executes { context -> previewSettlement(context.source, RiichiExhaustiveDrawReason.KyuushuKyuuhai.id, 1, proof = true) })
@@ -537,6 +552,15 @@ class FabricDebugAnimationCommand(
         options
             .filter { it.startsWith(suggestions.remaining, ignoreCase = true) }
             .forEach(suggestions::suggest)
+    }
+
+    /** 補全標準日麻允許的副露組數。 */
+    private fun suggestDebugMeldCounts(
+        @Suppress("UNUSED_PARAMETER") context: CommandContext<ServerCommandSource>,
+        builder: SuggestionsBuilder,
+    ): CompletableFuture<Suggestions> {
+        (1..MAX_DEBUG_MELD_COUNT).forEach(builder::suggest)
+        return builder.buildFuture()
     }
 
     /**
@@ -878,9 +902,11 @@ class FabricDebugAnimationCommand(
         proof: Boolean = false,
         scoreDelta: Int = 0,
         playerCount: Int = 4,
+        meldCount: Int = 0,
     ): Int {
         if (':' !in reasonId) return COMMAND_FAILURE
         if (playerCount !in 2..4 || tenpaiCount !in 0..playerCount) return COMMAND_FAILURE
+        if (meldCount !in 0..MAX_DEBUG_MELD_COUNT) return COMMAND_FAILURE
         val player = source.player ?: return COMMAND_FAILURE
         val layout = virtualTableLayout(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
         val previousScores = if (scoreDelta == 0) List(playerCount) { 25_000 } else List(playerCount) { index -> 28_000 - index * 2_000 }
@@ -900,18 +926,55 @@ class FabricDebugAnimationCommand(
         val playerIds = List(playerCount) { seat ->
             if (seat == 0) player.uuid.toKotlinUuid() else Uuid.random()
         }
+        val previewMeldTiles = List(meldCount) { meldIndex ->
+            List(MELD_TILE_COUNT) { tileIndex ->
+                spawnFreeTile(
+                    player.serverWorld,
+                    layout.handPlacement(handSize = DEFAULT_RULE_CONFIG.initialHandSize, tileIndex = tileIndex),
+                    MahjongTilePose.FACE_UP,
+                    ALL_TILE_ASSET_KEYS[(meldIndex * MELD_TILE_COUNT + tileIndex) % (ALL_TILE_ASSET_KEYS.size - 1)],
+                )
+            }
+        }
+        val previewMelds = previewMeldTiles.map { tiles ->
+            MahjongMeldTileGroup(
+                type = MeldType.PON,
+                tileIds = tiles.map { it.uuid.toKotlinUuid() },
+                calledTileId = tiles[1].uuid.toKotlinUuid(),
+                sourceDirection = RelativeDirection.Across,
+                allTilesFaceDown = false,
+            )
+        }
+        layout.meldPlacements(previewMelds).forEach { (tileId, tilePlacement) ->
+            previewMeldTiles.flatten().first { it.uuid.toKotlinUuid() == tileId }
+                .refreshPositionAndAngles(tilePlacement.x, tilePlacement.y, tilePlacement.z, tilePlacement.yaw, 0.0f)
+        }
+        val reservedCornerWidths = if (previewMelds.isEmpty()) {
+            emptyMap()
+        } else {
+            mapOf(DEBUG_SEAT_INDEX to MahjongTileTableLayout.meldAreaWidth(previewMelds))
+        }
         val previewTilesBySeat = List(playerCount) { seat ->
+            val handSize = if (seat == DEBUG_SEAT_INDEX && meldCount > 0) {
+                maxOf(MIN_DEBUG_CONCEALED_HAND_SIZE, DEFAULT_RULE_CONFIG.initialHandSize - meldCount * MELD_TILE_COUNT)
+            } else {
+                DEFAULT_RULE_CONFIG.initialHandSize
+            }
+            val cornerYieldShift = MahjongTileTableLayout.handCornerYieldShift(
+                handSize = handSize,
+                reservedCornerWidth = reservedCornerWidths[seat] ?: 0.0,
+            )
             val assets = if (proof && seat == 0) {
                 KYUUSHU_PREVIEW_ASSETS
             } else {
-                List(DEFAULT_RULE_CONFIG.initialHandSize) { index ->
+                List(handSize) { index ->
                     ALL_TILE_ASSET_KEYS[(seat * 7 + index) % (ALL_TILE_ASSET_KEYS.size - 1)]
                 }
             }
             assets.mapIndexed { index, asset ->
                 spawnFreeTile(
                     player.serverWorld,
-                    layout.handPlacement(seat, assets.size, index),
+                    layout.handPlacement(seat, assets.size, index, cornerYieldShift),
                     MahjongTilePose.STANDING,
                     asset,
                 ) to asset
@@ -961,8 +1024,13 @@ class FabricDebugAnimationCommand(
             waitingTileAssetsBySeat = players.filter { it.handPresentation == ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI }
                 .associate { it.ranking.seatIndex to DEFAULT_WAITING_TILE_ASSETS },
             revealedTileAssetsById = revealedAssetsById,
+            reservedCornerWidthsBySeat = reservedCornerWidths,
         ) ?: return COMMAND_FAILURE
-        scheduleCleanup(player.serverWorld, end, previewTilesBySeat.flatten().map(Pair<MahjongTileEntity, String>::first))
+        scheduleCleanup(
+            player.serverWorld,
+            end,
+            previewTilesBySeat.flatten().map(Pair<MahjongTileEntity, String>::first) + previewMeldTiles.flatten(),
+        )
         source.sendFeedback({ net.minecraft.text.Text.literal("Exhaustive draw settlement preview active until game time $end") }, false)
         return COMMAND_SUCCESS
     }
@@ -1546,7 +1614,12 @@ class FabricDebugAnimationCommand(
         fun handPlacement(handSize: Int, tileIndex: Int): MahjongTileWallPlacement = handPlacement(DEBUG_SEAT_INDEX, handSize, tileIndex)
 
         /** 取得指定座位的正式手牌格位，供多家和 showcase 使用。 */
-        fun handPlacement(seatIndex: Int, handSize: Int, tileIndex: Int): MahjongTileWallPlacement = MahjongTileTableLayout.handPlacement(
+        fun handPlacement(
+            seatIndex: Int,
+            handSize: Int,
+            tileIndex: Int,
+            cornerYieldShift: Double = 0.0,
+        ): MahjongTileWallPlacement = MahjongTileTableLayout.handPlacement(
             controllerX = controllerX,
             controllerY = controllerY,
             controllerZ = controllerZ,
@@ -1554,6 +1627,7 @@ class FabricDebugAnimationCommand(
             seatIndex = seatIndex,
             handSize = handSize,
             tileIndex = tileIndex,
+            cornerYieldShift = cornerYieldShift,
         )
 
         /** 取得與正式桌面完全一致的 showcase 世界中心。 */
@@ -1618,6 +1692,39 @@ class FabricDebugAnimationCommand(
                 cursorAlong += halfWidth + MahjongTileDimensions.TILE_SMALL_PADDING
                 placement
             }.reversed()
+        }
+
+        /** 依正式副露游標規則取得多組副露中每張牌的格位。 */
+        fun meldPlacements(melds: List<MahjongMeldTileGroup>): Map<Uuid, MahjongTileWallPlacement> {
+            val placements = mutableMapOf<Uuid, MahjongTileWallPlacement>()
+            var cursorAlong = MahjongTileTableLayout.stickAreaWidth(stickCount = 0)
+            melds.forEachIndexed { meldIndex, meld ->
+                if (meldIndex > 0) cursorAlong += MahjongTileTableLayout.MELD_GROUP_GAP
+                val sidewaysSlot = meld.calledTileId?.let {
+                    MahjongTileTableLayout.sidewaysSlotIndex(meld.sourceDirection, meld.tileIds.size)
+                }
+                val remainingTileIds = ArrayDeque(meld.tileIds.filterNot { it == meld.calledTileId })
+                val tileAtSlot = meld.tileIds.indices.map { slot ->
+                    if (slot == sidewaysSlot) meld.calledTileId!! else remainingTileIds.removeFirst()
+                }
+                for (slot in tileAtSlot.indices.reversed()) {
+                    val isSideways = slot == sidewaysSlot
+                    val halfWidth =
+                        if (isSideways) MahjongTileDimensions.TILE_HEIGHT / 2.0 else MahjongTileDimensions.TILE_WIDTH / 2.0
+                    cursorAlong += halfWidth
+                    placements[tileAtSlot[slot]] = MahjongTileTableLayout.meldPlacement(
+                        controllerX = controllerX,
+                        controllerY = controllerY,
+                        controllerZ = controllerZ,
+                        tableFacing = tableFacing,
+                        seatIndex = DEBUG_SEAT_INDEX,
+                        alongOffsetFromCorner = cursorAlong,
+                        isSidewaysTile = isSideways,
+                    )
+                    cursorAlong += halfWidth + MahjongTileDimensions.TILE_SMALL_PADDING
+                }
+            }
+            return placements
         }
     }
 
@@ -1779,6 +1886,8 @@ class FabricDebugAnimationCommand(
         const val CHANGED_ARGUMENT: String = "changed"
         const val UNCHANGED_ARGUMENT: String = "unchanged"
         const val NORMAL_ARGUMENT: String = "normal"
+        const val MELDS_ARGUMENT: String = "melds"
+        const val MELD_COUNT_ARGUMENT: String = "meld_count"
         const val KYUUSHU_ARGUMENT: String = "kyuushu"
         const val YAKUMAN_ARGUMENT: String = "yakuman"
         const val NAGASHI_ARGUMENT: String = "nagashi"
@@ -1850,6 +1959,12 @@ class FabricDebugAnimationCommand(
 
         /** `meld chi`／`meld pon` 需要的牌數。 */
         const val MELD_TILE_COUNT: Int = 3
+
+        /** 內建規則目前需要驗證的最大副露組數。 */
+        const val MAX_DEBUG_MELD_COUNT: Int = 5
+
+        /** 副露布局預覽至少保留的暗手張數。 */
+        const val MIN_DEBUG_CONCEALED_HAND_SIZE: Int = 1
 
         /** Brigadier 成功回傳值。 */
         const val COMMAND_SUCCESS: Int = 1
