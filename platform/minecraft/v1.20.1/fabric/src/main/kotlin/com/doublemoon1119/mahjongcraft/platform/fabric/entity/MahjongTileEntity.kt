@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -48,6 +49,25 @@ class MahjongTileEntity(
     type: EntityType<out MahjongTileEntity> = ModEntities.mahjongTile,
     world: World,
 ) : AnimatedMahjongEntity<MahjongTilePose>(type, world) {
+    /** 僅供本地 client 同種牌提示使用的原版 outline RGB；不追蹤也不持久化。 */
+    private var matchingHighlightColor: Int? = null
+
+    /** 原版或其他來源未啟用 glowing 時，加入本地同種牌提示狀態。 */
+    override fun isGlowing(): Boolean = super.isGlowing() || matchingHighlightColor != null
+
+    /** 原版 glowing 優先；只有 MahjongCraft 本地提示生效時才提供自訂描邊顏色。 */
+    override fun getTeamColorValue(): Int = if (super.isGlowing()) super.getTeamColorValue() else matchingHighlightColor ?: super.getTeamColorValue()
+
+    /** 設定僅供目前 client 使用的同種牌描邊色彩。 */
+    fun setMatchingHighlight(rgb: Int) {
+        matchingHighlightColor = rgb and 0xFFFFFF
+    }
+
+    /** 清除本地同種牌描邊，不影響原版或其他模組的 glowing flag。 */
+    fun clearMatchingHighlight() {
+        matchingHighlightColor = null
+    }
+
     /**
      * 牌面素材 key；外部輸入會正規化為支援值或 `unknown`。
      *
@@ -89,6 +109,48 @@ class MahjongTileEntity(
 
     /** [presentationAssetKey] 的絕對到期時間。 */
     val presentationAssetEndGameTime: Long get() = dataTracker[PRESENTATION_ASSET_END_GAME_TIME]
+
+    /** 最近一次捨牌或鳴牌落地後的短暫提示種類。 */
+    val actionPopupKind: TileActionPopupKind get() = TileActionPopupKind.fromOrdinal(dataTracker[ACTION_POPUP_KIND])
+
+    /** 短暫牌面提示開始淡入的絕對時間。 */
+    val actionPopupStartGameTime: Long get() = dataTracker[ACTION_POPUP_START_GAME_TIME]
+
+    /** 短暫牌面提示完成淡出的絕對時間。 */
+    val actionPopupEndGameTime: Long get() = dataTracker[ACTION_POPUP_END_GAME_TIME]
+
+    /** 由單一錨點承載的完整副露提示排列；非副露錨點為空集合。 */
+    val meldActionPopupTiles: List<MeldActionPopupTile>
+        get() = dataTracker[MELD_ACTION_POPUP_TILES].split(";").mapNotNull { encoded ->
+            val parts = encoded.split(",")
+            val tileId = parts.getOrNull(0)?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: return@mapNotNull null
+            val orientation = parts.getOrNull(1)
+                ?.let { name -> runCatching { DecisionTileOrientationDto.valueOf(name) }.getOrNull() }
+                ?: DecisionTileOrientationDto.UPRIGHT
+            MeldActionPopupTile(tileId, orientation, parts.getOrNull(2) == "1")
+        }
+
+    /** 在 server 端設定一次可持久化的落地牌面提示時間線。 */
+    fun showActionPopup(kind: TileActionPopupKind, startGameTime: Long, endGameTime: Long) {
+        check(!world.isClient) { "Tile action popup is server-only" }
+        require(kind != TileActionPopupKind.NONE) { "Tile action popup kind must be visible" }
+        require(endGameTime > startGameTime) { "Tile action popup must have a positive duration" }
+        dataTracker.set(ACTION_POPUP_KIND, kind.ordinal)
+        dataTracker.set(ACTION_POPUP_START_GAME_TIME, startGameTime)
+        dataTracker.set(ACTION_POPUP_END_GAME_TIME, endGameTime)
+    }
+
+    /** 在一張錨點牌上保存整組副露的實際順序、橫置方向與顯示時間線。 */
+    fun showMeldActionPopup(tiles: List<MeldActionPopupTile>, startGameTime: Long, endGameTime: Long) {
+        require(tiles.isNotEmpty()) { "Meld action popup must contain tiles" }
+        showActionPopup(TileActionPopupKind.MELD, startGameTime, endGameTime)
+        dataTracker.set(
+            MELD_ACTION_POPUP_TILES,
+            tiles.joinToString(";") { tile ->
+                "${tile.tileId},${tile.orientation.name},${if (tile.stacked) 1 else 0}"
+            },
+        )
+    }
 
     /** 只在 server 端建立可持久化的公開牌面 lease；重複呼叫只允許延長。 */
     fun revealForPresentation(assetKey: String, endGameTime: Long) {
@@ -385,6 +447,10 @@ class MahjongTileEntity(
         dataTracker.startTracking(ANIMATION_EASE_ROTATION, false)
         dataTracker.startTracking(PRESENTATION_ASSET_KEY, UNKNOWN_TILE_ASSET_KEY)
         dataTracker.startTracking(PRESENTATION_ASSET_END_GAME_TIME, 0L)
+        dataTracker.startTracking(ACTION_POPUP_KIND, TileActionPopupKind.NONE.ordinal)
+        dataTracker.startTracking(ACTION_POPUP_START_GAME_TIME, 0L)
+        dataTracker.startTracking(ACTION_POPUP_END_GAME_TIME, 0L)
+        dataTracker.startTracking(MELD_ACTION_POPUP_TILES, "")
     }
 
     /**
@@ -401,6 +467,10 @@ class MahjongTileEntity(
         tilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
         dataTracker.set(PRESENTATION_ASSET_KEY, nbt.getString(NBT_KEY_PRESENTATION_ASSET))
         dataTracker.set(PRESENTATION_ASSET_END_GAME_TIME, nbt.getLong(NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME))
+        dataTracker.set(ACTION_POPUP_KIND, nbt.getInt(NBT_KEY_ACTION_POPUP_KIND))
+        dataTracker.set(ACTION_POPUP_START_GAME_TIME, nbt.getLong(NBT_KEY_ACTION_POPUP_START_GAME_TIME))
+        dataTracker.set(ACTION_POPUP_END_GAME_TIME, nbt.getLong(NBT_KEY_ACTION_POPUP_END_GAME_TIME))
+        dataTracker.set(MELD_ACTION_POPUP_TILES, nbt.getString(NBT_KEY_MELD_ACTION_POPUP_TILES))
         nonBlockingPresentationUntilGameTime = NonBlockingPresentationLeaseCodec.read(nbt)
         readAnimationQueueFromNbt(nbt)
     }
@@ -413,6 +483,10 @@ class MahjongTileEntity(
         managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
         nbt.putString(NBT_KEY_PRESENTATION_ASSET, presentationAssetKey)
         nbt.putLong(NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME, presentationAssetEndGameTime)
+        nbt.putInt(NBT_KEY_ACTION_POPUP_KIND, actionPopupKind.ordinal)
+        nbt.putLong(NBT_KEY_ACTION_POPUP_START_GAME_TIME, actionPopupStartGameTime)
+        nbt.putLong(NBT_KEY_ACTION_POPUP_END_GAME_TIME, actionPopupEndGameTime)
+        nbt.putString(NBT_KEY_MELD_ACTION_POPUP_TILES, dataTracker[MELD_ACTION_POPUP_TILES])
         NonBlockingPresentationLeaseCodec.write(nbt, nonBlockingPresentationUntilGameTime)
         writeAnimationQueueToNbt(nbt)
     }
@@ -440,6 +514,10 @@ class MahjongTileEntity(
         private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
         private const val NBT_KEY_PRESENTATION_ASSET = "PresentationAsset"
         private const val NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME = "PresentationAssetEndGameTime"
+        private const val NBT_KEY_ACTION_POPUP_KIND = "ActionPopupKind"
+        private const val NBT_KEY_ACTION_POPUP_START_GAME_TIME = "ActionPopupStartGameTime"
+        private const val NBT_KEY_ACTION_POPUP_END_GAME_TIME = "ActionPopupEndGameTime"
+        private const val NBT_KEY_MELD_ACTION_POPUP_TILES = "MeldActionPopupTiles"
 
         /** 同步牌面素材 key。 */
         private val TILE_ASSET_KEY: TrackedData<String> =
@@ -450,6 +528,19 @@ class MahjongTileEntity(
 
         private val PRESENTATION_ASSET_END_GAME_TIME: TrackedData<Long> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
+
+        private val ACTION_POPUP_KIND: TrackedData<Int> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
+
+        private val ACTION_POPUP_START_GAME_TIME: TrackedData<Long> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
+
+        private val ACTION_POPUP_END_GAME_TIME: TrackedData<Long> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
+
+        /** 同步完整副露提示排列。 */
+        private val MELD_ACTION_POPUP_TILES: TrackedData<String> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
         /** 同步姿態 ordinal；持久化仍使用名稱以避免 enum 重排影響存檔。 */
         private val TILE_POSE: TrackedData<Int> =

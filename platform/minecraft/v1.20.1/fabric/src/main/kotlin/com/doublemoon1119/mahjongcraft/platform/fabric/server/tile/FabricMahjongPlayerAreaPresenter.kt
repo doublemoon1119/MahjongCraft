@@ -1,12 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MeldActionPopupTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
@@ -151,8 +154,8 @@ class FabricMahjongPlayerAreaPresenter(
             isSidewaysTile: Boolean,
             depthOffsetFromEdge: Double = 0.0,
             pose: MahjongTilePose = MahjongTilePose.FACE_UP,
-        ) {
-            val tile = claimTile(tileId) ?: return
+        ): MahjongTileEntity? {
+            val tile = claimTile(tileId) ?: return null
             val placement = MahjongTileTableLayout.meldPlacement(
                 controllerX = controllerPos.x,
                 controllerY = controllerPos.y,
@@ -176,6 +179,7 @@ class FabricMahjongPlayerAreaPresenter(
                 tile.tilePose = pose
                 tile.teleportExistingManagedTile(placement)
             }
+            return tile
         }
 
         var cursorAlong = MahjongTileTableLayout.stickAreaWidth(presentation.comboStickCount)
@@ -189,6 +193,7 @@ class FabricMahjongPlayerAreaPresenter(
             val tileAtSlot = (0 until slotCount).map { slot ->
                 if (slot == sidewaysSlot) meld.calledTileId!! else remainingTileIds.removeFirst()
             }
+            val placedTilesById = mutableMapOf<Uuid, MahjongTileEntity>()
             var sidewaysAlongOffset: Double? = null
             for (slot in slotCount - 1 downTo 0) {
                 val isSideways = slot == sidewaysSlot
@@ -200,7 +205,9 @@ class FabricMahjongPlayerAreaPresenter(
                     cursorAlong,
                     isSidewaysTile = isSideways,
                     pose = closedKanPose(meld, slot, slotCount),
-                )
+                )?.let { tile ->
+                    placedTilesById[tileAtSlot[slot]] = tile
+                }
                 if (isSideways) sidewaysAlongOffset = cursorAlong
                 cursorAlong += halfWidth + MahjongTileDimensions.TILE_SMALL_PADDING
             }
@@ -210,6 +217,30 @@ class FabricMahjongPlayerAreaPresenter(
                     sidewaysAlongOffset!!,
                     isSidewaysTile = true,
                     depthOffsetFromEdge = MahjongTileTableLayout.ADDED_KAN_DEPTH_OFFSET,
+                )?.let { tile ->
+                    placedTilesById[addedTileId] = tile
+                }
+            }
+            if (meld.tileIds.any { it in presentation.animatedMeldClaimTileIds }) {
+                val landingTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
+                val claimedOrientation = when (meld.sourceDirection) {
+                    RelativeDirection.Left -> DecisionTileOrientationDto.ROTATED_LEFT
+                    RelativeDirection.Across, RelativeDirection.Right -> DecisionTileOrientationDto.ROTATED_RIGHT
+                    RelativeDirection.Self -> DecisionTileOrientationDto.UPRIGHT
+                }
+                val popupTiles = tileAtSlot.mapIndexed { slot, tileId ->
+                    MeldActionPopupTile(
+                        tileId = tileId,
+                        orientation = if (slot == sidewaysSlot) claimedOrientation else DecisionTileOrientationDto.UPRIGHT,
+                        stacked = false,
+                    )
+                } + listOfNotNull(
+                    addedTileId?.let { tileId -> MeldActionPopupTile(tileId, claimedOrientation, stacked = true) },
+                )
+                placedTilesById.values.firstOrNull()?.showMeldActionPopup(
+                    popupTiles,
+                    landingTime,
+                    landingTime + TileAnimationSteps.ACTION_POPUP_DURATION_TICKS,
                 )
             }
         }

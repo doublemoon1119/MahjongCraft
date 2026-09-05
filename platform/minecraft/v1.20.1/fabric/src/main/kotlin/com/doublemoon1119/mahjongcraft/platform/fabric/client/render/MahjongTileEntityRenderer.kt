@@ -1,10 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.ClientDecisionPromptStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TileActionPopupKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
@@ -45,6 +48,7 @@ class MahjongTileEntityRenderer(
     private val tileFaceRenderer: MahjongTileFaceRenderer,
     private val moduleRegistry: MahjongModuleRegistry,
     private val decisionPromptStore: ClientDecisionPromptStore,
+    private val configStore: MahjongClientConfigStore,
 ) : EntityRenderer<MahjongTileEntity>(context) {
     /** 共用 Vanilla item renderer，避免建立第二套牌面模型格式。 */
     private val itemRenderer = context.itemRenderer
@@ -111,6 +115,144 @@ class MahjongTileEntityRenderer(
             )
         }
         tileFaceRenderer.renderModelLabels(assetKey, matrices, vertexConsumers, effectiveLight)
+        matrices.pop()
+        renderActionPopup(entity, assetKey, tickDelta, matrices, vertexConsumers)
+    }
+
+    /** 在落地牌張上方繪製短暫、無文字的 billboard 牌面提示。 */
+    private fun renderActionPopup(
+        entity: MahjongTileEntity,
+        assetKey: String,
+        tickDelta: Float,
+        matrices: MatrixStack,
+        consumers: VertexConsumerProvider,
+    ) {
+        val kind = entity.actionPopupKind
+        val visibility = configStore.current.presentationVisibility
+        val enabled = when (kind) {
+            TileActionPopupKind.DISCARD -> visibility.discardPopupEnabled
+            TileActionPopupKind.MELD -> visibility.meldPopupEnabled
+            TileActionPopupKind.NONE -> false
+        }
+        if (!enabled) return
+        val now = entity.world.time.toDouble() + tickDelta
+        if (now !in entity.actionPopupStartGameTime.toDouble()..<entity.actionPopupEndGameTime.toDouble()) return
+        val elapsed = now - entity.actionPopupStartGameTime
+        val remaining = entity.actionPopupEndGameTime - now
+        val alpha = minOf(elapsed / ACTION_POPUP_FADE_TICKS, remaining / ACTION_POPUP_FADE_TICKS, 1.0).toFloat()
+        if (kind == TileActionPopupKind.MELD) {
+            renderMeldActionPopup(entity, alpha, matrices, consumers)
+            return
+        }
+        if (assetKey == UNKNOWN_TILE_ASSET_KEY) return
+        matrices.push()
+        matrices.translate(0.0, ACTION_POPUP_WORLD_HEIGHT, 0.0)
+        matrices.multiply(dispatcher.rotation)
+        matrices.scale(-ACTION_POPUP_SCALE, -ACTION_POPUP_SCALE, ACTION_POPUP_SCALE)
+        WorldPanelRenderer.drawBackground(
+            -ACTION_POPUP_PANEL_WIDTH / 2f,
+            -ACTION_POPUP_PANEL_HEIGHT / 2f,
+            ACTION_POPUP_PANEL_WIDTH / 2f,
+            ACTION_POPUP_PANEL_HEIGHT / 2f,
+            WorldPanelRenderer.withAlpha(ACTION_POPUP_BACKGROUND, alpha * ACTION_POPUP_BACKGROUND_ALPHA),
+            0f,
+            matrices,
+            consumers,
+        )
+        tileFaceRenderer.renderWorldPanel(
+            assetKey,
+            0f,
+            0f,
+            ACTION_POPUP_TILE_WIDTH,
+            ACTION_POPUP_TILE_HEIGHT,
+            alpha,
+            -0.02f,
+            matrices,
+            consumers,
+        )
+        matrices.pop()
+    }
+
+    /** 由單一錨點依實際副露順序繪製一個共用面板，橫置牌與加槓疊牌維持其排列語意。 */
+    private fun renderMeldActionPopup(
+        entity: MahjongTileEntity,
+        alpha: Float,
+        matrices: MatrixStack,
+        consumers: VertexConsumerProvider,
+    ) {
+        val popupTiles = entity.meldActionPopupTiles
+        val entries = popupTiles.map { popupTile ->
+            val tile = stateStore.findManagedTileSnapshot(popupTile.tileId)?.tile ?: return
+            TileGroupPreviewEntry(tile.toAssetKey(tileAssetRegistry), popupTile.orientation, popupTile.stacked)
+        }
+        val layout = TileGroupPreviewLayoutCalculator.calculate(
+            entries,
+            ACTION_POPUP_TILE_WIDTH,
+            ACTION_POPUP_TILE_HEIGHT,
+            ACTION_POPUP_TILE_GAP,
+            ACTION_POPUP_STACK_OFFSET_Y,
+        )
+        if (layout.placements.isEmpty()) return
+        val panelWidth = layout.contentWidth + ACTION_POPUP_GROUP_PADDING * 2
+        val panelHeight = layout.contentHeight + ACTION_POPUP_GROUP_PADDING * 2
+        matrices.push()
+        matrices.translate(0.0, ACTION_POPUP_WORLD_HEIGHT, 0.0)
+        matrices.multiply(dispatcher.rotation)
+        matrices.scale(-ACTION_POPUP_SCALE, -ACTION_POPUP_SCALE, ACTION_POPUP_SCALE)
+        WorldPanelRenderer.drawBackground(
+            -panelWidth / 2f,
+            -panelHeight / 2f,
+            panelWidth / 2f,
+            panelHeight / 2f,
+            WorldPanelRenderer.withAlpha(ACTION_POPUP_BACKGROUND, alpha * ACTION_POPUP_BACKGROUND_ALPHA),
+            0f,
+            matrices,
+            consumers,
+        )
+        layout.placements.forEachIndexed { index, placement ->
+            renderPopupTile(
+                placement.assetKey,
+                placement.centerX,
+                placement.centerY,
+                placement.orientation,
+                alpha,
+                -0.02f - index * 0.001f,
+                matrices,
+                consumers,
+            )
+        }
+        matrices.pop()
+    }
+
+    /** 以牌面中心為軸旋轉副露中的橫置牌，避免以交換寬高裁切貼圖。 */
+    private fun renderPopupTile(
+        assetKey: String,
+        centerX: Float,
+        centerY: Float,
+        orientation: DecisionTileOrientationDto,
+        alpha: Float,
+        z: Float,
+        matrices: MatrixStack,
+        consumers: VertexConsumerProvider,
+    ) {
+        matrices.push()
+        matrices.translate(centerX.toDouble(), centerY.toDouble(), 0.0)
+        when (orientation) {
+            DecisionTileOrientationDto.UPRIGHT -> Unit
+            DecisionTileOrientationDto.ROTATED_LEFT -> matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(-90f))
+            DecisionTileOrientationDto.ROTATED_RIGHT -> matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(90f))
+        }
+        tileFaceRenderer.renderWorldPanel(
+            assetKey,
+            0f,
+            0f,
+            ACTION_POPUP_TILE_WIDTH,
+            ACTION_POPUP_TILE_HEIGHT,
+            alpha,
+            z,
+            matrices,
+            consumers,
+        )
         matrices.pop()
     }
 
@@ -215,6 +357,42 @@ class MahjongTileEntityRenderer(
 
         /** 保留牌面可辨識度的低光照 packed value。 */
         private const val DIMMED_LIGHT = 0x00300030
+
+        /** 落地提示在世界中的高度。 */
+        private const val ACTION_POPUP_WORLD_HEIGHT = 0.62
+
+        /** 落地提示的 GUI 像素轉世界比例。 */
+        private const val ACTION_POPUP_SCALE = 0.0125f
+
+        /** 落地提示背景寬度。 */
+        private const val ACTION_POPUP_PANEL_WIDTH = 28f
+
+        /** 落地提示背景高度。 */
+        private const val ACTION_POPUP_PANEL_HEIGHT = 36f
+
+        /** 落地提示牌面寬度。 */
+        private const val ACTION_POPUP_TILE_WIDTH = 20f
+
+        /** 落地提示牌面高度。 */
+        private const val ACTION_POPUP_TILE_HEIGHT = 28f
+
+        /** 副露提示中相鄰牌面的間距。 */
+        private const val ACTION_POPUP_TILE_GAP = 2f
+
+        /** 副露提示內容左右內距。 */
+        private const val ACTION_POPUP_GROUP_PADDING = 4f
+
+        /** 加槓牌相對橫置牌的垂直疊放距離。 */
+        private const val ACTION_POPUP_STACK_OFFSET_Y = -7f
+
+        /** 落地提示淡入及淡出的 tick 數。 */
+        private const val ACTION_POPUP_FADE_TICKS = 4.0
+
+        /** 落地提示背景 RGB。 */
+        private const val ACTION_POPUP_BACKGROUND = 0x101820
+
+        /** 落地提示背景基礎透明度。 */
+        private const val ACTION_POPUP_BACKGROUND_ALPHA = 0.72f
     }
 
     /** 立直選牌期間，合法宣告牌以外的管理中手牌降低光照。 */

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongAnimationSounds
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TileActionPopupKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
@@ -186,6 +187,8 @@ internal object TileAnimationSteps {
                 discardLandingSound(tile.world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS),
             ),
         )
+        val landingTime = tile.world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
+        tile.showActionPopup(TileActionPopupKind.DISCARD, landingTime, landingTime + ACTION_POPUP_DURATION_TICKS)
     }
 
     /**
@@ -223,6 +226,9 @@ internal object TileAnimationSteps {
         }
         tile.enqueueAll(steps)
     }
+
+    /** 捨牌與鳴牌落地牌面提示的總顯示時間。 */
+    const val ACTION_POPUP_DURATION_TICKS = 24L
 
     /**
      * 強制理牌重排的單張牌動畫（胡牌慶祝演出）：跟 [scheduleMeldClaim] 同一套「立即傳送到最終位置、
