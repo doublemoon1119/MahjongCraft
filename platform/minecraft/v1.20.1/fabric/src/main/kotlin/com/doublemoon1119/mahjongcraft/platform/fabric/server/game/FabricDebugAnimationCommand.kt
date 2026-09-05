@@ -63,6 +63,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MeldActionPopupTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCinematicTimeline
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
@@ -371,7 +372,8 @@ class FabricDebugAnimationCommand(
                             literal(MELD_SUBCOMMAND)
                                 .then(withOptionalTileArgument(literal(CHI_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.CHI, tileArg) })
                                 .then(withOptionalTileArgument(literal(PON_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.PON, tileArg) })
-                                .then(withOptionalTileArgument(literal(KAN_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.OPEN_KAN, tileArg) }),
+                                .then(withOptionalTileArgument(literal(KAN_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.OPEN_KAN, tileArg) })
+                                .then(withOptionalTileArgument(literal(ADDED_KAN_ARGUMENT)) { source, tileArg -> previewAddedKanMeld(source, tileArg) }),
                         )
                         .then(
                             DebugWinRoundContinuationMode.entries.fold(
@@ -1175,7 +1177,7 @@ class FabricDebugAnimationCommand(
                 } else {
                     7_700
                 },
-                handTileIds = handIds,
+                standingTileIds = handIds,
                 melds = listOf(
                     MeldPresentation(MeldType.PON, ponIds, ponIds.first(), RelativeDirection.Left, false),
                     MeldPresentation(MeldType.CLOSED_KAN, kanIds, null, RelativeDirection.Self, false),
@@ -1537,6 +1539,13 @@ class FabricDebugAnimationCommand(
         val assetKey = resolveAssetKey(tileArg)
         val tileCount = if (type == MeldType.OPEN_KAN) MELD_KAN_TILE_COUNT else MELD_TILE_COUNT
         val layout = virtualTableLayout(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
+        val sourceDirection = if (type == MeldType.CHI) RelativeDirection.Left else RelativeDirection.Across
+        val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(sourceDirection, tileCount)
+        val claimedOrientation = when (sourceDirection) {
+            RelativeDirection.Left -> DecisionTileOrientationDto.ROTATED_LEFT
+            RelativeDirection.Across, RelativeDirection.Right -> DecisionTileOrientationDto.ROTATED_RIGHT
+            RelativeDirection.Self -> DecisionTileOrientationDto.UPRIGHT
+        }
 
         val sourcePlacements = (0 until tileCount).map { slot ->
             layout.handPlacement(handSize = DEFAULT_RULE_CONFIG.initialHandSize, tileIndex = slot)
@@ -1551,6 +1560,94 @@ class FabricDebugAnimationCommand(
                 playLandingSound = index == 0,
             )
         }
+        val popupTiles = tiles.mapIndexed { slot, tile ->
+            MeldActionPopupTile(
+                tileId = tile.uuid.toKotlinUuid(),
+                orientation = if (slot == sidewaysSlot) claimedOrientation else DecisionTileOrientationDto.UPRIGHT,
+                stacked = false,
+            )
+        }
+        val landingTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
+        tiles.first().showMeldActionPopup(
+            popupTiles,
+            landingTime,
+            landingTime + TileAnimationSteps.ACTION_POPUP_DURATION_TICKS,
+        )
+        val endGameTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS + PREVIEW_VIEWING_BUFFER_TICKS
+        scheduleCleanup(world, endGameTime, tiles)
+        return COMMAND_SUCCESS
+    }
+
+    /**
+     * `meld added_kan`：臨時生成一組碰（3 張）加上第 4 張加槓牌，重播鳴牌動畫飛到模擬副露區位置，並在
+     * 其中一張牌上掛一次鳴牌牌面提示（[MahjongTileEntity.showMeldActionPopup]）——加槓的疊牌排列只在
+     * 真正對局中湊出一次加槓才會觸發，加這個子指令讓它可以獨立重播測試。
+     */
+    private fun previewAddedKanMeld(source: ServerCommandSource, tileArg: String?): Int {
+        val player = source.player ?: return COMMAND_FAILURE
+        val world = player.serverWorld
+        val assetKey = resolveAssetKey(tileArg)
+        val layout = virtualTableLayout(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
+        val sourceDirection = RelativeDirection.Across
+        val claimedOrientation = DecisionTileOrientationDto.ROTATED_RIGHT
+        val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(sourceDirection, MELD_TILE_COUNT)
+
+        val sourcePlacements = (0 until MELD_KAN_TILE_COUNT).map { slot ->
+            layout.handPlacement(handSize = DEFAULT_RULE_CONFIG.initialHandSize, tileIndex = slot)
+        }
+        var cursorAlong = MahjongTileTableLayout.stickAreaWidth(stickCount = 0)
+        var sidewaysAlongOffset = 0.0
+        val basePlacements = (MELD_TILE_COUNT - 1 downTo 0).map { slot ->
+            val isSideways = slot == sidewaysSlot
+            val halfWidth = if (isSideways) MahjongTileDimensions.TILE_HEIGHT / 2.0 else MahjongTileDimensions.TILE_WIDTH / 2.0
+            cursorAlong += halfWidth
+            if (isSideways) sidewaysAlongOffset = cursorAlong
+            val placement = MahjongTileTableLayout.meldPlacement(
+                controllerX = layout.controllerX,
+                controllerY = layout.controllerY,
+                controllerZ = layout.controllerZ,
+                tableFacing = layout.tableFacing,
+                seatIndex = DEBUG_SEAT_INDEX,
+                alongOffsetFromCorner = cursorAlong,
+                isSidewaysTile = isSideways,
+            )
+            cursorAlong += halfWidth + MahjongTileDimensions.TILE_SMALL_PADDING
+            placement
+        }.reversed()
+        val addedPlacement = MahjongTileTableLayout.meldPlacement(
+            controllerX = layout.controllerX,
+            controllerY = layout.controllerY,
+            controllerZ = layout.controllerZ,
+            tableFacing = layout.tableFacing,
+            seatIndex = DEBUG_SEAT_INDEX,
+            alongOffsetFromCorner = sidewaysAlongOffset,
+            isSidewaysTile = true,
+            depthOffsetFromEdge = MahjongTileTableLayout.ADDED_KAN_DEPTH_OFFSET,
+        )
+        val finalPlacements = basePlacements + addedPlacement
+
+        val tiles = sourcePlacements.map { placement -> spawnFreeTile(world, placement, MahjongTilePose.STANDING, assetKey) }
+        tiles.forEachIndexed { index, tile ->
+            TileAnimationSteps.scheduleMeldClaim(
+                tile,
+                finalPlacements[index],
+                MahjongTilePose.FACE_UP,
+                playLandingSound = index == 0,
+            )
+        }
+        val popupTiles = tiles.take(MELD_TILE_COUNT).mapIndexed { slot, tile ->
+            MeldActionPopupTile(
+                tileId = tile.uuid.toKotlinUuid(),
+                orientation = if (slot == sidewaysSlot) claimedOrientation else DecisionTileOrientationDto.UPRIGHT,
+                stacked = false,
+            )
+        } + MeldActionPopupTile(tiles[MELD_TILE_COUNT].uuid.toKotlinUuid(), claimedOrientation, stacked = true)
+        val landingTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
+        tiles.first().showMeldActionPopup(
+            popupTiles,
+            landingTime,
+            landingTime + TileAnimationSteps.ACTION_POPUP_DURATION_TICKS,
+        )
         val endGameTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS + PREVIEW_VIEWING_BUFFER_TICKS
         scheduleCleanup(world, endGameTime, tiles)
         return COMMAND_SUCCESS
@@ -1922,6 +2019,7 @@ class FabricDebugAnimationCommand(
         const val CHI_ARGUMENT: String = "chi"
         const val PON_ARGUMENT: String = "pon"
         const val KAN_ARGUMENT: String = "kan"
+        const val ADDED_KAN_ARGUMENT: String = "added_kan"
         const val DEFAULT_SCORE_DELTA: Int = 9_000
         val SHOWCASE_PHASES: List<String> = listOf("launch", "orbit", "place", "ignite", "explode", "reveal")
         val DEFAULT_WAITING_TILE_ASSETS: List<String> = listOf("m1", "m4", "m7")

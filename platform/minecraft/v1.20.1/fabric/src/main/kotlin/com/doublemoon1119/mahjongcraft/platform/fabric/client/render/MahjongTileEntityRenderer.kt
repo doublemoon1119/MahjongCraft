@@ -24,9 +24,11 @@ import net.minecraft.client.render.entity.EntityRendererFactory
 import net.minecraft.client.render.item.ItemRenderer
 import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.util.math.MatrixStack
+import net.minecraft.client.world.ClientWorld
 import net.minecraft.item.ItemStack
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.RotationAxis
+import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
 /**
@@ -181,16 +183,17 @@ class MahjongTileEntityRenderer(
         consumers: VertexConsumerProvider,
     ) {
         val popupTiles = entity.meldActionPopupTiles
+        val managedTiles = (entity.world as? ClientWorld)?.entities?.filterIsInstance<MahjongTileEntity>().orEmpty()
         val entries = popupTiles.map { popupTile ->
-            val tile = stateStore.findManagedTileSnapshot(popupTile.tileId)?.tile ?: return
-            TileGroupPreviewEntry(tile.toAssetKey(tileAssetRegistry), popupTile.orientation, popupTile.stacked)
+            val javaTileId = popupTile.tileId.toJavaUuid()
+            val tile = managedTiles.firstOrNull { it.uuid == javaTileId } ?: return
+            TileGroupPreviewEntry(tile.resolvedTileAssetKey(), popupTile.orientation, popupTile.stacked)
         }
         val layout = TileGroupPreviewLayoutCalculator.calculate(
             entries,
             ACTION_POPUP_TILE_WIDTH,
             ACTION_POPUP_TILE_HEIGHT,
             ACTION_POPUP_TILE_GAP,
-            ACTION_POPUP_STACK_OFFSET_Y,
         )
         if (layout.placements.isEmpty()) return
         val panelWidth = layout.contentWidth + ACTION_POPUP_GROUP_PADDING * 2
@@ -381,9 +384,6 @@ class MahjongTileEntityRenderer(
 
         /** 副露提示內容左右內距。 */
         private const val ACTION_POPUP_GROUP_PADDING = 4f
-
-        /** 加槓牌相對橫置牌的垂直疊放距離。 */
-        private const val ACTION_POPUP_STACK_OFFSET_Y = -7f
 
         /** 落地提示淡入及淡出的 tick 數。 */
         private const val ACTION_POPUP_FADE_TICKS = 4.0
