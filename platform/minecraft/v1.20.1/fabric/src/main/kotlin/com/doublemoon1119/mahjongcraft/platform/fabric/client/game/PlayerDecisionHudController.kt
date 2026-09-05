@@ -300,11 +300,13 @@ class PlayerDecisionHudController(
         context.matrices.pop()
     }
 
-    /** 依準星指向的手牌 UUID 選擇一份權威分析並繪製牌面格。 */
+    /** 依準星指向的手牌 UUID 選擇一份權威分析並繪製牌面格；欄寬依實際文字寬度動態計算，避免不同語系下的
+     * 剩餘張數／和牌資格文字互相碰撞。 */
     private fun renderDiscardAnalysis(context: DrawContext, prompt: PlayerDecisionPromptDto, hit: net.minecraft.util.hit.HitResult?) {
         if (!configStore.current.presentationVisibility.discardAnalysisEnabled) return
         val tile = (hit as? EntityHitResult)?.entity as? MahjongTileEntity ?: return
         val analysis = prompt.discardAnalyses.firstOrNull { it.discardTileId == tile.uuid.toString() } ?: return
+        val textRenderer = MinecraftClient.getInstance().textRenderer
         val columns = minOf(MAX_WAIT_COLUMNS, analysis.waitingTiles.size.coerceAtLeast(1))
         val rowCount = (analysis.waitingTiles.size + columns - 1) / columns
         val sharedAvailability = analysis.waitingTiles.map { it.winAvailability }.distinct().singleOrNull()
@@ -313,12 +315,26 @@ class PlayerDecisionHudController(
             analysis.statusIndicatorId?.let { Text.translatable(it.translationKey()) },
             sharedAvailability?.let { Text.translatable(it.translationKey()) },
         )
-        val statusHeight = if (statusTexts.isEmpty()) 0 else statusTexts.size * STATUS_TEXT_HEIGHT + STATUS_DIVIDER_GAP + 1
+        val statusHeight = if (statusTexts.isEmpty()) 0 else statusTexts.size * STATUS_TEXT_HEIGHT + STATUS_DIVIDER_GAP + 1 + STATUS_TILE_GAP
         val mixedAvailability = sharedAvailability == null &&
             analysis.waitingTiles.any {
                 it.winAvailability != WaitingTileWinAvailabilityDto.AVAILABLE
             }
-        val panelWidth = PADDING * 2 + columns * CELL_WIDTH
+        val countTexts = analysis.waitingTiles.map { waiting -> Text.translatable("mahjongcraft.hud.remaining_tiles", waiting.remainingCount) }
+        val availabilityTexts = analysis.waitingTiles.map { waiting ->
+            if (mixedAvailability && waiting.winAvailability != WaitingTileWinAvailabilityDto.AVAILABLE) {
+                Text.translatable(waiting.winAvailability.translationKey())
+            } else {
+                null
+            }
+        }
+        val widestCellContent = maxOf(
+            TILE_WIDTH,
+            countTexts.maxOf(textRenderer::getWidth),
+            availabilityTexts.maxOf { it?.let(textRenderer::getWidth) ?: 0 },
+        )
+        val cellWidth = widestCellContent + CELL_GAP
+        val panelWidth = PADDING * 2 + columns * cellWidth
         val cellHeight = TILE_HEIGHT + COUNT_HEIGHT + if (mixedAvailability) AVAILABILITY_HEIGHT else 0
         val panelHeight = PADDING * 2 + statusHeight + rowCount * cellHeight
         val left = (context.scaledWindowWidth - panelWidth) / 2
@@ -330,7 +346,7 @@ class PlayerDecisionHudController(
         context.fill(left, top, left + panelWidth, top + panelHeight, 0xCC101820.toInt())
         statusTexts.forEachIndexed { index, text ->
             context.drawCenteredTextWithShadow(
-                MinecraftClient.getInstance().textRenderer,
+                textRenderer,
                 text,
                 left + panelWidth / 2,
                 top + PADDING + index * STATUS_TEXT_HEIGHT,
@@ -344,28 +360,27 @@ class PlayerDecisionHudController(
         analysis.waitingTiles.forEachIndexed { index, waiting ->
             val row = index / columns
             val column = index % columns
-            val cellLeft = left + PADDING + column * CELL_WIDTH
-            val tileX = cellLeft + (CELL_WIDTH - TILE_WIDTH) / 2
+            val cellLeft = left + PADDING + column * cellWidth
+            val tileX = cellLeft + (cellWidth - TILE_WIDTH) / 2
             val tileY = top + PADDING + statusHeight + row * cellHeight
             tileFaceRenderer.renderGui(context, waiting.tileAssetKey, tileX, tileY, TILE_WIDTH, TILE_HEIGHT)
-            val count = Text.translatable("mahjongcraft.hud.remaining_tiles", waiting.remainingCount)
             val color = when (waiting.remainingCount) {
                 0 -> 0xAA4444
                 1 -> 0xFFD54F
                 else -> 0xFFFFFF
             }
             context.drawCenteredTextWithShadow(
-                MinecraftClient.getInstance().textRenderer,
-                count,
-                cellLeft + CELL_WIDTH / 2,
+                textRenderer,
+                countTexts[index],
+                cellLeft + cellWidth / 2,
                 tileY + TILE_HEIGHT + 1,
                 color,
             )
-            if (mixedAvailability && waiting.winAvailability != WaitingTileWinAvailabilityDto.AVAILABLE) {
+            availabilityTexts[index]?.let { text ->
                 context.drawCenteredTextWithShadow(
-                    MinecraftClient.getInstance().textRenderer,
-                    Text.translatable(waiting.winAvailability.translationKey()),
-                    cellLeft + CELL_WIDTH / 2,
+                    textRenderer,
+                    text,
+                    cellLeft + cellWidth / 2,
                     tileY + TILE_HEIGHT + COUNT_HEIGHT,
                     0xFFB05A,
                 )
@@ -386,7 +401,7 @@ class PlayerDecisionHudController(
 
         private const val MAX_WAIT_COLUMNS = 7
         private const val PADDING = 6
-        private const val CELL_WIDTH = 30
+        private const val CELL_GAP = 6
         private const val TILE_WIDTH = 18
         private const val TILE_HEIGHT = 24
         private const val AVAILABILITY_HEIGHT = 10
@@ -396,7 +411,6 @@ class PlayerDecisionHudController(
         private const val STATUS_TEXT_HEIGHT = 9
         private const val STATUS_DIVIDER_GAP = 3
         private const val STATUS_TILE_GAP = 5
-        private const val STATUS_HEIGHT = STATUS_TEXT_HEIGHT + STATUS_DIVIDER_GAP + 1 + STATUS_TILE_GAP
         private const val STATUS_DIVIDER_COLOR = 0x66708088
         private const val TIMER_SCALE = 1.5f
         private const val COMPACT_HUD_WIDTH = 220
