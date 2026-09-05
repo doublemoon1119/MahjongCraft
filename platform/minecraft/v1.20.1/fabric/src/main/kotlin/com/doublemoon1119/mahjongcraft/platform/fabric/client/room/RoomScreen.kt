@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPhaseD
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
@@ -68,15 +70,13 @@ class RoomScreen(
 ) : Screen(Text.translatable(MinecraftRoomScreenKeys.TITLE)) {
     private var page = if (openSettings) Page.SETTINGS else Page.ROOM
     private var selectedCategoryId: String? = null
-    private var fieldScroll = 0
+    private val fieldScroll = ScrollState()
     private var draftConfig: GameConfig? = null
     private var authoritativeConfigAtDraftStart: GameConfig? = null
     private var draftStale = false
     private var validationFailed = false
     private val invalidFieldIds = mutableSetOf<String>()
-    private var draggingScrollbar = false
-    private var playingInfoScroll = 0
-    private var draggingPlayingInfoScrollbar = false
+    private val playingInfoScroll = ScrollState()
     private var applyButton: ButtonWidget? = null
     private var undoButton: ButtonWidget? = null
     private var resetButton: ButtonWidget? = null
@@ -194,7 +194,7 @@ class RoomScreen(
             addDrawableChild(
                 RestartableMarqueeButtonWidget.builder(Text.translatable(category.nameTranslationKey)) {
                     selectedCategoryId = category.id
-                    fieldScroll = 0
+                    fieldScroll.reset()
                     rebuild()
                 }.dimensions(18, categoryY, 112, 20).build().also { it.active = selectedCategoryId != category.id },
             )
@@ -202,9 +202,9 @@ class RoomScreen(
         }
         val categoryFields = definition.fields.filter { it.categoryId == selectedCategoryId }
         val maximumVisibleFields = maximumVisibleFields()
-        fieldScroll = fieldScroll.coerceIn(0, (categoryFields.size - maximumVisibleFields).coerceAtLeast(0))
+        fieldScroll.clamp(categoryFields.size - maximumVisibleFields)
         var fieldY = SETTINGS_FIELDS_TOP
-        categoryFields.drop(fieldScroll).take(maximumVisibleFields).forEach { field ->
+        categoryFields.drop(fieldScroll.index).take(maximumVisibleFields).forEach { field ->
             addFieldControls(field, config, 150, fieldY, editable && field.isEditable && field.isEnabled(config))
             fieldY += 28
         }
@@ -387,7 +387,7 @@ class RoomScreen(
                 val next = configPresentations.find(nextId) ?: return@builder
                 draftConfig = config.copy(ruleConfig = next.defaultRuleConfig())
                 selectedCategoryId = null
-                fieldScroll = 0
+                fieldScroll.reset()
                 invalidFieldIds.clear()
                 validationFailed = false
                 rebuild()
@@ -585,14 +585,11 @@ class RoomScreen(
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (amount == 0.0) return super.mouseScrolled(mouseX, mouseY, amount)
         if (page == Page.SETTINGS) {
-            fieldScroll = (fieldScroll + if (amount < 0) 1 else -1).coerceAtLeast(0)
-            rebuild()
+            if (fieldScroll.scrollBy(amount, maximumFieldScroll())) rebuild()
             return true
         }
         if (page == Page.ROOM && stateStore.tableLobby?.phase == TableLobbyPhaseDto.PLAYING) {
-            val maximumScroll = maximumPlayingInfoScroll()
-            val next = (playingInfoScroll + if (amount < 0) 1 else -1).coerceIn(0, maximumScroll)
-            if (next != playingInfoScroll) playingInfoScroll = next
+            playingInfoScroll.scrollBy(amount, maximumPlayingInfoScroll())
             return true
         }
         return super.mouseScrolled(mouseX, mouseY, amount)
@@ -600,33 +597,31 @@ class RoomScreen(
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
         if (page == Page.SETTINGS && button == 0 && isOverScrollbar(mouseX, mouseY)) {
-            draggingScrollbar = true
-            updateScrollFromMouse(mouseY)
+            if (fieldScroll.beginDrag(mouseY, fieldScrollbarLayout())) rebuild()
             return true
         }
         if (page == Page.ROOM && button == 0 && isOverPlayingInfoScrollbar(mouseX, mouseY)) {
-            draggingPlayingInfoScrollbar = true
-            updatePlayingInfoScrollFromMouse(mouseY)
+            playingInfoScroll.beginDrag(mouseY, playingInfoScrollbarLayout())
             return true
         }
         return super.mouseClicked(mouseX, mouseY, button)
     }
 
     override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
-        if (draggingScrollbar && button == 0) {
-            updateScrollFromMouse(mouseY)
+        if (fieldScroll.dragging && button == 0) {
+            if (fieldScroll.dragTo(mouseY, fieldScrollbarLayout())) rebuild()
             return true
         }
-        if (draggingPlayingInfoScrollbar && button == 0) {
-            updatePlayingInfoScrollFromMouse(mouseY)
+        if (playingInfoScroll.dragging && button == 0) {
+            playingInfoScroll.dragTo(mouseY, playingInfoScrollbarLayout())
             return true
         }
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
     }
 
     override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        draggingScrollbar = false
-        draggingPlayingInfoScrollbar = false
+        fieldScroll.endDrag()
+        playingInfoScroll.endDrag()
         return super.mouseReleased(mouseX, mouseY, button)
     }
 
@@ -673,7 +668,7 @@ class RoomScreen(
                 invalidFieldIds.clear()
                 validationFailed = false
             }
-            rebuild()
+            clearAndInit()
             return
         }
         val authoritative = currentConfig() ?: return
@@ -687,7 +682,7 @@ class RoomScreen(
                 returnToRoomAfterApply = false
                 page = Page.ROOM
             }
-            rebuild()
+            clearAndInit()
         } else {
             draftStale = true
             returnToRoomAfterApply = false
@@ -740,7 +735,7 @@ class RoomScreen(
         val visibleRows = visiblePlayingInfoRows()
         val maximumScroll = (sortedPlayers.maxOfOrNull { playingInfoRows(it, dealerPlayerId).size } ?: 0)
             .minus(visibleRows).coerceAtLeast(0)
-        playingInfoScroll = playingInfoScroll.coerceIn(0, maximumScroll)
+        playingInfoScroll.clamp(maximumScroll)
         val cardWidth = memberCardWidth(sortedPlayers.size)
         val total = sortedPlayers.size * cardWidth
         sortedPlayers.forEachIndexed { index, player ->
@@ -755,7 +750,7 @@ class RoomScreen(
                 y + MEMBER_NAME_OFFSET,
                 0xFFFFFF,
             )
-            playingInfoRows(player, dealerPlayerId).drop(playingInfoScroll).take(visibleRows).forEachIndexed { rowIndex, row ->
+            playingInfoRows(player, dealerPlayerId).drop(playingInfoScroll.index).take(visibleRows).forEachIndexed { rowIndex, row ->
                 context.drawCenteredTextWithShadow(
                     textRenderer,
                     fitText(row.first, cardWidth - 12),
@@ -906,20 +901,29 @@ class RoomScreen(
 
     private fun visiblePlayingInfoRows(): Int = ((playingCardBottom() - PLAYING_INFO_TOP - 4) / PLAYING_INFO_ROW_HEIGHT).coerceAtLeast(1)
 
-    private fun maximumPlayingInfoScroll(): Int {
+    /** 目前進行中對局資訊清單的完整行數，供 scrollbar 幾何與捲動上限共用。 */
+    private fun totalPlayingInfoRows(): Int {
         val dealerPlayerId = resolvePlayerInfoEntity()?.dealerPlayerId ?: stateStore.gameSnapshot?.dealerPlayerId
-        return ((resolvePlayingPlayerInfo().maxOfOrNull { playingInfoRows(it, dealerPlayerId).size } ?: 0) - visiblePlayingInfoRows())
-            .coerceAtLeast(0)
+        return resolvePlayingPlayerInfo().maxOfOrNull { playingInfoRows(it, dealerPlayerId).size } ?: 0
     }
+
+    private fun maximumPlayingInfoScroll(): Int = playingInfoScrollbarLayout().maximumScroll
+
+    /** 建立進行中對局資訊 scrollbar 的共用幾何，供繪製與拖曳换算使用同一份座標系。 */
+    private fun playingInfoScrollbarLayout(): ScrollbarLayout = ScrollbarLayout(
+        trackTop = PLAYING_INFO_TOP,
+        trackBottom = playingCardBottom(),
+        itemCount = totalPlayingInfoRows(),
+        visibleItemCount = visiblePlayingInfoRows(),
+        scrollIndex = playingInfoScroll.index,
+        minimumThumbHeight = 12,
+    )
 
     private fun renderPlayingInfoScrollbar(context: DrawContext, maximumScroll: Int) {
         if (maximumScroll == 0) return
-        val trackHeight = playingCardBottom() - PLAYING_INFO_TOP
-        val totalRows = maximumScroll + visiblePlayingInfoRows()
-        val thumbHeight = (trackHeight * visiblePlayingInfoRows() / totalRows).coerceAtLeast(12)
-        val thumbY = PLAYING_INFO_TOP + (trackHeight - thumbHeight) * playingInfoScroll / maximumScroll
-        context.fill(width - 14, PLAYING_INFO_TOP, width - 9, playingCardBottom(), 0x80505050.toInt())
-        context.fill(width - 14, thumbY, width - 9, thumbY + thumbHeight, 0xFFD0D0D0.toInt())
+        val layout = playingInfoScrollbarLayout()
+        context.fill(width - 14, layout.trackTop, width - 9, layout.trackBottom, 0x80505050.toInt())
+        context.fill(width - 14, layout.thumbTop, width - 9, layout.thumbTop + layout.thumbHeight, 0xFFD0D0D0.toInt())
     }
 
     private fun isOverPlayingInfoScrollbar(mouseX: Double, mouseY: Double): Boolean = maximumPlayingInfoScroll() > 0 &&
@@ -927,13 +931,6 @@ class RoomScreen(
         mouseX <= width - 5 &&
         mouseY >= PLAYING_INFO_TOP &&
         mouseY <= playingCardBottom()
-
-    private fun updatePlayingInfoScrollFromMouse(mouseY: Double) {
-        val maximumScroll = maximumPlayingInfoScroll()
-        if (maximumScroll == 0) return
-        val fraction = ((mouseY - PLAYING_INFO_TOP) / (playingCardBottom() - PLAYING_INFO_TOP)).coerceIn(0.0, 1.0)
-        playingInfoScroll = (fraction * maximumScroll).toInt()
-    }
 
     private fun renderPortrait(context: DrawContext, playerId: Uuid, isAi: Boolean, x: Int, y: Int, cardWidth: Int) {
         val portraitSize = (cardWidth - 24).coerceIn(28, 38)
@@ -966,7 +963,7 @@ class RoomScreen(
         }
         var hoveredLabel: Text? = null
         definition.fields.filter { it.categoryId == selectedCategoryId }
-            .drop(fieldScroll)
+            .drop(fieldScroll.index)
             .take(maximumVisibleFields())
             .forEachIndexed { index, field ->
                 val label = Text.translatable(field.nameTranslationKey)
@@ -1029,38 +1026,34 @@ class RoomScreen(
         -> width - 212
     }
 
+    /** 目前分類的完整欄位數，供 scrollbar 幾何與捲動上限共用。 */
+    private fun currentFieldCount(): Int = (draftConfig ?: currentConfig())?.let(configResolver::resolve)
+        ?.definition?.fields?.count { it.categoryId == selectedCategoryId } ?: 0
+
+    private fun maximumFieldScroll(): Int = (currentFieldCount() - maximumVisibleFields()).coerceAtLeast(0)
+
+    /** 建立設定欄位 scrollbar 的共用幾何，供繪製與拖曳换算使用同一份座標系。 */
+    private fun fieldScrollbarLayout(fieldCount: Int = currentFieldCount()): ScrollbarLayout = ScrollbarLayout(
+        trackTop = SETTINGS_FIELDS_TOP,
+        trackBottom = settingsContentBottom(),
+        itemCount = fieldCount,
+        visibleItemCount = maximumVisibleFields(),
+        scrollIndex = fieldScroll.index,
+        minimumThumbHeight = 12,
+    )
+
     /** 只在內容超出可見範圍時繪製可拖曳 scrollbar。 */
     private fun renderScrollbar(context: DrawContext, fieldCount: Int) {
-        val visible = maximumVisibleFields()
-        if (fieldCount <= visible) return
-        val trackTop = SETTINGS_FIELDS_TOP
-        val trackBottom = settingsContentBottom()
-        val trackHeight = trackBottom - trackTop
-        val thumbHeight = (trackHeight * visible / fieldCount).coerceAtLeast(12)
-        val maximumScroll = fieldCount - visible
-        val thumbY = trackTop + (trackHeight - thumbHeight) * fieldScroll / maximumScroll
-        context.fill(width - 14, trackTop, width - 9, trackBottom, 0x80505050.toInt())
-        context.fill(width - 14, thumbY, width - 9, thumbY + thumbHeight, 0xFFD0D0D0.toInt())
+        val layout = fieldScrollbarLayout(fieldCount)
+        if (layout.maximumScroll <= 0) return
+        context.fill(width - 14, layout.trackTop, width - 9, layout.trackBottom, 0x80505050.toInt())
+        context.fill(width - 14, layout.thumbTop, width - 9, layout.thumbTop + layout.thumbHeight, 0xFFD0D0D0.toInt())
     }
 
     private fun isOverScrollbar(mouseX: Double, mouseY: Double): Boolean = mouseX >= width - 18 &&
         mouseX <= width - 5 &&
         mouseY >= SETTINGS_FIELDS_TOP &&
         mouseY <= settingsContentBottom()
-
-    private fun updateScrollFromMouse(mouseY: Double) {
-        val definition = (draftConfig ?: currentConfig())?.let(configResolver::resolve)?.definition ?: return
-        val fieldCount = definition.fields.count { it.categoryId == selectedCategoryId }
-        val maximumScroll = (fieldCount - maximumVisibleFields()).coerceAtLeast(0)
-        if (maximumScroll == 0) return
-        val fraction = ((mouseY - SETTINGS_FIELDS_TOP) / (settingsContentBottom() - SETTINGS_FIELDS_TOP)).coerceIn(0.0, 1.0)
-        val next = (fraction * maximumScroll).toInt()
-        if (next != fieldScroll) {
-            fieldScroll = next
-            rebuild()
-            draggingScrollbar = true
-        }
-    }
 
     /** 依實際像素寬度截斷成員名稱並補省略號。 */
     private fun fitText(text: Text, maximumWidth: Int): Text {
