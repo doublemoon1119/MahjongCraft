@@ -441,10 +441,14 @@ class RiichiRuleModule(
     override fun resolveMultiRonAbortiveDraw(): ExhaustiveDrawReason = RiichiExhaustiveDrawReason.SanchaHou
 
     /**
-     * 四風連打：全場尚未有人鳴牌，且全員恰好都打過一張牌（`entries.singleOrNull()` 只有在這個
-     * 情境下才會全員非 null），這些第一張捨牌若皆為同一種風牌則成立。
+     * 四風連打：日麻慣稱的途中流局——第一巡、四名玩家的第一張捨牌皆為同一種風牌、且無人鳴牌反應。
+     * 全場尚未有人鳴牌，且全員恰好都打過一張牌（`entries.singleOrNull()` 只有在這個情境下才會
+     * 全員非 null），這些第一張捨牌若皆為同一種風牌則成立。
+     *
+     * 只應在確定這次捨牌沒有任何人可以吃/碰/槓/榮和之後才呼叫；Flow 層的呼叫時機由對應的
+     * `PostActionExhaustiveDrawResolver` 掌控，這裡只負責純邏輯判定。
      */
-    override fun resolveSuufonRenda(tableStateAfterDiscard: TableState): ExhaustiveDrawReason? {
+    fun resolveSuufonRenda(tableStateAfterDiscard: TableState): ExhaustiveDrawReason? {
         if (tableStateAfterDiscard.players.any { it.hand.exposedMelds.isNotEmpty() }) return null
         val firstDiscards = tableStateAfterDiscard.players.map { it.discardPile.entries.singleOrNull()?.tile?.tile }
         if (firstDiscards.any { it == null || !it.isWind }) return null
@@ -454,9 +458,10 @@ class RiichiRuleModule(
     /**
      * 四家立直：全員皆已宣告立直則成立。呼叫端只在剛套用完一次立直宣告、且確定沒人反應時才會
      * 呼叫這個方法，所以「全員皆立直」這個條件只可能在恰好完成的那次宣告變成 true
-     * （玩家只能宣告立直一次，見 [declareRiichi] 的 `!isRiichi` 合法性檢查）。
+     * （玩家只能宣告立直一次，見 [declareRiichi] 的 `!isRiichi` 合法性檢查）。日麻限定，不屬於
+     * 通用規則契約。
      */
-    override fun resolveSuuchaRiichi(tableStateAfterDeclaration: TableState): ExhaustiveDrawReason? {
+    fun resolveSuuchaRiichi(tableStateAfterDeclaration: TableState): ExhaustiveDrawReason? {
         val allRiichi = tableStateAfterDeclaration.players.all { (it.playerRuleState as? RiichiPlayerState)?.isRiichi == true }
         return if (allRiichi) RiichiExhaustiveDrawReason.SuuchaRiichi else null
     }
@@ -466,7 +471,7 @@ class RiichiRuleModule(
      * 達到 4 個（含）以上時，若其中有一位玩家的槓子數就等於全場總數，代表全部槓子都是他一人
      * 達成（該玩家可能正在做四槓子役滿），此時不成立。
      */
-    override fun resolveSuukanNagare(tableState: TableState): ExhaustiveDrawReason? {
+    fun resolveSuukanNagare(tableState: TableState): ExhaustiveDrawReason? {
         val kanCountsByPlayer = tableState.players.map { player ->
             player.hand.exposedMelds.count {
                 it.type == MeldType.OPEN_KAN || it.type == MeldType.ADDED_KAN || it.type == MeldType.CLOSED_KAN

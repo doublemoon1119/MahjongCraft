@@ -73,11 +73,23 @@ class FullMatchIntegrationTest {
         val snapshotRepo = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val handSortPreferenceStore = HandSortPreferenceStore()
+        val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
+            registerRiichiPostActionExhaustiveDrawResolvers()
+            freeze()
+        }
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val winPresentationHandoff = WinPresentationHandoff()
         val presentationBusyGate = FakeGamePresentationBusyGate()
-        val declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, handSortPreferenceStore, eventPublisher, presentationPublisher)
+        val declareRiichiUseCase = DeclareRiichiUseCase(
+            gameRepo,
+            moduleRegistry,
+            snapshotSynchronizer,
+            handSortPreferenceStore,
+            postActionExhaustiveDrawResolverRegistry,
+            eventPublisher,
+            presentationPublisher,
+        )
         val extensionCommandRegistry = ExtensionGameCommandExecutorRegistry().apply {
             registerRiichiGameCommandHandler(declareRiichiUseCase)
         }
@@ -94,6 +106,7 @@ class FullMatchIntegrationTest {
                 moduleRegistry,
                 snapshotSynchronizer,
                 handSortPreferenceStore,
+                postActionExhaustiveDrawResolverRegistry,
                 eventPublisher,
                 presentationPublisher,
             ),
@@ -142,6 +155,7 @@ class FullMatchIntegrationTest {
             extensionCommandRegistry = extensionCommandRegistry,
             gameRepository = gameRepo,
             moduleRegistry = moduleRegistry,
+            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(
                 gameRepo,
                 moduleRegistry,
@@ -164,6 +178,7 @@ class FullMatchIntegrationTest {
                 gameRepo,
                 moduleRegistry,
                 snapshotSynchronizer,
+                postActionExhaustiveDrawResolverRegistry,
                 eventPublisher,
             ),
             advanceRoundUseCase = AdvanceRoundUseCase(

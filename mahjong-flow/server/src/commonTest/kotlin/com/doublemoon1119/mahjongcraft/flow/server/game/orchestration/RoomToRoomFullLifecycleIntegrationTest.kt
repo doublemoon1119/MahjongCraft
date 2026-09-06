@@ -100,7 +100,19 @@ class RoomToRoomFullLifecycleIntegrationTest {
             presentationPublisher,
         )
 
-        val declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, handSortPreferenceStore, gameEventPublisher, presentationPublisher)
+        val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
+            registerRiichiPostActionExhaustiveDrawResolvers()
+            freeze()
+        }
+        val declareRiichiUseCase = DeclareRiichiUseCase(
+            gameRepo,
+            moduleRegistry,
+            snapshotSynchronizer,
+            handSortPreferenceStore,
+            postActionExhaustiveDrawResolverRegistry,
+            gameEventPublisher,
+            presentationPublisher,
+        )
         val extensionCommandRegistry = ExtensionGameCommandExecutorRegistry().apply {
             registerRiichiGameCommandHandler(declareRiichiUseCase)
         }
@@ -112,6 +124,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 moduleRegistry,
                 snapshotSynchronizer,
                 handSortPreferenceStore,
+                postActionExhaustiveDrawResolverRegistry,
                 gameEventPublisher,
                 presentationPublisher,
             ),
@@ -147,6 +160,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
             extensionCommandRegistry = extensionCommandRegistry,
             gameRepository = gameRepo,
             moduleRegistry = moduleRegistry,
+            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
             resolvePostReactionRoundOutcomeUseCase = ResolvePostReactionRoundOutcomeUseCase(
                 gameRepo,
@@ -160,7 +174,13 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 WinRoundContinuationResolverRegistry().apply { freeze() },
                 snapshotSynchronizer,
             ),
-            declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
+            declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                postActionExhaustiveDrawResolverRegistry,
+                gameEventPublisher,
+            ),
             advanceRoundUseCase = AdvanceRoundUseCase(
                 gameRepo,
                 moduleRegistry,

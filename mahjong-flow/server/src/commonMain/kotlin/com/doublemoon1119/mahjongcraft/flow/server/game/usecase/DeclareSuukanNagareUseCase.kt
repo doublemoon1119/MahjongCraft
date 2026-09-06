@@ -3,12 +3,13 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionTrigger
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
@@ -30,7 +31,7 @@ import kotlin.uuid.Uuid
  * 並結束此局，會讓玩家完全沒有機會宣告嶺上開花。由誰、在什麼時機呼叫本用例（例如伺服器偵測到
  * 玩家對嶺上牌選擇不自摸之後接著呼叫）是更外層（伺服器流程編排）的決定，不在這裡處理。
  *
- * 是否構成四槓散了完全交給 [MahjongRuleModule.resolveSuukanNagare]
+ * 是否構成四槓散了完全交給 [postActionExhaustiveDrawResolverRegistry]
  * 判斷，這裡不重新實作槓子計數邏輯。
  *
  * 把 [GameAction.ExhaustiveDraw] 記錄進**全員**（不只莊家）的 `actionHistory`——途中流局莊家
@@ -39,6 +40,7 @@ import kotlin.uuid.Uuid
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
  * @property snapshotSynchronizer 對局快照同步服務。
+ * @property postActionExhaustiveDrawResolverRegistry 主動觸發途中流局的判定 registry。
  * @property eventPublisher 對局通知服務。
  */
 @Factory
@@ -46,6 +48,7 @@ class DeclareSuukanNagareUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
+    private val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
     @Provided private val eventPublisher: GameEventPublisher,
 ) {
     /**
@@ -63,9 +66,11 @@ class DeclareSuukanNagareUseCase(
                 else -> {
                     val module = moduleRegistry.getModule(state.config)
 
-                    // 目前的桌況不構成四槓散了（或此規則不支援）時 resolveSuukanNagare 回傳 null。
-                    val reason = module.resolveSuukanNagare(state)
-                        ?: return@updateGame game to Outcome.Error(GameError.UnsupportedAction(gameId))
+                    // 目前的桌況不構成四槓散了（或此規則不支援）時回傳 null。
+                    val reason = postActionExhaustiveDrawResolverRegistry.resolve(
+                        trigger = PostActionTrigger.KanDeclared(state),
+                        ruleModule = module,
+                    ) ?: return@updateGame game to Outcome.Error(GameError.UnsupportedAction(gameId))
 
                     val updatedPlayers = state.players.map { it.recordAction(GameAction.ExhaustiveDraw(reason)) }
                     val newState = state.copy(players = updatedPlayers)

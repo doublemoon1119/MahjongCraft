@@ -15,11 +15,13 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.registerRiichiGameActionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiGameCommandHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiNagashiManganOutcomeResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiPostActionExhaustiveDrawResolvers
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
@@ -115,6 +117,8 @@ object FabricMahjongExtensions {
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
             PostReactionRoundOutcomeResolverRegistry(),
+        postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry =
+            PostActionExhaustiveDrawResolverRegistry(),
         roundPreparationResolverRegistry: RoundPreparationResolverRegistry = RoundPreparationResolverRegistry(),
         winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry =
             WinRoundContinuationResolverRegistry(),
@@ -153,6 +157,7 @@ object FabricMahjongExtensions {
                 gameActionAiRegistry = gameActionAiRegistry,
                 gameCommandRegistry = gameCommandRegistry,
                 postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
+                postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
                 roundPreparationResolverRegistry = roundPreparationResolverRegistry,
                 winRoundContinuationResolverRegistry = winRoundContinuationResolverRegistry,
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
@@ -243,6 +248,8 @@ object FabricMahjongExtensions {
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
             PostReactionRoundOutcomeResolverRegistry(),
+        postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry =
+            PostActionExhaustiveDrawResolverRegistry(),
         roundPreparationResolverRegistry: RoundPreparationResolverRegistry = RoundPreparationResolverRegistry(),
         winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry =
             WinRoundContinuationResolverRegistry(),
@@ -264,6 +271,7 @@ object FabricMahjongExtensions {
             gameActionAiRegistry = gameActionAiRegistry,
             gameCommandRegistry = gameCommandRegistry,
             postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
+            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             gameActionDisplayNameRegistry = gameActionDisplayNameRegistry,
             declareRiichiUseCase = declareRiichiUseCase,
             networkRegistries = networkRegistries,
@@ -292,6 +300,7 @@ object FabricMahjongExtensions {
             gameActionAiRegistry = gameActionAiRegistry,
             gameCommandRegistry = gameCommandRegistry,
             postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
+            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             roundPreparationResolverRegistry = roundPreparationResolverRegistry,
             winRoundContinuationResolverRegistry = winRoundContinuationResolverRegistry,
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
@@ -332,6 +341,7 @@ object FabricMahjongExtensions {
         gameActionAiRegistry: ExtensionGameActionAiRegistry,
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry,
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry,
+        postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
         gameActionDisplayNameRegistry: GameActionDisplayNameRegistry,
         declareRiichiUseCase: DeclareRiichiUseCase,
         networkRegistries: NetworkDtoRegistries,
@@ -342,6 +352,7 @@ object FabricMahjongExtensions {
         gameActionAiRegistry.registerRiichiGameActionHandler(moduleRegistry)
         gameCommandRegistry.registerRiichiGameCommandHandler(declareRiichiUseCase)
         postReactionRoundOutcomeResolverRegistry.registerRiichiNagashiManganOutcomeResolver()
+        postActionExhaustiveDrawResolverRegistry.registerRiichiPostActionExhaustiveDrawResolvers()
         gameActionDisplayNameRegistry.registerRiichiGameActionDisplayName()
     }
 }

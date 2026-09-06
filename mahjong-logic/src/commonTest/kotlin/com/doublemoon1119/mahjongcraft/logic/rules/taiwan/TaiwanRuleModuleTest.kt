@@ -209,36 +209,6 @@ class TaiwanRuleModuleTest {
     }
 
     /**
-     * 驗證台灣麻將目前沒有四風連打這個機制，回傳 null。
-     */
-    @Test
-    fun `test resolveSuufonRenda returns null`() {
-        val table = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create()))
-
-        assertNull(module.resolveSuufonRenda(table))
-    }
-
-    /**
-     * 驗證台灣麻將目前沒有立直、也就沒有四家立直這個機制，回傳 null。
-     */
-    @Test
-    fun `test resolveSuuchaRiichi returns null`() {
-        val table = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create()))
-
-        assertNull(module.resolveSuuchaRiichi(table))
-    }
-
-    /**
-     * 驗證台灣麻將目前沒有四槓散了這個機制，回傳 null。
-     */
-    @Test
-    fun `test resolveSuukanNagare returns null`() {
-        val table = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create()))
-
-        assertNull(module.resolveSuukanNagare(table))
-    }
-
-    /**
      * 驗證台灣麻將沒有寶牌概念，不覆寫 [MahjongRuleModule.isHighlightedTile]，固定回傳預設值 false。
      */
     @Test

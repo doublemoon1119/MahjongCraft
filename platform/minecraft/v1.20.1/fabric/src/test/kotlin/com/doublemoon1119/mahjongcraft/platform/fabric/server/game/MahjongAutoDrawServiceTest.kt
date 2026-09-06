@@ -11,9 +11,11 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ForcedAutoPlayDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionRouter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiGameCommandHandler
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiPostActionExhaustiveDrawResolvers
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
@@ -80,11 +82,23 @@ class MahjongAutoDrawServiceTest {
         val snapshotRepo = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val handSortPreferenceStore = HandSortPreferenceStore()
+        val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
+            registerRiichiPostActionExhaustiveDrawResolvers()
+            freeze()
+        }
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val winPresentationHandoff = WinPresentationHandoff()
         val presentationBusyGate = FakeGamePresentationBusyGate()
-        val declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, handSortPreferenceStore, eventPublisher, presentationPublisher)
+        val declareRiichiUseCase = DeclareRiichiUseCase(
+            gameRepo,
+            moduleRegistry,
+            snapshotSynchronizer,
+            handSortPreferenceStore,
+            postActionExhaustiveDrawResolverRegistry,
+            eventPublisher,
+            presentationPublisher,
+        )
         val extensionCommandRegistry = ExtensionGameCommandExecutorRegistry().apply {
             registerRiichiGameCommandHandler(declareRiichiUseCase)
         }
@@ -95,6 +109,7 @@ class MahjongAutoDrawServiceTest {
                 moduleRegistry,
                 snapshotSynchronizer,
                 handSortPreferenceStore,
+                postActionExhaustiveDrawResolverRegistry,
                 eventPublisher,
                 presentationPublisher,
             ),
@@ -128,6 +143,7 @@ class MahjongAutoDrawServiceTest {
             extensionCommandRegistry = extensionCommandRegistry,
             gameRepository = gameRepo,
             moduleRegistry = moduleRegistry,
+            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             resolvePostReactionRoundOutcomeUseCase = ResolvePostReactionRoundOutcomeUseCase(
                 gameRepo,
@@ -141,7 +157,13 @@ class MahjongAutoDrawServiceTest {
                 WinRoundContinuationResolverRegistry().apply { freeze() },
                 snapshotSynchronizer,
             ),
-            declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
+            declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                postActionExhaustiveDrawResolverRegistry,
+                eventPublisher,
+            ),
             advanceRoundUseCase = AdvanceRoundUseCase(
                 gameRepo,
                 moduleRegistry,

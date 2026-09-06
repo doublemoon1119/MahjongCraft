@@ -3,6 +3,8 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiPostActionExhaustiveDrawResolvers
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -32,7 +34,7 @@ import kotlin.uuid.Uuid
 /**
  * [DeclareSuukanNagareUseCase] 的單元測試類別。
  *
- * 驗證四槓散了的觸發判斷（交給 `MahjongRuleModule.resolveSuukanNagare`）、`ExhaustiveDraw` 記錄進
+ * 驗證四槓散了的觸發判斷（交給 `PostActionExhaustiveDrawResolverRegistry`）、`ExhaustiveDraw` 記錄進
  * 全員（不只莊家）的 `actionHistory`、途中流局不結算任何點數、快照與事件的同步行為（actor 為莊家
  * Uuid，比照 `DeclareExhaustiveDrawUseCase` 既有慣例），以及各種驗證失敗案例。
  */
@@ -45,8 +47,18 @@ class DeclareSuukanNagareUseCaseTest {
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
+        val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
+            registerRiichiPostActionExhaustiveDrawResolvers()
+            freeze()
+        }
         val eventPublisher = FakeGameEventPublisher()
-        val useCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher)
+        val useCase = DeclareSuukanNagareUseCase(
+            gameRepo,
+            moduleRegistry,
+            snapshotSynchronizer,
+            postActionExhaustiveDrawResolverRegistry,
+            eventPublisher,
+        )
     }
 
     private fun kanMeld(): Meld {

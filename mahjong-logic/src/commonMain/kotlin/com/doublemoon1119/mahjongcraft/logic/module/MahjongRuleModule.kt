@@ -318,43 +318,6 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun resolveMultiRonAbortiveDraw(): ExhaustiveDrawReason?
 
     /**
-     * 這次捨牌後，是否構成日麻慣稱「四風連打」這類途中流局——具體判定條件（例如日麻是第一巡、全員
-     * 第一張捨牌皆為同一種風牌、且都沒人反應）完全由各規則自己的覆寫決定，這裡不預設任何規則的
-     * 具體定義。
-     *
-     * 只應在確定這次捨牌沒有任何人可以吃/碰/槓/榮和之後才呼叫。
-     *
-     * @param tableStateAfterDiscard 捨牌且確定無人反應後的桌況。
-     * @return 若構成此流局類型則為對應的流局原因，否則為 null；不支援此流局類型的規則固定回傳 null。
-     */
-    fun resolveSuufonRenda(tableStateAfterDiscard: TableState): ExhaustiveDrawReason?
-
-    /**
-     * 這次立直宣告後，是否構成日麻慣稱「四家立直」這類途中流局——具體判定條件（例如日麻是全員皆已
-     * 宣告立直、且這張立直宣告牌沒人反應）完全由各規則自己的覆寫決定，這裡不預設任何規則的具體定義。
-     *
-     * 只應在「剛套用完一次立直宣告」且確定這張宣告牌沒有任何人可以吃/碰/槓/榮和之後才呼叫——
-     * 只有立直宣告的呼叫端會呼叫這個方法，一般捨牌不會（否則同一副立直保持到底的牌局，往後每次
-     * 捨牌都會被誤判成這類流局）。
-     *
-     * @param tableStateAfterDeclaration 立直宣告且確定無人反應後的桌況。
-     * @return 若構成此流局類型則為對應的流局原因，否則為 null；不支援此流局類型的規則固定回傳 null。
-     */
-    fun resolveSuuchaRiichi(tableStateAfterDeclaration: TableState): ExhaustiveDrawReason?
-
-    /**
-     * 是否構成日麻慣稱「四槓散了」這類途中流局——具體判定條件（例如日麻是全場合計槓了 4 次、且並非
-     * 全部由同一人達成，全部由同一人達成時該玩家可能正在做四槓子役滿而不觸發流局）完全由各規則自己
-     * 的覆寫決定，這裡不預設任何規則的具體定義。
-     *
-     * 只應在確定某次槓牌的嶺上摸牌已經處理完畢（例如玩家已經有機會嘗試嶺上開花自摸）之後才呼叫。
-     *
-     * @param tableState 目前的桌況。
-     * @return 若構成此流局類型則為對應的流局原因，否則為 null；不支援此流局類型的規則固定回傳 null。
-     */
-    fun resolveSuukanNagare(tableState: TableState): ExhaustiveDrawReason?
-
-    /**
      * 給定一張牌與目前已公開翻開的牌山牌張（[revealedWallTiles]，一般是各規則自訂的指示牌），判斷這張
      * 牌目前是否該有特殊視覺強調（例如日麻的寶牌發光）——純粹牌面比對，不需要完整 [TableState]，
      * client／server 都能呼叫。呈現層只負責「有沒有」，實際疊加什麼視覺效果由呈現層自己決定，這裡

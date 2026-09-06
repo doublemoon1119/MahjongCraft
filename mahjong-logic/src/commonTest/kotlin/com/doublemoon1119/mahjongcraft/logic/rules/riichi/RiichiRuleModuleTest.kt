@@ -38,7 +38,7 @@ import kotlin.uuid.Uuid
  */
 class RiichiRuleModuleTest {
 
-    private val module: MahjongRuleModule<RiichiRuleConfig> = RiichiRuleModule(
+    private val module: RiichiRuleModule = RiichiRuleModule(
         id = "mahjongcraft:riichi",
         config = RiichiRuleConfig(),
     )

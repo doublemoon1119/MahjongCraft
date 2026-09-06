@@ -63,6 +63,8 @@ import kotlin.uuid.Uuid
  * @property gameActionRouter 玩家發起命令的路由入口。
  * @property gameRepository 權威對局數據倉庫，用於判斷是否需要銜接。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析四槓散了判定。
+ * @property postActionExhaustiveDrawResolverRegistry 主動觸發途中流局的判定 registry，用於預先判斷
+ *   是否已構成四槓散了，決定是否改呼叫 [declareSuukanNagareUseCase]。
  * @property declareExhaustiveDrawUseCase 一般流局結算用例。
  * @property resolveWinRoundContinuationUseCase 胡牌即時結算完成後，判定本局後續是否結束的用例；
  *   見 [ResolveWinRoundContinuationUseCase] KDoc。
@@ -85,6 +87,7 @@ class GameFlowCoordinator(
     private val extensionCommandRegistry: ExtensionGameCommandExecutorRegistry,
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
+    private val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
     private val declareExhaustiveDrawUseCase: DeclareExhaustiveDrawUseCase,
     private val resolvePostReactionRoundOutcomeUseCase: ResolvePostReactionRoundOutcomeUseCase,
     private val resolveWinRoundContinuationUseCase: ResolveWinRoundContinuationUseCase,
@@ -380,7 +383,8 @@ class GameFlowCoordinator(
         if (state.pendingReaction != null || state.pendingKanReaction != null) return null
 
         val module = moduleRegistry.getModule(state.config)
-        if (module.resolveSuukanNagare(state) == null) return null
+        val trigger = PostActionTrigger.KanDeclared(state)
+        if (postActionExhaustiveDrawResolverRegistry.resolve(trigger, module) == null) return null
 
         val result = declareSuukanNagareUseCase(gameId)
         if (result is Outcome.Success) {

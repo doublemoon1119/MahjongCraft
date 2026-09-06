@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublish
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionTrigger
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
@@ -13,7 +15,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -28,13 +29,14 @@ import kotlin.uuid.Uuid
  * 決定實際開放給誰、[RonResolution.ABORTIVE_DRAW] 是否直接觸發流局，這些邏輯與 [DeclareRiichiUseCase]
  * （立直宣告牌）共用，交給 [DiscardReactionResolver] 處理，詳見其 KDoc。
  *
- * 除了一炮多響判定為流局之外，這張捨牌若沒有任何人可以吃/碰/槓/榮和，還會額外檢查是否構成四風連打
- * （[MahjongRuleModule.resolveSuufonRenda]）。
+ * 除了一炮多響判定為流局之外，這張捨牌若沒有任何人可以吃/碰/槓/榮和，還會額外透過
+ * [postActionExhaustiveDrawResolverRegistry] 檢查是否構成主動觸發的途中流局（例如日麻的四風連打）。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器。
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
+ * @property postActionExhaustiveDrawResolverRegistry 捨牌完成後主動觸發途中流局的判定 registry。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
  */
@@ -44,6 +46,7 @@ class DiscardTileUseCase(
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val handSortPreferenceStore: HandSortPreferenceStore,
+    private val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
     @Provided private val eventPublisher: GameEventPublisher,
     @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
@@ -127,10 +130,13 @@ class DiscardTileUseCase(
                         val resolved =
                             DiscardReactionResolver.resolve(state, stateAfterDiscard, module, playerId, discardedTile)
 
-                        // 沒有觸發一炮多響流局、也沒有人可反應時，額外檢查是否構成四風連打。
+                        // 沒有觸發一炮多響流局、也沒有人可反應時，額外檢查是否構成主動觸發的途中流局。
                         val suufonReason =
                             if (resolved.abortiveDrawReason == null && resolved.tableState.pendingReaction == null) {
-                                module.resolveSuufonRenda(resolved.tableState)
+                                postActionExhaustiveDrawResolverRegistry.resolve(
+                                    PostActionTrigger.DiscardCompleted(resolved.tableState),
+                                    module,
+                                )
                             } else {
                                 null
                             }

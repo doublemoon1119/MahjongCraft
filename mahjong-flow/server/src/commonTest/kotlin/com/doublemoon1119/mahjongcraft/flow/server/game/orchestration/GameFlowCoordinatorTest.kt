@@ -102,11 +102,23 @@ class GameFlowCoordinatorTest {
         val snapshotRepo = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val handSortPreferenceStore = HandSortPreferenceStore()
+        val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
+            registerRiichiPostActionExhaustiveDrawResolvers()
+            freeze()
+        }
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val winPresentationHandoff = WinPresentationHandoff()
         val presentationBusyGate = FakeGamePresentationBusyGate()
-        val declareRiichiUseCase = DeclareRiichiUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, handSortPreferenceStore, eventPublisher, presentationPublisher)
+        val declareRiichiUseCase = DeclareRiichiUseCase(
+            gameRepo,
+            moduleRegistry,
+            snapshotSynchronizer,
+            handSortPreferenceStore,
+            postActionExhaustiveDrawResolverRegistry,
+            eventPublisher,
+            presentationPublisher,
+        )
         val extensionCommandRegistry = ExtensionGameCommandExecutorRegistry().apply {
             registerRiichiGameCommandHandler(declareRiichiUseCase)
         }
@@ -117,6 +129,7 @@ class GameFlowCoordinatorTest {
                 moduleRegistry,
                 snapshotSynchronizer,
                 handSortPreferenceStore,
+                postActionExhaustiveDrawResolverRegistry,
                 eventPublisher,
                 presentationPublisher,
             ),
@@ -150,6 +163,7 @@ class GameFlowCoordinatorTest {
             extensionCommandRegistry = extensionCommandRegistry,
             gameRepository = gameRepo,
             moduleRegistry = moduleRegistry,
+            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             resolvePostReactionRoundOutcomeUseCase = ResolvePostReactionRoundOutcomeUseCase(
                 gameRepo,
@@ -163,7 +177,13 @@ class GameFlowCoordinatorTest {
                 winRoundContinuationResolverRegistry,
                 snapshotSynchronizer,
             ),
-            declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
+            declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                postActionExhaustiveDrawResolverRegistry,
+                eventPublisher,
+            ),
             advanceRoundUseCase = AdvanceRoundUseCase(
                 gameRepo,
                 moduleRegistry,

@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublish
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionTrigger
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
@@ -13,7 +15,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.applyRiichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
@@ -40,12 +41,14 @@ import kotlin.uuid.Uuid
  *
  * 立直宣告牌打出後，其他玩家是否有資格吃/碰/槓/榮和這張牌（含一炮多響判定為流局的情況）交給
  * [DiscardReactionResolver] 處理，與 [DiscardTileUseCase] 共用同一套邏輯。沒有人可以反應時，
- * 還會額外檢查是否構成四家立直（[MahjongRuleModule.resolveSuuchaRiichi]）。
+ * 還會額外透過 [postActionExhaustiveDrawResolverRegistry] 檢查是否構成主動觸發的途中流局
+ * （例如日麻的四家立直）。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與向聽數計算器。
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
+ * @property postActionExhaustiveDrawResolverRegistry 立直宣告完成後主動觸發途中流局的判定 registry。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局呈現層通知服務，用於立直成立後通知平台呈現層更新立直棒。
  */
@@ -55,6 +58,7 @@ class DeclareRiichiUseCase(
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val handSortPreferenceStore: HandSortPreferenceStore,
+    private val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
     @Provided private val eventPublisher: GameEventPublisher,
     @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
@@ -156,10 +160,13 @@ class DeclareRiichiUseCase(
                         discardResult.tile,
                     )
 
-                    // 沒有觸發一炮多響流局、也沒有人可反應時，額外檢查是否構成四家立直。
+                    // 沒有觸發一炮多響流局、也沒有人可反應時，額外檢查是否構成主動觸發的途中流局。
                     val suuchaReason =
                         if (resolved.abortiveDrawReason == null && resolved.tableState.pendingReaction == null) {
-                            module.resolveSuuchaRiichi(resolved.tableState)
+                            postActionExhaustiveDrawResolverRegistry.resolve(
+                                PostActionTrigger.RiichiDeclared(resolved.tableState),
+                                module,
+                            )
                         } else {
                             null
                         }

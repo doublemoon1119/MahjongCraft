@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCu
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
@@ -34,6 +35,8 @@ object MahjongExtensionRegistrar {
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
             PostReactionRoundOutcomeResolverRegistry(),
+        postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry =
+            PostActionExhaustiveDrawResolverRegistry(),
         roundPreparationResolverRegistry: RoundPreparationResolverRegistry = RoundPreparationResolverRegistry(),
         winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry =
             WinRoundContinuationResolverRegistry(),
@@ -57,6 +60,7 @@ object MahjongExtensionRegistrar {
                 extension.registerGameActionAiHandlers(gameActionAiRegistry)
                 extension.registerGameCommandHandlers(gameCommandRegistry)
                 extension.registerPostReactionRoundOutcomeResolvers(postReactionRoundOutcomeResolverRegistry)
+                extension.registerPostActionExhaustiveDrawResolvers(postActionExhaustiveDrawResolverRegistry)
                 extension.registerRoundPreparationResolvers(roundPreparationResolverRegistry)
                 extension.registerWinRoundContinuationResolvers(winRoundContinuationResolverRegistry)
                 extension.registerWinSettlementDetailResolvers(winSettlementDetailResolverRegistry)
@@ -73,6 +77,7 @@ object MahjongExtensionRegistrar {
         gameActionAiRegistry.freeze()
         gameCommandRegistry.freeze()
         postReactionRoundOutcomeResolverRegistry.freeze()
+        postActionExhaustiveDrawResolverRegistry.freeze()
         roundPreparationResolverRegistry.freeze()
         winRoundContinuationResolverRegistry.freeze()
         winSettlementDetailResolverRegistry.freeze()
