@@ -441,6 +441,9 @@ private class PlayerDecisionScreen(
     /** 目前操作卡片的水平捲動量。 */
     private var horizontalScroll = 0.0
 
+    /** 是否已完成畫面開啟時的預設捲動位置；resize 造成的重建不應覆蓋玩家已手動調整的位置。 */
+    private var horizontalScrollInitialized = false
+
     /** 是否正在拖曳 scrollbar thumb。 */
     private var draggingScrollbar = false
 
@@ -454,13 +457,15 @@ private class PlayerDecisionScreen(
     /** 建立固定單列、可水平捲動的半透明選項卡。 */
     override fun init() {
         val entries = buildList<DisplayEntry> {
-            prompt.actions.filterNot { it.actionId == "mahjongcraft:pass" }.forEach { action ->
-                add(
-                    DisplayEntry(Text.translatable(action.actionId.translationKey()), action) {
-                        controller.submit(prompt, PlayerDecisionSelectionKindDto.ACTION, action.token)
-                    },
-                )
-            }
+            prompt.actions.filterNot { it.actionId == "mahjongcraft:pass" }
+                .sortedBy { it.actionId.actionDisplayPriority() }
+                .forEach { action ->
+                    add(
+                        DisplayEntry(Text.translatable(action.actionId.translationKey()), action) {
+                            controller.submit(prompt, PlayerDecisionSelectionKindDto.ACTION, action.token)
+                        },
+                    )
+                }
             if (prompt.riichiTileIds.isNotEmpty()) {
                 add(
                     DisplayEntry(
@@ -494,7 +499,12 @@ private class PlayerDecisionScreen(
             }
         }
         visibleEntries = entries
-        horizontalScroll = horizontalScroll.coerceIn(0.0, maximumScroll())
+        horizontalScroll = if (horizontalScrollInitialized) {
+            horizontalScroll.coerceIn(0.0, maximumScroll())
+        } else {
+            horizontalScrollInitialized = true
+            maximumScroll()
+        }
         val placements = cardPlacements()
         cardButtons = visibleEntries.mapIndexed { index, entry ->
             val placement = placements[index]
@@ -892,6 +902,16 @@ private class PlayerDecisionScreen(
 /** Prompt 是否包含需要玩家明確選擇的內容。 */
 private val PlayerDecisionPromptDto.isInteractive: Boolean
     get() = actions.isNotEmpty() || riichiTileIds.isNotEmpty() || preparation != null
+
+/** 操作卡由左至右的顯示順序；未列出的 ID（含第三方規則模組的特殊動作）維持原始相對順序排在最後。 */
+internal fun String.actionDisplayPriority(): Int = when (this) {
+    "mahjongcraft:chi" -> 0
+    "mahjongcraft:pon" -> 1
+    "mahjongcraft:kan_open", "mahjongcraft:kan_closed", "mahjongcraft:kan_added" -> 2
+    "mahjongcraft:ron" -> 3
+    "mahjongcraft:tsumo" -> 4
+    else -> 5
+}
 
 /** 將 namespaced ID 映射至內建語言鍵，未知 ID 仍以完整 ID 顯示。 */
 internal fun String.translationKey(): String = when (this) {
