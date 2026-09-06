@@ -258,6 +258,8 @@
   "mahjongcraft.message.rule_module_riichi": "日本麻将",
   "mahjongcraft.message.rule_module_taiwan": "台湾麻将",
   "mahjongcraft.message.show_game_config": "所在麻将游戏的 %s",
+  "mahjongcraft.message.start_blocked_distant_players": "无法开始游戏：%s 距离桌子太远",
+  "mahjongcraft.message.start_blocked_offline_players": "无法开始游戏：%s 目前离线",
   "mahjongcraft.message.table_animation_busy": "桌面正在播放动画，请稍候再试",
   "mahjongcraft.message.table_not_reachable": "找不到那张麻将桌，或距离太远无法互动",
   "mahjongcraft.message.target_not_ai": "该玩家不是 AI 玩家，无法更换策略",

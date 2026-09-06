@@ -34,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricMatchSe
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationShowcaseScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.resolveKnownPlayerName
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
@@ -516,12 +517,7 @@ class FabricGamePresentationPublisher(
             val module = moduleRegistry.getModule(game.tableState.config)
             val orderedAiPlayerIds = game.roomPlayerIds.filter { id -> game.tableState.players.any { it.id == id && it.isAi } }
             val playerInfo = MahjongPlayerInfoPresentationFactory.create(game.tableState, module) { player ->
-                if (player.isAi) {
-                    aiPlayerDisplayName(player.id, orderedAiPlayerIds)
-                } else {
-                    serverHolder.findPlayer(player.id)?.gameProfile?.name
-                        ?: serverHolder.current()?.userCache?.getByUuid(player.id.toJavaUuid())?.orElse(null)?.name
-                }
+                if (player.isAi) aiPlayerDisplayName(player.id, orderedAiPlayerIds) else resolveKnownPlayerName(serverHolder, player.id)
             }
             playerInfoPresenter.present(playerInfo, resolved.location, resolved.facing)
         }

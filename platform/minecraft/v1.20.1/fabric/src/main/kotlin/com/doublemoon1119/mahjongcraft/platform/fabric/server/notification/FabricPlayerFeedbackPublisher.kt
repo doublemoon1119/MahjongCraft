@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.resolveKnownPlayerName
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.resolveDisplayText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.bracketedInteractiveLabel
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
@@ -104,6 +105,8 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_START_FAILED), true)
                 MinecraftPlayerFeedback.TableNotReachable ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.TABLE_NOT_REACHABLE), true)
+                is MinecraftPlayerFeedback.StartBlockedByPlayers ->
+                    player.sendMessage(startBlockedByPlayersMessage(feedback), true)
                 is MinecraftPlayerFeedback.AiAdded ->
                     player.sendMessage(aiAddedMessage(feedback.strategyKey))
                 MinecraftPlayerFeedback.AddAiFailed ->
@@ -182,6 +185,27 @@ class FabricPlayerFeedbackPublisher(
         MinecraftMessageKeys.AI_ADDED,
         aiStrategyDisplayNames.resolveDisplayText(strategyKey),
     )
+
+    /** 建立「部分成員離線或太遠，無法開始對局」訊息；兩種原因各自成行，只有真的有內容的那一種才會出現。 */
+    private fun startBlockedByPlayersMessage(feedback: MinecraftPlayerFeedback.StartBlockedByPlayers): MutableText {
+        val lines = buildList {
+            if (feedback.offlinePlayerIds.isNotEmpty()) {
+                add(Text.translatable(MinecraftMessageKeys.START_BLOCKED_OFFLINE_PLAYERS, joinPlayerNames(feedback.offlinePlayerIds)))
+            }
+            if (feedback.distantPlayerIds.isNotEmpty()) {
+                add(Text.translatable(MinecraftMessageKeys.START_BLOCKED_DISTANT_PLAYERS, joinPlayerNames(feedback.distantPlayerIds)))
+            }
+        }
+        val message = Text.empty()
+        lines.forEachIndexed { index, line ->
+            if (index > 0) message.append("\n")
+            message.append(line)
+        }
+        return message
+    }
+
+    /** 用逗號串接每個玩家目前已知的名稱；查不到名稱時退回 UUID 前 8 碼，與其他玩家名稱 fallback 慣例一致。 */
+    private fun joinPlayerNames(playerIds: List<Uuid>): String = playerIds.joinToString { resolveKnownPlayerName(serverHolder, it) ?: it.toString().take(8) }
 
     /**
      * 建立「已更換 AI 策略」訊息，格式為「舊策略 → 新策略」，比照使用者對「舊 → 新」類訊息的配色慣例：

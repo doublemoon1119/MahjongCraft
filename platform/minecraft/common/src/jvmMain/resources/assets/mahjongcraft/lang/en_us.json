@@ -258,6 +258,8 @@
   "mahjongcraft.message.rule_module_riichi": "Riichi Mahjong",
   "mahjongcraft.message.rule_module_taiwan": "Taiwanese Mahjong",
   "mahjongcraft.message.show_game_config": "Current mahjong game rules: %s",
+  "mahjongcraft.message.start_blocked_distant_players": "Cannot start: too far from the table: %s",
+  "mahjongcraft.message.start_blocked_offline_players": "Cannot start: offline: %s",
   "mahjongcraft.message.table_animation_busy": "The table is playing an animation, please wait a moment",
   "mahjongcraft.message.table_not_reachable": "That table does not exist or is out of reach",
   "mahjongcraft.message.target_not_ai": "That player is not an AI player, cannot change its strategy",

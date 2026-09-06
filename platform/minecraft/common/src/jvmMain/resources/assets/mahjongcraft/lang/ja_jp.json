@@ -258,6 +258,8 @@
   "mahjongcraft.message.rule_module_riichi": "日本麻雀",
   "mahjongcraft.message.rule_module_taiwan": "台湾麻雀",
   "mahjongcraft.message.show_game_config": "この麻雀ゲームのルール：%s",
+  "mahjongcraft.message.start_blocked_distant_players": "開始できません：%s がテーブルから離れすぎています",
+  "mahjongcraft.message.start_blocked_offline_players": "開始できません：%s がオフラインです",
   "mahjongcraft.message.table_animation_busy": "テーブルが演出を再生中です。しばらくお待ちください",
   "mahjongcraft.message.table_not_reachable": "そのテーブルが見つからないか、操作できる範囲外です",
   "mahjongcraft.message.target_not_ai": "そのプレイヤーはAIではないため、戦略を変更できません",

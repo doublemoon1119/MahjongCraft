@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import kotlin.uuid.Uuid
 
 /**
  * Minecraft 玩家完成麻將操作後收到的一次性回饋語意。
@@ -103,6 +104,17 @@ sealed interface MinecraftPlayerFeedback {
 
     /** 指定的麻將桌不存在，或已超出目前可互動的範圍。 */
     data object TableNotReachable : MinecraftPlayerFeedback
+
+    /**
+     * 部分非 AI 成員（含房主）目前離線或距離桌子太遠，無法開始對局；兩份清單依情況可能同時有內容。
+     *
+     * @property offlinePlayerIds 目前離線的成員 Uuid。
+     * @property distantPlayerIds 目前在線、但距離桌子太遠的成員 Uuid。
+     */
+    data class StartBlockedByPlayers(
+        val offlinePlayerIds: List<Uuid>,
+        val distantPlayerIds: List<Uuid>,
+    ) : MinecraftPlayerFeedback
 
     /**
      * 已新增 AI 玩家。

@@ -71,6 +71,12 @@ object MinecraftMessageKeys {
     /** 指定的麻將桌不存在，或已超出目前可互動的範圍。 */
     const val TABLE_NOT_REACHABLE = PREFIX + "table_not_reachable"
 
+    /** 部分成員離線導致無法開始對局，帶一個離線成員名單參數（一個 `%s`，已用語系慣例的分隔符號串接）。 */
+    const val START_BLOCKED_OFFLINE_PLAYERS = PREFIX + "start_blocked_offline_players"
+
+    /** 部分成員距離桌子太遠導致無法開始對局，帶一個成員名單參數（一個 `%s`，已用語系慣例的分隔符號串接）。 */
+    const val START_BLOCKED_DISTANT_PLAYERS = PREFIX + "start_blocked_distant_players"
+
     /** 已新增 AI 玩家，帶策略顯示名稱參數（`%s`），措辭比照 [KICK_CANDIDATE_AI_LABEL] 的稱呼方式。 */
     const val AI_ADDED = PREFIX + "ai_added"
 
@@ -419,6 +425,8 @@ object MinecraftMessageKeys {
         NOT_ALL_PLAYERS_READY,
         GAME_START_FAILED,
         TABLE_NOT_REACHABLE,
+        START_BLOCKED_OFFLINE_PLAYERS,
+        START_BLOCKED_DISTANT_PLAYERS,
         AI_ADDED,
         ADD_AI_FAILED,
         GAME_FULL,

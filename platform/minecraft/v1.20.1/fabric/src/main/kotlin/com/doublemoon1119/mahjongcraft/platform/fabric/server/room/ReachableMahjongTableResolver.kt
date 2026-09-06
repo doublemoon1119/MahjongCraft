@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -61,21 +62,29 @@ class ReachableMahjongTableResolver(
         else -> SURVIVAL_REACH_DISTANCE
     }
 
-    /** 玩家座標到方塊中心的直線距離。 */
+    /**
+     * 玩家座標到麻將桌整個 3×3×2 結構（不是單一 controller 方塊）世界座標範圍最近點的直線距離。
+     * [pos] 是 controller 方塊座標，實際佔用範圍由 [MahjongTablePart] 的固定相對位移換算——水平朝向
+     * 不影響這個範圍：結構本身以 controller 為中心水平對稱，任何朝向的旋轉都只是把同一組相對座標互相
+     * 對應，不會改變整體占用的方塊集合，因此不需要另外讀取朝向。
+     */
     private fun distanceTo(player: ServerPlayerEntity, pos: BlockPos): Double {
+        val minX = pos.x + MahjongTablePart.entries.minOf { it.localX }
+        val maxX = pos.x + MahjongTablePart.entries.maxOf { it.localX } + 1
+        val minY = pos.y + MahjongTablePart.entries.minOf { it.localY }
+        val maxY = pos.y + MahjongTablePart.entries.maxOf { it.localY } + 1
+        val minZ = pos.z + MahjongTablePart.entries.minOf { it.localZ }
+        val maxZ = pos.z + MahjongTablePart.entries.maxOf { it.localZ } + 1
         val playerPos = player.pos
-        val dx = pos.x + BLOCK_CENTER - playerPos.x
-        val dy = pos.y + BLOCK_CENTER - playerPos.y
-        val dz = pos.z + BLOCK_CENTER - playerPos.z
+        val dx = playerPos.x.coerceIn(minX.toDouble(), maxX.toDouble()) - playerPos.x
+        val dy = playerPos.y.coerceIn(minY.toDouble(), maxY.toDouble()) - playerPos.y
+        val dz = playerPos.z.coerceIn(minZ.toDouble(), maxZ.toDouble()) - playerPos.z
         return sqrt(dx * dx + dy * dy + dz * dz)
     }
 
     private companion object {
         /** 方塊座標轉換為 16×16 chunk 座標的位移量，與 [TableLocation] 一致。 */
         const val CHUNK_COORDINATE_SHIFT: Int = 4
-
-        /** 方塊中心的座標偏移。 */
-        const val BLOCK_CENTER: Double = 0.5
 
         /** 原版創造模式的可觸距離（方塊數）。 */
         const val CREATIVE_REACH_DISTANCE: Double = 5.0

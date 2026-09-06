@@ -36,7 +36,8 @@ import kotlin.uuid.toKotlinUuid
  * [join]／[leave] 需要玩家明確指定目標桌子（[TableCoordinateArgument]），不會自動選最近的一張；
  * Tab 補全只會列出玩家目前實際可互動範圍內的桌子（[ReachableMahjongTableResolver]），與右鍵桌子
  * 能生效的範圍一致。[ready]／[start]／[addAi]／[changeAiStrategy]／[showConfig] 改用玩家目前的房間
- * 歸屬解析目標房間，不需要玩家人在桌子附近——開局本身就會把玩家傳送到座位，先天不需要距離限制。
+ * 歸屬解析目標房間，不需要玩家自己指定桌子——但 [ready]／[start] 仍然各自要求玩家（及 [start] 額外
+ * 檢查的所有房間成員）實際在桌子的可互動範圍內，見 `MahjongTableRoomService.isPlayerReachable`。
  *
  * [showConfig] 不帶參數，只負責印出目前設定；訊息裡的可互動文字點擊後會觸發另一個純 client-only
  * 指令（`/mahjongcraft_client room_config screen`，見 [FabricRoomConfigScreenCommand]）

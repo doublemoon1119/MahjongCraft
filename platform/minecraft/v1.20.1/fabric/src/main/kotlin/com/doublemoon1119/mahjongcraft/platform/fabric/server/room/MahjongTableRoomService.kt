@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
@@ -39,9 +40,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
@@ -76,11 +79,13 @@ class MahjongTableRoomService(
     private val gameSnapshotSender: GameSnapshotSender,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val tableLocationRegistry: TableLocationRegistry,
+    private val reachableTableResolver: ReachableMahjongTableResolver,
     private val memberCandidateResolver: RoomMemberCandidateResolver,
     private val gameFlowCoordinator: GameFlowCoordinator,
     private val autoDrawService: MahjongAutoDrawService,
     private val lobbyInfoPresenter: FabricMahjongLobbyInfoPresenter,
     private val serverHolder: FabricServerHolder,
+    private val dispatchers: CoroutineDispatchers,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) {
@@ -376,7 +381,8 @@ class MahjongTableRoomService(
 
     /**
      * 切換玩家在房間等待階段的準備狀態。以玩家目前的房間歸屬（[PlayerMembershipRepository]）解析
-     * 目標房間，不需要玩家實際站在桌子附近——呼叫端（指令或未來的 HUD）自行決定要不要額外檢查距離。
+     * 目標房間，並要求玩家目前實際在桌子的可互動範圍內（[isPlayerReachable]）；[start] 另外會在真正
+     * 開局前，對所有已準備成員各自重新驗證一次同樣的條件，兩處合起來確保開局當下每個成員都確實在場。
      *
      * 房主不參與準備機制（開局用 [start]），這裡先擋在呼叫 [toggleReady] 之前給出專屬回饋，避免
      * [ToggleReadyUseCase] 內部對房主的無操作分支被誤讀成一次真正的狀態切換。
@@ -387,6 +393,10 @@ class MahjongTableRoomService(
             val tableId = membershipRepository.getTableId(playerId)
             if (tableId == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
+                return@launch
+            }
+            if (!withContext(dispatchers.main) { isPlayerReachable(player, tableId) }) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.TableNotReachable)
                 return@launch
             }
             val room = roomRepository.getRoom(tableId)
@@ -405,6 +415,11 @@ class MahjongTableRoomService(
      * 讓房主在所有人皆已準備完成時開始遊戲。同樣以玩家目前的房間歸屬解析目標房間；座位傳送與其他
      * 呈現已經由 `StartGameUseCase` 內部觸發，這裡不需要額外處理。
      *
+     * 真正開始之前，會對房間內每一位非 AI 成員（含房主自己）各自檢查是否在線、以及在線的話是否在桌子
+     * 的可互動範圍內（[isPlayerReachable]）；只要有任何一人離線或太遠，就整批擋下開局，並在回饋中列出
+     * 是哪些人——不會只挑呼叫 [start] 的房主自己檢查，否則其他成員仍然可以先在附近按 [ready]、再走遠，
+     * 靠房主開局把自己傳送過去。
+     *
      * 開局後第一位玩家的摸牌需要另外補：[GameFlowCoordinator.driveAutomatedPlayers] 只涵蓋第一位是
      * AI 的情況，[MahjongAutoDrawService.checkAndAutoDraw] 只涵蓋第一位是真人的情況，兩者依
      * `current.isAi` 互斥，只呼叫其中一個會漏掉另一種開局，因此都要呼叫。
@@ -417,6 +432,24 @@ class MahjongTableRoomService(
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
             }
+            val room = roomRepository.getRoom(tableId)
+            if (room != null) {
+                val offlinePlayerIds = mutableListOf<Uuid>()
+                val distantPlayerIds = mutableListOf<Uuid>()
+                withContext(dispatchers.main) {
+                    room.humanPlayerIds.forEach { memberId ->
+                        val member = serverHolder.findPlayer(memberId)
+                        when {
+                            member == null -> offlinePlayerIds.add(memberId)
+                            !isPlayerReachable(member, tableId) -> distantPlayerIds.add(memberId)
+                        }
+                    }
+                }
+                if (offlinePlayerIds.isNotEmpty() || distantPlayerIds.isNotEmpty()) {
+                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.StartBlockedByPlayers(offlinePlayerIds, distantPlayerIds))
+                    return@launch
+                }
+            }
             when (val result = startGame(tableId, playerId)) {
                 is Outcome.Success -> {
                     val gameId = result.value
@@ -427,6 +460,19 @@ class MahjongTableRoomService(
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.startError(result.error))
             }
         }
+    }
+
+    /**
+     * 該玩家目前是否在指定桌子的可互動範圍內，沿用一般右鍵桌子互動的距離／維度規則
+     * （[ReachableMahjongTableResolver]），不另外維護一套獨立的距離常數。查不到桌子位置索引時視為
+     * 不可達。
+     *
+     * 內部會讀取 [TableLocationRegistry] 與世界的 BlockEntity 狀態，兩者都只能在伺服器主執行緒存取；
+     * 呼叫端必須先 `withContext(dispatchers.main)` 切回主執行緒，不能直接在 [scope] 的背景協程裡呼叫。
+     */
+    private fun isPlayerReachable(player: ServerPlayerEntity, tableId: Uuid): Boolean {
+        val location = tableLocationRegistry.get(tableId)?.location ?: return false
+        return reachableTableResolver.resolve(player, BlockPos(location.x, location.y, location.z)) != null
     }
 
     /**
