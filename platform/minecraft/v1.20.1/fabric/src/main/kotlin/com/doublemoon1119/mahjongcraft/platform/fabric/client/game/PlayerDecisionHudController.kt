@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
@@ -697,9 +699,9 @@ private class PlayerDecisionScreen(
             ?: uuid?.let { MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(it)?.profile?.name }
             ?: playerId.take(8)
         val relationKey = when (prompt.triggerPlayerRelation) {
-            com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto.LEFT -> "mahjongcraft.hud.relation.left"
-            com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto.ACROSS -> "mahjongcraft.hud.relation.across"
-            com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto.RIGHT -> "mahjongcraft.hud.relation.right"
+            DecisionPlayerRelationDto.LEFT -> "mahjongcraft.hud.relation.left"
+            DecisionPlayerRelationDto.ACROSS -> "mahjongcraft.hud.relation.across"
+            DecisionPlayerRelationDto.RIGHT -> "mahjongcraft.hud.relation.right"
             null -> return null
         }
         val action = Text.translatable((prompt.triggerActionId ?: "mahjongcraft:discard").translationKey())
@@ -930,6 +932,5 @@ private fun WaitingTileWinAvailabilityDto.translationKey(): String = when (this)
 }
 
 /** 只有他家捨牌與搶槓視窗的跳過會提交正式 Pass。 */
-private val com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase.isReaction: Boolean
-    get() = this == com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase.DISCARD_REACTION ||
-        this == com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase.KAN_REACTION
+private val PlayerDecisionPhase.isReaction: Boolean
+    get() = this == PlayerDecisionPhase.DISCARD_REACTION || this == PlayerDecisionPhase.KAN_REACTION

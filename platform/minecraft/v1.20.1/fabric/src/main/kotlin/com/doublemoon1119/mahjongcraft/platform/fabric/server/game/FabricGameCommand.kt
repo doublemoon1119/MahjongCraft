@@ -231,7 +231,11 @@ class FabricGameCommand(
     }
 
     private companion object {
-        /** 手牌引數名稱（`discard`／`riichi` 共用）。 */
+        /**
+         * 手牌引數名稱（`discard`／`riichi` 共用）。值是 [GameActionCandidateResolver] 依玩家當下
+         * 手牌動態算出的 candidate token，對應一張實體牌；跟 `FabricDebugAnimationCommand` 的 `tile`
+         * 引數（全域固定的素材 asset key，與任何玩家手牌無關）是兩個不同概念，不應合併實作。
+         */
         const val TILE_ARGUMENT: String = "tile"
 
         /** 候選動作引數名稱（`action` 使用）。 */

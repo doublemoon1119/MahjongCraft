@@ -772,6 +772,10 @@ class FabricDebugAnimationCommand(
     /**
      * 幫一個子指令節點同時掛上「不帶 `tile` 引數」與「帶 `tile` 引數」兩種執行路徑——省略引數時
      * [onExecute] 收到的 `tileArg` 為 `null`，由呼叫端自行決定預設牌面，見 [resolveAssetKey]。
+     *
+     * 這裡的 `tile` 是全域固定的素材 asset key（見 [suggestTileAssetKeys]），單純選擇要渲染成什麼
+     * 牌面，與任何玩家手牌無關；跟 `FabricGameCommand` 的 `tile` 引數（依玩家當下手牌動態算出的
+     * candidate token，對應一張實體牌）是兩個不同概念，不應合併實作。
      */
     private fun withOptionalTileArgument(
         node: LiteralArgumentBuilder<ServerCommandSource>,
