@@ -28,8 +28,8 @@ object WinSettlementPresentationRequestFactory {
         module: MahjongRuleModule<*>,
     ): WinSettlementPresentationRequest {
         val currentState = outcome.settledTableState
-        val previousRanks = ranks(previousState, module)
-        val currentRanks = ranks(currentState, module)
+        val previousRanks = roundRanksByPlayer(previousState, module)
+        val currentRanks = roundRanksByPlayer(currentState, module)
         return WinSettlementPresentationRequest(
             outcomeId = outcome.id,
             templateKey = if (outcome.id == BuiltInRoundOutcomeIds.NAGASHI_MANGAN) {
@@ -91,8 +91,8 @@ object WinSettlementPresentationRequestFactory {
         resolutions: Map<Uuid, WinResolutionResult>,
         detailResolverRegistry: WinSettlementDetailResolverRegistry = createBuiltInWinSettlementDetailResolverRegistry(),
     ): WinSettlementPresentationRequest {
-        val previousRanks = ranks(previousState, module)
-        val currentRanks = ranks(currentState, module)
+        val previousRanks = roundRanksByPlayer(previousState, module)
+        val currentRanks = roundRanksByPlayer(currentState, module)
         val resolvedDetails = resolutions.mapValues { (_, resolution) ->
             detailResolverRegistry.resolve(module.id, currentState, resolution.handValueResult)
         }
@@ -171,8 +171,6 @@ object WinSettlementPresentationRequestFactory {
             add(WinSettlementDetailField(RIICHI_URA_DORA_FIELD, WinSettlementDetailValue.Tiles(indicators?.second.orEmpty().map { it.id })))
         }
     }
-
-    private fun ranks(state: TableState, module: MahjongRuleModule<*>): Map<Uuid, Int> = state.players.sortedWith(module.compareForRoundRanking()).mapIndexed { index, player -> player.id to index + 1 }.toMap()
 
     /** 建立一般胡牌的翻符顯示；滿貫以上沒有權威符數時只顯示翻數。 */
     internal fun riichiHanFuValue(totalHan: Int, totalFu: Int): WinSettlementDetailValue.Text = if (totalFu > 0) {

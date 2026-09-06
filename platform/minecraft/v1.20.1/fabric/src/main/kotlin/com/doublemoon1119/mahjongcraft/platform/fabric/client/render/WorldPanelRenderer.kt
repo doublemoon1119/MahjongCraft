@@ -55,4 +55,12 @@ object WorldPanelRenderer {
     }
 
     fun withAlpha(rgb: Int, alpha: Float): Int = ((alpha.coerceIn(0f, 1f) * 255).roundToInt() shl 24) or (rgb and 0xFFFFFF)
+
+    /** 淡入、持續顯示與淡出三階段的透明度曲線；`value` 落在 `[outEnd, +∞)` 或 `(-∞, inStart)` 時完全透明。 */
+    fun phaseAlpha(value: Double, inStart: Double, inEnd: Double, outStart: Double, outEnd: Double): Float = when {
+        value < inStart || value >= outEnd -> 0f
+        value < inEnd -> ((value - inStart) / (inEnd - inStart)).toFloat()
+        value > outStart -> ((outEnd - value) / (outEnd - outStart)).toFloat()
+        else -> 1f
+    }
 }

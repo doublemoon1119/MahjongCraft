@@ -26,8 +26,8 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
         tenpaiPlayerIds: Set<Uuid>?,
         revealedHands: List<RevealedHandSettlement>,
     ): ExhaustiveDrawSettlementPresentationRequest {
-        val previousRanks = ranksByPlayer(previousState, module)
-        val currentRanks = ranksByPlayer(currentState, module)
+        val previousRanks = roundRanksByPlayer(previousState, module)
+        val currentRanks = roundRanksByPlayer(currentState, module)
         val revealedByPlayer = revealedHands.associateBy { it.playerId }
 
         return ExhaustiveDrawSettlementPresentationRequest(
@@ -79,10 +79,5 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
                 )
             },
         )
-    }
-
-    /** 依規則的回合排名比較器建立從一開始的名次 map。 */
-    private fun ranksByPlayer(state: TableState, module: MahjongRuleModule<*>): Map<Uuid, Int> = state.players.sortedWith(module.compareForRoundRanking()).withIndex().associate { (index, player) ->
-        player.id to index + 1
     }
 }

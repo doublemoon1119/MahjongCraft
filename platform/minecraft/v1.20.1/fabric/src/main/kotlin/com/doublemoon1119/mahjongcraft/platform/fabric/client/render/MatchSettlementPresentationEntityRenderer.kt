@@ -255,27 +255,19 @@ class MatchSettlementPresentationEntityRenderer(
     }
 
     /** 保證標準玩家名稱完整顯示，超寬名稱以省略號收尾。 */
-    private fun fitPlayerName(name: String, maxWidth: Int): String {
-        if (textRenderer.getWidth(name) <= maxWidth) return name
-        val suffix = "..."
-        return textRenderer.trimToWidth(name, maxWidth - textRenderer.getWidth(suffix)) + suffix
-    }
+    private fun fitPlayerName(name: String, maxWidth: Int): String = WorldPanelRenderer.fitText(textRenderer, name, maxWidth)
 
     /** 從 client player list 解析名稱，AI 與離線玩家使用穩定 fallback。 */
     private fun resolvePlayerName(player: MatchSettlementPlayerSnapshot): String = playerNames.resolve(player.playerId, player.isAi)
 
     /** 計算面板淡入、閱讀與淡出透明度。 */
-    private fun panelAlpha(elapsed: Double, duration: Double): Float = when {
-        elapsed < MatchSettlementPresentationEntity.PANEL_FADE_IN_START_TICK -> 0f
-        elapsed < MatchSettlementPresentationEntity.FIRST_ROW_REVEAL_TICK ->
-            (
-                (elapsed - MatchSettlementPresentationEntity.PANEL_FADE_IN_START_TICK) /
-                    (MatchSettlementPresentationEntity.FIRST_ROW_REVEAL_TICK - MatchSettlementPresentationEntity.PANEL_FADE_IN_START_TICK)
-                ).toFloat()
-        elapsed > duration - MatchSettlementPresentationEntity.FADE_OUT_TICKS ->
-            ((duration - elapsed) / MatchSettlementPresentationEntity.FADE_OUT_TICKS).toFloat().coerceIn(0f, 1f)
-        else -> 1f
-    }
+    private fun panelAlpha(elapsed: Double, duration: Double): Float = WorldPanelRenderer.phaseAlpha(
+        elapsed,
+        MatchSettlementPresentationEntity.PANEL_FADE_IN_START_TICK.toDouble(),
+        MatchSettlementPresentationEntity.FIRST_ROW_REVEAL_TICK.toDouble(),
+        duration - MatchSettlementPresentationEntity.FADE_OUT_TICKS,
+        duration,
+    )
 
     /** 計算指定揭曉序列 index 的淡入進度。 */
     private fun rowRevealProgress(elapsed: Double, index: Int, interval: Int): Float {
@@ -314,7 +306,7 @@ class MatchSettlementPresentationEntityRenderer(
     }
 
     /** 將 RGB 與動畫透明度合成 ARGB。 */
-    private fun withAlpha(rgb: Int, alpha: Float): Int = ((alpha.coerceIn(0f, 1f) * 255).roundToInt() shl 24) or (rgb and 0xFFFFFF)
+    private fun withAlpha(rgb: Int, alpha: Float): Int = WorldPanelRenderer.withAlpha(rgb, alpha)
 
     override fun getTexture(entity: MatchSettlementPresentationEntity): Identifier? = null
 

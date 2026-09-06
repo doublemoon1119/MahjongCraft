@@ -80,7 +80,7 @@ class WinSettlementPresentationEntityRenderer(
         val winner = entity.winners[index]
         val local = elapsed - entity.winnerStartTick(index)
         val duration = entity.winnerDurationTicks(winner).toDouble()
-        val alpha = phaseAlpha(local, 0.0, 12.0, duration - 12.0, duration)
+        val alpha = WorldPanelRenderer.phaseAlpha(local, 0.0, 12.0, duration - 12.0, duration)
         if (alpha <= MIN_VISIBLE_ALPHA) return
         val template = templateRegistry.findTemplate(entity.templateKey)
             ?: templateRegistry.findTemplate("${MinecraftModMetadata.MOD_ID}:generic")
@@ -742,7 +742,7 @@ class WinSettlementPresentationEntityRenderer(
     }
 
     private fun renderRankingPhase(entity: WinSettlementPresentationEntity, local: Double, matrices: MatrixStack, consumers: VertexConsumerProvider) {
-        val alpha = phaseAlpha(local, 0.0, 12.0, WinSettlementPresentationEntity.RANKING_TICKS.toDouble(), (WinSettlementPresentationEntity.RANKING_TICKS + WinSettlementPresentationEntity.FADE_OUT_TICKS).toDouble())
+        val alpha = WorldPanelRenderer.phaseAlpha(local, 0.0, 12.0, WinSettlementPresentationEntity.RANKING_TICKS.toDouble(), (WinSettlementPresentationEntity.RANKING_TICKS + WinSettlementPresentationEntity.FADE_OUT_TICKS).toDouble())
         if (alpha <= MIN_VISIBLE_ALPHA) return
         val layout = measureRankingLayout(entity.rankings)
         val panelBottom = -20f + entity.rankings.size * 16f + 8f
@@ -863,11 +863,7 @@ class WinSettlementPresentationEntityRenderer(
         return RankingLayout(totalWidth / 2f, rankRightX, faceLeftX, nameLeftX, scoreRightX, cursor + deltaWidth)
     }
 
-    private fun fitPlayerName(name: String): String {
-        if (textRenderer.getWidth(name) <= NAME_MAX_WIDTH) return name
-        val suffix = "..."
-        return textRenderer.trimToWidth(name, NAME_MAX_WIDTH - textRenderer.getWidth(suffix)) + suffix
-    }
+    private fun fitPlayerName(name: String): String = WorldPanelRenderer.fitText(textRenderer, name, NAME_MAX_WIDTH)
 
     private fun WinSettlementDetailSnapshot.text(): Text = Text.translatable(values.firstOrNull().orEmpty(), *values.drop(1).toTypedArray())
     private fun WinSettlementRankingSnapshot.toRankingPlayer() = ScoreRankingPlayer(Uuid.parse(playerId), seatIndex, isAi, previousScore, currentScore, previousRank, currentRank)
@@ -919,13 +915,7 @@ class WinSettlementPresentationEntityRenderer(
         return minOf(preferredScale, maxWidth.coerceAtLeast(1f) / naturalWidth)
     }
 
-    private fun phaseAlpha(value: Double, inStart: Double, inEnd: Double, outStart: Double, outEnd: Double): Float = when {
-        value < inStart || value >= outEnd -> 0f
-        value < inEnd -> ((value - inStart) / (inEnd - inStart)).toFloat()
-        value > outStart -> ((outEnd - value) / (outEnd - outStart)).toFloat()
-        else -> 1f
-    }
-    private fun color(rgb: Int, alpha: Float) = ((alpha.coerceIn(0f, 1f) * 255).roundToInt() shl 24) or (rgb and 0xFFFFFF)
+    private fun color(rgb: Int, alpha: Float) = WorldPanelRenderer.withAlpha(rgb, alpha)
     private fun formatDelta(delta: Int) = if (delta > 0) {
         "+$delta"
     } else if (delta < 0) {

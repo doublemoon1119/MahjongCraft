@@ -48,11 +48,11 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         val duration = (entity.endGameTime - entity.startGameTime).toDouble()
         if (elapsed !in 0.0..duration) return
         val hasInformationPhase = entity.hasInformationPhase
-        val informationAlpha = if (hasInformationPhase) phaseAlpha(elapsed, 30.0, 40.0, 92.0, 100.0) else 0f
+        val informationAlpha = if (hasInformationPhase) WorldPanelRenderer.phaseAlpha(elapsed, 30.0, 40.0, 92.0, 100.0) else 0f
         val rankingAlpha = if (hasInformationPhase) {
-            phaseAlpha(elapsed, 100.0, 110.0, 220.0, 240.0)
+            WorldPanelRenderer.phaseAlpha(elapsed, 100.0, 110.0, 220.0, 240.0)
         } else {
-            phaseAlpha(elapsed, 40.0, 50.0, 160.0, 180.0)
+            WorldPanelRenderer.phaseAlpha(elapsed, 40.0, 50.0, 160.0, 180.0)
         }
         val panelAlpha = maxOf(informationAlpha, rankingAlpha)
         if (panelAlpha <= 0f) return
@@ -336,11 +336,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     }
 
     /** 保證原版最多 16 字元的玩家名稱完整顯示；非標準長名稱以 `...` 收尾。 */
-    private fun fitPlayerName(name: String): String {
-        if (textRenderer.getWidth(name) <= NAME_MAX_WIDTH) return name
-        val suffix = "..."
-        return textRenderer.trimToWidth(name, NAME_MAX_WIDTH - textRenderer.getWidth(suffix)) + suffix
-    }
+    private fun fitPlayerName(name: String): String = WorldPanelRenderer.fitText(textRenderer, name, NAME_MAX_WIDTH)
 
     private fun resolvePlayerName(player: ExhaustiveDrawSettlementPlayerSnapshot): String = playerNames.resolve(player.playerId, player.isAi)
 
@@ -441,14 +437,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         currentRank = currentRank,
     )
 
-    private fun phaseAlpha(elapsed: Double, fadeInStart: Double, fadeInEnd: Double, fadeOutStart: Double, fadeOutEnd: Double): Float = when {
-        elapsed < fadeInStart || elapsed >= fadeOutEnd -> 0f
-        elapsed < fadeInEnd -> ((elapsed - fadeInStart) / (fadeInEnd - fadeInStart)).toFloat()
-        elapsed > fadeOutStart -> ((fadeOutEnd - elapsed) / (fadeOutEnd - fadeOutStart)).toFloat()
-        else -> 1f
-    }
-
-    private fun withAlpha(rgb: Int, alpha: Float): Int = ((alpha.coerceIn(0f, 1f) * 255).roundToInt() shl 24) or (rgb and 0xFFFFFF)
+    private fun withAlpha(rgb: Int, alpha: Float): Int = WorldPanelRenderer.withAlpha(rgb, alpha)
     override fun getTexture(entity: ExhaustiveDrawSettlementPresentationEntity): Identifier? = null
 
     private enum class Alignment { LEFT, CENTER, RIGHT }

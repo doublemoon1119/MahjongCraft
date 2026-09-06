@@ -139,13 +139,13 @@ class DiceRollPresentationEntityRenderer(
     }
 
     /** 依淡入、閱讀與淡出階段取得面板透明度。 */
-    private fun panelAlpha(elapsed: Double, duration: Double): Float = when {
-        elapsed < DiceRollPresentationEntity.FADE_IN_TICKS ->
-            (elapsed / DiceRollPresentationEntity.FADE_IN_TICKS).toFloat().coerceIn(0f, 1f)
-        elapsed > duration - DiceRollPresentationEntity.FADE_OUT_TICKS ->
-            ((duration - elapsed) / DiceRollPresentationEntity.FADE_OUT_TICKS).toFloat().coerceIn(0f, 1f)
-        else -> 1f
-    }
+    private fun panelAlpha(elapsed: Double, duration: Double): Float = WorldPanelRenderer.phaseAlpha(
+        elapsed,
+        0.0,
+        DiceRollPresentationEntity.FADE_IN_TICKS,
+        duration - DiceRollPresentationEntity.FADE_OUT_TICKS,
+        duration,
+    )
 
     /** 淡入時加入輕微放大回彈，提升結果落定感。 */
     private fun entranceScale(elapsed: Double): Float {
