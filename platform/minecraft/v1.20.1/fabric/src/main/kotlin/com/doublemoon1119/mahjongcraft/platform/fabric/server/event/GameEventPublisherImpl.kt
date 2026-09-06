@@ -38,4 +38,10 @@ class GameEventPublisherImpl(
         )
         MahjongChannels.gameUpdate.sendTo(player, json, payload)
     }
+
+    override suspend fun publishToTable(gameId: Uuid, seatedPlayerIds: Collection<Uuid>, actorId: Uuid, action: GameAction) {
+        val targetPlayerIds = seatedPlayerIds.toMutableSet()
+        targetPlayerIds += gameSnapshotRepository.getAllObservers(gameId)
+        targetPlayerIds.forEach { targetPlayerId -> publish(gameId, targetPlayerId, actorId, action) }
+    }
 }

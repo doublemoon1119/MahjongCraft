@@ -121,9 +121,7 @@ class DeclareExhaustiveDrawUseCase(
 
         // 3. 廣播流局事件；跟 GameAction.RoundStarted 一樣沒有實際執行者，比照既有慣例填入莊家 Uuid
         val dealerId = newState.dealerPlayerId
-        newState.players.forEach { player ->
-            eventPublisher.publish(gameId, player.id, dealerId, GameAction.ExhaustiveDraw(result.reason))
-        }
+        eventPublisher.publishToTable(gameId, newState.players.map { it.id }, dealerId, GameAction.ExhaustiveDraw(result.reason))
 
         return Outcome.Success(Unit)
     }

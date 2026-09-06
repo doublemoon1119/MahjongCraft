@@ -197,9 +197,7 @@ class AdvanceRoundUseCase(
             // 但不做開下一局才需要的 RoundStarted 廣播或擲骰／牌牆呈現。
             snapshotSynchronizer.syncAll(gameId)
             val lastDealerId = newState.dealerPlayerId
-            newState.players.forEach { player ->
-                eventPublisher.publish(gameId, player.id, lastDealerId, GameAction.MatchEnded)
-            }
+            eventPublisher.publishToTable(gameId, newState.players.map { it.id }, lastDealerId, GameAction.MatchEnded)
             val presentationModule = moduleRegistry.getModule(newState.config)
             val finalRankById = newState.players.sortedWith(presentationModule.compareForMatchRanking())
                 .mapIndexed { index, player -> player.id to index + 1 }
@@ -228,9 +226,8 @@ class AdvanceRoundUseCase(
         // 3. 廣播「下一局已開始」事件；RoundStarted 沒有實際執行者，比照 GameStarted 的既有慣例，
         //    填入新莊家的 Uuid
         val newDealerId = newState.dealerPlayerId
-        newState.players.forEach { player ->
-            eventPublisher.publish(gameId, player.id, newDealerId, GameAction.RoundStarted)
-        }
+        val seatedPlayerIds = newState.players.map { it.id }
+        eventPublisher.publishToTable(gameId, seatedPlayerIds, newDealerId, GameAction.RoundStarted)
 
         // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過。牌牆先建、骰子後擲，理由同
         // StartGameUseCase，這裡不能對調呼叫順序。
@@ -250,9 +247,7 @@ class AdvanceRoundUseCase(
                 newState.comboCount,
             )
             // 廣播擲骰點數本身；跟第 3 步的 RoundStarted 是兩則獨立事件，理由同 StartGameUseCase。
-            newState.players.forEach { player ->
-                eventPublisher.publish(gameId, player.id, newDealerId, GameAction.DiceRolled(diceRoll))
-            }
+            eventPublisher.publishToTable(gameId, seatedPlayerIds, newDealerId, GameAction.DiceRolled(diceRoll))
         }
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；新局手牌一定沒有副露，只是靠
         // publishInitialDealAnimation 的 comboStickCount 讓手牌正確讓開積棒佔用的空間。

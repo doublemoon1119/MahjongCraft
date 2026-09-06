@@ -153,11 +153,10 @@ class RespondToKanUseCase(
 
         snapshotSynchronizer.syncAll(gameId)
 
-        newState.players.forEach { player ->
-            eventPublisher.publish(gameId, player.id, playerId, action)
-            if (result.drawHappened) {
-                eventPublisher.publish(gameId, player.id, playerId, GameAction.Draw)
-            }
+        val seatedPlayerIds = newState.players.map { it.id }
+        eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, action)
+        if (result.drawHappened) {
+            eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.Draw)
         }
 
         // declarerId 只在「全員放過、槓真的成立」時才有值（見上面 KanDeclarationApplier 那個分支）；

@@ -77,10 +77,8 @@ class DrawTileUseCase(
         // 2. 同步快照給所有正在觀察的玩家
         snapshotSynchronizer.syncAll(gameId)
 
-        // 3. 通知對局內的所有玩家
-        newState.players.forEach { player ->
-            eventPublisher.publish(gameId, player.id, playerId, GameAction.Draw)
-        }
+        // 3. 通知在場玩家與旁觀者
+        eventPublisher.publishToTable(gameId, newState.players.map { it.id }, playerId, GameAction.Draw)
 
         // 4. 觸發平台呈現層：把摸到的牌從牌牆移到摸牌位（副露/積棒不受摸牌影響，仍要一併帶上讓手牌
         // 讓開偏移量算得準）；animateDrawnTile 傳 true 播放摸牌動畫，理由見

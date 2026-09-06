@@ -133,10 +133,8 @@ class DeclareTsumoUseCase(
         // 2. 同步快照給所有正在觀察的玩家
         snapshotSynchronizer.syncAll(gameId)
 
-        // 3. 通知對局內的所有玩家：廣播自摸事件
-        newState.players.forEach { player ->
-            eventPublisher.publish(gameId, player.id, playerId, GameAction.Tsumo)
-        }
+        // 3. 通知在場玩家與旁觀者：廣播自摸事件
+        eventPublisher.publishToTable(gameId, newState.players.map { it.id }, playerId, GameAction.Tsumo)
 
         // 4. 建構胡牌演出內容並寫進交接槽——手牌不受這個 use case 影響（只改分數與 actionHistory），
         // 贏家的 lastDrawn 此時仍是自摸那張牌。刻意不直接發布：本局是否就此結束，要等

@@ -143,11 +143,10 @@ class RespondToDiscardUseCase(
 
         snapshotSynchronizer.syncAll(gameId)
 
-        newState.players.forEach { player ->
-            eventPublisher.publish(gameId, player.id, playerId, action)
-            if (result.rinshanDrawHappened) {
-                eventPublisher.publish(gameId, player.id, playerId, GameAction.Draw)
-            }
+        val seatedPlayerIds = newState.players.map { it.id }
+        eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, action)
+        if (result.rinshanDrawHappened) {
+            eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.Draw)
         }
 
         // 觸發平台呈現層：碰/吃/明槓得標時，丟牌者的 discardPile 被 takeLast() 標記，即使沒有新增

@@ -21,6 +21,11 @@ class FakeGameEventPublisher : GameEventPublisher {
         notifications.getOrPut(Triple(gameId, targetPlayerId, actorId)) { mutableListOf() }.add(action)
     }
 
+    /** 測試替身沒有旁觀者名單，單純逐一轉呼叫 [publish]，行為等同呼叫端自己迴圈呼叫 [seatedPlayerIds]。 */
+    override suspend fun publishToTable(gameId: Uuid, seatedPlayerIds: Collection<Uuid>, actorId: Uuid, action: GameAction) {
+        seatedPlayerIds.forEach { targetPlayerId -> publish(gameId, targetPlayerId, actorId, action) }
+    }
+
     /**
      * 獲取特定玩家收到的「最後一次」事件動作內容。
      *

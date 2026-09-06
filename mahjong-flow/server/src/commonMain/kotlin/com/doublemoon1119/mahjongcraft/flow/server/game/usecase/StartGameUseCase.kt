@@ -113,9 +113,8 @@ class StartGameUseCase(
         }
 
         // 3. 廣播「對局已開始」事件
-        tableState.players.forEach { player ->
-            eventPublisher.publish(roomId, player.id, operatorId, GameAction.GameStarted)
-        }
+        val seatedPlayerIds = tableState.players.map { it.id }
+        eventPublisher.publishToTable(roomId, seatedPlayerIds, operatorId, GameAction.GameStarted)
 
         // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過。牌牆先建、骰子後擲——真實麻將
         // 是先砌好牌牆才擲骰決定開門位置，呈現層（`FabricGamePresentationPublisher`）依賴這個固定
@@ -131,9 +130,7 @@ class StartGameUseCase(
             presentationPublisher.publishDiceRoll(roomId, diceRoll, dealerSeatIndex, tableState.roundNumber, tableState.comboCount)
             // 廣播擲骰點數本身；跟第 3 步的 GameStarted 是兩則獨立事件，讓客戶端不用從 GameStarted
             // 的快照反推點數（快照本來就不帶開門用的擲骰資料）。
-            tableState.players.forEach { player ->
-                eventPublisher.publish(roomId, player.id, operatorId, GameAction.DiceRolled(diceRoll))
-            }
+            eventPublisher.publishToTable(roomId, seatedPlayerIds, operatorId, GameAction.DiceRolled(diceRoll))
         }
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；開局第一局 comboCount 恆為 0，
         // 呼叫本身仍需要，確保積棒 entity 從上一局殘留（理論上不會發生，但保持呼叫語意一致）清乾淨。

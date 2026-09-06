@@ -219,14 +219,13 @@ class DeclareKanUseCase(
 
         // 3. 廣播槓牌宣告；若無人可搶槓、副露已直接套用，依序再廣播補摸嶺上牌事件；若搶槓多響
         //    依規則設定判定為流局，則改廣播流局事件（此時副露未套用，不會有補摸嶺上牌事件）
-        newState.players.forEach { player ->
-            eventPublisher.publish(gameId, player.id, playerId, result.kanAction)
-            if (result.drawHappened) {
-                eventPublisher.publish(gameId, player.id, playerId, GameAction.Draw)
-            }
-            result.abortiveDrawReason?.let { reason ->
-                eventPublisher.publish(gameId, player.id, playerId, GameAction.ExhaustiveDraw(reason))
-            }
+        val seatedPlayerIds = newState.players.map { it.id }
+        eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, result.kanAction)
+        if (result.drawHappened) {
+            eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.Draw)
+        }
+        result.abortiveDrawReason?.let { reason ->
+            eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.ExhaustiveDraw(reason))
         }
 
         // 副露成立時（無人搶槓、也未判定為途中流局），重新呈現宣告者的整份手牌/摸牌位/副露——把補到

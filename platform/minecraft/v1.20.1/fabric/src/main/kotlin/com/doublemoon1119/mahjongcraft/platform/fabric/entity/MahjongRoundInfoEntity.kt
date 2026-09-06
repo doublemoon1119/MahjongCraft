@@ -2,15 +2,19 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.SpectatorObservationService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker
 import net.minecraft.entity.data.TrackedData
 import net.minecraft.entity.data.TrackedDataHandlerRegistry
 import net.minecraft.nbt.NbtCompound
+import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.Box
 import net.minecraft.world.World
+import org.koin.core.context.GlobalContext
 import kotlin.uuid.Uuid
+import kotlin.uuid.toKotlinUuid
 
 /**
  * 桌面中央局況顯示用的純視覺 entity——只同步組成畫面內容需要的原始數值（[lines]，實際顯示什麼完全由
@@ -21,6 +25,10 @@ import kotlin.uuid.Uuid
  * 每張桌子固定只有一個，不像牌／點棒有多個 UUID 各自代表獨立的牌局物件，因此不需要
  * `managedByGame`／`managedTableId` 以外的識別欄位——找既有 entity 時直接依 [managedTableId] 搜尋
  * 即可，見 `FabricMahjongRoundInfoPresenter`。
+ *
+ * 除了顯示局況以外，這個 entity 還被借來當作「有沒有玩家正在看著這張桌」的信號來源：它跟牌牆
+ * 同時出現、對局一結束就消失，剛好等於「這張桌子現在有沒有一場對局」，時機完全吻合，所以不需要
+ * 另外開一個 entity 專門做這件事。實際做法見 [onStartedTrackingBy]／[onStoppedTrackingBy]。
  */
 class MahjongRoundInfoEntity(
     type: EntityType<out MahjongRoundInfoEntity> = ModEntities.mahjongRoundInfo,
@@ -95,6 +103,37 @@ class MahjongRoundInfoEntity(
         y + HEIGHT / 2.0,
         z + WIDTH / 2.0,
     )
+
+    /**
+     * Minecraft 內建的 entity 回呼：某位玩家的用戶端剛開始收到這個 entity 的同步（通常是走近到追蹤
+     * 距離內、或剛連上伺服器時本來就在範圍內）。
+     *
+     * 這裡借用這個時機處理旁觀：如果這位玩家不是這桌的在場玩家（不在四個座位裡），代表他很可能是
+     * 路過或想旁觀的人——如果房間設定允許旁觀，就幫他補送一份依旁觀規則過濾過的對局快照（例如要不要
+     * 看得到手牌），讓他的用戶端能正確顯示牌面，而不是一直卡在「不知道是什麼牌」的預設外觀。
+     * 在場玩家已經有別的流程（右鍵桌子）負責同步，這裡看到在場玩家就直接跳過，不重複處理。
+     *
+     * 之後這位旁觀者會不會持續收到最新的牌局變化？會——不需要在這裡額外處理，伺服器每次牌局有變化
+     * 時，本來就會重新同步「目前所有已經同步過的人」，第一次同步過之後就會自動被納入。
+     */
+    override fun onStartedTrackingBy(player: ServerPlayerEntity) {
+        super.onStartedTrackingBy(player)
+        val tableId = managedTableId ?: return
+        GlobalContext.get().get<SpectatorObservationService>().onStartedObserving(player.uuid.toKotlinUuid(), tableId)
+    }
+
+    /**
+     * Minecraft 內建的 entity 回呼：某位玩家的用戶端不再收到這個 entity 的同步（走出追蹤距離、
+     * 離線，或這個 entity 本身被移除）。
+     *
+     * 只處理旁觀者：這裡把他先前收到的那份快照資料清掉，避免伺服器記憶體裡一直留著「已經沒人在看」
+     * 的舊資料。在場玩家完全不受影響——他們的快照就算暫時斷線也要保留，才能重新連上時馬上恢復畫面。
+     */
+    override fun onStoppedTrackingBy(player: ServerPlayerEntity) {
+        super.onStoppedTrackingBy(player)
+        val tableId = managedTableId ?: return
+        GlobalContext.get().get<SpectatorObservationService>().onStoppedObserving(player.uuid.toKotlinUuid(), tableId)
+    }
 
     /** 將 entity 標記為指定正式牌局桌子管理。 */
     fun assignToTable(tableId: Uuid) {
