@@ -817,12 +817,17 @@ private class PlayerDecisionScreen(
         context.fill(thumb.left, scrollbarTop(), thumb.right, scrollbarTop() + SCROLLBAR_HEIGHT, SCROLLBAR_THUMB_COLOR)
     }
 
+    /**
+     * 高 GUI scale 搭配小解析度時 [viewportWidth] 可能比 [MIN_SCROLLBAR_THUMB_WIDTH] 還窄，此時最小
+     * 寬度本身必須先讓給可見寬度，否則下界會大於上界（比照 [MahjongHudToolbarLayout.thumb] KDoc）。
+     */
     private fun scrollbarThumb(): ScrollbarThumb {
         val viewportWidth = viewportWidth()
         val thumbWidth = if (maximumScroll() <= 0.0) {
             viewportWidth
         } else {
-            (viewportWidth.toDouble() * viewportWidth / contentWidth()).toInt().coerceIn(MIN_SCROLLBAR_THUMB_WIDTH, viewportWidth)
+            (viewportWidth.toDouble() * viewportWidth / contentWidth()).toInt()
+                .coerceIn(MIN_SCROLLBAR_THUMB_WIDTH.coerceAtMost(viewportWidth), viewportWidth)
         }
         val travel = viewportWidth - thumbWidth
         val left = viewportLeft() + if (maximumScroll() <= 0.0) 0 else (horizontalScroll / maximumScroll() * travel).toInt()
