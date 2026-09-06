@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
@@ -321,7 +322,17 @@ class MahjongHudLayoutEditorScreen(
         if (!model.hasUnsavedChanges) {
             client?.setScreen(parent)
         } else {
-            client?.setScreen(HudLayoutUnsavedChangesScreen(this, ::apply, { client?.setScreen(parent) }))
+            client?.setScreen(
+                UnsavedChangesConfirmationScreen(
+                    this,
+                    { apply(true) },
+                    { client?.setScreen(parent) },
+                    clientConfigDifferenceText(
+                        MahjongClientConfigState(hudLayout = model.baseline),
+                        MahjongClientConfigState(hudLayout = model.draft),
+                    ),
+                ),
+            )
         }
     }
 
@@ -629,52 +640,5 @@ class MahjongHudLayoutEditorScreen(
 
         /** 標題與 hover 強調色。 */
         const val TITLE_COLOR = 0xFFD54F
-    }
-}
-
-/** HUD editor 返回時使用的三選項未保存變更畫面。 */
-private class HudLayoutUnsavedChangesScreen(
-    private val editor: MahjongHudLayoutEditorScreen,
-    private val apply: (Boolean) -> Unit,
-    private val discard: () -> Unit,
-) : Screen(Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_UNSAVED_TITLE)) {
-    /** 建立套用、放棄與繼續編輯三個按鈕。 */
-    override fun init() {
-        val buttonWidth = minOf(160, width - 24)
-        val left = (width - buttonWidth) / 2
-        addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.APPLY_AND_BACK)) { apply(true) }
-                .dimensions(left, height / 2, buttonWidth, 20).build(),
-        )
-        addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.DISCARD_CHANGES)) { discard() }
-                .dimensions(left, height / 2 + 24, buttonWidth, 20).build(),
-        )
-        addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.CONTINUE_EDITING)) { client?.setScreen(editor) }
-                .dimensions(left, height / 2 + 48, buttonWidth, 20).build(),
-        )
-    }
-
-    /** 確認畫面不暫停遊戲。 */
-    override fun shouldPause(): Boolean = false
-
-    /** Esc 返回 editor，避免無聲放棄變更。 */
-    override fun close() {
-        client?.setScreen(editor)
-    }
-
-    /** 繪製確認標題與說明。 */
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
-        context.fill(0, 0, width, height, 0xAA000000.toInt())
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, height / 2 - 42, 0xFFD54F)
-        context.drawCenteredTextWithShadow(
-            textRenderer,
-            Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_UNSAVED_MESSAGE),
-            width / 2,
-            height / 2 - 26,
-            0xFFFFFF,
-        )
-        super.render(context, mouseX, mouseY, delta)
     }
 }

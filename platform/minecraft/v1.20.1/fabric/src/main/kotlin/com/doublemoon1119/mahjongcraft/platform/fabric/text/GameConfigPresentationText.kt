@@ -11,6 +11,5 @@ fun gameConfigPresentationText(value: GameConfigPresentationValue): Text = when 
     )
     is GameConfigPresentationValue.IntegerValue -> value.number?.let { Text.literal(it.toString()) }
         ?: Text.translatable(MinecraftRoomScreenKeys.NONE)
-    is GameConfigPresentationValue.ChoiceValue ->
-        Text.translatable("mahjongcraft.room.config.option.${value.optionId.substringAfter(':')}")
+    is GameConfigPresentationValue.ChoiceValue -> Text.translatable(MinecraftRoomScreenKeys.configOption(value.optionId))
 }

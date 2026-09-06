@@ -59,20 +59,20 @@ object MinecraftClientConfigScreenKeys {
     /** 返回按鈕。 */
     const val BACK: String = "mahjongcraft.client_config.back"
 
-    /** 未套用 HUD 配置確認標題。 */
-    const val HUD_LAYOUT_UNSAVED_TITLE: String = "mahjongcraft.hud_layout.unsaved.title"
+    /** Client Config、HUD 版面編輯器與 Room 設定頁共用的未套用變更確認標題。 */
+    const val UNSAVED_CHANGES_TITLE: String = "mahjongcraft.settings.unsaved_changes.title"
 
-    /** 未套用 HUD 配置確認說明。 */
-    const val HUD_LAYOUT_UNSAVED_MESSAGE: String = "mahjongcraft.hud_layout.unsaved.message"
+    /** 未套用變更確認說明。 */
+    const val UNSAVED_CHANGES_MESSAGE: String = "mahjongcraft.settings.unsaved_changes.message"
 
     /** 套用並返回按鈕。 */
-    const val APPLY_AND_BACK: String = "mahjongcraft.hud_layout.apply_and_back"
+    const val APPLY_AND_BACK: String = "mahjongcraft.settings.unsaved_changes.apply_and_back"
 
     /** 放棄變更按鈕。 */
-    const val DISCARD_CHANGES: String = "mahjongcraft.hud_layout.discard_changes"
+    const val DISCARD_CHANGES: String = "mahjongcraft.settings.unsaved_changes.discard_changes"
 
     /** 繼續編輯按鈕。 */
-    const val CONTINUE_EDITING: String = "mahjongcraft.hud_layout.continue_editing"
+    const val CONTINUE_EDITING: String = "mahjongcraft.settings.unsaved_changes.continue_editing"
 
     /** HUD 百分比位置的 tooltip 標題。 */
     const val HUD_LAYOUT_CHANGES: String = "mahjongcraft.hud_layout.changes"

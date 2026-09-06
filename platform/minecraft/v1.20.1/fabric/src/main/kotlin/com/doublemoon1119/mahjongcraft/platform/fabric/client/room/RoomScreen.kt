@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
@@ -223,9 +224,7 @@ class RoomScreen(
             addDrawableChild(reset)
             val undo = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.UNDO)) {
                 restoreAuthoritativeDraft(authoritative)
-            }.dimensions(footer.undoX, height - 30, footer.actionWidth, 20).build().also {
-                it.tooltip = Tooltip.of(undoTooltip())
-            }
+            }.dimensions(footer.undoX, height - 30, footer.actionWidth, 20).build()
             undoButton = undo
             addDrawableChild(undo)
             val apply = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.APPLY)) { applyDraft() }
@@ -542,6 +541,13 @@ class RoomScreen(
         undoButton?.active = hasUnsavedChanges || draftStale || validationFailed
         resetButton?.active = draft != null && defaults != null && draft != defaults
         doneButton?.active = !draftStale && !validationFailed
+        val changes = if (draft != null && authoritative != null && draft != authoritative && !draftStale) {
+            Tooltip.of(gameConfigDifferenceText(configResolver, ruleNames, authoritative, draft))
+        } else {
+            null
+        }
+        applyButton?.tooltip = changes
+        undoButton?.tooltip = changes ?: Tooltip.of(undoTooltip())
     }
 
     private fun undoTooltip(): Text = Text.empty()
@@ -1089,16 +1095,45 @@ class RoomScreen(
     /** Tooltip 使用固定且不受系統語系影響的千分位，輸入框仍保留純整數。 */
     private fun formatInteger(number: Int): String = String.format(Locale.ROOT, "%,d", number)
 
-    /** Esc 在設定頁放棄未套用草稿並返回玩家頁；玩家頁才離開整個畫面。 */
+    /**
+     * Esc 在設定頁沒有可套用草稿時直接返回玩家頁；有尚未套用的合法草稿時改顯示「套用並返回／放棄
+     * 變更／繼續編輯」確認畫面，避免無聲丟棄——房間規則是所有玩家共享的狀態，比個人化的用戶端設定
+     * 風險更高（比照 [MahjongClientConfigScreen]／[MahjongHudLayoutEditorScreen] 既有的保護）。玩家頁
+     * 才離開整個畫面。
+     */
     override fun close() {
         if (page == Page.SETTINGS) {
-            restoreAuthoritativeDraft()
-            page = Page.ROOM
-            rebuild()
+            if (hasUnsavedSettingsDraft()) {
+                client?.setScreen(
+                    UnsavedChangesConfirmationScreen(
+                        this,
+                        {
+                            finishSettings()
+                            client?.setScreen(this)
+                        },
+                        {
+                            restoreAuthoritativeDraft()
+                            page = Page.ROOM
+                            client?.setScreen(this)
+                        },
+                        gameConfigDifferenceText(configResolver, ruleNames, currentConfig()!!, draftConfig!!),
+                    ),
+                )
+            } else {
+                restoreAuthoritativeDraft()
+                page = Page.ROOM
+                rebuild()
+            }
         } else {
             closeEntireScreen()
         }
     }
+
+    /**
+     * 目前是否有尚未套用、且可以直接套用的設定草稿；草稿因外部變更失效或驗證失敗時視為沒有，交由
+     * 既有 Undo 流程處理，不提供「套用並返回」選項。
+     */
+    private fun hasUnsavedSettingsDraft(): Boolean = !draftStale && !validationFailed && draftConfig != null && draftConfig != currentConfig()
 
     /** 關閉整個 RoomScreen，不套用設定頁的階層式 Esc 行為。 */
     private fun closeEntireScreen() {

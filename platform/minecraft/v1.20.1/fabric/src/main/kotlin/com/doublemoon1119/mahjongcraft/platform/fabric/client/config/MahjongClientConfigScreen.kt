@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import kotlinx.serialization.json.Json
@@ -92,10 +93,11 @@ class MahjongClientConfigScreen(
             client?.setScreen(parent)
         } else {
             client?.setScreen(
-                ClientConfigUnsavedChangesScreen(
+                UnsavedChangesConfirmationScreen(
                     this,
                     { applyDraft(closeAfterSave = true) },
                     { client?.setScreen(parent) },
+                    clientConfigDifferenceText(baseline, draft),
                 ),
             )
         }
@@ -666,52 +668,5 @@ class MahjongClientConfigScreen(
 
         /** 一般文字色。 */
         const val TEXT_COLOR = 0xFFFFFF
-    }
-}
-
-/** Client Config Screen 離開時使用的三選項未保存變更確認畫面。 */
-private class ClientConfigUnsavedChangesScreen(
-    private val settings: MahjongClientConfigScreen,
-    private val apply: () -> Unit,
-    private val discard: () -> Unit,
-) : Screen(Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_UNSAVED_TITLE)) {
-    /** 建立套用、放棄與繼續編輯按鈕。 */
-    override fun init() {
-        val buttonWidth = minOf(160, width - 24)
-        val left = (width - buttonWidth) / 2
-        addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.APPLY_AND_BACK)) { apply() }
-                .dimensions(left, height / 2, buttonWidth, 20).build(),
-        )
-        addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.DISCARD_CHANGES)) { discard() }
-                .dimensions(left, height / 2 + 24, buttonWidth, 20).build(),
-        )
-        addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.CONTINUE_EDITING)) { client?.setScreen(settings) }
-                .dimensions(left, height / 2 + 48, buttonWidth, 20).build(),
-        )
-    }
-
-    /** 確認畫面不暫停遊戲。 */
-    override fun shouldPause(): Boolean = false
-
-    /** Esc 返回設定畫面，避免無聲放棄草稿。 */
-    override fun close() {
-        client?.setScreen(settings)
-    }
-
-    /** 繪製確認標題與說明。 */
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
-        context.fill(0, 0, width, height, 0xAA000000.toInt())
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, height / 2 - 42, 0xFFD54F)
-        context.drawCenteredTextWithShadow(
-            textRenderer,
-            Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_UNSAVED_MESSAGE),
-            width / 2,
-            height / 2 - 26,
-            0xFFFFFF,
-        )
-        super.render(context, mouseX, mouseY, delta)
     }
 }
