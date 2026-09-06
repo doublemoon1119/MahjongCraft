@@ -16,7 +16,7 @@ import kotlin.math.roundToInt
  * 原生 HUD 位置編輯器；拖曳只修改草稿，套用時才交由父設定畫面原子保存。
  *
  * 這個畫面只負責原版 widget 生命週期與繪製：全部狀態轉換（拖曳、選取、草稿比較）委派給
- * [MahjongHudLayoutEditorModel]，工具列幾何與點擊區域判定委派給 [MahjongHudToolbarLayout]，
+ * [MahjongHudLayoutEditorModel]，第二行二級選項的水平捲動幾何計算委派給 [MahjongHudToolbarLayout]，
  * 兩者都不依賴 Minecraft 型別，因此可以直接以 JVM 測試驗證。
  */
 class MahjongHudLayoutEditorScreen(
@@ -29,30 +29,6 @@ class MahjongHudLayoutEditorScreen(
     /** 最近一次保存是否失敗。 */
     private var saveFailed = false
 
-    /** 頂部工具列按鈕及其未捲動內容座標。 */
-    private val toolbarEntries = mutableListOf<ToolbarEntry>()
-
-    /** 固定在工具列右側、不參與水平捲動的控制項隱藏按鈕。 */
-    private var hideControlsButton: ButtonWidget? = null
-
-    /** 固定在隱藏按鈕左側的其他 HUD 預覽選單按鈕。 */
-    private var otherHudPreviewButton: ButtonWidget? = null
-
-    /** 目前展開的下拉選單。 */
-    private var openDropdown: HudDropdownKind? = null
-
-    /** 頂部工具列目前水平捲動量。 */
-    private var toolbarScroll = 0.0
-
-    /** 是否正在拖曳工具列 scrollbar。 */
-    private var draggingToolbarScrollbar = false
-
-    /** 工具列 scrollbar 拖曳起點的游標 X。 */
-    private var toolbarDragStartX = 0.0
-
-    /** 工具列 scrollbar 拖曳起點的捲動量。 */
-    private var toolbarDragStartScroll = 0.0
-
     /** 套用按鈕。 */
     private var applyButton: ButtonWidget? = null
 
@@ -62,39 +38,38 @@ class MahjongHudLayoutEditorScreen(
     /** 重設配置按鈕。 */
     private var resetButton: ButtonWidget? = null
 
+    /**
+     * 第二行二級選項按鈕與其不受捲動影響的內容座標；目前只有操作面板的情境選擇會用到，但保留清單
+     * 結構讓未來規則模組能安全地登記更多二級選項。
+     */
+    private val secondaryRowEntries = mutableListOf<Pair<ButtonWidget, Int>>()
+
+    /** 第二行目前的水平捲動量。 */
+    private var secondaryRowScroll = 0.0
+
+    /** 是否正在拖曳第二行的 scrollbar。 */
+    private var draggingSecondaryRowScrollbar = false
+
+    /** 拖曳第二行 scrollbar 起點的游標 X 與捲動量。 */
+    private var secondaryRowDragStartX = 0.0
+    private var secondaryRowDragStartScroll = 0.0
+
+    /**
+     * 按鈕各自的 tooltip 內容（每個元素一行），於 [renderControls] 結尾統一補畫在最上層；不透過原版
+     * [ButtonWidget.tooltip]，避免第二行按鈕的背景／文字在同一輪繪製中畫到第一行按鈕彈出的 tooltip
+     * 上面。用多行清單而不是單一 Text 內嵌 `\n`，因為 [DrawContext.drawTooltip] 的單行版本不會把
+     * `\n` 拆成新的一行，只會把它當成一個缺字字元畫出來。
+     */
+    private val toolbarTooltips = mutableMapOf<ButtonWidget, List<Text>>()
+
     /** Editor 不暫停單人遊戲或 integrated server。 */
     override fun shouldPause(): Boolean = false
 
-    /** 建立固定單列的重設、復原、套用與返回按鈕。 */
+    /** 建立工具列按鈕與固定單列的重設、復原、套用與返回按鈕。 */
     override fun init() {
-        toolbarEntries.clear()
-        openDropdown = null
         val footer = SettingsFooterLayout.create(12, width - 24, 104, 6)
         val y = height - 28
-        addDropdownButtons()
-        otherHudPreviewButton = addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(dropdownButtonText(HudDropdownKind.VISIBILITY)) {
-                openDropdown = if (openDropdown == HudDropdownKind.VISIBILITY) null else HudDropdownKind.VISIBILITY
-            }.dimensions(
-                width - MahjongHudToolbarLayout.MARGIN - MahjongHudToolbarLayout.HIDE_CONTROLS_WIDTH -
-                    MahjongHudToolbarLayout.GAP - MahjongHudToolbarLayout.OTHER_PREVIEW_WIDTH,
-                MahjongHudToolbarLayout.TOP,
-                MahjongHudToolbarLayout.OTHER_PREVIEW_WIDTH,
-                MahjongHudToolbarLayout.BUTTON_HEIGHT,
-            ).build(),
-        )
-        hideControlsButton = addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_HIDE_CONTROLS)) {
-                model = model.withControlsHidden(true)
-                openDropdown = null
-                updateControlVisibility()
-            }.dimensions(
-                width - MahjongHudToolbarLayout.MARGIN - MahjongHudToolbarLayout.HIDE_CONTROLS_WIDTH,
-                MahjongHudToolbarLayout.TOP,
-                MahjongHudToolbarLayout.HIDE_CONTROLS_WIDTH,
-                MahjongHudToolbarLayout.BUTTON_HEIGHT,
-            ).build(),
-        )
+        addToolbarButtons()
         resetButton = addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_RESET)) {
                 model = model.reset()
@@ -120,28 +95,142 @@ class MahjongHudLayoutEditorScreen(
             }.dimensions(footer.doneX, y, footer.actionWidth, 20).build(),
         )
         refreshButtons()
-        toolbarScroll = toolbarScroll.coerceIn(0.0, toolbarLayout().maximumScroll)
-        updateToolbarPositions()
         updateControlVisibility()
     }
 
-    /** 建立 HUD、預覽模式與操作情境三個下拉選單按鈕。 */
-    private fun addDropdownButtons() {
-        HudDropdownKind.entries.forEach { kind ->
-            if (kind == HudDropdownKind.VISIBILITY) return@forEach
-            if (kind == HudDropdownKind.SCENARIO && model.selectedElement != HudElement.DECISION) return@forEach
-            addToolbarButton(
-                RestartableMarqueeButtonWidget.builder(dropdownButtonText(kind)) {
-                    openDropdown = if (openDropdown == kind) null else kind
-                }.dimensions(
-                    0,
-                    MahjongHudToolbarLayout.TOP,
-                    MahjongHudToolbarLayout.DROPDOWN_WIDTH,
-                    MahjongHudToolbarLayout.BUTTON_HEIGHT,
-                ).build(),
-                kind,
-            )
+    /**
+     * 建立固定第一行的 HUD、其他 HUD 預覽、隱藏控制項三顆全域按鈕，三等分整個可用寬度填滿整行；
+     * 以及目前 HUD 元件有二級選項時才出現的第二行（例如操作面板的情境選擇）。
+     */
+    private fun addToolbarButtons() {
+        toolbarTooltips.clear()
+        val available = width - MahjongHudToolbarLayout.MARGIN * 2
+        val buttonWidth = (available - MahjongHudToolbarLayout.GAP * 2) / 3
+        var x = MahjongHudToolbarLayout.MARGIN
+        val hud = hudSelectorButton(buttonWidth)
+        hud.x = x
+        hud.y = MahjongHudToolbarLayout.TOP
+        addDrawableChild(hud)
+        x += hud.width + MahjongHudToolbarLayout.GAP
+        val visibility = visibilitySelectorButton(buttonWidth)
+        visibility.x = x
+        visibility.y = MahjongHudToolbarLayout.TOP
+        addDrawableChild(visibility)
+        x += visibility.width + MahjongHudToolbarLayout.GAP
+        // 最後一顆吃下三等分無法整除的餘數，確保整行剛好填滿到右邊界。
+        val hideControls = hideControlsButtonWidget(width - MahjongHudToolbarLayout.MARGIN - x)
+        hideControls.x = x
+        hideControls.y = MahjongHudToolbarLayout.TOP
+        addDrawableChild(hideControls)
+        addSecondaryRowButtons()
+    }
+
+    /** 建立第二行二級選項按鈕；目前只有編輯操作面板時的情境選擇。 */
+    private fun addSecondaryRowButtons() {
+        secondaryRowEntries.clear()
+        val buttons = buildList {
+            if (model.selectedElement == HudElement.DECISION) add(scenarioSelectorButton())
         }
+        var contentX = 0
+        buttons.forEach { button ->
+            secondaryRowEntries += button to contentX
+            contentX += button.width + MahjongHudToolbarLayout.GAP
+            addDrawableChild(button)
+        }
+        secondaryRowScroll = secondaryRowScroll.coerceIn(0.0, secondaryRowLayout().maximumScroll)
+        updateSecondaryRowPositions()
+    }
+
+    /** 循環切換目前編輯的 HUD；tooltip 條列所有 HUD 補足失去的一覽性。 */
+    private fun hudSelectorButton(width: Int): ButtonWidget {
+        val button = RestartableMarqueeButtonWidget.builder(
+            Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_HUD, Text.translatable(model.selectedElement.translationKey)),
+        ) {
+            val entries = HudElement.entries
+            model = model.selectElement(entries[(entries.indexOf(model.selectedElement) + 1) % entries.size])
+            clearAndInit()
+        }.dimensions(0, 0, width, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
+        toolbarTooltips[button] = selectionTooltip(HudElement.entries.map { Text.translatable(it.translationKey) to (it == model.selectedElement) })
+        return button
+    }
+
+    /** 循環切換操作面板的代表性內容情境；只在編輯操作面板時顯示。 */
+    private fun scenarioSelectorButton(): ButtonWidget {
+        val button = RestartableMarqueeButtonWidget.builder(
+            Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_SCENARIO, Text.translatable(model.scenario.translationKey)),
+        ) {
+            val entries = HudPreviewScenario.entries
+            model = model.selectScenario(entries[(entries.indexOf(model.scenario) + 1) % entries.size])
+            clearAndInit()
+        }.dimensions(0, 0, MahjongHudToolbarLayout.SELECTOR_WIDTH, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
+        toolbarTooltips[button] = selectionTooltip(HudPreviewScenario.entries.map { Text.translatable(it.translationKey) to (it == model.scenario) })
+        return button
+    }
+
+    /** 循環切換非作用中 HUD 的預覽方式；與目前編輯哪個 HUD 無關，屬於全域設定。 */
+    private fun visibilitySelectorButton(width: Int): ButtonWidget {
+        val button = RestartableMarqueeButtonWidget.builder(
+            Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_VISIBILITY, Text.translatable(model.otherHudVisibility.translationKey)),
+        ) {
+            val entries = HudPreviewVisibility.entries
+            model = model.selectVisibility(entries[(entries.indexOf(model.otherHudVisibility) + 1) % entries.size])
+            clearAndInit()
+        }.dimensions(0, 0, width, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
+        toolbarTooltips[button] = selectionTooltip(HudPreviewVisibility.entries.map { Text.translatable(it.translationKey) to (it == model.otherHudVisibility) })
+        return button
+    }
+
+    /** 全域的隱藏控制項按鈕；與目前編輯哪個 HUD 無關。 */
+    private fun hideControlsButtonWidget(width: Int): ButtonWidget = ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_HIDE_CONTROLS)) {
+        model = model.withControlsHidden(true)
+        updateControlVisibility()
+    }.dimensions(0, 0, width, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
+
+    /** 建立「目前值＋可用選項」清單 tooltip（每行一個元素），補足循環切換按鈕無法一次看到所有選項的缺點。 */
+    private fun selectionTooltip(options: List<Pair<Text, Boolean>>): List<Text> = buildList {
+        val current = options.first { it.second }.first
+        add(Text.translatable(MinecraftClientConfigScreenKeys.CURRENT_VALUE, current).formatted(Formatting.GREEN))
+        add(Text.translatable(MinecraftClientConfigScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
+        options.forEach { (label, selected) ->
+            add(Text.literal("• ").append(label.copy().formatted(if (selected) Formatting.GREEN else Formatting.WHITE)))
+        }
+    }
+
+    /** 第二行內容總寬度，供水平捲動幾何使用。 */
+    private fun secondaryRowContentWidth(): Int = secondaryRowEntries.lastOrNull()?.let { (button, contentX) -> contentX + button.width } ?: 0
+
+    private fun secondaryRowLayout(): MahjongHudToolbarLayout = MahjongHudToolbarLayout(width, secondaryRowContentWidth())
+
+    /** 第二行按鈕上界；緊接在第一行下方。 */
+    private fun secondaryRowTop(): Int = MahjongHudToolbarLayout.TOP + MahjongHudToolbarLayout.BUTTON_HEIGHT + MahjongHudToolbarLayout.ROW_GAP
+
+    private fun secondaryRowScrollbarTop(): Int = secondaryRowTop() + MahjongHudToolbarLayout.BUTTON_HEIGHT + MahjongHudToolbarLayout.ROW_GAP
+
+    /** 依目前捲動量更新第二行按鈕的實際畫面座標。 */
+    private fun updateSecondaryRowPositions() {
+        val offset = secondaryRowLayout().contentOffset(secondaryRowScroll)
+        secondaryRowEntries.forEach { (button, contentX) ->
+            button.x = offset + contentX
+            button.y = secondaryRowTop()
+        }
+    }
+
+    /** 游標是否位於第二行按鈕列或其下方 scrollbar 的整體區域，決定滾輪是否轉為水平捲動。 */
+    private fun isInsideSecondaryRowArea(mouseX: Double, mouseY: Double): Boolean {
+        val layout = secondaryRowLayout()
+        return mouseX >= MahjongHudToolbarLayout.MARGIN &&
+            mouseX < MahjongHudToolbarLayout.MARGIN + layout.viewportWidth &&
+            mouseY >= secondaryRowTop() &&
+            mouseY < secondaryRowScrollbarTop() + MahjongHudToolbarLayout.SCROLLBAR_HEIGHT
+    }
+
+    private fun isOverSecondaryRowScrollbar(mouseX: Double, mouseY: Double): Boolean {
+        val layout = secondaryRowLayout()
+        if (!layout.hasOverflow) return false
+        return mouseX >= MahjongHudToolbarLayout.MARGIN &&
+            mouseX < MahjongHudToolbarLayout.MARGIN + layout.viewportWidth &&
+            mouseY >= secondaryRowScrollbarTop() &&
+            mouseY < secondaryRowScrollbarTop() + MahjongHudToolbarLayout.SCROLLBAR_HEIGHT
     }
 
     /** Esc 使用與返回按鈕相同的未保存變更保護。 */
@@ -182,8 +271,7 @@ class MahjongHudLayoutEditorScreen(
         if (model.controlsVisible) {
             context.matrices.push()
             context.matrices.translate(0.0, 0.0, EDITOR_CONTROLS_Z)
-            renderFixedControls(context, mouseX, mouseY, delta)
-            renderToolbar(context, mouseX, mouseY, delta)
+            renderControls(context, mouseX, mouseY, delta)
             context.matrices.pop()
         } else if (model.controlsManuallyHidden && model.dragging == null) {
             context.drawCenteredTextWithShadow(
@@ -196,39 +284,19 @@ class MahjongHudLayoutEditorScreen(
         }
     }
 
-    /** 左鍵按住任一預覽框時開始拖曳。 */
+    /** 左鍵按住任一預覽框時開始拖曳；按鈕點擊完全交由原版流程處理。 */
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        val toolbar = toolbarLayout()
-        if (model.controlsVisible && button == 0 && toolbar.hasOverflow && toolbar.isOverScrollbar(mouseX, mouseY)) {
-            val thumb = toolbar.thumb(toolbarScroll)
+        if (model.controlsVisible && button == 0 && secondaryRowEntries.isNotEmpty() && isOverSecondaryRowScrollbar(mouseX, mouseY)) {
+            val layout = secondaryRowLayout()
+            val thumb = layout.thumb(secondaryRowScroll)
             if (mouseX !in thumb.left.toDouble()..thumb.right.toDouble()) {
-                toolbarScroll = toolbar.scrollFromThumb(mouseX - thumb.width / 2.0)
-                updateToolbarPositions()
+                secondaryRowScroll = layout.scrollFromThumb(mouseX - thumb.width / 2.0)
+                updateSecondaryRowPositions()
             }
-            draggingToolbarScrollbar = true
-            toolbarDragStartX = mouseX
-            toolbarDragStartScroll = toolbarScroll
+            draggingSecondaryRowScrollbar = true
+            secondaryRowDragStartX = mouseX
+            secondaryRowDragStartScroll = secondaryRowScroll
             return true
-        }
-        if (model.controlsVisible && button == 0 && handleDropdownClick(mouseX, mouseY)) return true
-        if (
-            model.controlsVisible &&
-            listOfNotNull(otherHudPreviewButton, hideControlsButton).any { it.mouseClicked(mouseX, mouseY, button) }
-        ) {
-            return true
-        }
-        if (model.controlsVisible && toolbar.isInsideButtons(mouseX, mouseY)) {
-            val handled = toolbarEntries.any { it.button.visible && it.button.mouseClicked(mouseX, mouseY, button) }
-            if (!handled) openDropdown = null
-            return handled
-        }
-        openDropdown = null
-        if (
-            model.controlsVisible &&
-            mouseY >= MahjongHudToolbarLayout.TOP &&
-            mouseY < MahjongHudToolbarLayout.BOTTOM
-        ) {
-            return false
         }
         if (model.controlsVisible && super.mouseClicked(mouseX, mouseY, button)) return true
         if (button == 0) {
@@ -255,12 +323,9 @@ class MahjongHudLayoutEditorScreen(
 
     /** 依 HUD 可調整軸更新比例，並由比例座標自然限制完整 bounds 在畫面內。 */
     override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
-        if (draggingToolbarScrollbar && button == 0) {
-            toolbarScroll = toolbarLayout().scrollFromDrag(
-                startScroll = toolbarDragStartScroll,
-                pointerDelta = mouseX - toolbarDragStartX,
-            )
-            updateToolbarPositions()
+        if (draggingSecondaryRowScrollbar && button == 0) {
+            secondaryRowScroll = secondaryRowLayout().scrollFromDrag(secondaryRowDragStartScroll, mouseX - secondaryRowDragStartX)
+            updateSecondaryRowPositions()
             return true
         }
         if (model.dragging == null) return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
@@ -278,8 +343,8 @@ class MahjongHudLayoutEditorScreen(
 
     /** 放開左鍵後結束拖曳。 */
     override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (button == 0 && draggingToolbarScrollbar) {
-            draggingToolbarScrollbar = false
+        if (button == 0 && draggingSecondaryRowScrollbar) {
+            draggingSecondaryRowScrollbar = false
             return true
         }
         if (button == 0 && model.dragging != null) {
@@ -290,13 +355,15 @@ class MahjongHudLayoutEditorScreen(
         return super.mouseReleased(mouseX, mouseY, button)
     }
 
-    /** 工具列範圍內的滾輪輸入轉為水平捲動。 */
+    /** 第二行範圍內的滾輪輸入轉為水平捲動。 */
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
-        val toolbar = toolbarLayout()
-        if (model.controlsVisible && toolbar.hasOverflow && toolbar.isInsideArea(mouseX, mouseY)) {
-            toolbarScroll = toolbar.scrollFromWheel(currentScroll = toolbarScroll, amount = amount)
-            updateToolbarPositions()
-            return true
+        if (model.controlsVisible && secondaryRowEntries.isNotEmpty()) {
+            val layout = secondaryRowLayout()
+            if (layout.hasOverflow && isInsideSecondaryRowArea(mouseX, mouseY)) {
+                secondaryRowScroll = layout.scrollFromWheel(secondaryRowScroll, amount)
+                updateSecondaryRowPositions()
+                return true
+            }
         }
         return super.mouseScrolled(mouseX, mouseY, amount)
     }
@@ -361,167 +428,50 @@ class MahjongHudLayoutEditorScreen(
         children().filterIsInstance<ButtonWidget>().forEach { it.visible = visible }
     }
 
-    /** 將按鈕加入水平工具列並配置下一個內容座標。 */
-    private fun <T : ButtonWidget> addToolbarButton(button: T, kind: HudDropdownKind): T {
-        val contentX = toolbarEntries.lastOrNull()?.let {
-            it.contentX + it.button.width + MahjongHudToolbarLayout.GAP
-        } ?: 0
-        toolbarEntries += ToolbarEntry(button, contentX, kind)
-        return addDrawableChild(button)
-    }
-
-    /** 只透過 Screen 預設流程繪製底部固定按鈕與其 tooltip。 */
-    private fun renderFixedControls(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
-        toolbarEntries.forEach { it.button.visible = false }
+    /**
+     * 繪製全部按鈕的不透明底色與本體；第二行按鈕額外裁切以支援水平捲動。所有按鈕的 tooltip 都延後到
+     * 最後才畫，確保不會被之後繪製的按鈕（尤其是垂直距離很近的第二行）蓋住。
+     */
+    private fun renderControls(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+        val secondaryButtons = secondaryRowEntries.map { it.first }.toSet()
+        secondaryButtons.forEach { it.visible = false }
         children().filterIsInstance<ButtonWidget>().filter { it.visible }.forEach { button ->
             context.fill(button.x, button.y, button.x + button.width, button.y + button.height, EDITOR_BUTTON_BACKING_COLOR)
         }
         super.render(context, mouseX, mouseY, delta)
-        toolbarEntries.forEach { it.button.visible = true }
-    }
+        secondaryButtons.forEach { it.visible = model.controlsVisible }
 
-    /** 在裁切 viewport 中繪製工具列，溢出時於下方繪製滿寬 scrollbar。 */
-    private fun renderToolbar(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
-        updateToolbarPositions()
-        val toolbar = toolbarLayout()
-        context.enableScissor(
-            MahjongHudToolbarLayout.MARGIN,
-            MahjongHudToolbarLayout.TOP,
-            toolbar.viewportRight,
-            MahjongHudToolbarLayout.BOTTOM,
-        )
-        toolbarEntries.forEach { entry ->
-            if (entry.button.visible) {
-                context.fill(
-                    entry.button.x,
-                    entry.button.y,
-                    entry.button.x + entry.button.width,
-                    entry.button.y + entry.button.height,
-                    EDITOR_BUTTON_BACKING_COLOR,
-                )
-                entry.button.render(context, mouseX, mouseY, delta)
-            }
-        }
-        context.disableScissor()
-        if (toolbar.hasOverflow) {
-            context.fill(
+        if (secondaryRowEntries.isNotEmpty()) {
+            updateSecondaryRowPositions()
+            val layout = secondaryRowLayout()
+            context.enableScissor(
                 MahjongHudToolbarLayout.MARGIN,
-                MahjongHudToolbarLayout.SCROLLBAR_TOP,
-                toolbar.viewportRight,
-                MahjongHudToolbarLayout.SCROLLBAR_TOP + MahjongHudToolbarLayout.SCROLLBAR_HEIGHT,
-                TOOLBAR_TRACK_COLOR,
+                secondaryRowTop(),
+                MahjongHudToolbarLayout.MARGIN + layout.viewportWidth,
+                secondaryRowTop() + MahjongHudToolbarLayout.BUTTON_HEIGHT,
             )
-            val thumb = toolbar.thumb(toolbarScroll)
-            context.fill(
-                thumb.left,
-                MahjongHudToolbarLayout.SCROLLBAR_TOP,
-                thumb.right,
-                MahjongHudToolbarLayout.SCROLLBAR_TOP + MahjongHudToolbarLayout.SCROLLBAR_HEIGHT,
-                TOOLBAR_THUMB_COLOR,
-            )
-        }
-        context.matrices.push()
-        context.matrices.translate(0.0, 0.0, DROPDOWN_Z_OFFSET)
-        renderDropdown(context, mouseX, mouseY)
-        context.matrices.pop()
-    }
-
-    /** 繪製目前展開的下拉選單；popup 不受工具列水平裁切影響。 */
-    private fun renderDropdown(context: DrawContext, mouseX: Int, mouseY: Int) {
-        val kind = openDropdown ?: return
-        val anchor = dropdownAnchor(kind) ?: return
-        val options = dropdownOptions(kind)
-        val left = toolbarLayout().dropdownLeft(anchor.x)
-        val top = MahjongHudToolbarLayout.POPUP_TOP
-        val bottom = top + options.size * MahjongHudToolbarLayout.DROPDOWN_OPTION_HEIGHT
-        context.fill(
-            left - 1,
-            top - 1,
-            left + MahjongHudToolbarLayout.DROPDOWN_POPUP_WIDTH + 1,
-            bottom + 1,
-            DROPDOWN_BORDER_COLOR,
-        )
-        options.forEachIndexed { index, option ->
-            val optionTop = top + index * MahjongHudToolbarLayout.DROPDOWN_OPTION_HEIGHT
-            val hovered = mouseX in left until left + MahjongHudToolbarLayout.DROPDOWN_POPUP_WIDTH &&
-                mouseY in optionTop until optionTop + MahjongHudToolbarLayout.DROPDOWN_OPTION_HEIGHT
-            context.fill(
-                left,
-                optionTop,
-                left + MahjongHudToolbarLayout.DROPDOWN_POPUP_WIDTH,
-                optionTop + MahjongHudToolbarLayout.DROPDOWN_OPTION_HEIGHT,
-                if (hovered) DROPDOWN_HOVER_COLOR else DROPDOWN_BACKGROUND_COLOR,
-            )
-            context.drawTextWithShadow(textRenderer, option.label, left + 6, optionTop + 6, if (option.selected) TITLE_COLOR else 0xFFFFFF)
-        }
-    }
-
-    /** 若游標點中展開選單的項目便套用選擇。 */
-    private fun handleDropdownClick(mouseX: Double, mouseY: Double): Boolean {
-        val kind = openDropdown ?: return false
-        val anchor = dropdownAnchor(kind) ?: return false
-        val options = dropdownOptions(kind)
-        val index = toolbarLayout().dropdownOptionIndexAt(
-            mouseX = mouseX,
-            mouseY = mouseY,
-            anchorX = anchor.x,
-            optionCount = options.size,
-        ) ?: return false
-        options[index].select()
-        openDropdown = null
-        clearAndInit()
-        return true
-    }
-
-    /** 取得指定下拉選單目前可選項目與穩定順序。 */
-    private fun dropdownOptions(kind: HudDropdownKind): List<DropdownOption> = when (kind) {
-        HudDropdownKind.HUD -> HudElement.entries.map { element ->
-            DropdownOption(Text.translatable(element.translationKey), element == model.selectedElement) {
-                model = model.selectElement(element)
+            secondaryRowEntries.forEach { (button, _) ->
+                context.fill(button.x, button.y, button.x + button.width, button.y + button.height, EDITOR_BUTTON_BACKING_COLOR)
+                button.render(context, mouseX, mouseY, delta)
+            }
+            context.disableScissor()
+            if (layout.hasOverflow) {
+                val scrollbarTop = secondaryRowScrollbarTop()
+                context.fill(
+                    MahjongHudToolbarLayout.MARGIN,
+                    scrollbarTop,
+                    MahjongHudToolbarLayout.MARGIN + layout.viewportWidth,
+                    scrollbarTop + MahjongHudToolbarLayout.SCROLLBAR_HEIGHT,
+                    TOOLBAR_TRACK_COLOR,
+                )
+                val thumb = layout.thumb(secondaryRowScroll)
+                context.fill(thumb.left, scrollbarTop, thumb.right, scrollbarTop + MahjongHudToolbarLayout.SCROLLBAR_HEIGHT, TOOLBAR_THUMB_COLOR)
             }
         }
-        HudDropdownKind.VISIBILITY -> HudPreviewVisibility.entries.map { visibility ->
-            DropdownOption(Text.translatable(visibility.translationKey), model.otherHudVisibility == visibility) {
-                model = model.selectVisibility(visibility)
-            }
-        }
-        HudDropdownKind.SCENARIO -> HudPreviewScenario.entries.map { preview ->
-            DropdownOption(Text.translatable(preview.translationKey), model.scenario == preview) {
-                model = model.selectScenario(preview)
-            }
-        }
+
+        toolbarTooltips.entries.firstOrNull { (button, _) -> button.visible && button.isMouseOver(mouseX.toDouble(), mouseY.toDouble()) }
+            ?.let { (_, tooltip) -> context.drawTooltip(textRenderer, tooltip, mouseX, mouseY) }
     }
-
-    /** 組合下拉選單欄位名稱、目前值與展開符號。 */
-    private fun dropdownButtonText(kind: HudDropdownKind): Text = Text.translatable(
-        kind.translationKey,
-        when (kind) {
-            HudDropdownKind.HUD -> Text.translatable(model.selectedElement.translationKey)
-            HudDropdownKind.VISIBILITY -> Text.translatable(model.otherHudVisibility.translationKey)
-            HudDropdownKind.SCENARIO -> Text.translatable(model.scenario.translationKey)
-        },
-    )
-
-    /** 取得下拉選單按鈕，不依工具列內容順序推斷控制對象。 */
-    private fun dropdownAnchor(kind: HudDropdownKind): ButtonWidget? = when (kind) {
-        HudDropdownKind.VISIBILITY -> otherHudPreviewButton
-        else -> toolbarEntries.firstOrNull { it.kind == kind }?.button
-    }
-
-    /** 依目前捲動量更新工具列按鈕實際畫面位置。 */
-    private fun updateToolbarPositions() {
-        val contentOffset = toolbarLayout().contentOffset(toolbarScroll)
-        toolbarEntries.forEach { entry -> entry.button.x = contentOffset + entry.contentX }
-    }
-
-    /** 依目前畫面寬度與工具列內容寬度建立幾何計算。 */
-    private fun toolbarLayout(): MahjongHudToolbarLayout = MahjongHudToolbarLayout(
-        screenWidth = width,
-        contentWidth = toolbarContentWidth(),
-    )
-
-    /** 工具列全部按鈕所需內容寬度。 */
-    private fun toolbarContentWidth(): Int = toolbarEntries.lastOrNull()?.let { it.contentX + it.button.width } ?: 0
 
     /** 將比例轉為整數百分比。 */
     private fun percent(value: Double): Int = (value * 100).roundToInt()
@@ -568,32 +518,12 @@ class MahjongHudLayoutEditorScreen(
         context.drawCenteredTextWithShadow(textRenderer, label, bounds.left + bounds.width / 2, bounds.top + 7, OUTLINE_TEXT_COLOR)
     }
 
-    /** 下拉選單的一個宣告式選項。 */
-    private data class DropdownOption(
-        /** 顯示文字。 */
-        val label: Text,
-        /** 是否為目前選項。 */
-        val selected: Boolean,
-        /** 選取後執行的狀態更新。 */
-        val select: () -> Unit,
-    )
-
-    /** 一個工具列按鈕及其不受捲動影響的內容座標。 */
-    private data class ToolbarEntry(
-        /** 原版按鈕。 */
-        val button: ButtonWidget,
-        /** 工具列內容座標。 */
-        val contentX: Int,
-        /** 此按鈕控制的下拉選單。 */
-        val kind: HudDropdownKind,
-    )
-
-    /** Editor 配色與 Z 位移常數；工具列與預覽的幾何常數見 [MahjongHudToolbarLayout]。 */
+    /** Editor 配色與 Z 位移常數；第二行捲動幾何常數見 [MahjongHudToolbarLayout]。 */
     private companion object {
-        /** 工具列 scrollbar 軌道色。 */
+        /** 第二行 scrollbar 軌道色。 */
         const val TOOLBAR_TRACK_COLOR = 0xFF26333D.toInt()
 
-        /** 工具列 scrollbar thumb 色。 */
+        /** 第二行 scrollbar thumb 色。 */
         const val TOOLBAR_THUMB_COLOR = 0xFF8796A3.toInt()
 
         /** 全畫面半透明遮罩。 */
@@ -617,23 +547,11 @@ class MahjongHudLayoutEditorScreen(
         /** 非作用中 HUD 名稱的低對比文字色。 */
         const val OUTLINE_TEXT_COLOR = 0x668796A3
 
-        /** 下拉選單外框色。 */
-        const val DROPDOWN_BORDER_COLOR = 0xFF8796A3.toInt()
-
-        /** 下拉選單背景色。 */
-        const val DROPDOWN_BACKGROUND_COLOR = 0xF018222B.toInt()
-
-        /** 下拉選單 hover 背景色。 */
-        const val DROPDOWN_HOVER_COLOR = 0xF0364B5C.toInt()
-
         /** 僅位於每顆 editor 按鈕自身範圍內的不透明底色。 */
         const val EDITOR_BUTTON_BACKING_COLOR = 0xFF101820.toInt()
 
         /** Editor 控制項高於不同 GUI render layer 中 HUD 文字的 Z 位移。 */
         const val EDITOR_CONTROLS_Z = 400.0
-
-        /** 下拉選單高於其他 editor 控制項的額外 Z 位移。 */
-        const val DROPDOWN_Z_OFFSET = 100.0
 
         /** 中心參考線。 */
         const val GUIDE_COLOR = 0x446A7C8C

@@ -4,16 +4,13 @@ import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/**
- * 驗證 HUD 位置編輯器頂部工具列的溢出判定、scrollbar 換算與各點擊區域互不重疊。
- */
+/** 驗證 HUD 位置編輯器第二行（二級選項）的水平捲動幾何。 */
 class MahjongHudToolbarLayoutTest {
     /** 內容未超出可見寬度時不出現 scrollbar，也沒有可捲動距離。 */
     @Test
-    fun `scrollbar only appears once the toolbar content overflows`() {
+    fun `scrollbar only appears once the row content overflows`() {
         val fitting = layout(contentWidth = 200)
         assertFalse(fitting.hasOverflow)
         assertEquals(0.0, fitting.maximumScroll)
@@ -23,12 +20,11 @@ class MahjongHudToolbarLayoutTest {
         assertEquals(1.0, overflowing.maximumScroll)
     }
 
-    /** 未溢出時整組按鈕在可見範圍內置中，溢出時改為依捲動量靠左對齊。 */
+    /** 內容一律靠左對齊，不論是否溢出；溢出時再依捲動量往左捲動。 */
     @Test
-    fun `content is centered while it fits and scrolls once it overflows`() {
+    fun `content is left-aligned whether or not it overflows`() {
         val fitting = layout(contentWidth = 200)
-        val expectedCentered = MahjongHudToolbarLayout.MARGIN + (fitting.viewportWidth - 200) / 2
-        assertEquals(expectedCentered, fitting.contentOffset(0.0))
+        assertEquals(MahjongHudToolbarLayout.MARGIN, fitting.contentOffset(0.0))
 
         val overflowing = layout(contentWidth = 2_000)
         assertEquals(MahjongHudToolbarLayout.MARGIN, overflowing.contentOffset(0.0))
@@ -75,93 +71,6 @@ class MahjongHudToolbarLayoutTest {
         assertEquals(toolbar.maximumScroll, toolbar.scrollFromWheel(currentScroll = 0.0, amount = -10_000.0))
     }
 
-    /** 按鈕列與 scrollbar 是互斥的點擊區域，兩者都落在整體工具列區域之內。 */
-    @Test
-    fun `button row and scrollbar never claim the same pointer position`() {
-        val toolbar = layout(contentWidth = 2_000)
-        val insideX = MahjongHudToolbarLayout.MARGIN + 1.0
-        val buttonY = MahjongHudToolbarLayout.TOP + 1.0
-        val scrollbarY = MahjongHudToolbarLayout.SCROLLBAR_TOP + 1.0
-
-        assertTrue(toolbar.isInsideButtons(insideX, buttonY))
-        assertFalse(toolbar.isOverScrollbar(insideX, buttonY))
-        assertTrue(toolbar.isOverScrollbar(insideX, scrollbarY))
-        assertFalse(toolbar.isInsideButtons(insideX, scrollbarY))
-        assertTrue(toolbar.isInsideArea(insideX, buttonY))
-        assertTrue(toolbar.isInsideArea(insideX, scrollbarY))
-    }
-
-    /** 固定按鈕所在的右側區域不屬於可捲動工具列，不會攔截其點擊。 */
-    @Test
-    fun `the fixed right hand controls sit outside the scrolling viewport`() {
-        val toolbar = layout(contentWidth = 2_000)
-        val fixedControlsX = toolbar.viewportRight + 1.0
-        val buttonY = MahjongHudToolbarLayout.TOP + 1.0
-
-        assertFalse(toolbar.isInsideButtons(fixedControlsX, buttonY))
-        assertFalse(toolbar.isInsideArea(fixedControlsX, buttonY))
-        assertFalse(toolbar.isOverScrollbar(fixedControlsX, MahjongHudToolbarLayout.SCROLLBAR_TOP + 1.0))
-        assertTrue(toolbar.viewportRight < SCREEN_WIDTH - MahjongHudToolbarLayout.HIDE_CONTROLS_WIDTH)
-    }
-
-    /** 下拉選單依序對應每一列，超出項目數量或落在 popup 外都不算命中。 */
-    @Test
-    fun `dropdown clicks map to the row under the pointer`() {
-        val toolbar = layout(contentWidth = 400)
-        val anchorX = MahjongHudToolbarLayout.MARGIN
-        val left = toolbar.dropdownLeft(anchorX)
-        val optionCount = 3
-
-        repeat(optionCount) { index ->
-            assertEquals(
-                index,
-                toolbar.dropdownOptionIndexAt(
-                    mouseX = left + 1.0,
-                    mouseY = MahjongHudToolbarLayout.POPUP_TOP +
-                        index * MahjongHudToolbarLayout.DROPDOWN_OPTION_HEIGHT + 1.0,
-                    anchorX = anchorX,
-                    optionCount = optionCount,
-                ),
-            )
-        }
-
-        assertNull(
-            toolbar.dropdownOptionIndexAt(
-                mouseX = left + 1.0,
-                mouseY = MahjongHudToolbarLayout.POPUP_TOP - 1.0,
-                anchorX = anchorX,
-                optionCount = optionCount,
-            ),
-        )
-        assertNull(
-            toolbar.dropdownOptionIndexAt(
-                mouseX = left + 1.0,
-                mouseY = MahjongHudToolbarLayout.POPUP_TOP +
-                    optionCount * MahjongHudToolbarLayout.DROPDOWN_OPTION_HEIGHT + 1.0,
-                anchorX = anchorX,
-                optionCount = optionCount,
-            ),
-        )
-        assertNull(
-            toolbar.dropdownOptionIndexAt(
-                mouseX = left - 1.0,
-                mouseY = MahjongHudToolbarLayout.POPUP_TOP + 1.0,
-                anchorX = anchorX,
-                optionCount = optionCount,
-            ),
-        )
-    }
-
-    /** 錨點靠近右緣時下拉選單左界內縮，確保 popup 完整留在畫面內。 */
-    @Test
-    fun `dropdown popups are kept inside the screen`() {
-        val toolbar = layout(contentWidth = 400)
-        val left = toolbar.dropdownLeft(SCREEN_WIDTH)
-
-        assertTrue(left >= MahjongHudToolbarLayout.MARGIN)
-        assertTrue(left + MahjongHudToolbarLayout.DROPDOWN_POPUP_WIDTH <= SCREEN_WIDTH)
-    }
-
     /**
      * 最小支援解析度搭配高 GUI scale 時，可捲動 viewport 會窄於 thumb 最小寬度；此時 thumb 計算
      * 仍必須產生合法範圍，不得因為下界大於上界而丟出例外。
@@ -169,21 +78,12 @@ class MahjongHudToolbarLayoutTest {
     @Test
     fun `high gui scales at the smallest resolution keep the scrollbar computable`() {
         listOf(SCREEN_WIDTH, SCREEN_WIDTH / 2, SCREEN_WIDTH / 3, SCREEN_WIDTH / 4).forEach { scaledWidth ->
-            val toolbar = MahjongHudToolbarLayout(
-                screenWidth = scaledWidth,
-                contentWidth = OVERFLOWING_CONTENT_WIDTH,
-            )
+            val toolbar = MahjongHudToolbarLayout(screenWidth = scaledWidth, contentWidth = OVERFLOWING_CONTENT_WIDTH)
             val thumb = toolbar.thumb(toolbar.maximumScroll)
 
             assertTrue(thumb.width >= 1, "scaled width $scaledWidth produced thumb width ${thumb.width}")
-            assertTrue(
-                thumb.width <= toolbar.viewportWidth,
-                "scaled width $scaledWidth produced a thumb wider than its viewport",
-            )
-            assertTrue(
-                thumb.right <= MahjongHudToolbarLayout.MARGIN + toolbar.viewportWidth,
-                "scaled width $scaledWidth pushed the thumb past its track",
-            )
+            assertTrue(thumb.width <= toolbar.viewportWidth, "scaled width $scaledWidth produced a thumb wider than its viewport")
+            assertTrue(thumb.right <= MahjongHudToolbarLayout.MARGIN + toolbar.viewportWidth, "scaled width $scaledWidth pushed the thumb past its track")
         }
     }
 
@@ -198,9 +98,9 @@ class MahjongHudToolbarLayoutTest {
         assertTrue(toolbar.scrollFromThumb(0.0) in 0.0..toolbar.maximumScroll)
     }
 
-    /** 沒有任何工具列按鈕時不得因為除以零而算出非法 thumb。 */
+    /** 沒有任何二級選項按鈕時不得因為除以零而算出非法 thumb。 */
     @Test
-    fun `an empty toolbar reports no overflow and a full width thumb`() {
+    fun `an empty row reports no overflow and a full width thumb`() {
         val toolbar = layout(contentWidth = 0)
 
         assertFalse(toolbar.hasOverflow)
@@ -208,7 +108,6 @@ class MahjongHudToolbarLayoutTest {
         assertEquals(toolbar.viewportWidth, toolbar.thumb(0.0).width)
     }
 
-    /** 以最小支援畫面寬度建立工具列幾何。 */
     private fun layout(contentWidth: Int): MahjongHudToolbarLayout = MahjongHudToolbarLayout(
         screenWidth = SCREEN_WIDTH,
         contentWidth = contentWidth,
@@ -218,8 +117,7 @@ class MahjongHudToolbarLayoutTest {
         /** 測試使用的最小支援畫面寬度。 */
         const val SCREEN_WIDTH = 854
 
-        /** 實際工具列在任何支援解析度下都會溢出的內容寬度（兩顆下拉按鈕加間距）。 */
-        const val OVERFLOWING_CONTENT_WIDTH =
-            MahjongHudToolbarLayout.DROPDOWN_WIDTH * 2 + MahjongHudToolbarLayout.GAP
+        /** 實際二級選項行在任何支援解析度下都會溢出的內容寬度。 */
+        const val OVERFLOWING_CONTENT_WIDTH = MahjongHudToolbarLayout.SELECTOR_WIDTH * 5
     }
 }

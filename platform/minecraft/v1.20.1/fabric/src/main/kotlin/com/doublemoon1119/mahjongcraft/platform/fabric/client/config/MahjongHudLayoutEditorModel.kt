@@ -82,22 +82,6 @@ internal enum class HudPreviewScenario(
 }
 
 /**
- * 頂部工具列的三種下拉選單。
- *
- * @property translationKey 選單按鈕翻譯鍵。
- */
-internal enum class HudDropdownKind(val translationKey: String) {
-    /** 目前編輯的 HUD。 */
-    HUD(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_HUD),
-
-    /** 目前 HUD 的預覽方式。 */
-    VISIBILITY(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_VISIBILITY),
-
-    /** 操作面板的代表性內容情境。 */
-    SCENARIO(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_SCENARIO),
-}
-
-/**
  * HUD 預覽框在目前畫面尺寸下的實際像素尺寸。
  *
  * @property width 寬度。

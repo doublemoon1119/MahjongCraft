@@ -110,6 +110,12 @@ object MinecraftClientConfigScreenKeys {
     /** 隱藏 editor 控制項按鈕。 */
     const val HUD_LAYOUT_HIDE_CONTROLS: String = "mahjongcraft.hud_layout.hide_controls"
 
+    /** 循環切換按鈕 tooltip 的目前值列。 */
+    const val CURRENT_VALUE: String = "mahjongcraft.settings.current_value"
+
+    /** 循環切換按鈕 tooltip 的可用選項標題。 */
+    const val AVAILABLE_OPTIONS: String = "mahjongcraft.settings.available_options"
+
     /** 恢復 editor 控制項提示。 */
     const val HUD_LAYOUT_SHOW_CONTROLS_HINT: String = "mahjongcraft.hud_layout.show_controls_hint"
 
