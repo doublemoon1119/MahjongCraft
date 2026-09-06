@@ -61,6 +61,7 @@ import kotlin.uuid.toJavaUuid
 /** 空桌、等待房間與進行中對局共用的桌級畫面。 */
 class RoomScreen(
     private val stateStore: ClientMahjongStateStore,
+    private val tableId: Uuid,
     private val configPresentations: GameConfigPresentationRegistry,
     private val configResolver: GameConfigPresentationResolver,
     private val ruleNames: RuleModuleDisplayNameRegistry,
@@ -95,9 +96,9 @@ class RoomScreen(
     private var doneButton: ButtonWidget? = null
     private var returnToRoomAfterApply = false
     private var rebuildRequested = false
-    private var lastRoomSnapshot = stateStore.roomSnapshot
-    private var lastLobby = stateStore.tableLobby
-    private var wasWaitingRoomMember = stateStore.tableLobby?.phase == TableLobbyPhaseDto.WAITING && stateStore.roomSnapshot?.isInRoom == true
+    private var lastRoomSnapshot = stateStore.roomSnapshot(tableId)
+    private var lastLobby = stateStore.tableLobby(tableId)
+    private var wasWaitingRoomMember = stateStore.tableLobby(tableId)?.phase == TableLobbyPhaseDto.WAITING && stateStore.roomSnapshot(tableId)?.isInRoom == true
     private val profilePreviews = mutableMapOf<Uuid, OtherClientPlayerEntity>()
     private val warnedActorKeys = mutableSetOf<String>()
     private val warnedAppearanceProviderIds = mutableSetOf<String>()
@@ -125,8 +126,8 @@ class RoomScreen(
     }.dimensions(x, 24, 100, 20).build().also { it.active = page != target }
 
     private fun initRoomPage() {
-        val lobby = stateStore.tableLobby ?: return
-        val room = stateStore.roomSnapshot
+        val lobby = stateStore.tableLobby(tableId) ?: return
+        val room = stateStore.roomSnapshot(tableId)
         val bottom = height - 30
         when (lobby.phase) {
             TableLobbyPhaseDto.EMPTY -> addCenteredActions(
@@ -192,7 +193,7 @@ class RoomScreen(
 
     private fun initSettingsPage() {
         val authoritative = currentConfig() ?: return
-        val room = stateStore.roomSnapshot
+        val room = stateStore.roomSnapshot(tableId)
         if (draftConfig == null || authoritativeConfigAtDraftStart == null) {
             draftConfig = authoritative
             authoritativeConfigAtDraftStart = authoritative
@@ -201,7 +202,7 @@ class RoomScreen(
         val resolved = configResolver.resolve(config)
         val moduleId = resolved.ruleModuleId
         val definition = resolved.definition ?: return
-        val canEditRoom = stateStore.tableLobby?.phase == TableLobbyPhaseDto.WAITING && room?.isHost == true
+        val canEditRoom = stateStore.tableLobby(tableId)?.phase == TableLobbyPhaseDto.WAITING && room?.isHost == true
         val editable = canEditRoom && definition.selectable
         val categories = definition.categories
         if (selectedCategoryId !in categories.map { it.id }) selectedCategoryId = categories.firstOrNull()?.id
@@ -556,7 +557,7 @@ class RoomScreen(
 
     private fun applyDraft() {
         if (draftStale || validationFailed) return
-        val lobby = stateStore.tableLobby ?: return
+        val lobby = stateStore.tableLobby(tableId) ?: return
         val config = draftConfig ?: return
         MahjongChannels.roomScreenAction.sendToServer(json, RoomScreenActionDto.UpdateConfig(lobby.tableId, config.toDto(networkRegistries)))
     }
@@ -652,7 +653,7 @@ class RoomScreen(
             if (fieldScroll.scrollBy(amount, maximumFieldScroll())) rebuild()
             return true
         }
-        if (page == Page.ROOM && stateStore.tableLobby?.phase == TableLobbyPhaseDto.PLAYING && maximumPlayingInfoScroll() > 0) {
+        if (page == Page.ROOM && stateStore.tableLobby(tableId)?.phase == TableLobbyPhaseDto.PLAYING && maximumPlayingInfoScroll() > 0) {
             playingInfoScroll.scrollBy(amount, maximumPlayingInfoScroll())
             return true
         }
@@ -720,10 +721,10 @@ class RoomScreen(
             closeEntireScreen()
             return
         }
-        if (stateStore.tableLobby != lastLobby || stateStore.roomSnapshot != lastRoomSnapshot) {
+        if (stateStore.tableLobby(tableId) != lastLobby || stateStore.roomSnapshot(tableId) != lastRoomSnapshot) {
             val previousLobby = lastLobby
             val previousRoom = lastRoomSnapshot
-            val currentLobby = stateStore.tableLobby
+            val currentLobby = stateStore.tableLobby(tableId)
             if (previousLobby?.phase == TableLobbyPhaseDto.WAITING && previousRoom?.isInRoom == true) {
                 wasWaitingRoomMember = true
             }
@@ -735,8 +736,8 @@ class RoomScreen(
                 closeEntireScreen()
                 return
             }
-            lastLobby = stateStore.tableLobby
-            lastRoomSnapshot = stateStore.roomSnapshot
+            lastLobby = stateStore.tableLobby(tableId)
+            lastRoomSnapshot = stateStore.roomSnapshot(tableId)
             if (returnToRoomAfterApply && currentConfig() == draftConfig) {
                 val authoritative = currentConfig()
                 draftConfig = authoritative
@@ -744,7 +745,7 @@ class RoomScreen(
                 returnToRoomAfterApply = false
                 page = Page.ROOM
             }
-            if (stateStore.tableLobby?.phase == TableLobbyPhaseDto.EMPTY) {
+            if (stateStore.tableLobby(tableId)?.phase == TableLobbyPhaseDto.EMPTY) {
                 wasWaitingRoomMember = false
                 page = Page.ROOM
                 draftConfig = null
@@ -776,7 +777,7 @@ class RoomScreen(
 
     /** 離開桌旁或切換維度時關閉畫面，讓 removed() 清除暫時 observer。 */
     private fun isTableStillReachable(): Boolean {
-        val lobby = stateStore.tableLobby ?: return false
+        val lobby = stateStore.tableLobby(tableId) ?: return false
         val x = lobby.tableX ?: return true
         val y = lobby.tableY ?: return true
         val z = lobby.tableZ ?: return true
@@ -787,14 +788,14 @@ class RoomScreen(
     }
 
     private fun renderRoom(context: DrawContext, mouseX: Int, mouseY: Int) {
-        val lobby = stateStore.tableLobby ?: return
+        val lobby = stateStore.tableLobby(tableId) ?: return
         when (lobby.phase) {
             TableLobbyPhaseDto.EMPTY -> context.drawCenteredTextWithShadow(textRenderer, Text.translatable(MinecraftRoomScreenKeys.EMPTY), width / 2, 70, 0xFFFFFF)
             TableLobbyPhaseDto.PLAYING -> {
                 context.drawCenteredTextWithShadow(textRenderer, Text.translatable(MinecraftRoomScreenKeys.PLAYING), width / 2, 50, 0xFFCC55)
                 renderPlayingMembers(context, resolvePlayingPlayerInfo(), mouseX, mouseY)
             }
-            TableLobbyPhaseDto.WAITING -> stateStore.roomSnapshot?.let { room ->
+            TableLobbyPhaseDto.WAITING -> stateStore.roomSnapshot(tableId)?.let { room ->
                 renderMembers(
                     context,
                     room.playerIds,
@@ -820,7 +821,7 @@ class RoomScreen(
         mouseY: Int,
     ) {
         val sortedPlayers = players.sortedBy { WIND_ORDER.getValue(it.seatWind) }
-        val dealerPlayerId = resolvePlayerInfoEntity()?.dealerPlayerId ?: stateStore.gameSnapshot?.dealerPlayerId
+        val dealerPlayerId = resolvePlayerInfoEntity()?.dealerPlayerId ?: stateStore.gameSnapshot(tableId)?.dealerPlayerId
         val grid = playingGrid()
         memberScroll.clamp(grid.rows - memberGridVisibleRows())
         val visibleGridRows = visiblePlayingGridRows()
@@ -877,7 +878,7 @@ class RoomScreen(
     /** 優先使用 Player Info entity 的完整公開快照；同步尚未抵達時以遊戲快照安全降級。 */
     private fun resolvePlayingPlayerInfo(): List<MahjongPlayerInfoEntry> {
         resolvePlayerInfoEntity()?.players?.takeIf { it.isNotEmpty() }?.let { return it }
-        val snapshot = stateStore.gameSnapshot ?: return emptyList()
+        val snapshot = stateStore.gameSnapshot(tableId) ?: return emptyList()
         val orderedAiPlayerIds = snapshot.players.filter { it.isAi }.map { it.id }
         return snapshot.players.mapIndexed { index, player ->
             MahjongPlayerInfoEntry(
@@ -893,8 +894,7 @@ class RoomScreen(
     }
 
     private fun resolvePlayerInfoEntity(): MahjongPlayerInfoEntity? {
-        val lobby = stateStore.tableLobby ?: return null
-        val tableId = runCatching { Uuid.parse(lobby.tableId) }.getOrNull() ?: return null
+        val lobby = stateStore.tableLobby(tableId) ?: return null
         val world = client?.world ?: return null
         val x = lobby.tableX ?: return null
         val y = lobby.tableY ?: return null
@@ -1025,7 +1025,7 @@ class RoomScreen(
 
     /** 目前進行中對局資訊清單的完整行數，供 scrollbar 幾何與捲動上限共用。 */
     private fun totalPlayingInfoRows(): Int {
-        val dealerPlayerId = resolvePlayerInfoEntity()?.dealerPlayerId ?: stateStore.gameSnapshot?.dealerPlayerId
+        val dealerPlayerId = resolvePlayerInfoEntity()?.dealerPlayerId ?: stateStore.gameSnapshot(tableId)?.dealerPlayerId
         return resolvePlayingPlayerInfo().maxOfOrNull { playingInfoRows(it, dealerPlayerId).size } ?: 0
     }
 
@@ -1149,8 +1149,8 @@ class RoomScreen(
         return hoveredLabel
     }
 
-    private fun currentConfig(): GameConfig? = stateStore.roomSnapshot?.gameConfig
-        ?: stateStore.tableLobby?.playingGameConfig?.let { dto -> dto.toDomain(networkRegistries) }
+    private fun currentConfig(): GameConfig? = stateStore.roomSnapshot(tableId)?.gameConfig
+        ?: stateStore.tableLobby(tableId)?.playingGameConfig?.let { dto -> dto.toDomain(networkRegistries) }
 
     private fun memberName(playerId: Uuid, ai: Boolean, orderedAiPlayerIds: List<Uuid>): Text {
         if (ai) return Text.literal(aiPlayerDisplayName(playerId, orderedAiPlayerIds))
@@ -1212,8 +1212,8 @@ class RoomScreen(
      * 目前畫面上實際顯示的卡片 grid 版面（等待室或進行中對局）；兩者共用同一套固定列高與
      * [memberScroll] 捲動機制，不在這兩種狀態時為 null。
      */
-    private fun currentMemberGrid(): MemberGridLayout? = when (stateStore.tableLobby?.phase) {
-        TableLobbyPhaseDto.WAITING -> stateStore.roomSnapshot?.let { memberGridLayout(it.playerIds.size) }
+    private fun currentMemberGrid(): MemberGridLayout? = when (stateStore.tableLobby(tableId)?.phase) {
+        TableLobbyPhaseDto.WAITING -> stateStore.roomSnapshot(tableId)?.let { memberGridLayout(it.playerIds.size) }
         TableLobbyPhaseDto.PLAYING -> playingGrid()
         else -> null
     }
@@ -1388,7 +1388,7 @@ class RoomScreen(
 
     override fun removed() {
         super.removed()
-        stateStore.tableLobby?.let { lobby ->
+        stateStore.tableLobby(tableId)?.let { lobby ->
             MahjongChannels.roomScreenAction.sendToServer(json, RoomScreenActionDto.Close(lobby.tableId))
         }
     }

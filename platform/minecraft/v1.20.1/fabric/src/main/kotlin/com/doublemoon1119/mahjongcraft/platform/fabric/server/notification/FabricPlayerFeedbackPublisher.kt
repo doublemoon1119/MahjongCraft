@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.notification
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.resolveDisplayText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.bracketedInteractiveLabel
@@ -224,7 +224,7 @@ class FabricPlayerFeedbackPublisher(
 
     /**
      * 建立「顯示目前遊戲設定」訊息；可互動文字點擊後透過 [ClickEvent.Action.RUN_COMMAND] 觸發
-     * client-only 指令開啟設定編輯畫面（見 [FabricOpenRoomConfigScreenCommand]），
+     * client-only 指令開啟設定編輯畫面（見 [FabricRoomConfigScreenCommand]），
      * 不是複製 JSON。
      */
     private fun showGameConfigMessage(feedback: MinecraftPlayerFeedback.ShowGameConfig): MutableText = Text.translatable(
@@ -312,10 +312,7 @@ class FabricPlayerFeedbackPublisher(
         /** 主世界的 dimension registry identifier；hover 顯示位置時，這個維度不額外標示。 */
         const val OVERWORLD_DIMENSION_ID: String = "minecraft:overworld"
 
-        /**
-         * 開啟房間規則設定編輯畫面的 client-only 指令；純粹當點擊觸發器用，不是給玩家手動輸入。根節點用
-         * 麻將牌字元 `🀇` 而非英文字串的理由見 [FabricOpenRoomConfigScreenCommand] 的類別 KDoc。
-         */
-        const val OPEN_ROOM_CONFIG_SCREEN_COMMAND: String = "/🀇 open_room_config_screen"
+        /** 開啟房間規則設定編輯畫面的 client-only 指令；點擊這個訊息或玩家自己手動輸入都能觸發，見 [FabricRoomConfigScreenCommand] 的類別 KDoc。 */
+        const val OPEN_ROOM_CONFIG_SCREEN_COMMAND: String = "/mahjongcraft_client room_config screen"
     }
 }

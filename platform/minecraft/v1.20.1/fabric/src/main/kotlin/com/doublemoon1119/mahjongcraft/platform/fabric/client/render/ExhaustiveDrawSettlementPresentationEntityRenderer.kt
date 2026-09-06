@@ -34,6 +34,9 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     private val textRenderer = context.textRenderer
     private val warnedUnknownReasonIds = mutableSetOf<String>()
 
+    /** 目前這次 [render] 呼叫所屬的桌子 ID，[resolvePlayerName] 解析名稱時查詢用；每次 render 開頭重設。 */
+    private var currentTableId: KotlinUuid? = null
+
     override fun render(
         entity: ExhaustiveDrawSettlementPresentationEntity,
         yaw: Float,
@@ -43,6 +46,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         light: Int,
     ) {
         if (!configStore.current.presentationVisibility.drawSettlementEnabled) return
+        currentTableId = entity.managedTableId
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         val elapsed = entity.elapsedTicks(tickDelta)
         val duration = (entity.endGameTime - entity.startGameTime).toDouble()
@@ -338,7 +342,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     /** 保證原版最多 16 字元的玩家名稱完整顯示；非標準長名稱以 `...` 收尾。 */
     private fun fitPlayerName(name: String): String = WorldPanelRenderer.fitText(textRenderer, name, NAME_MAX_WIDTH)
 
-    private fun resolvePlayerName(player: ExhaustiveDrawSettlementPlayerSnapshot): String = playerNames.resolve(player.playerId, player.isAi)
+    private fun resolvePlayerName(player: ExhaustiveDrawSettlementPlayerSnapshot): String = playerNames.resolve(currentTableId, player.playerId, player.isAi)
 
     private fun reasonText(reasonId: String): Text = reasonDisplayNames.find(reasonId)?.let(Text::translatable) ?: run {
         if (warnedUnknownReasonIds.add(reasonId)) logger.warn("Unknown exhaustive-draw reason display name: {}", reasonId)

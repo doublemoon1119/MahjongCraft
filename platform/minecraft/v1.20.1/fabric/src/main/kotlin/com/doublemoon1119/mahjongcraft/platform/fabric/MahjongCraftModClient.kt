@@ -35,7 +35,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlaye
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationEffectEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationShowcaseEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinSettlementPresentationEntityRenderer
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricOpenRoomConfigScreenCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.RoomScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
@@ -85,7 +85,7 @@ class MahjongCraftModClient : ClientModInitializer {
             Identifier(MinecraftModMetadata.MOD_ID, "denomination"),
         ) { stack, _, _, _ -> MahjongScoringStickItem.readDenomination(stack).normalizedPredicateValue }
         val clientConfigStore = koin.get<MahjongClientConfigStore>()
-        koin.get<FabricOpenRoomConfigScreenCommand>().register()
+        koin.get<FabricRoomConfigScreenCommand>().register()
         initializeClientConfig(clientConfigStore)
         koin.get<MahjongClientConfigScreenController>().register()
         koin.get<FabricTileLabelCommand>().register()
@@ -122,10 +122,11 @@ class MahjongCraftModClient : ClientModInitializer {
         val profileResolver = koin.get<ClientPlayerProfileResolver>()
         MahjongChannels.roomUpdate.registerClientReceiver(json, stateStore::apply)
         MahjongChannels.gameUpdate.registerClientReceiver(json) { payload ->
-            val previousSnapshot = stateStore.gameSnapshot
+            val gameId = Uuid.parse(payload.gameId)
+            val previousSnapshot = stateStore.gameSnapshot(gameId)
             stateStore.apply(payload)
             val action = payload.action.toDomain(networkRegistries)
-            val newSnapshot = stateStore.gameSnapshot ?: return@registerClientReceiver
+            val newSnapshot = stateStore.gameSnapshot(gameId) ?: return@registerClientReceiver
             val module = moduleRegistry.getModule(newSnapshot.config)
             val message = buildRoundResultChatMessage(
                 action = action,
@@ -137,12 +138,12 @@ class MahjongCraftModClient : ClientModInitializer {
                 tileAssetRegistry = tileAssetRegistry,
                 tileEmojiRegistry = tileEmojiRegistry,
                 exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNames,
-                playerDisplayName = { id, isAi -> playerNames.resolve(id.toString(), isAi) },
+                playerDisplayName = { id, isAi -> playerNames.resolve(gameId, id.toString(), isAi) },
             ) ?: buildMatchResultChatMessage(
                 action,
                 newSnapshot,
                 module,
-            ) { id, isAi -> playerNames.resolve(id.toString(), isAi) } ?: return@registerClientReceiver
+            ) { id, isAi -> playerNames.resolve(gameId, id.toString(), isAi) } ?: return@registerClientReceiver
             MinecraftClient.getInstance().player?.sendMessage(message)
         }
         MahjongChannels.roomSnapshot.registerClientReceiver(json) { payload ->
@@ -158,6 +159,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 client.setScreen(
                     RoomScreen(
                         stateStore = stateStore,
+                        tableId = Uuid.parse(payload.tableId),
                         configPresentations = configPresentations,
                         configResolver = configResolver,
                         ruleNames = ruleNames,

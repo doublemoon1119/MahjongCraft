@@ -306,7 +306,8 @@ class MahjongTileEntityRenderer(
     private fun MahjongTileEntity.resolvedTileAssetKey(): String {
         if (!managedByGame) return tileAssetKey
         if (world.time < presentationAssetEndGameTime) return presentationAssetKey
-        val tile = stateStore.findManagedTileSnapshot(uuid.toKotlinUuid())?.tile ?: return UNKNOWN_TILE_ASSET_KEY
+        val tableId = managedTableId ?: return UNKNOWN_TILE_ASSET_KEY
+        val tile = stateStore.findManagedTileSnapshot(tableId, uuid.toKotlinUuid())?.tile ?: return UNKNOWN_TILE_ASSET_KEY
         return tile.toAssetKey(tileAssetRegistry)
     }
 
@@ -327,8 +328,9 @@ class MahjongTileEntityRenderer(
     private fun MahjongTileEntity.isHighlighted(): Boolean {
         if (!managedByGame) return false
         if (tilePose == MahjongTilePose.FACE_DOWN || animating) return false
-        val tile = stateStore.findManagedTileSnapshot(uuid.toKotlinUuid())?.tile ?: return false
-        val snapshot = stateStore.gameSnapshot ?: return false
+        val tableId = managedTableId ?: return false
+        val tile = stateStore.findManagedTileSnapshot(tableId, uuid.toKotlinUuid())?.tile ?: return false
+        val snapshot = stateStore.gameSnapshot(tableId) ?: return false
         val module = moduleRegistry.getModule(snapshot.config)
         val revealedWallTiles = snapshot.tileWall.tiles.mapNotNull { it.tile }
         return module.isHighlightedTile(tile, revealedWallTiles)

@@ -31,17 +31,18 @@ class MatchingTileHighlightController(
         if (!configStore.current.presentationVisibility.matchingTileHighlightEnabled) return
         val target = (client.crosshairTarget as? EntityHitResult)?.entity as? MahjongTileEntity ?: return
         if (!target.canParticipate()) return
-        val targetTile = stateStore.findManagedTileSnapshot(target.uuid.toKotlinUuid())?.tile ?: return
-        val snapshot = stateStore.gameSnapshot ?: return
+        val tableId = target.managedTableId ?: return
+        val targetTile = stateStore.findManagedTileSnapshot(tableId, target.uuid.toKotlinUuid())?.tile ?: return
+        val snapshot = stateStore.gameSnapshot(tableId) ?: return
         val interpretation = moduleRegistry.getModule(snapshot.config).createTileInterpretationPolicy()
         val canonicalTarget = interpretation.canonicalize(targetTile)
         val wave = ((sin((target.world.time + client.tickDelta) * PULSE_SPEED) + 1.0) / 2.0).toFloat()
         val targetColor = interpolateColor(TARGET_PULSE_DARK_COLOR, TARGET_PULSE_BRIGHT_COLOR, wave)
         val otherMatchColor = interpolateColor(OTHER_MATCH_PULSE_DARK_COLOR, OTHER_MATCH_PULSE_BRIGHT_COLOR, wave)
         tiles.asSequence()
-            .filter { tile -> tile.managedTableId == target.managedTableId && tile.canParticipate() }
+            .filter { tile -> tile.managedTableId == tableId && tile.canParticipate() }
             .filter { tile ->
-                stateStore.findManagedTileSnapshot(tile.uuid.toKotlinUuid())?.tile?.let(interpretation::canonicalize) == canonicalTarget
+                stateStore.findManagedTileSnapshot(tableId, tile.uuid.toKotlinUuid())?.tile?.let(interpretation::canonicalize) == canonicalTarget
             }
             .forEach { tile -> tile.setMatchingHighlight(if (tile.uuid == target.uuid) targetColor else otherMatchColor) }
     }
@@ -50,7 +51,7 @@ class MatchingTileHighlightController(
     private fun MahjongTileEntity.canParticipate(): Boolean = managedByGame &&
         tilePose != MahjongTilePose.FACE_DOWN &&
         !animating &&
-        stateStore.findManagedTileSnapshot(uuid.toKotlinUuid())?.tile != null
+        managedTableId?.let { tableId -> stateStore.findManagedTileSnapshot(tableId, uuid.toKotlinUuid())?.tile != null } == true
 
     /** 在兩個 RGB 色彩之間線性內插。 */
     private fun interpolateColor(from: Int, to: Int, progress: Float): Int {

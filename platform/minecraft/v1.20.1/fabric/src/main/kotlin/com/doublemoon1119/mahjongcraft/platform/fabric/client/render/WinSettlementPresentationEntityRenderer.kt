@@ -44,6 +44,9 @@ class WinSettlementPresentationEntityRenderer(
 ) : EntityRenderer<WinSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
 
+    /** 目前這次 [render] 呼叫所屬的桌子 ID，[playerName] 解析名稱時查詢用；每次 render 開頭重設。 */
+    private var currentTableId: Uuid? = null
+
     override fun render(
         entity: WinSettlementPresentationEntity,
         yaw: Float,
@@ -53,6 +56,7 @@ class WinSettlementPresentationEntityRenderer(
         light: Int,
     ) {
         if (!configStore.current.presentationVisibility.winSettlementEnabled) return
+        currentTableId = entity.managedTableId
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         val elapsed = entity.elapsedTicks(tickDelta)
         if (elapsed < 0.0 || elapsed > entity.endGameTime - entity.startGameTime) return
@@ -867,7 +871,7 @@ class WinSettlementPresentationEntityRenderer(
 
     private fun WinSettlementDetailSnapshot.text(): Text = Text.translatable(values.firstOrNull().orEmpty(), *values.drop(1).toTypedArray())
     private fun WinSettlementRankingSnapshot.toRankingPlayer() = ScoreRankingPlayer(Uuid.parse(playerId), seatIndex, isAi, previousScore, currentScore, previousRank, currentRank)
-    private fun playerName(id: String): String = playerNames.resolve(id)
+    private fun playerName(id: String): String = playerNames.resolve(currentTableId, id)
 
     private fun renderPanel(halfWidth: Float, top: Float, bottom: Float, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         val matrix = matrices.peek().positionMatrix
