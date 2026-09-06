@@ -1231,11 +1231,11 @@ class FabricDebugAnimationCommand(
             } else {
                 BuiltInRoundOutcomeIds.RON
             },
-            templateKey = if (preview == WinSettlementPreview.NAGASHI) {
-                WinSettlementPresentationRequestFactory.RIICHI_TEMPLATE_KEY
-            } else {
-                WinSettlementPresentationRequestFactory.RIICHI_TEMPLATE_KEY
-            },
+            // preview 目前只示範 riichi 規則的兩種一般胡牌，以及其特有的流局滿貫（riichi 自訂的「胡牌等效」特殊結果）。
+            // riichi 內建的 detail resolver（見 createBuiltInWinSettlementDetailResolverRegistry）對這些結果一律回傳 RIICHI_TEMPLATE_KEY；
+            // GENERIC_TEMPLATE_KEY 是給未登記 resolver 的規則模組（例如第三方擴充）使用的後備值，
+            // 此指令目前沒有對應的 preview 變體可以示範。
+            templateKey = WinSettlementPresentationRequestFactory.RIICHI_TEMPLATE_KEY,
             isTsumo = preview == WinSettlementPreview.TSUMO,
             winners = winners,
             ranking = ranking,
