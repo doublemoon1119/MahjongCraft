@@ -967,6 +967,8 @@ class RoomScreen(
             .getOrDefault(if (ai) RoomMemberAppearanceSource.Portrait else RoomMemberAppearanceSource.PlayerModel)
         when (appearance) {
             RoomMemberAppearanceSource.PlayerModel -> {
+                // 玩家離線（例如上一輪 runClient 留下的座位、政策為保留座位）時找不到可預覽的
+                // entity——沒有真人模型可畫，退回畫像，不能什麼都不畫，讓那一格看起來像沒東西。
                 val entity = resolvePlayerPreview(playerId)
                 if (entity != null) {
                     InventoryScreen.drawEntity(
@@ -978,6 +980,8 @@ class RoomScreen(
                         y + 42 - mouseY.toFloat(),
                         entity,
                     )
+                } else {
+                    renderPortrait(context, playerId, ai, x, y, cardWidth)
                 }
             }
             RoomMemberAppearanceSource.Portrait -> renderPortrait(context, playerId, ai, x, y, cardWidth)
