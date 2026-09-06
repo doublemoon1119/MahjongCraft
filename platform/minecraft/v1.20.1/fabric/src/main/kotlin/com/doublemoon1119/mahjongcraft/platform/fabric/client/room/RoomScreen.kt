@@ -647,13 +647,13 @@ class RoomScreen(
             if (fieldScroll.scrollBy(amount, maximumFieldScroll())) rebuild()
             return true
         }
-        if (page == Page.ROOM && stateStore.tableLobby?.phase == TableLobbyPhaseDto.PLAYING) {
+        if (page == Page.ROOM && stateStore.tableLobby?.phase == TableLobbyPhaseDto.PLAYING && maximumPlayingInfoScroll() > 0) {
             playingInfoScroll.scrollBy(amount, maximumPlayingInfoScroll())
             return true
         }
-        val waitingGrid = memberGridForWaitingRoom()
-        if (page == Page.ROOM && waitingGrid != null) {
-            if (memberScroll.scrollBy(amount, (waitingGrid.rows - memberGridVisibleRows()).coerceAtLeast(0))) rebuild()
+        val grid = currentMemberGrid()
+        if (page == Page.ROOM && grid != null) {
+            if (memberScroll.scrollBy(amount, (grid.rows - memberGridVisibleRows()).coerceAtLeast(0))) rebuild()
             return true
         }
         return super.mouseScrolled(mouseX, mouseY, amount)
@@ -671,9 +671,9 @@ class RoomScreen(
                 playingInfoScroll.beginDrag(mouseY, playingInfoScrollbarLayout(row))
                 return true
             }
-            val waitingGrid = memberGridForWaitingRoom()
-            if (waitingGrid != null && isOverMemberGridScrollbar(mouseX, mouseY, waitingGrid.rows)) {
-                if (memberScroll.beginDrag(mouseY, memberGridScrollbarLayout(waitingGrid.rows))) rebuild()
+            val grid = currentMemberGrid()
+            if (grid != null && isOverMemberGridScrollbar(mouseX, mouseY, grid.rows)) {
+                if (memberScroll.beginDrag(mouseY, memberGridScrollbarLayout(grid.rows))) rebuild()
                 return true
             }
         }
@@ -690,7 +690,7 @@ class RoomScreen(
             return true
         }
         if (memberScroll.dragging && button == 0) {
-            val rows = memberGridForWaitingRoom()?.rows ?: 0
+            val rows = currentMemberGrid()?.rows ?: 0
             if (memberScroll.dragTo(mouseY, memberGridScrollbarLayout(rows))) rebuild()
             return true
         }
@@ -802,7 +802,12 @@ class RoomScreen(
         }
     }
 
-    /** 進行中對局依權威自風排序，固定呈現東、南、西、北。 */
+    /**
+     * 進行中對局依權威自風排序，固定呈現東、南、西、北——卡片本身的大小與位置跟等待室
+     * （[renderMembers]）共用同一套固定尺寸 grid 與捲動機制（[memberScroll]），差異只在名稱下方
+     * 顯示的是 player info（[playingInfoRows]）而不是加入狀態，且該區塊內容過長時另外用
+     * [playingInfoScroll] 捲動。
+     */
     private fun renderPlayingMembers(
         context: DrawContext,
         players: List<MahjongPlayerInfoEntry>,
@@ -811,16 +816,19 @@ class RoomScreen(
     ) {
         val sortedPlayers = players.sortedBy { WIND_ORDER.getValue(it.seatWind) }
         val dealerPlayerId = resolvePlayerInfoEntity()?.dealerPlayerId ?: stateStore.gameSnapshot?.dealerPlayerId
-        val visibleRows = visiblePlayingInfoRows()
-        val maximumScroll = maximumPlayingInfoScroll()
-        playingInfoScroll.clamp(maximumScroll)
         val grid = playingGrid()
+        memberScroll.clamp(grid.rows - memberGridVisibleRows())
+        val visibleGridRows = visiblePlayingGridRows()
+        val visibleInfoRows = visiblePlayingInfoRows()
+        val maximumInfoScroll = maximumPlayingInfoScroll()
+        playingInfoScroll.clamp(maximumInfoScroll)
         val gridWidth = grid.columns * grid.cardWidth
         sortedPlayers.forEachIndexed { index, player ->
             val gridRow = index / grid.columns
+            if (gridRow !in visibleGridRows) return@forEachIndexed
             val x = width / 2 - gridWidth / 2 + (index % grid.columns) * grid.cardWidth
-            val y = playingRowTop(gridRow)
-            context.fill(x + 2, y, x + grid.cardWidth - 4, playingCardBottom(gridRow), MEMBER_CARD_BACKGROUND)
+            val y = playingCardTop(gridRow)
+            context.fill(x + 2, y, x + grid.cardWidth - 4, y + MEMBER_CARD_HEIGHT, MEMBER_CARD_BACKGROUND)
             renderMemberAppearance(context, player.playerId, player.isAi, x, y, grid.cardWidth, mouseX, mouseY)
             context.drawCenteredTextWithShadow(
                 textRenderer,
@@ -829,8 +837,8 @@ class RoomScreen(
                 y + MEMBER_NAME_OFFSET,
                 0xFFFFFF,
             )
-            val infoTop = playingInfoTop(gridRow)
-            playingInfoRows(player, dealerPlayerId).drop(playingInfoScroll.index).take(visibleRows).forEachIndexed { infoRowIndex, row ->
+            val infoTop = y + MEMBER_INFO_OFFSET
+            playingInfoRows(player, dealerPlayerId).drop(playingInfoScroll.index).take(visibleInfoRows).forEachIndexed { infoRowIndex, row ->
                 context.drawCenteredTextWithShadow(
                     textRenderer,
                     fitText(row.first, grid.cardWidth - 12),
@@ -840,7 +848,12 @@ class RoomScreen(
                 )
             }
         }
-        renderPlayingInfoScrollbar(context, maximumScroll)
+        if (grid.rows > memberGridVisibleRows()) {
+            val layout = memberGridScrollbarLayout(grid.rows)
+            context.fill(width - 14, layout.trackTop, width - 9, layout.trackBottom, 0x80505050.toInt())
+            context.fill(width - 14, layout.thumbTop, width - 9, layout.thumbTop + layout.thumbHeight, 0xFFD0D0D0.toInt())
+        }
+        renderPlayingInfoScrollbar(context, maximumInfoScroll, visibleGridRows)
     }
 
     private fun playingInfoRows(player: MahjongPlayerInfoEntry, dealerPlayerId: Uuid?): List<Pair<Text, Int>> = buildList {
@@ -903,7 +916,7 @@ class RoomScreen(
             if (row !in visibleRows) return@forEachIndexed
             val x = width / 2 - gridWidth / 2 + (index % grid.columns) * grid.cardWidth
             val y = MEMBER_CARD_TOP + (row - memberScroll.index) * MEMBER_ROW_HEIGHT
-            context.fill(x + 2, y, x + grid.cardWidth - 4, y + 146, 0xA0202838.toInt())
+            context.fill(x + 2, y, x + grid.cardWidth - 4, y + MEMBER_CARD_HEIGHT, MEMBER_CARD_BACKGROUND)
             val ai = playerId in aiIds
             renderMemberAppearance(context, playerId, ai, x, y, grid.cardWidth, mouseX, mouseY)
             context.drawCenteredTextWithShadow(
@@ -924,7 +937,7 @@ class RoomScreen(
             }
             status?.let {
                 val highlighted = memberStatus is MemberStatus.Waiting && (playerId in memberStatus.readyPlayerIds || ai)
-                context.drawCenteredTextWithShadow(textRenderer, it, x + grid.cardWidth / 2, y + 111, if (highlighted) 0x88FF88 else 0xAAAAAA)
+                context.drawCenteredTextWithShadow(textRenderer, it, x + grid.cardWidth / 2, y + MEMBER_INFO_OFFSET, if (highlighted) 0x88FF88 else 0xAAAAAA)
             }
         }
         if (grid.rows > memberGridVisibleRows()) {
@@ -986,26 +999,19 @@ class RoomScreen(
         },
     )
 
-    /** 對局中面板目前的欄數／列數；固定鎖最多兩欄，窄視窗時東南西北改成 2×2 排列。 */
-    private fun playingGrid(): MemberGridLayout = memberGridLayout(resolvePlayingPlayerInfo().size, maxColumns = 2)
+    /** 對局中面板目前的欄數／列數；跟等待室用同一套換欄規則，不額外限制欄數。 */
+    private fun playingGrid(): MemberGridLayout = memberGridLayout(resolvePlayingPlayerInfo().size)
 
-    /** 每一列（grid row）可用的垂直高度；只有一列時維持原本佔滿到畫面底部的行為，多列時平分剩餘高度。 */
-    private fun playingRowHeight(): Int {
-        val rows = playingGrid().rows
-        val available = (height - 38) - MEMBER_CARD_TOP
-        return if (rows <= 1) available else available / rows
-    }
+    /** 對局中卡片頂端 Y；跟等待室（[renderMembers]）共用同一套固定列高與捲動位置換算。 */
+    private fun playingCardTop(row: Int): Int = MEMBER_CARD_TOP + (row - memberScroll.index) * MEMBER_ROW_HEIGHT
 
-    private fun playingRowTop(row: Int): Int = MEMBER_CARD_TOP + row * playingRowHeight()
+    /** 該列資訊清單的起始 Y；與名稱下方內容的固定間距跟等待室狀態文字相同（[MEMBER_INFO_OFFSET]）。 */
+    private fun playingInfoTop(row: Int): Int = playingCardTop(row) + MEMBER_INFO_OFFSET
 
-    /** 該列資訊清單的起始 Y；與卡片頂端的固定間距和單列版面時相同。 */
-    private fun playingInfoTop(row: Int): Int = playingRowTop(row) + (PLAYING_INFO_TOP - MEMBER_CARD_TOP)
+    private fun playingCardBottom(row: Int): Int = playingCardTop(row) + MEMBER_CARD_HEIGHT
 
-    private fun playingCardBottom(row: Int): Int = (playingRowTop(row) + playingRowHeight())
-        .coerceAtLeast(playingInfoTop(row) + PLAYING_INFO_ROW_HEIGHT + 4)
-
-    /** 兩列共用同一個捲動位置，可見行數以單一列的可用高度為準。 */
-    private fun visiblePlayingInfoRows(): Int = ((playingRowHeight() - (PLAYING_INFO_TOP - MEMBER_CARD_TOP) - 4) / PLAYING_INFO_ROW_HEIGHT).coerceAtLeast(1)
+    /** 固定卡片高度扣掉名稱與資訊起始位置後能塞進幾行 player info；超過的部分交給 [playingInfoScroll]。 */
+    private fun visiblePlayingInfoRows(): Int = ((MEMBER_CARD_HEIGHT - MEMBER_INFO_OFFSET) / PLAYING_INFO_ROW_HEIGHT).coerceAtLeast(1)
 
     /** 目前進行中對局資訊清單的完整行數，供 scrollbar 幾何與捲動上限共用。 */
     private fun totalPlayingInfoRows(): Int {
@@ -1014,6 +1020,12 @@ class RoomScreen(
     }
 
     private fun maximumPlayingInfoScroll(): Int = (totalPlayingInfoRows() - visiblePlayingInfoRows()).coerceAtLeast(0)
+
+    /** 目前螢幕上看得到的 grid row 範圍；捲動超出視窗的列不需要畫資訊 scrollbar 或參與命中判定。 */
+    private fun visiblePlayingGridRows(): IntRange {
+        val grid = playingGrid()
+        return (memberScroll.index until memberScroll.index + memberGridVisibleRows()).let { it.first until minOf(it.last + 1, grid.rows) }
+    }
 
     /** 建立指定列進行中對局資訊 scrollbar 的共用幾何，供繪製與拖曳换算使用同一份座標系。 */
     private fun playingInfoScrollbarLayout(row: Int): ScrollbarLayout = ScrollbarLayout(
@@ -1025,10 +1037,10 @@ class RoomScreen(
         minimumThumbHeight = 12,
     )
 
-    /** 每一列各自畫一段 scrollbar，共用同一個捲動位置。 */
-    private fun renderPlayingInfoScrollbar(context: DrawContext, maximumScroll: Int) {
+    /** 每一列各自畫一段 scrollbar，共用同一個捲動位置；只畫目前捲動位置下看得到的列。 */
+    private fun renderPlayingInfoScrollbar(context: DrawContext, maximumScroll: Int, visibleGridRows: IntRange) {
         if (maximumScroll == 0) return
-        (0 until playingGrid().rows).forEach { row ->
+        visibleGridRows.forEach { row ->
             val layout = playingInfoScrollbarLayout(row)
             context.fill(width - 14, layout.trackTop, width - 9, layout.trackBottom, 0x80505050.toInt())
             context.fill(width - 14, layout.thumbTop, width - 9, layout.thumbTop + layout.thumbHeight, 0xFFD0D0D0.toInt())
@@ -1039,7 +1051,7 @@ class RoomScreen(
     private fun playingInfoScrollbarRowAt(mouseX: Double, mouseY: Double): Int? {
         if (maximumPlayingInfoScroll() <= 0) return null
         if (mouseX < width - 18 || mouseX > width - 5) return null
-        return (0 until playingGrid().rows).firstOrNull { row -> mouseY >= playingInfoTop(row) && mouseY <= playingCardBottom(row) }
+        return visiblePlayingGridRows().firstOrNull { row -> mouseY >= playingInfoTop(row) && mouseY <= playingCardBottom(row) }
     }
 
     private fun renderPortrait(context: DrawContext, playerId: Uuid, isAi: Boolean, x: Int, y: Int, cardWidth: Int) {
@@ -1139,14 +1151,14 @@ class RoomScreen(
     /**
      * 依玩家數與目前寬度計算卡片改用幾欄幾列。換列的判斷門檻是卡片能不能維持在
      * [MEMBER_CARD_MIN_WIDTH] 以上，不是能不能維持在理想的 [MEMBER_CARD_MAX_WIDTH]——同一列本來就會
-     * 把卡片縮到剛好塞滿寬度，只要還在可讀範圍內就不需要換列。[maxColumns] 讓對局中固定 4 人的面板
-     * 可以鎖定最多兩欄。
+     * 把卡片縮到剛好塞滿寬度，只要還在可讀範圍內就不需要換列。等待室與對局中面板共用同一套規則，
+     * 不額外限制欄數。
      */
-    private fun memberGridLayout(playerCount: Int, maxColumns: Int = Int.MAX_VALUE): MemberGridLayout {
+    private fun memberGridLayout(playerCount: Int): MemberGridLayout {
         val count = playerCount.coerceAtLeast(1)
         val availableWidth = width - MEMBER_GRID_MARGIN * 2
         val fittingColumns = (availableWidth / MEMBER_CARD_MIN_WIDTH).coerceAtLeast(1)
-        val columns = minOf(count, fittingColumns, maxColumns)
+        val columns = minOf(count, fittingColumns)
         val cardWidth = minOf(MEMBER_CARD_MAX_WIDTH, availableWidth / columns)
         val rows = (count + columns - 1) / columns
         return MemberGridLayout(columns, cardWidth, rows)
@@ -1176,11 +1188,14 @@ class RoomScreen(
         mouseY >= MEMBER_CARD_TOP &&
         mouseY <= memberGridBottom()
 
-    /** 等待室目前的卡片 grid 版面；不在等待室（沒有房間快照或還沒進入等待階段）時為 null。 */
-    private fun memberGridForWaitingRoom(): MemberGridLayout? {
-        if (stateStore.tableLobby?.phase != TableLobbyPhaseDto.WAITING) return null
-        val room = stateStore.roomSnapshot ?: return null
-        return memberGridLayout(room.playerIds.size)
+    /**
+     * 目前畫面上實際顯示的卡片 grid 版面（等待室或進行中對局）；兩者共用同一套固定列高與
+     * [memberScroll] 捲動機制，不在這兩種狀態時為 null。
+     */
+    private fun currentMemberGrid(): MemberGridLayout? = when (stateStore.tableLobby?.phase) {
+        TableLobbyPhaseDto.WAITING -> stateStore.roomSnapshot?.let { memberGridLayout(it.playerIds.size) }
+        TableLobbyPhaseDto.PLAYING -> playingGrid()
+        else -> null
     }
 
     /** 保留底部操作列後目前視窗能容納的設定欄位數。 */
@@ -1391,6 +1406,12 @@ class RoomScreen(
         const val MEMBER_NAME_OFFSET = 96
         const val MEMBER_CARD_BACKGROUND = 0xA0202838.toInt()
 
+        /** 卡片可視高度；等待室與對局中面板共用同一種固定大小卡片，只有名稱下方的內容不同。 */
+        const val MEMBER_CARD_HEIGHT = 146
+
+        /** 名稱下方第一行內容（等待室狀態文字／對局中資訊列）相對卡片頂端的垂直偏移。 */
+        const val MEMBER_INFO_OFFSET = 111
+
         /** 卡片 grid 左右各自的邊距。 */
         const val MEMBER_GRID_MARGIN = 8
 
@@ -1411,7 +1432,6 @@ class RoomScreen(
 
         /** 踢出按鈕相對卡片頂端（[MEMBER_CARD_TOP]）的垂直偏移。 */
         const val KICK_BUTTON_OFFSET_Y = 4
-        const val PLAYING_INFO_TOP = 170
         const val PLAYING_INFO_ROW_HEIGHT = 12
         val WIND_ORDER = mapOf(Wind.EAST to 0, Wind.SOUTH to 1, Wind.WEST to 2, Wind.NORTH to 3)
     }
