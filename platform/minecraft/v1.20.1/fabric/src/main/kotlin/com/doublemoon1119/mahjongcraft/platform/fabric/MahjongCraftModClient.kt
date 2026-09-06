@@ -71,6 +71,7 @@ import net.minecraft.util.Identifier
 import org.koin.core.context.GlobalContext
 import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
+import kotlin.uuid.toKotlinUuid
 
 class MahjongCraftModClient : ClientModInitializer {
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -127,6 +128,9 @@ class MahjongCraftModClient : ClientModInitializer {
             stateStore.apply(payload)
             val action = payload.action.toDomain(networkRegistries)
             val newSnapshot = stateStore.gameSnapshot(gameId) ?: return@registerClientReceiver
+            // 這個封包也會送給旁觀者（供其畫面同步用），回合／對局結算的聊天訊息只該發給實際入座的玩家。
+            val localPlayerId = MinecraftClient.getInstance().player?.uuid?.toKotlinUuid()
+            if (newSnapshot.players.none { it.id == localPlayerId }) return@registerClientReceiver
             val module = moduleRegistry.getModule(newSnapshot.config)
             val message = buildRoundResultChatMessage(
                 action = action,
