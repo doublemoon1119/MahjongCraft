@@ -8,10 +8,10 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import kotlin.uuid.Uuid
 
-/** 單一固定座位的完整公開顯示快照。 */
+/** 單一固定座位的完整公開顯示快照；[playerName] 為 `null` 代表目前解析不出這個玩家的真實名稱。 */
 data class MahjongPlayerInfoEntry(
     val playerId: Uuid,
-    val playerName: String,
+    val playerName: String?,
     val isAi: Boolean,
     val seatIndex: Int,
     val seatWind: Wind,
@@ -31,7 +31,7 @@ object MahjongPlayerInfoPresentationFactory {
     fun create(
         tableState: TableState,
         module: MahjongRuleModule<*>,
-        resolvePlayerName: (MahjongPlayer) -> String,
+        resolvePlayerName: (MahjongPlayer) -> String?,
     ): MahjongPlayerInfoPresentation = MahjongPlayerInfoPresentation(
         tableId = tableState.id,
         dealerPlayerId = tableState.dealerPlayerId,

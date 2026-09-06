@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
@@ -51,6 +52,7 @@ class FabricOpenRoomConfigScreenCommand(
     private val indicatorTextResolver: PublicPlayerIndicatorTextResolver,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
+    private val profileResolver: ClientPlayerProfileResolver,
 ) {
     /** 註冊指令；只能在 client entrypoint 呼叫。 */
     fun register() {
@@ -76,17 +78,18 @@ class FabricOpenRoomConfigScreenCommand(
         }
         client.setScreen(
             RoomScreen(
-                stateStore,
-                configPresentations,
-                configResolver,
-                ruleNames,
-                portraitRenderer,
-                aiStrategies,
-                aiStrategyNames,
-                appearanceSources,
-                indicatorTextResolver,
-                json,
-                networkRegistries,
+                stateStore = stateStore,
+                configPresentations = configPresentations,
+                configResolver = configResolver,
+                ruleNames = ruleNames,
+                portraitRenderer = portraitRenderer,
+                aiStrategies = aiStrategies,
+                aiStrategyNames = aiStrategyNames,
+                appearanceSources = appearanceSources,
+                indicatorTextResolver = indicatorTextResolver,
+                json = json,
+                networkRegistries = networkRegistries,
+                profileResolver = profileResolver,
                 openSettings = true,
             ),
         )

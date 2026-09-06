@@ -26,6 +26,7 @@ object MinecraftRoomScreenKeys {
     const val AI_STRATEGY_TITLE = "mahjongcraft.room.screen.ai_strategy_title"
     const val MEMBER_READY = "mahjongcraft.room.screen.member_ready"
     const val MEMBER_NOT_READY = "mahjongcraft.room.screen.member_not_ready"
+    const val OFFLINE_PLAYER = "mahjongcraft.room.screen.offline_player"
     const val READ_ONLY = "mahjongcraft.room.screen.read_only"
     const val UNAVAILABLE = "mahjongcraft.room.screen.unavailable"
     const val DRAFT_STALE = "mahjongcraft.room.screen.draft_stale"

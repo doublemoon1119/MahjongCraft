@@ -15,6 +15,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.resolvedPlayerNameText
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.OfflinePlayerPreviewEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
@@ -36,6 +39,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppeara
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.mojang.authlib.GameProfile
 import kotlinx.serialization.json.Json
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
@@ -67,6 +71,7 @@ class RoomScreen(
     private val indicatorTextResolver: PublicPlayerIndicatorTextResolver,
     private val json: Json,
     private val networkRegistries: NetworkDtoRegistries,
+    private val profileResolver: ClientPlayerProfileResolver,
     openSettings: Boolean = false,
 ) : Screen(Text.translatable(MinecraftRoomScreenKeys.TITLE)) {
     private var page = if (openSettings) Page.SETTINGS else Page.ROOM
@@ -832,7 +837,7 @@ class RoomScreen(
             renderMemberAppearance(context, player.playerId, player.isAi, x, y, grid.cardWidth, mouseX, mouseY)
             context.drawCenteredTextWithShadow(
                 textRenderer,
-                fitText(Text.literal(player.playerName), grid.cardWidth - 12),
+                fitText(resolvedPlayerNameText(player.playerName), grid.cardWidth - 12),
                 x + grid.cardWidth / 2,
                 y + MEMBER_NAME_OFFSET,
                 0xFFFFFF,
@@ -873,10 +878,11 @@ class RoomScreen(
     private fun resolvePlayingPlayerInfo(): List<MahjongPlayerInfoEntry> {
         resolvePlayerInfoEntity()?.players?.takeIf { it.isNotEmpty() }?.let { return it }
         val snapshot = stateStore.gameSnapshot ?: return emptyList()
+        val orderedAiPlayerIds = snapshot.players.filter { it.isAi }.map { it.id }
         return snapshot.players.mapIndexed { index, player ->
             MahjongPlayerInfoEntry(
                 playerId = player.id,
-                playerName = memberName(player.id, player.isAi, snapshot.players.filter { it.isAi }.map { it.id }).string,
+                playerName = if (player.isAi) aiPlayerDisplayName(player.id, orderedAiPlayerIds) else resolveLocalPlayerName(player.id),
                 isAi = player.isAi,
                 seatIndex = index,
                 seatWind = player.seatWind,
@@ -967,8 +973,8 @@ class RoomScreen(
             .getOrDefault(if (ai) RoomMemberAppearanceSource.Portrait else RoomMemberAppearanceSource.PlayerModel)
         when (appearance) {
             RoomMemberAppearanceSource.PlayerModel -> {
-                // 玩家離線（例如上一輪 runClient 留下的座位、政策為保留座位）時找不到可預覽的
-                // entity——沒有真人模型可畫，退回畫像，不能什麼都不畫，讓那一格看起來像沒東西。
+                // 玩家離線時找不到可預覽的 entity——沒有真人模型可畫，退回畫像，不能什麼都不畫，
+                // 讓那一格看起來像沒東西。
                 val entity = resolvePlayerPreview(playerId)
                 if (entity != null) {
                     InventoryScreen.drawEntity(
@@ -1148,8 +1154,18 @@ class RoomScreen(
 
     private fun memberName(playerId: Uuid, ai: Boolean, orderedAiPlayerIds: List<Uuid>): Text {
         if (ai) return Text.literal(aiPlayerDisplayName(playerId, orderedAiPlayerIds))
+        return resolvedPlayerNameText(resolveLocalPlayerName(playerId))
+    }
+
+    /**
+     * 真人玩家名稱的本地解析：在線就用 player list 的 profile；不在線時看之前有沒有非同步向 Mojang
+     * 查詢過這個 UUID 並已經拿到結果，兩者都沒有就觸發一次查詢並回傳 `null`，交由呼叫端決定顯示什麼。
+     */
+    private fun resolveLocalPlayerName(playerId: Uuid): String? {
         val name = client?.networkHandler?.getPlayerListEntry(playerId.toJavaUuid())?.profile?.name
-        return Text.literal(name ?: playerId.toString().take(8))
+            ?: profileResolver.resolvedProfile(playerId)?.name
+        if (name == null) profileResolver.requestResolve(playerId)
+        return name
     }
 
     /**
@@ -1281,13 +1297,26 @@ class RoomScreen(
         return Text.literal(raw.substring(0, end) + suffix)
     }
 
-    /** 優先使用世界中的真人；不在載入範圍時以 player-list profile 建立純客戶端預覽。 */
+    /**
+     * 優先使用世界中的真人；不在載入範圍時以 player-list profile 建立純客戶端預覽；連 player-list
+     * 都沒有這個人時，改用 [profileResolver] 非同步向 Mojang 查詢真實名稱與皮膚——查到之前（或最終
+     * 查無此人，例如 offline-mode 帳號）先用 [OfflinePlayerPreviewEntity] 畫一個固定黑底問號的替身，
+     * 而不是完全不畫。一旦 [profileResolver] 查到結果，下一次呼叫就會改用真人皮膚，不會卡在替身上。
+     */
     private fun resolvePlayerPreview(playerId: Uuid): LivingEntity? {
         val minecraft = client ?: return null
         minecraft.world?.getPlayerByUuid(playerId.toJavaUuid())?.let { return it }
         val world = minecraft.world ?: return null
-        val profile = minecraft.networkHandler?.getPlayerListEntry(playerId.toJavaUuid())?.profile ?: return null
-        return profilePreviews.getOrPut(playerId) { OtherClientPlayerEntity(world, profile) }
+        val listEntry = minecraft.networkHandler?.getPlayerListEntry(playerId.toJavaUuid())
+        val profile = listEntry?.profile ?: profileResolver.resolvedProfile(playerId)
+        if (profile == null) {
+            profileResolver.requestResolve(playerId)
+            return profilePreviews.getOrPut(playerId) {
+                OfflinePlayerPreviewEntity(world, GameProfile(playerId.toJavaUuid(), OFFLINE_PLAYER_PROFILE_NAME))
+            }
+        }
+        profilePreviews[playerId]?.takeUnless { it is OfflinePlayerPreviewEntity }?.let { return it }
+        return OtherClientPlayerEntity(world, profile).also { profilePreviews[playerId] = it }
     }
 
     private fun booleanText(enabled: Boolean): Text = Text.translatable(
@@ -1409,6 +1438,9 @@ class RoomScreen(
         const val MEMBER_CARD_TOP = 58
         const val MEMBER_NAME_OFFSET = 96
         const val MEMBER_CARD_BACKGROUND = 0xA0202838.toInt()
+
+        /** [resolvePlayerPreview] 為找不到 player-list profile 的玩家組出佔位 [GameProfile] 時使用的名稱。 */
+        const val OFFLINE_PLAYER_PROFILE_NAME = "Offline"
 
         /** 卡片可視高度；等待室與對局中面板共用同一種固定大小卡片，只有名稱下方的內容不同。 */
         const val MEMBER_CARD_HEIGHT = 146

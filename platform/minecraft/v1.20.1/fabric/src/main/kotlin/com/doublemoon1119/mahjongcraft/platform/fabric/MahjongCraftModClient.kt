@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildMatchRes
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildRoundResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.DiceRollPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ExhaustiveDrawSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongDiceEntityRenderer
@@ -118,6 +119,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val aiStrategyNames = koin.get<AiStrategyDisplayNameRegistry>()
         val appearanceSources = koin.get<RoomMemberAppearanceSourceRegistry>()
         val playerNames = koin.get<ClientPlayerDisplayNameResolver>()
+        val profileResolver = koin.get<ClientPlayerProfileResolver>()
         MahjongChannels.roomUpdate.registerClientReceiver(json, stateStore::apply)
         MahjongChannels.gameUpdate.registerClientReceiver(json) { payload ->
             val previousSnapshot = stateStore.gameSnapshot
@@ -155,17 +157,18 @@ class MahjongCraftModClient : ClientModInitializer {
             if (client.currentScreen !is RoomScreen) {
                 client.setScreen(
                     RoomScreen(
-                        stateStore,
-                        configPresentations,
-                        configResolver,
-                        ruleNames,
-                        portraitRenderer,
-                        aiStrategies,
-                        aiStrategyNames,
-                        appearanceSources,
-                        indicatorTextResolver,
-                        json,
-                        networkRegistries,
+                        stateStore = stateStore,
+                        configPresentations = configPresentations,
+                        configResolver = configResolver,
+                        ruleNames = ruleNames,
+                        portraitRenderer = portraitRenderer,
+                        aiStrategies = aiStrategies,
+                        aiStrategyNames = aiStrategyNames,
+                        appearanceSources = appearanceSources,
+                        indicatorTextResolver = indicatorTextResolver,
+                        json = json,
+                        networkRegistries = networkRegistries,
+                        profileResolver = profileResolver,
                     ),
                 )
             }

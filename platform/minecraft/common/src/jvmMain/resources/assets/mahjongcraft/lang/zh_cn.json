@@ -351,6 +351,7 @@
   "mahjongcraft.room.screen.leave": "离开",
   "mahjongcraft.room.screen.member_not_ready": "未准备",
   "mahjongcraft.room.screen.member_ready": "已准备",
+  "mahjongcraft.room.screen.offline_player": "离线玩家",
   "mahjongcraft.room.screen.page.room": "游戏",
   "mahjongcraft.room.screen.page.settings": "设置",
   "mahjongcraft.room.screen.playing": "对局进行中（只读）",

@@ -516,8 +516,12 @@ class FabricGamePresentationPublisher(
             val module = moduleRegistry.getModule(game.tableState.config)
             val orderedAiPlayerIds = game.roomPlayerIds.filter { id -> game.tableState.players.any { it.id == id && it.isAi } }
             val playerInfo = MahjongPlayerInfoPresentationFactory.create(game.tableState, module) { player ->
-                serverHolder.findPlayer(player.id)?.gameProfile?.name
-                    ?: if (player.isAi) aiPlayerDisplayName(player.id, orderedAiPlayerIds) else player.id.toString().take(8)
+                if (player.isAi) {
+                    aiPlayerDisplayName(player.id, orderedAiPlayerIds)
+                } else {
+                    serverHolder.findPlayer(player.id)?.gameProfile?.name
+                        ?: serverHolder.current()?.userCache?.getByUuid(player.id.toJavaUuid())?.orElse(null)?.name
+                }
             }
             playerInfoPresenter.present(playerInfo, resolved.location, resolved.facing)
         }

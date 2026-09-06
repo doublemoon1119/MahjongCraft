@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.resolvedPlayerNameText
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
@@ -74,7 +75,8 @@ class MahjongPlayerInfoEntityRenderer(
         val nameX = left + PANEL_PADDING + PORTRAIT_SIZE + PORTRAIT_GAP
         val suffixWidth = textRenderer.getWidth(windText(player.seatWind)).toFloat() +
             if (isDealer) textRenderer.getWidth(DEALER_MARK) + COLUMN_GAP else 0f
-        val fitted = WorldPanelRenderer.fitText(textRenderer, player.playerName, (left + width - PANEL_PADDING - nameX - suffixWidth).toInt())
+        val displayName = resolvedPlayerNameText(player.playerName).string
+        val fitted = WorldPanelRenderer.fitText(textRenderer, displayName, (left + width - PANEL_PADDING - nameX - suffixWidth).toInt())
         WorldPanelRenderer.drawText(textRenderer, Text.literal(fitted), nameX, top + 1f, NAME_COLOR, TEXT_Z, light, matrices, consumers)
         var right = left + width - PANEL_PADDING
         if (isDealer) {
@@ -100,8 +102,9 @@ class MahjongPlayerInfoEntityRenderer(
     ): Float {
         var width = MIN_PANEL_WIDTH
         players.forEach { player ->
+            val displayName = resolvedPlayerNameText(player.playerName).string
             val header = PANEL_PADDING * 2 + PORTRAIT_SIZE + PORTRAIT_GAP +
-                textRenderer.getWidth(player.playerName.take(MAX_NAME_CHARACTERS)) + COLUMN_GAP + textRenderer.getWidth(windText(player.seatWind)) +
+                textRenderer.getWidth(displayName.take(MAX_NAME_CHARACTERS)) + COLUMN_GAP + textRenderer.getWidth(windText(player.seatWind)) +
                 if (player.playerId == dealerPlayerId) textRenderer.getWidth(DEALER_MARK) + COLUMN_GAP else 0f
             val score = PANEL_PADDING * 2 + textRenderer.getWidth(player.score.toString())
             val indicator = player.indicators.maxOfOrNull {

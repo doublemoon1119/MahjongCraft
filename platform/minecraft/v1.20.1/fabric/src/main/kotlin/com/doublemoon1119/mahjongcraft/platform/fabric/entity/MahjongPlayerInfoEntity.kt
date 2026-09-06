@@ -150,7 +150,7 @@ class MahjongPlayerInfoEntity(
 @Serializable
 private data class PlayerEntryDto(
     val playerId: String,
-    val playerName: String,
+    val playerName: String?,
     val isAi: Boolean,
     val seatIndex: Int,
     val seatWind: Int,

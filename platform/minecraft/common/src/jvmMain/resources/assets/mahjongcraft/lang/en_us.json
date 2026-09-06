@@ -351,6 +351,7 @@
   "mahjongcraft.room.screen.leave": "Leave",
   "mahjongcraft.room.screen.member_not_ready": "Not Ready",
   "mahjongcraft.room.screen.member_ready": "Ready",
+  "mahjongcraft.room.screen.offline_player": "Offline Player",
   "mahjongcraft.room.screen.page.room": "Game",
   "mahjongcraft.room.screen.page.settings": "Settings",
   "mahjongcraft.room.screen.playing": "Match in progress — read only",
