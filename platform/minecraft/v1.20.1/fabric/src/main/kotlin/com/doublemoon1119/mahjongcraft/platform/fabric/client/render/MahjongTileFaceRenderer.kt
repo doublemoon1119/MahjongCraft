@@ -87,8 +87,8 @@ class MahjongTileFaceRenderer(
         vertex(left, bottom, 0f, 1f)
         val label = tileLabelRegistry.find(assetKey) ?: return
         if (!clientConfigStore.current.tileLabelsEnabled && !label.forced) return
-        label.topLeft?.let { renderWorldLabel(it, left, right, top, width, alpha, false, z, matrices, consumers) }
-        label.topRight?.let { renderWorldLabel(it, left, right, top, width, alpha, true, z, matrices, consumers) }
+        label.topLeft?.let { renderWorldLabel(it, left, right, top, width, height, alpha, false, z, matrices, consumers) }
+        label.topRight?.let { renderWorldLabel(it, left, right, top, width, height, alpha, true, z, matrices, consumers) }
     }
 
     /** 在 ItemRenderer 已完成的牌模型印刷面上疊加共用角落標籤。 */
@@ -113,18 +113,17 @@ class MahjongTileFaceRenderer(
         light: Int,
     ) {
         val renderer = MinecraftClient.getInstance().textRenderer
+        val metrics = tileLabelMetrics(MahjongTileEntity.TILE_WIDTH, MahjongTileEntity.TILE_HEIGHT)
         matrices.push()
         val halfWidth = MahjongTileEntity.TILE_WIDTH / 2.0
         val halfHeight = MahjongTileEntity.TILE_HEIGHT / 2.0
-        val marginX = MahjongTileEntity.TILE_WIDTH * MODEL_LABEL_MARGIN_RATIO
-        val marginY = MahjongTileEntity.TILE_HEIGHT * MODEL_LABEL_MARGIN_RATIO
         matrices.translate(
-            if (isLeft) halfWidth - marginX else -halfWidth + marginX,
-            halfHeight - marginY,
+            if (isLeft) halfWidth - metrics.marginX else -halfWidth + metrics.marginX,
+            halfHeight - metrics.marginY,
             -(MahjongTileEntity.TILE_DEPTH / 2.0),
         )
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
-        matrices.scale(MODEL_LABEL_SCALE, -MODEL_LABEL_SCALE, MODEL_LABEL_SCALE)
+        matrices.scale(metrics.scale, -metrics.scale, metrics.scale)
         val originX = if (isLeft) 0f else -renderer.getWidth(label.text).toFloat()
         renderer.draw(
             label.text,
@@ -141,13 +140,18 @@ class MahjongTileFaceRenderer(
         matrices.pop()
     }
 
-    /** 在世界面板牌面的左右上角繪製隨尺寸縮放的標籤。 */
+    /**
+     * 在世界面板牌面的左右上角繪製標籤；縮放與邊距都依實際牌面高／寬換算，比例跟真正放置在世界中的
+     * 麻將牌一致（見 [renderModelLabel]／[tileLabelMetrics]），不論面板把牌畫得多大或多小都維持相同
+     * 觀感。
+     */
     private fun renderWorldLabel(
         label: TileLabelText,
         left: Float,
         right: Float,
         top: Float,
         width: Float,
+        height: Float,
         alpha: Float,
         alignRight: Boolean,
         z: Float,
@@ -155,13 +159,12 @@ class MahjongTileFaceRenderer(
         consumers: VertexConsumerProvider,
     ) {
         val renderer = MinecraftClient.getInstance().textRenderer
-        val scale = width / TEXTURE_WIDTH
-        val margin = width / TEXTURE_WIDTH
-        val textWidth = renderer.getWidth(label.text) * scale
-        val x = if (alignRight) right - margin - textWidth else left + margin
+        val metrics = tileLabelMetrics(width, height)
+        val textWidth = renderer.getWidth(label.text) * metrics.scale
+        val x = if (alignRight) right - metrics.marginX - textWidth else left + metrics.marginX
         matrices.push()
-        matrices.translate(x.toDouble(), (top + margin).toDouble(), (z - WORLD_LABEL_Z_OFFSET).toDouble())
-        matrices.scale(scale, scale, 1f)
+        matrices.translate(x.toDouble(), (top + metrics.marginY).toDouble(), (z - WORLD_LABEL_Z_OFFSET).toDouble())
+        matrices.scale(metrics.scale, metrics.scale, 1f)
         renderer.draw(
             label.text,
             0f,
@@ -194,22 +197,40 @@ class MahjongTileFaceRenderer(
         )
         val label = tileLabelRegistry.find(assetKey) ?: return
         if (!clientConfigStore.current.tileLabelsEnabled && !label.forced) return
-        label.topLeft?.let { renderGuiLabel(context, it, x, y, width, alignRight = false) }
-        label.topRight?.let { renderGuiLabel(context, it, x, y, width, alignRight = true) }
+        label.topLeft?.let { renderGuiLabel(context, it, x, y, width, height, alignRight = false) }
+        label.topRight?.let { renderGuiLabel(context, it, x, y, width, height, alignRight = true) }
     }
 
-    /** 依牌面顯示尺寸縮放標籤，固定留在牌面左上／右上角。 */
-    private fun renderGuiLabel(context: DrawContext, label: TileLabelText, x: Int, y: Int, width: Int, alignRight: Boolean) {
+    /**
+     * 依牌面實際顯示高／寬換算標籤縮放與邊距，比例跟真正放置在世界中的麻將牌一致（見
+     * [renderModelLabel]／[tileLabelMetrics]），不論面板把牌畫得多大或多小都維持相同觀感。
+     */
+    private fun renderGuiLabel(context: DrawContext, label: TileLabelText, x: Int, y: Int, width: Int, height: Int, alignRight: Boolean) {
         val renderer = MinecraftClient.getInstance().textRenderer
-        val scale = (width / TEXTURE_WIDTH.toFloat()).coerceAtLeast(MIN_LABEL_SCALE)
-        val labelWidth = renderer.getWidth(label.text) * scale
-        val drawX = if (alignRight) x + width - LABEL_MARGIN - labelWidth else x + LABEL_MARGIN
+        val metrics = tileLabelMetrics(width.toFloat(), height.toFloat())
+        val labelWidth = renderer.getWidth(label.text) * metrics.scale
+        val drawX = if (alignRight) x + width - metrics.marginX - labelWidth else x + metrics.marginX
         context.matrices.push()
-        context.matrices.translate(drawX.toDouble(), (y + LABEL_MARGIN).toDouble(), LABEL_Z)
-        context.matrices.scale(scale, scale, 1f)
+        context.matrices.translate(drawX.toDouble(), (y + metrics.marginY).toDouble(), LABEL_Z)
+        context.matrices.scale(metrics.scale, metrics.scale, 1f)
         context.drawText(renderer, label.text, 0, 0, label.color.toArgb(), false)
         context.matrices.pop()
     }
+
+    /**
+     * 依牌面顯示尺寸換算標籤縮放與邊距的唯一入口；[renderGuiLabel]、[renderWorldLabel]、
+     * [renderModelLabel] 都改呼叫這裡，避免三種渲染路徑各自維護一份公式又各自漂移（曾經發生過的
+     * 問題）——比例直接從真正放置在世界中的麻將牌反推，見 [LABEL_SCALE_PER_HEIGHT]／
+     * [MODEL_LABEL_MARGIN_RATIO] KDoc。
+     */
+    private fun tileLabelMetrics(width: Float, height: Float): TileLabelMetrics = TileLabelMetrics(
+        scale = height * LABEL_SCALE_PER_HEIGHT,
+        marginX = width * MODEL_LABEL_MARGIN_RATIO,
+        marginY = height * MODEL_LABEL_MARGIN_RATIO,
+    )
+
+    /** 一次標籤縮放與邊距換算的結果。 */
+    private data class TileLabelMetrics(val scale: Float, val marginX: Float, val marginY: Float)
 
     /** 解析材質，不存在的第三方 asset 安全退回 unknown 牌。 */
     private fun resolveTexture(assetKey: String): Identifier {
@@ -224,12 +245,18 @@ class MahjongTileFaceRenderer(
     private companion object {
         const val TEXTURE_WIDTH = 48
         const val TEXTURE_HEIGHT = 64
-        const val LABEL_MARGIN = 1
         const val LABEL_Z = 10.0
-        const val MIN_LABEL_SCALE = 0.5f
         const val WORLD_LABEL_Z_OFFSET = 0.001f
-        const val MODEL_LABEL_MARGIN_RATIO = 0.08
+        const val MODEL_LABEL_MARGIN_RATIO = 0.08f
         const val MODEL_LABEL_SCALE = 0.004f
+
+        /**
+         * 依牌面高度換算標籤縮放的比例常數，直接從真正放置在世界中的麻將牌反推（[MODEL_LABEL_SCALE]
+         * 除以其固定世界高度 [MahjongTileEntity.TILE_HEIGHT]）——GUI 與世界面板的牌面尺寸各自使用不同
+         * 的本地單位系統，但「標籤高度佔牌面高度的比例」本身跟單位系統無關，套用同一個比例常數就能讓
+         * 不論面板把牌畫得多大或多小，標籤觀感都跟真正放置的麻將牌一致。
+         */
+        val LABEL_SCALE_PER_HEIGHT: Float = MODEL_LABEL_SCALE / MahjongTileEntity.TILE_HEIGHT
     }
 }
 
