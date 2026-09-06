@@ -78,6 +78,12 @@ class RoomScreen(
     private var validationFailed = false
     private val invalidFieldIds = mutableSetOf<String>()
     private val playingInfoScroll = ScrollState()
+
+    /** 目前正在拖曳哪一列（grid row）的對局資訊 scrollbar；兩列共用同一個捲動位置，但幾何各自獨立。 */
+    private var playingInfoDragRow = 0
+
+    /** 等待室玩家卡片 grid 換列時的垂直捲動狀態，避免超出範圍的列疊在底部操作列上。 */
+    private val memberScroll = ScrollState()
     private var applyButton: ButtonWidget? = null
     private var undoButton: ButtonWidget? = null
     private var resetButton: ButtonWidget? = null
@@ -133,11 +139,16 @@ class RoomScreen(
                     button(MinecraftRoomScreenKeys.ADD_AI, RoomScreenActionDto.AddAi(lobby.tableId), room.playerIds.size < room.gameConfig.ruleConfig.maxPlayers)
                     button(MinecraftRoomScreenKeys.START, RoomScreenActionDto.Start(lobby.tableId), room.canStart)
                     button(MinecraftRoomScreenKeys.DISBAND, RoomScreenActionDto.Disband(lobby.tableId))
-                    val cardWidth = memberCardWidth(room.playerIds.size)
-                    val total = room.playerIds.size * cardWidth
+                    val grid = memberGridLayout(room.playerIds.size)
+                    memberScroll.clamp(grid.rows - memberGridVisibleRows())
+                    val visibleRows = memberScroll.index until memberScroll.index + memberGridVisibleRows()
+                    val gridWidth = grid.columns * grid.cardWidth
                     room.playerIds.forEachIndexed { index, targetId ->
                         if (targetId == room.hostId) return@forEachIndexed
-                        val cardX = width / 2 - total / 2 + index * cardWidth
+                        val row = index / grid.columns
+                        if (row !in visibleRows) return@forEachIndexed
+                        val cardX = width / 2 - gridWidth / 2 + (index % grid.columns) * grid.cardWidth
+                        val cardY = MEMBER_CARD_TOP + (row - memberScroll.index) * MEMBER_ROW_HEIGHT
                         if (targetId in room.aiPlayerIds) {
                             val current = room.aiPlayerStrategyKeys[targetId]
                             addDrawableChild(
@@ -147,7 +158,7 @@ class RoomScreen(
                                         val next = keys[(keys.indexOf(current).coerceAtLeast(0) + 1) % keys.size]
                                         send(RoomScreenActionDto.ChangeAiStrategy(lobby.tableId, targetId.toString(), next))
                                     }
-                                }.dimensions(cardX + 8, 184, cardWidth - 20, 18).build().also {
+                                }.dimensions(cardX + 8, cardY + AI_STRATEGY_BUTTON_OFFSET_Y, grid.cardWidth - 20, 18).build().also {
                                     it.tooltip = Tooltip.of(aiStrategyTooltip(current))
                                 },
                             )
@@ -155,7 +166,7 @@ class RoomScreen(
                         addDrawableChild(
                             RestartableMarqueeButtonWidget.builder(Text.literal("×")) {
                                 send(RoomScreenActionDto.Kick(lobby.tableId, targetId.toString()))
-                            }.dimensions(cardX + cardWidth - 23, 62, 16, 16).build().also {
+                            }.dimensions(cardX + grid.cardWidth - 23, cardY + KICK_BUTTON_OFFSET_Y, 16, 16).build().also {
                                 it.tooltip = Tooltip.of(Text.translatable(MinecraftRoomScreenKeys.KICK))
                             },
                         )
@@ -189,25 +200,45 @@ class RoomScreen(
         val editable = canEditRoom && definition.selectable
         val categories = definition.categories
         if (selectedCategoryId !in categories.map { it.id }) selectedCategoryId = categories.firstOrNull()?.id
-        addRuleSelector(config, moduleId, canEditRoom)
-        var categoryY = 82
-        categories.forEach { category ->
-            addDrawableChild(
-                RestartableMarqueeButtonWidget.builder(Text.translatable(category.nameTranslationKey)) {
-                    selectedCategoryId = category.id
-                    fieldScroll.reset()
-                    rebuild()
-                }.dimensions(18, categoryY, 112, 20).build().also { it.active = selectedCategoryId != category.id },
-            )
-            categoryY += 24
+        val compact = isCompactSettings()
+        addRuleSelector(config, moduleId, canEditRoom, compact)
+        if (compact) {
+            val categoryWidth = (width - COMPACT_CONTENT_MARGIN * 2 - COMPACT_FIELDS_GAP) / 2
+            categories.forEachIndexed { index, category ->
+                addDrawableChild(
+                    RestartableMarqueeButtonWidget.builder(Text.translatable(category.nameTranslationKey)) {
+                        selectedCategoryId = category.id
+                        fieldScroll.reset()
+                        rebuild()
+                    }.dimensions(
+                        COMPACT_CONTENT_MARGIN + index % 2 * (categoryWidth + COMPACT_FIELDS_GAP),
+                        COMPACT_CATEGORY_TOP + index / 2 * COMPACT_CATEGORY_ROW_HEIGHT,
+                        categoryWidth,
+                        20,
+                    ).build().also { it.active = selectedCategoryId != category.id },
+                )
+            }
+        } else {
+            var categoryY = 82
+            categories.forEach { category ->
+                addDrawableChild(
+                    RestartableMarqueeButtonWidget.builder(Text.translatable(category.nameTranslationKey)) {
+                        selectedCategoryId = category.id
+                        fieldScroll.reset()
+                        rebuild()
+                    }.dimensions(18, categoryY, 112, 20).build().also { it.active = selectedCategoryId != category.id },
+                )
+                categoryY += 24
+            }
         }
         val categoryFields = definition.fields.filter { it.categoryId == selectedCategoryId }
         val maximumVisibleFields = maximumVisibleFields()
         fieldScroll.clamp(categoryFields.size - maximumVisibleFields)
-        var fieldY = SETTINGS_FIELDS_TOP
-        categoryFields.drop(fieldScroll.index).take(maximumVisibleFields).forEach { field ->
-            addFieldControls(field, config, 150, fieldY, editable && field.isEditable && field.isEnabled(config))
-            fieldY += 28
+        val fieldsTop = settingsFieldsTop()
+        val rowHeight = fieldRowHeight()
+        categoryFields.drop(fieldScroll.index).take(maximumVisibleFields).forEachIndexed { index, field ->
+            val controlY = fieldControlY(fieldsTop + index * rowHeight)
+            addFieldControls(field, config, controlY, editable && field.isEditable && field.isEnabled(config))
         }
         if (editable) {
             val defaultConfig = GameConfig(definition.defaultRuleConfig()).withConsistentSpectatorVisibility()
@@ -249,29 +280,41 @@ class RoomScreen(
         }
     }
 
-    private fun addFieldControls(field: GameConfigFieldDefinition, config: GameConfig, x: Int, y: Int, editable: Boolean) {
+    private fun addFieldControls(field: GameConfigFieldDefinition, config: GameConfig, y: Int, editable: Boolean) {
         val value = field.read(config)
         val controlY = y
+        val compact = isCompactSettings()
         when (val editor = field.editor) {
             GameConfigEditorSpec.BooleanToggle -> {
                 val enabled = (value as GameConfigPresentationValue.BooleanValue).enabled
+                val (left, controlWidth) = if (compact) compactControlBounds() else (width - 152) to 124
                 addDrawableChild(
                     RestartableMarqueeButtonWidget.builder(booleanText(enabled)) {
                         updateDraft(field, GameConfigPresentationValue.BooleanValue(!enabled))
-                    }.dimensions(width - 152, controlY, 124, 20).build().withFieldTooltip(field, config, editable),
+                    }.dimensions(left, controlY, controlWidth, 20).build().withFieldTooltip(field, config, editable),
                 )
             }
             is GameConfigEditorSpec.SingleChoice -> {
                 val option = (value as GameConfigPresentationValue.ChoiceValue).optionId
+                val (left, controlWidth) = if (compact) compactControlBounds() else (width - 212) to 184
                 addDrawableChild(
                     RestartableMarqueeButtonWidget.builder(optionText(option)) {
                         val index = editor.optionIds.indexOf(option).coerceAtLeast(0)
                         updateDraft(field, GameConfigPresentationValue.ChoiceValue(editor.optionIds[(index + 1) % editor.optionIds.size]))
-                    }.dimensions(width - 212, controlY, 184, 20).build().withFieldTooltip(field, config, editable),
+                    }.dimensions(left, controlY, controlWidth, 20).build().withFieldTooltip(field, config, editable),
                 )
             }
             is GameConfigEditorSpec.IntegerInput -> {
                 val number = (value as GameConfigPresentationValue.IntegerValue).number
+                val bounds = if (compact) {
+                    val (left, controlWidth) = compactControlBounds()
+                    val plusX = left + controlWidth - COMPACT_INTEGER_BUTTON_WIDTH
+                    val textX = left + COMPACT_INTEGER_BUTTON_WIDTH + COMPACT_INTEGER_BUTTON_GAP
+                    val textWidth = (plusX - COMPACT_INTEGER_BUTTON_GAP - textX).coerceAtLeast(1)
+                    IntegerControlBounds(left, textX, textWidth, plusX)
+                } else {
+                    IntegerControlBounds(width - 212, width - 184, 128, width - 52)
+                }
                 addDrawableChild(
                     RestartableMarqueeButtonWidget.builder(Text.literal("−")) {
                         val next = RoomConfigIntegerControl.decrement(
@@ -280,7 +323,7 @@ class RoomScreen(
                             shiftHeld = hasShiftDown(),
                         )
                         updateDraft(field, GameConfigPresentationValue.IntegerValue(next))
-                    }.dimensions(width - 212, controlY, 24, 20).build().withFieldTooltip(
+                    }.dimensions(bounds.minusX, controlY, COMPACT_INTEGER_BUTTON_WIDTH, 20).build().withFieldTooltip(
                         field,
                         config,
                         editable && RoomConfigIntegerControl.canDecrease(current = number, editor = editor),
@@ -288,9 +331,9 @@ class RoomScreen(
                 )
                 val input = CenteredIntegerTextFieldWidget(
                     textRenderer,
-                    width - 184,
+                    bounds.textX,
                     controlY,
-                    128,
+                    bounds.textWidth,
                     20,
                     Text.translatable(field.nameTranslationKey),
                 ).also { widget ->
@@ -315,7 +358,7 @@ class RoomScreen(
                             shiftHeld = hasShiftDown(),
                         )
                         updateDraft(field, GameConfigPresentationValue.IntegerValue(next))
-                    }.dimensions(width - 52, controlY, 24, 20).build().withFieldTooltip(
+                    }.dimensions(bounds.plusX, controlY, COMPACT_INTEGER_BUTTON_WIDTH, 20).build().withFieldTooltip(
                         field,
                         config,
                         editable && RoomConfigIntegerControl.canIncrease(current = number, editor = editor),
@@ -324,6 +367,15 @@ class RoomScreen(
             }
         }
     }
+
+    /** 窄視窗時控制項改用單欄、依可用寬度伸縮的版面，取代固定從右邊界回推的座標。 */
+    private fun compactControlBounds(): Pair<Int, Int> {
+        val left = COMPACT_CONTENT_MARGIN
+        val controlWidth = (width - COMPACT_CONTENT_MARGIN - COMPACT_SCROLLBAR_RESERVE).coerceAtLeast(MIN_COMPACT_CONTROL_WIDTH)
+        return left to controlWidth
+    }
+
+    private data class IntegerControlBounds(val minusX: Int, val textX: Int, val textWidth: Int, val plusX: Int)
 
     private fun ButtonWidget.withFieldTooltip(field: GameConfigFieldDefinition, config: GameConfig, active: Boolean): ButtonWidget = apply {
         this.active = active
@@ -374,10 +426,11 @@ class RoomScreen(
         this
     }
 
-    /** 以單一切換按鈕顯示規則，並在 tooltip 條列所有已登記規則。 */
-    private fun addRuleSelector(config: GameConfig, moduleId: String, canEdit: Boolean) {
+    /** 以單一切換按鈕顯示規則，並在 tooltip 條列所有已登記規則；窄視窗時改為佔滿內容寬度的單行。 */
+    private fun addRuleSelector(config: GameConfig, moduleId: String, canEdit: Boolean, compact: Boolean) {
         val candidates = configPresentations.ruleModuleIds.sorted()
         val currentName = ruleName(moduleId)
+        val (x, buttonWidth) = if (compact) COMPACT_CONTENT_MARGIN to (width - COMPACT_CONTENT_MARGIN * 2) else 18 to 112
         addDrawableChild(
             RestartableMarqueeButtonWidget.builder(currentName) {
                 val selectable = candidates.filter { configPresentations.find(it)?.selectable == true }
@@ -390,7 +443,7 @@ class RoomScreen(
                 invalidFieldIds.clear()
                 validationFailed = false
                 rebuild()
-            }.dimensions(18, 54, 112, 20).build().also { button ->
+            }.dimensions(x, 54, buttonWidth, 20).build().also { button ->
                 button.active = canEdit && candidates.count { configPresentations.find(it)?.selectable == true } > 1
                 button.tooltip = Tooltip.of(
                     Text.empty()
@@ -598,6 +651,11 @@ class RoomScreen(
             playingInfoScroll.scrollBy(amount, maximumPlayingInfoScroll())
             return true
         }
+        val waitingGrid = memberGridForWaitingRoom()
+        if (page == Page.ROOM && waitingGrid != null) {
+            if (memberScroll.scrollBy(amount, (waitingGrid.rows - memberGridVisibleRows()).coerceAtLeast(0))) rebuild()
+            return true
+        }
         return super.mouseScrolled(mouseX, mouseY, amount)
     }
 
@@ -606,9 +664,18 @@ class RoomScreen(
             if (fieldScroll.beginDrag(mouseY, fieldScrollbarLayout())) rebuild()
             return true
         }
-        if (page == Page.ROOM && button == 0 && isOverPlayingInfoScrollbar(mouseX, mouseY)) {
-            playingInfoScroll.beginDrag(mouseY, playingInfoScrollbarLayout())
-            return true
+        if (page == Page.ROOM && button == 0) {
+            val row = playingInfoScrollbarRowAt(mouseX, mouseY)
+            if (row != null) {
+                playingInfoDragRow = row
+                playingInfoScroll.beginDrag(mouseY, playingInfoScrollbarLayout(row))
+                return true
+            }
+            val waitingGrid = memberGridForWaitingRoom()
+            if (waitingGrid != null && isOverMemberGridScrollbar(mouseX, mouseY, waitingGrid.rows)) {
+                if (memberScroll.beginDrag(mouseY, memberGridScrollbarLayout(waitingGrid.rows))) rebuild()
+                return true
+            }
         }
         return super.mouseClicked(mouseX, mouseY, button)
     }
@@ -619,7 +686,12 @@ class RoomScreen(
             return true
         }
         if (playingInfoScroll.dragging && button == 0) {
-            playingInfoScroll.dragTo(mouseY, playingInfoScrollbarLayout())
+            playingInfoScroll.dragTo(mouseY, playingInfoScrollbarLayout(playingInfoDragRow))
+            return true
+        }
+        if (memberScroll.dragging && button == 0) {
+            val rows = memberGridForWaitingRoom()?.rows ?: 0
+            if (memberScroll.dragTo(mouseY, memberGridScrollbarLayout(rows))) rebuild()
             return true
         }
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
@@ -628,6 +700,7 @@ class RoomScreen(
     override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
         fieldScroll.endDrag()
         playingInfoScroll.endDrag()
+        memberScroll.endDrag()
         return super.mouseReleased(mouseX, mouseY, button)
     }
 
@@ -739,29 +812,30 @@ class RoomScreen(
         val sortedPlayers = players.sortedBy { WIND_ORDER.getValue(it.seatWind) }
         val dealerPlayerId = resolvePlayerInfoEntity()?.dealerPlayerId ?: stateStore.gameSnapshot?.dealerPlayerId
         val visibleRows = visiblePlayingInfoRows()
-        val maximumScroll = (sortedPlayers.maxOfOrNull { playingInfoRows(it, dealerPlayerId).size } ?: 0)
-            .minus(visibleRows).coerceAtLeast(0)
+        val maximumScroll = maximumPlayingInfoScroll()
         playingInfoScroll.clamp(maximumScroll)
-        val cardWidth = memberCardWidth(sortedPlayers.size)
-        val total = sortedPlayers.size * cardWidth
+        val grid = playingGrid()
+        val gridWidth = grid.columns * grid.cardWidth
         sortedPlayers.forEachIndexed { index, player ->
-            val x = width / 2 - total / 2 + index * cardWidth
-            val y = MEMBER_CARD_TOP
-            context.fill(x + 2, y, x + cardWidth - 4, playingCardBottom(), MEMBER_CARD_BACKGROUND)
-            renderMemberAppearance(context, player.playerId, player.isAi, x, y, cardWidth, mouseX, mouseY)
+            val gridRow = index / grid.columns
+            val x = width / 2 - gridWidth / 2 + (index % grid.columns) * grid.cardWidth
+            val y = playingRowTop(gridRow)
+            context.fill(x + 2, y, x + grid.cardWidth - 4, playingCardBottom(gridRow), MEMBER_CARD_BACKGROUND)
+            renderMemberAppearance(context, player.playerId, player.isAi, x, y, grid.cardWidth, mouseX, mouseY)
             context.drawCenteredTextWithShadow(
                 textRenderer,
-                fitText(Text.literal(player.playerName), cardWidth - 12),
-                x + cardWidth / 2,
+                fitText(Text.literal(player.playerName), grid.cardWidth - 12),
+                x + grid.cardWidth / 2,
                 y + MEMBER_NAME_OFFSET,
                 0xFFFFFF,
             )
-            playingInfoRows(player, dealerPlayerId).drop(playingInfoScroll.index).take(visibleRows).forEachIndexed { rowIndex, row ->
+            val infoTop = playingInfoTop(gridRow)
+            playingInfoRows(player, dealerPlayerId).drop(playingInfoScroll.index).take(visibleRows).forEachIndexed { infoRowIndex, row ->
                 context.drawCenteredTextWithShadow(
                     textRenderer,
-                    fitText(row.first, cardWidth - 12),
-                    x + cardWidth / 2,
-                    PLAYING_INFO_TOP + rowIndex * PLAYING_INFO_ROW_HEIGHT,
+                    fitText(row.first, grid.cardWidth - 12),
+                    x + grid.cardWidth / 2,
+                    infoTop + infoRowIndex * PLAYING_INFO_ROW_HEIGHT,
                     row.second,
                 )
             }
@@ -820,18 +894,22 @@ class RoomScreen(
         mouseX: Int,
         mouseY: Int,
     ) {
-        val cardWidth = memberCardWidth(playerIds.size)
-        val total = playerIds.size * cardWidth
+        val grid = memberGridLayout(playerIds.size)
+        memberScroll.clamp(grid.rows - memberGridVisibleRows())
+        val visibleRows = memberScroll.index until memberScroll.index + memberGridVisibleRows()
+        val gridWidth = grid.columns * grid.cardWidth
         playerIds.forEachIndexed { index, playerId ->
-            val x = width / 2 - total / 2 + index * cardWidth
-            val y = MEMBER_CARD_TOP
-            context.fill(x + 2, y, x + cardWidth - 4, y + 146, 0xA0202838.toInt())
+            val row = index / grid.columns
+            if (row !in visibleRows) return@forEachIndexed
+            val x = width / 2 - gridWidth / 2 + (index % grid.columns) * grid.cardWidth
+            val y = MEMBER_CARD_TOP + (row - memberScroll.index) * MEMBER_ROW_HEIGHT
+            context.fill(x + 2, y, x + grid.cardWidth - 4, y + 146, 0xA0202838.toInt())
             val ai = playerId in aiIds
-            renderMemberAppearance(context, playerId, ai, x, y, cardWidth, mouseX, mouseY)
+            renderMemberAppearance(context, playerId, ai, x, y, grid.cardWidth, mouseX, mouseY)
             context.drawCenteredTextWithShadow(
                 textRenderer,
-                fitText(memberName(playerId, ai, playerIds.filter(aiIds::contains)), cardWidth - 12),
-                x + cardWidth / 2,
+                fitText(memberName(playerId, ai, playerIds.filter(aiIds::contains)), grid.cardWidth - 12),
+                x + grid.cardWidth / 2,
                 y + MEMBER_NAME_OFFSET,
                 0xFFFFFF,
             )
@@ -846,8 +924,13 @@ class RoomScreen(
             }
             status?.let {
                 val highlighted = memberStatus is MemberStatus.Waiting && (playerId in memberStatus.readyPlayerIds || ai)
-                context.drawCenteredTextWithShadow(textRenderer, it, x + cardWidth / 2, y + 111, if (highlighted) 0x88FF88 else 0xAAAAAA)
+                context.drawCenteredTextWithShadow(textRenderer, it, x + grid.cardWidth / 2, y + 111, if (highlighted) 0x88FF88 else 0xAAAAAA)
             }
+        }
+        if (grid.rows > memberGridVisibleRows()) {
+            val layout = memberGridScrollbarLayout(grid.rows)
+            context.fill(width - 14, layout.trackTop, width - 9, layout.trackBottom, 0x80505050.toInt())
+            context.fill(width - 14, layout.thumbTop, width - 9, layout.thumbTop + layout.thumbHeight, 0xFFD0D0D0.toInt())
         }
     }
 
@@ -903,9 +986,26 @@ class RoomScreen(
         },
     )
 
-    private fun playingCardBottom(): Int = (height - 38).coerceAtLeast(PLAYING_INFO_TOP + PLAYING_INFO_ROW_HEIGHT + 4)
+    /** 對局中面板目前的欄數／列數；固定鎖最多兩欄，窄視窗時東南西北改成 2×2 排列。 */
+    private fun playingGrid(): MemberGridLayout = memberGridLayout(resolvePlayingPlayerInfo().size, maxColumns = 2)
 
-    private fun visiblePlayingInfoRows(): Int = ((playingCardBottom() - PLAYING_INFO_TOP - 4) / PLAYING_INFO_ROW_HEIGHT).coerceAtLeast(1)
+    /** 每一列（grid row）可用的垂直高度；只有一列時維持原本佔滿到畫面底部的行為，多列時平分剩餘高度。 */
+    private fun playingRowHeight(): Int {
+        val rows = playingGrid().rows
+        val available = (height - 38) - MEMBER_CARD_TOP
+        return if (rows <= 1) available else available / rows
+    }
+
+    private fun playingRowTop(row: Int): Int = MEMBER_CARD_TOP + row * playingRowHeight()
+
+    /** 該列資訊清單的起始 Y；與卡片頂端的固定間距和單列版面時相同。 */
+    private fun playingInfoTop(row: Int): Int = playingRowTop(row) + (PLAYING_INFO_TOP - MEMBER_CARD_TOP)
+
+    private fun playingCardBottom(row: Int): Int = (playingRowTop(row) + playingRowHeight())
+        .coerceAtLeast(playingInfoTop(row) + PLAYING_INFO_ROW_HEIGHT + 4)
+
+    /** 兩列共用同一個捲動位置，可見行數以單一列的可用高度為準。 */
+    private fun visiblePlayingInfoRows(): Int = ((playingRowHeight() - (PLAYING_INFO_TOP - MEMBER_CARD_TOP) - 4) / PLAYING_INFO_ROW_HEIGHT).coerceAtLeast(1)
 
     /** 目前進行中對局資訊清單的完整行數，供 scrollbar 幾何與捲動上限共用。 */
     private fun totalPlayingInfoRows(): Int {
@@ -913,30 +1013,34 @@ class RoomScreen(
         return resolvePlayingPlayerInfo().maxOfOrNull { playingInfoRows(it, dealerPlayerId).size } ?: 0
     }
 
-    private fun maximumPlayingInfoScroll(): Int = playingInfoScrollbarLayout().maximumScroll
+    private fun maximumPlayingInfoScroll(): Int = (totalPlayingInfoRows() - visiblePlayingInfoRows()).coerceAtLeast(0)
 
-    /** 建立進行中對局資訊 scrollbar 的共用幾何，供繪製與拖曳换算使用同一份座標系。 */
-    private fun playingInfoScrollbarLayout(): ScrollbarLayout = ScrollbarLayout(
-        trackTop = PLAYING_INFO_TOP,
-        trackBottom = playingCardBottom(),
+    /** 建立指定列進行中對局資訊 scrollbar 的共用幾何，供繪製與拖曳换算使用同一份座標系。 */
+    private fun playingInfoScrollbarLayout(row: Int): ScrollbarLayout = ScrollbarLayout(
+        trackTop = playingInfoTop(row),
+        trackBottom = playingCardBottom(row),
         itemCount = totalPlayingInfoRows(),
         visibleItemCount = visiblePlayingInfoRows(),
         scrollIndex = playingInfoScroll.index,
         minimumThumbHeight = 12,
     )
 
+    /** 每一列各自畫一段 scrollbar，共用同一個捲動位置。 */
     private fun renderPlayingInfoScrollbar(context: DrawContext, maximumScroll: Int) {
         if (maximumScroll == 0) return
-        val layout = playingInfoScrollbarLayout()
-        context.fill(width - 14, layout.trackTop, width - 9, layout.trackBottom, 0x80505050.toInt())
-        context.fill(width - 14, layout.thumbTop, width - 9, layout.thumbTop + layout.thumbHeight, 0xFFD0D0D0.toInt())
+        (0 until playingGrid().rows).forEach { row ->
+            val layout = playingInfoScrollbarLayout(row)
+            context.fill(width - 14, layout.trackTop, width - 9, layout.trackBottom, 0x80505050.toInt())
+            context.fill(width - 14, layout.thumbTop, width - 9, layout.thumbTop + layout.thumbHeight, 0xFFD0D0D0.toInt())
+        }
     }
 
-    private fun isOverPlayingInfoScrollbar(mouseX: Double, mouseY: Double): Boolean = maximumPlayingInfoScroll() > 0 &&
-        mouseX >= width - 18 &&
-        mouseX <= width - 5 &&
-        mouseY >= PLAYING_INFO_TOP &&
-        mouseY <= playingCardBottom()
+    /** 游標所在的那一列 scrollbar 索引；不在任何一列的 scrollbar 範圍內時為 null。 */
+    private fun playingInfoScrollbarRowAt(mouseX: Double, mouseY: Double): Int? {
+        if (maximumPlayingInfoScroll() <= 0) return null
+        if (mouseX < width - 18 || mouseX > width - 5) return null
+        return (0 until playingGrid().rows).firstOrNull { row -> mouseY >= playingInfoTop(row) && mouseY <= playingCardBottom(row) }
+    }
 
     private fun renderPortrait(context: DrawContext, playerId: Uuid, isAi: Boolean, x: Int, y: Int, cardWidth: Int) {
         val portraitSize = (cardWidth - 24).coerceIn(28, 38)
@@ -957,30 +1061,46 @@ class RoomScreen(
         val config = draftConfig ?: currentConfig() ?: return null
         val resolved = configResolver.resolve(config)
         val definition = resolved.definition
+        val fieldsTop = settingsFieldsTop()
         if (definition == null) {
             context.drawCenteredTextWithShadow(
                 textRenderer,
                 Text.translatable(MinecraftRoomScreenKeys.READ_ONLY),
                 width / 2,
-                SETTINGS_FIELDS_TOP,
+                fieldsTop,
                 0xAAAAAA,
             )
             return null
         }
         var hoveredLabel: Text? = null
+        val compact = isCompactSettings()
+        val rowHeight = fieldRowHeight()
         definition.fields.filter { it.categoryId == selectedCategoryId }
             .drop(fieldScroll.index)
             .take(maximumVisibleFields())
             .forEachIndexed { index, field ->
                 val label = Text.translatable(field.nameTranslationKey)
-                val labelY = SETTINGS_FIELDS_TOP + (20 - VANILLA_VISIBLE_TEXT_HEIGHT) / 2 + index * 28
-                val controlLeft = fieldControlLeft(field)
-                val maximumLabelWidth = (controlLeft - SETTINGS_FIELD_LABEL_X - SETTINGS_FIELD_LABEL_GAP).coerceAtLeast(1)
+                val rowTop = fieldsTop + index * rowHeight
+                val labelX: Int
+                val labelY: Int
+                val hoverRight: Int
+                val maximumLabelWidth: Int
+                if (compact) {
+                    labelX = COMPACT_CONTENT_MARGIN
+                    labelY = rowTop
+                    hoverRight = width - COMPACT_CONTENT_MARGIN
+                    maximumLabelWidth = (hoverRight - labelX).coerceAtLeast(1)
+                } else {
+                    labelX = SETTINGS_FIELD_LABEL_X
+                    labelY = rowTop + (20 - VANILLA_VISIBLE_TEXT_HEIGHT) / 2
+                    hoverRight = fieldControlLeft(field)
+                    maximumLabelWidth = (hoverRight - labelX - SETTINGS_FIELD_LABEL_GAP).coerceAtLeast(1)
+                }
                 val fittedLabel = fitText(label, maximumLabelWidth)
-                context.drawTextWithShadow(textRenderer, fittedLabel, SETTINGS_FIELD_LABEL_X, labelY, 0xFFFFFF)
+                context.drawTextWithShadow(textRenderer, fittedLabel, labelX, labelY, 0xFFFFFF)
                 if (
                     fittedLabel.string != label.string &&
-                    mouseX in SETTINGS_FIELD_LABEL_X until controlLeft &&
+                    mouseX in labelX until hoverRight &&
                     mouseY in labelY until labelY + textRenderer.fontHeight
                 ) {
                     hoveredLabel = label
@@ -994,11 +1114,12 @@ class RoomScreen(
             else -> null
         }
         status?.let { (message, color) ->
-            val contentWidth = (width - SETTINGS_FIELD_LABEL_X - 20).coerceAtLeast(1)
+            val statusLabelX = if (compact) COMPACT_CONTENT_MARGIN else SETTINGS_FIELD_LABEL_X
+            val contentWidth = (width - statusLabelX - 20).coerceAtLeast(1)
             context.drawCenteredTextWithShadow(
                 textRenderer,
                 fitText(message, contentWidth),
-                SETTINGS_FIELD_LABEL_X + contentWidth / 2,
+                statusLabelX + contentWidth / 2,
                 settingsStatusY(),
                 color,
             )
@@ -1015,14 +1136,83 @@ class RoomScreen(
         return Text.literal(name ?: playerId.toString().take(8))
     }
 
-    private fun memberCardWidth(playerCount: Int): Int = minOf(126, (width - 16) / playerCount.coerceAtLeast(1))
+    /**
+     * 依玩家數與目前寬度計算卡片改用幾欄幾列。換列的判斷門檻是卡片能不能維持在
+     * [MEMBER_CARD_MIN_WIDTH] 以上，不是能不能維持在理想的 [MEMBER_CARD_MAX_WIDTH]——同一列本來就會
+     * 把卡片縮到剛好塞滿寬度，只要還在可讀範圍內就不需要換列。[maxColumns] 讓對局中固定 4 人的面板
+     * 可以鎖定最多兩欄。
+     */
+    private fun memberGridLayout(playerCount: Int, maxColumns: Int = Int.MAX_VALUE): MemberGridLayout {
+        val count = playerCount.coerceAtLeast(1)
+        val availableWidth = width - MEMBER_GRID_MARGIN * 2
+        val fittingColumns = (availableWidth / MEMBER_CARD_MIN_WIDTH).coerceAtLeast(1)
+        val columns = minOf(count, fittingColumns, maxColumns)
+        val cardWidth = minOf(MEMBER_CARD_MAX_WIDTH, availableWidth / columns)
+        val rows = (count + columns - 1) / columns
+        return MemberGridLayout(columns, cardWidth, rows)
+    }
+
+    private data class MemberGridLayout(val columns: Int, val cardWidth: Int, val rows: Int)
+
+    /** 保留底部操作列後，等待室玩家卡片 grid 可用的下界。 */
+    private fun memberGridBottom(): Int = height - MEMBER_GRID_BOTTOM_RESERVED_HEIGHT
+
+    /** 目前視窗高度能完整顯示幾列玩家卡片。 */
+    private fun memberGridVisibleRows(): Int = ((memberGridBottom() - MEMBER_CARD_TOP) / MEMBER_ROW_HEIGHT).coerceAtLeast(1)
+
+    /** 建立等待室玩家卡片 grid scrollbar 的共用幾何，供繪製與拖曳换算使用同一份座標系。 */
+    private fun memberGridScrollbarLayout(rows: Int): ScrollbarLayout = ScrollbarLayout(
+        trackTop = MEMBER_CARD_TOP,
+        trackBottom = memberGridBottom(),
+        itemCount = rows,
+        visibleItemCount = memberGridVisibleRows(),
+        scrollIndex = memberScroll.index,
+        minimumThumbHeight = 12,
+    )
+
+    private fun isOverMemberGridScrollbar(mouseX: Double, mouseY: Double, rows: Int): Boolean = rows > memberGridVisibleRows() &&
+        mouseX >= width - 18 &&
+        mouseX <= width - 5 &&
+        mouseY >= MEMBER_CARD_TOP &&
+        mouseY <= memberGridBottom()
+
+    /** 等待室目前的卡片 grid 版面；不在等待室（沒有房間快照或還沒進入等待階段）時為 null。 */
+    private fun memberGridForWaitingRoom(): MemberGridLayout? {
+        if (stateStore.tableLobby?.phase != TableLobbyPhaseDto.WAITING) return null
+        val room = stateStore.roomSnapshot ?: return null
+        return memberGridLayout(room.playerIds.size)
+    }
 
     /** 保留底部操作列後目前視窗能容納的設定欄位數。 */
     private fun settingsContentBottom(): Int = height - SETTINGS_BOTTOM_RESERVED_HEIGHT
 
     private fun settingsStatusY(): Int = height - SETTINGS_STATUS_BOTTOM_OFFSET
 
-    private fun maximumVisibleFields(): Int = ((settingsContentBottom() - SETTINGS_FIELDS_TOP) / 28).coerceAtLeast(1)
+    private fun maximumVisibleFields(): Int = ((settingsContentBottom() - settingsFieldsTop()) / fieldRowHeight()).coerceAtLeast(1)
+
+    /** 視窗寬度不足以容納側邊欄、label 與控制項並排時，改用堆疊版面。 */
+    private fun isCompactSettings(): Boolean = width < COMPACT_SETTINGS_MIN_WIDTH
+
+    /** 目前規則模組的設定分類數，供 compact 版面計算頂部分類格所需高度。 */
+    private fun currentCategoryCount(): Int = (draftConfig ?: currentConfig())?.let(configResolver::resolve)
+        ?.definition?.categories?.size ?: 0
+
+    /** Compact 版面下規則切換鈕與分類格佔用內容區頂部空間，欄位列必須從其下方開始。 */
+    private fun settingsFieldsTop(): Int = if (isCompactSettings()) {
+        val categoryRows = (currentCategoryCount() + 1) / 2
+        COMPACT_CATEGORY_TOP + categoryRows * COMPACT_CATEGORY_ROW_HEIGHT + COMPACT_FIELDS_GAP
+    } else {
+        SETTINGS_FIELDS_TOP
+    }
+
+    /** Compact 版面 label 與控制項改上下堆疊，單一欄位列需要更高的垂直空間。 */
+    private fun fieldRowHeight(): Int = if (isCompactSettings()) COMPACT_FIELD_ROW_HEIGHT else 28
+
+    /**
+     * 控制項在該欄位列中的實際 Y 座標；compact 版面下 label 畫在 [rowTop]，控制項必須讓出 label 的高度
+     * 才不會疊在一起，非 compact 版面則與 label 同高並排，維持既有版面。
+     */
+    private fun fieldControlY(rowTop: Int): Int = if (isCompactSettings()) rowTop + COMPACT_CONTROL_Y_OFFSET else rowTop
 
     /** 依 editor 實際控制元件的左界計算本地化標籤可用寬度。 */
     private fun fieldControlLeft(field: GameConfigFieldDefinition): Int = when (field.editor) {
@@ -1040,7 +1230,7 @@ class RoomScreen(
 
     /** 建立設定欄位 scrollbar 的共用幾何，供繪製與拖曳换算使用同一份座標系。 */
     private fun fieldScrollbarLayout(fieldCount: Int = currentFieldCount()): ScrollbarLayout = ScrollbarLayout(
-        trackTop = SETTINGS_FIELDS_TOP,
+        trackTop = settingsFieldsTop(),
         trackBottom = settingsContentBottom(),
         itemCount = fieldCount,
         visibleItemCount = maximumVisibleFields(),
@@ -1058,11 +1248,12 @@ class RoomScreen(
 
     private fun isOverScrollbar(mouseX: Double, mouseY: Double): Boolean = mouseX >= width - 18 &&
         mouseX <= width - 5 &&
-        mouseY >= SETTINGS_FIELDS_TOP &&
+        mouseY >= settingsFieldsTop() &&
         mouseY <= settingsContentBottom()
 
     /** 依實際像素寬度截斷成員名稱並補省略號。 */
     private fun fitText(text: Text, maximumWidth: Int): Text {
+        if (maximumWidth <= 0) return Text.empty()
         if (textRenderer.getWidth(text) <= maximumWidth) return text
         val raw = text.string
         val suffix = "..."
@@ -1179,9 +1370,47 @@ class RoomScreen(
         const val SETTINGS_BOTTOM_RESERVED_HEIGHT = 56
         const val SETTINGS_STATUS_BOTTOM_OFFSET = 47
         const val VANILLA_VISIBLE_TEXT_HEIGHT = 8
+
+        /** 視窗寬度低於此值時，設定頁側邊欄／label／控制項改為窄視窗堆疊版面。 */
+        const val COMPACT_SETTINGS_MIN_WIDTH = 400
+        const val COMPACT_CONTENT_MARGIN = 18
+        const val COMPACT_CATEGORY_TOP = 78
+        const val COMPACT_CATEGORY_ROW_HEIGHT = 24
+        const val COMPACT_FIELDS_GAP = 8
+        const val COMPACT_FIELD_ROW_HEIGHT = 42
+
+        /** Label 與控制項之間的垂直間距；控制項的 Y 座標要在 label 下方讓出這麼多空間。 */
+        const val COMPACT_CONTROL_Y_OFFSET = 14
+        const val COMPACT_INTEGER_BUTTON_WIDTH = 24
+        const val COMPACT_INTEGER_BUTTON_GAP = 4
+
+        /** 右側需保留給 scrollbar 的寬度，避免 compact 控制項覆蓋到它。 */
+        const val COMPACT_SCROLLBAR_RESERVE = 20
+        const val MIN_COMPACT_CONTROL_WIDTH = 80
         const val MEMBER_CARD_TOP = 58
         const val MEMBER_NAME_OFFSET = 96
         const val MEMBER_CARD_BACKGROUND = 0xA0202838.toInt()
+
+        /** 卡片 grid 左右各自的邊距。 */
+        const val MEMBER_GRID_MARGIN = 8
+
+        /** 卡片渲染上限寬度，同一列有多餘空間時最多縮放到這個寬度。 */
+        const val MEMBER_CARD_MAX_WIDTH = 126
+
+        /** 卡片可讀性下限；同一列縮到低於這個寬度才需要換列，而不是一達到最大寬度就換列。 */
+        const val MEMBER_CARD_MIN_WIDTH = 70
+
+        /** 等待室卡片換列時，每列（grid row）佔用的垂直高度。 */
+        const val MEMBER_ROW_HEIGHT = 156
+
+        /** 等待室卡片 grid 保留給底部操作列的高度；grid 超出這個範圍時改用捲動而不是疊上去。 */
+        const val MEMBER_GRID_BOTTOM_RESERVED_HEIGHT = 40
+
+        /** AI 策略按鈕相對卡片頂端（[MEMBER_CARD_TOP]）的垂直偏移。 */
+        const val AI_STRATEGY_BUTTON_OFFSET_Y = 126
+
+        /** 踢出按鈕相對卡片頂端（[MEMBER_CARD_TOP]）的垂直偏移。 */
+        const val KICK_BUTTON_OFFSET_Y = 4
         const val PLAYING_INFO_TOP = 170
         const val PLAYING_INFO_ROW_HEIGHT = 12
         val WIND_ORDER = mapOf(Wind.EAST to 0, Wind.SOUTH to 1, Wind.WEST to 2, Wind.NORTH to 3)
