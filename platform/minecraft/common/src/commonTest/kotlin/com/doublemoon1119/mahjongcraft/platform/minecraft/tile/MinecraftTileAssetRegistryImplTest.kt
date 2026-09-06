@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -31,6 +32,17 @@ class MinecraftTileAssetRegistryImplTest {
         assertFailsWith<IllegalArgumentException> { registry.register(typeId, "another_key") }
     }
 
+    /** 驗證不同穩定 ID 不得共用同一個 asset key，避免正規化與 Tab 補全出現無法區分的撞名。 */
+    @Test
+    fun `duplicate asset key across different type ids is rejected`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        registry.register(TileTypeId.parse("example:animal/cat"), "shared_key")
+
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(TileTypeId.parse("example:animal/dog"), "shared_key")
+        }
+    }
+
     /** 驗證凍結後保持可查詢，但禁止新增映射。 */
     @Test
     fun `frozen registry remains readable and rejects registration`() {
@@ -53,5 +65,15 @@ class MinecraftTileAssetRegistryImplTest {
         val registry = MinecraftTileAssetRegistryImpl()
 
         assertNull(registry.find(TileTypeId.parse("example:unknown")))
+    }
+
+    /** 驗證 [MinecraftTileAssetRegistry.isRegisteredAssetKey] 只認得實際註冊過的 asset key 值。 */
+    @Test
+    fun `isRegisteredAssetKey only recognizes values that were actually registered`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        registry.register(TileTypeId.parse("example:animal/cat"), "animal_cat")
+
+        assertTrue(registry.isRegisteredAssetKey("animal_cat"))
+        assertFalse(registry.isRegisteredAssetKey("animal_dog"))
     }
 }

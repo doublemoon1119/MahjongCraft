@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVect
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.nextTileAssetKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAssetKey
@@ -76,9 +77,9 @@ class MahjongTileEntity(
      * 面，真正牌面完全交給 client 端依 `TableStateSnapshot` 的可見性規則另外呈現。
      */
     var tileAssetKey: String
-        get() = dataTracker[TILE_ASSET_KEY].normalizedTileAssetKey()
+        get() = dataTracker[TILE_ASSET_KEY].normalizedTileAssetKey(GlobalContext.get().get<MinecraftTileAssetRegistry>())
         set(value) {
-            val normalized = if (managedByGame) UNKNOWN_TILE_ASSET_KEY else value.normalizedTileAssetKey()
+            val normalized = if (managedByGame) UNKNOWN_TILE_ASSET_KEY else value.normalizedTileAssetKey(GlobalContext.get().get<MinecraftTileAssetRegistry>())
             dataTracker.set(TILE_ASSET_KEY, normalized)
         }
 
@@ -156,7 +157,7 @@ class MahjongTileEntity(
     fun revealForPresentation(assetKey: String, endGameTime: Long) {
         check(!world.isClient) { "Presentation reveal lease is server-only" }
         if (endGameTime < presentationAssetEndGameTime) return
-        dataTracker.set(PRESENTATION_ASSET_KEY, assetKey.normalizedTileAssetKey())
+        dataTracker.set(PRESENTATION_ASSET_KEY, assetKey.normalizedTileAssetKey(GlobalContext.get().get<MinecraftTileAssetRegistry>()))
         dataTracker.set(PRESENTATION_ASSET_END_GAME_TIME, endGameTime)
     }
 

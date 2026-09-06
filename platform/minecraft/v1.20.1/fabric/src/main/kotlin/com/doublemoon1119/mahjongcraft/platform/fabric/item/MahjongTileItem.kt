@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.nextTileAssetKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAssetKey
 import net.minecraft.entity.player.PlayerEntity
@@ -15,6 +16,7 @@ import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import net.minecraft.util.TypedActionResult
 import net.minecraft.world.World
+import org.koin.core.context.GlobalContext
 
 /**
  * 麻將牌 item：單一 item 類型代表所有牌面，實際牌面由 NBT 的 [NBT_KEY_TILE] 字串決定
@@ -63,12 +65,12 @@ class MahjongTileItem(settings: Settings) : Item(settings) {
         /** 讀取並正規化 item 保存的牌面；缺失值使用配方預設 `m1`，非法值回退為 `unknown`。 */
         fun readTileAssetKey(stack: ItemStack): String {
             val storedKey = stack.nbt?.takeIf { it.contains(NBT_KEY_TILE) }?.getString(NBT_KEY_TILE)
-            return storedKey?.normalizedTileAssetKey() ?: ALL_TILE_ASSET_KEYS.first()
+            return storedKey?.normalizedTileAssetKey(GlobalContext.get().get<MinecraftTileAssetRegistry>()) ?: ALL_TILE_ASSET_KEYS.first()
         }
 
         /** 寫入經正規化的牌面 asset key。 */
         fun writeTileAssetKey(stack: ItemStack, assetKey: String) {
-            stack.orCreateNbt.putString(NBT_KEY_TILE, assetKey.normalizedTileAssetKey())
+            stack.orCreateNbt.putString(NBT_KEY_TILE, assetKey.normalizedTileAssetKey(GlobalContext.get().get<MinecraftTileAssetRegistry>()))
         }
 
         /** 將 item 循環至下一個牌面；無自訂資料的配方產物以目前顯示的 `m1` 為起點。 */

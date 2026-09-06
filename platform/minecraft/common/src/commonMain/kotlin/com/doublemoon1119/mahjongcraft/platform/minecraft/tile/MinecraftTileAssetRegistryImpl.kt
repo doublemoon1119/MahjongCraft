@@ -18,6 +18,9 @@ class MinecraftTileAssetRegistryImpl : MinecraftTileAssetRegistry {
     override fun register(typeId: TileTypeId, assetKey: String) {
         check(!isFrozen) { "Minecraft tile asset registry is frozen" }
         require(typeId !in assetKeysById) { "Tile asset key already registered for ID: $typeId" }
+        require(assetKey !in assetKeysById.values) {
+            "Asset key \"$assetKey\" is already registered to a different tile type"
+        }
         assetKeysById[typeId] = assetKey
     }
 
@@ -26,4 +29,8 @@ class MinecraftTileAssetRegistryImpl : MinecraftTileAssetRegistry {
     }
 
     override fun find(typeId: TileTypeId): String? = assetKeysById[typeId]
+
+    override fun isRegisteredAssetKey(assetKey: String): Boolean = assetKeysById.containsValue(assetKey)
+
+    override val registeredAssetKeys: Set<String> get() = assetKeysById.values.toSet()
 }

@@ -276,6 +276,10 @@ private class RecordingMinecraftTileAssetRegistry(
     override fun freeze() = delegate.freeze()
 
     override fun find(typeId: TileTypeId): String? = delegate.find(typeId)
+
+    override fun isRegisteredAssetKey(assetKey: String): Boolean = delegate.isRegisteredAssetKey(assetKey)
+
+    override val registeredAssetKeys: Set<String> get() = delegate.registeredAssetKeys
 }
 
 /** 轉發至 [delegate]，並額外把第三方註冊的策略 key 記錄進 [recorded]，供診斷用途。 */

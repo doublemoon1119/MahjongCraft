@@ -73,9 +73,25 @@ class TileAssetKeysTest {
     /** 驗證合法 key 保持不變，缺失及非法 key 回退至 unknown。 */
     @Test
     fun `normalization preserves valid keys and rejects unsupported values`() {
-        assertEquals("m5_red", "m5_red".normalizedTileAssetKey())
-        assertEquals("flower_spring", "flower_spring".normalizedTileAssetKey())
-        assertEquals(UNKNOWN_TILE_ASSET_KEY, null.normalizedTileAssetKey())
+        assertEquals("m5_red", "m5_red".normalizedTileAssetKey(registry))
+        assertEquals("flower_spring", "flower_spring".normalizedTileAssetKey(registry))
+        assertEquals(UNKNOWN_TILE_ASSET_KEY, null.normalizedTileAssetKey(registry))
+        assertEquals(UNKNOWN_TILE_ASSET_KEY, "example:missing".normalizedTileAssetKey(registry))
+    }
+
+    /**
+     * 驗證已在 registry 註冊、但不屬於固定內建清單的第三方 asset key 正規化時保持不變，而不是被
+     * [ALL_TILE_ASSET_KEYS] 這份只收錄內建牌種的清單誤判成非法值。
+     */
+    @Test
+    fun `normalization preserves third-party asset keys registered at runtime`() {
+        val thirdPartyId = TileTypeId.parse("example:animal/cat")
+        val thirdPartyRegistry = MinecraftTileAssetRegistryImpl().apply {
+            registerBuiltInTileAssets()
+            register(thirdPartyId, "animal_cat")
+        }
+
+        assertEquals("animal_cat", "animal_cat".normalizedTileAssetKey(thirdPartyRegistry))
     }
 
     /** 驗證循環涵蓋完整清單，並讓缺失或非法 key 從第一張重新開始。 */

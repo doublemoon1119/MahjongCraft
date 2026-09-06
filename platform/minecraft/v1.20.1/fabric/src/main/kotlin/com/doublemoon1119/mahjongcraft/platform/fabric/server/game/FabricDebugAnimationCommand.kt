@@ -91,6 +91,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAssetKey
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -168,6 +170,7 @@ class FabricDebugAnimationCommand(
     private val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val serverConfigManager: FabricServerConfigManager,
+    private val tileAssetRegistry: MinecraftTileAssetRegistry,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) {
@@ -777,6 +780,7 @@ class FabricDebugAnimationCommand(
         .executes { ctx -> onExecute(ctx.source, null) }
         .then(
             argument(TILE_ARGUMENT, StringArgumentType.word())
+                .suggests(::suggestTileAssetKeys)
                 .executes { ctx -> onExecute(ctx.source, StringArgumentType.getString(ctx, TILE_ARGUMENT)) },
         )
 
@@ -800,6 +804,18 @@ class FabricDebugAnimationCommand(
                     .executes { ctx -> onExecute(ctx.source, IdentifierArgumentType.getIdentifier(ctx, CUE_ARGUMENT).toString()) },
             )
         }
+    }
+
+    /** 補全 `tile` 引數：內建 asset key（排除佔位用的 [UNKNOWN_TILE_ASSET_KEY]）與已註冊的第三方 asset key。 */
+    private fun suggestTileAssetKeys(
+        @Suppress("UNUSED_PARAMETER") context: CommandContext<ServerCommandSource>,
+        builder: SuggestionsBuilder,
+    ): CompletableFuture<Suggestions> {
+        (ALL_TILE_ASSET_KEYS.asSequence().filterNot { it == UNKNOWN_TILE_ASSET_KEY } + tileAssetRegistry.registeredAssetKeys)
+            .distinct()
+            .filter { it.startsWith(builder.remaining, ignoreCase = true) }
+            .forEach(builder::suggest)
+        return builder.buildFuture()
     }
 
     /** 列出單一 showcase cue 的 Tab 補全候選。 */
@@ -1671,7 +1687,7 @@ class FabricDebugAnimationCommand(
     }
 
     /** 省略 `tile` 引數時隨機抽一個內建牌面（排除佔位用的 `unknown`），否則正規化呼叫者輸入的字串。 */
-    private fun resolveAssetKey(tileArg: String?): String = tileArg?.normalizedTileAssetKey()
+    private fun resolveAssetKey(tileArg: String?): String = tileArg?.normalizedTileAssetKey(tileAssetRegistry)
         ?: ALL_TILE_ASSET_KEYS.dropLast(1).random()
 
     /** 以玩家腳下方塊為基準，將虛擬 controller 沿玩家視線前推，讓座位 0 的正式布局落在玩家面前。 */

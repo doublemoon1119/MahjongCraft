@@ -71,8 +71,15 @@ val ALL_TILE_ASSET_KEYS: List<String> = buildList {
     add(UNKNOWN_TILE_ASSET_KEY)
 }
 
-/** 將外部讀取的素材 key 正規化；不在支援清單中的值一律回退至 [UNKNOWN_TILE_ASSET_KEY]。 */
-fun String?.normalizedTileAssetKey(): String = this?.takeIf(ALL_TILE_ASSET_KEYS::contains)
+/**
+ * 將外部讀取的素材 key 正規化；內建 key（[ALL_TILE_ASSET_KEYS]）或 [registry] 已註冊的第三方 key
+ * 保持不變，其餘一律回退至 [UNKNOWN_TILE_ASSET_KEY]。
+ *
+ * [ALL_TILE_ASSET_KEYS] 只收錄內建牌種，不能單獨拿來驗證合法性，否則已註冊的第三方 asset key
+ * 會被這裡誤判成非法值、正規化成 unknown。
+ */
+fun String?.normalizedTileAssetKey(registry: MinecraftTileAssetRegistry): String = this
+    ?.takeIf { it in ALL_TILE_ASSET_KEYS || registry.isRegisteredAssetKey(it) }
     ?: UNKNOWN_TILE_ASSET_KEY
 
 /**

@@ -36,7 +36,7 @@ interface MinecraftMahjongExtension {
     val id: String
 
     /**
-     * 登記第三方牌種對應的 Minecraft asset key。
+     * 登記第三方牌種對應的 Minecraft asset key；asset key 命名建議見 [MinecraftTileAssetRegistry.register]。
      *
      * 預設不註冊任何映射，使只提供規則層整合的 extension 不必加入空實作。
      */
