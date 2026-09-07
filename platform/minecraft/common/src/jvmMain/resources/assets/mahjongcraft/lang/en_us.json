@@ -249,7 +249,7 @@
   "mahjongcraft.message.ready_state_not_ready": "Not ready",
   "mahjongcraft.message.ready_state_ready": "Ready",
   "mahjongcraft.message.ready_toggle_prefix": "Ready state toggled: ",
-  "mahjongcraft.message.round_info_riichi_stick_pot": "Riichi Sticks: %d",
+  "mahjongcraft.message.round_info_stick_pot": "Stick Pot: %d",
   "mahjongcraft.message.round_info_title": "%s %d, %d Repeat Counter",
   "mahjongcraft.message.round_info_wall_remaining": "Wall Remaining: %d",
   "mahjongcraft.message.round_result_broadcast": "Round ended: %s",

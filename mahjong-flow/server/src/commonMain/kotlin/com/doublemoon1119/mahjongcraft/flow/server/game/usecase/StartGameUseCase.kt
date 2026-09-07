@@ -136,9 +136,9 @@ class StartGameUseCase(
         // 呼叫本身仍需要，確保積棒 entity 從上一局殘留（理論上不會發生，但保持呼叫語意一致）清乾淨。
         presentationPublisher.publishScoringSticksUpdated(roomId, dealerSeatIndex, tableState.comboCount)
         // 開局第一局，不可能有任何延續的供託，全部固定為空／0。
-        presentationPublisher.publishRiichiSticksUpdated(
+        presentationPublisher.publishStickPotUpdated(
             roomId,
-            riichiSeatIndices = emptySet(),
+            declaredSeatIndices = emptySet(),
             dealerSeatIndex = dealerSeatIndex,
             comboStickCount = 0,
             pooledStickCount = 0,

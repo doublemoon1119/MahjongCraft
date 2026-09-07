@@ -68,6 +68,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -116,6 +117,7 @@ class MahjongCraftMod : ModInitializer {
             gameConfigPresentationRegistry = koin.get<GameConfigPresentationRegistry>(),
             roomMemberAppearanceSourceRegistry = koin.get<RoomMemberAppearanceSourceRegistry>(),
             gameActionSoundPresentationRegistry = koin.get<GameActionSoundPresentationRegistry>(),
+            roundInfoLineDisplayRegistry = koin.get<RoundInfoLineDisplayRegistry>(),
             gameActionAiRegistry = koin.get<ExtensionGameActionAiRegistry>(),
             gameCommandRegistry = koin.get<ExtensionGameCommandExecutorRegistry>(),
             postReactionRoundOutcomeResolverRegistry = koin.get<PostReactionRoundOutcomeResolverRegistry>(),

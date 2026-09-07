@@ -106,8 +106,8 @@ class FabricMahjongScoringStickPresenter(
 
     /**
      * 只查詢桌子結構附近並以同步 UUID＋面額精確篩選，避免掃描整個 dimension——用面額額外過濾是因為
-     * 積棒與立直棒共用同一個 entity 類型與同一個 [MahjongScoringStickEntity.managedTableId]，這裡的清除邏輯不能誤刪
-     * [FabricMahjongRiichiStickPresenter] 管理的立直棒（恆為 `P1000`，積棒恆為 `P100`）。
+     * 積棒與供託棒共用同一個 entity 類型與同一個 [MahjongScoringStickEntity.managedTableId]，這裡的清除邏輯不能誤刪
+     * [FabricMahjongStickPotPresenter] 管理的供託棒（恆為 `P1000`，積棒恆為 `P100`）。
      */
     private fun findManagedSticks(
         world: ServerWorld,

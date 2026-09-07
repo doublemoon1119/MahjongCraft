@@ -49,7 +49,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     private val scoringSticks = mutableMapOf<Uuid, ScoringStickContext>()
 
     /** 依對局 Uuid 紀錄最後一次收到的立直棒呈現資料。 */
-    private val riichiSticks = mutableMapOf<Uuid, RiichiStickContext>()
+    private val stickPots = mutableMapOf<Uuid, StickPotContext>()
 
     /** 依對局 Uuid 紀錄最後一次收到的桌面局況顯示內容。 */
     private val roundInfos = mutableMapOf<Uuid, List<RoundInfoLine>>()
@@ -111,14 +111,14 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         scoringSticks[gameId] = ScoringStickContext(dealerSeatIndex, stickCount)
     }
 
-    override fun publishRiichiSticksUpdated(
+    override fun publishStickPotUpdated(
         gameId: Uuid,
-        riichiSeatIndices: Set<Int>,
+        declaredSeatIndices: Set<Int>,
         dealerSeatIndex: Int,
         comboStickCount: Int,
         pooledStickCount: Int,
     ) {
-        riichiSticks[gameId] = RiichiStickContext(riichiSeatIndices, dealerSeatIndex, comboStickCount, pooledStickCount)
+        stickPots[gameId] = StickPotContext(declaredSeatIndices, dealerSeatIndex, comboStickCount, pooledStickCount)
     }
 
     override fun publishRoundInfoUpdated(gameId: Uuid, lines: List<RoundInfoLine>) {
@@ -210,8 +210,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 取得指定對局最後一次收到的積棒呈現資料；若無紀錄則回傳 null。 */
     fun getPublishedScoringSticks(gameId: Uuid): ScoringStickContext? = scoringSticks[gameId]
 
-    /** 取得指定對局最後一次收到的立直棒呈現資料；若無紀錄則回傳 null。 */
-    fun getPublishedRiichiSticks(gameId: Uuid): RiichiStickContext? = riichiSticks[gameId]
+    /** 取得指定對局最後一次收到的供託棒呈現資料；若無紀錄則回傳 null。 */
+    fun getPublishedStickPot(gameId: Uuid): StickPotContext? = stickPots[gameId]
 
     /** 取得指定對局最後一次收到的桌面局況顯示內容；若無紀錄則回傳 null。 */
     fun getPublishedRoundInfo(gameId: Uuid): List<RoundInfoLine>? = roundInfos[gameId]
@@ -277,9 +277,9 @@ data class ScoringStickContext(
     val stickCount: Int,
 )
 
-/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishRiichiSticksUpdated] 資料。 */
-data class RiichiStickContext(
-    val riichiSeatIndices: Set<Int>,
+/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishStickPotUpdated] 資料。 */
+data class StickPotContext(
+    val declaredSeatIndices: Set<Int>,
     val dealerSeatIndex: Int,
     val comboStickCount: Int,
     val pooledStickCount: Int,

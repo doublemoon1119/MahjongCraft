@@ -39,6 +39,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.registerBuilt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.registerBuiltInRiichiActionSounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.registerBuiltInRiichiRoundInfoLineDisplays
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -91,6 +94,7 @@ object MinecraftMahjongExtensionRegistrar {
         roomMemberAppearanceSourceRegistry: RoomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(),
         gameActionSoundPresentationRegistry: GameActionSoundPresentationRegistry =
             GameActionSoundPresentationRegistryImpl(),
+        roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl(),
     ): MinecraftMahjongExtensionRegistrationResult {
         tileAssetRegistry.registerBuiltInTileAssets()
         aiStrategyDisplayNameRegistry.registerBuiltInAiStrategyDisplayNames()
@@ -108,6 +112,7 @@ object MinecraftMahjongExtensionRegistrar {
         )
         gameConfigPresentationRegistry.registerBuiltInGameConfigPresentations()
         gameActionSoundPresentationRegistry.registerBuiltInRiichiActionSounds()
+        roundInfoLineDisplayRegistry.registerBuiltInRiichiRoundInfoLineDisplays()
 
         val thirdPartyAssetKeys = mutableListOf<String>()
         val thirdPartyAiStrategyKeys = mutableListOf<String>()
@@ -159,6 +164,7 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerPublicPlayerIndicatorDisplays(publicPlayerIndicatorDisplayRegistry)
                 extension.registerGameConfigPresentations(gameConfigPresentationRegistry)
                 extension.registerRoomMemberAppearanceSources(roomMemberAppearanceSourceRegistry)
+                extension.registerRoundInfoLineDisplays(roundInfoLineDisplayRegistry)
             } catch (cause: Exception) {
                 throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
             }
@@ -181,6 +187,7 @@ object MinecraftMahjongExtensionRegistrar {
         gameConfigPresentationRegistry.freeze()
         roomMemberAppearanceSourceRegistry.freeze()
         gameActionSoundPresentationRegistry.freeze()
+        roundInfoLineDisplayRegistry.freeze()
         return MinecraftMahjongExtensionRegistrationResult(
             thirdPartyAssetKeys,
             thirdPartyAiStrategyKeys,

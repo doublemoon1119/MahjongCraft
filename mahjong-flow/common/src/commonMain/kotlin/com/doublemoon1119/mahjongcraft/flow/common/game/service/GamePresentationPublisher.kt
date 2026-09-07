@@ -154,24 +154,26 @@ interface GamePresentationPublisher {
     fun publishScoringSticksUpdated(gameId: Uuid, dealerSeatIndex: Int, stickCount: Int)
 
     /**
-     * 通知平台呈現層本局目前的全部立直棒——這局在場上宣告中的座位集合，以及延續自前局、尚未被任何人
-     * 收下的供託堆支數（兩者相加恆等於 `MahjongRuleModule.getStickPotCount`）。
+     * 通知平台呈現層本局目前的全部供託棒——刻意用泛用的「供託」措辭而非「立直」，讓這個介面本身維持
+     * 規則無關，比照 [publishDeadWallRevealUpdated] 的既有慣例；不支援供託概念的規則永遠不會呼叫這個
+     * 方法。內容分兩層：這局場上宣告中的座位集合，以及延續自前局、尚未被任何人收下的供託堆支數
+     * （兩者相加恆等於 `MahjongRuleModule.getStickPotCount`）。
      *
-     * 立直棒不再是「換局一律清空」——流局後沒被收下的立直棒延續到下一局，只有真正被贏家收下、或整場
+     * 供託棒不是「換局一律清空」——流局後沒被收下的供託延續到下一局，只有真正被贏家收下、或整場
      * 對局結束時才會消失，跟 [publishScoringSticksUpdated]（綁在牌牆生成）各自獨立更新。
      *
      * @param gameId 對局 Uuid。
-     * @param riichiSeatIndices 目前立直中的座位 index 集合（`MahjongRuleModule.isPlayerInRiichi`）；
-     * 空集合代表這局目前沒有人立直宣告。
+     * @param declaredSeatIndices 目前場上有宣告中供託棒的座位 index 集合（例如日麻的
+     * `MahjongRuleModule.isPlayerInRiichi`）；空集合代表這局目前沒有人宣告。
      * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index——延續自前局的供託堆只在
      * 莊家角落顯示，跟積棒同一個角落。
      * @param comboStickCount 目前積棒（本場棒）支數，恆等於 `TableState.comboCount`——延續自前局的供託
      * 堆疊放時從這個支數之後接續，視覺上跟積棒同一疊。
      * @param pooledStickCount 延續自前局、尚未被任何人收下的供託堆支數；`0` 代表沒有延續的供託。
      */
-    fun publishRiichiSticksUpdated(
+    fun publishStickPotUpdated(
         gameId: Uuid,
-        riichiSeatIndices: Set<Int>,
+        declaredSeatIndices: Set<Int>,
         dealerSeatIndex: Int,
         comboStickCount: Int,
         pooledStickCount: Int,

@@ -252,12 +252,12 @@ class AdvanceRoundUseCase(
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；新局手牌一定沒有副露，只是靠
         // publishInitialDealAnimation 的 comboStickCount 讓手牌正確讓開積棒佔用的空間。
         presentationPublisher.publishScoringSticksUpdated(gameId, dealerSeatIndex, newState.comboCount)
-        // 立直宣告本身每局歸零（新局還沒有人宣告），但延續自前局、尚未被收下的供託堆要跟著顯示出來，
-        // 不是無條件清空——流局後沒被收走的立直棒延續到下一局，見 GamePresentationPublisher KDoc。
+        // 宣告本身每局歸零（新局還沒有人宣告），但延續自前局、尚未被收下的供託堆要跟著顯示出來，
+        // 不是無條件清空——流局後沒被收走的供託棒延續到下一局，見 GamePresentationPublisher KDoc。
         val module = moduleRegistry.getModule(newState.config)
-        presentationPublisher.publishRiichiSticksUpdated(
+        presentationPublisher.publishStickPotUpdated(
             gameId,
-            riichiSeatIndices = emptySet(),
+            declaredSeatIndices = emptySet(),
             dealerSeatIndex = dealerSeatIndex,
             comboStickCount = newState.comboCount,
             pooledStickCount = module.getStickPotCount(newState),

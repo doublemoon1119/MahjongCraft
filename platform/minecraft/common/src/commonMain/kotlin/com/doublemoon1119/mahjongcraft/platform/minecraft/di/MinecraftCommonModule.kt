@@ -26,6 +26,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebratio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -85,6 +87,10 @@ class MinecraftCommonModule {
     /** 建立供內建與第三方 extension 登記的動作顯示名稱 registry。 */
     @Single
     fun provideGameActionDisplayNameRegistry(): GameActionDisplayNameRegistry = GameActionDisplayNameRegistryImpl()
+
+    /** 建立供內建與第三方 extension 登記的局況顯示行 registry。 */
+    @Single
+    fun provideRoundInfoLineDisplayRegistry(): RoundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl()
 
     /** 建立供內建與第三方 extension 登記的胡牌 showcase registry。 */
     @Single

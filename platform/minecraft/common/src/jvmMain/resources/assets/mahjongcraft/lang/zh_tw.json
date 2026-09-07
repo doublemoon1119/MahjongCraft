@@ -249,7 +249,7 @@
   "mahjongcraft.message.ready_state_not_ready": "尚未準備",
   "mahjongcraft.message.ready_state_ready": "準備",
   "mahjongcraft.message.ready_toggle_prefix": "已將準備狀態切換為：",
-  "mahjongcraft.message.round_info_riichi_stick_pot": "供託：%d",
+  "mahjongcraft.message.round_info_stick_pot": "供託：%d",
   "mahjongcraft.message.round_info_title": "%s%d局，%d本場",
   "mahjongcraft.message.round_info_wall_remaining": "牌山剩餘：%d",
   "mahjongcraft.message.round_result_broadcast": "本局結束：%s",

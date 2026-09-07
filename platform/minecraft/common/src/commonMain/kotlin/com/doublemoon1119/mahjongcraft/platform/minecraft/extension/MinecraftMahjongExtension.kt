@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -112,4 +113,7 @@ interface MinecraftMahjongExtension {
 
     /** 登記第三方房間成員外觀來源；完整 entity factory 留待 SeatActorProvider 階段。 */
     fun registerRoomMemberAppearanceSources(registry: RoomMemberAppearanceSourceRegistry) = Unit
+
+    /** 登記第三方規則的桌面局況顯示行翻譯資訊。 */
+    fun registerRoundInfoLineDisplays(registry: RoundInfoLineDisplayRegistry) = Unit
 }

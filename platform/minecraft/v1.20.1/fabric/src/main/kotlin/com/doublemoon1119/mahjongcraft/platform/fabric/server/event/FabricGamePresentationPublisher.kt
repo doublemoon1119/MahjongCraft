@@ -49,10 +49,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongRiichiStickPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongRiichiStickPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongStickPotPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongStickPotPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentation
@@ -96,8 +96,8 @@ import kotlin.uuid.toJavaUuid
  * @property discardPresenter 正式牌河的實際呈現邏輯。
  * @property scoringStickPresenter 正式積棒的實際呈現邏輯，生命週期跟牌牆同時生成/清除，見
  *   [MahjongScoringStickPresenter] KDoc。
- * @property riichiStickPresenter 正式立直棒的實際呈現邏輯，生命週期綁在立直宣告，見
- *   [MahjongRiichiStickPresenter] KDoc。
+ * @property stickPotPresenter 正式供託棒的實際呈現邏輯，生命週期綁在宣告成立，見
+ *   [MahjongStickPotPresenter] KDoc。
  * @property roundInfoPresenter 桌面中央局況顯示的實際呈現邏輯。
  * @property tableLocationRegistry 麻將桌最後已知位置索引。
  * @property serverHolder 目前運行中的 server，供世界／方塊狀態查詢使用。
@@ -119,7 +119,7 @@ class FabricGamePresentationPublisher(
     private val playerAreaPresenter: MahjongPlayerAreaPresenter,
     private val discardPresenter: MahjongDiscardPresenter,
     private val scoringStickPresenter: MahjongScoringStickPresenter,
-    private val riichiStickPresenter: MahjongRiichiStickPresenter,
+    private val stickPotPresenter: MahjongStickPotPresenter,
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
     private val playerInfoPresenter: MahjongPlayerInfoPresenter,
     private val tableLocationRegistry: TableLocationRegistry,
@@ -462,34 +462,34 @@ class FabricGamePresentationPublisher(
     }
 
     /**
-     * 立直棒綁在**立直宣告**的時間點觸發（呼叫端緊接在立直宣告成立、廣播事件之後呼叫，見
-     * [MahjongRiichiStickPresenter] KDoc）——跟 [publishScoringSticksUpdated]（綁在牌牆生成）各自
+     * 供託棒綁在**宣告成立**的時間點觸發（呼叫端緊接在宣告成立、廣播事件之後呼叫，見
+     * [MahjongStickPotPresenter] KDoc）——跟 [publishScoringSticksUpdated]（綁在牌牆生成）各自
      * 獨立觸發時機；不需要 [busyTracker] 或延遲，直接同步呈現，跟 [publishScoringSticksUpdated] 同理。
      */
-    override fun publishRiichiSticksUpdated(
+    override fun publishStickPotUpdated(
         gameId: Uuid,
-        riichiSeatIndices: Set<Int>,
+        declaredSeatIndices: Set<Int>,
         dealerSeatIndex: Int,
         comboStickCount: Int,
         pooledStickCount: Int,
     ) {
         if (serverHolder.current() == null) {
-            logger.warn("publishRiichiSticksUpdated gameId={} skipped: no active server", gameId)
+            logger.warn("publishStickPotUpdated gameId={} skipped: no active server", gameId)
             return
         }
         scope.launch(dispatchers.main) {
-            val resolved = resolveTableContext(gameId, "publishRiichiSticksUpdated") ?: return@launch
+            val resolved = resolveTableContext(gameId, "publishStickPotUpdated") ?: return@launch
 
-            val presentation = MahjongRiichiStickPresentation(
+            val presentation = MahjongStickPotPresentation(
                 tableId = gameId,
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
-                riichiSeatIndices = riichiSeatIndices,
+                declaredSeatIndices = declaredSeatIndices,
                 dealerSeatIndex = dealerSeatIndex,
                 comboStickCount = comboStickCount,
                 pooledStickCount = pooledStickCount,
             )
-            riichiStickPresenter.present(presentation)
+            stickPotPresenter.present(presentation)
         }
     }
 
@@ -649,9 +649,9 @@ class FabricGamePresentationPublisher(
     }
 
     /**
-     * 清除整桌所有玩家的手牌/摸牌位/副露/積棒/立直棒/局況顯示呈現——回房間等清空情境使用（見
+     * 清除整桌所有玩家的手牌/摸牌位/副露/積棒/供託棒/局況顯示呈現——回房間等清空情境使用（見
      * `ReturnToRoomUseCase`），沒有座位分組資料可傳，直接呼叫 [playerAreaPresenter]／
-     * [scoringStickPresenter]／[riichiStickPresenter]／[roundInfoPresenter] 各自的 `clear()`（以
+     * [scoringStickPresenter]／[stickPotPresenter]／[roundInfoPresenter] 各自的 `clear()`（以
      * `managedTableId` 範圍搜尋清除，不需要逐座位資料）。
      */
     override fun clearPlayerAreas(gameId: Uuid) {
@@ -667,7 +667,7 @@ class FabricGamePresentationPublisher(
             }
             playerAreaPresenter.clear(gameId, location)
             scoringStickPresenter.clear(gameId, location)
-            riichiStickPresenter.clear(gameId, location)
+            stickPotPresenter.clear(gameId, location)
             roundInfoPresenter.clear(gameId, location)
             playerInfoPresenter.clear(gameId, location)
         }

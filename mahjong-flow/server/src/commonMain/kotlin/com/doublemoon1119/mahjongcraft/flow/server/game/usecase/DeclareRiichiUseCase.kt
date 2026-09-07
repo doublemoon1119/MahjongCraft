@@ -238,7 +238,7 @@ class DeclareRiichiUseCase(
             .map { (playerSeatIndex, _) -> playerSeatIndex }
             .toSet()
         val pooledStickCount = module.getStickPotCount(newState) - riichiSeatIndices.size
-        presentationPublisher.publishRiichiSticksUpdated(gameId, riichiSeatIndices, dealerSeatIndex, newState.comboCount, pooledStickCount)
+        presentationPublisher.publishStickPotUpdated(gameId, riichiSeatIndices, dealerSeatIndex, newState.comboCount, pooledStickCount)
 
         // 6. 通知平台呈現層更新桌面局況顯示——立直宣告當下供託支數馬上 +1，若不在這裡也更新一次，
         // 顯示要等到下一次摸牌才會跟著變，體驗不一致。

@@ -56,6 +56,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveD
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -109,6 +110,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val moduleRegistry = koin.get<MahjongModuleRegistry>()
         val showcaseRegistry = koin.get<WinCelebrationShowcaseRegistry>()
         val exhaustiveDrawReasonDisplayNames = koin.get<ExhaustiveDrawReasonDisplayNameRegistry>()
+        val roundInfoLineDisplayRegistry = koin.get<RoundInfoLineDisplayRegistry>()
         val winSettlementTemplates = koin.get<WinSettlementPresentationTemplateRegistry>()
         val matchSettlementTemplates = koin.get<MatchSettlementPresentationTemplateRegistry>()
         val portraitRenderer = koin.get<PlayerPortraitRenderer>()
@@ -190,7 +192,9 @@ class MahjongCraftModClient : ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.mahjongSoundTimeline, ::MahjongSoundTimelineEntityRenderer)
         EntityRendererRegistry.register(ModEntities.diceRollPresentation) { context -> DiceRollPresentationEntityRenderer(context, clientConfigStore) }
         EntityRendererRegistry.register(ModEntities.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
-        EntityRendererRegistry.register(ModEntities.mahjongRoundInfo) { context -> MahjongRoundInfoEntityRenderer(context, clientConfigStore) }
+        EntityRendererRegistry.register(ModEntities.mahjongRoundInfo) { context ->
+            MahjongRoundInfoEntityRenderer(context, clientConfigStore, roundInfoLineDisplayRegistry)
+        }
         EntityRendererRegistry.register(ModEntities.mahjongPlayerInfo) { context ->
             MahjongPlayerInfoEntityRenderer(context, portraitRenderer, indicatorTextResolver, clientConfigStore)
         }
