@@ -45,7 +45,14 @@ data class WaitingTileAvailabilityDto(
     val winAvailability: WaitingTileWinAvailabilityDto = WaitingTileWinAvailabilityDto.AVAILABLE,
 )
 
-/** 等待牌在目前權威桌況下的和牌可用性。 */
+/**
+ * 等待牌在目前權威桌況下的和牌可用性。
+ *
+ * 目前僅日麻一個規則模組會產生此欄位，各選項的語意（役、番數門檻）也是日麻特有概念；若日後有規則
+ * 模組需要不同的和牌可用性語意，這裡需要重新設計（例如改成命名字串＋client 端顯示 registry），不能
+ * 只是加新的列舉值。
+ */
+// TODO: 新增其他地區規則模組時重新評估此 enum 是否需要改為規則中立設計。
 @Serializable
 enum class WaitingTileWinAvailabilityDto {
     /** 榮和或自摸至少一種可用。 */
