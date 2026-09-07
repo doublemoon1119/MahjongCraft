@@ -317,7 +317,6 @@ class RespondToDiscardUseCase(
         val winnerAction = winningEntry.value
         val winner = players.first { it.id == winnerId }
         val winnerDirection = state.relativeDirectionOf(winnerId, pendingReaction.discarderId)
-        val tileInterpretation = module.createTileInterpretationPolicy()
 
         val meldType = when (winnerAction) {
             is GameAction.Chi -> MeldType.CHI
@@ -328,12 +327,7 @@ class RespondToDiscardUseCase(
         val handTilesUsed: List<IdentifiedTile> = when (winnerAction) {
             is GameAction.Chi -> winnerAction.withTiles.mapNotNull { id -> winner.hand.standingTiles.find { it.id == id } }
             is GameAction.Kan -> winnerAction.withTiles.mapNotNull { id -> winner.hand.standingTiles.find { it.id == id } }
-            is GameAction.Pon ->
-                winner.hand.standingTiles
-                    .filter {
-                        tileInterpretation.canonicalize(it.tile) == tileInterpretation.canonicalize(discardedTile.tile)
-                    }
-                    .take(2)
+            is GameAction.Pon -> winnerAction.withTiles.mapNotNull { id -> winner.hand.standingTiles.find { it.id == id } }
         }
 
         val winnerWithPao = if (meldType == MeldType.PON || meldType == MeldType.OPEN_KAN) {

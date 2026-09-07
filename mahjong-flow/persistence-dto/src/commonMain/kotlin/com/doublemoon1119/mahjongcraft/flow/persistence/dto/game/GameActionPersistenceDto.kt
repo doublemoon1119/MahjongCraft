@@ -43,7 +43,7 @@ sealed interface GameActionPersistenceDto {
 
     /** [GameAction.Pon] 的 persistence DTO。 */
     @Serializable
-    data class Pon(val tileId: String) : GameActionPersistenceDto
+    data class Pon(val tileId: String, val withTileIds: List<String>) : GameActionPersistenceDto
 
     /** [GameAction.Kan] 的 persistence DTO。 */
     @Serializable
@@ -92,7 +92,7 @@ fun GameAction.toPersistenceDto(
     GameAction.Draw -> GameActionPersistenceDto.Draw
     is GameAction.Discard -> GameActionPersistenceDto.Discard(tileId.toString())
     is GameAction.Chi -> GameActionPersistenceDto.Chi(tileId.toString(), withTiles.map(Uuid::toString))
-    is GameAction.Pon -> GameActionPersistenceDto.Pon(tileId.toString())
+    is GameAction.Pon -> GameActionPersistenceDto.Pon(tileId.toString(), withTiles.map(Uuid::toString))
     is GameAction.Kan -> toPersistenceDto()
     is GameAction.Ron -> GameActionPersistenceDto.Ron(tileId.toString())
     GameAction.Tsumo -> GameActionPersistenceDto.Tsumo
@@ -116,7 +116,7 @@ fun GameActionPersistenceDto.toDomain(
     GameActionPersistenceDto.Draw -> GameAction.Draw
     is GameActionPersistenceDto.Discard -> GameAction.Discard(Uuid.parse(tileId))
     is GameActionPersistenceDto.Chi -> GameAction.Chi(Uuid.parse(tileId), withTileIds.map(Uuid::parse))
-    is GameActionPersistenceDto.Pon -> GameAction.Pon(Uuid.parse(tileId))
+    is GameActionPersistenceDto.Pon -> GameAction.Pon(Uuid.parse(tileId), withTileIds.map(Uuid::parse))
     is GameActionPersistenceDto.Kan -> toDomain()
     is GameActionPersistenceDto.Ron -> GameAction.Ron(Uuid.parse(tileId))
     GameActionPersistenceDto.Tsumo -> GameAction.Tsumo

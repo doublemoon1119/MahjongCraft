@@ -50,7 +50,7 @@ class DecisionHudActionTranslationKeyTest {
         add(GameAction.Tsumo)
         add(GameAction.Ron(tileId = Uuid.random()))
         add(GameAction.Chi(tileId = Uuid.random(), withTiles = listOf(Uuid.random(), Uuid.random())))
-        add(GameAction.Pon(tileId = Uuid.random()))
+        add(GameAction.Pon(tileId = Uuid.random(), withTiles = emptyList()))
         GameAction.KanType.entries.forEach { type ->
             add(GameAction.Kan(type = type, tileId = Uuid.random(), withTiles = emptyList()))
         }

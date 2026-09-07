@@ -2,7 +2,13 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.message
 
 import kotlinx.serialization.Serializable
 
-/** HUD 可呈現的單一權威動作候選。 */
+/**
+ * HUD 可呈現的單一權威動作候選。
+ *
+ * @property claimedTileIndex [previewTileAssetKeys] 中要額外標記強調的牌索引；目前只有吃會給值
+ * （三張牌花色/數值不同，標出來才有辨識意義），碰／槓一律為 `null`——牌面彼此完全相同，標哪一張都
+ * 沒有實質資訊。卡片預覽一律直立顯示，不套用鳴牌後最終桌面朝向。
+ */
 @Serializable
 data class PlayerDecisionActionDto(
     val token: String,
@@ -10,10 +16,12 @@ data class PlayerDecisionActionDto(
     val referenceTileAssetKey: String? = null,
     val previewTileAssetKeys: List<String> = emptyList(),
     val claimedTileIndex: Int? = null,
-    val claimedTileOrientation: DecisionTileOrientationDto = DecisionTileOrientationDto.UPRIGHT,
 )
 
-/** 操作預覽中牌面的受控方向。 */
+/**
+ * 牌面的受控方向，供世界空間中的鳴牌 popup（[com.doublemoon1119.mahjongcraft.platform.fabric.client.render.TileGroupPreviewLayout]
+ * 等）沿用；決策 HUD 卡片預覽本身不使用此列舉，一律直立顯示。
+ */
 @Serializable
 enum class DecisionTileOrientationDto {
     UPRIGHT,

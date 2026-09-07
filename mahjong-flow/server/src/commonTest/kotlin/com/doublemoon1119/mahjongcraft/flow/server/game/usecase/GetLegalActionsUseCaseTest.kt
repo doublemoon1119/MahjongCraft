@@ -225,7 +225,7 @@ class GetLegalActionsUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         assertEquals(
-            listOf(GameAction.Pon(discardedSouthTile.id), GameAction.Pass),
+            listOf(GameAction.Pon(discardedSouthTile.id, listOf(southTile1.id, southTile2.id)), GameAction.Pass),
             result.value,
         )
     }

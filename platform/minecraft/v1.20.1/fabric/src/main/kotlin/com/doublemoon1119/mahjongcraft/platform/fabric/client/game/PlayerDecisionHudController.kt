@@ -645,20 +645,19 @@ private class PlayerDecisionScreen(
                     val row = tileIndex / columns
                     val rowStart = row * columns
                     val rowEnd = minOf(rowStart + columns, tiles.size)
-                    val rowIndices = rowStart until rowEnd
-                    val rowWidth = rowIndices.sumOf { tileDisplayWidth(entry.action, it) } + (rowIndices.count() - 1) * PREVIEW_TILE_GAP
-                    var tileX = placement.x + (placement.width - rowWidth) / 2
-                    rowIndices.takeWhile { it < tileIndex }.forEach { previous ->
-                        tileX += tileDisplayWidth(entry.action, previous) + PREVIEW_TILE_GAP
+                    val rowTileCount = rowEnd - rowStart
+                    val rowWidth = rowTileCount * PREVIEW_TILE_WIDTH + (rowTileCount - 1) * PREVIEW_TILE_GAP
+                    val column = tileIndex - rowStart
+                    val tileX = placement.x + (placement.width - rowWidth) / 2 + column * (PREVIEW_TILE_WIDTH + PREVIEW_TILE_GAP)
+                    val tileY = previewTop + row * (PREVIEW_TILE_HEIGHT + PREVIEW_TILE_GAP)
+                    drawTile(context, assetKey, tileX, tileY)
+                    if (tileIndex == entry.action?.claimedTileIndex) {
+                        drawClaimedTileMarker(
+                            context,
+                            tileX + PREVIEW_TILE_WIDTH / 2,
+                            tileY - CLAIMED_TILE_MARKER_GAP - CLAIMED_TILE_MARKER_ROW_WIDTHS.size,
+                        )
                     }
-                    val orientation = if (tileIndex == entry.action?.claimedTileIndex) {
-                        entry.action.claimedTileOrientation
-                    } else {
-                        DecisionTileOrientationDto.UPRIGHT
-                    }
-                    val tileY = previewTop + row * (PREVIEW_TILE_HEIGHT + PREVIEW_TILE_GAP) +
-                        if (orientation == DecisionTileOrientationDto.UPRIGHT) 0 else PREVIEW_TILE_HEIGHT - PREVIEW_TILE_WIDTH
-                    drawTile(context, assetKey, tileX, tileY, orientation)
                 }
             }
         }
@@ -709,22 +708,20 @@ private class PlayerDecisionScreen(
         return Text.translatable("mahjongcraft.hud.trigger", playerName, Text.translatable(relationKey), action)
     }
 
-    /** 使用完整牌面 UV 等比例縮放預覽牌。 */
-    private fun drawTile(
-        context: DrawContext,
-        assetKey: String,
-        x: Int,
-        y: Int,
-        orientation: DecisionTileOrientationDto = DecisionTileOrientationDto.UPRIGHT,
-    ) {
-        controller.renderTileFace(context, assetKey, x, y, PREVIEW_TILE_WIDTH, PREVIEW_TILE_HEIGHT, orientation)
+    /** 使用完整牌面 UV 等比例縮放預覽牌；卡片預覽一律直立，不套用鳴牌後最終桌面朝向。 */
+    private fun drawTile(context: DrawContext, assetKey: String, x: Int, y: Int) {
+        controller.renderTileFace(context, assetKey, x, y, PREVIEW_TILE_WIDTH, PREVIEW_TILE_HEIGHT)
     }
 
-    /** 橫置被鳴牌使用牌高作為畫面寬度，其餘牌使用正常牌寬。 */
-    private fun tileDisplayWidth(action: PlayerDecisionActionDto?, tileIndex: Int): Int = if (tileIndex == action?.claimedTileIndex && action.claimedTileOrientation != DecisionTileOrientationDto.UPRIGHT) {
-        PREVIEW_TILE_HEIGHT
-    } else {
-        PREVIEW_TILE_WIDTH
+    /**
+     * 在 [centerX], [top] 位置畫一個寬扁的倒三角形指標，逐列縮減寬度來模擬三角形，
+     * 不依賴字型字符，形狀比例可完全自訂。
+     */
+    private fun drawClaimedTileMarker(context: DrawContext, centerX: Int, top: Int) {
+        CLAIMED_TILE_MARKER_ROW_WIDTHS.forEachIndexed { row, width ->
+            val left = centerX - width / 2
+            context.fill(left, top + row, left + width, top + row + 1, CLAIMED_TILE_MARKER_COLOR)
+        }
     }
 
     /** 讓固定高度操作板位於 hotbar 上方並保留觸發牌空間。 */
@@ -757,7 +754,15 @@ private class PlayerDecisionScreen(
     private fun cardHeight(entry: DisplayEntry, cardWidth: Int): Int {
         val tileCount = entry.previewTileAssetKeys.ifEmpty { entry.action?.previewTileAssetKeys.orEmpty() }.size
         val tileRows = ((tileCount + previewColumns(cardWidth) - 1) / previewColumns(cardWidth)).coerceAtLeast(1)
-        return maxOf(MIN_CARD_HEIGHT, CARD_PADDING * 2 + tileRows * PREVIEW_TILE_HEIGHT + (tileRows - 1) * PREVIEW_TILE_GAP + BUTTON_HEIGHT)
+        val markerHeight = if (entry.action?.claimedTileIndex != null) {
+            CLAIMED_TILE_MARKER_ROW_WIDTHS.size + CLAIMED_TILE_MARKER_GAP
+        } else {
+            0
+        }
+        return maxOf(
+            MIN_CARD_HEIGHT,
+            CARD_PADDING * 2 + markerHeight + tileRows * PREVIEW_TILE_HEIGHT + (tileRows - 1) * PREVIEW_TILE_GAP + BUTTON_HEIGHT,
+        )
     }
 
     /** 大量牌面預覽優先橫向擴張，只有畫面不足時才換行；普通動作維持緊湊卡片。 */
@@ -897,6 +902,18 @@ private class PlayerDecisionScreen(
         const val SCROLL_STEP = 48.0
         const val CARD_BACKGROUND = 0xCC2A3844.toInt()
         const val CARD_HOVER_BACKGROUND = 0xDD3A4B59.toInt()
+
+        /**
+         * 吃卡片標出鳴來那張牌的倒三角形指標，由上而下每列的寬度（像素，皆為奇數以確保左右對稱）；
+         * 碰／槓不使用，牌面彼此完全相同，標記沒有辨識意義。
+         */
+        val CLAIMED_TILE_MARKER_ROW_WIDTHS = intArrayOf(9, 7, 5, 3, 1)
+
+        /** 指標的顏色，用鮮明的紅色與牌面色調完全區隔，不受任何背景深淺影響辨識度。 */
+        const val CLAIMED_TILE_MARKER_COLOR = 0xFFFF5555.toInt()
+
+        /** 指標與牌面之間的間距（像素）。 */
+        const val CLAIMED_TILE_MARKER_GAP = 3
         const val SCROLLBAR_TRACK_COLOR = 0xFF26333D.toInt()
         const val SCROLLBAR_THUMB_COLOR = 0xFF8796A3.toInt()
     }

@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -104,6 +105,40 @@ class RiichiLegalActionValidatorRedDoraTest {
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Pon && it.tileId == incomingTile.id })
+    }
+
+    /**
+     * 測試赤寶牌之情況：手牌同時有普通5萬與赤5萬時，碰牌優先用普通牌組成刻子，赤寶牌留在手上。
+     *
+     * 手牌有兩張普通5萬、一張赤5萬（共 3 張符合），碰只需要 2 張，withTiles 必須是兩張普通牌，
+     * 讓玩家自然保留赤寶牌在手上。
+     */
+    @Test
+    fun `test pon prefers plain tiles over red dora when both are available`() {
+        // 準備
+        val plainFive1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
+        val plainFive2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
+        val redFive = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
+        val playerHand = Hand(tiles = listOf(redFive, plainFive1, plainFive2))
+        val player = FakeMahjongPlayerFactory.create(hand = playerHand)
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = nonEmptyWall,
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
+
+        // 執行
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
+            incomingTile = incomingTile,
+        )
+
+        // 驗證
+        val ponAction = actions.filterIsInstance<GameAction.Pon>().single()
+        assertEquals(listOf(plainFive1.id, plainFive2.id), ponAction.withTiles)
     }
 
     /**

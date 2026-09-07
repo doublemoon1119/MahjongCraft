@@ -30,7 +30,7 @@ sealed interface GameActionDto {
 
     @Serializable data class Chi(val tileId: String, val withTiles: List<String>) : GameActionDto
 
-    @Serializable data class Pon(val tileId: String) : GameActionDto
+    @Serializable data class Pon(val tileId: String, val withTiles: List<String>) : GameActionDto
 
     @Serializable data class Kan(val kanType: KanTypeDto, val tileId: String, val withTiles: List<String>) : GameActionDto
 
@@ -56,7 +56,7 @@ fun GameAction.toDto(registries: NetworkDtoRegistries): GameActionDto = when (th
     GameAction.Draw -> GameActionDto.Draw
     is GameAction.Discard -> GameActionDto.Discard(tileId.toString())
     is GameAction.Chi -> GameActionDto.Chi(tileId.toString(), withTiles.map { it.toString() })
-    is GameAction.Pon -> GameActionDto.Pon(tileId.toString())
+    is GameAction.Pon -> GameActionDto.Pon(tileId.toString(), withTiles.map { it.toString() })
     is GameAction.Kan -> GameActionDto.Kan(type.toDto(), tileId.toString(), withTiles.map { it.toString() })
     is GameAction.Ron -> GameActionDto.Ron(tileId.toString())
     GameAction.Tsumo -> GameActionDto.Tsumo
@@ -73,7 +73,7 @@ fun GameActionDto.toDomain(registries: NetworkDtoRegistries): GameAction = when 
     GameActionDto.Draw -> GameAction.Draw
     is GameActionDto.Discard -> GameAction.Discard(Uuid.parse(tileId))
     is GameActionDto.Chi -> GameAction.Chi(Uuid.parse(tileId), withTiles.map { Uuid.parse(it) })
-    is GameActionDto.Pon -> GameAction.Pon(Uuid.parse(tileId))
+    is GameActionDto.Pon -> GameAction.Pon(Uuid.parse(tileId), withTiles.map { Uuid.parse(it) })
     is GameActionDto.Kan -> GameAction.Kan(kanType.toDomain(), Uuid.parse(tileId), withTiles.map { Uuid.parse(it) })
     is GameActionDto.Ron -> GameAction.Ron(Uuid.parse(tileId))
     GameActionDto.Tsumo -> GameAction.Tsumo

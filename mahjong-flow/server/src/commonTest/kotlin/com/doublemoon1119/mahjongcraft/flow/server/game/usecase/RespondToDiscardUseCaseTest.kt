@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -183,7 +184,7 @@ class RespondToDiscardUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id))
+        val result = fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id, listOf(handTile1.id, handTile2.id)))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -229,7 +230,7 @@ class RespondToDiscardUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id))
+        fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id, listOf(handTile1.id, handTile2.id)))
 
         val publishedDiscardPile = fixtures.presentationPublisher.getPublishedDiscardPile(gameId)
         assertNotNull(publishedDiscardPile)
@@ -270,7 +271,7 @@ class RespondToDiscardUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id))
+        fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id, listOf(handTile1.id, handTile2.id)))
 
         val publishedMelds = fixtures.presentationPublisher.getPublishedPlayerArea(gameId)
         assertNotNull(publishedMelds)
@@ -284,6 +285,46 @@ class RespondToDiscardUseCaseTest {
             publishedMelds.animatedMeldClaimTileIds,
             "All tiles in a newly claimed pon should trigger the meld-claim flight animation.",
         )
+    }
+
+    /**
+     * 驗證碰牌時，若 [GameAction.Pon.withTiles] 指定使用一般牌（而非赤五），實際執行會嚴格依照
+     * 該指定消耗手牌，赤五保留在手牌中、不會被誤消耗進副露——確保實際執行路徑與
+     * `RiichiLegalActionValidator` 的候選產生邏輯（優先用一般牌組成刻子）一致。
+     */
+    @Test
+    fun `test pon with withTiles specifying plain tiles keeps red five in hand`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val plainFive1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
+        val plainFive2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
+        val redFive = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
+        val responder = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = listOf(redFive, plainFive1, plainFive2)),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, responder),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id, listOf(plainFive1.id, plainFive2.id)))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val winner = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == responderId }
+        assertEquals(listOf(redFive), winner.hand.tiles, "The red five was not in withTiles, so it should remain in hand.")
+        val meld = winner.hand.melds.single()
+        assertEquals(setOf(plainFive1, plainFive2, discardedTile), meld.tiles.toSet())
     }
 
     /**
@@ -534,7 +575,7 @@ class RespondToDiscardUseCaseTest {
         assertEquals(0, stateAfterChiResponse.currentPlayerIndex, "Turn should not advance until resolution.")
 
         // 碰的玩家回應：資格齊全，開始結算，碰優先於吃
-        val secondResult = fixtures.useCase(gameId, ponPlayerId, GameAction.Pon(discardedTile.id))
+        val secondResult = fixtures.useCase(gameId, ponPlayerId, GameAction.Pon(discardedTile.id, listOf(ponTile1.id, ponTile2.id)))
         assertTrue(secondResult is Outcome.Success, "Expected Success but got $secondResult")
         val finalState = fixtures.gameRepo.getTableState(gameId)!!
         assertNull(finalState.pendingReaction)
@@ -589,7 +630,7 @@ class RespondToDiscardUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id))
+        val result = fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id, listOf(handTiles[6].id, handTiles[7].id)))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -617,10 +658,12 @@ class RespondToDiscardUseCaseTest {
                 isIppatsu = true,
             ),
         )
+        val responderHandTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val responderHandTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val responder = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.White), FakeIdentifiedTileFactory.create(Tile.Honor.White))),
+            hand = Hand(tiles = listOf(responderHandTile1, responderHandTile2)),
         )
         val bystanderId = Uuid.random()
         val bystander = FakeMahjongPlayerFactory.create(
@@ -640,7 +683,7 @@ class RespondToDiscardUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id))
+        val result = fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id, listOf(responderHandTile1.id, responderHandTile2.id)))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -786,7 +829,7 @@ class RespondToDiscardUseCaseTest {
         // 依序送出吃、碰：資格尚未齊全，不應結算
         val firstResult = fixtures.useCase(gameId, chiPlayerId, GameAction.Chi(discardedTile.id, listOf(chiTile4.id, chiTile6.id)))
         assertTrue(firstResult is Outcome.Success, "Expected Success but got $firstResult")
-        val secondResult = fixtures.useCase(gameId, ponPlayerId, GameAction.Pon(discardedTile.id))
+        val secondResult = fixtures.useCase(gameId, ponPlayerId, GameAction.Pon(discardedTile.id, listOf(ponTile1.id, ponTile2.id)))
         assertTrue(secondResult is Outcome.Success, "Expected Success but got $secondResult")
         val stateBeforeRon = fixtures.gameRepo.getTableState(gameId)!!
         assertNotNull(stateBeforeRon.pendingReaction, "Should still wait for the Ron-eligible player to respond.")
@@ -1373,9 +1416,9 @@ class RespondToDiscardUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id))
+        val result = fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id, emptyList()))
 
         assertTrue(result is Outcome.Error)
-        assertEquals(GameError.IllegalAction(responderId, gameId, GameAction.Pon(discardedTile.id)), result.error)
+        assertEquals(GameError.IllegalAction(responderId, gameId, GameAction.Pon(discardedTile.id, emptyList())), result.error)
     }
 }

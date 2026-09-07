@@ -56,7 +56,7 @@ class PendingReactionTest {
             discarderId = discarderId,
             tileId = tileId,
             eligiblePlayerIds = setOf(playerAId, playerBId),
-            responses = mapOf(playerAId to GameAction.Pass, playerBId to GameAction.Pon(tileId)),
+            responses = mapOf(playerAId to GameAction.Pass, playerBId to GameAction.Pon(tileId, emptyList())),
         )
 
         assertTrue(pendingReaction.isComplete)

@@ -924,7 +924,7 @@ class DiscardTileUseCaseTest {
             id = currentPlayerId,
             initialSeat = Wind.EAST,
             hand = Hand(tiles = listOf(handTile)),
-        ).recordAction(GameAction.Pon(tileId = Uuid.random()))
+        ).recordAction(GameAction.Pon(tileId = Uuid.random(), withTiles = emptyList()))
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer),

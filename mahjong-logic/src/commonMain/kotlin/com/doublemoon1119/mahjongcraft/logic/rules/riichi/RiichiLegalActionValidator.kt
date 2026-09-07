@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
 import com.doublemoon1119.mahjongcraft.logic.util.isNumeric
 import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
+import com.doublemoon1119.mahjongcraft.logic.util.preferPlainTiles
 import kotlin.math.abs
 
 /**
@@ -242,9 +243,10 @@ class RiichiLegalActionValidator(
             // 立直後不能碰、河底牌不能碰
             // 赤五與普通五視為同一張牌，故使用日麻標準牌比較
             // 過水碰：若玩家在當前巡迴中已放過此牌，則不可碰
-            val ponCount = player.hand.standingTiles.count { it.tile.riichiCanonical == incomingBaseTile }
-            if (ponCount >= 2 && !isRiichi && wallHasMoreTiles && incomingBaseTile !in player.passedTilesInRound) {
-                legalActions.add(GameAction.Pon(incomingTile.id))
+            val matchingForPon = player.hand.standingTiles.filter { it.tile.riichiCanonical == incomingBaseTile }
+            if (matchingForPon.size >= 2 && !isRiichi && wallHasMoreTiles && incomingBaseTile !in player.passedTilesInRound) {
+                // 優先用一般牌組成刻子，赤五只在數量不足時才會被選中，讓玩家自然保留手上的赤寶牌。
+                legalActions.add(GameAction.Pon(incomingTile.id, matchingForPon.preferPlainTiles(2).map { it.id }))
             }
 
             // 3. 檢查是否可以吃 (Chi)

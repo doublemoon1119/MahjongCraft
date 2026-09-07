@@ -136,7 +136,7 @@ class DtoRoundTripTest {
             GameAction.Draw,
             GameAction.Discard(tileId),
             GameAction.Chi(tileId, withTiles),
-            GameAction.Pon(tileId),
+            GameAction.Pon(tileId, withTiles),
             GameAction.Kan(GameAction.KanType.OPEN_KAN, tileId, withTiles),
             GameAction.Ron(tileId),
             GameAction.Tsumo,

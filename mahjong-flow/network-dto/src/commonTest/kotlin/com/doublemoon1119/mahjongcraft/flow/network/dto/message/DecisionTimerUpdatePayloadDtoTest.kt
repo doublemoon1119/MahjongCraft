@@ -27,7 +27,6 @@ class DecisionTimerUpdatePayloadDtoTest {
                                 referenceTileAssetKey = "m3",
                                 previewTileAssetKeys = listOf("m1", "m2", "m3"),
                                 claimedTileIndex = 2,
-                                claimedTileOrientation = DecisionTileOrientationDto.ROTATED_RIGHT,
                             ),
                         ),
                         triggerTileAssetKey = "m3",

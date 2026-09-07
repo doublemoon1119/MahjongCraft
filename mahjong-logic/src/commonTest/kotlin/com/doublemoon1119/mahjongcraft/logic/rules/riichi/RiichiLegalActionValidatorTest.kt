@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -68,8 +69,10 @@ class RiichiLegalActionValidatorTest {
             incomingTile = incomingTile,
         )
 
-        // 驗證
-        assertTrue(actions.any { it is GameAction.Pon && it.tileId == incomingTile.id })
+        // 驗證：withTiles 記錄實際要消耗的兩張手牌實例，供 UI 預覽與實際執行共用同一份決定。
+        val ponAction = actions.filterIsInstance<GameAction.Pon>().single()
+        assertEquals(incomingTile.id, ponAction.tileId)
+        assertEquals(playerHand.standingTiles.map { it.id }, ponAction.withTiles)
     }
 
     /**

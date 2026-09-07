@@ -68,8 +68,9 @@ sealed class GameAction {
      * 碰牌動作。
      * 玩家使用手牌中的兩張牌與他人的捨牌組成刻子。
      * @property tileId 欲碰的他家捨牌的唯一識別碼。
+     * @property withTiles 玩家手牌中用於組成刻子的兩張牌的唯一識別碼。
      */
-    data class Pon(val tileId: Uuid) : GameAction()
+    data class Pon(val tileId: Uuid, val withTiles: List<Uuid>) : GameAction()
 
     /**
      * 槓牌動作。

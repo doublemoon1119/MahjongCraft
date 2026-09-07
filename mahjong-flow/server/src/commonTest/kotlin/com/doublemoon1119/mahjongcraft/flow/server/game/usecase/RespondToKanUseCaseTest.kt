@@ -236,10 +236,10 @@ class RespondToKanUseCaseTest {
         val fixtures = Fixtures()
         fixtures.gameRepo.setTableState(setUpTable())
 
-        val result = fixtures.useCase(gameId, robberId, GameAction.Pon(robbedWhiteTile.id))
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pon(robbedWhiteTile.id, emptyList()))
 
         assertTrue(result is Outcome.Error)
-        assertEquals(GameError.IllegalAction(robberId, gameId, GameAction.Pon(robbedWhiteTile.id)), result.error)
+        assertEquals(GameError.IllegalAction(robberId, gameId, GameAction.Pon(robbedWhiteTile.id, emptyList())), result.error)
     }
 
     /**

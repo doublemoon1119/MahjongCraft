@@ -316,7 +316,7 @@ class AiTurnDriverTest {
         val aiId = Uuid.random()
         val remainingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.EAST, hand = Hand(tiles = listOf(remainingTile)), aiStrategyKey = strategyKey)
-            .recordAction(GameAction.Pon(Uuid.random()))
+            .recordAction(GameAction.Pon(Uuid.random(), emptyList()))
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(ai), config = RiichiRuleConfig(), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
 

@@ -1910,12 +1910,12 @@ class FabricDebugAnimationCommand(
                 actionId = "mahjongcraft:$id",
                 previewTileAssetKeys = tiles,
                 claimedTileIndex = claimedIndex,
-                claimedTileOrientation = if (claimedIndex == null) DecisionTileOrientationDto.UPRIGHT else DecisionTileOrientationDto.ROTATED_LEFT,
             )
+            // 只有吃會標出鳴來的那張牌（三張牌花色/數值不同才有辨識意義）；碰／槓牌面彼此完全相同，不標記。
             return when (this) {
-                CHI -> listOf(action("chi", listOf("s4", "s5", "s6"), 0))
-                PON -> listOf(action("pon", listOf("p5", "p5", "p5"), 0))
-                KAN -> listOf(action("kan_open", listOf("m9", "m9", "m9", "m9"), 0))
+                CHI -> listOf(action("chi", listOf("s4", "s5", "s6"), claimedIndex = 1))
+                PON -> listOf(action("pon", listOf("p5", "p5", "p5")))
+                KAN -> listOf(action("kan_open", listOf("m9", "m9", "m9", "m9")))
                 ANKAN -> listOf(action("kan_closed", listOf("m9", "m9", "m9", "m9")))
                 RON -> listOf(action("ron", listOf("s5")))
                 TSUMO -> listOf(action("tsumo", listOf("red_dragon")))
@@ -1926,9 +1926,9 @@ class FabricDebugAnimationCommand(
                     ),
                 )
                 MIXED -> listOf(
-                    action("chi", listOf("s4", "s5", "s6"), 0),
-                    action("pon", listOf("s5", "s5", "s5"), 0),
-                    action("kan_open", listOf("s5", "s5", "s5", "s5"), 0),
+                    action("chi", listOf("s4", "s5", "s6"), claimedIndex = 1),
+                    action("pon", listOf("s5", "s5", "s5")),
+                    action("kan_open", listOf("s5", "s5", "s5", "s5")),
                     action("ron", listOf("s5")),
                     action("pass", emptyList()),
                 )

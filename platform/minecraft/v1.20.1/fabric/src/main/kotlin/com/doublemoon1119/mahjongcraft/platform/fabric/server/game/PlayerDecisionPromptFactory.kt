@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
@@ -15,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
@@ -45,6 +45,7 @@ class PlayerDecisionPromptFactory(
         val game = gameRepository.getGame(gameId) ?: return null
         val state = game.tableState
         val player = state.players.firstOrNull { it.id == playerId } ?: return null
+        val tileOrder = moduleRegistry.getModule(state.config).tileOrder
         val actions = candidateResolver.listActionCandidates(playerId)
         val riichiTiles = candidateResolver.listRiichiTileCandidates(playerId)
         val preparation = game.pendingRoundPreparation
@@ -75,14 +76,13 @@ class PlayerDecisionPromptFactory(
                 },
             ),
             actions = actions.map { candidate ->
-                val preview = candidate.action.previewTiles(state, playerId, player.hand, candidate.referenceTile)
+                val preview = candidate.action.previewTiles(player.hand, candidate.referenceTile, tileOrder)
                 PlayerDecisionActionDto(
                     token = candidate.token,
                     actionId = candidate.action.presentationId(),
                     referenceTileAssetKey = candidate.referenceTile?.toAssetKey(tileAssetRegistry),
                     previewTileAssetKeys = preview.tiles.map { it.toAssetKey(tileAssetRegistry) },
                     claimedTileIndex = preview.claimedTileIndex,
-                    claimedTileOrientation = preview.claimedTileOrientation,
                 )
             },
             // 自己回合（立直／暗槓等）一律顯示剛摸到的牌，不依賴哪個候選動作剛好帶了 referenceTile——
@@ -219,57 +219,43 @@ internal fun GameAction.presentationId(): String = when (this) {
     else -> "mahjongcraft:action"
 }
 
-/** 建立動作完成後的牌組預覽；第三方動作沒有受控牌組資料時安全地只顯示參考牌。 */
+/**
+ * 建立動作完成後的牌組預覽；第三方動作沒有受控牌組資料時安全地只顯示參考牌。
+ *
+ * 卡片預覽一律直立顯示，不套用鳴牌後最終桌面朝向——那是給實際擺上桌的牌用的空間慣例，套在決策卡片上
+ * 反而讓玩家要多一拍才能解讀。只有吃才會標出 [ActionTilePreview.claimedTileIndex]（三張牌本身花色/
+ * 數值不同，框出來才有辨識意義）；碰跟槓的牌彼此看起來完全一樣，框哪一張都沒有實質資訊，不標記。
+ */
 private fun GameAction.previewTiles(
-    state: com.doublemoon1119.mahjongcraft.logic.table.TableState,
-    playerId: Uuid,
     hand: Hand,
     referenceTile: Tile?,
+    tileOrder: TileOrder,
 ): ActionTilePreview {
     val identifiedById = hand.standingTiles.associateBy { it.id }
     fun tile(id: Uuid): Tile? = identifiedById[id]?.tile
-    val rawTiles = when (this) {
-        is GameAction.Chi -> withTiles.mapNotNull(::tile) + listOfNotNull(referenceTile)
-        is GameAction.Pon ->
-            hand.standingTiles
-                .map { it.tile }
-                .filter { candidate -> referenceTile != null && candidate.riichiCanonical == referenceTile.riichiCanonical }
-                .take(2) + listOfNotNull(referenceTile)
-        is GameAction.Kan -> withTiles.mapNotNull(::tile) + listOfNotNull(referenceTile ?: tile(tileId))
-        is GameAction.Ron, GameAction.Tsumo -> listOfNotNull(referenceTile)
-        is GameAction.ExhaustiveDraw -> if (reason == RiichiExhaustiveDrawReason.KyuushuKyuuhai) {
-            hand.tiles.map { it.tile }.filter { it.isTerminal || it.isHonor }
-        } else {
-            emptyList()
+    return when (this) {
+        is GameAction.Chi -> {
+            val sorted = (withTiles.mapNotNull(::tile) + listOfNotNull(referenceTile)).sortedWith(tileOrder)
+            ActionTilePreview(sorted, claimedTileIndex = referenceTile?.let { sorted.indexOf(it) }?.takeIf { it >= 0 })
         }
-        else -> listOfNotNull(referenceTile)
+        is GameAction.Pon -> ActionTilePreview(withTiles.mapNotNull(::tile) + listOfNotNull(referenceTile))
+        is GameAction.Kan -> ActionTilePreview(withTiles.mapNotNull(::tile) + listOfNotNull(referenceTile ?: tile(tileId)))
+        is GameAction.Ron, GameAction.Tsumo -> ActionTilePreview(listOfNotNull(referenceTile))
+        is GameAction.ExhaustiveDraw -> ActionTilePreview(
+            if (reason == RiichiExhaustiveDrawReason.KyuushuKyuuhai) {
+                hand.tiles.map { it.tile }.filter { it.isTerminal || it.isHonor }
+            } else {
+                emptyList()
+            },
+        )
+        else -> ActionTilePreview(listOfNotNull(referenceTile))
     }
-    val hasClaimedTile = this is GameAction.Chi || this is GameAction.Pon || this is GameAction.Kan && type == GameAction.KanType.OPEN_KAN
-    if (!hasClaimedTile || rawTiles.isEmpty()) return ActionTilePreview(rawTiles)
-    val source = state.claimSource(playerId)
-    val claimedTile = rawTiles.last()
-    val remaining = rawTiles.dropLast(1).toMutableList()
-    val claimedIndex = when (source) {
-        ClaimSource.LEFT -> 0
-        ClaimSource.ACROSS -> 1.coerceAtMost(remaining.size)
-        ClaimSource.RIGHT -> 2.coerceAtMost(remaining.size)
-    }
-    remaining.add(claimedIndex, claimedTile)
-    return ActionTilePreview(
-        tiles = remaining,
-        claimedTileIndex = claimedIndex,
-        claimedTileOrientation = when (source) {
-            ClaimSource.LEFT -> DecisionTileOrientationDto.ROTATED_LEFT
-            ClaimSource.ACROSS, ClaimSource.RIGHT -> DecisionTileOrientationDto.ROTATED_RIGHT
-        },
-    )
 }
 
-/** 操作 HUD 一組牌面及其中被鳴牌的方向。 */
+/** 操作 HUD 一組牌面，[claimedTileIndex] 只有吃才會給值。 */
 private data class ActionTilePreview(
     val tiles: List<Tile>,
     val claimedTileIndex: Int? = null,
-    val claimedTileOrientation: DecisionTileOrientationDto = DecisionTileOrientationDto.UPRIGHT,
 )
 
 /** 從目前等待捨牌反應的出牌者解析相對來源方向。 */

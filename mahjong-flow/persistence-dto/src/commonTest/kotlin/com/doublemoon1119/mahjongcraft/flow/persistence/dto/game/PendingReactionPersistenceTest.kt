@@ -37,7 +37,7 @@ class PendingReactionPersistenceTest {
             GameAction.Draw,
             GameAction.Discard(tileId),
             GameAction.Chi(tileId, withTileIds.take(2)),
-            GameAction.Pon(tileId),
+            GameAction.Pon(tileId, withTileIds.take(2)),
             GameAction.Kan(GameAction.KanType.ADDED_KAN, tileId, withTileIds),
             GameAction.Ron(tileId),
             GameAction.Tsumo,
@@ -69,7 +69,7 @@ class PendingReactionPersistenceTest {
             discarderId = discarderId,
             tileId = tileId,
             eligiblePlayerIds = setOf(responderA, responderB),
-            responses = mapOf(responderA to GameAction.Pon(tileId)),
+            responses = mapOf(responderA to GameAction.Pon(tileId, emptyList())),
         )
 
         val encoded = json.encodeToString(

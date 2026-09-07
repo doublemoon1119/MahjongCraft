@@ -997,12 +997,13 @@ class GameFlowCoordinatorTest {
         fixtures.gameRepo.setTableState(table)
         val whiteTileId = table.pendingReaction!!.tileId
 
-        val result = fixtures.coordinator(gameId, respondentId, GameCommand.RespondToDiscard(GameAction.Pon(whiteTileId)))
+        val ponAction = GameAction.Pon(whiteTileId, listOf(whiteTile1.id, whiteTile2.id))
+        val result = fixtures.coordinator(gameId, respondentId, GameCommand.RespondToDiscard(ponAction))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(0, newState.comboCount)
-        assertEquals(GameAction.Pon(whiteTileId), newState.players.first { it.id == respondentId }.actionHistory.last())
+        assertEquals(ponAction, newState.players.first { it.id == respondentId }.actionHistory.last())
     }
 
     private fun chankanTable(declarerId: Uuid, robberId: Uuid, initialDeadWall: List<IdentifiedTile>, robberHand: Hand): TableState {

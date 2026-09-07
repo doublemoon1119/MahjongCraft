@@ -73,7 +73,7 @@ class TableStatePersistenceTest {
                     discarderId = discarderId,
                     tileId = tileId,
                     eligiblePlayerIds = setOf(responderId),
-                    responses = mapOf(responderId to GameAction.Pon(tileId)),
+                    responses = mapOf(responderId to GameAction.Pon(tileId, emptyList())),
                 ),
             ),
         )

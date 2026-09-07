@@ -87,7 +87,7 @@ class GameDecisionTimerManagerTest {
                     pendingReaction = null,
                     players = current.tableState.players.map { player ->
                         if (player.id == playerId) {
-                            player.copy(actionHistory = currentPlayer.actionHistory + GameAction.Pon(Uuid.random()))
+                            player.copy(actionHistory = currentPlayer.actionHistory + GameAction.Pon(Uuid.random(), emptyList()))
                         } else {
                             player
                         }
