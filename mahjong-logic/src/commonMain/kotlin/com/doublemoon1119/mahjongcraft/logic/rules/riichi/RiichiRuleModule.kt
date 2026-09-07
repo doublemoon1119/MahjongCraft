@@ -89,6 +89,16 @@ class RiichiRuleModule(
     )
 
     /**
+     * 建立日本麻將的打牌分析器。
+     *
+     * @return [RiichiDiscardReadinessAnalyzer] 實體。
+     */
+    override fun createDiscardReadinessAnalyzer(): RiichiDiscardReadinessAnalyzer = RiichiDiscardReadinessAnalyzer(
+        shantenCalculator = createShantenCalculator(),
+        legalActionValidator = createLegalActionValidator(),
+    )
+
+    /**
      * 建立日本麻將的手牌價值計算機。
      *
      * @return [RiichiHandValueCalculator] 實體。

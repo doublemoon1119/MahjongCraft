@@ -12,18 +12,13 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileWinAv
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
-import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
-import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalysis
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValidator
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWinAvailability
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
 import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
@@ -55,8 +50,8 @@ class PlayerDecisionPromptFactory(
             ?.toPrompt { tileId ->
                 player.hand.tiles.firstOrNull { it.id == tileId }?.tile?.toAssetKey(tileAssetRegistry)
             }
-        val analyses = if (phase == PlayerDecisionPhase.OWN_TURN && state.config is RiichiRuleConfig) {
-            createRiichiAnalyses(state, playerId)
+        val analyses = if (phase == PlayerDecisionPhase.OWN_TURN) {
+            moduleRegistry.getModule(state.config).createDiscardReadinessAnalyzer()?.analyze(state, player)?.map { it.toDto() }.orEmpty()
         } else {
             emptyList()
         }
@@ -107,56 +102,19 @@ class PlayerDecisionPromptFactory(
         )
     }
 
-    /** 日麻逐張假想捨牌，且只以自身與公開資訊估算等待牌餘量。 */
-    private fun createRiichiAnalyses(
-        state: com.doublemoon1119.mahjongcraft.logic.table.TableState,
-        playerId: Uuid,
-    ): List<DiscardReadinessAnalysisDto> {
-        val player = state.players.first { it.id == playerId }
-        val calculator = moduleRegistry.getModule(state.config).createShantenCalculator()
-        val validator = moduleRegistry.getModule(state.config).createLegalActionValidator() as RiichiLegalActionValidator
-        val visibleTiles = buildList {
-            addAll(player.hand.tiles.map { it.tile })
-            state.players.forEach { tablePlayer ->
-                addAll(tablePlayer.discardPile.entries.map { it.tile.tile })
-                addAll(tablePlayer.hand.exposedMelds.flatMap { meld -> meld.tiles.map { it.tile } })
-            }
-            (state.dynamicRuleState as? RiichiDynamicState)?.getDoraIndicators(state)?.first?.let { indicators ->
-                addAll(indicators.map { it.tile })
-            }
-        }.groupingBy { it.riichiCanonical }.eachCount()
-        val riichiState = player.playerRuleState as? RiichiPlayerState
-        return player.hand.standingTiles.mapNotNull { discard ->
-            val result = player.hand.discardById(discard.id) ?: return@mapNotNull null
-            val hypotheticalPlayer = player.copy(hand = result.hand)
-            val tenpai = calculator.calculate(Hand(result.hand.tiles, result.hand.melds)) as? ShantenResult.Tenpai
-                ?: return@mapNotNull null
-            val waits = tenpai.winningTiles.map(Tile::riichiCanonical).distinct()
-            val discarded = player.discardPile.entries.map { it.tile.tile.riichiCanonical }.toSet() + discard.tile.riichiCanonical
-            val passed = player.passedTilesInRound.map(Tile::riichiCanonical).toSet()
-            val status = when {
-                riichiState?.isPermanentlyFuriten == true -> PERMANENT_FURITEN
-                waits.any { it in discarded } -> DISCARD_FURITEN
-                waits.any { it in passed } -> TEMPORARY_FURITEN
-                else -> null
-            }
-            DiscardReadinessAnalysisDto(
-                discardTileId = discard.id.toString(),
-                waitingTiles = waits.map { tile ->
-                    WaitingTileAvailabilityDto(
-                        tileAssetKey = tile.toAssetKey(tileAssetRegistry),
-                        remainingCount = (COPIES_PER_RIICHI_TILE - (visibleTiles[tile] ?: 0)).coerceAtLeast(0),
-                        winAvailability = validator.analyzeWinAvailability(
-                            state,
-                            hypotheticalPlayer,
-                            IdentifiedTile(Uuid.random(), tile),
-                        ).toDto(),
-                    )
-                },
-                statusIndicatorId = status,
-            )
-        }
-    }
+    /** 將規則模組打牌分析結果轉為私人 prompt 網路值；牌面轉 asset key 是平台層的職責，規則層只回傳 [Tile]。 */
+    private fun DiscardReadinessAnalysis.toDto(): DiscardReadinessAnalysisDto = DiscardReadinessAnalysisDto(
+        discardTileId = discardTileId.toString(),
+        waitingTiles = waitingTiles.map { it.toDto() },
+        statusIndicatorId = statusIndicatorId,
+    )
+
+    /** 將一張等待牌的規則層可用性轉為私人 prompt 網路值。 */
+    private fun WaitingTileAvailability.toDto(): WaitingTileAvailabilityDto = WaitingTileAvailabilityDto(
+        tileAssetKey = tile.toAssetKey(tileAssetRegistry),
+        remainingCount = remainingCount,
+        winAvailability = winAvailability.toDto(),
+    )
 
     /** 組合不依同步時間變化的決策識別碼。 */
     private fun buildDecisionKey(
@@ -166,13 +124,6 @@ class PlayerDecisionPromptFactory(
         preparation: RoundPreparationPromptDto?,
         reference: Any?,
     ): String = listOf(gameId, playerId, phase, reference, preparation?.hashCode()).joinToString(":")
-
-    private companion object {
-        const val COPIES_PER_RIICHI_TILE = 4
-        const val DISCARD_FURITEN = "mahjongcraft:discard_furiten"
-        const val TEMPORARY_FURITEN = "mahjongcraft:temporary_furiten"
-        const val PERMANENT_FURITEN = "mahjongcraft:permanent_furiten"
-    }
 }
 
 /** 將規則層的日麻和牌資格轉為私人 prompt 網路值。 */

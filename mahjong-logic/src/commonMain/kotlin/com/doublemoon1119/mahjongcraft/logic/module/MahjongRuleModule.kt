@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
+import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
@@ -126,6 +127,15 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 實作了 [LegalActionValidator] 的物件。
      */
     fun createLegalActionValidator(): LegalActionValidator
+
+    /**
+     * 建立適用於該規則的打牌分析器，供呈現層顯示打某張牌之後的等待牌與風險（例如振聽狀態）。
+     *
+     * 不支援此分析（例如尚未實作聽牌概念的規則）的規則回傳 `null`。
+     *
+     * @return 實作了 [DiscardReadinessAnalyzer] 的物件，若此規則不支援則為 `null`。
+     */
+    fun createDiscardReadinessAnalyzer(): DiscardReadinessAnalyzer? = null
 
     /**
      * 建立適用於該規則的手牌役種計算機 (Hand Value Calculator)。
