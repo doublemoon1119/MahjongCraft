@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -19,28 +19,11 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** 驗證胡牌結算中的日麻翻符顯示政策，以及贏家手牌與副露的呈現分離。 */
+/** 驗證特殊 win-equivalent outcome 結算時，贏家手牌與副露的呈現分離。 */
 class WinSettlementPresentationRequestFactoryTest {
     private val config = RiichiRuleConfig()
     private val module = RiichiRuleModule("mahjongcraft:riichi", config)
-
-    /** 未達滿貫且具有權威符數時應同時顯示翻數與符數。 */
-    @Test
-    fun includesFuWhenAvailable() {
-        val value = WinSettlementPresentationRequestFactory.riichiHanFuValue(totalHan = 3, totalFu = 30)
-
-        assertEquals(WinSettlementTranslationKeys.HAN_FU, value.translationKey)
-        assertEquals(listOf("3", "30"), value.arguments)
-    }
-
-    /** 滿貫以上的符數為零時不得顯示不存在的符數。 */
-    @Test
-    fun omitsFuWhenUnavailable() {
-        val value = WinSettlementPresentationRequestFactory.riichiHanFuValue(totalHan = 5, totalFu = 0)
-
-        assertEquals(WinSettlementTranslationKeys.HAN, value.translationKey)
-        assertEquals(listOf("5"), value.arguments)
-    }
+    private val detailResolverRegistry = WinSettlementDetailResolverRegistry()
 
     /**
      * 副露牌張只能出現在 [WinSettlementWinnerPresentation.melds]，絕不能同時混進
@@ -70,7 +53,7 @@ class WinSettlementPresentationRequestFactoryTest {
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
 
-        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module)
+        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, detailResolverRegistry)
 
         val winnerPresentation = request.winners.first()
         assertEquals(listOf(standing.id), winnerPresentation.standingTileIds)
@@ -80,5 +63,32 @@ class WinSettlementPresentationRequestFactoryTest {
                 "A meld tile must never be duplicated into the hand tile group.",
             )
         }
+    }
+
+    /**
+     * 流局滿貫的 outcome id 必須透過 [WinSettlementDetailResolverRegistry] 正確分派到日麻樣板與役種
+     * 欄位——這條路徑在遊戲內很難自然重現（需要真的打出流局滿貫），靠這個測試取代進遊戲驗證。
+     */
+    @Test
+    fun `dispatches nagashi mangan special outcome through the registry`() {
+        val registry = WinSettlementDetailResolverRegistry().apply { registerRiichiWinSettlementDetailResolver() }
+        val winner = FakeMahjongPlayerFactory.create()
+        val state = FakeTableStateFactory.create(
+            players = listOf(winner) + List(3) { FakeMahjongPlayerFactory.create() },
+            config = config,
+        )
+        val outcome = ResolvedRoundOutcome(
+            id = BuiltInRoundOutcomeIds.NAGASHI_MANGAN,
+            settledTableState = state,
+            beneficiaryPlayerIds = setOf(winner.id),
+            scoreDeltas = state.players.associate { it.id to 0 },
+            transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+            presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
+        )
+
+        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, registry)
+
+        assertEquals(RiichiWinSettlementDetailResolver.TEMPLATE_KEY, request.templateKey)
+        assertEquals(RiichiWinSettlementDetailResolver.YAKU_FIELD, request.winners.single().detailFields.single().id)
     }
 }

@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReacti
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWinSettlementDetailResolverRegistry
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Single
@@ -52,9 +51,9 @@ class FlowServerModule {
     @Single
     fun winRoundContinuationResolverRegistry(): WinRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry()
 
-    /** 建立含 bundled 日麻解析器、並開放 extension 啟動期登記的胡牌詳情 registry。 */
+    /** 建立供規則 extension 登記胡牌詳情解析器的 registry。 */
     @Single
-    fun winSettlementDetailResolverRegistry(): WinSettlementDetailResolverRegistry = createBuiltInWinSettlementDetailResolverRegistry()
+    fun winSettlementDetailResolverRegistry(): WinSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry()
 
     @Single
     fun mahjongAiStrategyRegistry(extensionActionRegistry: ExtensionGameActionAiRegistry): MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply {

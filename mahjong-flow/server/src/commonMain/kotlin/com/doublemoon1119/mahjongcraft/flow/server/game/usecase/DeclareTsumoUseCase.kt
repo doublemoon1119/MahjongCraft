@@ -15,7 +15,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -53,8 +52,7 @@ class DeclareTsumoUseCase(
     private val winPresentationHandoff: WinPresentationHandoff,
     private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
         createBuiltInWinCelebrationCueResolverRegistry(),
-    private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
-        createBuiltInWinSettlementDetailResolverRegistry(),
+    private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
 ) {
     /**
      * 執行自摸宣告邏輯。

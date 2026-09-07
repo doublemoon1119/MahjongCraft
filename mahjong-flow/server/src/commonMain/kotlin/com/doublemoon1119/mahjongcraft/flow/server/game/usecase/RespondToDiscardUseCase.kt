@@ -17,7 +17,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -63,8 +62,7 @@ class RespondToDiscardUseCase(
     private val winPresentationHandoff: WinPresentationHandoff,
     private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
         createBuiltInWinCelebrationCueResolverRegistry(),
-    private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
-        createBuiltInWinSettlementDetailResolverRegistry(),
+    private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
 ) {
     /**
      * 執行捨牌反應回應邏輯。
@@ -82,16 +80,21 @@ class RespondToDiscardUseCase(
                 state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
                 state.players.none { it.id == playerId } ->
                     state to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
+
                 pendingReaction == null ->
                     state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
+
                 playerId !in pendingReaction.eligiblePlayerIds ->
                     state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
+
                 playerId in pendingReaction.responses ->
                     state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
+
                 else -> {
                     val discarder = state.players.first { it.id == pendingReaction.discarderId }
                     val responder = state.players.first { it.id == playerId }
-                    val discardedTile = discarder.discardPile.entries.first { it.tile.id == pendingReaction.tileId }.tile
+                    val discardedTile =
+                        discarder.discardPile.entries.first { it.tile.id == pendingReaction.tileId }.tile
 
                     val module = moduleRegistry.getModule(state.config)
                     val legalActions = module.createLegalActionValidator().getLegalActions(
@@ -110,7 +113,9 @@ class RespondToDiscardUseCase(
                     val responderAfterPassedTile = if (action == GameAction.Pass &&
                         legalActions.any { it is GameAction.Pon || it is GameAction.Ron }
                     ) {
-                        responder.addPassedTile(module.createTileInterpretationPolicy().canonicalize(discardedTile.tile))
+                        responder.addPassedTile(
+                            module.createTileInterpretationPolicy().canonicalize(discardedTile.tile),
+                        )
                     } else {
                         responder
                     }
@@ -124,7 +129,8 @@ class RespondToDiscardUseCase(
                         responderAfterPassedTile
                     }
                     val playersAfterResponse = state.players.map { if (it.id == playerId) updatedResponder else it }
-                    val newPendingReaction = pendingReaction.copy(responses = pendingReaction.responses + (playerId to action))
+                    val newPendingReaction =
+                        pendingReaction.copy(responses = pendingReaction.responses + (playerId to action))
 
                     val result = if (!newPendingReaction.isComplete) {
                         RespondResult(state.copy(players = playersAfterResponse, pendingReaction = newPendingReaction))
@@ -207,7 +213,10 @@ class RespondToDiscardUseCase(
                         WinCelebrationWinner(
                             newState.players.indexOfFirst { it.id == winnerId },
                             result.ronResolutions[winnerId]?.let {
-                                winCelebrationCueResolverRegistry.resolve(result.ruleModuleId.orEmpty(), it.handValueResult)
+                                winCelebrationCueResolverRegistry.resolve(
+                                    result.ruleModuleId.orEmpty(),
+                                    it.handValueResult,
+                                )
                             },
                         )
                     },
@@ -288,8 +297,9 @@ class RespondToDiscardUseCase(
             )
         }
 
-        val winningEntry = pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Pon || it.value is GameAction.Kan }
-            ?: pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Chi }
+        val winningEntry =
+            pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Pon || it.value is GameAction.Kan }
+                ?: pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Chi }
 
         if (winningEntry == null) {
             // 所有人皆過牌：行為與捨牌時「無人可反應」相同，直接推進到下一位仍在本局中的玩家
@@ -331,7 +341,8 @@ class RespondToDiscardUseCase(
         } else {
             winner
         }
-        val calledHand = winnerWithPao.hand.call(meldType, handTilesUsed + discardedTile, discardedTile, winnerDirection)
+        val calledHand =
+            winnerWithPao.hand.call(meldType, handTilesUsed + discardedTile, discardedTile, winnerDirection)
         // 明槓得標後緊接著補摸嶺上牌（見下方 lastDrawn 賦值），這裡先不整理——理由同 DeclareKanUseCase
         // 沒有整理手牌時機點的說明：整理只在 lastDrawn == null（沒有還沒決定的摸牌）時才適用。
         val organizedHand = if (meldType != MeldType.OPEN_KAN && handSortPreferenceStore.isEnabled(winnerId)) {
@@ -376,7 +387,8 @@ class RespondToDiscardUseCase(
         } else {
             playersAfterMeldClaimed.map { player ->
                 if (player.id == winnerId) {
-                    player.copy(hand = player.hand.copy(lastDrawn = rinshanTile)).clearPassedTiles().recordAction(GameAction.Draw)
+                    player.copy(hand = player.hand.copy(lastDrawn = rinshanTile)).clearPassedTiles()
+                        .recordAction(GameAction.Draw)
                 } else {
                     player
                 }

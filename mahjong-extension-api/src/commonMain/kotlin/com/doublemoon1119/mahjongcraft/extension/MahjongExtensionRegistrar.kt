@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.extension
 
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
@@ -10,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReacti
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 
@@ -30,18 +30,21 @@ object MahjongExtensionRegistrar {
         networkRegistries: NetworkDtoRegistries,
         persistenceRegistries: PersistenceRegistries,
         winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
-            com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl(),
-        gameActionAiRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
-        gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
+            WinCelebrationCueResolverRegistryImpl(),
+        gameActionAiRegistry: ExtensionGameActionAiRegistry =
+            ExtensionGameActionAiRegistry(),
+        gameCommandRegistry: ExtensionGameCommandExecutorRegistry =
+            ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
             PostReactionRoundOutcomeResolverRegistry(),
         postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry =
             PostActionExhaustiveDrawResolverRegistry(),
-        roundPreparationResolverRegistry: RoundPreparationResolverRegistry = RoundPreparationResolverRegistry(),
+        roundPreparationResolverRegistry: RoundPreparationResolverRegistry =
+            RoundPreparationResolverRegistry(),
         winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry =
             WinRoundContinuationResolverRegistry(),
         winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
-            createBuiltInWinSettlementDetailResolverRegistry(),
+            WinSettlementDetailResolverRegistry(),
     ) {
         val registeredExtensionIds = mutableSetOf<String>()
         extensions.forEach { extension ->

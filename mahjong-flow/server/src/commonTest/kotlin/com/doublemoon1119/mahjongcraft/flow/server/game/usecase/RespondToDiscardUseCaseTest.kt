@@ -8,6 +8,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepos
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -59,6 +61,10 @@ class RespondToDiscardUseCaseTest {
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val winPresentationHandoff = WinPresentationHandoff()
+        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+            registerRiichiWinSettlementDetailResolver()
+            freeze()
+        }
         val useCase = RespondToDiscardUseCase(
             gameRepo,
             moduleRegistry,
@@ -67,6 +73,7 @@ class RespondToDiscardUseCaseTest {
             eventPublisher,
             presentationPublisher,
             winPresentationHandoff,
+            winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
         )
     }
 

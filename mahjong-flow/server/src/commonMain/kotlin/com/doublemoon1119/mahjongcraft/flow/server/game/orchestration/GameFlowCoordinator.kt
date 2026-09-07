@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSyn
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomaticRoundPreparationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
@@ -65,6 +66,8 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析四槓散了判定。
  * @property postActionExhaustiveDrawResolverRegistry 主動觸發途中流局的判定 registry，用於預先判斷
  *   是否已構成四槓散了，決定是否改呼叫 [declareSuukanNagareUseCase]。
+ * @property winSettlementDetailResolverRegistry 特殊 win-equivalent outcome（例如流局滿貫）的胡牌
+ *   詳情解析 registry，用於 [WinSettlementPresentationRequestFactory.createSpecialOutcome]。
  * @property declareExhaustiveDrawUseCase 一般流局結算用例。
  * @property resolveWinRoundContinuationUseCase 胡牌即時結算完成後，判定本局後續是否結束的用例；
  *   見 [ResolveWinRoundContinuationUseCase] KDoc。
@@ -88,6 +91,7 @@ class GameFlowCoordinator(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
+    private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
     private val declareExhaustiveDrawUseCase: DeclareExhaustiveDrawUseCase,
     private val resolvePostReactionRoundOutcomeUseCase: ResolvePostReactionRoundOutcomeUseCase,
     private val resolveWinRoundContinuationUseCase: ResolveWinRoundContinuationUseCase,
@@ -328,6 +332,7 @@ class GameFlowCoordinator(
                             previousState,
                             resolved,
                             moduleRegistry.getModule(previousState.config),
+                            winSettlementDetailResolverRegistry,
                         ),
                     )
                 }

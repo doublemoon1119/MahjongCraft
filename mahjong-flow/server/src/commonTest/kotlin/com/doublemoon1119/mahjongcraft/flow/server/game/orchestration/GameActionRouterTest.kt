@@ -10,6 +10,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepos
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
@@ -70,6 +72,10 @@ class GameActionRouterTest {
             registerRiichiPostActionExhaustiveDrawResolvers()
             freeze()
         }
+        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+            registerRiichiWinSettlementDetailResolver()
+            freeze()
+        }
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val winPresentationHandoff = WinPresentationHandoff()
@@ -96,7 +102,15 @@ class GameActionRouterTest {
                 eventPublisher,
                 presentationPublisher,
             ),
-            declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, winPresentationHandoff),
+            declareTsumoUseCase = DeclareTsumoUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                eventPublisher,
+                presentationPublisher,
+                winPresentationHandoff,
+                winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+            ),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
             respondToDiscardUseCase = RespondToDiscardUseCase(
                 gameRepo,
@@ -106,8 +120,17 @@ class GameActionRouterTest {
                 eventPublisher,
                 presentationPublisher,
                 winPresentationHandoff,
+                winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
-            respondToKanUseCase = RespondToKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, winPresentationHandoff),
+            respondToKanUseCase = RespondToKanUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                eventPublisher,
+                presentationPublisher,
+                winPresentationHandoff,
+                winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+            ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             extensionCommandRegistry = extensionCommandRegistry,
         )

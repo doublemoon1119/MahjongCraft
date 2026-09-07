@@ -19,6 +19,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -104,6 +106,10 @@ class RoomToRoomFullLifecycleIntegrationTest {
             registerRiichiPostActionExhaustiveDrawResolvers()
             freeze()
         }
+        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+            registerRiichiWinSettlementDetailResolver()
+            freeze()
+        }
         val declareRiichiUseCase = DeclareRiichiUseCase(
             gameRepo,
             moduleRegistry,
@@ -128,7 +134,15 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 gameEventPublisher,
                 presentationPublisher,
             ),
-            declareTsumoUseCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher, winPresentationHandoff),
+            declareTsumoUseCase = DeclareTsumoUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                gameEventPublisher,
+                presentationPublisher,
+                winPresentationHandoff,
+                winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+            ),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
             respondToDiscardUseCase = RespondToDiscardUseCase(
                 gameRepo,
@@ -138,8 +152,17 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 gameEventPublisher,
                 presentationPublisher,
                 winPresentationHandoff,
+                winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
-            respondToKanUseCase = RespondToKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher, winPresentationHandoff),
+            respondToKanUseCase = RespondToKanUseCase(
+                gameRepo,
+                moduleRegistry,
+                snapshotSynchronizer,
+                gameEventPublisher,
+                presentationPublisher,
+                winPresentationHandoff,
+                winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+            ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
             extensionCommandRegistry = extensionCommandRegistry,
         )
@@ -161,6 +184,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
             gameRepository = gameRepo,
             moduleRegistry = moduleRegistry,
             postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+            winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
             resolvePostReactionRoundOutcomeUseCase = ResolvePostReactionRoundOutcomeUseCase(
                 gameRepo,

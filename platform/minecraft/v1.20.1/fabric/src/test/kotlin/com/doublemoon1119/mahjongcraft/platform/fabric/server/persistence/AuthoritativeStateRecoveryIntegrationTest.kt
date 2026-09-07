@@ -27,6 +27,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
@@ -481,6 +483,10 @@ class AuthoritativeStateRecoveryIntegrationTest {
             FakeGameEventPublisher(),
             FakeGamePresentationPublisher(),
             WinPresentationHandoff(),
+            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+                registerRiichiWinSettlementDetailResolver()
+                freeze()
+            },
         )(gameId, playerId, GameAction.Pass)
 
         /** 使用恢復後 repository 提交搶槓反應 Pass。 */
@@ -491,6 +497,10 @@ class AuthoritativeStateRecoveryIntegrationTest {
             FakeGameEventPublisher(),
             FakeGamePresentationPublisher(),
             WinPresentationHandoff(),
+            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+                registerRiichiWinSettlementDetailResolver()
+                freeze()
+            },
         )(gameId, playerId, GameAction.Pass)
     }
 }

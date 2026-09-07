@@ -23,7 +23,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRi
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiNagashiManganOutcomeResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiPostActionExhaustiveDrawResolvers
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.createBuiltInWinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -123,7 +123,7 @@ object FabricMahjongExtensions {
         winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry =
             WinRoundContinuationResolverRegistry(),
         winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
-            createBuiltInWinSettlementDetailResolverRegistry(),
+            WinSettlementDetailResolverRegistry(),
         declareRiichiUseCase: DeclareRiichiUseCase,
         debugWinRoundContinuationState: DebugWinRoundContinuationState,
         minecraftEnvironment: MinecraftEnvironment,
@@ -254,7 +254,7 @@ object FabricMahjongExtensions {
         winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry =
             WinRoundContinuationResolverRegistry(),
         winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry =
-            createBuiltInWinSettlementDetailResolverRegistry(),
+            WinSettlementDetailResolverRegistry(),
         declareRiichiUseCase: DeclareRiichiUseCase,
         debugWinRoundContinuationState: DebugWinRoundContinuationState = DebugWinRoundContinuationState(),
         // 預設不註冊開發用的中途胡牌 resolver：這個多載的其他測試呼叫端只關心依賴圖，正式呼叫端
@@ -272,6 +272,7 @@ object FabricMahjongExtensions {
             gameCommandRegistry = gameCommandRegistry,
             postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
             postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+            winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             gameActionDisplayNameRegistry = gameActionDisplayNameRegistry,
             declareRiichiUseCase = declareRiichiUseCase,
             networkRegistries = networkRegistries,
@@ -342,6 +343,7 @@ object FabricMahjongExtensions {
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry,
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry,
         postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
+        winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
         gameActionDisplayNameRegistry: GameActionDisplayNameRegistry,
         declareRiichiUseCase: DeclareRiichiUseCase,
         networkRegistries: NetworkDtoRegistries,
@@ -353,6 +355,7 @@ object FabricMahjongExtensions {
         gameCommandRegistry.registerRiichiGameCommandHandler(declareRiichiUseCase)
         postReactionRoundOutcomeResolverRegistry.registerRiichiNagashiManganOutcomeResolver()
         postActionExhaustiveDrawResolverRegistry.registerRiichiPostActionExhaustiveDrawResolvers()
+        winSettlementDetailResolverRegistry.registerRiichiWinSettlementDetailResolver()
         gameActionDisplayNameRegistry.registerRiichiGameActionDisplayName()
     }
 }

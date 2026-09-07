@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
@@ -54,7 +56,19 @@ class DeclareTsumoUseCaseTest {
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val winPresentationHandoff = WinPresentationHandoff()
-        val useCase = DeclareTsumoUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, winPresentationHandoff)
+        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+            registerRiichiWinSettlementDetailResolver()
+            freeze()
+        }
+        val useCase = DeclareTsumoUseCase(
+            gameRepo,
+            moduleRegistry,
+            snapshotSynchronizer,
+            eventPublisher,
+            presentationPublisher,
+            winPresentationHandoff,
+            winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+        )
     }
 
     // 中中、發發發、白白白、123m、55p（大三元役滿，13 張立牌）
