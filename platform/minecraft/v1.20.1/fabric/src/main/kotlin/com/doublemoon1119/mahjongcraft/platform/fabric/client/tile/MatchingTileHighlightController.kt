@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.MinecraftClient
 import net.minecraft.util.hit.EntityHitResult
@@ -47,9 +46,8 @@ class MatchingTileHighlightController(
             .forEach { tile -> tile.setMatchingHighlight(if (tile.uuid == target.uuid) targetColor else otherMatchColor) }
     }
 
-    /** 只有已揭露且停止動畫的正式牌局牌可參與同種牌提示。 */
+    /** 只有停止動畫的正式牌局牌可參與同種牌提示；牌面姿態不影響判斷，未知牌的快照本身就是 null。 */
     private fun MahjongTileEntity.canParticipate(): Boolean = managedByGame &&
-        tilePose != MahjongTilePose.FACE_DOWN &&
         !animating &&
         managedTableId?.let { tableId -> stateStore.findManagedTileSnapshot(tableId, uuid.toKotlinUuid())?.tile != null } == true
 
