@@ -85,7 +85,12 @@ class PlayerDecisionPromptFactory(
                     claimedTileOrientation = preview.claimedTileOrientation,
                 )
             },
-            triggerTileAssetKey = actions.firstNotNullOfOrNull { it.referenceTile }?.toAssetKey(tileAssetRegistry),
+            // 自己回合（立直／暗槓等）一律顯示剛摸到的牌，不依賴哪個候選動作剛好帶了 referenceTile——
+            // 否則像立直這種被 listActionCandidates 過濾掉、沒有對應候選的情況會完全沒有觸發牌可顯示。
+            triggerTileAssetKey = when (phase) {
+                PlayerDecisionPhase.OWN_TURN -> player.hand.lastDrawn?.tile?.toAssetKey(tileAssetRegistry)
+                else -> actions.firstNotNullOfOrNull { it.referenceTile }?.toAssetKey(tileAssetRegistry)
+            },
             triggerPlayerId = trigger?.playerId?.toString(),
             triggerPlayerName = trigger?.playerId?.let { sourceId ->
                 val sourcePlayer = state.players.firstOrNull { it.id == sourceId }

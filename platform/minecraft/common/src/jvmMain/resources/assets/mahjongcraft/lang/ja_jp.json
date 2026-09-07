@@ -143,6 +143,7 @@
   "mahjongcraft.hud.remaining_tiles": "残り%s枚",
   "mahjongcraft.hud.reopen_action": "手牌を右クリックして操作画面を開く",
   "mahjongcraft.hud.trigger": "%s（%s）%s",
+  "mahjongcraft.hud.trigger.self_draw": "自摸った牌",
   "mahjongcraft.hud.waiting_for_action": "操作待ち",
   "mahjongcraft.hud.win_availability.available": "和了可能",
   "mahjongcraft.hud.win_availability.below_minimum": "最低翻数未満",

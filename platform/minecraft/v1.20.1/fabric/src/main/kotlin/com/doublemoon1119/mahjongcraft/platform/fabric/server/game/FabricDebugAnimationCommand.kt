@@ -1864,15 +1864,18 @@ class FabricDebugAnimationCommand(
         val commandName: String,
         val phase: PlayerDecisionPhaseDto = PlayerDecisionPhaseDto.OWN_TURN,
         val isDiscardAnalysis: Boolean = false,
+        /** 自己回合摸牌的觸發牌 asset key；只有真的代表「摸到這張牌」的情境才給值，例如 [TIMER] 不給。 */
+        val selfDrawTileAssetKey: String? = null,
     ) {
         TIMER("timer"),
         CHI("chi", PlayerDecisionPhaseDto.DISCARD_REACTION),
         PON("pon", PlayerDecisionPhaseDto.DISCARD_REACTION),
         KAN("kan", PlayerDecisionPhaseDto.DISCARD_REACTION),
         RON("ron", PlayerDecisionPhaseDto.DISCARD_REACTION),
-        TSUMO("tsumo"),
-        RIICHI("riichi"),
-        KYUUSHU("kyuushu"),
+        TSUMO("tsumo", selfDrawTileAssetKey = "red_dragon"),
+        RIICHI("riichi", selfDrawTileAssetKey = "m1"),
+        ANKAN("ankan", selfDrawTileAssetKey = "m9"),
+        KYUUSHU("kyuushu", selfDrawTileAssetKey = "east"),
         MIXED("mixed", PlayerDecisionPhaseDto.DISCARD_REACTION),
         DISCARD_ANALYSIS("discard_analysis", isDiscardAnalysis = true),
         DISCARD_FURITEN("discard_furiten", isDiscardAnalysis = true),
@@ -1890,7 +1893,7 @@ class FabricDebugAnimationCommand(
         fun prompt(decisionKey: String, analysisTileId: String?): PlayerDecisionPromptDto = PlayerDecisionPromptDto(
             decisionKey = decisionKey,
             actions = actions(),
-            triggerTileAssetKey = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "s5" else null,
+            triggerTileAssetKey = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "s5" else selfDrawTileAssetKey,
             triggerPlayerId = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) Uuid.random().toString() else null,
             triggerPlayerName = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "AI 1" else null,
             triggerPlayerRelation = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) DecisionPlayerRelationDto.LEFT else null,
@@ -1913,6 +1916,7 @@ class FabricDebugAnimationCommand(
                 CHI -> listOf(action("chi", listOf("s4", "s5", "s6"), 0))
                 PON -> listOf(action("pon", listOf("p5", "p5", "p5"), 0))
                 KAN -> listOf(action("kan_open", listOf("m9", "m9", "m9", "m9"), 0))
+                ANKAN -> listOf(action("kan_closed", listOf("m9", "m9", "m9", "m9")))
                 RON -> listOf(action("ron", listOf("s5")))
                 TSUMO -> listOf(action("tsumo", listOf("red_dragon")))
                 KYUUSHU -> listOf(

@@ -691,9 +691,10 @@ private class PlayerDecisionScreen(
         drawTile(context, assetKey, width / 2 - PREVIEW_TILE_WIDTH / 2, top + TRIGGER_PADDING + textHeight)
     }
 
-    /** 以 client player list 解析來源名稱，並使用完整本地化句型。 */
+    /** 以 client player list 解析來源名稱，並使用完整本地化句型；自己回合摸牌沒有來源玩家，改顯示專用句型。 */
     private fun triggerText(): Text? {
-        val playerId = prompt.triggerPlayerId ?: return null
+        val playerId = prompt.triggerPlayerId
+            ?: return if (prompt.triggerTileAssetKey != null) Text.translatable("mahjongcraft.hud.trigger.self_draw") else null
         val uuid = runCatching { java.util.UUID.fromString(playerId) }.getOrNull()
         val playerName = prompt.triggerPlayerName
             ?: uuid?.let { MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(it)?.profile?.name }
