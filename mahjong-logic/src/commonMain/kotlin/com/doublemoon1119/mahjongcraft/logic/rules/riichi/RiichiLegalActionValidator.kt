@@ -116,6 +116,15 @@ class RiichiLegalActionValidator(
                 }
             }
 
+            // 自己回合已摸牌時，一併合併「有摸到牌」情境的完整判定（自摸／暗槓／加槓／九種九牌）：
+            // 遞迴呼叫自己、把 lastDrawn 從立牌剝離後當成 incomingTile 傳入，重用下方 incomingTile
+            // 非 null 分支既有的邏輯，讓呼叫端只需呼叫一次就能拿到自己回合的完整合法動作清單。
+            val lastDrawn = player.hand.lastDrawn
+            if (sourceDirection == RelativeDirection.Self && lastDrawn != null) {
+                val playerWithoutLastDrawn = player.copy(hand = player.hand.copy(lastDrawn = null))
+                legalActions += getLegalActions(tableState, playerWithoutLastDrawn, sourceAction, sourceDirection, lastDrawn)
+            }
+
             return legalActions
         }
 

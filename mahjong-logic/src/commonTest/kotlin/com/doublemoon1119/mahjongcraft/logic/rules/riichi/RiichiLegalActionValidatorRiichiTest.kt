@@ -305,6 +305,57 @@ class RiichiLegalActionValidatorRiichiTest {
     }
 
     /**
+     * 測試自己回合已摸牌時，單次呼叫（`incomingTile = null`，讓 [player] 的 `hand.lastDrawn` 帶著
+     * 摸到的牌，而非額外用參數傳入）就能拿到跟摸到的牌相關的資格（此處為自摸），呼叫端不需要自行
+     * 剝離 `lastDrawn` 再額外呼叫一次才問得到——這是本次修正要解決的行為：修正前 `incomingTile == null`
+     * 分支只檢查立直資格就直接回傳，`hand.lastDrawn` 帶的自摸資格會被整段跳過。
+     *
+     * 沿用 [RiichiLegalActionValidatorTest] `test can tsumo` 的手牌（1112345678999m + 摸到 9m 完成
+     * 清一色），差別只在於這裡讓摸到的牌直接放進 `hand.lastDrawn`，而不是另外用 `incomingTile` 參數
+     * 傳入。
+     */
+    @Test
+    fun `test single call with incomingTile null still surfaces lastDrawn eligibility`() {
+        // 準備
+        val standingTiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 2),
+            Tile.Numeric(Tile.Suit.Character, 3),
+            Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Character, 5),
+            Tile.Numeric(Tile.Suit.Character, 6),
+            Tile.Numeric(Tile.Suit.Character, 7),
+            Tile.Numeric(Tile.Suit.Character, 8),
+            Tile.Numeric(Tile.Suit.Character, 9),
+            Tile.Numeric(Tile.Suit.Character, 9),
+            Tile.Numeric(Tile.Suit.Character, 9),
+        )
+        val playerHand = FakeHandFactory.create(standingTiles, lastDrawn = Tile.Numeric(Tile.Suit.Character, 9))
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            playerRuleState = RiichiPlayerState(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+        )
+
+        // 執行——只呼叫一次，incomingTile 給 null。
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
+            incomingTile = null,
+        )
+
+        // 驗證
+        assertTrue(actions.any { it is GameAction.Tsumo })
+    }
+
+    /**
      * 測試立直後暗槓 - 牌型改變則不可暗槓。
      *
      * 立直後暗槓，必須暗槓前後的牌型相同才能暗槓。

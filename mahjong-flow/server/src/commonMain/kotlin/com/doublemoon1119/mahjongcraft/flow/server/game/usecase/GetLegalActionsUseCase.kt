@@ -24,10 +24,9 @@ import kotlin.uuid.Uuid
  *    過濾只留 [GameAction.Ron]/[GameAction.Pass]（`getLegalActions` 的「反應」分支不分辨
  *    `sourceAction` 種類，會一併算出吃/碰/明槓資格，這裡都不合法）。
  * 2. 有資格回應捨牌、且尚未回應（`pendingReaction` 非 null）：不過濾，Chi/Pon/Kan/Ron/Pass 皆可能合法。
- * 3. 輪到自己回合、且已經摸牌：`RiichiLegalActionValidator.getLegalActions` 對「自己回合」情境
- *    需要呼叫兩次才能拿到完整清單——一次 `incomingTile = null`（未剝離 `lastDrawn` 的原始手牌，
- *    只檢查 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION] 資格）、一次 `incomingTile = 剝離後的 lastDrawn`（檢查
- *    Tsumo/Kan/KyuushuKyuuhai 等資格），兩次結果需要合併，缺一次會漏掉對應的合法動作。
+ * 3. 輪到自己回合、且已經摸牌：`sourceAction = Draw`、`incomingTile = null`——規則實作自行決定「自己
+ *    回合已摸牌」這個情境下需要哪些額外資訊（例如是否要另外剝離 `lastDrawn` 才能檢查完整資格），
+ *    這裡只需呼叫一次即可拿到完整清單，不需要知道特定規則模組的內部實作細節。
  * 4. 以上皆非：回傳空清單（不是錯誤——單純這個玩家現在沒有除了被動等待以外的事可做）。
  *
  * 回傳清單只包含「除了預設回合動作以外」的額外合法動作——例如自己回合已摸牌時，「捨牌」本身
@@ -91,23 +90,13 @@ class GetLegalActionsUseCase(
                 player.hand.lastDrawn != null &&
                 pendingKanReaction == null &&
                 pendingReaction == null -> {
-                val lastDrawn = player.hand.lastDrawn
-                val riichiCheck = validator.getLegalActions(
+                validator.getLegalActions(
                     tableState = state,
                     player = player,
                     sourceAction = GameAction.Draw,
                     sourceDirection = RelativeDirection.Self,
                     incomingTile = null,
                 )
-                val playerForCheck = player.copy(hand = player.hand.copy(lastDrawn = null))
-                val otherChecks = validator.getLegalActions(
-                    tableState = state,
-                    player = playerForCheck,
-                    sourceAction = GameAction.Draw,
-                    sourceDirection = RelativeDirection.Self,
-                    incomingTile = lastDrawn,
-                )
-                riichiCheck + otherChecks
             }
 
             else -> emptyList()

@@ -22,6 +22,11 @@ interface LegalActionValidator {
      * @param sourceDirection 動作的來源方位。例如：[RelativeDirection.Left] 表示上家，[RelativeDirection.Self] 表示自己。
      * @param incomingTile 可選參數，表示剛摸到或他家打出或加槓之類的牌。
      *                     若為 null，則表示判斷玩家在自己回合內（未摸牌或已摸牌但未捨牌）的動作。
+     *                     [sourceDirection] 為 [RelativeDirection.Self] 且此參數為 null 時，若
+     *                     `player.hand.lastDrawn` 非 null（已摸牌，只是呼叫端還不知道要不要傳入摸到
+     *                     的牌），實作必須自行判斷是否需要一併檢查跟摸到的牌相關的資格（例如自摸／
+     *                     加槓／暗槓），一次呼叫就回傳完整清單——呼叫端只給一次 `incomingTile = null`，
+     *                     不會、也不應該為了拿到完整清單而自行剝離 `lastDrawn` 重複呼叫兩次。
      * @return 該玩家可以執行的合法動作列表。
      */
     fun getLegalActions(
