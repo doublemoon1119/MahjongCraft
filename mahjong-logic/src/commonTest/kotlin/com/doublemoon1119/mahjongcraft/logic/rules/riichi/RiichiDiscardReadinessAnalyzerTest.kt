@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
@@ -165,5 +166,21 @@ class RiichiDiscardReadinessAnalyzerTest {
 
         assertTrue(analysis.waitingTiles.any { it.tile == threeSou })
         assertTrue(analysis.waitingTiles.any { it.tile == sixSou })
+    }
+
+    /**
+     * 驗證每張等待牌的 [WaitingTileAvailability.winAvailability] 都是命名字串（規則中立設計，見該
+     * 屬性 KDoc），不是任何規則專屬型別的 toString() 結果。
+     */
+    @Test
+    fun `test analyze produces namespaced win availability ids`() {
+        val hand = FakeHandFactory.create(tenpaiTiles + floatingTile)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+
+        val analysis = analyzer.analyze(tableState, player).single()
+
+        assertTrue(analysis.waitingTiles.isNotEmpty())
+        analysis.waitingTiles.forEach { assertTrue(it.winAvailability.startsWith("mahjongcraft:win_")) }
     }
 }

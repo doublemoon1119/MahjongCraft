@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionAc
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileWinAvailabilityDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -18,7 +17,6 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalysis
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWinAvailability
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
 import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
@@ -113,7 +111,7 @@ class PlayerDecisionPromptFactory(
     private fun WaitingTileAvailability.toDto(): WaitingTileAvailabilityDto = WaitingTileAvailabilityDto(
         tileAssetKey = tile.toAssetKey(tileAssetRegistry),
         remainingCount = remainingCount,
-        winAvailability = winAvailability.toDto(),
+        winAvailability = winAvailability,
     )
 
     /** 組合不依同步時間變化的決策識別碼。 */
@@ -124,14 +122,6 @@ class PlayerDecisionPromptFactory(
         preparation: RoundPreparationPromptDto?,
         reference: Any?,
     ): String = listOf(gameId, playerId, phase, reference, preparation?.hashCode()).joinToString(":")
-}
-
-/** 將規則層的日麻和牌資格轉為私人 prompt 網路值。 */
-private fun RiichiWinAvailability.toDto(): WaitingTileWinAvailabilityDto = when (this) {
-    RiichiWinAvailability.AVAILABLE -> WaitingTileWinAvailabilityDto.AVAILABLE
-    RiichiWinAvailability.TSUMO_ONLY -> WaitingTileWinAvailabilityDto.TSUMO_ONLY
-    RiichiWinAvailability.NO_YAKU -> WaitingTileWinAvailabilityDto.NO_YAKU
-    RiichiWinAvailability.BELOW_MINIMUM -> WaitingTileWinAvailabilityDto.BELOW_MINIMUM
 }
 
 /** 將受控 preparation input 轉成不暴露其他玩家提交的私人 prompt。 */

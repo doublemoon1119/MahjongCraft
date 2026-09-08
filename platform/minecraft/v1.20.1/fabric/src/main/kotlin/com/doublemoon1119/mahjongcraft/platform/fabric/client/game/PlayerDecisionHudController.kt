@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPr
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileWinAvailabilityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
@@ -312,7 +312,7 @@ class PlayerDecisionHudController(
         val columns = minOf(MAX_WAIT_COLUMNS, analysis.waitingTiles.size.coerceAtLeast(1))
         val rowCount = (analysis.waitingTiles.size + columns - 1) / columns
         val sharedAvailability = analysis.waitingTiles.map { it.winAvailability }.distinct().singleOrNull()
-            ?.takeUnless { it == WaitingTileWinAvailabilityDto.AVAILABLE }
+            ?.takeUnless { it == WIN_AVAILABLE_ID }
         val statusTexts = listOfNotNull(
             analysis.statusIndicatorId?.let { Text.translatable(it.translationKey()) },
             sharedAvailability?.let { Text.translatable(it.translationKey()) },
@@ -320,11 +320,11 @@ class PlayerDecisionHudController(
         val statusHeight = if (statusTexts.isEmpty()) 0 else statusTexts.size * STATUS_TEXT_HEIGHT + STATUS_DIVIDER_GAP + 1 + STATUS_TILE_GAP
         val mixedAvailability = sharedAvailability == null &&
             analysis.waitingTiles.any {
-                it.winAvailability != WaitingTileWinAvailabilityDto.AVAILABLE
+                it.winAvailability != WIN_AVAILABLE_ID
             }
         val countTexts = analysis.waitingTiles.map { waiting -> Text.translatable("mahjongcraft.hud.remaining_tiles", waiting.remainingCount) }
         val availabilityTexts = analysis.waitingTiles.map { waiting ->
-            if (mixedAvailability && waiting.winAvailability != WaitingTileWinAvailabilityDto.AVAILABLE) {
+            if (mixedAvailability && waiting.winAvailability != WIN_AVAILABLE_ID) {
                 Text.translatable(waiting.winAvailability.translationKey())
             } else {
                 null
@@ -938,15 +938,11 @@ internal fun String.translationKey(): String = when (this) {
     "mahjongcraft:discard_furiten" -> "mahjongcraft.hud.furiten.discard"
     "mahjongcraft:temporary_furiten" -> "mahjongcraft.hud.furiten.temporary"
     "mahjongcraft:permanent_furiten" -> "mahjongcraft.hud.furiten.permanent"
+    "mahjongcraft:win_available" -> "mahjongcraft.hud.win_availability.available"
+    "mahjongcraft:win_tsumo_only" -> "mahjongcraft.hud.win_availability.tsumo_only"
+    "mahjongcraft:win_no_yaku" -> "mahjongcraft.hud.win_availability.no_yaku"
+    "mahjongcraft:win_below_minimum" -> "mahjongcraft.hud.win_availability.below_minimum"
     else -> if (startsWith("mahjongcraft:")) "mahjongcraft.hud.action.${substringAfter(':')}" else this
-}
-
-/** 將等待牌和牌資格映射至內建 HUD 翻譯鍵。 */
-private fun WaitingTileWinAvailabilityDto.translationKey(): String = when (this) {
-    WaitingTileWinAvailabilityDto.AVAILABLE -> "mahjongcraft.hud.win_availability.available"
-    WaitingTileWinAvailabilityDto.TSUMO_ONLY -> "mahjongcraft.hud.win_availability.tsumo_only"
-    WaitingTileWinAvailabilityDto.NO_YAKU -> "mahjongcraft.hud.win_availability.no_yaku"
-    WaitingTileWinAvailabilityDto.BELOW_MINIMUM -> "mahjongcraft.hud.win_availability.below_minimum"
 }
 
 /** 只有他家捨牌與搶槓視窗的跳過會提交正式 Pass。 */

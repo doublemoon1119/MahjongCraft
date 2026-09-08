@@ -37,36 +37,25 @@ enum class DecisionPlayerRelationDto {
     RIGHT,
 }
 
-/** 一張等待牌及依玩家可見資訊推算的剩餘張數。 */
+/**
+ * 一張等待牌及依玩家可見資訊推算的剩餘張數。
+ *
+ * [winAvailability] 是規則模組自訂的命名字串，比照 [DiscardReadinessAnalysisDto.statusIndicatorId] 的
+ * 慣例：預設值 [WIN_AVAILABLE_ID] 代表「沒有任何和牌資格上的特殊限制」，這是所有規則模組共通的中立
+ * 預設；有更細分和牌可用性概念的規則模組（例如日麻的自摸限定、無役、未達最低翻符）另外提供各自的
+ * 命名字串，client 端依 namespaced ID 映射顯示文字，查不到時安全 fallback 顯示原始字串（同
+ * [DiscardReadinessAnalysisDto.statusIndicatorId] 與 `RoundInfoLine`／`PublicPlayerIndicator` 的
+ * 既有慣例）。
+ */
 @Serializable
 data class WaitingTileAvailabilityDto(
     val tileAssetKey: String,
     val remainingCount: Int,
-    val winAvailability: WaitingTileWinAvailabilityDto = WaitingTileWinAvailabilityDto.AVAILABLE,
+    val winAvailability: String = WIN_AVAILABLE_ID,
 )
 
-/**
- * 等待牌在目前權威桌況下的和牌可用性。
- *
- * 目前僅日麻一個規則模組會產生此欄位，各選項的語意（役、番數門檻）也是日麻特有概念；若日後有規則
- * 模組需要不同的和牌可用性語意，這裡需要重新設計（例如改成命名字串＋client 端顯示 registry），不能
- * 只是加新的列舉值。
- */
-// TODO: 新增其他地區規則模組時重新評估此 enum 是否需要改為規則中立設計。
-@Serializable
-enum class WaitingTileWinAvailabilityDto {
-    /** 榮和或自摸至少一種可用。 */
-    AVAILABLE,
-
-    /** 僅自摸可用。 */
-    TSUMO_ONLY,
-
-    /** 目前完成牌型沒有役。 */
-    NO_YAKU,
-
-    /** 役種番數未達起胡限制。 */
-    BELOW_MINIMUM,
-}
+/** [WaitingTileAvailabilityDto.winAvailability] 的中立預設值，代表這張等待牌沒有和牌資格上的特殊限制。 */
+const val WIN_AVAILABLE_ID = "mahjongcraft:win_available"
 
 /** 打出指定實體手牌後的聽牌分析。 */
 @Serializable

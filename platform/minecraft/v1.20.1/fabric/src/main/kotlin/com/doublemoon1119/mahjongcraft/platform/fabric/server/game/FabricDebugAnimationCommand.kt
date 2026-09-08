@@ -35,8 +35,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionAc
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileWinAvailabilityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -1957,10 +1957,10 @@ class FabricDebugAnimationCommand(
                 listOf("m2", "m5", "m8")
             }
             val availability = when (this) {
-                DISCARD_NO_YAKU, DISCARD_FURITEN_UNAVAILABLE -> WaitingTileWinAvailabilityDto.NO_YAKU
-                DISCARD_BELOW_MINIMUM -> WaitingTileWinAvailabilityDto.BELOW_MINIMUM
-                DISCARD_TSUMO_ONLY -> WaitingTileWinAvailabilityDto.TSUMO_ONLY
-                else -> WaitingTileWinAvailabilityDto.AVAILABLE
+                DISCARD_NO_YAKU, DISCARD_FURITEN_UNAVAILABLE -> "mahjongcraft:win_no_yaku"
+                DISCARD_BELOW_MINIMUM -> "mahjongcraft:win_below_minimum"
+                DISCARD_TSUMO_ONLY -> "mahjongcraft:win_tsumo_only"
+                else -> WIN_AVAILABLE_ID
             }
             return DiscardReadinessAnalysisDto(
                 discardTileId,
@@ -1969,13 +1969,23 @@ class FabricDebugAnimationCommand(
                         asset,
                         (3 - index).coerceAtLeast(0),
                         if (this == DISCARD_MIXED_AVAILABILITY) {
-                            WaitingTileWinAvailabilityDto.entries[index % WaitingTileWinAvailabilityDto.entries.size]
+                            MIXED_AVAILABILITY_CYCLE[index % MIXED_AVAILABILITY_CYCLE.size]
                         } else {
                             availability
                         },
                     )
                 },
                 if (this == DISCARD_FURITEN || this == DISCARD_FURITEN_UNAVAILABLE) "mahjongcraft:discard_furiten" else null,
+            )
+        }
+
+        private companion object {
+            /** [DISCARD_MIXED_AVAILABILITY] 逐張輪流展示的和牌可用性命名字串。 */
+            val MIXED_AVAILABILITY_CYCLE = listOf(
+                WIN_AVAILABLE_ID,
+                "mahjongcraft:win_tsumo_only",
+                "mahjongcraft:win_no_yaku",
+                "mahjongcraft:win_below_minimum",
             )
         }
     }

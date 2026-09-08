@@ -58,7 +58,7 @@ class RiichiDiscardReadinessAnalyzer(
                             tableState,
                             hypotheticalPlayer,
                             IdentifiedTile(Uuid.random(), tile),
-                        ),
+                        ).toStatusId(),
                     )
                 },
                 statusIndicatorId = status,
@@ -66,10 +66,22 @@ class RiichiDiscardReadinessAnalyzer(
         }
     }
 
+    /** 將日麻的和牌可用性判定轉為 [WaitingTileAvailability.winAvailability] 用的命名字串。 */
+    private fun RiichiWinAvailability.toStatusId(): String = when (this) {
+        RiichiWinAvailability.AVAILABLE -> WIN_AVAILABLE
+        RiichiWinAvailability.TSUMO_ONLY -> WIN_TSUMO_ONLY
+        RiichiWinAvailability.NO_YAKU -> WIN_NO_YAKU
+        RiichiWinAvailability.BELOW_MINIMUM -> WIN_BELOW_MINIMUM
+    }
+
     private companion object {
         const val COPIES_PER_TILE = 4
         const val DISCARD_FURITEN = "mahjongcraft:discard_furiten"
         const val TEMPORARY_FURITEN = "mahjongcraft:temporary_furiten"
         const val PERMANENT_FURITEN = "mahjongcraft:permanent_furiten"
+        const val WIN_AVAILABLE = "mahjongcraft:win_available"
+        const val WIN_TSUMO_ONLY = "mahjongcraft:win_tsumo_only"
+        const val WIN_NO_YAKU = "mahjongcraft:win_no_yaku"
+        const val WIN_BELOW_MINIMUM = "mahjongcraft:win_below_minimum"
     }
 }

@@ -42,7 +42,7 @@ class DecisionTimerUpdatePayloadDtoTest {
                                     WaitingTileAvailabilityDto(
                                         "m2",
                                         3,
-                                        WaitingTileWinAvailabilityDto.TSUMO_ONLY,
+                                        "mahjongcraft:win_tsumo_only",
                                     ),
                                 ),
                                 statusIndicatorId = "mahjongcraft:discard_furiten",

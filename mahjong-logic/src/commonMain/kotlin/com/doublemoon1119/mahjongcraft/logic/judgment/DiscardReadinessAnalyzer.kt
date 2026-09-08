@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.judgment
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWinAvailability
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -34,13 +33,13 @@ data class DiscardReadinessAnalysis(
 /**
  * 一張等待牌的可用性。
  *
- * [winAvailability] 目前固定使用日麻的 [RiichiWinAvailability]，與 network-dto 的
- * `WaitingTileWinAvailabilityDto` 有同樣的設計限制——日後有規則模組需要不同和牌可用性語意時需一併
- * 重新設計，見該 DTO 的 KDoc／TODO。
+ * [winAvailability] 是規則模組自訂的命名字串，比照 [DiscardReadinessAnalysis.statusIndicatorId] 的
+ * 慣例：`"mahjongcraft:win_available"` 代表沒有任何和牌資格上的特殊限制，這是所有規則模組共通的中立
+ * 預設；有更細分和牌可用性概念的規則模組（例如日麻的自摸限定、無役、未達最低翻符）另外提供各自的
+ * 命名字串。
  */
-// TODO: 新增其他地區規則模組時重新評估 winAvailability 是否需要規則中立設計。
 data class WaitingTileAvailability(
     val tile: Tile,
     val remainingCount: Int,
-    val winAvailability: RiichiWinAvailability,
+    val winAvailability: String,
 )
