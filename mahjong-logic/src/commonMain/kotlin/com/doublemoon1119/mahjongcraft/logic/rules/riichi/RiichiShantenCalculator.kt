@@ -207,6 +207,10 @@ class RiichiShantenCalculator : ShantenCalculator {
             counts[index + 2]++
         }
 
+        // 跳過這張牌（視為多餘、不參與任何面子），避免卡在無法組成刻子／順子的孤張或多餘複本
+        // （例如手牌已有一組刻子、又多一張同種牌）導致搜尋提前中止，漏掉後面牌張能組成的面子。
+        best = max(best, countMeldsRecursive(counts, index + 1, currentMelds, targetMelds))
+
         return best
     }
 

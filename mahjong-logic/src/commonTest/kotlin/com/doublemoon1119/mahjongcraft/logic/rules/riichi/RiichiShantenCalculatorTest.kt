@@ -209,4 +209,40 @@ class RiichiShantenCalculatorTest {
         val notTenpaiResult = result as ShantenResult.NotTenpai
         assertEquals(1, notTenpaiResult.shanten, "Kokushi one away should have 1 shanten")
     }
+
+    /**
+     * 測試聽牌手牌中若含有一組與聽牌無關的多餘複本牌（暗槓候選），聽的牌仍要正確列出。
+     *
+     * 手牌為 111p(刻子) + 234m + 567m + 99s(雀頭) + 45s(兩面聽 3s/6s)，
+     * 額外多一張 1p（湊成四張、與聽牌完全無關），不應影響聽牌清單。
+     */
+    @Test
+    fun `test tenpai winning tiles are not lost when hand has an unrelated quadruple`() {
+        val ryanmenHandWithSurplus = listOf(
+            Tile.Numeric(Tile.Suit.Dot, 1),
+            Tile.Numeric(Tile.Suit.Dot, 1),
+            Tile.Numeric(Tile.Suit.Dot, 1),
+            Tile.Numeric(Tile.Suit.Dot, 1),
+            Tile.Numeric(Tile.Suit.Character, 2),
+            Tile.Numeric(Tile.Suit.Character, 3),
+            Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Character, 5),
+            Tile.Numeric(Tile.Suit.Character, 6),
+            Tile.Numeric(Tile.Suit.Character, 7),
+            Tile.Numeric(Tile.Suit.Bamboo, 9),
+            Tile.Numeric(Tile.Suit.Bamboo, 9),
+            Tile.Numeric(Tile.Suit.Bamboo, 4),
+            Tile.Numeric(Tile.Suit.Bamboo, 5),
+        )
+        val result = calculator.calculate(FakeHandFactory.create(ryanmenHandWithSurplus))
+        val tenpaiResult = result as ShantenResult.Tenpai
+        assertEquals(
+            setOf(
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 6),
+            ),
+            tenpaiResult.winningTiles.toSet(),
+            "Unrelated quadruple tile should not suppress the actual wait",
+        )
+    }
 }
