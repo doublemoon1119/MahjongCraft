@@ -83,7 +83,7 @@ data class MahjongHudLayoutConfig(
 
     /** 打牌分析面板的垂直位置比例。 */
     @SerialName("discard-analysis-y")
-    val discardAnalysisY: Double = 0.86,
+    val discardAnalysisY: Double = 0.8,
 ) {
     init {
         require(decisionPanelY in 0.0..1.0) { "decision-panel-y must be between 0.0 and 1.0" }
