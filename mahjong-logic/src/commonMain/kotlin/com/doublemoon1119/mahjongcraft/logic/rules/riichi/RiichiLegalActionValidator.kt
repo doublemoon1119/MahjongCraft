@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.judgment.TileSelectionRequirement
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -317,6 +318,29 @@ class RiichiLegalActionValidator(
         }
 
         return legalActions
+    }
+
+    /**
+     * 立直宣告需要玩家從立牌中另外指定打哪張牌，候選牌為「打出後手牌仍然聽牌」的立牌；其他日麻動作
+     * 在 [getLegalActions] 回傳時已經帶齊所需牌張，不需要額外選牌。
+     */
+    override fun tileSelectionRequirement(
+        tableState: TableState,
+        player: MahjongPlayer,
+        action: GameAction,
+    ): TileSelectionRequirement? {
+        if (action != RIICHI_GAME_ACTION) return null
+
+        val eligibleTileIds = player.hand.standingTiles
+            .filter { candidate ->
+                val discardResult = player.hand.discardById(candidate.id) ?: return@filter false
+                shantenCalculator.calculate(
+                    Hand(tiles = discardResult.hand.tiles, melds = discardResult.hand.melds),
+                ) is ShantenResult.Tenpai
+            }
+            .map { it.id }
+            .toSet()
+        return TileSelectionRequirement(eligibleTileIds)
     }
 
     /**

@@ -11,9 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
-import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.applyRiichiDeclaration
@@ -32,8 +30,9 @@ import kotlin.uuid.Uuid
  * 不會出現在合法動作清單中，這裡自然會回傳 [GameError.IllegalAction]，不需要額外判斷「這個
  * 規則支不支援立直」。
  *
- * 不過 `LegalActionValidator` 只確認「打出某一張牌後可以聽牌」，並不知道玩家實際選了哪張牌，
- * 所以這裡還要另外用向聽數計算器驗證：打出 [tileId] 這張特定的牌之後，手牌是否仍然聽牌。
+ * `LegalActionValidator.getLegalActions()` 只確認「存在某一張牌，打出後可以聽牌」，並不知道玩家實際
+ * 選了哪張牌，所以這裡還要另外呼叫 `LegalActionValidator.tileSelectionRequirement()` 取得候選牌集合，
+ * 驗證 [tileId] 是否在其中。
  *
  * 立直宣告實際造成的日麻狀態變化交給 [applyRiichiDeclaration]；這個 use case 與對應 command handler
  * 明確屬於 bundled Riichi extension。其他規則若提供相似宣告，應註冊自己的 action、command 與
@@ -86,7 +85,8 @@ class DeclareRiichiUseCase(
 
                 else -> {
                     val module = moduleRegistry.getModule(state.config)
-                    val legalActions = module.createLegalActionValidator().getLegalActions(
+                    val legalActionValidator = module.createLegalActionValidator()
+                    val legalActions = legalActionValidator.getLegalActions(
                         tableState = state,
                         player = state.currentPlayer,
                         sourceAction = GameAction.Draw,
@@ -94,6 +94,20 @@ class DeclareRiichiUseCase(
                         incomingTile = null,
                     )
                     if (RIICHI_GAME_ACTION !in legalActions) {
+                        return@update state to Outcome.Error(
+                            GameError.IllegalAction(
+                                playerId,
+                                gameId,
+                                RIICHI_GAME_ACTION,
+                            ),
+                        )
+                    }
+
+                    val eligibleTileIds = legalActionValidator
+                        .tileSelectionRequirement(state, state.currentPlayer, RIICHI_GAME_ACTION)
+                        ?.eligibleTileIds
+                        ?: emptySet()
+                    if (tileId !in eligibleTileIds) {
                         return@update state to Outcome.Error(
                             GameError.IllegalAction(
                                 playerId,
@@ -111,19 +125,6 @@ class DeclareRiichiUseCase(
                                 GameAction.Discard(tileId),
                             ),
                         )
-
-                    val postDiscardHand = discardResult.hand
-                    val shantenResult = module.createShantenCalculator()
-                        .calculate(Hand(tiles = postDiscardHand.tiles, melds = postDiscardHand.melds))
-                    if (shantenResult !is ShantenResult.Tenpai) {
-                        return@update state to Outcome.Error(
-                            GameError.IllegalAction(
-                                playerId,
-                                gameId,
-                                RIICHI_GAME_ACTION,
-                            ),
-                        )
-                    }
 
                     // 立直宣告本質上也是一次捨牌，理應跟 DiscardTileUseCase 同樣尊重自動整理手牌偏好——
                     // 立直宣告牌若不是摸切（打的是手牌、剛摸到的牌因此併入手牌），併入的牌也要照

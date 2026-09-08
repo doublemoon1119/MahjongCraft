@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -469,5 +470,60 @@ class RiichiLegalActionValidatorRiichiTest {
         val closedKanActions = actions.filterIsInstance<GameAction.Kan>()
         val hasClosedKan = closedKanActions.any { it.type == GameAction.KanType.CLOSED_KAN }
         assertTrue(hasClosedKan)
+    }
+
+    /**
+     * 測試立直候選牌只包含「打出後仍然聽牌」的牌，不包含其他打了會失去聽牌的牌。
+     *
+     * 手牌： 1111 餅(4張，其中一張多的複本) + 234 萬 + 567 萬 + 99 索(雀頭) + 45 索(兩面聽 3索/6索)
+     * 打掉任何一張 1 餅都會回到原本聽牌的 13 張手牌，其餘牌打了都會失去聽牌。
+     */
+    @Test
+    fun `test riichi tile selection requirement only includes tiles that keep tenpai`() {
+        val playerHand = FakeHandFactory.create(
+            listOf(
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Dot, 1),
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Numeric(Tile.Suit.Character, 7),
+                Tile.Numeric(Tile.Suit.Bamboo, 9),
+                Tile.Numeric(Tile.Suit.Bamboo, 9),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Numeric(Tile.Suit.Bamboo, 5),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(hand = playerHand).copy(score = 1000)
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = nonEmptyWall,
+        )
+
+        val expectedEligibleTileIds = player.hand.standingTiles
+            .filter { it.tile == Tile.Numeric(Tile.Suit.Dot, 1) }
+            .map { it.id }
+            .toSet()
+
+        val requirement = validator.tileSelectionRequirement(tableState, player, RIICHI_GAME_ACTION)
+
+        assertEquals(expectedEligibleTileIds, requirement?.eligibleTileIds)
+    }
+
+    /** 測試非立直動作不需要額外選牌，回傳 null。 */
+    @Test
+    fun `test tile selection requirement is null for non-riichi actions`() {
+        val playerHand = FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Character, 1)))
+        val player = FakeMahjongPlayerFactory.create(hand = playerHand)
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = nonEmptyWall,
+        )
+
+        assertEquals(null, validator.tileSelectionRequirement(tableState, player, GameAction.Tsumo))
     }
 }

@@ -36,4 +36,18 @@ interface LegalActionValidator {
         sourceDirection: RelativeDirection,
         incomingTile: IdentifiedTile? = null,
     ): List<GameAction>
+
+    /**
+     * 判斷 [action] 在成立前，是否還需要玩家從立牌中額外選出牌張（例如宣告立直後，還要另外指定打哪
+     * 張牌才能完成宣告）。大多數動作在 [getLegalActions] 回傳時已經帶齊所需牌張（`incomingTile`／
+     * [GameAction.Chi]／[GameAction.Pon]／[GameAction.Kan] 的 `withTiles`），不需要這個 hook；預設
+     * 回傳 null 代表 [action] 不需要額外選牌。
+     *
+     * @return 描述候選牌與選牌數量限制的 [TileSelectionRequirement]；[action] 不需要額外選牌則為 null。
+     */
+    fun tileSelectionRequirement(
+        tableState: TableState,
+        player: MahjongPlayer,
+        action: GameAction,
+    ): TileSelectionRequirement? = null
 }
