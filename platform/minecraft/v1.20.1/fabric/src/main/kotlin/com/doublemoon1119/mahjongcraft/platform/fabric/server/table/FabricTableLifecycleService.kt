@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.allowsTableBrea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongStickPotPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
@@ -42,11 +43,13 @@ class FabricTableLifecycleService(
     private val tileWallPresenter: MahjongTileWallPresenter,
     private val playerAreaPresenter: MahjongPlayerAreaPresenter,
     private val scoringStickPresenter: MahjongScoringStickPresenter,
+    private val stickPotPresenter: MahjongStickPotPresenter,
     private val discardPresenter: MahjongDiscardPresenter,
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
     private val playerInfoPresenter: MahjongPlayerInfoPresenter,
     private val lobbyInfoPresenter: FabricMahjongLobbyInfoPresenter,
     private val tileSelectionConfirmPresenter: MahjongTileSelectionConfirmPresenter,
+    private val presentationCleaner: FabricTablePresentationCleaner,
 ) {
     /** 記錄麻將桌破壞政策判斷與清理入口。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -69,26 +72,30 @@ class FabricTableLifecycleService(
         val removedWallTileCount = tileWallPresenter.clear(table.tableId, tableLocation)
         val removedPlayerAreaTileCount = playerAreaPresenter.clear(table.tableId, tableLocation)
         val removedStickCount = scoringStickPresenter.clear(table.tableId, tableLocation)
+        val removedStickPotCount = stickPotPresenter.clear(table.tableId, tableLocation)
         val removedDiscardTileCount = discardPresenter.clear(table.tableId, tableLocation)
         val removedRoundInfoCount = roundInfoPresenter.clear(table.tableId, tableLocation)
         val removedPlayerInfoCount = playerInfoPresenter.clear(table.tableId, tableLocation)
         val removedLobbyInfoCount = lobbyInfoPresenter.clear(table.tableId)
         val removedTileSelectionConfirmCount = tileSelectionConfirmPresenter.clear(table.tableId, tableLocation)
+        val removedTransientPresentationCount = presentationCleaner.clear(world, table.tableId, table.pos)
         val entry = locations.put(table.tableId, tableLocation)
         val result = runBlocking { cleanupService.cleanupMissing(table.tableId, entry.revision) }
         logger.debug(
-            "Handled replaced Mahjong table {} with cleanup result {}, removed {} managed dice, {} managed wall tiles, {} managed player area tiles, {} managed sticks, {} managed discard tiles, {} managed round info displays, {} managed player info displays, {} managed lobby info displays and {} managed tile selection confirm panels",
+            "Handled replaced Mahjong table {} with cleanup result {}, removed {} managed dice, {} managed wall tiles, {} managed player area tiles, {} managed sticks, {} managed stick-pot sticks, {} managed discard tiles, {} managed round info displays, {} managed player info displays, {} managed lobby info displays, {} managed tile selection confirm panels and {} transient presentations",
             table.tableId,
             result,
             removedDiceCount,
             removedWallTileCount,
             removedPlayerAreaTileCount,
             removedStickCount,
+            removedStickPotCount,
             removedDiscardTileCount,
             removedRoundInfoCount,
             removedPlayerInfoCount,
             removedLobbyInfoCount,
             removedTileSelectionConfirmCount,
+            removedTransientPresentationCount,
         )
     }
 

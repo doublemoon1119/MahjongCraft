@@ -18,7 +18,14 @@ import kotlin.uuid.toJavaUuid
 abstract class AnimatedVisualEffectEntity(
     type: EntityType<out AnimatedVisualEffectEntity>,
     world: World,
-) : SimpleAnimatedMahjongEntity(type, world) {
+) : SimpleAnimatedMahjongEntity(type, world),
+    TableOwnedPresentationEntity {
+    /** 所屬麻將桌。 */
+    override val managedTableId: Uuid?
+        get() = dataTracker[TABLE_ID]
+            .takeIf(String::isNotBlank)
+            ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
+
     /** 選擇具體視覺公式的穩定 key。 */
     val effectKey: String
         get() = dataTracker[EFFECT_KEY]
@@ -47,6 +54,7 @@ abstract class AnimatedVisualEffectEntity(
 
     /** 一次設定並同步完整效果描述；只能由伺服器在生成前呼叫。 */
     fun configure(
+        tableId: Uuid,
         effectKey: String,
         targetEntityId: Uuid,
         animationSeed: Long,
@@ -56,6 +64,7 @@ abstract class AnimatedVisualEffectEntity(
         check(!world.isClient) { "Visual effects must be configured by the server" }
         require(effectKey.isNotBlank()) { "Visual effect key must not be blank" }
         require(endGameTime > startGameTime) { "Visual effect end time must be after start time" }
+        dataTracker.set(TABLE_ID, tableId.toString())
         dataTracker.set(EFFECT_KEY, effectKey)
         dataTracker.set(TARGET_ENTITY_ID, targetEntityId.toString())
         dataTracker.set(ANIMATION_SEED, animationSeed)
@@ -106,6 +115,7 @@ abstract class AnimatedVisualEffectEntity(
 
     /** 初始化所有視覺效果共用的 tracked data。 */
     override fun initDataTracker() {
+        dataTracker.startTracking(TABLE_ID, "")
         dataTracker.startTracking(EFFECT_KEY, "")
         dataTracker.startTracking(TARGET_ENTITY_ID, "")
         dataTracker.startTracking(ANIMATION_SEED, 0L)
@@ -115,6 +125,7 @@ abstract class AnimatedVisualEffectEntity(
 
     /** 從世界存檔還原效果描述與絕對時間軸。 */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
+        dataTracker.set(TABLE_ID, nbt.getString(NBT_KEY_TABLE_ID))
         dataTracker.set(EFFECT_KEY, nbt.getString(NBT_KEY_EFFECT_KEY))
         dataTracker.set(TARGET_ENTITY_ID, nbt.getString(NBT_KEY_TARGET_ENTITY_ID))
         dataTracker.set(ANIMATION_SEED, nbt.getLong(NBT_KEY_ANIMATION_SEED))
@@ -125,6 +136,7 @@ abstract class AnimatedVisualEffectEntity(
 
     /** 將效果描述與絕對時間軸寫入世界存檔；位置與 entity UUID 由原版 entity 序列化負責。 */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
+        nbt.putString(NBT_KEY_TABLE_ID, managedTableId?.toString().orEmpty())
         nbt.putString(NBT_KEY_EFFECT_KEY, effectKey)
         nbt.putString(NBT_KEY_TARGET_ENTITY_ID, targetEntityId?.toString().orEmpty())
         nbt.putLong(NBT_KEY_ANIMATION_SEED, animationSeed)
@@ -134,6 +146,9 @@ abstract class AnimatedVisualEffectEntity(
     }
 
     companion object {
+        /** 所屬麻將桌 UUID 的世界存檔 key。 */
+        private const val NBT_KEY_TABLE_ID: String = "ManagedTableId"
+
         /** 效果 key 的世界存檔 key。 */
         private const val NBT_KEY_EFFECT_KEY: String = "EffectKey"
 
@@ -148,6 +163,10 @@ abstract class AnimatedVisualEffectEntity(
 
         /** 特效結束時間的世界存檔 key。 */
         private const val NBT_KEY_END_GAME_TIME: String = "EndGameTime"
+
+        /** 同步所屬麻將桌 UUID。 */
+        private val TABLE_ID: TrackedData<String> =
+            DataTracker.registerData(AnimatedVisualEffectEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
         /** 同步效果 key。 */
         private val EFFECT_KEY: TrackedData<String> =

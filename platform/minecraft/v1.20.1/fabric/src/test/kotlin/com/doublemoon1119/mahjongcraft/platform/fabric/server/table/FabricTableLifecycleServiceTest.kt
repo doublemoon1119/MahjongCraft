@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinShowcaseOverride
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
@@ -23,6 +24,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongStickPotPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongStickPotPresentationResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongStickPotPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
@@ -140,6 +144,9 @@ class FabricTableLifecycleServiceTest {
         /** 記錄清理呼叫的積棒 presenter fake。 */
         private val scoringStickPresenter = RecordingScoringStickPresenter()
 
+        /** 記錄清理呼叫的供託棒 presenter fake。 */
+        private val stickPotPresenter = RecordingStickPotPresenter()
+
         /** 記錄清理呼叫的牌河 presenter fake。 */
         private val discardPresenter = RecordingDiscardPresenter()
 
@@ -162,11 +169,13 @@ class FabricTableLifecycleServiceTest {
             tileWallPresenter = tileWallPresenter,
             playerAreaPresenter = playerAreaPresenter,
             scoringStickPresenter = scoringStickPresenter,
+            stickPotPresenter = stickPotPresenter,
             discardPresenter = discardPresenter,
             roundInfoPresenter = roundInfoPresenter,
             playerInfoPresenter = playerInfoPresenter,
             lobbyInfoPresenter = FabricMahjongLobbyInfoPresenter(FabricServerHolder(), locations, MahjongModuleRegistryImpl()),
             tileSelectionConfirmPresenter = tileSelectionConfirmPresenter,
+            presentationCleaner = FabricTablePresentationCleaner(FabricWinCelebrationEffectScheduler()),
         )
 
         /** 這個測試不驗證 debug 覆寫，一律回報非開發環境讓它保持 inert。 */
@@ -229,6 +238,15 @@ class FabricTableLifecycleServiceTest {
         override fun present(presentation: MahjongScoringStickPresentation): MahjongScoringStickPresentationResult = MahjongScoringStickPresentationResult.PRESENTED
 
         /** 記錄清理請求並回報沒有已載入積棒。 */
+        override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
+    }
+
+    /** 只記錄正式供託棒清理參數的測試 presenter。 */
+    private class RecordingStickPotPresenter : MahjongStickPotPresenter {
+        /** 此測試不使用正式供託棒呈現。 */
+        override fun present(presentation: MahjongStickPotPresentation): MahjongStickPotPresentationResult = MahjongStickPotPresentationResult.PRESENTED
+
+        /** 記錄清理請求並回報沒有已載入供託棒。 */
         override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
     }
 

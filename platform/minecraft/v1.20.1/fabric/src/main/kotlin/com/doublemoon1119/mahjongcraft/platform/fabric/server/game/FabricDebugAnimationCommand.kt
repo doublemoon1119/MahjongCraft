@@ -1444,6 +1444,7 @@ class FabricDebugAnimationCommand(
         val allSpawnedTiles = if (isTsumo) handTiles else handTiles + winningTile
         effectScheduler.schedule(
             world = world,
+            tableId = Uuid.random(),
             targetTileId = winningTile.uuid.toKotlinUuid(),
             startGameTime = effectStartGameTime,
             endGameTime = effectEndGameTime,

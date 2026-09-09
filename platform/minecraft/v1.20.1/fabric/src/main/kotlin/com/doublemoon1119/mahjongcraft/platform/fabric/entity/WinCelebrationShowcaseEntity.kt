@@ -44,9 +44,10 @@ data class ShowcaseSoundSnapshot(val soundId: String, val tickOffset: Int, val v
 class WinCelebrationShowcaseEntity(
     type: EntityType<out WinCelebrationShowcaseEntity> = ModEntities.winCelebrationShowcase,
     world: World,
-) : SimpleAnimatedMahjongEntity(type, world) {
+) : SimpleAnimatedMahjongEntity(type, world),
+    TableOwnedPresentationEntity {
     /** 所屬麻將桌。 */
-    val managedTableId: Uuid?
+    override val managedTableId: Uuid?
         get() = dataTracker[TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
 
     /** 整段演出的開始時間。 */

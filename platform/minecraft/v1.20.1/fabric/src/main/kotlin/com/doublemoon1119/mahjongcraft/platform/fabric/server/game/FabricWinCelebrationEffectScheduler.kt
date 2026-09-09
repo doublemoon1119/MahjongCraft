@@ -41,6 +41,7 @@ class FabricWinCelebrationEffectScheduler {
      */
     fun schedule(
         world: ServerWorld,
+        tableId: Uuid,
         targetTileId: Uuid,
         startGameTime: Long,
         endGameTime: Long,
@@ -50,6 +51,7 @@ class FabricWinCelebrationEffectScheduler {
         val tile = world.getEntity(targetTileId.toJavaUuid()) as? MahjongTileEntity ?: return
         val effect = WinCelebrationEffectEntity(world = world).apply {
             configure(
+                tableId = tableId,
                 effectKey = MahjongVisualEffectKeys.WIN_CELEBRATION,
                 targetEntityId = targetTileId,
                 animationSeed = Random.nextLong(),
@@ -78,6 +80,7 @@ class FabricWinCelebrationEffectScheduler {
         }
         val task = Task(
             world = world,
+            tableId = tableId,
             targetTileId = targetTileId,
             endGameTime = endGameTime,
             onComplete = onComplete,
@@ -85,6 +88,18 @@ class FabricWinCelebrationEffectScheduler {
         )
         if (tasksByTargetTileId.putIfAbsent(targetTileId, task) == null && !world.spawnEntity(effect)) {
             tasksByTargetTileId.remove(targetTileId, task)
+        }
+    }
+
+    /** 取消指定桌子的全部待播放／播放中效果並立即移除其世界實體。 */
+    fun cancel(tableId: Uuid) {
+        val iterator = tasksByTargetTileId.values.iterator()
+        while (iterator.hasNext()) {
+            val task = iterator.next()
+            if (task.tableId != tableId) continue
+            task.effect.discard()
+            iterator.remove()
+            task.onComplete?.invoke()
         }
     }
 
@@ -109,6 +124,7 @@ class FabricWinCelebrationEffectScheduler {
     /** 單一胡牌張的排程與已生成效果 entity。 */
     private data class Task(
         val world: ServerWorld,
+        val tableId: Uuid,
         val targetTileId: Uuid,
         val endGameTime: Long,
         val onComplete: (() -> Unit)? = null,

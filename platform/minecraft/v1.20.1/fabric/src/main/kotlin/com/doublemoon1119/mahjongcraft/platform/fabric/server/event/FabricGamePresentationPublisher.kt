@@ -175,7 +175,7 @@ class FabricGamePresentationPublisher(
             )
             val entity = MahjongSoundTimelineEntity(world = resolved.world).apply {
                 refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
-                configure(sound.soundId, sound.volume, sound.pitch, resolved.world.time)
+                configure(gameId, sound.soundId, sound.volume, sound.pitch, resolved.world.time)
             }
             if (!resolved.world.spawnEntity(entity)) {
                 logger.warn("publishGameActionSound gameId={} actorId={} failed to spawn sound timeline", gameId, actorId)
@@ -926,6 +926,7 @@ class FabricGamePresentationPublisher(
             val effectEndGameTime = effectStartGameTime + MahjongTileTableLayout.WIN_EFFECT_DURATION_TICKS
             effectScheduler.schedule(
                 world = resolved.world,
+                tableId = gameId,
                 targetTileId = request.winningTileId,
                 startGameTime = effectStartGameTime,
                 endGameTime = effectEndGameTime,

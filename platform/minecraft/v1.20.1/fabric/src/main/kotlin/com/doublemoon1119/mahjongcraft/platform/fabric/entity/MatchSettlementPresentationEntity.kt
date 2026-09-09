@@ -26,10 +26,11 @@ data class MatchSettlementPlayerSnapshot(
 class MatchSettlementPresentationEntity(
     type: EntityType<out MatchSettlementPresentationEntity> = ModEntities.matchSettlementPresentation,
     world: World,
-) : SimpleAnimatedMahjongEntity(type, world) {
+) : SimpleAnimatedMahjongEntity(type, world),
+    TableOwnedPresentationEntity {
 
     /** 所屬麻將桌。 */
-    val managedTableId: Uuid?
+    override val managedTableId: Uuid?
         get() = dataTracker[TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
 
     /** 舞台開始的絕對遊戲時間。 */

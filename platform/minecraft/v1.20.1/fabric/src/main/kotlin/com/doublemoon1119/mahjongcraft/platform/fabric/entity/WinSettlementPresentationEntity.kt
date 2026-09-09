@@ -56,8 +56,9 @@ data class WinSettlementSoundCueSnapshot(
 class WinSettlementPresentationEntity(
     type: EntityType<out WinSettlementPresentationEntity> = ModEntities.winSettlementPresentation,
     world: World,
-) : SimpleAnimatedMahjongEntity(type, world) {
-    val managedTableId: Uuid? get() = dataTracker[TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+) : SimpleAnimatedMahjongEntity(type, world),
+    TableOwnedPresentationEntity {
+    override val managedTableId: Uuid? get() = dataTracker[TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
     val startGameTime: Long get() = dataTracker[START_GAME_TIME]
     val endGameTime: Long get() = dataTracker[END_GAME_TIME]
     val outcomeId: String get() = dataTracker[OUTCOME_ID]
