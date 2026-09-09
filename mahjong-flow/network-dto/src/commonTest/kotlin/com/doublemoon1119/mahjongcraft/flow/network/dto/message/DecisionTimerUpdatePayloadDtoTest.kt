@@ -28,13 +28,22 @@ class DecisionTimerUpdatePayloadDtoTest {
                                 previewTileAssetKeys = listOf("m1", "m2", "m3"),
                                 claimedTileIndex = 2,
                             ),
+                            PlayerDecisionActionDto(
+                                token = "riichi",
+                                actionId = "mahjongcraft:riichi",
+                                previewTileAssetKeys = listOf("m1"),
+                                tileSelection = PlayerDecisionActionTileSelectionDto(
+                                    eligibleTileIds = listOf(Uuid.random().toString()),
+                                    minCount = 1,
+                                    maxCount = 1,
+                                ),
+                            ),
                         ),
                         triggerTileAssetKey = "m3",
                         triggerPlayerId = Uuid.random().toString(),
                         triggerPlayerName = "AI 1",
                         triggerPlayerRelation = DecisionPlayerRelationDto.LEFT,
                         triggerActionId = "mahjongcraft:discard",
-                        riichiTileIds = listOf(Uuid.random().toString()),
                         discardAnalyses = listOf(
                             DiscardReadinessAnalysisDto(
                                 discardTileId = Uuid.random().toString(),

@@ -20,6 +20,12 @@ import kotlin.uuid.Uuid
 data class HandTileCandidate(val tileId: Uuid, val token: String, val tile: Tile)
 
 /**
+ * 立直宣告在操作 HUD／`select` 提交所使用的固定 token——立直是唯一「宣告 + 額外選牌」的動作，
+ * 不像碰／吃／槓走 [listActionCandidates] 逐一產生候選 token，因此用固定值即可，不需要消歧義。
+ */
+const val RIICHI_ACTION_TOKEN = "riichi"
+
+/**
  * 玩家目前該用哪一種 [GameCommand] 信封包裝選定動作，
  * 依 [GetLegalActionsUseCase] 內部同一套優先順序判斷：搶槓 > 回應捨牌 > 自己回合 > 都不是
  * （沒有任何額外動作可做，只能被動等待）。

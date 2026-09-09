@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationIn
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
@@ -16,9 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalysis
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.util.isHonor
-import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
@@ -77,7 +76,7 @@ class PlayerDecisionPromptFactory(
                     previewTileAssetKeys = preview.tiles.map { it.toAssetKey(tileAssetRegistry) },
                     claimedTileIndex = preview.claimedTileIndex,
                 )
-            },
+            } + listOfNotNull(riichiAction(riichiTiles)),
             // 自己回合（立直／暗槓等）一律顯示剛摸到的牌，不依賴哪個候選動作剛好帶了 referenceTile——
             // 否則像立直這種被 listActionCandidates 過濾掉、沒有對應候選的情況會完全沒有觸發牌可顯示。
             triggerTileAssetKey = when (phase) {
@@ -91,12 +90,27 @@ class PlayerDecisionPromptFactory(
             },
             triggerPlayerRelation = trigger?.relation,
             triggerActionId = trigger?.actionId,
-            riichiTileIds = riichiTiles.map { it.tileId.toString() },
-            riichiTileAssetKeys = riichiTiles.mapNotNull { candidate ->
-                player.hand.standingTiles.firstOrNull { it.id == candidate.tileId }?.tile?.toAssetKey(tileAssetRegistry)
-            }.distinct(),
             preparation = preparation,
             discardAnalyses = analyses,
+        )
+    }
+
+    /**
+     * 立直宣告的 HUD 動作候選：宣告後還需要玩家從立牌中額外指定打哪張牌，用 [PlayerDecisionActionDto.tileSelection]
+     * 表示，點擊卡片後改為進入實體牌選取模式，跟其他一鍵送出的動作（碰／吃／槓等）不同。
+     * [candidateTiles] 為空（不可能立直）時回傳 null，不產生候選。
+     */
+    private fun riichiAction(candidateTiles: List<HandTileCandidate>): PlayerDecisionActionDto? {
+        if (candidateTiles.isEmpty()) return null
+        return PlayerDecisionActionDto(
+            token = RIICHI_ACTION_TOKEN,
+            actionId = RIICHI_GAME_ACTION.presentationId(),
+            previewTileAssetKeys = candidateTiles.map { it.tile.toAssetKey(tileAssetRegistry) }.distinct(),
+            tileSelection = PlayerDecisionActionTileSelectionDto(
+                eligibleTileIds = candidateTiles.map { it.tileId.toString() },
+                minCount = 1,
+                maxCount = 1,
+            ),
         )
     }
 
@@ -182,13 +196,7 @@ private fun GameAction.previewTiles(
         is GameAction.Pon -> ActionTilePreview(withTiles.mapNotNull(::tile) + listOfNotNull(referenceTile))
         is GameAction.Kan -> ActionTilePreview(withTiles.mapNotNull(::tile) + listOfNotNull(referenceTile ?: tile(tileId)))
         is GameAction.Ron, GameAction.Tsumo -> ActionTilePreview(listOfNotNull(referenceTile))
-        is GameAction.ExhaustiveDraw -> ActionTilePreview(
-            if (reason == RiichiExhaustiveDrawReason.KyuushuKyuuhai) {
-                hand.tiles.map { it.tile }.filter { it.isTerminal || it.isHonor }
-            } else {
-                emptyList()
-            },
-        )
+        is GameAction.ExhaustiveDraw -> ActionTilePreview(reason.previewTiles(hand))
         else -> ActionTilePreview(listOfNotNull(referenceTile))
     }
 }

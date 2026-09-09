@@ -29,6 +29,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInf
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresentationResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
@@ -144,6 +147,9 @@ class FabricTableLifecycleServiceTest {
         private val roundInfoPresenter = RecordingRoundInfoPresenter()
         private val playerInfoPresenter = RecordingPlayerInfoPresenter()
 
+        /** 記錄清理呼叫的選牌確認面板 presenter fake。 */
+        private val tileSelectionConfirmPresenter = RecordingTileSelectionConfirmPresenter()
+
         /** 受測生命週期服務。 */
         val lifecycleService = FabricTableLifecycleService(
             store = store,
@@ -160,6 +166,7 @@ class FabricTableLifecycleServiceTest {
             roundInfoPresenter = roundInfoPresenter,
             playerInfoPresenter = playerInfoPresenter,
             lobbyInfoPresenter = FabricMahjongLobbyInfoPresenter(FabricServerHolder(), locations, MahjongModuleRegistryImpl()),
+            tileSelectionConfirmPresenter = tileSelectionConfirmPresenter,
         )
 
         /** 這個測試不驗證 debug 覆寫，一律回報非開發環境讓它保持 inert。 */
@@ -252,6 +259,15 @@ class FabricTableLifecycleServiceTest {
         ): MahjongPlayerInfoPresentationResult = MahjongPlayerInfoPresentationResult.PRESENTED
 
         override fun hideUntil(tableId: Uuid, tableLocation: TableLocation, gameTime: Long) = Unit
+
+        override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
+    }
+
+    /** 此測試只需要滿足多選選牌確認面板清理邊界。 */
+    private class RecordingTileSelectionConfirmPresenter : MahjongTileSelectionConfirmPresenter {
+        override fun present(presentation: MahjongTileSelectionConfirmPresentation): MahjongTileSelectionConfirmPresentationResult = MahjongTileSelectionConfirmPresentationResult.PRESENTED
+
+        override fun clearForPlayer(tableId: Uuid, tableLocation: TableLocation, holderId: Uuid): Int = 0
 
         override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
     }

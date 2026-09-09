@@ -640,6 +640,50 @@ object MahjongTileTableLayout {
         yaw = 0.0f,
     )
 
+    /**
+     * 依 controller 座標、桌子世界朝向與座位 index，算出這位玩家多選選牌確認面板某一個拼湊 instance
+     * （`MahjongTileSelectionConfirmEntity`，見該類別 KDoc「多個 instance 拼湊」的設計）該擺放的世界
+     * 座標——整組面板置中於這位玩家手牌正上方（沿排列方向與手牌同樣置中，深度沿用 [HAND_EDGE_OFFSET]），
+     * 高度比手牌本身（[MahjongTileDimensions.TILE_HEIGHT]）明顯高出一截
+     * （[TILE_SELECTION_CONFIRM_HEIGHT_ABOVE_HAND]），避免跟手牌本身的碰撞箱重疊而誤觸——實際數值待
+     * 進遊戲用不同鏡頭角度比對調整。跟 [handPlacement] 同樣直接用座位 index 算局部側面，不經過莊家
+     * 相對旋轉。
+     *
+     * [segmentIndex]（`0` 到 [TILE_SELECTION_CONFIRM_SEGMENT_COUNT] - 1）決定這個 instance 沿排列
+     * 方向（本地 X 軸）偏離整組面板中心多遠，讓 [TILE_SELECTION_CONFIRM_SEGMENT_COUNT] 個小 instance
+     * 並排起來仍能涵蓋完整面板寬度。
+     */
+    fun tileSelectionConfirmPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatIndex: Int,
+        segmentIndex: Int,
+    ): MahjongTileWallPlacement {
+        val physicalSide = seatIndexToTableSide(seatIndex)
+        val local = TileTableVector(
+            x = tileSelectionConfirmSegmentAlongOffset(segmentIndex),
+            y = TILE_SELECTION_CONFIRM_HEIGHT_ABOVE_HAND,
+            z = HAND_EDGE_OFFSET,
+        )
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES),
+        )
+    }
+
+    /**
+     * 拼湊選牌確認面板的某個 `segmentIndex`（`0` 到 [TILE_SELECTION_CONFIRM_SEGMENT_COUNT] - 1）沿排列
+     * 方向（本地 X 軸）偏離整組面板中心的距離，供 [tileSelectionConfirmPlacement] 換算世界座標，也供
+     * `MahjongTileSelectionConfirmEntityRenderer` 比對目前實際文字寬度、決定各 instance 是否要回應
+     * 右鍵——兩邊共用同一個公式，確保拼湊面板的實際位置跟渲染端判斷可點擊範圍時用的位置永遠一致。
+     */
+    fun tileSelectionConfirmSegmentAlongOffset(segmentIndex: Int): Double = (segmentIndex - (TILE_SELECTION_CONFIRM_SEGMENT_COUNT - 1) / 2.0) * TILE_SELECTION_CONFIRM_SEGMENT_SPACING
+
     /** 依南→西→北→東的固定順序（跟 [seatIndexToTableSide] 同一套方向），把 [side] 往同方向推進 [steps] 步。 */
     private fun advance(side: MahjongTableSide, steps: Int): MahjongTableSide = SIDE_ORDER[(SIDE_ORDER.indexOf(side) + steps).mod(SIDE_ORDER.size)]
 
@@ -684,6 +728,28 @@ object MahjongTileTableLayout {
      * 最高點，避免文字被擋住，起始估算值，預期進遊戲後調整。
      */
     private const val ROUND_INFO_HEIGHT_ABOVE_TABLE: Double = 2.25
+
+    /** 多選選牌確認面板高於手牌（[MahjongTileDimensions.TILE_HEIGHT]）的垂直距離，見 [tileSelectionConfirmPlacement]。 */
+    private const val TILE_SELECTION_CONFIRM_HEIGHT_ABOVE_HAND: Double = 0.5
+
+    /**
+     * 多選選牌確認面板由幾個 `MahjongTileSelectionConfirmEntity` instance 拼湊而成，見該類別 KDoc；
+     * 非 `internal` 是因為 presenter 與 renderer 位於另一個平台版本模組，需要能直接引用同一個數值。跟
+     * [TILE_SELECTION_CONFIRM_SEGMENT_SPACING] 相乘得出這組 instance 涵蓋的最大總寬度，接近
+     * [MELD_AREA_CORNER_OFFSET] 的兩倍（桌子沿排列方向的完整可用內框寬度）。實際可點擊範圍與畫出來的
+     * 背景寬度依當下渲染文字內容動態決定，見 `MahjongTileSelectionConfirmEntity.isActive` KDoc；這裡
+     * 只決定 instance 位置與可點擊範圍的上限。刻意取奇數：讓正中央剛好有一個 index（見
+     * [tileSelectionConfirmSegmentAlongOffset]），負責顯示的那個 instance 才能直接落在整組面板的
+     * 幾何中心，不需要額外的置中平移。
+     */
+    const val TILE_SELECTION_CONFIRM_SEGMENT_COUNT: Int = 11
+
+    /**
+     * 拼湊面板相鄰兩個 instance 沿排列方向（本地 X 軸）的間距，見 [tileSelectionConfirmPlacement]
+     * KDoc。**必須**與 `MahjongTileSelectionConfirmEntity.WIDTH` 一致，否則相鄰 instance 的碰撞箱之間
+     * 會有沒被涵蓋的縫隙；非 `internal` 理由同 [TILE_SELECTION_CONFIRM_SEGMENT_COUNT]。
+     */
+    const val TILE_SELECTION_CONFIRM_SEGMENT_SPACING: Double = 0.3
 
     /**
      * 牌牆生成掉落動畫中，同一面牌牆相鄰兩墩（`stack` 差 1）開始掉落的時間差，供 [wallDropAnimationTicks]

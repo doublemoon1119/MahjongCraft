@@ -96,7 +96,7 @@ class MahjongTileEntityRenderer(
         matrices.translate(poseOffsetX, poseOffsetY, poseOffsetZ)
         val assetKey = entity.resolvedTileAssetKey()
         val highlighted = entity.isHighlighted()
-        val effectiveLight = if (entity.isDimmedByRiichiSelection()) DIMMED_LIGHT else light
+        val effectiveLight = if (entity.isDimmedByTileSelection()) DIMMED_LIGHT else light
         val stack = tileStacks[assetKey] ?: tileStacks.getValue(UNKNOWN_TILE_ASSET_KEY)
         val consumers = if (highlighted) vertexConsumers.withGlint() else vertexConsumers
         itemRenderer.renderItem(stack, ModelTransformationMode.HEAD, effectiveLight, OverlayTexture.DEFAULT_UV, matrices, consumers, entity.world, entity.id)
@@ -397,14 +397,10 @@ class MahjongTileEntityRenderer(
         private const val ACTION_POPUP_BACKGROUND_ALPHA = 0.72f
     }
 
-    /** 立直選牌期間，合法宣告牌以外的管理中手牌降低光照。 */
-    private fun MahjongTileEntity.isDimmedByRiichiSelection(): Boolean {
+    /** 動作選牌期間（例如立直宣告後選擇捨牌），合法候選牌以外的管理中手牌降低光照。 */
+    private fun MahjongTileEntity.isDimmedByTileSelection(): Boolean {
         if (!managedByGame) return false
-        val legalTileIds = if (decisionPromptStore.isRiichiSelectionActive()) {
-            decisionPromptStore.prompt?.riichiTileIds.orEmpty()
-        } else {
-            emptyList()
-        }
+        val legalTileIds = decisionPromptStore.activeTileSelectionEligibleTileIds()
         return legalTileIds.isNotEmpty() && uuid.toString() !in legalTileIds
     }
 }

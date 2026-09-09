@@ -5,9 +5,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
@@ -22,7 +24,6 @@ import kotlinx.coroutines.launch
 import net.minecraft.server.network.ServerPlayerEntity
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -47,6 +48,8 @@ import kotlin.uuid.toKotlinUuid
  * @property feedbackPublisher 操作結果的一次性回饋。
  * @property busyTracker 查詢該桌是否正在播放呈現動畫（例如擲骰），播放期間擋下玩家操作，避免畫面出現
  *   跟動畫不一致的桌況。
+ * @property presentationPublisher 選牌需要多選（`maxCount > 1`）時，通知平台呈現層生成／清除選牌確認
+ *   面板 entity。
  */
 @Single
 class MahjongTableGameActionService(
@@ -59,29 +62,17 @@ class MahjongTableGameActionService(
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val busyTracker: TablePresentationBusyTracker,
     private val promptFactory: PlayerDecisionPromptFactory,
+    private val presentationPublisher: GamePresentationPublisher,
 ) {
     /** 對局命令與自動銜接失敗時的專用 logger。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
-    /** 已由操作 HUD 選擇立直、正等待玩家點擊合法宣告牌的玩家。 */
-    private val riichiSelectionPlayerIds = ConcurrentHashMap.newKeySet<Uuid>()
-
-    /** 處理實體手牌右鍵；已進入立直選牌時改送立直，否則維持一般捨牌。 */
+    /**
+     * 處理實體手牌右鍵；立直等「宣告 + 選牌」動作由操作 HUD 端在進入選牌模式後直接送出
+     * [PlayerDecisionSelectionKindDto.ACTION]（見 [select]），不會經過這裡，故一律視為一般捨牌。
+     */
     fun interactWithHandTile(player: ServerPlayerEntity, tileId: Uuid) {
-        val playerId = player.uuid.toKotlinUuid()
-        if (playerId in riichiSelectionPlayerIds) {
-            scope.launch {
-                val legal = candidateResolver.listRiichiTileCandidates(playerId).any { it.tileId == tileId }
-                if (legal) {
-                    riichiSelectionPlayerIds.remove(playerId)
-                    riichi(player, tileId)
-                } else {
-                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
-                }
-            }
-        } else {
-            discard(player, tileId)
-        }
+        discard(player, tileId)
     }
 
     /** 驗證 decision key 後執行操作 HUD 提交的受控選擇。 */
@@ -101,13 +92,19 @@ class MahjongTableGameActionService(
             if (prompt.decisionKey != selection.decisionKey) return@launch
             when (selection.kind) {
                 PlayerDecisionSelectionKindDto.ACTION -> {
-                    val candidate = candidateResolver.listActionCandidates(playerId).firstOrNull { it.token == selection.token }
-                        ?: return@launch
-                    act(player, candidate)
-                }
-
-                PlayerDecisionSelectionKindDto.BEGIN_RIICHI -> {
-                    if (prompt.riichiTileIds.isNotEmpty()) riichiSelectionPlayerIds.add(playerId)
+                    if (selection.token == RIICHI_ACTION_TOKEN) {
+                        // 立直目前是唯一「宣告 + 額外選牌」的動作，直接在這裡處理；若未來有第二個規則
+                        // 模組也需要類似流程，再抽成通用 dispatch 機制。實際合法性（含選牌是否合法）
+                        // 由 DeclareRiichiUseCase 權威驗證，這裡不重複判斷。
+                        val tileId = selection.tileIds.singleOrNull()?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+                            ?: return@launch
+                        riichi(player, tileId)
+                    } else {
+                        val candidate = candidateResolver.listActionCandidates(playerId).firstOrNull { it.token == selection.token }
+                            ?: return@launch
+                        act(player, candidate)
+                    }
+                    presentationPublisher.publishTileSelectionEnded(gameId, playerId)
                 }
 
                 PlayerDecisionSelectionKindDto.PREPARATION_CONFIRM -> gameFlowCoordinator(
@@ -132,6 +129,20 @@ class MahjongTableGameActionService(
                         playerId,
                         GameCommand.SubmitRoundPreparation(RoundPreparationSubmission.Tiles(tileIds)),
                     )
+                    presentationPublisher.publishTileSelectionEnded(gameId, playerId)
+                }
+
+                PlayerDecisionSelectionKindDto.BEGIN_TILE_SELECTION -> {
+                    // 只有 maxCount > 1 才需要生成確認面板；maxCount == 1 維持右鍵合法牌直接自動送出，
+                    // 伺服器端重新驗證 client 宣稱的情境是否真的需要選超過一張牌，不盲信 client。
+                    val maxCount = if (selection.token == null) {
+                        (prompt.preparation as? RoundPreparationPromptDto.TileSelection)?.maxCount
+                    } else {
+                        prompt.actions.firstOrNull { it.token == selection.token }?.tileSelection?.maxCount
+                    }
+                    if (maxCount != null && maxCount > 1) {
+                        presentationPublisher.publishTileSelectionStarted(gameId, playerId)
+                    }
                 }
             }
         }

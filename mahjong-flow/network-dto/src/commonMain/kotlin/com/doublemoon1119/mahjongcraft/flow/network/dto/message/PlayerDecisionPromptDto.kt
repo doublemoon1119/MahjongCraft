@@ -8,6 +8,8 @@ import kotlinx.serialization.Serializable
  * @property claimedTileIndex [previewTileAssetKeys] 中要額外標記強調的牌索引；目前只有吃會給值
  * （三張牌花色/數值不同，標出來才有辨識意義），碰／槓一律為 `null`——牌面彼此完全相同，標哪一張都
  * 沒有實質資訊。卡片預覽一律直立顯示，不套用鳴牌後最終桌面朝向。
+ * @property tileSelection 這個動作若非 `null`，代表宣告後還需要玩家從立牌中額外選出牌張才算完成
+ * （例如立直宣告後還要另外指定打哪張牌）；點擊卡片後改為進入實體牌選取模式，不直接送出。
  */
 @Serializable
 data class PlayerDecisionActionDto(
@@ -16,6 +18,15 @@ data class PlayerDecisionActionDto(
     val referenceTileAssetKey: String? = null,
     val previewTileAssetKeys: List<String> = emptyList(),
     val claimedTileIndex: Int? = null,
+    val tileSelection: PlayerDecisionActionTileSelectionDto? = null,
+)
+
+/** [PlayerDecisionActionDto.tileSelection] 的候選牌與選牌數量限制。 */
+@Serializable
+data class PlayerDecisionActionTileSelectionDto(
+    val eligibleTileIds: List<String>,
+    val minCount: Int,
+    val maxCount: Int,
 )
 
 /**
@@ -101,8 +112,6 @@ data class PlayerDecisionPromptDto(
     val triggerPlayerName: String? = null,
     val triggerPlayerRelation: DecisionPlayerRelationDto? = null,
     val triggerActionId: String? = null,
-    val riichiTileIds: List<String> = emptyList(),
-    val riichiTileAssetKeys: List<String> = emptyList(),
     val preparation: RoundPreparationPromptDto? = null,
     val discardAnalyses: List<DiscardReadinessAnalysisDto> = emptyList(),
 )
@@ -111,10 +120,17 @@ data class PlayerDecisionPromptDto(
 @Serializable
 enum class PlayerDecisionSelectionKindDto {
     ACTION,
-    BEGIN_RIICHI,
     PREPARATION_CONFIRM,
     PREPARATION_CHOICE,
     PREPARATION_TILES,
+
+    /**
+     * 玩家明確進入「需要選超過一張牌」的實體牌選取模式（`tileSelection`／`preparation` 的
+     * `maxCount > 1`）——只有這種情境才需要通知伺服器生成確認面板 entity；`maxCount == 1` 維持右鍵
+     * 合法牌直接自動送出，不使用這個種類。[PlayerDecisionSelectionDto.token] 為 `null` 代表
+     * preparation 的 `TileSelection`，非 `null` 代表帶 `tileSelection` 的動作候選。
+     */
+    BEGIN_TILE_SELECTION,
 }
 
 /** 客戶端操作 HUD 提交的權威候選 token。 */

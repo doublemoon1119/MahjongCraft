@@ -57,6 +57,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInf
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
@@ -122,6 +124,7 @@ class FabricGamePresentationPublisher(
     private val stickPotPresenter: MahjongStickPotPresenter,
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
     private val playerInfoPresenter: MahjongPlayerInfoPresenter,
+    private val tileSelectionConfirmPresenter: MahjongTileSelectionConfirmPresenter,
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
     private val busyTracker: TablePresentationBusyTracker,
@@ -458,6 +461,42 @@ class FabricGamePresentationPublisher(
                 stickCount = stickCount,
             )
             scoringStickPresenter.present(presentation)
+        }
+    }
+
+    /**
+     * 委派給 [tileSelectionConfirmPresenter]，比照 [publishRoundInfoUpdated] 的「建 Presentation、丟給
+     * 專屬 presenter」分工——桌子被移除時的清除走 [FabricTableLifecycleService.onBlockReplaced] 直接呼叫
+     * 同一個 presenter 的 `clear()`，不經過這裡。
+     */
+    override fun publishTileSelectionStarted(gameId: Uuid, playerId: Uuid) {
+        if (serverHolder.current() == null) {
+            logger.warn("publishTileSelectionStarted gameId={} skipped: no active server", gameId)
+            return
+        }
+        scope.launch(dispatchers.main) {
+            val resolved = resolveTableContext(gameId, "publishTileSelectionStarted") ?: return@launch
+            val seatIndex = gameRepository.getGame(gameId)?.tableState?.players?.indexOfFirst { it.id == playerId } ?: -1
+            if (seatIndex < 0) return@launch
+
+            tileSelectionConfirmPresenter.present(
+                MahjongTileSelectionConfirmPresentation(
+                    tableId = gameId,
+                    tableLocation = resolved.location,
+                    tableFacing = resolved.facing,
+                    seatIndex = seatIndex,
+                    holderId = playerId,
+                ),
+            )
+        }
+    }
+
+    /** 找不到既有面板時視為 no-op，不記警告——選牌提前結束、面板已被 fallback 逾時清除都是正常情境。 */
+    override fun publishTileSelectionEnded(gameId: Uuid, playerId: Uuid) {
+        if (serverHolder.current() == null) return
+        scope.launch(dispatchers.main) {
+            val resolved = resolveTableContext(gameId, "publishTileSelectionEnded") ?: return@launch
+            tileSelectionConfirmPresenter.clearForPlayer(gameId, resolved.location, playerId)
         }
     }
 

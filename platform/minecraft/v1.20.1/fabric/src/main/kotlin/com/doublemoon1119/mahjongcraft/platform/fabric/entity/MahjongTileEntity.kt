@@ -53,11 +53,18 @@ class MahjongTileEntity(
     /** 僅供本地 client 同種牌提示使用的原版 outline RGB；不追蹤也不持久化。 */
     private var matchingHighlightColor: Int? = null
 
-    /** 原版或其他來源未啟用 glowing 時，加入本地同種牌提示狀態。 */
-    override fun isGlowing(): Boolean = super.isGlowing() || matchingHighlightColor != null
+    /** 僅供本地 client 動作選牌（例如多選 preparation）使用的原版 outline RGB；不追蹤也不持久化。 */
+    private var selectionHighlightColor: Int? = null
 
-    /** 原版 glowing 優先；只有 MahjongCraft 本地提示生效時才提供自訂描邊顏色。 */
-    override fun getTeamColorValue(): Int = if (super.isGlowing()) super.getTeamColorValue() else matchingHighlightColor ?: super.getTeamColorValue()
+    /** 原版或其他來源未啟用 glowing 時，加入本地同種牌提示或選牌提示狀態。 */
+    override fun isGlowing(): Boolean = super.isGlowing() || selectionHighlightColor != null || matchingHighlightColor != null
+
+    /** 原版 glowing 優先；其次是選牌提示（比同種牌提示更即時可動作），最後才是同種牌提示。 */
+    override fun getTeamColorValue(): Int = if (super.isGlowing()) {
+        super.getTeamColorValue()
+    } else {
+        selectionHighlightColor ?: matchingHighlightColor ?: super.getTeamColorValue()
+    }
 
     /** 設定僅供目前 client 使用的同種牌描邊色彩。 */
     fun setMatchingHighlight(rgb: Int) {
@@ -67,6 +74,16 @@ class MahjongTileEntity(
     /** 清除本地同種牌描邊，不影響原版或其他模組的 glowing flag。 */
     fun clearMatchingHighlight() {
         matchingHighlightColor = null
+    }
+
+    /** 設定僅供目前 client 使用的動作選牌描邊色彩（例如多選 preparation 中已選取的牌）。 */
+    fun setSelectionHighlight(rgb: Int) {
+        selectionHighlightColor = rgb and 0xFFFFFF
+    }
+
+    /** 清除本地選牌描邊，不影響原版或其他模組的 glowing flag。 */
+    fun clearSelectionHighlight() {
+        selectionHighlightColor = null
     }
 
     /**

@@ -80,6 +80,23 @@ interface GamePresentationPublisher {
     fun publishMatchSettlement(gameId: Uuid, request: MatchSettlementPresentationRequest) = Unit
 
     /**
+     * 通知平台呈現層：[playerId] 進入了「需要選超過一張牌」的實體牌選取模式，該在其手牌上方顯示可
+     * 互動的確認面板。只有 `tileSelection`／`preparation` 的 `maxCount > 1` 才會觸發；`maxCount == 1`
+     * 維持右鍵合法牌直接自動送出，不呼叫這個方法。
+     *
+     * 預設 no-op，讓沒有世界呈現能力的平台略過。
+     */
+    fun publishTileSelectionStarted(gameId: Uuid, playerId: Uuid) = Unit
+
+    /**
+     * 通知平台呈現層清除 [playerId] 的選牌確認面板——選牌送出或情境失效後呼叫；沒有面板存在時
+     * 應為 no-op。
+     *
+     * 預設 no-op，讓沒有世界呈現能力的平台略過。
+     */
+    fun publishTileSelectionEnded(gameId: Uuid, playerId: Uuid) = Unit
+
+    /**
      * 通知平台呈現層本局權威擲骰結果。
      *
      * [dealerSeatIndex]／[roundNumber]／[comboCount] 是呼叫端已經持有的通用桌況資料，一併帶過去讓

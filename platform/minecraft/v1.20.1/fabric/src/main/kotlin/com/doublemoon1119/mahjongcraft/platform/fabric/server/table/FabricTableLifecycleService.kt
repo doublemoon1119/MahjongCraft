@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
@@ -45,6 +46,7 @@ class FabricTableLifecycleService(
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
     private val playerInfoPresenter: MahjongPlayerInfoPresenter,
     private val lobbyInfoPresenter: FabricMahjongLobbyInfoPresenter,
+    private val tileSelectionConfirmPresenter: MahjongTileSelectionConfirmPresenter,
 ) {
     /** 記錄麻將桌破壞政策判斷與清理入口。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -71,10 +73,11 @@ class FabricTableLifecycleService(
         val removedRoundInfoCount = roundInfoPresenter.clear(table.tableId, tableLocation)
         val removedPlayerInfoCount = playerInfoPresenter.clear(table.tableId, tableLocation)
         val removedLobbyInfoCount = lobbyInfoPresenter.clear(table.tableId)
+        val removedTileSelectionConfirmCount = tileSelectionConfirmPresenter.clear(table.tableId, tableLocation)
         val entry = locations.put(table.tableId, tableLocation)
         val result = runBlocking { cleanupService.cleanupMissing(table.tableId, entry.revision) }
         logger.debug(
-            "Handled replaced Mahjong table {} with cleanup result {}, removed {} managed dice, {} managed wall tiles, {} managed player area tiles, {} managed sticks, {} managed discard tiles, {} managed round info displays, {} managed player info displays and {} managed lobby info displays",
+            "Handled replaced Mahjong table {} with cleanup result {}, removed {} managed dice, {} managed wall tiles, {} managed player area tiles, {} managed sticks, {} managed discard tiles, {} managed round info displays, {} managed player info displays, {} managed lobby info displays and {} managed tile selection confirm panels",
             table.tableId,
             result,
             removedDiceCount,
@@ -85,6 +88,7 @@ class FabricTableLifecycleService(
             removedRoundInfoCount,
             removedPlayerInfoCount,
             removedLobbyInfoCount,
+            removedTileSelectionConfirmCount,
         )
     }
 

@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEn
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongSoundTimelineEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileSelectionConfirmEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffectEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
@@ -38,6 +39,10 @@ object ModEntities {
 
     /** 麻將牌 entity type；由 [register] 初始化。 */
     lateinit var mahjongTile: EntityType<MahjongTileEntity>
+        private set
+
+    /** 多選選牌確認面板 entity type；由 [register] 初始化。 */
+    lateinit var mahjongTileSelectionConfirm: EntityType<MahjongTileSelectionConfirmEntity>
         private set
 
     /** 麻將點棒 entity type；由 [register] 初始化。 */
@@ -113,6 +118,16 @@ object ModEntities {
             Identifier(MinecraftModMetadata.MOD_ID, "mahjong_tile"),
             FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongTileEntity)
                 .dimensions(EntityDimensions.fixed(MahjongTileEntity.TILE_WIDTH, MahjongTileEntity.TILE_HEIGHT))
+                .trackRangeBlocks(16)
+                .trackedUpdateRate(10)
+                .fireImmune()
+                .build(),
+        )
+        mahjongTileSelectionConfirm = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_tile_selection_confirm"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongTileSelectionConfirmEntity)
+                .dimensions(EntityDimensions.fixed(MahjongTileSelectionConfirmEntity.WIDTH, MahjongTileSelectionConfirmEntity.HEIGHT))
                 .trackRangeBlocks(16)
                 .trackedUpdateRate(10)
                 .fireImmune()

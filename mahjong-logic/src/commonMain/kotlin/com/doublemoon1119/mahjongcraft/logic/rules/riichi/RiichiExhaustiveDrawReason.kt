@@ -1,9 +1,13 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
+import com.doublemoon1119.mahjongcraft.logic.util.isHonor
+import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 
 /**
@@ -25,6 +29,9 @@ sealed class RiichiExhaustiveDrawReason : ExhaustiveDrawReason {
      */
     data object KyuushuKyuuhai : RiichiExhaustiveDrawReason() {
         override val id: String = MahjongCraftMetadata.id("kyuushu_kyuuhai")
+
+        /** 預覽手牌中觸發九種九牌資格的全部么九牌。 */
+        override fun previewTiles(hand: Hand): List<Tile> = hand.tiles.map { it.tile }.filter { it.isTerminal || it.isHonor }
     }
 
     /**

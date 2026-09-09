@@ -32,6 +32,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerSta
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
@@ -40,6 +41,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvail
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
@@ -158,6 +161,8 @@ class FabricDebugAnimationCommand(
     private val membershipRepository: PlayerMembershipRepository,
     private val gameRepository: GameRepository,
     private val gameFlowCoordinator: GameFlowCoordinator,
+    private val gameDecisionTimerManager: GameDecisionTimerManager,
+    private val decisionTimerSynchronizationService: DecisionTimerSynchronizationService,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
@@ -470,7 +475,21 @@ class FabricDebugAnimationCommand(
             literal(START_ARGUMENT)
                 .then(literal(CONFIRM_ARGUMENT).executes { startPreparation(it.source, PreparationPreview.CONFIRM) })
                 .then(literal(CHOICE_ARGUMENT).executes { startPreparation(it.source, PreparationPreview.CHOICE) })
-                .then(literal(TILES_ARGUMENT).executes { startPreparation(it.source, PreparationPreview.TILES) }),
+                .then(
+                    literal(TILES_ARGUMENT).executes { startPreparation(it.source, PreparationPreview.TILES) }
+                        .then(
+                            argument(MIN_COUNT_ARGUMENT, IntegerArgumentType.integer(1)).then(
+                                argument(MAX_COUNT_ARGUMENT, IntegerArgumentType.integer(1)).executes { context ->
+                                    startPreparation(
+                                        context.source,
+                                        PreparationPreview.TILES,
+                                        minCount = IntegerArgumentType.getInteger(context, MIN_COUNT_ARGUMENT),
+                                        maxCount = IntegerArgumentType.getInteger(context, MAX_COUNT_ARGUMENT),
+                                    )
+                                },
+                            ),
+                        ),
+                ),
         )
         .then(
             literal(SUBMIT_ARGUMENT)
@@ -625,8 +644,19 @@ class FabricDebugAnimationCommand(
         return future
     }
 
-    /** 建立指定形狀的測試 preparation state。 */
-    private fun startPreparation(source: ServerCommandSource, preview: PreparationPreview): Int = withPlayerTableSuspend(source) { tableId, playerId ->
+    /**
+     * 建立指定形狀的測試 preparation state；[minCount]／[maxCount] 只用在 [PreparationPreview.TILES]，
+     * 預設維持既有的 3/3（省略引數時的既有行為不變），可調高 `maxCount` 端對端測試多選確認面板
+     * （選中發光→確認面板→送出）走真正的 `SubmitRoundPreparation` 流程與呼叫者真實手牌，不需要真正的
+     * 地區麻將規則就先湊出一個 `maxCount > 1` 的情境。
+     *
+     * 寫入狀態後額外呼叫 [GameDecisionTimerManager.reconcile] 並同步結果，比照
+     * [GameFlowCoordinator] 內部 `dispatchAndReconcile` 的作法，讓這位玩家真的取得
+     * [com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase.ROUND_PREPARATION]
+     * 計時器——直接寫入 repository 不會經過 coordinator 的指令派送流程，計時器不會自動產生，逾時、
+     * 強制 fallback 等行為在 debug 情境下就永遠測不到。
+     */
+    private fun startPreparation(source: ServerCommandSource, preview: PreparationPreview, minCount: Int = 3, maxCount: Int = 3): Int = withPlayerTableSuspend(source) { tableId, playerId ->
         val changed = gameRepository.updateGame(tableId) { game ->
             if (game == null) return@updateGame null to false
             val input = when (preview) {
@@ -635,8 +665,8 @@ class FabricDebugAnimationCommand(
                 PreparationPreview.TILES -> RoundPreparationInputSpec.TileSelection(
                     eligibleTileIds = game.tableState.players.first { it.id == playerId }.hand.allTiles
                         .mapTo(linkedSetOf()) { it.id },
-                    minCount = 3,
-                    maxCount = 3,
+                    minCount = minCount,
+                    maxCount = maxCount,
                 )
             }
             game.copy(
@@ -647,7 +677,11 @@ class FabricDebugAnimationCommand(
                 ),
             ) to true
         }
-        if (changed) snapshotSynchronizer.syncAll(tableId)
+        if (changed) {
+            snapshotSynchronizer.syncAll(tableId)
+            gameDecisionTimerManager.reconcile(tableId)
+            decisionTimerSynchronizationService.synchronize(tableId)
+        }
         "Round preparation ${preview.name.lowercase()} preview ${if (changed) "started" else "failed"}"
     }
 
@@ -666,12 +700,18 @@ class FabricDebugAnimationCommand(
         "Round preparation timeout fallback requested"
     }
 
-    /** 清除 development-only 測試 preparation state。 */
+    /**
+     * 清除 development-only 測試 preparation state。連同呼叫 [GameDecisionTimerManager.reconcile]
+     * 立即結算 [startPreparation] 建立的計時器，理由同該函式 KDoc——不清掉的話，計時器要等到下一次
+     * 剛好觸發 reconcile 的操作才會被結算掉。
+     */
     private fun cancelPreparation(context: CommandContext<ServerCommandSource>): Int = withPlayerTableSuspend(context.source) { tableId, _ ->
         gameRepository.updateGame(tableId) { game ->
             game?.copy(pendingRoundPreparation = null) to Unit
         }
         snapshotSynchronizer.syncAll(tableId)
+        gameDecisionTimerManager.reconcile(tableId)
+        decisionTimerSynchronizationService.synchronize(tableId)
         "Round preparation preview cancelled"
     }
 
@@ -1898,8 +1938,6 @@ class FabricDebugAnimationCommand(
             triggerPlayerName = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "AI 1" else null,
             triggerPlayerRelation = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) DecisionPlayerRelationDto.LEFT else null,
             triggerActionId = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "mahjongcraft:discard" else null,
-            riichiTileIds = if (this == RIICHI || this == MIXED) List(9) { Uuid.random().toString() } else emptyList(),
-            riichiTileAssetKeys = if (this == RIICHI || this == MIXED) listOf("m1", "m4", "m7", "p2", "p5", "p8", "s3", "s6", "s9") else emptyList(),
             preparation = preparation(),
             discardAnalyses = analysisTileId?.let { listOf(analysis(it)) }.orEmpty(),
         )
@@ -1911,6 +1949,16 @@ class FabricDebugAnimationCommand(
                 previewTileAssetKeys = tiles,
                 claimedTileIndex = claimedIndex,
             )
+            fun riichiAction() = PlayerDecisionActionDto(
+                token = RIICHI_ACTION_TOKEN,
+                actionId = "mahjongcraft:riichi",
+                previewTileAssetKeys = listOf("m1", "m4", "m7", "p2", "p5", "p8", "s3", "s6", "s9"),
+                tileSelection = PlayerDecisionActionTileSelectionDto(
+                    eligibleTileIds = List(9) { Uuid.random().toString() },
+                    minCount = 1,
+                    maxCount = 1,
+                ),
+            )
             // 只有吃會標出鳴來的那張牌（三張牌花色/數值不同才有辨識意義）；碰／槓牌面彼此完全相同，不標記。
             return when (this) {
                 CHI -> listOf(action("chi", listOf("s4", "s5", "s6"), claimedIndex = 1))
@@ -1919,6 +1967,7 @@ class FabricDebugAnimationCommand(
                 ANKAN -> listOf(action("kan_closed", listOf("m9", "m9", "m9", "m9")))
                 RON -> listOf(action("ron", listOf("s5")))
                 TSUMO -> listOf(action("tsumo", listOf("red_dragon")))
+                RIICHI -> listOf(riichiAction())
                 KYUUSHU -> listOf(
                     action(
                         "kyuushu_kyuuhai",
@@ -1930,6 +1979,7 @@ class FabricDebugAnimationCommand(
                     action("pon", listOf("s5", "s5", "s5")),
                     action("kan_open", listOf("s5", "s5", "s5", "s5")),
                     action("ron", listOf("s5")),
+                    riichiAction(),
                     action("pass", emptyList()),
                 )
                 else -> emptyList()
@@ -2030,6 +2080,8 @@ class FabricDebugAnimationCommand(
         const val MATCH_PROGRESSION_SUBCOMMAND: String = "match_progression"
         const val DECISION_HUD_SUBCOMMAND: String = "decision_hud"
         const val DEBUG_HUD_DURATION_TICKS: Long = 20L * 30L
+        const val MIN_COUNT_ARGUMENT: String = "min_count"
+        const val MAX_COUNT_ARGUMENT: String = "max_count"
         const val HOVERED_TEXT_SUBCOMMAND: String = "hovered_text"
         const val EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT: String = "exhaustive_draw_settlement"
         const val GAME_CREATED_LOCATION_ARGUMENT: String = "game_created_location"

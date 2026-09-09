@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudL
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileSelectionConfirmEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -29,6 +30,7 @@ import net.minecraft.util.hit.EntityHitResult
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import kotlin.math.ceil
+import kotlin.uuid.toKotlinUuid
 
 /** 管理操作介面、精簡倒數與打牌分析 HUD 的共用客戶端生命週期。 */
 @Single
@@ -51,6 +53,12 @@ class PlayerDecisionHudController(
     /** 已由玩家明確點擊 preparation 選牌按鈕的 decision key。 */
     private var preparationTileSelectionDecisionKey: String? = null
 
+    /** 目前實體手牌動作選取（例如立直宣告後選擇捨牌）中的 tile UUID 字串。 */
+    private val selectedActionTileSelectionIds = linkedSetOf<String>()
+
+    /** 已由玩家明確點擊、正在選取實體牌的動作 token。 */
+    private var actionTileSelectionToken: String? = null
+
     /** 玩家明確點擊自己回合「跳過」後，才允許實體手牌直接出牌。 */
     private var directDiscardDecisionKey: String? = null
 
@@ -62,6 +70,8 @@ class PlayerDecisionHudController(
             if (world.isClient && entity is MahjongTileEntity && entity.managedByGame) {
                 if (togglePreparationTile(entity)) {
                     ActionResult.SUCCESS
+                } else if (toggleActionSelectionTile(entity)) {
+                    ActionResult.SUCCESS
                 } else if (canUsePhysicalTileDirectly()) {
                     ActionResult.PASS
                 } else if (promptStore.prompt?.isInteractive == true) {
@@ -70,6 +80,8 @@ class PlayerDecisionHudController(
                 } else {
                     ActionResult.PASS
                 }
+            } else if (world.isClient && entity is MahjongTileSelectionConfirmEntity) {
+                if (confirmTileSelection(entity)) ActionResult.SUCCESS else ActionResult.PASS
             } else {
                 ActionResult.PASS
             }
@@ -117,10 +129,20 @@ class PlayerDecisionHudController(
         MinecraftClient.getInstance().setScreen(null)
     }
 
-    /** 明確選擇立直後通知伺服器，並在本機啟用合法宣告牌高亮。 */
-    fun beginRiichiSelection(prompt: PlayerDecisionPromptDto) {
-        promptStore.beginRiichiSelection(prompt.decisionKey)
-        submit(prompt, PlayerDecisionSelectionKindDto.BEGIN_RIICHI)
+    /**
+     * 明確點擊帶有選牌需求的動作卡片後，進入實體牌選取模式並啟用合法候選牌高亮；只有
+     * `maxCount > 1` 才通知伺服器生成確認面板（[PlayerDecisionSelectionKindDto.BEGIN_TILE_SELECTION]）
+     * ——`maxCount == 1` 維持右鍵合法牌直接自動送出，不需要面板。
+     */
+    fun beginActionTileSelection(prompt: PlayerDecisionPromptDto, action: PlayerDecisionActionDto) {
+        selectedActionTileSelectionIds.clear()
+        actionTileSelectionToken = action.token
+        promptStore.beginTileSelection(prompt.decisionKey, action.token)
+        dismissedDecisionKey = prompt.decisionKey
+        MinecraftClient.getInstance().setScreen(null)
+        if ((action.tileSelection?.maxCount ?: 1) > 1) {
+            sendSelection(prompt, PlayerDecisionSelectionKindDto.BEGIN_TILE_SELECTION, action.token, emptyList())
+        }
     }
 
     /** 玩家明確跳過自己回合的特殊動作後，進入普通實體出牌模式。 */
@@ -130,39 +152,44 @@ class PlayerDecisionHudController(
         MinecraftClient.getInstance().setScreen(null)
     }
 
-    /** 只有已明確選擇立直或普通出牌時，右鍵才可傳到實體牌。 */
+    /** 只有已明確選擇普通出牌時，右鍵才可傳到實體牌——動作選牌（如立直）由 [toggleActionSelectionTile] 攔截。 */
     private fun canUsePhysicalTileDirectly(): Boolean {
         val decisionKey = promptStore.prompt?.decisionKey ?: return false
-        return directDiscardDecisionKey == decisionKey || promptStore.isRiichiSelectionActive()
+        return directDiscardDecisionKey == decisionKey
     }
 
-    /** 進入實體手牌 preparation 選取模式。 */
+    /**
+     * 進入實體手牌 preparation 選取模式；只有 `maxCount > 1` 才通知伺服器生成確認面板，理由同
+     * [beginActionTileSelection]。
+     */
     fun beginPreparationTileSelection(prompt: PlayerDecisionPromptDto) {
         selectedPreparationTileIds.clear()
         preparationTileSelectionDecisionKey = prompt.decisionKey
         dismissedDecisionKey = prompt.decisionKey
         MinecraftClient.getInstance().setScreen(null)
+        val selection = prompt.preparation as? RoundPreparationPromptDto.TileSelection
+        if ((selection?.maxCount ?: 1) > 1) {
+            sendSelection(prompt, PlayerDecisionSelectionKindDto.BEGIN_TILE_SELECTION, null, emptyList())
+        }
     }
 
-    /** 切換一張合法 preparation 手牌；達到 maxCount 時直接原子提交。 */
+    /**
+     * 切換一張合法 preparation 手牌；已選滿 `maxCount` 張時，右鍵其他尚未選取的牌不會有反應，必須先
+     * 取消一張才能再選別的。只有 `maxCount == 1` 才會選中即自動送出（那種情境沒有確認面板，非送出
+     * 不可）；`maxCount > 1` 一律要右鍵確認面板才會送出，即使剛好選滿 `maxCount` 張也一樣，見
+     * [confirmTileSelection]。
+     */
     private fun togglePreparationTile(entity: MahjongTileEntity): Boolean {
         val prompt = promptStore.prompt ?: return false
         if (preparationTileSelectionDecisionKey != prompt.decisionKey) return false
         val selection = prompt.preparation as? RoundPreparationPromptDto.TileSelection ?: return false
         val tileId = entity.uuid.toString()
         if (tileId !in selection.eligibleTileIds) return true
-        if (!selectedPreparationTileIds.remove(tileId)) selectedPreparationTileIds.add(tileId)
-        if (selectedPreparationTileIds.size == selection.maxCount) {
-            val gameId = timerStore.state?.gameId ?: return true
-            MahjongChannels.decisionSelection.sendToServer(
-                json,
-                PlayerDecisionSelectionDto(
-                    gameId = gameId.toString(),
-                    decisionKey = prompt.decisionKey,
-                    kind = PlayerDecisionSelectionKindDto.PREPARATION_TILES,
-                    tileIds = selectedPreparationTileIds.toList(),
-                ),
-            )
+        if (!selectedPreparationTileIds.remove(tileId) && selectedPreparationTileIds.size < selection.maxCount) {
+            selectedPreparationTileIds.add(tileId)
+        }
+        if (selection.maxCount == 1 && selectedPreparationTileIds.size == 1) {
+            sendSelection(prompt, PlayerDecisionSelectionKindDto.PREPARATION_TILES, null, selectedPreparationTileIds.toList())
             selectedPreparationTileIds.clear()
             preparationTileSelectionDecisionKey = null
             directDiscardDecisionKey = null
@@ -170,8 +197,104 @@ class PlayerDecisionHudController(
         return true
     }
 
+    /**
+     * 切換一張合法動作選牌手牌（例如立直宣告牌）；已選滿 `maxCount` 張時，右鍵其他尚未選取的牌不會有
+     * 反應，理由同 [togglePreparationTile]。只有 `maxCount == 1` 才會選中即自動送出，理由也同
+     * [togglePreparationTile]。
+     */
+    private fun toggleActionSelectionTile(entity: MahjongTileEntity): Boolean {
+        val prompt = promptStore.prompt ?: return false
+        val token = actionTileSelectionToken ?: return false
+        if (!promptStore.isTileSelectionActive()) return false
+        val selection = prompt.actions.firstOrNull { it.token == token }?.tileSelection ?: return false
+        val tileId = entity.uuid.toString()
+        if (tileId !in selection.eligibleTileIds) return true
+        if (!selectedActionTileSelectionIds.remove(tileId) && selectedActionTileSelectionIds.size < selection.maxCount) {
+            selectedActionTileSelectionIds.add(tileId)
+        }
+        if (selection.maxCount == 1 && selectedActionTileSelectionIds.size == 1) {
+            sendSelection(prompt, PlayerDecisionSelectionKindDto.ACTION, token, selectedActionTileSelectionIds.toList())
+            selectedActionTileSelectionIds.clear()
+            actionTileSelectionToken = null
+            promptStore.endTileSelection()
+            directDiscardDecisionKey = null
+        }
+        return true
+    }
+
+    /**
+     * 目前進行中選牌情境的已選數量與合法範圍（`minCount..maxCount`）；preparation 與 action 選牌互斥，
+     * 依目前哪一個處於進行中判斷。沒有進行中的選牌時回傳 `null`。
+     */
+    private fun currentTileSelectionState(): TileSelectionState? {
+        val prompt = promptStore.prompt ?: return null
+        if (preparationTileSelectionDecisionKey == prompt.decisionKey) {
+            val selection = prompt.preparation as? RoundPreparationPromptDto.TileSelection ?: return null
+            return TileSelectionState(selectedPreparationTileIds.size, selection.minCount..selection.maxCount)
+        }
+        val token = actionTileSelectionToken
+        if (token != null && promptStore.isTileSelectionActive()) {
+            val selection = prompt.actions.firstOrNull { it.token == token }?.tileSelection ?: return null
+            return TileSelectionState(selectedActionTileSelectionIds.size, selection.minCount..selection.maxCount)
+        }
+        return null
+    }
+
+    /** 目前選牌是否落在合法範圍內、右鍵確認面板會不會真的送出；沒有進行中的選牌時回傳 `null`。 */
+    fun currentTileSelectionConfirmable(): Boolean? = currentTileSelectionState()?.let { it.selectedCount in it.validRange }
+
+    /**
+     * 右鍵多選確認面板：只有本機玩家就是這個面板的 [MahjongTileSelectionConfirmEntity.holderId]、且目前
+     * 已選數量落在合法範圍內才送出；不在範圍內時忽略這次點擊（維持選取狀態，讓玩家繼續選）。回傳
+     * `false`（面板不屬於本機玩家、或本機目前根本不在任何選牌情境）時，呼叫端應讓事件正常往下傳遞。
+     */
+    private fun confirmTileSelection(entity: MahjongTileSelectionConfirmEntity): Boolean {
+        val prompt = promptStore.prompt ?: return false
+        val localPlayerId = MinecraftClient.getInstance().player?.uuid?.toKotlinUuid() ?: return false
+        if (entity.holderId != localPlayerId) return false
+        if (currentTileSelectionState() == null) return false
+
+        if (preparationTileSelectionDecisionKey == prompt.decisionKey) {
+            val selection = prompt.preparation as? RoundPreparationPromptDto.TileSelection ?: return true
+            if (selectedPreparationTileIds.size in selection.minCount..selection.maxCount) {
+                sendSelection(prompt, PlayerDecisionSelectionKindDto.PREPARATION_TILES, null, selectedPreparationTileIds.toList())
+                selectedPreparationTileIds.clear()
+                preparationTileSelectionDecisionKey = null
+                directDiscardDecisionKey = null
+            }
+            return true
+        }
+
+        val token = actionTileSelectionToken
+        if (token != null && promptStore.isTileSelectionActive()) {
+            val selection = prompt.actions.firstOrNull { it.token == token }?.tileSelection ?: return true
+            if (selectedActionTileSelectionIds.size in selection.minCount..selection.maxCount) {
+                sendSelection(prompt, PlayerDecisionSelectionKindDto.ACTION, token, selectedActionTileSelectionIds.toList())
+                selectedActionTileSelectionIds.clear()
+                actionTileSelectionToken = null
+                promptStore.endTileSelection()
+                directDiscardDecisionKey = null
+            }
+            return true
+        }
+        return false
+    }
+
+    /** [currentTileSelectionState] 的回傳形狀。 */
+    private data class TileSelectionState(val selectedCount: Int, val validRange: IntRange)
+
+    /** 送出一個以目前 decision key 約束的受控選擇，不觸發 [submit] 額外的關閉面板／dismiss 副作用。 */
+    private fun sendSelection(prompt: PlayerDecisionPromptDto, kind: PlayerDecisionSelectionKindDto, token: String?, tileIds: List<String>) {
+        val gameId = timerStore.state?.gameId ?: return
+        MahjongChannels.decisionSelection.sendToServer(
+            json,
+            PlayerDecisionSelectionDto(gameId.toString(), prompt.decisionKey, kind, token, tileIds),
+        )
+    }
+
     /** 新 prompt 第一次出現時自動開啟；普通出牌回合只保留精簡倒數。 */
     private fun tick(client: MinecraftClient) {
+        syncSelectionHighlights(client)
         val prompt = promptStore.prompt
         if (prompt == null) {
             if (client.currentScreen is PlayerDecisionScreen) client.setScreen(null)
@@ -179,6 +302,8 @@ class PlayerDecisionHudController(
             openedDecisionKey = null
             selectedPreparationTileIds.clear()
             preparationTileSelectionDecisionKey = null
+            selectedActionTileSelectionIds.clear()
+            actionTileSelectionToken = null
             directDiscardDecisionKey = null
             return
         }
@@ -186,17 +311,45 @@ class PlayerDecisionHudController(
             selectedPreparationTileIds.clear()
             preparationTileSelectionDecisionKey = null
         }
+        if (actionTileSelectionToken != null && !promptStore.isTileSelectionActive()) {
+            selectedActionTileSelectionIds.clear()
+            actionTileSelectionToken = null
+        }
         val openScreen = client.currentScreen as? PlayerDecisionScreen
         if (openScreen != null && openScreen.decisionKey != prompt.decisionKey) {
             client.setScreen(null)
             openedDecisionKey = null
             selectedPreparationTileIds.clear()
             preparationTileSelectionDecisionKey = null
+            selectedActionTileSelectionIds.clear()
+            actionTileSelectionToken = null
         }
         if (!prompt.isInteractive || client.currentScreen != null || prompt.decisionKey == openedDecisionKey) return
         openedDecisionKey = prompt.decisionKey
         dismissedDecisionKey = null
         client.setScreen(PlayerDecisionScreen(prompt, timerStore.state?.phase?.isReaction == true, this))
+    }
+
+    /**
+     * 逐 tick 依目前選取集合（[selectedPreparationTileIds]／[selectedActionTileSelectionIds]）同步管理中
+     * 手牌的本地選取發光——先清除所有管理中手牌的選取發光，再對目前選取集合套用，比照
+     * [MatchingTileHighlightController] 的「先清除再重算」手法，不用在每個新增／移除選取的分支各自
+     * 手動維護高亮狀態，也不怕漏掉某條重置路徑（decisionKey 改變、prompt 消失等）忘記清除。
+     */
+    private fun syncSelectionHighlights(client: MinecraftClient) {
+        val selectedIds = when {
+            preparationTileSelectionDecisionKey != null -> selectedPreparationTileIds
+            actionTileSelectionToken != null -> selectedActionTileSelectionIds
+            else -> emptySet()
+        }
+        val tiles = client.world?.entities?.filterIsInstance<MahjongTileEntity>().orEmpty()
+        tiles.forEach { tile ->
+            if (tile.uuid.toString() in selectedIds) {
+                tile.setSelectionHighlight(SELECTION_HIGHLIGHT_COLOR)
+            } else {
+                tile.clearSelectionHighlight()
+            }
+        }
     }
 
     /** 在原版聊天欄之前繪製被動提示，讓聊天背景保有自然的半透明覆蓋效果。 */
@@ -211,18 +364,19 @@ class PlayerDecisionHudController(
         if (client.currentScreen == null && prompt != null) renderDiscardAnalysis(context, prompt, client.crosshairTarget)
     }
 
-    /** 繪製一般遊戲畫面與聊天畫面共用的等待提示及倒數。 */
+    /** 繪製一般遊戲畫面與聊天畫面共用的等待提示及倒數；正在多選選牌時改顯示選牌進度提示。 */
     private fun renderCompactDecisionHud(context: DrawContext) {
         val client = MinecraftClient.getInstance()
         if (!configStore.current.presentationVisibility.compactPromptEnabled) return
         if (client.options.hudHidden || timerStore.reading() == null) return
         val prompt = promptStore.prompt
         val groupWidth = COMPACT_HUD_WIDTH.coerceAtMost(context.scaledWindowWidth)
+        val tileSelectionState = currentTileSelectionState()
         val showReopenReminder = prompt != null &&
             dismissedDecisionKey == prompt.decisionKey &&
             prompt.isInteractive &&
             !isPhysicalSelectionActive(prompt)
-        val groupHeight = if (showReopenReminder) {
+        val groupHeight = if (tileSelectionState != null || showReopenReminder) {
             COMPACT_HUD_EXPANDED_HEIGHT
         } else {
             COMPACT_HUD_TIMER_HEIGHT
@@ -233,7 +387,9 @@ class PlayerDecisionHudController(
         val centerX = groupLeft + groupWidth / 2
         val timerY = groupTop + groupHeight - COMPACT_HUD_TIMER_HEIGHT
         renderTimerOverlay(context, timerY, centerX)
-        if (showReopenReminder) {
+        if (tileSelectionState != null) {
+            renderTileSelectionStatus(context, client, tileSelectionState, centerX, groupTop)
+        } else if (showReopenReminder) {
             context.drawCenteredTextWithShadow(
                 client.textRenderer,
                 Text.translatable("mahjongcraft.hud.waiting_for_action"),
@@ -251,8 +407,39 @@ class PlayerDecisionHudController(
         }
     }
 
+    /**
+     * 選牌進度提示：還沒選到 `minCount` 張時提示還缺幾張，落在合法範圍內（含剛好選滿 `maxCount`）時
+     * 提示可以確認——選滿本身已經隱含「已達上限」，不需要額外的一次性提醒。
+     */
+    private fun renderTileSelectionStatus(
+        context: DrawContext,
+        client: MinecraftClient,
+        state: TileSelectionState,
+        centerX: Int,
+        groupTop: Int,
+    ) {
+        context.drawCenteredTextWithShadow(
+            client.textRenderer,
+            Text.translatable("mahjongcraft.hud.tile_selection_in_progress"),
+            centerX,
+            groupTop,
+            0xFFD54F,
+        )
+        val detail = if (state.selectedCount < state.validRange.first) {
+            Text.translatable(
+                "mahjongcraft.hud.tile_selection_need_more",
+                state.validRange.first - state.selectedCount,
+                state.selectedCount,
+                state.validRange.last,
+            )
+        } else {
+            Text.translatable("mahjongcraft.hud.tile_selection_ready", state.selectedCount, state.validRange.last)
+        }
+        context.drawCenteredTextWithShadow(client.textRenderer, detail, centerX, groupTop + 11, 0xFFFFFF)
+    }
+
     /** 玩家已明確進入實體牌選擇階段時，不再顯示「重新開啟操作介面」提醒。 */
-    private fun isPhysicalSelectionActive(prompt: PlayerDecisionPromptDto): Boolean = promptStore.isRiichiSelectionActive() ||
+    private fun isPhysicalSelectionActive(prompt: PlayerDecisionPromptDto): Boolean = promptStore.isTileSelectionActive() ||
         preparationTileSelectionDecisionKey == prompt.decisionKey ||
         directDiscardDecisionKey == prompt.decisionKey
 
@@ -401,6 +588,10 @@ class PlayerDecisionHudController(
             activeController?.renderBeforeChat(context)
         }
 
+        /** 供 [MahjongTileSelectionConfirmEntityRenderer] 查詢目前選牌是否可送出，決定面板文字顏色。 */
+        @JvmStatic
+        fun isTileSelectionConfirmable(): Boolean? = activeController?.currentTileSelectionConfirmable()
+
         private const val MAX_WAIT_COLUMNS = 7
         private const val PADDING = 6
         private const val CELL_GAP = 6
@@ -418,6 +609,12 @@ class PlayerDecisionHudController(
         private const val COMPACT_HUD_WIDTH = 220
         private const val COMPACT_HUD_TIMER_HEIGHT = 14
         private const val COMPACT_HUD_EXPANDED_HEIGHT = 38
+
+        /**
+         * 多選選牌中已選取手牌的本地描邊色，跟 [MatchingTileHighlightController] 的青（準星目標）／
+         * 橘黃（其他同種牌）刻意區隔開，選紫色系避免混淆。
+         */
+        private const val SELECTION_HIGHLIGHT_COLOR = 0x9D5DE8
     }
 }
 
@@ -462,20 +659,13 @@ private class PlayerDecisionScreen(
             prompt.actions.filterNot { it.actionId == "mahjongcraft:pass" }
                 .sortedBy { it.actionId.actionDisplayPriority() }
                 .forEach { action ->
-                    add(
-                        DisplayEntry(Text.translatable(action.actionId.translationKey()), action) {
-                            controller.submit(prompt, PlayerDecisionSelectionKindDto.ACTION, action.token)
-                        },
-                    )
+                    val onClick: () -> Unit = if (action.tileSelection != null) {
+                        { controller.beginActionTileSelection(prompt, action) }
+                    } else {
+                        { controller.submit(prompt, PlayerDecisionSelectionKindDto.ACTION, action.token) }
+                    }
+                    add(DisplayEntry(Text.translatable(action.actionId.translationKey()), action, onClick = onClick))
                 }
-            if (prompt.riichiTileIds.isNotEmpty()) {
-                add(
-                    DisplayEntry(
-                        Text.translatable("mahjongcraft.hud.action.riichi"),
-                        previewTileAssetKeys = prompt.riichiTileAssetKeys,
-                    ) { controller.beginRiichiSelection(prompt) },
-                )
-            }
             when (val preparation = prompt.preparation) {
                 RoundPreparationPromptDto.Confirmation -> add(
                     DisplayEntry(Text.translatable("mahjongcraft.hud.action.confirm")) {
@@ -921,7 +1111,7 @@ private class PlayerDecisionScreen(
 
 /** Prompt 是否包含需要玩家明確選擇的內容。 */
 private val PlayerDecisionPromptDto.isInteractive: Boolean
-    get() = actions.isNotEmpty() || riichiTileIds.isNotEmpty() || preparation != null
+    get() = actions.isNotEmpty() || preparation != null
 
 /** 操作卡由左至右的顯示順序；未列出的 ID（含第三方規則模組的特殊動作）維持原始相對順序排在最後。 */
 internal fun String.actionDisplayPriority(): Int = when (this) {
