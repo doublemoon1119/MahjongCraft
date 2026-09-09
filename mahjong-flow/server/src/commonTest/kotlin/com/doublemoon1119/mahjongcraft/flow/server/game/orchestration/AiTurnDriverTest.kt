@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -60,12 +61,14 @@ class AiTurnDriverTest {
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val strategy = FakeMahjongAiStrategy(strategyCommand)
         val strategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = "fake").apply { register("fake") { strategy } }
+        val actionContextResolver = PlayerActionContextResolver()
         val driver = AiTurnDriver(
             gameRepo,
-            GetLegalActionsUseCase(gameRepo, moduleRegistry),
+            GetLegalActionsUseCase(gameRepo, moduleRegistry, actionContextResolver),
             strategyRegistry,
             GameVisibilityPolicyImpl(),
             moduleRegistry,
+            actionContextResolver,
         )
     }
 

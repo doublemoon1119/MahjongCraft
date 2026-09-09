@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
@@ -12,12 +13,15 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSe
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContext
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import kotlinx.coroutines.launch
@@ -50,6 +54,7 @@ import kotlin.uuid.toKotlinUuid
  *   跟動畫不一致的桌況。
  * @property presentationPublisher 選牌需要多選（`maxCount > 1`）時，通知平台呈現層生成／清除選牌確認
  *   面板 entity。
+ * @property actionContextResolver 玩家目前操作情境的權威解析器。
  */
 @Single
 class MahjongTableGameActionService(
@@ -63,6 +68,7 @@ class MahjongTableGameActionService(
     private val busyTracker: TablePresentationBusyTracker,
     private val promptFactory: PlayerDecisionPromptFactory,
     private val presentationPublisher: GamePresentationPublisher,
+    private val actionContextResolver: PlayerActionContextResolver,
 ) {
     /** 對局命令與自動銜接失敗時的專用 logger。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -80,13 +86,17 @@ class MahjongTableGameActionService(
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             val gameId = runCatching { Uuid.parse(selection.gameId) }.getOrNull() ?: return@launch
-            val state = gameRepository.getTableState(gameId) ?: return@launch
-            val mode = GameActionCandidateResolver.resolvePendingMode(state, playerId)
-            val phase = when (mode) {
-                GamePendingMode.KAN_REACTION -> com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase.KAN_REACTION
-                GamePendingMode.DISCARD_REACTION -> com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase.DISCARD_REACTION
-                GamePendingMode.OWN_TURN -> com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase.OWN_TURN
-                GamePendingMode.NONE -> com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase.ROUND_PREPARATION
+            val game = gameRepository.getGame(gameId) ?: return@launch
+            val state = game.tableState
+            val preparation = game.pendingRoundPreparation
+            val phase = if (
+                preparation != null &&
+                playerId in preparation.participantPlayerIds &&
+                playerId !in preparation.completedPlayerIds
+            ) {
+                PlayerDecisionPhase.ROUND_PREPARATION
+            } else {
+                actionContextResolver.resolveFor(state, playerId)?.phase ?: return@launch
             }
             val prompt = promptFactory.create(gameId, playerId, phase) ?: return@launch
             if (prompt.decisionKey != selection.decisionKey) return@launch
@@ -176,12 +186,7 @@ class MahjongTableGameActionService(
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
             }
-            val command = when (GameActionCandidateResolver.resolvePendingMode(state, playerId)) {
-                GamePendingMode.KAN_REACTION -> GameCommand.RespondToKan(candidate.action)
-                GamePendingMode.DISCARD_REACTION -> GameCommand.RespondToDiscard(candidate.action)
-                GamePendingMode.OWN_TURN -> toOwnTurnCommand(candidate.action)
-                GamePendingMode.NONE -> null
-            }
+            val command = actionContextResolver.resolveFor(state, playerId)?.toGameCommand(candidate.action)
             if (command == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
                 return@launch
@@ -211,19 +216,11 @@ class MahjongTableGameActionService(
                 MinecraftPlayerFeedback.ShowHand(
                     standingTiles = playerState.hand.standingTiles.map { it.tile },
                     melds = playerState.hand.exposedMelds,
-                    turnStatus = GameActionCandidateResolver.resolvePendingMode(state, playerId).toTurnStatus(),
+                    turnStatus = actionContextResolver.resolveFor(state, playerId).toTurnStatus(),
                     legalActions = legalActions,
                 ),
             )
         }
-    }
-
-    /** 自己回合的合法動作清單只會出現 [GameAction.Tsumo]／[GameAction.Kan]／[GameAction.ExhaustiveDraw]。 */
-    private fun toOwnTurnCommand(action: GameAction): GameCommand? = when (action) {
-        GameAction.Tsumo -> GameCommand.Tsumo
-        is GameAction.Kan -> GameCommand.Kan(action.type, action.tileId)
-        is GameAction.ExhaustiveDraw -> GameCommand.DeclareExhaustiveDraw(action.reason)
-        else -> null
     }
 
     /** 分派動作並驅動後續流程；實體捨牌本身已提供明確回饋，因此不再額外傳送成功聊天訊息。 */
@@ -259,4 +256,26 @@ class MahjongTableGameActionService(
         }
         return tableId
     }
+}
+
+/** 對應到手牌查詢顯示使用的粗粒度回合狀態。 */
+internal fun PlayerActionContext?.toTurnStatus(): GameTurnStatus = when (this) {
+    is PlayerActionContext.KanReaction, is PlayerActionContext.DiscardReaction -> GameTurnStatus.AWAITING_RESPONSE
+    is PlayerActionContext.OwnTurn -> GameTurnStatus.OWN_TURN
+    null -> GameTurnStatus.WAITING
+}
+
+/** 依玩家操作情境把合法動作包裝成對應的對局命令。 */
+internal fun PlayerActionContext.toGameCommand(action: GameAction): GameCommand? = when (this) {
+    is PlayerActionContext.KanReaction -> GameCommand.RespondToKan(action)
+    is PlayerActionContext.DiscardReaction -> GameCommand.RespondToDiscard(action)
+    is PlayerActionContext.OwnTurn -> action.toOwnTurnCommand()
+}
+
+/** 將自己回合的額外合法動作轉換成對應命令，不支援的動作回傳 null。 */
+private fun GameAction.toOwnTurnCommand(): GameCommand? = when (this) {
+    GameAction.Tsumo -> GameCommand.Tsumo
+    is GameAction.Kan -> GameCommand.Kan(type, tileId)
+    is GameAction.ExhaustiveDraw -> GameCommand.DeclareExhaustiveDraw(reason)
+    else -> null
 }

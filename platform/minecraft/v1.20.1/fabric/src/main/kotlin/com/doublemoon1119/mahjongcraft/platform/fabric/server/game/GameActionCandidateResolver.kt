@@ -1,8 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContext
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -11,8 +12,6 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
@@ -24,26 +23,6 @@ data class HandTileCandidate(val tileId: Uuid, val token: String, val tile: Tile
  * 不像碰／吃／槓走 [listActionCandidates] 逐一產生候選 token，因此用固定值即可，不需要消歧義。
  */
 const val RIICHI_ACTION_TOKEN = "riichi"
-
-/**
- * 玩家目前該用哪一種 [GameCommand] 信封包裝選定動作，
- * 依 [GetLegalActionsUseCase] 內部同一套優先順序判斷：搶槓 > 回應捨牌 > 自己回合 > 都不是
- * （沒有任何額外動作可做，只能被動等待）。
- */
-enum class GamePendingMode {
-    KAN_REACTION,
-    DISCARD_REACTION,
-    OWN_TURN,
-    NONE,
-    ;
-
-    /** 對應到 [GameTurnStatus] 的粗粒度分類，供 [MinecraftPlayerFeedback.ShowHand] 顯示提示文字使用。 */
-    fun toTurnStatus(): GameTurnStatus = when (this) {
-        KAN_REACTION, DISCARD_REACTION -> GameTurnStatus.AWAITING_RESPONSE
-        OWN_TURN -> GameTurnStatus.OWN_TURN
-        NONE -> GameTurnStatus.WAITING
-    }
-}
 
 /**
  * `action` 指令的合法動作候選項目。
@@ -67,6 +46,7 @@ data class GameActionCandidate(val action: GameAction, val token: String, val re
  * @property membershipRepository 玩家目前所在桌子（房間／對局共用同一個 Uuid）的歸屬查詢。
  * @property getLegalActions 查詢目前合法動作清單的既有 use case。
  * @property moduleRegistry 麻將規則模組註冊中心，供 [listRiichiTileCandidates] 解析合法動作判定器。
+ * @property actionContextResolver 玩家目前操作情境的權威解析器。
  */
 @Single
 class GameActionCandidateResolver(
@@ -74,6 +54,7 @@ class GameActionCandidateResolver(
     private val membershipRepository: PlayerMembershipRepository,
     private val getLegalActions: GetLegalActionsUseCase,
     private val moduleRegistry: MahjongModuleRegistry,
+    private val actionContextResolver: PlayerActionContextResolver,
 ) {
     /** 列出玩家目前手牌（含剛摸到的牌）作為 `discard`／`riichi` 的候選項目。 */
     suspend fun listHandTileCandidates(playerId: Uuid): List<HandTileCandidate> {
@@ -139,52 +120,21 @@ class GameActionCandidateResolver(
     }
 
     /** 找出該情境下「進來的那張牌」，供候選動作清單共用的 [referenceTile][GameActionCandidate.referenceTile]。 */
-    private fun resolveReferenceTile(state: TableState, playerId: Uuid): Tile? = when (resolvePendingMode(state, playerId)) {
-        GamePendingMode.KAN_REACTION -> state.pendingKanReaction?.robbedTile?.tile
-        GamePendingMode.DISCARD_REACTION -> {
-            val pendingReaction = state.pendingReaction
-            val discarder = state.players.first { it.id == pendingReaction?.discarderId }
-            discarder.discardPile.entries.first { it.tile.id == pendingReaction?.tileId }.tile.tile
+    private fun resolveReferenceTile(state: TableState, playerId: Uuid): Tile? = when (val context = actionContextResolver.resolveFor(state, playerId)) {
+        is PlayerActionContext.KanReaction -> context.pending.robbedTile.tile
+        is PlayerActionContext.DiscardReaction -> {
+            val discarder = state.players.first { it.id == context.pending.discarderId }
+            discarder.discardPile.entries.first { it.tile.id == context.pending.tileId }.tile.tile
         }
 
-        GamePendingMode.OWN_TURN -> state.players.first { it.id == playerId }.hand.lastDrawn?.tile
-        GamePendingMode.NONE -> null
+        is PlayerActionContext.OwnTurn -> state.players.first { it.id == playerId }.hand.lastDrawn?.tile
+        null -> null
     }
 
     /** 以玩家目前的房間歸屬解析目標桌況；不在任何桌子或桌況不是對局時回傳 null。 */
     private suspend fun resolveTableState(playerId: Uuid): TableState? {
         val gameId = membershipRepository.getTableId(playerId) ?: return null
         return gameRepository.getTableState(gameId)
-    }
-
-    companion object {
-        /**
-         * 依玩家目前搶槓／回應捨牌／自己回合的優先順序判斷目前所處情境。複製自
-         * [GetLegalActionsUseCase] 內部的同一套優先順序判斷——那個 use case 只回傳
-         * `List<GameAction>`，不會單獨暴露目前是哪種情境，這裡才需要自己再判斷一次；
-         * [MahjongTableGameActionService] 決定要把選中的動作包成哪種 [GameCommand] 信封時也需要同一個判斷結果，
-         * 因此獨立成 companion 函式供兩處共用，避免各自複製一份。
-         */
-        fun resolvePendingMode(state: TableState, playerId: Uuid): GamePendingMode {
-            val pendingKanReaction = state.pendingKanReaction
-            val pendingReaction = state.pendingReaction
-            return when {
-                pendingKanReaction != null &&
-                    playerId in pendingKanReaction.eligiblePlayerIds &&
-                    playerId !in pendingKanReaction.responses -> GamePendingMode.KAN_REACTION
-
-                pendingReaction != null &&
-                    playerId in pendingReaction.eligiblePlayerIds &&
-                    playerId !in pendingReaction.responses -> GamePendingMode.DISCARD_REACTION
-
-                state.currentPlayer.id == playerId &&
-                    state.players.first { it.id == playerId }.hand.lastDrawn != null &&
-                    pendingKanReaction == null &&
-                    pendingReaction == null -> GamePendingMode.OWN_TURN
-
-                else -> GamePendingMode.NONE
-            }
-        }
     }
 }
 

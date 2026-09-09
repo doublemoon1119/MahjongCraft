@@ -6,9 +6,15 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCo
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** 依權威 [Game] 桌況解析目前需要做出決策的玩家與階段。 */
+/**
+ * 依權威 [Game] 桌況解析目前需要做出決策的玩家與階段。
+ *
+ * @property actionContextResolver 玩家目前操作情境的權威解析器。
+ */
 @Single
-class GameDecisionAuthorityResolver {
+class GameDecisionAuthorityResolver(
+    private val actionContextResolver: PlayerActionContextResolver = PlayerActionContextResolver(),
+) {
     /**
      * 解析目前所有尚未完成的玩家決策。
      *
@@ -35,30 +41,8 @@ class GameDecisionAuthorityResolver {
                 .filterNot { it in game.forcedAutoPlayPlayerIds }
                 .associateWith { PlayerDecisionPhase.ROUND_PREPARATION }
         }
-        state.pendingKanReaction?.let { pending ->
-            return pending.eligiblePlayerIds
-                .filter { it in humanPlayerIds }
-                .filterNot { it in pending.responses }
-                .filterNot { it in game.forcedAutoPlayPlayerIds }
-                .associateWith { PlayerDecisionPhase.KAN_REACTION }
-        }
-        state.pendingReaction?.let { pending ->
-            return pending.eligiblePlayerIds
-                .filter { it in humanPlayerIds }
-                .filterNot { it in pending.responses }
-                .filterNot { it in game.forcedAutoPlayPlayerIds }
-                .associateWith { PlayerDecisionPhase.DISCARD_REACTION }
-        }
-
-        val currentPlayer = state.currentPlayer
-        return if (
-            currentPlayer.id in humanPlayerIds &&
-            currentPlayer.id !in game.forcedAutoPlayPlayerIds &&
-            (currentPlayer.hand.lastDrawn != null || currentPlayer.justClaimedMeld)
-        ) {
-            mapOf(currentPlayer.id to PlayerDecisionPhase.OWN_TURN)
-        } else {
-            emptyMap()
-        }
+        return actionContextResolver.resolve(state)
+            .filterKeys { it in humanPlayerIds && it !in game.forcedAutoPlayPlayerIds }
+            .mapValues { it.value.phase }
     }
 }

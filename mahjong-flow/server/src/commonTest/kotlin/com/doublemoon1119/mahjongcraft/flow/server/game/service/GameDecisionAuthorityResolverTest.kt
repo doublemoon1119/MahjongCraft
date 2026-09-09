@@ -18,6 +18,9 @@ import kotlin.uuid.Uuid
 
 /** [GameDecisionAuthorityResolver] 的單元測試。 */
 class GameDecisionAuthorityResolverTest {
+    /** 共用的權威決策解析器。 */
+    private val resolver = GameDecisionAuthorityResolver(PlayerActionContextResolver())
+
     /** 驗證捨牌反應只包含仍未回應的合資格玩家。 */
     @Test
     fun `test discard reaction resolves only unanswered eligible players`() {
@@ -35,7 +38,7 @@ class GameDecisionAuthorityResolverTest {
 
         assertEquals(
             mapOf(secondId to PlayerDecisionPhase.DISCARD_REACTION),
-            GameDecisionAuthorityResolver().resolve(game),
+            resolver.resolve(game),
         )
     }
 
@@ -63,7 +66,7 @@ class GameDecisionAuthorityResolverTest {
 
         assertEquals(
             mapOf(playerId to PlayerDecisionPhase.KAN_REACTION),
-            GameDecisionAuthorityResolver().resolve(game),
+            resolver.resolve(game),
         )
     }
 
@@ -82,7 +85,24 @@ class GameDecisionAuthorityResolverTest {
 
         assertEquals(
             mapOf(playerId to PlayerDecisionPhase.OWN_TURN),
-            GameDecisionAuthorityResolver().resolve(game),
+            resolver.resolve(game),
+        )
+    }
+
+    /** 驗證剛完成吃碰且尚未捨牌的真人取得自己回合決策權。 */
+    @Test
+    fun `test claimed meld current player resolves own turn decision`() {
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(id = playerId)
+            .recordAction(GameAction.Pon(Uuid.random(), emptyList()))
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(player)),
+            flowConfig = GameFlowConfig(),
+        )
+
+        assertEquals(
+            mapOf(playerId to PlayerDecisionPhase.OWN_TURN),
+            resolver.resolve(game),
         )
     }
 
@@ -91,7 +111,7 @@ class GameDecisionAuthorityResolverTest {
     fun `test current player without draw or claimed meld has no decision`() {
         val game = game(listOf(Uuid.random()))
 
-        assertEquals(emptyMap(), GameDecisionAuthorityResolver().resolve(game))
+        assertEquals(emptyMap(), resolver.resolve(game))
     }
 
     /** 驗證本局已進入結算交接後，不會替仍留在桌況中的原決策者重新建立計時器。 */
@@ -108,7 +128,7 @@ class GameDecisionAuthorityResolverTest {
             pendingTransition = PendingGameTransition.AdvanceRound,
         )
 
-        assertEquals(emptyMap(), GameDecisionAuthorityResolver().resolve(game))
+        assertEquals(emptyMap(), resolver.resolve(game))
     }
 
     /** 驗證強制自動操作玩家不再建立新的思考計時器。 */
@@ -125,7 +145,7 @@ class GameDecisionAuthorityResolverTest {
             forcedAutoPlayPlayerIds = setOf(playerId),
         )
 
-        assertEquals(emptyMap(), GameDecisionAuthorityResolver().resolve(game))
+        assertEquals(emptyMap(), resolver.resolve(game))
     }
 
     /**
@@ -146,7 +166,7 @@ class GameDecisionAuthorityResolverTest {
             flowConfig = GameFlowConfig(),
         )
 
-        assertEquals(emptyMap(), GameDecisionAuthorityResolver().resolve(game))
+        assertEquals(emptyMap(), resolver.resolve(game))
     }
 
     /** 驗證 AI 玩家即使在捨牌反應視窗的合資格清單裡，也不會被視為需要決策。 */
@@ -172,7 +192,7 @@ class GameDecisionAuthorityResolverTest {
 
         assertEquals(
             mapOf(humanId to PlayerDecisionPhase.DISCARD_REACTION),
-            GameDecisionAuthorityResolver().resolve(game),
+            resolver.resolve(game),
         )
     }
 

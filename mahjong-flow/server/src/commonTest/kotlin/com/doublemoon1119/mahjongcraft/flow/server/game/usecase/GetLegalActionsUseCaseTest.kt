@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
@@ -40,7 +41,7 @@ class GetLegalActionsUseCaseTest {
     private class Fixtures {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
-        val useCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
+        val useCase = GetLegalActionsUseCase(gameRepo, moduleRegistry, PlayerActionContextResolver())
     }
 
     /**
@@ -100,6 +101,27 @@ class GetLegalActionsUseCaseTest {
         val playerId = Uuid.random()
         val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(player), config = RiichiRuleConfig(), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId)
+
+        assertTrue(result is Outcome.Success)
+        assertEquals(emptyList(), result.value)
+    }
+
+    /** 驗證剛完成吃碰但未摸牌時屬於自己回合，且沒有額外合法特殊動作。 */
+    @Test
+    fun `test own turn after claimed meld returns empty extra actions`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
+            .recordAction(GameAction.Pon(Uuid.random(), emptyList()))
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+        )
         fixtures.gameRepo.setTableState(table)
 
         val result = fixtures.useCase(gameId, playerId)
