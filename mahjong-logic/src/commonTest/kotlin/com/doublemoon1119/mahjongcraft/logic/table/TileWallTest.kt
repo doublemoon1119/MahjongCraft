@@ -10,8 +10,8 @@ import kotlin.test.assertNull
 /**
  * 針對 [TileWall] 進行單元測試。
  *
- * [TileWall] 為不可變值物件，[TileWall.draw]/[TileWall.drawLast] 皆透過 [TileWall.DrawResult]
- * 回傳摸到的牌與新的牌山狀態，因此測試以 `wall = result.wall` 的重新賦值方式驗證。
+ * [TileWall] 為不可變值物件，[TileWall.draw] 透過 [TileWall.DrawResult] 回傳摸到的牌與新的牌山狀態，
+ * 因此測試以 `wall = result.wall` 的重新賦值方式驗證。
  */
 class TileWallTest {
 
@@ -42,53 +42,6 @@ class TileWallTest {
         val thirdDraw = wall.draw()
         assertNull(thirdDraw.tile)
         assertEquals(0, thirdDraw.wall.remainingCount)
-    }
-
-    /**
-     * 驗證從牌山後方摸牌的邏輯，是否正確減少牌山數量。
-     */
-    @Test
-    fun `test drawing last from wall`() {
-        val tiles = listOf(
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2)),
-        )
-        var wall = TileWall(tiles)
-
-        assertEquals(2, wall.remainingCount)
-
-        val firstDraw = wall.drawLast()
-        assertNotNull(firstDraw.tile)
-        wall = firstDraw.wall
-        assertEquals(1, wall.remainingCount)
-
-        val secondDraw = wall.draw()
-        assertNotNull(secondDraw.tile)
-        wall = secondDraw.wall
-        assertEquals(0, wall.remainingCount)
-
-        // 牌山空了應返回 null
-        assertNull(wall.draw().tile)
-    }
-
-    /**
-     * 驗證從牌山讀取特定位置的牌的邏輯。
-     */
-    @Test
-    fun `test peeking from wall`() {
-        val tile1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
-        val tile2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
-        val wall = TileWall(listOf(tile1, tile2))
-
-        assertEquals(2, wall.remainingCount)
-
-        val firstTile = wall.peekAt(0)
-        assertNotNull(firstTile)
-        assertEquals(firstTile, tile1)
-
-        val secondTile = wall.peekAt(1)
-        assertNotNull(secondTile)
-        assertEquals(secondTile, tile2)
     }
 
     /**

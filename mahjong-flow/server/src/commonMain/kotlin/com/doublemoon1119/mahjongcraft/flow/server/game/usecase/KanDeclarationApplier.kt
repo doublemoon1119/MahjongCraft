@@ -83,8 +83,8 @@ internal object KanDeclarationApplier {
     }
 
     /**
-     * 從王牌區（[TableState.initialDeadWall]）摸嶺上牌，取代過去誤用 `TileWall.drawLast()`
-     * 從活牌堆尾端摸牌的既有錯誤行為——真實麻將的嶺上牌本來就該來自死牌區，不是活牌堆。
+     * 從王牌區（[TableState.initialDeadWall]）摸嶺上牌；真實麻將的嶺上牌來自死牌區，不是
+     * [TableState.tileWall] 活牌堆的尾端。
      *
      * [RiichiDynamicState.getDoraIndicators] 的既有慣例是王牌區前 2 墩（索引 0～3，
      * `FIRST_INDICATOR_OFFSET = 4`）保留給嶺上摸牌、之後才是寶牌指示牌區——這裡沿用同一份保留區，

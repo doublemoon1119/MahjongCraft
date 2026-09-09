@@ -171,8 +171,10 @@ object GameInitializer {
     /**
      * 建立一副已套用開門結果的牌山：洗牌、（若規則同時提供 [MahjongRuleModule.createWallOpeningPolicy]
      * 與 [MahjongRuleModule.createWallLayout]）擲骰、解析開門位置、依牌牆布局重排成正式摸牌順序並
-     * 切出王牌。任一者尚未支援時，直接沿用原始洗牌結果、不擲骰、沒有王牌——通用初始化流程不得自行
-     * 為尚未支援開門流程的規則套用其他玩法的公式或假設固定張數。
+     * 切出王牌。[TileWallLayoutResult.drawOrder] 與 [TileWallLayoutResult.initialDeadWall] 已彼此分離，
+     * 回傳的 [OpenedWall.wall] 因此只包含活牌，後續會直接成為 [TableState.tileWall]。任一能力尚未支援
+     * 時，直接沿用原始洗牌結果、不擲骰、沒有王牌——通用初始化流程不得自行為尚未支援開門流程的規則
+     * 套用其他玩法的公式或假設固定張數。
      */
     private fun MahjongRuleModule<*>.buildOpenedWall(): OpenedWall {
         val shuffledWall = createWallFactory().create()

@@ -44,14 +44,9 @@ class RiichiHandValueContextCalculator(
         var isLastDraw = false
         var isLastDiscard = false
 
-        // 日麻規則的王牌數量為 14
-        val wanPaiCount = config.deadTileCount
-
-        // 牌山剩餘的牌數量
-        val tileWallRemainingCount = tableState.tileWall.remainingCount
-
-        // 剩餘可摸牌數為 0 時，視為海底撈月或河底撈魚
-        if ((tileWallRemainingCount - wanPaiCount) == 0) {
+        // tileWall 在開門時已經排除 initialDeadWall，只保存仍可正常摸取的活牌；最後一張活牌摸走後
+        // remainingCount 才會成為 0，不可再次扣除 deadTileCount，否則會提早 14 張誤判海底／河底。
+        if (tableState.tileWall.remainingCount == 0) {
             if (isTsumo) {
                 // 自摸時，視為海底撈月
                 isLastDraw = true

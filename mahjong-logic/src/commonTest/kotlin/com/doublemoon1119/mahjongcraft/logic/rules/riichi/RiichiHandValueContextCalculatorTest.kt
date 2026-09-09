@@ -66,7 +66,7 @@ class RiichiHandValueContextCalculatorTest {
     }
 
     /**
-     * 測試海底撈月：當牌山剩餘牌數等於王牌數時，自摸應設定 isLastDraw 為 true。
+     * 測試海底撈月：最後一張活牌摸走後，自摸應設定 isLastDraw 為 true。
      */
     @Test
     fun `test tsumo at last draw sets isLastDraw true`() {
@@ -91,10 +91,7 @@ class RiichiHandValueContextCalculatorTest {
         )
         val player = createPlayer(hand)
 
-        val wanPaiTiles = (1..14).map {
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
-        }
-        val tileWall = TileWall(wanPaiTiles)
+        val tileWall = TileWall(emptyList())
 
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -118,7 +115,7 @@ class RiichiHandValueContextCalculatorTest {
     }
 
     /**
-     * 測試河底撈魚：當牌山剩餘牌數等於王牌數時，榮和應設定 isLastDiscard 為 true。
+     * 測試河底撈魚：最後一張活牌打出後，榮和應設定 isLastDiscard 為 true。
      */
     @Test
     fun `test ron at last discard sets isLastDiscard true`() {
@@ -143,10 +140,7 @@ class RiichiHandValueContextCalculatorTest {
         )
         val player = createPlayer(hand)
 
-        val wanPaiTiles = (1..14).map {
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
-        }
-        val tileWall = TileWall(wanPaiTiles)
+        val tileWall = TileWall(emptyList())
 
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -170,7 +164,7 @@ class RiichiHandValueContextCalculatorTest {
     }
 
     /**
-     * 測試海底撈月與河底撈魚標記不會在牌山還有剩餘時觸發。
+     * 測試海底撈月與河底撈魚標記不會在活牌還有 1、14 或 15 張時觸發。
      */
     @Test
     fun `test last draw discard flags not set when tiles remain`() {
@@ -195,30 +189,31 @@ class RiichiHandValueContextCalculatorTest {
         )
         val player = createPlayer(hand)
 
-        val wallTiles = (1..15).map {
-            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
-        }
-        val tileWall = TileWall(wallTiles)
-
-        val tableState = FakeTableStateFactory.create(
-            players = listOf(player),
-            tileWall = tileWall,
-            config = RiichiRuleConfig(),
-        )
-
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
+        listOf(1, 14, 15).forEach { remainingCount ->
+            val wallTiles = (1..remainingCount).map {
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (it % 9) + 1))
+            }
+            val tableState = FakeTableStateFactory.create(
+                players = listOf(player),
+                tileWall = TileWall(wallTiles),
+                config = RiichiRuleConfig(),
+            )
 
-        val context = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
-                tableState = tableState,
-                player = player,
-                incomingTile = incomingTile,
-                isTsumo = false,
-            ),
-        )
+            listOf(true, false).forEach { isTsumo ->
+                val context = calculator.calculate(
+                    RiichiHandValueContextCalculator.Input(
+                        tableState = tableState,
+                        player = player,
+                        incomingTile = incomingTile,
+                        isTsumo = isTsumo,
+                    ),
+                )
 
-        assertFalse(context.isLastDraw)
-        assertFalse(context.isLastDiscard)
+                assertFalse(context.isLastDraw, "remainingCount=$remainingCount, isTsumo=$isTsumo")
+                assertFalse(context.isLastDiscard, "remainingCount=$remainingCount, isTsumo=$isTsumo")
+            }
+        }
     }
 
     /**

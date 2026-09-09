@@ -948,6 +948,83 @@ class RiichiLegalActionValidatorTest {
     }
 
     /**
+     * 無役聽牌在活牌仍剩 14 張時不可因重複扣除王牌而取得河底役；真正摸盡後才可用河底榮和。
+     */
+    @Test
+    fun `test houtei only grants ron after live wall is exhausted`() {
+        val chiMeld = Meld(
+            MeldType.CHI,
+            listOf(1, 2, 3).map { value ->
+                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, value))
+            },
+            sourceDirection = RelativeDirection.Left,
+        )
+        val terminalPon = Meld(
+            MeldType.PON,
+            List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)) },
+            sourceDirection = RelativeDirection.Across,
+        )
+        val nonValueHonorPon = Meld(
+            MeldType.PON,
+            List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.West) },
+            sourceDirection = RelativeDirection.Right,
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(
+                tiles = listOf(
+                    Tile.Numeric(Tile.Suit.Bamboo, 5),
+                    Tile.Numeric(Tile.Suit.Bamboo, 5),
+                    Tile.Numeric(Tile.Suit.Bamboo, 6),
+                    Tile.Numeric(Tile.Suit.Bamboo, 7),
+                ).map(FakeIdentifiedTileFactory::create),
+                melds = listOf(chiMeld, terminalPon, nonValueHonorPon),
+            ),
+            discardPile = FakeDiscardPile().discard(
+                FakeDiscardPile.FakeEntry(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
+            ),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 8))
+        val fourteenLiveTiles = TileWall(
+            List(14) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)) },
+        )
+        val liveWallState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = fourteenLiveTiles,
+            config = RiichiRuleConfig(minimumWinConstraint = 1),
+            prevalentWind = Wind.SOUTH,
+        )
+
+        assertEquals(
+            RiichiWinAvailability.NO_YAKU,
+            validator.analyzeWinAvailability(liveWallState, player, incomingTile),
+        )
+        val prematureActions = validator.getLegalActions(
+            liveWallState,
+            player,
+            GameAction.Discard(incomingTile.id),
+            RelativeDirection.Across,
+            incomingTile,
+        )
+        assertFalse(prematureActions.any { it is GameAction.Ron })
+
+        val exhaustedState = liveWallState.copy(tileWall = TileWall(emptyList()))
+        assertEquals(
+            RiichiWinAvailability.AVAILABLE,
+            validator.analyzeWinAvailability(exhaustedState, player, incomingTile),
+        )
+        val houteiActions = validator.getLegalActions(
+            exhaustedState,
+            player,
+            GameAction.Discard(incomingTile.id),
+            RelativeDirection.Across,
+            incomingTile,
+        )
+        assertTrue(houteiActions.any { it is GameAction.Ron })
+    }
+
+    /**
      * 測試搶槓時可執行榮和動作之情況。
      *
      * 當手牌已听牌，且其他玩家執行加槓時，可搶槓榮和。

@@ -16,7 +16,9 @@ import kotlin.uuid.Uuid
  * @property id 當前遊戲的唯一識別碼
  * @property players 參與遊戲的玩家列表。
  * @property config 當前遊戲的規則配置，包含物理參數與計分規則。
- * @property tileWall 當前遊戲使用的牌山。
+ * @property tileWall 當前仍可依一般摸牌流程取得的活牌堆。支援開門布局時，王牌已在初始化階段排除並
+ * 另存於 [initialDeadWall]；因此 [TileWall.remainingCount] 就是剩餘活牌數，不得再次扣除
+ * [MahjongRuleConfig.deadTileCount]。未支援開門布局的規則則由其初始化流程自行定義這個容器的內容。
  * @property dealerPlayerId 本局權威莊家 Uuid；莊家身分與自風彼此獨立。
  * @property prevalentWind 當前的場風（圈風）。
  * @property roundNumber 當前的局數。
@@ -27,8 +29,9 @@ import kotlin.uuid.Uuid
  * @property pendingReaction 目前尚待其他玩家回應（吃/碰/槓/過）的捨牌反應視窗，若無則為 null。
  * @property pendingKanReaction 目前尚待其他玩家回應（搶槓/過）的暗槓/加槓反應視窗，若無則為 null。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
- * @property initialDeadWall 開局瞬間的王牌快照，依規則定義的固定內部順序保存；規則尚未支援開門
- * 流程時為空清單。這只是初始狀態，不代表王牌整局固定不變——見 [TileWallLayoutResult.initialDeadWall]。
+ * @property initialDeadWall 開局瞬間從 [tileWall] 分離的王牌快照，依規則定義的固定內部順序保存；
+ * 規則尚未支援開門流程時為空清單。這只是初始狀態，不代表王牌整局固定不變——見
+ * [TileWallLayoutResult.initialDeadWall]。
  * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合。供第三方規則實作
  * 「胡牌後本局可能不結束」的擴充（如持續胡牌局）；核心規則預設不會寫入這個集合，因此對現有
  * 規則永遠是空集合、行為不變。座位、分數、快照仍保留這些玩家；見 [isPlayerActive]、[activePlayers]、

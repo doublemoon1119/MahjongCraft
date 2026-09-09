@@ -61,6 +61,8 @@ internal object FourSidedWallLayoutSupport {
             floorMod(breakGlobalStack + offset, totalStacks)
         }
 
+        // 兩份清單在這裡完成實體切分：drawOrder 只含活牌，initialDeadWall 只含王牌；GameInitializer
+        // 之後只會用 drawOrder 建立 TableState.tileWall，不會把王牌再次放回該容器。
         val initialDeadWall = deadWallGlobalStacks.flatMap { stacks[it].asReversed() }
         val drawOrder = liveWallGlobalStacks.flatMap { stacks[it].asReversed() }
 
