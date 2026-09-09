@@ -1,6 +1,11 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -182,5 +187,54 @@ class RiichiDiscardReadinessAnalyzerTest {
 
         assertTrue(analysis.waitingTiles.isNotEmpty())
         analysis.waitingTiles.forEach { assertTrue(it.winAvailability.startsWith("mahjongcraft:win_")) }
+    }
+
+    /**
+     * 驗證一般捨牌的無役單騎仍只可自摸，而玩家明確選擇立直後，同一候選會以正式立直狀態投影為可榮和。
+     */
+    @Test
+    fun `test riichi action analysis projects declaration yaku`() {
+        val completedMelds = listOf(
+            Meld(
+                MeldType.CLOSED_KAN,
+                List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)) },
+                sourceDirection = RelativeDirection.Self,
+            ),
+        )
+        val hand = Hand(
+            tiles = listOf(
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+                Tile.Numeric(Tile.Suit.Dot, 6),
+                Tile.Numeric(Tile.Suit.Bamboo, 7),
+                Tile.Numeric(Tile.Suit.Bamboo, 8),
+                Tile.Numeric(Tile.Suit.Bamboo, 9),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+                Tile.Honor.East,
+            ).map(FakeIdentifiedTileFactory::create),
+            melds = completedMelds,
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = hand,
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = TileWall(List(20) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }),
+            config = RiichiRuleConfig(),
+            dynamicRuleState = RiichiDynamicState(),
+        )
+        val floatingTileId = hand.standingTiles.single { it.tile == Tile.Honor.East }.id
+
+        val ordinary = analyzer.analyze(tableState, player).single { it.discardTileId == floatingTileId }
+        val projected = analyzer.analyzeForAction(tableState, player, RIICHI_GAME_ACTION)
+            .single { it.discardTileId == floatingTileId }
+
+        assertEquals("mahjongcraft:win_tsumo_only", ordinary.waitingTiles.single().winAvailability)
+        assertEquals("mahjongcraft:win_available", projected.waitingTiles.single().winAvailability)
     }
 }

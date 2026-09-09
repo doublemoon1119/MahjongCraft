@@ -47,8 +47,18 @@ class PlayerDecisionPromptFactory(
             ?.toPrompt { tileId ->
                 player.hand.tiles.firstOrNull { it.id == tileId }?.tile?.toAssetKey(tileAssetRegistry)
             }
+        val analyzer = moduleRegistry.getModule(state.config).createDiscardReadinessAnalyzer()
         val analyses = if (phase == PlayerDecisionPhase.OWN_TURN) {
-            moduleRegistry.getModule(state.config).createDiscardReadinessAnalyzer()?.analyze(state, player)?.map { it.toDto() }.orEmpty()
+            analyzer?.analyze(state, player)?.map { it.toDto() }.orEmpty()
+        } else {
+            emptyList()
+        }
+        val riichiAnalyses = if (phase == PlayerDecisionPhase.OWN_TURN && riichiTiles.isNotEmpty()) {
+            val eligibleIds = riichiTiles.mapTo(mutableSetOf()) { it.tileId }
+            analyzer?.analyzeForAction(state, player, RIICHI_GAME_ACTION)
+                ?.filter { it.discardTileId in eligibleIds }
+                ?.map { it.toDto() }
+                .orEmpty()
         } else {
             emptyList()
         }
@@ -76,7 +86,7 @@ class PlayerDecisionPromptFactory(
                     previewTileAssetKeys = preview.tiles.map { it.toAssetKey(tileAssetRegistry) },
                     claimedTileIndex = preview.claimedTileIndex,
                 )
-            } + listOfNotNull(riichiAction(riichiTiles)),
+            } + listOfNotNull(riichiAction(riichiTiles, riichiAnalyses)),
             // 自己回合（立直／暗槓等）一律顯示剛摸到的牌，不依賴哪個候選動作剛好帶了 referenceTile——
             // 否則像立直這種被 listActionCandidates 過濾掉、沒有對應候選的情況會完全沒有觸發牌可顯示。
             triggerTileAssetKey = when (phase) {
@@ -100,7 +110,10 @@ class PlayerDecisionPromptFactory(
      * 表示，點擊卡片後改為進入實體牌選取模式，跟其他一鍵送出的動作（碰／吃／槓等）不同。
      * [candidateTiles] 為空（不可能立直）時回傳 null，不產生候選。
      */
-    private fun riichiAction(candidateTiles: List<HandTileCandidate>): PlayerDecisionActionDto? {
+    private fun riichiAction(
+        candidateTiles: List<HandTileCandidate>,
+        discardAnalyses: List<DiscardReadinessAnalysisDto>,
+    ): PlayerDecisionActionDto? {
         if (candidateTiles.isEmpty()) return null
         return PlayerDecisionActionDto(
             token = RIICHI_ACTION_TOKEN,
@@ -110,6 +123,7 @@ class PlayerDecisionPromptFactory(
                 eligibleTileIds = candidateTiles.map { it.tileId.toString() },
                 minCount = 1,
                 maxCount = 1,
+                discardAnalyses = discardAnalyses,
             ),
         )
     }

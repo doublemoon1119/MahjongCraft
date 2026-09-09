@@ -494,7 +494,8 @@ class PlayerDecisionHudController(
     private fun renderDiscardAnalysis(context: DrawContext, prompt: PlayerDecisionPromptDto, hit: net.minecraft.util.hit.HitResult?) {
         if (!configStore.current.presentationVisibility.discardAnalysisEnabled) return
         val tile = (hit as? EntityHitResult)?.entity as? MahjongTileEntity ?: return
-        val analysis = prompt.discardAnalyses.firstOrNull { it.discardTileId == tile.uuid.toString() } ?: return
+        val analyses = prompt.discardAnalysesForAction(actionTileSelectionToken)
+        val analysis = analyses.firstOrNull { it.discardTileId == tile.uuid.toString() } ?: return
         val textRenderer = MinecraftClient.getInstance().textRenderer
         val columns = minOf(MAX_WAIT_COLUMNS, analysis.waitingTiles.size.coerceAtLeast(1))
         val rowCount = (analysis.waitingTiles.size + columns - 1) / columns
@@ -1112,6 +1113,16 @@ private class PlayerDecisionScreen(
 /** Prompt 是否包含需要玩家明確選擇的內容。 */
 private val PlayerDecisionPromptDto.isInteractive: Boolean
     get() = actions.isNotEmpty() || preparation != null
+
+/**
+ * 取得目前動作選牌情境的捨牌分析；該動作沒有專屬分析或已離開選牌情境時，沿用 prompt 的一般分析。
+ */
+internal fun PlayerDecisionPromptDto.discardAnalysesForAction(actionToken: String?) = actionToken
+    ?.let { token -> actions.firstOrNull { it.token == token } }
+    ?.tileSelection
+    ?.discardAnalyses
+    .orEmpty()
+    .ifEmpty { discardAnalyses }
 
 /** 操作卡由左至右的顯示順序；未列出的 ID（含第三方規則模組的特殊動作）維持原始相對順序排在最後。 */
 internal fun String.actionDisplayPriority(): Int = when (this) {

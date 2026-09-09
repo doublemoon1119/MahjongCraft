@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.judgment
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -21,6 +22,17 @@ interface DiscardReadinessAnalyzer {
      * @return 依立牌順序排列的分析結果列表。
      */
     fun analyze(tableState: TableState, player: MahjongPlayer): List<DiscardReadinessAnalysis>
+
+    /**
+     * 逐張候選投影指定動作成立後的捨牌分析；不需要動作專屬語意的規則沿用一般分析。
+     *
+     * @param action 玩家已明確選擇、但尚未完成其選牌階段的動作。
+     */
+    fun analyzeForAction(
+        tableState: TableState,
+        player: MahjongPlayer,
+        action: GameAction,
+    ): List<DiscardReadinessAnalysis> = analyze(tableState, player)
 }
 
 /** 假想捨出 [discardTileId] 後的聽牌分析結果。 */

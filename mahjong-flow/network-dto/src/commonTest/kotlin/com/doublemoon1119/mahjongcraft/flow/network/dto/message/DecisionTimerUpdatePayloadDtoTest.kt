@@ -36,6 +36,18 @@ class DecisionTimerUpdatePayloadDtoTest {
                                     eligibleTileIds = listOf(Uuid.random().toString()),
                                     minCount = 1,
                                     maxCount = 1,
+                                    discardAnalyses = listOf(
+                                        DiscardReadinessAnalysisDto(
+                                            discardTileId = Uuid.random().toString(),
+                                            waitingTiles = listOf(
+                                                WaitingTileAvailabilityDto(
+                                                    "p5",
+                                                    2,
+                                                    "mahjongcraft:win_available",
+                                                ),
+                                            ),
+                                        ),
+                                    ),
                                 ),
                             ),
                         ),

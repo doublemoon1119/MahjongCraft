@@ -21,12 +21,17 @@ data class PlayerDecisionActionDto(
     val tileSelection: PlayerDecisionActionTileSelectionDto? = null,
 )
 
-/** [PlayerDecisionActionDto.tileSelection] 的候選牌與選牌數量限制。 */
+/**
+ * [PlayerDecisionActionDto.tileSelection] 的候選牌、選牌數量限制，以及選擇該動作後才適用的呈現分析。
+ *
+ * @property discardAnalyses 以該動作已成立的假設狀態計算之捨牌分析；空清單代表沿用 prompt 的一般分析。
+ */
 @Serializable
 data class PlayerDecisionActionTileSelectionDto(
     val eligibleTileIds: List<String>,
     val minCount: Int,
     val maxCount: Int,
+    val discardAnalyses: List<DiscardReadinessAnalysisDto> = emptyList(),
 )
 
 /**
