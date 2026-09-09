@@ -70,7 +70,36 @@ data class DecisionTimeStatus(
 )
 
 /**
- * 以此設定及玩家目前剩餘保留思考時間建立一次決策計時器。
+ * 以指定的基本思考秒數及玩家目前剩餘保留思考時間建立一次決策計時器。
+ *
+ * 保留思考時間永遠是玩家整場遊戲共用的單一資源池（見 [Game.remainingReserveMillisByPlayerId]），
+ * 不分決策階段，所以這裡只接受 [baseSeconds]，不接受完整 [ActionTimeControl]——某個決策階段想採用
+ * 不同的基本思考時間時（例如 [GameFlowConfig.preparationBaseSeconds]），沒有對應「這個階段專屬保留
+ * 思考時間」的概念可以搭配。
+ *
+ * @param baseSeconds 此次決策重新取得的基本思考秒數。
+ * @param playerId 目前具有決策權的玩家。
+ * @param remainingReserveMillis 玩家在決策開始時剩餘的保留思考時間毫秒數。
+ * @param startedAtMillis 此次決策開始的單調時間毫秒數。
+ * @param resumedBaseMillis 接續被中斷的同一次決策時，其尚未使用的基本思考時間毫秒數；
+ *   `null` 代表這是一次全新的決策，重新取得完整基本思考時間。
+ * @return 新建立的 [PlayerDecisionTimer]。
+ */
+fun startDecisionTimer(
+    baseSeconds: Int,
+    playerId: Uuid,
+    remainingReserveMillis: Long,
+    startedAtMillis: Long,
+    resumedBaseMillis: Long? = null,
+): PlayerDecisionTimer = PlayerDecisionTimer(
+    playerId = playerId,
+    startedAtMillis = startedAtMillis,
+    baseDurationMillis = resumedBaseMillis ?: (baseSeconds * 1_000L),
+    reserveAtStartMillis = remainingReserveMillis,
+)
+
+/**
+ * 以此設定的 [ActionTimeControl.baseSeconds] 及玩家目前剩餘保留思考時間建立一次決策計時器。
  *
  * @param playerId 目前具有決策權的玩家。
  * @param remainingReserveMillis 玩家在決策開始時剩餘的保留思考時間毫秒數。
@@ -84,9 +113,10 @@ fun ActionTimeControl.startDecisionTimer(
     remainingReserveMillis: Long,
     startedAtMillis: Long,
     resumedBaseMillis: Long? = null,
-): PlayerDecisionTimer = PlayerDecisionTimer(
+): PlayerDecisionTimer = startDecisionTimer(
+    baseSeconds = baseSeconds,
     playerId = playerId,
+    remainingReserveMillis = remainingReserveMillis,
     startedAtMillis = startedAtMillis,
-    baseDurationMillis = resumedBaseMillis ?: (baseSeconds * 1_000L),
-    reserveAtStartMillis = remainingReserveMillis,
+    resumedBaseMillis = resumedBaseMillis,
 )

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -36,12 +37,45 @@ class PlayerDecisionTimerFactoryTest {
         )
         val factory = PlayerDecisionTimerFactory(FakeMonotonicClock(nowMillis = 98_765L))
 
-        val timer = factory.create(game, playerId)
+        val timer = factory.create(game, playerId, phase = PlayerDecisionPhase.OWN_TURN)
 
         assertEquals(playerId, timer.playerId)
         assertEquals(98_765L, timer.startedAtMillis)
         assertEquals(7_000L, timer.baseDurationMillis)
         assertEquals(12_345L, timer.reserveAtStartMillis)
+    }
+
+    /**
+     * 驗證 [PlayerDecisionPhase.ROUND_PREPARATION] 的基本思考秒數採用 [GameFlowConfig.preparationBaseSeconds]
+     * 而非一般 [GameFlowConfig.timeControl]，且完全不動用共用保留思考時間池——即使玩家池子裡還有剩，
+     * 這個階段建立的計時器 [PlayerDecisionTimer.reserveAtStartMillis] 也固定是 0，用完基本思考時間就
+     * 直接逾時。
+     */
+    @Test
+    fun `test factory uses preparation base seconds and zero reserve for round preparation phase`() {
+        val playerId = Uuid.random()
+        val players = Wind.entries.map { wind ->
+            FakeMahjongPlayerFactory.create(
+                initialSeat = wind,
+                id = if (wind == Wind.EAST) playerId else Uuid.random(),
+            )
+        }
+        val game = Game(
+            tableState = FakeTableStateFactory.create(
+                players = players,
+            ),
+            flowConfig = GameFlowConfig(
+                timeControl = ActionTimeControl.Custom(baseSeconds = 7, reserveSeconds = 30),
+                preparationBaseSeconds = 45,
+            ),
+            remainingReserveMillisByPlayerId = players.associate { player -> player.id to 12_000L },
+        )
+        val factory = PlayerDecisionTimerFactory(FakeMonotonicClock(nowMillis = 98_765L))
+
+        val timer = factory.create(game, playerId, phase = PlayerDecisionPhase.ROUND_PREPARATION)
+
+        assertEquals(45_000L, timer.baseDurationMillis)
+        assertEquals(0L, timer.reserveAtStartMillis)
     }
 }
 

@@ -23,6 +23,7 @@ data class ActionTimeControlDto(
 @Serializable
 data class GameFlowConfigDto(
     val timeControl: ActionTimeControlDto,
+    val preparationBaseSeconds: Int,
     val decisionTimeoutPolicy: DecisionTimeoutPolicy,
     val spectatingPolicy: SpectatingPolicy,
     val spectatorHandVisibility: SpectatorHandVisibility,
@@ -50,6 +51,7 @@ fun GameConfigDto.toDomain(registries: NetworkDtoRegistries): GameConfig = GameC
 /** 將 [GameFlowConfig] 轉換成網路 DTO。 */
 private fun GameFlowConfig.toDto(): GameFlowConfigDto = GameFlowConfigDto(
     timeControl = ActionTimeControlDto(timeControl.baseSeconds, timeControl.reserveSeconds),
+    preparationBaseSeconds = preparationBaseSeconds,
     decisionTimeoutPolicy = decisionTimeoutPolicy,
     spectatingPolicy = spectatingPolicy,
     spectatorHandVisibility = spectatorHandVisibility,
@@ -58,6 +60,7 @@ private fun GameFlowConfig.toDto(): GameFlowConfigDto = GameFlowConfigDto(
 /** 將 [GameFlowConfigDto] 還原成 [GameFlowConfig]。 */
 private fun GameFlowConfigDto.toDomain(): GameFlowConfig = GameFlowConfig(
     timeControl = ActionTimeControl.from(timeControl.baseSeconds, timeControl.reserveSeconds),
+    preparationBaseSeconds = preparationBaseSeconds,
     decisionTimeoutPolicy = decisionTimeoutPolicy,
     spectatingPolicy = spectatingPolicy,
     spectatorHandVisibility = spectatorHandVisibility,

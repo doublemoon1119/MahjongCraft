@@ -46,7 +46,9 @@ data class TimedOutPlayerDecision(
  * 管理目前 server session 中所有遊戲的玩家決策計時器。
  *
  * runtime timer 不會寫入 persistence。每次 [reconcile] 會保留仍處於相同決策階段的計時器，並將已完成、
- * 階段改變或失去決策權的計時器所消耗的保留思考時間原子寫回 [GameRepository]。
+ * 階段改變或失去決策權的計時器所消耗的保留思考時間原子寫回 [GameRepository]——[PlayerDecisionPhase.ROUND_PREPARATION]
+ * 是唯一例外，這個階段從不動用共用保留思考時間池（見 [PlayerDecisionTimerFactory.create] KDoc），
+ * 結算時也不寫回，避免拿這個階段自己「假裝 0 保留」算出的結果覆蓋掉玩家真正存下的保留思考時間。
  *
  * @property gameRepository 權威遊戲狀態倉庫。
  * @property authorityResolver 解析目前具有決策權的玩家與階段。
@@ -89,6 +91,9 @@ class GameDecisionTimerManager(
             }
             val remainingReserveMillisByPlayerId = currentGame.remainingReserveMillisByPlayerId.toMutableMap()
             timersToSettle.forEach { (playerId, activeTimer) ->
+                // ROUND_PREPARATION 從不動用共用保留思考時間池（見 PlayerDecisionTimerFactory.create KDoc），
+                // 結算時也不寫回，避免用這個階段自己「假裝 0 保留」算出的結果覆蓋掉玩家真正存下的保留時間。
+                if (activeTimer.phase == PlayerDecisionPhase.ROUND_PREPARATION) return@forEach
                 remainingReserveMillisByPlayerId[playerId] = activeTimer.timer
                     .statusAt(settledAtMillis)
                     .reserveRemainingMillis
@@ -121,6 +126,7 @@ class GameDecisionTimerManager(
                     timer = timerFactory.create(
                         game = reconciliation.game,
                         playerId = playerId,
+                        phase = phase,
                         resumedBaseMillis = reconciliation.resumeBaseMillisByPlayerId[playerId],
                     ),
                 )
@@ -166,7 +172,13 @@ class GameDecisionTimerManager(
                 if (currentGame == null) return@updateGame null to Unit
                 val timedOutPlayerIds = timedOut.keys.intersect(currentGame.remainingReserveMillisByPlayerId.keys)
                 val remainingReserveMillisByPlayerId = currentGame.remainingReserveMillisByPlayerId.toMutableMap()
-                timedOutPlayerIds.forEach { remainingReserveMillisByPlayerId[it] = 0L }
+                timedOutPlayerIds.forEach { playerId ->
+                    // ROUND_PREPARATION 逾時本來就沒有動用共用保留思考時間池（理由同 reconcile），
+                    // 不能在這裡清空，否則會誤把玩家在其他階段存下的保留時間也一起歸零。
+                    if (timedOut.getValue(playerId).phase != PlayerDecisionPhase.ROUND_PREPARATION) {
+                        remainingReserveMillisByPlayerId[playerId] = 0L
+                    }
+                }
                 currentGame.copy(
                     remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId,
                     forcedAutoPlayPlayerIds = currentGame.forcedAutoPlayPlayerIds + timedOutPlayerIds,
@@ -201,7 +213,10 @@ class GameDecisionTimerManager(
                 val exhaustedPlayerIds = mutableSetOf<Uuid>()
                 timers.forEach { (playerId, activeTimer) ->
                     val status = activeTimer.timer.statusAt(settledAtMillis)
-                    remainingReserveMillisByPlayerId[playerId] = status.reserveRemainingMillis
+                    // ROUND_PREPARATION 從不動用共用保留思考時間池，理由同 reconcile。
+                    if (activeTimer.phase != PlayerDecisionPhase.ROUND_PREPARATION) {
+                        remainingReserveMillisByPlayerId[playerId] = status.reserveRemainingMillis
+                    }
                     if (status.isTimedOut) {
                         // 已耗盡全部思考時間卻還沒被 scheduler 取走的決策，直接比照 claimTimedOutDecisions
                         // 進入強制自動操作；不寫入中斷的基本思考時間，下一個 session 也不會再為它建計時器。

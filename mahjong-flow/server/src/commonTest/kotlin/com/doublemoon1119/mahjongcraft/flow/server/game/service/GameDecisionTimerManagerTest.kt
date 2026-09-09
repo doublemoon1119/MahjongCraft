@@ -2,7 +2,9 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -244,6 +246,57 @@ class GameDecisionTimerManagerTest {
         assertTrue(fixtures.manager.claimTimedOutDecisions().isEmpty())
     }
 
+    /**
+     * 驗證 [PlayerDecisionPhase.ROUND_PREPARATION] 逾時進入強制自動操作時，不會清空玩家的共用保留
+     * 思考時間池——這個階段從未動用過那個池子，逾時只代表 `preparationBaseSeconds` 用完，跟其他階段
+     * 逾時會把保留思考時間歸零的行為不同。
+     */
+    @Test
+    fun `test round preparation timeout does not clear reserve pool`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val game = fixtures.preparationGame(playerId)
+        fixtures.repository.setGame(game)
+        fixtures.manager.reconcile(game.id)
+        fixtures.clock.nowMillis = GameFlowConfig().preparationBaseSeconds * 1_000L + 1_000L
+
+        val claimed = fixtures.manager.claimTimedOutDecisions()
+
+        assertEquals(
+            listOf(TimedOutPlayerDecision(game.id, playerId, PlayerDecisionPhase.ROUND_PREPARATION)),
+            claimed,
+        )
+        val updatedGame = fixtures.repository.getGame(game.id)!!
+        assertEquals(20_000L, updatedGame.remainingReserveMillisByPlayerId.getValue(playerId))
+        assertEquals(setOf(playerId), updatedGame.forcedAutoPlayPlayerIds)
+    }
+
+    /**
+     * 驗證玩家離開 [PlayerDecisionPhase.ROUND_PREPARATION]（例如提交選擇）結算舊 timer 時，不會把
+     * 「這個階段自己假裝 0 保留」算出的剩餘保留思考時間寫回共用池，玩家原本存下的保留思考時間維持
+     * 不變。
+     */
+    @Test
+    fun `test leaving round preparation does not overwrite reserve pool`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val game = fixtures.preparationGame(playerId)
+        fixtures.repository.setGame(game)
+        fixtures.manager.reconcile(game.id)
+        fixtures.clock.nowMillis = 5_000L
+        fixtures.repository.updateGame(game.id) { current ->
+            current!!.copy(pendingRoundPreparation = null) to Unit
+        }
+
+        val statuses = fixtures.manager.reconcile(game.id)
+
+        assertTrue(statuses.isEmpty())
+        assertEquals(
+            20_000L,
+            fixtures.repository.getGame(game.id)!!.remainingReserveMillisByPlayerId.getValue(playerId),
+        )
+    }
+
     /** 提供可控時間、repository 與 manager 的測試組合。 */
     private class Fixtures {
         /** 測試用權威遊戲倉庫。 */
@@ -285,6 +338,20 @@ class GameDecisionTimerManagerTest {
             return Game(
                 tableState = FakeTableStateFactory.create(players = listOf(player)),
                 flowConfig = GameFlowConfig(),
+            )
+        }
+
+        /** 建立單一玩家正在 [PlayerDecisionPhase.ROUND_PREPARATION] 的遊戲。 */
+        fun preparationGame(playerId: Uuid): Game {
+            val player = FakeMahjongPlayerFactory.create(id = playerId)
+            return Game(
+                tableState = FakeTableStateFactory.create(players = listOf(player)),
+                flowConfig = GameFlowConfig(),
+                pendingRoundPreparation = PendingRoundPreparation(
+                    stepId = "test:step",
+                    stepIndex = 0,
+                    inputSpecsByPlayerId = mapOf(playerId to RoundPreparationInputSpec.Confirmation),
+                ),
             )
         }
     }
