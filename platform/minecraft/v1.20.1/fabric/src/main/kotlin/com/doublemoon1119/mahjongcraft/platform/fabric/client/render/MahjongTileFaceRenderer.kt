@@ -15,8 +15,10 @@ import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.render.LightmapTextureManager
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.util.math.MatrixStack
+import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.RotationAxis
+import org.joml.Matrix4f
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import kotlin.math.roundToInt
@@ -120,21 +122,18 @@ class MahjongTileFaceRenderer(
         matrices.translate(
             if (isLeft) halfWidth - metrics.marginX else -halfWidth + metrics.marginX,
             halfHeight - metrics.marginY,
-            -(MahjongTileEntity.TILE_DEPTH / 2.0),
+            -(MahjongTileEntity.TILE_DEPTH / 2.0) - MODEL_LABEL_SURFACE_OFFSET,
         )
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
         matrices.scale(metrics.scale, -metrics.scale, metrics.scale)
         val originX = if (isLeft) 0f else -renderer.getWidth(label.text).toFloat()
-        renderer.draw(
-            label.text,
+        drawLabelWithOutline(
+            renderer,
+            label,
             originX,
             0f,
-            label.color.toArgb(),
-            false,
             matrices.peek().positionMatrix,
             consumers,
-            TextRenderer.TextLayerType.POLYGON_OFFSET,
-            0,
             light,
         )
         matrices.pop()
@@ -165,17 +164,15 @@ class MahjongTileFaceRenderer(
         matrices.push()
         matrices.translate(x.toDouble(), (top + metrics.marginY).toDouble(), (z - WORLD_LABEL_Z_OFFSET).toDouble())
         matrices.scale(metrics.scale, metrics.scale, 1f)
-        renderer.draw(
-            label.text,
+        drawLabelWithOutline(
+            renderer,
+            label,
             0f,
             0f,
-            withAlpha(label.color.toArgb(), alpha),
-            false,
             matrices.peek().positionMatrix,
             consumers,
-            TextRenderer.TextLayerType.POLYGON_OFFSET,
-            0,
             LightmapTextureManager.MAX_LIGHT_COORDINATE,
+            alpha,
         )
         matrices.pop()
     }
@@ -213,8 +210,39 @@ class MahjongTileFaceRenderer(
         context.matrices.push()
         context.matrices.translate(drawX.toDouble(), (y + metrics.marginY).toDouble(), LABEL_Z)
         context.matrices.scale(metrics.scale, metrics.scale, 1f)
-        context.drawText(renderer, label.text, 0, 0, label.color.toArgb(), false)
+        drawLabelWithOutline(
+            renderer,
+            label,
+            0f,
+            0f,
+            context.matrices.peek().positionMatrix,
+            context.vertexConsumers,
+            LightmapTextureManager.MAX_LIGHT_COORDINATE,
+        )
         context.matrices.pop()
+    }
+
+    /** 使用原版字型描邊管線繪製牌面輔助標籤。 */
+    private fun drawLabelWithOutline(
+        renderer: TextRenderer,
+        label: TileLabelText,
+        x: Float,
+        y: Float,
+        matrix: Matrix4f,
+        consumers: VertexConsumerProvider,
+        light: Int,
+        alpha: Float = 1f,
+    ) {
+        renderer.drawWithOutline(
+            Text.literal(label.text).asOrderedText(),
+            x,
+            y,
+            withAlpha(label.color.toArgb(), alpha),
+            withAlpha(LABEL_OUTLINE_COLOR, alpha),
+            matrix,
+            consumers,
+            light,
+        )
     }
 
     /**
@@ -247,6 +275,8 @@ class MahjongTileFaceRenderer(
         const val TEXTURE_HEIGHT = 64
         const val LABEL_Z = 10.0
         const val WORLD_LABEL_Z_OFFSET = 0.001f
+        const val MODEL_LABEL_SURFACE_OFFSET = 0.0005
+        const val LABEL_OUTLINE_COLOR: Int = 0xFFC6C9C3.toInt()
         const val MODEL_LABEL_MARGIN_RATIO = 0.08f
         const val MODEL_LABEL_SCALE = 0.004f
 
