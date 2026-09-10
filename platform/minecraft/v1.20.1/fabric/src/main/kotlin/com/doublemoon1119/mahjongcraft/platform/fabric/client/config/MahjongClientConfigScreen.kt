@@ -397,12 +397,6 @@ class MahjongClientConfigScreen(
 
         Category.HUD -> listOf(
             ConfigRow(
-                MinecraftClientConfigScreenKeys.TILE_LABELS,
-                MinecraftClientConfigScreenKeys.TILE_LABELS_DESCRIPTION,
-                { booleanText(it.tileLabelsEnabled) },
-                { it.copy(tileLabelsEnabled = !it.tileLabelsEnabled) },
-            ),
-            ConfigRow(
                 MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT,
                 MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT_DESCRIPTION,
                 { Text.translatable(MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT) },
@@ -423,7 +417,14 @@ class MahjongClientConfigScreen(
             "draw_settlement",
             "match_settlement",
         )
-        Category.VISUAL_FEEDBACK -> presentationRows("matching_tile_highlight", "discard_popup", "meld_popup")
+        Category.VISUAL_FEEDBACK -> listOf(
+            ConfigRow(
+                MinecraftClientConfigScreenKeys.TILE_LABELS,
+                MinecraftClientConfigScreenKeys.TILE_LABELS_DESCRIPTION,
+                { booleanText(it.tileLabelsEnabled) },
+                { it.copy(tileLabelsEnabled = !it.tileLabelsEnabled) },
+            ),
+        ) + presentationRows("matching_tile_highlight", "discard_popup", "meld_popup")
     }
 
     /** 建立 HUD、遊戲面板與視覺效果的個別開關列。 */
