@@ -72,7 +72,7 @@ class GameInitializerTest {
 
     /**
      * 驗證支援開門流程的規則（如日麻）開局時會產生非 null 的 [TableState.wallOpening]，且
-     * [TableState.initialDeadWall] 張數等於規則配置的王牌張數。
+     * [TableState.reservedWallTiles] 張數等於規則配置的保留牌張數。
      */
     @Test
     fun `test initialize resolves wall opening and dead wall for a rule that supports it`() {
@@ -80,7 +80,7 @@ class GameInitializerTest {
         val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
 
         assertTrue(table.wallOpening != null, "Riichi supports wall opening, wallOpening should not be null")
-        assertEquals(module.config.deadTileCount, table.initialDeadWall.size)
+        assertEquals(module.config.deadTileCount, table.reservedWallTiles.size)
     }
 
     /**
@@ -95,7 +95,7 @@ class GameInitializerTest {
 
         val dealtTileIds = table.players.flatMap { it.hand.tiles }.map { it.id }
         val remainingTileIds = table.tileWall.getAllTiles().map { it.id }
-        val deadWallTileIds = table.initialDeadWall.map { it.id }
+        val deadWallTileIds = table.reservedWallTiles.map { it.id }
         val allTileIds = dealtTileIds + remainingTileIds + deadWallTileIds
 
         assertEquals(totalTileCount, allTileIds.size)
@@ -389,7 +389,7 @@ class GameInitializerTest {
 
     /**
      * 驗證 [GameInitializer.startNextRound] 連莊仍會重新擲骰開門，產生非 null 的
-     * [TableState.wallOpening] 與符合規則配置張數的 [TableState.initialDeadWall]。
+     * [TableState.wallOpening] 與符合規則配置張數的 [TableState.reservedWallTiles]。
      */
     @Test
     fun `test startNextRound resolves a fresh wall opening and dead wall`() {
@@ -405,6 +405,6 @@ class GameInitializerTest {
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
 
         assertTrue(table.wallOpening != null, "Riichi supports wall opening, wallOpening should not be null")
-        assertEquals(module.config.deadTileCount, table.initialDeadWall.size)
+        assertEquals(module.config.deadTileCount, table.reservedWallTiles.size)
     }
 }

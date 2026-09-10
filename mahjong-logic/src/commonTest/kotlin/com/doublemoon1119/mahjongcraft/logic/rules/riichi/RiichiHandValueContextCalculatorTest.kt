@@ -320,7 +320,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 1),
             initialDeadWall = wanPaiTiles,
         )
 
@@ -406,7 +406,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 4),
             initialDeadWall = wanPaiTiles,
         )
 
@@ -660,7 +660,7 @@ class RiichiHandValueContextCalculatorTest {
     /**
      * 驗證不同槓數下的寶牌指示器計算邏輯是否正確。
      *
-     * 資料來源是 [TableState.initialDeadWall]（固定 14 張、順序穩定），索引在整個對局期間都不會變動，
+     * 資料來源是 [TableState.reservedWallTiles]（固定 14 個語意位置、順序穩定），索引在整個對局期間都不會變動，
      * 見 [RiichiDynamicState.getDoraIndicators] KDoc。
      *
      * 計算公式：`baseIndex = 4 + (i * 2)`，其中 `indicatorCount = (1 + kanCount).coerceAtMost(5)`
@@ -760,7 +760,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player1Kan),
             tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 1),
             initialDeadWall = wanPaiTiles,
         )
         val context1Kan = calculator.calculate(
@@ -785,7 +785,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player2Kan),
             tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 2),
             initialDeadWall = wanPaiTiles,
         )
         val context2Kan = calculator.calculate(
@@ -811,7 +811,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player3Kan),
             tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 3),
             initialDeadWall = wanPaiTiles,
         )
         val context3Kan = calculator.calculate(
@@ -838,7 +838,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player4Kan),
             tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 4),
             initialDeadWall = wanPaiTiles,
         )
         val context4Kan = calculator.calculate(

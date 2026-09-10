@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.getNextDora
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
@@ -62,6 +63,9 @@ class RiichiRuleModule(
 
     /** 建立將日麻赤五解讀為普通五的牌面 policy。 */
     override fun createTileInterpretationPolicy(): TileInterpretationPolicy = RiichiTileInterpretationPolicy
+
+    /** 建立日本麻將槓後嶺上補牌與死牌區變化 policy。 */
+    override fun createSupplementalDrawPolicy(): SupplementalDrawPolicy = RiichiSupplementalDrawPolicy
 
     /**
      * 建立日本麻將專用的牌河。

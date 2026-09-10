@@ -54,7 +54,7 @@ fun TableState.toSnapshot(visibleHandPlayerIds: Set<Uuid>): TableStateSnapshot {
             it.toSnapshot(isVisible = it.id in visibleHandPlayerIds, revealsClosedKanTiles = config.revealsClosedKanTiles)
         },
         config = this.config,
-        tileWall = this.tileWall.toSnapshot(visibleTileIds = visibleTileIds, deadWallTiles = this.initialDeadWall),
+        tileWall = this.tileWall.toSnapshot(visibleTileIds = visibleTileIds, reservedWallTiles = this.reservedWallTiles),
         dealerPlayerId = this.dealerPlayerId,
         prevalentWind = this.prevalentWind,
         roundNumber = this.roundNumber,

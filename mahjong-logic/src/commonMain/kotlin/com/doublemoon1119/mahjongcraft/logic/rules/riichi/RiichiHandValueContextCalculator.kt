@@ -44,7 +44,7 @@ class RiichiHandValueContextCalculator(
         var isLastDraw = false
         var isLastDiscard = false
 
-        // tileWall 在開門時已經排除 initialDeadWall，只保存仍可正常摸取的活牌；最後一張活牌摸走後
+        // tileWall 在開門時已經排除 reservedWallTiles，只保存仍可正常摸取的活牌；最後一張活牌摸走後
         // remainingCount 才會成為 0，不可再次扣除 deadTileCount，否則會提早 14 張誤判海底／河底。
         if (tableState.tileWall.remainingCount == 0) {
             if (isTsumo) {

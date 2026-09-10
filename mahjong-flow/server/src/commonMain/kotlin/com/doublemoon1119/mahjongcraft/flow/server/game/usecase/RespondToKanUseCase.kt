@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDet
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -128,16 +129,22 @@ class RespondToKanUseCase(
                     } else {
                         // 全員放過：槓真的成立，補做副露套用，並讓宣告者摸嶺上牌。
                         val applied = KanDeclarationApplier.apply(state, pending.declarerId, pending.kanAction, pending.robbedTile, module)
-                        if (applied.rinshanTile == null) {
-                            return@update state to Outcome.Error(GameError.WallExhausted(gameId))
+                        if (applied is KanDeclarationApplier.Result.Rejected) {
+                            val error = if (applied.reasonId == SupplementalDrawReasonIds.WALL_EXHAUSTED) {
+                                GameError.WallExhausted(gameId)
+                            } else {
+                                GameError.UnsupportedAction(gameId, pending.declarerId, applied.reasonId)
+                            }
+                            return@update state to Outcome.Error(error)
                         }
+                        applied as KanDeclarationApplier.Result.Applied
                         val newState = applied.tableState.copy(pendingKanReaction = null)
                         newState to Outcome.Success(
                             ChankanResult(
                                 newState,
-                                drawHappened = true,
+                                drawHappened = applied.drawnTiles.isNotEmpty(),
                                 declarerId = pending.declarerId,
-                                newlyRevealedDeadWallTileIds = newlyRevealedDeadWallTileIds(state, newState),
+                                newlyRevealedWallTileIds = applied.newlyRevealedTileIds,
                             ),
                         )
                     }
@@ -173,8 +180,8 @@ class RespondToKanUseCase(
                 comboStickCount = if (declarerSeatIndex == dealerSeatIndex) newState.comboCount else 0,
             )
             // 槓牌真的成立後可能翻開新的一張寶牌指示牌，理由同 DeclareKanUseCase。
-            if (result.newlyRevealedDeadWallTileIds.isNotEmpty()) {
-                presentationPublisher.publishDeadWallRevealUpdated(gameId, result.newlyRevealedDeadWallTileIds)
+            if (result.newlyRevealedWallTileIds.isNotEmpty()) {
+                presentationPublisher.publishWallTilesRevealed(gameId, result.newlyRevealedWallTileIds)
             }
         }
 
@@ -233,6 +240,6 @@ class RespondToKanUseCase(
         val ruleModuleId: String? = null,
         val previousTableState: TableState? = null,
         val ronDiscarderId: Uuid? = null,
-        val newlyRevealedDeadWallTileIds: Set<Uuid> = emptySet(),
+        val newlyRevealedWallTileIds: Set<Uuid> = emptySet(),
     )
 }

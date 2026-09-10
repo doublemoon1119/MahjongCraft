@@ -29,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -328,6 +329,7 @@ class GameActionRouterTest {
             config = RiichiRuleConfig(),
             initialDeadWall = initialDeadWall,
             currentPlayerIndex = 0,
+            dynamicRuleState = RiichiDynamicState(),
             pendingKanReaction = PendingKanReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
         )
     }

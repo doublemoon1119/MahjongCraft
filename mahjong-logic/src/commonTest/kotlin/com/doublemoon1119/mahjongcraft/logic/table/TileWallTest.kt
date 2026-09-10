@@ -44,6 +44,23 @@ class TileWallTest {
         assertEquals(0, thirdDraw.wall.remainingCount)
     }
 
+    /** 驗證尾端取牌回傳最後一張，且不修改原本牌堆。 */
+    @Test
+    fun `test drawing from wall tail`() {
+        val first = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val last = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
+        val wall = TileWall(listOf(first, last))
+
+        val result = wall.drawLast()
+
+        assertEquals(last, result.tile)
+        assertEquals(listOf(first), result.wall.getAllTiles())
+        assertEquals(listOf(first, last), wall.getAllTiles())
+        val emptyResult = TileWall().drawLast()
+        assertNull(emptyResult.tile)
+        assertEquals(0, emptyResult.wall.remainingCount)
+    }
+
     /**
      * 驗證獲取所有牌的列表後，摸牌不會影響原本已取得的列表或原本的牌山實例。
      */

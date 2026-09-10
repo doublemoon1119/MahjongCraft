@@ -14,9 +14,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueContextCalculator
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
+import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -28,21 +27,18 @@ import kotlin.uuid.Uuid
  * 是否合法完全交給該規則模組自己的 `LegalActionValidator`——這裡不重新實作暗槓/加槓的偵測邏輯
  * （含立直後暗槓「不能改變聽牌」的限制），理由與 [DeclareRiichiUseCase]、
  * [DeclareAbortiveDrawUseCase] 相同。合法性確認後，先檢查有沒有其他玩家可以搶槓
- * （[GameAction.Kan.type] 為 [GameAction.KanType.ADDED_KAN] 時常見；暗槓只有國士無雙能搶，見
- * [RiichiLegalActionValidator] 既有邏輯）：
+ * （是否允許搶槓以及哪些和牌形能搶，完全由規則模組的合法動作判定器決定）：
  * 有人可以搶時開一次反應視窗（[TableState.pendingKanReaction]，副露暫緩套用，交給
  * [RespondToKanUseCase] 解析）；沒人可以搶時直接套用（[KanDeclarationApplier]）。多位玩家同時
  * 可搶時（罕見），依 [MahjongRuleConfig.multiRonPolicy] 決定實際開放
  * 給誰，與一般捨牌榮和共用同一套判定（見 [DiscardReactionResolver]）；判定為途中流局時，這次
  * 加槓視為未成立，不開反應視窗、不套用副露。
  *
- * 套用副露後依序記錄 [GameAction.Kan] → 從死牌區（[KanDeclarationApplier.drawRinshanTile]）
- * 補摸嶺上牌並記錄 [GameAction.Draw]，讓 [RiichiHandValueContextCalculator] 既有的
- * 嶺上開花偵測邏輯（依賴 `actionHistory` 最後兩筆是否恰為 `[Kan, Draw]`）能真正被觸發。
+ * 套用副露後依序記錄 [GameAction.Kan]，再由 [MahjongRuleModule.createSupplementalDrawPolicy]
+ * 決定是否補牌、補牌來源、牌牆變化及新公開牌。若規則補牌成功，Flow 會記錄 [GameAction.Draw]；
+ * 規則層可依動作歷史判斷其專屬役種或狀態。
  *
- * 不需要新增任何 [MahjongRuleModule] 規則鉤子——
- * 套用副露、補摸嶺上牌、清除全場一發皆為既有通用方法（`Hand.call`/`Hand.upgradeToAddedKan`/
- * `KanDeclarationApplier.drawRinshanTile`/`module.onMeldClaimed`）的組合。不涉及包牌（Pao）：加槓沿用
+ * 不涉及包牌（Pao）：加槓沿用
  * `Hand.upgradeToAddedKan` 保留的原碰副露來源方位，暗槓沒有鳴牌來源，兩者皆不構成包牌，不呼叫
  * `applyPaoLiabilityIfTriggered`。
  *
@@ -195,15 +191,21 @@ class DeclareKanUseCase(
                     }
 
                     val applied = KanDeclarationApplier.apply(state, playerId, kanAction, declaredTile, module)
-                    if (applied.rinshanTile == null) {
-                        return@update state to Outcome.Error(GameError.WallExhausted(gameId))
+                    if (applied is KanDeclarationApplier.Result.Rejected) {
+                        val error = if (applied.reasonId == SupplementalDrawReasonIds.WALL_EXHAUSTED) {
+                            GameError.WallExhausted(gameId)
+                        } else {
+                            GameError.UnsupportedAction(gameId, playerId, applied.reasonId)
+                        }
+                        return@update state to Outcome.Error(error)
                     }
+                    applied as KanDeclarationApplier.Result.Applied
                     applied.tableState to Outcome.Success(
                         KanResult(
                             applied.tableState,
                             kanAction,
-                            drawHappened = true,
-                            newlyRevealedDeadWallTileIds = newlyRevealedDeadWallTileIds(state, applied.tableState),
+                            drawHappened = applied.drawnTiles.isNotEmpty(),
+                            newlyRevealedWallTileIds = applied.newlyRevealedTileIds,
                         ),
                     )
                 }
@@ -255,8 +257,8 @@ class DeclareKanUseCase(
             )
             // 槓牌成立後可能翻開新的一張寶牌指示牌（例如日麻的槓寶牌）；不支援 TileWallRevealable
             // 的規則永遠算出空集合，呼叫這個方法沒有任何效果。
-            if (result.newlyRevealedDeadWallTileIds.isNotEmpty()) {
-                presentationPublisher.publishDeadWallRevealUpdated(gameId, result.newlyRevealedDeadWallTileIds)
+            if (result.newlyRevealedWallTileIds.isNotEmpty()) {
+                presentationPublisher.publishWallTilesRevealed(gameId, result.newlyRevealedWallTileIds)
             }
         }
 
@@ -276,6 +278,6 @@ class DeclareKanUseCase(
         val kanAction: GameAction.Kan,
         val drawHappened: Boolean,
         val abortiveDrawReason: ExhaustiveDrawReason? = null,
-        val newlyRevealedDeadWallTileIds: Set<Uuid> = emptySet(),
+        val newlyRevealedWallTileIds: Set<Uuid> = emptySet(),
     )
 }

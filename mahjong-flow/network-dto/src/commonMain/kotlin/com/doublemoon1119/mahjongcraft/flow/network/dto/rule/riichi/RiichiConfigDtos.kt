@@ -109,12 +109,16 @@ sealed interface RiichiGameLengthDto : GameLengthDto {
 
 // ── DynamicRuleStateDto ────────────────────────────────────────────────────
 
-/** [RiichiDynamicState] 的網路 DTO。 */
+/** [RiichiDynamicState] 的完整網路 DTO。 */
 @Serializable
-data class RiichiDynamicStateDto(val riichiStickCount: Int) : DynamicRuleStateDto
+data class RiichiDynamicStateDto(
+    val riichiStickCount: Int,
+    val completedSupplementalDrawCount: Int,
+) : DynamicRuleStateDto
 
-fun RiichiDynamicState.toRiichiDto(): RiichiDynamicStateDto = RiichiDynamicStateDto(riichiStickCount)
-fun RiichiDynamicStateDto.toDomain(): RiichiDynamicState = RiichiDynamicState(riichiStickCount)
+fun RiichiDynamicState.toRiichiDto(): RiichiDynamicStateDto = RiichiDynamicStateDto(riichiStickCount, completedSupplementalDrawCount)
+
+fun RiichiDynamicStateDto.toDomain(): RiichiDynamicState = RiichiDynamicState(riichiStickCount, completedSupplementalDrawCount)
 
 // ── PlayerRuleStateDto ─────────────────────────────────────────────────────
 

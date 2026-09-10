@@ -31,7 +31,8 @@ import kotlin.uuid.Uuid
  * @property pendingReaction 尚未完成的捨牌反應視窗。
  * @property pendingKanReaction 尚未完成的搶槓反應視窗。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
- * @property initialDeadWall 開局瞬間的王牌快照；規則尚未支援開門流程時為空清單。
+ * @property initialDeadWall 目前規則保留牌；舊欄位名稱為既有存檔格式相容性而保留，不代表內容固定，
+ * 也不表示 platform 必須將它呈現為日麻式獨立王牌區。
  * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合；舊存檔缺少此欄位時
  * 預設空集合。
  */
@@ -87,7 +88,7 @@ fun TableState.toPersistenceDto(
     pendingReaction = pendingReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
     pendingKanReaction = pendingKanReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
     wallOpening = wallOpening?.toPersistenceDto(),
-    initialDeadWall = initialDeadWall.map { it.toPersistenceDto() },
+    initialDeadWall = reservedWallTiles.map { it.toPersistenceDto() },
     finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
 )
 

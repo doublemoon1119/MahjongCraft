@@ -424,15 +424,15 @@ class FabricGamePresentationPublisher(
      * 一般回合動作，不需要 [busyTracker] 或延遲，直接同步呈現；跟 [publishDiceRoll] 同理，世界／entity
      * 存取一併丟回伺服器主執行緒執行。
      */
-    override fun publishDeadWallRevealUpdated(gameId: Uuid, revealedTileIds: Set<Uuid>) {
+    override fun publishWallTilesRevealed(gameId: Uuid, revealedTileIds: Set<Uuid>) {
         if (serverHolder.current() == null) {
-            logger.warn("publishDeadWallRevealUpdated gameId={} skipped: no active server", gameId)
+            logger.warn("publishWallTilesRevealed gameId={} skipped: no active server", gameId)
             return
         }
         scope.launch(dispatchers.main) {
             val location = tableLocationRegistry.get(gameId)?.location
             if (location == null) {
-                logger.warn("publishDeadWallRevealUpdated gameId={} skipped: no known table location", gameId)
+                logger.warn("publishWallTilesRevealed gameId={} skipped: no known table location", gameId)
                 return@launch
             }
             tileWallPresenter.revealDeadWallTiles(gameId, location, revealedTileIds)
@@ -1070,7 +1070,7 @@ class FabricGamePresentationPublisher(
     /** 依 UUID 從所有權威牌區尋找牌面。 */
     private fun TableState.findTile(tileId: Uuid): IdentifiedTile? = players.asSequence().flatMap { player ->
         (player.hand.allTiles + player.discardPile.entries.map { it.tile }).asSequence()
-    }.plus(tileWall.getAllTiles().asSequence()).plus(initialDeadWall.asSequence()).firstOrNull { it.id == tileId }
+    }.plus(tileWall.getAllTiles().asSequence()).plus(reservedWallTiles.asSequence()).firstOrNull { it.id == tileId }
 
     /** 由版本無關 dimension ID 取得目前 server session 的世界。 */
     private fun resolveWorld(location: TableLocation): ServerWorld? {

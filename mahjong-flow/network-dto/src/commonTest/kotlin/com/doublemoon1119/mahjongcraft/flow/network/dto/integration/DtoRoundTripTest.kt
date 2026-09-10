@@ -173,7 +173,7 @@ class DtoRoundTripTest {
         val tableState = FakeTableStateFactory.create(
             players = listOf(riichiPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2, completedSupplementalDrawCount = 3),
         )
         val snapshot = tableState.toSnapshot(setOf(riichiPlayer.id))
         val snapshotDto = snapshot.toDto(registries)

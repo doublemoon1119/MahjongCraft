@@ -79,15 +79,44 @@ sealed interface GameError : ApplicationError {
      *
      * @param gameId 對局 Uuid。
      * @param playerId 發起操作的玩家 Uuid；系統觸發（無玩家發起者，例如流局結算）的情境下為 null。
+     * @param reasonId 規則或 policy 提供的完整 namespaced 原因 ID；沒有更具體原因時為 null。
      */
-    data class UnsupportedAction(val gameId: Uuid, val playerId: Uuid? = null) : GameError
+    data class UnsupportedAction(
+        val gameId: Uuid,
+        val playerId: Uuid? = null,
+        val reasonId: String? = null,
+    ) : GameError
 
-    /** 對局目前沒有可由指定玩家提交的開局準備步驟。 */
+    /**
+     * 對局目前沒有可由指定玩家提交的開局準備步驟。
+     *
+     * 這通常表示該規則沒有準備階段、準備階段尚未開始、已經完成，或目前正在等待其他玩家。它描述的
+     * 是權威對局狀態，不代表提交內容本身格式錯誤。
+     *
+     * @param gameId 對局 Uuid。
+     * @param playerId 嘗試提交準備操作的玩家 Uuid。
+     */
     data class RoundPreparationUnavailable(val gameId: Uuid, val playerId: Uuid) : GameError
 
-    /** 開局準備提交不符合輸入結構或規則語意。 */
+    /**
+     * 開局準備提交不符合目前步驟要求的輸入結構或規則語意。
+     *
+     * 與 [RoundPreparationUnavailable] 不同，此錯誤表示玩家確實有可提交的準備步驟，但所選牌張、數量
+     * 或確認資料沒有通過權威規則驗證。
+     *
+     * @param gameId 對局 Uuid。
+     * @param playerId 送出無效準備資料的玩家 Uuid。
+     */
     data class InvalidRoundPreparationSubmission(val gameId: Uuid, val playerId: Uuid) : GameError
 
-    /** 本局缺少權威完成摘要，或規則回傳互相矛盾的 progression decision。 */
+    /**
+     * 本局缺少權威完成摘要，或規則回傳互相矛盾的 progression decision。
+     *
+     * [reason] 是供伺服器記錄與開發診斷使用的文字，不是穩定 ID、translation key，也不應直接顯示給
+     * 玩家。
+     *
+     * @param gameId 對局 Uuid。
+     * @param reason 描述內部狀態矛盾或例外的診斷文字。
+     */
     data class InvalidMatchProgression(val gameId: Uuid, val reason: String) : GameError
 }

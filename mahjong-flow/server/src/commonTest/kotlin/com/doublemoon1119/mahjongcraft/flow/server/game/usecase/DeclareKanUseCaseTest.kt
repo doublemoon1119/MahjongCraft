@@ -84,6 +84,7 @@ class DeclareKanUseCaseTest {
             config = RiichiRuleConfig(),
             initialDeadWall = listOf(rinshanTile),
             currentPlayerIndex = 0,
+            dynamicRuleState = RiichiDynamicState(),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -102,7 +103,9 @@ class DeclareKanUseCaseTest {
             updated.actionHistory.takeLast(2),
             "Kan must be recorded before Draw for rinshan kaihou detection to work.",
         )
-        assertEquals(table.tileWall, newState.tileWall, "The rinshan tile comes from the dead wall reserve, not the live wall.")
+        assertEquals(table.tileWall.remainingCount - 1, newState.tileWall.remainingCount)
+        assertEquals(table.tileWall.getAllTiles().last(), newState.initialDeadWall.first())
+        assertEquals(1, (newState.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
         assertEquals(
             rinshanTile.id,
             fixtures.presentationPublisher.getPublishedPlayerArea(gameId)?.drawnTileId,
@@ -142,8 +145,10 @@ class DeclareKanUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val currentState = fixtures.gameRepo.getTableState(gameId)!!
+        val currentDynamicState = currentState.dynamicRuleState as RiichiDynamicState
+        val previousDynamicState = table.dynamicRuleState as RiichiDynamicState
         assertEquals(
-            RiichiDynamicState().getVisibleTileIds(currentState) - RiichiDynamicState().getVisibleTileIds(table),
+            currentDynamicState.getVisibleTileIds(currentState) - previousDynamicState.getVisibleTileIds(table),
             assertNotNull(
                 fixtures.presentationPublisher.getPublishedDeadWallReveal(gameId),
                 "A kan-dora reveal should have been published for a rule that implements TileWallRevealable.",
@@ -180,9 +185,9 @@ class DeclareKanUseCaseTest {
             config = RiichiRuleConfig(),
             initialDeadWall = deadWall,
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(),
+            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 1),
         )
-        val previouslyVisible = RiichiDynamicState().getVisibleTileIds(table)
+        val previouslyVisible = (table.dynamicRuleState as RiichiDynamicState).getVisibleTileIds(table)
         fixtures.gameRepo.setTableState(table)
 
         val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, eastTiles.last().id)
@@ -190,7 +195,10 @@ class DeclareKanUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val currentState = fixtures.gameRepo.getTableState(gameId)!!
         val published = assertNotNull(fixtures.presentationPublisher.getPublishedDeadWallReveal(gameId))
-        assertEquals(RiichiDynamicState().getVisibleTileIds(currentState) - previouslyVisible, published)
+        assertEquals(
+            (currentState.dynamicRuleState as RiichiDynamicState).getVisibleTileIds(currentState) - previouslyVisible,
+            published,
+        )
         assertTrue(published.intersect(previouslyVisible).isEmpty(), "Previously revealed indicators must not be republished")
     }
 
@@ -217,6 +225,7 @@ class DeclareKanUseCaseTest {
             config = RiichiRuleConfig(),
             initialDeadWall = listOf(rinshanTile),
             currentPlayerIndex = 0,
+            dynamicRuleState = RiichiDynamicState(),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -296,6 +305,7 @@ class DeclareKanUseCaseTest {
             config = RiichiRuleConfig(),
             initialDeadWall = listOf(rinshanTile),
             currentPlayerIndex = 0,
+            dynamicRuleState = RiichiDynamicState(),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -352,6 +362,7 @@ class DeclareKanUseCaseTest {
             // （initialDeadWall，預設空清單）摸盡」是兩回事，tileWall 空的話這次暗槓在走到補摸嶺上牌
             // 之前就會先被 RiichiLegalActionValidator 擋下，這個測試就測不到真正想驗證的情境。
             currentPlayerIndex = 0,
+            dynamicRuleState = RiichiDynamicState(),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -461,6 +472,7 @@ class DeclareKanUseCaseTest {
             config = RiichiRuleConfig(),
             initialDeadWall = listOf(rinshanTile),
             currentPlayerIndex = 0,
+            dynamicRuleState = RiichiDynamicState(),
         )
         fixtures.gameRepo.setTableState(table)
         fixtures.snapshotRepo.setSnapshot(playerId, table.toSnapshot(setOf(playerId)))
@@ -572,6 +584,7 @@ class DeclareKanUseCaseTest {
             initialDeadWall = listOf(rinshanTile),
             currentPlayerIndex = 0,
             finishedPlayerIds = setOf(finishedRobberId),
+            dynamicRuleState = RiichiDynamicState(),
         )
         fixtures.gameRepo.setTableState(table)
 

@@ -61,9 +61,9 @@ internal object FourSidedWallLayoutSupport {
             floorMod(breakGlobalStack + offset, totalStacks)
         }
 
-        // 兩份清單在這裡完成實體切分：drawOrder 只含活牌，initialDeadWall 只含王牌；GameInitializer
-        // 之後只會用 drawOrder 建立 TableState.tileWall，不會把王牌再次放回該容器。
-        val initialDeadWall = deadWallGlobalStacks.flatMap { stacks[it].asReversed() }
+        // 兩份清單在這裡完成規則上的摸牌分區；是否把保留牌呈現為獨立實體區域由後續 layout policy
+        // 決定，這個通用 helper 不賦予日麻王牌的物理語意。
+        val reservedWallTiles = deadWallGlobalStacks.flatMap { stacks[it].asReversed() }
         val drawOrder = liveWallGlobalStacks.flatMap { stacks[it].asReversed() }
 
         val structure = buildMap {
@@ -76,7 +76,7 @@ internal object FourSidedWallLayoutSupport {
             }
         }
 
-        return TileWallLayoutResult(drawOrder, initialDeadWall, structure)
+        return TileWallLayoutResult(drawOrder, reservedWallTiles, structure)
     }
 
     /** 恆為非負餘數的取模，處理往回數王牌時可能產生的負值。 */

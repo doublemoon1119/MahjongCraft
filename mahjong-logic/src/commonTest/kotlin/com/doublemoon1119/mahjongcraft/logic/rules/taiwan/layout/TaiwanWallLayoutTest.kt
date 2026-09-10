@@ -28,8 +28,8 @@ class TaiwanWallLayoutTest {
         val result = layout.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 2, stacksFromRight = 11))
 
         assertEquals(120, result.drawOrder.size)
-        assertEquals(16, result.initialDeadWall.size)
-        assertEquals(tiles.map { it.id }.toSet(), (result.drawOrder + result.initialDeadWall).map { it.id }.toSet())
+        assertEquals(16, result.reservedWallTiles.size)
+        assertEquals(tiles.map { it.id }.toSet(), (result.drawOrder + result.reservedWallTiles).map { it.id }.toSet())
     }
 
     /** 驗證含花牌時（144 張、每面 18 墩），活牌 128 張、王牌 16 張，涵蓋全部輸入牌。 */
@@ -39,8 +39,8 @@ class TaiwanWallLayoutTest {
         val result = layout.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 1, stacksFromRight = 18))
 
         assertEquals(128, result.drawOrder.size)
-        assertEquals(16, result.initialDeadWall.size)
-        assertEquals(tiles.map { it.id }.toSet(), (result.drawOrder + result.initialDeadWall).map { it.id }.toSet())
+        assertEquals(16, result.reservedWallTiles.size)
+        assertEquals(tiles.map { it.id }.toSet(), (result.drawOrder + result.reservedWallTiles).map { it.id }.toSet())
     }
 
     /** 驗證 structure 涵蓋全部輸入牌，且面／墩／層座標範圍隨牌數（含花牌與否）正確調整。 */

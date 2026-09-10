@@ -132,7 +132,7 @@ interface GamePresentationPublisher {
      * @param revealedTileIds [deadWallTileIds] 之中，牌牆建立當下就該立即公開翻面的牌 Uuid 子集合
      * （例如日麻開局就翻開的第一張寶牌指示牌，由呼叫端用 `TileWallRevealable.getVisibleTileIds`
      * 算出）；平台實作會在王牌移出開門位置的同一個時機點翻開這些牌，不支援此概念的規則傳空集合即可。
-     * 槓牌後才追加公開的牌屬於 [publishDeadWallRevealUpdated] 的職責，不是這裡。
+     * 動作後才追加公開的牌屬於 [publishWallTilesRevealed] 的職責，不是這裡。
      */
     fun publishWallStructure(
         gameId: Uuid,
@@ -144,17 +144,17 @@ interface GamePresentationPublisher {
     )
 
     /**
-     * 通知平台呈現層本局王牌區裡，本次新增公開翻面的牌集合——用於牌牆建立**之後**才追加
-     * 公開的牌，例如日麻槓牌成立後翻開的新寶牌指示牌；開局當下就該公開的第一張（不需要等任何事件）
+     * 通知平台呈現層本局牌牆裡，本次新增公開翻面的牌集合——用於牌牆建立**之後**才追加
+     * 公開的牌，例如日麻槓牌成立後翻開的新寶牌指示牌；開局當下就該公開的牌（不需要等任何事件）
      * 屬於 [publishWallStructure] 的 `revealedTileIds`，不是這裡，兩者是完全獨立的呈現時機。
      *
      * 刻意用泛用的「應該公開翻面」措辭而非「寶牌」，讓這個介面本身維持規則無關——呼叫端一律用
      * `TileWallRevealable.getVisibleTileIds` 比較變更前後的集合，不支援此概念的規則永遠不會呼叫這個方法。
      *
      * @param gameId 對局 Uuid。
-     * @param revealedTileIds 本次新增公開翻面的王牌 Uuid 集合；平台實作只替這些牌播放翻面動畫。
+     * @param revealedTileIds 本次新增公開翻面的牌 Uuid 集合；平台實作只替這些牌播放翻面動畫。
      */
-    fun publishDeadWallRevealUpdated(gameId: Uuid, revealedTileIds: Set<Uuid>)
+    fun publishWallTilesRevealed(gameId: Uuid, revealedTileIds: Set<Uuid>)
 
     /**
      * 通知平台呈現層本局莊家角落的積棒（連莊棒）數量。
@@ -172,7 +172,7 @@ interface GamePresentationPublisher {
 
     /**
      * 通知平台呈現層本局目前的全部供託棒——刻意用泛用的「供託」措辭而非「立直」，讓這個介面本身維持
-     * 規則無關，比照 [publishDeadWallRevealUpdated] 的既有慣例；不支援供託概念的規則永遠不會呼叫這個
+     * 規則無關，比照 [publishWallTilesRevealed] 的既有慣例；不支援供託概念的規則永遠不會呼叫這個
      * 方法。內容分兩層：這局場上宣告中的座位集合，以及延續自前局、尚未被任何人收下的供託堆支數
      * （兩者相加恆等於 `MahjongRuleModule.getStickPotCount`）。
      *

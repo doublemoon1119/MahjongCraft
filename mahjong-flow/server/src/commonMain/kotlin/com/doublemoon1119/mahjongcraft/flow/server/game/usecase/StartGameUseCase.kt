@@ -121,7 +121,7 @@ class StartGameUseCase(
         // 呼叫順序，把擲骰動畫延遲到牌牆完全落地才開始播放，這裡不能對調。
         val dealerSeatIndex = tableState.dealerIndex
         initializationResult.wallStructure?.let { structure ->
-            val deadWallTileIds = tableState.initialDeadWall.map { tile -> tile.id }.toSet()
+            val deadWallTileIds = tableState.reservedWallTiles.map { tile -> tile.id }.toSet()
             val diceCount = initializationResult.diceRoll?.values?.size ?: 0
             val revealedTileIds = (tableState.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(tableState) ?: emptySet()
             presentationPublisher.publishWallStructure(roomId, structure, dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)

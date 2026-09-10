@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -138,6 +139,15 @@ class RespondToDiscardUseCase(
                         resolvePendingReaction(state, playersAfterResponse, newPendingReaction, discardedTile, module)
                     }
 
+                    result.rejectionReasonId?.let { reasonId ->
+                        val error = if (reasonId == SupplementalDrawReasonIds.WALL_EXHAUSTED) {
+                            GameError.WallExhausted(gameId)
+                        } else {
+                            GameError.UnsupportedAction(gameId, playerId, reasonId)
+                        }
+                        return@update state to Outcome.Error(error)
+                    }
+
                     result.tableState to Outcome.Success(result)
                 }
             }
@@ -151,7 +161,7 @@ class RespondToDiscardUseCase(
 
         val seatedPlayerIds = newState.players.map { it.id }
         eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, action)
-        if (result.rinshanDrawHappened) {
+        if (result.supplementalDrawHappened) {
             eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.Draw)
         }
 
@@ -169,7 +179,7 @@ class RespondToDiscardUseCase(
         }
 
         // 碰/吃/明槓得標時，得標玩家的副露多了一組、手牌也少了對應張數，重新呈現整份手牌/摸牌位/
-        // 副露；明槓另外補到嶺上牌時（[RespondResult.rinshanDrawHappened]）摸牌位自然帶著呈現，不需要
+        // 副露；規則另外補牌時（[RespondResult.supplementalDrawHappened]）摸牌位自然帶著呈現，不需要
         // 額外判斷——合併呼叫後也順便補上先前缺漏的手牌重新呈現（吃/碰/明槓後手牌張數變少，先前完全
         // 沒有重新呈現手牌列）。
         result.winnerId?.let { winnerId ->
@@ -192,8 +202,8 @@ class RespondToDiscardUseCase(
             )
             // 明槓得標可能翻開新的一張寶牌指示牌，理由同 DeclareKanUseCase；吃/碰不構成槓，不需要
             // 檢查——只看剛成立的那組副露（永遠是 melds 的最後一組）是不是明槓。
-            if (result.newlyRevealedDeadWallTileIds.isNotEmpty()) {
-                presentationPublisher.publishDeadWallRevealUpdated(gameId, result.newlyRevealedDeadWallTileIds)
+            if (result.newlyRevealedWallTileIds.isNotEmpty()) {
+                presentationPublisher.publishWallTilesRevealed(gameId, result.newlyRevealedWallTileIds)
             }
         }
 
@@ -240,9 +250,9 @@ class RespondToDiscardUseCase(
     }
 
     /**
-     * `update` 區塊內部使用的中繼結果，讓 [rinshanDrawHappened]／[discarderId]／[winnerId] 能跟著
+     * `update` 區塊內部使用的中繼結果，讓 [supplementalDrawHappened]／[discarderId]／[winnerId] 能跟著
      * [tableState] 一起帶出 `gameRepository.update` 的作用域，供廣播事件／觸發呈現時使用。
-     * [rinshanDrawHappened] 為 true 代表明槓得標後成功補到嶺上牌，需要額外廣播 [GameAction.Draw]。
+     * [supplementalDrawHappened] 為 true 代表明槓得標後規則成功補牌，需要額外廣播 [GameAction.Draw]。
      * [discarderId] 只在碰/吃/明槓得標、實際對丟牌者的 `discardPile` 呼叫過 `takeLast()` 時才有值
      * （全員過牌與榮和都不會呼叫 `takeLast()`），供呼叫端重新呈現該玩家的牌河。[winnerId] 跟
      * [discarderId] 同一個有效視窗（碰/吃/明槓得標時才有值），供呼叫端重新呈現得標玩家的副露。
@@ -252,7 +262,7 @@ class RespondToDiscardUseCase(
      */
     private data class RespondResult(
         val tableState: TableState,
-        val rinshanDrawHappened: Boolean = false,
+        val supplementalDrawHappened: Boolean = false,
         val discarderId: Uuid? = null,
         val winnerId: Uuid? = null,
         val resolvedAction: GameAction? = null,
@@ -262,7 +272,8 @@ class RespondToDiscardUseCase(
         val ruleModuleId: String? = null,
         val previousTableState: TableState? = null,
         val ronDiscarderId: Uuid? = null,
-        val newlyRevealedDeadWallTileIds: Set<Uuid> = emptySet(),
+        val newlyRevealedWallTileIds: Set<Uuid> = emptySet(),
+        val rejectionReasonId: String? = null,
     )
 
     /**
@@ -369,44 +380,34 @@ class RespondToDiscardUseCase(
             )
         }
 
-        // 明槓比照暗槓/加槓，得標後立即從死牌區補摸嶺上牌（KanDeclarationApplier.drawRinshanTile，
-        // 共用同一份「王牌區前段保留給嶺上摸牌」的邏輯），取代原本依賴得標玩家事後另外呼叫
-        // DrawTileUseCase（那是從牌山前端摸牌，摸錯位置）的既有錯誤行為。若王牌區的嶺上摸牌保留區
-        // 恰好在此刻摸盡（極端邊界情況，理論上四槓散了流局應該已經先成立），這裡沒有 Outcome 通道
-        // 可回報錯誤（本方法回傳單純 TableState），已知簡化：讓 lastDrawn 維持空，不中斷已經套用
-        // 完成的副露結果。
-        val rinshanTile = KanDeclarationApplier.drawRinshanTile(state)
-        val playersWithRinshanDraw = if (rinshanTile == null) {
-            playersAfterMeldClaimed
-        } else {
-            playersAfterMeldClaimed.map { player ->
-                if (player.id == winnerId) {
-                    player.copy(hand = player.hand.copy(lastDrawn = rinshanTile)).clearPassedTiles()
-                        .recordAction(GameAction.Draw)
-                } else {
-                    player
-                }
-            }
-        }
-
-        return RespondResult(
-            tableState = state.copy(
-                players = playersWithRinshanDraw,
-                currentPlayerIndex = winnerIndex,
-                pendingReaction = null,
-            ),
-            rinshanDrawHappened = rinshanTile != null,
-            discarderId = pendingReaction.discarderId,
-            winnerId = winnerId,
-            resolvedAction = winnerAction,
-            newlyRevealedDeadWallTileIds = newlyRevealedDeadWallTileIds(
-                state,
-                state.copy(
-                    players = playersWithRinshanDraw,
-                    currentPlayerIndex = winnerIndex,
-                    pendingReaction = null,
-                ),
-            ),
+        val originalState = state.copy(players = players)
+        val candidateState = state.copy(
+            players = playersAfterMeldClaimed,
+            currentPlayerIndex = winnerIndex,
+            pendingReaction = null,
         )
+        return when (
+            val applied = KanDeclarationApplier.applySupplementalDraw(
+                originalState,
+                candidateState,
+                winnerId,
+                winnerAction,
+                module,
+            )
+        ) {
+            is KanDeclarationApplier.Result.Rejected -> RespondResult(
+                tableState = state,
+                rejectionReasonId = applied.reasonId,
+            )
+
+            is KanDeclarationApplier.Result.Applied -> RespondResult(
+                tableState = applied.tableState,
+                supplementalDrawHappened = applied.drawnTiles.isNotEmpty(),
+                discarderId = pendingReaction.discarderId,
+                winnerId = winnerId,
+                resolvedAction = winnerAction,
+                newlyRevealedWallTileIds = applied.newlyRevealedTileIds,
+            )
+        }
     }
 }

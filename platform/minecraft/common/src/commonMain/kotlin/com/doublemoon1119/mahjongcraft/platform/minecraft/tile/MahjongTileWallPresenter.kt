@@ -61,7 +61,7 @@ interface MahjongTileWallPresenter {
      * 把 [revealedTileIds] 對應的既有王牌 entity 姿態改成正面朝上，其餘管理中的王牌不受影響——用於
      * 牌牆建立之後才追加公開的牌（例如日麻槓牌後翻開新的寶牌指示牌），跟 [present] 開局那次的初始
      * 公開（[MahjongTileWallPresentation.revealedTileIds]）是兩條獨立的時機，理由見
-     * `GamePresentationPublisher.publishDeadWallRevealUpdated` KDoc。冪等：重複呼叫同一批 id 沒有
+     * `GamePresentationPublisher.publishWallTilesRevealed` KDoc。冪等：重複呼叫同一批 id 沒有
      * 副作用。
      *
      * @param revealedTileIds 目前應該公開翻面的完整王牌 Uuid 集合（不是只有「新增」的那幾張），

@@ -193,7 +193,7 @@ class TableStatePersistenceTest {
             roundNumber = 5,
             comboCount = 2,
             currentPlayerIndex = 1,
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 3),
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 3, completedSupplementalDrawCount = 2),
         )
     }
 

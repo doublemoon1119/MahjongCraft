@@ -110,7 +110,7 @@ class RiichiDynamicStateTest {
         }
         val table = createTableStateWithWall(deadWallTiles, listOf(playerWithKan))
 
-        val dynamicState = RiichiDynamicState()
+        val dynamicState = RiichiDynamicState(completedSupplementalDrawCount = 1)
         val (dora, uraDora) = dynamicState.getDoraIndicators(table)
 
         // 1 槓 = 2 張指示器
@@ -150,7 +150,7 @@ class RiichiDynamicStateTest {
         }
         val table = createTableStateWithWall(deadWallTiles, players)
 
-        val dynamicState = RiichiDynamicState()
+        val dynamicState = RiichiDynamicState(completedSupplementalDrawCount = 4)
         val (dora, uraDora) = dynamicState.getDoraIndicators(table)
 
         assertEquals(5, dora.size, "Should cap at 5 dora indicators with 4 kan.")

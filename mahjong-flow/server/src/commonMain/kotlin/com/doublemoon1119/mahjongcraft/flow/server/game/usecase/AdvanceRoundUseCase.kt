@@ -233,7 +233,7 @@ class AdvanceRoundUseCase(
         // StartGameUseCase，這裡不能對調呼叫順序。
         val dealerSeatIndex = newState.players.indexOfFirst { player -> player.id == newDealerId }
         advanceOutcome.wallStructure?.let { structure ->
-            val deadWallTileIds = newState.initialDeadWall.map { tile -> tile.id }.toSet()
+            val deadWallTileIds = newState.reservedWallTiles.map { tile -> tile.id }.toSet()
             val diceCount = advanceOutcome.diceRoll?.values?.size ?: 0
             val revealedTileIds = (newState.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(newState) ?: emptySet()
             presentationPublisher.publishWallStructure(gameId, structure, dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)

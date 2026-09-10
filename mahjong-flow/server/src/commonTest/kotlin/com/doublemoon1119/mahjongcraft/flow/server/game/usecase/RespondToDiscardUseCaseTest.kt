@@ -397,6 +397,7 @@ class RespondToDiscardUseCaseTest {
             initialDeadWall = listOf(rinshanTile),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            dynamicRuleState = RiichiDynamicState(),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -407,7 +408,9 @@ class RespondToDiscardUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertNull(newState.pendingReaction)
         assertEquals(1, newState.currentPlayerIndex, "Turn should move to the player who claimed the meld.")
-        assertEquals(table.tileWall, newState.tileWall, "The replacement tile comes from the dead wall reserve, not the live wall.")
+        assertEquals(table.tileWall.remainingCount - 1, newState.tileWall.remainingCount)
+        assertEquals(table.tileWall.getAllTiles().last(), newState.initialDeadWall.first())
+        assertEquals(1, (newState.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
 
         val winner = newState.players.first { it.id == responderId }
         val meld = winner.hand.melds.single()
@@ -458,6 +461,7 @@ class RespondToDiscardUseCaseTest {
             initialDeadWall = listOf(rinshanTile),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            dynamicRuleState = RiichiDynamicState(),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -472,13 +476,9 @@ class RespondToDiscardUseCaseTest {
         )
     }
 
-    /**
-     * 驗證明槓得標時牌山恰好摸盡（極端邊界情況）：副露仍正確套用，但 `lastDrawn` 維持空
-     * （已知簡化，見規劃紀錄——`resolvePendingReaction` 回傳單純 `TableState`，沒有 `Outcome`
-     * 通道可以回報 `WallExhausted`）。
-     */
+    /** 驗證明槓無法完成補牌時原子失敗，不留下已成立副露或被取走的捨牌。 */
     @Test
-    fun `test open kan with exhausted wall still applies meld but leaves lastDrawn empty`() = runTest {
+    fun `test open kan with exhausted wall applies nothing`() = runTest {
         val fixtures = Fixtures()
         val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val discarder = FakeMahjongPlayerFactory.create(
@@ -503,27 +503,21 @@ class RespondToDiscardUseCaseTest {
             // 之前就會先被 RiichiLegalActionValidator 擋下，這個測試就測不到真正想驗證的情境。
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            dynamicRuleState = RiichiDynamicState(),
         )
         fixtures.gameRepo.setTableState(table)
 
         val kanAction = GameAction.Kan(GameAction.KanType.OPEN_KAN, discardedTile.id, listOf(handTile1.id, handTile2.id, handTile3.id))
         val result = fixtures.useCase(gameId, responderId, kanAction)
 
-        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertTrue(result is Outcome.Error, "Expected Error but got $result")
+        assertEquals(GameError.WallExhausted(gameId), result.error)
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         val winner = newState.players.first { it.id == responderId }
-        assertEquals(MeldType.OPEN_KAN, winner.hand.melds.single().type, "The meld itself should still be applied.")
-        assertNull(winner.hand.lastDrawn, "No replacement tile is available; lastDrawn should remain empty.")
+        assertTrue(winner.hand.melds.isEmpty(), "The meld must not be applied when its supplemental draw fails.")
+        assertTrue(newState.players.first { it.id == discarderId }.discardPile.entries.last().isTaken.not())
         assertEquals(0, newState.initialDeadWall.size, "The rinshan reserve (initialDeadWall) is what's actually exhausted here.")
-        assertEquals(
-            listOf(kanAction),
-            fixtures.eventPublisher.getNotifiedActions(gameId, responderId, responderId),
-            "No rinshan tile was drawn, so no Draw event should be broadcast.",
-        )
-        assertNull(
-            fixtures.presentationPublisher.getPublishedPlayerArea(gameId)?.drawnTileId,
-            "No rinshan tile was drawn, so nothing should be presented as drawn either.",
-        )
+        assertTrue(fixtures.eventPublisher.getNotifiedActions(gameId, responderId, responderId).isEmpty())
     }
 
     /**

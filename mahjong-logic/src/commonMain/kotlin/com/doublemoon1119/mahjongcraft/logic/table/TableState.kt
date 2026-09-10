@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayoutResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlin.uuid.Uuid
 
@@ -17,7 +16,7 @@ import kotlin.uuid.Uuid
  * @property players 參與遊戲的玩家列表。
  * @property config 當前遊戲的規則配置，包含物理參數與計分規則。
  * @property tileWall 當前仍可依一般摸牌流程取得的活牌堆。支援開門布局時，王牌已在初始化階段排除並
- * 另存於 [initialDeadWall]；因此 [TileWall.remainingCount] 就是剩餘活牌數，不得再次扣除
+ * 另存於 [reservedWallTiles]；因此 [TileWall.remainingCount] 就是剩餘活牌數，不得再次扣除
  * [MahjongRuleConfig.deadTileCount]。未支援開門布局的規則則由其初始化流程自行定義這個容器的內容。
  * @property dealerPlayerId 本局權威莊家 Uuid；莊家身分與自風彼此獨立。
  * @property prevalentWind 當前的場風（圈風）。
@@ -29,9 +28,8 @@ import kotlin.uuid.Uuid
  * @property pendingReaction 目前尚待其他玩家回應（吃/碰/槓/過）的捨牌反應視窗，若無則為 null。
  * @property pendingKanReaction 目前尚待其他玩家回應（搶槓/過）的暗槓/加槓反應視窗，若無則為 null。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
- * @property initialDeadWall 開局瞬間從 [tileWall] 分離的王牌快照，依規則定義的固定內部順序保存；
- * 規則尚未支援開門流程時為空清單。這只是初始狀態，不代表王牌整局固定不變——見
- * [TileWallLayoutResult.initialDeadWall]。
+ * @property initialDeadWall 目前權威規則保留牌。舊名稱為既有建構與 mapping 相容性而保留；通用程式
+ * 應改讀 [reservedWallTiles]，不得由此名稱推定 Minecraft 必須形成日麻式獨立王牌區。
  * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合。供第三方規則實作
  * 「胡牌後本局可能不結束」的擴充（如持續胡牌局）；核心規則預設不會寫入這個集合，因此對現有
  * 規則永遠是空集合、行為不變。座位、分數、快照仍保留這些玩家；見 [isPlayerActive]、[activePlayers]、
@@ -59,6 +57,13 @@ data class TableState(
     val initialDeadWall: List<IdentifiedTile> = emptyList(),
     val finishedPlayerIds: Set<Uuid> = emptySet(),
 ) {
+    /**
+     * 目前不由一般 [tileWall] 摸牌流程取得、改由規則解讀用途與順序的保留牌。
+     *
+     * 日麻會將它解讀為王牌；其他規則可以維持連續牌牆、採用不同補牌語意或完全不使用保留牌。
+     */
+    val reservedWallTiles: List<IdentifiedTile> get() = initialDeadWall
+
     init {
         require(players.map { it.id }.distinct().size == players.size) { "Table players must have unique IDs" }
         require(players.any { it.id == dealerPlayerId }) { "dealerPlayerId must belong to this table" }

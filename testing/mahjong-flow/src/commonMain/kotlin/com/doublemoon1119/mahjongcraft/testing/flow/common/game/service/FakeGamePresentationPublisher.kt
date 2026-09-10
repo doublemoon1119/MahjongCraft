@@ -103,7 +103,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         wallStructureContexts[gameId] = WallStructureContext(dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
     }
 
-    override fun publishDeadWallRevealUpdated(gameId: Uuid, revealedTileIds: Set<Uuid>) {
+    override fun publishWallTilesRevealed(gameId: Uuid, revealedTileIds: Set<Uuid>) {
         deadWallReveals[gameId] = revealedTileIds
     }
 

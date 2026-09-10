@@ -22,8 +22,10 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.RankablePlayer
+import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
+import com.doublemoon1119.mahjongcraft.logic.table.UnsupportedSupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayout
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.seat.DealerAnchoredSeatWindAssignmentPolicy
@@ -102,6 +104,13 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 沒有規則特有等價牌面的模組可使用預設原樣實作；共用流程不得自行判斷特定 extension ID。
      */
     fun createTileInterpretationPolicy(): TileInterpretationPolicy = IdentityTileInterpretationPolicy
+
+    /**
+     * 建立動作完成後的規則特有補牌 policy。
+     *
+     * 未提供補牌能力的規則使用安全拒絕實作，不會自動套用其他玩法的補牌來源或張數。
+     */
+    fun createSupplementalDrawPolicy(): SupplementalDrawPolicy = UnsupportedSupplementalDrawPolicy
 
     /**
      * 建立適用於該規則的捨牌堆（牌河）實作。
