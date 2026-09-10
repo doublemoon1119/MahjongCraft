@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalysis
@@ -23,8 +23,7 @@ class RiichiDiscardReadinessAnalyzer(
     private val shantenCalculator: RiichiShantenCalculator,
     private val legalActionValidator: RiichiLegalActionValidator,
 ) : DiscardReadinessAnalyzer {
-    override fun analyze(tableState: TableState, player: MahjongPlayer): List<DiscardReadinessAnalysis> =
-        analyzeWithProjection(tableState, player) { _, hypotheticalPlayer -> hypotheticalPlayer }
+    override fun analyze(tableState: TableState, player: MahjongPlayer): List<DiscardReadinessAnalysis> = analyzeWithProjection(tableState, player) { _, hypotheticalPlayer -> hypotheticalPlayer }
 
     /** 立直選牌期間以正式宣告邏輯投影每張候選，其他動作維持一般分析。 */
     override fun analyzeForAction(
