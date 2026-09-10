@@ -44,15 +44,18 @@ class RiichiDiscardReadinessAnalyzer(
         projectPlayer: (Hand.DiscardResult, MahjongPlayer) -> MahjongPlayer?,
     ): List<DiscardReadinessAnalysis> {
         val visibleTiles = buildList {
-            addAll(player.hand.tiles.map { it.tile })
+            addAll(player.hand.standingTiles)
             tableState.players.forEach { tablePlayer ->
-                addAll(tablePlayer.discardPile.entries.map { it.tile.tile })
-                addAll(tablePlayer.hand.exposedMelds.flatMap { meld -> meld.tiles.map { it.tile } })
+                addAll(tablePlayer.discardPile.entries.filterNot { it.isTaken }.map { it.tile })
+                addAll(tablePlayer.hand.exposedMelds.flatMap { meld -> meld.tiles })
             }
             (tableState.dynamicRuleState as? RiichiDynamicState)?.getDoraIndicators(tableState)?.first?.let { indicators ->
-                addAll(indicators.map { it.tile })
+                addAll(indicators)
             }
-        }.groupingBy { it.riichiCanonical }.eachCount()
+            // 同一實體牌可能同時出現在不同可見來源；依 UUID 去重並非用來處理 UUID 碰撞。
+        }.distinctBy { it.id }
+            .groupingBy { it.tile.riichiCanonical }
+            .eachCount()
         val riichiState = player.playerRuleState as? RiichiPlayerState
         return player.hand.standingTiles.mapNotNull { discard ->
             val result = player.hand.discardById(discard.id) ?: return@mapNotNull null
