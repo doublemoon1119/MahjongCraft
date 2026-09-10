@@ -1,10 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
@@ -20,12 +22,12 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.uuid.Uuid
 
 /**
  * 驗證 [RiichiSuufonRendaResolver]／[RiichiSuuchaRiichiResolver]／[RiichiSuukanNagareResolver]
- * 只回應各自對應的 [PostActionTrigger]——即使桌況本身已經符合成立條件，用錯觸發時機呼叫也不能誤判
- * 成立；這是把三個判定收斂進同一個 registry 之後最需要保護的正確性：不同途中流局共用同一個
- * [TableState] 形狀，唯一的區分依據就是呼叫時機。
+ * 只回應各自對應的 [GameAction]——即使桌況本身已經符合成立條件，傳入其他動作也不能誤判成立。
+ * 不同途中流局共用同一個 [TableState] 形狀，resolver 必須以 context 內的實際完成動作區分。
  */
 class RiichiPostActionExhaustiveDrawResolversTest {
     private val riichiModule = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())
@@ -61,37 +63,56 @@ class RiichiPostActionExhaustiveDrawResolversTest {
         return FakeTableStateFactory.create(players = players, config = riichiModule.config)
     }
 
-    /** 驗證四風連打只在 [PostActionTrigger.DiscardCompleted] 成立，其餘時機一律回傳 null。 */
+    /** 建立指定動作的通用完成 context。 */
+    private fun context(table: TableState, action: GameAction): CompletedGameActionContext = CompletedGameActionContext(Uuid.random(), action, table)
+
+    /** 建立測試用槓動作。 */
+    private fun kanAction(): GameAction.Kan = GameAction.Kan(
+        type = GameAction.KanType.CLOSED_KAN,
+        tileId = Uuid.random(),
+        withTiles = List(3) { Uuid.random() },
+    )
+
+    /** 驗證四風連打只處理捨牌動作，其餘動作一律回傳 null。 */
     @Test
     fun `suufon renda resolver only fires on discard completed trigger`() {
         val table = tableWithFirstDiscards(List(4) { Tile.Honor.East })
         val resolver = RiichiSuufonRendaResolver()
 
-        assertEquals(RiichiExhaustiveDrawReason.SuufonRenda, resolver.resolve(PostActionTrigger.DiscardCompleted(table), riichiModule))
-        assertNull(resolver.resolve(PostActionTrigger.RiichiDeclared(table), riichiModule))
-        assertNull(resolver.resolve(PostActionTrigger.KanDeclared(table), riichiModule))
+        assertEquals(
+            RiichiExhaustiveDrawReason.SuufonRenda,
+            resolver.resolve(context(table, GameAction.Discard(Uuid.random())), riichiModule),
+        )
+        assertNull(resolver.resolve(context(table, RIICHI_GAME_ACTION), riichiModule))
+        assertNull(resolver.resolve(context(table, kanAction()), riichiModule))
     }
 
-    /** 驗證四家立直只在 [PostActionTrigger.RiichiDeclared] 成立，其餘時機一律回傳 null。 */
+    /** 驗證四家立直只處理 bundled Riichi 立直動作，其餘動作一律回傳 null。 */
     @Test
     fun `suucha riichi resolver only fires on riichi declared trigger`() {
         val table = allRiichiTable()
         val resolver = RiichiSuuchaRiichiResolver()
 
-        assertEquals(RiichiExhaustiveDrawReason.SuuchaRiichi, resolver.resolve(PostActionTrigger.RiichiDeclared(table), riichiModule))
-        assertNull(resolver.resolve(PostActionTrigger.DiscardCompleted(table), riichiModule))
-        assertNull(resolver.resolve(PostActionTrigger.KanDeclared(table), riichiModule))
+        assertEquals(
+            RiichiExhaustiveDrawReason.SuuchaRiichi,
+            resolver.resolve(context(table, RIICHI_GAME_ACTION), riichiModule),
+        )
+        assertNull(resolver.resolve(context(table, GameAction.Discard(Uuid.random())), riichiModule))
+        assertNull(resolver.resolve(context(table, kanAction()), riichiModule))
     }
 
-    /** 驗證四槓散了只在 [PostActionTrigger.KanDeclared] 成立，其餘時機一律回傳 null。 */
+    /** 驗證四槓散了只處理槓動作，其餘動作一律回傳 null。 */
     @Test
     fun `suukan nagare resolver only fires on kan declared trigger`() {
         val table = allKansTable()
         val resolver = RiichiSuukanNagareResolver()
 
-        assertEquals(RiichiExhaustiveDrawReason.SuukanNagare, resolver.resolve(PostActionTrigger.KanDeclared(table), riichiModule))
-        assertNull(resolver.resolve(PostActionTrigger.DiscardCompleted(table), riichiModule))
-        assertNull(resolver.resolve(PostActionTrigger.RiichiDeclared(table), riichiModule))
+        assertEquals(
+            RiichiExhaustiveDrawReason.SuukanNagare,
+            resolver.resolve(context(table, kanAction()), riichiModule),
+        )
+        assertNull(resolver.resolve(context(table, GameAction.Discard(Uuid.random())), riichiModule))
+        assertNull(resolver.resolve(context(table, RIICHI_GAME_ACTION), riichiModule))
     }
 
     /** 驗證三個 resolver 面對非日麻規則模組時一律回傳 null，即使觸發時機正確。 */
@@ -101,8 +122,8 @@ class RiichiPostActionExhaustiveDrawResolversTest {
         val riichiTable = allRiichiTable()
         val kanTable = allKansTable()
 
-        assertNull(RiichiSuufonRendaResolver().resolve(PostActionTrigger.DiscardCompleted(discardTable), taiwanModule))
-        assertNull(RiichiSuuchaRiichiResolver().resolve(PostActionTrigger.RiichiDeclared(riichiTable), taiwanModule))
-        assertNull(RiichiSuukanNagareResolver().resolve(PostActionTrigger.KanDeclared(kanTable), taiwanModule))
+        assertNull(RiichiSuufonRendaResolver().resolve(context(discardTable, GameAction.Discard(Uuid.random())), taiwanModule))
+        assertNull(RiichiSuuchaRiichiResolver().resolve(context(riichiTable, RIICHI_GAME_ACTION), taiwanModule))
+        assertNull(RiichiSuukanNagareResolver().resolve(context(kanTable, kanAction()), taiwanModule))
     }
 }

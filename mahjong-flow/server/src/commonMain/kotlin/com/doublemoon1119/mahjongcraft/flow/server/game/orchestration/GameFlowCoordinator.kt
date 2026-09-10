@@ -387,16 +387,32 @@ class GameFlowCoordinator(
         if (state.currentPlayer.id != playerId) return null
         if (state.pendingReaction != null || state.pendingKanReaction != null) return null
 
+        val completedKanContext = state.completedKanContext(playerId) ?: return null
         val module = moduleRegistry.getModule(state.config)
-        val trigger = PostActionTrigger.KanDeclared(state)
-        if (postActionExhaustiveDrawResolverRegistry.resolve(trigger, module) == null) return null
+        if (postActionExhaustiveDrawResolverRegistry.resolve(completedKanContext, module) == null) return null
 
-        val result = declareSuukanNagareUseCase(gameId)
+        val result = declareSuukanNagareUseCase(gameId, completedKanContext)
         if (result is Outcome.Success) {
             publishNewAbortiveDrawIfPresent(gameId, null, state)
             chainAdvanceRound(gameId)
         }
         return result
+    }
+
+    /**
+     * 從權威動作歷史辨認剛完成補摸、尚未執行下一個動作的槓。
+     *
+     * 槓成立後固定記錄 `[Kan, Draw]`；只接受這個完整結尾，避免依副露數量或目前玩家臆測觸發動作。
+     */
+    private fun TableState.completedKanContext(playerId: Uuid): CompletedGameActionContext? {
+        val player = players.firstOrNull { it.id == playerId } ?: return null
+        if (player.actionHistory.lastOrNull() != GameAction.Draw) return null
+        val kanAction = player.actionHistory.getOrNull(player.actionHistory.lastIndex - 1) as? GameAction.Kan ?: return null
+        return CompletedGameActionContext(
+            actorPlayerId = playerId,
+            action = kanAction,
+            tableState = this,
+        )
     }
 
     /** 若這次狀態變更新增途中流局記錄，建立統一回合結算呈現。 */

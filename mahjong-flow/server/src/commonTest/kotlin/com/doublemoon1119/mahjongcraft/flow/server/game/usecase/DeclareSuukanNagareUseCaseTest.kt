@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiPostActionExhaustiveDrawResolvers
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -17,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -72,6 +74,13 @@ class DeclareSuukanNagareUseCaseTest {
         hand = Hand(melds = List(kanCount) { kanMeld() }),
     ).copy(score = 25000)
 
+    /** 建立四槓散了判定使用的已完成槓 context。 */
+    private fun completedKanContext(table: TableState): CompletedGameActionContext = CompletedGameActionContext(
+        actorPlayerId = table.currentPlayer.id,
+        action = GameAction.Kan(GameAction.KanType.CLOSED_KAN, Uuid.random(), List(3) { Uuid.random() }),
+        tableState = table,
+    )
+
     /**
      * 驗證 4 個槓子分屬不同玩家時：全員 `actionHistory` 皆記錄 `ExhaustiveDraw(SuukanNagare)`、
      * 分數皆不變（途中流局不結算任何點數）。
@@ -89,7 +98,7 @@ class DeclareSuukanNagareUseCaseTest {
         val table = FakeTableStateFactory.create(id = gameId, players = players, config = RiichiRuleConfig())
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId)
+        val result = fixtures.useCase(gameId, completedKanContext(table))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -115,7 +124,7 @@ class DeclareSuukanNagareUseCaseTest {
         val table = FakeTableStateFactory.create(id = gameId, players = players, config = RiichiRuleConfig())
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId)
+        val result = fixtures.useCase(gameId, completedKanContext(table))
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.UnsupportedAction(gameId), result.error)
@@ -136,7 +145,7 @@ class DeclareSuukanNagareUseCaseTest {
         val table = FakeTableStateFactory.create(id = gameId, players = players, config = RiichiRuleConfig())
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId)
+        val result = fixtures.useCase(gameId, completedKanContext(table))
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.UnsupportedAction(gameId), result.error)
@@ -149,7 +158,8 @@ class DeclareSuukanNagareUseCaseTest {
     fun `test declare suukan nagare fails when game not found`() = runTest {
         val fixtures = Fixtures()
 
-        val result = fixtures.useCase(gameId)
+        val missingTable = FakeTableStateFactory.create(id = gameId, config = RiichiRuleConfig())
+        val result = fixtures.useCase(gameId, completedKanContext(missingTable))
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.GameNotFound(gameId), result.error)
@@ -174,7 +184,7 @@ class DeclareSuukanNagareUseCaseTest {
         fixtures.snapshotRepo.setSnapshot(dealerId, table.toSnapshot(setOf(dealerId)))
         fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(setOf(otherId)))
 
-        fixtures.useCase(gameId)
+        fixtures.useCase(gameId, completedKanContext(table))
 
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, dealerId))
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, otherId))

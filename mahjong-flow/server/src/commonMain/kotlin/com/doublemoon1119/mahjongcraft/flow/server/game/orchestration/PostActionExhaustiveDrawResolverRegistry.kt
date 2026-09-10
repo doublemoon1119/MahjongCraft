@@ -1,31 +1,28 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.uuid.Uuid
 
 /**
- * 特定玩家動作剛完成、確定無人可反應之後才會發生的主動觸發時機。
+ * 一次玩家動作完成、且已到達可判定後續規則結果的權威上下文。
  *
- * 跟 [PostReactionRoundOutcomeResolver]（單一、被動觸發：只在確定普通荒牌流局之前檢查一次）不同，
- * 這裡的每個時機都是由某個特定玩家動作主動觸發，同一場對局可能發生多次，也可能完全不會發生；
- * 各 resolver 應只回應自己認得的時機，其餘時機一律回傳 null，避免跨時機誤判成立。
+ * [action] 是實際完成的動作，不以規則專用 trigger 類型代替；各 resolver 應自行辨認是否關心該動作。
+ * 呼叫端必須等候相關反應與必要的後續胡牌機會結束後才建立 context，避免提早終止合法流程。
+ *
+ * @property actorPlayerId 完成動作的玩家 ID。
+ * @property action 實際完成的權威動作。
+ * @property tableState 動作及其必要反應處理完成後的權威桌況。
  */
-sealed interface PostActionTrigger {
-    /** 觸發當下的桌況快照，供 resolver 純邏輯判定使用。 */
-    val tableState: TableState
+data class CompletedGameActionContext(
+    val actorPlayerId: Uuid,
+    val action: GameAction,
+    val tableState: TableState,
+)
 
-    /** 一張捨牌確定沒有任何人可以吃/碰/槓/榮和之後。 */
-    data class DiscardCompleted(override val tableState: TableState) : PostActionTrigger
-
-    /** 一次立直宣告確定沒有任何人可以吃/碰/槓/榮和之後。 */
-    data class RiichiDeclared(override val tableState: TableState) : PostActionTrigger
-
-    /** 一次槓牌的嶺上摸牌已經處理完畢（含玩家已有機會嘗試嶺上開花自摸）之後。 */
-    data class KanDeclared(override val tableState: TableState) : PostActionTrigger
-}
-
-/** 特定 [PostActionTrigger] 時機下，以純邏輯判定是否構成某種主動觸發的途中流局。 */
+/** 特定 [CompletedGameActionContext] 下，以純邏輯判定是否構成某種主動觸發的途中流局。 */
 interface PostActionExhaustiveDrawResolver {
     /** Resolver 的完整 namespaced ID，同時作為穩定排序的最後決勝鍵。 */
     val id: String
@@ -36,8 +33,8 @@ interface PostActionExhaustiveDrawResolver {
     /** 數值越小越先判定；同優先序再依 [id] 排序。 */
     val priority: Int
 
-    /** 成立時回傳對應的流局原因，不認得 [trigger] 或不成立時回傳 `null`，讓下一個 resolver 繼續判定。 */
-    fun resolve(trigger: PostActionTrigger, ruleModule: MahjongRuleModule<*>): ExhaustiveDrawReason?
+    /** 成立時回傳對應的流局原因，不認得 [context] 或不成立時回傳 `null`，讓下一個 resolver 繼續判定。 */
+    fun resolve(context: CompletedGameActionContext, ruleModule: MahjongRuleModule<*>): ExhaustiveDrawReason?
 }
 
 /** 可於 bootstrap 登記、完成後凍結的主動觸發途中流局 resolver registry。 */
@@ -63,11 +60,16 @@ class PostActionExhaustiveDrawResolverRegistry {
     }
 
     /** 依穩定順序回傳第一個成立的流局原因。 */
-    fun resolve(trigger: PostActionTrigger, ruleModule: MahjongRuleModule<*>): ExhaustiveDrawReason? {
+    fun resolve(context: CompletedGameActionContext, ruleModule: MahjongRuleModule<*>): ExhaustiveDrawReason? {
         check(frozen) { "Post-action exhaustive draw resolver registry must be frozen before use" }
         return resolvers.asSequence()
             .filter { it.ruleModuleId == ruleModule.id }
-            .mapNotNull { it.resolve(trigger, ruleModule) }
+            .mapNotNull { it.resolve(context, ruleModule) }
             .firstOrNull()
     }
 }
+
+/** 將同一途中流局動作記錄至所有玩家的權威動作歷史。 */
+internal fun TableState.recordExhaustiveDrawForAllPlayers(reason: ExhaustiveDrawReason): TableState = copy(
+    players = players.map { player -> player.recordAction(GameAction.ExhaustiveDraw(reason)) },
+)

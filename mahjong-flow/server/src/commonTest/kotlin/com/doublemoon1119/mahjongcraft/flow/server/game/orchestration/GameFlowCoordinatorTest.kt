@@ -362,11 +362,16 @@ class GameFlowCoordinatorTest {
     }
 
     private fun suukanNagareTable(dealerId: Uuid, otherId: Uuid, dealerLastDrawn: IdentifiedTile): TableState {
+        val completedKan = GameAction.Kan(
+            type = GameAction.KanType.CLOSED_KAN,
+            tileId = Uuid.random(),
+            withTiles = List(3) { Uuid.random() },
+        )
         val dealer = FakeMahjongPlayerFactory.create(
             id = dealerId,
             initialSeat = Wind.EAST,
             hand = Hand(melds = kanMeldsOf(Tile.Honor.East, Tile.Honor.South), lastDrawn = dealerLastDrawn),
-        )
+        ).recordAction(completedKan).recordAction(GameAction.Draw)
         val other = FakeMahjongPlayerFactory.create(
             id = otherId,
             initialSeat = Wind.SOUTH,

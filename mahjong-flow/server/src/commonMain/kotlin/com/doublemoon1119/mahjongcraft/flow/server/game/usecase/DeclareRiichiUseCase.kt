@@ -5,8 +5,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublish
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionTrigger
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordExhaustiveDrawForAllPlayers
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
@@ -165,7 +166,11 @@ class DeclareRiichiUseCase(
                     val suuchaReason =
                         if (resolved.abortiveDrawReason == null && resolved.tableState.pendingReaction == null) {
                             postActionExhaustiveDrawResolverRegistry.resolve(
-                                PostActionTrigger.RiichiDeclared(resolved.tableState),
+                                CompletedGameActionContext(
+                                    actorPlayerId = playerId,
+                                    action = RIICHI_GAME_ACTION,
+                                    tableState = resolved.tableState,
+                                ),
                                 module,
                             )
                         } else {
@@ -173,15 +178,7 @@ class DeclareRiichiUseCase(
                         }
                     val finalResult = if (suuchaReason != null) {
                         resolved.copy(
-                            tableState = resolved.tableState.copy(
-                                players = resolved.tableState.players.map {
-                                    it.recordAction(
-                                        GameAction.ExhaustiveDraw(
-                                            suuchaReason,
-                                        ),
-                                    )
-                                },
-                            ),
+                            tableState = resolved.tableState.recordExhaustiveDrawForAllPlayers(suuchaReason),
                             abortiveDrawReason = suuchaReason,
                         )
                     } else {

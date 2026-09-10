@@ -3,8 +3,9 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionTrigger
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordExhaustiveDrawForAllPlayers
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
@@ -55,25 +56,31 @@ class DeclareSuukanNagareUseCase(
      * 執行四槓散了宣告邏輯。
      *
      * @param gameId 對局 Uuid。
+     * @param context 完成槓後補摸及嶺上自摸機會的權威動作 context。
      * @return 執行結果，成功時為 [Unit]，失敗時為 [GameError]。
      */
-    suspend operator fun invoke(gameId: Uuid): Outcome<Unit, GameError> {
+    suspend operator fun invoke(
+        gameId: Uuid,
+        context: CompletedGameActionContext,
+    ): Outcome<Unit, GameError> {
         // 1. 以原子方式讀取桌況、驗證業務規則並寫回
         val outcome = gameRepository.updateGame(gameId) { game ->
             val state = game?.tableState
             when {
                 game == null || state == null -> game to Outcome.Error(GameError.GameNotFound(gameId))
                 else -> {
+                    if (state != context.tableState) {
+                        return@updateGame game to Outcome.Error(GameError.UnsupportedAction(gameId))
+                    }
                     val module = moduleRegistry.getModule(state.config)
 
                     // 目前的桌況不構成四槓散了（或此規則不支援）時回傳 null。
                     val reason = postActionExhaustiveDrawResolverRegistry.resolve(
-                        trigger = PostActionTrigger.KanDeclared(state),
+                        context = context,
                         ruleModule = module,
                     ) ?: return@updateGame game to Outcome.Error(GameError.UnsupportedAction(gameId))
 
-                    val updatedPlayers = state.players.map { it.recordAction(GameAction.ExhaustiveDraw(reason)) }
-                    val newState = state.copy(players = updatedPlayers)
+                    val newState = state.recordExhaustiveDrawForAllPlayers(reason)
 
                     game.copy(
                         tableState = newState,
