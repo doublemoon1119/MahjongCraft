@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.flow.common.di.FlowCommonModule
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
@@ -27,6 +28,10 @@ import org.koin.core.annotation.Single
 @Module(includes = [FlowCommonModule::class])
 @ComponentScan("com.doublemoon1119.mahjongcraft.flow.server")
 class FlowServerModule {
+    /** 建立供規則 extension 登記玩家動作命令 factory 的 registry。 */
+    @Single
+    fun extensionGameActionCommandFactoryRegistry(): ExtensionGameActionCommandFactoryRegistry = ExtensionGameActionCommandFactoryRegistry()
+
     /** 建立供規則 extension 登記開局準備流程的 registry。 */
     @Single
     fun roundPreparationResolverRegistry(): RoundPreparationResolverRegistry = RoundPreparationResolverRegistry()

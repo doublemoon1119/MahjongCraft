@@ -1951,7 +1951,7 @@ class FabricDebugAnimationCommand(
                 claimedTileIndex = claimedIndex,
             )
             fun riichiAction() = PlayerDecisionActionDto(
-                token = RIICHI_ACTION_TOKEN,
+                token = "mahjongcraft:riichi",
                 actionId = "mahjongcraft:riichi",
                 previewTileAssetKeys = listOf("m1", "m4", "m7", "p2", "p5", "p8", "s3", "s6", "s9"),
                 tileSelection = PlayerDecisionActionTileSelectionDto(

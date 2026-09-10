@@ -15,4 +15,10 @@ data class TileSelectionRequirement(
     val eligibleTileIds: Set<Uuid>,
     val minCount: Int = 1,
     val maxCount: Int = 1,
-)
+) {
+    init {
+        require(minCount >= 1) { "Minimum tile selection count must be at least one" }
+        require(maxCount >= minCount) { "Maximum tile selection count must not be less than the minimum" }
+        require(maxCount <= eligibleTileIds.size) { "Maximum tile selection count exceeds eligible tiles" }
+    }
+}

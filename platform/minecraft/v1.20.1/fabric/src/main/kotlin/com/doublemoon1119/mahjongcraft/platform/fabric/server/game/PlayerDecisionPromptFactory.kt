@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalysis
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
@@ -39,7 +39,6 @@ class PlayerDecisionPromptFactory(
         val player = state.players.firstOrNull { it.id == playerId } ?: return null
         val tileOrder = moduleRegistry.getModule(state.config).tileOrder
         val actions = candidateResolver.listActionCandidates(playerId)
-        val riichiTiles = candidateResolver.listRiichiTileCandidates(playerId)
         val preparation = game.pendingRoundPreparation
             ?.takeIf { playerId !in it.completedPlayerIds }
             ?.inputSpecsByPlayerId
@@ -50,15 +49,6 @@ class PlayerDecisionPromptFactory(
         val analyzer = moduleRegistry.getModule(state.config).createDiscardReadinessAnalyzer()
         val analyses = if (phase == PlayerDecisionPhase.OWN_TURN) {
             analyzer?.analyze(state, player)?.map { it.toDto() }.orEmpty()
-        } else {
-            emptyList()
-        }
-        val riichiAnalyses = if (phase == PlayerDecisionPhase.OWN_TURN && riichiTiles.isNotEmpty()) {
-            val eligibleIds = riichiTiles.mapTo(mutableSetOf()) { it.tileId }
-            analyzer?.analyzeForAction(state, player, RIICHI_GAME_ACTION)
-                ?.filter { it.discardTileId in eligibleIds }
-                ?.map { it.toDto() }
-                .orEmpty()
         } else {
             emptyList()
         }
@@ -79,16 +69,39 @@ class PlayerDecisionPromptFactory(
             ),
             actions = actions.map { candidate ->
                 val preview = candidate.action.previewTiles(player.hand, candidate.referenceTile, tileOrder)
+                val requirement = candidate.tileSelectionRequirement
+                val selectionTiles = requirement?.let {
+                    candidateResolver.listTileSelectionCandidates(playerId, candidate)
+                }.orEmpty()
+                val actionAnalyses = if (phase == PlayerDecisionPhase.OWN_TURN && requirement != null) {
+                    analyzer?.analyzeForAction(state, player, candidate.action)
+                        ?.filter { it.discardTileId in requirement.eligibleTileIds }
+                        ?.map { it.toDto() }
+                        .orEmpty()
+                } else {
+                    emptyList()
+                }
                 PlayerDecisionActionDto(
                     token = candidate.token,
                     actionId = candidate.action.presentationId(),
                     referenceTileAssetKey = candidate.referenceTile?.toAssetKey(tileAssetRegistry),
-                    previewTileAssetKeys = preview.tiles.map { it.toAssetKey(tileAssetRegistry) },
+                    previewTileAssetKeys = if (requirement == null) {
+                        preview.tiles.map { it.toAssetKey(tileAssetRegistry) }
+                    } else {
+                        selectionTiles.map { it.tile.toAssetKey(tileAssetRegistry) }.distinct()
+                    },
                     claimedTileIndex = preview.claimedTileIndex,
+                    tileSelection = requirement?.let {
+                        PlayerDecisionActionTileSelectionDto(
+                            eligibleTileIds = selectionTiles.map { tile -> tile.tileId.toString() },
+                            minCount = it.minCount,
+                            maxCount = it.maxCount,
+                            discardAnalyses = actionAnalyses,
+                        )
+                    },
                 )
-            } + listOfNotNull(riichiAction(riichiTiles, riichiAnalyses)),
-            // 自己回合（立直／暗槓等）一律顯示剛摸到的牌，不依賴哪個候選動作剛好帶了 referenceTile——
-            // 否則像立直這種被 listActionCandidates 過濾掉、沒有對應候選的情況會完全沒有觸發牌可顯示。
+            },
+            // 自己回合一律顯示剛摸到的牌，不依賴候選動作是否帶有 referenceTile。
             triggerTileAssetKey = when (phase) {
                 PlayerDecisionPhase.OWN_TURN -> player.hand.lastDrawn?.tile?.toAssetKey(tileAssetRegistry)
                 else -> actions.firstNotNullOfOrNull { it.referenceTile }?.toAssetKey(tileAssetRegistry)
@@ -102,29 +115,6 @@ class PlayerDecisionPromptFactory(
             triggerActionId = trigger?.actionId,
             preparation = preparation,
             discardAnalyses = analyses,
-        )
-    }
-
-    /**
-     * 立直宣告的 HUD 動作候選：宣告後還需要玩家從立牌中額外指定打哪張牌，用 [PlayerDecisionActionDto.tileSelection]
-     * 表示，點擊卡片後改為進入實體牌選取模式，跟其他一鍵送出的動作（碰／吃／槓等）不同。
-     * [candidateTiles] 為空（不可能立直）時回傳 null，不產生候選。
-     */
-    private fun riichiAction(
-        candidateTiles: List<HandTileCandidate>,
-        discardAnalyses: List<DiscardReadinessAnalysisDto>,
-    ): PlayerDecisionActionDto? {
-        if (candidateTiles.isEmpty()) return null
-        return PlayerDecisionActionDto(
-            token = RIICHI_ACTION_TOKEN,
-            actionId = RIICHI_GAME_ACTION.presentationId(),
-            previewTileAssetKeys = candidateTiles.map { it.tile.toAssetKey(tileAssetRegistry) }.distinct(),
-            tileSelection = PlayerDecisionActionTileSelectionDto(
-                eligibleTileIds = candidateTiles.map { it.tileId.toString() },
-                minCount = 1,
-                maxCount = 1,
-                discardAnalyses = discardAnalyses,
-            ),
         )
     }
 
@@ -222,7 +212,7 @@ private data class ActionTilePreview(
 )
 
 /** 從目前等待捨牌反應的出牌者解析相對來源方向。 */
-private fun com.doublemoon1119.mahjongcraft.logic.table.TableState.claimSource(playerId: Uuid): ClaimSource {
+private fun TableState.claimSource(playerId: Uuid): ClaimSource {
     val sourceId = pendingReaction?.discarderId ?: pendingKanReaction?.declarerId ?: return ClaimSource.ACROSS
     val playerIndex = players.indexOfFirst { it.id == playerId }
     val sourceIndex = players.indexOfFirst { it.id == sourceId }
@@ -235,7 +225,7 @@ private fun com.doublemoon1119.mahjongcraft.logic.table.TableState.claimSource(p
 }
 
 /** 建立反應 HUD 的來源玩家、相對位置及動作語意。 */
-private fun com.doublemoon1119.mahjongcraft.logic.table.TableState.triggerContext(playerId: Uuid): TriggerContext? {
+private fun TableState.triggerContext(playerId: Uuid): TriggerContext? {
     val sourceId = pendingReaction?.discarderId ?: pendingKanReaction?.declarerId ?: return null
     val source = claimSource(playerId)
     val actionId = pendingKanReaction?.kanAction?.presentationId() ?: "mahjongcraft:discard"

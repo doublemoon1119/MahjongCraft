@@ -14,11 +14,13 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerRiichiG
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.registerRiichiGameActionPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiGameActionCommandFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiGameCommandHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiNagashiManganOutcomeResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiPostActionExhaustiveDrawResolvers
@@ -117,6 +119,8 @@ object FabricMahjongExtensions {
             GameActionSoundPresentationRegistryImpl(),
         roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl(),
         gameActionAiRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
+        gameActionCommandFactoryRegistry: ExtensionGameActionCommandFactoryRegistry =
+            ExtensionGameActionCommandFactoryRegistry(),
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
             PostReactionRoundOutcomeResolverRegistry(),
@@ -159,6 +163,7 @@ object FabricMahjongExtensions {
                 gameActionSoundPresentationRegistry = gameActionSoundPresentationRegistry,
                 roundInfoLineDisplayRegistry = roundInfoLineDisplayRegistry,
                 gameActionAiRegistry = gameActionAiRegistry,
+                gameActionCommandFactoryRegistry = gameActionCommandFactoryRegistry,
                 gameCommandRegistry = gameCommandRegistry,
                 postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
@@ -250,6 +255,8 @@ object FabricMahjongExtensions {
             GameActionSoundPresentationRegistryImpl(),
         roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl(),
         gameActionAiRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
+        gameActionCommandFactoryRegistry: ExtensionGameActionCommandFactoryRegistry =
+            ExtensionGameActionCommandFactoryRegistry(),
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
             PostReactionRoundOutcomeResolverRegistry(),
@@ -274,6 +281,7 @@ object FabricMahjongExtensions {
         registerBundledRiichiExtension(
             moduleRegistry = moduleRegistry,
             gameActionAiRegistry = gameActionAiRegistry,
+            gameActionCommandFactoryRegistry = gameActionCommandFactoryRegistry,
             gameCommandRegistry = gameCommandRegistry,
             postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
             postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
@@ -304,6 +312,7 @@ object FabricMahjongExtensions {
             persistenceRegistries = persistenceRegistries,
             winCelebrationCueResolverRegistry = winCelebrationCueResolverRegistry,
             gameActionAiRegistry = gameActionAiRegistry,
+            gameActionCommandFactoryRegistry = gameActionCommandFactoryRegistry,
             gameCommandRegistry = gameCommandRegistry,
             postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,
             postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
@@ -346,6 +355,7 @@ object FabricMahjongExtensions {
     private fun registerBundledRiichiExtension(
         moduleRegistry: MahjongModuleRegistry,
         gameActionAiRegistry: ExtensionGameActionAiRegistry,
+        gameActionCommandFactoryRegistry: ExtensionGameActionCommandFactoryRegistry,
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry,
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry,
         postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
@@ -358,6 +368,7 @@ object FabricMahjongExtensions {
         networkRegistries.registerRiichiGameActionDtos()
         persistenceRegistries.extensionGameActions.registerRiichiGameActionPersistenceDto()
         gameActionAiRegistry.registerRiichiGameActionHandler(moduleRegistry)
+        gameActionCommandFactoryRegistry.registerRiichiGameActionCommandFactory()
         gameCommandRegistry.registerRiichiGameCommandHandler(declareRiichiUseCase)
         postReactionRoundOutcomeResolverRegistry.registerRiichiNagashiManganOutcomeResolver()
         postActionExhaustiveDrawResolverRegistry.registerRiichiPostActionExhaustiveDrawResolvers()

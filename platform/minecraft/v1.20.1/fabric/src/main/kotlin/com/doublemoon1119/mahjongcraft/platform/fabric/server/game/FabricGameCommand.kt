@@ -25,7 +25,7 @@ import java.util.concurrent.CompletableFuture
 import kotlin.uuid.toKotlinUuid
 
 /**
- * `/mahjongcraft game` 底下的對局階段玩家指令：`hand`、`discard`、`riichi`、`action`。
+ * `/mahjongcraft game` 底下的對局階段玩家指令：`hand`、`discard`、`action`。
  *
  * 集中在 `game` 子分類、獨立於 `room`（見 `FabricRoomCommand` KDoc 早就預告的分工）——`room` 專屬
  * 房間等待階段，這裡專屬進行中的對局。摸牌不開放指令（全自動觸發，見 [MahjongTableGameActionService]
@@ -33,7 +33,7 @@ import kotlin.uuid.toKotlinUuid
  * [GameActionCandidateResolver] 依目前搶槓／回應捨牌／自己回合的情境動態算出，玩家不需要自己組
  * 動作內容。
  *
- * `discard`／`riichi`／`action` 的候選 token 直接是可讀的牌面／動作簡寫（見
+ * `discard`／`action` 的候選 token 直接是可讀的牌面／動作簡寫（見
  * [GameActionCandidateResolver] KDoc），不需要 tooltip 也看得懂要打什麼；第三方牌種的候選 token 可能
  * 帶命名空間冒號，因此引數用 [StringArgumentType.string]（而非 [StringArgumentType.word]）並在補全時
  * 用 [StringArgumentType.escapeIfRequired]，比照 `FabricRoomCommand` 策略引數的既有慣例。
@@ -59,7 +59,7 @@ class FabricGameCommand(
     private val tileEmojiRegistry: TileEmojiRegistry,
     private val scope: AppCoroutineScope,
 ) {
-    /** 將 `/mahjongcraft game hand|discard|riichi|action` 加入 Fabric command dispatcher。 */
+    /** 將 `/mahjongcraft game hand|discard|action` 加入 Fabric command dispatcher。 */
     fun register() {
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
             dispatcher.register(
@@ -76,19 +76,18 @@ class FabricGameCommand(
                                     ),
                             )
                             .then(
-                                literal("riichi")
-                                    .then(
-                                        argument(TILE_ARGUMENT, StringArgumentType.string())
-                                            .suggests(::suggestRiichiTiles)
-                                            .executes { context -> riichi(context) },
-                                    ),
-                            )
-                            .then(
                                 literal("action")
                                     .then(
                                         argument(ACTION_ARGUMENT, StringArgumentType.string())
                                             .suggests(::suggestActions)
-                                            .executes { context -> act(context) },
+                                            .executes { context -> act(context, emptyList()) }
+                                            .then(
+                                                argument(ACTION_TILES_ARGUMENT, StringArgumentType.greedyString())
+                                                    .suggests(::suggestActionTiles)
+                                                    .executes { context ->
+                                                        act(context, parseTileTokens(context, ACTION_TILES_ARGUMENT))
+                                                    },
+                                            ),
                                     ),
                             ),
                     ),
@@ -115,22 +114,8 @@ class FabricGameCommand(
         }
     }
 
-    /** 宣告立直，打出指令帶入的候選手牌作為立直宣告牌。 */
-    private fun riichi(context: CommandContext<ServerCommandSource>): Int = withPlayer(context.source) { player ->
-        val token = StringArgumentType.getString(context, TILE_ARGUMENT)
-        val playerId = player.uuid.toKotlinUuid()
-        scope.launch {
-            val tileId = candidateResolver.listRiichiTileCandidates(playerId).firstOrNull { it.token == token }?.tileId
-            if (tileId == null) {
-                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
-                return@launch
-            }
-            gameActionService.riichi(player, tileId)
-        }
-    }
-
-    /** 執行指令帶入的候選動作（吃／碰／槓／胡／過／九種九牌）。 */
-    private fun act(context: CommandContext<ServerCommandSource>): Int = withPlayer(context.source) { player ->
+    /** 執行指令帶入的候選動作與額外選牌。 */
+    private fun act(context: CommandContext<ServerCommandSource>, tileTokens: List<String>): Int = withPlayer(context.source) { player ->
         val token = StringArgumentType.getString(context, ACTION_ARGUMENT)
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -139,7 +124,14 @@ class FabricGameCommand(
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
                 return@launch
             }
-            gameActionService.act(player, candidate)
+            val eligibleTiles = candidateResolver.listTileSelectionCandidates(playerId, candidate)
+            val selectedTiles = tileTokens.map { tileToken ->
+                eligibleTiles.firstOrNull { it.token == tileToken }?.tileId ?: run {
+                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
+                    return@launch
+                }
+            }
+            gameActionService.act(player, candidate, selectedTiles)
         }
     }
 
@@ -163,33 +155,6 @@ class FabricGameCommand(
         }
         scope.launch {
             candidateResolver.listHandTileCandidates(player.uuid.toKotlinUuid()).forEach { candidate ->
-                builder.suggest(
-                    StringArgumentType.escapeIfRequired(candidate.token),
-                    candidate.tile.toDisplayText(tileDisplayNameRegistry, tileAssetRegistry, tileEmojiRegistry),
-                )
-            }
-            future.complete(builder.build())
-        }
-        return future
-    }
-
-    /**
-     * 列出執行指令玩家目前手牌裡「打了還聽牌」的候選建議，作為 `riichi` 的候選建議，tooltip 顯示牌面
-     * 文字——跟 [suggestHandTiles] 不同，這裡只列 [GameActionCandidateResolver.listRiichiTileCandidates]
-     * 過濾過的子集，玩家才知道該選哪張才能立直成功。
-     */
-    private fun suggestRiichiTiles(
-        context: CommandContext<ServerCommandSource>,
-        builder: SuggestionsBuilder,
-    ): CompletableFuture<Suggestions> {
-        val future = CompletableFuture<Suggestions>()
-        val player = context.source.player
-        if (player == null) {
-            future.complete(builder.build())
-            return future
-        }
-        scope.launch {
-            candidateResolver.listRiichiTileCandidates(player.uuid.toKotlinUuid()).forEach { candidate ->
                 builder.suggest(
                     StringArgumentType.escapeIfRequired(candidate.token),
                     candidate.tile.toDisplayText(tileDisplayNameRegistry, tileAssetRegistry, tileEmojiRegistry),
@@ -230,9 +195,53 @@ class FabricGameCommand(
         return future
     }
 
+    /** 列出目前 action 引數指定動作可接受的額外手牌候選。 */
+    private fun suggestActionTiles(
+        context: CommandContext<ServerCommandSource>,
+        builder: SuggestionsBuilder,
+    ): CompletableFuture<Suggestions> {
+        val future = CompletableFuture<Suggestions>()
+        val player = context.source.player
+        if (player == null) {
+            future.complete(builder.build())
+            return future
+        }
+        scope.launch {
+            val completedTokens = builder.remaining
+                .trimStart()
+                .split(Regex("\\s+"))
+                .dropLast(1)
+                .filter(String::isNotBlank)
+            val currentTokenStart = builder.remaining.lastIndexOf(' ').let { index ->
+                if (index < 0) builder.start else builder.start + index + 1
+            }
+            val currentTokenBuilder = builder.createOffset(currentTokenStart)
+            val playerId = player.uuid.toKotlinUuid()
+            val actionToken = StringArgumentType.getString(context, ACTION_ARGUMENT)
+            val candidate = candidateResolver.listActionCandidates(playerId).firstOrNull { it.token == actionToken }
+            candidate?.let { candidateResolver.listTileSelectionCandidates(playerId, it) }
+                .orEmpty()
+                .filterNot { it.token in completedTokens }
+                .forEach { tile -> currentTokenBuilder.suggestTile(tile) }
+            future.complete(currentTokenBuilder.build())
+        }
+        return future
+    }
+
+    /** 將手牌候選加入目前的 Brigadier 建議清單。 */
+    private fun SuggestionsBuilder.suggestTile(candidate: HandTileCandidate) {
+        suggest(
+            StringArgumentType.escapeIfRequired(candidate.token),
+            candidate.tile.toDisplayText(tileDisplayNameRegistry, tileAssetRegistry, tileEmojiRegistry),
+        )
+    }
+
+    /** 將 greedy string 引數拆成不含空白的選牌 token。 */
+    private fun parseTileTokens(context: CommandContext<ServerCommandSource>, argumentName: String): List<String> = StringArgumentType.getString(context, argumentName).split(Regex("\\s+")).filter(String::isNotBlank)
+
     private companion object {
         /**
-         * 手牌引數名稱（`discard`／`riichi` 共用）。值是 [GameActionCandidateResolver] 依玩家當下
+         * 手牌引數名稱（`discard` 使用）。值是 [GameActionCandidateResolver] 依玩家當下
          * 手牌動態算出的 candidate token，對應一張實體牌；跟 `FabricDebugAnimationCommand` 的 `tile`
          * 引數（全域固定的素材 asset key，與任何玩家手牌無關）是兩個不同概念，不應合併實作。
          */
@@ -240,6 +249,9 @@ class FabricGameCommand(
 
         /** 候選動作引數名稱（`action` 使用）。 */
         const val ACTION_ARGUMENT: String = "action"
+
+        /** 動作額外選牌的 greedy string 引數名稱。 */
+        const val ACTION_TILES_ARGUMENT: String = "tiles"
 
         /** Brigadier 成功回傳值。 */
         const val COMMAND_SUCCESS: Int = 1

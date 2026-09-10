@@ -8,34 +8,32 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsU
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
+import com.doublemoon1119.mahjongcraft.logic.judgment.TileSelectionRequirement
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** `discard`／`riichi` 指令的手牌候選項目：`tileId` 用來建構 [GameCommand]，`token` 是玩家實際輸入的字面值，`tile` 供 tooltip 顯示。 */
+/** `discard` 與動作選牌使用的手牌候選項目。 */
 data class HandTileCandidate(val tileId: Uuid, val token: String, val tile: Tile)
-
-/**
- * 立直宣告在操作 HUD／`select` 提交所使用的固定 token——立直是唯一「宣告 + 額外選牌」的動作，
- * 不像碰／吃／槓走 [listActionCandidates] 逐一產生候選 token，因此用固定值即可，不需要消歧義。
- */
-const val RIICHI_ACTION_TOKEN = "riichi"
 
 /**
  * `action` 指令的合法動作候選項目。
  *
  * @property action 選中後實際要送出的完整動作。
  * @property token 玩家實際輸入的字面值。
- * @property referenceTile 該動作涉及的牌面，供 tooltip／回饋訊息組字用；[GameAction.Tsumo] 等不涉及
- *   特定牌面的動作為 null。
+ * @property referenceTile 該動作涉及的牌面；不涉及特定牌面的動作為 null。
+ * @property tileSelectionRequirement 動作提交前需要額外選取的手牌契約；不需選牌時為 null。
  */
-data class GameActionCandidate(val action: GameAction, val token: String, val referenceTile: Tile?)
+data class GameActionCandidate(
+    val action: GameAction,
+    val token: String,
+    val referenceTile: Tile?,
+    val tileSelectionRequirement: TileSelectionRequirement?,
+)
 
 /**
- * 依玩家目前的桌況列出 `/mahjongcraft game discard|riichi|action` 三個指令的候選項目。
+ * 依玩家目前的桌況列出 `/mahjongcraft game discard|action` 的候選項目。
  *
  * 候選 token 直接用可讀的牌面／動作簡寫（例如 `5m`／`3p`／`7s`／`east`、`chi`／`pon`／`ron`），不透過
  * tooltip 才看得懂；同一輪候選裡如果有重複（例如手牌兩張同樣的牌、或同時有多種吃法），第一個維持
@@ -45,7 +43,7 @@ data class GameActionCandidate(val action: GameAction, val token: String, val re
  * @property gameRepository 權威對局數據倉庫。
  * @property membershipRepository 玩家目前所在桌子（房間／對局共用同一個 Uuid）的歸屬查詢。
  * @property getLegalActions 查詢目前合法動作清單的既有 use case。
- * @property moduleRegistry 麻將規則模組註冊中心，供 [listRiichiTileCandidates] 解析合法動作判定器。
+ * @property moduleRegistry 麻將規則模組註冊中心，供候選動作解析額外選牌契約。
  * @property actionContextResolver 玩家目前操作情境的權威解析器。
  */
 @Single
@@ -56,7 +54,7 @@ class GameActionCandidateResolver(
     private val moduleRegistry: MahjongModuleRegistry,
     private val actionContextResolver: PlayerActionContextResolver,
 ) {
-    /** 列出玩家目前手牌（含剛摸到的牌）作為 `discard`／`riichi` 的候選項目。 */
+    /** 列出玩家目前手牌（含剛摸到的牌）作為捨牌或動作選牌候選。 */
     suspend fun listHandTileCandidates(playerId: Uuid): List<HandTileCandidate> {
         val state = resolveTableState(playerId) ?: return emptyList()
         val player = state.players.firstOrNull { it.id == playerId } ?: return emptyList()
@@ -65,32 +63,7 @@ class GameActionCandidateResolver(
         }
     }
 
-    /**
-     * 列出玩家目前手牌裡「打了這張牌之後仍然聽牌」的候選項目，供 `riichi` 指令使用——跟
-     * [listHandTileCandidates] 共用同一份候選來源，只是額外過濾掉打了會失去聽牌的牌。目前這位玩家
-     * 完全不可能立直時（未輪到自己回合、已經立直過、非門前清、點數不足等，交給
-     * [GetLegalActionsUseCase] 判斷，這裡不重複實作規則專屬的立直前置條件）直接回傳空清單；哪些牌
-     * 打了之後仍然聽牌則交給 [LegalActionValidator.tileSelectionRequirement] 規則中立地算出，不在
-     * 平台層重算一次。
-     */
-    suspend fun listRiichiTileCandidates(playerId: Uuid): List<HandTileCandidate> {
-        val state = resolveTableState(playerId) ?: return emptyList()
-        val player = state.players.firstOrNull { it.id == playerId } ?: return emptyList()
-        val gameId = membershipRepository.getTableId(playerId) ?: return emptyList()
-
-        val legalActionsOutcome = getLegalActions(gameId, playerId)
-        val riichiPossible = legalActionsOutcome is Outcome.Success && RIICHI_GAME_ACTION in legalActionsOutcome.value
-        if (!riichiPossible) return emptyList()
-
-        val validator = moduleRegistry.getModule(state.config).createLegalActionValidator()
-        val eligibleTileIds = validator.tileSelectionRequirement(state, player, RIICHI_GAME_ACTION)?.eligibleTileIds ?: emptySet()
-        return listHandTileCandidates(playerId).filter { it.tileId in eligibleTileIds }
-    }
-
-    /**
-     * 列出玩家目前合法的特殊動作作為 `action` 的候選項目，過濾掉 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION]——它不帶
-     * tileId，由專屬的 `riichi` 指令另外處理，不透過這裡的候選機制送出。
-     */
+    /** 列出玩家目前合法的特殊動作及各動作的額外選牌契約。 */
     suspend fun listActionCandidates(playerId: Uuid): List<GameActionCandidate> {
         val gameId = membershipRepository.getTableId(playerId) ?: return emptyList()
         val state = gameRepository.getTableState(gameId) ?: return emptyList()
@@ -99,10 +72,26 @@ class GameActionCandidateResolver(
         val outcome = getLegalActions(gameId, playerId)
         if (outcome !is Outcome.Success) return emptyList()
 
-        val actions = outcome.value.filterNot { it == RIICHI_GAME_ACTION }
+        val player = state.players.firstOrNull { it.id == playerId } ?: return emptyList()
+        val validator = moduleRegistry.getModule(state.config).createLegalActionValidator()
+        val actions = outcome.value
         return disambiguateTokens(actions, GameAction::baseToken) { action, token ->
-            GameActionCandidate(action, token, referenceTile)
+            GameActionCandidate(
+                action = action,
+                token = token,
+                referenceTile = referenceTile,
+                tileSelectionRequirement = validator.tileSelectionRequirement(state, player, action),
+            )
         }
+    }
+
+    /** 列出指定動作契約允許選取的手牌候選。 */
+    suspend fun listTileSelectionCandidates(
+        playerId: Uuid,
+        candidate: GameActionCandidate,
+    ): List<HandTileCandidate> {
+        val eligibleTileIds = candidate.tileSelectionRequirement?.eligibleTileIds ?: return emptyList()
+        return listHandTileCandidates(playerId).filter { it.tileId in eligibleTileIds }
     }
 
     /**
@@ -172,6 +161,7 @@ private fun GameAction.baseToken(): String = when (this) {
     is GameAction.Ron -> "ron"
     GameAction.Pass -> "pass"
     is GameAction.ExhaustiveDraw -> reason.id
-    // Riichi 已被呼叫端過濾；Discard／GameStarted／RoundStarted／Draw 不會出現在合法動作清單裡。
+    is GameAction.Extension -> value.id
+    // Discard／GameStarted／RoundStarted／Draw 不會出現在合法動作清單裡。
     else -> "action"
 }

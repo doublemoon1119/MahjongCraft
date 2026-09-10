@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCu
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
@@ -33,6 +34,8 @@ object MahjongExtensionRegistrar {
             WinCelebrationCueResolverRegistryImpl(),
         gameActionAiRegistry: ExtensionGameActionAiRegistry =
             ExtensionGameActionAiRegistry(),
+        gameActionCommandFactoryRegistry: ExtensionGameActionCommandFactoryRegistry =
+            ExtensionGameActionCommandFactoryRegistry(),
         gameCommandRegistry: ExtensionGameCommandExecutorRegistry =
             ExtensionGameCommandExecutorRegistry(),
         postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry =
@@ -61,6 +64,7 @@ object MahjongExtensionRegistrar {
                 extension.registerPersistenceDtos(persistenceRegistries)
                 extension.registerWinCelebrationCueResolvers(winCelebrationCueResolverRegistry)
                 extension.registerGameActionAiHandlers(gameActionAiRegistry)
+                extension.registerGameActionCommandFactories(gameActionCommandFactoryRegistry)
                 extension.registerGameCommandHandlers(gameCommandRegistry)
                 extension.registerPostReactionRoundOutcomeResolvers(postReactionRoundOutcomeResolverRegistry)
                 extension.registerPostActionExhaustiveDrawResolvers(postActionExhaustiveDrawResolverRegistry)
@@ -78,6 +82,7 @@ object MahjongExtensionRegistrar {
         persistenceRegistries.freeze()
         winCelebrationCueResolverRegistry.freeze()
         gameActionAiRegistry.freeze()
+        gameActionCommandFactoryRegistry.freeze()
         gameCommandRegistry.freeze()
         postReactionRoundOutcomeResolverRegistry.freeze()
         postActionExhaustiveDrawResolverRegistry.freeze()

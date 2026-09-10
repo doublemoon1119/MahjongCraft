@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublish
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.state.AuthoritativeStatePersistenceCodec
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
@@ -79,9 +80,11 @@ class FabricApplicationModuleTest {
         val tileEmojiRegistry = koin.get<TileEmojiRegistry>()
         val tileLabelRegistry = koin.get<TileLabelRegistry>()
         val gameActionAiRegistry = koin.get<ExtensionGameActionAiRegistry>()
+        val gameActionCommandFactoryRegistry = koin.get<ExtensionGameActionCommandFactoryRegistry>()
         val gameCommandRegistry = koin.get<ExtensionGameCommandExecutorRegistry>()
         val gameActionDisplayNameRegistry = koin.get<GameActionDisplayNameRegistry>()
         assertFalse(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
+        assertFalse(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertFalse(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
         FabricMahjongExtensions.initialize(
             moduleRegistry = moduleRegistry,
@@ -95,6 +98,7 @@ class FabricApplicationModuleTest {
             tileEmojiRegistry = tileEmojiRegistry,
             tileLabelRegistry = tileLabelRegistry,
             gameActionAiRegistry = gameActionAiRegistry,
+            gameActionCommandFactoryRegistry = gameActionCommandFactoryRegistry,
             gameCommandRegistry = gameCommandRegistry,
             gameActionDisplayNameRegistry = gameActionDisplayNameRegistry,
             declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
@@ -119,6 +123,7 @@ class FabricApplicationModuleTest {
         assertTrue(tileEmojiRegistry.isFrozen)
         assertTrue(tileLabelRegistry.isFrozen)
         assertTrue(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
+        assertTrue(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertTrue(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
         assertEquals(MinecraftMessageKeys.GAME_ACTION_RIICHI, gameActionDisplayNameRegistry.find(RiichiGameAction.Riichi))
         koin.get<GameFlowCoordinator>()

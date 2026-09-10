@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCu
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
@@ -119,6 +120,7 @@ class MahjongCraftMod : ModInitializer {
             gameActionSoundPresentationRegistry = koin.get<GameActionSoundPresentationRegistry>(),
             roundInfoLineDisplayRegistry = koin.get<RoundInfoLineDisplayRegistry>(),
             gameActionAiRegistry = koin.get<ExtensionGameActionAiRegistry>(),
+            gameActionCommandFactoryRegistry = koin.get<ExtensionGameActionCommandFactoryRegistry>(),
             gameCommandRegistry = koin.get<ExtensionGameCommandExecutorRegistry>(),
             postReactionRoundOutcomeResolverRegistry = koin.get<PostReactionRoundOutcomeResolverRegistry>(),
             postActionExhaustiveDrawResolverRegistry = koin.get<PostActionExhaustiveDrawResolverRegistry>(),

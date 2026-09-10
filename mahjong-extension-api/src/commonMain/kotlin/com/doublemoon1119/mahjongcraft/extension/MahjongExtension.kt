@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
@@ -53,6 +54,9 @@ interface MahjongExtension {
 
     /** 登記規則擴充動作供 AI 建立命令的 handler。 */
     fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistry) = Unit
+
+    /** 登記需要額外選牌的規則擴充動作如何建立伺服器命令。 */
+    fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistry) = Unit
 
     /** 登記規則擴充命令的伺服器執行 handler。 */
     fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistry) = Unit

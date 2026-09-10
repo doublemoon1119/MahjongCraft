@@ -5,12 +5,12 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContext
@@ -55,6 +55,7 @@ import kotlin.uuid.toKotlinUuid
  * @property presentationPublisher 選牌需要多選（`maxCount > 1`）時，通知平台呈現層生成／清除選牌確認
  *   面板 entity。
  * @property actionContextResolver 玩家目前操作情境的權威解析器。
+ * @property actionCommandFactoryRegistry 將規則擴充動作與其選牌結果轉成強型別命令。
  */
 @Single
 class MahjongTableGameActionService(
@@ -69,6 +70,7 @@ class MahjongTableGameActionService(
     private val promptFactory: PlayerDecisionPromptFactory,
     private val presentationPublisher: GamePresentationPublisher,
     private val actionContextResolver: PlayerActionContextResolver,
+    private val actionCommandFactoryRegistry: ExtensionGameActionCommandFactoryRegistry,
 ) {
     /** 對局命令與自動銜接失敗時的專用 logger。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -102,18 +104,12 @@ class MahjongTableGameActionService(
             if (prompt.decisionKey != selection.decisionKey) return@launch
             when (selection.kind) {
                 PlayerDecisionSelectionKindDto.ACTION -> {
-                    if (selection.token == RIICHI_ACTION_TOKEN) {
-                        // 立直目前是唯一「宣告 + 額外選牌」的動作，直接在這裡處理；若未來有第二個規則
-                        // 模組也需要類似流程，再抽成通用 dispatch 機制。實際合法性（含選牌是否合法）
-                        // 由 DeclareRiichiUseCase 權威驗證，這裡不重複判斷。
-                        val tileId = selection.tileIds.singleOrNull()?.let { runCatching { Uuid.parse(it) }.getOrNull() }
-                            ?: return@launch
-                        riichi(player, tileId)
-                    } else {
-                        val candidate = candidateResolver.listActionCandidates(playerId).firstOrNull { it.token == selection.token }
-                            ?: return@launch
-                        act(player, candidate)
+                    val candidate = candidateResolver.listActionCandidates(playerId)
+                        .firstOrNull { it.token == selection.token } ?: return@launch
+                    val tileIds = selection.tileIds.map { serializedId ->
+                        runCatching { Uuid.parse(serializedId) }.getOrNull() ?: return@launch
                     }
+                    submitAction(playerId, candidate, tileIds)
                     presentationPublisher.publishTileSelectionEnded(gameId, playerId)
                 }
 
@@ -167,32 +163,54 @@ class MahjongTableGameActionService(
         }
     }
 
-    /** 宣告立直，同時打出 [tileId] 這張牌作為立直宣告牌。 */
-    fun riichi(player: ServerPlayerEntity, tileId: Uuid) {
+    /** 執行玩家從 [GameActionCandidateResolver.listActionCandidates] 選出的候選動作。 */
+    fun act(
+        player: ServerPlayerEntity,
+        candidate: GameActionCandidate,
+        selectedTileIds: List<Uuid> = emptyList(),
+    ) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
-            val gameId = resolveGameId(playerId) ?: return@launch
-            execute(gameId, playerId, GameCommand.Extension(RiichiGameCommand(tileId)))
+            submitAction(playerId, candidate, selectedTileIds)
         }
     }
 
-    /** 執行玩家從 [GameActionCandidateResolver.listActionCandidates] 選出的候選動作。 */
-    fun act(player: ServerPlayerEntity, candidate: GameActionCandidate) {
-        val playerId = player.uuid.toKotlinUuid()
-        scope.launch {
-            val gameId = resolveGameId(playerId) ?: return@launch
-            val state = gameRepository.getTableState(gameId)
-            if (state == null) {
-                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
-                return@launch
-            }
-            val command = actionContextResolver.resolveFor(state, playerId)?.toGameCommand(candidate.action)
-            if (command == null) {
-                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
-                return@launch
-            }
-            execute(gameId, playerId, command)
+    /** 重新驗證選牌契約，將候選動作轉成命令並執行。 */
+    private suspend fun submitAction(
+        playerId: Uuid,
+        candidate: GameActionCandidate,
+        selectedTileIds: List<Uuid>,
+    ) {
+        val gameId = resolveGameId(playerId) ?: return
+        val state = gameRepository.getTableState(gameId)
+        if (state == null) {
+            feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
+            return
         }
+        val requirement = candidate.tileSelectionRequirement
+        val selectionIsValid = if (requirement == null) {
+            selectedTileIds.isEmpty()
+        } else {
+            selectedTileIds.size in requirement.minCount..requirement.maxCount &&
+                selectedTileIds.distinct().size == selectedTileIds.size &&
+                selectedTileIds.all { it in requirement.eligibleTileIds }
+        }
+        if (!selectionIsValid) {
+            feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
+            return
+        }
+        val context = actionContextResolver.resolveFor(state, playerId)
+        val command = when (val action = candidate.action) {
+            is GameAction.Extension -> actionCommandFactoryRegistry.createCommand(action.value, selectedTileIds)
+                ?.let(GameCommand::Extension)
+                ?: if (requirement == null) context?.toGameCommand(action) else null
+            else -> if (selectedTileIds.isEmpty()) context?.toGameCommand(action) else null
+        }
+        if (command == null) {
+            feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
+            return
+        }
+        execute(gameId, playerId, command)
     }
 
     /** 顯示玩家目前的手牌、副露與可執行的特殊動作。 */
