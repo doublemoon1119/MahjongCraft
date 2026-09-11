@@ -26,8 +26,8 @@ data class RiichiDynamicState(
      * 計算並取得寶牌、裏寶牌列表。
      *
      * 資料來源必須是 [TableState.reservedWallTiles]，不能用 [TableState.tileWall]——後者只保存仍可正常摸取
-     * 的活牌。日麻槓後補牌會替換死牌區前四個嶺上語意槽位，但寶牌與裏寶牌所在的後續槽位保持不變，
-     * 因此指示牌索引不需要隨活牌剩餘數補償。
+     * 的活牌。每次槓後補牌會移除死牌區最前方的嶺上牌，再將活牌尾端補到死牌區末端，因此原本的
+     * 寶牌與裏寶牌會在列表中向前移動，指示牌索引必須扣除已完成的補牌次數。
      *
      * [TableState.reservedWallTiles] 的排列順序（[FourSidedWallLayoutSupport] 建牌時決定）是「離開門缺口最近的
      * 一墩排最前面，往深處排到最後」，每墩固定 [上層, 下層]；`FIRST_INDICATOR_OFFSET`（4）比照通行
@@ -45,8 +45,10 @@ data class RiichiDynamicState(
         // 每成功完成 1 次槓後補牌多公開 1 組寶牌／裏寶牌，最多 5 組（4 次補牌封頂）。
         val indicatorCount = (1 + completedSupplementalDrawCount).coerceAtMost(5)
 
+        val indicatorStartIndex =
+            (FIRST_INDICATOR_OFFSET - completedSupplementalDrawCount).coerceAtLeast(0)
         for (i in 0 until indicatorCount) {
-            val baseIndex = FIRST_INDICATOR_OFFSET + (i * 2)
+            val baseIndex = indicatorStartIndex + (i * 2)
 
             // 取得寶牌指示牌（每墩的上層）
             wanPai.getOrNull(baseIndex)?.let {

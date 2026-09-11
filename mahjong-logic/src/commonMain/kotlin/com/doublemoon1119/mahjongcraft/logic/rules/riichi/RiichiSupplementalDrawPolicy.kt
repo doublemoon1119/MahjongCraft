@@ -11,7 +11,8 @@ object RiichiSupplementalDrawPolicy : SupplementalDrawPolicy {
     /**
      * 解析成功成立的槓；其他動作不需要補牌。
      *
-     * 每次從對應嶺上語意槽位取牌，並以活牌尾端補回該槽位，讓死牌區維持十四張且活牌正確減少一張。
+     * 每次取走死牌區最前方的嶺上牌，再將活牌尾端補入死牌區末端。補入的牌只用來維持死牌區
+     * 十四張，不會成為後續可摸取的嶺上牌。
      */
     override fun resolve(context: SupplementalDrawContext): SupplementalDrawDecision {
         if (context.action !is GameAction.Kan) return SupplementalDrawDecision.NotRequired
@@ -22,14 +23,12 @@ object RiichiSupplementalDrawPolicy : SupplementalDrawPolicy {
             return SupplementalDrawDecision.Rejected(LIMIT_REACHED_REASON_ID)
         }
 
-        val drawnTile = context.tableStateAfterAction.reservedWallTiles.getOrNull(drawIndex)
+        val drawnTile = context.tableStateAfterAction.reservedWallTiles.firstOrNull()
             ?: return SupplementalDrawDecision.Rejected(SupplementalDrawReasonIds.WALL_EXHAUSTED)
         val replenishment = context.tableStateAfterAction.tileWall.drawLast()
         val replenishmentTile = replenishment.tile
             ?: return SupplementalDrawDecision.Rejected(SupplementalDrawReasonIds.WALL_EXHAUSTED)
-        val updatedDeadWall = context.tableStateAfterAction.reservedWallTiles.toMutableList().apply {
-            this[drawIndex] = replenishmentTile
-        }
+        val updatedDeadWall = context.tableStateAfterAction.reservedWallTiles.drop(1) + replenishmentTile
         val updatedDynamicState = dynamicState.copy(completedSupplementalDrawCount = drawIndex + 1)
         val updatedState = context.tableStateAfterAction.copy(
             tileWall = replenishment.wall,

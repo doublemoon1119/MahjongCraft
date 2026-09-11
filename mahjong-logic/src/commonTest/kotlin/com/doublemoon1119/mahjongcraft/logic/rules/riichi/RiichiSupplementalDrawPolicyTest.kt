@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
@@ -40,13 +41,47 @@ class RiichiSupplementalDrawPolicyTest {
 
         assertEquals(listOf(deadWall.first()), result.drawnTiles)
         assertEquals(liveWall.dropLast(1), result.tileWall.getAllTiles())
-        assertEquals(liveWall.last(), result.reservedWallTiles.first())
+        assertEquals(deadWall.drop(1) + liveWall.last(), result.reservedWallTiles)
         assertEquals(14, result.reservedWallTiles.size)
         assertEquals(1, (result.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
         assertEquals(setOf(deadWall[6].id), result.newlyRevealedTileIds)
     }
 
-    /** 驗證補牌次數決定嶺上槽位，且第五次會由規則明確拒絕。 */
+    /** 驗證連續四次補牌依序取走原始嶺上牌，補入死牌區的牌不會被再次摸取。 */
+    @Test
+    fun `test four supplemental draws never draw replenishment tiles`() {
+        val deadWall = List(14) { index ->
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (index % 9) + 1))
+        }
+        val liveWall = List(8) { index ->
+            FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, (index % 9) + 1))
+        }
+        var state = FakeTableStateFactory.create(
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(liveWall),
+            initialDeadWall = deadWall,
+            dynamicRuleState = RiichiDynamicState(),
+        )
+        val drawnTiles = mutableListOf<IdentifiedTile>()
+
+        repeat(RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS) {
+            val result = assertIs<SupplementalDrawDecision.Completed>(
+                RiichiSupplementalDrawPolicy.resolve(context(state)),
+            )
+            drawnTiles += result.drawnTiles.single()
+            state = state.copy(
+                tileWall = result.tileWall,
+                initialDeadWall = result.reservedWallTiles,
+                dynamicRuleState = result.dynamicRuleState,
+            )
+        }
+
+        assertEquals(deadWall.take(4), drawnTiles)
+        assertEquals(deadWall.drop(4) + liveWall.takeLast(4).reversed(), state.reservedWallTiles)
+        assertEquals(14, state.reservedWallTiles.size)
+    }
+
+    /** 驗證第四次補牌可正常完成，且第五次會由規則明確拒絕。 */
     @Test
     fun `test supplemental draw count selects slot and enforces limit`() {
         val deadWall = List(14) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
@@ -54,7 +89,9 @@ class RiichiSupplementalDrawPolicyTest {
         val state = FakeTableStateFactory.create(
             config = RiichiRuleConfig(),
             tileWall = TileWall(listOf(liveTile)),
-            initialDeadWall = deadWall,
+            initialDeadWall = deadWall.drop(3) + List(3) {
+                FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+            },
             dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 3),
         )
         val fourth = assertIs<SupplementalDrawDecision.Completed>(

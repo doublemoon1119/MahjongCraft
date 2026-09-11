@@ -48,6 +48,14 @@ class RiichiDynamicStateTest {
         )
     }
 
+    /** 建立已完成指定補牌次數後仍維持十四張的死牌區。 */
+    private fun afterSupplementalDraws(
+        originalDeadWall: List<IdentifiedTile>,
+        completedDrawCount: Int,
+    ): List<IdentifiedTile> = originalDeadWall.drop(completedDrawCount) + List(completedDrawCount) {
+        FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+    }
+
     /**
      * 驗證無槓時，應僅有一張寶牌指示器與一張裏寶牌指示器可見。
      */
@@ -108,7 +116,7 @@ class RiichiDynamicStateTest {
         val deadWallTiles = List(14) { i ->
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, (i % 9) + 1))
         }
-        val table = createTableStateWithWall(deadWallTiles, listOf(playerWithKan))
+        val table = createTableStateWithWall(afterSupplementalDraws(deadWallTiles, 1), listOf(playerWithKan))
 
         val dynamicState = RiichiDynamicState(completedSupplementalDrawCount = 1)
         val (dora, uraDora) = dynamicState.getDoraIndicators(table)
@@ -116,6 +124,8 @@ class RiichiDynamicStateTest {
         // 1 槓 = 2 張指示器
         assertEquals(2, dora.size, "Should have 2 dora indicators with one kan.")
         assertEquals(2, uraDora.size, "Should have 2 ura-dora indicators with one kan.")
+        assertEquals(listOf(deadWallTiles[4], deadWallTiles[6]), dora)
+        assertEquals(listOf(deadWallTiles[5], deadWallTiles[7]), uraDora)
     }
 
     /**
@@ -148,7 +158,7 @@ class RiichiDynamicStateTest {
         val deadWallTiles = List(14) { i ->
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, (i % 9) + 1))
         }
-        val table = createTableStateWithWall(deadWallTiles, players)
+        val table = createTableStateWithWall(afterSupplementalDraws(deadWallTiles, 4), players)
 
         val dynamicState = RiichiDynamicState(completedSupplementalDrawCount = 4)
         val (dora, uraDora) = dynamicState.getDoraIndicators(table)
