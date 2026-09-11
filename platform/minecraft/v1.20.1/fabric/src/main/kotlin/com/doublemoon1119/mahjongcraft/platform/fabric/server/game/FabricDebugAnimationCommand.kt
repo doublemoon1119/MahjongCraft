@@ -71,6 +71,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCine
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugGameScenarioCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildMatchResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
@@ -176,6 +177,7 @@ class FabricDebugAnimationCommand(
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val serverConfigManager: FabricServerConfigManager,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
+    private val debugGameScenarioCommand: DebugGameScenarioCommand,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) {
@@ -194,6 +196,7 @@ class FabricDebugAnimationCommand(
                 literal(MinecraftModMetadata.MOD_ID).then(
                     literal(DEBUG_SUBCOMMAND)
                         .requires { it.hasPermissionLevel(OP_PERMISSION_LEVEL) }
+                        .then(debugGameScenarioCommand.build())
                         .then(
                             literal(WIN_SUBCOMMAND)
                                 .then(withOptionalTileArgument(literal(TSUMO_ARGUMENT)) { source, tileArg -> previewWin(source, isTsumo = true, tileArg) })

@@ -49,9 +49,9 @@ class FabricMahjongTileWallPresenter(
      * 沿用 [MahjongTileEntity] 既有 KDoc 早已寫下的設計意圖——此時 entity 尚未加入 world 的 UUID
      * 索引，是唯一安全能覆寫 UUID 的時機點；`world.spawnEntity` 之後才變更會與世界既有索引不一致。
      *
-     * 王牌區的牌這裡一律跟活牌用同一組（`isDeadWall = false`）座標生成，維持一圈完整無縫的牌牆——
-     * 不在生成當下就把王牌拉出開門，那樣會少了「開門」的過程，缺少沉浸感。真正把王牌區拉出的動作
-     * 交給 [scheduleDeadWallReveal]，等擲骰動畫播完才執行。
+     * 搭配擲骰時，王牌區的牌先跟活牌用同一組（`isDeadWall = false`）座標生成，維持一圈完整無縫的
+     * 牌牆；真正把王牌區拉出的動作交給 [startWallDropAnimations]，等擲骰動畫播完才執行。沒有搭配
+     * 擲骰時則代表恢復既有桌況，直接使用開門後座標與權威公開姿態，不重新播放開門及翻面動畫。
      *
      * 這裡查詢並清除的「舊牌」不限定牌牆自己管理的牌，而是這張桌子目前所有管理中的麻將牌 entity
      * （含已經被 [FabricMahjongHandTilesPresenter]領走、目前呈現成手牌的那些）——因為每一局重新洗牌都會產生全新的 `IdentifiedTile.id`，
@@ -74,7 +74,9 @@ class FabricMahjongTileWallPresenter(
             .filter { position -> position.side == 0 }
             .maxOfOrNull { position -> position.stack + 1 } ?: 0
         val oldTiles = findManagedTiles(world, presentation.tableId, controllerPos)
+        val restoresFinalStateImmediately = presentation.diceCount == 0
         val newTiles = presentation.structure.map { (tileId, position) ->
+            val belongsToDeadWall = tileId in presentation.deadWallTileIds
             val placement = MahjongTileTableLayout.wallPlacement(
                 controllerX = controllerPos.x,
                 controllerY = controllerPos.y,
@@ -83,11 +85,16 @@ class FabricMahjongTileWallPresenter(
                 dealerSeatIndex = presentation.dealerSeatIndex,
                 stacksPerSide = stacksPerSide,
                 position = position,
+                isDeadWall = restoresFinalStateImmediately && belongsToDeadWall,
             )
             position to MahjongTileEntity(world = world).apply {
                 uuid = tileId.toJavaUuid()
                 refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
-                tilePose = MahjongTilePose.FACE_DOWN
+                tilePose = if (restoresFinalStateImmediately && tileId in presentation.revealedTileIds) {
+                    MahjongTilePose.FACE_UP
+                } else {
+                    MahjongTilePose.FACE_DOWN
+                }
                 assignToTable(presentation.tableId)
             }
         }
@@ -119,8 +126,9 @@ class FabricMahjongTileWallPresenter(
      * 動畫總時長加上擲骰動畫時長的總和——擲骰動畫會等牌牆完全落地才開始播放，見
      * `FabricGamePresentationPublisher.publishDiceRoll`，王牌移出開門的時機要跟著往後移，不能只算
      * 擲骰動畫本身的時長），不是每張王牌各自用減法反推剩餘等待時間去湊同一個目標——理由見
-     * [AnimationStep.WaitUntil] KDoc。[MahjongTileWallPresentation.diceCount] 為 `0`（沒有搭配擲骰）
-     * 或沒有王牌時這張牌的佇列到掉落動畫播完就結束，不會多排這段。同一時機點順便讓
+     * [AnimationStep.WaitUntil] KDoc。[MahjongTileWallPresentation.diceCount] 為 `0`（沒有搭配擲骰）時，
+     * 牌牆會直接在開門後的最終座標生成，已公開的牌也直接使用正面姿態；這讓 debug scenario 或重載
+     * 恢復不必偽造一段擲骰時間線。沒有王牌時則不會多排這段。同一時機點順便讓
      * [MahjongTileWallPresentation.revealedTileIds] 對應的牌接續播放「起飛→翻面→落下」的公開動畫
      * （見 [revealFlipAnimationSteps]）——開局第一張寶牌指示牌本該在王牌分離、開門完成的這一刻公開，
      * 不需要另外排一個時機點。
@@ -141,6 +149,7 @@ class FabricMahjongTileWallPresenter(
         var revealSoundScheduled = false
         tilesWithPosition.forEach { (position, tile) ->
             val startDelayTicks = MahjongTileTableLayout.wallDropStartDelayTicks(position.stack)
+            val initialPose = tile.tilePose
             val steps = mutableListOf<AnimationStep<MahjongTilePose>>(
                 AnimationStep.SetInvisible(true),
                 AnimationStep.WaitUntil(world.time + startDelayTicks),
@@ -151,8 +160,8 @@ class FabricMahjongTileWallPresenter(
                     startOffsetX = 0.0,
                     startOffsetY = WALL_DROP_HEIGHT,
                     startOffsetZ = 0.0,
-                    startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-                    endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
+                    startPoseRotationDegrees = initialPose.rotationDegrees,
+                    endPoseRotationDegrees = initialPose.rotationDegrees,
                 ),
             )
             if (position.layer == WALL_STACK_SOUND_LAYER) {

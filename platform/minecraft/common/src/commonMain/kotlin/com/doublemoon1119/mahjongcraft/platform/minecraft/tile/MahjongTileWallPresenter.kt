@@ -18,7 +18,8 @@ import kotlin.uuid.Uuid
  *                     舊牌，不需要建立新牌。
  * @property deadWallTileIds [structure] 之中屬於王牌區的牌 Uuid 子集合；[structure] 為空時可傳空集合。
  * @property diceCount 本次開門擲骰的骰子數量，用來換算擲骰動畫總長度、決定王牌區延遲移出開門位置的
- *                     時機；未搭配擲骰時傳 `0`（此時實作不會排定王牌延遲移出）。
+ *                     時機；未搭配擲骰時傳 `0`，實作會直接恢復開門後的最終位置與公開姿態，不排定
+ *                     延遲移出或翻面動畫。
  * @property revealedTileIds [deadWallTileIds] 之中，牌牆建立當下就該立即公開翻面的牌 Uuid 子集合
  *                     （例如日麻開局就翻開的第一張寶牌指示牌，見 `TileWallRevealable`）——實作會在
  *                     王牌移出開門位置的同一個時機點把這些牌的姿態改成正面朝上，其餘王牌維持牌背朝上；
