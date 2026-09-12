@@ -29,7 +29,10 @@ object RiichiSupplementalDrawPolicy : SupplementalDrawPolicy {
         val replenishmentTile = replenishment.tile
             ?: return SupplementalDrawDecision.Rejected(SupplementalDrawReasonIds.WALL_EXHAUSTED)
         val updatedDeadWall = context.tableStateAfterAction.reservedWallTiles.drop(1) + replenishmentTile
-        val updatedDynamicState = dynamicState.copy(completedSupplementalDrawCount = drawIndex + 1)
+        val updatedDynamicState = dynamicState.copy(
+            completedSupplementalDrawCount = drawIndex + 1,
+            revealedKanDoraCount = drawIndex + 1,
+        )
         val updatedState = context.tableStateAfterAction.copy(
             tileWall = replenishment.wall,
             initialDeadWall = updatedDeadWall,

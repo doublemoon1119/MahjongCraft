@@ -13,16 +13,19 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MultiRonPolicyDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.PlayerRuleStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ScoreConfigDto
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
 import kotlinx.serialization.Serializable
+import kotlin.uuid.Uuid
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain as toRuleDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto as toRuleDto
 
@@ -114,11 +117,70 @@ sealed interface RiichiGameLengthDto : GameLengthDto {
 data class RiichiDynamicStateDto(
     val riichiStickCount: Int,
     val completedSupplementalDrawCount: Int,
+    val revealedKanDoraCount: Int = completedSupplementalDrawCount,
+    val pendingKanDoraReveals: List<RiichiPendingKanDoraRevealDto> = emptyList(),
 ) : DynamicRuleStateDto
 
-fun RiichiDynamicState.toRiichiDto(): RiichiDynamicStateDto = RiichiDynamicStateDto(riichiStickCount, completedSupplementalDrawCount)
+/** 尚未正式公開的日麻槓寶牌網路 DTO。 */
+@Serializable
+data class RiichiPendingKanDoraRevealDto(
+    val actorPlayerId: String,
+    val sourceKanType: RiichiPendingKanTypeDto,
+    val supplementalDrawNumber: Int,
+)
 
-fun RiichiDynamicStateDto.toDomain(): RiichiDynamicState = RiichiDynamicState(riichiStickCount, completedSupplementalDrawCount)
+/** 等待公開項目保存的來源槓牌種類。 */
+@Serializable
+enum class RiichiPendingKanTypeDto {
+    /** 大明槓。 */
+    OPEN_KAN,
+
+    /** 暗槓。 */
+    CLOSED_KAN,
+
+    /** 加槓。 */
+    ADDED_KAN,
+}
+
+fun RiichiDynamicState.toRiichiDto(): RiichiDynamicStateDto = RiichiDynamicStateDto(
+    riichiStickCount,
+    completedSupplementalDrawCount,
+    revealedKanDoraCount,
+    pendingKanDoraReveals.map {
+        RiichiPendingKanDoraRevealDto(
+            it.actorPlayerId.toString(),
+            it.sourceKanType.toPendingDto(),
+            it.supplementalDrawNumber,
+        )
+    },
+)
+
+fun RiichiDynamicStateDto.toDomain(): RiichiDynamicState = RiichiDynamicState(
+    riichiStickCount,
+    completedSupplementalDrawCount,
+    revealedKanDoraCount,
+    pendingKanDoraReveals.map {
+        RiichiPendingKanDoraReveal(
+            Uuid.parse(it.actorPlayerId),
+            it.sourceKanType.toDomain(),
+            it.supplementalDrawNumber,
+        )
+    },
+)
+
+/** 將來源槓牌種類轉為等待公開項目的網路 DTO。 */
+private fun GameAction.KanType.toPendingDto(): RiichiPendingKanTypeDto = when (this) {
+    GameAction.KanType.OPEN_KAN -> RiichiPendingKanTypeDto.OPEN_KAN
+    GameAction.KanType.CLOSED_KAN -> RiichiPendingKanTypeDto.CLOSED_KAN
+    GameAction.KanType.ADDED_KAN -> RiichiPendingKanTypeDto.ADDED_KAN
+}
+
+/** 將等待公開項目的網路 DTO 還原為來源槓牌種類。 */
+private fun RiichiPendingKanTypeDto.toDomain(): GameAction.KanType = when (this) {
+    RiichiPendingKanTypeDto.OPEN_KAN -> GameAction.KanType.OPEN_KAN
+    RiichiPendingKanTypeDto.CLOSED_KAN -> GameAction.KanType.CLOSED_KAN
+    RiichiPendingKanTypeDto.ADDED_KAN -> GameAction.KanType.ADDED_KAN
+}
 
 // ── PlayerRuleStateDto ─────────────────────────────────────────────────────
 

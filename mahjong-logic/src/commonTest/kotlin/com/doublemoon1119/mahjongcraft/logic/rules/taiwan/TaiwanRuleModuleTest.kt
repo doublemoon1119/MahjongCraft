@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.NoOpWallRevealPolicy
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -28,6 +29,12 @@ class TaiwanRuleModuleTest {
         id = "mahjongcraft:taiwan",
         config = TaiwanRuleConfig(),
     )
+
+    /** 未提供牌牆公開政策的規則應安全使用 no-op，不套用日麻行為。 */
+    @Test
+    fun `test wall reveal policy defaults to no-op`() {
+        assertSame(NoOpWallRevealPolicy, module.createWallRevealPolicy())
+    }
 
     /**
      * 驗證建立的牌山工廠是否為台灣麻將實作。

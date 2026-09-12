@@ -20,12 +20,14 @@ import com.doublemoon1119.mahjongcraft.logic.table.FixedLengthMatchProgressionPo
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.NoOpWallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.RankablePlayer
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
 import com.doublemoon1119.mahjongcraft.logic.table.UnsupportedSupplementalDrawPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayout
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.seat.DealerAnchoredSeatWindAssignmentPolicy
@@ -111,6 +113,13 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 未提供補牌能力的規則使用安全拒絕實作，不會自動套用其他玩法的補牌來源或張數。
      */
     fun createSupplementalDrawPolicy(): SupplementalDrawPolicy = UnsupportedSupplementalDrawPolicy
+
+    /**
+     * 建立適用於該規則的牌牆公開時序 policy。
+     *
+     * 沒有額外公開時序的規則使用 no-op 實作，不會套用其他玩法的行為。
+     */
+    fun createWallRevealPolicy(): WallRevealPolicy = NoOpWallRevealPolicy
 
     /**
      * 建立適用於該規則的捨牌堆（牌河）實作。

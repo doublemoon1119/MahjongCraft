@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -11,10 +12,14 @@ import kotlin.uuid.Uuid
  *
  * @property riichiStickCount 場上存留的立直棒數量。
  * @property completedSupplementalDrawCount 本局已成功完成的槓後補牌次數。
+ * @property revealedKanDoraCount 本局已正式公開的追加槓寶牌指示牌數量。
+ * @property pendingKanDoraReveals 依建立順序排列、尚未正式公開的槓寶牌項目。
  */
 data class RiichiDynamicState(
     val riichiStickCount: Int = 0,
     val completedSupplementalDrawCount: Int = 0,
+    val revealedKanDoraCount: Int = completedSupplementalDrawCount,
+    val pendingKanDoraReveals: List<RiichiPendingKanDoraReveal> = emptyList(),
 ) : DynamicRuleState,
     TileWallRevealable {
     /**
@@ -31,8 +36,8 @@ data class RiichiDynamicState(
      *
      * [TableState.reservedWallTiles] 的排列順序（[FourSidedWallLayoutSupport] 建牌時決定）是「離開門缺口最近的
      * 一墩排最前面，往深處排到最後」，每墩固定 [上層, 下層]；`FIRST_INDICATOR_OFFSET`（4）比照通行
-     * 日麻慣例跳過最前面 2 墩（王牌區前段的嶺上摸牌語意槽位），之後每完成一次槓後補牌就往深一墩、
-     * 多公開一組寶牌／裏寶牌。
+     * 日麻慣例跳過最前面 2 墩（王牌區前段的嶺上摸牌語意槽位）。指示牌實體位置依已完成補牌次數
+     * 往深處位移，而公開組數僅依已正式公開的槓寶牌數量增加；延後公開期間兩者不必相等。
      *
      * @return Pair<寶牌列表, 裏寶牌列表>
      */
@@ -42,8 +47,8 @@ data class RiichiDynamicState(
 
         val wanPai = state.reservedWallTiles
 
-        // 每成功完成 1 次槓後補牌多公開 1 組寶牌／裏寶牌，最多 5 組（4 次補牌封頂）。
-        val indicatorCount = (1 + completedSupplementalDrawCount).coerceAtMost(5)
+        // 開局固定公開一組；追加指示牌只依正式公開進度計算，不把等待項目提前視為可見。
+        val indicatorCount = (1 + revealedKanDoraCount).coerceAtMost(5)
 
         val indicatorStartIndex =
             (FIRST_INDICATOR_OFFSET - completedSupplementalDrawCount).coerceAtLeast(0)
@@ -72,3 +77,16 @@ data class RiichiDynamicState(
         const val FIRST_INDICATOR_OFFSET = 4
     }
 }
+
+/**
+ * 尚未正式公開的日麻槓寶牌項目。
+ *
+ * @property actorPlayerId 宣告來源槓牌的玩家 ID。
+ * @property sourceKanType 來源槓牌種類。
+ * @property supplementalDrawNumber 此槓完成的是本局第幾次補牌，從一開始計數。
+ */
+data class RiichiPendingKanDoraReveal(
+    val actorPlayerId: Uuid,
+    val sourceKanType: GameAction.KanType,
+    val supplementalDrawNumber: Int,
+)

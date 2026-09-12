@@ -27,6 +27,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRe
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiDynamicStateDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.RoomSnapshotDto
@@ -49,6 +51,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
@@ -173,7 +176,15 @@ class DtoRoundTripTest {
         val tableState = FakeTableStateFactory.create(
             players = listOf(riichiPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2, completedSupplementalDrawCount = 3),
+            dynamicRuleState = RiichiDynamicState(
+                riichiStickCount = 2,
+                completedSupplementalDrawCount = 3,
+                revealedKanDoraCount = 1,
+                pendingKanDoraReveals = listOf(
+                    RiichiPendingKanDoraReveal(riichiPlayer.id, GameAction.KanType.ADDED_KAN, 2),
+                    RiichiPendingKanDoraReveal(riichiPlayer.id, GameAction.KanType.OPEN_KAN, 3),
+                ),
+            ),
         )
         val snapshot = tableState.toSnapshot(setOf(riichiPlayer.id))
         val snapshotDto = snapshot.toDto(registries)
@@ -183,6 +194,20 @@ class DtoRoundTripTest {
         // DiscardPile.DiscardEntry/RiichiDiscardEntry 沒有 equals()，改比對來回前後的 DTO
         // （DTO 都是 data class，有結構化相等），不比對還原後的領域物件。
         assertEquals(snapshotDto, decodedDto)
+        assertEquals(snapshot.dynamicRuleState, decodedDto.toDomain(registries).dynamicRuleState)
+    }
+
+    /** 驗證舊版網路資料缺少公開進度與等待項目時，沿用原本的立即公開語意。 */
+    @Test
+    fun `test legacy riichi dynamic state defaults reveal progress to completed draws`() {
+        val decoded = json.decodeFromString(
+            RiichiDynamicStateDto.serializer(),
+            """{"riichiStickCount":2,"completedSupplementalDrawCount":3}""",
+        )
+
+        assertEquals(3, decoded.revealedKanDoraCount)
+        assertEquals(emptyList(), decoded.pendingKanDoraReveals)
+        assertEquals(RiichiDynamicState(2, 3, 3), decoded.toDomain())
     }
 
     @Test

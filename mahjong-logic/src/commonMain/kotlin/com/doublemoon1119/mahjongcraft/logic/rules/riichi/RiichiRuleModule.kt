@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
 import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
@@ -66,6 +67,9 @@ class RiichiRuleModule(
 
     /** 建立日本麻將槓後嶺上補牌與死牌區變化 policy。 */
     override fun createSupplementalDrawPolicy(): SupplementalDrawPolicy = RiichiSupplementalDrawPolicy
+
+    /** 建立日麻槓寶牌公開時序 policy。 */
+    override fun createWallRevealPolicy(): WallRevealPolicy = RiichiWallRevealPolicy
 
     /**
      * 建立日本麻將專用的牌河。

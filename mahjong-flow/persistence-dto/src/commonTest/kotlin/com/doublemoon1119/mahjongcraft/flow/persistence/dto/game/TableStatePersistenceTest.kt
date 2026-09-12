@@ -1,4 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.game
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.RiichiDynamicStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildDiscardPilePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildDynamicRuleStatePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.buildExhaustiveDrawReasonPersistenceRegistry
@@ -12,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
@@ -142,6 +144,18 @@ class TableStatePersistenceTest {
         assertEquals(emptySet(), decoded.finishedPlayerIds)
     }
 
+    /** 驗證舊存檔缺少公開進度與等待項目時，沿用原本的立即公開語意。 */
+    @Test
+    fun `decoding legacy riichi dynamic state defaults reveal progress to completed draws`() {
+        val decoded = json.decodeFromString(
+            RiichiDynamicStatePersistenceDto.serializer(),
+            """{"riichiStickCount":2,"completedSupplementalDrawCount":3}""",
+        )
+
+        assertEquals(3, decoded.revealedKanDoraCount)
+        assertEquals(emptyList(), decoded.pendingKanDoraReveals)
+    }
+
     /** 存檔裡的 `finishedPlayerIds` 含不在座玩家時，還原成領域型別的當下就該被不變式擋下。 */
     @Test
     fun `restoring a table state whose finishedPlayerIds contains an outsider fails fast`() {
@@ -193,7 +207,14 @@ class TableStatePersistenceTest {
             roundNumber = 5,
             comboCount = 2,
             currentPlayerIndex = 1,
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 3, completedSupplementalDrawCount = 2),
+            dynamicRuleState = RiichiDynamicState(
+                riichiStickCount = 3,
+                completedSupplementalDrawCount = 2,
+                revealedKanDoraCount = 1,
+                pendingKanDoraReveals = listOf(
+                    RiichiPendingKanDoraReveal(human.id, GameAction.KanType.OPEN_KAN, 2),
+                ),
+            ),
         )
     }
 
