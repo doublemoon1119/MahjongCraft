@@ -28,6 +28,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
 import com.doublemoon1119.mahjongcraft.logic.table.UnsupportedSupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.layout.ContinuousPhysicalWallLayoutPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayout
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.seat.DealerAnchoredSeatWindAssignmentPolicy
@@ -99,6 +101,14 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 此規則的 [TileWallLayout]，若尚未支援則為 null。
      */
     fun createWallLayout(): TileWallLayout? = null
+
+    /**
+     * 建立本規則的抽象實體牌牆布局 policy。
+     *
+     * 未覆寫的規則維持 [TileWallLayout] 產生的基本格位，只移除已離開牌牆的牌，不建立特定玩法的
+     * 王牌分界、特殊嶺上牌位置或補牌重排。
+     */
+    fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy = ContinuousPhysicalWallLayoutPolicy
 
     /**
      * 建立目前規則用於一般牌面比較的解讀 policy。
