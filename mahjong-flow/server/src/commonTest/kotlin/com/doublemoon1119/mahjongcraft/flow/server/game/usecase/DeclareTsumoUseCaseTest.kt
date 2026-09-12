@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -113,6 +114,13 @@ class DeclareTsumoUseCaseTest {
             players = listOf(winner, south, west, north),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
+            dynamicRuleState = RiichiDynamicState(
+                completedSupplementalDrawCount = 1,
+                revealedKanDoraCount = 0,
+                pendingKanDoraReveals = listOf(
+                    RiichiPendingKanDoraReveal(winnerId, GameAction.KanType.ADDED_KAN, 1),
+                ),
+            ),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -124,6 +132,7 @@ class DeclareTsumoUseCaseTest {
         assertEquals(25000 - 16000, newState.players.first { it.id == south.id }.score)
         assertEquals(25000 - 16000, newState.players.first { it.id == west.id }.score)
         assertEquals(25000 - 16000, newState.players.first { it.id == north.id }.score)
+        assertTrue((newState.dynamicRuleState as RiichiDynamicState).pendingKanDoraReveals.isEmpty())
         assertEquals(
             listOf(com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.GameActionSoundContext(winnerId, GameAction.Tsumo)),
             fixtures.presentationPublisher.getPublishedGameActionSounds(gameId),

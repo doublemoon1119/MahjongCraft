@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -112,8 +113,25 @@ class RespondToKanUseCase(
                             winnerIds = ronWinnerIds,
                             isRobbingKan = pending.kanAction.type == GameAction.KanType.ADDED_KAN,
                         )
-                        val newState = resolved?.tableState?.copy(pendingKanReaction = null)
+                        val settledState = resolved?.tableState?.copy(pendingKanReaction = null)
                             ?: state.copy(pendingKanReaction = newPending)
+                        val revealResult = if (resolved != null) {
+                            WallRevealDecisionApplier.apply(
+                                tableState = settledState,
+                                checkpoint = WallRevealCheckpoint.WIN_CONFIRMED,
+                                module = module,
+                                sourceAction = GameAction.Ron(pending.robbedTile.id),
+                            )
+                        } else {
+                            WallRevealDecisionApplier.Result.Applied(settledState)
+                        }
+                        if (revealResult is WallRevealDecisionApplier.Result.Rejected) {
+                            return@update state to Outcome.Error(
+                                GameError.UnsupportedAction(gameId, playerId, revealResult.reasonId),
+                            )
+                        }
+                        revealResult as WallRevealDecisionApplier.Result.Applied
+                        val newState = revealResult.tableState
                         newState to Outcome.Success(
                             ChankanResult(
                                 tableState = newState,
@@ -124,6 +142,8 @@ class RespondToKanUseCase(
                                 ruleModuleId = if (resolved != null) module.id else null,
                                 previousTableState = if (resolved != null) state else null,
                                 ronDiscarderId = if (resolved != null) pending.declarerId else null,
+                                wallRevealBatches = listOf(revealResult.newlyRevealedTileIds)
+                                    .filterNot { it.isEmpty() },
                             ),
                         )
                     } else {
@@ -144,7 +164,7 @@ class RespondToKanUseCase(
                                 newState,
                                 drawHappened = applied.drawnTiles.isNotEmpty(),
                                 declarerId = pending.declarerId,
-                                newlyRevealedWallTileIds = applied.newlyRevealedTileIds,
+                                wallRevealBatches = applied.wallRevealBatches,
                             ),
                         )
                     }
@@ -179,10 +199,11 @@ class RespondToKanUseCase(
                 declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
                 comboStickCount = if (declarerSeatIndex == dealerSeatIndex) newState.comboCount else 0,
             )
-            // 槓牌真的成立後可能翻開新的一張寶牌指示牌，理由同 DeclareKanUseCase。
-            if (result.newlyRevealedWallTileIds.isNotEmpty()) {
-                presentationPublisher.publishWallTilesRevealed(gameId, result.newlyRevealedWallTileIds)
-            }
+        }
+
+        // 正常成立的槓依規則 checkpoint 發布新公開的牌；搶槓胡牌取消等待時不會產生批次。
+        result.wallRevealBatches.forEach { revealedTileIds ->
+            presentationPublisher.publishWallTilesRevealed(gameId, revealedTileIds)
         }
 
         // 建構胡牌演出內容並寫進交接槽——搶槓成功時 result.ronWinnerIds 可能不只一人，打包成同一筆；
@@ -240,6 +261,6 @@ class RespondToKanUseCase(
         val ruleModuleId: String? = null,
         val previousTableState: TableState? = null,
         val ronDiscarderId: Uuid? = null,
-        val newlyRevealedWallTileIds: Set<Uuid> = emptySet(),
+        val wallRevealBatches: List<Set<Uuid>> = emptyList(),
     )
 }

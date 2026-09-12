@@ -17,6 +17,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -131,14 +133,38 @@ class DiscardTileUseCase(
                         val resolved =
                             DiscardReactionResolver.resolve(state, stateAfterDiscard, module, playerId, discardedTile)
 
+                        val revealResult = if (
+                            resolved.abortiveDrawReason == null && resolved.tableState.pendingReaction == null
+                        ) {
+                            WallRevealDecisionApplier.apply(
+                                tableState = resolved.tableState,
+                                checkpoint = WallRevealCheckpoint.AFTER_DISCARD_REACTIONS,
+                                module = module,
+                                actorPlayerId = playerId,
+                                sourceAction = GameAction.Discard(tileId),
+                            )
+                        } else {
+                            WallRevealDecisionApplier.Result.Applied(resolved.tableState)
+                        }
+                        if (revealResult is WallRevealDecisionApplier.Result.Rejected) {
+                            return@update state to Outcome.Error(
+                                GameError.UnsupportedAction(gameId, playerId, revealResult.reasonId),
+                            )
+                        }
+                        revealResult as WallRevealDecisionApplier.Result.Applied
+                        val resolvedAfterReveal = resolved.copy(tableState = revealResult.tableState)
+
                         // 沒有觸發一炮多響流局、也沒有人可反應時，額外檢查是否構成主動觸發的途中流局。
                         val suufonReason =
-                            if (resolved.abortiveDrawReason == null && resolved.tableState.pendingReaction == null) {
+                            if (
+                                resolvedAfterReveal.abortiveDrawReason == null &&
+                                resolvedAfterReveal.tableState.pendingReaction == null
+                            ) {
                                 postActionExhaustiveDrawResolverRegistry.resolve(
                                     CompletedGameActionContext(
                                         actorPlayerId = playerId,
                                         action = GameAction.Discard(tileId),
-                                        tableState = resolved.tableState,
+                                        tableState = resolvedAfterReveal.tableState,
                                     ),
                                     module,
                                 )
@@ -146,15 +172,17 @@ class DiscardTileUseCase(
                                 null
                             }
                         val finalResult = if (suufonReason != null) {
-                            resolved.copy(
-                                tableState = resolved.tableState.recordExhaustiveDrawForAllPlayers(suufonReason),
+                            resolvedAfterReveal.copy(
+                                tableState = resolvedAfterReveal.tableState.recordExhaustiveDrawForAllPlayers(suufonReason),
                                 abortiveDrawReason = suufonReason,
                             )
                         } else {
-                            resolved
+                            resolvedAfterReveal
                         }
 
-                        finalResult.tableState to Outcome.Success(finalResult)
+                        finalResult.tableState to Outcome.Success(
+                            DiscardResult(finalResult, revealResult.newlyRevealedTileIds),
+                        )
                     }
                 }
             }
@@ -162,7 +190,7 @@ class DiscardTileUseCase(
 
         if (outcome is Outcome.Error) return outcome
         val result = (outcome as Outcome.Success).value
-        val newState = result.tableState
+        val newState = result.resolution.tableState
 
         // 2. 同步快照給所有正在觀察的玩家
         snapshotSynchronizer.syncAll(gameId)
@@ -170,7 +198,7 @@ class DiscardTileUseCase(
         // 3. 通知在場玩家與旁觀者；流局有觸發時，先廣播捨牌事件、再接著廣播流局事件
         val seatedPlayerIds = newState.players.map { it.id }
         eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.Discard(tileId))
-        result.abortiveDrawReason?.let { reason ->
+        result.resolution.abortiveDrawReason?.let { reason ->
             eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.ExhaustiveDraw(reason))
         }
 
@@ -194,7 +222,19 @@ class DiscardTileUseCase(
             (discarder.discardPile as? SidewaysMarkedDiscardPile)?.sidewaysMarkedTileId(),
             newlyDiscardedTileId = tileId,
         )
+        if (result.newlyRevealedTileIds.isNotEmpty()) {
+            presentationPublisher.publishWallTilesRevealed(gameId, result.newlyRevealedTileIds)
+        }
 
         return Outcome.Success(Unit)
+    }
+
+    /** 將捨牌反應結果與該 checkpoint 新公開的牌張一起帶出原子更新區塊。 */
+    private data class DiscardResult(
+        val resolution: DiscardReactionResolver.Result,
+        val newlyRevealedTileIds: Set<Uuid> = emptySet(),
+    ) {
+        /** 更新後的權威桌況。 */
+        val tableState: TableState get() = resolution.tableState
     }
 }

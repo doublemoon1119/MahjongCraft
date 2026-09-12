@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
@@ -14,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
+import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -26,16 +28,17 @@ import kotlin.uuid.Uuid
 object RiichiDebugGameScenarios {
     /** 所有內建日麻 debug 情境。 */
     val all: List<DebugGameScenario> = listOf(
-        RiichiWallScenario("mahjongcraft:riichi_wall_initial", null),
-        RiichiWallScenario("mahjongcraft:riichi_before_kan_1", 0),
-        RiichiWallScenario("mahjongcraft:riichi_before_kan_2", 1),
-        RiichiWallScenario("mahjongcraft:riichi_before_kan_3", 2),
-        RiichiWallScenario("mahjongcraft:riichi_before_kan_4", 3),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_1", 0),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_2", 1),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_3", 2),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_4", 3),
+        RiichiBeforeMinkanScenario,
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi_wall_initial", null),
     )
 }
 
 /** 建立固定停在下一次暗槓宣告前的四人日麻情境。 */
-private class RiichiWallScenario(
+private class RiichiBeforeAnkanScenario(
     override val id: String,
     /** 已在桌上成立並完成補牌的槓數；null 代表單純初始牌牆情境。 */
     private val completedKanCount: Int?,
@@ -245,5 +248,42 @@ private class RiichiWallScenario(
             Tile.Honor.Green,
             Tile.Honor.Red,
         )
+    }
+}
+
+/** 建立固定停在呼叫者可對上一張捨牌宣告大明槓的四人日麻情境。 */
+private object RiichiBeforeMinkanScenario : DebugGameScenario {
+    override val id: String = "mahjongcraft:riichi_before_minkan_1"
+
+    override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
+        val base = RiichiBeforeAnkanScenario(id, 0).build(context)
+        val state = base.game.tableState
+        val claimantIndex = state.players.indexOfFirst { it.id == context.invokingPlayerId }
+        val discarderIndex = (claimantIndex + state.players.lastIndex) % state.players.size
+        val claimant = state.players[claimantIndex]
+        val discardedTile = requireNotNull(claimant.hand.lastDrawn) {
+            "Minkan debug scenario requires the fourth matching tile as the prepared draw"
+        }
+        val discardAction = GameAction.Discard(discardedTile.id)
+        val players = state.players.mapIndexed { index, player ->
+            when (index) {
+                claimantIndex -> player.copy(hand = player.hand.copy(lastDrawn = null))
+                discarderIndex -> player.copy(
+                    discardPile = player.discardPile.discardTile(discardedTile),
+                    actionHistory = player.actionHistory + discardAction,
+                )
+                else -> player
+            }
+        }
+        val tableState = state.copy(
+            players = players,
+            currentPlayerIndex = discarderIndex,
+            pendingReaction = PendingReaction(
+                discarderId = players[discarderIndex].id,
+                tileId = discardedTile.id,
+                eligiblePlayerIds = setOf(context.invokingPlayerId),
+            ),
+        )
+        return base.copy(game = base.game.copy(tableState = tableState))
     }
 }

@@ -27,7 +27,6 @@ class KanDeclarationApplierTest {
             tileWall = TileWall(listOf(remainingTile)),
             reservedWallTiles = listOf(reservedTile),
             dynamicRuleState = state.dynamicRuleState,
-            newlyRevealedTileIds = setOf(reservedTile.id),
         )
 
         val result = assertIs<KanDeclarationApplier.Result.Applied>(
@@ -37,7 +36,7 @@ class KanDeclarationApplierTest {
         assertEquals(drawnTile, result.tableState.currentPlayer.hand.lastDrawn)
         assertEquals(listOf(remainingTile), result.tableState.tileWall.getAllTiles())
         assertEquals(listOf(reservedTile), result.tableState.reservedWallTiles)
-        assertEquals(setOf(reservedTile.id), result.newlyRevealedTileIds)
+        assertEquals(emptyList(), result.wallRevealBatches)
     }
 
     /** 驗證 policy 遺失牌張或重複使用同一 UUID 時，Flow 不會留下半完成桌況。 */

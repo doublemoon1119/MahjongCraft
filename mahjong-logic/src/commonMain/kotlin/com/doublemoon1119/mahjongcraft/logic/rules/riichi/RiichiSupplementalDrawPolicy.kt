@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 
-/** 日本麻將槓後嶺上補牌、死牌區補充與槓寶牌公開 policy。 */
+/** 日本麻將槓後嶺上補牌與死牌區補充 policy。 */
 object RiichiSupplementalDrawPolicy : SupplementalDrawPolicy {
     /**
      * 解析成功成立的槓；其他動作不需要補牌。
@@ -29,24 +29,13 @@ object RiichiSupplementalDrawPolicy : SupplementalDrawPolicy {
         val replenishmentTile = replenishment.tile
             ?: return SupplementalDrawDecision.Rejected(SupplementalDrawReasonIds.WALL_EXHAUSTED)
         val updatedDeadWall = context.tableStateAfterAction.reservedWallTiles.drop(1) + replenishmentTile
-        val updatedDynamicState = dynamicState.copy(
-            completedSupplementalDrawCount = drawIndex + 1,
-            revealedKanDoraCount = drawIndex + 1,
-        )
-        val updatedState = context.tableStateAfterAction.copy(
-            tileWall = replenishment.wall,
-            initialDeadWall = updatedDeadWall,
-            dynamicRuleState = updatedDynamicState,
-        )
-        val previouslyVisible = dynamicState.getVisibleTileIds(context.tableStateBeforeAction)
-        val newlyVisible = updatedDynamicState.getVisibleTileIds(updatedState) - previouslyVisible
+        val updatedDynamicState = dynamicState.copy(completedSupplementalDrawCount = drawIndex + 1)
 
         return SupplementalDrawDecision.Completed(
             drawnTiles = listOf(drawnTile),
             tileWall = replenishment.wall,
             reservedWallTiles = updatedDeadWall,
             dynamicRuleState = updatedDynamicState,
-            newlyRevealedTileIds = newlyVisible,
         )
     }
 

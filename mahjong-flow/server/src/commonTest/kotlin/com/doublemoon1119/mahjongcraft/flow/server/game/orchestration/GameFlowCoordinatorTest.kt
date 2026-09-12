@@ -1128,7 +1128,8 @@ class GameFlowCoordinatorTest {
             id = gameId,
             players = listOf(player),
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
-            initialDeadWall = listOf(rinshanTile),
+            initialDeadWall = listOf(rinshanTile) +
+                List(13) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)) },
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
         )

@@ -44,7 +44,7 @@ class RiichiSupplementalDrawPolicyTest {
         assertEquals(deadWall.drop(1) + liveWall.last(), result.reservedWallTiles)
         assertEquals(14, result.reservedWallTiles.size)
         assertEquals(1, (result.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
-        assertEquals(setOf(deadWall[6].id), result.newlyRevealedTileIds)
+        assertEquals(0, (result.dynamicRuleState as RiichiDynamicState).revealedKanDoraCount)
     }
 
     /** 驗證連續四次補牌依序取走原始嶺上牌，補入死牌區的牌不會被再次摸取。 */

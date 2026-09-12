@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import kotlin.uuid.Uuid
 
 /**
@@ -25,12 +26,12 @@ internal object KanDeclarationApplier {
          *
          * @property tableState 更新後桌況。
          * @property drawnTiles 規則實際補到的牌張。
-         * @property newlyRevealedTileIds 本次新公開的牌張 ID。
+         * @property wallRevealBatches 依 checkpoint 順序排列的新公開牌批次。
          */
         data class Applied(
             val tableState: TableState,
             val drawnTiles: List<IdentifiedTile>,
-            val newlyRevealedTileIds: Set<Uuid>,
+            val wallRevealBatches: List<Set<Uuid>> = emptyList(),
         ) : Result
 
         /**
@@ -106,17 +107,62 @@ internal object KanDeclarationApplier {
         action: GameAction,
         module: MahjongRuleModule<*>,
     ): Result {
+        val beforeReveal = WallRevealDecisionApplier.apply(
+            originalState,
+            WallRevealCheckpoint.BEFORE_SUPPLEMENTAL_DRAW,
+            module,
+            actorPlayerId,
+            action,
+        )
+        if (beforeReveal is WallRevealDecisionApplier.Result.Rejected) {
+            return Result.Rejected(beforeReveal.reasonId)
+        }
+        beforeReveal as WallRevealDecisionApplier.Result.Applied
+        val stateBeforeSupplementalDraw = beforeReveal.tableState
+        val candidateAfterBeforeReveal = candidateState.copy(
+            dynamicRuleState = stateBeforeSupplementalDraw.dynamicRuleState,
+        )
         val decision = module.createSupplementalDrawPolicy().resolve(
-            SupplementalDrawContext(originalState, candidateState, actorPlayerId, action),
+            SupplementalDrawContext(stateBeforeSupplementalDraw, candidateAfterBeforeReveal, actorPlayerId, action),
         )
         return when (decision) {
-            SupplementalDrawDecision.NotRequired -> Result.Applied(candidateState, emptyList(), emptySet())
+            SupplementalDrawDecision.NotRequired -> Result.Applied(
+                candidateAfterBeforeReveal,
+                emptyList(),
+                listOf(beforeReveal.newlyRevealedTileIds).filterNot { it.isEmpty() },
+            )
             is SupplementalDrawDecision.Rejected -> Result.Rejected(decision.reasonId)
             is SupplementalDrawDecision.Completed -> applyCompletedDecision(
-                originalState,
-                candidateState,
+                stateBeforeSupplementalDraw,
+                candidateAfterBeforeReveal,
                 actorPlayerId,
                 decision,
+            ).completeWallReveal(module, actorPlayerId, action, beforeReveal.newlyRevealedTileIds)
+        }
+    }
+
+    /** 補牌成功後呼叫公開 policy，並保留補牌前／後兩批呈現順序。 */
+    private fun Result.completeWallReveal(
+        module: MahjongRuleModule<*>,
+        actorPlayerId: Uuid,
+        action: GameAction,
+        revealedBeforeDraw: Set<Uuid>,
+    ): Result {
+        if (this is Result.Rejected) return this
+        this as Result.Applied
+        val afterReveal = WallRevealDecisionApplier.apply(
+            tableState,
+            WallRevealCheckpoint.AFTER_SUPPLEMENTAL_DRAW,
+            module,
+            actorPlayerId,
+            action,
+        )
+        return when (afterReveal) {
+            is WallRevealDecisionApplier.Result.Rejected -> Result.Rejected(afterReveal.reasonId)
+            is WallRevealDecisionApplier.Result.Applied -> copy(
+                tableState = afterReveal.tableState,
+                wallRevealBatches = listOf(revealedBeforeDraw, afterReveal.newlyRevealedTileIds)
+                    .filterNot { it.isEmpty() },
             )
         }
     }
@@ -136,11 +182,6 @@ internal object KanDeclarationApplier {
         ) {
             return Result.Rejected(SupplementalDrawReasonIds.INVALID_RESULT)
         }
-        val updatedWallIds = (decision.tileWall.getAllTiles() + decision.reservedWallTiles).mapTo(mutableSetOf()) { it.id }
-        if (!updatedWallIds.containsAll(decision.newlyRevealedTileIds)) {
-            return Result.Rejected(SupplementalDrawReasonIds.INVALID_RESULT)
-        }
-
         val actorIndex = candidateState.players.indexOfFirst { it.id == actorPlayerId }
         if (actorIndex == -1) return Result.Rejected(SupplementalDrawReasonIds.INVALID_RESULT)
         val actor = candidateState.players[actorIndex]
@@ -156,6 +197,6 @@ internal object KanDeclarationApplier {
             initialDeadWall = decision.reservedWallTiles,
             dynamicRuleState = decision.dynamicRuleState,
         )
-        return Result.Applied(updatedState, decision.drawnTiles, decision.newlyRevealedTileIds)
+        return Result.Applied(updatedState, decision.drawnTiles)
     }
 }

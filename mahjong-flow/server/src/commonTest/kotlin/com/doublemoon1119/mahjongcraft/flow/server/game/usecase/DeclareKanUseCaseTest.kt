@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepos
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
@@ -82,7 +83,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer),
             config = RiichiRuleConfig(),
-            initialDeadWall = listOf(rinshanTile),
+            initialDeadWall = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
         )
@@ -104,7 +105,7 @@ class DeclareKanUseCaseTest {
             "Kan must be recorded before Draw for rinshan kaihou detection to work.",
         )
         assertEquals(table.tileWall.remainingCount - 1, newState.tileWall.remainingCount)
-        assertEquals(table.tileWall.getAllTiles().last(), newState.initialDeadWall.first())
+        assertEquals(table.tileWall.getAllTiles().last(), newState.initialDeadWall.last())
         assertEquals(1, (newState.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
         assertEquals(
             rinshanTile.id,
@@ -114,9 +115,8 @@ class DeclareKanUseCaseTest {
     }
 
     /**
-     * 驗證槓牌成立後會透過 `TileWallRevealable` 通知平台呈現層目前完整該公開翻面的王牌集合（例如
-     * 槓寶牌）——不是只有「有沒有呼叫」，而是真的用了 `RiichiDynamicState.getVisibleTileIds` 算出來的
-     * 值，不支援 `TileWallRevealable` 的桌況（`dynamicRuleState` 為 null）則完全不會呼叫。
+     * 驗證暗槓補牌後會將牌牆公開 policy 回傳的新公開王牌（例如槓寶牌）通知平台呈現層；
+     * 已經公開的牌不會混入這次的動畫批次。
      */
     @Test
     fun `test closed kan success publishes newly revealed dead wall tiles`() = runTest {
@@ -223,7 +223,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer),
             config = RiichiRuleConfig(),
-            initialDeadWall = listOf(rinshanTile),
+            initialDeadWall = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
         )
@@ -303,7 +303,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer),
             config = RiichiRuleConfig(),
-            initialDeadWall = listOf(rinshanTile),
+            initialDeadWall = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
         )
@@ -470,7 +470,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer, other),
             config = RiichiRuleConfig(),
-            initialDeadWall = listOf(rinshanTile),
+            initialDeadWall = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
         )
@@ -581,7 +581,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer, finishedRobber),
             config = RiichiRuleConfig(),
-            initialDeadWall = listOf(rinshanTile),
+            initialDeadWall = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
             finishedPlayerIds = setOf(finishedRobberId),
             dynamicRuleState = RiichiDynamicState(),
@@ -786,4 +786,8 @@ class DeclareKanUseCaseTest {
             result.error,
         )
     }
+
+    /** 建立具有完整十四張槽位、且第一張可作為嶺上牌的日麻王牌區。 */
+    private fun completeDeadWall(firstSupplementalTile: IdentifiedTile): List<IdentifiedTile> = listOf(firstSupplementalTile) +
+        List(13) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)) }
 }

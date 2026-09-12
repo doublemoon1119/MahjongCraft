@@ -27,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -200,11 +201,12 @@ class RespondToDiscardUseCase(
                 // 最後一組必定就是這次剛成立的那組，組內全部牌都該播放鳴牌動畫。
                 animatedMeldClaimTileIds = winner.hand.melds.last().tiles.map { it.id }.toSet(),
             )
-            // 明槓得標可能翻開新的一張寶牌指示牌，理由同 DeclareKanUseCase；吃/碰不構成槓，不需要
-            // 檢查——只看剛成立的那組副露（永遠是 melds 的最後一組）是不是明槓。
-            if (result.newlyRevealedWallTileIds.isNotEmpty()) {
-                presentationPublisher.publishWallTilesRevealed(gameId, result.newlyRevealedWallTileIds)
-            }
+        }
+
+        // 依 checkpoint 順序發布新公開的牌牆資訊；除了本次明槓，先前延後的公開也可能在全員跳過、
+        // 吃或碰確定無人榮和時於此完成，因此不能綁在 winnerId 的呈現區塊內。
+        result.wallRevealBatches.forEach { revealedTileIds ->
+            presentationPublisher.publishWallTilesRevealed(gameId, revealedTileIds)
         }
 
         // 建構胡牌演出內容並寫進交接槽——一炮多響時 result.ronWinnerIds 可能不只一人，打包成同一筆；
@@ -272,7 +274,7 @@ class RespondToDiscardUseCase(
         val ruleModuleId: String? = null,
         val previousTableState: TableState? = null,
         val ronDiscarderId: Uuid? = null,
-        val newlyRevealedWallTileIds: Set<Uuid> = emptySet(),
+        val wallRevealBatches: List<Set<Uuid>> = emptyList(),
         val rejectionReasonId: String? = null,
     )
 
@@ -296,7 +298,7 @@ class RespondToDiscardUseCase(
                 module = module,
                 winnerIds = ronWinnerIds,
             )
-            return RespondResult(
+            val result = RespondResult(
                 tableState = resolved?.tableState?.copy(pendingReaction = null)
                     ?: state.copy(players = players, pendingReaction = pendingReaction),
                 ronWinnerIds = if (resolved != null) ronWinnerIds else emptySet(),
@@ -306,6 +308,15 @@ class RespondToDiscardUseCase(
                 previousTableState = if (resolved != null) state.copy(players = players) else null,
                 ronDiscarderId = if (resolved != null) pendingReaction.discarderId else null,
             )
+            return if (resolved != null) {
+                result.applyWallReveal(
+                    checkpoint = WallRevealCheckpoint.WIN_CONFIRMED,
+                    module = module,
+                    sourceAction = GameAction.Ron(discardedTile.id),
+                )
+            } else {
+                result
+            }
         }
 
         val winningEntry =
@@ -321,6 +332,11 @@ class RespondToDiscardUseCase(
                     currentPlayerIndex = players.indexOf(nextPlayer),
                     pendingReaction = null,
                 ),
+            ).applyWallReveal(
+                checkpoint = WallRevealCheckpoint.AFTER_DISCARD_REACTIONS,
+                module = module,
+                actorPlayerId = pendingReaction.discarderId,
+                sourceAction = GameAction.Discard(pendingReaction.tileId),
             )
         }
 
@@ -377,6 +393,11 @@ class RespondToDiscardUseCase(
                 discarderId = pendingReaction.discarderId,
                 winnerId = winnerId,
                 resolvedAction = winnerAction,
+            ).applyWallReveal(
+                checkpoint = WallRevealCheckpoint.AFTER_DISCARD_REACTIONS,
+                module = module,
+                actorPlayerId = pendingReaction.discarderId,
+                sourceAction = GameAction.Discard(pendingReaction.tileId),
             )
         }
 
@@ -386,10 +407,18 @@ class RespondToDiscardUseCase(
             currentPlayerIndex = winnerIndex,
             pendingReaction = null,
         )
+        val reactionReveal = RespondResult(candidateState).applyWallReveal(
+            checkpoint = WallRevealCheckpoint.AFTER_DISCARD_REACTIONS,
+            module = module,
+            actorPlayerId = pendingReaction.discarderId,
+            sourceAction = GameAction.Discard(pendingReaction.tileId),
+        )
+        if (reactionReveal.rejectionReasonId != null) return reactionReveal
+
         return when (
             val applied = KanDeclarationApplier.applySupplementalDraw(
-                originalState,
-                candidateState,
+                originalState.copy(dynamicRuleState = reactionReveal.tableState.dynamicRuleState),
+                reactionReveal.tableState,
                 winnerId,
                 winnerAction,
                 module,
@@ -406,8 +435,32 @@ class RespondToDiscardUseCase(
                 discarderId = pendingReaction.discarderId,
                 winnerId = winnerId,
                 resolvedAction = winnerAction,
-                newlyRevealedWallTileIds = applied.newlyRevealedTileIds,
+                wallRevealBatches = reactionReveal.wallRevealBatches + applied.wallRevealBatches,
             )
         }
+    }
+
+    /** 對中繼結果套用一個規則中立牌牆公開 checkpoint。 */
+    private fun RespondResult.applyWallReveal(
+        checkpoint: WallRevealCheckpoint,
+        module: MahjongRuleModule<*>,
+        actorPlayerId: Uuid? = null,
+        sourceAction: GameAction? = null,
+    ): RespondResult = when (
+        val applied = WallRevealDecisionApplier.apply(
+            tableState = tableState,
+            checkpoint = checkpoint,
+            module = module,
+            actorPlayerId = actorPlayerId,
+            sourceAction = sourceAction,
+        )
+    ) {
+        is WallRevealDecisionApplier.Result.Applied -> copy(
+            tableState = applied.tableState,
+            wallRevealBatches = wallRevealBatches +
+                listOf(applied.newlyRevealedTileIds).filterNot { it.isEmpty() },
+        )
+
+        is WallRevealDecisionApplier.Result.Rejected -> copy(rejectionReasonId = applied.reasonId)
     }
 }

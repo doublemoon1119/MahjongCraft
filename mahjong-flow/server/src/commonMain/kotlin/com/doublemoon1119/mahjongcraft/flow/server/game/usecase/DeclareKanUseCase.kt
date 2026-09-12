@@ -35,7 +35,8 @@ import kotlin.uuid.Uuid
  * 加槓視為未成立，不開反應視窗、不套用副露。
  *
  * 套用副露後依序記錄 [GameAction.Kan]，再由 [MahjongRuleModule.createSupplementalDrawPolicy]
- * 決定是否補牌、補牌來源、牌牆變化及新公開牌。若規則補牌成功，Flow 會記錄 [GameAction.Draw]；
+ * 決定是否補牌、補牌來源及牌牆變化，公開牌則由規則的牌牆公開 policy 決定。若規則補牌成功，
+ * Flow 會記錄 [GameAction.Draw]；
  * 規則層可依動作歷史判斷其專屬役種或狀態。
  *
  * 不涉及包牌（Pao）：加槓沿用
@@ -205,7 +206,7 @@ class DeclareKanUseCase(
                             applied.tableState,
                             kanAction,
                             drawHappened = applied.drawnTiles.isNotEmpty(),
-                            newlyRevealedWallTileIds = applied.newlyRevealedTileIds,
+                            wallRevealBatches = applied.wallRevealBatches,
                         ),
                     )
                 }
@@ -255,10 +256,9 @@ class DeclareKanUseCase(
                 comboStickCount = if (declarerSeatIndex == dealerSeatIndex) newState.comboCount else 0,
                 animatedMeldClaimTileIds = animatedTileIds,
             )
-            // 槓牌成立後可能翻開新的一張寶牌指示牌（例如日麻的槓寶牌）；不支援 TileWallRevealable
-            // 的規則永遠算出空集合，呼叫這個方法沒有任何效果。
-            if (result.newlyRevealedWallTileIds.isNotEmpty()) {
-                presentationPublisher.publishWallTilesRevealed(gameId, result.newlyRevealedWallTileIds)
+            // 依規則 checkpoint 順序發布這次新公開的牌牆資訊（例如日麻暗槓後立即翻槓寶牌）。
+            result.wallRevealBatches.forEach { revealedTileIds ->
+                presentationPublisher.publishWallTilesRevealed(gameId, revealedTileIds)
             }
         }
 
@@ -278,6 +278,6 @@ class DeclareKanUseCase(
         val kanAction: GameAction.Kan,
         val drawHappened: Boolean,
         val abortiveDrawReason: ExhaustiveDrawReason? = null,
-        val newlyRevealedWallTileIds: Set<Uuid> = emptySet(),
+        val wallRevealBatches: List<Set<Uuid>> = emptyList(),
     )
 }

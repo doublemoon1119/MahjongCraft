@@ -65,8 +65,7 @@ interface MahjongTileWallPresenter {
      * `GamePresentationPublisher.publishWallTilesRevealed` KDoc。冪等：重複呼叫同一批 id 沒有
      * 副作用。
      *
-     * @param revealedTileIds 目前應該公開翻面的完整王牌 Uuid 集合（不是只有「新增」的那幾張），
-     *                        呼叫端每次都傳目前完整該公開的集合，實作不需要自行比對差異。
+     * @param revealedTileIds 本次新增公開翻面的牌 Uuid 集合；實作只處理這一批，重複 ID 仍須保持冪等。
      * @return 找不到對應 entity 的張數；比照本介面 best-effort 慣例，找不到的牌會被跳過。
      */
     fun revealDeadWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult

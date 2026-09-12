@@ -20,7 +20,14 @@ class DebugGameScenarioValidator(
         }
         require(candidate.roomPlayerIds == previous.roomPlayerIds) { "Debug scenario must preserve room player order" }
         require(candidate.hostId == previous.hostId) { "Debug scenario must preserve the host" }
-        require(candidate.tableState.currentPlayer.id == context.invokingPlayerId) {
+        val invokingPlayerHasAuthority = candidate.tableState.currentPlayer.id == context.invokingPlayerId ||
+            candidate.tableState.pendingReaction?.let { pending ->
+                context.invokingPlayerId in pending.eligiblePlayerIds && context.invokingPlayerId !in pending.responses
+            } == true ||
+            candidate.tableState.pendingKanReaction?.let { pending ->
+                context.invokingPlayerId in pending.eligiblePlayerIds && context.invokingPlayerId !in pending.responses
+            } == true
+        require(invokingPlayerHasAuthority) {
             "Debug scenario must give the invoking player decision authority"
         }
 

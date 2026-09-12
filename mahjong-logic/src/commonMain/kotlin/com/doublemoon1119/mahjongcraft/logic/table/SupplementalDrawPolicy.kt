@@ -8,7 +8,8 @@ import kotlin.uuid.Uuid
 /**
  * 動作完成後由規則決定是否補摸額外牌張的純邏輯 policy。
  *
- * Flow 只負責建立候選桌況、驗證結果及原子套用，不得自行假設補牌來源、數量或公開資訊。
+ * Flow 只負責建立候選桌況、驗證結果及原子套用，不得自行假設補牌來源、數量或牌牆變化；
+ * 公開資訊另由 [WallRevealPolicy] 在明確 checkpoint 處理。
  */
 fun interface SupplementalDrawPolicy {
     /** 根據 [context] 決定本次動作完成後的補牌與牌牆變化。 */
@@ -42,14 +43,12 @@ sealed interface SupplementalDrawDecision {
      * @property tileWall 更新後仍可供一般摸牌的牌堆。
      * @property reservedWallTiles 更新後的權威規則保留牌；實體擺法由另外的 layout policy 決定。
      * @property dynamicRuleState 更新後的規則動態狀態。
-     * @property newlyRevealedTileIds 本次動作後新公開的牌張 ID。
      */
     data class Completed(
         val drawnTiles: List<IdentifiedTile>,
         val tileWall: TileWall,
         val reservedWallTiles: List<IdentifiedTile>,
         val dynamicRuleState: DynamicRuleState?,
-        val newlyRevealedTileIds: Set<Uuid> = emptySet(),
     ) : SupplementalDrawDecision
 
     /**

@@ -17,7 +17,9 @@ import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
@@ -1166,5 +1168,47 @@ class DiscardTileUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)
         assertNotNull(newState)
         assertNull(newState.pendingReaction, "The finished player's ron eligibility must not open a reaction window.")
+    }
+
+    /** 驗證延後中的槓寶牌會在捨牌反應確定無人可執行後公開。 */
+    @Test
+    fun `test discard without reactions reveals pending kan dora`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = drawnTile),
+        )
+        val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
+        val deadWall = List(14) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2)) }
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+            initialDeadWall = deadWall,
+            dynamicRuleState = RiichiDynamicState(
+                completedSupplementalDrawCount = 1,
+                revealedKanDoraCount = 0,
+                pendingKanDoraReveals = listOf(
+                    RiichiPendingKanDoraReveal(currentPlayerId, GameAction.KanType.OPEN_KAN, 1),
+                ),
+            ),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = assertNotNull(fixtures.gameRepo.getTableState(gameId))
+        val dynamicState = newState.dynamicRuleState as RiichiDynamicState
+        assertEquals(1, dynamicState.revealedKanDoraCount)
+        assertTrue(dynamicState.pendingKanDoraReveals.isEmpty())
+        assertEquals(
+            dynamicState.getVisibleTileIds(newState) -
+                (table.dynamicRuleState as RiichiDynamicState).getVisibleTileIds(table),
+            fixtures.presentationPublisher.getPublishedDeadWallReveal(gameId),
+        )
     }
 }

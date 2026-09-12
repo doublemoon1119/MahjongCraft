@@ -19,6 +19,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -95,18 +98,37 @@ class DeclareTsumoUseCase(
                         return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Tsumo))
                     }
 
+                    val revealResult = WallRevealDecisionApplier.apply(
+                        tableState = state,
+                        checkpoint = WallRevealCheckpoint.WIN_CONFIRMED,
+                        module = module,
+                        actorPlayerId = playerId,
+                        sourceAction = GameAction.Tsumo,
+                    )
+                    if (revealResult is WallRevealDecisionApplier.Result.Rejected) {
+                        return@update state to Outcome.Error(
+                            GameError.UnsupportedAction(gameId, playerId, revealResult.reasonId),
+                        )
+                    }
+                    revealResult as WallRevealDecisionApplier.Result.Applied
+                    val stateForSettlement = revealResult.tableState
+
                     // 這個規則不支援自摸結算時 declareTsumo 回傳 null。理論上不會走到
                     // 這裡，因為上面的 legalActions 檢查已經先擋下了；僅作防呆。
-                    val tsumoResult = module.declareTsumo(state, state.currentPlayer)
+                    val tsumoResult = module.declareTsumo(stateForSettlement, stateForSettlement.currentPlayer)
                         ?: return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Tsumo))
 
                     // 贏家同時收下場上所有供託（如立直棒），不支援此機制的規則回傳 null
-                    val stickPot = module.collectStickPot(state)
+                    val stickPot = module.collectStickPot(stateForSettlement)
 
-                    val updatedWinner = state.currentPlayer
-                        .copy(score = state.currentPlayer.score + tsumoResult.totalGained + (stickPot?.second ?: 0))
+                    val updatedWinner = stateForSettlement.currentPlayer
+                        .copy(
+                            score = stateForSettlement.currentPlayer.score +
+                                tsumoResult.totalGained +
+                                (stickPot?.second ?: 0),
+                        )
                         .recordAction(GameAction.Tsumo)
-                    val updatedPlayers = state.players.map { p ->
+                    val updatedPlayers = stateForSettlement.players.map { p ->
                         when {
                             p.id == playerId -> updatedWinner
                             else -> tsumoResult.paymentsByPlayerId[p.id]
@@ -114,12 +136,20 @@ class DeclareTsumoUseCase(
                                 ?: p
                         }
                     }
-                    val newState = state.copy(
+                    val newState = stateForSettlement.copy(
                         players = updatedPlayers,
-                        dynamicRuleState = stickPot?.first ?: state.dynamicRuleState,
+                        dynamicRuleState = stickPot?.first ?: stateForSettlement.dynamicRuleState,
                     )
 
-                    newState to Outcome.Success(TsumoResult(state, newState, tsumoResult, module.id))
+                    newState to Outcome.Success(
+                        TsumoResult(
+                            previousTableState = stateForSettlement,
+                            tableState = newState,
+                            resolution = tsumoResult,
+                            ruleModuleId = module.id,
+                            newlyRevealedTileIds = revealResult.newlyRevealedTileIds,
+                        ),
+                    )
                 }
             }
         }
@@ -133,6 +163,9 @@ class DeclareTsumoUseCase(
 
         // 3. 通知在場玩家與旁觀者：廣播自摸事件
         eventPublisher.publishToTable(gameId, newState.players.map { it.id }, playerId, GameAction.Tsumo)
+        if (result.newlyRevealedTileIds.isNotEmpty()) {
+            presentationPublisher.publishWallTilesRevealed(gameId, result.newlyRevealedTileIds)
+        }
 
         // 4. 建構胡牌演出內容並寫進交接槽——手牌不受這個 use case 影響（只改分數與 actionHistory），
         // 贏家的 lastDrawn 此時仍是自摸那張牌。刻意不直接發布：本局是否就此結束，要等
@@ -173,10 +206,11 @@ class DeclareTsumoUseCase(
 
     /** 將原子更新內取得的算役結果帶到呈現發布階段。 */
     private data class TsumoResult(
-        val previousTableState: com.doublemoon1119.mahjongcraft.logic.table.TableState,
-        val tableState: com.doublemoon1119.mahjongcraft.logic.table.TableState,
-        val resolution: com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult,
+        val previousTableState: TableState,
+        val tableState: TableState,
+        val resolution: WinResolutionResult,
         val ruleModuleId: String,
+        val newlyRevealedTileIds: Set<Uuid> = emptySet(),
     ) {
         val handValueResult get() = resolution.handValueResult
     }

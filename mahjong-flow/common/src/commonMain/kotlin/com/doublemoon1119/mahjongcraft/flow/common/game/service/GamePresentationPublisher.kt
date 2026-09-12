@@ -148,8 +148,9 @@ interface GamePresentationPublisher {
      * 公開的牌，例如日麻槓牌成立後翻開的新寶牌指示牌；開局當下就該公開的牌（不需要等任何事件）
      * 屬於 [publishWallStructure] 的 `revealedTileIds`，不是這裡，兩者是完全獨立的呈現時機。
      *
-     * 刻意用泛用的「應該公開翻面」措辭而非「寶牌」，讓這個介面本身維持規則無關——呼叫端一律用
-     * `TileWallRevealable.getVisibleTileIds` 比較變更前後的集合，不支援此概念的規則永遠不會呼叫這個方法。
+     * 刻意用泛用的「應該公開翻面」措辭而非「寶牌」，讓這個介面本身維持規則無關——規則的
+     * `WallRevealPolicy` 提供新增集合，Flow 驗證其符合權威可見差集後才會呼叫；不支援此概念的規則
+     * 不會產生發布事件。
      *
      * @param gameId 對局 Uuid。
      * @param revealedTileIds 本次新增公開翻面的牌 Uuid 集合；平台實作只替這些牌播放翻面動畫。

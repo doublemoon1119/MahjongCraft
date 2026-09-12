@@ -20,11 +20,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** Development-only 權威對局情境的 registry、fixture 與驗證測試。 */
 class DebugGameScenarioTest {
-    /** Registry 應以穩定順序列出並解析首批五個情境。 */
+    /** Registry 應以穩定順序列出並解析所有內建情境。 */
     @Test
     fun `test registry lists and resolves built in scenarios`() {
         val registry = DebugGameScenarioRegistry()
@@ -38,7 +39,7 @@ class DebugGameScenarioTest {
     @Test
     fun `test repeated scenario builds preserve semantics with fresh tile ids`() {
         val fixture = createFixture()
-        val scenario = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_kan_4") ?: error("Missing scenario")
+        val scenario = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_ankan_4") ?: error("Missing scenario")
 
         val first = scenario.build(fixture.context)
         val second = scenario.build(fixture.context)
@@ -58,12 +59,12 @@ class DebugGameScenarioTest {
 
     /** 四個槓牌情境都應停在呼叫者恰好只能宣告一次預定暗槓、且不能意外自摸的位置。 */
     @Test
-    fun `test kan scenarios expose the intended legal closed kan`() {
+    fun `test ankan scenarios expose the intended legal closed kan`() {
         val fixture = createFixture()
         val registry = DebugGameScenarioRegistry()
 
         (1..4).forEach { number ->
-            val result = registry.get("mahjongcraft:riichi_before_kan_$number")!!.build(fixture.context)
+            val result = registry.get("mahjongcraft:riichi_before_ankan_$number")!!.build(fixture.context)
             fixture.validator.validate(fixture.context, result)
             val state = result.game.tableState
             val module = fixture.moduleRegistry.getModule(state.config)
@@ -88,12 +89,12 @@ class DebugGameScenarioTest {
 
     /** Debug 情境中的對手不應因填充手牌意外取得明槓選項。 */
     @Test
-    fun `test kan scenarios do not give opponents accidental open kans`() {
+    fun `test ankan scenarios do not give opponents accidental open kans`() {
         val fixture = createFixture()
         val registry = DebugGameScenarioRegistry()
 
         (1..4).forEach { number ->
-            val state = registry.get("mahjongcraft:riichi_before_kan_$number")!!.build(fixture.context).game.tableState
+            val state = registry.get("mahjongcraft:riichi_before_ankan_$number")!!.build(fixture.context).game.tableState
             val module = fixture.moduleRegistry.getModule(state.config)
             val validator = module.createLegalActionValidator()
             val actor = state.currentPlayer
@@ -119,7 +120,7 @@ class DebugGameScenarioTest {
 
     /** 情境的剩餘活牌格位應是正式發牌前綴與既有補牌尾端消耗後的連續區段。 */
     @Test
-    fun `test kan scenarios preserve physical live wall history`() {
+    fun `test ankan scenarios preserve physical live wall history`() {
         val fixture = createFixture()
         val registry = DebugGameScenarioRegistry()
         val templateModule = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())
@@ -129,7 +130,7 @@ class DebugGameScenarioTest {
         val templateReservedPositions = template.reservedWallTiles.map { template.structure.getValue(it.id) }
 
         (1..4).forEach { number ->
-            val result = registry.get("mahjongcraft:riichi_before_kan_$number")!!.build(fixture.context)
+            val result = registry.get("mahjongcraft:riichi_before_ankan_$number")!!.build(fixture.context)
             val state = result.game.tableState
             val completedKanCount = number - 1
             val consumedFrontCount = INITIAL_DEAL_TILE_COUNT + completedKanCount + CURRENT_DRAW_TILE_COUNT
@@ -150,12 +151,12 @@ class DebugGameScenarioTest {
 
     /** 下一次補牌應取出情境編號對應的正式嶺上槽位，並只推進一次補牌計數。 */
     @Test
-    fun `test kan scenarios draw from the intended supplemental slot`() {
+    fun `test ankan scenarios draw from the intended supplemental slot`() {
         val fixture = createFixture()
         val registry = DebugGameScenarioRegistry()
 
         (1..4).forEach { number ->
-            val result = registry.get("mahjongcraft:riichi_before_kan_$number")!!.build(fixture.context)
+            val result = registry.get("mahjongcraft:riichi_before_ankan_$number")!!.build(fixture.context)
             val state = result.game.tableState
             val kanAction = fixture.moduleRegistry.getModule(state.config)
                 .createLegalActionValidator()
@@ -170,6 +171,38 @@ class DebugGameScenarioTest {
             assertEquals(number, (decision.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
             assertEquals(state.tileWall.remainingCount - 1, decision.tileWall.remainingCount)
         }
+    }
+
+    /** 大明槓情境應只讓呼叫者對指定捨牌取得一次預定的大明槓。 */
+    @Test
+    fun `test minkan scenario exposes the intended open kan reaction`() {
+        val fixture = createFixture()
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_minkan_1")!!.build(fixture.context)
+
+        fixture.validator.validate(fixture.context, result)
+        val state = result.game.tableState
+        val pending = assertNotNull(state.pendingReaction)
+        val claimant = state.players.single { it.id == fixture.context.invokingPlayerId }
+        val discarder = state.players.single { it.id == pending.discarderId }
+        val discardedTile = discarder.discardPile.entries.single { it.tile.id == pending.tileId }.tile
+        val legalActions = fixture.moduleRegistry.getModule(state.config).createLegalActionValidator().getLegalActions(
+            tableState = state,
+            player = claimant,
+            sourceAction = GameAction.Discard(discardedTile.id),
+            sourceDirection = state.relativeDirectionOf(claimant.id, discarder.id),
+            incomingTile = discardedTile,
+        )
+        val openKans = legalActions.filterIsInstance<GameAction.Kan>().filter {
+            it.type == GameAction.KanType.OPEN_KAN
+        }
+
+        assertEquals(setOf(claimant.id), pending.eligiblePlayerIds)
+        assertEquals(1, openKans.size)
+        assertEquals(discardedTile.id, openKans.single().tileId)
+        assertTrue(openKans.single().withTiles.all { tileId -> claimant.hand.allTiles.any { it.id == tileId } })
+        assertFalse(legalActions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN })
+        assertEquals(69, state.tileWall.remainingCount)
+        assertEquals(14, state.reservedWallTiles.size)
     }
 
     /** 建立測試所需的正式日麻遊戲、module registry 與 validator。 */
@@ -218,10 +251,11 @@ class DebugGameScenarioTest {
 
         /** 首批情境的固定排序。 */
         val EXPECTED_IDS: List<String> = listOf(
-            "mahjongcraft:riichi_before_kan_1",
-            "mahjongcraft:riichi_before_kan_2",
-            "mahjongcraft:riichi_before_kan_3",
-            "mahjongcraft:riichi_before_kan_4",
+            "mahjongcraft:riichi_before_ankan_1",
+            "mahjongcraft:riichi_before_ankan_2",
+            "mahjongcraft:riichi_before_ankan_3",
+            "mahjongcraft:riichi_before_ankan_4",
+            "mahjongcraft:riichi_before_minkan_1",
             "mahjongcraft:riichi_wall_initial",
         )
     }
