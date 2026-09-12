@@ -7,8 +7,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhas
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultKindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
@@ -25,7 +28,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
+import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
@@ -71,6 +76,7 @@ class MahjongTableGameActionService(
     private val presentationPublisher: GamePresentationPublisher,
     private val actionContextResolver: PlayerActionContextResolver,
     private val actionCommandFactoryRegistry: ExtensionGameActionCommandFactoryRegistry,
+    @Provided private val json: Json,
 ) {
     /** 對局命令與自動銜接失敗時的專用 logger。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -87,71 +93,140 @@ class MahjongTableGameActionService(
     fun select(player: ServerPlayerEntity, selection: PlayerDecisionSelectionDto) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
-            val gameId = runCatching { Uuid.parse(selection.gameId) }.getOrNull() ?: return@launch
-            val game = gameRepository.getGame(gameId) ?: return@launch
-            val state = game.tableState
-            val preparation = game.pendingRoundPreparation
-            val phase = if (
-                preparation != null &&
-                playerId in preparation.participantPlayerIds &&
-                playerId !in preparation.completedPlayerIds
+            if (selection.kind == PlayerDecisionSelectionKindDto.BEGIN_TILE_SELECTION) {
+                runCatching {
+                    resolveSelectionPrompt(playerId, selection)?.let { resolved ->
+                        handleBeginTileSelection(resolved.gameId, playerId, resolved.prompt, selection)
+                    }
+                }.onFailure { throwable ->
+                    logger.error("Failed to begin tile selection for player {}", playerId, throwable)
+                }
+                return@launch
+            }
+            val result = resolveFinalDecisionSubmission(
+                onFailure = { throwable ->
+                    logger.error("Failed to process decision submission for player {}", playerId, throwable)
+                },
             ) {
-                PlayerDecisionPhase.ROUND_PREPARATION
-            } else {
-                actionContextResolver.resolveFor(state, playerId)?.phase ?: return@launch
+                processFinalSelection(playerId, selection)
             }
-            val prompt = promptFactory.create(gameId, playerId, phase) ?: return@launch
-            if (prompt.decisionKey != selection.decisionKey) return@launch
-            when (selection.kind) {
-                PlayerDecisionSelectionKindDto.ACTION -> {
-                    val candidate = candidateResolver.listActionCandidates(playerId)
-                        .firstOrNull { it.token == selection.token } ?: return@launch
-                    val tileIds = selection.tileIds.map { serializedId ->
-                        runCatching { Uuid.parse(serializedId) }.getOrNull() ?: return@launch
-                    }
-                    submitAction(playerId, candidate, tileIds)
-                    presentationPublisher.publishTileSelectionEnded(gameId, playerId)
-                }
-
-                PlayerDecisionSelectionKindDto.PREPARATION_CONFIRM -> gameFlowCoordinator(
-                    gameId,
-                    playerId,
-                    GameCommand.SubmitRoundPreparation(RoundPreparationSubmission.Confirmed),
-                )
-
-                PlayerDecisionSelectionKindDto.PREPARATION_CHOICE -> {
-                    val option = selection.token ?: return@launch
-                    gameFlowCoordinator(
-                        gameId,
-                        playerId,
-                        GameCommand.SubmitRoundPreparation(RoundPreparationSubmission.Choice(option)),
-                    )
-                }
-
-                PlayerDecisionSelectionKindDto.PREPARATION_TILES -> {
-                    val tileIds = selection.tileIds.mapNotNull { runCatching { Uuid.parse(it) }.getOrNull() }.toSet()
-                    gameFlowCoordinator(
-                        gameId,
-                        playerId,
-                        GameCommand.SubmitRoundPreparation(RoundPreparationSubmission.Tiles(tileIds)),
-                    )
-                    presentationPublisher.publishTileSelectionEnded(gameId, playerId)
-                }
-
-                PlayerDecisionSelectionKindDto.BEGIN_TILE_SELECTION -> {
-                    // 只有 maxCount > 1 才需要生成確認面板；maxCount == 1 維持右鍵合法牌直接自動送出，
-                    // 伺服器端重新驗證 client 宣稱的情境是否真的需要選超過一張牌，不盲信 client。
-                    val maxCount = if (selection.token == null) {
-                        (prompt.preparation as? RoundPreparationPromptDto.TileSelection)?.maxCount
-                    } else {
-                        prompt.actions.firstOrNull { it.token == selection.token }?.tileSelection?.maxCount
-                    }
-                    if (maxCount != null && maxCount > 1) {
-                        presentationPublisher.publishTileSelectionStarted(gameId, playerId)
-                    }
-                }
-            }
+            replyToFinalSubmission(player, selection, result)
         }
+    }
+
+    /** 完整驗證並執行一筆 final selection，所有正常拒絕路徑只回傳結果，不自行傳送 ACK。 */
+    private suspend fun processFinalSelection(
+        playerId: Uuid,
+        selection: PlayerDecisionSelectionDto,
+    ): PlayerDecisionSubmissionResultKindDto {
+        val resolved = resolveSelectionPrompt(playerId, selection)
+            ?: return PlayerDecisionSubmissionResultKindDto.STALE
+        if (selection.submissionId.isBlank()) return PlayerDecisionSubmissionResultKindDto.REJECTED
+        return when (selection.kind) {
+            PlayerDecisionSelectionKindDto.ACTION -> {
+                val candidate = candidateResolver.listActionCandidates(playerId)
+                    .firstOrNull { it.token == selection.token }
+                val tileIds = selection.tileIds.map { serializedId ->
+                    runCatching { Uuid.parse(serializedId) }.getOrNull()
+                }
+                if (candidate == null || tileIds.any { it == null }) {
+                    PlayerDecisionSubmissionResultKindDto.REJECTED
+                } else {
+                    val actionResult = submitAction(playerId, candidate, tileIds.filterNotNull())
+                    if (actionResult == PlayerDecisionSubmissionResultKindDto.ACCEPTED) {
+                        presentationPublisher.publishTileSelectionEnded(resolved.gameId, playerId)
+                    }
+                    actionResult
+                }
+            }
+
+            PlayerDecisionSelectionKindDto.PREPARATION_CONFIRM -> execute(
+                resolved.gameId,
+                playerId,
+                GameCommand.SubmitRoundPreparation(RoundPreparationSubmission.Confirmed),
+            )
+
+            PlayerDecisionSelectionKindDto.PREPARATION_CHOICE -> selection.token?.let { option ->
+                execute(
+                    resolved.gameId,
+                    playerId,
+                    GameCommand.SubmitRoundPreparation(RoundPreparationSubmission.Choice(option)),
+                )
+            } ?: PlayerDecisionSubmissionResultKindDto.REJECTED
+
+            PlayerDecisionSelectionKindDto.PREPARATION_TILES -> {
+                val parsedIds = selection.tileIds.map { runCatching { Uuid.parse(it) }.getOrNull() }
+                if (parsedIds.any { it == null }) {
+                    PlayerDecisionSubmissionResultKindDto.REJECTED
+                } else {
+                    val commandResult = execute(
+                        resolved.gameId,
+                        playerId,
+                        GameCommand.SubmitRoundPreparation(RoundPreparationSubmission.Tiles(parsedIds.filterNotNull().toSet())),
+                    )
+                    if (commandResult == PlayerDecisionSubmissionResultKindDto.ACCEPTED) {
+                        presentationPublisher.publishTileSelectionEnded(resolved.gameId, playerId)
+                    }
+                    commandResult
+                }
+            }
+
+            PlayerDecisionSelectionKindDto.BEGIN_TILE_SELECTION -> error("Handled before final submission")
+        }
+    }
+
+    /** 解析並驗證 selection 所指向的目前權威 prompt；任一項已失效時回傳 null。 */
+    private suspend fun resolveSelectionPrompt(
+        playerId: Uuid,
+        selection: PlayerDecisionSelectionDto,
+    ): ResolvedSelectionPrompt? {
+        val gameId = runCatching { Uuid.parse(selection.gameId) }.getOrNull() ?: return null
+        val game = gameRepository.getGame(gameId) ?: return null
+        val state = game.tableState
+        val preparation = game.pendingRoundPreparation
+        val phase = if (
+            preparation != null &&
+            playerId in preparation.participantPlayerIds &&
+            playerId !in preparation.completedPlayerIds
+        ) {
+            PlayerDecisionPhase.ROUND_PREPARATION
+        } else {
+            actionContextResolver.resolveFor(state, playerId)?.phase
+        } ?: return null
+        val prompt = promptFactory.create(gameId, playerId, phase) ?: return null
+        return if (prompt.decisionKey == selection.decisionKey) ResolvedSelectionPrompt(gameId, prompt) else null
+    }
+
+    /** 已驗證且仍有效的 prompt 與所屬對局。 */
+    private data class ResolvedSelectionPrompt(val gameId: Uuid, val prompt: PlayerDecisionPromptDto)
+
+    /** 驗證開始多選的呈現意圖；此訊號不屬於最終提交，因此不回傳 submission ACK。 */
+    private fun handleBeginTileSelection(
+        gameId: Uuid,
+        playerId: Uuid,
+        prompt: PlayerDecisionPromptDto,
+        selection: PlayerDecisionSelectionDto,
+    ) {
+        val maxCount = if (selection.token == null) {
+            (prompt.preparation as? RoundPreparationPromptDto.TileSelection)?.maxCount
+        } else {
+            prompt.actions.firstOrNull { it.token == selection.token }?.tileSelection?.maxCount
+        }
+        if (maxCount != null && maxCount > 1) presentationPublisher.publishTileSelectionStarted(gameId, playerId)
+    }
+
+    /** 每一筆最終提交都回傳處理結果；空 ID 也會原樣回覆，讓無效 client 封包得到確定結果。 */
+    private fun replyToFinalSubmission(
+        player: ServerPlayerEntity,
+        selection: PlayerDecisionSelectionDto,
+        result: PlayerDecisionSubmissionResultKindDto,
+    ) {
+        if (selection.kind == PlayerDecisionSelectionKindDto.BEGIN_TILE_SELECTION) return
+        MahjongChannels.decisionSubmissionResult.sendTo(
+            player,
+            json,
+            PlayerDecisionSubmissionResultDto(selection.gameId, selection.decisionKey, selection.submissionId, result),
+        )
     }
 
     /** 打出 [tileId] 這張牌。 */
@@ -180,12 +255,12 @@ class MahjongTableGameActionService(
         playerId: Uuid,
         candidate: GameActionCandidate,
         selectedTileIds: List<Uuid>,
-    ) {
-        val gameId = resolveGameId(playerId) ?: return
+    ): PlayerDecisionSubmissionResultKindDto {
+        val gameId = resolveGameId(playerId) ?: return PlayerDecisionSubmissionResultKindDto.REJECTED
         val state = gameRepository.getTableState(gameId)
         if (state == null) {
             feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
-            return
+            return PlayerDecisionSubmissionResultKindDto.REJECTED
         }
         val requirement = candidate.tileSelectionRequirement
         val selectionIsValid = if (requirement == null) {
@@ -197,7 +272,7 @@ class MahjongTableGameActionService(
         }
         if (!selectionIsValid) {
             feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
-            return
+            return PlayerDecisionSubmissionResultKindDto.REJECTED
         }
         val context = actionContextResolver.resolveFor(state, playerId)
         val command = when (val action = candidate.action) {
@@ -208,9 +283,9 @@ class MahjongTableGameActionService(
         }
         if (command == null) {
             feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
-            return
+            return PlayerDecisionSubmissionResultKindDto.REJECTED
         }
-        execute(gameId, playerId, command)
+        return execute(gameId, playerId, command)
     }
 
     /** 顯示玩家目前的手牌、副露與可執行的特殊動作。 */
@@ -242,10 +317,14 @@ class MahjongTableGameActionService(
     }
 
     /** 分派動作並驅動後續流程；實體捨牌本身已提供明確回饋，因此不再額外傳送成功聊天訊息。 */
-    private suspend fun execute(gameId: Uuid, playerId: Uuid, command: GameCommand) {
+    private suspend fun execute(
+        gameId: Uuid,
+        playerId: Uuid,
+        command: GameCommand,
+    ): PlayerDecisionSubmissionResultKindDto {
         if (busyTracker.isBusy(gameId)) {
             feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.TableAnimationBusy)
-            return
+            return PlayerDecisionSubmissionResultKindDto.REJECTED
         }
         try {
             val result = gameFlowCoordinator.dispatch(gameId, playerId, command)
@@ -260,8 +339,14 @@ class MahjongTableGameActionService(
                 gameFlowCoordinator.driveAutomatedPlayers(gameId)
             }
             if (result is Outcome.Success) autoDrawService.checkAndAutoDraw(gameId)
+            return if (result is Outcome.Success) {
+                PlayerDecisionSubmissionResultKindDto.ACCEPTED
+            } else {
+                PlayerDecisionSubmissionResultKindDto.REJECTED
+            }
         } catch (throwable: Throwable) {
             logger.error("Failed to execute game command {} for player {} in game {}", command, playerId, gameId, throwable)
+            return PlayerDecisionSubmissionResultKindDto.REJECTED
         }
     }
 

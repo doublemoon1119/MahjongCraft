@@ -94,7 +94,8 @@ class MahjongCraftModClient : ClientModInitializer {
         koin.get<FabricTileLabelCommand>().register()
         koin.get<FabricHandSortCommand>().register()
         koin.get<FabricClientConfigCommand>().register()
-        koin.get<PlayerDecisionHudController>().registerEvents()
+        val decisionHudController = koin.get<PlayerDecisionHudController>()
+        decisionHudController.registerEvents()
         koin.get<MatchingTileHighlightController>().register()
 
         val json = koin.get<kotlinx.serialization.json.Json>()
@@ -243,6 +244,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 decisionPromptStore.apply(gameId, status.prompt)
             }
         }
+        MahjongChannels.decisionSubmissionResult.registerClientReceiver(json, decisionHudController::handleSubmissionResult)
         ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
             MahjongChannels.requestSnapshot.sendToServer(json, Unit)
             // 伺服器端的自動整理手牌偏好純記憶體、不撐過伺服器重啟（見 HandSortPreferenceStore KDoc），
@@ -253,6 +255,7 @@ class MahjongCraftModClient : ClientModInitializer {
             stateStore.clear()
             decisionTimerStore.clear()
             decisionPromptStore.clear()
+            decisionHudController.clear()
         }
     }
 

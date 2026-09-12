@@ -146,4 +146,27 @@ data class PlayerDecisionSelectionDto(
     val kind: PlayerDecisionSelectionKindDto,
     val token: String? = null,
     val tileIds: List<String> = emptyList(),
+    val submissionId: String = "",
 )
+
+/** 最終決策提交的伺服器權威處理結果。 */
+@Serializable
+data class PlayerDecisionSubmissionResultDto(
+    val gameId: String,
+    val decisionKey: String,
+    val submissionId: String,
+    val result: PlayerDecisionSubmissionResultKindDto,
+)
+
+/** 最終決策提交可能得到的權威結果種類。 */
+@Serializable
+enum class PlayerDecisionSubmissionResultKindDto {
+    /** 命令已由對局流程接受；client 等待後續 timer 更新清除或替換 prompt。 */
+    ACCEPTED,
+
+    /** 提交內容無效或當下無法執行；目前 prompt 若仍有效，client 可恢復操作。 */
+    REJECTED,
+
+    /** Decision key 或對局已過期；client 不得用這個回覆復活舊 prompt。 */
+    STALE,
+}

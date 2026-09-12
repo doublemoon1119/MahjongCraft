@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameCommandEnvel
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomScreenActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
@@ -38,6 +39,7 @@ object MahjongChannels {
      */
     val setAutoSortHand = C2SChannel("set_auto_sort_hand", Boolean.serializer())
     val decisionTimerUpdate = S2CChannel("decision_timer_update", DecisionTimerUpdatePayloadDto.serializer())
+    val decisionSubmissionResult = S2CChannel("decision_submission_result", PlayerDecisionSubmissionResultDto.serializer())
     val gameUpdate = S2CChannel("game_update", GameUpdatePayloadDto.serializer())
     val roomUpdate = S2CChannel("room_update", RoomUpdatePayloadDto.serializer())
     val gameSnapshot = S2CChannel("game_snapshot", GameSnapshotSyncPayloadDto.serializer())

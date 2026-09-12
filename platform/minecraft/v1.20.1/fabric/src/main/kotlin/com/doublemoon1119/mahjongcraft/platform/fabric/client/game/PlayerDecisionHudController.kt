@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionAc
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
@@ -30,6 +31,7 @@ import net.minecraft.util.hit.EntityHitResult
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import kotlin.math.ceil
+import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
 /** 管理操作介面、精簡倒數與打牌分析 HUD 的共用客戶端生命週期。 */
@@ -62,13 +64,18 @@ class PlayerDecisionHudController(
     /** 玩家明確點擊自己回合「跳過」後，才允許實體手牌直接出牌。 */
     private var directDiscardDecisionKey: String? = null
 
+    /** 尚待伺服器 ACK 或後續權威 timer 更新確認的最終提交。 */
+    private val submissionTracker = DecisionSubmissionTracker()
+
     /** 註冊 client tick、實體互動及聊天層前方的 HUD renderer bridge。 */
     fun registerEvents() {
         activeController = this
         ClientTickEvents.END_CLIENT_TICK.register(::tick)
         UseEntityCallback.EVENT.register { _, world, _, entity, _ ->
             if (world.isClient && entity is MahjongTileEntity && entity.managedByGame) {
-                if (togglePreparationTile(entity)) {
+                if (submissionTracker.isPending()) {
+                    ActionResult.SUCCESS
+                } else if (togglePreparationTile(entity)) {
                     ActionResult.SUCCESS
                 } else if (toggleActionSelectionTile(entity)) {
                     ActionResult.SUCCESS
@@ -92,7 +99,7 @@ class PlayerDecisionHudController(
     fun reopen() {
         val client = MinecraftClient.getInstance()
         val prompt = promptStore.prompt ?: return
-        if (!prompt.isInteractive || client.currentScreen != null) return
+        if (!prompt.isInteractive || client.currentScreen != null || submissionTracker.isPending()) return
         dismissedDecisionKey = null
         client.setScreen(PlayerDecisionScreen(prompt, timerStore.state?.phase?.isReaction == true, this))
     }
@@ -120,13 +127,7 @@ class PlayerDecisionHudController(
 
     /** 傳送一個以目前 decision key 約束的受控選擇。 */
     fun submit(prompt: PlayerDecisionPromptDto, kind: PlayerDecisionSelectionKindDto, token: String? = null) {
-        val gameId = timerStore.state?.gameId ?: return
-        MahjongChannels.decisionSelection.sendToServer(
-            json,
-            PlayerDecisionSelectionDto(gameId.toString(), prompt.decisionKey, kind, token),
-        )
-        dismissedDecisionKey = prompt.decisionKey
-        MinecraftClient.getInstance().setScreen(null)
+        sendFinalSelection(prompt, kind, token, emptyList())
     }
 
     /**
@@ -189,10 +190,7 @@ class PlayerDecisionHudController(
             selectedPreparationTileIds.add(tileId)
         }
         if (selection.maxCount == 1 && selectedPreparationTileIds.size == 1) {
-            sendSelection(prompt, PlayerDecisionSelectionKindDto.PREPARATION_TILES, null, selectedPreparationTileIds.toList())
-            selectedPreparationTileIds.clear()
-            preparationTileSelectionDecisionKey = null
-            directDiscardDecisionKey = null
+            sendFinalSelection(prompt, PlayerDecisionSelectionKindDto.PREPARATION_TILES, null, selectedPreparationTileIds.toList())
         }
         return true
     }
@@ -213,11 +211,7 @@ class PlayerDecisionHudController(
             selectedActionTileSelectionIds.add(tileId)
         }
         if (selection.maxCount == 1 && selectedActionTileSelectionIds.size == 1) {
-            sendSelection(prompt, PlayerDecisionSelectionKindDto.ACTION, token, selectedActionTileSelectionIds.toList())
-            selectedActionTileSelectionIds.clear()
-            actionTileSelectionToken = null
-            promptStore.endTileSelection()
-            directDiscardDecisionKey = null
+            sendFinalSelection(prompt, PlayerDecisionSelectionKindDto.ACTION, token, selectedActionTileSelectionIds.toList())
         }
         return true
     }
@@ -249,6 +243,7 @@ class PlayerDecisionHudController(
      * `false`（面板不屬於本機玩家、或本機目前根本不在任何選牌情境）時，呼叫端應讓事件正常往下傳遞。
      */
     private fun confirmTileSelection(entity: MahjongTileSelectionConfirmEntity): Boolean {
+        if (submissionTracker.isPending()) return true
         val prompt = promptStore.prompt ?: return false
         val localPlayerId = MinecraftClient.getInstance().player?.uuid?.toKotlinUuid() ?: return false
         if (entity.holderId != localPlayerId) return false
@@ -257,10 +252,7 @@ class PlayerDecisionHudController(
         if (preparationTileSelectionDecisionKey == prompt.decisionKey) {
             val selection = prompt.preparation as? RoundPreparationPromptDto.TileSelection ?: return true
             if (selectedPreparationTileIds.size in selection.minCount..selection.maxCount) {
-                sendSelection(prompt, PlayerDecisionSelectionKindDto.PREPARATION_TILES, null, selectedPreparationTileIds.toList())
-                selectedPreparationTileIds.clear()
-                preparationTileSelectionDecisionKey = null
-                directDiscardDecisionKey = null
+                sendFinalSelection(prompt, PlayerDecisionSelectionKindDto.PREPARATION_TILES, null, selectedPreparationTileIds.toList())
             }
             return true
         }
@@ -269,11 +261,7 @@ class PlayerDecisionHudController(
         if (token != null && promptStore.isTileSelectionActive()) {
             val selection = prompt.actions.firstOrNull { it.token == token }?.tileSelection ?: return true
             if (selectedActionTileSelectionIds.size in selection.minCount..selection.maxCount) {
-                sendSelection(prompt, PlayerDecisionSelectionKindDto.ACTION, token, selectedActionTileSelectionIds.toList())
-                selectedActionTileSelectionIds.clear()
-                actionTileSelectionToken = null
-                promptStore.endTileSelection()
-                directDiscardDecisionKey = null
+                sendFinalSelection(prompt, PlayerDecisionSelectionKindDto.ACTION, token, selectedActionTileSelectionIds.toList())
             }
             return true
         }
@@ -292,20 +280,55 @@ class PlayerDecisionHudController(
         )
     }
 
+    /** 送出具有唯一 ID 的最終選擇，並在收到 ACK 前保留所有畫面與實體選牌狀態。 */
+    private fun sendFinalSelection(
+        prompt: PlayerDecisionPromptDto,
+        kind: PlayerDecisionSelectionKindDto,
+        token: String?,
+        tileIds: List<String>,
+    ) {
+        if (submissionTracker.isPending()) return
+        val gameId = timerStore.state?.gameId ?: return
+        val submissionId = Uuid.random().toString()
+        if (!submissionTracker.begin(gameId.toString(), prompt.decisionKey, submissionId)) return
+        MahjongChannels.decisionSelection.sendToServer(
+            json,
+            PlayerDecisionSelectionDto(gameId.toString(), prompt.decisionKey, kind, token, tileIds, submissionId),
+        )
+        (MinecraftClient.getInstance().currentScreen as? PlayerDecisionScreen)?.refreshSubmissionState()
+    }
+
+    /** 套用 server ACK；過期或不屬於目前提交的回覆一律忽略。 */
+    fun handleSubmissionResult(result: PlayerDecisionSubmissionResultDto) {
+        if (submissionTracker.acknowledge(result) == AcknowledgementEffect.UNLOCKED) {
+            (MinecraftClient.getInstance().currentScreen as? PlayerDecisionScreen)?.refreshSubmissionState()
+        }
+    }
+
+    /** 世界離線時同步清除提交鎖與選牌資料。 */
+    fun clear() {
+        submissionTracker.clear()
+        clearLocalDecisionState()
+    }
+
+    /** 是否正等待目前 decision 的最終提交結果。 */
+    fun isSubmissionPending(decisionKey: String): Boolean = submissionTracker.isPending(decisionKey)
+
     /** 新 prompt 第一次出現時自動開啟；普通出牌回合只保留精簡倒數。 */
     private fun tick(client: MinecraftClient) {
         syncSelectionHighlights(client)
         val prompt = promptStore.prompt
         if (prompt == null) {
             if (client.currentScreen is PlayerDecisionScreen) client.setScreen(null)
+            submissionTracker.applyAuthoritativeDecision(null)
             dismissedDecisionKey = null
             openedDecisionKey = null
-            selectedPreparationTileIds.clear()
-            preparationTileSelectionDecisionKey = null
-            selectedActionTileSelectionIds.clear()
-            actionTileSelectionToken = null
-            directDiscardDecisionKey = null
+            clearLocalDecisionState()
             return
+        }
+        if (submissionTracker.isPending() && !submissionTracker.isPending(prompt.decisionKey)) {
+            submissionTracker.applyAuthoritativeDecision(prompt.decisionKey)
+            clearLocalDecisionState()
         }
         if (preparationTileSelectionDecisionKey != null && preparationTileSelectionDecisionKey != prompt.decisionKey) {
             selectedPreparationTileIds.clear()
@@ -328,6 +351,16 @@ class PlayerDecisionHudController(
         openedDecisionKey = prompt.decisionKey
         dismissedDecisionKey = null
         client.setScreen(PlayerDecisionScreen(prompt, timerStore.state?.phase?.isReaction == true, this))
+    }
+
+    /** 清除只屬於上一個 decision 的本機互動狀態。 */
+    private fun clearLocalDecisionState() {
+        selectedPreparationTileIds.clear()
+        preparationTileSelectionDecisionKey = null
+        selectedActionTileSelectionIds.clear()
+        actionTileSelectionToken = null
+        directDiscardDecisionKey = null
+        promptStore.endTileSelection()
     }
 
     /**
@@ -728,6 +761,14 @@ private class PlayerDecisionScreen(
         } else {
             null
         }
+        refreshSubmissionState()
+    }
+
+    /** 最終提交送出或遭拒後，立即同步所有操作按鈕的可用狀態。 */
+    fun refreshSubmissionState() {
+        val active = !controller.isSubmissionPending(prompt.decisionKey)
+        cardButtons.forEach { it.active = active }
+        skipButton?.active = active
     }
 
     /** Esc 只暫時收起，不提交 Pass。 */
