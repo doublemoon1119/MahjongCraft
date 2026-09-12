@@ -5,8 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimeoutService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
@@ -18,24 +18,23 @@ import org.slf4j.LoggerFactory
  *
  * @property appScope 將工作綁定目前 server session。
  * @property dispatchers 確保計時工作在 server thread 執行。
+ * @property availabilityService 在逾時判定前先暫停 busy 桌，並在閒置後恢復決策。
  * @property timeoutService 執行與平台無關的逾時政策。
  * @property gameRepository 用於列出所有進行中對局，供每個 tick 的心跳巡邏使用。
  * @property gameFlowCoordinator 對每個進行中對局推進自動操作。
  * @property synchronizationService 每秒同步一次所有真人決策者的權威時間。
  * @property autoDrawService 對每個進行中對局補做真人玩家的自動摸牌檢查。
- * @property busyTracker 查詢對局是否正在播放呈現動畫，播放期間跳過該桌這一輪的自動操作推進，
- *   避免遊戲流程搶在動畫播完前繼續（例如 AI 莊家在擲骰動畫還沒播完就已經摸牌打牌）。
  */
 @Single
 class FabricDecisionTimerScheduler(
     private val appScope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
+    private val availabilityService: GameDecisionAvailabilityService,
     private val timeoutService: GameDecisionTimeoutService,
     private val gameRepository: GameRepository,
     private val gameFlowCoordinator: GameFlowCoordinator,
     private val synchronizationService: DecisionTimerSynchronizationService,
     private val autoDrawService: MahjongAutoDrawService,
-    private val busyTracker: TablePresentationBusyTracker,
 ) {
     /** 決策逾時處理錯誤的專用 logger。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -55,7 +54,12 @@ class FabricDecisionTimerScheduler(
             isProcessing = true
             appScope.launch(dispatchers.main) {
                 try {
-                    // 先結算逾時：把耗盡思考時間的玩家標記進強制自動操作。
+                    val gameIds = gameRepository.getAllGameIds()
+                    // 必須先暫停所有 busy 桌，才可 claim timeout；否則同一輪剛開始播放動畫的玩家仍可能
+                    // 先被判定逾時，之後才輪到 busy 檢查。
+                    val availableGameIds = gameIds.filter { gameId -> availabilityService.reconcile(gameId) }
+
+                    // 結算真正處於可操作狀態且已耗盡時間的決策。
                     timeoutService.processExpiredDecisions()
 
                     // 每個 tick 把所有進行中的對局都巡一遍，不是只處理這次剛好逾時的對局。原因是：
@@ -63,11 +67,7 @@ class FabricDecisionTimerScheduler(
                     // 這種桌子如果只靠逾時事件觸發，會永遠沒人叫它繼續走。逐桌巡邏才能保證不管哪種
                     // 情況都會被推進。桌子如果本來就沒事要做，這兩個呼叫很快就會發現沒事然後返回，
                     // 不用擔心多跑這一輪很浪費。
-                    gameRepository.getAllGameIds().forEach { gameId ->
-                        // 這桌還在播呈現動畫（例如擲骰）時跳過這一輪：讓 AI／強制自動操作等動畫播完
-                        // 再繼續，避免玩家看到牌局狀態搶在畫面之前推進。決策逾時計時器本身不受影響，
-                        // 只是這一輪不驅動——理由見 TablePresentationBusyTracker KDoc。
-                        if (busyTracker.isBusy(gameId)) return@forEach
+                    availableGameIds.forEach { gameId ->
                         // 胡牌／流局結算後的待完成流程與呈現時間軸都會持久化。呈現播完後
                         // 先從權威狀態補完流程；這一輪若有待收斂的流程，就不再驅動玩家操作。
                         if (gameFlowCoordinator.resumePendingGameTransition(gameId)) return@forEach

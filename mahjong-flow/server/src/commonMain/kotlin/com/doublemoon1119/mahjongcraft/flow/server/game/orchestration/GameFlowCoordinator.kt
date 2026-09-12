@@ -12,9 +12,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
@@ -77,8 +76,7 @@ import kotlin.uuid.Uuid
  *   會先持久化 [PendingGameTransition.ReturnToRoom]，再於同一次待完成流程收斂中呼叫此用例。
  * @property aiTurnDriver 找出下一個該行動的 AI 玩家與其命令。
  * @property forcedAutoPlayDriver 找出下一個必須由伺服器固定操作的真人玩家與命令。
- * @property decisionTimerManager 在每次命令完成後結算並調整玩家決策計時器。
- * @property decisionTimerSynchronizationService 立即同步命令完成後的權威計時與停止狀態。
+ * @property decisionAvailabilityService 在呈現忙碌時暫停玩家決策，閒置時恢復或調整計時並立即同步。
  * @property winPresentationHandoff 胡牌 use case 建構好的演出內容交接點，見 [WinPresentationHandoff]。
  * @property presentationBusyGate 查詢平台呈現層是否仍在播放動畫；[driveAutomatedPlayers] 與
  *   [resumePendingGameTransition] 都會在推進權威流程前檢查，忙碌時直接返回並留待後續心跳重試；
@@ -100,8 +98,7 @@ class GameFlowCoordinator(
     private val returnToRoomUseCase: ReturnToRoomUseCase,
     private val aiTurnDriver: AiTurnDriver,
     private val forcedAutoPlayDriver: ForcedAutoPlayDriver,
-    private val decisionTimerManager: GameDecisionTimerManager,
-    private val decisionTimerSynchronizationService: DecisionTimerSynchronizationService,
+    private val decisionAvailabilityService: GameDecisionAvailabilityService,
     private val exhaustiveDrawSettlementPresentationService: ExhaustiveDrawSettlementPresentationService,
     private val winPresentationHandoff: WinPresentationHandoff,
     @Provided private val presentationPublisher: GamePresentationPublisher,
@@ -134,6 +131,9 @@ class GameFlowCoordinator(
     ): Outcome<Unit, GameError> {
         val game = gameRepository.getGame(gameId)
             ?: return Outcome.Error(GameError.GameNotFound(gameId))
+        if (!decisionAvailabilityService.reconcile(gameId)) {
+            return Outcome.Error(GameError.UnsupportedAction(gameId, playerId, PRESENTATION_BUSY_REASON_ID))
+        }
         if (playerId in game.forcedAutoPlayPlayerIds) {
             return Outcome.Error(GameError.ForcedAutoPlayActive(playerId, gameId))
         }
@@ -163,6 +163,9 @@ class GameFlowCoordinator(
     ): Outcome<Unit, GameError> {
         val game = gameRepository.getGame(gameId)
             ?: return Outcome.Error(GameError.GameNotFound(gameId))
+        if (!decisionAvailabilityService.reconcile(gameId)) {
+            return Outcome.Error(GameError.UnsupportedAction(gameId, playerId, PRESENTATION_BUSY_REASON_ID))
+        }
         if (playerId in game.forcedAutoPlayPlayerIds) {
             return Outcome.Error(GameError.ForcedAutoPlayActive(playerId, gameId))
         }
@@ -182,7 +185,7 @@ class GameFlowCoordinator(
      *
      * 由 [forcedAutoPlayDriver] 解析出的動作在送出前會先把該玩家從[Game.forcedAutoPlayPlayerIds] 移除——
      * 強制自動操作只鎖住逾時當下那一次決策，不是整場對局；提前移除也讓緊接著呼叫的
-     * [GameDecisionTimerManager.reconcile] 能立刻看到這位玩家重新是一般決策者，替他下一次決策
+     * [GameDecisionAvailabilityService.reconcile] 能立刻看到這位玩家重新是一般決策者，替他下一次決策
      * （例如緊接著要捨牌）建立帶有完整 `baseSeconds` 的新計時器，而不是繼續被排除在外。
      *
      * 每次迭代開始前都會用 [presentationBusyGate] 確認這桌目前沒有正在播放呈現動畫——不是只在呼叫
@@ -196,7 +199,7 @@ class GameFlowCoordinator(
      */
     suspend fun driveAutomatedPlayers(gameId: Uuid) {
         repeat(MAX_ITERATIONS) {
-            if (presentationBusyGate.isBusy(gameId)) return
+            if (!decisionAvailabilityService.reconcile(gameId)) return
             if (resumePendingGameTransition(gameId)) {
                 val resumedGame = gameRepository.getGame(gameId) ?: return
                 if (resumedGame.pendingTransition != null || presentationBusyGate.isBusy(gameId)) return
@@ -281,11 +284,10 @@ class GameFlowCoordinator(
         command: GameCommand,
     ): Outcome<Unit, GameError> {
         val result = dispatchAndChain(gameId, playerId, command)
-        val statuses = decisionTimerManager.reconcile(
+        decisionAvailabilityService.reconcile(
             gameId = gameId,
             completedPlayerId = playerId.takeIf { result is Outcome.Success },
         )
-        decisionTimerSynchronizationService.synchronize(gameId, statuses)
         return result
     }
 
@@ -550,6 +552,9 @@ class GameFlowCoordinator(
     }
 
     private companion object {
+        /** 命令因 blocking presentation 暫時不可執行時使用的穩定原因 ID。 */
+        const val PRESENTATION_BUSY_REASON_ID = "mahjongcraft:presentation_busy"
+
         /** [driveAutomatedPlayers] 的最大迭代次數，避免收斂性 bug 讓自動操作鏈路無限跑下去。 */
         const val MAX_ITERATIONS = 5000
     }

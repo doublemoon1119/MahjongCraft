@@ -8,7 +8,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
@@ -16,6 +18,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnaps
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.time.MonotonicClockImpl
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -50,6 +54,15 @@ class ServerSessionStateRestorerTest {
             memberships,
             GameVisibilityPolicyImpl(),
             decisionTimerManager,
+            GameDecisionAvailabilityService(
+                FakeGamePresentationBusyGate(),
+                decisionTimerManager,
+                DecisionTimerSynchronizationService(
+                    decisionTimerManager,
+                    gameRepository,
+                    FakeDecisionTimerUpdatePublisher(),
+                ),
+            ),
         )
         val roomPlayerId = Uuid.random()
         val gamePlayerId = Uuid.random()
@@ -112,6 +125,15 @@ class ServerSessionStateRestorerTest {
             memberships,
             GameVisibilityPolicyImpl(),
             decisionTimerManager,
+            GameDecisionAvailabilityService(
+                FakeGamePresentationBusyGate(),
+                decisionTimerManager,
+                DecisionTimerSynchronizationService(
+                    decisionTimerManager,
+                    gameRepository,
+                    FakeDecisionTimerUpdatePublisher(),
+                ),
+            ),
         )
         val playerId = Uuid.random()
         val existingTableId = Uuid.random()

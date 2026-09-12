@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
@@ -29,6 +30,7 @@ class ServerSessionStateRestorer(
     private val memberships: PlayerMembershipRepository,
     private val gameVisibilityPolicy: GameVisibilityPolicy,
     private val decisionTimerManager: GameDecisionTimerManager,
+    private val decisionAvailabilityService: GameDecisionAvailabilityService,
 ) {
     /**
      * 依 [state] 完整取代目前的衍生狀態。
@@ -56,7 +58,7 @@ class ServerSessionStateRestorer(
                     snapshot = gameVisibilityPolicy.roundPreparationSnapshotFor(game, player.id),
                 )
             }
-            decisionTimerManager.reconcile(game.id)
+            decisionAvailabilityService.reconcile(game.id)
         }
         return ServerSessionStateRestoreResult(conflicts)
     }

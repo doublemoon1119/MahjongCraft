@@ -297,6 +297,69 @@ class GameDecisionTimerManagerTest {
         )
     }
 
+    /** 驗證暫停會保存剩餘時間，且暫停期間經過的單調時間不會被計入決策時間。 */
+    @Test
+    fun `test pause preserves remaining time until decision resumes`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val game = fixtures.ownTurnGame(playerId)
+        fixtures.repository.setGame(game)
+        fixtures.manager.reconcile(game.id)
+        fixtures.clock.nowMillis = 1_500L
+
+        fixtures.manager.pause(game.id)
+
+        assertTrue(fixtures.manager.getStatuses(game.id).isEmpty())
+        val pausedGame = fixtures.repository.getGame(game.id)!!
+        assertEquals(3_500L, pausedGame.interruptedBaseMillisByPlayerId.getValue(playerId))
+        assertEquals(20_000L, pausedGame.remainingReserveMillisByPlayerId.getValue(playerId))
+
+        fixtures.clock.nowMillis = 11_500L
+        val resumed = fixtures.manager.reconcile(game.id).getValue(playerId)
+        assertEquals(3_500L, resumed.time.baseRemainingMillis)
+        assertEquals(20_000L, resumed.time.reserveRemainingMillis)
+
+        fixtures.clock.nowMillis = 12_500L
+        assertEquals(2_500L, fixtures.manager.getStatuses(game.id).getValue(playerId).time.baseRemainingMillis)
+    }
+
+    /** 驗證造成 blocking presentation 的已完成玩家不會把舊決策基本時間帶進下一次決策。 */
+    @Test
+    fun `test pause does not preserve completed player decision`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val game = fixtures.ownTurnGame(playerId)
+        fixtures.repository.setGame(game)
+        fixtures.manager.reconcile(game.id)
+        fixtures.clock.nowMillis = 1_500L
+
+        fixtures.manager.pause(game.id, completedPlayerId = playerId)
+
+        assertTrue(fixtures.repository.getGame(game.id)!!.interruptedBaseMillisByPlayerId.isEmpty())
+        val resumed = fixtures.manager.reconcile(game.id).getValue(playerId)
+        assertEquals(5_000L, resumed.time.baseRemainingMillis)
+    }
+
+    /** 驗證準備階段暫停只保存基本時間，不會覆寫玩家共用的保留思考時間池。 */
+    @Test
+    fun `test pausing round preparation preserves reserve pool`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val game = fixtures.preparationGame(playerId)
+        fixtures.repository.setGame(game)
+        fixtures.manager.reconcile(game.id)
+        fixtures.clock.nowMillis = 5_000L
+
+        fixtures.manager.pause(game.id)
+
+        val pausedGame = fixtures.repository.getGame(game.id)!!
+        assertEquals(20_000L, pausedGame.remainingReserveMillisByPlayerId.getValue(playerId))
+        assertEquals(
+            GameFlowConfig().preparationBaseSeconds * 1_000L - 5_000L,
+            pausedGame.interruptedBaseMillisByPlayerId.getValue(playerId),
+        )
+    }
+
     /** 提供可控時間、repository 與 manager 的測試組合。 */
     private class Fixtures {
         /** 測試用權威遊戲倉庫。 */

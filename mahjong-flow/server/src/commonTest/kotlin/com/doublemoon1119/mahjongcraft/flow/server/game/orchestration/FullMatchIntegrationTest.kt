@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepos
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
@@ -217,11 +218,14 @@ class FullMatchIntegrationTest {
             ),
             aiTurnDriver = aiTurnDriver,
             forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo),
-            decisionTimerManager = decisionTimerManager,
-            decisionTimerSynchronizationService = DecisionTimerSynchronizationService(
+            decisionAvailabilityService = GameDecisionAvailabilityService(
+                presentationBusyGate,
                 decisionTimerManager,
-                gameRepo,
-                FakeDecisionTimerUpdatePublisher(),
+                DecisionTimerSynchronizationService(
+                    decisionTimerManager,
+                    gameRepo,
+                    FakeDecisionTimerUpdatePublisher(),
+                ),
             ),
             presentationBusyGate = presentationBusyGate,
             exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),

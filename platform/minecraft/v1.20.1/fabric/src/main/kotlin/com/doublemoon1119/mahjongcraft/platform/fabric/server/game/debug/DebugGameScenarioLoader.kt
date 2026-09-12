@@ -2,8 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
@@ -37,8 +36,7 @@ class DebugGameScenarioLoader(
     private val gameRepository: GameRepository,
     private val busyTracker: TablePresentationBusyTracker,
     private val presentationSynchronizer: DebugGameScenarioPresentationSynchronizer,
-    private val timerManager: GameDecisionTimerManager,
-    private val timerSynchronizationService: DecisionTimerSynchronizationService,
+    private val decisionAvailabilityService: GameDecisionAvailabilityService,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val dispatchers: CoroutineDispatchers,
 ) {
@@ -63,9 +61,8 @@ class DebugGameScenarioLoader(
         }.getOrElse { error -> return DebugGameScenarioLoadResult.Rejected(error.message ?: "Scenario validation failed") }
 
         withContext(dispatchers.main) { presentationSynchronizer.synchronize(loaded) }
-        val statuses = timerManager.reconcile(tableId, completedPlayerId = playerId)
+        decisionAvailabilityService.reconcile(tableId, completedPlayerId = playerId)
         snapshotSynchronizer.syncAll(tableId)
-        timerSynchronizationService.synchronize(tableId, statuses)
         return DebugGameScenarioLoadResult.Success(scenarioId)
     }
 }

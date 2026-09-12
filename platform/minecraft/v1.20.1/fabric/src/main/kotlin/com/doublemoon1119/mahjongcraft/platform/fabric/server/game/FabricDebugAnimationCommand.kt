@@ -41,8 +41,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvail
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
@@ -162,8 +161,7 @@ class FabricDebugAnimationCommand(
     private val membershipRepository: PlayerMembershipRepository,
     private val gameRepository: GameRepository,
     private val gameFlowCoordinator: GameFlowCoordinator,
-    private val gameDecisionTimerManager: GameDecisionTimerManager,
-    private val decisionTimerSynchronizationService: DecisionTimerSynchronizationService,
+    private val decisionAvailabilityService: GameDecisionAvailabilityService,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
@@ -653,7 +651,7 @@ class FabricDebugAnimationCommand(
      * （選中發光→確認面板→送出）走真正的 `SubmitRoundPreparation` 流程與呼叫者真實手牌，不需要真正的
      * 地區麻將規則就先湊出一個 `maxCount > 1` 的情境。
      *
-     * 寫入狀態後額外呼叫 [GameDecisionTimerManager.reconcile] 並同步結果，比照
+     * 寫入狀態後額外呼叫 [GameDecisionAvailabilityService.reconcile] 並同步結果，比照
      * [GameFlowCoordinator] 內部 `dispatchAndReconcile` 的作法，讓這位玩家真的取得
      * [com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase.ROUND_PREPARATION]
      * 計時器——直接寫入 repository 不會經過 coordinator 的指令派送流程，計時器不會自動產生，逾時、
@@ -682,8 +680,7 @@ class FabricDebugAnimationCommand(
         }
         if (changed) {
             snapshotSynchronizer.syncAll(tableId)
-            gameDecisionTimerManager.reconcile(tableId)
-            decisionTimerSynchronizationService.synchronize(tableId)
+            decisionAvailabilityService.reconcile(tableId)
         }
         "Round preparation ${preview.name.lowercase()} preview ${if (changed) "started" else "failed"}"
     }
@@ -704,7 +701,7 @@ class FabricDebugAnimationCommand(
     }
 
     /**
-     * 清除 development-only 測試 preparation state。連同呼叫 [GameDecisionTimerManager.reconcile]
+     * 清除 development-only 測試 preparation state。連同呼叫 [GameDecisionAvailabilityService.reconcile]
      * 立即結算 [startPreparation] 建立的計時器，理由同該函式 KDoc——不清掉的話，計時器要等到下一次
      * 剛好觸發 reconcile 的操作才會被結算掉。
      */
@@ -713,8 +710,7 @@ class FabricDebugAnimationCommand(
             game?.copy(pendingRoundPreparation = null) to Unit
         }
         snapshotSynchronizer.syncAll(tableId)
-        gameDecisionTimerManager.reconcile(tableId)
-        decisionTimerSynchronizationService.synchronize(tableId)
+        decisionAvailabilityService.reconcile(tableId)
         "Round preparation preview cancelled"
     }
 

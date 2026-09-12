@@ -69,6 +69,46 @@ class GameDecisionTimerManager(
     private val activeTimers = mutableMapOf<Uuid, Map<Uuid, ActiveDecisionTimer>>()
 
     /**
+     * 暫停指定遊戲目前仍有效的決策計時器，並將剩餘基本與保留時間寫回權威狀態。
+     *
+     * [completedPlayerId] 已完成的舊決策不會留下可恢復基本時間；階段已改變或失去決策權的 timer 也只會
+     * 結算保留時間。只有目前仍維持相同決策階段的 timer 會寫入 `interruptedBaseMillisByPlayerId`，供下一次
+     * [reconcile] 接續一次。重複暫停沒有 runtime timer 時不會改寫既有中斷資料。
+     *
+     * @param gameId 欲暫停計時器的遊戲識別碼。
+     * @param completedPlayerId 在造成暫停的命令中剛完成決策的玩家；純呈現狀態變化時為 null。
+     */
+    suspend fun pause(gameId: Uuid, completedPlayerId: Uuid? = null) = mutex.withLock {
+        val previousTimers = activeTimers[gameId].orEmpty()
+        if (previousTimers.isEmpty()) return@withLock
+        val pausedAtMillis = clock.nowMillis()
+        gameRepository.updateGame(gameId) { currentGame ->
+            if (currentGame == null) return@updateGame null to Unit
+
+            val targets = authorityResolver.resolve(currentGame)
+            val remainingReserveMillisByPlayerId = currentGame.remainingReserveMillisByPlayerId.toMutableMap()
+            val interruptedBaseMillisByPlayerId = currentGame.interruptedBaseMillisByPlayerId.toMutableMap()
+            previousTimers.forEach { (playerId, activeTimer) ->
+                val status = activeTimer.timer.statusAt(pausedAtMillis)
+                if (activeTimer.phase != PlayerDecisionPhase.ROUND_PREPARATION) {
+                    remainingReserveMillisByPlayerId[playerId] = status.reserveRemainingMillis
+                }
+                val remainsSameDecision = playerId != completedPlayerId && targets[playerId] == activeTimer.phase
+                if (remainsSameDecision) {
+                    interruptedBaseMillisByPlayerId[playerId] = status.baseRemainingMillis
+                } else {
+                    interruptedBaseMillisByPlayerId -= playerId
+                }
+            }
+            currentGame.copy(
+                remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId,
+                interruptedBaseMillisByPlayerId = interruptedBaseMillisByPlayerId,
+            ) to Unit
+        }
+        activeTimers.remove(gameId)
+    }
+
+    /**
      * 依目前權威遊戲狀態調整決策計時器。
      *
      * [completedPlayerId] 的既有計時器必定先結算；若狀態轉移後該玩家再次取得決策權，會以結算後的

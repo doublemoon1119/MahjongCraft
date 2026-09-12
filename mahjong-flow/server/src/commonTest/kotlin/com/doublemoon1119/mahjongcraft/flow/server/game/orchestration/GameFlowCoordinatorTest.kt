@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepos
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
@@ -82,6 +83,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
@@ -224,11 +226,14 @@ class GameFlowCoordinatorTest {
             returnToRoomUseCase = ReturnToRoomUseCase(AuthoritativeStateStore(), FakeRoomSnapshotRepository(), FakeRoomEventPublisher(), presentationPublisher),
             aiTurnDriver = aiTurnDriver,
             forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo),
-            decisionTimerManager = decisionTimerManager,
-            decisionTimerSynchronizationService = DecisionTimerSynchronizationService(
+            decisionAvailabilityService = GameDecisionAvailabilityService(
+                presentationBusyGate,
                 decisionTimerManager,
-                gameRepo,
-                FakeDecisionTimerUpdatePublisher(),
+                DecisionTimerSynchronizationService(
+                    decisionTimerManager,
+                    gameRepo,
+                    FakeDecisionTimerUpdatePublisher(),
+                ),
             ),
             presentationBusyGate = presentationBusyGate,
             exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
@@ -907,12 +912,9 @@ class GameFlowCoordinatorTest {
         assertTrue(newState.players.first { it.id == respondentId }.actionHistory.isEmpty())
     }
 
-    /**
-     * 迴歸測試：驗證榮和呈現尚未完成時不會先進入下一局；呈現恢復閒置後才銜接
-     * [AdvanceRoundUseCase]。
-     */
+    /** 驗證 blocking presentation 期間的真人命令會在進入權威流程前遭拒。 */
     @Test
-    fun `test ron waits for presentation before chaining advance round`() = runTest {
+    fun `test busy presentation rejects player command`() = runTest {
         val fixtures = Fixtures()
         val discarderId = Uuid.random()
         val respondentId = Uuid.random()
@@ -923,18 +925,9 @@ class GameFlowCoordinatorTest {
 
         val result = fixtures.coordinator(gameId, respondentId, GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId)))
 
-        assertTrue(result is Outcome.Success)
-        val settledState = fixtures.gameRepo.getTableState(gameId)!!
-        assertTrue(
-            settledState.players.first { it.id == respondentId }.actionHistory.any { it is GameAction.Ron },
-            "Winning settlement should be retained until the presentation finishes.",
-        )
-        assertEquals(PendingGameTransition.AdvanceRound, fixtures.gameRepo.getGame(gameId)!!.pendingTransition)
-
-        fixtures.presentationBusyGate.setBusy(gameId, false)
-        assertTrue(fixtures.coordinator.resumePendingGameTransition(gameId))
-        val advancedState = fixtures.gameRepo.getTableState(gameId)!!
-        assertTrue(advancedState.players.first { it.id == respondentId }.actionHistory.isEmpty())
+        val error = assertIs<Outcome.Error<GameError>>(result).error
+        assertEquals(GameError.UnsupportedAction(gameId, respondentId, "mahjongcraft:presentation_busy"), error)
+        assertEquals(table, fixtures.gameRepo.getTableState(gameId))
     }
 
     /**

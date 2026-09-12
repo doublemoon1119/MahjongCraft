@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
@@ -199,11 +200,14 @@ class MahjongAutoDrawServiceTest {
             returnToRoomUseCase = ReturnToRoomUseCase(store, roomSnapshotRepo, roomEventPublisher, presentationPublisher),
             aiTurnDriver = aiTurnDriver,
             forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo),
-            decisionTimerManager = decisionTimerManager,
-            decisionTimerSynchronizationService = DecisionTimerSynchronizationService(
+            decisionAvailabilityService = GameDecisionAvailabilityService(
+                presentationBusyGate,
                 decisionTimerManager,
-                gameRepo,
-                FakeDecisionTimerUpdatePublisher(),
+                DecisionTimerSynchronizationService(
+                    decisionTimerManager,
+                    gameRepo,
+                    FakeDecisionTimerUpdatePublisher(),
+                ),
             ),
             presentationBusyGate = presentationBusyGate,
             exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),

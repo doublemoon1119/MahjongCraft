@@ -30,10 +30,10 @@ import kotlin.uuid.Uuid
  *   （見 `ReturnToRoomUseCase`）時能還原同一位房主，預設值取第一位玩家僅供未指定房主的測試情境使用；
  *   `tableState` 沒有任何玩家時（同樣僅見於測試情境）退回隨機值，不受下方驗證約束。
  * @property roomPlayerIds 開局前房間成員的固定顯示順序；牌桌座位洗牌不得覆寫此順序。
- * @property interruptedBaseMillisByPlayerId 因 server session 結束而中斷的那一次決策，其尚未使用的
- *   基本思考時間毫秒數，以玩家 Uuid 索引。`PlayerDecisionTimer.startedAtMillis` 屬於 runtime 單調時間、
- *   不得持久化，因此只寫回剩餘量；沒有這筆資料的玩家下一次取得決策權時重新取得完整基本思考時間。
- *   決策完成、階段改變或計時器重建後即清除，確保一次中斷只被接續一次。
+ * @property interruptedBaseMillisByPlayerId 因 server session 結束或 blocking presentation 而暫停的那一次
+ *   決策，其尚未使用的基本思考時間毫秒數，以玩家 Uuid 索引。`PlayerDecisionTimer.startedAtMillis` 屬於
+ *   runtime 單調時間、不得持久化，因此只寫回剩餘量；沒有這筆資料的玩家下一次取得決策權時重新取得
+ *   完整基本思考時間。決策完成、階段改變或計時器重建後即清除，確保一次中斷只被接續一次。
  */
 data class Game(
     val tableState: TableState,
