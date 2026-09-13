@@ -119,7 +119,7 @@ class RespondToKanUseCaseTest {
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
             pendingKanReaction = PendingKanReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
-        )
+        ).withFirstKanPhysicalWallLayout()
     }
 
     /**
@@ -208,6 +208,11 @@ class RespondToKanUseCaseTest {
             fixtures.winPresentationHandoff.take(gameId, setOf(robberId)),
             "A completed kan (not robbed) should never stage a win presentation either.",
         )
+        val publishedTransitions = fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId)
+        assertEquals(1, publishedTransitions.size)
+        publishedTransitions.single().flatMap { it.moves }.forEach { move ->
+            assertEquals(newState.physicalWallLayout?.placements?.get(move.tileId), move.destination)
+        }
     }
 
     /**
@@ -227,6 +232,7 @@ class RespondToKanUseCaseTest {
         val unchangedDeclarer = unchangedState.players.first { it.id == declarerId }
         assertEquals(MeldType.PON, unchangedDeclarer.hand.melds.single().type, "The meld should not be applied.")
         assertEquals(robbedWhiteTile, unchangedDeclarer.hand.lastDrawn)
+        assertTrue(fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId).isEmpty())
     }
 
     /**

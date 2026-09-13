@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -81,12 +82,12 @@ class ReturnToRoomUseCase(
         if (outcome is Outcome.Error) return outcome
         val newRoom = (outcome as Outcome.Success).value
 
-        // 2. 清除本局牌牆用牌、手牌/摸牌位/副露、積棒。空 structure 觸發呈現層既有的「建空集合後
+        // 2. 清除本局牌牆用牌、手牌/摸牌位/副露、積棒。空 layout 觸發呈現層既有的「建空集合後
         //    丟棄全部舊牌」語意；莊家座位、王牌集合、擲骰數量在空集合下都不影響任何座標計算，直接傳
         //    空／零值即可。手牌/摸牌位/副露/積棒沒有座位分組資料可傳，改呼叫專用的清除方法。
         presentationPublisher.publishWallStructure(
             gameId,
-            emptyMap(),
+            TileWallPhysicalLayout(emptyMap()),
             dealerSeatIndex = 0,
             deadWallTileIds = emptySet(),
             diceCount = 0,

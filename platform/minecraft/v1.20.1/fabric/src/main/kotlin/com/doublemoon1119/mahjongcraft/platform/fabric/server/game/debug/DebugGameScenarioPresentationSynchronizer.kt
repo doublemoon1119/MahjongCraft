@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTablePresentationCleaner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -37,7 +39,9 @@ class DebugGameScenarioPresentationSynchronizer(
         publisher.clearPlayerAreas(game.id)
         publisher.publishWallStructure(
             gameId = game.id,
-            structure = result.wallStructure,
+            layout = state.physicalWallLayout ?: TileWallPhysicalLayout(
+                result.wallStructure.mapValues { (_, position) -> TileWallPlacement(position) },
+            ),
             dealerSeatIndex = state.dealerIndex,
             deadWallTileIds = state.reservedWallTiles.mapTo(mutableSetOf()) { it.id },
             diceCount = 0,

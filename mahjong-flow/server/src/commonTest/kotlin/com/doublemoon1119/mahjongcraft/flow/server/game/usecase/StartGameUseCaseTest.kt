@@ -171,6 +171,21 @@ class StartGameUseCaseTest {
         assertEquals(1, revealedTileIds.size)
     }
 
+    /** 驗證開局發布完整 136 張初始布局，而不是已排除發牌張的目前牌牆布局。 */
+    @Test
+    fun `test start game publishes complete initial physical wall layout`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.roomRepo.setRoom(readyRoom())
+
+        fixtures.useCase(roomId, hostId)
+
+        val tableState = assertNotNull(fixtures.gameRepo.getTableState(roomId))
+        val layout = assertNotNull(fixtures.presentationPublisher.getPublishedWallStructure(roomId))
+        assertEquals(136, layout.placements.size)
+        val dealtTileIds = tableState.players.flatMap { player -> player.hand.tiles }.mapTo(mutableSetOf()) { it.id }
+        assertTrue(layout.placements.keys.containsAll(dealtTileIds))
+    }
+
     /**
      * 驗證開局呈現初次發牌動畫時，每個座位都帶上完整的最終手牌，且批次大小依日麻規則模組固定為
      * `[4, 4, 4, 1]`（總和等於 13 張初始手牌）——確認 [StartGameUseCase] 真的呼叫

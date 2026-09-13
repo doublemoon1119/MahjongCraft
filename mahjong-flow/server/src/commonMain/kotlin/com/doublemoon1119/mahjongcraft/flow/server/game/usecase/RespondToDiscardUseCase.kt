@@ -28,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -208,6 +209,9 @@ class RespondToDiscardUseCase(
         result.wallRevealBatches.forEach { revealedTileIds ->
             presentationPublisher.publishWallTilesRevealed(gameId, revealedTileIds)
         }
+        if (result.physicalWallTransitionPhases.isNotEmpty()) {
+            presentationPublisher.publishWallLayoutTransition(gameId, result.physicalWallTransitionPhases)
+        }
 
         // 建構胡牌演出內容並寫進交接槽——一炮多響時 result.ronWinnerIds 可能不只一人，打包成同一筆；
         // winningTileId 對每位贏家來說都是同一張放銃的捨牌。刻意不直接發布，理由同 DeclareTsumoUseCase。
@@ -275,6 +279,7 @@ class RespondToDiscardUseCase(
         val previousTableState: TableState? = null,
         val ronDiscarderId: Uuid? = null,
         val wallRevealBatches: List<Set<Uuid>> = emptyList(),
+        val physicalWallTransitionPhases: List<PhysicalWallLayoutTransitionPhase> = emptyList(),
         val rejectionReasonId: String? = null,
     )
 
@@ -436,6 +441,7 @@ class RespondToDiscardUseCase(
                 winnerId = winnerId,
                 resolvedAction = winnerAction,
                 wallRevealBatches = reactionReveal.wallRevealBatches + applied.wallRevealBatches,
+                physicalWallTransitionPhases = applied.physicalWallTransitionPhases,
             )
         }
     }

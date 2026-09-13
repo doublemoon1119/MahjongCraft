@@ -165,6 +165,10 @@ class AdvanceRoundUseCaseTest {
             assertTrue(player.actionHistory.isEmpty(), "actionHistory should be reset for the new round.")
         }
         assertNull(newState.pendingReaction)
+        val layout = assertNotNull(fixtures.presentationPublisher.getPublishedWallStructure(gameId))
+        assertEquals(136, layout.placements.size)
+        val dealtTileIds = newState.players.flatMap { player -> player.hand.tiles }.mapTo(mutableSetOf()) { it.id }
+        assertTrue(layout.placements.keys.containsAll(dealtTileIds))
     }
 
     /**

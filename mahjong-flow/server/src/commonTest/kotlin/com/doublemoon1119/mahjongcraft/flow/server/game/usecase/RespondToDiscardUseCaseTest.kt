@@ -398,7 +398,7 @@ class RespondToDiscardUseCaseTest {
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
             dynamicRuleState = RiichiDynamicState(),
-        )
+        ).withFirstKanPhysicalWallLayout()
         fixtures.gameRepo.setTableState(table)
 
         val kanAction = GameAction.Kan(GameAction.KanType.OPEN_KAN, discardedTile.id, listOf(handTile1.id, handTile2.id, handTile3.id))
@@ -430,6 +430,11 @@ class RespondToDiscardUseCaseTest {
             fixtures.presentationPublisher.getPublishedPlayerArea(gameId)?.drawnTileId,
             "The rinshan tile should be presented as a drawn tile (moved to the draw slot), same as a normal draw.",
         )
+        val publishedTransitions = fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId)
+        assertEquals(1, publishedTransitions.size)
+        publishedTransitions.single().flatMap { it.moves }.forEach { move ->
+            assertEquals(newState.physicalWallLayout?.placements?.get(move.tileId), move.destination)
+        }
     }
 
     /**
@@ -518,6 +523,7 @@ class RespondToDiscardUseCaseTest {
         assertTrue(newState.players.first { it.id == discarderId }.discardPile.entries.last().isTaken.not())
         assertEquals(0, newState.initialDeadWall.size, "The rinshan reserve (initialDeadWall) is what's actually exhausted here.")
         assertTrue(fixtures.eventPublisher.getNotifiedActions(gameId, responderId, responderId).isEmpty())
+        assertTrue(fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId).isEmpty())
     }
 
     /**

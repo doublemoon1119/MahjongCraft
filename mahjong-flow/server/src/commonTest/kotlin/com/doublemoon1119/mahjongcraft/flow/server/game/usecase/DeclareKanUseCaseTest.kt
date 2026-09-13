@@ -86,7 +86,7 @@ class DeclareKanUseCaseTest {
             initialDeadWall = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
-        )
+        ).withFirstKanPhysicalWallLayout()
         fixtures.gameRepo.setTableState(table)
 
         val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, east4.id)
@@ -112,6 +112,11 @@ class DeclareKanUseCaseTest {
             fixtures.presentationPublisher.getPublishedPlayerArea(gameId)?.drawnTileId,
             "The rinshan tile should be presented as a drawn tile (moved to the draw slot), same as a normal draw.",
         )
+        val publishedTransitions = fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId)
+        assertEquals(1, publishedTransitions.size)
+        publishedTransitions.single().flatMap { it.moves }.forEach { move ->
+            assertEquals(newState.physicalWallLayout?.placements?.get(move.tileId), move.destination)
+        }
     }
 
     /**
@@ -375,6 +380,7 @@ class DeclareKanUseCaseTest {
         assertTrue(unchangedPlayer.hand.melds.isEmpty(), "The meld should not be applied when the replacement draw fails.")
         assertEquals(east4, unchangedPlayer.hand.lastDrawn, "The player's hand should remain exactly as it was before the declaration.")
         assertEquals(0, unchangedState.initialDeadWall.size, "The rinshan reserve (initialDeadWall) is what's actually exhausted here.")
+        assertTrue(fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId).isEmpty())
     }
 
     /**

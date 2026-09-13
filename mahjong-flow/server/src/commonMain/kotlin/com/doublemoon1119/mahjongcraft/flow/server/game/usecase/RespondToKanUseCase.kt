@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -165,6 +166,7 @@ class RespondToKanUseCase(
                                 drawHappened = applied.drawnTiles.isNotEmpty(),
                                 declarerId = pending.declarerId,
                                 wallRevealBatches = applied.wallRevealBatches,
+                                physicalWallTransitionPhases = applied.physicalWallTransitionPhases,
                             ),
                         )
                     }
@@ -204,6 +206,9 @@ class RespondToKanUseCase(
         // 正常成立的槓依規則 checkpoint 發布新公開的牌；搶槓胡牌取消等待時不會產生批次。
         result.wallRevealBatches.forEach { revealedTileIds ->
             presentationPublisher.publishWallTilesRevealed(gameId, revealedTileIds)
+        }
+        if (result.physicalWallTransitionPhases.isNotEmpty()) {
+            presentationPublisher.publishWallLayoutTransition(gameId, result.physicalWallTransitionPhases)
         }
 
         // 建構胡牌演出內容並寫進交接槽——搶槓成功時 result.ronWinnerIds 可能不只一人，打包成同一筆；
@@ -262,5 +267,6 @@ class RespondToKanUseCase(
         val previousTableState: TableState? = null,
         val ronDiscarderId: Uuid? = null,
         val wallRevealBatches: List<Set<Uuid>> = emptyList(),
+        val physicalWallTransitionPhases: List<PhysicalWallLayoutTransitionPhase> = emptyList(),
     )
 }

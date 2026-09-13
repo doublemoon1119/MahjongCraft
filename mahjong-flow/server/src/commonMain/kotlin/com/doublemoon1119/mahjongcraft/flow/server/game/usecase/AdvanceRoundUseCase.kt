@@ -21,7 +21,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundTransition
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
@@ -119,7 +119,7 @@ class AdvanceRoundUseCase(
                         val advanceOutcome = AdvanceRoundOutcome(
                             result = AdvanceRoundResult(finalState, isMatchOver = true),
                             diceRoll = null,
-                            wallStructure = null,
+                            initialPhysicalWallLayout = null,
                             dealOrderHandTileIdsBySeatIndex = emptyMap(),
                         )
                         // 對局已經結束：記下這個事實，讓 AiTurnDriver／ForcedAutoPlayDriver 之後都
@@ -173,7 +173,7 @@ class AdvanceRoundUseCase(
                         val advanceOutcome = AdvanceRoundOutcome(
                             result = AdvanceRoundResult(newState, isMatchOver = false),
                             diceRoll = initializationResult.diceRoll,
-                            wallStructure = initializationResult.wallStructure,
+                            initialPhysicalWallLayout = initializationResult.initialPhysicalWallLayout,
                             dealOrderHandTileIdsBySeatIndex = dealOrderHandTileIdsBySeatIndex,
                         )
                         game.copy(
@@ -232,11 +232,11 @@ class AdvanceRoundUseCase(
         // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過。牌牆先建、骰子後擲，理由同
         // StartGameUseCase，這裡不能對調呼叫順序。
         val dealerSeatIndex = newState.players.indexOfFirst { player -> player.id == newDealerId }
-        advanceOutcome.wallStructure?.let { structure ->
+        advanceOutcome.initialPhysicalWallLayout?.let { layout ->
             val deadWallTileIds = newState.reservedWallTiles.map { tile -> tile.id }.toSet()
             val diceCount = advanceOutcome.diceRoll?.values?.size ?: 0
             val revealedTileIds = (newState.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(newState) ?: emptySet()
-            presentationPublisher.publishWallStructure(gameId, structure, dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
+            presentationPublisher.publishWallStructure(gameId, layout, dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
         }
         advanceOutcome.diceRoll?.let { diceRoll ->
             presentationPublisher.publishDiceRoll(
@@ -301,7 +301,7 @@ class AdvanceRoundUseCase(
     private data class AdvanceRoundOutcome(
         val result: AdvanceRoundResult,
         val diceRoll: DiceRollResult?,
-        val wallStructure: Map<Uuid, TileWallPosition>?,
+        val initialPhysicalWallLayout: TileWallPhysicalLayout?,
         val dealOrderHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     )
 }

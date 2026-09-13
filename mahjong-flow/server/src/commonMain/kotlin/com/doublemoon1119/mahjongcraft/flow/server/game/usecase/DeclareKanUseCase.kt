@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
@@ -207,6 +208,7 @@ class DeclareKanUseCase(
                             kanAction,
                             drawHappened = applied.drawnTiles.isNotEmpty(),
                             wallRevealBatches = applied.wallRevealBatches,
+                            physicalWallTransitionPhases = applied.physicalWallTransitionPhases,
                         ),
                     )
                 }
@@ -235,6 +237,9 @@ class DeclareKanUseCase(
         // 的嶺上牌移到摸牌位，跟一般摸牌同一套呈現慣例（見 DrawTileUseCase），先前遺漏這一步會讓
         // 補到的嶺上牌在玩家端看起來像是憑空消失，只看到副露成立、看不到補牌動作。
         if (result.drawHappened) {
+            if (result.physicalWallTransitionPhases.isNotEmpty()) {
+                presentationPublisher.publishWallLayoutTransition(gameId, result.physicalWallTransitionPhases)
+            }
             val declarerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
             val declarer = newState.players[declarerSeatIndex]
             val dealerSeatIndex = newState.dealerIndex
@@ -279,5 +284,6 @@ class DeclareKanUseCase(
         val drawHappened: Boolean,
         val abortiveDrawReason: ExhaustiveDrawReason? = null,
         val wallRevealBatches: List<Set<Uuid>> = emptyList(),
+        val physicalWallTransitionPhases: List<PhysicalWallLayoutTransitionPhase> = emptyList(),
     )
 }

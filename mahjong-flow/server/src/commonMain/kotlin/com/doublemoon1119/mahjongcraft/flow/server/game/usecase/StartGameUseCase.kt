@@ -120,11 +120,11 @@ class StartGameUseCase(
         // 是先砌好牌牆才擲骰決定開門位置，呈現層（`FabricGamePresentationPublisher`）依賴這個固定
         // 呼叫順序，把擲骰動畫延遲到牌牆完全落地才開始播放，這裡不能對調。
         val dealerSeatIndex = tableState.dealerIndex
-        initializationResult.wallStructure?.let { structure ->
+        initializationResult.initialPhysicalWallLayout?.let { layout ->
             val deadWallTileIds = tableState.reservedWallTiles.map { tile -> tile.id }.toSet()
             val diceCount = initializationResult.diceRoll?.values?.size ?: 0
             val revealedTileIds = (tableState.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(tableState) ?: emptySet()
-            presentationPublisher.publishWallStructure(roomId, structure, dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
+            presentationPublisher.publishWallStructure(roomId, layout, dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
         }
         initializationResult.diceRoll?.let { diceRoll ->
             presentationPublisher.publishDiceRoll(roomId, diceRoll, dealerSeatIndex, tableState.roundNumber, tableState.comboCount)

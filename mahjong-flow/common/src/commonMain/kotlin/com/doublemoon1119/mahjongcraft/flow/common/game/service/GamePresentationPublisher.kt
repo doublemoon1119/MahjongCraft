@@ -11,7 +11,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
 
@@ -124,10 +125,10 @@ interface GamePresentationPublisher {
      * 呼叫端只負責提供這兩項資料，何時、如何觸發王牌分離的呈現細節仍完全交給平台實作決定。
      *
      * @param gameId 對局 Uuid。
-     * @param structure 本局牌牆所有牌（含活牌與王牌）的面／墩／層結構座標，鍵為 [IdentifiedTile.id]；空 map 代表這局結束，只需要清除
+     * @param layout 本局牌牆所有牌（含活牌與王牌）的完整抽象實體位置；空布局代表這局結束，只需清除
      * 舊牌。
      * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index。
-     * @param deadWallTileIds [structure] 之中屬於王牌區的牌 Uuid 子集合；空 map 呼叫時可傳空集合。
+     * @param deadWallTileIds [layout] 之中屬於王牌區的牌 Uuid 子集合；空布局呼叫時可傳空集合。
      * @param diceCount 本次開門擲骰的骰子數量，供平台實作換算擲骰動畫總長度；未搭配擲骰的呼叫可傳 `0`。
      * @param revealedTileIds [deadWallTileIds] 之中，牌牆建立當下就該立即公開翻面的牌 Uuid 子集合
      * （例如日麻開局就翻開的第一張寶牌指示牌，由呼叫端用 `TileWallRevealable.getVisibleTileIds`
@@ -136,12 +137,23 @@ interface GamePresentationPublisher {
      */
     fun publishWallStructure(
         gameId: Uuid,
-        structure: Map<Uuid, TileWallPosition>,
+        layout: TileWallPhysicalLayout,
         dealerSeatIndex: Int,
         deadWallTileIds: Set<Uuid>,
         diceCount: Int,
         revealedTileIds: Set<Uuid> = emptySet(),
     )
+
+    /**
+     * 通知平台呈現層依序播放一次已由規則驗證的實體牌牆布局 transition。
+     *
+     * 呼叫端只可在包含最終布局的權威桌況成功保存後發布；平台不得藉此回寫或重新判定桌況。
+     * 預設 no-op，讓尚未支援實體牌牆動畫的平台維持正常遊戲流程。
+     *
+     * @param gameId 對局 Uuid。
+     * @param phases 依規則決定順序排列的移動階段。
+     */
+    fun publishWallLayoutTransition(gameId: Uuid, phases: List<PhysicalWallLayoutTransitionPhase>) = Unit
 
     /**
      * 通知平台呈現層本局牌牆裡，本次新增公開翻面的牌集合——用於牌牆建立**之後**才追加

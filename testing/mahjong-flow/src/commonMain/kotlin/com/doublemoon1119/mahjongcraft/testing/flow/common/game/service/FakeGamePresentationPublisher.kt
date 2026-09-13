@@ -9,7 +9,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
 
@@ -40,7 +41,10 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     private val diceRollContexts = mutableMapOf<Uuid, DiceRollContext>()
 
     /** 依對局 Uuid 紀錄最後一次收到的牌牆結構座標。 */
-    private val wallStructures = mutableMapOf<Uuid, Map<Uuid, TileWallPosition>>()
+    private val wallStructures = mutableMapOf<Uuid, TileWallPhysicalLayout>()
+
+    /** 依對局 Uuid 紀錄所有收到的實體牌牆 transition。 */
+    private val wallLayoutTransitions = mutableMapOf<Uuid, MutableList<List<PhysicalWallLayoutTransitionPhase>>>()
 
     /** 依對局 Uuid 紀錄最後一次收到的牌牆結構隨附桌況資料。 */
     private val wallStructureContexts = mutableMapOf<Uuid, WallStructureContext>()
@@ -93,14 +97,18 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     override fun publishWallStructure(
         gameId: Uuid,
-        structure: Map<Uuid, TileWallPosition>,
+        layout: TileWallPhysicalLayout,
         dealerSeatIndex: Int,
         deadWallTileIds: Set<Uuid>,
         diceCount: Int,
         revealedTileIds: Set<Uuid>,
     ) {
-        wallStructures[gameId] = structure
+        wallStructures[gameId] = layout
         wallStructureContexts[gameId] = WallStructureContext(dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
+    }
+
+    override fun publishWallLayoutTransition(gameId: Uuid, phases: List<PhysicalWallLayoutTransitionPhase>) {
+        wallLayoutTransitions.getOrPut(gameId, ::mutableListOf).add(phases)
     }
 
     override fun publishWallTilesRevealed(gameId: Uuid, revealedTileIds: Set<Uuid>) {
@@ -202,7 +210,10 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     fun getPublishedDiceRollContext(gameId: Uuid): DiceRollContext? = diceRollContexts[gameId]
 
     /** 取得指定對局最後一次收到的牌牆結構座標；若無紀錄則回傳 null。 */
-    fun getPublishedWallStructure(gameId: Uuid): Map<Uuid, TileWallPosition>? = wallStructures[gameId]
+    fun getPublishedWallStructure(gameId: Uuid): TileWallPhysicalLayout? = wallStructures[gameId]
+
+    /** 取得指定對局依序收到的實體牌牆 transition。 */
+    fun getPublishedWallLayoutTransitions(gameId: Uuid): List<List<PhysicalWallLayoutTransitionPhase>> = wallLayoutTransitions[gameId].orEmpty()
 
     /** 取得指定對局最後一次收到的牌牆結構隨附桌況資料；若無紀錄則回傳 null。 */
     fun getPublishedWallStructureContext(gameId: Uuid): WallStructureContext? = wallStructureContexts[gameId]
