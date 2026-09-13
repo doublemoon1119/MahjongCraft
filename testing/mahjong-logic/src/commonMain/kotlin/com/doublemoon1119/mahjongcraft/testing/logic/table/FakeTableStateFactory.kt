@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlin.uuid.Uuid
@@ -45,6 +46,7 @@ object FakeTableStateFactory {
         pendingReaction: PendingReaction? = null,
         pendingKanReaction: PendingKanReaction? = null,
         initialDeadWall: List<IdentifiedTile> = emptyList(),
+        physicalWallLayout: TileWallPhysicalLayout? = null,
         finishedPlayerIds: Set<Uuid> = emptySet(),
     ): TableState {
         val hasDuplicateWinds = players.map { it.seatWind }.distinct().size != players.size
@@ -68,6 +70,7 @@ object FakeTableStateFactory {
             pendingReaction = pendingReaction,
             pendingKanReaction = pendingKanReaction,
             initialDeadWall = initialDeadWall,
+            physicalWallLayout = physicalWallLayout,
             finishedPlayerIds = finishedPlayerIds,
         )
     }

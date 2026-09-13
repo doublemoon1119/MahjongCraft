@@ -63,7 +63,13 @@ class DrawTileUseCase(
                                 .recordAction(GameAction.Draw),
                         )
                         val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
-                        val newState = state.copy(tileWall = newWall, players = updatedPlayers)
+                        val remainingWallTileIds = (newWall.getAllTiles() + state.reservedWallTiles)
+                            .mapTo(mutableSetOf()) { it.id }
+                        val newState = state.copy(
+                            tileWall = newWall,
+                            players = updatedPlayers,
+                            physicalWallLayout = state.physicalWallLayout?.retainOnly(remainingWallTileIds),
+                        )
 
                         newState to Outcome.Success(newState)
                     }

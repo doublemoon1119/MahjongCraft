@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import kotlin.uuid.Uuid
 
 /**
@@ -20,6 +21,7 @@ import kotlin.uuid.Uuid
  * @property dynamicRuleState 規則特定的動態桌況狀態
  * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合，供 HUD、牌面與觀戰
  * 呈現使用。
+ * @property physicalWallLayout 目前仍在牌牆中的牌張實體位置；規則不支援或舊資料時為 null。
  */
 data class TableStateSnapshot(
     val id: Uuid,
@@ -34,6 +36,7 @@ data class TableStateSnapshot(
     val currentPlayerIndex: Int,
     val dynamicRuleState: DynamicRuleState?,
     val finishedPlayerIds: Set<Uuid>,
+    val physicalWallLayout: TileWallPhysicalLayout?,
 )
 
 /**
@@ -63,5 +66,6 @@ fun TableState.toSnapshot(visibleHandPlayerIds: Set<Uuid>): TableStateSnapshot {
         currentPlayerIndex = this.currentPlayerIndex,
         dynamicRuleState = this.dynamicRuleState,
         finishedPlayerIds = this.finishedPlayerIds,
+        physicalWallLayout = this.physicalWallLayout,
     )
 }

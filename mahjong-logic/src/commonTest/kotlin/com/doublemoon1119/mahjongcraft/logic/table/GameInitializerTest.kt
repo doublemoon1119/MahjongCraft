@@ -77,10 +77,16 @@ class GameInitializerTest {
     @Test
     fun `test initialize resolves wall opening and dead wall for a rule that supports it`() {
         val playerIds = List(4) { Uuid.random() }
-        val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
+        val result = GameInitializer.initialize(Uuid.random(), playerIds, module)
+        val table = result.tableState
 
         assertTrue(table.wallOpening != null, "Riichi supports wall opening, wallOpening should not be null")
         assertEquals(module.config.deadTileCount, table.reservedWallTiles.size)
+        assertEquals(136, result.initialPhysicalWallLayout?.placements?.size)
+        assertEquals(
+            (table.tileWall.getAllTiles() + table.reservedWallTiles).map { it.id }.toSet(),
+            table.physicalWallLayout?.placements?.keys,
+        )
     }
 
     /**

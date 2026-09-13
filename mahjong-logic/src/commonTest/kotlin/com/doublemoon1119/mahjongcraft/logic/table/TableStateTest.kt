@@ -1,5 +1,10 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -11,6 +16,23 @@ import kotlin.uuid.Uuid
 /** 驗證 [TableState.localRoundNumber] 換算邏輯，以及 [TableState] 的 active/finished 玩家概念。 */
 class TableStateTest {
     private val fourPlayers = Wind.entries.map { FakeMahjongPlayerFactory.create(it) }
+
+    /** 實體布局只要缺少或多出目前牌牆的一張牌，就必須在建立桌況時立即拒絕。 */
+    @Test
+    fun `test physical wall layout keys must exactly match wall membership`() {
+        val wallTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val unrelatedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Green)
+
+        assertFailsWith<IllegalArgumentException> {
+            FakeTableStateFactory.create(
+                players = fourPlayers,
+                tileWall = TileWall(listOf(wallTile)),
+                physicalWallLayout = TileWallPhysicalLayout(
+                    mapOf(unrelatedTile.id to TileWallPlacement(TileWallPosition(0, 0, 0))),
+                ),
+            )
+        }
+    }
 
     /** 場風內第一局（跨場風累計局數等於玩家人數的整數倍加一）應換算回 `1`。 */
     @Test

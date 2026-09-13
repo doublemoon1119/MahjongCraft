@@ -68,4 +68,15 @@ data class TileWallPhysicalLayout(val placements: Map<Uuid, TileWallPlacement>) 
             "Physical wall layout placements must be unique"
         }
     }
+
+    /**
+     * 只保留 [tileIds] 指定的 placement，且拒絕要求目前布局不存在的牌張。
+     *
+     * @param tileIds 新布局應包含的完整牌張 Uuid 集合。
+     * @return placement 內容與本布局一致、成員縮減為 [tileIds] 的新布局。
+     */
+    fun retainOnly(tileIds: Set<Uuid>): TileWallPhysicalLayout {
+        require(placements.keys.containsAll(tileIds)) { "Physical wall layout does not contain every retained tile" }
+        return TileWallPhysicalLayout(placements.filterKeys { it in tileIds })
+    }
 }

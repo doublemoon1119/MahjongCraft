@@ -365,7 +365,11 @@ class MahjongAutoDrawServiceTest {
             module = module,
             aiPlayerStrategyKeys = aiStrategyKeys,
         )
-        val emptyWallState = initializationResult.tableState.copy(tileWall = TileWall(emptyList()))
+        val remainingReservedIds = initializationResult.tableState.reservedWallTiles.mapTo(mutableSetOf()) { it.id }
+        val emptyWallState = initializationResult.tableState.copy(
+            tileWall = TileWall(emptyList()),
+            physicalWallLayout = initializationResult.tableState.physicalWallLayout?.retainOnly(remainingReservedIds),
+        )
         fixtures.gameRepo.setTableState(emptyWallState)
         // GameInitializer 依座位風重排玩家順序，setTableState 預設把 hostId 定成第一位玩家的 id，
         // 不保證真的是 hostId 這位玩家——比照 StartGameUseCase 實際上是明確從 Room.hostId 帶入，

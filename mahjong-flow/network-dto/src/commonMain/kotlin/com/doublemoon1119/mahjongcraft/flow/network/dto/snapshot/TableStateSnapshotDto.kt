@@ -27,6 +27,7 @@ data class TableStateSnapshotDto(
     val currentPlayerIndex: Int,
     val dynamicRuleState: DynamicRuleStateDto?,
     val finishedPlayerIds: Set<String>,
+    val physicalWallLayout: TileWallPhysicalLayoutDto? = null,
 )
 
 /** 將 observer-specific 桌況快照轉成網路 DTO。 */
@@ -43,6 +44,7 @@ fun TableStateSnapshot.toDto(registries: NetworkDtoRegistries): TableStateSnapsh
     currentPlayerIndex = currentPlayerIndex,
     dynamicRuleState = dynamicRuleState?.toDto(registries),
     finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
+    physicalWallLayout = physicalWallLayout?.toDto(),
 )
 
 /** 將網路 DTO 還原成 observer-specific 桌況快照。 */
@@ -59,4 +61,5 @@ fun TableStateSnapshotDto.toDomain(registries: NetworkDtoRegistries): TableState
     currentPlayerIndex = currentPlayerIndex,
     dynamicRuleState = dynamicRuleState?.toDomain(registries),
     finishedPlayerIds = finishedPlayerIds.map(Uuid::parse).toSet(),
+    physicalWallLayout = physicalWallLayout?.toDomain(),
 )

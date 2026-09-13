@@ -59,6 +59,10 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -173,9 +177,14 @@ class DtoRoundTripTest {
                 paoLiability = PaoLiability(PaoYaku.Daisuushii, RelativeDirection.Across),
             ),
         )
+        val wallTile = IdentifiedTile(Uuid.random(), Tile.Honor.White)
         val tableState = FakeTableStateFactory.create(
             players = listOf(riichiPlayer),
             config = RiichiRuleConfig(),
+            tileWall = TileWall(listOf(wallTile)),
+            physicalWallLayout = TileWallPhysicalLayout(
+                mapOf(wallTile.id to TileWallPlacement(TileWallPosition(2, 4, 1))),
+            ),
             dynamicRuleState = RiichiDynamicState(
                 riichiStickCount = 2,
                 completedSupplementalDrawCount = 3,
@@ -195,6 +204,7 @@ class DtoRoundTripTest {
         // （DTO 都是 data class，有結構化相等），不比對還原後的領域物件。
         assertEquals(snapshotDto, decodedDto)
         assertEquals(snapshot.dynamicRuleState, decodedDto.toDomain(registries).dynamicRuleState)
+        assertEquals(snapshot.physicalWallLayout, decodedDto.toDomain(registries).physicalWallLayout)
     }
 
     /** 驗證舊版網路資料缺少公開進度與等待項目時，沿用原本的立即公開語意。 */

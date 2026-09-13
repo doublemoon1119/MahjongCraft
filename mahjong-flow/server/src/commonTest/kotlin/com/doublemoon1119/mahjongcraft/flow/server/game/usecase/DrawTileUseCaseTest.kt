@@ -14,6 +14,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -66,6 +69,9 @@ class DrawTileUseCaseTest {
             config = RiichiRuleConfig(),
             tileWall = TileWall(listOf(drawnTile)),
             currentPlayerIndex = 0,
+            physicalWallLayout = TileWallPhysicalLayout(
+                mapOf(drawnTile.id to TileWallPlacement(TileWallPosition(0, 0, 0))),
+            ),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -80,6 +86,7 @@ class DrawTileUseCaseTest {
         assertEquals(emptySet(), updatedPlayer.passedTilesInRound, "Passed tiles should be cleared on draw.")
         assertTrue(updatedPlayer.actionHistory.last() is GameAction.Draw)
         assertEquals(0, newState.tileWall.remainingCount)
+        assertEquals(emptyMap(), newState.physicalWallLayout?.placements)
     }
 
     /**

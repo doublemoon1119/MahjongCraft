@@ -6,7 +6,11 @@ import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer.buildOpenedWall
+import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutContext
+import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutDecision
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.logic.table.layout.createInitialLayoutValidated
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.logic.table.seat.SeatWindAssignmentContext
@@ -74,12 +78,14 @@ object GameInitializer {
             dynamicRuleState = module.createInitialDynamicState(),
             wallOpening = openedWall.wallOpening,
             initialDeadWall = openedWall.reservedWallTiles,
+            physicalWallLayout = openedWall.currentPhysicalLayout(remainingWall),
         ).init()
 
         return GameInitializationResult(
             tableState = tableState,
             diceRoll = openedWall.diceRoll,
             wallStructure = openedWall.structure,
+            initialPhysicalWallLayout = openedWall.initialPhysicalWallLayout,
         )
     }
 
@@ -145,12 +151,14 @@ object GameInitializer {
             dynamicRuleState = previousDynamicRuleState,
             wallOpening = openedWall.wallOpening,
             initialDeadWall = openedWall.reservedWallTiles,
+            physicalWallLayout = openedWall.currentPhysicalLayout(remainingWall),
         )
 
         return GameInitializationResult(
             tableState = tableState,
             diceRoll = openedWall.diceRoll,
             wallStructure = openedWall.structure,
+            initialPhysicalWallLayout = openedWall.initialPhysicalWallLayout,
         )
     }
 
@@ -187,12 +195,23 @@ object GameInitializer {
                 reservedWallTiles = emptyList(),
                 diceRoll = null,
                 structure = null,
+                initialPhysicalWallLayout = null,
             )
         }
 
         val diceRoll = DiceRollResult.of(List(openingPolicy.diceCount) { (1..DICE_FACES).random() })
         val wallOpening = openingPolicy.resolve(diceRoll)
         val layoutResult = layout.resolve(shuffledWall.getAllTiles(), wallOpening)
+        val physicalLayout = when (
+            val decision = createPhysicalWallLayoutPolicy().createInitialLayoutValidated(
+                InitialPhysicalWallLayoutContext(layoutResult),
+            )
+        ) {
+            is InitialPhysicalWallLayoutDecision.Completed -> decision.layout
+            is InitialPhysicalWallLayoutDecision.Rejected -> error(
+                "Physical wall layout initialization was rejected: ${decision.reasonId}",
+            )
+        }
 
         return OpenedWall(
             wall = TileWall(layoutResult.drawOrder),
@@ -200,6 +219,7 @@ object GameInitializer {
             reservedWallTiles = layoutResult.reservedWallTiles,
             diceRoll = diceRoll,
             structure = layoutResult.structure,
+            initialPhysicalWallLayout = physicalLayout,
         )
     }
 
@@ -213,7 +233,14 @@ object GameInitializer {
         val reservedWallTiles: List<IdentifiedTile>,
         val diceRoll: DiceRollResult?,
         val structure: Map<Uuid, TileWallPosition>?,
-    )
+        val initialPhysicalWallLayout: TileWallPhysicalLayout?,
+    ) {
+        /** 從完整初始布局保留發牌後仍位於活牌區與保留區的牌張。 */
+        fun currentPhysicalLayout(remainingWall: TileWall): TileWallPhysicalLayout? {
+            val retainedIds = (remainingWall.getAllTiles() + reservedWallTiles).mapTo(mutableSetOf()) { it.id }
+            return initialPhysicalWallLayout?.retainOnly(retainedIds)
+        }
+    }
 
     /** 六面骰的點數上限。 */
     private const val DICE_FACES: Int = 6

@@ -10,6 +10,10 @@ import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionContext
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionDecision
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
+import com.doublemoon1119.mahjongcraft.logic.table.layout.resolveTransitionValidated
 import kotlin.uuid.Uuid
 
 /**
@@ -27,11 +31,14 @@ internal object KanDeclarationApplier {
          * @property tableState 更新後桌況。
          * @property drawnTiles 規則實際補到的牌張。
          * @property wallRevealBatches 依 checkpoint 順序排列的新公開牌批次。
+         * @property physicalWallTransitionPhases 已通過規則驗證的實體牌牆移動階段；本切片只隨結果保留，
+         * 尚不負責發布 presentation。
          */
         data class Applied(
             val tableState: TableState,
             val drawnTiles: List<IdentifiedTile>,
             val wallRevealBatches: List<Set<Uuid>> = emptyList(),
+            val physicalWallTransitionPhases: List<PhysicalWallLayoutTransitionPhase> = emptyList(),
         ) : Result
 
         /**
@@ -137,6 +144,8 @@ internal object KanDeclarationApplier {
                 candidateAfterBeforeReveal,
                 actorPlayerId,
                 decision,
+                action,
+                module,
             ).completeWallReveal(module, actorPlayerId, action, beforeReveal.newlyRevealedTileIds)
         }
     }
@@ -173,6 +182,8 @@ internal object KanDeclarationApplier {
         candidateState: TableState,
         actorPlayerId: Uuid,
         decision: SupplementalDrawDecision.Completed,
+        action: GameAction,
+        module: MahjongRuleModule<*>,
     ): Result {
         if (decision.drawnTiles.isEmpty()) return Result.Rejected(SupplementalDrawReasonIds.INVALID_RESULT)
         val originalWallTiles = originalState.tileWall.getAllTiles() + originalState.reservedWallTiles
@@ -191,12 +202,30 @@ internal object KanDeclarationApplier {
         )
         val actorAfterDraw = actor.copy(hand = handAfterDraw).clearPassedTiles().recordAction(GameAction.Draw)
         val updatedPlayers = candidateState.players.toMutableList().apply { this[actorIndex] = actorAfterDraw }
-        val updatedState = candidateState.copy(
+        val stateWithoutResolvedPhysicalLayout = candidateState.copy(
             players = updatedPlayers,
             tileWall = decision.tileWall,
             initialDeadWall = decision.reservedWallTiles,
             dynamicRuleState = decision.dynamicRuleState,
+            physicalWallLayout = null,
         )
-        return Result.Applied(updatedState, decision.drawnTiles)
+        val currentPhysicalLayout = originalState.physicalWallLayout
+            ?: return Result.Applied(stateWithoutResolvedPhysicalLayout, decision.drawnTiles)
+        val physicalDecision = module.createPhysicalWallLayoutPolicy().resolveTransitionValidated(
+            PhysicalWallLayoutTransitionContext(
+                tableStateBeforeAction = originalState,
+                tableStateAfterAction = stateWithoutResolvedPhysicalLayout,
+                currentLayout = currentPhysicalLayout,
+                actorPlayerId = actorPlayerId,
+                action = action,
+            ),
+        )
+        val (updatedPhysicalLayout, phases) = when (physicalDecision) {
+            PhysicalWallLayoutTransitionDecision.Unchanged -> currentPhysicalLayout to emptyList()
+            is PhysicalWallLayoutTransitionDecision.Completed -> physicalDecision.layout to physicalDecision.phases
+            is PhysicalWallLayoutTransitionDecision.Rejected -> return Result.Rejected(physicalDecision.reasonId)
+        }
+        val updatedState = stateWithoutResolvedPhysicalLayout.copy(physicalWallLayout = updatedPhysicalLayout)
+        return Result.Applied(updatedState, decision.drawnTiles, physicalWallTransitionPhases = phases)
     }
 }

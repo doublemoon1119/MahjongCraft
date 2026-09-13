@@ -23,6 +23,11 @@ import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOffset
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrientation
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -58,7 +63,21 @@ class TableStatePersistenceTest {
     /** 驗證一般摸打狀態保留完整牌山、隱藏手牌與 AI 玩家資訊。 */
     @Test
     fun `active turn round-trips with hidden authoritative state`() {
-        assertEncodedRoundTrip(createTableState())
+        val state = createTableState()
+        val wallTiles = state.tileWall.getAllTiles()
+        assertEncodedRoundTrip(
+            state.copy(
+                physicalWallLayout = TileWallPhysicalLayout(
+                    wallTiles.mapIndexed { index, tile ->
+                        tile.id to TileWallPlacement(
+                            position = TileWallPosition(1, index, index % 2),
+                            offset = TileWallPlacementOffset(alongWallStacks = 0.25),
+                            orientation = TileWallPlacementOrientation.CLOCKWISE_90,
+                        )
+                    }.toMap(),
+                ),
+            ),
+        )
     }
 
     /** 驗證等待捨牌反應時保留資格玩家與已提交回應。 */
@@ -142,6 +161,19 @@ class TableStatePersistenceTest {
         val decoded = this.json.decodeFromJsonElement(TableStatePersistenceDto.serializer(), withoutFinishedPlayerIds)
 
         assertEquals(emptySet(), decoded.finishedPlayerIds)
+    }
+
+    /** 驗證舊存檔缺少實體牌牆布局時，不猜測規則位置並維持 null。 */
+    @Test
+    fun `decoding a persistence dto without physicalWallLayout defaults to null`() {
+        val state = createTableState()
+        val element = json.encodeToJsonElement(TableStatePersistenceDto.serializer(), state.toPersistenceDto())
+        val legacyElement = JsonObject(element.jsonObject.filterKeys { it != "physicalWallLayout" })
+
+        val decoded = json.decodeFromJsonElement(TableStatePersistenceDto.serializer(), legacyElement)
+
+        assertEquals(null, decoded.physicalWallLayout)
+        assertEquals(null, decoded.toDomain().physicalWallLayout)
     }
 
     /** 驗證舊存檔缺少公開進度與等待項目時，沿用原本的立即公開語意。 */

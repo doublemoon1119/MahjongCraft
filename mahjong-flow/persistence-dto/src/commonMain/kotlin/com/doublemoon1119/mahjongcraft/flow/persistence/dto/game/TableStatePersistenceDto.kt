@@ -35,6 +35,7 @@ import kotlin.uuid.Uuid
  * 也不表示 platform 必須將它呈現為日麻式獨立王牌區。
  * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合；舊存檔缺少此欄位時
  * 預設空集合。
+ * @property physicalWallLayout 目前仍在牌牆中的牌張實體位置；舊存檔或不支援的規則為 null。
  */
 @Serializable
 data class TableStatePersistenceDto(
@@ -54,6 +55,7 @@ data class TableStatePersistenceDto(
     val wallOpening: WallOpeningPersistenceDto?,
     val initialDeadWall: List<IdentifiedTilePersistenceDto>,
     val finishedPlayerIds: Set<String> = emptySet(),
+    val physicalWallLayout: TileWallPhysicalLayoutPersistenceDto? = null,
 )
 
 /** 將 [TableState] 轉換成完整權威 persistence DTO。 */
@@ -90,6 +92,7 @@ fun TableState.toPersistenceDto(
     wallOpening = wallOpening?.toPersistenceDto(),
     initialDeadWall = reservedWallTiles.map { it.toPersistenceDto() },
     finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
+    physicalWallLayout = physicalWallLayout?.toPersistenceDto(),
 )
 
 /** 將 [TableStatePersistenceDto] 驗證並還原成完整權威 [TableState]。 */
@@ -126,4 +129,5 @@ fun TableStatePersistenceDto.toDomain(
     wallOpening = wallOpening?.toDomain(),
     initialDeadWall = initialDeadWall.map { it.toDomain() },
     finishedPlayerIds = finishedPlayerIds.map(Uuid::parse).toSet(),
+    physicalWallLayout = physicalWallLayout?.toDomain(),
 )
