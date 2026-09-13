@@ -18,12 +18,14 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTran
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionDecision
 import com.doublemoon1119.mahjongcraft.logic.table.layout.resolveTransitionValidated
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -39,21 +41,89 @@ class DebugGameScenarioTest {
         assertEquals(null, registry.get("mahjongcraft:unknown"))
     }
 
-    /** 只有開門預覽情境應要求播放初始開門，其餘可操作牌局維持靜態同步。 */
+    /** 只有開門情境應攜帶完整初局呈現，其餘可操作牌局維持靜態同步。 */
     @Test
-    fun `test only wall opening scenario requests opening animation`() {
+    fun `test only wall opening scenario provides initial round presentation`() {
         val fixture = createFixture()
         val registry = DebugGameScenarioRegistry()
 
         val opening = registry.get("mahjongcraft:riichi_wall_opening")!!.build(fixture.context)
-        assertEquals(DebugWallPresentationIntent.ANIMATE_OPENING, opening.wallPresentationIntent)
+        assertIs<DebugGameScenarioPresentation.InitialRound>(opening.presentation)
         EXPECTED_IDS.filterNot { it == "mahjongcraft:riichi_wall_opening" }.forEach { id ->
             assertEquals(
-                DebugWallPresentationIntent.STATIC,
-                registry.get(id)!!.build(fixture.context).wallPresentationIntent,
+                DebugGameScenarioPresentation.StaticWall,
+                registry.get(id)!!.build(fixture.context).presentation,
                 id,
             )
         }
+    }
+
+    /** 開門情境的牌牆、骰子與發牌資料應全部來自同一份正式初始化結果。 */
+    @Test
+    fun `test wall opening scenario contains a consistent formal initialization`() {
+        val fixture = createFixture()
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_wall_opening")!!.build(fixture.context)
+
+        fixture.validator.validate(fixture.context, result)
+        val state = result.game.tableState
+        val presentation = assertIs<DebugGameScenarioPresentation.InitialRound>(result.presentation)
+        val allTileIds = allTileIds(result)
+
+        assertEquals(2, presentation.diceRoll.values.size)
+        assertEquals(allTileIds, result.wallStructure.keys)
+        assertEquals(allTileIds, result.wallLayout.placements.keys)
+        assertEquals(
+            (state.tileWall.getAllTiles() + state.reservedWallTiles).mapTo(mutableSetOf()) { tile -> tile.id },
+            assertNotNull(state.physicalWallLayout).placements.keys,
+        )
+        state.players.forEachIndexed { seatIndex, player ->
+            val dealOrderIds = presentation.dealOrderHandTileIdsBySeatIndex.getValue(seatIndex)
+            val postFlipIds = presentation.postFlipHandTileIdsBySeatIndex.getValue(seatIndex)
+            assertEquals(player.hand.tiles.map { tile -> tile.id }, postFlipIds)
+            assertEquals(player.hand.tiles.mapTo(mutableSetOf()) { tile -> tile.id }, dealOrderIds.toSet())
+        }
+    }
+
+    /** 完整開局呈現應發布真實骰子與發牌動畫，不得提前靜態生成玩家區。 */
+    @Test
+    fun `test wall opening presentation publishes the formal initial timeline`() {
+        val fixture = createFixture()
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_wall_opening")!!.build(fixture.context)
+        val presentation = assertIs<DebugGameScenarioPresentation.InitialRound>(result.presentation)
+        val publisher = FakeGamePresentationPublisher()
+
+        DebugGameScenarioPresentationPublisher(publisher, fixture.moduleRegistry).publish(result)
+
+        val gameId = result.game.id
+        val wallContext = assertNotNull(publisher.getPublishedWallStructureContext(gameId))
+        val initialDeal = assertNotNull(publisher.getPublishedInitialDealAnimation(gameId))
+        assertTrue(publisher.wasPlayerAreasCleared(gameId))
+        assertTrue(wallContext.animateOpening)
+        assertEquals(presentation.diceRoll.values.size, wallContext.diceCount)
+        assertEquals(presentation.diceRoll, publisher.getPublishedDiceRoll(gameId))
+        assertEquals(presentation.dealOrderHandTileIdsBySeatIndex, initialDeal.handTileIdsBySeatIndex)
+        assertEquals(presentation.postFlipHandTileIdsBySeatIndex, initialDeal.postFlipHandTileIdsBySeatIndex)
+        assertNull(publisher.getPublishedPlayerArea(gameId))
+        assertNull(publisher.getPublishedDiscardPile(gameId))
+    }
+
+    /** 可操作情境應維持靜態牌牆與玩家區同步，不得重播骰子或初次發牌。 */
+    @Test
+    fun `test playable scenario keeps static presentation`() {
+        val fixture = createFixture()
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_ankan_1")!!.build(fixture.context)
+        val publisher = FakeGamePresentationPublisher()
+
+        DebugGameScenarioPresentationPublisher(publisher, fixture.moduleRegistry).publish(result)
+
+        val gameId = result.game.id
+        val wallContext = assertNotNull(publisher.getPublishedWallStructureContext(gameId))
+        assertFalse(wallContext.animateOpening)
+        assertEquals(0, wallContext.diceCount)
+        assertNotNull(publisher.getPublishedPlayerArea(gameId))
+        assertNotNull(publisher.getPublishedDiscardPile(gameId))
+        assertNull(publisher.getPublishedDiceRoll(gameId))
+        assertNull(publisher.getPublishedInitialDealAnimation(gameId))
     }
 
     /** 重複建立同一情境時應保留語意並換用全新的牌 UUID。 */

@@ -40,6 +40,7 @@ object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
             stacksPerSide = stacksPerSide,
             stackCount = RESERVED_TRACK_STACK_COUNT,
             occupiedPositions = occupiedPositions,
+            initialVacantStackCount = INITIAL_RESERVED_STACK_COUNT,
             extraStackAfterHead = true,
         ) ?: return InitialPhysicalWallLayoutDecision.Rejected(NO_COLLISION_FREE_TRACK_REASON_ID)
         val reservedPlacements = createReservedPlacements(wallLayout, track)
@@ -207,11 +208,14 @@ object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
     /** 初始 14 張王牌的八格布局，加上兩墩供四次槓補入牌使用。 */
     private const val RESERVED_TRACK_STACK_COUNT = 10
 
+    /** 開局時實際由十四張王牌使用的軌道墩數；其後兩墩仍屬活牌，待槓後才補入。 */
+    private const val INITIAL_RESERVED_STACK_COUNT = 8
+
     /** 第一次補入牌位於軌道的第八格，之後每兩次補牌向尾端推進一墩。 */
     private const val FIRST_REPLENISHMENT_TRACK_INDEX = 8
 
-    /** 將集中後的保留牌整體朝開門空位平移四分之一墩，形成清楚分界。 */
-    private val RESERVED_WALL_GAP_OFFSET = TileWallPlacementOffset(alongWallStacks = 0.25)
+    /** 將集中後的保留牌整體朝開門空位平移半墩，形成清楚但不含預留空墩的分界。 */
+    private val RESERVED_WALL_GAP_OFFSET = TileWallPlacementOffset(alongWallStacks = 0.5)
 
     /** 初始牌牆缺少日麻嶺上牌結構時的拒絕原因。 */
     const val INVALID_STATE_REASON_ID: String = "mahjongcraft:invalid_riichi_physical_wall_state"

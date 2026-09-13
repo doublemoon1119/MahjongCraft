@@ -20,15 +20,17 @@ class DebugGameScenarioValidator(
         }
         require(candidate.roomPlayerIds == previous.roomPlayerIds) { "Debug scenario must preserve room player order" }
         require(candidate.hostId == previous.hostId) { "Debug scenario must preserve the host" }
-        val invokingPlayerHasAuthority = candidate.tableState.currentPlayer.id == context.invokingPlayerId ||
-            candidate.tableState.pendingReaction?.let { pending ->
-                context.invokingPlayerId in pending.eligiblePlayerIds && context.invokingPlayerId !in pending.responses
-            } == true ||
-            candidate.tableState.pendingKanReaction?.let { pending ->
-                context.invokingPlayerId in pending.eligiblePlayerIds && context.invokingPlayerId !in pending.responses
-            } == true
-        require(invokingPlayerHasAuthority) {
-            "Debug scenario must give the invoking player decision authority"
+        if (result.presentation == DebugGameScenarioPresentation.StaticWall) {
+            val invokingPlayerHasAuthority = candidate.tableState.currentPlayer.id == context.invokingPlayerId ||
+                candidate.tableState.pendingReaction?.let { pending ->
+                    context.invokingPlayerId in pending.eligiblePlayerIds && context.invokingPlayerId !in pending.responses
+                } == true ||
+                candidate.tableState.pendingKanReaction?.let { pending ->
+                    context.invokingPlayerId in pending.eligiblePlayerIds && context.invokingPlayerId !in pending.responses
+                } == true
+            require(invokingPlayerHasAuthority) {
+                "Static debug scenario must give the invoking player decision authority"
+            }
         }
 
         val allTiles = candidate.tableState.allTiles()
@@ -41,6 +43,9 @@ class DebugGameScenarioValidator(
         }
         requireNotNull(candidate.tableState.physicalWallLayout) {
             "Debug scenario must provide the current authoritative physical wall layout"
+        }
+        (result.presentation as? DebugGameScenarioPresentation.InitialRound)?.let { presentation ->
+            validateInitialRoundPresentation(candidate.tableState, presentation)
         }
 
         val module = moduleRegistry.getModule(candidate.tableState.config)
@@ -72,4 +77,30 @@ class DebugGameScenarioValidator(
     /** 收集權威桌況目前持有的全部實體牌。 */
     private fun TableState.allTiles(): List<IdentifiedTile> = players.flatMap { it.hand.allTiles + it.discardPile.entries.map { entry -> entry.tile } } +
         tileWall.getAllTiles() + reservedWallTiles
+
+    /** 驗證完整開局呈現的發牌前後資料與同一份權威手牌完全一致。 */
+    private fun validateInitialRoundPresentation(
+        state: TableState,
+        presentation: DebugGameScenarioPresentation.InitialRound,
+    ) {
+        require(presentation.diceRoll.values.isNotEmpty()) { "Initial round presentation must provide dice" }
+        val expectedSeatIndices = state.players.indices.toSet()
+        require(presentation.dealOrderHandTileIdsBySeatIndex.keys == expectedSeatIndices) {
+            "Initial round deal order must contain every seat"
+        }
+        require(presentation.postFlipHandTileIdsBySeatIndex.keys == expectedSeatIndices) {
+            "Initial round final hands must contain every seat"
+        }
+        state.players.forEachIndexed { seatIndex, player ->
+            val authoritativeIds = player.hand.tiles.map { tile -> tile.id }
+            val dealOrderIds = presentation.dealOrderHandTileIdsBySeatIndex.getValue(seatIndex)
+            val postFlipIds = presentation.postFlipHandTileIdsBySeatIndex.getValue(seatIndex)
+            require(dealOrderIds.toSet() == authoritativeIds.toSet() && dealOrderIds.size == authoritativeIds.size) {
+                "Initial round deal order does not match the authoritative hand at seat $seatIndex"
+            }
+            require(postFlipIds == authoritativeIds) {
+                "Initial round final hand order does not match the authoritative hand at seat $seatIndex"
+            }
+        }
+    }
 }

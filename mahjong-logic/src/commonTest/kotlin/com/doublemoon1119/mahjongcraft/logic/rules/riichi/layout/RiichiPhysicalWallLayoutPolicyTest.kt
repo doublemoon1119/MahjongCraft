@@ -179,8 +179,8 @@ class RiichiPhysicalWallLayoutPolicyTest {
     /** 建立不依賴實際手牌內容的暗槓動作識別。 */
     private fun kanAction(): GameAction.Kan = GameAction.Kan(GameAction.KanType.CLOSED_KAN, Uuid.random(), emptyList())
 
-    /** 日麻王牌區使用的四分之一墩分界位移。 */
-    private val deadWallOffset = TileWallPlacementOffset(alongWallStacks = 0.25)
+    /** 日麻王牌區使用的半墩分界位移。 */
+    private val deadWallOffset = TileWallPlacementOffset(alongWallStacks = 0.5)
 
     /** 四人日麻初次發牌後離開牌牆的牌張數。 */
     private companion object {

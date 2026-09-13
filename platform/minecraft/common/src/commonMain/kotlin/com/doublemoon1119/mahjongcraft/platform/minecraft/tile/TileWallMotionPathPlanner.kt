@@ -232,10 +232,10 @@ object TileWallMotionPathPlanner {
     private const val CORNER_SUBDIVISIONS = 3
 
     /** 每移動一個世界方塊所需的 tick 數。 */
-    private const val TICKS_PER_BLOCK = 8.0
+    private const val TICKS_PER_BLOCK = 16.0
 
-    /** 非零路徑段的最短播放時間。 */
-    private const val MIN_SEGMENT_TICKS = 1
+    /** 非零路徑段的最短播放時間，確保短距離整理仍能看清移動過程。 */
+    private const val MIN_SEGMENT_TICKS = 3
 
     /** 判斷世界位置相同時使用的容差。 */
     private const val POSITION_EPSILON = 1e-9

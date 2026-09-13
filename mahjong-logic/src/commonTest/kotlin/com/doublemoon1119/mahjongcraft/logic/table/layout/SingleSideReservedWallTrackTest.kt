@@ -60,4 +60,28 @@ class SingleSideReservedWallTrackTest {
             ),
         )
     }
+
+    /** 後續補牌容量可以先由活牌占用，不應被誤判成開局保留牌碰撞。 */
+    @Test
+    fun `future transition capacity may remain occupied by live wall`() {
+        val occupied = buildSet {
+            listOf(1, 0).forEach { stack ->
+                add(TileWallPosition(0, stack, 0))
+                add(TileWallPosition(0, stack, 1))
+            }
+        }
+
+        val track = requireNotNull(
+            SingleSideReservedWallTrackPlanner.plan(
+                opening = WallOpening(0, 2),
+                stacksPerSide = 17,
+                stackCount = 10,
+                occupiedPositions = occupied,
+                initialVacantStackCount = 8,
+                extraStackAfterHead = true,
+            ),
+        )
+
+        assertEquals((9 downTo 0).toList(), track.stackIndices)
+    }
 }

@@ -33,6 +33,9 @@ object SingleSideReservedWallTrackPlanner {
     /**
      * 以最接近原開門格位的位置建立 [stackCount] 墩軌道，並避開 [occupiedPositions]。
      *
+     * [initialVacantStackCount] 表示開局時實際由保留牌佔用、因此必須避開其他牌的軌道前綴；其後格位
+     * 可以在開局時仍由活牌佔用，供後續補牌 transition 搬入，避免為未來容量預先挖出空墩。
+     *
      * [extraStackAfterHead] 會在軌道頭端之外多保留一格，例如日麻第一張嶺上牌的特殊下層位置。只有
      * 與候選軌道相同開門面的占位會參與碰撞判斷；上下層分開計算。
      */
@@ -41,10 +44,14 @@ object SingleSideReservedWallTrackPlanner {
         stacksPerSide: Int,
         stackCount: Int,
         occupiedPositions: Set<TileWallPosition>,
+        initialVacantStackCount: Int = stackCount,
         extraStackAfterHead: Boolean = false,
     ): SingleSideReservedWallTrack? {
         require(stacksPerSide > 0) { "Stacks per side must be positive" }
         require(stackCount in 1..stacksPerSide) { "Reserved wall stack count must fit on one wall side" }
+        require(initialVacantStackCount in 1..stackCount) {
+            "Initially vacant stack count must fit inside the reserved wall track"
+        }
         val preferredHead = opening.stacksFromRight - 1
         val minimumHead = stackCount - 1
         val maximumHead = stacksPerSide - 1 - if (extraStackAfterHead) 1 else 0
@@ -54,7 +61,7 @@ object SingleSideReservedWallTrackPlanner {
             .firstNotNullOfOrNull { head ->
                 val indices = List(stackCount) { offset -> head - offset }
                 val trackPositions = buildSet {
-                    indices.forEach { stack ->
+                    indices.take(initialVacantStackCount).forEach { stack ->
                         add(TileWallPosition(opening.wallSideOffsetFromDealer, stack, 0))
                         add(TileWallPosition(opening.wallSideOffsetFromDealer, stack, 1))
                     }

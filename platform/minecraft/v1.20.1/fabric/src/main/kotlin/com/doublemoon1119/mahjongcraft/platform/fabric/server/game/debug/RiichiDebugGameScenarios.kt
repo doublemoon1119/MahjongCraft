@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
@@ -40,15 +41,71 @@ object RiichiDebugGameScenarios {
         RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_3", 2),
         RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_4", 3),
         RiichiBeforeMinkanScenario,
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi_wall_opening", null),
+        RiichiWallOpeningScenario,
     )
+}
+
+/** 使用正式初始化流程建立完整日麻開局呈現情境。 */
+private object RiichiWallOpeningScenario : DebugGameScenario {
+    override val id: String = "mahjongcraft:riichi_wall_opening"
+
+    override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
+        val currentGame = context.currentGame
+        val config = currentGame.tableState.config as? RiichiRuleConfig
+            ?: error("Riichi debug scenarios require a Riichi game")
+        val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
+        val playerIds = currentGame.tableState.players.map { player -> player.id }
+        val aiPlayerStrategyKeys = currentGame.tableState.players.mapNotNull { player ->
+            player.aiStrategyKey?.let { strategyKey -> player.id to strategyKey }
+        }.toMap()
+        val initialization = GameInitializer.initialize(
+            id = currentGame.id,
+            playerIds = playerIds,
+            module = module,
+            aiPlayerStrategyKeys = aiPlayerStrategyKeys,
+        )
+        val dealtState = initialization.tableState
+        val dealOrderHandTileIdsBySeatIndex = dealtState.players.withIndex().associate { (seatIndex, player) ->
+            seatIndex to player.hand.tiles.map { tile -> tile.id }
+        }
+        val organizedState = dealtState.copy(
+            players = dealtState.players.map { player ->
+                player.copy(hand = player.hand.organize(module.tileOrder))
+            },
+        )
+        val postFlipHandTileIdsBySeatIndex = organizedState.players.withIndex().associate { (seatIndex, player) ->
+            seatIndex to player.hand.tiles.map { tile -> tile.id }
+        }
+        val diceRoll = requireNotNull(initialization.diceRoll) { "Riichi initialization did not produce dice" }
+        val wallStructure = requireNotNull(initialization.wallStructure) {
+            "Riichi initialization did not produce wall structure"
+        }
+        val initialPhysicalWallLayout = requireNotNull(initialization.initialPhysicalWallLayout) {
+            "Riichi initialization did not produce physical wall layout"
+        }
+        return DebugGameScenarioResult(
+            game = Game(
+                tableState = organizedState,
+                flowConfig = currentGame.flowConfig,
+                hostId = currentGame.hostId,
+                roomPlayerIds = currentGame.roomPlayerIds,
+            ),
+            wallStructure = wallStructure,
+            wallLayout = initialPhysicalWallLayout,
+            presentation = DebugGameScenarioPresentation.InitialRound(
+                diceRoll = diceRoll,
+                dealOrderHandTileIdsBySeatIndex = dealOrderHandTileIdsBySeatIndex,
+                postFlipHandTileIdsBySeatIndex = postFlipHandTileIdsBySeatIndex,
+            ),
+        )
+    }
 }
 
 /** 建立固定停在下一次暗槓宣告前的四人日麻情境。 */
 private class RiichiBeforeAnkanScenario(
     override val id: String,
-    /** 已在桌上成立並完成補牌的槓數；null 代表單純初始牌牆情境。 */
-    private val completedKanCount: Int?,
+    /** 已在桌上成立並完成補牌的槓數。 */
+    private val completedKanCount: Int,
 ) : DebugGameScenario {
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
@@ -63,16 +120,16 @@ private class RiichiBeforeAnkanScenario(
         val opening = WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 8)
         val inventory = module.createWallFactory().create().getAllTiles().sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
-        val requestedKanCount = completedKanCount?.plus(1) ?: 0
+        val requestedKanCount = completedKanCount + 1
         val kanGroups = selectCompleteGroups(availableTiles, requestedKanCount)
-        val targetKan = completedKanCount?.let { kanGroups.last() }
-        val establishedKans = if (completedKanCount == null) emptyList() else kanGroups.dropLast(1)
+        val targetKan = kanGroups.last()
+        val establishedKans = kanGroups.dropLast(1)
         val dealerIndex = currentGame.tableState.players.indexOfFirst { it.id == context.invokingPlayerId }
         val initialHands = createInitialHands(availableTiles, dealerIndex, targetKan, establishedKans)
         val initialDealOrder = interleaveInitialDeal(initialHands, dealerIndex, config.dealBatchSizes())
         val priorNormalDraws = List(establishedKans.size) { takeFirst(availableTiles, 1).single() }
-        val dealerDraw = targetKan?.last()
-        val consumedFromFront = initialDealOrder + priorNormalDraws + listOfNotNull(dealerDraw)
+        val dealerDraw = targetKan.last()
+        val consumedFromFront = initialDealOrder + priorNormalDraws + dealerDraw
         val initialReservedTiles = takeFirst(availableTiles, config.deadTileCount)
         val initialLiveTiles = consumedFromFront + availableTiles
         val templateLayout = requireNotNull(module.createWallLayout()).resolve(inventory, opening)
@@ -138,7 +195,7 @@ private class RiichiBeforeAnkanScenario(
             dealerPlayerId = context.invokingPlayerId,
             roundPosition = MatchRoundPosition(sequenceIndex = 0, prevalentWind = Wind.EAST, localRoundNumber = 1),
             currentPlayerIndex = dealerIndex,
-            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = completedKanCount ?: 0),
+            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = completedKanCount),
             wallOpening = opening,
             initialDeadWall = reservedTiles,
         )
@@ -159,11 +216,6 @@ private class RiichiBeforeAnkanScenario(
             ),
             structure,
             presentationLayout,
-            wallPresentationIntent = if (completedKanCount == null) {
-                DebugWallPresentationIntent.ANIMATE_OPENING
-            } else {
-                DebugWallPresentationIntent.STATIC
-            },
         )
     }
 
