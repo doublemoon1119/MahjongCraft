@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResu
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiPhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
@@ -62,6 +63,12 @@ class RiichiRuleModuleTest {
     @Test
     fun `test create wall layout returns riichi implementation`() {
         assertTrue(module.createWallLayout() is RiichiWallLayout)
+    }
+
+    /** 驗證規則模組提供日麻獨立王牌區與槓後補位 policy。 */
+    @Test
+    fun `test create physical wall layout policy returns riichi implementation`() {
+        assertSame(RiichiPhysicalWallLayoutPolicy, module.createPhysicalWallLayoutPolicy())
     }
 
     /** 驗證規則模組提供日麻赤五的牌面解讀 policy。 */

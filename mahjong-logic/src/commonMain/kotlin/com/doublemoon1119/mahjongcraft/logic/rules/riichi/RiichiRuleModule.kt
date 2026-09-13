@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiPhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
@@ -25,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
 import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
@@ -61,6 +63,9 @@ class RiichiRuleModule(
 
     /** 建立四人日本麻將固定 136 張的牌牆布局。 */
     override fun createWallLayout(): RiichiWallLayout = RiichiWallLayout(config)
+
+    /** 建立日本麻將獨立王牌區與槓後補位所使用的抽象實體布局 policy。 */
+    override fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy = RiichiPhysicalWallLayoutPolicy
 
     /** 建立將日麻赤五解讀為普通五的牌面 policy。 */
     override fun createTileInterpretationPolicy(): TileInterpretationPolicy = RiichiTileInterpretationPolicy
