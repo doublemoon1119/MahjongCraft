@@ -68,17 +68,17 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPre
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallOpeningPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallProjectionContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionDecision
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionPlanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import kotlinx.coroutines.launch
 import net.minecraft.registry.RegistryKey
@@ -155,7 +155,7 @@ class FabricGamePresentationPublisher(
     /**
      * 記錄每張桌子最近一次 [publishWallStructure] 算出的牌牆生成掉落動畫總時長（ticks）——[publishDiceRoll]
      * 與 [publishInitialDealAnimation] 都會讀取，用來把擲骰動畫、發牌動畫依序延遲到牌牆完全落地、
-     * 擲骰動畫也播完才開始播放，符合真實麻將先砌牌牆、擲骰開門、才發牌的順序。
+     * 擲骰動畫也播完才開始播放。
      *
      * 每次 [publishWallStructure] 呼叫都覆寫（不是單次消費後移除）——同一張桌子每局都會重新呼叫
      * [publishWallStructure]，覆寫掉上一局的舊值，兩個讀取端都能各自安全讀到本局的值，不需要協調
@@ -165,8 +165,8 @@ class FabricGamePresentationPublisher(
      */
     private val wallDropTicksByTable = ConcurrentHashMap<Uuid, Int>()
 
-    /** 每張桌子最近一次初始開門 transition 的最長動畫時長。 */
-    private val wallOpeningTicksByTable = ConcurrentHashMap<Uuid, Int>()
+    /** 等待初次發牌與四家翻牌完成後才可排入 entity 佇列的本局開門資料。 */
+    private val pendingWallOpeningByTable = ConcurrentHashMap<Uuid, MahjongTileWallPresentation>()
 
     /** 每張桌子最近一次牌牆結構換算出的單面墩數。 */
     private val wallStacksPerSideByTable = ConcurrentHashMap<Uuid, Int>()
@@ -416,16 +416,7 @@ class FabricGamePresentationPublisher(
         val wallDropTicks = MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide)
         wallDropTicksByTable[gameId] = wallDropTicks
         wallStacksPerSideByTable[gameId] = stacksPerSide
-        wallOpeningTicksByTable[gameId] = if (animateOpening) {
-            calculateOpeningDurationTicks(
-                assemblyStructure,
-                layout,
-                dealerSeatIndex,
-                stacksPerSide,
-            )
-        } else {
-            0
-        }
+        if (!animateOpening) pendingWallOpeningByTable.remove(gameId)
         busyTracker.markPending(gameId)
         scope.launch(dispatchers.main) {
             try {
@@ -443,7 +434,12 @@ class FabricGamePresentationPublisher(
                     animateOpening = animateOpening,
                     revealedTileIds = revealedTileIds,
                 )
-                tileWallPresenter.present(presentation)
+                val result = tileWallPresenter.present(presentation)
+                if (animateOpening && result == MahjongTileWallPresentationResult.PRESENTED) {
+                    pendingWallOpeningByTable[gameId] = presentation
+                } else if (result != MahjongTileWallPresentationResult.PRESENTED) {
+                    pendingWallOpeningByTable.remove(gameId)
+                }
             } finally {
                 busyTracker.clearPending(gameId)
             }
@@ -646,13 +642,13 @@ class FabricGamePresentationPublisher(
      * 初次發牌要等牌牆＋擲骰動畫都播完才輪到——不能在骰子還在動畫時就直接讓手牌出現。過去用外層
      * `tickClock.scheduleAfter` 延遲整個呼叫本身（那段延遲純粹活在記憶體裡，撐不過伺服器重啟）；改成
      * 立刻呼叫 [playerAreaPresenter.presentInitialDeal]，把等待時長（跟 [publishDiceRoll] 同一套
-     * [wallDropTicksByTable] 與 [wallOpeningTicksByTable] 機制，涵蓋牌牆掉落、擲骰與開門動畫時長）折算進
+     * [wallDropTicksByTable] 機制，涵蓋牌牆掉落與擲骰動畫時長）折算進
      * [MahjongInitialDealPresentation.extraLeadDelayTicks]，變成每張牌自己動畫佇列最前面的一個等待
      * step（見 `FabricMahjongPlayerAreaPresenter.scheduleDealBatchAnimation`），理由見
      * `AnimatedMahjongEntity` KDoc。
      *
      * 玩家操作／自動操作心跳（[GameFlowCoordinator.driveAutomatedPlayers]）不會搶在整段開局呈現
-     * （建牌 → 擲骰開門 → 分牌 → 翻牌 → 觀看緩衝）播完前執行，現在是靠 [busyTracker] 直接查詢桌上
+     * （建牌 → 擲骰 → 分牌 → 翻牌 → 開門 → 觀看緩衝）播完前執行，現在是靠 [busyTracker] 直接查詢桌上
      * entity 是否還在動畫佇列裡，不需要另外手動標記忙碌時長，見 [TablePresentationBusyTracker] KDoc；
      * 觀看緩衝本身也已經摺進每張牌佇列尾端（見
      * `FabricMahjongPlayerAreaPresenter.OPENING_SEQUENCE_EXTRA_VIEWING_TICKS`）。
@@ -671,7 +667,6 @@ class FabricGamePresentationPublisher(
             return
         }
         val wallDropTicks = wallDropTicksByTable[gameId] ?: 0
-        val wallOpeningTicks = if (diceCount > 0) wallOpeningTicksByTable[gameId] ?: 0 else 0
         val diceTicks = if (diceCount > 0) MahjongDiceTableLayout.totalAnimationTicks(diceCount) else 0
         busyTracker.markPending(gameId)
         scope.launch(dispatchers.main) {
@@ -687,9 +682,21 @@ class FabricGamePresentationPublisher(
                     dealerSeatIndex = dealerSeatIndex,
                     comboStickCount = comboStickCount,
                     dealBatchSizes = dealBatchSizes,
-                    extraLeadDelayTicks = wallDropTicks + diceTicks + wallOpeningTicks,
+                    extraLeadDelayTicks = wallDropTicks + diceTicks,
                 )
-                playerAreaPresenter.presentInitialDeal(presentation)
+                val result = playerAreaPresenter.presentInitialDeal(presentation)
+                val opening = pendingWallOpeningByTable.remove(gameId)
+                if (opening != null && result != MahjongPlayerAreaPresentationResult.TABLE_NOT_FOUND) {
+                    val totalTurnCount = dealBatchSizes.size * handTileIdsBySeatIndex.size
+                    val handFlipEndGameTime = resolved.world.time + presentation.extraLeadDelayTicks +
+                        MahjongTileTableLayout.dealAnimationTicks(totalTurnCount)
+                    val openingResult = tileWallPresenter.presentOpening(
+                        MahjongTileWallOpeningPresentation(opening, handFlipEndGameTime),
+                    )
+                    if (openingResult != MahjongTileWallPresentationResult.PRESENTED) {
+                        logger.warn("Initial wall opening gameId={} failed: result={}", gameId, openingResult)
+                    }
+                }
                 tableOverlayCoordinator.showNow(
                     resolved.world,
                     gameId,
@@ -698,34 +705,6 @@ class FabricGamePresentationPublisher(
             } finally {
                 busyTracker.clearPending(gameId)
             }
-        }
-    }
-
-    /**
-     * 以不受桌子平移與旋轉影響的基準投影計算初始開門時長，供同步建立後續發牌 lead delay。
-     */
-    private fun calculateOpeningDurationTicks(
-        assemblyStructure: Map<Uuid, TileWallPosition>,
-        layout: TileWallPhysicalLayout,
-        dealerSeatIndex: Int,
-        stacksPerSide: Int,
-    ): Int {
-        if (assemblyStructure.isEmpty() || stacksPerSide <= 0) return 0
-        val decision = TileWallTransitionMotionPlanner.planOpening(
-            MahjongTileWallProjectionContext(
-                controllerX = 0,
-                controllerY = 0,
-                controllerZ = 0,
-                tableFacing = MahjongTableFacing.NORTH,
-                dealerSeatIndex = dealerSeatIndex,
-                stacksPerSide = stacksPerSide,
-            ),
-            assemblyStructure,
-            layout,
-        )
-        return (decision as? TileWallTransitionMotionDecision.Completed)?.plan?.durationTicks ?: run {
-            logger.warn("Initial wall opening path could not be planned; subsequent deal will use no opening delay")
-            0
         }
     }
 

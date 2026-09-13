@@ -45,6 +45,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallOpeningPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
@@ -211,6 +212,9 @@ class FabricTableLifecycleServiceTest {
     private class RecordingTileWallPresenter : MahjongTileWallPresenter {
         /** 此測試不使用正式牌牆呈現。 */
         override fun present(presentation: MahjongTileWallPresentation): MahjongTileWallPresentationResult = MahjongTileWallPresentationResult.PRESENTED
+
+        /** 此測試不使用正式開門動畫呈現。 */
+        override fun presentOpening(presentation: MahjongTileWallOpeningPresentation): MahjongTileWallPresentationResult = MahjongTileWallPresentationResult.PRESENTED
 
         /** 此測試不使用正式牌牆 transition 呈現。 */
         override fun presentTransition(

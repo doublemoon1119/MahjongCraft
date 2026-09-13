@@ -40,6 +40,17 @@ data class MahjongTileWallPresentation(
 )
 
 /**
+ * 在初次發牌與四家手牌翻起後，接續排入既有牌牆 entity 的開門呈現資料。
+ *
+ * @property wallPresentation 建立牌牆時保存的完整組裝與規則最終布局。
+ * @property startGameTime 王牌整理可以開始的絕對 server game time。
+ */
+data class MahjongTileWallOpeningPresentation(
+    val wallPresentation: MahjongTileWallPresentation,
+    val startGameTime: Long,
+)
+
+/**
  * 已由規則解析完成、等待在既有牌牆 entity 上播放的布局 transition。
  *
  * @property tableId 所屬麻將桌的穩定 UUID。
@@ -86,6 +97,9 @@ enum class MahjongTileWallPresentationResult {
     /** 其中一張牌無法加入世界；已回滾本次建立的牌。 */
     SPAWN_FAILED,
 
+    /** 開門或翻面需要的既有管理中牌 entity 不存在。 */
+    TILE_NOT_FOUND,
+
     /** 初始 assembly 與 final layout 無法建立安全開門路徑。 */
     INVALID_PATH,
 }
@@ -99,6 +113,9 @@ enum class MahjongTileWallPresentationResult {
 interface MahjongTileWallPresenter {
     /** 在指定桌面呈現整副牌牆；[MahjongTileWallPresentation.finalLayout] 為空時等同只清除舊牌。 */
     fun present(presentation: MahjongTileWallPresentation): MahjongTileWallPresentationResult
+
+    /** 在既有牌牆上排入開門整理及初始公開牌翻面動畫。 */
+    fun presentOpening(presentation: MahjongTileWallOpeningPresentation): MahjongTileWallPresentationResult
 
     /** 將權威 transition 原子排入指定桌子的既有牌牆 entity。 */
     fun presentTransition(presentation: MahjongTileWallTransitionPresentation): MahjongTileWallTransitionResult
