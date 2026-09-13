@@ -47,6 +47,8 @@ data class TileMotionAnimationFrame(
     val offset: DiceAnimationVector,
     /** 內插後的姿態旋轉角，取代靜態的 `tilePose.rotationDegrees`。 */
     val poseRotationDegrees: Float,
+    /** 畫面目前相對 entity 真實終點 yaw 的角差。 */
+    val yawOffsetDegrees: Float,
     /** 限制在 `0～1` 的動畫進度。 */
     val progress: Double,
     /** 動畫是否已完成。 */
@@ -62,12 +64,17 @@ class TileMotionAnimation(
     private val spec: TileMotionAnimationSpec,
 ) {
     /** 計算指定經過 ticks、指定起點相對終點偏移的視覺 frame。 */
-    fun frame(elapsedTicks: Double, startOffset: DiceAnimationVector): TileMotionAnimationFrame {
+    fun frame(
+        elapsedTicks: Double,
+        startOffset: DiceAnimationVector,
+        startYawOffsetDegrees: Float = 0.0f,
+    ): TileMotionAnimationFrame {
         val progress = (elapsedTicks / spec.durationTicks).coerceIn(0.0, 1.0)
         if (progress >= 1.0) {
             return TileMotionAnimationFrame(
                 offset = DiceAnimationVector.ZERO,
                 poseRotationDegrees = spec.endPoseRotationDegrees,
+                yawOffsetDegrees = 0.0f,
                 progress = 1.0,
                 completed = true,
             )
@@ -90,6 +97,7 @@ class TileMotionAnimation(
         return TileMotionAnimationFrame(
             offset = offset,
             poseRotationDegrees = poseRotationDegrees,
+            yawOffsetDegrees = startYawOffsetDegrees * (1.0 - easedProgress).toFloat(),
             progress = progress,
             completed = false,
         )

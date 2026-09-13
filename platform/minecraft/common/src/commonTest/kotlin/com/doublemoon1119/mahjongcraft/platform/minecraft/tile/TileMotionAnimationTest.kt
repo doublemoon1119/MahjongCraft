@@ -22,10 +22,11 @@ class TileMotionAnimationTest {
     @Test
     fun `animation starts at the configured start offset and pose`() {
         val startOffset = DiceAnimationVector(0.0, 1.5, 0.0)
-        val frame = animation.frame(elapsedTicks = 0.0, startOffset = startOffset)
+        val frame = animation.frame(elapsedTicks = 0.0, startOffset = startOffset, startYawOffsetDegrees = 30.0f)
 
         assertVectorEquals(startOffset, frame.offset)
         assertEquals(-90.0f, frame.poseRotationDegrees)
+        assertEquals(30.0f, frame.yawOffsetDegrees)
         assertEquals(0.0, frame.progress)
         assertFalse(frame.completed)
     }
@@ -39,6 +40,7 @@ class TileMotionAnimationTest {
 
         assertVectorEquals(DiceAnimationVector.ZERO, atEnd.offset)
         assertEquals(0.0f, atEnd.poseRotationDegrees)
+        assertEquals(0.0f, atEnd.yawOffsetDegrees)
         assertTrue(atEnd.completed)
         assertVectorEquals(DiceAnimationVector.ZERO, pastEnd.offset)
         assertTrue(pastEnd.completed)
@@ -51,6 +53,18 @@ class TileMotionAnimationTest {
 
         assertEquals(-45.0f, frame.poseRotationDegrees, ABSOLUTE_TOLERANCE_FLOAT)
         assertEquals(0.5, frame.progress)
+    }
+
+    /** 世界 yaw offset 與位移共用 ease-out，並在動畫完成時收斂到零。 */
+    @Test
+    fun `yaw offset eases out with position`() {
+        val midpoint = animation.frame(
+            elapsedTicks = 10.0,
+            startOffset = DiceAnimationVector.ZERO,
+            startYawOffsetDegrees = -80.0f,
+        )
+
+        assertEquals(-20.0f, midpoint.yawOffsetDegrees, ABSOLUTE_TOLERANCE_FLOAT)
     }
 
     /**

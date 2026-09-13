@@ -161,7 +161,7 @@ object MahjongTileTableLayout {
 
     /** 以最短旋轉方向在兩個世界 yaw 之間內插。 */
     private fun interpolateYaw(start: Float, end: Float, progress: Double): Float {
-        val delta = ((end - start + HALF_YAW_DEGREES).mod(FULL_YAW_DEGREES)) - HALF_YAW_DEGREES
+        val delta = shortestYawDeltaDegrees(start, end)
         return start + delta * progress.toFloat()
     }
 
@@ -960,7 +960,6 @@ object MahjongTileTableLayout {
     internal const val CORNER_GAP_RATIO: Double = 0.25
 
     /** 世界 yaw 進行最短路徑內插時使用的半圈角度。 */
-    private const val HALF_YAW_DEGREES: Float = 180.0f
     private const val FULL_YAW_DEGREES: Float = 360.0f
 
     /** [HAND_EDGE_OFFSET] 額外扣除的桌緣留白，遊戲內驗證後調整的觀感參數（初版手牌幾乎貼到桌緣）。 */

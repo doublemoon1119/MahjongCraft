@@ -80,13 +80,21 @@ class MahjongTileEntityRenderer(
                     endPoseRotationDegrees = entity.animationEndPoseRotationDegrees,
                     easeRotation = entity.animationEaseRotation,
                 ),
-            ).frame(elapsedTicks = elapsedAnimationTicks, startOffset = entity.animationStartOffset)
+            ).frame(
+                elapsedTicks = elapsedAnimationTicks,
+                startOffset = entity.animationStartOffset,
+                startYawOffsetDegrees = entity.animationStartYawOffsetDegrees,
+            )
         } else {
             null
         }
         matrices.push()
         if (animationFrame != null) matrices.translate(animationFrame.offset.x, animationFrame.offset.y, animationFrame.offset.z)
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-entity.yaw + 180.0f))
+        matrices.multiply(
+            RotationAxis.POSITIVE_Y.rotationDegrees(
+                -entity.yaw + 180.0f - (animationFrame?.yawOffsetDegrees ?: 0.0f),
+            ),
+        )
         matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(animationFrame?.poseRotationDegrees ?: entity.tilePose.rotationDegrees))
         val (poseOffsetX, poseOffsetY, poseOffsetZ) = if (animationFrame != null) {
             lerpPoseOriginOffset(entity.animationStartPoseRotationDegrees, entity.animationEndPoseRotationDegrees, animationFrame.progress)

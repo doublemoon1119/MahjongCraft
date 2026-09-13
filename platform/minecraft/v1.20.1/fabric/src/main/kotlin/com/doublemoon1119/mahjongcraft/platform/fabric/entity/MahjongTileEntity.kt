@@ -243,6 +243,10 @@ class MahjongTileEntity(
             z = dataTracker[ANIMATION_START_OFFSET_Z].toDouble(),
         )
 
+    /** 動畫起點相對 entity 真實終點 yaw 的角差。 */
+    val animationStartYawOffsetDegrees: Float
+        get() = dataTracker[ANIMATION_START_YAW_OFFSET]
+
     /** 動畫起始姿態的局部 X 軸旋轉角。 */
     val animationStartPoseRotationDegrees: Float
         get() = dataTracker[ANIMATION_START_POSE_ROTATION]
@@ -273,6 +277,7 @@ class MahjongTileEntity(
         dataTracker.set(ANIMATION_START_POSE_ROTATION, step.startPoseRotationDegrees)
         dataTracker.set(ANIMATION_END_POSE_ROTATION, step.endPoseRotationDegrees)
         dataTracker.set(ANIMATION_EASE_ROTATION, step.easeRotation)
+        dataTracker.set(ANIMATION_START_YAW_OFFSET, step.startYawOffsetDegrees)
         animating = true
     }
 
@@ -463,6 +468,7 @@ class MahjongTileEntity(
         dataTracker.startTracking(ANIMATION_START_POSE_ROTATION, 0.0f)
         dataTracker.startTracking(ANIMATION_END_POSE_ROTATION, 0.0f)
         dataTracker.startTracking(ANIMATION_EASE_ROTATION, false)
+        dataTracker.startTracking(ANIMATION_START_YAW_OFFSET, 0.0f)
         dataTracker.startTracking(PRESENTATION_ASSET_KEY, UNKNOWN_TILE_ASSET_KEY)
         dataTracker.startTracking(PRESENTATION_ASSET_END_GAME_TIME, 0L)
         dataTracker.startTracking(ACTION_POPUP_KIND, TileActionPopupKind.NONE.ordinal)
@@ -615,5 +621,9 @@ class MahjongTileEntity(
         /** 同步姿態旋轉角是否也套用 ease-out 曲線。 */
         private val ANIMATION_EASE_ROTATION: TrackedData<Boolean> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+
+        /** 同步動畫起點相對真實終點 yaw 的角差。 */
+        private val ANIMATION_START_YAW_OFFSET: TrackedData<Float> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
     }
 }

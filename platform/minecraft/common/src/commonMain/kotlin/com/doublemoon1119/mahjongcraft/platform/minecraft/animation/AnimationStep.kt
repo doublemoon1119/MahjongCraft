@@ -57,6 +57,8 @@ sealed interface AnimationStep<out C> {
      * [easeRotation] 預設 `false`：姿態旋轉角內插維持純線性，這是開局發牌翻牌／摸牌換面等既有呼叫點
      * 已經驗證過手感的既有行為，不因為新增這個參數而改變。只有明確需要旋轉本身也先快後慢（跟位移的
      * ease-out 曲線一致，銜接下一個 step 時才不會有旋轉忽然停止的生硬感）的呼叫點才傳 `true`。
+     * [startYawOffsetDegrees] 是畫面起點相對 entity 真實終點 yaw 的角差；它與位移一起套用 ease-out 並
+     * 收斂到零。預設為零，因此既有不需要水平轉向的動畫完全不受影響。
      */
     data class PlayMotion(
         val durationTicks: Int,
@@ -67,6 +69,7 @@ sealed interface AnimationStep<out C> {
         val startPoseRotationDegrees: Float,
         val endPoseRotationDegrees: Float,
         val easeRotation: Boolean = false,
+        val startYawOffsetDegrees: Float = 0.0f,
     ) : AnimationStep<Nothing>
 
     /** 實體專屬的瞬間動作（例如麻將牌的姿態切換），交給該實體類型自己解讀與套用。 */
