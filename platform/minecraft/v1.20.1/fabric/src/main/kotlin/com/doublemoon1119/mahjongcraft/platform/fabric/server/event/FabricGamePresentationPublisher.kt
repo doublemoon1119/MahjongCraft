@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongSoundTimelineEntity
@@ -385,6 +386,7 @@ class FabricGamePresentationPublisher(
      */
     override fun publishWallStructure(
         gameId: Uuid,
+        assemblyStructure: Map<Uuid, TileWallPosition>,
         layout: TileWallPhysicalLayout,
         dealerSeatIndex: Int,
         deadWallTileIds: Set<Uuid>,
@@ -395,8 +397,9 @@ class FabricGamePresentationPublisher(
             logger.warn("publishWallStructure gameId={} skipped: no active server", gameId)
             return
         }
-        val structure = layout.placements.mapValues { (_, placement) -> placement.position }
-        val stacksPerSide = structure.values.filter { position -> position.side == 0 }.maxOfOrNull { position -> position.stack + 1 } ?: 0
+        val stacksPerSide = assemblyStructure.values
+            .filter { position -> position.side == 0 }
+            .maxOfOrNull { position -> position.stack + 1 } ?: 0
         val wallDropTicks = MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide)
         wallDropTicksByTable[gameId] = wallDropTicks
         busyTracker.markPending(gameId)
@@ -409,7 +412,8 @@ class FabricGamePresentationPublisher(
                     tableLocation = resolved.location,
                     tableFacing = resolved.facing,
                     dealerSeatIndex = dealerSeatIndex,
-                    structure = structure,
+                    assemblyStructure = assemblyStructure,
+                    finalLayout = layout,
                     deadWallTileIds = deadWallTileIds,
                     diceCount = diceCount,
                     revealedTileIds = revealedTileIds,

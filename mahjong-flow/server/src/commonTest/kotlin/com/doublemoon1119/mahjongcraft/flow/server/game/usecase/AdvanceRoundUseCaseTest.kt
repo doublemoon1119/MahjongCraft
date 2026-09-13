@@ -166,7 +166,9 @@ class AdvanceRoundUseCaseTest {
         }
         assertNull(newState.pendingReaction)
         val layout = assertNotNull(fixtures.presentationPublisher.getPublishedWallStructure(gameId))
+        val assemblyStructure = assertNotNull(fixtures.presentationPublisher.getPublishedWallAssemblyStructure(gameId))
         assertEquals(136, layout.placements.size)
+        assertEquals(layout.placements.keys, assemblyStructure.keys)
         val dealtTileIds = newState.players.flatMap { player -> player.hand.tiles }.mapTo(mutableSetOf()) { it.id }
         assertTrue(layout.placements.keys.containsAll(dealtTileIds))
     }

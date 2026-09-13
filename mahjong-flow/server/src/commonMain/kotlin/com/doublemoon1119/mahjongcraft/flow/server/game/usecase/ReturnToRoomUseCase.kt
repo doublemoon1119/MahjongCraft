@@ -87,6 +87,7 @@ class ReturnToRoomUseCase(
         //    空／零值即可。手牌/摸牌位/副露/積棒沒有座位分組資料可傳，改呼叫專用的清除方法。
         presentationPublisher.publishWallStructure(
             gameId,
+            emptyMap(),
             TileWallPhysicalLayout(emptyMap()),
             dealerSeatIndex = 0,
             deadWallTileIds = emptySet(),

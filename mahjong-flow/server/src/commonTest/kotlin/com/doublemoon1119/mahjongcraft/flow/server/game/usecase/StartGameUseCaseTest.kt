@@ -181,7 +181,9 @@ class StartGameUseCaseTest {
 
         val tableState = assertNotNull(fixtures.gameRepo.getTableState(roomId))
         val layout = assertNotNull(fixtures.presentationPublisher.getPublishedWallStructure(roomId))
+        val assemblyStructure = assertNotNull(fixtures.presentationPublisher.getPublishedWallAssemblyStructure(roomId))
         assertEquals(136, layout.placements.size)
+        assertEquals(layout.placements.keys, assemblyStructure.keys)
         val dealtTileIds = tableState.players.flatMap { player -> player.hand.tiles }.mapTo(mutableSetOf()) { it.id }
         assertTrue(layout.placements.keys.containsAll(dealtTileIds))
     }

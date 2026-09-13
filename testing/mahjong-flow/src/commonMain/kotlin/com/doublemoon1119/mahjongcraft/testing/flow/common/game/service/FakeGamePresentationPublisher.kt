@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
 
@@ -42,6 +43,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 依對局 Uuid 紀錄最後一次收到的牌牆結構座標。 */
     private val wallStructures = mutableMapOf<Uuid, TileWallPhysicalLayout>()
+
+    /** 依對局 Uuid 紀錄最後一次收到的牌牆組裝格位。 */
+    private val wallAssemblyStructures = mutableMapOf<Uuid, Map<Uuid, TileWallPosition>>()
 
     /** 依對局 Uuid 紀錄所有收到的實體牌牆 transition。 */
     private val wallLayoutTransitions = mutableMapOf<Uuid, MutableList<List<PhysicalWallLayoutTransitionPhase>>>()
@@ -97,6 +101,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     override fun publishWallStructure(
         gameId: Uuid,
+        assemblyStructure: Map<Uuid, TileWallPosition>,
         layout: TileWallPhysicalLayout,
         dealerSeatIndex: Int,
         deadWallTileIds: Set<Uuid>,
@@ -104,6 +109,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         revealedTileIds: Set<Uuid>,
     ) {
         wallStructures[gameId] = layout
+        wallAssemblyStructures[gameId] = assemblyStructure
         wallStructureContexts[gameId] = WallStructureContext(dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
     }
 
@@ -211,6 +217,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 取得指定對局最後一次收到的牌牆結構座標；若無紀錄則回傳 null。 */
     fun getPublishedWallStructure(gameId: Uuid): TileWallPhysicalLayout? = wallStructures[gameId]
+
+    /** 取得指定對局最後一次收到的牌牆組裝格位；若無紀錄則回傳 null。 */
+    fun getPublishedWallAssemblyStructure(gameId: Uuid): Map<Uuid, TileWallPosition>? = wallAssemblyStructures[gameId]
 
     /** 取得指定對局依序收到的實體牌牆 transition。 */
     fun getPublishedWallLayoutTransitions(gameId: Uuid): List<List<PhysicalWallLayoutTransitionPhase>> = wallLayoutTransitions[gameId].orEmpty()

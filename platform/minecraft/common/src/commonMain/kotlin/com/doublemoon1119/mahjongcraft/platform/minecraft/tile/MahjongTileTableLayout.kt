@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrientation
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
@@ -49,10 +51,8 @@ object MahjongTileTableLayout {
      * 依 controller 座標、桌子世界朝向、莊家座位與牌牆總墩數，算出單一 [TileWallPosition] 的世界座標。
      *
      * @param stacksPerSide 這副牌牆每面的總墩數（例如四人日麻固定 17），用來將牌墩對稱置中於側面。
-     * @param isDeadWall 這張牌是否屬於王牌區——為 `true` 時額外把整條線沿排列方向、往開門缺口的方向
-     * 滑動一點（見 [localWallVector]），跟活牌保持一點視覺距離。牌牆剛生成時所有牌（含王牌）都應該以
-     * `false` 呼叫，維持一圈完整無縫的牌牆；等到骰子動畫播完、要把王牌區「移出」開門時，才對王牌區的
-     * 牌改用 `true` 重新算一次座標並移動過去——這是刻意分兩階段呼叫的設計，不是可以合併成一次的參數。
+     * [TileWallPlacement.offset] 使用牌張尺寸正規化的三軸位移；沿牌牆的小數位移會在相鄰兩個基本墩位
+     * 間內插，跨過牆角時也沿環狀拓樸連續推進。這裡只投影最終端點，動畫行進路徑由呈現層另行處理。
      */
     fun wallPlacement(
         controllerX: Int,
@@ -61,17 +61,95 @@ object MahjongTileTableLayout {
         tableFacing: MahjongTableFacing,
         dealerSeatIndex: Int,
         stacksPerSide: Int,
-        position: TileWallPosition,
-        isDeadWall: Boolean = false,
+        placement: TileWallPlacement,
     ): MahjongTileWallPlacement {
         require(stacksPerSide > 0) { "Stacks per side must be positive" }
+        val position = placement.position
+        require(position.side in 0 until SIDE_ORDER.size) { "Side ${position.side} out of range" }
         require(position.stack in 0 until stacksPerSide) {
             "Stack ${position.stack} out of range for $stacksPerSide stacks per side"
         }
         require(position.layer in 0..1) { "Layer ${position.layer} must be 0 or 1" }
 
-        val physicalSide = advance(seatIndexToTableSide(dealerSeatIndex), position.side)
-        val local = localWallVector(stacksPerSide, position.stack, position.layer, isDeadWall)
+        val baseCoordinate = position.side * stacksPerSide + position.stack
+        val targetCoordinate = baseCoordinate + placement.offset.alongWallStacks
+        val lowerCoordinate = kotlin.math.floor(targetCoordinate).toInt()
+        val interpolation = targetCoordinate - lowerCoordinate
+        val lower = baseWallPlacement(
+            controllerX,
+            controllerY,
+            controllerZ,
+            tableFacing,
+            dealerSeatIndex,
+            stacksPerSide,
+            lowerCoordinate,
+            position.layer,
+        )
+        val upper = baseWallPlacement(
+            controllerX,
+            controllerY,
+            controllerZ,
+            tableFacing,
+            dealerSeatIndex,
+            stacksPerSide,
+            lowerCoordinate + 1,
+            position.layer,
+        )
+        val interpolatedX = lower.x + (upper.x - lower.x) * interpolation
+        val interpolatedY = lower.y + (upper.y - lower.y) * interpolation
+        val interpolatedZ = lower.z + (upper.z - lower.z) * interpolation
+        val centerX = controllerX + BLOCK_CENTER
+        val centerZ = controllerZ + BLOCK_CENTER
+        val towardCenterX = centerX - interpolatedX
+        val towardCenterZ = centerZ - interpolatedZ
+        val centerDistance = kotlin.math.sqrt(towardCenterX * towardCenterX + towardCenterZ * towardCenterZ)
+        val centerOffset = placement.offset.towardTableCenterTiles * MahjongTileDimensions.TILE_HEIGHT
+        val layerOffset = placement.offset.upwardLayers *
+            (MahjongTileDimensions.TILE_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING)
+        return MahjongTileWallPlacement(
+            x = interpolatedX + towardCenterX / centerDistance * centerOffset,
+            y = interpolatedY + layerOffset,
+            z = interpolatedZ + towardCenterZ / centerDistance * centerOffset,
+            yaw = (interpolateYaw(lower.yaw, upper.yaw, interpolation) + orientationYaw(placement.orientation))
+                .mod(FULL_YAW_DEGREES),
+        )
+    }
+
+    /** 將沒有額外位移與旋轉的基本牌牆格位投影為世界座標。 */
+    fun wallPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        dealerSeatIndex: Int,
+        stacksPerSide: Int,
+        position: TileWallPosition,
+    ): MahjongTileWallPlacement = wallPlacement(
+        controllerX = controllerX,
+        controllerY = controllerY,
+        controllerZ = controllerZ,
+        tableFacing = tableFacing,
+        dealerSeatIndex = dealerSeatIndex,
+        stacksPerSide = stacksPerSide,
+        placement = TileWallPlacement(position),
+    )
+
+    /** 將環狀牌牆上的整數墩位投影為基本世界座標，超出單面範圍時會繞四面循環。 */
+    private fun baseWallPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        dealerSeatIndex: Int,
+        stacksPerSide: Int,
+        circularStack: Int,
+        layer: Int,
+    ): MahjongTileWallPlacement {
+        val normalized = circularStack.mod(stacksPerSide * SIDE_ORDER.size)
+        val side = normalized / stacksPerSide
+        val stack = normalized % stacksPerSide
+        val physicalSide = advance(seatIndexToTableSide(dealerSeatIndex), side)
+        val local = localWallVector(stacksPerSide, stack, layer)
         val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
         return MahjongTileWallPlacement(
             x = controllerX + BLOCK_CENTER + worldOffset.x,
@@ -79,6 +157,20 @@ object MahjongTileTableLayout {
             z = controllerZ + BLOCK_CENTER + worldOffset.z,
             yaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES),
         )
+    }
+
+    /** 以最短旋轉方向在兩個世界 yaw 之間內插。 */
+    private fun interpolateYaw(start: Float, end: Float, progress: Double): Float {
+        val delta = ((end - start + HALF_YAW_DEGREES).mod(FULL_YAW_DEGREES)) - HALF_YAW_DEGREES
+        return start + delta * progress.toFloat()
+    }
+
+    /** 將規則定義的離散牌張方向轉換為額外世界 yaw。 */
+    private fun orientationYaw(orientation: TileWallPlacementOrientation): Float = when (orientation) {
+        TileWallPlacementOrientation.DEFAULT -> 0.0f
+        TileWallPlacementOrientation.CLOCKWISE_90 -> 90.0f
+        TileWallPlacementOrientation.HALF_TURN -> 180.0f
+        TileWallPlacementOrientation.COUNTERCLOCKWISE_90 -> -90.0f
     }
 
     /**
@@ -118,26 +210,16 @@ object MahjongTileTableLayout {
      * 依據，純粹是視覺調校參數，用牌本身尺寸的比例表示比直接疊加 [MahjongTileDimensions.TILE_SMALL_PADDING]
      * 倍數更好預期調整後的視覺效果）。
      *
-     * [isDeadWall] 為 `true` 時，額外把 `alongSide`（沿墩排列方向的位置）往「`stack` 遞增」的方向多推
-     * [MahjongTileDimensions.TILE_WIDTH] 的 [DEAD_WALL_GAP_RATIO] 倍——`stack` 遞增的方向正是王牌區
-     * 緊鄰開門缺口、之後會被摸走分配給玩家手牌的活牌墩所在方向（見
-     * `com.doublemoon1119.mahjongcraft.logic.table.layout.FourSidedWallLayoutSupport` 的墩位排列
-     * 邏輯：王牌從缺口本身往 `stack` 遞減方向連續佔用，活牌則從缺口另一側往 `stack` 遞增方向連續
-     * 佔用，兩者在缺口處以遞增/遞減方向相鄰）。這是刻意選這個方向的位移，不是垂直推向桌子中心——
-     * 活牌之後會被摸走清空這塊空間，王牌滑過去暫時會跟還沒摸走的活牌墩重疊一點點，等手牌分配這個
-     * 切片完成後就會自然錯開，這次不需要另外處理這個過渡期的重疊。
-     *
      * `stack = 0` 在該面玩家自己右手邊（`alongSide` 較大）、`stack` 遞增往左手邊移動，真實麻將
      * 「牌山數墩：從該牌山最右端往左邊數」就是這個方向。這裡的方向跟 [seatIndexToTableSide]／
      * `SIDE_ORDER` 是耦合校準出來的一組關係，不要單獨改——理由與踩過的坑見 [seatIndexToTableSide] KDoc。
      */
-    private fun localWallVector(stacksPerSide: Int, stack: Int, layer: Int, isDeadWall: Boolean): TileTableVector {
+    private fun localWallVector(stacksPerSide: Int, stack: Int, layer: Int): TileTableVector {
         val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
         val halfSpan = stacksPerSide / 2.0 * stackStep
         val cornerInterlockShift = MahjongTileDimensions.TILE_HEIGHT / 2.0 +
             MahjongTileDimensions.TILE_WIDTH * CORNER_GAP_RATIO
-        val deadWallOpeningShift = if (isDeadWall) MahjongTileDimensions.TILE_WIDTH * DEAD_WALL_GAP_RATIO else 0.0
-        val alongSide = ((stacksPerSide - 1) / 2.0 - stack) * stackStep + cornerInterlockShift - deadWallOpeningShift
+        val alongSide = ((stacksPerSide - 1) / 2.0 - stack) * stackStep + cornerInterlockShift
         val layerHeight = layer * MahjongTileDimensions.TILE_DEPTH +
             if (layer > 0) MahjongTileDimensions.TILE_SMALL_PADDING else 0.0
         return TileTableVector(x = alongSide, y = layerHeight, z = halfSpan)
@@ -877,8 +959,8 @@ object MahjongTileTableLayout {
      */
     internal const val CORNER_GAP_RATIO: Double = 0.25
 
-    /** 王牌區沿排列方向滑向開門缺口的距離相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，觀感調校參數；`internal` 理由同 [CORNER_GAP_RATIO]。 */
-    internal const val DEAD_WALL_GAP_RATIO: Double = 0.25
+    /** 世界 yaw 進行最短路徑內插時使用的半圈角度。 */
+    private const val HALF_YAW_DEGREES: Float = 180.0f
     private const val FULL_YAW_DEGREES: Float = 360.0f
 
     /** [HAND_EDGE_OFFSET] 額外扣除的桌緣留白，遊戲內驗證後調整的觀感參數（初版手牌幾乎貼到桌緣）。 */

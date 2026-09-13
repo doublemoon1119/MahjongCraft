@@ -124,7 +124,15 @@ class StartGameUseCase(
             val deadWallTileIds = tableState.reservedWallTiles.map { tile -> tile.id }.toSet()
             val diceCount = initializationResult.diceRoll?.values?.size ?: 0
             val revealedTileIds = (tableState.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(tableState) ?: emptySet()
-            presentationPublisher.publishWallStructure(roomId, layout, dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
+            presentationPublisher.publishWallStructure(
+                roomId,
+                requireNotNull(initializationResult.wallStructure),
+                layout,
+                dealerSeatIndex,
+                deadWallTileIds,
+                diceCount,
+                revealedTileIds,
+            )
         }
         initializationResult.diceRoll?.let { diceRoll ->
             presentationPublisher.publishDiceRoll(roomId, diceRoll, dealerSeatIndex, tableState.roundNumber, tableState.comboCount)

@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
 
@@ -119,12 +120,12 @@ interface GamePresentationPublisher {
      * [dealerSeatIndex] 跟 [publishDiceRoll] 同理，是呼叫端已經持有的通用桌況資料，一併帶過去讓平台
      * 呈現層自行決定怎麼把牌牆面／墩／層結構換算成以莊家座位為基準的世界座標。
      *
-     * [deadWallTileIds]／[diceCount] 讓平台呈現層知道「哪些牌是王牌」與「這次擲骰動畫要播多久」——
-     * 王牌區要跟活牌保持一點視覺距離，但這個分離要等骰子動畫播完才觸發（比照真實麻將牌桌開門後才把
-     * 王牌移出的節奏），不能在牌牆剛生成的當下就直接呈現，否則會少了「開門」的過程，缺少沉浸感。
-     * 呼叫端只負責提供這兩項資料，何時、如何觸發王牌分離的呈現細節仍完全交給平台實作決定。
+     * [assemblyStructure] 是牌牆剛完成組裝時的基本格位；[layout] 是規則決定的開門後最終布局。平台可用
+     * 兩者表現開門過程，不必從王牌集合反推規則專有位移。[diceCount] 只負責提供本次擲骰時間線長度。
      *
      * @param gameId 對局 Uuid。
+     * @param assemblyStructure 本局牌牆完成組裝、尚未開門時的面／墩／層格位；牌張集合必須與 [layout]
+     * 一致。空布局呼叫時傳空 map。
      * @param layout 本局牌牆所有牌（含活牌與王牌）的完整抽象實體位置；空布局代表這局結束，只需清除
      * 舊牌。
      * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index。
@@ -137,6 +138,7 @@ interface GamePresentationPublisher {
      */
     fun publishWallStructure(
         gameId: Uuid,
+        assemblyStructure: Map<Uuid, TileWallPosition>,
         layout: TileWallPhysicalLayout,
         dealerSeatIndex: Int,
         deadWallTileIds: Set<Uuid>,

@@ -2,6 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOffset
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrientation
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
@@ -97,20 +100,108 @@ class MahjongTileTableLayoutTest {
         assertNotEquals(dealerZero.x to dealerZero.z, dealerOne.x to dealerOne.z)
     }
 
-    /**
-     * 王牌區在牌牆剛生成時（`isDeadWall = false`）應跟活牌落在完全相同的座標，維持一圈無縫牌牆；
-     * 只有事後標記為王牌（`isDeadWall = true`）才會沿排列方向、往 `stack` 遞增方向（開門缺口所在
-     * 方向）滑動一點，垂直於側面的距離不變。
-     */
+    /** 沿牌牆的小數位移應在同一面相鄰墩位之間線性內插。 */
     @Test
-    fun `dead wall only slides toward the opening when explicitly marked`() {
+    fun `along wall offset interpolates between adjacent stacks`() {
         val position = TileWallPosition(side = 0, stack = 0, layer = 0)
-        val asLiveWall = wallPlacement(position = position, isDeadWall = false)
-        val asDeadWall = wallPlacement(position = position, isDeadWall = true)
-        val expectedShift = MahjongTileDimensions.TILE_WIDTH * MahjongTileTableLayout.DEAD_WALL_GAP_RATIO
+        val start = wallPlacement(position = position)
+        val end = wallPlacement(position = position.copy(stack = 1))
+        val shifted = wallPlacement(
+            placement = TileWallPlacement(position, TileWallPlacementOffset(alongWallStacks = 0.25)),
+        )
 
-        assertEquals(asLiveWall.z, asDeadWall.z, ABSOLUTE_TOLERANCE)
-        assertEquals(expectedShift, asLiveWall.x - asDeadWall.x, ABSOLUTE_TOLERANCE)
+        assertEquals(start.x + (end.x - start.x) * 0.25, shifted.x, ABSOLUTE_TOLERANCE)
+        assertEquals(start.z + (end.z - start.z) * 0.25, shifted.z, ABSOLUTE_TOLERANCE)
+    }
+
+    /** 沿牌牆的小數位移跨過牆角時，終點應在兩面相鄰墩位之間連續內插。 */
+    @Test
+    fun `along wall offset crosses a corner continuously`() {
+        val position = TileWallPosition(side = 0, stack = STACKS_PER_SIDE - 1, layer = 0)
+        val start = wallPlacement(position = position)
+        val nextSide = wallPlacement(position = TileWallPosition(side = 1, stack = 0, layer = 0))
+        val shifted = wallPlacement(
+            placement = TileWallPlacement(position, TileWallPlacementOffset(alongWallStacks = 0.5)),
+        )
+
+        assertEquals((start.x + nextSide.x) / 2.0, shifted.x, ABSOLUTE_TOLERANCE)
+        assertEquals((start.z + nextSide.z) / 2.0, shifted.z, ABSOLUTE_TOLERANCE)
+    }
+
+    /** 朝桌心的正規化位移應縮短一個牌高的水平半徑，不改變高度。 */
+    @Test
+    fun `toward center offset follows the local radial direction`() {
+        val position = TileWallPosition(side = 0, stack = 3, layer = 0)
+        val base = wallPlacement(position = position)
+        val shifted = wallPlacement(
+            placement = TileWallPlacement(position, TileWallPlacementOffset(towardTableCenterTiles = 1.0)),
+        )
+        val baseRadius = kotlin.math.hypot(base.x - CONTROLLER_CENTER_X, base.z - CONTROLLER_CENTER_Z)
+        val shiftedRadius = kotlin.math.hypot(shifted.x - CONTROLLER_CENTER_X, shifted.z - CONTROLLER_CENTER_Z)
+
+        assertEquals(MahjongTileDimensions.TILE_HEIGHT, baseRadius - shiftedRadius, ABSOLUTE_TOLERANCE)
+        assertEquals(base.y, shifted.y, ABSOLUTE_TOLERANCE)
+    }
+
+    /** 垂直正規化位移一層應等於一個牌深與層間縫隙的合計高度。 */
+    @Test
+    fun `upward offset uses the wall layer step`() {
+        val position = TileWallPosition(side = 0, stack = 2, layer = 0)
+        val base = wallPlacement(position = position)
+        val shifted = wallPlacement(
+            placement = TileWallPlacement(position, TileWallPlacementOffset(upwardLayers = 1.0)),
+        )
+
+        assertEquals(
+            MahjongTileDimensions.TILE_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING,
+            shifted.y - base.y,
+            ABSOLUTE_TOLERANCE,
+        )
+    }
+
+    /** 離散方向應相對基本墩位旋轉，不影響其世界座標。 */
+    @Test
+    fun `orientation rotates relative to the base wall yaw`() {
+        val position = TileWallPosition(side = 2, stack = 4, layer = 0)
+        val base = wallPlacement(position = position)
+        val yawOffsets = mapOf(
+            TileWallPlacementOrientation.DEFAULT to 0.0f,
+            TileWallPlacementOrientation.CLOCKWISE_90 to 90.0f,
+            TileWallPlacementOrientation.HALF_TURN to 180.0f,
+            TileWallPlacementOrientation.COUNTERCLOCKWISE_90 to -90.0f,
+        )
+
+        yawOffsets.forEach { (orientation, yawOffset) ->
+            val rotated = wallPlacement(placement = TileWallPlacement(position, orientation = orientation))
+            assertEquals(base.x, rotated.x, ABSOLUTE_TOLERANCE)
+            assertEquals(base.y, rotated.y, ABSOLUTE_TOLERANCE)
+            assertEquals(base.z, rotated.z, ABSOLUTE_TOLERANCE)
+            assertEquals((base.yaw + yawOffset).mod(360.0f), rotated.yaw, ABSOLUTE_TOLERANCE.toFloat())
+        }
+    }
+
+    /** 四種桌子朝向都應保留規則 offset 的距離與高度，不把局部軸誤當成固定世界軸。 */
+    @Test
+    fun `placement offsets rotate consistently for every table facing`() {
+        val position = TileWallPosition(side = 1, stack = 5, layer = 0)
+        MahjongTableFacing.entries.forEach { facing ->
+            val base = wallPlacement(tableFacing = facing, position = position)
+            val shifted = wallPlacement(
+                tableFacing = facing,
+                placement = TileWallPlacement(
+                    position,
+                    TileWallPlacementOffset(towardTableCenterTiles = 0.5, upwardLayers = 0.5),
+                ),
+            )
+            val horizontalDistance = kotlin.math.hypot(shifted.x - base.x, shifted.z - base.z)
+
+            assertEquals(MahjongTileDimensions.TILE_HEIGHT * 0.5, horizontalDistance, ABSOLUTE_TOLERANCE)
+            assertEquals(
+                (MahjongTileDimensions.TILE_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING) * 0.5,
+                shifted.y - base.y,
+                ABSOLUTE_TOLERANCE,
+            )
+        }
     }
 
     /** 超出墩數或層數範圍應直接拒絕，不產生不合理座標。 */
@@ -493,7 +584,7 @@ class MahjongTileTableLayoutTest {
         tableFacing: MahjongTableFacing = MahjongTableFacing.NORTH,
         dealerSeatIndex: Int = 0,
         position: TileWallPosition = TileWallPosition(side = 0, stack = 0, layer = 0),
-        isDeadWall: Boolean = false,
+        placement: TileWallPlacement = TileWallPlacement(position),
     ): MahjongTileWallPlacement = MahjongTileTableLayout.wallPlacement(
         controllerX = 10,
         controllerY = 64,
@@ -501,8 +592,7 @@ class MahjongTileTableLayoutTest {
         tableFacing = tableFacing,
         dealerSeatIndex = dealerSeatIndex,
         stacksPerSide = STACKS_PER_SIDE,
-        position = position,
-        isDeadWall = isDeadWall,
+        placement = placement,
     )
 
     /** 建立固定 controller 與可覆寫輸入的測試手牌 placement。 */

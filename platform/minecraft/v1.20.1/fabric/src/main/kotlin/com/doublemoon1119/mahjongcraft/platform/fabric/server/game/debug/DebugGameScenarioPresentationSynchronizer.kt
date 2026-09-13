@@ -37,11 +37,13 @@ class DebugGameScenarioPresentationSynchronizer(
         val world = requireNotNull(serverHolder.current()?.getWorld(worldKey)) { "Table world is not loaded" }
         presentationCleaner.clear(world, game.id, BlockPos(location.x, location.y, location.z))
         publisher.clearPlayerAreas(game.id)
+        val physicalWallLayout = state.physicalWallLayout ?: TileWallPhysicalLayout(
+            result.wallStructure.mapValues { (_, position) -> TileWallPlacement(position) },
+        )
         publisher.publishWallStructure(
             gameId = game.id,
-            layout = state.physicalWallLayout ?: TileWallPhysicalLayout(
-                result.wallStructure.mapValues { (_, position) -> TileWallPlacement(position) },
-            ),
+            assemblyStructure = result.wallStructure.filterKeys { tileId -> tileId in physicalWallLayout.placements },
+            layout = physicalWallLayout,
             dealerSeatIndex = state.dealerIndex,
             deadWallTileIds = state.reservedWallTiles.mapTo(mutableSetOf()) { it.id },
             diceCount = 0,

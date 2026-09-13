@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOffset
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrientation
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
@@ -41,7 +44,7 @@ class FabricMahjongTileWallPresenter(
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
     /**
-     * 驗證 controller 後先建立新牌；全部成功才移除同桌舊牌。[MahjongTileWallPresentation.structure]
+     * 驗證 controller 後先建立新牌；全部成功才移除同桌舊牌。[MahjongTileWallPresentation.finalLayout]
      * 為空（例如對局結束）時，跳過建立步驟直接視為成功，等同只清除舊牌——重用同一段替換邏輯，不需要
      * 另外開一個清除專用的呼叫路徑。
      *
@@ -49,9 +52,9 @@ class FabricMahjongTileWallPresenter(
      * 沿用 [MahjongTileEntity] 既有 KDoc 早已寫下的設計意圖——此時 entity 尚未加入 world 的 UUID
      * 索引，是唯一安全能覆寫 UUID 的時機點；`world.spawnEntity` 之後才變更會與世界既有索引不一致。
      *
-     * 搭配擲骰時，王牌區的牌先跟活牌用同一組（`isDeadWall = false`）座標生成，維持一圈完整無縫的
-     * 牌牆；真正把王牌區拉出的動作交給 [startWallDropAnimations]，等擲骰動畫播完才執行。沒有搭配
-     * 擲骰時則代表恢復既有桌況，直接使用開門後座標與權威公開姿態，不重新播放開門及翻面動畫。
+     * 搭配擲骰時，所有牌先依 [MahjongTileWallPresentation.assemblyStructure] 生成；開門時再切換至
+     * [MahjongTileWallPresentation.finalLayout]。沒有搭配擲骰時代表恢復既有桌況，直接使用最終布局與
+     * 權威公開姿態，不重新播放開門及翻面動畫。
      *
      * 這裡查詢並清除的「舊牌」不限定牌牆自己管理的牌，而是這張桌子目前所有管理中的麻將牌 entity
      * （含已經被 [FabricMahjongHandTilesPresenter]領走、目前呈現成手牌的那些）——因為每一局重新洗牌都會產生全新的 `IdentifiedTile.id`，
@@ -70,13 +73,16 @@ class FabricMahjongTileWallPresenter(
             return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
         }
 
-        val stacksPerSide = presentation.structure.values
+        val stacksPerSide = presentation.assemblyStructure.values
             .filter { position -> position.side == 0 }
             .maxOfOrNull { position -> position.stack + 1 } ?: 0
         val oldTiles = findManagedTiles(world, presentation.tableId, controllerPos)
         val restoresFinalStateImmediately = presentation.diceCount == 0
-        val newTiles = presentation.structure.map { (tileId, position) ->
-            val belongsToDeadWall = tileId in presentation.deadWallTileIds
+        require(presentation.assemblyStructure.keys == presentation.finalLayout.placements.keys) {
+            "Assembly structure and final layout must contain the same tiles"
+        }
+        val newTiles = presentation.finalLayout.placements.map { (tileId, finalPlacement) ->
+            val assemblyPosition = requireNotNull(presentation.assemblyStructure[tileId])
             val placement = MahjongTileTableLayout.wallPlacement(
                 controllerX = controllerPos.x,
                 controllerY = controllerPos.y,
@@ -84,10 +90,9 @@ class FabricMahjongTileWallPresenter(
                 tableFacing = presentation.tableFacing,
                 dealerSeatIndex = presentation.dealerSeatIndex,
                 stacksPerSide = stacksPerSide,
-                position = position,
-                isDeadWall = restoresFinalStateImmediately && belongsToDeadWall,
+                placement = if (restoresFinalStateImmediately) finalPlacement else TileWallPlacement(assemblyPosition),
             )
-            position to MahjongTileEntity(world = world).apply {
+            assemblyPosition to MahjongTileEntity(world = world).apply {
                 uuid = tileId.toJavaUuid()
                 refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
                 tilePose = if (restoresFinalStateImmediately && tileId in presentation.revealedTileIds) {
@@ -121,14 +126,14 @@ class FabricMahjongTileWallPresenter(
      * 隱形」用 [AnimationStep.SetInvisible] 表達，不是像過去那樣提前把動畫起點設在未來、靠 renderer
      * 端另外判斷「還沒到期」來隱藏——理由見 [AnimatedMahjongEntity] KDoc。
      *
-     * 王牌區的牌（[MahjongTileWallPresentation.deadWallTileIds]）額外在掉落動畫播完後接續排定移出
-     * 開門位置：所有王牌共用同一個算好的絕對揭示時刻（[AnimationStep.WaitUntil]，等待時長是牌牆掉落
+     * 所有最終布局與組裝格位不同的牌，會在掉落動畫播完後接續排定切換至開門後位置。全部牌共用同一個
+     * 絕對揭示時刻（[AnimationStep.WaitUntil]，等待時長是牌牆掉落
      * 動畫總時長加上擲骰動畫時長的總和——擲骰動畫會等牌牆完全落地才開始播放，見
      * `FabricGamePresentationPublisher.publishDiceRoll`，王牌移出開門的時機要跟著往後移，不能只算
      * 擲骰動畫本身的時長），不是每張王牌各自用減法反推剩餘等待時間去湊同一個目標——理由見
      * [AnimationStep.WaitUntil] KDoc。[MahjongTileWallPresentation.diceCount] 為 `0`（沒有搭配擲骰）時，
      * 牌牆會直接在開門後的最終座標生成，已公開的牌也直接使用正面姿態；這讓 debug scenario 或重載
-     * 恢復不必偽造一段擲骰時間線。沒有王牌時則不會多排這段。同一時機點順便讓
+     * 恢復不必偽造一段擲骰時間線。同一時機點順便讓
      * [MahjongTileWallPresentation.revealedTileIds] 對應的牌接續播放「起飛→翻面→落下」的公開動畫
      * （見 [revealFlipAnimationSteps]）——開局第一張寶牌指示牌本該在王牌分離、開門完成的這一刻公開，
      * 不需要另外排一個時機點。
@@ -140,7 +145,7 @@ class FabricMahjongTileWallPresenter(
         controllerPos: BlockPos,
         stacksPerSide: Int,
     ) {
-        val revealAbsoluteGameTime = if (presentation.diceCount > 0 && presentation.deadWallTileIds.isNotEmpty()) {
+        val revealAbsoluteGameTime = if (presentation.diceCount > 0) {
             world.time + MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide) +
                 MahjongDiceTableLayout.totalAnimationTicks(presentation.diceCount)
         } else {
@@ -169,7 +174,8 @@ class FabricMahjongTileWallPresenter(
                 steps += wallStackLandingSound(landingGameTime)
             }
             val tileId = tile.uuid.toKotlinUuid()
-            if (revealAbsoluteGameTime != null && tileId in presentation.deadWallTileIds) {
+            val finalPlacement = requireNotNull(presentation.finalLayout.placements[tileId])
+            if (revealAbsoluteGameTime != null) {
                 val openPlacement = MahjongTileTableLayout.wallPlacement(
                     controllerX = controllerPos.x,
                     controllerY = controllerPos.y,
@@ -177,11 +183,15 @@ class FabricMahjongTileWallPresenter(
                     tableFacing = presentation.tableFacing,
                     dealerSeatIndex = presentation.dealerSeatIndex,
                     stacksPerSide = stacksPerSide,
-                    position = position,
-                    isDeadWall = true,
+                    placement = finalPlacement,
                 )
                 steps += AnimationStep.WaitUntil(revealAbsoluteGameTime)
-                steps += AnimationStep.Teleport(openPlacement.x, openPlacement.y, openPlacement.z, openPlacement.yaw)
+                if (finalPlacement.position != position ||
+                    finalPlacement.offset != TileWallPlacementOffset.Zero ||
+                    finalPlacement.orientation != TileWallPlacementOrientation.DEFAULT
+                ) {
+                    steps += AnimationStep.Teleport(openPlacement.x, openPlacement.y, openPlacement.z, openPlacement.yaw)
+                }
                 if (tileId in presentation.revealedTileIds) {
                     val soundGameTime = if (revealSoundScheduled) null else revealAbsoluteGameTime + REVEAL_LIFT_DURATION_TICKS
                     steps += revealFlipAnimationSteps(
