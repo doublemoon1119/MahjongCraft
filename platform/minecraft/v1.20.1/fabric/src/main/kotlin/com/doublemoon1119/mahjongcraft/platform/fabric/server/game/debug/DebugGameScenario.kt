@@ -1,8 +1,18 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import kotlin.uuid.Uuid
+
+/** Debug 情境載入後第一次重建牌牆時採用的呈現方式。 */
+enum class DebugWallPresentationIntent {
+    /** 直接呈現權威最終布局，不播放已經過去的開門動畫。 */
+    STATIC,
+
+    /** 從組裝格位播放至權威最終布局，用於確定性驗收開門動畫。 */
+    ANIMATE_OPENING,
+}
 
 /** 建立 development-only 權威對局情境的受控輸入。 */
 data class DebugGameScenarioContext(
@@ -18,6 +28,10 @@ data class DebugGameScenarioResult(
     val game: Game,
     /** 新桌況所有牌的實體牌牆結構座標。 */
     val wallStructure: Map<Uuid, TileWallPosition>,
+    /** 所有實體牌生成時採用的權威最終 placement。 */
+    val wallLayout: TileWallPhysicalLayout,
+    /** 本次載入後重建牌牆的呈現方式。 */
+    val wallPresentationIntent: DebugWallPresentationIntent = DebugWallPresentationIntent.STATIC,
 )
 
 /** 可重複建立完整權威桌況的 development-only 情境。 */

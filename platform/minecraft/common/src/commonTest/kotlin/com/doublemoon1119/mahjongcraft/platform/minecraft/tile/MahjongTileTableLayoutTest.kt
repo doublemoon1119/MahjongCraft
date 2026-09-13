@@ -114,6 +114,29 @@ class MahjongTileTableLayoutTest {
         assertEquals(start.z + (end.z - start.z) * 0.25, shifted.z, ABSOLUTE_TOLERANCE)
     }
 
+    /** 同一面保留牌軌道套用分界位移後應保持一致 yaw，且相鄰牌墩的實際 footprint 不重疊。 */
+    @Test
+    fun `single side reserved track keeps yaw and spacing`() {
+        MahjongTableFacing.entries.forEach { facing ->
+            repeat(SIDE_COUNT) { side ->
+                val placements = (15 downTo 6).map { stack ->
+                    wallPlacement(
+                        tableFacing = facing,
+                        placement = TileWallPlacement(
+                            TileWallPosition(side, stack, 0),
+                            TileWallPlacementOffset(alongWallStacks = 0.25),
+                        ),
+                    )
+                }
+
+                assertEquals(1, placements.map { it.yaw }.distinct().size)
+                placements.zipWithNext().forEach { (left, right) ->
+                    assertFalse(left.toFootprint().overlaps(right.toFootprint()))
+                }
+            }
+        }
+    }
+
     /** 沿牌牆的小數位移跨過牆角時，終點應在兩面相鄰墩位之間連續內插。 */
     @Test
     fun `along wall offset crosses a corner continuously`() {

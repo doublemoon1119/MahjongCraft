@@ -121,7 +121,8 @@ interface GamePresentationPublisher {
      * 呈現層自行決定怎麼把牌牆面／墩／層結構換算成以莊家座位為基準的世界座標。
      *
      * [assemblyStructure] 是牌牆剛完成組裝時的基本格位；[layout] 是規則決定的開門後最終布局。平台可用
-     * 兩者表現開門過程，不必從王牌集合反推規則專有位移。[diceCount] 只負責提供本次擲骰時間線長度。
+     * 兩者表現開門過程，不必從王牌集合反推規則專有位移。[animateOpening] 明確決定是否播放開門，
+     * [diceCount] 只負責提供開門前的擲骰時間線長度。
      *
      * @param gameId 對局 Uuid。
      * @param assemblyStructure 本局牌牆完成組裝、尚未開門時的面／墩／層格位；牌張集合必須與 [layout]
@@ -131,6 +132,7 @@ interface GamePresentationPublisher {
      * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index。
      * @param deadWallTileIds [layout] 之中屬於王牌區的牌 Uuid 子集合；空布局呼叫時可傳空集合。
      * @param diceCount 本次開門擲骰的骰子數量，供平台實作換算擲骰動畫總長度；未搭配擲骰的呼叫可傳 `0`。
+     * @param animateOpening 是否從 [assemblyStructure] 播放至 [layout]；恢復既有桌況時傳 `false`。
      * @param revealedTileIds [deadWallTileIds] 之中，牌牆建立當下就該立即公開翻面的牌 Uuid 子集合
      * （例如日麻開局就翻開的第一張寶牌指示牌，由呼叫端用 `TileWallRevealable.getVisibleTileIds`
      * 算出）；平台實作會在王牌移出開門位置的同一個時機點翻開這些牌，不支援此概念的規則傳空集合即可。
@@ -143,6 +145,7 @@ interface GamePresentationPublisher {
         dealerSeatIndex: Int,
         deadWallTileIds: Set<Uuid>,
         diceCount: Int,
+        animateOpening: Boolean = diceCount > 0,
         revealedTileIds: Set<Uuid> = emptySet(),
     )
 

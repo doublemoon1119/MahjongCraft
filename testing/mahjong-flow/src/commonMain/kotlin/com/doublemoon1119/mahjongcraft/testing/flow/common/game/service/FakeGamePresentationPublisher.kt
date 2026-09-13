@@ -106,11 +106,18 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         dealerSeatIndex: Int,
         deadWallTileIds: Set<Uuid>,
         diceCount: Int,
+        animateOpening: Boolean,
         revealedTileIds: Set<Uuid>,
     ) {
         wallStructures[gameId] = layout
         wallAssemblyStructures[gameId] = assemblyStructure
-        wallStructureContexts[gameId] = WallStructureContext(dealerSeatIndex, deadWallTileIds, diceCount, revealedTileIds)
+        wallStructureContexts[gameId] = WallStructureContext(
+            dealerSeatIndex,
+            deadWallTileIds,
+            diceCount,
+            animateOpening,
+            revealedTileIds,
+        )
     }
 
     override fun publishWallLayoutTransition(gameId: Uuid, phases: List<PhysicalWallLayoutTransitionPhase>) {
@@ -288,6 +295,7 @@ data class WallStructureContext(
     val dealerSeatIndex: Int,
     val deadWallTileIds: Set<Uuid>,
     val diceCount: Int,
+    val animateOpening: Boolean,
     val revealedTileIds: Set<Uuid>,
 )
 

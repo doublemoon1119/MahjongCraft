@@ -23,11 +23,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallMotionSegment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionDecision
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionPlan
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionPlanner
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.shortestYawDeltaDegrees
 import net.minecraft.block.BlockState
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
@@ -58,9 +56,10 @@ class FabricMahjongTileWallPresenter(
      * 沿用 [MahjongTileEntity] 既有 KDoc 早已寫下的設計意圖——此時 entity 尚未加入 world 的 UUID
      * 索引，是唯一安全能覆寫 UUID 的時機點；`world.spawnEntity` 之後才變更會與世界既有索引不一致。
      *
-     * 搭配擲骰時，所有牌先依 [MahjongTileWallPresentation.assemblyStructure] 生成；開門時再切換至
-     * [MahjongTileWallPresentation.finalLayout]。沒有搭配擲骰時代表恢復既有桌況，直接使用最終布局與
-     * 權威公開姿態，不重新播放開門及翻面動畫。
+     * [MahjongTileWallPresentation.animateOpening] 啟用時，所有牌先依
+     * [MahjongTileWallPresentation.assemblyStructure] 生成；開門時再切換至
+     * [MahjongTileWallPresentation.finalLayout]。[MahjongTileWallPresentation.diceCount] 只會在開門前加入
+     * 實際擲骰時長。停用開門時代表恢復既有桌況，直接使用最終布局與權威公開姿態。
      *
      * 這裡查詢並清除的「舊牌」不限定牌牆自己管理的牌，而是這張桌子目前所有管理中的麻將牌 entity
      * （含已經被 [FabricMahjongHandTilesPresenter]領走、目前呈現成手牌的那些）——因為每一局重新洗牌都會產生全新的 `IdentifiedTile.id`，
@@ -83,7 +82,7 @@ class FabricMahjongTileWallPresenter(
             .filter { position -> position.side == 0 }
             .maxOfOrNull { position -> position.stack + 1 } ?: 0
         val oldTiles = findManagedTiles(world, presentation.tableId, controllerPos)
-        val restoresFinalStateImmediately = presentation.diceCount == 0
+        val restoresFinalStateImmediately = !presentation.animateOpening
         require(presentation.assemblyStructure.keys == presentation.finalLayout.placements.keys) {
             "Assembly structure and final layout must contain the same tiles"
         }
@@ -157,18 +156,11 @@ class FabricMahjongTileWallPresenter(
             .associateBy { tile -> tile.uuid.toKotlinUuid() }
         if (!tilesById.keys.containsAll(tileIds)) return MahjongTileWallTransitionResult.TILE_NOT_FOUND
 
-        val stepsByTile = tileIds.associateWith { mutableListOf<AnimationStep<MahjongTilePose>>() }
-        var phaseStart = presentation.startGameTime
-        plan.phases.forEach { phase ->
-            phase.motions.forEach { motion ->
-                stepsByTile.getValue(motion.tileId) += AnimationStep.WaitUntil(phaseStart)
-                val pose = tilesById.getValue(motion.tileId).tilePose
-                motion.segments.forEach { segment ->
-                    stepsByTile.getValue(motion.tileId) += segment.animationSteps(pose)
-                }
-            }
-            phaseStart += phase.durationTicks
-        }
+        val stepsByTile = TileWallTransitionAnimationCompiler.compile(
+            plan = plan,
+            startGameTime = presentation.startGameTime,
+            initialPoses = tileIds.associateWith { tileId -> tilesById.getValue(tileId).tilePose },
+        )
         stepsByTile.forEach { (tileId, steps) -> tilesById.getValue(tileId).enqueueAll(steps) }
         return MahjongTileWallTransitionResult.PRESENTED
     }
@@ -187,8 +179,8 @@ class FabricMahjongTileWallPresenter(
      * 各張牌自行用相對等待時間推算；每張牌再用 [AnimationStep.WaitUntil] 收斂至同一開始時刻。
      * [MahjongTileWallPresentation.revealedTileIds] 對應的牌會等最長開門路徑完成後，才播放「起飛→翻面
      * →落下」的公開動畫（見 [revealFlipAnimationSteps]）。[MahjongTileWallPresentation.diceCount] 為
-     * `0` 時代表 recovery 或靜態同步，牌牆會直接在最終座標與權威公開姿態生成，不重播已過去的開門或
-     * 翻面動畫。
+     * [MahjongTileWallPresentation.animateOpening] 為 `false` 時代表 recovery 或靜態同步，牌牆會直接在
+     * 最終座標與權威公開姿態生成，不重播已過去的開門或翻面動畫。
      */
     private fun startWallDropAnimations(
         world: ServerWorld,
@@ -201,7 +193,7 @@ class FabricMahjongTileWallPresenter(
         val openingMotionsByTile = openingPlan.phases
             .flatMap { it.motions }
             .associateBy { it.tileId }
-        val openingAbsoluteGameTime = if (presentation.diceCount > 0) {
+        val openingAbsoluteGameTime = if (presentation.animateOpening) {
             world.time + MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide) +
                 MahjongDiceTableLayout.totalAnimationTicks(presentation.diceCount)
         } else {
@@ -244,7 +236,7 @@ class FabricMahjongTileWallPresenter(
                 )
                 openingMotionsByTile[tileId]?.let { motion ->
                     steps += AnimationStep.WaitUntil(openingAbsoluteGameTime)
-                    motion.segments.forEach { segment -> steps += segment.animationSteps(initialPose) }
+                    steps += TileWallTransitionAnimationCompiler.compileMotion(motion.segments, initialPose)
                 }
                 steps += AnimationStep.WaitUntil(revealAbsoluteGameTime)
                 if (tileId in presentation.revealedTileIds) {
@@ -285,23 +277,6 @@ class FabricMahjongTileWallPresenter(
         tableFacing = tableFacing,
         dealerSeatIndex = dealerSeatIndex,
         stacksPerSide = stacksPerSide,
-    )
-
-    /** 將真實終點與畫面起點組成既有可持久化 motion steps。 */
-    private fun TileWallMotionSegment.animationSteps(
-        pose: MahjongTilePose,
-    ): List<AnimationStep<MahjongTilePose>> = listOf(
-        AnimationStep.Teleport(end.x, end.y, end.z, end.yaw),
-        AnimationStep.PlayMotion(
-            durationTicks = durationTicks,
-            arcHeight = 0.0,
-            startOffsetX = start.x - end.x,
-            startOffsetY = start.y - end.y,
-            startOffsetZ = start.z - end.z,
-            startPoseRotationDegrees = pose.rotationDegrees,
-            endPoseRotationDegrees = pose.rotationDegrees,
-            startYawOffsetDegrees = shortestYawDeltaDegrees(end.yaw, start.yaw),
-        ),
     )
 
     /** 建立一墩牌牆落桌時的小音量聲音 step；同墩只由上層牌播放一次。 */

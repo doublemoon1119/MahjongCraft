@@ -19,8 +19,15 @@ import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutContext
+import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutDecision
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionContext
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionDecision
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayoutResult
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.logic.table.layout.createInitialLayoutValidated
+import com.doublemoon1119.mahjongcraft.logic.table.layout.resolveTransitionValidated
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlin.uuid.Uuid
 
@@ -33,7 +40,7 @@ object RiichiDebugGameScenarios {
         RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_3", 2),
         RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_4", 3),
         RiichiBeforeMinkanScenario,
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi_wall_initial", null),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi_wall_opening", null),
     )
 }
 
@@ -70,15 +77,31 @@ private class RiichiBeforeAnkanScenario(
         val initialLiveTiles = consumedFromFront + availableTiles
         val templateLayout = requireNotNull(module.createWallLayout()).resolve(inventory, opening)
         val structure = remapStructure(templateLayout, initialLiveTiles, initialReservedTiles).toMutableMap()
+        val initialLayoutResult = TileWallLayoutResult(initialLiveTiles, initialReservedTiles, structure)
+        val initialPhysicalLayout = when (
+            val decision = module.createPhysicalWallLayoutPolicy().createInitialLayoutValidated(
+                InitialPhysicalWallLayoutContext(
+                    initialLayoutResult,
+                    opening,
+                    (initialLiveTiles.drop(consumedFromFront.size) + initialReservedTiles)
+                        .mapTo(mutableSetOf()) { tile -> tile.id },
+                ),
+            )
+        ) {
+            is InitialPhysicalWallLayoutDecision.Completed -> decision.layout
+            is InitialPhysicalWallLayoutDecision.Rejected -> error(decision.reasonId)
+        }
         val liveTiles = initialLiveTiles.drop(consumedFromFront.size).toMutableList()
         val reservedTiles = initialReservedTiles.toMutableList()
         val supplementalDiscards = mutableListOf<IdentifiedTile>()
+        val wallStages = mutableListOf(WallStage(liveTiles.toList(), reservedTiles.toList()))
 
         repeat(establishedKans.size) {
             val drawnTile = reservedTiles.removeAt(0)
             val replenishmentTile = liveTiles.removeLast()
             reservedTiles += replenishmentTile
             supplementalDiscards += drawnTile
+            wallStages += WallStage(liveTiles.toList(), reservedTiles.toList())
         }
 
         val players = currentGame.tableState.players.mapIndexed { index, oldPlayer ->
@@ -107,7 +130,7 @@ private class RiichiBeforeAnkanScenario(
                 seatWind = Wind.entries[(index - dealerIndex + PLAYER_COUNT) % PLAYER_COUNT],
             )
         }
-        val tableState = TableState(
+        val tableStateWithoutLayout = TableState(
             id = currentGame.id,
             players = players,
             config = config,
@@ -119,6 +142,14 @@ private class RiichiBeforeAnkanScenario(
             wallOpening = opening,
             initialDeadWall = reservedTiles,
         )
+        val currentPhysicalLayout = resolveCurrentPhysicalLayout(
+            module,
+            tableStateWithoutLayout,
+            initialPhysicalLayout,
+            wallStages,
+        )
+        val tableState = tableStateWithoutLayout.copy(physicalWallLayout = currentPhysicalLayout)
+        val presentationLayout = TileWallPhysicalLayout(initialPhysicalLayout.placements + currentPhysicalLayout.placements)
         return DebugGameScenarioResult(
             Game(
                 tableState = tableState,
@@ -127,7 +158,54 @@ private class RiichiBeforeAnkanScenario(
                 roomPlayerIds = currentGame.roomPlayerIds,
             ),
             structure,
+            presentationLayout,
+            wallPresentationIntent = if (completedKanCount == null) {
+                DebugWallPresentationIntent.ANIMATE_OPENING
+            } else {
+                DebugWallPresentationIntent.STATIC
+            },
         )
+    }
+
+    /** 依正式 policy 重播既有槓數，取得目前仍留在牌牆中的權威 placement。 */
+    private fun resolveCurrentPhysicalLayout(
+        module: RiichiRuleModule,
+        stateTemplate: TableState,
+        initialLayout: TileWallPhysicalLayout,
+        wallStages: List<WallStage>,
+    ): TileWallPhysicalLayout {
+        val firstStageIds = (wallStages.first().liveTiles + wallStages.first().reservedTiles)
+            .mapTo(mutableSetOf()) { tile -> tile.id }
+        var currentLayout = TileWallPhysicalLayout(initialLayout.placements.filterKeys { tileId -> tileId in firstStageIds })
+        wallStages.zipWithNext().forEachIndexed { index, (beforeStage, afterStage) ->
+            val beforeState = stateTemplate.copy(
+                tileWall = TileWall(beforeStage.liveTiles),
+                initialDeadWall = beforeStage.reservedTiles,
+                dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = index),
+                physicalWallLayout = currentLayout,
+            )
+            val afterState = stateTemplate.copy(
+                tileWall = TileWall(afterStage.liveTiles),
+                initialDeadWall = afterStage.reservedTiles,
+                dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = index + 1),
+            )
+            val markerTile = beforeStage.reservedTiles.first()
+            val decision = module.createPhysicalWallLayoutPolicy().resolveTransitionValidated(
+                PhysicalWallLayoutTransitionContext(
+                    tableStateBeforeAction = beforeState,
+                    tableStateAfterAction = afterState,
+                    currentLayout = currentLayout,
+                    actorPlayerId = stateTemplate.currentPlayer.id,
+                    action = GameAction.Kan(GameAction.KanType.CLOSED_KAN, markerTile.id, emptyList()),
+                ),
+            )
+            currentLayout = when (decision) {
+                is PhysicalWallLayoutTransitionDecision.Completed -> decision.layout
+                is PhysicalWallLayoutTransitionDecision.Rejected -> error(decision.reasonId)
+                PhysicalWallLayoutTransitionDecision.Unchanged -> error("Riichi kan must change the physical wall layout")
+            }
+        }
+        return currentLayout
     }
 
     /** 建立四家開局十三張手牌；預定槓牌只會出現在指定玩家手中。 */
@@ -250,6 +328,14 @@ private class RiichiBeforeAnkanScenario(
         )
     }
 }
+
+/** 一次已完成槓牌前後重建 policy 所需的活牌與保留牌快照。 */
+private data class WallStage(
+    /** 此階段仍可一般摸取的活牌。 */
+    val liveTiles: List<IdentifiedTile>,
+    /** 此階段由規則管理的保留牌。 */
+    val reservedTiles: List<IdentifiedTile>,
+)
 
 /** 建立固定停在呼叫者可對上一張捨牌宣告大明槓的四人日麻情境。 */
 private object RiichiBeforeMinkanScenario : DebugGameScenario {

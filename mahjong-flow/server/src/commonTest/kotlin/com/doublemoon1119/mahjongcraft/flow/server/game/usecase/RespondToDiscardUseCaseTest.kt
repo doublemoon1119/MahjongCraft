@@ -394,7 +394,7 @@ class RespondToDiscardUseCaseTest {
             id = gameId,
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
-            initialDeadWall = listOf(rinshanTile),
+            initialDeadWall = completeRiichiReservedWall(rinshanTile),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
             dynamicRuleState = RiichiDynamicState(),
@@ -409,7 +409,7 @@ class RespondToDiscardUseCaseTest {
         assertNull(newState.pendingReaction)
         assertEquals(1, newState.currentPlayerIndex, "Turn should move to the player who claimed the meld.")
         assertEquals(table.tileWall.remainingCount - 1, newState.tileWall.remainingCount)
-        assertEquals(table.tileWall.getAllTiles().last(), newState.initialDeadWall.first())
+        assertEquals(table.tileWall.getAllTiles().last(), newState.initialDeadWall.last())
         assertEquals(1, (newState.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
 
         val winner = newState.players.first { it.id == responderId }

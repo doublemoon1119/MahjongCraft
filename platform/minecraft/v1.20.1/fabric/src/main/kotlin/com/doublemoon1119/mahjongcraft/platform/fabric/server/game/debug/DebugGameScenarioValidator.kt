@@ -36,6 +36,12 @@ class DebugGameScenarioValidator(
         require(result.wallStructure.keys == allTiles.mapTo(mutableSetOf()) { it.id }) {
             "Debug scenario wall structure must contain every tile UUID exactly once"
         }
+        require(result.wallLayout.placements.keys == result.wallStructure.keys) {
+            "Debug scenario presentation layout must contain every wall structure UUID exactly once"
+        }
+        requireNotNull(candidate.tableState.physicalWallLayout) {
+            "Debug scenario must provide the current authoritative physical wall layout"
+        }
 
         val module = moduleRegistry.getModule(candidate.tableState.config)
         val expectedCounts = module.createWallFactory().create().getAllTiles().groupingBy { it.tile }.eachCount()

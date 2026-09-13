@@ -166,9 +166,11 @@ class StartGameUseCaseTest {
 
         fixtures.useCase(roomId, hostId)
 
-        val revealedTileIds = fixtures.presentationPublisher.getPublishedWallStructureContext(roomId)?.revealedTileIds
+        val wallContext = assertNotNull(fixtures.presentationPublisher.getPublishedWallStructureContext(roomId))
+        val revealedTileIds = wallContext.revealedTileIds
         assertNotNull(revealedTileIds)
         assertEquals(1, revealedTileIds.size)
+        assertTrue(wallContext.animateOpening)
     }
 
     /** 驗證開局發布完整 136 張初始布局，而不是已排除發牌張的目前牌牆布局。 */

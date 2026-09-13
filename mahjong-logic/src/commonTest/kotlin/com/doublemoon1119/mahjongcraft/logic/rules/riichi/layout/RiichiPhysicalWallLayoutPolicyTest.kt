@@ -28,22 +28,26 @@ import kotlin.uuid.Uuid
 
 /** [RiichiPhysicalWallLayoutPolicy] 的初始王牌位置與四次槓後補位測試。 */
 class RiichiPhysicalWallLayoutPolicyTest {
-    /** 驗證第一張嶺上牌預先位於第二張外側下層，其他王牌整體保留分界位移。 */
+    /** 驗證所有王牌集中於開門面，且第一張嶺上牌位於第二張外側下層。 */
     @Test
     fun `initial layout separates the dead wall and lowers first rinshan tile outside the break`() {
         openings().forEach { opening ->
             val wallLayout = createWallLayout(opening)
-            val layout = initialPhysicalLayout(wallLayout)
+            val layout = initialPhysicalLayout(wallLayout, opening)
             val firstRinshan = wallLayout.reservedWallTiles[0]
             val secondRinshan = wallLayout.reservedWallTiles[1]
             val firstPlacement = layout.placements.getValue(firstRinshan.id)
             val secondPlacement = layout.placements.getValue(secondRinshan.id)
 
             assertEquals(0, firstPlacement.position.layer)
-            assertEquals(nextStack(secondPlacement.position.side, secondPlacement.position.stack), firstPlacement.position.side to firstPlacement.position.stack)
+            assertEquals(opening.wallSideOffsetFromDealer, firstPlacement.position.side)
+            assertEquals(firstPlacement.position.side, secondPlacement.position.side)
+            assertEquals(secondPlacement.position.stack + 1, firstPlacement.position.stack)
             assertEquals(deadWallOffset, firstPlacement.offset)
             wallLayout.reservedWallTiles.drop(1).forEach { tile ->
-                assertEquals(deadWallOffset, layout.placements.getValue(tile.id).offset)
+                val placement = layout.placements.getValue(tile.id)
+                assertEquals(opening.wallSideOffsetFromDealer, placement.position.side)
+                assertEquals(deadWallOffset, placement.offset)
             }
             wallLayout.drawOrder.forEach { tile ->
                 assertEquals(TileWallPlacementOffset.Zero, layout.placements.getValue(tile.id).offset)
@@ -62,7 +66,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
                 initialDeadWall = wallLayout.reservedWallTiles,
                 dynamicRuleState = RiichiDynamicState(),
             )
-            var physicalLayout = initialPhysicalLayout(wallLayout)
+            var physicalLayout = initialPhysicalLayout(wallLayout, opening)
             val originalRinshanIds = wallLayout.reservedWallTiles.take(4).map { it.id }
             val replenishmentIds = mutableListOf<Uuid>()
 
@@ -125,7 +129,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
         )
         val draw = initialState.tileWall.draw()
         val updatedState = initialState.copy(tileWall = draw.wall)
-        val initialLayout = initialPhysicalLayout(wallLayout)
+        val initialLayout = initialPhysicalLayout(wallLayout, WallOpening(0, 1))
 
         val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
             RiichiPhysicalWallLayoutPolicy.resolveTransitionValidated(
@@ -145,10 +149,10 @@ class RiichiPhysicalWallLayoutPolicyTest {
 
     /** 建立可覆蓋一般開門、面內邊界與跨面邊界的日麻布局。 */
     private fun openings(): List<WallOpening> = listOf(
-        WallOpening(0, 1),
-        WallOpening(1, 17),
-        WallOpening(2, 1),
-        WallOpening(3, 17),
+        WallOpening(0, 2),
+        WallOpening(1, 5),
+        WallOpening(2, 8),
+        WallOpening(3, 12),
     )
 
     /** 建立指定開門位置的固定 136 張測試牌牆。 */
@@ -158,19 +162,28 @@ class RiichiPhysicalWallLayoutPolicyTest {
     )
 
     /** 取得並斷言有效的日麻初始實體布局。 */
-    private fun initialPhysicalLayout(wallLayout: TileWallLayoutResult): TileWallPhysicalLayout = assertIs<InitialPhysicalWallLayoutDecision.Completed>(
-        RiichiPhysicalWallLayoutPolicy.createInitialLayoutValidated(InitialPhysicalWallLayoutContext(wallLayout)),
+    private fun initialPhysicalLayout(
+        wallLayout: TileWallLayoutResult,
+        opening: WallOpening,
+    ): TileWallPhysicalLayout = assertIs<InitialPhysicalWallLayoutDecision.Completed>(
+        RiichiPhysicalWallLayoutPolicy.createInitialLayoutValidated(
+            InitialPhysicalWallLayoutContext(
+                wallLayout,
+                opening,
+                (wallLayout.drawOrder.drop(INITIAL_DEAL_TILE_COUNT) + wallLayout.reservedWallTiles)
+                    .mapTo(mutableSetOf()) { it.id },
+            ),
+        ),
     ).layout
 
     /** 建立不依賴實際手牌內容的暗槓動作識別。 */
     private fun kanAction(): GameAction.Kan = GameAction.Kan(GameAction.KanType.CLOSED_KAN, Uuid.random(), emptyList())
 
-    /** 取得沿摸牌方向的相鄰全域墩座標。 */
-    private fun nextStack(side: Int, stack: Int): Pair<Int, Int> {
-        val next = (side * 17 + stack + 1) % 68
-        return next / 17 to next % 17
-    }
-
     /** 日麻王牌區使用的四分之一墩分界位移。 */
     private val deadWallOffset = TileWallPlacementOffset(alongWallStacks = 0.25)
+
+    /** 四人日麻初次發牌後離開牌牆的牌張數。 */
+    private companion object {
+        const val INITIAL_DEAL_TILE_COUNT = 53
+    }
 }

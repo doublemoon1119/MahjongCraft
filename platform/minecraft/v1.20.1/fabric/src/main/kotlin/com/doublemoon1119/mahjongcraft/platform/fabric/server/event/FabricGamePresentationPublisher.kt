@@ -403,6 +403,7 @@ class FabricGamePresentationPublisher(
         dealerSeatIndex: Int,
         deadWallTileIds: Set<Uuid>,
         diceCount: Int,
+        animateOpening: Boolean,
         revealedTileIds: Set<Uuid>,
     ) {
         if (serverHolder.current() == null) {
@@ -415,12 +416,16 @@ class FabricGamePresentationPublisher(
         val wallDropTicks = MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide)
         wallDropTicksByTable[gameId] = wallDropTicks
         wallStacksPerSideByTable[gameId] = stacksPerSide
-        wallOpeningTicksByTable[gameId] = calculateOpeningDurationTicks(
-            assemblyStructure,
-            layout,
-            dealerSeatIndex,
-            stacksPerSide,
-        )
+        wallOpeningTicksByTable[gameId] = if (animateOpening) {
+            calculateOpeningDurationTicks(
+                assemblyStructure,
+                layout,
+                dealerSeatIndex,
+                stacksPerSide,
+            )
+        } else {
+            0
+        }
         busyTracker.markPending(gameId)
         scope.launch(dispatchers.main) {
             try {
@@ -435,6 +440,7 @@ class FabricGamePresentationPublisher(
                     finalLayout = layout,
                     deadWallTileIds = deadWallTileIds,
                     diceCount = diceCount,
+                    animateOpening = animateOpening,
                     revealedTileIds = revealedTileIds,
                 )
                 tileWallPresenter.present(presentation)

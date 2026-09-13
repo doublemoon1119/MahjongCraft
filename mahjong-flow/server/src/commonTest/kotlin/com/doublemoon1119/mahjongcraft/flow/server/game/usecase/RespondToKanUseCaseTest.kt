@@ -99,7 +99,9 @@ class RespondToKanUseCaseTest {
         ).map { FakeIdentifiedTileFactory.create(it) } + FakeIdentifiedTileFactory.create(Tile.Honor.White),
     )
 
-    private fun setUpTable(initialDeadWall: List<IdentifiedTile> = listOf(rinshanTile)): TableState {
+    private fun setUpTable(
+        initialDeadWall: List<IdentifiedTile> = completeRiichiReservedWall(rinshanTile),
+    ): TableState {
         val declarer = FakeMahjongPlayerFactory.create(
             id = declarerId,
             initialSeat = Wind.EAST,

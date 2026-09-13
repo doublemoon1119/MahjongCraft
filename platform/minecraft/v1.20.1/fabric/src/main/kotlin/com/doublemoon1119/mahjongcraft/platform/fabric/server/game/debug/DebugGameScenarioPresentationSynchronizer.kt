@@ -5,8 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTablePresentationCleaner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -37,16 +35,14 @@ class DebugGameScenarioPresentationSynchronizer(
         val world = requireNotNull(serverHolder.current()?.getWorld(worldKey)) { "Table world is not loaded" }
         presentationCleaner.clear(world, game.id, BlockPos(location.x, location.y, location.z))
         publisher.clearPlayerAreas(game.id)
-        val physicalWallLayout = state.physicalWallLayout ?: TileWallPhysicalLayout(
-            result.wallStructure.mapValues { (_, position) -> TileWallPlacement(position) },
-        )
         publisher.publishWallStructure(
             gameId = game.id,
-            assemblyStructure = result.wallStructure.filterKeys { tileId -> tileId in physicalWallLayout.placements },
-            layout = physicalWallLayout,
+            assemblyStructure = result.wallStructure,
+            layout = result.wallLayout,
             dealerSeatIndex = state.dealerIndex,
             deadWallTileIds = state.reservedWallTiles.mapTo(mutableSetOf()) { it.id },
             diceCount = 0,
+            animateOpening = result.wallPresentationIntent == DebugWallPresentationIntent.ANIMATE_OPENING,
             revealedTileIds = revealedTileIds,
         )
         state.players.forEachIndexed { seatIndex, player ->

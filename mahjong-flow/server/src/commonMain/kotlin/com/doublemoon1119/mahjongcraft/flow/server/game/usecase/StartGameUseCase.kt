@@ -131,7 +131,7 @@ class StartGameUseCase(
                 dealerSeatIndex,
                 deadWallTileIds,
                 diceCount,
-                revealedTileIds,
+                revealedTileIds = revealedTileIds,
             )
         }
         initializationResult.diceRoll?.let { diceRoll ->

@@ -14,10 +14,14 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiSupplementalDraw
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionContext
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionDecision
+import com.doublemoon1119.mahjongcraft.logic.table.layout.resolveTransitionValidated
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -33,6 +37,23 @@ class DebugGameScenarioTest {
         assertEquals(EXPECTED_IDS, registry.getAll().map { it.id })
         EXPECTED_IDS.forEach { id -> assertNotNull(registry.get(id)) }
         assertEquals(null, registry.get("mahjongcraft:unknown"))
+    }
+
+    /** 只有開門預覽情境應要求播放初始開門，其餘可操作牌局維持靜態同步。 */
+    @Test
+    fun `test only wall opening scenario requests opening animation`() {
+        val fixture = createFixture()
+        val registry = DebugGameScenarioRegistry()
+
+        val opening = registry.get("mahjongcraft:riichi_wall_opening")!!.build(fixture.context)
+        assertEquals(DebugWallPresentationIntent.ANIMATE_OPENING, opening.wallPresentationIntent)
+        EXPECTED_IDS.filterNot { it == "mahjongcraft:riichi_wall_opening" }.forEach { id ->
+            assertEquals(
+                DebugWallPresentationIntent.STATIC,
+                registry.get(id)!!.build(fixture.context).wallPresentationIntent,
+                id,
+            )
+        }
     }
 
     /** 重複建立同一情境時應保留語意並換用全新的牌 UUID。 */
@@ -166,10 +187,36 @@ class DebugGameScenarioTest {
             val decision = RiichiSupplementalDrawPolicy.resolve(
                 SupplementalDrawContext(state, state, state.currentPlayer.id, kanAction),
             ) as SupplementalDrawDecision.Completed
+            val currentLayout = assertNotNull(state.physicalWallLayout)
+            val afterState = state.copy(
+                tileWall = decision.tileWall,
+                initialDeadWall = decision.reservedWallTiles,
+                dynamicRuleState = decision.dynamicRuleState,
+                physicalWallLayout = null,
+            )
+            val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
+                fixture.moduleRegistry.getModule(state.config).createPhysicalWallLayoutPolicy()
+                    .resolveTransitionValidated(
+                        PhysicalWallLayoutTransitionContext(
+                            tableStateBeforeAction = state,
+                            tableStateAfterAction = afterState,
+                            currentLayout = currentLayout,
+                            actorPlayerId = state.currentPlayer.id,
+                            action = kanAction,
+                        ),
+                    ),
+            )
 
             assertEquals(state.reservedWallTiles.first().id, decision.drawnTiles.single().id)
             assertEquals(number, (decision.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
             assertEquals(state.tileWall.remainingCount - 1, decision.tileWall.remainingCount)
+            transition.phases.flatMap { it.moves }.forEach { move ->
+                assertEquals(currentLayout.placements.getValue(move.tileId), move.source)
+            }
+            assertEquals(
+                (decision.tileWall.getAllTiles() + decision.reservedWallTiles).mapTo(mutableSetOf()) { it.id },
+                transition.layout.placements.keys,
+            )
         }
     }
 
@@ -256,7 +303,7 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi_before_ankan_3",
             "mahjongcraft:riichi_before_ankan_4",
             "mahjongcraft:riichi_before_minkan_1",
-            "mahjongcraft:riichi_wall_initial",
+            "mahjongcraft:riichi_wall_opening",
         )
     }
 }

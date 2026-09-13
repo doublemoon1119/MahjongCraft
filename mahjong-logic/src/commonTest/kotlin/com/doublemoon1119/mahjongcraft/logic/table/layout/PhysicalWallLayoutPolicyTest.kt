@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -30,7 +31,7 @@ class PhysicalWallLayoutPolicyTest {
         )
 
         val decision = ContinuousPhysicalWallLayoutPolicy.createInitialLayoutValidated(
-            InitialPhysicalWallLayoutContext(result),
+            InitialPhysicalWallLayoutContext(result, WallOpening(0, 1), result.structure.keys),
         )
 
         val completed = assertIs<InitialPhysicalWallLayoutDecision.Completed>(decision)
@@ -128,7 +129,9 @@ class PhysicalWallLayoutPolicyTest {
             ): PhysicalWallLayoutTransitionDecision = PhysicalWallLayoutTransitionDecision.Unchanged
         }
 
-        val decision = policy.createInitialLayoutValidated(InitialPhysicalWallLayoutContext(result))
+        val decision = policy.createInitialLayoutValidated(
+            InitialPhysicalWallLayoutContext(result, WallOpening(0, 1), result.structure.keys),
+        )
 
         assertEquals(
             InitialPhysicalWallLayoutDecision.Rejected(PhysicalWallLayoutReasonIds.INVALID_RESULT),

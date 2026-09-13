@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer.buildOpenedWall
 import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutContext
 import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutDecision
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayoutResult
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.layout.createInitialLayoutValidated
@@ -56,6 +57,7 @@ object GameInitializer {
         val seatWinds = module.assignSeatWinds(shuffledPlayerIds, dealerPlayerId, openedWall)
         // 洗座位當下 shuffledPlayerIds[0] 就是莊家，順序本來就是正確的發牌輪轉順序。
         val (hands, remainingWall) = module.dealInitialHands(openedWall.wall, shuffledPlayerIds)
+        val physicalLayouts = openedWall.createPhysicalLayouts(module, remainingWall)
         val players = shuffledPlayerIds.mapIndexed { index, playerId ->
             MahjongPlayer(
                 id = playerId,
@@ -78,14 +80,14 @@ object GameInitializer {
             dynamicRuleState = module.createInitialDynamicState(),
             wallOpening = openedWall.wallOpening,
             initialDeadWall = openedWall.reservedWallTiles,
-            physicalWallLayout = openedWall.currentPhysicalLayout(remainingWall),
+            physicalWallLayout = physicalLayouts?.current,
         ).init()
 
         return GameInitializationResult(
             tableState = tableState,
             diceRoll = openedWall.diceRoll,
             wallStructure = openedWall.structure,
-            initialPhysicalWallLayout = openedWall.initialPhysicalWallLayout,
+            initialPhysicalWallLayout = physicalLayouts?.complete,
         )
     }
 
@@ -123,6 +125,7 @@ object GameInitializer {
             roundAdvancement.players[(dealerIndex + offset) % roundAdvancement.players.size].id
         }
         val (hands, remainingWall) = module.dealInitialHands(openedWall.wall, dealOrderPlayerIds)
+        val physicalLayouts = openedWall.createPhysicalLayouts(module, remainingWall)
         val handsByPlayerId = dealOrderPlayerIds.zip(hands).toMap()
         val playerIdsInTurnOrder = roundAdvancement.players.map { it.id }
         val seatWinds = module.assignSeatWinds(playerIdsInTurnOrder, roundAdvancement.dealerPlayerId, openedWall)
@@ -151,14 +154,14 @@ object GameInitializer {
             dynamicRuleState = previousDynamicRuleState,
             wallOpening = openedWall.wallOpening,
             initialDeadWall = openedWall.reservedWallTiles,
-            physicalWallLayout = openedWall.currentPhysicalLayout(remainingWall),
+            physicalWallLayout = physicalLayouts?.current,
         )
 
         return GameInitializationResult(
             tableState = tableState,
             diceRoll = openedWall.diceRoll,
             wallStructure = openedWall.structure,
-            initialPhysicalWallLayout = openedWall.initialPhysicalWallLayout,
+            initialPhysicalWallLayout = physicalLayouts?.complete,
         )
     }
 
@@ -195,31 +198,20 @@ object GameInitializer {
                 reservedWallTiles = emptyList(),
                 diceRoll = null,
                 structure = null,
-                initialPhysicalWallLayout = null,
+                layoutResult = null,
             )
         }
 
         val diceRoll = DiceRollResult.of(List(openingPolicy.diceCount) { (1..DICE_FACES).random() })
         val wallOpening = openingPolicy.resolve(diceRoll)
         val layoutResult = layout.resolve(shuffledWall.getAllTiles(), wallOpening)
-        val physicalLayout = when (
-            val decision = createPhysicalWallLayoutPolicy().createInitialLayoutValidated(
-                InitialPhysicalWallLayoutContext(layoutResult),
-            )
-        ) {
-            is InitialPhysicalWallLayoutDecision.Completed -> decision.layout
-            is InitialPhysicalWallLayoutDecision.Rejected -> error(
-                "Physical wall layout initialization was rejected: ${decision.reasonId}",
-            )
-        }
-
         return OpenedWall(
             wall = TileWall(layoutResult.drawOrder),
             wallOpening = wallOpening,
             reservedWallTiles = layoutResult.reservedWallTiles,
             diceRoll = diceRoll,
             structure = layoutResult.structure,
-            initialPhysicalWallLayout = physicalLayout,
+            layoutResult = layoutResult,
         )
     }
 
@@ -233,14 +225,37 @@ object GameInitializer {
         val reservedWallTiles: List<IdentifiedTile>,
         val diceRoll: DiceRollResult?,
         val structure: Map<Uuid, TileWallPosition>?,
-        val initialPhysicalWallLayout: TileWallPhysicalLayout?,
+        val layoutResult: TileWallLayoutResult?,
     ) {
-        /** 從完整初始布局保留發牌後仍位於活牌區與保留區的牌張。 */
-        fun currentPhysicalLayout(remainingWall: TileWall): TileWallPhysicalLayout? {
+        /** 在初次發牌結果已知後建立完整呈現布局與目前仍留在牌牆中的權威布局。 */
+        fun createPhysicalLayouts(module: MahjongRuleModule<*>, remainingWall: TileWall): PhysicalLayouts? {
+            val result = layoutResult ?: return null
             val retainedIds = (remainingWall.getAllTiles() + reservedWallTiles).mapTo(mutableSetOf()) { it.id }
-            return initialPhysicalWallLayout?.retainOnly(retainedIds)
+            val opening = requireNotNull(wallOpening)
+            val complete = when (
+                val decision = module.createPhysicalWallLayoutPolicy().createInitialLayoutValidated(
+                    InitialPhysicalWallLayoutContext(result, opening, retainedIds),
+                )
+            ) {
+                is InitialPhysicalWallLayoutDecision.Completed -> decision.layout
+                is InitialPhysicalWallLayoutDecision.Rejected -> error(
+                    "Physical wall layout initialization was rejected: ${decision.reasonId}",
+                )
+            }
+            return PhysicalLayouts(complete, complete.retainOnly(retainedIds))
         }
     }
+
+    /**
+     * 初始呈現使用的完整布局與發牌後桌況保存的目前布局。
+     *
+     * @property complete 包含整副牌的初始呈現終點。
+     * @property current 僅包含初次發牌後仍留在牌牆與保留牌區的布局。
+     */
+    private data class PhysicalLayouts(
+        val complete: TileWallPhysicalLayout,
+        val current: TileWallPhysicalLayout,
+    )
 
     /** 六面骰的點數上限。 */
     private const val DICE_FACES: Int = 6

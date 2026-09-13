@@ -8,9 +8,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -99,16 +96,7 @@ class KanDeclarationApplierTest {
             tileWall = TileWall(listOf(loweredTile, replenishment)),
             initialDeadWall = reservedTiles,
             dynamicRuleState = RiichiDynamicState(),
-            physicalWallLayout = TileWallPhysicalLayout(
-                buildMap {
-                    put(loweredTile.id, TileWallPlacement(TileWallPosition(0, 0, 1)))
-                    put(replenishment.id, TileWallPlacement(TileWallPosition(0, 0, 0)))
-                    reservedTiles.forEachIndexed { index, tile ->
-                        put(tile.id, TileWallPlacement(TileWallPosition(0, index + 1, 0)))
-                    }
-                },
-            ),
-        )
+        ).withFirstKanPhysicalWallLayout()
         val decision = SupplementalDrawDecision.Completed(
             drawnTiles = listOf(reservedTiles.first()),
             tileWall = TileWall(listOf(loweredTile)),

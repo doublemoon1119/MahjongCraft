@@ -246,7 +246,7 @@ class AdvanceRoundUseCase(
                 dealerSeatIndex,
                 deadWallTileIds,
                 diceCount,
-                revealedTileIds,
+                revealedTileIds = revealedTileIds,
             )
         }
         advanceOutcome.diceRoll?.let { diceRoll ->
