@@ -2,8 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOffset
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrientation
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
@@ -21,7 +19,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableL
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallProjectionContext
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallMotionSegment
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionDecision
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionPlan
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionPlanner
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.shortestYawDeltaDegrees
 import net.minecraft.block.BlockState
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
@@ -81,6 +87,17 @@ class FabricMahjongTileWallPresenter(
         require(presentation.assemblyStructure.keys == presentation.finalLayout.placements.keys) {
             "Assembly structure and final layout must contain the same tiles"
         }
+        val openingPlan = if (!restoresFinalStateImmediately && presentation.finalLayout.placements.isNotEmpty()) {
+            val decision = TileWallTransitionMotionPlanner.planOpening(
+                presentation.projectionContext(controllerPos),
+                presentation.assemblyStructure,
+                presentation.finalLayout,
+            )
+            (decision as? TileWallTransitionMotionDecision.Completed)?.plan
+                ?: return MahjongTileWallPresentationResult.INVALID_PATH
+        } else {
+            TileWallTransitionMotionPlan(emptyList())
+        }
         val newTiles = presentation.finalLayout.placements.map { (tileId, finalPlacement) ->
             val assemblyPosition = requireNotNull(presentation.assemblyStructure[tileId])
             val placement = MahjongTileTableLayout.wallPlacement(
@@ -113,8 +130,47 @@ class FabricMahjongTileWallPresenter(
         }
         oldTiles.forEach(MahjongTileEntity::discard)
         table.markDirty()
-        startWallDropAnimations(world, newTiles, presentation, controllerPos, stacksPerSide)
+        if (newTiles.isNotEmpty()) {
+            startWallDropAnimations(world, newTiles, presentation, controllerPos, stacksPerSide, openingPlan)
+        }
         return MahjongTileWallPresentationResult.PRESENTED
+    }
+
+    /** 將完整 transition 預先解析後，原子附加到同桌既有牌張的持久化佇列。 */
+    override fun presentTransition(
+        presentation: MahjongTileWallTransitionPresentation,
+    ): MahjongTileWallTransitionResult {
+        val world = resolveWorld(presentation.tableLocation) ?: return MahjongTileWallTransitionResult.TABLE_NOT_FOUND
+        val controllerPos = presentation.tableLocation.toBlockPos()
+        val state = world.getBlockState(controllerPos)
+        resolveTable(world, controllerPos, state, presentation.tableId)
+            ?: return MahjongTileWallTransitionResult.TABLE_NOT_FOUND
+        if (state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing() != presentation.tableFacing) {
+            return MahjongTileWallTransitionResult.TABLE_NOT_FOUND
+        }
+        val context = presentation.projectionContext(controllerPos)
+        val decision = TileWallTransitionMotionPlanner.plan(context, presentation.phases)
+        val plan = (decision as? TileWallTransitionMotionDecision.Completed)?.plan
+            ?: return MahjongTileWallTransitionResult.INVALID_PATH
+        val tileIds = presentation.phases.flatMapTo(mutableSetOf()) { phase -> phase.moves.map { it.tileId } }
+        val tilesById = findManagedTiles(world, presentation.tableId, controllerPos)
+            .associateBy { tile -> tile.uuid.toKotlinUuid() }
+        if (!tilesById.keys.containsAll(tileIds)) return MahjongTileWallTransitionResult.TILE_NOT_FOUND
+
+        val stepsByTile = tileIds.associateWith { mutableListOf<AnimationStep<MahjongTilePose>>() }
+        var phaseStart = presentation.startGameTime
+        plan.phases.forEach { phase ->
+            phase.motions.forEach { motion ->
+                stepsByTile.getValue(motion.tileId) += AnimationStep.WaitUntil(phaseStart)
+                val pose = tilesById.getValue(motion.tileId).tilePose
+                motion.segments.forEach { segment ->
+                    stepsByTile.getValue(motion.tileId) += segment.animationSteps(pose)
+                }
+            }
+            phaseStart += phase.durationTicks
+        }
+        stepsByTile.forEach { (tileId, steps) -> tilesById.getValue(tileId).enqueueAll(steps) }
+        return MahjongTileWallTransitionResult.PRESENTED
     }
 
     /**
@@ -126,17 +182,13 @@ class FabricMahjongTileWallPresenter(
      * 隱形」用 [AnimationStep.SetInvisible] 表達，不是像過去那樣提前把動畫起點設在未來、靠 renderer
      * 端另外判斷「還沒到期」來隱藏——理由見 [AnimatedMahjongEntity] KDoc。
      *
-     * 所有最終布局與組裝格位不同的牌，會在掉落動畫播完後接續排定切換至開門後位置。全部牌共用同一個
-     * 絕對揭示時刻（[AnimationStep.WaitUntil]，等待時長是牌牆掉落
-     * 動畫總時長加上擲骰動畫時長的總和——擲骰動畫會等牌牆完全落地才開始播放，見
-     * `FabricGamePresentationPublisher.publishDiceRoll`，王牌移出開門的時機要跟著往後移，不能只算
-     * 擲骰動畫本身的時長），不是每張王牌各自用減法反推剩餘等待時間去湊同一個目標——理由見
-     * [AnimationStep.WaitUntil] KDoc。[MahjongTileWallPresentation.diceCount] 為 `0`（沒有搭配擲骰）時，
-     * 牌牆會直接在開門後的最終座標生成，已公開的牌也直接使用正面姿態；這讓 debug scenario 或重載
-     * 恢復不必偽造一段擲骰時間線。同一時機點順便讓
-     * [MahjongTileWallPresentation.revealedTileIds] 對應的牌接續播放「起飛→翻面→落下」的公開動畫
-     * （見 [revealFlipAnimationSteps]）——開局第一張寶牌指示牌本該在王牌分離、開門完成的這一刻公開，
-     * 不需要另外排一個時機點。
+     * 所有最終布局與組裝格位不同的牌，會在掉落及擲骰動畫播完後，以共同絕對開始時間接續播放開門
+     * transition。所有路徑都在 entity 加入世界前由 [TileWallTransitionMotionPlanner] 完整規劃，不是
+     * 各張牌自行用相對等待時間推算；每張牌再用 [AnimationStep.WaitUntil] 收斂至同一開始時刻。
+     * [MahjongTileWallPresentation.revealedTileIds] 對應的牌會等最長開門路徑完成後，才播放「起飛→翻面
+     * →落下」的公開動畫（見 [revealFlipAnimationSteps]）。[MahjongTileWallPresentation.diceCount] 為
+     * `0` 時代表 recovery 或靜態同步，牌牆會直接在最終座標與權威公開姿態生成，不重播已過去的開門或
+     * 翻面動畫。
      */
     private fun startWallDropAnimations(
         world: ServerWorld,
@@ -144,13 +196,18 @@ class FabricMahjongTileWallPresenter(
         presentation: MahjongTileWallPresentation,
         controllerPos: BlockPos,
         stacksPerSide: Int,
+        openingPlan: TileWallTransitionMotionPlan,
     ) {
-        val revealAbsoluteGameTime = if (presentation.diceCount > 0) {
+        val openingMotionsByTile = openingPlan.phases
+            .flatMap { it.motions }
+            .associateBy { it.tileId }
+        val openingAbsoluteGameTime = if (presentation.diceCount > 0) {
             world.time + MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide) +
                 MahjongDiceTableLayout.totalAnimationTicks(presentation.diceCount)
         } else {
             null
         }
+        val revealAbsoluteGameTime = openingAbsoluteGameTime?.plus(openingPlan.durationTicks)
         var revealSoundScheduled = false
         tilesWithPosition.forEach { (position, tile) ->
             val startDelayTicks = MahjongTileTableLayout.wallDropStartDelayTicks(position.stack)
@@ -175,7 +232,7 @@ class FabricMahjongTileWallPresenter(
             }
             val tileId = tile.uuid.toKotlinUuid()
             val finalPlacement = requireNotNull(presentation.finalLayout.placements[tileId])
-            if (revealAbsoluteGameTime != null) {
+            if (openingAbsoluteGameTime != null && revealAbsoluteGameTime != null) {
                 val openPlacement = MahjongTileTableLayout.wallPlacement(
                     controllerX = controllerPos.x,
                     controllerY = controllerPos.y,
@@ -185,13 +242,11 @@ class FabricMahjongTileWallPresenter(
                     stacksPerSide = stacksPerSide,
                     placement = finalPlacement,
                 )
-                steps += AnimationStep.WaitUntil(revealAbsoluteGameTime)
-                if (finalPlacement.position != position ||
-                    finalPlacement.offset != TileWallPlacementOffset.Zero ||
-                    finalPlacement.orientation != TileWallPlacementOrientation.DEFAULT
-                ) {
-                    steps += AnimationStep.Teleport(openPlacement.x, openPlacement.y, openPlacement.z, openPlacement.yaw)
+                openingMotionsByTile[tileId]?.let { motion ->
+                    steps += AnimationStep.WaitUntil(openingAbsoluteGameTime)
+                    motion.segments.forEach { segment -> steps += segment.animationSteps(initialPose) }
                 }
+                steps += AnimationStep.WaitUntil(revealAbsoluteGameTime)
                 if (tileId in presentation.revealedTileIds) {
                     val soundGameTime = if (revealSoundScheduled) null else revealAbsoluteGameTime + REVEAL_LIFT_DURATION_TICKS
                     steps += revealFlipAnimationSteps(
@@ -207,6 +262,47 @@ class FabricMahjongTileWallPresenter(
             tile.enqueueAll(steps)
         }
     }
+
+    /** 建立此牌牆請求使用的抽象 placement 世界投影資料。 */
+    private fun MahjongTileWallPresentation.projectionContext(controllerPos: BlockPos): MahjongTileWallProjectionContext = MahjongTileWallProjectionContext(
+        controllerX = controllerPos.x,
+        controllerY = controllerPos.y,
+        controllerZ = controllerPos.z,
+        tableFacing = tableFacing,
+        dealerSeatIndex = dealerSeatIndex,
+        stacksPerSide = assemblyStructure.values
+            .filter { position -> position.side == 0 }
+            .maxOf { position -> position.stack + 1 },
+    )
+
+    /** 建立此 transition 請求使用的抽象 placement 世界投影資料。 */
+    private fun MahjongTileWallTransitionPresentation.projectionContext(
+        controllerPos: BlockPos,
+    ): MahjongTileWallProjectionContext = MahjongTileWallProjectionContext(
+        controllerX = controllerPos.x,
+        controllerY = controllerPos.y,
+        controllerZ = controllerPos.z,
+        tableFacing = tableFacing,
+        dealerSeatIndex = dealerSeatIndex,
+        stacksPerSide = stacksPerSide,
+    )
+
+    /** 將真實終點與畫面起點組成既有可持久化 motion steps。 */
+    private fun TileWallMotionSegment.animationSteps(
+        pose: MahjongTilePose,
+    ): List<AnimationStep<MahjongTilePose>> = listOf(
+        AnimationStep.Teleport(end.x, end.y, end.z, end.yaw),
+        AnimationStep.PlayMotion(
+            durationTicks = durationTicks,
+            arcHeight = 0.0,
+            startOffsetX = start.x - end.x,
+            startOffsetY = start.y - end.y,
+            startOffsetZ = start.z - end.z,
+            startPoseRotationDegrees = pose.rotationDegrees,
+            endPoseRotationDegrees = pose.rotationDegrees,
+            startYawOffsetDegrees = shortestYawDeltaDegrees(end.yaw, start.yaw),
+        ),
+    )
 
     /** 建立一墩牌牆落桌時的小音量聲音 step；同墩只由上層牌播放一次。 */
     private fun wallStackLandingSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(

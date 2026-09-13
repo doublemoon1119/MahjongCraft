@@ -57,8 +57,8 @@ class PhysicalWallLayoutPolicyTest {
             phases = listOf(
                 PhysicalWallLayoutTransitionPhase(
                     listOf(
-                        PhysicalWallTileMove(bottomTile.id, bottomEnd),
-                        PhysicalWallTileMove(topTile.id, topEnd),
+                        PhysicalWallTileMove(bottomTile.id, bottomStart, bottomEnd),
+                        PhysicalWallTileMove(topTile.id, topStart, topEnd),
                     ),
                 ),
             ),
@@ -151,6 +151,57 @@ class PhysicalWallLayoutPolicyTest {
         val decision = completedPolicy(changed, emptyList()).resolveTransitionValidated(
             transitionContext(state, state, current),
         )
+
+        assertEquals(
+            PhysicalWallLayoutTransitionDecision.Rejected(PhysicalWallLayoutReasonIds.INVALID_RESULT),
+            decision,
+        )
+    }
+
+    /** Move 宣告的來源與 phase 開始布局不同時應拒絕。 */
+    @Test
+    fun `transition rejects stale move source`() {
+        val tile = testTile()
+        val state = FakeTableStateFactory.create(tileWall = TileWall(listOf(tile)))
+        val start = TileWallPlacement(TileWallPosition(side = 0, stack = 0, layer = 0))
+        val stale = TileWallPlacement(TileWallPosition(side = 0, stack = 1, layer = 0))
+        val end = TileWallPlacement(TileWallPosition(side = 0, stack = 2, layer = 0))
+        val current = TileWallPhysicalLayout(mapOf(tile.id to start))
+        val completed = completedPolicy(
+            TileWallPhysicalLayout(mapOf(tile.id to end)),
+            listOf(PhysicalWallLayoutTransitionPhase(listOf(PhysicalWallTileMove(tile.id, stale, end)))),
+        )
+
+        val decision = completed.resolveTransitionValidated(transitionContext(state, state, current))
+
+        assertEquals(
+            PhysicalWallLayoutTransitionDecision.Rejected(PhysicalWallLayoutReasonIds.INVALID_RESULT),
+            decision,
+        )
+    }
+
+    /** 同 phase 的目的位置與未移動牌重疊時應拒絕。 */
+    @Test
+    fun `transition rejects overlapping phase destination`() {
+        val moving = testTile()
+        val stationary = testTile()
+        val state = FakeTableStateFactory.create(tileWall = TileWall(listOf(moving, stationary)))
+        val movingStart = TileWallPlacement(TileWallPosition(side = 0, stack = 0, layer = 0))
+        val occupied = TileWallPlacement(TileWallPosition(side = 0, stack = 1, layer = 0))
+        val current = TileWallPhysicalLayout(mapOf(moving.id to movingStart, stationary.id to occupied))
+        val completed = completedPolicy(
+            TileWallPhysicalLayout(mapOf(moving.id to occupied, stationary.id to movingStart)),
+            listOf(
+                PhysicalWallLayoutTransitionPhase(
+                    listOf(PhysicalWallTileMove(moving.id, movingStart, occupied)),
+                ),
+                PhysicalWallLayoutTransitionPhase(
+                    listOf(PhysicalWallTileMove(stationary.id, occupied, movingStart)),
+                ),
+            ),
+        )
+
+        val decision = completed.resolveTransitionValidated(transitionContext(state, state, current))
 
         assertEquals(
             PhysicalWallLayoutTransitionDecision.Rejected(PhysicalWallLayoutReasonIds.INVALID_RESULT),

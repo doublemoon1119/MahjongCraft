@@ -106,8 +106,12 @@ object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
         val loweredDestination = TileWallPlacement(loweredPlacement.position.copy(layer = 0))
         val replenishmentDestination = TileWallPlacement(replenishmentPlacement.position, DEAD_WALL_OFFSET)
         return listOf(
-            PhysicalWallLayoutTransitionPhase(listOf(PhysicalWallTileMove(replenishmentId, replenishmentDestination))),
-            PhysicalWallLayoutTransitionPhase(listOf(PhysicalWallTileMove(loweredTile.id, loweredDestination))),
+            PhysicalWallLayoutTransitionPhase(
+                listOf(PhysicalWallTileMove(replenishmentId, replenishmentPlacement, replenishmentDestination)),
+            ),
+            PhysicalWallLayoutTransitionPhase(
+                listOf(PhysicalWallTileMove(loweredTile.id, loweredPlacement, loweredDestination)),
+            ),
         )
     }
 
@@ -121,6 +125,7 @@ object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
         return listOf(
             PhysicalWallTileMove(
                 replenishmentId,
+                currentPlacement,
                 TileWallPlacement(currentPlacement.position.copy(layer = 1), DEAD_WALL_OFFSET),
             ),
         )

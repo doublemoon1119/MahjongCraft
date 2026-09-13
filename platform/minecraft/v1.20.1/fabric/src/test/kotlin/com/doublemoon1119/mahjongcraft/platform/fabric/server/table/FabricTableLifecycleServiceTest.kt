@@ -48,6 +48,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationResult
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
@@ -209,6 +211,11 @@ class FabricTableLifecycleServiceTest {
     private class RecordingTileWallPresenter : MahjongTileWallPresenter {
         /** 此測試不使用正式牌牆呈現。 */
         override fun present(presentation: MahjongTileWallPresentation): MahjongTileWallPresentationResult = MahjongTileWallPresentationResult.PRESENTED
+
+        /** 此測試不使用正式牌牆 transition 呈現。 */
+        override fun presentTransition(
+            presentation: MahjongTileWallTransitionPresentation,
+        ): MahjongTileWallTransitionResult = MahjongTileWallTransitionResult.PRESENTED
 
         /** 此測試不使用正式王牌追加翻面呈現。 */
         override fun revealDeadWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult = MahjongTileWallPresentationResult.PRESENTED

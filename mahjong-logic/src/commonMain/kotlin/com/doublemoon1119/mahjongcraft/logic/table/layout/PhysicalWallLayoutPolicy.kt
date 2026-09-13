@@ -66,6 +66,8 @@ data class PhysicalWallLayoutTransitionContext(
 data class PhysicalWallTileMove(
     /** 要移動的既有牌張 Uuid。 */
     val tileId: Uuid,
+    /** 此階段開始時的權威抽象來源位置。 */
+    val source: TileWallPlacement,
     /** 此移動完成後的抽象目的位置。 */
     val destination: TileWallPlacement,
 )
@@ -188,14 +190,26 @@ private fun PhysicalWallLayoutTransitionDecision.Completed.isValidFor(
     expectedTileIds: Set<Uuid>,
 ): Boolean {
     if (layout.placements.keys != expectedTileIds) return false
-    val moves = phases.flatMap { it.moves }
-    if (moves.any { it.tileId !in expectedTileIds }) return false
-    val finalMoveByTile = moves.associateBy { it.tileId }
-    if (finalMoveByTile.any { (tileId, move) -> layout.placements[tileId] != move.destination }) return false
-    val changedTileIds = expectedTileIds.filterTo(mutableSetOf()) { tileId ->
-        currentLayout.placements[tileId] != layout.placements[tileId]
+    val workingPlacements = currentLayout.placements
+        .filterKeys { it in expectedTileIds }
+        .toMutableMap()
+    if (workingPlacements.keys != expectedTileIds) return false
+    phases.forEach { phase ->
+        if (phase.moves.any { move ->
+                move.tileId !in expectedTileIds || workingPlacements[move.tileId] != move.source
+            }
+        ) {
+            return false
+        }
+        val movedTileIds = phase.moves.mapTo(mutableSetOf()) { it.tileId }
+        val unchangedDestinations = workingPlacements
+            .filterKeys { it !in movedTileIds }
+            .values
+        val phaseDestinations = phase.moves.map { it.destination }
+        if ((unchangedDestinations + phaseDestinations).distinct().size != expectedTileIds.size) return false
+        phase.moves.forEach { move -> workingPlacements[move.tileId] = move.destination }
     }
-    return finalMoveByTile.keys.containsAll(changedTileIds)
+    return workingPlacements == layout.placements
 }
 
 /** 目前桌況中仍應具有實體牌牆 placement 的所有牌張 Uuid。 */

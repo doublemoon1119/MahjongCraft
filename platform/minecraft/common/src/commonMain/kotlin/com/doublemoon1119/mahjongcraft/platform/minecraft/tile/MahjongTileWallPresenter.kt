@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
@@ -38,6 +39,42 @@ data class MahjongTileWallPresentation(
     val revealedTileIds: Set<Uuid> = emptySet(),
 )
 
+/**
+ * 已由規則解析完成、等待在既有牌牆 entity 上播放的布局 transition。
+ *
+ * @property tableId 所屬麻將桌的穩定 UUID。
+ * @property tableLocation 麻將桌 controller 的位置。
+ * @property tableFacing 麻將桌 controller 的世界水平朝向。
+ * @property dealerSeatIndex 本局莊家在固定座位列表中的 index。
+ * @property stacksPerSide 牌牆每面的墩數。
+ * @property phases 規則提供的來源、目的與先後階段。
+ * @property startGameTime 第一個階段可開始播放的絕對 server game time。
+ */
+data class MahjongTileWallTransitionPresentation(
+    val tableId: Uuid,
+    val tableLocation: TableLocation,
+    val tableFacing: MahjongTableFacing,
+    val dealerSeatIndex: Int,
+    val stacksPerSide: Int,
+    val phases: List<PhysicalWallLayoutTransitionPhase>,
+    val startGameTime: Long,
+)
+
+/** 既有牌牆 entity transition 的處理結果。 */
+enum class MahjongTileWallTransitionResult {
+    /** 所有需要的動畫已原子排入既有 entity 佇列。 */
+    PRESENTED,
+
+    /** 指定 dimension、controller 或桌子 UUID 與目前世界不一致。 */
+    TABLE_NOT_FOUND,
+
+    /** 至少一張必要的既有管理中牌 entity 不存在。 */
+    TILE_NOT_FOUND,
+
+    /** 至少一段抽象 placement 無法建立安全路徑。 */
+    INVALID_PATH,
+}
+
 /** 正式牌牆呈現請求的處理結果。 */
 enum class MahjongTileWallPresentationResult {
     /** 已替換同桌舊牌並建立所有新牌（或 [MahjongTileWallPresentation.finalLayout] 為空、只清除舊牌）。 */
@@ -48,6 +85,9 @@ enum class MahjongTileWallPresentationResult {
 
     /** 其中一張牌無法加入世界；已回滾本次建立的牌。 */
     SPAWN_FAILED,
+
+    /** 初始 assembly 與 final layout 無法建立安全開門路徑。 */
+    INVALID_PATH,
 }
 
 /**
@@ -59,6 +99,9 @@ enum class MahjongTileWallPresentationResult {
 interface MahjongTileWallPresenter {
     /** 在指定桌面呈現整副牌牆；[MahjongTileWallPresentation.finalLayout] 為空時等同只清除舊牌。 */
     fun present(presentation: MahjongTileWallPresentation): MahjongTileWallPresentationResult
+
+    /** 將權威 transition 原子排入指定桌子的既有牌牆 entity。 */
+    fun presentTransition(presentation: MahjongTileWallTransitionPresentation): MahjongTileWallTransitionResult
 
     /**
      * 把 [revealedTileIds] 對應的既有王牌 entity 姿態改成正面朝上，其餘管理中的王牌不受影響——用於
