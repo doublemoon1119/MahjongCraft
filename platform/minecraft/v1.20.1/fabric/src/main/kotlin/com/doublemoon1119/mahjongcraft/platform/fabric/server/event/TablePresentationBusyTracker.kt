@@ -16,6 +16,8 @@ import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
 import org.koin.core.annotation.Single
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.uuid.Uuid
 
 /**
@@ -32,35 +34,70 @@ import kotlin.uuid.Uuid
  * 資訊記錄兩遍，且過去那份記錄是純記憶體、撐不過伺服器重啟；改成直接查詢佇列後，「忙碌」狀態自動
  * 繼承佇列本身的持久化正確性——伺服器重啟後如果佇列還沒播完，`isBusy` 依然正確回傳 `true`。
  *
- * [markPending]／[clearPending] 額外覆蓋一個窄範圍的情境：[FabricGamePresentationPublisher] 的
+ * [beginPending] 額外覆蓋一個窄範圍的情境：[FabricGamePresentationPublisher] 的
  * `publishXxx` 方法把實際呈現（生成/移動 entity）丟回伺服器主執行緒非同步執行（`scope.launch`），
  * 呼叫端（`AdvanceRoundUseCase`／`StartGameUseCase`）呼叫完 `publishXxx` 就會緊接著繼續走自己的自動
  * 連鎖（莊家自動摸牌、開始思考計時器）——如果這時候動畫用的 entity 還沒真正生成（非同步工作還沒
- * 排到），單純掃描 entity 會查無所獲、誤判成不忙碌，自動連鎖就會搶在畫面之前推進。[markPending] 由
- * `publishXxx` 在方法最前面同步呼叫，涵蓋「已經決定要呈現、但 entity 還沒生成」這段極短暫的窗口；
- * [clearPending] 在非同步工作真正執行後呼叫（不論成功或失敗），之後就完全交給 entity 掃描判斷。這段
- * pending 標記不需要撐過伺服器重啟——非同步排程的窗口本身就不可能跨越一次伺服器重啟。
+ * 排到），單純掃描 entity 會查無所獲、誤判成不忙碌，自動連鎖就會搶在畫面之前推進。[beginPending] 會
+ * 建立一張只屬於該非同步工作的 lease，涵蓋「已經決定要呈現、但 entity 還沒生成」這段極短暫的窗口；
+ * lease 完成後才會移除自己的 token，之後就完全交給 entity 掃描判斷。這段 pending 標記不需要撐過
+ * 伺服器重啟——非同步排程的窗口本身就不可能跨越一次伺服器重啟。
  */
 @Single
 class TablePresentationBusyTracker(
     private val serverHolder: FabricServerHolder,
     private val tableLocationRegistry: TableLocationRegistry,
 ) {
-    private val pendingTableIds: MutableSet<Uuid> = ConcurrentHashMap.newKeySet()
+    /** 依牌桌保存尚未完成的唯一 lease ID。 */
+    private val pendingLeasesByTable: ConcurrentHashMap<Uuid, MutableSet<Long>> = ConcurrentHashMap()
 
-    /** 標記 [tableId] 有一段呈現工作已經排定、但 entity 可能還沒生成，見類別 KDoc。 */
-    fun markPending(tableId: Uuid) {
-        pendingTableIds += tableId
+    /** 跨 server session 單調遞增，避免舊 lease 遲到完成時命中新 session 的 ID。 */
+    private val nextLeaseId = AtomicLong()
+
+    /**
+     * 建立一張屬於單一非同步呈現工作的 lease。
+     *
+     * @param tableId 需要暫時標記忙碌的牌桌識別碼。
+     * @param operation 供診斷使用的工作名稱。
+     * @return 完成時只會移除自己 token 的 lease。
+     */
+    fun beginPending(tableId: Uuid, operation: String): PendingLease {
+        val leaseId = nextLeaseId.incrementAndGet()
+        pendingLeasesByTable.computeIfAbsent(tableId) { ConcurrentHashMap.newKeySet() }.add(leaseId)
+        return PendingLease(tableId, leaseId, operation)
     }
 
-    /** 見 [markPending] KDoc；非同步呈現工作真正執行後呼叫，不論成功或失敗。 */
-    fun clearPending(tableId: Uuid) {
-        pendingTableIds -= tableId
+    /** 清除目前所有牌桌的 pending token；既有 lease 之後完成時不會影響新 lease。 */
+    fun clearAll() {
+        pendingLeasesByTable.clear()
+    }
+
+    /**
+     * 一張只可完成一次的非同步呈現工作 lease。
+     *
+     * @property operation 建立此 lease 時提供的診斷工作名稱。
+     */
+    inner class PendingLease internal constructor(
+        private val tableId: Uuid,
+        private val leaseId: Long,
+        val operation: String,
+    ) {
+        /** 防止同一 lease 重複完成時再次存取 tracker。 */
+        private val completed = AtomicBoolean(false)
+
+        /** 完成此 lease；重複呼叫不會影響其他工作的 token。 */
+        fun complete() {
+            if (!completed.compareAndSet(false, true)) return
+            pendingLeasesByTable.computeIfPresent(tableId) { _, tokens ->
+                tokens.remove(leaseId)
+                if (tokens.isEmpty()) null else tokens
+            }
+        }
     }
 
     /** [tableId] 目前是否仍在忙碌中。 */
     fun isBusy(tableId: Uuid): Boolean {
-        if (tableId in pendingTableIds) return true
+        if (!pendingLeasesByTable[tableId].isNullOrEmpty()) return true
         val location = tableLocationRegistry.get(tableId)?.location ?: return false
         val world = resolveWorld(location) ?: return false
         val controllerPos = BlockPos(location.x, location.y, location.z)
