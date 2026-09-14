@@ -5,7 +5,7 @@ package com.doublemoon1119.mahjongcraft.ai
  * [MahjongAiStrategyRegistry.register]，不具特權。
  */
 fun MahjongAiStrategyRegistry.registerBuiltInAiStrategies(
-    extensionActionRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
+    extensionActionRegistry: ExtensionGameActionAiRegistry,
 ) {
     register(RandomAiStrategy.KEY) { RandomAiStrategy(extensionActionRegistry = extensionActionRegistry) }
 }

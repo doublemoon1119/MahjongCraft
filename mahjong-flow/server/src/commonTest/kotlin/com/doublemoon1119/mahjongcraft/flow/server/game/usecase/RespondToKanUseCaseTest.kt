@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -71,6 +72,7 @@ class RespondToKanUseCaseTest {
             eventPublisher,
             presentationPublisher,
             winPresentationHandoff,
+            winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
         )
     }

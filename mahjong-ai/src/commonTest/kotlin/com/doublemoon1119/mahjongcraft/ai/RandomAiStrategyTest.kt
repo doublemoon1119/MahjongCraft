@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.ai
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -25,6 +27,16 @@ import kotlin.uuid.Uuid
  * 不依賴特定亂數種子的具體輸出序列。
  */
 class RandomAiStrategyTest {
+    /** 驗證 registry 注入用的測試擴充動作。 */
+    private data object TestExtensionAction : ExtensionGameAction {
+        override val id: String = "test:ai_action"
+    }
+
+    /** 驗證 registry 注入用的測試擴充命令。 */
+    private data object TestExtensionCommand : ExtensionGameCommand
+
+    /** 不登記額外動作的明確測試 registry。 */
+    private val extensionActionRegistry = ExtensionGameActionAiRegistry()
 
     private val selfId = Uuid.random()
 
@@ -51,7 +63,7 @@ class RandomAiStrategyTest {
      */
     @Test
     fun `test responding to discard picks one of the legal actions`() = runTest {
-        val strategy = RandomAiStrategy(Random(1))
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
         val ronAction = GameAction.Ron(Uuid.random())
         val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToDiscard, listOf(ronAction, GameAction.Pass))
 
@@ -66,7 +78,7 @@ class RandomAiStrategyTest {
      */
     @Test
     fun `test responding to discard defaults to pass when legal actions is empty`() = runTest {
-        val strategy = RandomAiStrategy(Random(1))
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
         val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToDiscard, emptyList())
 
         val result = strategy.decideGameCommand(context)
@@ -80,7 +92,7 @@ class RandomAiStrategyTest {
      */
     @Test
     fun `test responding to chankan picks one of the legal actions`() = runTest {
-        val strategy = RandomAiStrategy(Random(1))
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
         val ronAction = GameAction.Ron(Uuid.random())
         val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToKan, listOf(ronAction, GameAction.Pass))
 
@@ -95,7 +107,7 @@ class RandomAiStrategyTest {
      */
     @Test
     fun `test responding to chankan defaults to pass when legal actions is empty`() = runTest {
-        val strategy = RandomAiStrategy(Random(1))
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
         val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToKan, emptyList())
 
         val result = strategy.decideGameCommand(context)
@@ -110,7 +122,7 @@ class RandomAiStrategyTest {
      */
     @Test
     fun `test own turn always discards when only riichi and pass are legal`() = runTest {
-        val strategy = RandomAiStrategy(Random(1))
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
         val onlyTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val hand = Hand(tiles = listOf(onlyTile))
         val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION, GameAction.Pass))
@@ -125,7 +137,7 @@ class RandomAiStrategyTest {
      */
     @Test
     fun `test own turn discard picks from standing tiles and last drawn`() = runTest {
-        val strategy = RandomAiStrategy(Random(1))
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
         val standingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val hand = Hand(tiles = listOf(standingTile), lastDrawn = lastDrawn)
@@ -142,7 +154,7 @@ class RandomAiStrategyTest {
      */
     @Test
     fun `test own turn obeys forced discard tile`() = runTest {
-        val strategy = RandomAiStrategy(Random(1))
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
         val standingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val forcedTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val hand = Hand(tiles = listOf(standingTile), lastDrawn = forcedTile)
@@ -164,7 +176,7 @@ class RandomAiStrategyTest {
      */
     @Test
     fun `test own turn can select tsumo when legal across many trials`() = runTest {
-        val strategy = RandomAiStrategy(Random(42))
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(42))
         val tile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val hand = Hand(tiles = listOf(tile))
         val results = List(200) {
@@ -181,7 +193,7 @@ class RandomAiStrategyTest {
      */
     @Test
     fun `test own turn can select kan when legal across many trials`() = runTest {
-        val strategy = RandomAiStrategy(Random(42))
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(42))
         val tile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val hand = Hand(tiles = listOf(tile))
         val kanAction = GameAction.Kan(GameAction.KanType.CLOSED_KAN, tile.id, emptyList())
@@ -202,7 +214,7 @@ class RandomAiStrategyTest {
      */
     @Test
     fun `test own turn can select kyuushu kyuuhai when legal across many trials`() = runTest {
-        val strategy = RandomAiStrategy(Random(42))
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(42))
         val tile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val hand = Hand(tiles = listOf(tile))
         val exhaustiveDrawAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai)
@@ -220,7 +232,7 @@ class RandomAiStrategyTest {
      */
     @Test
     fun `test own turn skips unregistered extension action`() = runTest {
-        val strategy = RandomAiStrategy(Random(42))
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(42))
         val tile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val hand = Hand(tiles = listOf(tile))
         val results = List(200) {
@@ -229,5 +241,23 @@ class RandomAiStrategyTest {
         }
 
         assertTrue(results.none { it is GameCommand.Extension }, "Unregistered extension actions must not produce commands.")
+    }
+
+    /** 驗證策略會使用明確注入的 registry 將第三方動作轉成命令。 */
+    @Test
+    fun `test own turn uses explicitly injected extension action handler`() = runTest {
+        val registry = ExtensionGameActionAiRegistry().apply {
+            register(TestExtensionAction::class) { _, _ -> listOf(GameCommand.Extension(TestExtensionCommand)) }
+            freeze()
+        }
+        val strategy = RandomAiStrategy(registry, Random(42))
+        val hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.East)))
+        val results = List(200) {
+            strategy.decideGameCommand(
+                contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(GameAction.Extension(TestExtensionAction))),
+            )
+        }
+
+        assertTrue(results.any { it == GameCommand.Extension(TestExtensionCommand) })
     }
 }

@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -123,6 +124,7 @@ class FullMatchIntegrationTest {
                 eventPublisher,
                 presentationPublisher,
                 winPresentationHandoff,
+                winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
@@ -134,6 +136,7 @@ class FullMatchIntegrationTest {
                 eventPublisher,
                 presentationPublisher,
                 winPresentationHandoff,
+                winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             ),
@@ -144,6 +147,7 @@ class FullMatchIntegrationTest {
                 eventPublisher,
                 presentationPublisher,
                 winPresentationHandoff,
+                winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(

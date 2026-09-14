@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
+import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
+import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
@@ -440,7 +442,9 @@ class AuthoritativeStateRecoveryIntegrationTest {
         val aiTurnDriver = AiTurnDriver(
             gameRepository,
             GetLegalActionsUseCase(gameRepository, moduleRegistry),
-            MahjongAiStrategyRegistryImpl(RandomAiStrategy.KEY).apply { registerBuiltInAiStrategies() },
+            MahjongAiStrategyRegistryImpl(RandomAiStrategy.KEY).apply {
+                registerBuiltInAiStrategies(ExtensionGameActionAiRegistry())
+            },
             GameVisibilityPolicyImpl(),
             moduleRegistry,
         )
@@ -497,6 +501,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             FakeGameEventPublisher(),
             FakeGamePresentationPublisher(),
             WinPresentationHandoff(),
+            winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
                 registerRiichiWinSettlementDetailResolver()
                 freeze()
@@ -512,6 +517,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             FakeGameEventPublisher(),
             FakeGamePresentationPublisher(),
             WinPresentationHandoff(),
+            winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
                 registerRiichiWinSettlementDetailResolver()
                 freeze()

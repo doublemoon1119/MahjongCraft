@@ -4,10 +4,22 @@ import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -27,6 +39,36 @@ import kotlin.test.assertTrue
 
 /** 驗證第三方 Minecraft extension 的統一註冊順序、錯誤診斷與 registry freeze。 */
 class MinecraftMahjongExtensionRegistrarTest {
+    /** 以明確的獨立 registry graph 執行 registrar，供隔離的單元測試使用。 */
+    private fun registerAndFreeze(
+        extensions: Iterable<MinecraftMahjongExtension>,
+        tileAssetRegistry: MinecraftTileAssetRegistry,
+        aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
+        tileDisplayNameRegistry: TileDisplayNameRegistry,
+        ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
+        tileEmojiRegistry: TileEmojiRegistry,
+        tileLabelRegistry: TileLabelRegistry,
+    ): MinecraftMahjongExtensionRegistrationResult = MinecraftMahjongExtensionRegistrar.registerAndFreeze(
+        extensions = extensions,
+        tileAssetRegistry = tileAssetRegistry,
+        aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
+        tileDisplayNameRegistry = tileDisplayNameRegistry,
+        ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
+        tileEmojiRegistry = tileEmojiRegistry,
+        tileLabelRegistry = tileLabelRegistry,
+        showcaseRegistry = WinCelebrationShowcaseRegistryImpl(),
+        gameActionDisplayNameRegistry = GameActionDisplayNameRegistryImpl(),
+        exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl(),
+        roundPreparationDisplayNameRegistry = RoundPreparationDisplayNameRegistryImpl(),
+        winSettlementTemplateRegistry = WinSettlementPresentationTemplateRegistryImpl(),
+        matchSettlementTemplateRegistry = MatchSettlementPresentationTemplateRegistryImpl(),
+        playerPortraitSourceRegistry = PlayerPortraitSourceRegistryImpl(),
+        publicPlayerIndicatorDisplayRegistry = PublicPlayerIndicatorDisplayRegistryImpl(),
+        gameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(),
+        roomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(),
+        gameActionSoundPresentationRegistry = GameActionSoundPresentationRegistryImpl(),
+        roundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl(),
+    )
 
     /** 驗證內建映射先完成註冊，第三方映射接續登記，完成後禁止新增映射。 */
     @Test
@@ -67,7 +109,7 @@ class MinecraftMahjongExtensionRegistrarTest {
             }
         }
 
-        val result = MinecraftMahjongExtensionRegistrar.registerAndFreeze(
+        val result = registerAndFreeze(
             extensions = listOf(extension),
             tileAssetRegistry = tileAssetRegistry,
             aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
@@ -141,7 +183,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         val tileEmojiRegistry = TileEmojiRegistryImpl()
         val tileLabelRegistry = TileLabelRegistryImpl()
 
-        MinecraftMahjongExtensionRegistrar.registerAndFreeze(
+        registerAndFreeze(
             extensions = emptyList(),
             tileAssetRegistry = tileAssetRegistry,
             aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
@@ -189,7 +231,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         }
 
         val error = assertFailsWith<MinecraftMahjongExtensionRegistrationException> {
-            MinecraftMahjongExtensionRegistrar.registerAndFreeze(
+            registerAndFreeze(
                 extensions = listOf(extension),
                 tileAssetRegistry = MinecraftTileAssetRegistryImpl(),
                 aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl(),
@@ -211,7 +253,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         }
 
         val error = assertFailsWith<MinecraftMahjongExtensionRegistrationException> {
-            MinecraftMahjongExtensionRegistrar.registerAndFreeze(
+            registerAndFreeze(
                 extensions = listOf(extension, extension),
                 tileAssetRegistry = MinecraftTileAssetRegistryImpl(),
                 aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl(),

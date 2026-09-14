@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
+import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
@@ -110,6 +111,7 @@ class GameActionRouterTest {
                 eventPublisher,
                 presentationPublisher,
                 winPresentationHandoff,
+                winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
@@ -121,6 +123,7 @@ class GameActionRouterTest {
                 eventPublisher,
                 presentationPublisher,
                 winPresentationHandoff,
+                winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             ),
@@ -131,6 +134,7 @@ class GameActionRouterTest {
                 eventPublisher,
                 presentationPublisher,
                 winPresentationHandoff,
+                winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),

@@ -9,6 +9,8 @@ import kotlin.test.assertTrue
  * [MahjongAiStrategyRegistryImpl] 的單元測試類別。
  */
 class MahjongAiStrategyRegistryImplTest {
+    /** 不登記額外動作的明確測試 registry。 */
+    private val extensionActionRegistry = ExtensionGameActionAiRegistry()
 
     /**
      * 驗證 [MahjongAiStrategyRegistryImpl.register] 後，[MahjongAiStrategyRegistryImpl.resolve]
@@ -16,7 +18,7 @@ class MahjongAiStrategyRegistryImplTest {
      */
     @Test
     fun `test resolve returns strategy registered for key`() {
-        val strategy = RandomAiStrategy()
+        val strategy = RandomAiStrategy(extensionActionRegistry)
         val registry = MahjongAiStrategyRegistryImpl(defaultKey = "default").apply {
             register("custom") { strategy }
         }
@@ -29,7 +31,7 @@ class MahjongAiStrategyRegistryImplTest {
      */
     @Test
     fun `test resolve with null key falls back to default`() {
-        val defaultStrategy = RandomAiStrategy()
+        val defaultStrategy = RandomAiStrategy(extensionActionRegistry)
         val registry = MahjongAiStrategyRegistryImpl(defaultKey = "default").apply {
             register("default") { defaultStrategy }
         }
@@ -43,7 +45,7 @@ class MahjongAiStrategyRegistryImplTest {
      */
     @Test
     fun `test resolve with unknown key falls back to default`() {
-        val defaultStrategy = RandomAiStrategy()
+        val defaultStrategy = RandomAiStrategy(extensionActionRegistry)
         val registry = MahjongAiStrategyRegistryImpl(defaultKey = "default").apply {
             register("default") { defaultStrategy }
         }
@@ -57,8 +59,8 @@ class MahjongAiStrategyRegistryImplTest {
     @Test
     fun `test getAllStrategyKeys reflects registered keys`() {
         val registry = MahjongAiStrategyRegistryImpl(defaultKey = "a").apply {
-            register("a") { RandomAiStrategy() }
-            register("b") { RandomAiStrategy() }
+            register("a") { RandomAiStrategy(extensionActionRegistry) }
+            register("b") { RandomAiStrategy(extensionActionRegistry) }
         }
 
         assertEquals(setOf("a", "b"), registry.getAllStrategyKeys())
@@ -70,7 +72,7 @@ class MahjongAiStrategyRegistryImplTest {
     @Test
     fun `test registerBuiltInAiStrategies registers RandomAiStrategy`() {
         val registry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply {
-            registerBuiltInAiStrategies()
+            registerBuiltInAiStrategies(extensionActionRegistry)
         }
 
         assertTrue(registry.getAllStrategyKeys().contains(RandomAiStrategy.KEY))

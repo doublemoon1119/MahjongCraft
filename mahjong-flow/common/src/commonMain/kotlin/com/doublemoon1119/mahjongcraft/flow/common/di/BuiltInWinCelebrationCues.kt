@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrat
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationCue
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolver
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
@@ -17,7 +18,7 @@ fun WinCelebrationCueResolverRegistry.registerBuiltInWinCelebrationCueResolvers(
 }
 
 /** 建立已註冊內建 resolver 且完成凍結的獨立 registry，供非 DI 測試使用。 */
-fun createBuiltInWinCelebrationCueResolverRegistry(): WinCelebrationCueResolverRegistry = com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl().apply {
+fun createBuiltInWinCelebrationCueResolverRegistry(): WinCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl().apply {
     registerBuiltInWinCelebrationCueResolvers()
     freeze()
 }

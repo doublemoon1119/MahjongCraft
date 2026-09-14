@@ -1,7 +1,11 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationCue
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
@@ -13,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
@@ -49,7 +54,10 @@ class DeclareTsumoUseCaseTest {
     private val gameId = Uuid.random()
     private val winnerId = Uuid.random()
 
-    private class Fixtures {
+    private class Fixtures(
+        val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
+            createBuiltInWinCelebrationCueResolverRegistry(),
+    ) {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
@@ -68,6 +76,7 @@ class DeclareTsumoUseCaseTest {
             eventPublisher,
             presentationPublisher,
             winPresentationHandoff,
+            winCelebrationCueResolverRegistry = winCelebrationCueResolverRegistry,
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
         )
     }
@@ -346,6 +355,39 @@ class DeclareTsumoUseCaseTest {
         assertEquals(listOf(1), staged.celebration.winners.map { it.seatIndex })
         assertEquals(winningTile.id, staged.celebration.winningTileId)
         assertTrue(staged.celebration.isTsumo)
+    }
+
+    /** 驗證明確注入的第三方 resolver 會由實際自摸流程解析，而不是退回另一套內建 registry。 */
+    @Test
+    fun `test declare tsumo uses explicitly injected celebration resolver`() = runTest {
+        val expectedCue = WinCelebrationCue("test:custom_tsumo")
+        val registry = WinCelebrationCueResolverRegistryImpl().apply {
+            register(BuiltInRuleModuleIds.RIICHI) { expectedCue }
+            freeze()
+        }
+        val fixtures = Fixtures(registry)
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.SOUTH,
+            hand = daisangenHand(),
+            discardPile = priorDiscardPile(),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        fixtures.gameRepo.setTableState(
+            FakeTableStateFactory.create(
+                id = gameId,
+                players = listOf(dealer, winner),
+                config = RiichiRuleConfig(),
+                currentPlayerIndex = 1,
+            ),
+        )
+
+        val result = fixtures.useCase(gameId, winnerId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val staged = assertNotNull(fixtures.winPresentationHandoff.take(gameId, setOf(winnerId)))
+        assertEquals(expectedCue, staged.celebration.winners.single().cue)
     }
 
     /**

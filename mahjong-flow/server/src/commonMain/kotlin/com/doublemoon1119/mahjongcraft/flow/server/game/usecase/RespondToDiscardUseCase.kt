@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
@@ -67,8 +66,7 @@ class RespondToDiscardUseCase(
     @Provided private val eventPublisher: GameEventPublisher,
     @Provided private val presentationPublisher: GamePresentationPublisher,
     private val winPresentationHandoff: WinPresentationHandoff,
-    private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
-        createBuiltInWinCelebrationCueResolverRegistry(),
+    private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry,
     private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
     private val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
 ) {

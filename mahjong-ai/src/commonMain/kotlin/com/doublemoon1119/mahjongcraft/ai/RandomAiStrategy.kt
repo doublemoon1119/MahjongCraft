@@ -14,8 +14,8 @@ import kotlin.random.Random
  * @property extensionActionRegistry 將規則 extension 動作轉成可執行命令的註冊表。
  */
 class RandomAiStrategy(
+    private val extensionActionRegistry: ExtensionGameActionAiRegistry,
     private val random: Random = Random.Default,
-    private val extensionActionRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(),
 ) : MahjongAiStrategy {
     companion object {
         /** 這個策略在 [MahjongAiStrategyRegistry] 裡登記的 key。 */
