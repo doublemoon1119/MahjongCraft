@@ -12,6 +12,17 @@
 - **Test Framework**: **JUnit is strictly forbidden**. Only `kotlin.test.Test` is allowed.
 - **Test Naming**: Test method names must use backtick format, e.g., `` `test sorting with different regional orders` ``.
 
+### Import Conventions
+
+- Use file-level `import` directives and short names for Kotlin declarations. Do not use avoidable fully qualified
+  project names in type declarations, expressions, properties, functions, or annotations.
+- When short names conflict, prefer an explicit import alias over repeating a fully qualified name in executable code.
+- Fully qualified names may remain when they are intentionally stored as strings for reflection, serialization,
+  component scanning, interoperability, or another identifier contract, or when an import alias cannot reasonably
+  remove an ambiguity.
+- Comments and KDoc may name a fully qualified declaration when the package itself is relevant to the explanation;
+  otherwise, use a resolvable documentation link or short name.
+
 ## Before Committing
 
 - Run `./gradlew build` — it compiles, tests, and lints (ktlint, `intellij_idea` code style per
