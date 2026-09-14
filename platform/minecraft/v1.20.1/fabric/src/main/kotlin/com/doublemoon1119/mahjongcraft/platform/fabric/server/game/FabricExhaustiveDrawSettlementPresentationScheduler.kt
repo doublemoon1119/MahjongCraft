@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSett
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
@@ -20,6 +21,7 @@ import kotlin.uuid.toJavaUuid
 @Single
 class FabricExhaustiveDrawSettlementPresentationScheduler(
     private val overlays: PersistentTableOverlayCoordinator,
+    private val spawnGateway: FabricEntitySpawnGateway,
 ) {
     /** 成功生成時回傳固定結束時間；失敗則不隱藏 round info。 */
     fun schedule(
@@ -60,7 +62,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
             )
             refreshPositionAndAngles(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
         }
-        if (!world.spawnEntity(stage)) return null
+        if (!spawnGateway.spawn(world, stage, "exhaustive-draw-settlement", tableId)) return null
         val endGameTime = startGameTime + ExhaustiveDrawSettlementPresentationEntity.durationTicks(playerSnapshots)
         request.players.forEach { player ->
             val handTileIds = player.handTileIds.distinct()

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentationResult
@@ -31,6 +32,7 @@ import kotlin.uuid.Uuid
 @Single(binds = [MahjongRoundInfoPresenter::class])
 class FabricMahjongRoundInfoPresenter(
     private val serverHolder: FabricServerHolder,
+    private val spawnGateway: FabricEntitySpawnGateway,
 ) : MahjongRoundInfoPresenter {
     override fun present(presentation: MahjongRoundInfoPresentation): MahjongRoundInfoPresentationResult {
         val world = resolveWorld(presentation.tableLocation) ?: return MahjongRoundInfoPresentationResult.TABLE_NOT_FOUND
@@ -54,7 +56,7 @@ class FabricMahjongRoundInfoPresenter(
                 refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
                 assignToTable(presentation.tableId)
             }
-            if (!world.spawnEntity(display)) {
+            if (!spawnGateway.spawn(world, display, "round-info", presentation.tableId)) {
                 return MahjongRoundInfoPresentationResult.SPAWN_FAILED
             }
         }

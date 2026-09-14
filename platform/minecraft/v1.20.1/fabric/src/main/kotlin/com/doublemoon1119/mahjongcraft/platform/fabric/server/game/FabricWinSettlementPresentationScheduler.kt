@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementRanki
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementRevealTimingSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementSoundCueSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementWinnerSnapshot
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTimelineAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
@@ -25,6 +26,7 @@ import kotlin.uuid.Uuid
 class FabricWinSettlementPresentationScheduler(
     private val templateRegistry: WinSettlementPresentationTemplateRegistry,
     private val overlays: PersistentTableOverlayCoordinator,
+    private val spawnGateway: FabricEntitySpawnGateway,
 ) {
     fun schedule(
         world: ServerWorld,
@@ -92,7 +94,7 @@ class FabricWinSettlementPresentationScheduler(
             configure(tableId, start, request.outcomeId, request.templateKey, request.isTsumo, winners, rankings, timing, soundCues)
             refreshPositionAndAngles(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
         }
-        if (!world.spawnEntity(stage)) return null
+        if (!spawnGateway.spawn(world, stage, "win-settlement", tableId)) return null
         if (request.isBrief) {
             overlays.hideUntil(world, tableId, controllerPos, stage.endGameTime + BRIEF_PRESENTATION_HANDOFF_GRACE_TICKS)
         } else {

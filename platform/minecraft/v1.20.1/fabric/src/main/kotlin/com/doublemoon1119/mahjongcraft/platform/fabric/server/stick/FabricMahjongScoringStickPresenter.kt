@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStic
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
@@ -31,6 +32,7 @@ import kotlin.uuid.Uuid
 @Single(binds = [MahjongScoringStickPresenter::class])
 class FabricMahjongScoringStickPresenter(
     private val serverHolder: FabricServerHolder,
+    private val spawnGateway: FabricEntitySpawnGateway,
 ) : MahjongScoringStickPresenter {
     /** 驗證 controller 後先建立新積棒；全部成功才移除同桌舊積棒。 */
     override fun present(presentation: MahjongScoringStickPresentation): MahjongScoringStickPresentationResult {
@@ -61,7 +63,7 @@ class FabricMahjongScoringStickPresenter(
         }
         val spawnedSticks = mutableListOf<MahjongScoringStickEntity>()
         newSticks.forEach { stick ->
-            if (!world.spawnEntity(stick)) {
+            if (!spawnGateway.spawn(world, stick, "scoring-stick", presentation.tableId)) {
                 spawnedSticks.forEach(MahjongScoringStickEntity::discard)
                 return MahjongScoringStickPresentationResult.SPAWN_FAILED
             }

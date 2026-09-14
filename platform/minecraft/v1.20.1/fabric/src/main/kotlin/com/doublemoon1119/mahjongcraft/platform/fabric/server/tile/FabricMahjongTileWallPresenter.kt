@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -43,6 +44,7 @@ import kotlin.uuid.toKotlinUuid
 @Single(binds = [MahjongTileWallPresenter::class])
 class FabricMahjongTileWallPresenter(
     private val serverHolder: FabricServerHolder,
+    private val spawnGateway: FabricEntitySpawnGateway,
 ) : MahjongTileWallPresenter {
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
@@ -109,7 +111,7 @@ class FabricMahjongTileWallPresenter(
         }
         val spawnedTiles = mutableListOf<MahjongTileEntity>()
         newTiles.forEach { (_, tile) ->
-            if (!world.spawnEntity(tile)) {
+            if (!spawnGateway.spawn(world, tile, "tile-wall", presentation.tableId)) {
                 spawnedTiles.forEach(MahjongTileEntity::discard)
                 return MahjongTileWallPresentationResult.SPAWN_FAILED
             }

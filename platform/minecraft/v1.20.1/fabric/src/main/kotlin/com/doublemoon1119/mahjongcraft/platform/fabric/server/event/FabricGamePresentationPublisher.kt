@@ -29,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinShowcaseOverride
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricExhaustiveDrawSettlementPresentationScheduler
@@ -43,6 +44,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationSte
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.WinPresentationCleanupPlan
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
@@ -80,6 +82,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
@@ -135,6 +138,8 @@ class FabricGamePresentationPublisher(
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
     private val busyTracker: TablePresentationBusyTracker,
+    private val openingOperations: TableOpeningPresentationOperationTracker,
+    private val spawnGateway: FabricEntitySpawnGateway,
     private val debugWinShowcaseOverride: DebugWinShowcaseOverride,
     private val debugWinRoundContinuationState: DebugWinRoundContinuationState,
     private val gameRepository: GameRepository,
@@ -190,7 +195,7 @@ class FabricGamePresentationPublisher(
                 refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
                 configure(gameId, sound.soundId, sound.volume, sound.pitch, resolved.world.time)
             }
-            if (!resolved.world.spawnEntity(entity)) {
+            if (!spawnGateway.spawn(resolved.world, entity, "game-action-sound", gameId)) {
                 logger.warn("publishGameActionSound gameId={} actorId={} failed to spawn sound timeline", gameId, actorId)
             }
             null
@@ -358,28 +363,28 @@ class FabricGamePresentationPublisher(
             return
         }
         val wallDropTicks = wallDropTicksByTable[gameId] ?: 0
+        val openingOperation = openingOperations.capture(gameId)
         busyTracker.markPending(gameId)
-        scope.launch(dispatchers.main) {
-            try {
-                val resolved = resolveTableContext(gameId, "publishDiceRoll") ?: return@launch
+        launchOpeningStage(gameId, "dice-roll", openingOperation, clearsPending = true) {
+            val resolved = resolveTableContext(gameId, "publishDiceRoll") ?: return@launchOpeningStage
 
-                val presentation = MahjongDiceRollPresentation(
-                    tableId = gameId,
-                    tableLocation = resolved.location,
-                    tableFacing = resolved.facing,
-                    throwSide = seatIndexToTableSide(dealerSeatIndex),
-                    rollSequence = roundNumber.toLong() * ROLL_SEQUENCE_ROUND_MULTIPLIER + comboCount,
-                    dice = dice.values.map { point ->
-                        MahjongDicePresentation(
-                            point = point,
-                            animationSeed = Random.nextLong(),
-                        )
-                    },
-                    extraLeadDelayTicks = wallDropTicks,
-                )
-                diceRollPresenter.present(presentation)
-            } finally {
-                busyTracker.clearPending(gameId)
+            val presentation = MahjongDiceRollPresentation(
+                tableId = gameId,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
+                throwSide = seatIndexToTableSide(dealerSeatIndex),
+                rollSequence = roundNumber.toLong() * ROLL_SEQUENCE_ROUND_MULTIPLIER + comboCount,
+                dice = dice.values.map { point ->
+                    MahjongDicePresentation(
+                        point = point,
+                        animationSeed = Random.nextLong(),
+                    )
+                },
+                extraLeadDelayTicks = wallDropTicks,
+            )
+            val result = diceRollPresenter.present(presentation)
+            if (result == MahjongDiceRollPresentationResult.SPAWN_FAILED) {
+                error("Dice roll presentation failed to spawn")
             }
         }
     }
@@ -414,34 +419,39 @@ class FabricGamePresentationPublisher(
             .filter { position -> position.side == 0 }
             .maxOfOrNull { position -> position.stack + 1 } ?: 0
         val wallDropTicks = MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide)
+        val openingOperation = if (animateOpening) openingOperations.begin(gameId) else null
+        if (openingOperation != null) {
+            pendingWallOpeningByTable.remove(gameId)
+            wallDropTicksByTable.remove(gameId)
+            wallStacksPerSideByTable.remove(gameId)
+        }
         wallDropTicksByTable[gameId] = wallDropTicks
         wallStacksPerSideByTable[gameId] = stacksPerSide
         if (!animateOpening) pendingWallOpeningByTable.remove(gameId)
         busyTracker.markPending(gameId)
-        scope.launch(dispatchers.main) {
-            try {
-                val resolved = resolveTableContext(gameId, "publishWallStructure") ?: return@launch
+        launchOpeningStage(gameId, "wall-structure", openingOperation, clearsPending = true) {
+            val resolved = resolveTableContext(gameId, "publishWallStructure") ?: return@launchOpeningStage
 
-                val presentation = MahjongTileWallPresentation(
-                    tableId = gameId,
-                    tableLocation = resolved.location,
-                    tableFacing = resolved.facing,
-                    dealerSeatIndex = dealerSeatIndex,
-                    assemblyStructure = assemblyStructure,
-                    finalLayout = layout,
-                    deadWallTileIds = deadWallTileIds,
-                    diceCount = diceCount,
-                    animateOpening = animateOpening,
-                    revealedTileIds = revealedTileIds,
-                )
-                val result = tileWallPresenter.present(presentation)
-                if (animateOpening && result == MahjongTileWallPresentationResult.PRESENTED) {
-                    pendingWallOpeningByTable[gameId] = presentation
-                } else if (result != MahjongTileWallPresentationResult.PRESENTED) {
-                    pendingWallOpeningByTable.remove(gameId)
-                }
-            } finally {
-                busyTracker.clearPending(gameId)
+            val presentation = MahjongTileWallPresentation(
+                tableId = gameId,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
+                dealerSeatIndex = dealerSeatIndex,
+                assemblyStructure = assemblyStructure,
+                finalLayout = layout,
+                deadWallTileIds = deadWallTileIds,
+                diceCount = diceCount,
+                animateOpening = animateOpening,
+                revealedTileIds = revealedTileIds,
+            )
+            val result = tileWallPresenter.present(presentation)
+            if (animateOpening && result == MahjongTileWallPresentationResult.PRESENTED) {
+                pendingWallOpeningByTable[gameId] = presentation
+            } else if (result != MahjongTileWallPresentationResult.PRESENTED) {
+                pendingWallOpeningByTable.remove(gameId)
+            }
+            if (result == MahjongTileWallPresentationResult.SPAWN_FAILED) {
+                error("Tile wall presentation failed to spawn")
             }
         }
     }
@@ -503,8 +513,9 @@ class FabricGamePresentationPublisher(
             logger.warn("publishScoringSticksUpdated gameId={} skipped: no active server", gameId)
             return
         }
-        scope.launch(dispatchers.main) {
-            val resolved = resolveTableContext(gameId, "publishScoringSticksUpdated") ?: return@launch
+        val openingOperation = openingOperations.capture(gameId)
+        launchOpeningStage(gameId, "scoring-sticks", openingOperation) {
+            val resolved = resolveTableContext(gameId, "publishScoringSticksUpdated") ?: return@launchOpeningStage
 
             val presentation = MahjongScoringStickPresentation(
                 tableId = gameId,
@@ -569,8 +580,9 @@ class FabricGamePresentationPublisher(
             logger.warn("publishStickPotUpdated gameId={} skipped: no active server", gameId)
             return
         }
-        scope.launch(dispatchers.main) {
-            val resolved = resolveTableContext(gameId, "publishStickPotUpdated") ?: return@launch
+        val openingOperation = openingOperations.capture(gameId)
+        launchOpeningStage(gameId, "stick-pot", openingOperation) {
+            val resolved = resolveTableContext(gameId, "publishStickPotUpdated") ?: return@launchOpeningStage
 
             val presentation = MahjongStickPotPresentation(
                 tableId = gameId,
@@ -595,8 +607,9 @@ class FabricGamePresentationPublisher(
             logger.warn("publishRoundInfoUpdated gameId={} skipped: no active server", gameId)
             return
         }
-        scope.launch(dispatchers.main) {
-            val resolved = resolveTableContext(gameId, "publishRoundInfoUpdated") ?: return@launch
+        val openingOperation = openingOperations.capture(gameId)
+        launchOpeningStage(gameId, "round-info", openingOperation) {
+            val resolved = resolveTableContext(gameId, "publishRoundInfoUpdated") ?: return@launchOpeningStage
 
             val presentation = MahjongRoundInfoPresentation(
                 tableId = gameId,
@@ -605,7 +618,7 @@ class FabricGamePresentationPublisher(
                 lines = lines,
             )
             roundInfoPresenter.present(presentation)
-            val game = gameRepository.getGame(gameId) ?: return@launch
+            val game = gameRepository.getGame(gameId) ?: return@launchOpeningStage
             val module = moduleRegistry.getModule(game.tableState.config)
             val orderedAiPlayerIds = game.roomPlayerIds.filter { id -> game.tableState.players.any { it.id == id && it.isAi } }
             val playerInfo = MahjongPlayerInfoPresentationFactory.create(game.tableState, module) { player ->
@@ -668,44 +681,42 @@ class FabricGamePresentationPublisher(
         }
         val wallDropTicks = wallDropTicksByTable[gameId] ?: 0
         val diceTicks = if (diceCount > 0) MahjongDiceTableLayout.totalAnimationTicks(diceCount) else 0
+        val openingOperation = openingOperations.capture(gameId)
         busyTracker.markPending(gameId)
-        scope.launch(dispatchers.main) {
-            try {
-                val resolved = resolveTableContext(gameId, "publishInitialDealAnimation") ?: return@launch
+        launchOpeningStage(gameId, "initial-deal", openingOperation, clearsPending = true) {
+            val resolved = resolveTableContext(gameId, "publishInitialDealAnimation") ?: return@launchOpeningStage
 
-                val presentation = MahjongInitialDealPresentation(
-                    tableId = gameId,
-                    tableLocation = resolved.location,
-                    tableFacing = resolved.facing,
-                    handTileIdsBySeatIndex = handTileIdsBySeatIndex,
-                    postFlipHandTileIdsBySeatIndex = postFlipHandTileIdsBySeatIndex,
-                    dealerSeatIndex = dealerSeatIndex,
-                    comboStickCount = comboStickCount,
-                    dealBatchSizes = dealBatchSizes,
-                    extraLeadDelayTicks = wallDropTicks + diceTicks,
+            val presentation = MahjongInitialDealPresentation(
+                tableId = gameId,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
+                handTileIdsBySeatIndex = handTileIdsBySeatIndex,
+                postFlipHandTileIdsBySeatIndex = postFlipHandTileIdsBySeatIndex,
+                dealerSeatIndex = dealerSeatIndex,
+                comboStickCount = comboStickCount,
+                dealBatchSizes = dealBatchSizes,
+                extraLeadDelayTicks = wallDropTicks + diceTicks,
+            )
+            val result = playerAreaPresenter.presentInitialDeal(presentation)
+            val opening = pendingWallOpeningByTable.remove(gameId)
+            if (opening != null && result != MahjongPlayerAreaPresentationResult.TABLE_NOT_FOUND) {
+                val totalTurnCount = dealBatchSizes.size * handTileIdsBySeatIndex.size
+                val handFlipEndGameTime = resolved.world.time + presentation.extraLeadDelayTicks +
+                    MahjongTileTableLayout.dealAnimationTicks(totalTurnCount)
+                val openingResult = tileWallPresenter.presentOpening(
+                    MahjongTileWallOpeningPresentation(opening, handFlipEndGameTime),
                 )
-                val result = playerAreaPresenter.presentInitialDeal(presentation)
-                val opening = pendingWallOpeningByTable.remove(gameId)
-                if (opening != null && result != MahjongPlayerAreaPresentationResult.TABLE_NOT_FOUND) {
-                    val totalTurnCount = dealBatchSizes.size * handTileIdsBySeatIndex.size
-                    val handFlipEndGameTime = resolved.world.time + presentation.extraLeadDelayTicks +
-                        MahjongTileTableLayout.dealAnimationTicks(totalTurnCount)
-                    val openingResult = tileWallPresenter.presentOpening(
-                        MahjongTileWallOpeningPresentation(opening, handFlipEndGameTime),
-                    )
-                    if (openingResult != MahjongTileWallPresentationResult.PRESENTED) {
-                        logger.warn("Initial wall opening gameId={} failed: result={}", gameId, openingResult)
-                    }
+                if (openingResult != MahjongTileWallPresentationResult.PRESENTED) {
+                    logger.warn("Initial wall opening gameId={} failed: result={}", gameId, openingResult)
                 }
-                tableOverlayCoordinator.showNow(
-                    resolved.world,
-                    gameId,
-                    BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
-                )
-            } finally {
-                busyTracker.clearPending(gameId)
             }
+            tableOverlayCoordinator.showNow(
+                resolved.world,
+                gameId,
+                BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
+            )
         }
+        if (openingOperation != null) openingOperations.finishRegistration(openingOperation)
     }
 
     /**
@@ -919,6 +930,43 @@ class FabricGamePresentationPublisher(
                 logger.warn("Failed to run {} for gameId={}", operation, gameId, cause)
             } finally {
                 if (blocksTable) busyTracker.clearPending(gameId)
+            }
+        }
+    }
+
+    /**
+     * 將可能屬於同一批開局的 presentation 丟回伺服器主執行緒，並在第一個不可恢復例外後阻止同批
+     * 尚未開始的工作繼續碰觸世界。一般回合呼叫的 [openingOperation] 為 `null`，維持原本的例外語意。
+     */
+    private fun launchOpeningStage(
+        gameId: Uuid,
+        stage: String,
+        openingOperation: TableOpeningPresentationOperationTracker.Ticket?,
+        clearsPending: Boolean = false,
+        block: suspend () -> Unit,
+    ) {
+        scope.launch(dispatchers.main) {
+            try {
+                if (!openingOperations.mayRun(openingOperation)) {
+                    logger.debug(
+                        "Opening presentation stage skipped: gameId={} generation={} stage={}",
+                        gameId,
+                        openingOperation?.generation,
+                        stage,
+                    )
+                    return@launch
+                }
+                block()
+            } catch (cause: CancellationException) {
+                throw cause
+            } catch (cause: Throwable) {
+                if (openingOperation == null) throw cause
+                pendingWallOpeningByTable.remove(gameId)
+                wallDropTicksByTable.remove(gameId)
+                wallStacksPerSideByTable.remove(gameId)
+                throw openingOperations.fail(openingOperation, stage, cause)
+            } finally {
+                if (clearsPending) busyTracker.clearPending(gameId)
             }
         }
     }

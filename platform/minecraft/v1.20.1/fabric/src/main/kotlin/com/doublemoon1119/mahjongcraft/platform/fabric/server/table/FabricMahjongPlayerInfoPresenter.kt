@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationResult
@@ -23,7 +24,7 @@ import kotlin.uuid.Uuid
 
 /** Fabric 1.20.1 的一桌一 entity 玩家公開資訊 presenter。 */
 @Single(binds = [MahjongPlayerInfoPresenter::class])
-class FabricMahjongPlayerInfoPresenter(private val serverHolder: FabricServerHolder) : MahjongPlayerInfoPresenter {
+class FabricMahjongPlayerInfoPresenter(private val serverHolder: FabricServerHolder, private val spawnGateway: FabricEntitySpawnGateway) : MahjongPlayerInfoPresenter {
     override fun present(
         presentation: MahjongPlayerInfoPresentation,
         tableLocation: TableLocation,
@@ -42,7 +43,7 @@ class FabricMahjongPlayerInfoPresenter(private val serverHolder: FabricServerHol
         val entity = find(world, presentation.tableId, controllerPos) ?: MahjongPlayerInfoEntity(world = world).apply {
             refreshPositionAndAngles(controllerPos.x + 0.5, controllerPos.y.toDouble(), controllerPos.z + 0.5, 0f, 0f)
             assignToTable(presentation.tableId, controllerPos)
-            if (!world.spawnEntity(this)) return MahjongPlayerInfoPresentationResult.SPAWN_FAILED
+            if (!spawnGateway.spawn(world, this, "player-info", presentation.tableId)) return MahjongPlayerInfoPresentationResult.SPAWN_FAILED
         }
         entity.players = presentation.players
         entity.dealerPlayerId = presentation.dealerPlayerId

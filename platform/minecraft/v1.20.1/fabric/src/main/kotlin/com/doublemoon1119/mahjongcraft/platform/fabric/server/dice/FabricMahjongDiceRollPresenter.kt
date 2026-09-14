@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentati
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentationResult
@@ -28,6 +29,7 @@ import kotlin.uuid.Uuid
 @Single(binds = [MahjongDiceRollPresenter::class])
 class FabricMahjongDiceRollPresenter(
     private val serverHolder: FabricServerHolder,
+    private val spawnGateway: FabricEntitySpawnGateway,
 ) : MahjongDiceRollPresenter {
     /** 驗證 controller 後先建立新骰子；全部成功才移除同桌舊骰子。 */
     override fun present(presentation: MahjongDiceRollPresentation): MahjongDiceRollPresentationResult {
@@ -90,13 +92,13 @@ class FabricMahjongDiceRollPresenter(
         }
         val spawnedDice = mutableListOf<MahjongDiceEntity>()
         newDice.forEach { dice ->
-            if (!world.spawnEntity(dice)) {
+            if (!spawnGateway.spawn(world, dice, "dice-roll-die", presentation.tableId)) {
                 spawnedDice.forEach(MahjongDiceEntity::discard)
                 return MahjongDiceRollPresentationResult.SPAWN_FAILED
             }
             spawnedDice += dice
         }
-        if (!world.spawnEntity(stage)) {
+        if (!spawnGateway.spawn(world, stage, "dice-roll-stage", presentation.tableId)) {
             spawnedDice.forEach(MahjongDiceEntity::discard)
             return MahjongDiceRollPresentationResult.SPAWN_FAILED
         }

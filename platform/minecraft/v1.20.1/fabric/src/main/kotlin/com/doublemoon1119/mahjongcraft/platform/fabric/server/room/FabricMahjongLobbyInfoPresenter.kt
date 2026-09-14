@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongLobbyInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
@@ -25,6 +26,7 @@ import kotlin.uuid.Uuid
 class FabricMahjongLobbyInfoPresenter(
     private val serverHolder: FabricServerHolder,
     private val locations: TableLocationRegistry,
+    private val spawnGateway: FabricEntitySpawnGateway,
     @Provided private val moduleRegistry: MahjongModuleRegistry,
 ) {
     fun present(tableId: Uuid, config: GameConfig, playerCount: Int): Boolean {
@@ -42,7 +44,7 @@ class FabricMahjongLobbyInfoPresenter(
         val existingEntities = findAll(world, tableId, controllerPos)
         val entity = existingEntities.firstOrNull() ?: MahjongLobbyInfoEntity(world = world).also {
             it.assignToTable(tableId, controllerPos)
-            if (!world.spawnEntity(it)) return false
+            if (!spawnGateway.spawn(world, it, "lobby-info", tableId)) return false
         }
         existingEntities.drop(1).forEach(MahjongLobbyInfoEntity::discard)
         entity.ruleModuleId = moduleRegistry.getModule(config.ruleConfig).id

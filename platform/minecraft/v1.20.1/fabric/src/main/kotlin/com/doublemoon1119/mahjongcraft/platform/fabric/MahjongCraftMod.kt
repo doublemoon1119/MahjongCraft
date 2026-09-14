@@ -37,6 +37,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.Fabric
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TableOpeningPresentationOperationTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDebugAnimationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
@@ -154,6 +155,7 @@ class MahjongCraftMod : ModInitializer {
         val tableLocationPersistence = koin.get<FabricTableLocationPersistence>()
         val configManager = koin.get<FabricServerConfigManager>()
         val mahjongTileCollisionService = koin.get<MahjongTileCollisionService>()
+        val openingPresentationOperations = koin.get<TableOpeningPresentationOperationTracker>()
         mahjongTileCollisionService.registerEvents()
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             initializeServerConfig(configManager, mahjongTileCollisionService, server)
@@ -173,6 +175,7 @@ class MahjongCraftMod : ModInitializer {
                 // 比照 GameDecisionTimerManager.settleAll() 自己 KDoc 要求的「先停止新命令、再結算、
                 // 最後才解除 persistence dirty listener」。
                 appScope.shutdown()
+                openingPresentationOperations.clearAll()
                 decisionTimerManager.settleAll()
                 statePersistence.detach()
                 stateCleaner.clear()

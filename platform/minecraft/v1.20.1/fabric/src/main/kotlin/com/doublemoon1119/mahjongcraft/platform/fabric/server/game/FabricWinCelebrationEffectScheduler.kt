@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongAnimationSo
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongVisualEffectKeys
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffectEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
@@ -30,7 +31,7 @@ import kotlin.uuid.toJavaUuid
  * 世界中。
  */
 @Single
-class FabricWinCelebrationEffectScheduler {
+class FabricWinCelebrationEffectScheduler(private val spawnGateway: FabricEntitySpawnGateway) {
     /** 依 [Task.targetTileId] 索引的待開始／進行中任務。 */
     private val tasksByTargetTileId = ConcurrentHashMap<Uuid, Task>()
 
@@ -86,7 +87,9 @@ class FabricWinCelebrationEffectScheduler {
             onComplete = onComplete,
             effect = effect,
         )
-        if (tasksByTargetTileId.putIfAbsent(targetTileId, task) == null && !world.spawnEntity(effect)) {
+        if (tasksByTargetTileId.putIfAbsent(targetTileId, task) == null &&
+            !spawnGateway.spawn(world, effect, "win-celebration-effect", tableId)
+        ) {
             tasksByTargetTileId.remove(targetTileId, task)
         }
     }

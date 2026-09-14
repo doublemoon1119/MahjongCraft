@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.BUILT_IN_MATCH_SET
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPresentationEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
@@ -18,6 +19,7 @@ import kotlin.uuid.Uuid
 class FabricMatchSettlementPresentationScheduler(
     private val templateRegistry: MatchSettlementPresentationTemplateRegistry,
     private val overlays: PersistentTableOverlayCoordinator,
+    private val spawnGateway: FabricEntitySpawnGateway,
 ) {
     private val warnedUnknownTemplateKeys = mutableSetOf<String>()
 
@@ -51,7 +53,7 @@ class FabricMatchSettlementPresentationScheduler(
             configure(tableId, startGameTime, snapshots, template)
             refreshPositionAndAngles(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
         }
-        if (!world.spawnEntity(stage)) return null
+        if (!spawnGateway.spawn(world, stage, "match-settlement", tableId)) return null
         val endGameTime = stage.endGameTime
         overlays.hideUntilRemoved(world, tableId, controllerPos)
         return endGameTime

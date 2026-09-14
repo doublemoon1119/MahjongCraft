@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStic
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongStickPotPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongStickPotPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongStickPotPresenter
@@ -32,6 +33,7 @@ import kotlin.uuid.Uuid
 @Single(binds = [MahjongStickPotPresenter::class])
 class FabricMahjongStickPotPresenter(
     private val serverHolder: FabricServerHolder,
+    private val spawnGateway: FabricEntitySpawnGateway,
 ) : MahjongStickPotPresenter {
     /** 驗證 controller 後差量保留既有槽位；全部缺少的棒都生成成功後，才移除多餘舊棒。 */
     override fun present(presentation: MahjongStickPotPresentation): MahjongStickPotPresentationResult {
@@ -85,7 +87,7 @@ class FabricMahjongStickPotPresenter(
                 denomination = MahjongScoringStickDenomination.P1000
                 assignToTable(presentation.tableId)
             }
-            if (!world.spawnEntity(stick)) {
+            if (!spawnGateway.spawn(world, stick, "stick-pot", presentation.tableId)) {
                 spawnedSticks.forEach(MahjongScoringStickEntity::discard)
                 return MahjongStickPotPresentationResult.SPAWN_FAILED
             }

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileSelectionConfirmEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
@@ -32,6 +33,7 @@ import kotlin.uuid.Uuid
 @Single(binds = [MahjongTileSelectionConfirmPresenter::class])
 class FabricMahjongTileSelectionConfirmPresenter(
     private val serverHolder: FabricServerHolder,
+    private val spawnGateway: FabricEntitySpawnGateway,
 ) : MahjongTileSelectionConfirmPresenter {
     override fun present(presentation: MahjongTileSelectionConfirmPresentation): MahjongTileSelectionConfirmPresentationResult {
         val world = resolveWorld(presentation.tableLocation) ?: return MahjongTileSelectionConfirmPresentationResult.TABLE_NOT_FOUND
@@ -65,7 +67,7 @@ class FabricMahjongTileSelectionConfirmPresenter(
                 )
                 refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
             }
-            if (!world.spawnEntity(panel)) {
+            if (!spawnGateway.spawn(world, panel, "tile-selection-confirm", presentation.tableId)) {
                 spawned.forEach { it.discard() }
                 return MahjongTileSelectionConfirmPresentationResult.SPAWN_FAILED
             }

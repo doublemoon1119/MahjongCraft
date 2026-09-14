@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseSoundSnaps
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseWingSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseWinningTileSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
@@ -24,6 +25,7 @@ import kotlin.uuid.toJavaUuid
 class FabricWinCelebrationShowcaseScheduler(
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
     private val overlays: PersistentTableOverlayCoordinator,
+    private val spawnGateway: FabricEntitySpawnGateway,
 ) {
     private val logger = LoggerFactory.getLogger(FabricWinCelebrationShowcaseScheduler::class.java)
     private val warnedUnknownCues = mutableSetOf<String>()
@@ -88,7 +90,7 @@ class FabricWinCelebrationShowcaseScheduler(
             configure(tableId, startGameTime, endGameTime, Random.nextLong(), winningTileSnapshot, snapshots, extraSounds)
             refreshPositionAndAngles(stagePlacement.x, stagePlacement.y, stagePlacement.z, stagePlacement.yaw, 0.0f)
         }
-        if (!world.spawnEntity(stage)) return null
+        if (!spawnGateway.spawn(world, stage, "win-celebration-showcase", tableId)) return null
 
         wings.flatMap { it.tileIdsAndAssets }.map { it.first }.plus(winningTileId).distinct().forEach { tileId ->
             (world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity)?.enqueueAll(
