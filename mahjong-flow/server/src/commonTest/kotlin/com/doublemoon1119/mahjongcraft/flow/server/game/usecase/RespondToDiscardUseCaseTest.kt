@@ -411,6 +411,11 @@ class RespondToDiscardUseCaseTest {
         assertEquals(table.tileWall.remainingCount - 1, newState.tileWall.remainingCount)
         assertEquals(table.tileWall.getAllTiles().last(), newState.initialDeadWall.last())
         assertEquals(1, (newState.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
+        assertEquals(
+            fixtures.moduleRegistry.getModule(newState.config).getRoundInfoLines(newState),
+            fixtures.presentationPublisher.getPublishedRoundInfo(gameId),
+            "An open kan supplemental draw should immediately refresh round information.",
+        )
 
         val winner = newState.players.first { it.id == responderId }
         val meld = winner.hand.melds.single()
@@ -524,6 +529,7 @@ class RespondToDiscardUseCaseTest {
         assertEquals(0, newState.initialDeadWall.size, "The rinshan reserve (initialDeadWall) is what's actually exhausted here.")
         assertTrue(fixtures.eventPublisher.getNotifiedActions(gameId, responderId, responderId).isEmpty())
         assertTrue(fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId).isEmpty())
+        assertNull(fixtures.presentationPublisher.getPublishedRoundInfo(gameId))
     }
 
     /**

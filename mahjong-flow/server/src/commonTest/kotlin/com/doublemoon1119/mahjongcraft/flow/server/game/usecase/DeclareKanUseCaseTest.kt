@@ -108,6 +108,11 @@ class DeclareKanUseCaseTest {
         assertEquals(table.tileWall.getAllTiles().last(), newState.initialDeadWall.last())
         assertEquals(1, (newState.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
         assertEquals(
+            fixtures.moduleRegistry.getModule(newState.config).getRoundInfoLines(newState),
+            fixtures.presentationPublisher.getPublishedRoundInfo(gameId),
+            "A completed supplemental draw should immediately refresh round information from the updated state.",
+        )
+        assertEquals(
             rinshanTile.id,
             fixtures.presentationPublisher.getPublishedPlayerArea(gameId)?.drawnTileId,
             "The rinshan tile should be presented as a drawn tile (moved to the draw slot), same as a normal draw.",
@@ -381,6 +386,7 @@ class DeclareKanUseCaseTest {
         assertEquals(east4, unchangedPlayer.hand.lastDrawn, "The player's hand should remain exactly as it was before the declaration.")
         assertEquals(0, unchangedState.initialDeadWall.size, "The rinshan reserve (initialDeadWall) is what's actually exhausted here.")
         assertTrue(fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId).isEmpty())
+        assertNull(fixtures.presentationPublisher.getPublishedRoundInfo(gameId))
     }
 
     /**

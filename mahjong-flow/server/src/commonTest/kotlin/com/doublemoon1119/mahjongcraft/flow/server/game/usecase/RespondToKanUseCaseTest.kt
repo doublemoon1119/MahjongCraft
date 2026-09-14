@@ -157,6 +157,7 @@ class RespondToKanUseCaseTest {
             fixtures.presentationPublisher.getPublishedPlayerArea(gameId),
             "Robbing the kan is a Ron, not a completed kan — no rinshan tile was drawn, so nothing should be presented as drawn.",
         )
+        assertNull(fixtures.presentationPublisher.getPublishedRoundInfo(gameId))
 
         // 演出寫進交接槽而非直接發布，理由見 DeclareTsumoUseCaseTest 對應案例的 KDoc。
         assertTrue(fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty())
@@ -192,6 +193,11 @@ class RespondToKanUseCaseTest {
         assertEquals(setOf(whiteTile1, whiteTile2, whiteTile3, robbedWhiteTile), meld.tiles.toSet())
         assertEquals(rinshanTile, declarer.hand.lastDrawn)
         assertEquals(listOf(kanAction, GameAction.Draw), declarer.actionHistory.takeLast(2))
+        assertEquals(
+            fixtures.moduleRegistry.getModule(newState.config).getRoundInfoLines(newState),
+            fixtures.presentationPublisher.getPublishedRoundInfo(gameId),
+            "Passing the robbing-kan window should refresh round information after the supplemental draw completes.",
+        )
 
         assertEquals(
             listOf(GameAction.Pass, GameAction.Draw),
@@ -235,6 +241,7 @@ class RespondToKanUseCaseTest {
         assertEquals(MeldType.PON, unchangedDeclarer.hand.melds.single().type, "The meld should not be applied.")
         assertEquals(robbedWhiteTile, unchangedDeclarer.hand.lastDrawn)
         assertTrue(fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId).isEmpty())
+        assertNull(fixtures.presentationPublisher.getPublishedRoundInfo(gameId))
     }
 
     /**
