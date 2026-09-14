@@ -64,7 +64,18 @@ class RiichiPostActionExhaustiveDrawResolversTest {
     }
 
     /** 建立指定動作的通用完成 context。 */
-    private fun context(table: TableState, action: GameAction): CompletedGameActionContext = CompletedGameActionContext(Uuid.random(), action, table)
+    private fun context(table: TableState, action: GameAction): CompletedGameActionContext = CompletedGameActionContext(
+        table.players.first().id,
+        action,
+        table,
+    )
+
+    /** 將第一位玩家的動作歷史替換為指定動作，並建立最後一個動作的完成 context。 */
+    private fun contextWithActorHistory(table: TableState, actions: List<GameAction>): CompletedGameActionContext {
+        val actor = table.players.first().copy(actionHistory = actions)
+        val updatedTable = table.copy(players = listOf(actor) + table.players.drop(1))
+        return CompletedGameActionContext(actor.id, actions.last(), updatedTable)
+    }
 
     /** 建立測試用槓動作。 */
     private fun kanAction(): GameAction.Kan = GameAction.Kan(
@@ -87,31 +98,37 @@ class RiichiPostActionExhaustiveDrawResolversTest {
         assertNull(resolver.resolve(context(table, kanAction()), riichiModule))
     }
 
-    /** 驗證四家立直只處理 bundled Riichi 立直動作，其餘動作一律回傳 null。 */
+    /** 驗證四家立直只在立直宣告緊接的捨牌完成後成立。 */
     @Test
-    fun `suucha riichi resolver only fires on riichi declared trigger`() {
+    fun `suucha riichi resolver only fires on riichi discard completed trigger`() {
         val table = allRiichiTable()
         val resolver = RiichiSuuchaRiichiResolver()
+        val discard = GameAction.Discard(Uuid.random())
 
         assertEquals(
             RiichiExhaustiveDrawReason.SuuchaRiichi,
-            resolver.resolve(context(table, RIICHI_GAME_ACTION), riichiModule),
+            resolver.resolve(contextWithActorHistory(table, listOf(RIICHI_GAME_ACTION, discard)), riichiModule),
         )
-        assertNull(resolver.resolve(context(table, GameAction.Discard(Uuid.random())), riichiModule))
+        assertNull(resolver.resolve(context(table, discard), riichiModule))
+        assertNull(resolver.resolve(context(table, RIICHI_GAME_ACTION), riichiModule))
         assertNull(resolver.resolve(context(table, kanAction()), riichiModule))
     }
 
-    /** 驗證四槓散了只處理槓動作，其餘動作一律回傳 null。 */
+    /** 驗證四槓散了只在槓、補摸後的第一張捨牌完成時成立。 */
     @Test
-    fun `suukan nagare resolver only fires on kan declared trigger`() {
+    fun `suukan nagare resolver only fires on post-kan discard completed trigger`() {
         val table = allKansTable()
         val resolver = RiichiSuukanNagareResolver()
+        val kan = kanAction()
+        val discard = GameAction.Discard(Uuid.random())
 
         assertEquals(
             RiichiExhaustiveDrawReason.SuukanNagare,
-            resolver.resolve(context(table, kanAction()), riichiModule),
+            resolver.resolve(contextWithActorHistory(table, listOf(kan, GameAction.Draw, discard)), riichiModule),
         )
-        assertNull(resolver.resolve(context(table, GameAction.Discard(Uuid.random())), riichiModule))
+        assertNull(resolver.resolve(context(table, discard), riichiModule))
+        assertNull(resolver.resolve(contextWithActorHistory(table, listOf(kan, GameAction.Draw, discard, discard)), riichiModule))
+        assertNull(resolver.resolve(context(table, kan), riichiModule))
         assertNull(resolver.resolve(context(table, RIICHI_GAME_ACTION), riichiModule))
     }
 
@@ -123,7 +140,18 @@ class RiichiPostActionExhaustiveDrawResolversTest {
         val kanTable = allKansTable()
 
         assertNull(RiichiSuufonRendaResolver().resolve(context(discardTable, GameAction.Discard(Uuid.random())), taiwanModule))
-        assertNull(RiichiSuuchaRiichiResolver().resolve(context(riichiTable, RIICHI_GAME_ACTION), taiwanModule))
-        assertNull(RiichiSuukanNagareResolver().resolve(context(kanTable, kanAction()), taiwanModule))
+        val discard = GameAction.Discard(Uuid.random())
+        assertNull(
+            RiichiSuuchaRiichiResolver().resolve(
+                contextWithActorHistory(riichiTable, listOf(RIICHI_GAME_ACTION, discard)),
+                taiwanModule,
+            ),
+        )
+        assertNull(
+            RiichiSuukanNagareResolver().resolve(
+                contextWithActorHistory(kanTable, listOf(kanAction(), GameAction.Draw, discard)),
+                taiwanModule,
+            ),
+        )
     }
 }

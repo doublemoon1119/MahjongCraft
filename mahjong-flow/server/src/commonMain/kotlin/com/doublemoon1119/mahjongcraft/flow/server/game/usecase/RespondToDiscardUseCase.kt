@@ -11,12 +11,16 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordExhaustiveDrawForAllPlayers
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
+import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -66,6 +70,7 @@ class RespondToDiscardUseCase(
     private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
         createBuiltInWinCelebrationCueResolverRegistry(),
     private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
+    private val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
 ) {
     /**
      * 執行捨牌反應回應邏輯。
@@ -163,6 +168,14 @@ class RespondToDiscardUseCase(
 
         val seatedPlayerIds = newState.players.map { it.id }
         eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, action)
+        result.abortiveDrawReason?.let { reason ->
+            eventPublisher.publishToTable(
+                gameId,
+                seatedPlayerIds,
+                requireNotNull(result.abortiveDrawActorId),
+                GameAction.ExhaustiveDraw(reason),
+            )
+        }
         if (result.supplementalDrawHappened) {
             eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.Draw)
             val module = moduleRegistry.getModule(newState.config)
@@ -283,6 +296,8 @@ class RespondToDiscardUseCase(
         val wallRevealBatches: List<Set<Uuid>> = emptyList(),
         val physicalWallTransitionPhases: List<PhysicalWallLayoutTransitionPhase> = emptyList(),
         val rejectionReasonId: String? = null,
+        val abortiveDrawReason: ExhaustiveDrawReason? = null,
+        val abortiveDrawActorId: Uuid? = null,
     )
 
     /**
@@ -324,6 +339,24 @@ class RespondToDiscardUseCase(
             } else {
                 result
             }
+        }
+
+        val stateAfterResponses = state.copy(players = players, pendingReaction = null)
+        val completedDiscard = GameAction.Discard(pendingReaction.tileId)
+        val abortiveDrawReason = postActionExhaustiveDrawResolverRegistry.resolve(
+            CompletedGameActionContext(
+                actorPlayerId = pendingReaction.discarderId,
+                action = completedDiscard,
+                tableState = stateAfterResponses,
+            ),
+            module,
+        )
+        if (abortiveDrawReason != null) {
+            return RespondResult(
+                tableState = stateAfterResponses.recordExhaustiveDrawForAllPlayers(abortiveDrawReason),
+                abortiveDrawReason = abortiveDrawReason,
+                abortiveDrawActorId = pendingReaction.discarderId,
+            )
         }
 
         val winningEntry =

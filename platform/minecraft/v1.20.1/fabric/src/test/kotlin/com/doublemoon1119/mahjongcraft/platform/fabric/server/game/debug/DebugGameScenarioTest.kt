@@ -7,7 +7,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiSupplementalDrawPolicy
@@ -322,6 +324,49 @@ class DebugGameScenarioTest {
         assertEquals(14, state.reservedWallTiles.size)
     }
 
+    /** 四家立直情境應讓前三家已立直，並只讓呼叫者完成最後一次合法立直宣告。 */
+    @Test
+    fun `test suucha riichi scenario exposes the fourth legal declaration`() {
+        val fixture = createFixture()
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_suucha_riichi")!!.build(fixture.context)
+
+        fixture.validator.validate(fixture.context, result)
+        val state = result.game.tableState
+        val actor = state.currentPlayer
+        val module = fixture.moduleRegistry.getModule(state.config)
+        val validator = module.createLegalActionValidator()
+        val legalActions = validator.getLegalActions(
+            tableState = state,
+            player = actor,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
+        )
+
+        assertEquals(fixture.context.invokingPlayerId, actor.id)
+        assertTrue(RIICHI_GAME_ACTION in legalActions)
+        assertFalse(GameAction.Tsumo in legalActions)
+        assertFalse((actor.playerRuleState as RiichiPlayerState).isRiichi)
+        assertEquals(3, state.players.count { player -> (player.playerRuleState as RiichiPlayerState).isRiichi })
+        assertEquals(3, (state.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+        assertEquals(66, state.tileWall.remainingCount)
+        assertEquals(14, state.reservedWallTiles.size)
+        val declarationTile = assertNotNull(actor.hand.lastDrawn)
+        assertTrue(declarationTile.id in assertNotNull(validator.tileSelectionRequirement(state, actor, RIICHI_GAME_ACTION)).eligibleTileIds)
+        state.players.filterNot { player -> player.id == actor.id }.forEach { opponent ->
+            val reactions = validator.getLegalActions(
+                tableState = state,
+                player = opponent,
+                sourceAction = GameAction.Discard(declarationTile.id),
+                sourceDirection = state.relativeDirectionOf(opponent.id, actor.id),
+                incomingTile = declarationTile,
+            )
+            assertFalse(
+                reactions.any { action -> action is GameAction.Ron },
+                "Scenario must not let an opponent ron the fourth declaration tile",
+            )
+        }
+    }
+
     /** 建立測試所需的正式日麻遊戲、module registry 與 validator。 */
     private fun createFixture(): Fixture {
         val playerIds = List(4) { Uuid.random() }
@@ -373,6 +418,7 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi_before_ankan_3",
             "mahjongcraft:riichi_before_ankan_4",
             "mahjongcraft:riichi_before_minkan_1",
+            "mahjongcraft:riichi_before_suucha_riichi",
             "mahjongcraft:riichi_wall_opening",
         )
     }

@@ -20,7 +20,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPre
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomaticRoundPreparationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNagareUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundContinuationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
@@ -36,8 +35,8 @@ import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
- * 在 [GameActionRouter] 之上，自動銜接 3 個系統觸發 use case（[DeclareExhaustiveDrawUseCase]、
- * [DeclareSuukanNagareUseCase]、[AdvanceRoundUseCase]）的呼叫時機，讓呼叫端只需要送出玩家的
+ * 在 [GameActionRouter] 之上，自動銜接系統觸發 use case（[DeclareExhaustiveDrawUseCase]、
+ * [AdvanceRoundUseCase]）的呼叫時機，讓呼叫端只需要送出玩家的
  * [GameCommand]，不需要自己判斷「這個結果是不是代表本局已經結束、該推進到下一局了」。
  *
  * 未來真正的呼叫端（例如 Minecraft 平台層）應該呼叫這裡，而不是直接呼叫 [GameActionRouter]——
@@ -46,9 +45,7 @@ import kotlin.uuid.Uuid
  * 三種銜接時機：
  * 1. **最終反應後 outcome／一般流局**：任一命令的結果為 [GameError.WallExhausted] 時，先呼叫
  *    [resolvePostReactionRoundOutcomeUseCase]；沒有 extension outcome 成立才呼叫 [declareExhaustiveDrawUseCase]。
- * 2. **槓後流局**：[GameCommand.Discard] 或明確宣告需要先結算槓後流局的 extension command，在送進
- *    [GameActionRouter] 前先詢問規則模組；若成立，原命令不會套用，改由規則既有流局流程收斂。
- * 3. **連莊/過莊**：任何造成本局結束的操作完成後，先將 [PendingGameTransition.AdvanceRound]
+ * 2. **連莊/過莊**：任何造成本局結束的操作完成後，先將 [PendingGameTransition.AdvanceRound]
  *    寫入權威狀態；待呈現動畫結束後，再由 [resumePendingGameTransition] 呼叫 [advanceRoundUseCase]。
  *    任一命令成功後，統一從權威桌況的 `actionHistory` 判斷是否已留下胡牌或流局記錄，不依命令型別
  *    猜測規則結果，因此第三方 extension command 也能沿用相同收斂流程。
@@ -62,15 +59,12 @@ import kotlin.uuid.Uuid
  *
  * @property gameActionRouter 玩家發起命令的路由入口。
  * @property gameRepository 權威對局數據倉庫，用於判斷是否需要銜接。
- * @property moduleRegistry 麻將規則模組註冊中心，用於解析四槓散了判定。
- * @property postActionExhaustiveDrawResolverRegistry 主動觸發途中流局的判定 registry，用於預先判斷
- *   是否已構成四槓散了，決定是否改呼叫 [declareSuukanNagareUseCase]。
+ * @property moduleRegistry 麻將規則模組註冊中心。
  * @property winSettlementDetailResolverRegistry 特殊 win-equivalent outcome（例如流局滿貫）的胡牌
  *   詳情解析 registry，用於 [WinSettlementPresentationRequestFactory.createSpecialOutcome]。
  * @property declareExhaustiveDrawUseCase 一般流局結算用例。
  * @property resolveWinRoundContinuationUseCase 胡牌即時結算完成後，判定本局後續是否結束的用例；
  *   見 [ResolveWinRoundContinuationUseCase] KDoc。
- * @property declareSuukanNagareUseCase 四槓散了結算用例。
  * @property advanceRoundUseCase 連莊/過莊/開下一局用例。
  * @property returnToRoomUseCase 對局結束後把桌子轉回房間用例；[advanceRoundUseCase] 判定對局結束時
  *   會先持久化 [PendingGameTransition.ReturnToRoom]，再於同一次待完成流程收斂中呼叫此用例。
@@ -85,15 +79,12 @@ import kotlin.uuid.Uuid
 @Factory
 class GameFlowCoordinator(
     private val gameActionRouter: GameActionRouter,
-    private val extensionCommandRegistry: ExtensionGameCommandExecutorRegistry,
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
-    private val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
     private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
     private val declareExhaustiveDrawUseCase: DeclareExhaustiveDrawUseCase,
     private val resolvePostReactionRoundOutcomeUseCase: ResolvePostReactionRoundOutcomeUseCase,
     private val resolveWinRoundContinuationUseCase: ResolveWinRoundContinuationUseCase,
-    private val declareSuukanNagareUseCase: DeclareSuukanNagareUseCase,
     private val advanceRoundUseCase: AdvanceRoundUseCase,
     private val returnToRoomUseCase: ReturnToRoomUseCase,
     private val aiTurnDriver: AiTurnDriver,
@@ -122,7 +113,7 @@ class GameFlowCoordinator(
      * @param gameId 對局 Uuid。
      * @param playerId 發起操作的玩家 Uuid。
      * @param command 欲執行的操作。
-     * @return [GameActionRouter]（或四槓散了攔截時改呼叫的 [declareSuukanNagareUseCase]）的執行結果。
+     * @return [GameActionRouter] 的執行結果。
      */
     suspend operator fun invoke(
         gameId: Uuid,
@@ -154,7 +145,7 @@ class GameFlowCoordinator(
      * @param gameId 對局 Uuid。
      * @param playerId 發起操作的玩家 Uuid。
      * @param command 欲執行的操作。
-     * @return [GameActionRouter]（或四槓散了攔截時改呼叫的 [declareSuukanNagareUseCase]）的執行結果。
+     * @return [GameActionRouter] 的執行結果。
      */
     suspend fun dispatch(
         gameId: Uuid,
@@ -303,7 +294,7 @@ class GameFlowCoordinator(
 
     /**
      * 分派 [command] 並自動銜接對應的系統觸發 use case。抽出成獨立方法讓 [driveAutomatedPlayers] 能
-     * 直接呼叫——AI 送出的命令也必須經過同一套四槓散了攔截與系統銜接邏輯，不能繞過去。
+     * 直接呼叫——AI 送出的命令也必須經過同一套系統銜接邏輯，不能繞過去。
      */
     private suspend fun dispatchAndChain(gameId: Uuid, playerId: Uuid, command: GameCommand): Outcome<Unit, GameError> {
         val game = gameRepository.getGame(gameId)
@@ -311,14 +302,6 @@ class GameFlowCoordinator(
         if (game.pendingRoundPreparation != null && command !is GameCommand.SubmitRoundPreparation) {
             return Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
         }
-        if (
-            command is GameCommand.Discard ||
-            command is GameCommand.Extension &&
-            extensionCommandRegistry.resolvesPendingKanDrawBeforeExecution(command.value)
-        ) {
-            redirectToSuukanNagareIfPending(gameId, playerId)?.let { return it }
-        }
-
         val previousState = gameRepository.getTableState(gameId)
             ?: return Outcome.Error(GameError.GameNotFound(gameId))
         val result = gameActionRouter(gameId, playerId, command)
@@ -377,44 +360,6 @@ class GameFlowCoordinator(
         gameRepository.updateGame(gameId) { game ->
             game?.copy(pendingTransition = PendingGameTransition.AdvanceRound) to Unit
         }
-    }
-
-    /**
-     * 若 [playerId] 正輪到自己回合、沒有任何反應視窗開著、且四槓散了已成立，改呼叫
-     * [declareSuukanNagareUseCase] 並嘗試銜接 [advanceRoundUseCase]，回傳這次改呼叫的結果；
-     * 否則回傳 null，代表呼叫端應照原命令正常分派給 [gameActionRouter]。
-     */
-    private suspend fun redirectToSuukanNagareIfPending(gameId: Uuid, playerId: Uuid): Outcome<Unit, GameError>? {
-        val state = gameRepository.getTableState(gameId) ?: return null
-        if (state.currentPlayer.id != playerId) return null
-        if (state.pendingReaction != null || state.pendingKanReaction != null) return null
-
-        val completedKanContext = state.completedKanContext(playerId) ?: return null
-        val module = moduleRegistry.getModule(state.config)
-        if (postActionExhaustiveDrawResolverRegistry.resolve(completedKanContext, module) == null) return null
-
-        val result = declareSuukanNagareUseCase(gameId, completedKanContext)
-        if (result is Outcome.Success) {
-            publishNewAbortiveDrawIfPresent(gameId, null, state)
-            chainAdvanceRound(gameId)
-        }
-        return result
-    }
-
-    /**
-     * 從權威動作歷史辨認剛完成補摸、尚未執行下一個動作的槓。
-     *
-     * 槓成立後固定記錄 `[Kan, Draw]`；只接受這個完整結尾，避免依副露數量或目前玩家臆測觸發動作。
-     */
-    private fun TableState.completedKanContext(playerId: Uuid): CompletedGameActionContext? {
-        val player = players.firstOrNull { it.id == playerId } ?: return null
-        if (player.actionHistory.lastOrNull() != GameAction.Draw) return null
-        val kanAction = player.actionHistory.getOrNull(player.actionHistory.lastIndex - 1) as? GameAction.Kan ?: return null
-        return CompletedGameActionContext(
-            actorPlayerId = playerId,
-            action = kanAction,
-            tableState = this,
-        )
     }
 
     /** 若這次狀態變更新增途中流局記錄，建立統一回合結算呈現。 */

@@ -3,6 +3,9 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -10,16 +13,20 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.registerRiichiWinSettlementDetailResolver
+import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
@@ -53,7 +60,10 @@ class RespondToDiscardUseCaseTest {
     private val discarderId = Uuid.random()
     private val responderId = Uuid.random()
 
-    private class Fixtures {
+    private class Fixtures(
+        postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry =
+            PostActionExhaustiveDrawResolverRegistry().apply { freeze() },
+    ) {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
@@ -75,7 +85,27 @@ class RespondToDiscardUseCaseTest {
             presentationPublisher,
             winPresentationHandoff,
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
         )
+    }
+
+    /** 建立每次完成捨牌都要求途中流局的測試 registry，用來驗證反應結算優先序。 */
+    private fun alwaysAbortAfterDiscardRegistry(): PostActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
+        register(
+            object : PostActionExhaustiveDrawResolver {
+                override val id: String = "mahjongcraft:test_abort_after_discard"
+                override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+                override val priority: Int = 0
+
+                override fun resolve(
+                    context: CompletedGameActionContext,
+                    ruleModule: MahjongRuleModule<*>,
+                ): ExhaustiveDrawReason? = RiichiExhaustiveDrawReason.SuukanNagare.takeIf {
+                    context.action is GameAction.Discard
+                }
+            },
+        )
+        freeze()
     }
 
     /**
@@ -116,6 +146,47 @@ class RespondToDiscardUseCaseTest {
             Tile.Honor.White in updatedResponder.passedTilesInRound,
             "Passing on an available Pon should be recorded as a temporary pass (過水碰).",
         )
+    }
+
+    /** 驗證無人榮和時，捨牌後途中流局優先於已提交的碰牌，且捨牌保持在牌河。 */
+    @Test
+    fun `test post-action abortive draw takes priority over pon after reactions complete`() = runTest {
+        val fixtures = Fixtures(alwaysAbortAfterDiscardRegistry())
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val handTiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
+        val responder = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = handTiles),
+        )
+        fixtures.gameRepo.setTableState(
+            FakeTableStateFactory.create(
+                id = gameId,
+                players = listOf(discarder, responder),
+                config = RiichiRuleConfig(),
+                currentPlayerIndex = 0,
+                pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            ),
+        )
+
+        val result = fixtures.useCase(
+            gameId,
+            responderId,
+            GameAction.Pon(discardedTile.id, handTiles.map { it.id }),
+        )
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertNull(newState.pendingReaction)
+        assertTrue(newState.players.first { it.id == responderId }.hand.melds.isEmpty())
+        assertFalse(newState.players.first { it.id == discarderId }.discardPile.entries.last().isTaken)
+        val expected = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SuukanNagare)
+        assertTrue(newState.players.all { it.actionHistory.lastOrNull() == expected })
     }
 
     /**
@@ -719,7 +790,7 @@ class RespondToDiscardUseCaseTest {
      */
     @Test
     fun `test lone ron resolves with score deltas actionHistory and index unchanged`() = runTest {
-        val fixtures = Fixtures()
+        val fixtures = Fixtures(alwaysAbortAfterDiscardRegistry())
         val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
         val discarder = FakeMahjongPlayerFactory.create(
             id = discarderId,
@@ -756,6 +827,10 @@ class RespondToDiscardUseCaseTest {
 
         val newDiscarder = newState.players.first { it.id == discarderId }
         assertEquals(-32000, newDiscarder.score, "The sole discarder should pay the full amount.")
+        assertTrue(
+            newState.players.none { player -> player.actionHistory.any { it is GameAction.ExhaustiveDraw } },
+            "A resolved Ron must take priority over the post-action abortive draw resolver.",
+        )
 
         assertNull(
             fixtures.presentationPublisher.getPublishedPlayerArea(gameId),

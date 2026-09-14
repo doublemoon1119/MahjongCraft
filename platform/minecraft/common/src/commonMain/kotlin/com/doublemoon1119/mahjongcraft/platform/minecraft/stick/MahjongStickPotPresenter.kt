@@ -52,9 +52,9 @@ enum class MahjongStickPotPresentationResult {
  * （[MahjongStickPotPresentation.pooledStickCount]）各自獨立更新，跟
  * [MahjongScoringStickPresenter]（積棒，綁在牌牆生成時間點）也是各自獨立的呈現流程。
  *
- * 供託棒沒有 domain 層身分（不像牌有 `IdentifiedTile.id`），比照 [MahjongScoringStickPresenter] 的
- * 按需生成模式：每次 [present] 都用 vanilla entity 隨機 UUID 生成本次要呈現的全部供託棒（宣告中＋延續
- * 供託堆），新的全部生成成功後才清除舊的。
+ * 供託棒沒有 domain 層身分（不像牌有 `IdentifiedTile.id`）；adapter 應依穩定落點差量同步完整 snapshot：
+ * 保留仍符合目標槽位的既有棒，只替新增槽位建立 entity，並在新增全部成功後移除過期槽位。如此局況更新
+ * 不會讓未改變的立直棒重播生成動畫。
  */
 interface MahjongStickPotPresenter {
     /** 在指定桌面呈現這桌目前的全部供託棒（宣告中＋延續供託堆）；兩者皆為空時等同只清除舊供託棒。 */

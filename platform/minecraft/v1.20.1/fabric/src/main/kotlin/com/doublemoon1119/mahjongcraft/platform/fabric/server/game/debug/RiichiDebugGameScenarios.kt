@@ -10,7 +10,11 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
@@ -41,8 +45,107 @@ object RiichiDebugGameScenarios {
         RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_3", 2),
         RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_4", 3),
         RiichiBeforeMinkanScenario,
+        RiichiBeforeSuuchaRiichiScenario,
         RiichiWallOpeningScenario,
     )
+}
+
+/** 建立前三家已立直、呼叫者可合法宣告第四家立直的四人日麻情境。 */
+private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
+    override val id: String = "mahjongcraft:riichi_before_suucha_riichi"
+
+    override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
+        val currentGame = context.currentGame
+        require(currentGame.tableState.players.size == PLAYER_COUNT) { "Riichi debug scenarios require four players" }
+        require(currentGame.tableState.config is RiichiRuleConfig) { "Riichi debug scenarios require a Riichi game" }
+        val invokingPlayerIndex = currentGame.tableState.players.indexOfFirst { it.id == context.invokingPlayerId }
+        require(invokingPlayerIndex >= 0) { "Invoking player does not belong to the game" }
+
+        val config = RiichiRuleConfig()
+        val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
+        val opening = WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 8)
+        val inventory = module.createWallFactory().create().getAllTiles().sortedBy { it.tile.stableSortKey() }
+        val availableTiles = inventory.toMutableList()
+        val invokingStandingTiles = takeTiles(
+            availableTiles,
+            listOf(1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9)
+                .map { value -> Tile.Numeric(Tile.Suit.Character, value) },
+        )
+        val invokingDrawnTile = takeTiles(availableTiles, listOf(Tile.Honor.North)).single()
+        val opponentHands = List(PLAYER_COUNT - 1) { takeDistinctFillers(availableTiles, INITIAL_HAND_SIZE) }
+        val opponentRiichiTiles = takeDistinctFillers(availableTiles, PLAYER_COUNT - 1)
+        val consumedTiles = invokingStandingTiles + opponentHands.flatten() + opponentRiichiTiles + invokingDrawnTile
+        val initialReservedTiles = takeFirst(availableTiles, config.deadTileCount)
+        val initialLiveTiles = consumedTiles + availableTiles
+        val templateLayout = requireNotNull(module.createWallLayout()).resolve(inventory, opening)
+        val structure = remapStructure(templateLayout, initialLiveTiles, initialReservedTiles)
+        val layoutResult = TileWallLayoutResult(initialLiveTiles, initialReservedTiles, structure)
+        val visibleWallTileIds = (availableTiles + initialReservedTiles).mapTo(mutableSetOf()) { tile -> tile.id }
+        val initialPhysicalLayout = when (
+            val decision = module.createPhysicalWallLayoutPolicy().createInitialLayoutValidated(
+                InitialPhysicalWallLayoutContext(layoutResult, opening, visibleWallTileIds),
+            )
+        ) {
+            is InitialPhysicalWallLayoutDecision.Completed -> decision.layout
+            is InitialPhysicalWallLayoutDecision.Rejected -> error(decision.reasonId)
+        }
+        val physicalLayout = TileWallPhysicalLayout(
+            initialPhysicalLayout.placements.filterKeys { tileId -> tileId in visibleWallTileIds },
+        )
+
+        var opponentIndex = 0
+        val players = currentGame.tableState.players.mapIndexed { index, oldPlayer ->
+            if (index == invokingPlayerIndex) {
+                MahjongPlayer(
+                    id = oldPlayer.id,
+                    initialSeatIndex = oldPlayer.initialSeatIndex,
+                    hand = Hand(tiles = invokingStandingTiles, lastDrawn = invokingDrawnTile),
+                    discardPile = RiichiDiscardPile(),
+                    playerRuleState = RiichiPlayerState(),
+                    score = config.scoreConfig.initialScore,
+                    aiStrategyKey = oldPlayer.aiStrategyKey,
+                    seatWind = Wind.entries[(index - invokingPlayerIndex + PLAYER_COUNT) % PLAYER_COUNT],
+                )
+            } else {
+                val riichiTile = opponentRiichiTiles[opponentIndex]
+                val discardAction = GameAction.Discard(riichiTile.id)
+                MahjongPlayer(
+                    id = oldPlayer.id,
+                    initialSeatIndex = oldPlayer.initialSeatIndex,
+                    hand = Hand(tiles = opponentHands[opponentIndex]),
+                    discardPile = RiichiDiscardPile().discard(RiichiDiscardEntry(riichiTile, isRiichi = true)),
+                    playerRuleState = RiichiPlayerState(riichiTile = riichiTile),
+                    score = config.scoreConfig.initialScore - RIICHI_STICK_SCORE,
+                    aiStrategyKey = oldPlayer.aiStrategyKey,
+                    actionHistory = listOf(RIICHI_GAME_ACTION, discardAction),
+                    seatWind = Wind.entries[(index - invokingPlayerIndex + PLAYER_COUNT) % PLAYER_COUNT],
+                ).also { opponentIndex++ }
+            }
+        }
+        val state = TableState(
+            id = currentGame.id,
+            players = players,
+            config = config,
+            tileWall = TileWall(availableTiles),
+            dealerPlayerId = context.invokingPlayerId,
+            roundPosition = MatchRoundPosition(sequenceIndex = 0, prevalentWind = Wind.EAST, localRoundNumber = 1),
+            currentPlayerIndex = invokingPlayerIndex,
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = PLAYER_COUNT - 1),
+            wallOpening = opening,
+            initialDeadWall = initialReservedTiles,
+            physicalWallLayout = physicalLayout,
+        )
+        return DebugGameScenarioResult(
+            game = Game(
+                tableState = state,
+                flowConfig = currentGame.flowConfig,
+                hostId = currentGame.hostId,
+                roomPlayerIds = currentGame.roomPlayerIds,
+            ),
+            wallStructure = structure,
+            wallLayout = initialPhysicalLayout,
+        )
+    }
 }
 
 /** 使用正式初始化流程建立完整日麻開局呈現情境。 */
@@ -303,22 +406,6 @@ private class RiichiBeforeAnkanScenario(
         }
     }
 
-    /** 把指定活牌與保留牌配置到正式 layout 的同一組物理格位。 */
-    private fun remapStructure(
-        template: TileWallLayoutResult,
-        liveTiles: List<IdentifiedTile>,
-        reservedTiles: List<IdentifiedTile>,
-    ): Map<Uuid, TileWallPosition> = buildMap {
-        require(liveTiles.size == template.drawOrder.size) { "Debug live wall size does not match layout" }
-        require(reservedTiles.size == template.reservedWallTiles.size) { "Debug reserved wall size does not match layout" }
-        liveTiles.zip(template.drawOrder).forEach { (tile, slot) ->
-            put(tile.id, template.structure.getValue(slot.id))
-        }
-        reservedTiles.zip(template.reservedWallTiles).forEach { (tile, slot) ->
-            put(tile.id, template.structure.getValue(slot.id))
-        }
-    }
-
     /** 將玩家 index 換算成不包含莊家的對手順序；莊家回傳不可能命中的索引。 */
     private fun opponentOrder(playerIndex: Int, dealerIndex: Int): Int = if (playerIndex == dealerIndex) {
         Int.MAX_VALUE
@@ -334,50 +421,12 @@ private class RiichiBeforeAnkanScenario(
         return groups
     }
 
-    /** 取出牌種互異的填充牌，避免替預定玩家意外建立第二組暗槓。 */
-    private fun takeDistinctFillers(tiles: MutableList<IdentifiedTile>, count: Int): List<IdentifiedTile> {
-        val selected = tiles.distinctBy { it.tile }.take(count)
-        require(selected.size == count) { "Not enough distinct filler tiles" }
-        selected.forEach(tiles::remove)
-        return selected
-    }
-
-    /** 從清單前端取出固定張數並同步移除。 */
-    private fun takeFirst(tiles: MutableList<IdentifiedTile>, count: Int): List<IdentifiedTile> = List(count) {
-        require(tiles.isNotEmpty()) { "Debug scenario ran out of tiles" }
-        tiles.removeAt(0)
-    }
-
-    /** 產生不受 factory 洗牌結果影響的牌種排序鍵。 */
-    private fun Tile.stableSortKey(): String = when (this) {
-        is Tile.Numeric -> "0:${suit.ordinal}:$value"
-        is Tile.Honor -> "1:${HONORS.indexOf(this)}"
-        is Tile.Extension -> "2:${typeId.namespace}:${typeId.path}"
-    }
-
     private companion object {
-        /** 四人日麻固定玩家數。 */
-        const val PLAYER_COUNT: Int = 4
-
-        /** 未副露時的立牌張數。 */
-        const val INITIAL_HAND_SIZE: Int = 13
-
         /** 一組槓的實體牌數。 */
         const val KAN_SIZE: Int = 4
 
         /** 暗槓宣告前放在一般立牌區的同種牌數。 */
         const val TARGET_KAN_IN_HAND: Int = 3
-
-        /** 字牌的穩定排序順序。 */
-        val HONORS: List<Tile.Honor> = listOf(
-            Tile.Honor.East,
-            Tile.Honor.South,
-            Tile.Honor.West,
-            Tile.Honor.North,
-            Tile.Honor.White,
-            Tile.Honor.Green,
-            Tile.Honor.Red,
-        )
     }
 }
 
@@ -425,3 +474,68 @@ private object RiichiBeforeMinkanScenario : DebugGameScenario {
         return base.copy(game = base.game.copy(tableState = tableState))
     }
 }
+
+/** 從牌庫依指定牌種順序各取出一張具有唯一 UUID 的實體牌。 */
+private fun takeTiles(
+    tiles: MutableList<IdentifiedTile>,
+    requestedTiles: List<Tile>,
+): List<IdentifiedTile> = requestedTiles.map { requested ->
+    val index = tiles.indexOfFirst { tile -> tile.tile == requested }
+    require(index >= 0) { "Debug scenario does not contain requested tile: $requested" }
+    tiles.removeAt(index)
+}
+
+/** 取出牌種互異的情境填充牌，避免意外建立特殊牌型。 */
+private fun takeDistinctFillers(tiles: MutableList<IdentifiedTile>, count: Int): List<IdentifiedTile> {
+    val selected = tiles.distinctBy { tile -> tile.tile }.take(count)
+    require(selected.size == count) { "Not enough distinct filler tiles" }
+    selected.forEach(tiles::remove)
+    return selected
+}
+
+/** 從清單前端取出固定張數並同步移除。 */
+private fun takeFirst(tiles: MutableList<IdentifiedTile>, count: Int): List<IdentifiedTile> = List(count) {
+    require(tiles.isNotEmpty()) { "Debug scenario ran out of tiles" }
+    tiles.removeAt(0)
+}
+
+/** 把情境指定的活牌與保留牌配置到正式 layout 的物理格位。 */
+private fun remapStructure(
+    template: TileWallLayoutResult,
+    liveTiles: List<IdentifiedTile>,
+    reservedTiles: List<IdentifiedTile>,
+): Map<Uuid, TileWallPosition> = buildMap {
+    require(liveTiles.size == template.drawOrder.size) { "Debug live wall size does not match layout" }
+    require(reservedTiles.size == template.reservedWallTiles.size) { "Debug reserved wall size does not match layout" }
+    liveTiles.zip(template.drawOrder).forEach { (tile, slot) -> put(tile.id, template.structure.getValue(slot.id)) }
+    reservedTiles.zip(template.reservedWallTiles).forEach { (tile, slot) ->
+        put(tile.id, template.structure.getValue(slot.id))
+    }
+}
+
+/** 產生不受 factory 洗牌結果影響的牌種排序鍵。 */
+private fun Tile.stableSortKey(): String = when (this) {
+    is Tile.Numeric -> "0:${suit.ordinal}:$value"
+    is Tile.Honor -> "1:${HONORS.indexOf(this)}"
+    is Tile.Extension -> "2:${typeId.namespace}:${typeId.path}"
+}
+
+/** 四人日麻固定玩家數。 */
+private const val PLAYER_COUNT: Int = 4
+
+/** 未副露時的立牌張數。 */
+private const val INITIAL_HAND_SIZE: Int = 13
+
+/** 宣告立直時支付的點棒分數。 */
+private const val RIICHI_STICK_SCORE: Int = 1000
+
+/** 字牌的穩定排序順序。 */
+private val HONORS: List<Tile.Honor> = listOf(
+    Tile.Honor.East,
+    Tile.Honor.South,
+    Tile.Honor.West,
+    Tile.Honor.North,
+    Tile.Honor.White,
+    Tile.Honor.Green,
+    Tile.Honor.Red,
+)

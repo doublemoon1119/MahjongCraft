@@ -122,6 +122,7 @@ class GameActionRouterTest {
                 presentationPublisher,
                 winPresentationHandoff,
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+                postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             ),
             respondToKanUseCase = RespondToKanUseCase(
                 gameRepo,

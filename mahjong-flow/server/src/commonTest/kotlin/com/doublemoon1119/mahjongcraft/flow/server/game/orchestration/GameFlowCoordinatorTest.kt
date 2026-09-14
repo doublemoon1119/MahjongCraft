@@ -35,7 +35,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveD
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNagareUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
@@ -161,6 +160,7 @@ class GameFlowCoordinatorTest {
                 presentationPublisher,
                 winPresentationHandoff,
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+                postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             ),
             respondToKanUseCase = RespondToKanUseCase(
                 gameRepo,
@@ -186,10 +186,8 @@ class GameFlowCoordinatorTest {
         )
         val coordinator = GameFlowCoordinator(
             gameActionRouter = router,
-            extensionCommandRegistry = extensionCommandRegistry,
             gameRepository = gameRepo,
             moduleRegistry = moduleRegistry,
-            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             resolvePostReactionRoundOutcomeUseCase = ResolvePostReactionRoundOutcomeUseCase(
@@ -203,13 +201,6 @@ class GameFlowCoordinatorTest {
                 moduleRegistry,
                 winRoundContinuationResolverRegistry,
                 snapshotSynchronizer,
-            ),
-            declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                postActionExhaustiveDrawResolverRegistry,
-                eventPublisher,
             ),
             advanceRoundUseCase = AdvanceRoundUseCase(
                 gameRepo,
@@ -360,7 +351,7 @@ class GameFlowCoordinatorTest {
         assertEquals(table, fixtures.gameRepo.getTableState(gameId))
     }
 
-    // ---- 四槓散了：攔截 Discard/Riichi ----
+    // ---- 四槓散了：捨牌後收斂 ----
 
     private fun kanMeldsOf(vararg tileValues: Tile): List<Meld> = tileValues.map { tile ->
         val tiles = List(4) { FakeIdentifiedTileFactory.create(tile) }
@@ -392,12 +383,11 @@ class GameFlowCoordinatorTest {
     }
 
     /**
-     * 驗證四槓散了成立（4 個槓子分屬不同玩家）時，[GameCommand.Discard] 會被攔截、改觸發四槓散了
-     * 流局並接著開下一局——原本要打出的牌不會真的進牌河（副露被重置就是證明，正常捨牌不會清空
-     * 既有的槓子副露）；莊家固定連莊（`comboCount + 1`、莊家方位不變）。
+     * 驗證四槓散了成立（4 個槓子分屬不同玩家）時，[GameCommand.Discard] 會先正常執行，再由通用
+     * 本局結束流程收斂並開下一局；莊家固定連莊（`comboCount + 1`、莊家方位不變）。
      */
     @Test
-    fun `test discard command is redirected to suukan nagare when pending`() = runTest {
+    fun `test completed discard is followed by suukan nagare when pending`() = runTest {
         val fixtures = Fixtures()
         val dealerId = Uuid.random()
         val otherId = Uuid.random()
@@ -411,29 +401,6 @@ class GameFlowCoordinatorTest {
         assertEquals(1, newState.comboCount, "Suukan nagare is an abortive draw; the dealer always repeats.")
         assertEquals(Wind.EAST, newState.players.first { it.id == dealerId }.seatWind)
         assertTrue(newState.players.first { it.id == dealerId }.hand.melds.isEmpty(), "A fresh hand should have no melds left over.")
-    }
-
-    /**
-     * 驗證同樣的攔截也適用於 [GameCommand.Riichi]（立直宣告本身就包含打出一張牌）。
-     */
-    @Test
-    fun `test riichi command is redirected to suukan nagare when pending`() = runTest {
-        val fixtures = Fixtures()
-        val dealerId = Uuid.random()
-        val otherId = Uuid.random()
-        val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
-        fixtures.gameRepo.setTableState(suukanNagareTable(dealerId, otherId, lastDrawn))
-
-        val result = fixtures.coordinator(
-            gameId,
-            dealerId,
-            GameCommand.Extension(com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand(lastDrawn.id)),
-        )
-
-        assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        val newState = fixtures.gameRepo.getTableState(gameId)!!
-        assertEquals(1, newState.comboCount)
-        assertTrue(newState.players.first { it.id == dealerId }.hand.melds.isEmpty())
     }
 
     /**

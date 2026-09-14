@@ -34,7 +34,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveD
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareSuukanNagareUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
@@ -139,6 +138,7 @@ class MahjongAutoDrawServiceTest {
                 presentationPublisher,
                 winPresentationHandoff,
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+                postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             ),
             respondToKanUseCase = RespondToKanUseCase(
                 gameRepo,
@@ -164,10 +164,8 @@ class MahjongAutoDrawServiceTest {
         )
         val coordinator = GameFlowCoordinator(
             gameActionRouter = router,
-            extensionCommandRegistry = extensionCommandRegistry,
             gameRepository = gameRepo,
             moduleRegistry = moduleRegistry,
-            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             resolvePostReactionRoundOutcomeUseCase = ResolvePostReactionRoundOutcomeUseCase(
@@ -181,13 +179,6 @@ class MahjongAutoDrawServiceTest {
                 moduleRegistry,
                 WinRoundContinuationResolverRegistry().apply { freeze() },
                 snapshotSynchronizer,
-            ),
-            declareSuukanNagareUseCase = DeclareSuukanNagareUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                postActionExhaustiveDrawResolverRegistry,
-                eventPublisher,
             ),
             advanceRoundUseCase = AdvanceRoundUseCase(
                 gameRepo,

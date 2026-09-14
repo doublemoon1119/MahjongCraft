@@ -22,8 +22,8 @@ import kotlin.uuid.Uuid
  * （例如 Minecraft 平台層的網路封包處理）只需要「解析請求 → 組出一個 [GameCommand] → 呼叫本路由」，
  * 不需要自己維護一份「哪個操作對應哪個 use case」的對照表。
  *
- * 系統觸發的 3 個 use case（`DeclareExhaustiveDrawUseCase`、`DeclareSuukanNagareUseCase`、
- * `AdvanceRoundUseCase`）不在這裡——它們沒有 `playerId`，呼叫時機由 [GameFlowCoordinator] 決定。
+ * 系統觸發的流局與回合推進 use case 不在這裡——它們沒有 `playerId`，呼叫時機由
+ * [GameFlowCoordinator] 決定。
  *
  * @property drawTileUseCase 摸牌用例。
  * @property discardTileUseCase 捨牌用例。

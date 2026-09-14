@@ -10,10 +10,6 @@ import kotlin.uuid.Uuid
 
 /** 執行一種規則 extension 命令的 handler。 */
 interface ExtensionGameCommandHandler<C : ExtensionGameCommand> {
-    /** 執行前是否必須先結算已成立的四槓散了等槓後流局。 */
-    val resolvesPendingKanDrawBeforeExecution: Boolean
-        get() = false
-
     /** 執行指定玩家送出的強型別命令。 */
     suspend fun execute(gameId: Uuid, playerId: Uuid, command: C): Outcome<Unit, GameError>
 }
@@ -58,13 +54,6 @@ class ExtensionGameCommandExecutorRegistry {
             ?: return Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
         return entry.handler.execute(gameId, playerId, command)
     }
-
-    /** 查詢命令是否要求先結算已成立的槓後流局。 */
-    @Suppress("UNCHECKED_CAST")
-    fun resolvesPendingKanDrawBeforeExecution(command: ExtensionGameCommand): Boolean {
-        val entry = entries[command::class] as? Entry<ExtensionGameCommand> ?: return false
-        return entry.handler.resolvesPendingKanDrawBeforeExecution
-    }
 }
 
 /** 登記 MahjongCraft 內建規則提供的擴充命令 handler。 */
@@ -72,8 +61,6 @@ fun ExtensionGameCommandExecutorRegistry.registerRiichiGameCommandHandler(declar
     register(
         RiichiGameCommand::class,
         object : ExtensionGameCommandHandler<RiichiGameCommand> {
-            override val resolvesPendingKanDrawBeforeExecution: Boolean = true
-
             override suspend fun execute(
                 gameId: Uuid,
                 playerId: Uuid,

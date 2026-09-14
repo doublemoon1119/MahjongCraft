@@ -168,7 +168,7 @@ class DeclareRiichiUseCase(
                             postActionExhaustiveDrawResolverRegistry.resolve(
                                 CompletedGameActionContext(
                                     actorPlayerId = playerId,
-                                    action = RIICHI_GAME_ACTION,
+                                    action = GameAction.Discard(tileId),
                                     tableState = resolved.tableState,
                                 ),
                                 module,
