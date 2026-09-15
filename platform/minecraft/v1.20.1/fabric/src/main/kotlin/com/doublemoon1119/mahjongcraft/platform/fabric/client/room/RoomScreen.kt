@@ -2,8 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisibility
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomScreenActionDto
@@ -78,11 +76,7 @@ class RoomScreen(
     private var page = if (openSettings) Page.SETTINGS else Page.ROOM
     private var selectedCategoryId: String? = null
     private val fieldScroll = ScrollState()
-    private var draftConfig: GameConfig? = null
-    private var authoritativeConfigAtDraftStart: GameConfig? = null
-    private var draftStale = false
-    private var validationFailed = false
-    private val invalidFieldIds = mutableSetOf<String>()
+    private val draft = RoomSettingsDraft()
     private val playingInfoScroll = ScrollState()
 
     /** 目前正在拖曳哪一列（grid row）的對局資訊 scrollbar；兩列共用同一個捲動位置，但幾何各自獨立。 */
@@ -94,7 +88,6 @@ class RoomScreen(
     private var undoButton: ButtonWidget? = null
     private var resetButton: ButtonWidget? = null
     private var doneButton: ButtonWidget? = null
-    private var returnToRoomAfterApply = false
     private var rebuildRequested = false
     private var lastRoomSnapshot = stateStore.roomSnapshot(tableId)
     private var lastLobby = stateStore.tableLobby(tableId)
@@ -194,11 +187,8 @@ class RoomScreen(
     private fun initSettingsPage() {
         val authoritative = currentConfig() ?: return
         val room = stateStore.roomSnapshot(tableId)
-        if (draftConfig == null || authoritativeConfigAtDraftStart == null) {
-            draftConfig = authoritative
-            authoritativeConfigAtDraftStart = authoritative
-        }
-        val config = draftConfig ?: authoritative
+        draft.beginIfAbsent(authoritative)
+        val config = draft.config ?: authoritative
         val resolved = configResolver.resolve(config)
         val moduleId = resolved.ruleModuleId
         val definition = resolved.definition ?: return
@@ -248,12 +238,10 @@ class RoomScreen(
             addFieldControls(field, config, controlY, editable && field.isEditable && field.isEnabled(config))
         }
         if (editable) {
-            val defaultConfig = GameConfig(definition.defaultRuleConfig()).withConsistentSpectatorVisibility()
+            val defaultConfig = draft.normalized(GameConfig(definition.defaultRuleConfig()))
             val footer = settingsFooterLayout()
             val reset = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS_BUTTON)) {
-                draftConfig = defaultConfig
-                invalidFieldIds.clear()
-                validationFailed = false
+                draft.resetTo(defaultConfig)
                 rebuild()
             }.dimensions(footer.resetX, height - 30, footer.resetWidth, 20).build().also {
                 it.tooltip = Tooltip.of(resetTooltip())
@@ -272,7 +260,7 @@ class RoomScreen(
             val done = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.DONE)) {
                 finishSettings()
             }.dimensions(footer.doneX, height - 30, footer.actionWidth, 20).build().also {
-                it.active = !draftStale && !validationFailed
+                it.active = draft.canDone()
             }
             doneButton = done
             addDrawableChild(done)
@@ -353,7 +341,7 @@ class RoomScreen(
                     widget.tooltip = Tooltip.of(fieldTooltip(field, config))
                     widget.setChangedListener { raw ->
                         updateNumericDraft(field, editor, raw)
-                        widget.setEditableColor(if (field.id in invalidFieldIds) 0xFF5555 else 0xFFFFFF)
+                        widget.setEditableColor(if (draft.isFieldInvalid(field.id)) 0xFF5555 else 0xFFFFFF)
                     }
                 }
                 addDrawableChild(input)
@@ -390,11 +378,7 @@ class RoomScreen(
     }
 
     private fun updateDraft(field: GameConfigFieldDefinition, value: GameConfigPresentationValue) {
-        val updater = field.update ?: return
-        val updated = runCatching { updater(draftConfig ?: return, value) }.getOrNull()
-        if (updated == null) invalidFieldIds.add(field.id) else invalidFieldIds.remove(field.id)
-        validationFailed = invalidFieldIds.isNotEmpty()
-        if (updated != null) draftConfig = updated.withConsistentSpectatorVisibility()
+        draft.updateField(field, value)
         rebuild()
     }
 
@@ -404,33 +388,12 @@ class RoomScreen(
         editor: GameConfigEditorSpec.IntegerInput,
         raw: String,
     ) {
-        val number = raw.toIntOrNull()
-        val valid = (editor.nullable && raw.isEmpty()) || number != null && number in editor.minimum..editor.maximum
-        if (valid) invalidFieldIds.remove(field.id) else invalidFieldIds.add(field.id)
-        validationFailed = invalidFieldIds.isNotEmpty()
+        if (!draft.markNumericInput(field, editor, raw)) {
+            refreshDraftButtons()
+            return
+        }
+        draft.applyNumericInput(field, raw)
         refreshDraftButtons()
-        if (!valid) return
-        val updater = field.update ?: return
-        val updated = runCatching {
-            updater(draftConfig ?: return, GameConfigPresentationValue.IntegerValue(number))
-        }.getOrNull()
-        if (updated == null) invalidFieldIds.add(field.id) else invalidFieldIds.remove(field.id)
-        validationFailed = invalidFieldIds.isNotEmpty()
-        refreshDraftButtons()
-        if (updated != null) draftConfig = updated.withConsistentSpectatorVisibility()
-    }
-
-    /** 關閉旁觀時同時關閉旁觀者手牌公開，避免草稿存在互相矛盾的設定。 */
-    private fun GameConfig.withConsistentSpectatorVisibility(): GameConfig = if (
-        flowConfig.spectatingPolicy == SpectatingPolicy.DISABLED
-    ) {
-        copy(
-            flowConfig = flowConfig.copy(
-                spectatorHandVisibility = SpectatorHandVisibility.HIDDEN,
-            ),
-        )
-    } else {
-        this
     }
 
     /** 以單一切換按鈕顯示規則，並在 tooltip 條列所有已登記規則；窄視窗時改為佔滿內容寬度的單行。 */
@@ -444,11 +407,9 @@ class RoomScreen(
                 if (selectable.isEmpty()) return@builder
                 val nextId = selectable[(selectable.indexOf(moduleId).coerceAtLeast(0) + 1) % selectable.size]
                 val next = configPresentations.find(nextId) ?: return@builder
-                draftConfig = config.copy(ruleConfig = next.defaultRuleConfig())
+                draft.resetTo(config.copy(ruleConfig = next.defaultRuleConfig()))
                 selectedCategoryId = null
                 fieldScroll.reset()
-                invalidFieldIds.clear()
-                validationFailed = false
                 rebuild()
             }.dimensions(x, 54, buttonWidth, 20).build().also { button ->
                 button.active = canEdit && candidates.count { configPresentations.find(it)?.selectable == true } > 1
@@ -557,52 +518,46 @@ class RoomScreen(
         }
 
     private fun applyDraft() {
-        if (draftStale || validationFailed) return
+        if (!draft.canDone()) return
         val lobby = stateStore.tableLobby(tableId) ?: return
-        val config = draftConfig ?: return
+        val config = draft.config ?: return
         MahjongChannels.roomScreenAction.sendToServer(json, RoomScreenActionDto.UpdateConfig(lobby.tableId, config.toDto(networkRegistries)))
     }
 
     /** 有變更時提交並等待權威 snapshot，沒有變更時立即返回玩家頁。 */
     private fun finishSettings() {
         val authoritative = currentConfig() ?: return
-        val draft = draftConfig ?: authoritative
-        if (draft == authoritative) {
+        val current = draft.config ?: authoritative
+        if (current == authoritative) {
             page = Page.ROOM
             rebuild()
             return
         }
-        returnToRoomAfterApply = true
+        draft.markReturnToRoomAfterApply()
         applyDraft()
     }
 
     /** 將草稿恢復成目前權威設定。 */
     private fun restoreAuthoritativeDraft(authoritative: GameConfig? = currentConfig()) {
         val resolvedAuthoritative = authoritative ?: return
-        draftConfig = resolvedAuthoritative
-        authoritativeConfigAtDraftStart = resolvedAuthoritative
-        invalidFieldIds.clear()
-        validationFailed = false
-        draftStale = false
-        returnToRoomAfterApply = false
+        draft.restoreAuthoritative(resolvedAuthoritative)
         rebuild()
     }
 
     /** 依草稿、權威值與預設值同步儲存、取消及重設按鈕狀態。 */
     private fun refreshDraftButtons(
-        draft: GameConfig? = draftConfig,
+        current: GameConfig? = draft.config,
         authoritative: GameConfig? = currentConfig(),
-        defaults: GameConfig? = draft?.let { config ->
+        defaults: GameConfig? = current?.let { config ->
             configResolver.resolve(config).definition?.let { GameConfig(it.defaultRuleConfig()) }
         },
     ) {
-        val hasUnsavedChanges = draft != null && authoritative != null && draft != authoritative
-        applyButton?.active = hasUnsavedChanges && !draftStale && !validationFailed
-        undoButton?.active = hasUnsavedChanges || draftStale || validationFailed
-        resetButton?.active = draft != null && defaults != null && draft != defaults
-        doneButton?.active = !draftStale && !validationFailed
-        val changes = if (draft != null && authoritative != null && draft != authoritative && !draftStale) {
-            Tooltip.of(gameConfigDifferenceText(configResolver, ruleNames, authoritative, draft))
+        applyButton?.active = draft.canApply(authoritative)
+        undoButton?.active = draft.canUndo(authoritative)
+        resetButton?.active = draft.canReset(defaults)
+        doneButton?.active = draft.canDone()
+        val changes = if (current != null && authoritative != null && current != authoritative && !draft.isStale) {
+            Tooltip.of(gameConfigDifferenceText(configResolver, ruleNames, authoritative, current))
         } else {
             null
         }
@@ -742,40 +697,26 @@ class RoomScreen(
             }
             lastLobby = stateStore.tableLobby(tableId)
             lastRoomSnapshot = stateStore.roomSnapshot(tableId)
-            if (returnToRoomAfterApply && currentConfig() == draftConfig) {
-                val authoritative = currentConfig()
-                draftConfig = authoritative
-                authoritativeConfigAtDraftStart = authoritative
-                returnToRoomAfterApply = false
+            if (draft.isReturningToRoomAfterApply && currentConfig() == draft.config) {
+                draft.adoptAuthoritative(currentConfig())
                 page = Page.ROOM
             }
             if (stateStore.tableLobby(tableId)?.phase == TableLobbyPhaseDto.EMPTY) {
                 wasWaitingRoomMember = false
                 page = Page.ROOM
-                draftConfig = null
-                authoritativeConfigAtDraftStart = null
-                invalidFieldIds.clear()
-                validationFailed = false
+                draft.clear()
             }
             clearAndInit()
             return
         }
         val authoritative = currentConfig() ?: return
-        val previous = authoritativeConfigAtDraftStart ?: return
-        if (authoritative == previous) return
-        if (draftConfig == previous || authoritative == draftConfig) {
-            draftConfig = authoritative
-            authoritativeConfigAtDraftStart = authoritative
-            draftStale = false
-            if (returnToRoomAfterApply) {
-                returnToRoomAfterApply = false
-                page = Page.ROOM
+        when (val outcome = draft.onAuthoritativeChanged(authoritative)) {
+            RoomSettingsDraft.Outcome.Unchanged -> Unit
+            is RoomSettingsDraft.Outcome.Adopted -> {
+                if (outcome.returnToRoom) page = Page.ROOM
+                clearAndInit()
             }
-            clearAndInit()
-        } else {
-            draftStale = true
-            returnToRoomAfterApply = false
-            refreshDraftButtons()
+            RoomSettingsDraft.Outcome.BecameStale -> refreshDraftButtons()
         }
     }
 
@@ -1048,7 +989,7 @@ class RoomScreen(
     }
 
     private fun renderSettings(context: DrawContext, mouseX: Int, mouseY: Int): Text? {
-        val config = draftConfig ?: currentConfig() ?: return null
+        val config = draft.config ?: currentConfig() ?: return null
         val resolved = configResolver.resolve(config)
         val definition = resolved.definition
         val settings = settingsLayout()
@@ -1100,8 +1041,8 @@ class RoomScreen(
         renderScrollbar(context, definition.fields.count { it.categoryId == selectedCategoryId })
         val status = when {
             !definition.selectable -> Text.translatable(definition.unavailableReasonTranslationKey!!) to 0xFF7777
-            draftStale -> Text.translatable(MinecraftRoomScreenKeys.DRAFT_STALE) to 0xFF5555
-            validationFailed -> Text.translatable(MinecraftRoomScreenKeys.VALIDATION_FAILED) to 0xFF5555
+            draft.isStale -> Text.translatable(MinecraftRoomScreenKeys.DRAFT_STALE) to 0xFF5555
+            draft.hasInvalidFields -> Text.translatable(MinecraftRoomScreenKeys.VALIDATION_FAILED) to 0xFF5555
             else -> null
         }
         status?.let { (message, color) ->
@@ -1165,7 +1106,7 @@ class RoomScreen(
     )
 
     /** 目前草稿或權威設定解析出的欄位定義；沒有可編輯定義時為 null。 */
-    private fun resolvedDefinition(): GameConfigPresentationDefinition? = (draftConfig ?: currentConfig())?.let(configResolver::resolve)?.definition
+    private fun resolvedDefinition(): GameConfigPresentationDefinition? = (draft.config ?: currentConfig())?.let(configResolver::resolve)?.definition
 
     /** 目前分類的完整欄位數，供 scrollbar 幾何與捲動上限共用。 */
     private fun currentFieldCount(): Int = resolvedDefinition()?.fields?.count { it.categoryId == selectedCategoryId } ?: 0
@@ -1249,7 +1190,7 @@ class RoomScreen(
                             page = Page.ROOM
                             client?.setScreen(this)
                         },
-                        gameConfigDifferenceText(configResolver, ruleNames, currentConfig()!!, draftConfig!!),
+                        gameConfigDifferenceText(configResolver, ruleNames, currentConfig()!!, draft.config!!),
                     ),
                 )
             } else {
@@ -1266,7 +1207,7 @@ class RoomScreen(
      * 目前是否有尚未套用、且可以直接套用的設定草稿；草稿因外部變更失效或驗證失敗時視為沒有，交由
      * 既有 Undo 流程處理，不提供「套用並返回」選項。
      */
-    private fun hasUnsavedSettingsDraft(): Boolean = !draftStale && !validationFailed && draftConfig != null && draftConfig != currentConfig()
+    private fun hasUnsavedSettingsDraft(): Boolean = draft.canDone() && draft.hasUnsavedChanges(currentConfig())
 
     /** 關閉整個 RoomScreen，不套用設定頁的階層式 Esc 行為。 */
     private fun closeEntireScreen() {
