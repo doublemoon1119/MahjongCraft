@@ -2,30 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInExhaustiveDrawSettlementStatusIds
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementHandPresentation
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPlayerPresentation
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPlayerPresentation
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
-import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerStatusDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerUpdatePayloadDto
@@ -42,11 +22,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.RiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
-import com.doublemoon1119.mahjongcraft.logic.base.MeldType
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiMatchProgressionPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -60,43 +36,14 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCinematicTimeline
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationMode
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinShowcaseOverride
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricExhaustiveDrawSettlementPresentationScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricMatchSettlementPresentationScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationShowcaseScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.FabricDebugPresentationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewDefaults
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugTilePreviewSupport
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildMatchResultChatText
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowMessage
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.serverConfigEntries
-import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.text.FabricDebugTextCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
@@ -105,16 +52,13 @@ import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.command.argument.IdentifierArgumentType
-import net.minecraft.entity.Entity
 import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
-import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import java.util.concurrent.CompletableFuture
@@ -125,15 +69,19 @@ import kotlin.uuid.toKotlinUuid
 /**
  * 註冊 development-only、op 限定的 `/mahjongcraft debug ...` 指令根節點與各功能測試子指令。
  *
- * 自由 entity 動畫（`dice`、`deal`、`draw`、`discard`、`meld`）由
- * [FabricDebugAnimationCommand] 建立並掛在既有位置；本類別只負責組裝，不認識那些 handler。其餘尚未
- * 分家的 showcase、settlement、hovered text、Decision HUD、preparation 與 match progression 子指令目前
- * 仍由本類別直接建立。
+ * 各子指令樹由專責的 family command 建立，本類別只把它們回傳的節點掛在既有位置，不認識那些 handler：
+ *
+ * - `scenario`：[FabricDebugScenarioCommand]
+ * - `dice`、`deal`、`draw`、`discard`、`meld`：[FabricDebugAnimationCommand]
+ * - `win`、`showcase`、三種 settlement、`continuing_win`、`win_showcase_override`：
+ *   [FabricDebugPresentationCommand]
+ * - `hovered_text`：[FabricDebugTextCommand]
+ *
+ * 尚未分家的 `decision_hud`、`preparation` 與 `match_progression` 仍由本類別直接建立。
  *
  * 各子指令都完全自成一體：在呼叫者面前臨時生成全新的預覽 entity（不呼叫 `assignToTable`、不掛在任何
  * 桌子／對局底下），不觸碰任何房間或對局 use case——呼叫者不需要站在任何桌子附近，也不需要加入房間
- * 或身處進行中的對局，站在隨便一個已載入的世界座標就能直接測試演出效果。臨時牌的牌面解析與生成見
- * [DebugTilePreviewSupport]，虛擬桌座標見 [DebugVirtualTableLayoutFactory]，到期清除見
+ * 或身處進行中的對局，站在隨便一個已載入的世界座標就能直接測試演出效果。臨時 entity 的到期清除見
  * [DebugPreviewEntityLifecycle]。
  *
  * 整組指令樹只在 [MinecraftEnvironment.isDevelopment] 為 `true` 時才註冊——正式打包發布的產物裡整棵
@@ -142,17 +90,14 @@ import kotlin.uuid.toKotlinUuid
  * 誤用。
  *
  * @property minecraftEnvironment 查詢目前是否為開發環境，決定整組指令樹要不要註冊。
- * @property effectScheduler 排定 `win` 胡牌慶祝演出的降臨特效。
  * @property animationCommand 建立自由 entity 動畫子指令樹。
- * @property tilePreviewSupport 解析牌面、生成臨時牌 entity 並提供 `tile` 引數節點。
- * @property layoutFactory 依呼叫者座標建立虛擬桌布局。
+ * @property presentationCommand 建立對局演出預覽子指令樹。
+ * @property textCommand 建立訊息排版預覽子指令樹。
  * @property entityLifecycle 保管並驅動臨時 entity 的到期清除。
  */
 @Single
 class FabricDebugCommand(
     private val minecraftEnvironment: MinecraftEnvironment,
-    private val debugWinRoundContinuationState: DebugWinRoundContinuationState,
-    private val debugWinShowcaseOverride: DebugWinShowcaseOverride,
     private val membershipRepository: PlayerMembershipRepository,
     private val gameRepository: GameRepository,
     private val gameFlowCoordinator: GameFlowCoordinator,
@@ -160,20 +105,10 @@ class FabricDebugCommand(
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
-    private val effectScheduler: FabricWinCelebrationEffectScheduler,
-    private val showcaseScheduler: FabricWinCelebrationShowcaseScheduler,
-    private val showcaseRegistry: WinCelebrationShowcaseRegistry,
-    private val exhaustiveDrawSettlementScheduler: FabricExhaustiveDrawSettlementPresentationScheduler,
-    private val winSettlementScheduler: FabricWinSettlementPresentationScheduler,
-    private val matchSettlementScheduler: FabricMatchSettlementPresentationScheduler,
-    private val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
-    private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
-    private val serverConfigManager: FabricServerConfigManager,
-    private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val debugGameScenarioCommand: FabricDebugScenarioCommand,
     private val animationCommand: FabricDebugAnimationCommand,
-    private val tilePreviewSupport: DebugTilePreviewSupport,
-    private val layoutFactory: DebugVirtualTableLayoutFactory,
+    private val presentationCommand: FabricDebugPresentationCommand,
+    private val textCommand: FabricDebugTextCommand,
     private val entityLifecycle: DebugPreviewEntityLifecycle,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
@@ -195,204 +130,21 @@ class FabricDebugCommand(
         literal(DEBUG_SUBCOMMAND)
             .requires { it.hasPermissionLevel(OP_PERMISSION_LEVEL) }
             .then(debugGameScenarioCommand.build())
-            .then(
-                literal(WIN_SUBCOMMAND)
-                    .then(tilePreviewSupport.withOptionalTileArgument(literal(TSUMO_ARGUMENT)) { source, tileArg -> previewWin(source, isTsumo = true, tileArg) })
-                    .then(tilePreviewSupport.withOptionalTileArgument(literal(RON_ARGUMENT)) { source, tileArg -> previewWin(source, isTsumo = false, tileArg) }),
-            )
-            .then(
-                literal(SHOWCASE_SUBCOMMAND)
-                    .then(
-                        withOptionalCueArgument(literal(TSUMO_ARGUMENT), allowMultiple = false) { source, cue ->
-                            previewShowcase(source, isTsumo = true, listOf(cue ?: DEFAULT_SHOWCASE_CUE))
-                        },
-                    )
-                    .then(
-                        withOptionalCueArgument(literal(RON_ARGUMENT), allowMultiple = true) { source, cues ->
-                            previewShowcase(source, isTsumo = false, (cues ?: DEFAULT_SHOWCASE_CUE).split(",").take(3))
-                        },
-                    )
-                    .then(
-                        literal(MULTI_RON_ARGUMENT).then(
-                            argument(WINNER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 3))
-                                .executes { context ->
-                                    val count = IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT)
-                                    previewShowcase(context.source, isTsumo = false, List(count) { DEFAULT_SHOWCASE_CUE })
-                                }
-                                .then(
-                                    argument(CUE_ARGUMENT, StringArgumentType.greedyString())
-                                        .suggests(::suggestShowcaseCueList)
-                                        .executes { context ->
-                                            val count = IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT)
-                                            val supplied = StringArgumentType.getString(context, CUE_ARGUMENT).split(",").filter(String::isNotBlank)
-                                            val cues = expandShowcaseCues(supplied, count, DEFAULT_SHOWCASE_CUE)
-                                            previewShowcase(context.source, isTsumo = false, cues)
-                                        },
-                                ),
-                        ),
-                    )
-                    .then(
-                        literal(PHASE_ARGUMENT).then(
-                            argument(PHASE_NAME_ARGUMENT, StringArgumentType.word())
-                                .suggests(::suggestShowcasePhases)
-                                .executes { context -> previewShowcasePhase(context.source, StringArgumentType.getString(context, PHASE_NAME_ARGUMENT), DEFAULT_SHOWCASE_CUE) }
-                                .then(
-                                    argument(CUE_ARGUMENT, IdentifierArgumentType.identifier())
-                                        .suggests(::suggestSingleShowcaseCue)
-                                        .executes { context ->
-                                            previewShowcasePhase(
-                                                context.source,
-                                                StringArgumentType.getString(context, PHASE_NAME_ARGUMENT),
-                                                IdentifierArgumentType.getIdentifier(context, CUE_ARGUMENT).toString(),
-                                            )
-                                        },
-                                ),
-                        ),
-                    ),
-            )
+            .then(presentationCommand.buildWinCommand())
+            .then(presentationCommand.buildShowcaseCommand())
             .then(animationCommand.buildDiceCommand())
             .then(animationCommand.buildDealCommand())
             .then(animationCommand.buildDrawCommand())
             .then(animationCommand.buildDiscardCommand())
-            .then(
-                literal(EXHAUSTIVE_DRAW_SETTLEMENT_SUBCOMMAND)
-                    .then(
-                        literal(NORMAL_ARGUMENT).then(
-                            argument(TENPAI_COUNT_ARGUMENT, IntegerArgumentType.integer(0, 4)).executes { context ->
-                                previewSettlement(
-                                    context.source,
-                                    RiichiExhaustiveDrawReason.Normal.id,
-                                    IntegerArgumentType.getInteger(context, TENPAI_COUNT_ARGUMENT),
-                                )
-                            }.then(
-                                argument(PLAYER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 4)).executes { context ->
-                                    previewSettlement(
-                                        context.source,
-                                        RiichiExhaustiveDrawReason.Normal.id,
-                                        IntegerArgumentType.getInteger(context, TENPAI_COUNT_ARGUMENT),
-                                        playerCount = IntegerArgumentType.getInteger(context, PLAYER_COUNT_ARGUMENT),
-                                    )
-                                },
-                            ),
-                        ),
-                    )
-                    .then(
-                        literal(MELDS_ARGUMENT).then(
-                            argument(MELD_COUNT_ARGUMENT, IntegerArgumentType.integer(1, MAX_DEBUG_MELD_COUNT))
-                                .suggests(::suggestDebugMeldCounts)
-                                .executes { context ->
-                                    previewSettlement(
-                                        context.source,
-                                        RiichiExhaustiveDrawReason.Normal.id,
-                                        tenpaiCount = 1,
-                                        meldCount = IntegerArgumentType.getInteger(context, MELD_COUNT_ARGUMENT),
-                                    )
-                                },
-                        ),
-                    )
-                    .then(literal(KYUUSHU_ARGUMENT).executes { context -> previewSettlement(context.source, RiichiExhaustiveDrawReason.KyuushuKyuuhai.id, 1, proof = true) })
-                    .then(
-                        literal(SCORE_ARGUMENT)
-                            .executes { context -> previewSettlement(context.source, RiichiExhaustiveDrawReason.Normal.id, 0, scoreDelta = DEFAULT_SCORE_DELTA) }
-                            .then(
-                                argument(SCORE_DELTA_ARGUMENT, IntegerArgumentType.integer(1)).executes { context ->
-                                    previewSettlement(
-                                        context.source,
-                                        RiichiExhaustiveDrawReason.Normal.id,
-                                        0,
-                                        scoreDelta = IntegerArgumentType.getInteger(context, SCORE_DELTA_ARGUMENT),
-                                    )
-                                },
-                            ),
-                    )
-                    .then(
-                        literal(ABORTIVE_ARGUMENT).then(
-                            argument(REASON_ARGUMENT, IdentifierArgumentType.identifier())
-                                .suggests(::suggestAbortiveDrawReasons)
-                                .executes { context ->
-                                    previewSettlement(context.source, IdentifierArgumentType.getIdentifier(context, REASON_ARGUMENT).toString(), 0)
-                                },
-                        ),
-                    ),
-            )
-            .then(
-                literal(HOVERED_TEXT_SUBCOMMAND)
-                    .then(
-                        literal(EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT)
-                            .executes { context -> previewExhaustiveDrawSettlementHoveredText(context.source) },
-                    )
-                    .then(
-                        literal(WIN_SETTLEMENT_SUBCOMMAND)
-                            .executes { context -> previewWinSettlementHoveredText(context.source) },
-                    )
-                    .then(
-                        literal(MATCH_SETTLEMENT_SUBCOMMAND)
-                            .executes { context -> previewMatchSettlementHoveredText(context.source) },
-                    )
-                    .then(literal(GAME_CREATED_LOCATION_ARGUMENT).executes { context -> previewGameCreatedLocationHoveredText(context.source) })
-                    .then(
-                        literal(GAME_CONFIG_ARGUMENT)
-                            .then(literal(SHOW_ARGUMENT).executes { context -> previewGameConfigHoveredText(context.source, SHOW_ARGUMENT) })
-                            .then(literal(CHANGED_ARGUMENT).executes { context -> previewGameConfigHoveredText(context.source, CHANGED_ARGUMENT) })
-                            .then(literal(UNCHANGED_ARGUMENT).executes { context -> previewGameConfigHoveredText(context.source, UNCHANGED_ARGUMENT) }),
-                    )
-                    .then(literal(SERVER_CONFIG_ARGUMENT).executes { context -> previewServerConfigHoveredText(context.source) }),
-            )
-            .then(
-                literal(WIN_SETTLEMENT_SUBCOMMAND)
-                    .then(literal(TSUMO_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.TSUMO, 1) })
-                    .then(
-                        literal(RON_ARGUMENT)
-                            .executes { context -> previewWinSettlement(context.source, WinSettlementPreview.RON, 1) }
-                            .then(
-                                argument(WINNER_COUNT_ARGUMENT, IntegerArgumentType.integer(1, 3)).executes { context ->
-                                    previewWinSettlement(
-                                        context.source,
-                                        WinSettlementPreview.RON,
-                                        IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT),
-                                    )
-                                },
-                            ),
-                    )
-                    .then(literal(YAKUMAN_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.YAKUMAN, 1) })
-                    .then(literal(NAGASHI_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.NAGASHI, 1) }),
-            )
-            .then(
-                literal(MATCH_SETTLEMENT_SUBCOMMAND)
-                    .executes { context -> previewMatchSettlement(context.source, 4) }
-                    .then(
-                        argument(PLAYER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 4))
-                            .executes { context ->
-                                previewMatchSettlement(
-                                    context.source,
-                                    IntegerArgumentType.getInteger(context, PLAYER_COUNT_ARGUMENT),
-                                )
-                            },
-                    ),
-            )
+            .then(presentationCommand.buildExhaustiveDrawSettlementCommand())
+            .then(textCommand.buildHoveredTextCommand())
+            .then(presentationCommand.buildWinSettlementCommand())
+            .then(presentationCommand.buildMatchSettlementCommand())
             .then(matchProgressionCommand())
             .then(decisionHudCommand())
             .then(animationCommand.buildMeldCommand())
-            .then(
-                DebugWinRoundContinuationMode.entries.fold(
-                    literal(CONTINUING_WIN_SUBCOMMAND)
-                        .executes { context -> reportContinuingWinMode(context.source) },
-                ) { node, mode ->
-                    node.then(
-                        literal(mode.name.lowercase()).executes { context ->
-                            setContinuingWinMode(context.source, mode)
-                        },
-                    )
-                },
-            )
-            .then(
-                withOptionalCueArgument(
-                    literal(WIN_SHOWCASE_OVERRIDE_SUBCOMMAND).then(
-                        literal(CLEAR_ARGUMENT).executes { context -> clearWinShowcaseOverride(context.source) },
-                    ),
-                    allowMultiple = false,
-                ) { source, cue -> armWinShowcaseOverride(source, cue) },
-            )
+            .then(presentationCommand.buildContinuingWinCommand())
+            .then(presentationCommand.buildWinShowcaseOverrideCommand())
             .then(preparationCommand()),
     )
 
@@ -566,15 +318,6 @@ class FabricDebugCommand(
             .forEach(suggestions::suggest)
     }
 
-    /** 補全標準日麻允許的副露組數。 */
-    private fun suggestDebugMeldCounts(
-        @Suppress("UNUSED_PARAMETER") context: CommandContext<ServerCommandSource>,
-        builder: SuggestionsBuilder,
-    ): CompletableFuture<Suggestions> {
-        (1..MAX_DEBUG_MELD_COUNT).forEach(builder::suggest)
-        return builder.buildFuture()
-    }
-
     /**
      * 只補全執行者目前可選的手牌 UUID；已輸入的 UUID 不重複建議，達到最大張數後停止補全。
      */
@@ -700,76 +443,6 @@ class FabricDebugCommand(
         "Round preparation preview cancelled"
     }
 
-    /**
-     * 切換**執行者目前所在那一桌**的中途胡牌（胡牌後本局繼續）開發用模式，見
-     * [DebugWinRoundContinuationResolver]。
-     *
-     * 跟這個類別的其他子指令不同，這一個**不**臨時生成任何 entity、也不預覽任何動畫——它只翻一個開關，
-     * 之後在那一桌正常胡牌就會走中途胡牌流程。中途胡牌牽涉的是整條遊戲流程（已完成玩家被跳過、演出走
-     * 獨立時間軸不擋其他玩家、換局延後），本來就不可能靠臨時 entity 預覽出來。
-     *
-     * 刻意以桌為範圍而非全伺服器：同一個開發伺服器上可能同時有多桌，全域開關會讓其他桌莫名其妙進入
-     * 中途胡牌流程，而且開啟後會一直有效到有人記得手動關掉。因此執行者必須已經坐在某一桌上。
-     */
-    private fun setContinuingWinMode(source: ServerCommandSource, mode: DebugWinRoundContinuationMode): Int = withPlayerTable(source) { tableId ->
-        debugWinRoundContinuationState.setMode(tableId, mode)
-        "Continuing-win debug mode for table $tableId set to ${mode.name}"
-    }
-
-    /** 回報執行者目前所在那一桌的中途胡牌模式，並一併列出全伺服器其他仍有設定的桌子。 */
-    private fun reportContinuingWinMode(source: ServerCommandSource): Int = withPlayerTable(source) { tableId ->
-        buildString {
-            append("Continuing-win debug mode for table $tableId is ${debugWinRoundContinuationState.modeFor(tableId).name}")
-            val others = debugWinRoundContinuationState.activeTableIds() - tableId
-            if (others.isNotEmpty()) append("; also active on: ${others.joinToString()}")
-            val armed = debugWinShowcaseOverride.armedTableIds()
-            if (armed.isNotEmpty()) append("; showcase override armed on: ${armed.joinToString()}")
-        }
-    }
-
-    /**
-     * 替執行者目前所在那一桌武裝一次性的役滿 showcase 覆寫，見 [DebugWinShowcaseOverride]——只覆寫
-     * 呈現用的 cue，動不到權威役種、番數、分數或結算結果。
-     */
-    private fun armWinShowcaseOverride(source: ServerCommandSource, cueKey: String?): Int = withPlayerTable(source) { tableId ->
-        val resolvedCue = cueKey ?: DEFAULT_SHOWCASE_CUE
-        if (debugWinShowcaseOverride.arm(tableId, resolvedCue)) {
-            "Next win on table $tableId will play showcase cue $resolvedCue (presentation only, one-shot)"
-        } else {
-            "Showcase override is available in development environments only"
-        }
-    }
-
-    /** 解除執行者目前所在那一桌尚未用掉的 showcase 覆寫武裝。 */
-    private fun clearWinShowcaseOverride(source: ServerCommandSource): Int = withPlayerTable(source) { tableId ->
-        debugWinShowcaseOverride.clear(tableId)
-        "Showcase override for table $tableId cleared"
-    }
-
-    /**
-     * 解析執行者目前占用的麻將桌後在伺服器主執行緒上執行 [action]，並把它回傳的訊息回饋給執行者。
-     *
-     * 桌歸屬查詢是 suspend 的，而 Brigadier 的執行是同步的，因此結果透過協程非同步回饋——比照
-     * `FabricGameCommand` 橋接 suspend 查詢與 Brigadier 同步 API 的既有做法。
-     */
-    private fun withPlayerTable(source: ServerCommandSource, action: (Uuid) -> String): Int {
-        val player = source.player ?: run {
-            source.sendError(Text.literal("This debug subcommand must be run by a player seated at a table"))
-            return 0
-        }
-        scope.launch {
-            val tableId = membershipRepository.getTableId(player.uuid.toKotlinUuid())
-            withContext(dispatchers.main) {
-                if (tableId == null) {
-                    source.sendError(Text.literal("You are not seated at any mahjong table"))
-                } else {
-                    source.sendFeedback({ Text.literal(action(tableId)) }, true)
-                }
-            }
-        }
-        return 1
-    }
-
     /** 在協程中解析玩家與桌子，供需要呼叫 suspend flow service 的 debug 指令使用。 */
     private fun withPlayerTableSuspend(
         source: ServerCommandSource,
@@ -792,605 +465,6 @@ class FabricDebugCommand(
             }
         }
         return 1
-    }
-
-    /** 幫 showcase 節點掛上可選的 cue 或逗號分隔 cue 清單。 */
-    private fun withOptionalCueArgument(
-        node: LiteralArgumentBuilder<ServerCommandSource>,
-        allowMultiple: Boolean,
-        onExecute: (ServerCommandSource, String?) -> Int,
-    ): LiteralArgumentBuilder<ServerCommandSource> {
-        node.executes { ctx -> onExecute(ctx.source, null) }
-        return if (allowMultiple) {
-            node.then(
-                argument(CUE_ARGUMENT, StringArgumentType.greedyString())
-                    .suggests(::suggestShowcaseCueList)
-                    .executes { ctx -> onExecute(ctx.source, StringArgumentType.getString(ctx, CUE_ARGUMENT)) },
-            )
-        } else {
-            node.then(
-                argument(CUE_ARGUMENT, IdentifierArgumentType.identifier())
-                    .suggests(::suggestSingleShowcaseCue)
-                    .executes { ctx -> onExecute(ctx.source, IdentifierArgumentType.getIdentifier(ctx, CUE_ARGUMENT).toString()) },
-            )
-        }
-    }
-
-    /** 列出單一 showcase cue 的 Tab 補全候選。 */
-    private fun suggestSingleShowcaseCue(
-        context: CommandContext<ServerCommandSource>,
-        builder: SuggestionsBuilder,
-    ): CompletableFuture<Suggestions> = suggestShowcaseCues(context, builder, allowMultiple = false)
-
-    /** 列出逗號分隔 showcase cue 清單目前最後一段的 Tab 補全候選。 */
-    private fun suggestShowcaseCueList(
-        context: CommandContext<ServerCommandSource>,
-        builder: SuggestionsBuilder,
-    ): CompletableFuture<Suggestions> = suggestShowcaseCues(context, builder, allowMultiple = true)
-
-    /** 從正式 registry 建立 showcase cue 補全，不另外維護 cue 字串清單。 */
-    private fun suggestShowcaseCues(
-        context: CommandContext<ServerCommandSource>,
-        builder: SuggestionsBuilder,
-        allowMultiple: Boolean,
-    ): CompletableFuture<Suggestions> {
-        buildShowcaseCueSuggestions(builder.remaining, showcaseRegistry.cueKeys, allowMultiple).forEach(builder::suggest)
-        return builder.buildFuture()
-    }
-
-    /** 補全核心 TNT 時間線可直接跳轉的固定 phase。 */
-    private fun suggestShowcasePhases(
-        context: CommandContext<ServerCommandSource>,
-        builder: SuggestionsBuilder,
-    ): CompletableFuture<Suggestions> {
-        SHOWCASE_PHASES.filter { it.startsWith(builder.remaining, ignoreCase = true) }.forEach(builder::suggest)
-        return builder.buildFuture()
-    }
-
-    /** 補全 registry 中適合由 `abortive` 入口預覽的完整途中流局原因 ID。 */
-    private fun suggestAbortiveDrawReasons(
-        context: CommandContext<ServerCommandSource>,
-        builder: SuggestionsBuilder,
-    ): CompletableFuture<Suggestions> {
-        exhaustiveDrawReasonDisplayNameRegistry.reasonIds
-            .asSequence()
-            .filterNot { it == RiichiExhaustiveDrawReason.Normal.id || it == RiichiExhaustiveDrawReason.KyuushuKyuuhai.id }
-            .filter { it.startsWith(builder.remaining, ignoreCase = true) }
-            .sorted()
-            .forEach(builder::suggest)
-        return builder.buildFuture()
-    }
-
-    /** `showcase <tsumo|ron>`：在玩家面前生成一至三翼完整鞘翅煙火 showcase。 */
-    private fun previewShowcase(source: ServerCommandSource, isTsumo: Boolean, cues: List<String>, initialElapsedTicks: Int = 0): Int {
-        if (cues.any { showcaseRegistry.find(it) == null }) return COMMAND_FAILURE
-        val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
-        val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
-        val controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ)
-        val tableId = Uuid.random()
-        val wingTiles = cues.mapIndexed { seat, cue ->
-            val tiles = List(DebugPreviewDefaults.RULE_CONFIG.initialHandSize) { index ->
-                val asset = ALL_TILE_ASSET_KEYS.dropLast(1)[(index + seat * 5) % (ALL_TILE_ASSET_KEYS.size - 1)]
-                val tile = tilePreviewSupport.spawnFreeTile(world, layout.handPlacement(seat, DebugPreviewDefaults.RULE_CONFIG.initialHandSize, index), MahjongTilePose.STANDING, asset)
-                tile to asset
-            }
-            Triple(seat, cue, tiles)
-        }
-        val winningAsset = ALL_TILE_ASSET_KEYS.first()
-        val winningPlacement = if (isTsumo) layout.drawnTilePlacement(DebugPreviewDefaults.RULE_CONFIG.initialHandSize) else layout.discardPlacement(0)
-        val winningTile = tilePreviewSupport.spawnFreeTile(world, winningPlacement, MahjongTilePose.FACE_UP, winningAsset)
-        showcaseScheduler.schedule(
-            world = world,
-            tableId = tableId,
-            controllerPos = controllerPos,
-            stagePlacement = layout.showcaseStagePlacement(),
-            startGameTime = world.time - initialElapsedTicks,
-            winningTileId = winningTile.uuid.toKotlinUuid(),
-            winningTileAssetKey = winningAsset,
-            wings = wingTiles.map { (seat, cue, tiles) ->
-                FabricWinCelebrationShowcaseScheduler.Wing(seat, cue, tiles.map { it.first.uuid.toKotlinUuid() to it.second })
-            },
-        ) ?: return COMMAND_FAILURE
-        // Stage 已同步保存所有牌面與起始位置；debug 臨時牌不必繼續 tick 到演出結束。
-        (wingTiles.flatMap { it.third.map(Pair<MahjongTileEntity, String>::first) } + winningTile).forEach(Entity::discard)
-        return COMMAND_SUCCESS
-    }
-
-    /** `showcase phase <launch|orbit|place|ignite|explode|reveal>`：直接從指定 phase 開始。 */
-    private fun previewShowcasePhase(source: ServerCommandSource, phase: String, cue: String): Int {
-        val initialElapsedTicks = when (phase.lowercase()) {
-            "launch" -> WinCelebrationCinematicTimeline.LAUNCH_START
-            "orbit" -> WinCelebrationCinematicTimeline.ORBIT_BUILDUP_START
-            "place" -> WinCelebrationCinematicTimeline.TNT_PLACEMENT_START
-            "ignite" -> WinCelebrationCinematicTimeline.IGNITION_START
-            "explode" -> WinCelebrationCinematicTimeline.EXPLOSION_START
-            "reveal" -> WinCelebrationCinematicTimeline.TITLE_REVEAL_START
-            else -> return COMMAND_FAILURE
-        }
-        return previewShowcase(source, isTsumo = true, cues = listOf(cue), initialElapsedTicks = initialElapsedTicks.toInt())
-    }
-
-    /** `exhaustive_draw_settlement`：以正式持久化 stage 預覽統一流局排行榜。 */
-    private fun previewSettlement(
-        source: ServerCommandSource,
-        reasonId: String,
-        tenpaiCount: Int,
-        proof: Boolean = false,
-        scoreDelta: Int = 0,
-        playerCount: Int = 4,
-        meldCount: Int = 0,
-    ): Int {
-        if (':' !in reasonId) return COMMAND_FAILURE
-        if (playerCount !in 2..4 || tenpaiCount !in 0..playerCount) return COMMAND_FAILURE
-        if (meldCount !in 0..MAX_DEBUG_MELD_COUNT) return COMMAND_FAILURE
-        val player = source.player ?: return COMMAND_FAILURE
-        val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
-        val previousScores = if (scoreDelta == 0) List(playerCount) { 25_000 } else List(playerCount) { index -> 28_000 - index * 2_000 }
-        val currentScores = previousScores.toMutableList()
-        if (scoreDelta != 0) {
-            val lastPlaceSeat = previousScores.lastIndex
-            currentScores[lastPlaceSeat] += scoreDelta
-            val payingSeats = previousScores.indices.filterNot { it == lastPlaceSeat }
-            val basePayment = scoreDelta / payingSeats.size
-            val remainder = scoreDelta % payingSeats.size
-            payingSeats.forEachIndexed { index, seat -> currentScores[seat] -= basePayment + if (index < remainder) 1 else 0 }
-        }
-        val currentRanks = currentScores.indices
-            .sortedWith(compareByDescending<Int> { currentScores[it] }.thenBy { it })
-            .withIndex()
-            .associate { (rank, seat) -> seat to rank + 1 }
-        val playerIds = List(playerCount) { seat ->
-            if (seat == 0) player.uuid.toKotlinUuid() else Uuid.random()
-        }
-        val previewMeldTiles = List(meldCount) { meldIndex ->
-            List(DebugPreviewDefaults.MELD_TILE_COUNT) { tileIndex ->
-                tilePreviewSupport.spawnFreeTile(
-                    player.serverWorld,
-                    layout.handPlacement(handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize, tileIndex = tileIndex),
-                    MahjongTilePose.FACE_UP,
-                    ALL_TILE_ASSET_KEYS[(meldIndex * DebugPreviewDefaults.MELD_TILE_COUNT + tileIndex) % (ALL_TILE_ASSET_KEYS.size - 1)],
-                )
-            }
-        }
-        val previewMelds = previewMeldTiles.map { tiles ->
-            MahjongMeldTileGroup(
-                type = MeldType.PON,
-                tileIds = tiles.map { it.uuid.toKotlinUuid() },
-                calledTileId = tiles[1].uuid.toKotlinUuid(),
-                sourceDirection = RelativeDirection.Across,
-                allTilesFaceDown = false,
-            )
-        }
-        layout.meldPlacements(previewMelds).forEach { (tileId, tilePlacement) ->
-            previewMeldTiles.flatten().first { it.uuid.toKotlinUuid() == tileId }
-                .refreshPositionAndAngles(tilePlacement.x, tilePlacement.y, tilePlacement.z, tilePlacement.yaw, 0.0f)
-        }
-        val reservedCornerWidths = if (previewMelds.isEmpty()) {
-            emptyMap()
-        } else {
-            mapOf(DebugVirtualTableLayout.DEBUG_SEAT_INDEX to MahjongTileTableLayout.meldAreaWidth(previewMelds))
-        }
-        val previewTilesBySeat = List(playerCount) { seat ->
-            val handSize = if (seat == DebugVirtualTableLayout.DEBUG_SEAT_INDEX && meldCount > 0) {
-                maxOf(MIN_DEBUG_CONCEALED_HAND_SIZE, DebugPreviewDefaults.RULE_CONFIG.initialHandSize - meldCount * DebugPreviewDefaults.MELD_TILE_COUNT)
-            } else {
-                DebugPreviewDefaults.RULE_CONFIG.initialHandSize
-            }
-            val cornerYieldShift = MahjongTileTableLayout.handCornerYieldShift(
-                handSize = handSize,
-                reservedCornerWidth = reservedCornerWidths[seat] ?: 0.0,
-            )
-            val assets = if (proof && seat == 0) {
-                KYUUSHU_PREVIEW_ASSETS
-            } else {
-                List(handSize) { index ->
-                    ALL_TILE_ASSET_KEYS[(seat * 7 + index) % (ALL_TILE_ASSET_KEYS.size - 1)]
-                }
-            }
-            assets.mapIndexed { index, asset ->
-                tilePreviewSupport.spawnFreeTile(
-                    player.serverWorld,
-                    layout.handPlacement(seat, assets.size, index, cornerYieldShift),
-                    MahjongTilePose.STANDING,
-                    asset,
-                ) to asset
-            }
-        }
-        val revealedAssetsById = mutableMapOf<Uuid, String>()
-        val players = List(playerCount) { seat ->
-            val handPresentation = when {
-                proof && seat == 0 -> ExhaustiveDrawSettlementHandPresentation.REVEAL_PROOF
-                seat < tenpaiCount -> ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI
-                else -> ExhaustiveDrawSettlementHandPresentation.CONCEAL
-            }
-            val handTiles = previewTilesBySeat[seat]
-            if (handPresentation != ExhaustiveDrawSettlementHandPresentation.CONCEAL) {
-                handTiles.forEach { (tile, asset) -> revealedAssetsById[tile.uuid.toKotlinUuid()] = asset }
-            }
-            ExhaustiveDrawSettlementPlayerPresentation(
-                ranking = ScoreRankingPlayer(
-                    playerId = playerIds[seat],
-                    seatIndex = seat,
-                    isAi = seat != 0,
-                    previousScore = previousScores[seat],
-                    currentScore = currentScores[seat],
-                    previousRank = seat + 1,
-                    currentRank = currentRanks.getValue(seat),
-                ),
-                seatWind = Wind.entries[seat],
-                handTileIds = handTiles.map { it.first.uuid.toKotlinUuid() },
-                handPresentation = handPresentation,
-                revealedHandTileIds = if (handPresentation == ExhaustiveDrawSettlementHandPresentation.CONCEAL) emptyList() else handTiles.map { it.first.uuid.toKotlinUuid() },
-                waitingTiles = emptyList(),
-                statusId = when {
-                    proof && seat == 0 -> BuiltInExhaustiveDrawSettlementStatusIds.DRAW_DECLARATION
-                    seat < tenpaiCount -> BuiltInExhaustiveDrawSettlementStatusIds.TENPAI
-                    reasonId.endsWith(":normal") -> BuiltInExhaustiveDrawSettlementStatusIds.NOTEN
-                    else -> null
-                },
-            )
-        }
-        val end = exhaustiveDrawSettlementScheduler.schedule(
-            world = player.serverWorld,
-            tableId = Uuid.random(),
-            controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
-            tableFacing = layout.tableFacing,
-            placement = layout.showcaseStagePlacement(),
-            request = ExhaustiveDrawSettlementPresentationRequest(reasonId, players),
-            waitingTileAssetsBySeat = players.filter { it.handPresentation == ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI }
-                .associate { it.ranking.seatIndex to DEFAULT_WAITING_TILE_ASSETS },
-            revealedTileAssetsById = revealedAssetsById,
-            reservedCornerWidthsBySeat = reservedCornerWidths,
-        ) ?: return COMMAND_FAILURE
-        entityLifecycle.schedule(
-            player.serverWorld,
-            end,
-            previewTilesBySeat.flatten().map(Pair<MahjongTileEntity, String>::first) + previewMeldTiles.flatten(),
-        )
-        source.sendFeedback({ net.minecraft.text.Text.literal("Exhaustive draw settlement preview active until game time $end") }, false)
-        return COMMAND_SUCCESS
-    }
-
-    /** `hovered_text exhaustive_draw_settlement`：以正式 builder 發送一筆可懸停檢查的 round-result 訊息。 */
-    private fun previewExhaustiveDrawSettlementHoveredText(source: ServerCommandSource): Int {
-        val details = Text.empty()
-        HOVERED_TEXT_SAMPLE_ROWS.forEachIndexed { index, row ->
-            if (index > 0) details.append(Text.literal("\n"))
-            details.append(
-                Text.translatable(
-                    MinecraftMessageKeys.ROUND_RESULT_PLAYER_LINE,
-                    row.playerName,
-                    row.previousRank.toString(),
-                    row.currentRank.toString(),
-                    row.rankSymbol,
-                    row.previousScore.toString(),
-                    row.currentScore.toString(),
-                ),
-            )
-        }
-        source.sendFeedback(
-            {
-                buildRoundResultChatText(
-                    Text.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW),
-                    details,
-                )
-            },
-            false,
-        )
-        return COMMAND_SUCCESS
-    }
-
-    /** `hovered_text win_settlement`：以正式 round-result builder 預覽胡牌結算摘要。 */
-    private fun previewWinSettlementHoveredText(source: ServerCommandSource): Int {
-        val details = Text.empty()
-            .append(Text.translatable(WinSettlementTranslationKeys.RON_SUMMARY, "Player", "AI 1"))
-            .append(Text.literal("\n"))
-            .append(Text.translatable(WinSettlementTranslationKeys.HAN_FU, "3", "30"))
-            .append(Text.literal("\n"))
-            .append(Text.translatable(WinSettlementTranslationKeys.TOTAL_SCORE, "7700"))
-        source.sendFeedback(
-            { buildRoundResultChatText(Text.translatable(WinSettlementTranslationKeys.RON), details) },
-            false,
-        )
-        return COMMAND_SUCCESS
-    }
-
-    /** `hovered_text match_settlement`：以正式 match-result builder 預覽最終排行 hover。 */
-    private fun previewMatchSettlementHoveredText(source: ServerCommandSource): Int {
-        val details = Text.empty()
-        listOf("PlayerLongName123" to "120000", "AI 1" to "45000", "PlayerC" to "25000", "PlayerD" to "-12000")
-            .forEachIndexed { index, (name, score) ->
-                if (index > 0) details.append(Text.literal("\n"))
-                details.append(Text.translatable(MinecraftMessageKeys.RANKING_LINE, (index + 1).toString(), name, score))
-            }
-        source.sendFeedback({ buildMatchResultChatText(details) }, false)
-        return COMMAND_SUCCESS
-    }
-
-    /** 走正式 scheduler 預覽末位至第一名的終局揭曉。 */
-    private fun previewMatchSettlement(source: ServerCommandSource, playerCount: Int): Int {
-        val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
-        val layout = layoutFactory.create(player.blockX, player.blockY, player.blockZ, player.horizontalFacing.toMahjongTableFacing())
-        val scores = listOf(120_000, 45_000, 25_000, -12_000).take(playerCount)
-        val playerIds = List(playerCount) { index -> if (index == 0) player.uuid.toKotlinUuid() else Uuid.random() }
-        val request = MatchSettlementPresentationRequest(
-            players = List(playerCount) { seatIndex ->
-                MatchSettlementPlayerPresentation(
-                    playerId = playerIds[seatIndex],
-                    seatIndex = seatIndex,
-                    isAi = seatIndex != 0,
-                    initialSeatIndex = seatIndex,
-                    finalScore = scores[seatIndex],
-                    finalRank = seatIndex + 1,
-                )
-            },
-        )
-        val end = matchSettlementScheduler.schedule(
-            world = world,
-            tableId = Uuid.random(),
-            controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
-            placement = layout.showcaseStagePlacement(),
-            earliestStartGameTime = world.time,
-            request = request,
-        ) ?: return COMMAND_FAILURE
-        source.sendFeedback({ Text.literal("Match settlement preview active until game time $end") }, false)
-        return COMMAND_SUCCESS
-    }
-
-    /** 走正式 scheduler 預覽一至三位贏家的完整胡牌結算與最終排行。 */
-    private fun previewWinSettlement(
-        source: ServerCommandSource,
-        preview: WinSettlementPreview,
-        winnerCount: Int,
-    ): Int {
-        val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
-        val layout = layoutFactory.create(player.blockX, player.blockY, player.blockZ, player.horizontalFacing.toMahjongTableFacing())
-        val playerIds = List(4) { index -> if (index == 0) player.uuid.toKotlinUuid() else Uuid.random() }
-        val tileAssetsById = mutableMapOf<Uuid, String>()
-        val winners = List(winnerCount) { winnerIndex ->
-            val handIds = List(DebugPreviewDefaults.RULE_CONFIG.initialHandSize - 7) { tileIndex ->
-                Uuid.random().also { tileAssetsById[it] = ALL_TILE_ASSET_KEYS[(winnerIndex * 7 + tileIndex) % (ALL_TILE_ASSET_KEYS.size - 1)] }
-            }
-            val ponIds = List(3) { Uuid.random().also { id -> tileAssetsById[id] = "s3" } }
-            val kanIds = List(4) { Uuid.random().also { id -> tileAssetsById[id] = "p8" } }
-            val winningTileId = Uuid.random().also { tileAssetsById[it] = if (winnerIndex == 0) "m1" else "p${winnerIndex + 1}" }
-            val yakuman = preview == WinSettlementPreview.YAKUMAN
-            val regularYakuEntries = if (preview == WinSettlementPreview.RON && winnerIndex == 0) {
-                listOf(
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.reach", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.ippatsu", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.tsumo", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.pinfu", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.tanyao", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.ipeiko", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.sanshokudohjun", "2"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.ikkitsukan", "2"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.chanta", "2"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.toitoiho", "2"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.honitsu", "3"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.chinitsu", "6"),
-                )
-            } else {
-                listOf(
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.reach", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.ippatsu", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.pinfu", "1"),
-                )
-            }
-            WinSettlementWinnerPresentation(
-                playerId = playerIds[winnerIndex],
-                seatIndex = winnerIndex,
-                responsiblePlayerId = playerIds.getOrNull(winnerCount),
-                totalScore = if (yakuman) {
-                    32_000
-                } else if (preview == WinSettlementPreview.NAGASHI) {
-                    8_000
-                } else {
-                    7_700
-                },
-                standingTileIds = handIds,
-                melds = listOf(
-                    MeldPresentation(MeldType.PON, ponIds, ponIds.first(), RelativeDirection.Left, false),
-                    MeldPresentation(MeldType.CLOSED_KAN, kanIds, null, RelativeDirection.Self, false),
-                ),
-                winningTileId = winningTileId,
-                detailFields = buildList {
-                    add(
-                        WinSettlementDetailField(
-                            "mahjongcraft:riichi_yaku",
-                            WinSettlementDetailValue.Entries(
-                                if (yakuman) {
-                                    listOf(
-                                        WinSettlementDetailValue.Entries.Entry(
-                                            translationKey = "mahjongcraft.game.yaku.kokushimuso_jusanmenmachi",
-                                            trailingTranslationKey = "mahjongcraft.game.score.yakuman_2x",
-                                        ),
-                                        WinSettlementDetailValue.Entries.Entry(
-                                            translationKey = "mahjongcraft.game.yaku.daisangen",
-                                            trailingTranslationKey = "mahjongcraft.game.score.yakuman_1x",
-                                        ),
-                                    )
-                                } else if (preview != WinSettlementPreview.NAGASHI) {
-                                    regularYakuEntries
-                                } else {
-                                    listOf(WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.nagashi_mangan"))
-                                },
-                            ),
-                        ),
-                    )
-                    if (!yakuman && preview != WinSettlementPreview.NAGASHI) {
-                        val totalHan = regularYakuEntries.sumOf { it.trailingText.toIntOrNull() ?: 0 }
-                        add(WinSettlementDetailField("mahjongcraft:riichi_han_fu", WinSettlementDetailValue.Text(WinSettlementTranslationKeys.HAN_FU, listOf(totalHan.toString(), "30"))))
-                    } else if (yakuman) {
-                        add(WinSettlementDetailField("mahjongcraft:riichi_yakuman_total", WinSettlementDetailValue.Text("mahjongcraft.game.score.yakuman_3x")))
-                    }
-                    add(WinSettlementDetailField("mahjongcraft:riichi_dora", WinSettlementDetailValue.Tiles(handIds.take(2))))
-                    add(WinSettlementDetailField("mahjongcraft:riichi_ura_dora", WinSettlementDetailValue.Tiles(handIds.drop(2).take(1))))
-                },
-            )
-        }
-        val ranking = ScoreRankingPresentation(
-            listOf(31_000, 28_000, 24_000, 17_000).zip(listOf(26_000, 23_000, 19_000, 32_000)).mapIndexed { seatIndex, (before, after) ->
-                ScoreRankingPlayer(playerIds[seatIndex], seatIndex, seatIndex != 0, before, after, seatIndex + 1, listOf(2, 3, 4, 1)[seatIndex])
-            },
-        )
-        val request = WinSettlementPresentationRequest(
-            outcomeId = if (preview == WinSettlementPreview.NAGASHI) {
-                BuiltInRoundOutcomeIds.NAGASHI_MANGAN
-            } else if (preview == WinSettlementPreview.TSUMO) {
-                BuiltInRoundOutcomeIds.TSUMO
-            } else {
-                BuiltInRoundOutcomeIds.RON
-            },
-            // preview 目前只示範 riichi 規則的兩種一般胡牌，以及其特有的流局滿貫（riichi 自訂的「胡牌等效」特殊結果）。
-            // 這些結果一律對應 RiichiWinSettlementDetailResolver.TEMPLATE_KEY；
-            // WinSettlementPresentationRequestFactory.GENERIC_TEMPLATE_KEY 是給未登記 resolver 的規則模組
-            // （例如第三方擴充）使用的後備值，此指令目前沒有對應的 preview 變體可以示範。
-            templateKey = RiichiWinSettlementDetailResolver.TEMPLATE_KEY,
-            isTsumo = preview == WinSettlementPreview.TSUMO,
-            winners = winners,
-            ranking = ranking,
-        )
-        return if (
-            winSettlementScheduler.schedule(
-                world,
-                Uuid.random(),
-                BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
-                layout.showcaseStagePlacement(),
-                world.time,
-                request,
-                tileAssetsById,
-            ) != null
-        ) {
-            COMMAND_SUCCESS
-        } else {
-            COMMAND_FAILURE
-        }
-    }
-
-    /** 使用正式 feedback publisher 發送建立牌桌位置的 hover 預覽。 */
-    private fun previewGameCreatedLocationHoveredText(source: ServerCommandSource): Int {
-        val player = source.player ?: return COMMAND_FAILURE
-        feedbackPublisher.publish(
-            player.uuid.toKotlinUuid(),
-            MinecraftPlayerFeedback.GameCreated(
-                TableLocation(
-                    dimensionId = player.world.registryKey.value.toString(),
-                    x = player.blockX,
-                    y = player.blockY,
-                    z = player.blockZ,
-                ),
-            ),
-        )
-        return COMMAND_SUCCESS
-    }
-
-    /** 使用正式 feedback publisher 發送遊戲設定 show／changed／unchanged hover 預覽。 */
-    private fun previewGameConfigHoveredText(source: ServerCommandSource, variant: String): Int {
-        val player = source.player ?: return COMMAND_FAILURE
-        val current = json.encodeToString(GameConfig(DebugPreviewDefaults.RULE_CONFIG).toDto(networkRegistries))
-        val changed = json.encodeToString(
-            GameConfig(DebugPreviewDefaults.RULE_CONFIG, GameFlowConfig(timeControl = ActionTimeControl.Short)).toDto(networkRegistries),
-        )
-        val feedback = when (variant) {
-            CHANGED_ARGUMENT -> MinecraftPlayerFeedback.GameConfigChanged(current, changed)
-            UNCHANGED_ARGUMENT -> MinecraftPlayerFeedback.GameConfigUnchanged(current)
-            else -> MinecraftPlayerFeedback.ShowGameConfig(current)
-        }
-        feedbackPublisher.publish(player.uuid.toKotlinUuid(), feedback)
-        return COMMAND_SUCCESS
-    }
-
-    /** 使用正式 config builder 發送目前 server config 的 hover 預覽。 */
-    private fun previewServerConfigHoveredText(source: ServerCommandSource): Int {
-        source.sendFeedback(
-            {
-                configShowMessage(
-                    Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG),
-                    serverConfigManager.displayPath,
-                    serverConfigEntries(serverConfigManager.current),
-                )
-            },
-            false,
-        )
-        return COMMAND_SUCCESS
-    }
-
-    /**
-     * `win <tsumo|ron>`：完全自成一體地重播胡牌慶祝演出——依標準日麻初始手牌張數，臨時生成與正式
-     * 對局相同數量的立牌
-     * 「手牌」（先打亂順序生成，再用 [TileAnimationSteps.scheduleReorder] 飛到整理後的格位，實際演出
-     * 「強制理牌重排」這一步），接著依 [isTsumo] 走跟正式對局一模一樣的時間軸：自摸時胡牌張重排至
-     * 手牌右側保留間距的正式摸牌位，先單獨倒下、等待、其餘手牌一起倒下；榮和時省略胡牌張單獨倒下
-     * 這一步，額外在牌河生成
-     * 一張已經面朝上的胡牌張（模擬放銃者牌河/副露區的那張），跟正式對局的差異完全一致，見
-     * `FabricGamePresentationPublisher.publishWinCelebration` KDoc。降臨特效鎖定的目標固定是胡牌張，
-     * 沿用 [effectScheduler] 排定，特效播完後透過 `onComplete` 回呼清除這次生成的全部臨時 entity。
-     */
-    private fun previewWin(source: ServerCommandSource, isTsumo: Boolean, tileArg: String?): Int {
-        val player = source.player ?: return COMMAND_FAILURE
-        val world = player.serverWorld
-        val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
-        val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
-        val handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize
-        val handPlacements = (0 until handSize).map { slot -> layout.handPlacement(handSize = handSize, tileIndex = slot) }
-        val sortedPlacements = if (isTsumo) {
-            listOf(layout.drawnTilePlacement(standingTileCount = handSize)) + handPlacements
-        } else {
-            handPlacements
-        }
-        val handTiles = sortedPlacements.shuffled().map { shuffledPlacement ->
-            tilePreviewSupport.spawnFreeTile(world, shuffledPlacement, MahjongTilePose.STANDING, assetKey)
-        }
-
-        val reorderStartGameTime = world.time
-        val reorderEndGameTime = reorderStartGameTime + MahjongTileTableLayout.WIN_REORDER_FLIGHT_DURATION_TICKS
-        handTiles.forEachIndexed { index, tile ->
-            TileAnimationSteps.scheduleReorder(
-                tile,
-                sortedPlacements[index],
-                reorderStartGameTime,
-            )
-        }
-
-        val winningTile: MahjongTileEntity
-        val handLaydownEndGameTime: Long
-        if (isTsumo) {
-            winningTile = handTiles.first()
-            val winTileLaydownStartGameTime = reorderEndGameTime
-            val winTileLaydownEndGameTime = winTileLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
-            TileAnimationSteps.scheduleLaydown(winningTile, winTileLaydownStartGameTime, playGroupSound = true)
-            val restLaydownStartGameTime = winTileLaydownEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
-            val restTiles = handTiles - winningTile
-            restTiles.forEachIndexed { index, tile ->
-                TileAnimationSteps.scheduleLaydown(tile, restLaydownStartGameTime, playGroupSound = index == restTiles.size / 2)
-            }
-            handLaydownEndGameTime = restLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
-        } else {
-            val discardedPlacement = layout.discardPlacement(discardIndex = 0)
-            winningTile = tilePreviewSupport.spawnFreeTile(world, discardedPlacement, MahjongTilePose.FACE_UP, assetKey)
-            val handLaydownStartGameTime = reorderEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
-            handTiles.forEachIndexed { index, tile ->
-                TileAnimationSteps.scheduleLaydown(tile, handLaydownStartGameTime, playGroupSound = index == handTiles.size / 2)
-            }
-            handLaydownEndGameTime = handLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
-        }
-
-        val effectStartGameTime = handLaydownEndGameTime + MahjongTileTableLayout.WIN_PRE_EFFECT_DELAY_TICKS
-        val effectEndGameTime = effectStartGameTime + MahjongTileTableLayout.WIN_EFFECT_DURATION_TICKS
-        val allSpawnedTiles = if (isTsumo) handTiles else handTiles + winningTile
-        effectScheduler.schedule(
-            world = world,
-            tableId = Uuid.random(),
-            targetTileId = winningTile.uuid.toKotlinUuid(),
-            startGameTime = effectStartGameTime,
-            endGameTime = effectEndGameTime,
-            onComplete = { allSpawnedTiles.forEach(Entity::discard) },
-        )
-        return COMMAND_SUCCESS
     }
 
     /** `/debug decision_hud` 的固定、可補全測試情境。 */
@@ -1537,18 +611,6 @@ class FabricDebugCommand(
     private companion object {
         const val OP_PERMISSION_LEVEL: Int = 2
         const val DEBUG_SUBCOMMAND: String = "debug"
-        const val WIN_SUBCOMMAND: String = "win"
-        const val SHOWCASE_SUBCOMMAND: String = "showcase"
-        const val MULTI_RON_ARGUMENT: String = "multi_ron"
-        const val WINNER_COUNT_ARGUMENT: String = "winner_count"
-        const val CUE_ARGUMENT: String = "cue"
-        const val PHASE_ARGUMENT: String = "phase"
-        const val PHASE_NAME_ARGUMENT: String = "phase_name"
-        val DEFAULT_SHOWCASE_CUE: String = BuiltInWinCelebrationCueIds.riichiYakuman("kokushi_musou")
-        const val TSUMO_ARGUMENT: String = "tsumo"
-        const val RON_ARGUMENT: String = "ron"
-        const val CONTINUING_WIN_SUBCOMMAND: String = "continuing_win"
-        const val WIN_SHOWCASE_OVERRIDE_SUBCOMMAND: String = "win_showcase_override"
         const val PREPARATION_SUBCOMMAND: String = "preparation"
         const val START_ARGUMENT: String = "start"
         const val SUBMIT_ARGUMENT: String = "submit"
@@ -1560,47 +622,12 @@ class FabricDebugCommand(
         const val OPTION_ID_ARGUMENT: String = "option_id"
         const val TILE_IDS_ARGUMENT: String = "tile_ids"
         const val CLEAR_ARGUMENT: String = "clear"
-        const val EXHAUSTIVE_DRAW_SETTLEMENT_SUBCOMMAND: String = "exhaustive_draw_settlement"
-        const val WIN_SETTLEMENT_SUBCOMMAND: String = "win_settlement"
-        const val MATCH_SETTLEMENT_SUBCOMMAND: String = "match_settlement"
         const val MATCH_PROGRESSION_SUBCOMMAND: String = "match_progression"
         const val DECISION_HUD_SUBCOMMAND: String = "decision_hud"
         const val DEBUG_HUD_DURATION_TICKS: Long = 20L * 30L
         const val MIN_COUNT_ARGUMENT: String = "min_count"
         const val MAX_COUNT_ARGUMENT: String = "max_count"
-        const val HOVERED_TEXT_SUBCOMMAND: String = "hovered_text"
-        const val EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT: String = "exhaustive_draw_settlement"
-        const val GAME_CREATED_LOCATION_ARGUMENT: String = "game_created_location"
-        const val GAME_CONFIG_ARGUMENT: String = "game_config"
-        const val SERVER_CONFIG_ARGUMENT: String = "server_config"
-        const val SHOW_ARGUMENT: String = "show"
-        const val CHANGED_ARGUMENT: String = "changed"
-        const val UNCHANGED_ARGUMENT: String = "unchanged"
-        const val NORMAL_ARGUMENT: String = "normal"
-        const val MELDS_ARGUMENT: String = "melds"
-        const val MELD_COUNT_ARGUMENT: String = "meld_count"
-        const val KYUUSHU_ARGUMENT: String = "kyuushu"
-        const val YAKUMAN_ARGUMENT: String = "yakuman"
-        const val NAGASHI_ARGUMENT: String = "nagashi"
-        const val ABORTIVE_ARGUMENT: String = "abortive"
-        const val SCORE_ARGUMENT: String = "score"
-        const val SCORE_DELTA_ARGUMENT: String = "delta"
-        const val TENPAI_COUNT_ARGUMENT: String = "tenpai_count"
-        const val PLAYER_COUNT_ARGUMENT: String = "player_count"
-        const val REASON_ARGUMENT: String = "reason"
-        const val DEFAULT_SCORE_DELTA: Int = 9_000
-        val SHOWCASE_PHASES: List<String> = listOf("launch", "orbit", "place", "ignite", "explode", "reveal")
-        val DEFAULT_WAITING_TILE_ASSETS: List<String> = listOf("m1", "m4", "m7")
         val DEBUG_OPTION_IDS: List<String> = listOf("mahjongcraft:alpha", "mahjongcraft:beta", "mahjongcraft:gamma")
-        val KYUUSHU_PREVIEW_ASSETS: List<String> = listOf(
-            "m1", "m9", "p1", "p9", "s1", "s9", "east", "south", "west", "north", "red_dragon", "green_dragon", "white_dragon", "m1",
-        )
-        val HOVERED_TEXT_SAMPLE_ROWS: List<HoveredTextSampleRow> = listOf(
-            HoveredTextSampleRow("Player", 4, 1, "↑", 16_000, 34_000),
-            HoveredTextSampleRow("AI 1", 1, 2, "↓", 31_000, 25_000),
-            HoveredTextSampleRow("AI 2", 2, 3, "↓", 28_000, 22_000),
-            HoveredTextSampleRow("AI 3", 3, 4, "↓", 25_000, 19_000),
-        )
 
         /** 內建日麻 progression debug 情境固定使用的玩家數。 */
         const val RIICHI_PLAYER_COUNT: Int = 4
@@ -1612,17 +639,8 @@ class FabricDebugCommand(
             TILES,
         }
 
-        /** 內建規則目前需要驗證的最大副露組數。 */
-        const val MAX_DEBUG_MELD_COUNT: Int = 5
-
-        /** 副露布局預覽至少保留的暗手張數。 */
-        const val MIN_DEBUG_CONCEALED_HAND_SIZE: Int = 1
-
         /** Brigadier 成功回傳值。 */
         const val COMMAND_SUCCESS: Int = 1
-
-        /** Brigadier 失敗回傳值。 */
-        const val COMMAND_FAILURE: Int = 0
     }
 
     /** Development-only 日麻終局 progression 預覽情境。 */
@@ -1718,55 +736,4 @@ class FabricDebugCommand(
             BUST -> listOf(50_000, 30_100, 20_000, -100)
         }
     }
-
-    /** 正式 round-result hover builder 的單列測試資料。 */
-    private data class HoveredTextSampleRow(
-        val playerName: String,
-        val previousRank: Int,
-        val currentRank: Int,
-        val rankSymbol: String,
-        val previousScore: Int,
-        val currentScore: Int,
-    )
-
-    private enum class WinSettlementPreview {
-        RON,
-        TSUMO,
-        YAKUMAN,
-        NAGASHI,
-    }
-}
-
-/**
- * 將 debug 指令提供的 cue 展開成指定贏家數量；單一 cue 套用至所有贏家，多個 cue 則依序對應，
- * 未提供的尾端位置使用 [defaultCue]。
- */
-internal fun expandShowcaseCues(
-    supplied: List<String>,
-    winnerCount: Int,
-    defaultCue: String,
-): List<String> = when (supplied.size) {
-    0 -> List(winnerCount) { defaultCue }
-    1 -> List(winnerCount) { supplied.single() }
-    else -> List(winnerCount) { index -> supplied.getOrNull(index) ?: defaultCue }
-}
-
-/**
- * 依目前輸入內容建立完整 showcase cue key 候選；逗號清單只替換最後一段。
- */
-internal fun buildShowcaseCueSuggestions(
-    remaining: String,
-    cueKeys: Set<String>,
-    allowMultiple: Boolean,
-): List<String> {
-    val separatorIndex = if (allowMultiple) remaining.lastIndexOf(',') else -1
-    val completedPrefix = remaining.takeIf { separatorIndex >= 0 }?.substring(0, separatorIndex + 1).orEmpty()
-    val currentToken = remaining.substring(separatorIndex + 1)
-    return (cueKeys + BuiltInWinCelebrationCueIds.GENERIC)
-        .asSequence()
-        .distinct()
-        .filter { candidate -> candidate.startsWith(currentToken, ignoreCase = true) }
-        .sorted()
-        .map { candidate -> completedPrefix + candidate }
-        .toList()
 }

@@ -34,10 +34,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.GameActionCan
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.FabricDebugPresentationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugTilePreviewSupport
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.text.FabricDebugTextCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
@@ -167,6 +169,48 @@ class FabricApplicationModuleTest {
             debugNode.children.map { it.name }.containsAll(listOf("dice", "deal", "draw", "discard", "meld")),
             "the animation family stays mounted under the debug root",
         )
+        assertTrue(
+            debugNode.children.map { it.name }.containsAll(
+                listOf(
+                    "win",
+                    "showcase",
+                    "exhaustive_draw_settlement",
+                    "win_settlement",
+                    "match_settlement",
+                    "continuing_win",
+                    "win_showcase_override",
+                ),
+            ),
+            "the presentation family stays mounted under the debug root",
+        )
+        val presentationCommand = koin.get<FabricDebugPresentationCommand>()
+        assertEquals(
+            setOf("tsumo", "ron", "multi_ron", "phase"),
+            presentationCommand.buildShowcaseCommand().build().children.map { it.name }.toSet(),
+        )
+        assertEquals(
+            setOf("normal", "melds", "kyuushu", "score", "abortive"),
+            presentationCommand.buildExhaustiveDrawSettlementCommand().build().children.map { it.name }.toSet(),
+        )
+        assertEquals(
+            setOf("tsumo", "ron", "yakuman", "nagashi"),
+            presentationCommand.buildWinSettlementCommand().build().children.map { it.name }.toSet(),
+        )
+        assertEquals(
+            setOf("winner_count"),
+            presentationCommand.buildWinSettlementCommand().build().children
+                .single { it.name == "ron" }.children.map { it.name }.toSet(),
+            "ron keeps its optional winner count argument",
+        )
+        assertEquals(
+            setOf("clear", "cue"),
+            presentationCommand.buildWinShowcaseOverrideCommand().build().children.map { it.name }.toSet(),
+        )
+        assertTrue(
+            debugNode.children.any { it.name == "hovered_text" },
+            "the text family stays mounted under the debug root",
+        )
+        koin.get<FabricDebugTextCommand>()
         koin.get<FabricDebugAnimationCommand>()
         koin.get<DebugTilePreviewSupport>()
         koin.get<DebugVirtualTableLayoutFactory>()
