@@ -34,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.GameActionCan
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.FabricDebugDecisionCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.FabricDebugPresentationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
@@ -212,6 +213,21 @@ class FabricApplicationModuleTest {
             "the text family stays mounted under the debug root",
         )
         koin.get<FabricDebugTextCommand>()
+        val decisionCommand = koin.get<FabricDebugDecisionCommand>()
+        val decisionHudChildren = decisionCommand.buildDecisionHudCommand().build()
+            .children.map { it.name }.toSet()
+        assertTrue(
+            decisionHudChildren.containsAll(listOf("timer", "chi", "pon", "kan", "ron", "clear")),
+            "decision_hud keeps its preview literals and clear",
+        )
+        assertEquals(
+            setOf("start", "submit", "timeout", "cancel"),
+            decisionCommand.buildPreparationCommand().build().children.map { it.name }.toSet(),
+        )
+        assertTrue(
+            debugNode.children.map { it.name }.containsAll(listOf("decision_hud", "preparation")),
+            "the decision family stays mounted under the debug root",
+        )
         koin.get<FabricDebugAnimationCommand>()
         koin.get<DebugTilePreviewSupport>()
         koin.get<DebugVirtualTableLayoutFactory>()
