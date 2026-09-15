@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetPlayerDecisionOptionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -28,6 +29,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServe
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.GameActionCandidateResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
@@ -142,6 +145,9 @@ class FabricApplicationModuleTest {
         koin.get<FabricTableLocationValidationService>()
         koin.get<FabricAppCoroutineScope>()
         koin.get<FabricDecisionTimerScheduler>()
+        koin.get<GetPlayerDecisionOptionsUseCase>()
+        koin.get<GameActionCandidateResolver>()
+        koin.get<PlayerDecisionPromptFactory>()
         koin.get<MahjongTileCollisionService>()
         koin.get<MahjongDiceRollPresenter>()
         koin.get<MinecraftServerConfigState>()

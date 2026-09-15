@@ -1,15 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.model.PlayerDecisionOptions
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContext
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetPlayerDecisionOptionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalysis
 import com.doublemoon1119.mahjongcraft.logic.judgment.TileSelectionRequirement
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
@@ -24,12 +23,25 @@ data class HandTileCandidate(val tileId: Uuid, val token: String, val tile: Tile
  * @property token 玩家實際輸入的字面值。
  * @property referenceTile 該動作涉及的牌面；不涉及特定牌面的動作為 null。
  * @property tileSelectionRequirement 動作提交前需要額外選取的手牌契約；不需選牌時為 null。
+ * @property discardAnalyses 該動作選牌的捨牌分析；不適用時為空。
  */
 data class GameActionCandidate(
     val action: GameAction,
     val token: String,
     val referenceTile: Tile?,
     val tileSelectionRequirement: TileSelectionRequirement?,
+    val discardAnalyses: List<DiscardReadinessAnalysis>,
+)
+
+/**
+ * 同一次 Flow 查詢建立的特殊動作候選與一般捨牌分析。
+ *
+ * @property actions Minecraft 指令與 HUD 共用的特殊動作候選。
+ * @property discardAnalyses 自己回合的一般捨牌分析；不適用時為空。
+ */
+data class ResolvedGameActionCandidates(
+    val actions: List<GameActionCandidate>,
+    val discardAnalyses: List<DiscardReadinessAnalysis>,
 )
 
 /**
@@ -42,17 +54,13 @@ data class GameActionCandidate(
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property membershipRepository 玩家目前所在桌子（房間／對局共用同一個 Uuid）的歸屬查詢。
- * @property getLegalActions 查詢目前合法動作清單的既有 use case。
- * @property moduleRegistry 麻將規則模組註冊中心，供候選動作解析額外選牌契約。
- * @property actionContextResolver 玩家目前操作情境的權威解析器。
+ * @property getPlayerDecisionOptions 查詢完整合法動作、選牌需求與捨牌分析的 Flow use case。
  */
 @Single
 class GameActionCandidateResolver(
     private val gameRepository: GameRepository,
     private val membershipRepository: PlayerMembershipRepository,
-    private val getLegalActions: GetLegalActionsUseCase,
-    private val moduleRegistry: MahjongModuleRegistry,
-    private val actionContextResolver: PlayerActionContextResolver,
+    private val getPlayerDecisionOptions: GetPlayerDecisionOptionsUseCase,
 ) {
     /** 列出玩家目前手牌（含剛摸到的牌）作為捨牌或動作選牌候選。 */
     suspend fun listHandTileCandidates(playerId: Uuid): List<HandTileCandidate> {
@@ -64,25 +72,33 @@ class GameActionCandidateResolver(
     }
 
     /** 列出玩家目前合法的特殊動作及各動作的額外選牌契約。 */
-    suspend fun listActionCandidates(playerId: Uuid): List<GameActionCandidate> {
-        val gameId = membershipRepository.getTableId(playerId) ?: return emptyList()
-        val state = gameRepository.getTableState(gameId) ?: return emptyList()
-        val referenceTile = resolveReferenceTile(state, playerId)
+    suspend fun listActionCandidates(playerId: Uuid): List<GameActionCandidate> = resolveActionCandidates(playerId)?.actions.orEmpty()
 
-        val outcome = getLegalActions(gameId, playerId)
-        if (outcome !is Outcome.Success) return emptyList()
+    /** 以同一次 Flow 查詢解析特殊動作候選與一般捨牌分析。 */
+    suspend fun resolveActionCandidates(playerId: Uuid): ResolvedGameActionCandidates? {
+        val gameId = membershipRepository.getTableId(playerId) ?: return null
+        return resolveActionCandidates(gameId, playerId)
+    }
 
-        val player = state.players.firstOrNull { it.id == playerId } ?: return emptyList()
-        val validator = moduleRegistry.getModule(state.config).createLegalActionValidator()
-        val actions = outcome.value
-        return disambiguateTokens(actions, GameAction::baseToken) { action, token ->
+    /** 依已知對局解析特殊動作候選與一般捨牌分析，避免再次透過房間歸屬反查對局。 */
+    suspend fun resolveActionCandidates(gameId: Uuid, playerId: Uuid): ResolvedGameActionCandidates? {
+        val outcome = getPlayerDecisionOptions(gameId, playerId)
+        if (outcome !is Outcome.Success) return null
+        return outcome.value.toCandidates()
+    }
+
+    /** 將 Flow 的完整決策選項映射成 Minecraft 指令與 HUD 共用的候選資料。 */
+    private fun PlayerDecisionOptions.toCandidates(): ResolvedGameActionCandidates {
+        val candidates = disambiguateTokens(actions, { it.action.baseToken() }) { option, token ->
             GameActionCandidate(
-                action = action,
+                action = option.action,
                 token = token,
                 referenceTile = referenceTile,
-                tileSelectionRequirement = validator.tileSelectionRequirement(state, player, action),
+                tileSelectionRequirement = option.tileSelectionRequirement,
+                discardAnalyses = option.discardAnalyses,
             )
         }
+        return ResolvedGameActionCandidates(candidates, discardAnalyses)
     }
 
     /** 列出指定動作契約允許選取的手牌候選。 */
@@ -106,18 +122,6 @@ class GameActionCandidateResolver(
             seenCounts[base] = count
             build(item, if (count == 1) base else "${base}_$count")
         }
-    }
-
-    /** 找出該情境下「進來的那張牌」，供候選動作清單共用的 [referenceTile][GameActionCandidate.referenceTile]。 */
-    private fun resolveReferenceTile(state: TableState, playerId: Uuid): Tile? = when (val context = actionContextResolver.resolveFor(state, playerId)) {
-        is PlayerActionContext.KanReaction -> context.pending.robbedTile.tile
-        is PlayerActionContext.DiscardReaction -> {
-            val discarder = state.players.first { it.id == context.pending.discarderId }
-            discarder.discardPile.entries.first { it.tile.id == context.pending.tileId }.tile.tile
-        }
-
-        is PlayerActionContext.OwnTurn -> state.players.first { it.id == playerId }.hand.lastDrawn?.tile
-        null -> null
     }
 
     /** 以玩家目前的房間歸屬解析目標桌況；不在任何桌子或桌況不是對局時回傳 null。 */

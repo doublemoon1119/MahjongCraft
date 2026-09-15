@@ -3,10 +3,9 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionOptionsResolver
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Factory
@@ -58,42 +57,7 @@ class GetLegalActionsUseCase(
         val player = state.players.firstOrNull { it.id == playerId }
             ?: return Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
 
-        val module = moduleRegistry.getModule(state.config)
-        val validator = module.createLegalActionValidator()
-        val actions = when (val context = actionContextResolver.resolveFor(state, playerId)) {
-            is PlayerActionContext.KanReaction -> {
-                val pendingKanReaction = context.pending
-                validator.getLegalActions(
-                    tableState = state,
-                    player = player,
-                    sourceAction = pendingKanReaction.kanAction,
-                    sourceDirection = state.relativeDirectionOf(playerId, pendingKanReaction.declarerId),
-                    incomingTile = pendingKanReaction.robbedTile,
-                ).filter { it is GameAction.Ron || it == GameAction.Pass }
-            }
-
-            is PlayerActionContext.DiscardReaction -> {
-                val pendingReaction = context.pending
-                val discarder = state.players.first { it.id == pendingReaction.discarderId }
-                val discardedTile = discarder.discardPile.entries.first { it.tile.id == pendingReaction.tileId }.tile
-                validator.getLegalActions(
-                    tableState = state,
-                    player = player,
-                    sourceAction = GameAction.Discard(pendingReaction.tileId),
-                    sourceDirection = state.relativeDirectionOf(playerId, pendingReaction.discarderId),
-                    incomingTile = discardedTile,
-                )
-            }
-
-            is PlayerActionContext.OwnTurn -> if (player.hand.lastDrawn != null) {
-                validator.getLegalActions(state, player, GameAction.Draw, RelativeDirection.Self, null)
-            } else {
-                emptyList()
-            }
-
-            null -> emptyList()
-        }
-
+        val actions = PlayerDecisionOptionsResolver.resolveActions(state, player, moduleRegistry, actionContextResolver)
         return Outcome.Success(actions)
     }
 }

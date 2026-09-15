@@ -38,7 +38,8 @@ class PlayerDecisionPromptFactory(
         val state = game.tableState
         val player = state.players.firstOrNull { it.id == playerId } ?: return null
         val tileOrder = moduleRegistry.getModule(state.config).tileOrder
-        val actions = candidateResolver.listActionCandidates(playerId)
+        val resolvedCandidates = candidateResolver.resolveActionCandidates(gameId, playerId) ?: return null
+        val actions = resolvedCandidates.actions
         val preparation = game.pendingRoundPreparation
             ?.takeIf { playerId !in it.completedPlayerIds }
             ?.inputSpecsByPlayerId
@@ -46,9 +47,8 @@ class PlayerDecisionPromptFactory(
             ?.toPrompt { tileId ->
                 player.hand.tiles.firstOrNull { it.id == tileId }?.tile?.toAssetKey(tileAssetRegistry)
             }
-        val analyzer = moduleRegistry.getModule(state.config).createDiscardReadinessAnalyzer()
         val analyses = if (phase == PlayerDecisionPhase.OWN_TURN) {
-            analyzer?.analyze(state, player)?.map { it.toDto() }.orEmpty()
+            resolvedCandidates.discardAnalyses.map { it.toDto() }
         } else {
             emptyList()
         }
@@ -74,10 +74,7 @@ class PlayerDecisionPromptFactory(
                     candidateResolver.listTileSelectionCandidates(playerId, candidate)
                 }.orEmpty()
                 val actionAnalyses = if (phase == PlayerDecisionPhase.OWN_TURN && requirement != null) {
-                    analyzer?.analyzeForAction(state, player, candidate.action)
-                        ?.filter { it.discardTileId in requirement.eligibleTileIds }
-                        ?.map { it.toDto() }
-                        .orEmpty()
+                    candidate.discardAnalyses.map { it.toDto() }
                 } else {
                     emptyList()
                 }
