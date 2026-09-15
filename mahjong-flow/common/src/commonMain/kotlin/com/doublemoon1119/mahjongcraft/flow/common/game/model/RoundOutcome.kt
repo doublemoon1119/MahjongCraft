@@ -56,7 +56,7 @@ data class ResolvedRoundOutcome(
     }
 
     private companion object {
-        /** 接受 Minecraft 慣用 namespace 與 path 字元的完整識別碼格式。 */
+        /** 接受 `namespace:path` 形式的完整識別碼格式。 */
         val ID_PATTERN = Regex("[a-z0-9_.-]+:[a-z0-9/._-]+")
     }
 }

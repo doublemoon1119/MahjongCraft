@@ -64,6 +64,6 @@ object WinSettlementYakuTranslationKeys {
     /** 流局滿貫結算面板役種條目使用的 key；流局滿貫不經過一般役種偵測流程，不屬於 [YakuType]。 */
     const val NAGASHI_MANGAN = PREFIX + "nagashi_mangan"
 
-    /** Minecraft 語系資源必須提供的全部役種 translation key。 */
+    /** 平台語系資源必須提供的全部役種 translation key。 */
     val ALL: Set<String> = YakuType.entries.mapTo(mutableSetOf(), ::keyFor) + NAGASHI_MANGAN
 }

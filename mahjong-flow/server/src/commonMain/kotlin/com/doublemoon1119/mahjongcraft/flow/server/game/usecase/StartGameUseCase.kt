@@ -141,7 +141,7 @@ class StartGameUseCase(
             eventPublisher.publishToTable(roomId, seatedPlayerIds, operatorId, GameAction.DiceRolled(diceRoll))
         }
         // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；開局第一局 comboCount 恆為 0，
-        // 呼叫本身仍需要，確保積棒 entity 從上一局殘留（理論上不會發生，但保持呼叫語意一致）清乾淨。
+        // 呼叫本身仍需要，確保積棒呈現從上一局殘留（理論上不會發生，但保持呼叫語意一致）清乾淨。
         presentationPublisher.publishScoringSticksUpdated(roomId, dealerSeatIndex, tableState.comboCount)
         // 開局第一局，不可能有任何延續的供託，全部固定為空／0。
         presentationPublisher.publishStickPotUpdated(

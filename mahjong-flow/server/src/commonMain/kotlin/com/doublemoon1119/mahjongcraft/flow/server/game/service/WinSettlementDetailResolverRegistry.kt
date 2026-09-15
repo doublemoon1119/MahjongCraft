@@ -11,7 +11,7 @@ data class WinSettlementResolvedDetails(
     val fields: List<WinSettlementDetailField>,
 )
 
-/** 不接觸 Minecraft renderer 的規則專屬胡牌詳情解析器。 */
+/** 不接觸平台呈現層的規則專屬胡牌詳情解析器。 */
 interface WinSettlementDetailResolver {
     /** 解析一般胡牌（自摸／榮和）的詳情；[handValue] 一律是實際成立的胡牌結果。 */
     fun resolve(state: TableState, handValue: HandValueResult): WinSettlementResolvedDetails

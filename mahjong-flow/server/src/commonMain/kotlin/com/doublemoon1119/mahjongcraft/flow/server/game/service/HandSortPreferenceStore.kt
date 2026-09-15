@@ -6,7 +6,7 @@ import kotlin.uuid.Uuid
 
 /**
  * 記錄每位玩家「是否啟用自動整理手牌」這個純呈現偏好，不透過 [org.koin.core.annotation.Provided]
- * 的 client-only 疊加（不像牌角標籤那種純客戶端呈現），因為手牌 tile entity 是伺服器端共用的實體，
+ * 的 client-only 疊加（不像牌角標籤那種純客戶端呈現），因為手牌的呈現實體是伺服器端共用的，
  * 排序結果必須由伺服器套用才會反映在實際世界座標上，見 [HandSortPreferenceStore] 使用端
  * `SetHandSortPreferenceUseCase` KDoc。
  *

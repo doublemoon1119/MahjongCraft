@@ -74,7 +74,7 @@ interface GamePresentationPublisher {
     /**
      * 通知平台呈現層建立統一流局結算展示。
      *
-     * 預設 no-op，讓沒有世界呈現能力的平台仍能只依 chat／GUI 顯示權威結算結果。
+     * 預設 no-op，讓沒有世界呈現能力的平台仍能以自己的文字或介面呈現權威結算結果。
      */
     fun publishExhaustiveDrawSettlement(gameId: Uuid, request: ExhaustiveDrawSettlementPresentationRequest) = Unit
 
@@ -102,8 +102,8 @@ interface GamePresentationPublisher {
      * 通知平台呈現層本局權威擲骰結果。
      *
      * [dealerSeatIndex]／[roundNumber]／[comboCount] 是呼叫端已經持有的通用桌況資料，一併帶過去讓
-     * 平台呈現層自行決定怎麼用（例如換算成畫面呈現用的「這是第幾次擲骰」序號、決定擲骰者的座位）——
-     * 不在這裡先算好任何 Minecraft 專屬概念，維持這個介面本身跟平台無關。
+     * 平台呈現層自行決定怎麼用（例如換算成呈現用的「這是第幾次擲骰」序號、決定擲骰者的座位）——
+     * 不在這裡先算好任何平台專屬概念，維持這個介面本身跟平台無關。
      *
      * @param gameId 對局 Uuid。
      * @param dice 本次開門使用的權威擲骰個別點數。
@@ -219,7 +219,7 @@ interface GamePresentationPublisher {
      * （見 `MahjongRuleModule.getRoundInfoLines`），這裡不假設任何固定欄位。
      *
      * 觸發時機：開局/換局（跟 [publishWallStructure] 同一批呼叫）、每次摸牌（牌山剩餘張數可能會變）、
-     * 以及任何會改變 [lines] 內容的事件（例如立直宣告後供託支數改變）。這個 entity 是「找到既有的
+     * 以及任何會改變 [lines] 內容的事件（例如立直宣告後供託支數改變）。這份呈現是「找到既有的
      * 就地更新」模式，每個呼叫點都要重新算好完整的 [lines]（不能只在部分呼叫點帶上），否則沒帶的
      * 呼叫會把之前顯示的內容覆蓋回空清單。
      *
@@ -248,7 +248,7 @@ interface GamePresentationPublisher {
      * @param melds 這位玩家目前所有副露，依宣告順序排列——第一組（最早宣告）位於副露區固定的桌角
      * 錨點外緣（積棒外緣），後續每組依序往玩家自己手牌方向排開，呼叫端不需要另外傳遞位置索引。
      * @param comboStickCount 這位玩家目前該顯示的積棒支數——只有莊家非零，等於 `TableState.comboCount`；
-     * 只用來讓手牌／副露正確讓開積棒佔用的空間，不會觸發積棒 entity 本身的生成／清除（那是
+     * 只用來讓手牌／副露正確讓開積棒佔用的空間，不會觸發積棒呈現本身的生成／清除（那是
      * [publishScoringSticksUpdated] 的職責）。
      * @param animateDrawnTile [drawnTileId] 非 `null` 時，是否要播放「牌從牌山原位面朝下起飛、隱形
      * 傳送到摸牌位、傳送同一瞬間切換成面向玩家、解除隱形後落下」的動畫——只有真正的摸牌事件

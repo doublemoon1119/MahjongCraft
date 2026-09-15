@@ -22,7 +22,7 @@ data class ClientDecisionTimerState(
 )
 
 /**
- * 供 HUD 讀取的客戶端決策時間。
+ * 供呈現層讀取的客戶端決策時間。
  *
  * @property gameId 計時所屬遊戲。
  * @property phase 目前決策階段。
@@ -41,7 +41,7 @@ data class ClientDecisionTimerReading(
 /**
  * 保存客戶端最後收到的權威決策計時，並限制本地內插時間。
  *
- * 本地時間只用於畫面平滑顯示；超過 [staleAfterMillis] 後凍結，不自行宣告逾時。
+ * 本地時間只用於呈現時的平滑顯示；超過 [staleAfterMillis] 後凍結，不自行宣告逾時。
  *
  * @property clock 客戶端 runtime 的單調時間。
  * @property staleAfterMillis 收不到新同步後允許繼續內插的最長時間。
@@ -86,7 +86,7 @@ class ClientDecisionTimerStateStore(
         state = null
     }
 
-    /** 依目前客戶端單調時間產生供 HUD 顯示的內插讀值。 */
+    /** 依目前客戶端單調時間產生供呈現層顯示的內插讀值。 */
     fun reading(): ClientDecisionTimerReading? {
         val current = state ?: return null
         val elapsedMillis = (clock.nowMillis() - current.receivedAtMillis).coerceAtLeast(0L)

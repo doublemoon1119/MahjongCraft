@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.message
 import kotlinx.serialization.Serializable
 
 /**
- * HUD 可呈現的單一權威動作候選。
+ * 呈現層可顯示的單一權威動作候選（在 Minecraft 平台上對應操作 HUD 的一張卡片）。
  *
  * @property claimedTileIndex [previewTileAssetKeys] 中要額外標記強調的牌索引；目前只有吃會給值
  * （三張牌花色/數值不同，標出來才有辨識意義），碰／槓一律為 `null`——牌面彼此完全相同，標哪一張都
@@ -35,8 +35,8 @@ data class PlayerDecisionActionTileSelectionDto(
 )
 
 /**
- * 牌面的受控方向，供世界空間中的鳴牌 popup（[com.doublemoon1119.mahjongcraft.platform.fabric.client.render.TileGroupPreviewLayout]
- * 等）沿用；決策 HUD 卡片預覽本身不使用此列舉，一律直立顯示。
+ * 牌面的受控方向，供平台在世界空間呈現鳴牌 popup 時沿用；決策提示本身的牌面預覽不使用此列舉，
+ * 一律直立顯示。
  */
 @Serializable
 enum class DecisionTileOrientationDto {
@@ -81,7 +81,7 @@ data class DiscardReadinessAnalysisDto(
     val statusIndicatorId: String? = null,
 )
 
-/** 開局準備輸入在操作 HUD 使用的受控網路表示。 */
+/** 開局準備輸入供呈現層顯示的受控網路表示。 */
 @Serializable
 sealed interface RoundPreparationPromptDto {
     /** 只需要確認的準備步驟。 */
@@ -104,7 +104,7 @@ sealed interface RoundPreparationPromptDto {
 }
 
 /**
- * 只傳給取得決策權玩家的 HUD prompt。
+ * 只傳給取得決策權玩家的決策提示。
  *
  * 所有牌張 ID 都是該玩家已知的實體手牌；分析結果只包含自身與公開資訊，不包含暗手或牌山內容。
  */
@@ -131,14 +131,14 @@ enum class PlayerDecisionSelectionKindDto {
 
     /**
      * 玩家明確進入「需要選超過一張牌」的實體牌選取模式（`tileSelection`／`preparation` 的
-     * `maxCount > 1`）——只有這種情境才需要通知伺服器生成確認面板 entity；`maxCount == 1` 維持右鍵
+     * `maxCount > 1`）——只有這種情境才需要通知伺服器生成確認面板呈現；`maxCount == 1` 維持右鍵
      * 合法牌直接自動送出，不使用這個種類。[PlayerDecisionSelectionDto.token] 為 `null` 代表
      * preparation 的 `TileSelection`，非 `null` 代表帶 `tileSelection` 的動作候選。
      */
     BEGIN_TILE_SELECTION,
 }
 
-/** 客戶端操作 HUD 提交的權威候選 token。 */
+/** 客戶端提交的權威候選 token。 */
 @Serializable
 data class PlayerDecisionSelectionDto(
     val gameId: String,

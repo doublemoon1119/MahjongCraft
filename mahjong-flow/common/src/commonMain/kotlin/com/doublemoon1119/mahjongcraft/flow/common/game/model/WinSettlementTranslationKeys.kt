@@ -22,7 +22,7 @@ object WinSettlementTranslationKeys {
     const val TSUMO_SUMMARY = PREFIX + "tsumo_summary"
     const val URA_DORA = PREFIX + "ura_dora"
 
-    /** Minecraft 語系資源必須提供的全部內建胡牌結算 key。 */
+    /** 平台語系資源必須提供的全部內建胡牌結算 key。 */
     val ALL: Set<String> = setOf(
         DORA,
         HAN,

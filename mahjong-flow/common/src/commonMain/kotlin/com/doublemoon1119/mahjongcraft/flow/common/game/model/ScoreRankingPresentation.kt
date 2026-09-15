@@ -82,7 +82,7 @@ object ScoreRankingAnimation {
         }
     }
 
-    /** 依連續排行位置取得畫面當下的一至多人名次，讓跨越多名時依序顯示中間名次。 */
+    /** 依連續排行位置取得呈現當下的一至多人名次，讓跨越多名時依序顯示中間名次。 */
     fun liveRanks(rows: List<AnimatedScoreRankingRow>): Map<Uuid, Int> = rows
         .sortedWith(compareBy<AnimatedScoreRankingRow> { it.position }.thenBy { it.player.previousRank })
         .mapIndexed { index, row -> row.player.playerId to index + 1 }

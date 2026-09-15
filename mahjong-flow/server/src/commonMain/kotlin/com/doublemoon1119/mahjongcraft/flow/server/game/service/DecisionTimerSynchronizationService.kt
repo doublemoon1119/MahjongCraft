@@ -12,7 +12,7 @@ import kotlin.uuid.Uuid
 /**
  * 將 server timer manager 的權威狀態同步給目前具有決策權的真人玩家。
  *
- * 服務會記住上次已同步的玩家，讓失去決策權、階段結束或完整逾時時能送出停止更新。AI 不需要畫面
+ * 服務會記住上次已同步的玩家，讓失去決策權、階段結束或完整逾時時能送出停止更新。AI 不需要呈現
  * 計時，因此不會交給 [publisher]。
  *
  * @property timerManager 提供目前 runtime 中的權威計時。

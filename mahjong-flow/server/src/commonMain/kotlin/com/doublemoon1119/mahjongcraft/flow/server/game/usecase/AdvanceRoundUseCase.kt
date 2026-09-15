@@ -196,7 +196,7 @@ class AdvanceRoundUseCase(
         val newState = result.tableState
 
         if (result.isMatchOver) {
-            // 對局已結束：仍要同步最終快照、廣播 MatchEnded，讓客戶端能讀到最終分數組出排名畫面，
+            // 對局已結束：仍要同步最終快照、廣播 MatchEnded，讓客戶端能讀到最終分數組出排名呈現，
             // 但不做開下一局才需要的 RoundStarted 廣播或擲骰／牌牆呈現。
             snapshotSynchronizer.syncAll(gameId)
             val lastDealerId = newState.dealerPlayerId
