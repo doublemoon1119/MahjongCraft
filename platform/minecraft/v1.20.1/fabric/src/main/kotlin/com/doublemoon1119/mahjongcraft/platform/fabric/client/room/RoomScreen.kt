@@ -30,13 +30,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceContext
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSource
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceProviderException
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.mojang.authlib.GameProfile
 import kotlinx.serialization.json.Json
 import net.minecraft.client.MinecraftClient
@@ -51,7 +47,6 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.math.Box
 import org.slf4j.LoggerFactory
-import java.util.Locale
 import java.util.UUID
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -93,8 +88,8 @@ class RoomScreen(
     private var lastLobby = stateStore.tableLobby(tableId)
     private var wasWaitingRoomMember = stateStore.tableLobby(tableId)?.phase == TableLobbyPhaseDto.WAITING && stateStore.roomSnapshot(tableId)?.isInRoom == true
     private val profilePreviews = mutableMapOf<Uuid, OtherClientPlayerEntity>()
-    private val warnedActorKeys = mutableSetOf<String>()
-    private val warnedAppearanceProviderIds = mutableSetOf<String>()
+    private val appearanceResolver = RoomMemberAppearanceResolver(appearanceSources)
+    private val memberPresentation = RoomMemberPresentation(indicatorTextResolver)
 
     override fun init() {
         applyButton = null
@@ -453,15 +448,15 @@ class RoomScreen(
                 result.append("\n• ").append(
                     Text.translatable(
                         MinecraftRoomScreenKeys.VALID_RANGE,
-                        formatInteger(editor.minimum),
-                        formatInteger(editor.maximum),
+                        formatRoomInteger(editor.minimum),
+                        formatRoomInteger(editor.maximum),
                     ).formatted(Formatting.GOLD),
                 )
                 result.append("\n• ").append(
-                    Text.translatable(MinecraftRoomScreenKeys.NORMAL_STEP, formatInteger(editor.step)).formatted(Formatting.WHITE),
+                    Text.translatable(MinecraftRoomScreenKeys.NORMAL_STEP, formatRoomInteger(editor.step)).formatted(Formatting.WHITE),
                 )
                 result.append("\n• ").append(
-                    Text.translatable(MinecraftRoomScreenKeys.SHIFT_STEP, formatInteger(editor.step * 10)).formatted(Formatting.YELLOW),
+                    Text.translatable(MinecraftRoomScreenKeys.SHIFT_STEP, formatRoomInteger(editor.step * 10)).formatted(Formatting.YELLOW),
                 )
                 result.append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.KEYBOARD_INPUT).formatted(Formatting.GRAY))
             }
@@ -787,7 +782,7 @@ class RoomScreen(
                 0xFFFFFF,
             )
             val infoTop = y + RoomMemberGridLayout.INFO_OFFSET
-            playingInfoRows(player, dealerPlayerId).drop(playingInfoScroll.index).take(grid.visibleInfoRows).forEachIndexed { infoRowIndex, row ->
+            memberPresentation.infoRows(player, dealerPlayerId).drop(playingInfoScroll.index).take(grid.visibleInfoRows).forEachIndexed { infoRowIndex, row ->
                 context.drawCenteredTextWithShadow(
                     textRenderer,
                     fitText(row.first, grid.cardWidth - 12),
@@ -801,35 +796,11 @@ class RoomScreen(
         renderPlayingInfoScrollbar(context, grid, totalInfoRows)
     }
 
-    private fun playingInfoRows(player: MahjongPlayerInfoEntry, dealerPlayerId: Uuid?): List<Pair<Text, Int>> = buildList {
-        val wind = windText(player.seatWind)
-        add(
-            if (player.playerId == dealerPlayerId) {
-                Text.empty().append(wind).append("  ●") to 0xFFFFD45A.toInt()
-            } else {
-                wind to 0xFFFFD45A.toInt()
-            },
-        )
-        add(Text.literal(formatInteger(player.score)) to 0xFFF3F3F3.toInt())
-        addAll(player.indicators.map(indicatorTextResolver::resolve))
-    }
-
     /** 優先使用 Player Info entity 的完整公開快照；同步尚未抵達時以遊戲快照安全降級。 */
     private fun resolvePlayingPlayerInfo(): List<MahjongPlayerInfoEntry> {
         resolvePlayerInfoEntity()?.players?.takeIf { it.isNotEmpty() }?.let { return it }
         val snapshot = stateStore.gameSnapshot(tableId) ?: return emptyList()
-        val orderedAiPlayerIds = snapshot.players.filter { it.isAi }.map { it.id }
-        return snapshot.players.mapIndexed { index, player ->
-            MahjongPlayerInfoEntry(
-                playerId = player.id,
-                playerName = if (player.isAi) aiPlayerDisplayName(player.id, orderedAiPlayerIds) else resolveLocalPlayerName(player.id),
-                isAi = player.isAi,
-                seatIndex = index,
-                seatWind = player.seatWind,
-                score = player.score,
-                indicators = emptyList(),
-            )
-        }
+        return roomMemberEntriesFrom(snapshot.players, ::resolveLocalPlayerName)
     }
 
     private fun resolvePlayerInfoEntity(): MahjongPlayerInfoEntity? {
@@ -898,51 +869,35 @@ class RoomScreen(
         mouseX: Int,
         mouseY: Int,
     ) {
-        val appearance = runCatching { appearanceSources.resolve(RoomMemberAppearanceContext(playerId, ai)) }
-            .onFailure { cause ->
-                val providerId = (cause as? RoomMemberAppearanceSourceProviderException)?.providerId ?: "registry"
-                if (warnedAppearanceProviderIds.add(providerId)) {
-                    LOGGER.warn("Failed to resolve room member appearance provider {}", providerId, cause)
-                }
-            }
-            .getOrDefault(if (ai) RoomMemberAppearanceSource.Portrait else RoomMemberAppearanceSource.PlayerModel)
-        when (appearance) {
-            RoomMemberAppearanceSource.PlayerModel -> {
-                // 玩家離線時找不到可預覽的 entity——沒有真人模型可畫，退回畫像，不能什麼都不畫，
-                // 讓那一格看起來像沒東西。
-                val entity = resolvePlayerPreview(playerId)
-                if (entity != null) {
-                    InventoryScreen.drawEntity(
-                        context,
-                        x + cardWidth / 2,
-                        y + 84,
-                        (cardWidth / 3).coerceIn(24, 36),
-                        x + cardWidth / 2 - mouseX.toFloat(),
-                        y + 42 - mouseY.toFloat(),
-                        entity,
-                    )
-                } else {
-                    renderPortrait(context, playerId, ai, x, y, cardWidth)
-                }
-            }
-            RoomMemberAppearanceSource.Portrait -> renderPortrait(context, playerId, ai, x, y, cardWidth)
-            is RoomMemberAppearanceSource.ActorPreview -> {
-                if (warnedActorKeys.add(appearance.actorKey)) {
-                    LOGGER.warn("No room actor preview factory is registered for {}; using portrait fallback", appearance.actorKey)
-                }
-                renderPortrait(context, playerId, ai, x, y, cardWidth)
-            }
+        val resolution = appearanceResolver.resolve(playerId, ai)
+        when (val warning = resolution.warning) {
+            null -> Unit
+            is RoomMemberAppearanceResolver.Warning.ProviderFailed ->
+                LOGGER.warn("Failed to resolve room member appearance provider {}", warning.providerId, warning.cause)
+            is RoomMemberAppearanceResolver.Warning.MissingActorPreviewFactory ->
+                LOGGER.warn("No room actor preview factory is registered for {}; using portrait fallback", warning.actorKey)
         }
+        // 玩家離線時找不到可預覽的 entity——沒有真人模型可畫，退回畫像，不能什麼都不畫，
+        // 讓那一格看起來像沒東西。
+        val entity = if (resolution.appearance == RoomMemberAppearanceResolver.Appearance.PlayerModel) {
+            resolvePlayerPreview(playerId)
+        } else {
+            null
+        }
+        if (entity == null) {
+            renderPortrait(context, playerId, ai, x, y, cardWidth)
+            return
+        }
+        InventoryScreen.drawEntity(
+            context,
+            x + cardWidth / 2,
+            y + 84,
+            (cardWidth / 3).coerceIn(24, 36),
+            x + cardWidth / 2 - mouseX.toFloat(),
+            y + 42 - mouseY.toFloat(),
+            entity,
+        )
     }
-
-    private fun windText(wind: Wind): Text = Text.translatable(
-        when (wind) {
-            Wind.EAST -> MinecraftMessageKeys.TILE_HONOR_EAST
-            Wind.SOUTH -> MinecraftMessageKeys.TILE_HONOR_SOUTH
-            Wind.WEST -> MinecraftMessageKeys.TILE_HONOR_WEST
-            Wind.NORTH -> MinecraftMessageKeys.TILE_HONOR_NORTH
-        },
-    )
 
     /** 對局中面板的卡片版面；跟等待室共用同一套換欄規則與捲動機制。 */
     private fun playingGrid(): RoomMemberGridLayout = memberGrid(resolvePlayingPlayerInfo().size)
@@ -950,7 +905,7 @@ class RoomScreen(
     /** 目前進行中對局資訊清單的完整行數，供 scrollbar 幾何與捲動上限共用。 */
     private fun totalPlayingInfoRows(): Int {
         val dealerPlayerId = resolvePlayerInfoEntity()?.dealerPlayerId ?: stateStore.gameSnapshot(tableId)?.dealerPlayerId
-        return resolvePlayingPlayerInfo().maxOfOrNull { playingInfoRows(it, dealerPlayerId).size } ?: 0
+        return resolvePlayingPlayerInfo().maxOfOrNull { memberPresentation.infoRows(it, dealerPlayerId).size } ?: 0
     }
 
     /** 只在卡片列超出可見範圍時繪製 grid scrollbar；等待室與進行中對局共用。 */
@@ -1162,12 +1117,9 @@ class RoomScreen(
 
     private fun integerText(number: Int?, unit: String?): Text = when {
         number == null -> Text.translatable(MinecraftRoomScreenKeys.NONE)
-        unit == null -> Text.literal(formatInteger(number))
+        unit == null -> Text.literal(formatRoomInteger(number))
         else -> Text.translatable(unit, number)
     }
-
-    /** Tooltip 使用固定且不受系統語系影響的千分位，輸入框仍保留純整數。 */
-    private fun formatInteger(number: Int): String = String.format(Locale.ROOT, "%,d", number)
 
     /**
      * Esc 在設定頁沒有可套用草稿時直接返回玩家頁；有尚未套用的合法草稿時改顯示「套用並返回／放棄

@@ -69,7 +69,7 @@ class RoomSettingsDraftTest {
         assertEquals(AUTHORITATIVE, draft.config)
         assertFalse(draft.canApply(AUTHORITATIVE))
         assertFalse(draft.canDone())
-        assertTrue(draft.canUndo(AUTHORITATIVE), "無效欄位時仍要能放棄草稿")
+        assertTrue(draft.canUndo(AUTHORITATIVE), "Expected undo to stay available while a field is invalid.")
     }
 
     /** 同一欄位改回合法值後清除該欄位的無效標記。 */
@@ -99,8 +99,8 @@ class RoomSettingsDraftTest {
 
         assertTrue(draft.isFieldInvalid(REJECTING_FIELD_ID))
         assertTrue(draft.hasInvalidFields)
-        assertFalse(draft.canDone(), "仍有欄位無效時不可結束設定")
-        assertEquals(45, draft.config?.flowConfig?.preparationBaseSeconds, "合法欄位的編輯仍會寫入草稿")
+        assertFalse(draft.canDone(), "Expected done to be blocked while a field is invalid.")
+        assertEquals(45, draft.config?.flowConfig?.preparationBaseSeconds, "Expected an edit to a valid field to still reach the draft.")
     }
 
     /** 第一段驗證擋下超出範圍的輸入，且不改動草稿。 */
@@ -231,7 +231,7 @@ class RoomSettingsDraftTest {
         assertIs<RoomSettingsDraft.Outcome.BecameStale>(outcome)
         assertTrue(draft.isStale)
         assertFalse(draft.isReturningToRoomAfterApply)
-        assertEquals(45, draft.config?.flowConfig?.preparationBaseSeconds, "過期時草稿內容保持不變")
+        assertEquals(45, draft.config?.flowConfig?.preparationBaseSeconds, "Expected the draft contents to survive becoming stale.")
     }
 
     /** 過期後只剩 Undo 可用。 */
