@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
-import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
@@ -40,6 +39,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.FabricDebugPresentationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.text.FabricDebugTextCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
@@ -51,7 +51,6 @@ import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.command.argument.IdentifierArgumentType
@@ -93,6 +92,7 @@ import kotlin.uuid.toKotlinUuid
  * @property animationCommand 建立自由 entity 動畫子指令樹。
  * @property presentationCommand 建立對局演出預覽子指令樹。
  * @property textCommand 建立訊息排版預覽子指令樹。
+ * @property playerTableScope 解析呼叫者目前入座的桌子。
  * @property entityLifecycle 保管並驅動臨時 entity 的到期清除。
  */
 @Single
@@ -100,15 +100,15 @@ class FabricDebugCommand(
     private val minecraftEnvironment: MinecraftEnvironment,
     private val membershipRepository: PlayerMembershipRepository,
     private val gameRepository: GameRepository,
+    private val scope: AppCoroutineScope,
     private val gameFlowCoordinator: GameFlowCoordinator,
     private val decisionAvailabilityService: GameDecisionAvailabilityService,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
-    private val scope: AppCoroutineScope,
-    private val dispatchers: CoroutineDispatchers,
     private val debugGameScenarioCommand: FabricDebugScenarioCommand,
     private val animationCommand: FabricDebugAnimationCommand,
     private val presentationCommand: FabricDebugPresentationCommand,
     private val textCommand: FabricDebugTextCommand,
+    private val playerTableScope: DebugPlayerTableScope,
     private val entityLifecycle: DebugPreviewEntityLifecycle,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
@@ -275,11 +275,11 @@ class FabricDebugCommand(
     }
 
     /** 使用執行者目前牌桌的玩家身分建立唯讀情境，回報正式日麻 policy 的決策。 */
-    private fun previewMatchProgression(source: ServerCommandSource, preview: MatchProgressionPreview): Int = withPlayerTableSuspend(source) { tableId, _ ->
+    private fun previewMatchProgression(source: ServerCommandSource, preview: MatchProgressionPreview): Int = playerTableScope.runSuspending(source) { tableId, _ ->
         val current = gameRepository.getTableState(tableId)
-            ?: return@withPlayerTableSuspend "Game not found"
+            ?: return@runSuspending "Game not found"
         if (current.players.size != RIICHI_PLAYER_COUNT) {
-            return@withPlayerTableSuspend "Match progression previews require four players"
+            return@runSuspending "Match progression previews require four players"
         }
         val config = RiichiRuleConfig(gameLength = preview.gameLength)
         val scores = preview.scores(current.dealerIndex)
@@ -386,7 +386,7 @@ class FabricDebugCommand(
      * 計時器——直接寫入 repository 不會經過 coordinator 的指令派送流程，計時器不會自動產生，逾時、
      * 強制 fallback 等行為在 debug 情境下就永遠測不到。
      */
-    private fun startPreparation(source: ServerCommandSource, preview: PreparationPreview, minCount: Int = 3, maxCount: Int = 3): Int = withPlayerTableSuspend(source) { tableId, playerId ->
+    private fun startPreparation(source: ServerCommandSource, preview: PreparationPreview, minCount: Int = 3, maxCount: Int = 3): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
         val changed = gameRepository.updateGame(tableId) { game ->
             if (game == null) return@updateGame null to false
             val input = when (preview) {
@@ -415,13 +415,13 @@ class FabricDebugCommand(
     }
 
     /** 透過正式 coordinator 提交測試 preparation 選擇。 */
-    private fun submitPreparation(source: ServerCommandSource, submission: RoundPreparationSubmission): Int = withPlayerTableSuspend(source) { tableId, playerId ->
+    private fun submitPreparation(source: ServerCommandSource, submission: RoundPreparationSubmission): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
         gameFlowCoordinator(tableId, playerId, GameCommand.SubmitRoundPreparation(submission))
         "Round preparation submission sent"
     }
 
     /** 將執行者標記為逾時，讓正式 fallback driver 在下一次推進時代為提交。 */
-    private fun timeoutPreparation(context: CommandContext<ServerCommandSource>): Int = withPlayerTableSuspend(context.source) { tableId, playerId ->
+    private fun timeoutPreparation(context: CommandContext<ServerCommandSource>): Int = playerTableScope.runSuspending(context.source) { tableId, playerId ->
         gameRepository.updateGame(tableId) { game ->
             game?.copy(forcedAutoPlayPlayerIds = game.forcedAutoPlayPlayerIds + playerId) to Unit
         }
@@ -434,37 +434,13 @@ class FabricDebugCommand(
      * 立即結算 [startPreparation] 建立的計時器，理由同該函式 KDoc——不清掉的話，計時器要等到下一次
      * 剛好觸發 reconcile 的操作才會被結算掉。
      */
-    private fun cancelPreparation(context: CommandContext<ServerCommandSource>): Int = withPlayerTableSuspend(context.source) { tableId, _ ->
+    private fun cancelPreparation(context: CommandContext<ServerCommandSource>): Int = playerTableScope.runSuspending(context.source) { tableId, _ ->
         gameRepository.updateGame(tableId) { game ->
             game?.copy(pendingRoundPreparation = null) to Unit
         }
         snapshotSynchronizer.syncAll(tableId)
         decisionAvailabilityService.reconcile(tableId)
         "Round preparation preview cancelled"
-    }
-
-    /** 在協程中解析玩家與桌子，供需要呼叫 suspend flow service 的 debug 指令使用。 */
-    private fun withPlayerTableSuspend(
-        source: ServerCommandSource,
-        action: suspend (tableId: Uuid, playerId: Uuid) -> String,
-    ): Int {
-        val player = source.player ?: run {
-            source.sendError(Text.literal("This debug subcommand must be run by a player seated at a table"))
-            return 0
-        }
-        scope.launch {
-            val playerId = player.uuid.toKotlinUuid()
-            val tableId = membershipRepository.getTableId(playerId)
-            val message = tableId?.let { action(it, playerId) }
-            withContext(dispatchers.main) {
-                if (message == null) {
-                    source.sendError(Text.literal("You are not seated at any mahjong table"))
-                } else {
-                    source.sendFeedback({ Text.literal(message) }, true)
-                }
-            }
-        }
-        return 1
     }
 
     /** `/debug decision_hud` 的固定、可補全測試情境。 */

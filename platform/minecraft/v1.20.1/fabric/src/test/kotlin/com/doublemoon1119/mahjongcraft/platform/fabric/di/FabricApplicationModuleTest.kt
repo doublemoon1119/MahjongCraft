@@ -36,6 +36,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricD
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.FabricDebugPresentationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugTilePreviewSupport
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory
@@ -215,6 +216,7 @@ class FabricApplicationModuleTest {
         koin.get<DebugTilePreviewSupport>()
         koin.get<DebugVirtualTableLayoutFactory>()
         koin.get<DebugPreviewEntityLifecycle>()
+        koin.get<DebugPlayerTableScope>()
         koin.get<GetPlayerDecisionOptionsUseCase>()
         koin.get<GameActionCandidateResolver>()
         koin.get<PlayerDecisionPromptFactory>()

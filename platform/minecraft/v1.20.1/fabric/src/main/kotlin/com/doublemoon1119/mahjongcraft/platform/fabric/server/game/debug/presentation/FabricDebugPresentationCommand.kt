@@ -1,7 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation
 
-import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
-import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInExhaustiveDrawSettlementStatusIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
@@ -19,7 +17,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTrans
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RiichiWinSettlementDetailResolver
-import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -36,6 +33,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricMatchSe
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationShowcaseScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewDefaults
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugTilePreviewSupport
@@ -53,8 +51,6 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import net.minecraft.command.argument.IdentifierArgumentType
 import net.minecraft.entity.Entity
 import net.minecraft.server.command.CommandManager.argument
@@ -82,9 +78,6 @@ import kotlin.uuid.toKotlinUuid
  *
  * @property debugWinRoundContinuationState 保存本桌的連莊判定覆寫模式。
  * @property debugWinShowcaseOverride 保存本桌下一次胡牌演出的 cue 覆寫。
- * @property membershipRepository 解析呼叫者目前入座的桌子。
- * @property scope 執行需要查詢入座狀態的協程。
- * @property dispatchers 取得回到主執行緒送出指令回饋的 dispatcher。
  * @property effectScheduler 排定 `win` 胡牌慶祝演出的降臨特效。
  * @property showcaseScheduler 排定 `showcase` 的鞘翅煙火演出。
  * @property showcaseRegistry 解析與列舉可用的 showcase cue。
@@ -92,6 +85,7 @@ import kotlin.uuid.toKotlinUuid
  * @property winSettlementScheduler 排定胡牌結算演出。
  * @property matchSettlementScheduler 排定終局排名演出。
  * @property exhaustiveDrawReasonDisplayNameRegistry 列舉可用的中止流局原因 ID。
+ * @property playerTableScope 解析呼叫者目前入座的桌子。
  * @property tilePreviewSupport 解析牌面、生成臨時牌 entity 並提供 `tile` 引數節點。
  * @property layoutFactory 依呼叫者座標建立虛擬桌布局。
  * @property entityLifecycle 排定結算預覽臨時 entity 的到期清除。
@@ -100,9 +94,6 @@ import kotlin.uuid.toKotlinUuid
 class FabricDebugPresentationCommand(
     private val debugWinRoundContinuationState: DebugWinRoundContinuationState,
     private val debugWinShowcaseOverride: DebugWinShowcaseOverride,
-    private val membershipRepository: PlayerMembershipRepository,
-    private val scope: AppCoroutineScope,
-    private val dispatchers: CoroutineDispatchers,
     private val effectScheduler: FabricWinCelebrationEffectScheduler,
     private val showcaseScheduler: FabricWinCelebrationShowcaseScheduler,
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
@@ -110,6 +101,7 @@ class FabricDebugPresentationCommand(
     private val winSettlementScheduler: FabricWinSettlementPresentationScheduler,
     private val matchSettlementScheduler: FabricMatchSettlementPresentationScheduler,
     private val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
+    private val playerTableScope: DebugPlayerTableScope,
     private val tilePreviewSupport: DebugTilePreviewSupport,
     private val layoutFactory: DebugVirtualTableLayoutFactory,
     private val entityLifecycle: DebugPreviewEntityLifecycle,
@@ -293,13 +285,13 @@ class FabricDebugPresentationCommand(
      * 刻意以桌為範圍而非全伺服器：同一個開發伺服器上可能同時有多桌，全域開關會讓其他桌莫名其妙進入
      * 中途胡牌流程，而且開啟後會一直有效到有人記得手動關掉。因此執行者必須已經坐在某一桌上。
      */
-    private fun setContinuingWinMode(source: ServerCommandSource, mode: DebugWinRoundContinuationMode): Int = withPlayerTable(source) { tableId ->
+    private fun setContinuingWinMode(source: ServerCommandSource, mode: DebugWinRoundContinuationMode): Int = playerTableScope.runOnMain(source) { tableId ->
         debugWinRoundContinuationState.setMode(tableId, mode)
         "Continuing-win debug mode for table $tableId set to ${mode.name}"
     }
 
     /** 回報執行者目前所在那一桌的中途胡牌模式，並一併列出全伺服器其他仍有設定的桌子。 */
-    private fun reportContinuingWinMode(source: ServerCommandSource): Int = withPlayerTable(source) { tableId ->
+    private fun reportContinuingWinMode(source: ServerCommandSource): Int = playerTableScope.runOnMain(source) { tableId ->
         buildString {
             append("Continuing-win debug mode for table $tableId is ${debugWinRoundContinuationState.modeFor(tableId).name}")
             val others = debugWinRoundContinuationState.activeTableIds() - tableId
@@ -313,7 +305,7 @@ class FabricDebugPresentationCommand(
      * 替執行者目前所在那一桌武裝一次性的役滿 showcase 覆寫，見 [DebugWinShowcaseOverride]——只覆寫
      * 呈現用的 cue，動不到權威役種、番數、分數或結算結果。
      */
-    private fun armWinShowcaseOverride(source: ServerCommandSource, cueKey: String?): Int = withPlayerTable(source) { tableId ->
+    private fun armWinShowcaseOverride(source: ServerCommandSource, cueKey: String?): Int = playerTableScope.runOnMain(source) { tableId ->
         val resolvedCue = cueKey ?: DEFAULT_SHOWCASE_CUE
         if (debugWinShowcaseOverride.arm(tableId, resolvedCue)) {
             "Next win on table $tableId will play showcase cue $resolvedCue (presentation only, one-shot)"
@@ -323,33 +315,9 @@ class FabricDebugPresentationCommand(
     }
 
     /** 解除執行者目前所在那一桌尚未用掉的 showcase 覆寫武裝。 */
-    private fun clearWinShowcaseOverride(source: ServerCommandSource): Int = withPlayerTable(source) { tableId ->
+    private fun clearWinShowcaseOverride(source: ServerCommandSource): Int = playerTableScope.runOnMain(source) { tableId ->
         debugWinShowcaseOverride.clear(tableId)
         "Showcase override for table $tableId cleared"
-    }
-
-    /**
-     * 解析執行者目前占用的麻將桌後在伺服器主執行緒上執行 [action]，並把它回傳的訊息回饋給執行者。
-     *
-     * 桌歸屬查詢是 suspend 的，而 Brigadier 的執行是同步的，因此結果透過協程非同步回饋——比照
-     * `FabricGameCommand` 橋接 suspend 查詢與 Brigadier 同步 API 的既有做法。
-     */
-    private fun withPlayerTable(source: ServerCommandSource, action: (Uuid) -> String): Int {
-        val player = source.player ?: run {
-            source.sendError(Text.literal("This debug subcommand must be run by a player seated at a table"))
-            return 0
-        }
-        scope.launch {
-            val tableId = membershipRepository.getTableId(player.uuid.toKotlinUuid())
-            withContext(dispatchers.main) {
-                if (tableId == null) {
-                    source.sendError(Text.literal("You are not seated at any mahjong table"))
-                } else {
-                    source.sendFeedback({ Text.literal(action(tableId)) }, true)
-                }
-            }
-        }
-        return 1
     }
 
     /** 幫 showcase 節點掛上可選的 cue 或逗號分隔 cue 清單。 */
