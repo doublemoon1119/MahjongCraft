@@ -33,7 +33,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisio
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.GameActionCandidateResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugTilePreviewSupport
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
@@ -153,11 +157,20 @@ class FabricApplicationModuleTest {
         val debugRoot = koin.get<FabricDebugCommand>().build().build()
         assertEquals("mahjongcraft", debugRoot.name)
         assertEquals(setOf("debug"), debugRoot.children.map { it.name }.toSet())
-        assertTrue(debugRoot.children.single().children.any { it.name == "scenario" })
+        val debugNode = debugRoot.children.single()
+        assertTrue(debugNode.children.any { it.name == "scenario" })
         assertEquals(
             setOf("list", "load", "stress"),
             koin.get<FabricDebugScenarioCommand>().build().build().children.map { it.name }.toSet(),
         )
+        assertTrue(
+            debugNode.children.map { it.name }.containsAll(listOf("dice", "deal", "draw", "discard", "meld")),
+            "the animation family stays mounted under the debug root",
+        )
+        koin.get<FabricDebugAnimationCommand>()
+        koin.get<DebugTilePreviewSupport>()
+        koin.get<DebugVirtualTableLayoutFactory>()
+        koin.get<DebugPreviewEntityLifecycle>()
         koin.get<GetPlayerDecisionOptionsUseCase>()
         koin.get<GameActionCandidateResolver>()
         koin.get<PlayerDecisionPromptFactory>()
