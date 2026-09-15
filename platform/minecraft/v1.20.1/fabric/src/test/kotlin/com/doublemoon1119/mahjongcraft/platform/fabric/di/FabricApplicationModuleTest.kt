@@ -163,28 +163,32 @@ class FabricApplicationModuleTest {
         assertEquals("mahjongcraft", debugRoot.name)
         assertEquals(setOf("debug"), debugRoot.children.map { it.name }.toSet())
         val debugNode = debugRoot.children.single()
-        assertTrue(debugNode.children.any { it.name == "scenario" })
+        assertEquals(
+            setOf(
+                "scenario",
+                "win",
+                "showcase",
+                "dice",
+                "deal",
+                "draw",
+                "discard",
+                "exhaustive_draw_settlement",
+                "hovered_text",
+                "win_settlement",
+                "match_settlement",
+                "match_progression",
+                "decision_hud",
+                "meld",
+                "continuing_win",
+                "win_showcase_override",
+                "preparation",
+            ),
+            debugNode.children.map { it.name }.toSet(),
+            "every family subcommand is mounted under the debug root, and nothing else is",
+        )
         assertEquals(
             setOf("list", "load", "stress"),
             koin.get<FabricDebugScenarioCommand>().build().build().children.map { it.name }.toSet(),
-        )
-        assertTrue(
-            debugNode.children.map { it.name }.containsAll(listOf("dice", "deal", "draw", "discard", "meld")),
-            "the animation family stays mounted under the debug root",
-        )
-        assertTrue(
-            debugNode.children.map { it.name }.containsAll(
-                listOf(
-                    "win",
-                    "showcase",
-                    "exhaustive_draw_settlement",
-                    "win_settlement",
-                    "match_settlement",
-                    "continuing_win",
-                    "win_showcase_override",
-                ),
-            ),
-            "the presentation family stays mounted under the debug root",
         )
         val presentationCommand = koin.get<FabricDebugPresentationCommand>()
         assertEquals(
@@ -209,10 +213,6 @@ class FabricApplicationModuleTest {
             setOf("clear", "cue"),
             presentationCommand.buildWinShowcaseOverrideCommand().build().children.map { it.name }.toSet(),
         )
-        assertTrue(
-            debugNode.children.any { it.name == "hovered_text" },
-            "the text family stays mounted under the debug root",
-        )
         koin.get<FabricDebugTextCommand>()
         val decisionCommand = koin.get<FabricDebugDecisionCommand>()
         val decisionHudChildren = decisionCommand.buildDecisionHudCommand().build()
@@ -224,14 +224,6 @@ class FabricApplicationModuleTest {
         assertEquals(
             setOf("start", "submit", "timeout", "cancel"),
             decisionCommand.buildPreparationCommand().build().children.map { it.name }.toSet(),
-        )
-        assertTrue(
-            debugNode.children.map { it.name }.containsAll(listOf("decision_hud", "preparation")),
-            "the decision family stays mounted under the debug root",
-        )
-        assertTrue(
-            debugNode.children.any { it.name == "match_progression" },
-            "the progression family stays mounted under the debug root",
         )
         koin.get<FabricDebugProgressionCommand>()
         koin.get<FabricDebugAnimationCommand>()
