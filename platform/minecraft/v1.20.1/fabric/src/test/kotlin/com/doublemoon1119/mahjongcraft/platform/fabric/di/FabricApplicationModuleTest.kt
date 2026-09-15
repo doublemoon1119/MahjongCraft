@@ -36,6 +36,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricD
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.FabricDebugDecisionCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.FabricDebugPresentationCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugProgressionCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
@@ -228,6 +229,11 @@ class FabricApplicationModuleTest {
             debugNode.children.map { it.name }.containsAll(listOf("decision_hud", "preparation")),
             "the decision family stays mounted under the debug root",
         )
+        assertTrue(
+            debugNode.children.any { it.name == "match_progression" },
+            "the progression family stays mounted under the debug root",
+        )
+        koin.get<FabricDebugProgressionCommand>()
         koin.get<FabricDebugAnimationCommand>()
         koin.get<DebugTilePreviewSupport>()
         koin.get<DebugVirtualTableLayoutFactory>()
