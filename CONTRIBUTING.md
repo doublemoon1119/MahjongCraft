@@ -137,13 +137,17 @@ Shared test utility module.
 
 ### `:platform`
 
-Platform adaptation layer.
+Platform adaptation and presentation layer.
 
-- **Purpose**: Contains platform-specific implementations (e.g., Minecraft, Hytale). Implements DataSource interfaces defined in `:mahjong-flow` with platform-native storage (world save, I/O). Serves as the final entry point for each platform.
+- **Purpose**: Contains platform-specific implementations (e.g., Minecraft, Hytale). Implements repository and data-source interfaces defined in `:mahjong-flow` with platform-native storage, networking, rendering, and I/O. Serves as the final composition root for each platform.
 - **Structure**:
   - `platform/{platform}/common`: Platform-level common abstractions and shared implementations.
   - `platform/{platform}/{version}/common`: Version-specific code (e.g., networking, world save format).
   - `platform/{platform}/{version}/{loader}`: Loader-specific entry points (e.g., Fabric mod initializer).
+- **Domain access**:
+  - May depend on immutable domain models, value objects, rule-neutral interfaces, and built-in identifiers from `:mahjong-logic` when adapting them for rendering, persistence, networking, or platform presentation.
+  - May register platform presentation adapters for built-in rules, such as tile assets, translated names, sounds, and room configuration editors.
+  - Must not perform authoritative rule decisions or mutate authoritative game state outside `:mahjong-flow` use cases and coordinators.
 
 ## Dependency Rules
 
@@ -151,7 +155,13 @@ All modules must strictly follow the rules below to form a one-way dependency ch
 
 - **Direction**: `platform` -> `:mahjong-flow` -> `:mahjong-logic`
 - **No reverse dependencies**: `:mahjong-logic` must not depend on any outer layer. `:mahjong-flow` must not depend on `platform`.
-- **Cross-layer access**: `platform` modules may directly depend on `:mahjong-flow` to implement DataSource interfaces. They must not depend on `:mahjong-logic` directly — domain interaction must go through `:mahjong-flow`.
+- **Platform access to domain types**: `platform` modules may directly depend on `:mahjong-logic` for immutable domain models, value objects, rule-neutral contracts, and identifiers needed by adapters. This is still a one-way outer-to-inner dependency; it does not authorize the platform to own business rules.
+- **Authoritative state changes**: Production platform code must route every authoritative game-state change through a `:mahjong-flow` use case or coordinator. It must not copy or mutate `TableState`, hands, tile walls, pending reactions, round progression, or equivalent state and write the result directly to a repository.
+- **Rule decisions**: Production platform code must not invoke calculators, validators, analyzers, or rule policies to decide legal actions, wins, scoring, or game progression. Those decisions belong behind `:mahjong-flow` queries or use cases. Platform code may map their returned results into platform DTOs, assets, text, sounds, and rendering state.
+- **Presentation adapters**: Platform code may use concrete built-in rule IDs, action IDs, and configuration types to register presentation mappings. For example, mapping a Riichi action ID to a Minecraft sound is allowed; independently deciding whether that action is legal is not.
+- **Serialization boundaries**: Network and persistence adapters must use their explicit DTOs, registries, and versioned mappers. Do not serialize arbitrary domain objects directly merely because the platform can import their types.
+- **No duplicate boundary models**: Do not create a second set of Flow DTOs solely to prevent renderers or presenters from reading immutable domain data. Introduce a dedicated DTO only when the network, persistence, privacy, compatibility, or lifecycle boundary requires one.
+- **Development-only state setup**: Tests and development-gated debug scenarios may construct or replace authoritative state to provide deterministic fixtures. Keep this code inside an explicit test/debug boundary, prevent production player flows from calling it, and do not treat it as a precedent for normal platform mutations.
 - **Same-layer dependencies**:
   - Inside `platform`, concrete implementation modules (e.g., `fabric`) should depend on their corresponding common module (e.g., `common`).
   - Example: `:minecraft_v1_20_1_fabric` -> `:minecraft_v1_20_1_common` -> `:minecraft_common`.
