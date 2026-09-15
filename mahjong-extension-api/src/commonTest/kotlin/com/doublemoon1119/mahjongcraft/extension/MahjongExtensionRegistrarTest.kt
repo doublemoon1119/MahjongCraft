@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.extension
 
+import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DiscardPileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DynamicRuleStateDto
@@ -14,6 +16,13 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.PlayerRuleStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ScoreConfigDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
@@ -50,11 +59,13 @@ class MahjongExtensionRegistrarTest {
         val extension = RecordingExtension(calls)
 
         MahjongExtensionRegistrar.registerAndFreeze(
-            listOf(extension),
-            moduleRegistry,
-            tileTypeRegistry,
-            networkRegistries,
-            persistenceRegistries,
+            extensions = listOf(extension),
+            registries = testCoreRegistries(
+                moduleRegistry = moduleRegistry,
+                tileTypeRegistry = tileTypeRegistry,
+                networkRegistries = networkRegistries,
+                persistenceRegistries = persistenceRegistries,
+            ),
         )
 
         assertEquals(listOf("rule", "tile", "network", "persistence"), calls)
@@ -90,11 +101,8 @@ class MahjongExtensionRegistrarTest {
 
         val error = assertFailsWith<MahjongExtensionRegistrationException> {
             MahjongExtensionRegistrar.registerAndFreeze(
-                listOf(extension),
-                MahjongModuleRegistryImpl(),
-                TileTypeRegistryImpl(),
-                TestNetworkDtoRegistries(),
-                buildBuiltInPersistenceRegistries(),
+                extensions = listOf(extension),
+                registries = testCoreRegistries(),
             )
         }
 
@@ -108,11 +116,8 @@ class MahjongExtensionRegistrarTest {
 
         val error = assertFailsWith<MahjongExtensionRegistrationException> {
             MahjongExtensionRegistrar.registerAndFreeze(
-                listOf(extension, extension),
-                MahjongModuleRegistryImpl(),
-                TileTypeRegistryImpl(),
-                TestNetworkDtoRegistries(),
-                buildBuiltInPersistenceRegistries(),
+                extensions = listOf(extension, extension),
+                registries = testCoreRegistries(),
             )
         }
 
@@ -120,6 +125,28 @@ class MahjongExtensionRegistrarTest {
         assertTrue(error.cause?.message.orEmpty().contains("Duplicate"))
     }
 }
+
+/** 建立 registrar 測試使用的獨立 core registry 集合。 */
+private fun testCoreRegistries(
+    moduleRegistry: MahjongModuleRegistry = MahjongModuleRegistryImpl(),
+    tileTypeRegistry: TileTypeRegistry = TileTypeRegistryImpl(),
+    networkRegistries: NetworkDtoRegistries = TestNetworkDtoRegistries(),
+    persistenceRegistries: PersistenceRegistries = buildBuiltInPersistenceRegistries(),
+): CoreExtensionRegistries = CoreExtensionRegistries(
+    moduleRegistry = moduleRegistry,
+    tileTypeRegistry = tileTypeRegistry,
+    networkRegistries = networkRegistries,
+    persistenceRegistries = persistenceRegistries,
+    winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
+    gameActionAiRegistry = ExtensionGameActionAiRegistry(),
+    gameActionCommandFactoryRegistry = ExtensionGameActionCommandFactoryRegistry(),
+    gameCommandRegistry = ExtensionGameCommandExecutorRegistry(),
+    postReactionRoundOutcomeResolverRegistry = PostReactionRoundOutcomeResolverRegistry(),
+    postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry(),
+    roundPreparationResolverRegistry = RoundPreparationResolverRegistry(),
+    winRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry(),
+    winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(),
+)
 
 /** 記錄 registrar 呼叫順序並登記一個可解析規則的測試 extension。 */
 private class RecordingExtension(

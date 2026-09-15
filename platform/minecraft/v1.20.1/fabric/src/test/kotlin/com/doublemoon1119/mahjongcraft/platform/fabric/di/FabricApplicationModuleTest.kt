@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.di
 
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
@@ -39,6 +40,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDispl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
@@ -83,41 +85,14 @@ class FabricApplicationModuleTest {
         val gameActionCommandFactoryRegistry = koin.get<ExtensionGameActionCommandFactoryRegistry>()
         val gameCommandRegistry = koin.get<ExtensionGameCommandExecutorRegistry>()
         val gameActionDisplayNameRegistry = koin.get<GameActionDisplayNameRegistry>()
+        val coreRegistries = koin.get<CoreExtensionRegistries>()
+        val presentationRegistries = koin.get<MinecraftPresentationRegistries>()
         assertFalse(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertFalse(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertFalse(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
         FabricMahjongExtensions.initialize(
-            moduleRegistry = moduleRegistry,
-            tileTypeRegistry = tileTypeRegistry,
-            networkRegistries = networkRegistries,
-            persistenceRegistries = persistenceRegistries,
-            minecraftTileAssetRegistry = minecraftTileAssetRegistry,
-            aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
-            tileDisplayNameRegistry = tileDisplayNameRegistry,
-            ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
-            tileEmojiRegistry = tileEmojiRegistry,
-            tileLabelRegistry = tileLabelRegistry,
-            exhaustiveDrawReasonDisplayNameRegistry = koin.get(),
-            roundPreparationDisplayNameRegistry = koin.get(),
-            winCelebrationCueResolverRegistry = koin.get(),
-            showcaseRegistry = koin.get(),
-            winSettlementTemplateRegistry = koin.get(),
-            matchSettlementTemplateRegistry = koin.get(),
-            playerPortraitSourceRegistry = koin.get(),
-            publicPlayerIndicatorDisplayRegistry = koin.get(),
-            gameConfigPresentationRegistry = koin.get(),
-            roomMemberAppearanceSourceRegistry = koin.get(),
-            gameActionSoundPresentationRegistry = koin.get(),
-            roundInfoLineDisplayRegistry = koin.get(),
-            gameActionAiRegistry = gameActionAiRegistry,
-            gameActionCommandFactoryRegistry = gameActionCommandFactoryRegistry,
-            gameCommandRegistry = gameCommandRegistry,
-            gameActionDisplayNameRegistry = gameActionDisplayNameRegistry,
-            postReactionRoundOutcomeResolverRegistry = koin.get(),
-            postActionExhaustiveDrawResolverRegistry = koin.get(),
-            roundPreparationResolverRegistry = koin.get(),
-            winRoundContinuationResolverRegistry = koin.get(),
-            winSettlementDetailResolverRegistry = koin.get(),
+            coreRegistries = coreRegistries,
+            presentationRegistries = presentationRegistries,
             declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
             extensions = emptyList(),
         )
@@ -132,6 +107,12 @@ class FabricApplicationModuleTest {
         assertSame(ruleModuleDisplayNameRegistry, koin.get<RuleModuleDisplayNameRegistry>())
         assertSame(tileEmojiRegistry, koin.get<TileEmojiRegistry>())
         assertSame(tileLabelRegistry, koin.get<TileLabelRegistry>())
+        assertSame(moduleRegistry, coreRegistries.moduleRegistry)
+        assertSame(tileTypeRegistry, coreRegistries.tileTypeRegistry)
+        assertSame(networkRegistries, coreRegistries.networkRegistries)
+        assertSame(persistenceRegistries, coreRegistries.persistenceRegistries)
+        assertSame(minecraftTileAssetRegistry, presentationRegistries.tileAssetRegistry)
+        assertSame(tileDisplayNameRegistry, presentationRegistries.tileDisplayNameRegistry)
         assertEquals(RiichiTileTypes.ALL + TaiwanTileTypes.ALL, tileTypeRegistry.getAll().map { it.id })
         assertTrue(minecraftTileAssetRegistry.isFrozen)
         assertTrue(aiStrategyDisplayNameRegistry.isFrozen)

@@ -4,7 +4,9 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
@@ -16,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
@@ -30,6 +33,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
@@ -41,6 +45,48 @@ import org.koin.core.annotation.Single
 /** Minecraft loader 與版本無關、client／server 共用的 Koin 定義。 */
 @Module
 class MinecraftCommonModule {
+    /** 將 Koin 管理的 Minecraft presentation registry single 組成 bootstrap 專用集合。 */
+    @Single
+    fun provideMinecraftPresentationRegistries(
+        gameActionDisplayNameRegistry: GameActionDisplayNameRegistry,
+        @Provided aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
+        playerPortraitSourceRegistry: PlayerPortraitSourceRegistry,
+        publicPlayerIndicatorDisplayRegistry: PublicPlayerIndicatorDisplayRegistry,
+        roundPreparationDisplayNameRegistry: RoundPreparationDisplayNameRegistry,
+        gameConfigPresentationRegistry: GameConfigPresentationRegistry,
+        roomMemberAppearanceSourceRegistry: RoomMemberAppearanceSourceRegistry,
+        @Provided ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
+        exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
+        matchSettlementTemplateRegistry: MatchSettlementPresentationTemplateRegistry,
+        winSettlementTemplateRegistry: WinSettlementPresentationTemplateRegistry,
+        winCelebrationShowcaseRegistry: WinCelebrationShowcaseRegistry,
+        gameActionSoundPresentationRegistry: GameActionSoundPresentationRegistry,
+        roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
+        tileAssetRegistry: MinecraftTileAssetRegistry,
+        @Provided tileDisplayNameRegistry: TileDisplayNameRegistry,
+        tileEmojiRegistry: TileEmojiRegistry,
+        tileLabelRegistry: TileLabelRegistry,
+    ): MinecraftPresentationRegistries = MinecraftPresentationRegistries(
+        tileAssetRegistry = tileAssetRegistry,
+        tileDisplayNameRegistry = tileDisplayNameRegistry,
+        tileEmojiRegistry = tileEmojiRegistry,
+        tileLabelRegistry = tileLabelRegistry,
+        gameActionDisplayNameRegistry = gameActionDisplayNameRegistry,
+        gameActionSoundPresentationRegistry = gameActionSoundPresentationRegistry,
+        exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
+        roundPreparationDisplayNameRegistry = roundPreparationDisplayNameRegistry,
+        roundInfoLineDisplayRegistry = roundInfoLineDisplayRegistry,
+        winCelebrationShowcaseRegistry = winCelebrationShowcaseRegistry,
+        winSettlementTemplateRegistry = winSettlementTemplateRegistry,
+        matchSettlementTemplateRegistry = matchSettlementTemplateRegistry,
+        aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
+        ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
+        playerPortraitSourceRegistry = playerPortraitSourceRegistry,
+        publicPlayerIndicatorDisplayRegistry = publicPlayerIndicatorDisplayRegistry,
+        roomMemberAppearanceSourceRegistry = roomMemberAppearanceSourceRegistry,
+        gameConfigPresentationRegistry = gameConfigPresentationRegistry,
+    )
+
     /** 建立供內建與第三方規則登記動作語音的 registry。 */
     @Single
     fun provideGameActionSoundPresentationRegistry(): GameActionSoundPresentationRegistry = GameActionSoundPresentationRegistryImpl()

@@ -1,26 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric
 
-import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.HandSortPreferenceUpdateMode
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SetHandSortPreferenceUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftClientApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftServerApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
@@ -54,28 +43,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableR
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -98,37 +70,8 @@ class MahjongCraftMod : ModInitializer {
         val koin = startDependencyInjection()
         // Koin single 建立後，必須先於 Json 與遊戲流程服務第一次被解析前完成。
         FabricMahjongExtensions.initialize(
-            moduleRegistry = koin.get<MahjongModuleRegistry>(),
-            tileTypeRegistry = koin.get<TileTypeRegistry>(),
-            networkRegistries = koin.get<NetworkDtoRegistries>(),
-            persistenceRegistries = koin.get<PersistenceRegistries>(),
-            minecraftTileAssetRegistry = koin.get<MinecraftTileAssetRegistry>(),
-            aiStrategyDisplayNameRegistry = koin.get<AiStrategyDisplayNameRegistry>(),
-            tileDisplayNameRegistry = koin.get<TileDisplayNameRegistry>(),
-            ruleModuleDisplayNameRegistry = koin.get<RuleModuleDisplayNameRegistry>(),
-            tileEmojiRegistry = koin.get<TileEmojiRegistry>(),
-            tileLabelRegistry = koin.get<TileLabelRegistry>(),
-            gameActionDisplayNameRegistry = koin.get<GameActionDisplayNameRegistry>(),
-            exhaustiveDrawReasonDisplayNameRegistry = koin.get<ExhaustiveDrawReasonDisplayNameRegistry>(),
-            roundPreparationDisplayNameRegistry = koin.get<RoundPreparationDisplayNameRegistry>(),
-            winCelebrationCueResolverRegistry = koin.get<WinCelebrationCueResolverRegistry>(),
-            showcaseRegistry = koin.get<WinCelebrationShowcaseRegistry>(),
-            winSettlementTemplateRegistry = koin.get<WinSettlementPresentationTemplateRegistry>(),
-            matchSettlementTemplateRegistry = koin.get<MatchSettlementPresentationTemplateRegistry>(),
-            playerPortraitSourceRegistry = koin.get<PlayerPortraitSourceRegistry>(),
-            publicPlayerIndicatorDisplayRegistry = koin.get<PublicPlayerIndicatorDisplayRegistry>(),
-            gameConfigPresentationRegistry = koin.get<GameConfigPresentationRegistry>(),
-            roomMemberAppearanceSourceRegistry = koin.get<RoomMemberAppearanceSourceRegistry>(),
-            gameActionSoundPresentationRegistry = koin.get<GameActionSoundPresentationRegistry>(),
-            roundInfoLineDisplayRegistry = koin.get<RoundInfoLineDisplayRegistry>(),
-            gameActionAiRegistry = koin.get<ExtensionGameActionAiRegistry>(),
-            gameActionCommandFactoryRegistry = koin.get<ExtensionGameActionCommandFactoryRegistry>(),
-            gameCommandRegistry = koin.get<ExtensionGameCommandExecutorRegistry>(),
-            postReactionRoundOutcomeResolverRegistry = koin.get<PostReactionRoundOutcomeResolverRegistry>(),
-            postActionExhaustiveDrawResolverRegistry = koin.get<PostActionExhaustiveDrawResolverRegistry>(),
-            winRoundContinuationResolverRegistry = koin.get<WinRoundContinuationResolverRegistry>(),
-            roundPreparationResolverRegistry = koin.get<RoundPreparationResolverRegistry>(),
-            winSettlementDetailResolverRegistry = koin.get<WinSettlementDetailResolverRegistry>(),
+            coreRegistries = koin.get<CoreExtensionRegistries>(),
+            presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
             declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
             debugWinRoundContinuationState = koin.get<DebugWinRoundContinuationState>(),
             minecraftEnvironment = koin.get<MinecraftEnvironment>(),

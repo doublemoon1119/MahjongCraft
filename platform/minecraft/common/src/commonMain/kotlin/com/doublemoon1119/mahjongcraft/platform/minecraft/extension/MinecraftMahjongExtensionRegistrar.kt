@@ -10,25 +10,16 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
-import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.registerBuiltInGameConfigPresentations
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.registerBuiltInRuleModuleDisplayNames
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInMatchSettlementTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInRiichiReasons
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInWinSettlementTemplates
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.registerBuiltInWinCelebrationShowcases
-import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.registerBuiltInRiichiActionSounds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.registerBuiltInRiichiRoundInfoLineDisplays
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
@@ -59,42 +50,25 @@ object MinecraftMahjongExtensionRegistrar {
      */
     fun registerAndFreeze(
         extensions: Iterable<MinecraftMahjongExtension>,
-        tileAssetRegistry: MinecraftTileAssetRegistry,
-        aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
-        tileDisplayNameRegistry: TileDisplayNameRegistry,
-        ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
-        tileEmojiRegistry: TileEmojiRegistry,
-        tileLabelRegistry: TileLabelRegistry,
-        showcaseRegistry: WinCelebrationShowcaseRegistry,
-        gameActionDisplayNameRegistry: GameActionDisplayNameRegistry,
-        exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
-        roundPreparationDisplayNameRegistry: RoundPreparationDisplayNameRegistry,
-        winSettlementTemplateRegistry: WinSettlementPresentationTemplateRegistry,
-        matchSettlementTemplateRegistry: MatchSettlementPresentationTemplateRegistry,
-        playerPortraitSourceRegistry: PlayerPortraitSourceRegistry,
-        publicPlayerIndicatorDisplayRegistry: PublicPlayerIndicatorDisplayRegistry,
-        gameConfigPresentationRegistry: GameConfigPresentationRegistry,
-        roomMemberAppearanceSourceRegistry: RoomMemberAppearanceSourceRegistry,
-        gameActionSoundPresentationRegistry: GameActionSoundPresentationRegistry,
-        roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
+        registries: MinecraftPresentationRegistries,
     ): MinecraftMahjongExtensionRegistrationResult {
-        tileAssetRegistry.registerBuiltInTileAssets()
-        aiStrategyDisplayNameRegistry.registerBuiltInAiStrategyDisplayNames()
-        tileDisplayNameRegistry.registerBuiltInTileDisplayNames()
-        ruleModuleDisplayNameRegistry.registerBuiltInRuleModuleDisplayNames()
-        tileEmojiRegistry.registerBuiltInTileEmojis()
-        tileLabelRegistry.registerBuiltInTileLabels()
-        showcaseRegistry.registerBuiltInWinCelebrationShowcases()
-        exhaustiveDrawReasonDisplayNameRegistry.registerBuiltInRiichiReasons()
-        winSettlementTemplateRegistry.registerBuiltInWinSettlementTemplates()
-        matchSettlementTemplateRegistry.registerBuiltInMatchSettlementTemplate()
-        publicPlayerIndicatorDisplayRegistry.register(
+        registries.tileAssetRegistry.registerBuiltInTileAssets()
+        registries.aiStrategyDisplayNameRegistry.registerBuiltInAiStrategyDisplayNames()
+        registries.tileDisplayNameRegistry.registerBuiltInTileDisplayNames()
+        registries.ruleModuleDisplayNameRegistry.registerBuiltInRuleModuleDisplayNames()
+        registries.tileEmojiRegistry.registerBuiltInTileEmojis()
+        registries.tileLabelRegistry.registerBuiltInTileLabels()
+        registries.winCelebrationShowcaseRegistry.registerBuiltInWinCelebrationShowcases()
+        registries.exhaustiveDrawReasonDisplayNameRegistry.registerBuiltInRiichiReasons()
+        registries.winSettlementTemplateRegistry.registerBuiltInWinSettlementTemplates()
+        registries.matchSettlementTemplateRegistry.registerBuiltInMatchSettlementTemplate()
+        registries.publicPlayerIndicatorDisplayRegistry.register(
             RiichiRuleModule.RIICHI_INDICATOR_ID,
             PublicPlayerIndicatorDisplay(MinecraftMessageKeys.PLAYER_INDICATOR_RIICHI),
         )
-        gameConfigPresentationRegistry.registerBuiltInGameConfigPresentations()
-        gameActionSoundPresentationRegistry.registerBuiltInRiichiActionSounds()
-        roundInfoLineDisplayRegistry.registerBuiltInRiichiRoundInfoLineDisplays()
+        registries.gameConfigPresentationRegistry.registerBuiltInGameConfigPresentations()
+        registries.gameActionSoundPresentationRegistry.registerBuiltInRiichiActionSounds()
+        registries.roundInfoLineDisplayRegistry.registerBuiltInRiichiRoundInfoLineDisplays()
 
         val thirdPartyAssetKeys = mutableListOf<String>()
         val thirdPartyAiStrategyKeys = mutableListOf<String>()
@@ -105,20 +79,33 @@ object MinecraftMahjongExtensionRegistrar {
         val thirdPartyShowcaseKeys = mutableListOf<String>()
         val thirdPartyGameActionIds = mutableListOf<String>()
         val thirdPartyPortraitProviderIds = mutableListOf<String>()
-        val recordingTileAssetRegistry = RecordingMinecraftTileAssetRegistry(tileAssetRegistry, thirdPartyAssetKeys)
+        val recordingTileAssetRegistry =
+            RecordingMinecraftTileAssetRegistry(registries.tileAssetRegistry, thirdPartyAssetKeys)
         val recordingAiStrategyDisplayNameRegistry =
-            RecordingAiStrategyDisplayNameRegistry(aiStrategyDisplayNameRegistry, thirdPartyAiStrategyKeys)
+            RecordingAiStrategyDisplayNameRegistry(registries.aiStrategyDisplayNameRegistry, thirdPartyAiStrategyKeys)
         val recordingTileDisplayNameRegistry =
-            RecordingTileDisplayNameRegistry(tileDisplayNameRegistry, thirdPartyTileDisplayNameKeys)
+            RecordingTileDisplayNameRegistry(registries.tileDisplayNameRegistry, thirdPartyTileDisplayNameKeys)
         val recordingRuleModuleDisplayNameRegistry =
-            RecordingRuleModuleDisplayNameRegistry(ruleModuleDisplayNameRegistry, thirdPartyRuleModuleDisplayNameKeys)
-        val recordingTileEmojiRegistry = RecordingTileEmojiRegistry(tileEmojiRegistry, thirdPartyTileEmojiKeys)
-        val recordingTileLabelRegistry = RecordingTileLabelRegistry(tileLabelRegistry, thirdPartyTileLabelKeys)
-        val recordingShowcaseRegistry = RecordingWinCelebrationShowcaseRegistry(showcaseRegistry, thirdPartyShowcaseKeys)
+            RecordingRuleModuleDisplayNameRegistry(
+                registries.ruleModuleDisplayNameRegistry,
+                thirdPartyRuleModuleDisplayNameKeys,
+            )
+        val recordingTileEmojiRegistry =
+            RecordingTileEmojiRegistry(registries.tileEmojiRegistry, thirdPartyTileEmojiKeys)
+        val recordingTileLabelRegistry =
+            RecordingTileLabelRegistry(registries.tileLabelRegistry, thirdPartyTileLabelKeys)
+        val recordingShowcaseRegistry =
+            RecordingWinCelebrationShowcaseRegistry(
+                registries.winCelebrationShowcaseRegistry,
+                thirdPartyShowcaseKeys,
+            )
         val recordingGameActionDisplayNameRegistry =
-            RecordingGameActionDisplayNameRegistry(gameActionDisplayNameRegistry, thirdPartyGameActionIds)
+            RecordingGameActionDisplayNameRegistry(
+                registries.gameActionDisplayNameRegistry,
+                thirdPartyGameActionIds,
+            )
         val recordingPortraitRegistry =
-            RecordingPlayerPortraitSourceRegistry(playerPortraitSourceRegistry, thirdPartyPortraitProviderIds)
+            RecordingPlayerPortraitSourceRegistry(registries.playerPortraitSourceRegistry, thirdPartyPortraitProviderIds)
 
         val registeredExtensionIds = mutableSetOf<String>()
         extensions.forEach { extension ->
@@ -137,39 +124,22 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerTileLabels(recordingTileLabelRegistry)
                 extension.registerWinCelebrationShowcases(recordingShowcaseRegistry)
                 extension.registerGameActionDisplayNames(recordingGameActionDisplayNameRegistry)
-                extension.registerGameActionSounds(gameActionSoundPresentationRegistry)
-                extension.registerExhaustiveDrawReasonDisplayNames(exhaustiveDrawReasonDisplayNameRegistry)
-                extension.registerRoundPreparationDisplayNames(roundPreparationDisplayNameRegistry)
-                extension.registerWinSettlementPresentationTemplates(winSettlementTemplateRegistry)
-                extension.registerMatchSettlementPresentationTemplates(matchSettlementTemplateRegistry)
+                extension.registerGameActionSounds(registries.gameActionSoundPresentationRegistry)
+                extension.registerExhaustiveDrawReasonDisplayNames(registries.exhaustiveDrawReasonDisplayNameRegistry)
+                extension.registerRoundPreparationDisplayNames(registries.roundPreparationDisplayNameRegistry)
+                extension.registerWinSettlementPresentationTemplates(registries.winSettlementTemplateRegistry)
+                extension.registerMatchSettlementPresentationTemplates(registries.matchSettlementTemplateRegistry)
                 extension.registerPlayerPortraitSources(recordingPortraitRegistry)
-                extension.registerPublicPlayerIndicatorDisplays(publicPlayerIndicatorDisplayRegistry)
-                extension.registerGameConfigPresentations(gameConfigPresentationRegistry)
-                extension.registerRoomMemberAppearanceSources(roomMemberAppearanceSourceRegistry)
-                extension.registerRoundInfoLineDisplays(roundInfoLineDisplayRegistry)
+                extension.registerPublicPlayerIndicatorDisplays(registries.publicPlayerIndicatorDisplayRegistry)
+                extension.registerGameConfigPresentations(registries.gameConfigPresentationRegistry)
+                extension.registerRoomMemberAppearanceSources(registries.roomMemberAppearanceSourceRegistry)
+                extension.registerRoundInfoLineDisplays(registries.roundInfoLineDisplayRegistry)
             } catch (cause: Exception) {
                 throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
             }
         }
 
-        tileAssetRegistry.freeze()
-        aiStrategyDisplayNameRegistry.freeze()
-        tileDisplayNameRegistry.freeze()
-        ruleModuleDisplayNameRegistry.freeze()
-        tileEmojiRegistry.freeze()
-        tileLabelRegistry.freeze()
-        showcaseRegistry.freeze()
-        gameActionDisplayNameRegistry.freeze()
-        exhaustiveDrawReasonDisplayNameRegistry.freeze()
-        roundPreparationDisplayNameRegistry.freeze()
-        winSettlementTemplateRegistry.freeze()
-        matchSettlementTemplateRegistry.freeze()
-        playerPortraitSourceRegistry.freeze()
-        publicPlayerIndicatorDisplayRegistry.freeze()
-        gameConfigPresentationRegistry.freeze()
-        roomMemberAppearanceSourceRegistry.freeze()
-        gameActionSoundPresentationRegistry.freeze()
-        roundInfoLineDisplayRegistry.freeze()
+        registries.freezeAll()
         return MinecraftMahjongExtensionRegistrationResult(
             thirdPartyAssetKeys,
             thirdPartyAiStrategyKeys,
