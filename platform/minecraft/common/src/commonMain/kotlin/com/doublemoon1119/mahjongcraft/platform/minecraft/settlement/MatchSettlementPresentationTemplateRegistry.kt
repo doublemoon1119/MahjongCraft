@@ -55,6 +55,9 @@ data class MatchSettlementPresentationTemplate(
 
 /** 終局面板模板的凍結式 registry。 */
 interface MatchSettlementPresentationTemplateRegistry {
+    /** 目前已登記模板 key 的快照。 */
+    val registrationKeys: Set<String>
+
     /** 登記一個完整模板；重複 key 視為錯誤。 */
     fun register(template: MatchSettlementPresentationTemplate)
 
@@ -68,6 +71,8 @@ interface MatchSettlementPresentationTemplateRegistry {
 /** [MatchSettlementPresentationTemplateRegistry] 的記憶體實作。 */
 class MatchSettlementPresentationTemplateRegistryImpl : MatchSettlementPresentationTemplateRegistry {
     private val templates = linkedMapOf<String, MatchSettlementPresentationTemplate>()
+
+    override val registrationKeys: Set<String> get() = templates.keys.toSet()
     private var frozen = false
 
     override fun register(template: MatchSettlementPresentationTemplate) {

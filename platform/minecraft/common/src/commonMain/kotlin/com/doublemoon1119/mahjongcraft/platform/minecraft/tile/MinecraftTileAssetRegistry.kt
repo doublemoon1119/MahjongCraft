@@ -9,6 +9,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
  * `mahjong-logic` 不依賴此介面，由 Minecraft adapter 自行決定如何將 asset key 解析成模型與貼圖。
  */
 interface MinecraftTileAssetRegistry {
+    /** 目前已登記 asset key 的快照。 */
+    val registrationKeys: Set<String>
+
     /** registry 是否已禁止後續註冊。 */
     val isFrozen: Boolean
 

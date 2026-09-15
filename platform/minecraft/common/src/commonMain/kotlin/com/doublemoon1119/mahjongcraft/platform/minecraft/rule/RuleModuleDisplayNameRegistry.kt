@@ -12,6 +12,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
  * 第三方規則模組登記時沿用同一個 id，不需要另外設計一套識別碼。
  */
 interface RuleModuleDisplayNameRegistry {
+    /** 目前已登記規則模組 ID 的快照。 */
+    val registrationKeys: Set<String>
+
     /** 是否已禁止後續註冊。 */
     val isFrozen: Boolean
 

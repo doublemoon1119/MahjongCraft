@@ -6,6 +6,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftShowcase
 
 /** 宣告式胡牌展示定義註冊中心。 */
 interface WinCelebrationShowcaseRegistry {
+    /** 目前已登記 cue key 的快照。 */
+    val registrationKeys: Set<String> get() = cueKeys.toSet()
+
     /** registry 是否已凍結。 */
     val isFrozen: Boolean
 

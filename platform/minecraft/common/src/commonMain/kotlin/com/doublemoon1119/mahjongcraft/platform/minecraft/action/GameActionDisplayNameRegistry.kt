@@ -6,6 +6,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageK
 
 /** 管理規則擴充動作 ID 對應之 Minecraft 翻譯 key。 */
 interface GameActionDisplayNameRegistry {
+    /** 目前已登記動作 ID 的快照。 */
+    val registrationKeys: Set<String>
+
     /** registry 是否已凍結。 */
     val isFrozen: Boolean
 
@@ -23,6 +26,8 @@ interface GameActionDisplayNameRegistry {
 class GameActionDisplayNameRegistryImpl : GameActionDisplayNameRegistry {
     /** 依擴充動作 ID 索引的翻譯 key。 */
     private val translationKeys = mutableMapOf<String, String>()
+
+    override val registrationKeys: Set<String> get() = translationKeys.keys.toSet()
 
     /** 是否已禁止後續登記。 */
     override var isFrozen: Boolean = false

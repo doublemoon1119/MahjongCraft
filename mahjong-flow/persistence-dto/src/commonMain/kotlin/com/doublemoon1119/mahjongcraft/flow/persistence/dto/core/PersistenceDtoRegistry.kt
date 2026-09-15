@@ -31,6 +31,9 @@ class PersistenceDtoRegistry<Domain : Any> {
     /** 以穩定 type key 索引的註冊項目。 */
     private val byTypeKey = mutableMapOf<String, Entry<*, *>>()
 
+    /** 目前已登記 persistence mapper 的穩定 type key 快照。 */
+    val registrationKeys: Set<String> get() = byTypeKey.keys.toSet()
+
     /** 是否已禁止後續註冊。 */
     private var frozen = false
 

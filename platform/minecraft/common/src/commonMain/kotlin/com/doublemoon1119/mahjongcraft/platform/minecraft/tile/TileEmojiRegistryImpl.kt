@@ -10,6 +10,8 @@ class TileEmojiRegistryImpl : TileEmojiRegistry {
     /** 依 asset key 保存牌面 emoji 字元。 */
     private val emojisByAssetKey = mutableMapOf<String, String>()
 
+    override val registrationKeys: Set<String> get() = emojisByAssetKey.keys.toSet()
+
     override var isFrozen: Boolean = false
         private set
 

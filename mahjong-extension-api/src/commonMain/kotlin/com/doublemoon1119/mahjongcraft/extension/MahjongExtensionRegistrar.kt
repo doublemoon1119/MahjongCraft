@@ -12,7 +12,8 @@ object MahjongExtensionRegistrar {
     fun registerAndFreeze(
         extensions: Iterable<MahjongExtension>,
         registries: CoreExtensionRegistries,
-    ) {
+    ): List<ExtensionRegistrationCategory> {
+        val baseline = registries.registrationSnapshot()
         val registeredExtensionIds = mutableSetOf<String>()
         extensions.forEach { extension ->
             if (!registeredExtensionIds.add(extension.id)) {
@@ -40,7 +41,9 @@ object MahjongExtensionRegistrar {
             }
         }
 
+        val registrations = baseline.additionsSince(registries.registrationSnapshot())
         registries.freezeAll()
+        return registrations
     }
 }
 

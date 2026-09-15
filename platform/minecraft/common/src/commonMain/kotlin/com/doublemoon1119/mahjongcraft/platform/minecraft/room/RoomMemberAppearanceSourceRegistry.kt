@@ -28,6 +28,9 @@ class RoomMemberAppearanceSourceProviderException(
 
 /** 依 priority 與 provider ID 解析房間成員外觀的凍結式 registry。 */
 interface RoomMemberAppearanceSourceRegistry {
+    /** 目前已登記 provider ID 的快照。 */
+    val registrationKeys: Set<String>
+
     val isFrozen: Boolean
     fun register(providerId: String, priority: Int = 0, provider: RoomMemberAppearanceSourceProvider)
     fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource
@@ -39,6 +42,8 @@ class RoomMemberAppearanceSourceRegistryImpl : RoomMemberAppearanceSourceRegistr
     private data class Entry(val id: String, val priority: Int, val provider: RoomMemberAppearanceSourceProvider)
 
     private val entries = mutableMapOf<String, Entry>()
+
+    override val registrationKeys: Set<String> get() = entries.keys.toSet()
     private var ordered = emptyList<Entry>()
     override var isFrozen: Boolean = false
         private set

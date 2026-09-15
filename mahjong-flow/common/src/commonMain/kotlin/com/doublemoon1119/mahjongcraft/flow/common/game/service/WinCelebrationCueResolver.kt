@@ -11,6 +11,9 @@ fun interface WinCelebrationCueResolver {
 
 /** 規則模組 ID 與 [WinCelebrationCueResolver] 的註冊中心。 */
 interface WinCelebrationCueResolverRegistry {
+    /** 目前已登記規則模組 ID 的快照。 */
+    val registrationKeys: Set<String>
+
     /** 註冊指定規則模組的 resolver；同一 ID 不得重複。 */
     fun register(ruleModuleId: String, resolver: WinCelebrationCueResolver)
 
@@ -25,6 +28,8 @@ interface WinCelebrationCueResolverRegistry {
 class WinCelebrationCueResolverRegistryImpl : WinCelebrationCueResolverRegistry {
     private val resolvers = mutableMapOf<String, WinCelebrationCueResolver>()
     private var frozen = false
+
+    override val registrationKeys: Set<String> get() = resolvers.keys.toSet()
 
     override fun register(ruleModuleId: String, resolver: WinCelebrationCueResolver) {
         check(!frozen) { "Win celebration cue resolver registry is frozen" }

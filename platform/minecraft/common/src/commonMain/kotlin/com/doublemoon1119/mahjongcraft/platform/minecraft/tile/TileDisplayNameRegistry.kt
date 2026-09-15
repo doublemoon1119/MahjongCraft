@@ -11,6 +11,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
  * 不把所有概念塞進同一個通用 registry。
  */
 interface TileDisplayNameRegistry {
+    /** 目前已登記牌種 ID 的快照。 */
+    val registrationKeys: Set<String>
+
     /** 是否已禁止後續註冊。 */
     val isFrozen: Boolean
 

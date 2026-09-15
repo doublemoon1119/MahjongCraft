@@ -54,6 +54,9 @@ class RoundPreparationResolverRegistry {
     /** 是否已禁止後續註冊。 */
     private var frozen = false
 
+    /** 目前已登記規則模組 ID 的快照。 */
+    val registrationKeys: Set<String> get() = resolvers.keys.toSet()
+
     /** 登記一個規則模組的解析器。 */
     fun register(resolver: RoundPreparationResolver) {
         check(!frozen) { "Round preparation resolver registry is frozen" }

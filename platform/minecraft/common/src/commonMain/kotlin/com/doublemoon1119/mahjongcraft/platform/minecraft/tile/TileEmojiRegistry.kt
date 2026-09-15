@@ -9,6 +9,9 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
  * 只保存字元對照。
  */
 interface TileEmojiRegistry {
+    /** 目前已登記 asset key 的快照。 */
+    val registrationKeys: Set<String>
+
     /** registry 是否已禁止後續註冊。 */
     val isFrozen: Boolean
 

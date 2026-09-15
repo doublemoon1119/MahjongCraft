@@ -2,6 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.preparation
 
 /** 將開局準備 step／option 的完整 ID 映射到 Minecraft translation key。 */
 interface RoundPreparationDisplayNameRegistry {
+    /** 目前已登記準備項目 ID 的快照。 */
+    val registrationKeys: Set<String>
+
     /** Registry 是否已凍結。 */
     val isFrozen: Boolean
 
@@ -19,6 +22,8 @@ interface RoundPreparationDisplayNameRegistry {
 class RoundPreparationDisplayNameRegistryImpl : RoundPreparationDisplayNameRegistry {
     /** 依完整 ID 索引的 translation key。 */
     private val translations = mutableMapOf<String, String>()
+
+    override val registrationKeys: Set<String> get() = translations.keys.toSet()
 
     override var isFrozen: Boolean = false
         private set

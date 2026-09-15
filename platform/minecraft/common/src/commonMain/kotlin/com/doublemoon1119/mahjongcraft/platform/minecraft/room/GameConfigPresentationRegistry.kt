@@ -93,6 +93,9 @@ data class GameConfigPresentationDefinition(
 
 /** 供內建與第三方規則登記設定呈現定義的凍結式 registry。 */
 interface GameConfigPresentationRegistry {
+    /** 目前已登記規則模組 ID 的快照。 */
+    val registrationKeys: Set<String> get() = ruleModuleIds.toSet()
+
     val isFrozen: Boolean
     val ruleModuleIds: Set<String>
 

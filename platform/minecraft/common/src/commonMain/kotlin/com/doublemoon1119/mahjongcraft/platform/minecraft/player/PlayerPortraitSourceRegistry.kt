@@ -57,6 +57,9 @@ class PlayerPortraitSourceProviderException(
 
 /** 依 priority 與穩定 provider ID 解析玩家 portrait 的凍結式 registry。 */
 interface PlayerPortraitSourceRegistry {
+    /** 目前已登記 provider ID 的快照。 */
+    val registrationKeys: Set<String> get() = providerIds.toSet()
+
     val isFrozen: Boolean
     val providerIds: Set<String>
 

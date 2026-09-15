@@ -26,6 +26,9 @@ data class RoundInfoLineDisplay(
 
 /** 將 `RoundInfoLine.key` 映射至對應翻譯資訊，供呈現端組出實際文字，不需要認得特定規則模組。 */
 interface RoundInfoLineDisplayRegistry {
+    /** 目前已登記局況資訊 key 的快照。 */
+    val registrationKeys: Set<String>
+
     /** registry 是否已凍結。 */
     val isFrozen: Boolean
 
@@ -43,6 +46,8 @@ interface RoundInfoLineDisplayRegistry {
 class RoundInfoLineDisplayRegistryImpl : RoundInfoLineDisplayRegistry {
     /** 依局況顯示行 key 索引的翻譯資訊。 */
     private val displays = mutableMapOf<String, RoundInfoLineDisplay>()
+
+    override val registrationKeys: Set<String> get() = displays.keys.toSet()
 
     override var isFrozen: Boolean = false
         private set

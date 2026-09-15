@@ -27,6 +27,9 @@ class PostReactionRoundOutcomeResolverRegistry {
     /** 是否已禁止後續註冊。 */
     private var frozen = false
 
+    /** 目前已登記 resolver ID 的快照。 */
+    val registrationKeys: Set<String> get() = resolvers.mapTo(mutableSetOf()) { it.id }
+
     /** 登記 resolver；ID 不得重複。 */
     fun register(resolver: PostReactionRoundOutcomeResolver) {
         check(!frozen) { "Post-reaction round outcome resolver registry is frozen" }

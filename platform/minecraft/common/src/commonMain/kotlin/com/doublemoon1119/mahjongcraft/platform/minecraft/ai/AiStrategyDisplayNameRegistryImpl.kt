@@ -10,6 +10,8 @@ class AiStrategyDisplayNameRegistryImpl : AiStrategyDisplayNameRegistry {
     /** 依策略 key 保存顯示名稱 translation key。 */
     private val translationKeysByStrategyKey = mutableMapOf<String, String>()
 
+    override val registrationKeys: Set<String> get() = translationKeysByStrategyKey.keys.toSet()
+
     override var isFrozen: Boolean = false
         private set
 

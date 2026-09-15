@@ -25,6 +25,9 @@ class ExtensionGameCommandExecutorRegistry {
     /** 是否已禁止後續註冊。 */
     private var frozen = false
 
+    /** 目前已登記命令型別的穩定類別名稱快照。 */
+    val registrationKeys: Set<String> get() = entries.keys.mapTo(mutableSetOf()) { it.qualifiedName ?: it.toString() }
+
     /** 註冊一種擴充命令的伺服器 handler。 */
     fun <C : ExtensionGameCommand> register(
         commandClass: KClass<C>,

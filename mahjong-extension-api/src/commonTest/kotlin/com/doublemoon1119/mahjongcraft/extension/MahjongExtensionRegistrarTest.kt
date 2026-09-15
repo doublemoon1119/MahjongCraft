@@ -58,7 +58,7 @@ class MahjongExtensionRegistrarTest {
         val calls = mutableListOf<String>()
         val extension = RecordingExtension(calls)
 
-        MahjongExtensionRegistrar.registerAndFreeze(
+        val categories = MahjongExtensionRegistrar.registerAndFreeze(
             extensions = listOf(extension),
             registries = testCoreRegistries(
                 moduleRegistry = moduleRegistry,
@@ -69,6 +69,13 @@ class MahjongExtensionRegistrarTest {
         )
 
         assertEquals(listOf("rule", "tile", "network", "persistence"), calls)
+        assertEquals(
+            setOf(
+                "mahjongcraft:rule_module",
+                "mahjongcraft:tile_type",
+            ),
+            categories.mapTo(mutableSetOf(), ExtensionRegistrationCategory::id),
+        )
         assertTrue(moduleRegistry.getModule(RiichiRuleConfig()) is RiichiRuleModule)
         assertEquals(
             TileTypeId.parse("example:flower/spring"),

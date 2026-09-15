@@ -12,6 +12,8 @@ class MinecraftTileAssetRegistryImpl : MinecraftTileAssetRegistry {
     /** 依穩定 ID 保存 asset key。 */
     private val assetKeysById = mutableMapOf<TileTypeId, String>()
 
+    override val registrationKeys: Set<String> get() = assetKeysById.values.toSet()
+
     override var isFrozen: Boolean = false
         private set
 

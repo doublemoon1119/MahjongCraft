@@ -16,6 +16,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
  * 替呼叫端防呆。
  */
 interface AiStrategyDisplayNameRegistry {
+    /** 目前已登記策略 key 的快照。 */
+    val registrationKeys: Set<String>
+
     /** registry 是否已禁止後續註冊。 */
     val isFrozen: Boolean
 

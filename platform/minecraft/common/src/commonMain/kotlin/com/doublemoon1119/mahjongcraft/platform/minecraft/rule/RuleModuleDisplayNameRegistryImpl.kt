@@ -10,6 +10,8 @@ class RuleModuleDisplayNameRegistryImpl : RuleModuleDisplayNameRegistry {
     /** 依規則模組 ID 保存顯示名稱 translation key。 */
     private val translationKeysByRuleModuleId = mutableMapOf<String, String>()
 
+    override val registrationKeys: Set<String> get() = translationKeysByRuleModuleId.keys.toSet()
+
     override var isFrozen: Boolean = false
         private set
 

@@ -35,6 +35,9 @@ class DtoRegistry<Domain : Any, Dto : Any> {
     /** 是否已禁止後續註冊。 */
     private var frozen = false
 
+    /** 目前已登記 DTO 的穩定序列化名稱快照。 */
+    val registrationKeys: Set<String> get() = bySerialName.keys.toSet()
+
     /**
      * 註冊一組領域型別 ↔ DTO 的對應關係。
      *

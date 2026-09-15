@@ -123,7 +123,7 @@ class MinecraftMahjongExtensionRegistrarTest {
 
         assertEquals("m5_red", tileAssetRegistry.find(RiichiTileTypes.RED_FIVE_CHARACTER))
         assertEquals("animal_cat", tileAssetRegistry.find(thirdPartyId))
-        assertEquals(listOf("animal_cat"), result.thirdPartyTileAssetKeys)
+        assertEquals(setOf("animal_cat"), result.registrationKeys("mahjongcraft:tile_asset"))
         assertTrue(tileAssetRegistry.isFrozen)
         assertFailsWith<IllegalStateException> {
             tileAssetRegistry.register(TileTypeId.parse("example:late"), "late_key")
@@ -133,7 +133,7 @@ class MinecraftMahjongExtensionRegistrarTest {
             "example.ai_strategy.aggressive",
             aiStrategyDisplayNameRegistry.find("example:aggressive"),
         )
-        assertEquals(listOf("example:aggressive"), result.thirdPartyAiStrategyKeys)
+        assertEquals(setOf("example:aggressive"), result.registrationKeys("mahjongcraft:ai_strategy_display_name"))
         assertTrue(aiStrategyDisplayNameRegistry.isFrozen)
         assertFailsWith<IllegalStateException> {
             aiStrategyDisplayNameRegistry.register("example:late", "example.ai_strategy.late")
@@ -141,7 +141,7 @@ class MinecraftMahjongExtensionRegistrarTest {
 
         assertTrue(tileDisplayNameRegistry.find(RiichiTileTypes.RED_FIVE_CHARACTER) != null)
         assertEquals("example.tile.cat", tileDisplayNameRegistry.find(thirdPartyId))
-        assertEquals(listOf(thirdPartyId.toString()), result.thirdPartyTileDisplayNameKeys)
+        assertEquals(setOf(thirdPartyId.toString()), result.registrationKeys("mahjongcraft:tile_display_name"))
         assertTrue(tileDisplayNameRegistry.isFrozen)
         assertFailsWith<IllegalStateException> {
             tileDisplayNameRegistry.register(TileTypeId.parse("example:late"), "example.tile.late")
@@ -152,7 +152,7 @@ class MinecraftMahjongExtensionRegistrarTest {
             "example.rule_module.my_rule",
             ruleModuleDisplayNameRegistry.find("example:my_rule"),
         )
-        assertEquals(listOf("example:my_rule"), result.thirdPartyRuleModuleDisplayNameKeys)
+        assertEquals(setOf("example:my_rule"), result.registrationKeys("mahjongcraft:rule_module_display_name"))
         assertTrue(ruleModuleDisplayNameRegistry.isFrozen)
         assertFailsWith<IllegalStateException> {
             ruleModuleDisplayNameRegistry.register("example:late", "example.rule_module.late")
@@ -160,7 +160,7 @@ class MinecraftMahjongExtensionRegistrarTest {
 
         assertTrue(tileEmojiRegistry.find("m1") != null)
         assertEquals("🐱", tileEmojiRegistry.find("animal_cat"))
-        assertEquals(listOf("animal_cat"), result.thirdPartyTileEmojiKeys)
+        assertEquals(setOf("animal_cat"), result.registrationKeys("mahjongcraft:tile_emoji"))
         assertTrue(tileEmojiRegistry.isFrozen)
         assertFailsWith<IllegalStateException> {
             tileEmojiRegistry.register("late_key", "🐶")
@@ -168,7 +168,7 @@ class MinecraftMahjongExtensionRegistrarTest {
 
         assertTrue(tileLabelRegistry.find("m9") != null)
         assertEquals(exampleLabel, tileLabelRegistry.find("animal_cat"))
-        assertEquals(listOf("animal_cat"), result.thirdPartyTileLabelKeys)
+        assertEquals(setOf("animal_cat"), result.registrationKeys("mahjongcraft:tile_label"))
         assertTrue(tileLabelRegistry.isFrozen)
         assertFailsWith<IllegalStateException> {
             tileLabelRegistry.register("late_key", exampleLabel)
@@ -270,3 +270,8 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertTrue(error.cause?.message.orEmpty().contains("Duplicate"))
     }
 }
+
+/** 取得測試指定診斷分類的 registration key。 */
+private fun MinecraftMahjongExtensionRegistrationResult.registrationKeys(categoryId: String): Set<String> = categories
+    .single { it.id == categoryId }
+    .registrationKeys

@@ -5,6 +5,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageK
 
 /** 將完整流局原因 ID 映射至 Minecraft translation key。 */
 interface ExhaustiveDrawReasonDisplayNameRegistry {
+    /** 目前已登記流局原因 ID 的快照。 */
+    val registrationKeys: Set<String> get() = reasonIds.toSet()
+
     /** registry 是否已凍結。 */
     val isFrozen: Boolean
 

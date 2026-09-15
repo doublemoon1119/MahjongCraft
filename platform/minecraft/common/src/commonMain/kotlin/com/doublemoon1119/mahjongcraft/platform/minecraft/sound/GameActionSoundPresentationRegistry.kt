@@ -37,6 +37,9 @@ data class GameActionSoundDefinition(
 
 /** 管理規則模組動作與 Minecraft 語音呈現的凍結式 registry。 */
 interface GameActionSoundPresentationRegistry {
+    /** 目前已登記規則模組與動作組合的穩定 key 快照。 */
+    val registrationKeys: Set<String> get() = definitionKeys.mapTo(mutableSetOf()) { (ruleId, actionId) -> "$ruleId/$actionId" }
+
     /** registry 是否已凍結。 */
     val isFrozen: Boolean
 

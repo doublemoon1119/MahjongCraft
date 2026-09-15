@@ -10,6 +10,8 @@ class TileLabelRegistryImpl : TileLabelRegistry {
     /** 依 asset key 保存牌面角落標籤。 */
     private val labelsByAssetKey = mutableMapOf<String, TileLabel>()
 
+    override val registrationKeys: Set<String> get() = labelsByAssetKey.keys.toSet()
+
     override var isFrozen: Boolean = false
         private set
 

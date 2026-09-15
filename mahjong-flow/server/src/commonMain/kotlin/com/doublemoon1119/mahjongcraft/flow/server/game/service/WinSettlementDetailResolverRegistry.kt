@@ -26,6 +26,9 @@ interface WinSettlementDetailResolver {
 /** 以完整規則模組 ID 登記、bootstrap 後凍結的胡牌詳情解析器。 */
 class WinSettlementDetailResolverRegistry {
     private val resolvers = linkedMapOf<String, WinSettlementDetailResolver>()
+
+    /** 目前已登記規則模組 ID 的快照。 */
+    val registrationKeys: Set<String> get() = resolvers.keys.toSet()
     var isFrozen: Boolean = false
         private set
 

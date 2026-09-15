@@ -12,6 +12,8 @@ class TileDisplayNameRegistryImpl : TileDisplayNameRegistry {
     /** 依牌種 ID 保存顯示名稱 translation key。 */
     private val translationKeysByTypeId = mutableMapOf<TileTypeId, String>()
 
+    override val registrationKeys: Set<String> get() = translationKeysByTypeId.keys.mapTo(mutableSetOf(), TileTypeId::toString)
+
     override var isFrozen: Boolean = false
         private set
 

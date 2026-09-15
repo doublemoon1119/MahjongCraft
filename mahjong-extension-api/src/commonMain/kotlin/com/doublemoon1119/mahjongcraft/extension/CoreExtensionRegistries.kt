@@ -53,6 +53,53 @@ class CoreExtensionRegistries(
     val winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry,
     val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
 ) {
+    /** 取得目前所有 core extension registry 的不可變診斷快照。 */
+    fun registrationSnapshot(): ExtensionRegistrationSnapshot = ExtensionRegistrationSnapshot(
+        listOf(
+            snapshotCategory("mahjongcraft:rule_module", "Rule Module", moduleRegistry.getAllModuleIds()),
+            snapshotCategory("mahjongcraft:tile_type", "Tile Type", tileTypeRegistry.getAll().map { it.id.toString() }),
+            snapshotCategory("mahjongcraft:network_dto", "Network DTO", networkRegistrationKeys()),
+            snapshotCategory("mahjongcraft:persistence_dto", "Persistence DTO", persistenceRegistrationKeys()),
+            snapshotCategory(
+                "mahjongcraft:win_celebration_cue_resolver",
+                "Win Celebration Cue Resolver",
+                winCelebrationCueResolverRegistry.registrationKeys,
+            ),
+            snapshotCategory("mahjongcraft:game_action_ai", "Game Action AI", gameActionAiRegistry.registrationKeys),
+            snapshotCategory(
+                "mahjongcraft:game_action_command_factory",
+                "Game Action Command Factory",
+                gameActionCommandFactoryRegistry.registrationKeys,
+            ),
+            snapshotCategory("mahjongcraft:game_command", "Game Command", gameCommandRegistry.registrationKeys),
+            snapshotCategory(
+                "mahjongcraft:post_reaction_round_outcome_resolver",
+                "Post-reaction Round Outcome Resolver",
+                postReactionRoundOutcomeResolverRegistry.registrationKeys,
+            ),
+            snapshotCategory(
+                "mahjongcraft:post_action_exhaustive_draw_resolver",
+                "Post-action Exhaustive Draw Resolver",
+                postActionExhaustiveDrawResolverRegistry.registrationKeys,
+            ),
+            snapshotCategory(
+                "mahjongcraft:round_preparation_resolver",
+                "Round Preparation Resolver",
+                roundPreparationResolverRegistry.registrationKeys,
+            ),
+            snapshotCategory(
+                "mahjongcraft:win_round_continuation_resolver",
+                "Win Round Continuation Resolver",
+                winRoundContinuationResolverRegistry.registrationKeys,
+            ),
+            snapshotCategory(
+                "mahjongcraft:win_settlement_detail_resolver",
+                "Win Settlement Detail Resolver",
+                winSettlementDetailResolverRegistry.registrationKeys,
+            ),
+        ),
+    )
+
     /** 依固定分類順序凍結集合內所有 registry。 */
     fun freezeAll() {
         moduleRegistry.freeze()
@@ -69,4 +116,39 @@ class CoreExtensionRegistries(
         winRoundContinuationResolverRegistry.freeze()
         winSettlementDetailResolverRegistry.freeze()
     }
+
+    /** 彙整所有 network DTO 子 registry 的穩定 key。 */
+    private fun networkRegistrationKeys(): Set<String> = buildSet {
+        addPrefixed("rule_config", networkRegistries.ruleConfig.registrationKeys)
+        addPrefixed("score_config", networkRegistries.scoreConfig.registrationKeys)
+        addPrefixed("game_length", networkRegistries.gameLength.registrationKeys)
+        addPrefixed("dynamic_rule_state", networkRegistries.dynamicRuleState.registrationKeys)
+        addPrefixed("player_rule_state", networkRegistries.playerRuleState.registrationKeys)
+        addPrefixed("discard_pile", networkRegistries.discardPile.registrationKeys)
+        addPrefixed("exhaustive_draw_reason", networkRegistries.exhaustiveDrawReason.registrationKeys)
+        addPrefixed("extension_game_action", networkRegistries.extensionGameAction.registrationKeys)
+        addPrefixed("extension_game_command", networkRegistries.extensionGameCommand.registrationKeys)
+    }
+
+    /** 彙整所有 persistence DTO 子 registry 的穩定 key。 */
+    private fun persistenceRegistrationKeys(): Set<String> = buildSet {
+        addPrefixed("rule_config", persistenceRegistries.ruleConfigs.registrationKeys)
+        addPrefixed("discard_pile", persistenceRegistries.discardPiles.registrationKeys)
+        addPrefixed("player_rule_state", persistenceRegistries.playerRuleStates.registrationKeys)
+        addPrefixed("dynamic_rule_state", persistenceRegistries.dynamicRuleStates.registrationKeys)
+        addPrefixed("exhaustive_draw_reason", persistenceRegistries.exhaustiveDrawReasons.registrationKeys)
+        addPrefixed("extension_game_action", persistenceRegistries.extensionGameActions.registrationKeys)
+    }
+}
+
+/** 建立固定 ID 與顯示名稱的診斷快照類別。 */
+private fun snapshotCategory(
+    id: String,
+    displayName: String,
+    registrationKeys: Iterable<String>,
+): ExtensionRegistrationSnapshotCategory = ExtensionRegistrationSnapshotCategory(id, displayName, registrationKeys.toSet())
+
+/** 將子 registry 名稱加入 key，避免不同 DTO registry 使用相同 serial name 時互相抵銷。 */
+private fun MutableSet<String>.addPrefixed(prefix: String, keys: Iterable<String>) {
+    keys.forEach { key -> add("$prefix:$key") }
 }

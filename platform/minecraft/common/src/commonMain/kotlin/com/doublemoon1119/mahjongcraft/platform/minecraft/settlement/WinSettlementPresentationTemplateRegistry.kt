@@ -4,6 +4,9 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 interface WinSettlementPresentationTemplateRegistry {
     val isFrozen: Boolean
     val templateKeys: Set<String>
+
+    /** 目前已登記模板與欄位 provider 的穩定 key 快照。 */
+    val registrationKeys: Set<String>
     fun registerTemplate(template: WinSettlementPresentationTemplate)
     fun registerFieldProvider(fieldId: PresentationFieldId, provider: WinSettlementPresentationFieldProvider)
     fun findTemplate(key: String): WinSettlementPresentationTemplate?
@@ -53,6 +56,8 @@ class WinSettlementPresentationTemplateRegistryImpl : WinSettlementPresentationT
     override var isFrozen: Boolean = false
         private set
     override val templateKeys: Set<String> get() = templates.keys.toSet()
+    override val registrationKeys: Set<String>
+        get() = templates.keys.mapTo(mutableSetOf()) { "template:$it" } + providers.keys.map { "field:$it" }
 
     override fun registerTemplate(template: WinSettlementPresentationTemplate) {
         check(!isFrozen) { "Win settlement template registry is frozen" }

@@ -13,6 +13,9 @@ data class PublicPlayerIndicatorDisplay(
 
 /** 完整 namespaced indicator／option ID 的凍結式 Minecraft 顯示 registry。 */
 interface PublicPlayerIndicatorDisplayRegistry {
+    /** 目前已登記 indicator ID 的快照。 */
+    val registrationKeys: Set<String>
+
     val isFrozen: Boolean
     fun register(id: String, display: PublicPlayerIndicatorDisplay)
     fun find(id: String): PublicPlayerIndicatorDisplay?
@@ -22,6 +25,8 @@ interface PublicPlayerIndicatorDisplayRegistry {
 /** [PublicPlayerIndicatorDisplayRegistry] 的記憶體實作。 */
 class PublicPlayerIndicatorDisplayRegistryImpl : PublicPlayerIndicatorDisplayRegistry {
     private val displays = mutableMapOf<String, PublicPlayerIndicatorDisplay>()
+
+    override val registrationKeys: Set<String> get() = displays.keys.toSet()
     override var isFrozen: Boolean = false
         private set
 
