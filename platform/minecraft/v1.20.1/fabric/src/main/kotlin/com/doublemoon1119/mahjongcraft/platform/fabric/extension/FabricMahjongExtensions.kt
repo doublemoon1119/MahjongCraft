@@ -2,6 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.ai.registerRiichiGameActionHandler
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationCategory
+import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReport
+import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReportFormatter
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
@@ -24,7 +27,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.registerRiichiG
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
-import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.loader.api.FabricLoader
@@ -62,42 +64,14 @@ object FabricMahjongExtensions {
                 minecraftEnvironment = minecraftEnvironment,
                 extensions = extensions,
             )
-            val extensionIds = extensions.map { it.id }
-            logger.info(
-                "Registered {} third-party Mahjong extension(s): {}",
-                extensionIds.size,
-                extensionIds,
+            val report = ExtensionRegistrationReport(
+                extensionIds = extensions.map { it.id }.distinct().sorted(),
+                categories = result.categories,
             )
-            logger.info(
-                "Registered {} third-party Minecraft tile asset(s): {}",
-                result.thirdPartyTileAssetKeys.size,
-                result.thirdPartyTileAssetKeys,
-            )
-            logger.info(
-                "Registered {} third-party AI strategy display name(s): {}",
-                result.thirdPartyAiStrategyKeys.size,
-                result.thirdPartyAiStrategyKeys,
-            )
-            logger.info(
-                "Registered {} third-party tile display name(s): {}",
-                result.thirdPartyTileDisplayNameKeys.size,
-                result.thirdPartyTileDisplayNameKeys,
-            )
-            logger.info(
-                "Registered {} third-party rule module display name(s): {}",
-                result.thirdPartyRuleModuleDisplayNameKeys.size,
-                result.thirdPartyRuleModuleDisplayNameKeys,
-            )
-            logger.info(
-                "Registered {} third-party tile emoji(s): {}",
-                result.thirdPartyTileEmojiKeys.size,
-                result.thirdPartyTileEmojiKeys,
-            )
-            logger.info(
-                "Registered {} third-party tile label(s): {}",
-                result.thirdPartyTileLabelKeys.size,
-                result.thirdPartyTileLabelKeys,
-            )
+            logger.info(ExtensionRegistrationReportFormatter.format(report))
+            if (report.isTruncatedAt(ExtensionRegistrationReportFormatter.DEFAULT_MAX_IDS_PER_CATEGORY)) {
+                logger.debug(ExtensionRegistrationReportFormatter.format(report, Int.MAX_VALUE))
+            }
         } catch (cause: Exception) {
             logger.error("Failed to initialize Mahjong extensions", cause)
             throw cause
@@ -107,7 +81,7 @@ object FabricMahjongExtensions {
     /**
      * 使用明確提供的 [extensions] 初始化，供平台測試驗證組裝順序。
      *
-     * @return [MinecraftMahjongExtensionRegistrar.registerAndFreeze] 的登記結果，供呼叫端記錄診斷資訊。
+     * @return Core 與 Minecraft presentation 的第三方登記分類。
      */
     internal fun initialize(
         coreRegistries: CoreExtensionRegistries,
@@ -118,7 +92,7 @@ object FabricMahjongExtensions {
         // （MahjongCraftMod）會傳入真正的 MinecraftEnvironment。
         minecraftEnvironment: MinecraftEnvironment = NonDevelopmentEnvironment,
         extensions: Iterable<MahjongExtension>,
-    ): MinecraftMahjongExtensionRegistrationResult {
+    ): FabricExtensionRegistrationResult {
         coreRegistries.moduleRegistry.registerBuiltInRuleModules()
         coreRegistries.tileTypeRegistry.registerBuiltInTileTypes()
         coreRegistries.networkRegistries.registerBuiltInRuleConfigDtos()
@@ -141,17 +115,21 @@ object FabricMahjongExtensions {
             )
         }
 
-        MahjongExtensionRegistrar.registerAndFreeze(
+        val coreCategories = MahjongExtensionRegistrar.registerAndFreeze(
             extensions = extensions,
             registries = coreRegistries,
         )
 
         // 同一個第三方類別可同時實作 MahjongExtension 與 MinecraftMahjongExtension，
         // 不需要在 fabric.mod.json 額外宣告第二個 entrypoint。
-        return MinecraftMahjongExtensionRegistrar.registerAndFreeze(
+        val minecraftResult = MinecraftMahjongExtensionRegistrar.registerAndFreeze(
             extensions = extensions.filterIsInstance<MinecraftMahjongExtension>(),
             registries = presentationRegistries,
         )
+        val minecraftCategories = minecraftResult.categories.map { category ->
+            ExtensionRegistrationCategory(category.id, category.displayName, category.registrationKeys.sorted())
+        }
+        return FabricExtensionRegistrationResult(coreCategories + minecraftCategories)
     }
 
     /** [initialize] 預設使用的環境查詢：一律回報非開發環境，見該參數上方註解。 */
@@ -176,3 +154,8 @@ object FabricMahjongExtensions {
         presentationRegistries.gameActionDisplayNameRegistry.registerRiichiGameActionDisplayName()
     }
 }
+
+/** Fabric extension 初始化完成後的跨 bundle 第三方登記分類。 */
+internal data class FabricExtensionRegistrationResult(
+    val categories: List<ExtensionRegistrationCategory>,
+)
