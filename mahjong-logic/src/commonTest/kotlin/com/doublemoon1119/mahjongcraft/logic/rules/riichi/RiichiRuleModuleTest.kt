@@ -39,7 +39,7 @@ import kotlin.uuid.Uuid
  */
 class RiichiRuleModuleTest {
 
-    private val module: RiichiRuleModule = RiichiRuleModule(
+    private val module: MahjongRuleModule<RiichiRuleConfig> = RiichiRuleModule(
         id = "mahjongcraft:riichi",
         config = RiichiRuleConfig(),
     )
@@ -1146,7 +1146,7 @@ class RiichiRuleModuleTest {
     fun `test resolveSuufonRenda returns SuufonRenda when all first discards are the same wind`() {
         val table = tableWithFirstDiscards(List(4) { Tile.Honor.East })
 
-        assertEquals(RiichiExhaustiveDrawReason.SuufonRenda, module.resolveSuufonRenda(table))
+        assertEquals(RiichiExhaustiveDrawReason.SuufonRenda, (module as RiichiRuleModule).resolveSuufonRenda(table))
     }
 
     /**
@@ -1156,7 +1156,7 @@ class RiichiRuleModuleTest {
     fun `test resolveSuufonRenda returns null when first discards differ`() {
         val table = tableWithFirstDiscards(listOf(Tile.Honor.East, Tile.Honor.East, Tile.Honor.South, Tile.Honor.East))
 
-        assertNull(module.resolveSuufonRenda(table))
+        assertNull((module as RiichiRuleModule).resolveSuufonRenda(table))
     }
 
     /**
@@ -1173,7 +1173,7 @@ class RiichiRuleModuleTest {
         )
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertNull(module.resolveSuufonRenda(table))
+        assertNull((module as RiichiRuleModule).resolveSuufonRenda(table))
     }
 
     /**
@@ -1196,7 +1196,7 @@ class RiichiRuleModuleTest {
         )
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertNull(module.resolveSuufonRenda(table))
+        assertNull((module as RiichiRuleModule).resolveSuufonRenda(table))
     }
 
     /**
@@ -1211,7 +1211,7 @@ class RiichiRuleModuleTest {
         }
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertEquals(RiichiExhaustiveDrawReason.SuuchaRiichi, module.resolveSuuchaRiichi(table))
+        assertEquals(RiichiExhaustiveDrawReason.SuuchaRiichi, (module as RiichiRuleModule).resolveSuuchaRiichi(table))
     }
 
     /**
@@ -1226,7 +1226,7 @@ class RiichiRuleModuleTest {
         } + FakeMahjongPlayerFactory.create(playerRuleState = RiichiPlayerState())
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertNull(module.resolveSuuchaRiichi(table))
+        assertNull((module as RiichiRuleModule).resolveSuuchaRiichi(table))
     }
 
     private fun kanMeld(type: MeldType): Meld {
@@ -1246,7 +1246,7 @@ class RiichiRuleModuleTest {
         val players = List(4) { playerWithKans(count = 1) }
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertEquals(RiichiExhaustiveDrawReason.SuukanNagare, module.resolveSuukanNagare(table))
+        assertEquals(RiichiExhaustiveDrawReason.SuukanNagare, (module as RiichiRuleModule).resolveSuukanNagare(table))
     }
 
     /**
@@ -1257,7 +1257,7 @@ class RiichiRuleModuleTest {
         val players = listOf(playerWithKans(count = 2)) + List(3) { playerWithKans(count = 1) }
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertEquals(RiichiExhaustiveDrawReason.SuukanNagare, module.resolveSuukanNagare(table))
+        assertEquals(RiichiExhaustiveDrawReason.SuukanNagare, (module as RiichiRuleModule).resolveSuukanNagare(table))
     }
 
     /**
@@ -1268,7 +1268,7 @@ class RiichiRuleModuleTest {
         val players = listOf(playerWithKans(count = 4)) + List(3) { FakeMahjongPlayerFactory.create() }
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertNull(module.resolveSuukanNagare(table))
+        assertNull((module as RiichiRuleModule).resolveSuukanNagare(table))
     }
 
     /**
@@ -1279,7 +1279,7 @@ class RiichiRuleModuleTest {
         val players = List(3) { playerWithKans(count = 1) } + FakeMahjongPlayerFactory.create()
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertNull(module.resolveSuukanNagare(table))
+        assertNull((module as RiichiRuleModule).resolveSuukanNagare(table))
     }
 
     /** 驗證指示牌的下一張數牌被判定為寶牌，循環邊界（9 → 1）也一併驗證。 */
