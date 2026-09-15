@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decisi
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto
@@ -42,6 +43,7 @@ import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -82,7 +84,7 @@ class FabricDebugDecisionCommand(
     @Provided private val json: Json,
 ) {
     /** 每位測試者最後一次 HUD 預覽的虛擬 game ID，供 clear 精確停止同一份 client state。 */
-    private val debugDecisionGameIds = mutableMapOf<java.util.UUID, String>()
+    private val debugDecisionGameIds = mutableMapOf<UUID, String>()
 
     /** 建立涵蓋操作、立直、分析及 preparation 的 HUD 預覽指令；literal 節點同時提供完整 tab 補全。 */
     fun buildDecisionHudCommand(): LiteralArgumentBuilder<ServerCommandSource> = DecisionHudPreview.entries.fold(
@@ -93,7 +95,7 @@ class FabricDebugDecisionCommand(
 
     /** 直接傳送正式 S2C prompt DTO，讓 client 使用與真實對局相同的 HUD renderer。 */
     private fun previewDecisionHud(source: ServerCommandSource, preview: DecisionHudPreview): Int {
-        val player = source.player ?: return 0
+        val player = source.player ?: return COMMAND_FAILURE
         val gameId = Uuid.random().toString()
         debugDecisionGameIds[player.uuid] = gameId
         val analysisTileId = if (preview.isDiscardAnalysis) {
@@ -134,7 +136,7 @@ class FabricDebugDecisionCommand(
 
     /** 清除 HUD 預覽使用的 client timer/prompt。 */
     private fun clearDecisionHud(source: ServerCommandSource): Int {
-        val player = source.player ?: return 0
+        val player = source.player ?: return COMMAND_FAILURE
         val gameId = debugDecisionGameIds.remove(player.uuid) ?: return COMMAND_SUCCESS
         MahjongChannels.decisionTimerUpdate.sendTo(
             player,
@@ -276,7 +278,7 @@ class FabricDebugDecisionCommand(
      *
      * 寫入狀態後額外呼叫 [GameDecisionAvailabilityService.reconcile] 並同步結果，比照
      * [GameFlowCoordinator] 內部 `dispatchAndReconcile` 的作法，讓這位玩家真的取得
-     * [com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase.ROUND_PREPARATION]
+     * [PlayerDecisionPhase.ROUND_PREPARATION]
      * 計時器——直接寫入 repository 不會經過 coordinator 的指令派送流程，計時器不會自動產生，逾時、
      * 強制 fallback 等行為在 debug 情境下就永遠測不到。
      */
@@ -536,5 +538,8 @@ class FabricDebugDecisionCommand(
 
         /** Brigadier 成功回傳值。 */
         const val COMMAND_SUCCESS: Int = 1
+
+        /** Brigadier 失敗回傳值。 */
+        const val COMMAND_FAILURE: Int = 0
     }
 }
