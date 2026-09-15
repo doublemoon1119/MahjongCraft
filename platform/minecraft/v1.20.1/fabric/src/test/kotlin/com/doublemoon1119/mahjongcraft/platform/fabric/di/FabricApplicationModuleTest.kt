@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.DefaultGameConfigProvider
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
@@ -35,6 +36,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapsh
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.BuiltInDefaultGameConfigProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
@@ -131,6 +133,7 @@ class FabricApplicationModuleTest {
         koin.get<GameEventPublisher>()
         koin.get<DecisionTimerUpdatePublisher>()
         koin.get<RoomEventPublisher>()
+        assertTrue(koin.get<DefaultGameConfigProvider>() is BuiltInDefaultGameConfigProvider)
         koin.get<MahjongTableRoomService>()
         koin.get<RoomSnapshotSender>()
         koin.get<GameSnapshotSender>()

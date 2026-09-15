@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.DefaultGameConfigProvider
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
@@ -29,7 +30,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.ToggleReadyUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.UpdateConfigUseCase
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
@@ -64,6 +64,7 @@ class MahjongTableRoomService(
     private val roomSnapshotRepository: RoomSnapshotRepository,
     private val gameRepository: GameRepository,
     private val membershipRepository: PlayerMembershipRepository,
+    private val defaultGameConfigProvider: DefaultGameConfigProvider,
     private val createRoom: CreateRoomUseCase,
     private val joinRoom: JoinRoomUseCase,
     private val leaveRoom: LeaveRoomUseCase,
@@ -209,7 +210,7 @@ class MahjongTableRoomService(
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.TableNotReachable)
                 return@launch
             }
-            when (val result = createRoom(tableId, playerId, GameConfig(RiichiRuleConfig()))) {
+            when (val result = createRoom(tableId, playerId, defaultGameConfigProvider.create())) {
                 is Outcome.Success -> {
                     syncRoom(tableId, playerId)
                     roomSnapshotSender.send(tableId, playerId)
@@ -311,7 +312,7 @@ class MahjongTableRoomService(
 
             val room = roomRepository.getRoom(tableId)
             if (room == null) {
-                when (val result = createRoom(tableId, playerId, GameConfig(RiichiRuleConfig()))) {
+                when (val result = createRoom(tableId, playerId, defaultGameConfigProvider.create())) {
                     is Outcome.Success -> {
                         syncRoom(tableId, playerId)
                         roomSnapshotSender.send(tableId, playerId)
