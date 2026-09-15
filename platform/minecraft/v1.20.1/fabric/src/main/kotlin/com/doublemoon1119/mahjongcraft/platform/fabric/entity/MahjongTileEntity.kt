@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
@@ -183,7 +184,7 @@ class MahjongTileEntity(
      *
      * 存在的理由：中途胡牌（本局在胡牌後仍繼續）會在已完成玩家的真實牌上排入理牌、倒牌、隱形、恢復
      * 顯示與蓋牌動畫。這些動畫**不該**阻擋其他仍在本局中的玩家繼續摸打，但
-     * [TablePresentationBusyTracker][com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker]
+     * [TablePresentationBusyTracker][TablePresentationBusyTracker]
      * 的整桌忙碌判定是掃描「這桌有沒有任何牌正在動畫」，光靠呈現層不標記整桌 pending 攔不住。
      *
      * 刻意用「到期時間」而不是布林旗標：跟牌桌呈現時間軸與動畫佇列一樣是絕對 game time，寫進 entity

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.CompletionType
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Fuuro
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
@@ -24,7 +25,7 @@ import kotlin.test.assertNull
  *
  * 測試平和的成立條件，包括門前清兩面聽、有副露等情況。
  *
- * @see com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
+ * @see RiichiHandValueCalculator
  */
 class PinfuTest : RiichiHandValueCalculatorTestBase() {
 

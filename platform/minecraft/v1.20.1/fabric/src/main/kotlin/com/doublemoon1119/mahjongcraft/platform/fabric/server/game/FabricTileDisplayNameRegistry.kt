@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
@@ -13,7 +14,7 @@ import org.koin.core.annotation.Single
  * 方式。實際邏輯委派給 [TileDisplayNameRegistryImpl]；內建與第三方牌種的註冊、凍結時機交給
  * [MinecraftMahjongExtensionRegistrar]。
  *
- * 放在 `server.game` 套件（而不是跟 [com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText]
+ * 放在 `server.game` 套件（而不是跟 [toDisplayText]
  * 同一個 `text` 套件）——`@ComponentScan` 只掃描 `platform.fabric.server` 底下，Koin 帶註解的類別要放在
  * 掃描範圍內才會被發現。
  */

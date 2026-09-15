@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROOT
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
@@ -117,7 +118,7 @@ class FabricRoomConfigScreenCommand(
         /** `room_config` 子指令節點。 */
         const val ROOM_CONFIG_SUBCOMMAND: String = "room_config"
 
-        /** 開啟畫面的子指令，跟 [com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand] 的 `screen` 子節點用途一致。 */
+        /** 開啟畫面的子指令，跟 [FabricClientConfigCommand] 的 `screen` 子節點用途一致。 */
         const val SCREEN_SUBCOMMAND: String = "screen"
 
         /** Brigadier 成功回傳值。 */

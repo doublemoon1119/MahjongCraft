@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
@@ -358,7 +359,7 @@ interface GamePresentationPublisher {
      * 水波紋）。
      *
      * 呼叫時機：[gameId] 的贏家結算完成、既有事件廣播之後——自摸（`DeclareTsumoUseCase`）緊接在廣播
-     * [com.doublemoon1119.mahjongcraft.logic.base.GameAction.Tsumo] 之後呼叫一次；榮和／搶槓
+     * [GameAction.Tsumo] 之後呼叫一次；榮和／搶槓
      * （`RespondToDiscardUseCase`／`RespondToKanUseCase`）在既有事件廣播之後，對每一位贏家各自
      * 呼叫一次（一炮多響可能不只一次）。
      *
@@ -404,7 +405,7 @@ interface GamePresentationPublisher {
  * @property celebration 胡牌演出：強制理牌重排、把贏家立牌倒下攤開（FACE_UP）、降臨特效，以及役滿
  * 成立時的 showcase。整段不可省略、也不拆開——它是「這個人胡了」在世界裡唯一的視覺訊號。
  * @property settlement 結算面板；詳細或精簡由
- * [com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode] 決定，反映在
+ * [ContinuingWinSettlementMode] 決定，反映在
  * [WinSettlementPresentationRequest.isBrief] 上。
  * @property celebration 胡牌及役滿展示請求。
  * @property settlement 結算面板請求。

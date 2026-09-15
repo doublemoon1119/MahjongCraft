@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.ai
 /**
  * AI 策略登記中心介面，管理策略 key 與其建構方式的對照關係。
  *
- * 設計刻意比照 `com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry`：開放註冊，
+ * 設計刻意比照 `MahjongModuleRegistry`：開放註冊，
  * 內建策略與第三方策略走同一條路，登記表本身不具備任何特權判斷。策略若需要額外設定（例如未來
  * 某個自帶 url/prompt/api key 的策略），由該策略自己在註冊時透過閉包捕捉，不會經過這個介面的
  * 任何參數——避免這類設定被夾帶進 `Room`/`MahjongPlayer` 進而外洩到快照裡。

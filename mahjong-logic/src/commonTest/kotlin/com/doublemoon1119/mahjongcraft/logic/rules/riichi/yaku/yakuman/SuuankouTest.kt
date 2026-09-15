@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
@@ -25,7 +26,7 @@ import kotlin.test.assertTrue
  * - 四暗刻單騎：手牌由 4 個暗面子組成，胡牌形成第四個暗面子（單騎聽牌）
  *
  * @see calculateSuuankou
- * @see com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
+ * @see RiichiHandValueCalculator
  */
 class SuuankouTest : RiichiHandValueCalculatorTestBase() {
 

@@ -12,7 +12,7 @@ import kotlin.uuid.Uuid
  * 這次一起成立的所有贏家，不逐位呼叫。
  *
  * 刻意不攜帶 `MahjongRuleModule.declareTsumo`／`declareRon` 算出的原始
- * `com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult`（番數、役種等呈現細節）——
+ * `WinResolutionResult`（番數、役種等呈現細節）——
  * [settledTableState] 的分數與 `actionHistory` 已經是套用結算後的最終值，「本局是否結束」這個判斷
  * 只需要看結算後的桌況即可，不需要重新理解規則特有的算役細節。
  *

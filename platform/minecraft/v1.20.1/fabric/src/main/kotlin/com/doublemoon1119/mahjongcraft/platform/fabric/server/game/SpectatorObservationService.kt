@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
@@ -18,7 +19,7 @@ import kotlin.uuid.Uuid
  * `onStartedTrackingBy`／`onStoppedTrackingBy`），伺服器就會呼叫這裡的 [onStartedObserving]。
  *
  * 這裡只負責「第一次補一份快照給他」；之後牌局有任何變化要不要繼續推播給他，交給
- * [com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher.publishToTable]——
+ * [GameEventPublisher.publishToTable]——
  * 那裡才是真正每次動作後決定「這則通知要送給哪些人」的地方，一樣會把旁觀者（[GameSnapshotRepository]
  * 已登記的觀察者）納入。只呼叫 `syncAll`（把最新快照寫回 repository）並不夠：那一步只更新了
  * repository 裡「存了什麼」，真正把資料送到玩家用戶端手上的是另外那個廣播步驟，如果那步驟只找

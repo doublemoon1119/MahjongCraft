@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
@@ -21,7 +22,7 @@ import kotlin.test.assertTrue
  * - 字一色 (Tsuuiisou) - 役滿
  *
  * @see calculateTsuuiisou
- * @see com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
+ * @see RiichiHandValueCalculator
  */
 class TsuuiisouTest : RiichiHandValueCalculatorTestBase() {
 

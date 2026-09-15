@@ -7,8 +7,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
+import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import org.koin.core.annotation.Single
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
@@ -37,7 +39,7 @@ enum class DebugWinRoundContinuationMode(val settlementMode: ContinuingWinSettle
  * （這是刻意的設計，讓判定順序在整個 server session 內固定不變）。因此 resolver 本身在開發環境固定
  * 註冊、但預設沒有任何桌子開啟時完全 inert，由指令逐桌切換模式。
  *
- * **以桌為範圍**：模式存在以 tableId 為鍵的 map 裡（[com.doublemoon1119.mahjongcraft.logic.table.TableState.id]
+ * **以桌為範圍**：模式存在以 tableId 為鍵的 map 裡（[TableState.id]
  * 即該桌的 tableId），指令只影響執行者目前所在的那一桌。全伺服器共用的單一開關會讓同一個開發伺服器上
  * 其他桌莫名其妙進入中途胡牌流程，而且開啟後會一直有效到有人記得手動關掉。
  *
@@ -76,7 +78,7 @@ class DebugWinRoundContinuationState {
  * 真的實作出某個支援它的規則（例如雀魂赤血之戰）才能進遊戲驗證。
  *
  * 規則刻意做到最簡單、與任何真實麻將規則無關——它存在的唯一目的是把已經完成的底層機制推上實機：
- * 已完成玩家會被跳過（[com.doublemoon1119.mahjongcraft.logic.table.TableState.finishedPlayerIds]）、
+ * 已完成玩家會被跳過（[TableState.finishedPlayerIds]）、
  * 中途胡牌演出走獨立時間軸不擋其他玩家、贏家立牌蓋起來但副露維持原狀。分數結算沿用既有胡牌結算，
  * 不做任何額外調整。
  *
@@ -84,7 +86,7 @@ class DebugWinRoundContinuationState {
  * [WinRoundDirective.EndRound] 讓本局照常結束（一個人打不下去），否則回傳
  * [WinRoundDirective.ContinueRound]，回合交給榮和放銃者（自摸時為贏家）之後的第一位 active 玩家。
  *
- * 只在 [com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment.isDevelopment]
+ * 只在 [MinecraftEnvironment.isDevelopment]
  * 為 `true` 時註冊，比照 [FabricDebugCommand] 的既有做法——正式打包發布的產物裡這個 resolver
  * 根本沒被註冊過。
  *

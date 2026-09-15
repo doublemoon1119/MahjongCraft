@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.judgment
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -10,7 +11,7 @@ import kotlin.uuid.Uuid
  * 分析捨牌後聽牌狀態的介面，供呈現層顯示打某張牌之後的等待牌與風險，讓玩家判斷該不該打這張牌。
  *
  * 目前只有日麻有具體實作；規則模組透過
- * [com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule.createDiscardReadinessAnalyzer]
+ * [MahjongRuleModule.createDiscardReadinessAnalyzer]
  * 提供，不支援此分析（例如尚未實作聽牌概念的規則）時回傳 null，不需要實作這個介面。
  */
 interface DiscardReadinessAnalyzer {

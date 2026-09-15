@@ -1,10 +1,11 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 
 /**
  * 規則中立的線性牌堆值物件。[TileWall] 只保存呼叫端交付的牌與其摸牌順序，本身不辨識活牌、王牌、
- * 嶺上牌或其他規則區域，也不會依 [com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig.deadTileCount]
+ * 嶺上牌或其他規則區域，也不會依 [MahjongRuleConfig.deadTileCount]
  * 自動保留或扣除任何牌。
  *
  * 內部存儲 [IdentifiedTile]，確保每一張牌在遊戲進程中都具有可追蹤的唯一性。

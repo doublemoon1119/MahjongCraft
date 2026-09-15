@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
@@ -19,7 +20,7 @@ import kotlin.test.assertTrue
  * - 國士無雙十三面 (Kokushi Musou 13-men) - 雙倍役滿
  *
  * @see calculateKokushiMusou
- * @see com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
+ * @see RiichiHandValueCalculator
  */
 class KokushiMusouTest : RiichiHandValueCalculatorTestBase() {
 

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
@@ -23,7 +24,7 @@ import kotlin.test.assertTrue
  * 四杠子的手牌結構必須是「4 面子 + 1 雀頭」，且這 4 個面子全部都是槓子。
  *
  * @see calculateSukantsu
- * @see com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
+ * @see RiichiHandValueCalculator
  */
 class SukantsuTest : RiichiHandValueCalculatorTestBase() {
 

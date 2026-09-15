@@ -20,7 +20,7 @@ import org.koin.core.context.GlobalContext
 
 /**
  * 麻將牌 item：單一 item 類型代表所有牌面，實際牌面由 NBT 的 [NBT_KEY_TILE] 字串決定
- * （對應 [com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS]）。
+ * （對應 [ALL_TILE_ASSET_KEYS]）。
  *
  * 非蹲下右鍵循環切換牌面；蹲下對方塊右鍵則放置保留目前牌面的 [MahjongTileEntity]。
  */

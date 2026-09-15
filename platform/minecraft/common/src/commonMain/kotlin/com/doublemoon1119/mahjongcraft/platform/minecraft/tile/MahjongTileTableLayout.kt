@@ -954,7 +954,7 @@ object MahjongTileTableLayout {
 
     /**
      * 牌牆角落貼齊處縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，遊戲內驗證後調整的觀感參數。
-     * `internal` 而非 `private`：讓同模組的 `com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayoutTest`
+     * `internal` 而非 `private`：讓同模組的 `MahjongTileTableLayoutTest`
      * 能直接引用同一個數值驗證預期位移量，不需要在測試裡另外複製一份可能忘記同步的常數。
      */
     internal const val CORNER_GAP_RATIO: Double = 0.25

@@ -488,7 +488,7 @@ class GameFlowCoordinatorTest {
     }
 
     /**
-     * 驗證規則模組登記了 [WinRoundContinuationResolver] 且回傳 [com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective.ContinueRound]
+     * 驗證規則模組登記了 [WinRoundContinuationResolver] 且回傳 [WinRoundDirective.ContinueRound]
      * 時，自摸不會結束本局：不銜接 `AdvanceRoundUseCase`（`pendingTransition` 維持 null、贏家的
      * `Tsumo` 記錄原樣保留，不會被新一手牌重置），改為原子套用 `finishedPlayerIds`／
      * `currentPlayerIndex` 的變化。

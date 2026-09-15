@@ -6,9 +6,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuati
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.applyTo
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
@@ -21,7 +23,7 @@ import kotlin.uuid.Uuid
 /**
  * 一次胡牌（自摸／榮和，含搶槓）即時結算完成後，判定並套用本局後續的權威決策。
  *
- * 呼叫時機：[GameFlowCoordinator][com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator]
+ * 呼叫時機：[GameFlowCoordinator][GameFlowCoordinator]
  * 偵測到這次成功指令為某些玩家新增了 [GameAction.Tsumo]／[GameAction.Ron] 記錄後呼叫一次——
  * 一炮多響已經在 `RonSettlementResolver` 收斂成單一結算，因此 [winnerPlayerIds] 在此時已包含這次
  * 一起成立的所有贏家，本用例只呼叫一次 [WinRoundContinuationResolverRegistry.resolve]。
@@ -103,7 +105,7 @@ class ResolveWinRoundContinuationUseCase(
      * 從結算前後的桌況重建 [WinRoundContinuationContext]——放銃者／搶槓宣告者身分要從
      * [previousTableState] 尚未清除的 `pendingReaction`／`pendingKanReaction` 還原（自摸時兩者皆為
      * null）；胡牌張則優先取任一贏家剛記錄的 [GameAction.Ron.tileId]，自摸時改用贏家的 `lastDrawn`
-     * （[com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase] 不會清除它）。
+     * （[DeclareTsumoUseCase] 不會清除它）。
      */
     private fun buildContext(
         previousTableState: TableState,

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -17,7 +18,7 @@ import kotlin.test.assertTrue
  * - 天和 (Tenhou) - 役滿
  * - 地和 (Chiihou) - 役滿
  *
- * @see com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
+ * @see RiichiHandValueCalculator
  */
 class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
 

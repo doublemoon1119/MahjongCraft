@@ -23,7 +23,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
  * 第三方 Minecraft mod 在 MahjongCraft runtime 啟動前登記 Minecraft 專屬整合的共用契約。
  *
  * 跟遊戲平台無關的規則邏輯本身（規則配置與計算、自訂牌種、網路／存檔層的資料轉換）屬於
- * `com.doublemoon1119.mahjongcraft.extension.MahjongExtension` 的職責，不在這裡登記；這裡只涵蓋
+ * `MahjongExtension` 的職責，不在這裡登記；這裡只涵蓋
  * Minecraft 這個平台專屬的整合——[MinecraftTileAssetRegistry]／[AiStrategyDisplayNameRegistry] 這類
  * 概念屬於 Minecraft adapter，不應該出現在平台無關的 extension API 裡，才能讓規則邏輯保持可攜。
  *

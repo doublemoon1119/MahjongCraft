@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionTimer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.startDecisionTimer
@@ -23,8 +24,8 @@ class PlayerDecisionTimerFactory(
      *
      * @param game 包含流程設定與玩家剩餘保留思考時間的權威遊戲狀態。
      * @param playerId 目前取得決策權的玩家。
-     * @param phase 這次決策所屬的階段，決定基本思考秒數採用 [com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig.timeControl]
-     *   還是 [com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig.preparationBaseSeconds]。
+     * @param phase 這次決策所屬的階段，決定基本思考秒數採用 [GameFlowConfig.timeControl]
+     *   還是 [GameFlowConfig.preparationBaseSeconds]。
      *   [PlayerDecisionPhase.ROUND_PREPARATION] 完全不動用共用保留思考時間池——固定以 0 保留思考時間
      *   起算，`preparationBaseSeconds` 用完就直接逾時；[GameDecisionTimerManager] 結算這個階段的計時器
      *   時，同樣不會把結算結果寫回共用池，玩家在其他階段已經存下的保留思考時間不會被這個階段消耗，

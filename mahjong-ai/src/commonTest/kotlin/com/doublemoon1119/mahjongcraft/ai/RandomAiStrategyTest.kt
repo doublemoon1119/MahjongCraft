@@ -116,7 +116,7 @@ class RandomAiStrategyTest {
     }
 
     /**
-     * 驗證自己回合時，若合法動作清單只有 [com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION]/[GameAction.Pass]（過濾後視同沒有
+     * 驗證自己回合時，若合法動作清單只有 [RIICHI_GAME_ACTION]/[GameAction.Pass]（過濾後視同沒有
      * 可選的特殊動作），一律捨牌——這個判斷不涉及機率（`actionableOptions.isEmpty()` 短路），
      * 不需要固定亂數種子即可穩定驗證。
      */
