@@ -5,6 +5,12 @@
 - **Language**: All comments and KDoc must be written in **Traditional Chinese (繁體中文)**.
 - **Style**: Use objective descriptions of functionality. Avoid subjective tone or conversational language.
 - **Completeness**: Every Kotlin declaration must have a complete comment or KDoc.
+- **Layer vocabulary**: Comments and KDoc in `:mahjong-logic`, `:mahjong-flow`, `:mahjong-ai` and
+  `:mahjong-extension-api` must describe a contract in that layer's own vocabulary. Do not define what
+  something is, or what it is for, in terms of a presentation surface or platform that only some
+  platforms have — HUD, screens, chat, entities, ticks, or a specific mod loader. Naming a platform is
+  fine in a clause that is explicitly an example or a rationale ("for example, the Minecraft adapter
+  renders these on its action HUD"); it is not fine in the sentence that defines the contract.
 
 ## Kotlin Development Conventions
 
