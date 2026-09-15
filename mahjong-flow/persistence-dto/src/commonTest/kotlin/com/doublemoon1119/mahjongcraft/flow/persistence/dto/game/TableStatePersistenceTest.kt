@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
@@ -212,7 +213,7 @@ class TableStatePersistenceTest {
             playerRuleState = RiichiPlayerState(riichiTile = humanDiscard, isIppatsu = true),
             score = 24_000,
             passedTilesInRound = setOf(Tile.Honor.White),
-            actionHistory = listOf(com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION, GameAction.Discard(humanDiscard.id)),
+            actionHistory = listOf(RIICHI_GAME_ACTION, GameAction.Discard(humanDiscard.id)),
         )
         val ai = MahjongPlayer(
             id = Uuid.random(),

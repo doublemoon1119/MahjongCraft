@@ -125,7 +125,7 @@ class RandomAiStrategyTest {
         val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
         val onlyTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val hand = Hand(tiles = listOf(onlyTile))
-        val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION, GameAction.Pass))
+        val context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(RIICHI_GAME_ACTION, GameAction.Pass))
 
         val result = strategy.decideGameCommand(context)
 

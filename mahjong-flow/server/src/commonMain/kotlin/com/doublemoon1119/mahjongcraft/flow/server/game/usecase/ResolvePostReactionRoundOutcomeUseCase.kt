@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -41,9 +42,9 @@ class ResolvePostReactionRoundOutcomeUseCase(
                 roundCompletion = RoundCompletionSummary(
                     outcomeId = resolved.id,
                     classification = when (resolved.presentationClassification) {
-                        com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification.WIN_EQUIVALENT ->
+                        RoundOutcomePresentationClassification.WIN_EQUIVALENT ->
                             RoundCompletionClassification.WIN
-                        com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification.EXHAUSTIVE_DRAW_EQUIVALENT ->
+                        RoundOutcomePresentationClassification.EXHAUSTIVE_DRAW_EQUIVALENT ->
                             RoundCompletionClassification.EXTENSION
                     },
                     beneficiaryPlayerIds = resolved.beneficiaryPlayerIds,

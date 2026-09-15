@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -138,7 +139,7 @@ class ResolveWinRoundContinuationUseCaseTest {
     }
 
     /** 呼叫 [useCase] 一次並回傳唯一登記的 resolver 觀察到的 context（該 resolver 固定回傳 null）。 */
-    private suspend fun captureContext(previousState: com.doublemoon1119.mahjongcraft.logic.table.TableState, winnerPlayerIds: Set<Uuid>): WinRoundContinuationContext {
+    private suspend fun captureContext(previousState: TableState, winnerPlayerIds: Set<Uuid>): WinRoundContinuationContext {
         var captured: WinRoundContinuationContext? = null
         val registry = WinRoundContinuationResolverRegistry().apply {
             register(

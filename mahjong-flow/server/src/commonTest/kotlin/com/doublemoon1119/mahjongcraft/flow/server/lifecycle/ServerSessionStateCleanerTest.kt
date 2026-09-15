@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTime
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
@@ -67,7 +68,7 @@ class ServerSessionStateCleanerTest {
         )
         val game = FakeTableStateFactory.create()
         store.load(
-            com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot(
+            AuthoritativeStateSnapshot(
                 rooms = mapOf(room.id to room),
                 games = mapOf(game.id to Game(game, GameFlowConfig())),
             ),

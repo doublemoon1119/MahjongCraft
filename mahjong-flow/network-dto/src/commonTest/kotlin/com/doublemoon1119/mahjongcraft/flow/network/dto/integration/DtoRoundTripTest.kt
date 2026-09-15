@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.integration
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
@@ -47,6 +48,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
@@ -118,7 +120,7 @@ class DtoRoundTripTest {
         val commands = listOf(
             GameCommand.Draw,
             GameCommand.Discard(tileId),
-            GameCommand.Extension(com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand(tileId)),
+            GameCommand.Extension(RiichiGameCommand(tileId)),
             GameCommand.Tsumo,
             GameCommand.Kan(GameAction.KanType.CLOSED_KAN, tileId),
             GameCommand.RespondToDiscard(GameAction.Ron(tileId)),
@@ -147,7 +149,7 @@ class DtoRoundTripTest {
             GameAction.Kan(GameAction.KanType.OPEN_KAN, tileId, withTiles),
             GameAction.Ron(tileId),
             GameAction.Tsumo,
-            com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION,
+            RIICHI_GAME_ACTION,
             GameAction.Pass,
             GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.Normal),
             GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai),

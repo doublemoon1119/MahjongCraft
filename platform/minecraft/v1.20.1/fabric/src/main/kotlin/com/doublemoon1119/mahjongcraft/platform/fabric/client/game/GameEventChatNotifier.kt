@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildMatchResultChat
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
@@ -150,7 +151,7 @@ private fun appendRankingLines(
  * 玩家清單解析出真實 ID；查不到（不在同一伺服器可見範圍）或是 AI 玩家則退回顯示短 ID 佔位。
  */
 private fun resolvePlayerDisplayName(id: Uuid, isAi: Boolean, orderedAiPlayerIds: List<Uuid>): String {
-    if (isAi) return com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName(id, orderedAiPlayerIds)
+    if (isAi) return aiPlayerDisplayName(id, orderedAiPlayerIds)
     val name = MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(id.toJavaUuid())?.profile?.name
     return name ?: id.toString().take(8)
 }

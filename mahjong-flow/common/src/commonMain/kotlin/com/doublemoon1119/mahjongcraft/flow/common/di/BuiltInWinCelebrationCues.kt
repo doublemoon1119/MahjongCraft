@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationCue
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolver
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
@@ -25,7 +26,7 @@ fun createBuiltInWinCelebrationCueResolverRegistry(): WinCelebrationCueResolverR
 
 /** 僅從自然役滿役種挑選穩定 primary cue 的日麻解析器。 */
 private object RiichiWinCelebrationCueResolver : WinCelebrationCueResolver {
-    override fun resolve(result: com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult): WinCelebrationCue? {
+    override fun resolve(result: HandValueResult): WinCelebrationCue? {
         val riichi = result as? RiichiHandValueResult ?: return null
         val primary = riichi.yakuResults
             .filter { it.isYakuman }

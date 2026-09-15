@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
@@ -145,7 +146,7 @@ class DeclareRiichiUseCaseTest {
         assertEquals(1, dynamicState.riichiStickCount)
 
         assertEquals(1, newState.currentPlayerIndex, "Turn should advance to the next player.")
-        assertEquals(com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION, updatedPlayer.actionHistory[updatedPlayer.actionHistory.size - 2])
+        assertEquals(RIICHI_GAME_ACTION, updatedPlayer.actionHistory[updatedPlayer.actionHistory.size - 2])
         assertEquals(GameAction.Discard(drawnTile.id), updatedPlayer.actionHistory.last())
     }
 
@@ -199,7 +200,7 @@ class DeclareRiichiUseCaseTest {
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, currentPlayerId))
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, otherPlayerId))
         assertEquals(
-            listOf(com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION, GameAction.Discard(drawnTile.id)),
+            listOf(RIICHI_GAME_ACTION, GameAction.Discard(drawnTile.id)),
             fixtures.eventPublisher.getNotifiedActions(gameId, otherPlayerId, currentPlayerId),
         )
     }
@@ -281,7 +282,7 @@ class DeclareRiichiUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION),
+            GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
             result.error,
         )
     }
@@ -307,7 +308,7 @@ class DeclareRiichiUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION),
+            GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
             result.error,
         )
     }
@@ -338,7 +339,7 @@ class DeclareRiichiUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION),
+            GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
             result.error,
         )
     }
@@ -362,7 +363,7 @@ class DeclareRiichiUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION),
+            GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
             result.error,
         )
     }
@@ -388,7 +389,7 @@ class DeclareRiichiUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION),
+            GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
             result.error,
         )
     }
@@ -415,7 +416,7 @@ class DeclareRiichiUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION),
+            GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
             result.error,
         )
     }

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.command
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExhaustiveDrawReasonDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
@@ -38,7 +39,7 @@ sealed interface GameActionDto {
 
     @Serializable data object Tsumo : GameActionDto
 
-    @Serializable data class Extension(@Polymorphic val value: com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameActionDto) : GameActionDto
+    @Serializable data class Extension(@Polymorphic val value: ExtensionGameActionDto) : GameActionDto
 
     @Serializable data object Pass : GameActionDto
 

@@ -55,6 +55,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
@@ -687,7 +688,7 @@ class GameFlowCoordinatorTest {
     private suspend fun runContinuingWinTsumo(
         winnerId: Uuid,
         otherId: Uuid,
-        winningTile: com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile,
+        winningTile: IdentifiedTile,
         settlementMode: ContinuingWinSettlementMode,
         handTiles: List<Tile> = daisangenTiles,
     ): Fixtures {
@@ -701,7 +702,7 @@ class GameFlowCoordinatorTest {
 
                     override fun resolve(
                         context: WinRoundContinuationContext,
-                        ruleModule: com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule<*>,
+                        ruleModule: MahjongRuleModule<*>,
                     ): WinRoundDirective {
                         // 從 context 取本次贏家，讓同一份 registry 能重複用於同一局內的連續胡牌。
                         val settled = context.settledTableState

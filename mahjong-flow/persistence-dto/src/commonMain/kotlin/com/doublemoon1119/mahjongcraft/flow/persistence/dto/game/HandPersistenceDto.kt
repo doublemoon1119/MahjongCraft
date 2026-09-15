@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.MeldTypeId
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
@@ -89,7 +90,7 @@ private fun MeldTypePersistenceDto.toDomain(): MeldType = when (this) {
     MeldTypePersistenceDto.ClosedKan -> MeldType.CLOSED_KAN
     MeldTypePersistenceDto.AddedKan -> MeldType.ADDED_KAN
     is MeldTypePersistenceDto.Extension -> MeldType.Extension(
-        com.doublemoon1119.mahjongcraft.logic.base.MeldTypeId.parse(typeId),
+        MeldTypeId.parse(typeId),
     )
 }
 

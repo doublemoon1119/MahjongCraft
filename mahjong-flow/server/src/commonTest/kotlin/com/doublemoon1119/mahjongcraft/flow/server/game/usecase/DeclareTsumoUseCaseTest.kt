@@ -32,6 +32,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.GameActionSoundContext
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -143,7 +144,7 @@ class DeclareTsumoUseCaseTest {
         assertEquals(25000 - 16000, newState.players.first { it.id == north.id }.score)
         assertTrue((newState.dynamicRuleState as RiichiDynamicState).pendingKanDoraReveals.isEmpty())
         assertEquals(
-            listOf(com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.GameActionSoundContext(winnerId, GameAction.Tsumo)),
+            listOf(GameActionSoundContext(winnerId, GameAction.Tsumo)),
             fixtures.presentationPublisher.getPublishedGameActionSounds(gameId),
         )
     }

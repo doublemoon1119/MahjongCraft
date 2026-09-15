@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
@@ -287,7 +288,7 @@ class RespondToDiscardUseCase(
         val resolvedAction: GameAction? = null,
         val ronWinnerIds: Set<Uuid> = emptySet(),
         val ronWinningTileId: Uuid? = null,
-        val ronResolutions: Map<Uuid, com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult> = emptyMap(),
+        val ronResolutions: Map<Uuid, WinResolutionResult> = emptyMap(),
         val ruleModuleId: String? = null,
         val previousTableState: TableState? = null,
         val ronDiscarderId: Uuid? = null,

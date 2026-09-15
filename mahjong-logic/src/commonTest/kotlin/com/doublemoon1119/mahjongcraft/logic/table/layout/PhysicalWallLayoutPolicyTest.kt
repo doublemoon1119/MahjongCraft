@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.table.layout
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -239,8 +240,8 @@ class PhysicalWallLayoutPolicyTest {
 
     /** 建立共用的牌牆 transition 測試 context。 */
     private fun transitionContext(
-        before: com.doublemoon1119.mahjongcraft.logic.table.TableState,
-        after: com.doublemoon1119.mahjongcraft.logic.table.TableState,
+        before: TableState,
+        after: TableState,
         current: TileWallPhysicalLayout,
     ): PhysicalWallLayoutTransitionContext = PhysicalWallLayoutTransitionContext(
         tableStateBeforeAction = before,

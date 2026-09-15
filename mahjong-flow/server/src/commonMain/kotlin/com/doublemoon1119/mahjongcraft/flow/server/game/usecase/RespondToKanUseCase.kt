@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDet
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
@@ -262,7 +263,7 @@ class RespondToKanUseCase(
         val declarerId: Uuid? = null,
         val ronWinnerIds: Set<Uuid> = emptySet(),
         val ronWinningTileId: Uuid? = null,
-        val ronResolutions: Map<Uuid, com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult> = emptyMap(),
+        val ronResolutions: Map<Uuid, WinResolutionResult> = emptyMap(),
         val ruleModuleId: String? = null,
         val previousTableState: TableState? = null,
         val ronDiscarderId: Uuid? = null,

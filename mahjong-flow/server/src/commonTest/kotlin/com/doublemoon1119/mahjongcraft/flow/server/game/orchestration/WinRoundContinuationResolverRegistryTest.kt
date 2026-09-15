@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -39,7 +40,7 @@ class WinRoundContinuationResolverRegistryTest {
         val expectedDirective = WinRoundDirective.ContinueRound(
             newlyFinishedPlayerIds = setOf(winner.id),
             nextPlayerId = winner.id,
-            settlementMode = com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode.BRIEF,
+            settlementMode = ContinuingWinSettlementMode.BRIEF,
         )
         val registry = WinRoundContinuationResolverRegistry().apply {
             register(recordingResolver("test:z", module.id, 20, calls, null))

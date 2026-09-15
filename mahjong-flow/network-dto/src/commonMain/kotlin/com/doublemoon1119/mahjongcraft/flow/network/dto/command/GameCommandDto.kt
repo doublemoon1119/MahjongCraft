@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RoundPreparationSubmissionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExhaustiveDrawReasonDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameCommandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
@@ -21,7 +23,7 @@ import kotlin.uuid.Uuid
 sealed interface GameCommandDto {
     @Serializable data class SubmitRoundPreparation(val submission: RoundPreparationSubmissionDto) : GameCommandDto
 
-    @Serializable data class Extension(@Polymorphic val value: com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameCommandDto) : GameCommandDto
+    @Serializable data class Extension(@Polymorphic val value: ExtensionGameCommandDto) : GameCommandDto
 
     @Serializable data object Draw : GameCommandDto
 
@@ -35,7 +37,7 @@ sealed interface GameCommandDto {
 
     @Serializable data class RespondToKan(val action: GameActionDto) : GameCommandDto
 
-    @Serializable data class DeclareExhaustiveDraw(val reason: com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExhaustiveDrawReasonDto) : GameCommandDto
+    @Serializable data class DeclareExhaustiveDraw(val reason: ExhaustiveDrawReasonDto) : GameCommandDto
 }
 
 fun GameCommand.toDto(registries: NetworkDtoRegistries): GameCommandDto = when (this) {

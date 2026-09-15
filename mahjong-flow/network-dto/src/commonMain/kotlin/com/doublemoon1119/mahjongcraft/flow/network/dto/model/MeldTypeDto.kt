@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.model
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.MeldTypeId
 import kotlinx.serialization.Serializable
 
 /** [MeldType] 的網路 DTO。 */
@@ -34,5 +35,5 @@ fun MeldTypeDto.toDomain(): MeldType = when (this) {
     MeldTypeDto.OpenKan -> MeldType.OPEN_KAN
     MeldTypeDto.ClosedKan -> MeldType.CLOSED_KAN
     MeldTypeDto.AddedKan -> MeldType.ADDED_KAN
-    is MeldTypeDto.Extension -> MeldType.Extension(com.doublemoon1119.mahjongcraft.logic.base.MeldTypeId.parse(typeId))
+    is MeldTypeDto.Extension -> MeldType.Extension(MeldTypeId.parse(typeId))
 }
