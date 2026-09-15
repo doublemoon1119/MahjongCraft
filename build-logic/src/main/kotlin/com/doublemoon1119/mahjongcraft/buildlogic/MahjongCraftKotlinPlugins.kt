@@ -37,9 +37,19 @@ class MahjongCraftKotlinJvmPlugin : Plugin<Project> {
     }
 }
 
-/** 排除所有 convention 共用的 generated source。 */
+/**
+ * 排除所有 convention 共用的 generated source，並掛上專案自訂 rule set。
+ *
+ * `:ktlint-rules` 自己不掛——它就是規則的來源，掛上去會讓它的 ktlint 任務依賴自身產物。
+ */
 private fun Project.configureKtlint() {
     extensions.configure<KtlintExtension> {
         filter { exclude("**/generated/**") }
     }
+    if (path != CUSTOM_RULE_SET_PROJECT_PATH) {
+        dependencies.add("ktlintRuleset", dependencies.project(mapOf("path" to CUSTOM_RULE_SET_PROJECT_PATH)))
+    }
 }
+
+/** 提供專案自訂 ktlint rule set 的模組路徑。 */
+private const val CUSTOM_RULE_SET_PROJECT_PATH: String = ":ktlint-rules"
