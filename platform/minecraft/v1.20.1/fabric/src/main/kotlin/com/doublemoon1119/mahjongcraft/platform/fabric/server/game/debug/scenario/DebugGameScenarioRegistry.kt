@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
+package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
 import org.koin.core.annotation.Single
 

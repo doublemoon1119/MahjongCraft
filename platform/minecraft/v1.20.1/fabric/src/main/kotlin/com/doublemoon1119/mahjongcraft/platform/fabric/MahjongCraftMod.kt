@@ -29,11 +29,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TableOpeningPresentationOperationTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDebugAnimationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricGameCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
@@ -138,7 +138,7 @@ class MahjongCraftMod : ModInitializer {
         koin.get<FabricServerConfigCommand>().register()
         koin.get<FabricRoomCommand>().register()
         koin.get<FabricGameCommand>().register()
-        koin.get<FabricDebugAnimationCommand>().register()
+        koin.get<FabricDebugCommand>().register()
 
         logger.info(koin.get<FabricRuntimeMetadata>().initializationMessage())
     }

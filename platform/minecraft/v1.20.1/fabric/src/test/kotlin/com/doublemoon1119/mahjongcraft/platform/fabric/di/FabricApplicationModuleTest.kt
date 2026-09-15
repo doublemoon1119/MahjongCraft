@@ -32,6 +32,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.GameActionCandidateResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
@@ -148,6 +150,14 @@ class FabricApplicationModuleTest {
         koin.get<FabricTableLocationValidationService>()
         koin.get<FabricAppCoroutineScope>()
         koin.get<FabricDecisionTimerScheduler>()
+        val debugRoot = koin.get<FabricDebugCommand>().build().build()
+        assertEquals("mahjongcraft", debugRoot.name)
+        assertEquals(setOf("debug"), debugRoot.children.map { it.name }.toSet())
+        assertTrue(debugRoot.children.single().children.any { it.name == "scenario" })
+        assertEquals(
+            setOf("list", "load", "stress"),
+            koin.get<FabricDebugScenarioCommand>().build().build().children.map { it.name }.toSet(),
+        )
         koin.get<GetPlayerDecisionOptionsUseCase>()
         koin.get<GameActionCandidateResolver>()
         koin.get<PlayerDecisionPromptFactory>()

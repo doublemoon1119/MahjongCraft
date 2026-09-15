@@ -14,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPl
  * [FabricMahjongDiscardPresenter]）抽成獨立、不帶任何實例狀態的共用函式——這些函式全部只吃
  * `tile`／位置／絕對時刻這幾個純粹的參數，完全不涉及桌子座標系、`TableLocation` 或任何對局概念。
  *
- * 抽出來的理由：`FabricDebugAnimationCommand` 的動畫測試指令群組需要在完全不掛任何桌子／對局的臨時
+ * 抽出來的理由：`FabricDebugCommand` 的動畫測試指令群組需要在完全不掛任何桌子／對局的臨時
  * 牌 entity 上重播一模一樣的動畫，讓開發者不需要真的建房/加入/開局就能預覽演出效果——重新複製一份
  * 邏輯容易在兩處實際動畫調整時忘記同步，因此改成兩邊共用同一份實作。`internal` 而非 `public`：只給
  * 同模組內的呼叫端使用，不對外公開成正式 API。

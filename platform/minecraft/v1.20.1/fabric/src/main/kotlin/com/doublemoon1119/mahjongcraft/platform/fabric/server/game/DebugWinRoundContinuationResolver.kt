@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundCo
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
 import org.koin.core.annotation.Single
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
@@ -84,7 +85,7 @@ class DebugWinRoundContinuationState {
  * [WinRoundDirective.ContinueRound]，回合交給榮和放銃者（自摸時為贏家）之後的第一位 active 玩家。
  *
  * 只在 [com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment.isDevelopment]
- * 為 `true` 時註冊，比照 [FabricDebugAnimationCommand] 的既有做法——正式打包發布的產物裡這個 resolver
+ * 為 `true` 時註冊，比照 [FabricDebugCommand] 的既有做法——正式打包發布的產物裡這個 resolver
  * 根本沒被註冊過。
  *
  * @property ruleModuleId 這個實例服務的規則模組 ID；registry 依此過濾，因此每個規則模組各註冊一個實例。

@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
+package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction

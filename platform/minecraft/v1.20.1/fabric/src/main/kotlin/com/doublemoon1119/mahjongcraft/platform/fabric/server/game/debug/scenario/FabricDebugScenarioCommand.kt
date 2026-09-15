@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
+package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
@@ -22,7 +22,7 @@ import kotlin.uuid.toKotlinUuid
 
 /** 建立 `/mahjongcraft debug scenario` 的 development-only 指令子樹。 */
 @Single
-class DebugGameScenarioCommand(
+class FabricDebugScenarioCommand(
     private val registry: DebugGameScenarioRegistry,
     private val loader: DebugGameScenarioLoader,
     private val scope: AppCoroutineScope,

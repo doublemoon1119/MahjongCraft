@@ -1,10 +1,10 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
+package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /** Showcase debug 指令 cue 補全的純字串行為測試。 */
-class FabricDebugAnimationCommandTest {
+class FabricDebugCommandTest {
     /** 單一 cue 會套用到所有多家和贏家。 */
     @Test
     fun `expands one cue to every winner`() {

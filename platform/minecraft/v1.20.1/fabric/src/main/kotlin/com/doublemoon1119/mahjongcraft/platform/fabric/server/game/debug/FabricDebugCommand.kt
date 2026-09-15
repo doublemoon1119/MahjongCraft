@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
+package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
@@ -70,7 +70,15 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCine
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugGameScenarioCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationMode
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationState
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinShowcaseOverride
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricExhaustiveDrawSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricMatchSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationShowcaseScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildMatchResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
@@ -127,9 +135,7 @@ import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
 /**
- * `/mahjongcraft debug ...`：常駐、op 限定的動畫測試指令群組，涵蓋所有既有呈現層動畫與胡牌慶祝演出的
- * 預覽版本，讓這些動畫不必真的湊到對應遊戲情境（真的自摸、真的湊到四家開局等）才能觸發，也不需要
- * 每次臨時寫一個測試指令、commit 前再刪掉。
+ * 註冊 development-only、op 限定的 `/mahjongcraft debug ...` 指令根節點與各功能測試子指令。
  *
  * 每個子指令都完全自成一體：在呼叫者面前臨時生成幾個全新的 [MahjongTileEntity]／[MahjongDiceEntity]
  * （不呼叫 `assignToTable`、不掛在任何桌子／對局底下），直接對這些臨時 entity 重播對應的動畫排程邏輯
@@ -154,7 +160,7 @@ import kotlin.uuid.toKotlinUuid
  * @property effectScheduler 排定 `win` 胡牌慶祝演出的降臨特效。
  */
 @Single
-class FabricDebugAnimationCommand(
+class FabricDebugCommand(
     private val minecraftEnvironment: MinecraftEnvironment,
     private val debugWinRoundContinuationState: DebugWinRoundContinuationState,
     private val debugWinShowcaseOverride: DebugWinShowcaseOverride,
@@ -175,7 +181,7 @@ class FabricDebugAnimationCommand(
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val serverConfigManager: FabricServerConfigManager,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
-    private val debugGameScenarioCommand: DebugGameScenarioCommand,
+    private val debugGameScenarioCommand: FabricDebugScenarioCommand,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) {
@@ -190,225 +196,226 @@ class FabricDebugAnimationCommand(
         if (!minecraftEnvironment.isDevelopment) return
         registerCleanupTicking()
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
-            dispatcher.register(
-                literal(MinecraftModMetadata.MOD_ID).then(
-                    literal(DEBUG_SUBCOMMAND)
-                        .requires { it.hasPermissionLevel(OP_PERMISSION_LEVEL) }
-                        .then(debugGameScenarioCommand.build())
-                        .then(
-                            literal(WIN_SUBCOMMAND)
-                                .then(withOptionalTileArgument(literal(TSUMO_ARGUMENT)) { source, tileArg -> previewWin(source, isTsumo = true, tileArg) })
-                                .then(withOptionalTileArgument(literal(RON_ARGUMENT)) { source, tileArg -> previewWin(source, isTsumo = false, tileArg) }),
-                        )
-                        .then(
-                            literal(SHOWCASE_SUBCOMMAND)
+            dispatcher.register(build())
+        }
+    }
+
+    /** 建立保留既有 literal、權限與子指令順序的完整 debug 指令樹。 */
+    internal fun build(): LiteralArgumentBuilder<ServerCommandSource> = literal(MinecraftModMetadata.MOD_ID).then(
+        literal(DEBUG_SUBCOMMAND)
+            .requires { it.hasPermissionLevel(OP_PERMISSION_LEVEL) }
+            .then(debugGameScenarioCommand.build())
+            .then(
+                literal(WIN_SUBCOMMAND)
+                    .then(withOptionalTileArgument(literal(TSUMO_ARGUMENT)) { source, tileArg -> previewWin(source, isTsumo = true, tileArg) })
+                    .then(withOptionalTileArgument(literal(RON_ARGUMENT)) { source, tileArg -> previewWin(source, isTsumo = false, tileArg) }),
+            )
+            .then(
+                literal(SHOWCASE_SUBCOMMAND)
+                    .then(
+                        withOptionalCueArgument(literal(TSUMO_ARGUMENT), allowMultiple = false) { source, cue ->
+                            previewShowcase(source, isTsumo = true, listOf(cue ?: DEFAULT_SHOWCASE_CUE))
+                        },
+                    )
+                    .then(
+                        withOptionalCueArgument(literal(RON_ARGUMENT), allowMultiple = true) { source, cues ->
+                            previewShowcase(source, isTsumo = false, (cues ?: DEFAULT_SHOWCASE_CUE).split(",").take(3))
+                        },
+                    )
+                    .then(
+                        literal(MULTI_RON_ARGUMENT).then(
+                            argument(WINNER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 3))
+                                .executes { context ->
+                                    val count = IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT)
+                                    previewShowcase(context.source, isTsumo = false, List(count) { DEFAULT_SHOWCASE_CUE })
+                                }
                                 .then(
-                                    withOptionalCueArgument(literal(TSUMO_ARGUMENT), allowMultiple = false) { source, cue ->
-                                        previewShowcase(source, isTsumo = true, listOf(cue ?: DEFAULT_SHOWCASE_CUE))
-                                    },
-                                )
-                                .then(
-                                    withOptionalCueArgument(literal(RON_ARGUMENT), allowMultiple = true) { source, cues ->
-                                        previewShowcase(source, isTsumo = false, (cues ?: DEFAULT_SHOWCASE_CUE).split(",").take(3))
-                                    },
-                                )
-                                .then(
-                                    literal(MULTI_RON_ARGUMENT).then(
-                                        argument(WINNER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 3))
-                                            .executes { context ->
-                                                val count = IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT)
-                                                previewShowcase(context.source, isTsumo = false, List(count) { DEFAULT_SHOWCASE_CUE })
-                                            }
-                                            .then(
-                                                argument(CUE_ARGUMENT, StringArgumentType.greedyString())
-                                                    .suggests(::suggestShowcaseCueList)
-                                                    .executes { context ->
-                                                        val count = IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT)
-                                                        val supplied = StringArgumentType.getString(context, CUE_ARGUMENT).split(",").filter(String::isNotBlank)
-                                                        val cues = expandShowcaseCues(supplied, count, DEFAULT_SHOWCASE_CUE)
-                                                        previewShowcase(context.source, isTsumo = false, cues)
-                                                    },
-                                            ),
-                                    ),
-                                )
-                                .then(
-                                    literal(PHASE_ARGUMENT).then(
-                                        argument(PHASE_NAME_ARGUMENT, StringArgumentType.word())
-                                            .suggests(::suggestShowcasePhases)
-                                            .executes { context -> previewShowcasePhase(context.source, StringArgumentType.getString(context, PHASE_NAME_ARGUMENT), DEFAULT_SHOWCASE_CUE) }
-                                            .then(
-                                                argument(CUE_ARGUMENT, IdentifierArgumentType.identifier())
-                                                    .suggests(::suggestSingleShowcaseCue)
-                                                    .executes { context ->
-                                                        previewShowcasePhase(
-                                                            context.source,
-                                                            StringArgumentType.getString(context, PHASE_NAME_ARGUMENT),
-                                                            IdentifierArgumentType.getIdentifier(context, CUE_ARGUMENT).toString(),
-                                                        )
-                                                    },
-                                            ),
-                                    ),
-                                ),
-                        )
-                        .then(
-                            literal(DICE_SUBCOMMAND)
-                                .executes { ctx -> previewDice(ctx.source, DEFAULT_DEBUG_DICE_COUNT) }
-                                .then(literal(TWO_DICE_ARGUMENT).executes { ctx -> previewDice(ctx.source, 2) })
-                                .then(literal(THREE_DICE_ARGUMENT).executes { ctx -> previewDice(ctx.source, 3) }),
-                        )
-                        .then(withOptionalTileArgument(literal(DEAL_SUBCOMMAND), ::previewDeal))
-                        .then(withOptionalTileArgument(literal(DRAW_SUBCOMMAND), ::previewDraw))
-                        .then(withOptionalTileArgument(literal(DISCARD_SUBCOMMAND), ::previewDiscard))
-                        .then(
-                            literal(EXHAUSTIVE_DRAW_SETTLEMENT_SUBCOMMAND)
-                                .then(
-                                    literal(NORMAL_ARGUMENT).then(
-                                        argument(TENPAI_COUNT_ARGUMENT, IntegerArgumentType.integer(0, 4)).executes { context ->
-                                            previewSettlement(
-                                                context.source,
-                                                RiichiExhaustiveDrawReason.Normal.id,
-                                                IntegerArgumentType.getInteger(context, TENPAI_COUNT_ARGUMENT),
-                                            )
-                                        }.then(
-                                            argument(PLAYER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 4)).executes { context ->
-                                                previewSettlement(
-                                                    context.source,
-                                                    RiichiExhaustiveDrawReason.Normal.id,
-                                                    IntegerArgumentType.getInteger(context, TENPAI_COUNT_ARGUMENT),
-                                                    playerCount = IntegerArgumentType.getInteger(context, PLAYER_COUNT_ARGUMENT),
-                                                )
-                                            },
-                                        ),
-                                    ),
-                                )
-                                .then(
-                                    literal(MELDS_ARGUMENT).then(
-                                        argument(MELD_COUNT_ARGUMENT, IntegerArgumentType.integer(1, MAX_DEBUG_MELD_COUNT))
-                                            .suggests(::suggestDebugMeldCounts)
-                                            .executes { context ->
-                                                previewSettlement(
-                                                    context.source,
-                                                    RiichiExhaustiveDrawReason.Normal.id,
-                                                    tenpaiCount = 1,
-                                                    meldCount = IntegerArgumentType.getInteger(context, MELD_COUNT_ARGUMENT),
-                                                )
-                                            },
-                                    ),
-                                )
-                                .then(literal(KYUUSHU_ARGUMENT).executes { context -> previewSettlement(context.source, RiichiExhaustiveDrawReason.KyuushuKyuuhai.id, 1, proof = true) })
-                                .then(
-                                    literal(SCORE_ARGUMENT)
-                                        .executes { context -> previewSettlement(context.source, RiichiExhaustiveDrawReason.Normal.id, 0, scoreDelta = DEFAULT_SCORE_DELTA) }
-                                        .then(
-                                            argument(SCORE_DELTA_ARGUMENT, IntegerArgumentType.integer(1)).executes { context ->
-                                                previewSettlement(
-                                                    context.source,
-                                                    RiichiExhaustiveDrawReason.Normal.id,
-                                                    0,
-                                                    scoreDelta = IntegerArgumentType.getInteger(context, SCORE_DELTA_ARGUMENT),
-                                                )
-                                            },
-                                        ),
-                                )
-                                .then(
-                                    literal(ABORTIVE_ARGUMENT).then(
-                                        argument(REASON_ARGUMENT, IdentifierArgumentType.identifier())
-                                            .suggests(::suggestAbortiveDrawReasons)
-                                            .executes { context ->
-                                                previewSettlement(context.source, IdentifierArgumentType.getIdentifier(context, REASON_ARGUMENT).toString(), 0)
-                                            },
-                                    ),
-                                ),
-                        )
-                        .then(
-                            literal(HOVERED_TEXT_SUBCOMMAND)
-                                .then(
-                                    literal(EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT)
-                                        .executes { context -> previewExhaustiveDrawSettlementHoveredText(context.source) },
-                                )
-                                .then(
-                                    literal(WIN_SETTLEMENT_SUBCOMMAND)
-                                        .executes { context -> previewWinSettlementHoveredText(context.source) },
-                                )
-                                .then(
-                                    literal(MATCH_SETTLEMENT_SUBCOMMAND)
-                                        .executes { context -> previewMatchSettlementHoveredText(context.source) },
-                                )
-                                .then(literal(GAME_CREATED_LOCATION_ARGUMENT).executes { context -> previewGameCreatedLocationHoveredText(context.source) })
-                                .then(
-                                    literal(GAME_CONFIG_ARGUMENT)
-                                        .then(literal(SHOW_ARGUMENT).executes { context -> previewGameConfigHoveredText(context.source, SHOW_ARGUMENT) })
-                                        .then(literal(CHANGED_ARGUMENT).executes { context -> previewGameConfigHoveredText(context.source, CHANGED_ARGUMENT) })
-                                        .then(literal(UNCHANGED_ARGUMENT).executes { context -> previewGameConfigHoveredText(context.source, UNCHANGED_ARGUMENT) }),
-                                )
-                                .then(literal(SERVER_CONFIG_ARGUMENT).executes { context -> previewServerConfigHoveredText(context.source) }),
-                        )
-                        .then(
-                            literal(WIN_SETTLEMENT_SUBCOMMAND)
-                                .then(literal(TSUMO_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.TSUMO, 1) })
-                                .then(
-                                    literal(RON_ARGUMENT)
-                                        .executes { context -> previewWinSettlement(context.source, WinSettlementPreview.RON, 1) }
-                                        .then(
-                                            argument(WINNER_COUNT_ARGUMENT, IntegerArgumentType.integer(1, 3)).executes { context ->
-                                                previewWinSettlement(
-                                                    context.source,
-                                                    WinSettlementPreview.RON,
-                                                    IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT),
-                                                )
-                                            },
-                                        ),
-                                )
-                                .then(literal(YAKUMAN_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.YAKUMAN, 1) })
-                                .then(literal(NAGASHI_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.NAGASHI, 1) }),
-                        )
-                        .then(
-                            literal(MATCH_SETTLEMENT_SUBCOMMAND)
-                                .executes { context -> previewMatchSettlement(context.source, 4) }
-                                .then(
-                                    argument(PLAYER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 4))
+                                    argument(CUE_ARGUMENT, StringArgumentType.greedyString())
+                                        .suggests(::suggestShowcaseCueList)
                                         .executes { context ->
-                                            previewMatchSettlement(
+                                            val count = IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT)
+                                            val supplied = StringArgumentType.getString(context, CUE_ARGUMENT).split(",").filter(String::isNotBlank)
+                                            val cues = expandShowcaseCues(supplied, count, DEFAULT_SHOWCASE_CUE)
+                                            previewShowcase(context.source, isTsumo = false, cues)
+                                        },
+                                ),
+                        ),
+                    )
+                    .then(
+                        literal(PHASE_ARGUMENT).then(
+                            argument(PHASE_NAME_ARGUMENT, StringArgumentType.word())
+                                .suggests(::suggestShowcasePhases)
+                                .executes { context -> previewShowcasePhase(context.source, StringArgumentType.getString(context, PHASE_NAME_ARGUMENT), DEFAULT_SHOWCASE_CUE) }
+                                .then(
+                                    argument(CUE_ARGUMENT, IdentifierArgumentType.identifier())
+                                        .suggests(::suggestSingleShowcaseCue)
+                                        .executes { context ->
+                                            previewShowcasePhase(
                                                 context.source,
-                                                IntegerArgumentType.getInteger(context, PLAYER_COUNT_ARGUMENT),
+                                                StringArgumentType.getString(context, PHASE_NAME_ARGUMENT),
+                                                IdentifierArgumentType.getIdentifier(context, CUE_ARGUMENT).toString(),
                                             )
                                         },
                                 ),
-                        )
-                        .then(matchProgressionCommand())
-                        .then(decisionHudCommand())
-                        .then(
-                            literal(MELD_SUBCOMMAND)
-                                .then(withOptionalTileArgument(literal(CHI_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.CHI, tileArg) })
-                                .then(withOptionalTileArgument(literal(PON_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.PON, tileArg) })
-                                .then(withOptionalTileArgument(literal(KAN_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.OPEN_KAN, tileArg) })
-                                .then(withOptionalTileArgument(literal(ADDED_KAN_ARGUMENT)) { source, tileArg -> previewAddedKanMeld(source, tileArg) }),
-                        )
-                        .then(
-                            DebugWinRoundContinuationMode.entries.fold(
-                                literal(CONTINUING_WIN_SUBCOMMAND)
-                                    .executes { context -> reportContinuingWinMode(context.source) },
-                            ) { node, mode ->
-                                node.then(
-                                    literal(mode.name.lowercase()).executes { context ->
-                                        setContinuingWinMode(context.source, mode)
-                                    },
+                        ),
+                    ),
+            )
+            .then(
+                literal(DICE_SUBCOMMAND)
+                    .executes { ctx -> previewDice(ctx.source, DEFAULT_DEBUG_DICE_COUNT) }
+                    .then(literal(TWO_DICE_ARGUMENT).executes { ctx -> previewDice(ctx.source, 2) })
+                    .then(literal(THREE_DICE_ARGUMENT).executes { ctx -> previewDice(ctx.source, 3) }),
+            )
+            .then(withOptionalTileArgument(literal(DEAL_SUBCOMMAND), ::previewDeal))
+            .then(withOptionalTileArgument(literal(DRAW_SUBCOMMAND), ::previewDraw))
+            .then(withOptionalTileArgument(literal(DISCARD_SUBCOMMAND), ::previewDiscard))
+            .then(
+                literal(EXHAUSTIVE_DRAW_SETTLEMENT_SUBCOMMAND)
+                    .then(
+                        literal(NORMAL_ARGUMENT).then(
+                            argument(TENPAI_COUNT_ARGUMENT, IntegerArgumentType.integer(0, 4)).executes { context ->
+                                previewSettlement(
+                                    context.source,
+                                    RiichiExhaustiveDrawReason.Normal.id,
+                                    IntegerArgumentType.getInteger(context, TENPAI_COUNT_ARGUMENT),
+                                )
+                            }.then(
+                                argument(PLAYER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 4)).executes { context ->
+                                    previewSettlement(
+                                        context.source,
+                                        RiichiExhaustiveDrawReason.Normal.id,
+                                        IntegerArgumentType.getInteger(context, TENPAI_COUNT_ARGUMENT),
+                                        playerCount = IntegerArgumentType.getInteger(context, PLAYER_COUNT_ARGUMENT),
+                                    )
+                                },
+                            ),
+                        ),
+                    )
+                    .then(
+                        literal(MELDS_ARGUMENT).then(
+                            argument(MELD_COUNT_ARGUMENT, IntegerArgumentType.integer(1, MAX_DEBUG_MELD_COUNT))
+                                .suggests(::suggestDebugMeldCounts)
+                                .executes { context ->
+                                    previewSettlement(
+                                        context.source,
+                                        RiichiExhaustiveDrawReason.Normal.id,
+                                        tenpaiCount = 1,
+                                        meldCount = IntegerArgumentType.getInteger(context, MELD_COUNT_ARGUMENT),
+                                    )
+                                },
+                        ),
+                    )
+                    .then(literal(KYUUSHU_ARGUMENT).executes { context -> previewSettlement(context.source, RiichiExhaustiveDrawReason.KyuushuKyuuhai.id, 1, proof = true) })
+                    .then(
+                        literal(SCORE_ARGUMENT)
+                            .executes { context -> previewSettlement(context.source, RiichiExhaustiveDrawReason.Normal.id, 0, scoreDelta = DEFAULT_SCORE_DELTA) }
+                            .then(
+                                argument(SCORE_DELTA_ARGUMENT, IntegerArgumentType.integer(1)).executes { context ->
+                                    previewSettlement(
+                                        context.source,
+                                        RiichiExhaustiveDrawReason.Normal.id,
+                                        0,
+                                        scoreDelta = IntegerArgumentType.getInteger(context, SCORE_DELTA_ARGUMENT),
+                                    )
+                                },
+                            ),
+                    )
+                    .then(
+                        literal(ABORTIVE_ARGUMENT).then(
+                            argument(REASON_ARGUMENT, IdentifierArgumentType.identifier())
+                                .suggests(::suggestAbortiveDrawReasons)
+                                .executes { context ->
+                                    previewSettlement(context.source, IdentifierArgumentType.getIdentifier(context, REASON_ARGUMENT).toString(), 0)
+                                },
+                        ),
+                    ),
+            )
+            .then(
+                literal(HOVERED_TEXT_SUBCOMMAND)
+                    .then(
+                        literal(EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT)
+                            .executes { context -> previewExhaustiveDrawSettlementHoveredText(context.source) },
+                    )
+                    .then(
+                        literal(WIN_SETTLEMENT_SUBCOMMAND)
+                            .executes { context -> previewWinSettlementHoveredText(context.source) },
+                    )
+                    .then(
+                        literal(MATCH_SETTLEMENT_SUBCOMMAND)
+                            .executes { context -> previewMatchSettlementHoveredText(context.source) },
+                    )
+                    .then(literal(GAME_CREATED_LOCATION_ARGUMENT).executes { context -> previewGameCreatedLocationHoveredText(context.source) })
+                    .then(
+                        literal(GAME_CONFIG_ARGUMENT)
+                            .then(literal(SHOW_ARGUMENT).executes { context -> previewGameConfigHoveredText(context.source, SHOW_ARGUMENT) })
+                            .then(literal(CHANGED_ARGUMENT).executes { context -> previewGameConfigHoveredText(context.source, CHANGED_ARGUMENT) })
+                            .then(literal(UNCHANGED_ARGUMENT).executes { context -> previewGameConfigHoveredText(context.source, UNCHANGED_ARGUMENT) }),
+                    )
+                    .then(literal(SERVER_CONFIG_ARGUMENT).executes { context -> previewServerConfigHoveredText(context.source) }),
+            )
+            .then(
+                literal(WIN_SETTLEMENT_SUBCOMMAND)
+                    .then(literal(TSUMO_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.TSUMO, 1) })
+                    .then(
+                        literal(RON_ARGUMENT)
+                            .executes { context -> previewWinSettlement(context.source, WinSettlementPreview.RON, 1) }
+                            .then(
+                                argument(WINNER_COUNT_ARGUMENT, IntegerArgumentType.integer(1, 3)).executes { context ->
+                                    previewWinSettlement(
+                                        context.source,
+                                        WinSettlementPreview.RON,
+                                        IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT),
+                                    )
+                                },
+                            ),
+                    )
+                    .then(literal(YAKUMAN_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.YAKUMAN, 1) })
+                    .then(literal(NAGASHI_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.NAGASHI, 1) }),
+            )
+            .then(
+                literal(MATCH_SETTLEMENT_SUBCOMMAND)
+                    .executes { context -> previewMatchSettlement(context.source, 4) }
+                    .then(
+                        argument(PLAYER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 4))
+                            .executes { context ->
+                                previewMatchSettlement(
+                                    context.source,
+                                    IntegerArgumentType.getInteger(context, PLAYER_COUNT_ARGUMENT),
                                 )
                             },
-                        )
-                        .then(
-                            withOptionalCueArgument(
-                                literal(WIN_SHOWCASE_OVERRIDE_SUBCOMMAND).then(
-                                    literal(CLEAR_ARGUMENT).executes { context -> clearWinShowcaseOverride(context.source) },
-                                ),
-                                allowMultiple = false,
-                            ) { source, cue -> armWinShowcaseOverride(source, cue) },
-                        )
-                        .then(preparationCommand()),
-                ),
+                    ),
             )
-        }
-    }
+            .then(matchProgressionCommand())
+            .then(decisionHudCommand())
+            .then(
+                literal(MELD_SUBCOMMAND)
+                    .then(withOptionalTileArgument(literal(CHI_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.CHI, tileArg) })
+                    .then(withOptionalTileArgument(literal(PON_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.PON, tileArg) })
+                    .then(withOptionalTileArgument(literal(KAN_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.OPEN_KAN, tileArg) })
+                    .then(withOptionalTileArgument(literal(ADDED_KAN_ARGUMENT)) { source, tileArg -> previewAddedKanMeld(source, tileArg) }),
+            )
+            .then(
+                DebugWinRoundContinuationMode.entries.fold(
+                    literal(CONTINUING_WIN_SUBCOMMAND)
+                        .executes { context -> reportContinuingWinMode(context.source) },
+                ) { node, mode ->
+                    node.then(
+                        literal(mode.name.lowercase()).executes { context ->
+                            setContinuingWinMode(context.source, mode)
+                        },
+                    )
+                },
+            )
+            .then(
+                withOptionalCueArgument(
+                    literal(WIN_SHOWCASE_OVERRIDE_SUBCOMMAND).then(
+                        literal(CLEAR_ARGUMENT).executes { context -> clearWinShowcaseOverride(context.source) },
+                    ),
+                    allowMultiple = false,
+                ) { source, cue -> armWinShowcaseOverride(source, cue) },
+            )
+            .then(preparationCommand()),
+    )
 
     /** 建立涵蓋操作、立直、分析及 preparation 的 HUD 預覽指令；literal 節點同時提供完整 tab 補全。 */
     private fun decisionHudCommand(): LiteralArgumentBuilder<ServerCommandSource> = DecisionHudPreview.entries.fold(

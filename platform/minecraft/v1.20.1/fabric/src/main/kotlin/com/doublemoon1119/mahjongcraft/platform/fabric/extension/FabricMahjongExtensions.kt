@@ -103,7 +103,7 @@ object FabricMahjongExtensions {
             declareRiichiUseCase = declareRiichiUseCase,
         )
         // 開發環境限定：讓「胡牌後本局繼續」這條路徑在還沒有任何規則支援它時就能進遊戲驗證，
-        // 比照 FabricDebugAnimationCommand 的 gating——正式產物裡根本沒註冊過。預設 inert。
+        // 比照 FabricDebugCommand 的 gating——正式產物裡根本沒註冊過。預設 inert。
         if (minecraftEnvironment.isDevelopment) {
             listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.TAIWAN).forEach { ruleModuleId ->
                 if (coreRegistries.roundPreparationResolverRegistry.find(ruleModuleId) == null) {
