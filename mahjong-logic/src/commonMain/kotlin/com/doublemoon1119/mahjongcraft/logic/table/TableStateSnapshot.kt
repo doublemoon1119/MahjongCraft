@@ -19,8 +19,8 @@ import kotlin.uuid.Uuid
  * @property comboCount 當前連莊次數
  * @property currentPlayerIndex 當前回合玩家的索引
  * @property dynamicRuleState 規則特定的動態桌況狀態
- * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合，供 HUD、牌面與觀戰
- * 呈現使用。
+ * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合，供呈現層顯示牌面與
+ * 觀戰狀態使用。
  * @property physicalWallLayout 目前仍在牌牆中的牌張實體位置；規則不支援或舊資料時為 null。
  */
 data class TableStateSnapshot(

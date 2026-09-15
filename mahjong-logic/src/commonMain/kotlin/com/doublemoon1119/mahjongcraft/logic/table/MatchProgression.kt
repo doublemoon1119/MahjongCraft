@@ -51,7 +51,7 @@ data class RoundCompletionSummary(
     }
 
     private companion object {
-        /** Minecraft 慣用 namespace 與 path 的完整識別碼格式。 */
+        /** `namespace:path` 形式的完整識別碼格式。 */
         val ID_PATTERN = Regex("[a-z0-9_.-]+:[a-z0-9/._-]+")
     }
 }
@@ -89,7 +89,7 @@ sealed interface MatchProgressionDecision {
     data class ContinueMatch(val transition: MatchRoundTransition) : MatchProgressionDecision
 
     private companion object {
-        /** Minecraft 慣用 namespace 與 path 的完整識別碼格式。 */
+        /** `namespace:path` 形式的完整識別碼格式。 */
         val ID_PATTERN = Regex("[a-z0-9_.-]+:[a-z0-9/._-]+")
     }
 }

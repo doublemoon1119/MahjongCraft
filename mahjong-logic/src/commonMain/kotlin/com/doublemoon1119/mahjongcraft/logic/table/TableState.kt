@@ -30,7 +30,7 @@ import kotlin.uuid.Uuid
  * @property pendingKanReaction 目前尚待其他玩家回應（搶槓/過）的暗槓/加槓反應視窗，若無則為 null。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
  * @property initialDeadWall 目前權威規則保留牌。舊名稱為既有建構與 mapping 相容性而保留；通用程式
- * 應改讀 [reservedWallTiles]，不得由此名稱推定 Minecraft 必須形成日麻式獨立王牌區。
+ * 應改讀 [reservedWallTiles]，不得由此名稱推定其他規則必須形成日麻式獨立王牌區。
  * @property physicalWallLayout 目前仍位於活牌區與規則保留區的權威抽象實體位置；不支援實體布局的規則
  * 或缺少此欄位的舊存檔為 null。
  * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合。供第三方規則實作

@@ -8,7 +8,7 @@ import kotlin.uuid.Uuid
 /**
  * [GameInitializer.initialize]／[GameInitializer.startNextRound] 的結果。
  *
- * 除了權威 [tableState] 之外，額外攜帶只有 Minecraft 等平台呈現層需要、不該進入 [TableState]／
+ * 除了權威 [tableState] 之外，額外攜帶只有平台呈現層需要、不該進入 [TableState]／
  * persistence／network DTO 的一次性資料——這些資料只在牌局剛初始化的那個當下存在，呼叫端用完即可
  * 丟棄，不需要另外保存。
  *

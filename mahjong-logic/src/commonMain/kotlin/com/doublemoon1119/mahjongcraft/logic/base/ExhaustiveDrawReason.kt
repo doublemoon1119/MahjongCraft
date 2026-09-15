@@ -11,7 +11,7 @@ interface ExhaustiveDrawReason {
     val id: String
 
     /**
-     * 選擇宣告這個流局理由的動作後，操作 HUD 卡片要預覽哪些立牌；預設不特別預覽（回傳空清單）。
+     * 選擇宣告這個流局理由的動作後，呈現層要預覽哪些立牌；預設不特別預覽（回傳空清單）。
      */
     fun previewTiles(hand: Hand): List<Tile> = emptyList()
 }
