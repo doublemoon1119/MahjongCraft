@@ -1,6 +1,22 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.BOB_HEIGHT
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.BOB_SPEED
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.ELYTRA_APPEAR_TICK
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.ELYTRA_FADE_END_TICK
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.ELYTRA_FADE_START_TICK
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.ELYTRA_OPEN_TICK
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.EQUIPMENT_FADE_END_TICK
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.easeOut
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.equipmentAppearance
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.equipmentVisibility
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.fadeScale
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.lerp
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.smoothStep
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.tntFlashVisible
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.winningTileBobOffset
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.winningTileTicksFromBottom
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseCardSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCinematicTimeline
@@ -140,13 +156,6 @@ class WinCelebrationShowcaseEntityRenderer(
                     .color(255, 255, 255, alpha.coerceIn(0, 255)).next()
             }
         }
-    }
-
-    /** 越接近爆炸，白色覆層出現得越頻繁、停留得越久。 */
-    private fun tntFlashVisible(fuse: Double): Boolean {
-        val cycle = 8.0 - fuse * 6.5
-        val phase = (fuse * (EXPLOSION_TICK - IGNITION_TICK)) % cycle
-        return phase < lerp(1.0, cycle * 0.72, fuse)
     }
 
     private fun renderIgnitionSparks(
@@ -303,7 +312,7 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices.push()
         val localX = formation.winningTileX
         val offset = Vector3f(localX.toFloat(), 0.0f, 0.0f).rotate(billboardRotation)
-        val fade = fadeScaleFactor(elapsed, fadeStart)
+        val fade = fadeScale(elapsed, fadeStart)
         val entranceProgress = ((elapsed - FLIGHT_END_TICK) / CARD_ENTRANCE_TICKS).coerceIn(0.0, 1.0)
         val entranceEase = easeOut(entranceProgress)
         val bob = if (entranceProgress >= 1.0) winningTileBobOffset(elapsed, fade) else 0.0
@@ -368,7 +377,7 @@ class WinCelebrationShowcaseEntityRenderer(
             x = target.x.toDouble()
             z = target.z.toDouble()
         }
-        val fade = fadeScaleFactor(elapsed, fadeStart)
+        val fade = fadeScale(elapsed, fadeStart)
         if (returnProgress >= 1.0) {
             val bob = if (entranceProgress >= 1.0) {
                 if (winningTile) winningTileBobOffset(elapsed, fade) else sin((elapsed - SHOWCASE_START_TICK) * BOB_SPEED + seededPhase) * BOB_HEIGHT * fade
@@ -948,34 +957,6 @@ class WinCelebrationShowcaseEntityRenderer(
 
     override fun getTexture(entity: WinCelebrationShowcaseEntity): Identifier? = null
 
-    private fun fadeScaleFactor(elapsed: Double, fadeStart: Double): Double = if (elapsed < fadeStart) {
-        1.0
-    } else {
-        1.0 - smoothStep(((elapsed - fadeStart) / WinCelebrationShowcaseEntity.FADE_OUT_TICKS).coerceIn(0.0, 1.0))
-    }
-
-    private fun equipmentVisibility(elapsed: Double): Double = when {
-        elapsed < ELYTRA_FADE_START_TICK -> 1.0
-        elapsed < EQUIPMENT_FADE_END_TICK -> 1.0 - smoothStep((elapsed - ELYTRA_FADE_START_TICK) / (EQUIPMENT_FADE_END_TICK - ELYTRA_FADE_START_TICK))
-        else -> 0.0
-    }
-
-    /** 起飛裝備先由小到大具現，再銜接鞘翅展開；抵達時沿用既有反向收束。 */
-    private fun equipmentAppearance(elapsed: Double): Double = easeOut(
-        ((elapsed - ELYTRA_APPEAR_TICK) / (ELYTRA_OPEN_TICK - ELYTRA_APPEAR_TICK)).coerceIn(0.0, 1.0),
-    )
-
-    /** 胡牌張與接觸波紋共用的唯一垂直晃動來源。 */
-    private fun winningTileBobOffset(elapsed: Double, fade: Double): Double = sin(elapsed * BOB_SPEED) * BOB_HEIGHT * fade
-
-    /** 相對最近一次最低點的 tick；負值正在下降，正值已開始上升。 */
-    private fun winningTileTicksFromBottom(elapsed: Double): Double {
-        val twoPi = PI * 2.0
-        val rawPhase = elapsed * BOB_SPEED - PI * 1.5
-        val wrappedPhase = ((rawPhase + PI) % twoPi + twoPi) % twoPi - PI
-        return wrappedPhase / BOB_SPEED
-    }
-
     /** 胡牌張每次接近晃動最低點時，在固定的空中水面生成兩圈短促波紋。 */
     private fun renderWinningTileContactRipples(
         elapsed: Double,
@@ -1062,9 +1043,6 @@ class WinCelebrationShowcaseEntityRenderer(
             .add(Vector3f(end).mul(-2f * t3 + 3f * t2))
             .add(Vector3f(endTangent).mul(t3 - t2))
     }
-    private fun lerp(start: Double, end: Double, progress: Double) = start + (end - start) * progress
-    private fun smoothStep(value: Double): Double = value * value * (3.0 - 2.0 * value)
-    private fun easeOut(value: Double): Double = 1.0 - (1.0 - value) * (1.0 - value)
     private fun seededUnit(seed: Long, salt: Int): Double = (((seed xor (salt.toLong() * -7046029254386353131L)) ushr 11) and 0xFFFF).toDouble() / 65535.0
 
     private companion object {
@@ -1093,8 +1071,6 @@ class WinCelebrationShowcaseEntityRenderer(
         const val SHAKE_PITCH_DEGREES = 3.5
         const val SHAKE_SECONDARY_TILT_DEGREES = 2.5
         const val SHAKE_SECONDARY_FREQUENCY_RATIO = 1.17
-        const val ELYTRA_APPEAR_TICK = 32.0
-        const val ELYTRA_OPEN_TICK = 40.0
         const val FIREWORK_APPEAR_TICK = 32.0
         const val FIREWORK_USE_START_TICK = 48.0
         const val FLIGHT_START_TICK = 52.0
@@ -1108,9 +1084,6 @@ class WinCelebrationShowcaseEntityRenderer(
         const val DEPARTURE_TURN_DURATION_TICKS = 20.0
         const val FIREWORK_FLAME_END_TICK = 56.0
         const val FLIGHT_END_TICK = 260.0
-        const val ELYTRA_FADE_START_TICK = 260.0
-        const val ELYTRA_FADE_END_TICK = 276.0
-        const val EQUIPMENT_FADE_END_TICK = 276.0
         const val SHOWCASE_START_TICK = 300.0
         const val ARRIVAL_TRANSITION_TICKS = SHOWCASE_START_TICK - FLIGHT_END_TICK
         const val ORBIT_BUILDUP_TICK = 80.0
@@ -1132,8 +1105,6 @@ class WinCelebrationShowcaseEntityRenderer(
         const val LIFT_HEIGHT = 0.08
         const val SHOWCASE_HEIGHT = 1.25
         const val FLIGHT_ARC_HEIGHT = 0.65
-        const val BOB_HEIGHT = 0.025
-        const val BOB_SPEED = 0.22
         const val RECOIL_DISTANCE = 0.025
         val RIGHT_HAND_X = MahjongTileEntity.TILE_WIDTH / 2.0 + 0.010
         val LEFT_HAND_X = -RIGHT_HAND_X
