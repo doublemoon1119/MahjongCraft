@@ -637,6 +637,8 @@ class FabricDebugPresentationCommand(
             val kanIds = List(4) { Uuid.random().also { id -> tileAssetsById[id] = "p8" } }
             val winningTileId = Uuid.random().also { tileAssetsById[it] = if (winnerIndex == 0) "m1" else "p${winnerIndex + 1}" }
             val yakuman = preview == WinSettlementPreview.YAKUMAN
+            // 自摸與流局滿貫沒有放銃者；只有榮和（含役滿榮和）才歸咎到特定玩家。
+            val dealsIn = preview == WinSettlementPreview.RON || yakuman
             val regularYakuEntries = if (preview == WinSettlementPreview.RON && winnerIndex == 0) {
                 listOf(
                     WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.reach", "1"),
@@ -662,7 +664,7 @@ class FabricDebugPresentationCommand(
             WinSettlementWinnerPresentation(
                 playerId = playerIds[winnerIndex],
                 seatIndex = winnerIndex,
-                responsiblePlayerId = playerIds.getOrNull(winnerCount),
+                responsiblePlayerId = if (dealsIn) playerIds.getOrNull(winnerCount) else null,
                 totalScore = if (yakuman) {
                     32_000
                 } else if (preview == WinSettlementPreview.NAGASHI) {
