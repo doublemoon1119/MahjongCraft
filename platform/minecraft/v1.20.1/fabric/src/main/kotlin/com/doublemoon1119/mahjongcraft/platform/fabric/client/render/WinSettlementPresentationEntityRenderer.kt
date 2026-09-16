@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.Presentatio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.anchorOffset
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.arrange
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.crossAxisOffset
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.fittedScale
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.unweighted
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationNodeSize
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTextMeasurer
@@ -259,7 +260,7 @@ class WinSettlementPresentationEntityRenderer(
                 val rowX = x + column * columnWidth
                 val rowY = y + row * layout.rowHeight
                 val title = Text.translatable(entry.translationKey)
-                val titleScale = fittedTextScale(title, columnWidth - 44f, entryScale)
+                val titleScale = fittedScale(textRenderer.getWidth(title).toFloat(), columnWidth - 44f, entryScale)
                 val titleY = rowY + crossAxisOffset(layout.rowHeight, textRenderer.fontHeight * titleScale, layout.verticalAlignment)
                 val trailing = entry.trailingTranslationKey?.let { key ->
                     entry.trailingTranslationArgument?.let { Text.translatable(key, it) } ?: Text.translatable(key)
@@ -478,6 +479,11 @@ class WinSettlementPresentationEntityRenderer(
         val alpha = WorldPanelRenderer.phaseAlpha(local, 0.0, 12.0, WinSettlementPresentationEntity.RANKING_TICKS.toDouble(), (WinSettlementPresentationEntity.RANKING_TICKS + WinSettlementPresentationEntity.FADE_OUT_TICKS).toDouble())
         if (alpha <= MIN_VISIBLE_ALPHA) return
         val layout = measureRankingLayout(entity.rankings)
+        val rankRightX = layout[SettlementRankingColumnId.RANK].right
+        val faceLeftX = layout[SettlementRankingColumnId.FACE].left
+        val nameLeftX = layout[SettlementRankingColumnId.NAME].left
+        val scoreRightX = layout[SettlementRankingColumnId.SCORE].right
+        val deltaRightX = layout[SettlementRankingColumnId.DELTA].right
         val panelBottom = -20f + entity.rankings.size * 16f + 8f
         renderPanel(layout.panelHalfWidth, -55f, panelBottom, alpha, matrices, consumers)
         draw(Text.translatable(WinSettlementTranslationKeys.SCORE_RANKING), 0f, -42f, Align.CENTER, color(0xFFD45A, alpha), 1.25f, matrices, consumers)
@@ -501,7 +507,7 @@ class WinSettlementPresentationEntityRenderer(
             matrices.translate(0f, y, 0f)
             matrices.scale(settledEffect.rowScale, settledEffect.rowScale, 1f)
             matrices.push()
-            matrices.translate(layout.rankRightX, 0f, 0f)
+            matrices.translate(rankRightX, 0f, 0f)
             matrices.scale(settledEffect.rankScale, settledEffect.rankScale, 1f)
             draw(
                 Text.literal(ranks.getValue(row.player.playerId).toString()),
@@ -514,10 +520,10 @@ class WinSettlementPresentationEntityRenderer(
                 consumers,
             )
             matrices.pop()
-            renderRankingPortrait(snapshot, layout.faceLeftX, -1f, rowAlpha, matrices, consumers)
-            draw(Text.literal(fitPlayerName(playerName(row.player.playerId.toString()))), layout.nameLeftX, 0f, Align.LEFT, color(0xFFFFFF, rowAlpha), 1f, matrices, consumers)
-            draw(Text.literal(row.score.toString()), layout.scoreRightX, 0f, Align.RIGHT, color(0xFFF3C4, rowAlpha), 1f, matrices, consumers)
-            draw(Text.literal(formatDelta(row.delta)), layout.deltaRightX, 0f, Align.RIGHT, color(if (row.delta >= 0) 0x80FF80 else 0xFF8080, rowAlpha), 1f, matrices, consumers)
+            renderRankingPortrait(snapshot, faceLeftX, -1f, rowAlpha, matrices, consumers)
+            draw(Text.literal(fitPlayerName(playerName(row.player.playerId.toString()))), nameLeftX, 0f, Align.LEFT, color(0xFFFFFF, rowAlpha), 1f, matrices, consumers)
+            draw(Text.literal(row.score.toString()), scoreRightX, 0f, Align.RIGHT, color(0xFFF3C4, rowAlpha), 1f, matrices, consumers)
+            draw(Text.literal(SettlementRankingLayout.formatDelta(row.delta)), deltaRightX, 0f, Align.RIGHT, color(if (row.delta >= 0) 0x80FF80 else 0xFF8080, rowAlpha), 1f, matrices, consumers)
             matrices.pop()
         }
     }
@@ -571,32 +577,29 @@ class WinSettlementPresentationEntityRenderer(
         return (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
     }
 
-    private fun measureRankingLayout(players: List<WinSettlementRankingSnapshot>): RankingLayout {
-        val scoreWidth = maxOf(
-            MIN_SCORE_COLUMN_WIDTH,
-            players.maxOfOrNull { maxOf(textRenderer.getWidth(it.previousScore.toString()), textRenderer.getWidth(it.currentScore.toString())) }
-                ?.plus(NUMERIC_COLUMN_PADDING * 2) ?: 0,
-        ).toFloat()
-        val deltaWidth = maxOf(
-            MIN_DELTA_COLUMN_WIDTH,
-            players.maxOfOrNull { textRenderer.getWidth(formatDelta(it.currentScore - it.previousScore)) }
-                ?.plus(NUMERIC_COLUMN_PADDING * 2) ?: 0,
-        ).toFloat()
-        val totalWidth = PANEL_PADDING * 2 + RANK_COLUMN_WIDTH + COLUMN_GAP + PresentationLayoutSolver.FACE_SIZE + COLUMN_GAP +
-            NAME_MAX_WIDTH + SECTION_GAP + scoreWidth + SECTION_GAP + deltaWidth
-        var cursor = -totalWidth / 2f + PANEL_PADDING
-        val rankRightX = cursor + RANK_COLUMN_WIDTH
-        cursor = rankRightX + COLUMN_GAP
-        val faceLeftX = cursor
-        cursor += PresentationLayoutSolver.FACE_SIZE + COLUMN_GAP
-        val nameLeftX = cursor
-        cursor += NAME_MAX_WIDTH + SECTION_GAP
-        val scoreRightX = cursor + scoreWidth
-        cursor = scoreRightX + SECTION_GAP
-        return RankingLayout(totalWidth / 2f, rankRightX, faceLeftX, nameLeftX, scoreRightX, cursor + deltaWidth)
+    /** 依所有起訖分數與增減的實際像素寬度建立排名欄位。 */
+    private fun measureRankingLayout(players: List<WinSettlementRankingSnapshot>): SettlementRankingLayout {
+        val scoreWidth = SettlementRankingLayout.contentColumnWidth(
+            contentWidths = players.flatMap { listOf(it.previousScore, it.currentScore) }.map { textRenderer.getWidth(it.toString()).toFloat() },
+            padding = SettlementRankingLayout.NUMERIC_COLUMN_PADDING,
+            minWidth = SettlementRankingLayout.MIN_SCORE_COLUMN_WIDTH,
+        )
+        val deltaWidth = SettlementRankingLayout.contentColumnWidth(
+            contentWidths = players.map { textRenderer.getWidth(SettlementRankingLayout.formatDelta(it.currentScore - it.previousScore)).toFloat() },
+            padding = SettlementRankingLayout.NUMERIC_COLUMN_PADDING,
+            minWidth = SettlementRankingLayout.MIN_DELTA_COLUMN_WIDTH,
+        )
+        return SettlementRankingLayout.arrange(
+            columns = SettlementRankingLayout.standardColumns(
+                faceSize = PresentationLayoutSolver.FACE_SIZE,
+                scoreWidth = scoreWidth,
+                deltaWidth = deltaWidth,
+            ),
+            panelPadding = PANEL_PADDING,
+        )
     }
 
-    private fun fitPlayerName(name: String): String = WorldPanelRenderer.fitText(textRenderer, name, NAME_MAX_WIDTH)
+    private fun fitPlayerName(name: String): String = WorldPanelRenderer.fitText(textRenderer, name, SettlementRankingLayout.NAME_MAX_WIDTH)
 
     private fun WinSettlementDetailSnapshot.text(): Text = Text.translatable(values.firstOrNull().orEmpty(), *values.drop(1).toTypedArray())
     private fun WinSettlementRankingSnapshot.toRankingPlayer() = ScoreRankingPlayer(Uuid.parse(playerId), seatIndex, isAi, previousScore, currentScore, previousRank, currentRank)
@@ -630,42 +633,14 @@ class WinSettlementPresentationEntityRenderer(
         matrices.pop()
     }
 
-    private fun fittedTextScale(text: Text, maxWidth: Float, preferredScale: Float): Float {
-        val naturalWidth = textRenderer.getWidth(text).toFloat().coerceAtLeast(1f)
-        return minOf(preferredScale, maxWidth.coerceAtLeast(1f) / naturalWidth)
-    }
-
     private fun color(rgb: Int, alpha: Float) = WorldPanelRenderer.withAlpha(rgb, alpha)
-    private fun formatDelta(delta: Int) = if (delta > 0) {
-        "+$delta"
-    } else if (delta < 0) {
-        delta.toString()
-    } else {
-        "±0"
-    }
     override fun getTexture(entity: WinSettlementPresentationEntity): Identifier? = null
 
     private enum class Align { LEFT, CENTER, RIGHT }
 
-    private data class RankingLayout(
-        val panelHalfWidth: Float,
-        val rankRightX: Float,
-        val faceLeftX: Float,
-        val nameLeftX: Float,
-        val scoreRightX: Float,
-        val deltaRightX: Float,
-    )
-
     private companion object {
         const val SCALE = 0.02f
         const val PANEL_PADDING = 12f
-        const val RANK_COLUMN_WIDTH = 12f
-        const val COLUMN_GAP = 7f
-        const val SECTION_GAP = 9f
-        const val NAME_MAX_WIDTH = 96
-        const val MIN_SCORE_COLUMN_WIDTH = 48
-        const val MIN_DELTA_COLUMN_WIDTH = 56
-        const val NUMERIC_COLUMN_PADDING = 6
         const val TILE_BACK_ASSET_KEY = "back"
         const val MIN_VISIBLE_ALPHA = 0.02f
         const val RANKING_SWEEP_HALF_WIDTH = 18f

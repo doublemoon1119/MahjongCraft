@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.anchorOffset
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.arrange
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.crossAxisOffset
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.fittedScale
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.styledSize
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.tileSequenceWidth
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.unweighted
@@ -62,6 +63,25 @@ class PresentationLayoutSolverTest {
     fun `measures an empty tile sequence as nothing wide`() {
         assertEquals(0f, tileSequenceWidth(count = 0, tileWidth = 10f, gap = 2f))
         assertEquals(10f, tileSequenceWidth(count = 1, tileWidth = 10f, gap = 2f))
+    }
+
+    /** 放得下的文字維持偏好縮放。 */
+    @Test
+    fun `keeps the preferred scale when the text fits`() {
+        assertEquals(0.85f, fittedScale(naturalWidth = 40f, maxWidth = 100f, preferredScale = 0.85f))
+    }
+
+    /** 過寬的文字縮到剛好放得下。 */
+    @Test
+    fun `shrinks a text that is too wide`() {
+        assertEquals(0.5f, fittedScale(naturalWidth = 200f, maxWidth = 100f, preferredScale = 0.85f))
+    }
+
+    /** 空字串或非正的可用寬度都以 1 計算，不會除以零或產生負值。 */
+    @Test
+    fun `treats zero widths as one`() {
+        assertEquals(0.85f, fittedScale(naturalWidth = 0f, maxWidth = 100f, preferredScale = 0.85f))
+        assertEquals(0.01f, fittedScale(naturalWidth = 100f, maxWidth = -20f, preferredScale = 0.85f))
     }
 
     /** 牌組之間套用較大的組間距。 */

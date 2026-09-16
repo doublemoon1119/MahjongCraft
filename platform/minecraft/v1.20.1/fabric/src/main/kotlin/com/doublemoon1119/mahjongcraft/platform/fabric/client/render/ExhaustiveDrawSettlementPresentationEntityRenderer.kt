@@ -163,7 +163,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         matrices: MatrixStack,
         vertexConsumers: VertexConsumerProvider,
     ) {
-        val deltaText = formatDelta(delta)
+        val deltaText = SettlementRankingLayout.formatDelta(delta)
         val deltaColor = when {
             delta > 0 -> 0x80FF80
             delta < 0 -> 0xFF8080
@@ -397,37 +397,41 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
 
     /** 依所有起訖數值及本地化狀態的實際像素寬度建立穩定欄位；動畫中途不會改變面板尺寸。 */
     private fun measureLayout(players: List<ExhaustiveDrawSettlementPlayerSnapshot>): TableLayout {
-        val scoreContentWidth = players.maxOfOrNull { player ->
-            maxOf(textRenderer.getWidth(player.previousScore.toString()), textRenderer.getWidth(player.currentScore.toString()))
-        } ?: 0
-        val deltaContentWidth = players.maxOfOrNull { player -> textRenderer.getWidth(formatDelta(player.currentScore - player.previousScore)) } ?: 0
-        val statusContentWidth = players.maxOfOrNull { player ->
-            settlementStatusText(player)?.let(textRenderer::getWidth) ?: 0
-        } ?: 0
-        val scoreWidth = maxOf(MIN_SCORE_COLUMN_WIDTH, scoreContentWidth + NUMERIC_COLUMN_PADDING * 2)
-        val deltaWidth = maxOf(MIN_DELTA_COLUMN_WIDTH, deltaContentWidth + NUMERIC_COLUMN_PADDING * 2)
-        val statusWidth = maxOf(MIN_STATUS_COLUMN_WIDTH, statusContentWidth + STATUS_COLUMN_PADDING * 2)
-        val totalWidth = PANEL_PADDING * 2 + RANK_COLUMN_WIDTH + COLUMN_GAP + FACE_SIZE + COLUMN_GAP + NAME_MAX_WIDTH + SECTION_GAP + statusWidth + SECTION_GAP + scoreWidth + SECTION_GAP + deltaWidth
-        var cursor = -totalWidth / 2f + PANEL_PADDING
-        val rankRightX = cursor + RANK_COLUMN_WIDTH
-        cursor = rankRightX + COLUMN_GAP
-        val faceLeftX = cursor
-        cursor += FACE_SIZE + COLUMN_GAP
-        val nameLeftX = cursor
-        cursor += NAME_MAX_WIDTH + SECTION_GAP
-        val statusCenterX = cursor + statusWidth / 2f
-        cursor += statusWidth + SECTION_GAP
-        val scoreRightX = cursor + scoreWidth
-        cursor = scoreRightX + SECTION_GAP
-        val deltaRightX = cursor + deltaWidth
+        val scoreWidth = SettlementRankingLayout.contentColumnWidth(
+            contentWidths = players.flatMap { listOf(it.previousScore, it.currentScore) }.map { textRenderer.getWidth(it.toString()).toFloat() },
+            padding = SettlementRankingLayout.NUMERIC_COLUMN_PADDING,
+            minWidth = SettlementRankingLayout.MIN_SCORE_COLUMN_WIDTH,
+        )
+        val deltaWidth = SettlementRankingLayout.contentColumnWidth(
+            contentWidths = players.map { textRenderer.getWidth(SettlementRankingLayout.formatDelta(it.currentScore - it.previousScore)).toFloat() },
+            padding = SettlementRankingLayout.NUMERIC_COLUMN_PADDING,
+            minWidth = SettlementRankingLayout.MIN_DELTA_COLUMN_WIDTH,
+        )
+        val statusWidth = SettlementRankingLayout.contentColumnWidth(
+            contentWidths = players.map { player -> settlementStatusText(player)?.let(textRenderer::getWidth)?.toFloat() ?: 0f },
+            padding = STATUS_COLUMN_PADDING,
+            minWidth = MIN_STATUS_COLUMN_WIDTH,
+        )
+        val columns = SettlementRankingLayout.arrange(
+            columns = SettlementRankingLayout.standardColumns(
+                faceSize = FACE_SIZE,
+                scoreWidth = scoreWidth,
+                deltaWidth = deltaWidth,
+                statusWidth = statusWidth,
+            ),
+            panelPadding = PANEL_PADDING,
+        )
         val panelBottom = FIRST_ROW_Y + players.size.coerceAtLeast(1) * ROW_HEIGHT + PANEL_BOTTOM_PADDING
-        return TableLayout(totalWidth / 2f, panelBottom, rankRightX, faceLeftX, nameLeftX, statusCenterX, scoreRightX, deltaRightX)
-    }
-
-    private fun formatDelta(delta: Int): String = when {
-        delta > 0 -> "+$delta"
-        delta < 0 -> delta.toString()
-        else -> "±0"
+        return TableLayout(
+            panelHalfWidth = columns.panelHalfWidth,
+            panelBottom = panelBottom,
+            rankRightX = columns[SettlementRankingColumnId.RANK].right,
+            faceLeftX = columns[SettlementRankingColumnId.FACE].left,
+            nameLeftX = columns[SettlementRankingColumnId.NAME].left,
+            statusCenterX = columns[SettlementRankingColumnId.STATUS].centerX,
+            scoreRightX = columns[SettlementRankingColumnId.SCORE].right,
+            deltaRightX = columns[SettlementRankingColumnId.DELTA].right,
+        )
     }
 
     /** 將可持久化 Fabric snapshot 投影為 Flow 層共用的規則中立排行關鍵影格。 */
@@ -492,13 +496,9 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         const val FACE_TEXT_CENTER_OFFSET = 0.5f
         const val NAME_MAX_WIDTH = 96
         const val PANEL_PADDING = 8f
-        const val RANK_COLUMN_WIDTH = 12f
         const val COLUMN_GAP = 7f
         const val SECTION_GAP = 9f
         const val MIN_STATUS_COLUMN_WIDTH = 48f
-        const val MIN_SCORE_COLUMN_WIDTH = 48f
-        const val MIN_DELTA_COLUMN_WIDTH = 56f
-        const val NUMERIC_COLUMN_PADDING = 6f
         const val STATUS_COLUMN_PADDING = 4f
         const val ROW_REVEAL_DURATION = 6.0
         const val ROW_REVEAL_OFFSET = 6f

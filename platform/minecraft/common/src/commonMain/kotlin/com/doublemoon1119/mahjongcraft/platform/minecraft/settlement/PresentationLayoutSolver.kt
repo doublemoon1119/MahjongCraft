@@ -229,6 +229,17 @@ class PresentationLayoutSolver(
         /** 連續排列的牌張總寬度；沒有牌時為 0，不會算進負的間距。 */
         fun tileSequenceWidth(count: Int, tileWidth: Float, gap: Float): Float = count * tileWidth + (count - 1).coerceAtLeast(0) * gap
 
+        /**
+         * 讓自然寬度 [naturalWidth] 的文字放進 [maxWidth] 的縮放係數，最大為 [preferredScale]。
+         *
+         * 兩個寬度都至少以 1 計算，因此空字串或非正的可用寬度不會除以零或產生負值。
+         */
+        fun fittedScale(
+            naturalWidth: Float,
+            maxWidth: Float,
+            preferredScale: Float,
+        ): Float = minOf(preferredScale, maxWidth.coerceAtLeast(1f) / naturalWidth.coerceAtLeast(1f))
+
         /** 加上容器留白之後的尺寸。 */
         fun styledSize(width: Float, height: Float, style: PresentationContainerStyle): PresentationNodeSize = PresentationNodeSize(width + style.padding * 2f, height + style.padding * 2f)
 
