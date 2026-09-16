@@ -1,6 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.player
 
-/** 公開 indicator 或 option 在 Minecraft 面板使用的本地化名稱與 RGB 顏色。 */
+/**
+ * 玩家相關公開標記在 Minecraft 面板使用的本地化名稱與 RGB 顏色。
+ *
+ * 公開標記包括座位上的公開 indicator 與其 option，以及胡牌結算排行中的付款原因；兩者都是規則提供、
+ * 所有玩家與旁觀者都能看到的完整 namespaced ID。
+ */
 data class PublicPlayerIndicatorDisplay(
     val translationKey: String,
     val colorRgb: Int = 0xFFE08A,
@@ -11,7 +16,7 @@ data class PublicPlayerIndicatorDisplay(
     }
 }
 
-/** 完整 namespaced indicator／option ID 的凍結式 Minecraft 顯示 registry。 */
+/** 玩家相關公開標記（indicator、option、付款原因）完整 namespaced ID 的凍結式 Minecraft 顯示 registry。 */
 interface PublicPlayerIndicatorDisplayRegistry {
     /** 目前已登記 indicator ID 的快照。 */
     val registrationKeys: Set<String>

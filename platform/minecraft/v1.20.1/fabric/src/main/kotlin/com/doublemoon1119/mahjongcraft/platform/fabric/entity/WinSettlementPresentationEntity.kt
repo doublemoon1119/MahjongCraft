@@ -36,6 +36,7 @@ data class WinSettlementRankingSnapshot(
     val currentScore: Int,
     val previousRank: Int,
     val currentRank: Int,
+    val paymentReasonId: String? = null,
 )
 
 data class WinSettlementRevealTimingSnapshot(
@@ -65,7 +66,7 @@ class WinSettlementPresentationEntity(
     val templateKey: String get() = dataTracker[TEMPLATE_KEY]
     val isTsumo: Boolean get() = dataTracker[IS_TSUMO]
     val winners: List<WinSettlementWinnerSnapshot> get() = decodeWinners(dataTracker[WINNERS])
-    val rankings: List<WinSettlementRankingSnapshot> get() = decodeRankings(dataTracker[RANKINGS])
+    val rankings: List<WinSettlementRankingSnapshot> get() = WinSettlementRankingCodec.decode(dataTracker[RANKINGS])
     val revealTiming: WinSettlementRevealTimingSnapshot get() = decodeRevealTiming(dataTracker[REVEAL_TIMING])
     val customSoundCues: List<WinSettlementSoundCueSnapshot> get() = decodeSoundCues(dataTracker[CUSTOM_SOUND_CUES])
 
@@ -103,7 +104,7 @@ class WinSettlementPresentationEntity(
         dataTracker.set(TEMPLATE_KEY, templateKey)
         dataTracker.set(IS_TSUMO, isTsumo)
         dataTracker.set(WINNERS, encodeWinners(winners))
-        dataTracker.set(RANKINGS, encodeRankings(rankings))
+        dataTracker.set(RANKINGS, WinSettlementRankingCodec.encode(rankings))
         enqueueSettlementSounds(startGameTime)
     }
 
@@ -361,16 +362,6 @@ class WinSettlementPresentationEntity(
                     if (parts.size != 3) null else WinSettlementDetailSnapshot(parts[0], parts[1], parts[2].splitList())
                 }.orEmpty(),
             )
-        }
-
-        private fun encodeRankings(values: List<WinSettlementRankingSnapshot>) = values.joinToString(R.toString()) {
-            listOf(it.playerId, it.seatIndex, if (it.isAi) 1 else 0, it.previousScore, it.currentScore, it.previousRank, it.currentRank).joinToString(F.toString())
-        }
-
-        private fun decodeRankings(encoded: String) = encoded.split(R).mapNotNull { row ->
-            val f = row.split(F)
-            if (f.size != 7) return@mapNotNull null
-            WinSettlementRankingSnapshot(f[0], f[1].toIntOrNull() ?: return@mapNotNull null, f[2] == "1", f[3].toIntOrNull() ?: return@mapNotNull null, f[4].toIntOrNull() ?: return@mapNotNull null, f[5].toIntOrNull() ?: return@mapNotNull null, f[6].toIntOrNull() ?: return@mapNotNull null)
         }
 
         private fun String.splitList(): List<String> = takeIf(String::isNotBlank)?.split(L).orEmpty()

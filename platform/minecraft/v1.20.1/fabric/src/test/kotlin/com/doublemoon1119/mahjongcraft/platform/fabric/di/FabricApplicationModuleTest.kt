@@ -206,7 +206,7 @@ class FabricApplicationModuleTest {
             presentationCommand.buildExhaustiveDrawSettlementCommand().build().children.map { it.name }.toSet(),
         )
         assertEquals(
-            setOf("tsumo", "ron", "yakuman", "nagashi"),
+            setOf("tsumo", "ron", "yakuman", "pao", "nagashi"),
             presentationCommand.buildWinSettlementCommand().build().children.map { it.name }.toSet(),
         )
         assertEquals(

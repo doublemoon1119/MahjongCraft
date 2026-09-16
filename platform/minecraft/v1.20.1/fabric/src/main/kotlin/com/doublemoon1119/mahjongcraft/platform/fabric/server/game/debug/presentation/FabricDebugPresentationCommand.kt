@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
@@ -222,7 +223,7 @@ class FabricDebugPresentationCommand(
             ),
         )
 
-    /** 建立 `win_settlement`：自摸、榮和（可指定贏家數）、役滿與流局滿貫的結算預覽。 */
+    /** 建立 `win_settlement`：自摸、榮和（可指定贏家數）、役滿、包牌役滿與流局滿貫的結算預覽。 */
     fun buildWinSettlementCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(WIN_SETTLEMENT_SUBCOMMAND)
         .then(literal(TSUMO_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.TSUMO, 1) })
         .then(
@@ -239,6 +240,7 @@ class FabricDebugPresentationCommand(
                 ),
         )
         .then(literal(YAKUMAN_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.YAKUMAN, 1) })
+        .then(literal(PAO_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.PAO, 1) })
         .then(literal(NAGASHI_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.NAGASHI, 1) })
 
     /** 建立 `match_settlement`：終局排名揭曉預覽，可指定玩家數。 */
@@ -636,7 +638,7 @@ class FabricDebugPresentationCommand(
             val ponIds = List(3) { Uuid.random().also { id -> tileAssetsById[id] = "s3" } }
             val kanIds = List(4) { Uuid.random().also { id -> tileAssetsById[id] = "p8" } }
             val winningTileId = Uuid.random().also { tileAssetsById[it] = if (winnerIndex == 0) "m1" else "p${winnerIndex + 1}" }
-            val yakuman = preview == WinSettlementPreview.YAKUMAN
+            val yakuman = preview == WinSettlementPreview.YAKUMAN || preview == WinSettlementPreview.PAO
             // 自摸與流局滿貫沒有放銃者；只有榮和（含役滿榮和）才歸咎到特定玩家。
             val dealsIn = preview == WinSettlementPreview.RON || yakuman
             val regularYakuEntries = if (preview == WinSettlementPreview.RON && winnerIndex == 0) {
@@ -713,9 +715,15 @@ class FabricDebugPresentationCommand(
                 },
             )
         }
+        // 包牌預覽：座位 0 役滿榮和 32000，座位 1 放銃、座位 2 為包牌責任者，各付一半；其餘預覽沿用固定示意分數。
+        val (scoresBefore, scoresAfter, ranksAfter) = if (preview == WinSettlementPreview.PAO) {
+            Triple(listOf(25_000, 25_000, 25_000, 25_000), listOf(57_000, 9_000, 9_000, 25_000), listOf(1, 3, 4, 2))
+        } else {
+            Triple(listOf(31_000, 28_000, 24_000, 17_000), listOf(26_000, 23_000, 19_000, 32_000), listOf(2, 3, 4, 1))
+        }
         val ranking = ScoreRankingPresentation(
-            listOf(31_000, 28_000, 24_000, 17_000).zip(listOf(26_000, 23_000, 19_000, 32_000)).mapIndexed { seatIndex, (before, after) ->
-                ScoreRankingPlayer(playerIds[seatIndex], seatIndex, seatIndex != 0, before, after, seatIndex + 1, listOf(2, 3, 4, 1)[seatIndex])
+            scoresBefore.zip(scoresAfter).mapIndexed { seatIndex, (before, after) ->
+                ScoreRankingPlayer(playerIds[seatIndex], seatIndex, seatIndex != 0, before, after, seatIndex + 1, ranksAfter[seatIndex])
             },
         )
         val request = WinSettlementPresentationRequest(
@@ -734,6 +742,11 @@ class FabricDebugPresentationCommand(
             isTsumo = preview == WinSettlementPreview.TSUMO,
             winners = winners,
             ranking = ranking,
+            paymentReasonIdsByPlayerId = if (preview == WinSettlementPreview.PAO) {
+                mapOf(playerIds[2] to BuiltInPaymentReasonIds.PAO)
+            } else {
+                emptyMap()
+            },
         )
         return if (
             winSettlementScheduler.schedule(
@@ -831,6 +844,7 @@ class FabricDebugPresentationCommand(
         RON,
         TSUMO,
         YAKUMAN,
+        PAO,
         NAGASHI,
     }
 
@@ -900,6 +914,9 @@ class FabricDebugPresentationCommand(
 
         /** 流局滿貫結算 literal。 */
         const val NAGASHI_ARGUMENT: String = "nagashi"
+
+        /** 包牌役滿結算預覽 literal。 */
+        const val PAO_ARGUMENT: String = "pao"
 
         /** 中止流局 literal。 */
         const val ABORTIVE_ARGUMENT: String = "abortive"

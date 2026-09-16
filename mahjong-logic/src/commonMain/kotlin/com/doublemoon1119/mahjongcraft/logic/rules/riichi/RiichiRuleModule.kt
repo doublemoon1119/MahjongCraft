@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
@@ -205,6 +206,7 @@ class RiichiRuleModule(
         )
         val result = createHandValueCalculator().calculate(context)
 
+        var paymentReasons: Map<Uuid, String> = emptyMap()
         val payments: Map<Uuid, Int> = when (val pointResult = result.pointResult) {
             is RiichiPointResult.DealerTsumo ->
                 tableState.players
@@ -224,6 +226,7 @@ class RiichiRuleModule(
                 val paoPlayerId = tableState.players
                     .first { tableState.relativeDirectionOf(player.id, it.id) == paoLiability.direction }
                     .id
+                paymentReasons = mapOf(paoPlayerId to BuiltInPaymentReasonIds.PAO)
                 mergeTsumoRemainder(tableState, player.id, mapOf(paoPlayerId to pointResult.paoPayment), pointResult.remainder)
             }
 
@@ -233,7 +236,11 @@ class RiichiRuleModule(
         }
 
         return WinResolutionResult(
-            settlement = WinSettlementResult(totalGained = result.totalPoint, paymentsByPlayerId = payments),
+            settlement = WinSettlementResult(
+                totalGained = result.totalPoint,
+                paymentsByPlayerId = payments,
+                paymentReasonIdsByPlayerId = paymentReasons,
+            ),
             handValueResult = result,
         )
     }
@@ -265,6 +272,7 @@ class RiichiRuleModule(
         )
         val result = createHandValueCalculator().calculate(context)
 
+        var paymentReasons: Map<Uuid, String> = emptyMap()
         val payments: Map<Uuid, Int> = when (val pointResult = result.pointResult) {
             is RiichiPointResult.Ron -> mapOf(discarderId to pointResult.total)
 
@@ -276,6 +284,7 @@ class RiichiRuleModule(
                     .id
                 // 包牌責任者剛好就是放銃者本人時，兩份「一半」其實是同一個人要付，直接歸戶成一筆
                 // 全額，避免兩筆同 key 的付款在合併時互相覆蓋掉一半金額。
+                paymentReasons = mapOf(paoPlayerId to BuiltInPaymentReasonIds.PAO)
                 val paoPayments = if (paoPlayerId == discarderId) {
                     mapOf(discarderId to pointResult.paymentEach * 2)
                 } else {
@@ -291,7 +300,11 @@ class RiichiRuleModule(
         }
 
         return WinResolutionResult(
-            settlement = WinSettlementResult(totalGained = result.totalPoint, paymentsByPlayerId = payments),
+            settlement = WinSettlementResult(
+                totalGained = result.totalPoint,
+                paymentsByPlayerId = payments,
+                paymentReasonIdsByPlayerId = paymentReasons,
+            ),
             handValueResult = result,
         )
     }

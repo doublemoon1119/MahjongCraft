@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
@@ -417,7 +418,14 @@ class RiichiRuleModuleTest {
 
         val result = module.declareTsumo(table, winner)
 
-        assertEquals(WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(paoPlayer.id to 32000)), result?.settlement)
+        assertEquals(
+            WinSettlementResult(
+                totalGained = 32000,
+                paymentsByPlayerId = mapOf(paoPlayer.id to 32000),
+                paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
+            ),
+            result?.settlement,
+        )
     }
 
     /**
@@ -508,6 +516,7 @@ class RiichiRuleModuleTest {
             WinSettlementResult(
                 totalGained = 32000,
                 paymentsByPlayerId = mapOf(discarder.id to 16000, paoPlayer.id to 16000),
+                paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
             ),
             result?.settlement,
         )
@@ -532,11 +541,15 @@ class RiichiRuleModuleTest {
         val other2 = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
         val table = FakeTableStateFactory.create(players = listOf(paoPlayer, winner, other1, other2), config = module.config)
 
-        // 包牌責任者（paoPlayer）這次剛好也是放銃者本人
+        // 包牌責任者（paoPlayer）這次剛好也是放銃者本人；付款金額與一般放銃相同，但仍標示包牌。
         val result = module.declareRon(table, winner, winningTile, discarderId = paoPlayer.id)
 
         assertEquals(
-            WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(paoPlayer.id to 32000)),
+            WinSettlementResult(
+                totalGained = 32000,
+                paymentsByPlayerId = mapOf(paoPlayer.id to 32000),
+                paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
+            ),
             result?.settlement,
         )
     }
@@ -584,6 +597,7 @@ class RiichiRuleModuleTest {
             WinSettlementResult(
                 totalGained = 96000,
                 paymentsByPlayerId = mapOf(paoPlayer.id to 64000, other1.id to 16000, other2.id to 16000),
+                paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
             ),
             result?.settlement,
         )
@@ -614,6 +628,7 @@ class RiichiRuleModuleTest {
             WinSettlementResult(
                 totalGained = 64000,
                 paymentsByPlayerId = mapOf(discarder.id to 48000, paoPlayer.id to 16000),
+                paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
             ),
             result?.settlement,
         )
@@ -659,6 +674,7 @@ class RiichiRuleModuleTest {
             WinSettlementResult(
                 totalGained = 64000,
                 paymentsByPlayerId = mapOf(discarder.id to 32000, paoPlayer.id to 32000),
+                paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
             ),
             result?.settlement,
         )

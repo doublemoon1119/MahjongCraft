@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.registerBuiltInAiStrategyDisplayNames
@@ -57,6 +58,10 @@ object MinecraftMahjongExtensionRegistrar {
             RiichiRuleModule.RIICHI_INDICATOR_ID,
             PublicPlayerIndicatorDisplay(MinecraftMessageKeys.PLAYER_INDICATOR_RIICHI),
         )
+        registries.publicPlayerIndicatorDisplayRegistry.register(
+            BuiltInPaymentReasonIds.PAO,
+            PublicPlayerIndicatorDisplay(MinecraftMessageKeys.PLAYER_INDICATOR_PAO, colorRgb = PAO_PAYMENT_REASON_COLOR),
+        )
         registries.gameConfigPresentationRegistry.registerBuiltInGameConfigPresentations()
         registries.gameActionSoundPresentationRegistry.registerBuiltInRiichiActionSounds()
         registries.roundInfoLineDisplayRegistry.registerBuiltInRiichiRoundInfoLineDisplays()
@@ -99,6 +104,9 @@ object MinecraftMahjongExtensionRegistrar {
             categories = baseline.additionsSince(registries.registrationSnapshot()),
         )
     }
+
+    /** 包牌付款原因的文字顏色；與分數增減的紅綠色區隔。 */
+    private const val PAO_PAYMENT_REASON_COLOR: Int = 0xFFB05C
 }
 
 /** [MinecraftMahjongExtensionRegistrar.registerAndFreeze] 登記的第三方呈現分類。 */

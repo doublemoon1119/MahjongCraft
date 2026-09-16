@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
+import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import kotlin.uuid.Uuid
 
 /** 平台無關、可序列化的胡牌詳情欄位。 */
@@ -65,6 +66,9 @@ data class WinSettlementWinnerPresentation(
 /**
  * 胡牌演出之後依序顯示贏家詳情、最後顯示共用排行的 request。
  *
+ * @property paymentReasonIdsByPlayerId 排行中付款方式有別於一般結算的玩家，對應規則提供的付款原因 ID
+ * （見 [WinSettlementResult.paymentReasonIdsByPlayerId]）；呈現層依 ID 查出顯示文字，不認識任何規則。
+ * key 必須是 [ranking] 中的玩家。
  * @property isBrief 這次是否**跳過贏家詳情、只顯示分數變動**。
  *
  * 中途胡牌（本局在胡牌後仍繼續）用的模式：贏家的牌已經在牌桌上攤開了，面板再重現一次手牌、胡牌張、
@@ -81,9 +85,12 @@ data class WinSettlementPresentationRequest(
     val winners: List<WinSettlementWinnerPresentation>,
     val ranking: ScoreRankingPresentation,
     val isBrief: Boolean = false,
+    val paymentReasonIdsByPlayerId: Map<Uuid, String> = emptyMap(),
 ) {
     init {
         require(winners.isNotEmpty())
+        require(paymentReasonIdsByPlayerId.keys.all { playerId -> ranking.players.any { it.playerId == playerId } })
+        require(paymentReasonIdsByPlayerId.values.all { ':' in it })
         require(outcomeId.substringBefore(':', "").isNotBlank() && outcomeId.substringAfter(':', "").isNotBlank())
         require(templateKey.substringBefore(':', "").isNotBlank() && templateKey.substringAfter(':', "").isNotBlank())
     }

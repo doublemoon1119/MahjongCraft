@@ -107,7 +107,33 @@ object WinSettlementPresentationRequestFactory {
                     )
                 },
             ),
+            paymentReasonIdsByPlayerId = mergePaymentReasons(currentState, responsiblePlayerId, resolutions),
         )
+    }
+
+    /**
+     * 合併各贏家結算給出的付款原因。
+     *
+     * 同一位玩家被多位贏家標上不同原因時，取頭跳順位較前（從 [responsiblePlayerId] 起算、座位順序最先
+     * 輪到）的贏家給出的原因；沒有 [responsiblePlayerId] 時依 [resolutions] 的順序。
+     */
+    internal fun mergePaymentReasons(
+        state: TableState,
+        responsiblePlayerId: Uuid?,
+        resolutions: Map<Uuid, WinResolutionResult>,
+    ): Map<Uuid, String> {
+        val winnersInPriority = responsiblePlayerId?.let { fromId ->
+            val fromSeat = state.players.indexOfFirst { it.id == fromId }
+            val seatCount = state.players.size
+            resolutions.keys.sortedBy { winnerId -> (state.players.indexOfFirst { it.id == winnerId } - fromSeat + seatCount) % seatCount }
+        } ?: resolutions.keys.toList()
+        val reasons = linkedMapOf<Uuid, String>()
+        winnersInPriority.forEach { winnerId ->
+            resolutions.getValue(winnerId).settlement.paymentReasonIdsByPlayerId.forEach { (playerId, reasonId) ->
+                reasons.putIfAbsent(playerId, reasonId)
+            }
+        }
+        return reasons
     }
 
     const val GENERIC_TEMPLATE_KEY = "mahjongcraft:generic"

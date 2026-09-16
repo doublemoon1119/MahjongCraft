@@ -246,6 +246,7 @@
   "mahjongcraft.message.not_game_host": "Only the game host can start the game",
   "mahjongcraft.message.not_your_turn": "It's not your turn yet",
   "mahjongcraft.message.player_already_in_game": "You have already joined another mahjong game",
+  "mahjongcraft.message.player_indicator_pao": "Pao",
   "mahjongcraft.message.player_indicator_riichi": "Riichi",
   "mahjongcraft.message.player_kicked": "Player removed from the game",
   "mahjongcraft.message.player_not_in_any_game": "You are not currently part of any mahjong game",

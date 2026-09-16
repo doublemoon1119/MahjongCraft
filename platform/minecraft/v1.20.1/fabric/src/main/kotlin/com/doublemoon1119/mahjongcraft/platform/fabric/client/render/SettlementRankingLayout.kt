@@ -19,6 +19,9 @@ enum class SettlementRankingColumnId {
 
     /** 分數增減，靠右對齊。 */
     DELTA,
+
+    /** 付款原因文字，靠左對齊。 */
+    PAYMENT_REASON,
 }
 
 /**
@@ -65,6 +68,9 @@ class SettlementRankingLayout private constructor(
     /** 取得指定欄位的範圍；欄位不在版面中時拋出例外。 */
     operator fun get(id: SettlementRankingColumnId): SettlementRankingColumnSpan = spans.getValue(id)
 
+    /** 取得選用欄位的範圍；欄位不在版面中時為 `null`。 */
+    fun find(id: SettlementRankingColumnId): SettlementRankingColumnSpan? = spans[id]
+
     companion object {
         /** 名次欄寬度。 */
         const val RANK_COLUMN_WIDTH: Float = 12f
@@ -110,15 +116,16 @@ class SettlementRankingLayout private constructor(
         }
 
         /**
-         * 兩個結算面板共用的排名欄位：名次、頭像、名稱、（選用的）狀態、分數、增減。
+         * 兩個結算面板共用的排名欄位：名次、頭像、名稱、（選用的）狀態、分數、增減、（選用的）付款原因。
          *
-         * [statusWidth] 為 `null` 時不含狀態欄。
+         * [statusWidth] 為 `null` 時不含狀態欄；[paymentReasonWidth] 為 `null` 時不含付款原因欄。
          */
         fun standardColumns(
             faceSize: Float,
             scoreWidth: Float,
             deltaWidth: Float,
             statusWidth: Float? = null,
+            paymentReasonWidth: Float? = null,
         ): List<SettlementRankingColumn> = listOfNotNull(
             SettlementRankingColumn(SettlementRankingColumnId.RANK, RANK_COLUMN_WIDTH, gapBefore = 0f),
             SettlementRankingColumn(SettlementRankingColumnId.FACE, faceSize, COLUMN_GAP),
@@ -126,6 +133,7 @@ class SettlementRankingLayout private constructor(
             statusWidth?.let { SettlementRankingColumn(SettlementRankingColumnId.STATUS, it, SECTION_GAP) },
             SettlementRankingColumn(SettlementRankingColumnId.SCORE, scoreWidth, SECTION_GAP),
             SettlementRankingColumn(SettlementRankingColumnId.DELTA, deltaWidth, SECTION_GAP),
+            paymentReasonWidth?.let { SettlementRankingColumn(SettlementRankingColumnId.PAYMENT_REASON, it, SECTION_GAP) },
         )
 
         /**

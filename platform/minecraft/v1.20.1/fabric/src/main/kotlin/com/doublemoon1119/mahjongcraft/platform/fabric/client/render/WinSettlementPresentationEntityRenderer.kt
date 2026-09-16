@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingAnimat
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
+import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementDetailSnapshot
@@ -48,6 +49,7 @@ class WinSettlementPresentationEntityRenderer(
     private val tileFaceRenderer: MahjongTileFaceRenderer,
     private val playerNames: ClientPlayerDisplayNameResolver,
     private val configStore: MahjongClientConfigStore,
+    private val indicatorTextResolver: PublicPlayerIndicatorTextResolver,
 ) : EntityRenderer<WinSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
 
@@ -484,6 +486,7 @@ class WinSettlementPresentationEntityRenderer(
         val nameLeftX = layout[SettlementRankingColumnId.NAME].left
         val scoreRightX = layout[SettlementRankingColumnId.SCORE].right
         val deltaRightX = layout[SettlementRankingColumnId.DELTA].right
+        val paymentReasonLeftX = layout.find(SettlementRankingColumnId.PAYMENT_REASON)?.left
         val panelBottom = -20f + entity.rankings.size * 16f + 8f
         renderPanel(layout.panelHalfWidth, -55f, panelBottom, alpha, matrices, consumers)
         draw(Text.translatable(WinSettlementTranslationKeys.SCORE_RANKING), 0f, -42f, Align.CENTER, color(0xFFD45A, alpha), 1.25f, matrices, consumers)
@@ -524,6 +527,11 @@ class WinSettlementPresentationEntityRenderer(
             draw(Text.literal(fitPlayerName(playerName(row.player.playerId.toString()))), nameLeftX, 0f, Align.LEFT, color(0xFFFFFF, rowAlpha), 1f, matrices, consumers)
             draw(Text.literal(row.score.toString()), scoreRightX, 0f, Align.RIGHT, color(0xFFF3C4, rowAlpha), 1f, matrices, consumers)
             draw(Text.literal(SettlementRankingLayout.formatDelta(row.delta)), deltaRightX, 0f, Align.RIGHT, color(if (row.delta >= 0) 0x80FF80 else 0xFF8080, rowAlpha), 1f, matrices, consumers)
+            val paymentReason = snapshot.paymentReasonText()
+            if (paymentReasonLeftX != null && paymentReason != null) {
+                val (reasonText, reasonArgb) = paymentReason
+                draw(reasonText, paymentReasonLeftX, 0f, Align.LEFT, color(reasonArgb and 0xFFFFFF, rowAlpha), 1f, matrices, consumers)
+            }
             matrices.pop()
         }
     }
@@ -577,7 +585,7 @@ class WinSettlementPresentationEntityRenderer(
         return (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
     }
 
-    /** 依所有起訖分數與增減的實際像素寬度建立排名欄位。 */
+    /** 依所有起訖分數、增減與付款原因的實際像素寬度建立排名欄位；沒有任何付款原因時不含付款原因欄。 */
     private fun measureRankingLayout(players: List<WinSettlementRankingSnapshot>): SettlementRankingLayout {
         val scoreWidth = SettlementRankingLayout.contentColumnWidth(
             contentWidths = players.flatMap { listOf(it.previousScore, it.currentScore) }.map { textRenderer.getWidth(it.toString()).toFloat() },
@@ -589,15 +597,22 @@ class WinSettlementPresentationEntityRenderer(
             padding = SettlementRankingLayout.NUMERIC_COLUMN_PADDING,
             minWidth = SettlementRankingLayout.MIN_DELTA_COLUMN_WIDTH,
         )
+        val paymentReasonWidths = players.mapNotNull { it.paymentReasonText()?.first?.let(textRenderer::getWidth)?.toFloat() }
         return SettlementRankingLayout.arrange(
             columns = SettlementRankingLayout.standardColumns(
                 faceSize = PresentationLayoutSolver.FACE_SIZE,
                 scoreWidth = scoreWidth,
                 deltaWidth = deltaWidth,
+                paymentReasonWidth = paymentReasonWidths.maxOrNull(),
             ),
             panelPadding = PANEL_PADDING,
         )
     }
+
+    /** 付款原因的顯示文字與 ARGB 顏色；沒有付款原因時為 `null`。 */
+    private fun WinSettlementRankingSnapshot.paymentReasonText(): Pair<Text, Int>? = paymentReasonId
+        ?.takeIf { ':' in it }
+        ?.let { indicatorTextResolver.resolve(PublicPlayerIndicator(it)) }
 
     private fun fitPlayerName(name: String): String = WorldPanelRenderer.fitText(textRenderer, name, SettlementRankingLayout.NAME_MAX_WIDTH)
 

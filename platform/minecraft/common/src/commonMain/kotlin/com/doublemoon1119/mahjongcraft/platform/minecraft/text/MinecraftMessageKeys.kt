@@ -116,6 +116,9 @@ object MinecraftMessageKeys {
     /** 玩家公開資訊面板中的立直狀態。 */
     const val PLAYER_INDICATOR_RIICHI = PREFIX + "player_indicator_riichi"
 
+    /** 結算排行中包牌責任者的付款原因。 */
+    const val PLAYER_INDICATOR_PAO = PREFIX + "player_indicator_pao"
+
     /** 更換 AI 策略失敗。 */
     const val CHANGE_AI_STRATEGY_FAILED = PREFIX + "change_ai_strategy_failed"
 
@@ -440,6 +443,7 @@ object MinecraftMessageKeys {
         AI_STRATEGY_UNCHANGED,
         TARGET_NOT_AI,
         PLAYER_INDICATOR_RIICHI,
+        PLAYER_INDICATOR_PAO,
         CHANGE_AI_STRATEGY_FAILED,
         GAME_CONFIG_CHANGED,
         GAME_CONFIG_UNCHANGED,

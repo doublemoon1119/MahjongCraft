@@ -80,7 +80,16 @@ class FabricWinSettlementPresentationScheduler(
             )
         }
         val rankings = request.ranking.players.map {
-            WinSettlementRankingSnapshot(it.playerId.toString(), it.seatIndex, it.isAi, it.previousScore, it.currentScore, it.previousRank, it.currentRank)
+            WinSettlementRankingSnapshot(
+                playerId = it.playerId.toString(),
+                seatIndex = it.seatIndex,
+                isAi = it.isAi,
+                previousScore = it.previousScore,
+                currentScore = it.currentScore,
+                previousRank = it.previousRank,
+                currentRank = it.currentRank,
+                paymentReasonId = request.paymentReasonIdsByPlayerId[it.playerId],
+            )
         }
         val reveal = templateRegistry.findTemplate(request.templateKey)?.reveal ?: WinSettlementRevealSequence()
         val timing = WinSettlementRevealTimingSnapshot(

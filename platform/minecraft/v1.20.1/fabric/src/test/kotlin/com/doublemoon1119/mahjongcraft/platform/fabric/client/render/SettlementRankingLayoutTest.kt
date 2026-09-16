@@ -3,12 +3,14 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.SettlementRankingColumnId.DELTA
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.SettlementRankingColumnId.FACE
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.SettlementRankingColumnId.NAME
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.SettlementRankingColumnId.PAYMENT_REASON
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.SettlementRankingColumnId.RANK
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.SettlementRankingColumnId.SCORE
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.SettlementRankingColumnId.STATUS
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 
 /** 驗證結算排名面板的欄位配置與欄寬。 */
 class SettlementRankingLayoutTest {
@@ -51,6 +53,31 @@ class SettlementRankingLayoutTest {
     @Test
     fun `has no status column unless one is given`() {
         assertFailsWith<NoSuchElementException> { layout(statusWidth = null, panelPadding = 12f)[STATUS] }
+    }
+
+    /** 付款原因欄接在增減欄之後，面板隨之變寬，其餘欄位都往左移半個增加量。 */
+    @Test
+    fun `appends the payment reason column after the delta`() {
+        val without = layout(statusWidth = null, panelPadding = 12f)
+        val with = SettlementRankingLayout.arrange(
+            columns = SettlementRankingLayout.standardColumns(faceSize = 10f, scoreWidth = 48f, deltaWidth = 56f, paymentReasonWidth = 20f),
+            panelPadding = 12f,
+        )
+
+        assertEquals(without.panelHalfWidth + 29f / 2, with.panelHalfWidth)
+        assertEquals(SettlementRankingColumnSpan(left = with[DELTA].right + SettlementRankingLayout.SECTION_GAP, width = 20f), with[PAYMENT_REASON])
+        assertEquals(with.panelHalfWidth - 12f, with[PAYMENT_REASON].right)
+        assertEquals(without[NAME].left - 29f / 2, with[NAME].left)
+    }
+
+    /** 沒有付款原因時版面與原本相同，也查不到付款原因欄。 */
+    @Test
+    fun `leaves the layout unchanged without a payment reason`() {
+        val layout = layout(statusWidth = null, panelPadding = 12f)
+
+        assertEquals(139f, layout.panelHalfWidth)
+        assertNull(layout.find(PAYMENT_REASON))
+        assertEquals(layout[DELTA], layout.find(DELTA))
     }
 
     /** 只有一欄時不套用它的前置間距。 */
