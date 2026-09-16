@@ -1080,7 +1080,7 @@ object MahjongTileTableLayout {
     const val SIDEWAYS_SLOT_ACROSS: Int = 1
 
     /** 積棒同一排最多排放的支數，超過往局部 Y 軸疊下一層——刻意的設計決定。 */
-    const val STICKS_PER_ROW: Int = 5
+    const val STICKS_PER_ROW: Int = 4
 
     /**
      * 手牌／摸牌位讓開副露＋積棒區時，額外多留的縫隙——避免 [handCornerYieldShift] 算出來的偏移
