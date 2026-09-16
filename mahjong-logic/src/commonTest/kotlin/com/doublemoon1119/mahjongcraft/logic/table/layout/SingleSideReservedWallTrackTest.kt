@@ -78,7 +78,7 @@ class SingleSideReservedWallTrackTest {
                 stackCount = 10,
                 occupiedPositions = occupied,
                 initialVacantStackCount = 8,
-                extraStackAfterHead = true,
+                extraStacksAfterHead = 2,
             ),
         )
 

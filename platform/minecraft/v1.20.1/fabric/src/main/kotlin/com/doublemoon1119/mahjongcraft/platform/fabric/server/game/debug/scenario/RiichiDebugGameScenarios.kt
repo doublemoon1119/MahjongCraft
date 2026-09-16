@@ -44,11 +44,32 @@ object RiichiDebugGameScenarios {
         RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_2", 1),
         RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_3", 2),
         RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_4", 3),
-        RiichiBeforeMinkanScenario,
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_at_break_1", 0, AT_BREAK_WALL_OPENING),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_at_break_2", 1, AT_BREAK_WALL_OPENING),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_at_break_3", 2, AT_BREAK_WALL_OPENING),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_at_break_4", 3, AT_BREAK_WALL_OPENING),
+        RiichiBeforeMinkanScenario("mahjongcraft:riichi_before_minkan_1"),
+        RiichiBeforeMinkanScenario("mahjongcraft:riichi_before_minkan_at_break_1", AT_BREAK_WALL_OPENING),
         RiichiBeforeSuuchaRiichiScenario,
         RiichiWallOpeningScenario,
     )
 }
+
+/**
+ * 情境預設的開門位置。
+ *
+ * 這個位置下保留牌軌道的頭端會被 `SingleSideReservedWallTrackPlanner` 的最小頭端限制推離開門點，王牌區
+ * 因此不與活牌末端相鄰。
+ */
+private val DEFAULT_WALL_OPENING = WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 8)
+
+/**
+ * 王牌區緊貼開門點、因此與活牌末端相鄰的開門位置。
+ *
+ * 王牌區與活牌區的分界、以及槓後補入牌與活牌末端的相對位置，只有在兩區相鄰時才會真正被檢驗；
+ * [DEFAULT_WALL_OPENING] 下兩區隔得太遠，這類幾何問題不會顯現。
+ */
+private val AT_BREAK_WALL_OPENING = WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 10)
 
 /** 建立前三家已立直、呼叫者可合法宣告第四家立直的四人日麻情境。 */
 private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
@@ -63,7 +84,7 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
 
         val config = RiichiRuleConfig()
         val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
-        val opening = WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 8)
+        val opening = DEFAULT_WALL_OPENING
         val inventory = module.createWallFactory().create().getAllTiles().sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
         val invokingStandingTiles = takeTiles(
@@ -209,6 +230,8 @@ private class RiichiBeforeAnkanScenario(
     override val id: String,
     /** 已在桌上成立並完成補牌的槓數。 */
     private val completedKanCount: Int,
+    /** 本情境使用的開門位置，決定王牌區落在哪裡。 */
+    private val opening: WallOpening = DEFAULT_WALL_OPENING,
 ) : DebugGameScenario {
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
@@ -220,7 +243,6 @@ private class RiichiBeforeAnkanScenario(
 
         val config = RiichiRuleConfig()
         val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
-        val opening = WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 8)
         val inventory = module.createWallFactory().create().getAllTiles().sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
         val requestedKanCount = completedKanCount + 1
@@ -439,11 +461,13 @@ private data class WallStage(
 )
 
 /** 建立固定停在呼叫者可對上一張捨牌宣告大明槓的四人日麻情境。 */
-private object RiichiBeforeMinkanScenario : DebugGameScenario {
-    override val id: String = "mahjongcraft:riichi_before_minkan_1"
-
+private class RiichiBeforeMinkanScenario(
+    override val id: String,
+    /** 本情境使用的開門位置，決定王牌區落在哪裡。 */
+    private val opening: WallOpening = DEFAULT_WALL_OPENING,
+) : DebugGameScenario {
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
-        val base = RiichiBeforeAnkanScenario(id, 0).build(context)
+        val base = RiichiBeforeAnkanScenario(id, 0, opening).build(context)
         val state = base.game.tableState
         val claimantIndex = state.players.indexOfFirst { it.id == context.invokingPlayerId }
         val discarderIndex = (claimantIndex + state.players.lastIndex) % state.players.size

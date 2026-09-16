@@ -417,7 +417,12 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi_before_ankan_2",
             "mahjongcraft:riichi_before_ankan_3",
             "mahjongcraft:riichi_before_ankan_4",
+            "mahjongcraft:riichi_before_ankan_at_break_1",
+            "mahjongcraft:riichi_before_ankan_at_break_2",
+            "mahjongcraft:riichi_before_ankan_at_break_3",
+            "mahjongcraft:riichi_before_ankan_at_break_4",
             "mahjongcraft:riichi_before_minkan_1",
+            "mahjongcraft:riichi_before_minkan_at_break_1",
             "mahjongcraft:riichi_before_suucha_riichi",
             "mahjongcraft:riichi_wall_opening",
         )

@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOffset
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import kotlin.math.ceil
 import kotlin.uuid.Uuid
 
 /** 日本麻將的獨立王牌區、特殊嶺上牌位置與槓後補位布局。 */
@@ -41,7 +42,7 @@ object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
             stackCount = RESERVED_TRACK_STACK_COUNT,
             occupiedPositions = occupiedPositions,
             initialVacantStackCount = INITIAL_RESERVED_STACK_COUNT,
-            extraStackAfterHead = true,
+            extraStacksAfterHead = RESERVED_WALL_GAP_CLEARANCE_STACKS,
         ) ?: return InitialPhysicalWallLayoutDecision.Rejected(NO_COLLISION_FREE_TRACK_REASON_ID)
         val reservedPlacements = createReservedPlacements(wallLayout, track)
         val placements = wallLayout.structure.mapValues { (tileId, position) ->
@@ -214,8 +215,20 @@ object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
     /** 第一次補入牌位於軌道的第八格，之後每兩次補牌向尾端推進一墩。 */
     private const val FIRST_REPLENISHMENT_TRACK_INDEX = 8
 
-    /** 將集中後的保留牌整體朝開門空位平移半墩，形成清楚但不含預留空墩的分界。 */
-    private val RESERVED_WALL_GAP_OFFSET = TileWallPlacementOffset(alongWallStacks = 0.5)
+    /**
+     * 王牌區整體朝開門空位平移的墩數。
+     *
+     * 牌張寬度為一墩，所以這個位移同時決定分界寬度：平移一墩半時，活牌末端與王牌區尾端之間留下一墩半
+     * 的空間，槓後補入的那張牌（寬一墩）填進去之後仍剩半墩，不會壓到同一墩下降的活牌。偶數次槓把整墩
+     * 用完、活牌整排後退一墩後，分界回到一墩半。
+     */
+    private const val RESERVED_WALL_GAP_STACKS = 1.5
+
+    /** 平移後王牌區頭端會越過軌道頭端，向上取整即為頭端必須額外淨空的墩數。 */
+    private val RESERVED_WALL_GAP_CLEARANCE_STACKS = ceil(RESERVED_WALL_GAP_STACKS).toInt()
+
+    /** 將集中後的保留牌整體朝開門空位平移，形成清楚且足以容納槓後補入牌的分界。 */
+    private val RESERVED_WALL_GAP_OFFSET = TileWallPlacementOffset(alongWallStacks = RESERVED_WALL_GAP_STACKS)
 
     /** 初始牌牆缺少日麻嶺上牌結構時的拒絕原因。 */
     const val INVALID_STATE_REASON_ID: String = "mahjongcraft:invalid_riichi_physical_wall_state"
