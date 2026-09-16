@@ -47,10 +47,9 @@ sourceSets {
     }
 }
 
-// fabric-language-kotlin 1.13.12+kotlin.2.4.0 已經以 nested jar 形式 bundle 了
-// kotlinx-coroutines-core/kotlinx-serialization-json（版本剛好對到 gradle/libs.versions.toml
-// 裡固定的版本），這裡拉進來的專案模組如果transitively 帶到同一個 artifact，include() 打包時
-// 要排除掉，避免同一個 class 在最終 mod jar 裡出現兩份。
+// fabric-language-kotlin 以 nested jar 形式內附 kotlinx-coroutines-core／kotlinx-serialization-json，
+// 版本與 gradle/libs.versions.toml 固定的版本一致。這裡拉進來的專案模組若傳遞帶到同一個 artifact，
+// include() 打包時要排除，避免同一個 class 在最終 mod jar 裡出現兩份。
 val excludeFlkBundledKotlinx: ModuleDependency.() -> Unit = {
     exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core")
     exclude(group = "org.jetbrains.kotlinx", module = "kotlinx-coroutines-core-jvm")

@@ -3,7 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.di
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.network.dto.di.NetworkDtoModule
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.di.PersistenceDtoModule
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.di.FlowServerModule
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
@@ -30,16 +32,19 @@ import org.koin.core.annotation.Single
  * [MinecraftServerModule]、[FabricCommonModule] 與所有 server-side Fabric adapter，但不掃描
  * `platform.fabric.client`，因此不會把 HUD、renderer 或其他 Minecraft client-only 類別加入 server graph。
  *
- * [MinecraftCommonModule] 已經透過 [FabricCommonModule] 間接 include，這裡重複列出純粹是因為 Koin
- * compiler plugin 的 strictSafety 靜態依賴檢查目前不會展開超過一層的巢狀 `includes`（[MinecraftCommonModule]
- * 定義的 single 因此在巢狀兩層時被誤判成缺漏依賴）；Koin runtime 對同一個 module 被多路徑重複
- * include 本來就會去重，不會造成 [MinecraftTileAssetRegistry] 之類的 single 被註冊兩次。
+ * [MinecraftCommonModule]、[NetworkDtoModule] 與 [PersistenceDtoModule] 已經透過 [FabricCommonModule] 間接
+ * include，這裡重複列出是因為 Koin compiler plugin 組裝 full-graph 時，不會展開本地 module（例如
+ * [FabricCommonModule]）自己的 `includes`；只經由它引入的 single 會被判成缺漏依賴，連 `koin.get<T>()`
+ * 呼叫處也一併報錯。Koin runtime 對同一個 module 被多路徑重複 include 本來就會去重，不會造成
+ * [MinecraftTileAssetRegistry] 之類的 single 被註冊兩次。
  */
 @Module(
     includes = [
         FlowServerModule::class,
         MinecraftServerModule::class,
         MinecraftCommonModule::class,
+        NetworkDtoModule::class,
+        PersistenceDtoModule::class,
         FabricCommonModule::class,
     ],
 )

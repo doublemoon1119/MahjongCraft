@@ -15,7 +15,7 @@ core-java-toolchain = "17"
 core-java-release = "17"
 
 # Kotlin ecosystem
-kotlin = "2.4.0"
+kotlin = "2.4.20"
 coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
 kotlinx-datetime = "0.7.1-0.6.x-compat"
@@ -23,7 +23,7 @@ ktoml = "0.7.1"
 
 # Dependency injection and build tooling
 koin-bom = "4.2.2"
-koin-plugin = "1.0.1"
+koin-plugin = "1.2.1"
 ktlint-gradle = "14.2.0"
 ktlint = "1.5.0"
 slf4j = "2.0.17"
@@ -36,7 +36,7 @@ minecraft1201 = "1.20.1"
 yarnMappings1201 = "1.20.1+build.10"
 fabric-loader = "0.19.3"
 fabricApi1201 = "0.92.11+1.20.1"
-fabric-language-kotlin = "1.13.12+kotlin.2.4.0"
+fabric-language-kotlin = "1.13.14+kotlin.2.4.20"
 
 [libraries]
 
