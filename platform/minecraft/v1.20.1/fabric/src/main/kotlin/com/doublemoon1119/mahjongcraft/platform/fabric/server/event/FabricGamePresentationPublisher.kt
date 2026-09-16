@@ -93,7 +93,6 @@ import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -159,23 +158,13 @@ class FabricGamePresentationPublisher(
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
     /**
-     * 記錄每張桌子最近一次 [publishWallStructure] 算出的牌牆生成掉落動畫總時長（ticks）——[publishDiceRoll]
-     * 與 [publishInitialDealAnimation] 都會讀取，用來把擲骰動畫、發牌動畫依序延遲到牌牆完全落地、
-     * 擲骰動畫也播完才開始播放。
+     * 開局四個階段之間的暫存資料。
      *
-     * 每次 [publishWallStructure] 呼叫都覆寫（不是單次消費後移除）——同一張桌子每局都會重新呼叫
-     * [publishWallStructure]，覆寫掉上一局的舊值，兩個讀取端都能各自安全讀到本局的值，不需要協調
-     * 誰先讀、誰清除。依賴呼叫端（`StartGameUseCase`／`AdvanceRoundUseCase`）固定先呼叫
-     * [publishWallStructure] 才呼叫 [publishDiceRoll]／[publishInitialDealAnimation]；找不到對應紀錄
-     * （例如規則沒有牌牆）時預設視為 `0`，不強制要求呼叫順序。
+     * 呼叫端（`StartGameUseCase`／`AdvanceRoundUseCase`）固定先呼叫 [publishWallStructure] 才呼叫
+     * [publishDiceRoll]／[publishInitialDealAnimation]，但這裡不強制要求該順序：讀不到值時一律有安全的
+     * 預設行為，見 [TableOpeningPresentationState] KDoc。
      */
-    private val wallDropTicksByTable = ConcurrentHashMap<Uuid, Int>()
-
-    /** 等待初次發牌與四家翻牌完成後才可排入 entity 佇列的本局開門資料。 */
-    private val pendingWallOpeningByTable = ConcurrentHashMap<Uuid, MahjongTileWallPresentation>()
-
-    /** 每張桌子最近一次牌牆結構換算出的單面墩數。 */
-    private val wallStacksPerSideByTable = ConcurrentHashMap<Uuid, Int>()
+    private val openingState = TableOpeningPresentationState()
 
     override fun publishGameActionSound(gameId: Uuid, actorId: Uuid, action: GameAction) {
         publish(gameId, "publishGameActionSound", blocksTable = false) { resolved, state, _ ->
@@ -337,8 +326,9 @@ class FabricGamePresentationPublisher(
      * [present] 真的失敗（例如桌子被拆掉），這桌還是會被錯誤標記忙碌一小段時間——比起每一次擲骰都
      * 有機會被搶跑，這個機率很低的邊界情況划算得多。
      *
-     * 呈現本身（[diceRollPresenter.present]）不再延遲呼叫——骰子 entity 立刻生成，[wallDropTicksByTable]
-     * 記錄的牌牆掉落動畫時長改成折算進 [MahjongDiceRollPresentation.extraLeadDelayTicks]，變成每顆
+     * 呈現本身（[diceRollPresenter.present]）不再延遲呼叫——骰子 entity 立刻生成，
+     * [TableOpeningPresentationState.wallDropTicks] 記錄的牌牆掉落動畫時長改成折算進
+     * [MahjongDiceRollPresentation.extraLeadDelayTicks]，變成每顆
      * 骰子自己動畫佇列最前面的一個等待 step（`MahjongDiceEntity.startRoll`），理由見
      * `AnimatedMahjongEntity` KDoc：延遲呼叫這個方法本身沒辦法撐過伺服器重啟，只有掛在 entity 自己
      * 身上的佇列才可以。[busyTracker] 也已經改成直接查詢桌上管理中 entity 是否還在動畫佇列裡，不需要
@@ -355,7 +345,7 @@ class FabricGamePresentationPublisher(
             logger.warn("publishDiceRoll gameId={} skipped: no active server", gameId)
             return
         }
-        val wallDropTicks = wallDropTicksByTable[gameId] ?: 0
+        val wallDropTicks = openingState.wallDropTicks(gameId)
         val openingOperation = openingOperations.capture(gameId)
         launchOpeningStage(gameId, "dice-roll", openingOperation, pendingOperation = "publishDiceRoll") {
             val resolved = resolveTableContext(gameId, "publishDiceRoll") ?: return@launchOpeningStage
@@ -387,10 +377,10 @@ class FabricGamePresentationPublisher(
      * `stacksPerSide` 的算法跟 [FabricMahjongTileWallPresenter.present] 內部完全一致（取 `side == 0`
      * 的最大 `stack + 1`），兩處必須同步，否則算出來的動畫時長會跟實際動畫時長脫鉤。
      *
-     * 算出來的動畫時長寫進 [wallDropTicksByTable]，供緊接著呼叫的 [publishDiceRoll]／
+     * 算出來的動畫時長寫進 [TableOpeningPresentationState.wallDropTicks]，供緊接著呼叫的 [publishDiceRoll]／
      * [publishInitialDealAnimation] 讀取，折算進擲骰／發牌動畫每個 entity 自己動畫佇列最前面的等待
-     * step，讓它們延遲到牌牆完全落地才真正開始播放；呼叫端固定先呼叫這個方法才呼叫另外兩者，見該欄位
-     * KDoc。玩家操作／自動操作心跳不會搶在牌牆落地之前執行，現在是靠 [busyTracker] 直接查詢桌上
+     * step，讓它們延遲到牌牆完全落地才真正開始播放；呼叫端固定先呼叫這個方法才呼叫另外兩者，見
+     * [TableOpeningPresentationState] KDoc。玩家操作／自動操作心跳不會搶在牌牆落地之前執行，現在是靠 [busyTracker] 直接查詢桌上
      * entity 是否還在動畫佇列裡，不需要另外手動標記忙碌時長，見 [TablePresentationBusyTracker] KDoc。
      */
     override fun publishWallStructure(
@@ -412,14 +402,7 @@ class FabricGamePresentationPublisher(
             .maxOfOrNull { position -> position.stack + 1 } ?: 0
         val wallDropTicks = MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide)
         val openingOperation = if (animateOpening) openingOperations.begin(gameId) else null
-        if (openingOperation != null) {
-            pendingWallOpeningByTable.remove(gameId)
-            wallDropTicksByTable.remove(gameId)
-            wallStacksPerSideByTable.remove(gameId)
-        }
-        wallDropTicksByTable[gameId] = wallDropTicks
-        wallStacksPerSideByTable[gameId] = stacksPerSide
-        if (!animateOpening) pendingWallOpeningByTable.remove(gameId)
+        openingState.beginWall(gameId, wallDropTicks, stacksPerSide)
         launchOpeningStage(gameId, "wall-structure", openingOperation, pendingOperation = "publishWallStructure") {
             val resolved = resolveTableContext(gameId, "publishWallStructure") ?: return@launchOpeningStage
 
@@ -437,9 +420,9 @@ class FabricGamePresentationPublisher(
             )
             val result = tileWallPresenter.present(presentation)
             if (animateOpening && result == MahjongTileWallPresentationResult.PRESENTED) {
-                pendingWallOpeningByTable[gameId] = presentation
+                openingState.armOpening(gameId, presentation)
             } else if (result != MahjongTileWallPresentationResult.PRESENTED) {
-                pendingWallOpeningByTable.remove(gameId)
+                openingState.cancelOpening(gameId)
             }
             if (result == MahjongTileWallPresentationResult.SPAWN_FAILED) {
                 error("Tile wall presentation failed to spawn")
@@ -451,7 +434,7 @@ class FabricGamePresentationPublisher(
     override fun publishWallLayoutTransition(gameId: Uuid, phases: List<PhysicalWallLayoutTransitionPhase>) {
         if (phases.isEmpty()) return
         publish(gameId, "publishWallLayoutTransition", blocksTable = true) { resolved, state, startAt ->
-            val stacksPerSide = wallStacksPerSideByTable[gameId]
+            val stacksPerSide = openingState.wallStacksPerSide(gameId)
             if (stacksPerSide == null) {
                 logger.warn("publishWallLayoutTransition gameId={} skipped: wall stack count is unavailable", gameId)
                 return@publish null
@@ -646,7 +629,7 @@ class FabricGamePresentationPublisher(
      * 初次發牌要等牌牆＋擲骰動畫都播完才輪到——不能在骰子還在動畫時就直接讓手牌出現。過去用外層
      * `tickClock.scheduleAfter` 延遲整個呼叫本身（那段延遲純粹活在記憶體裡，撐不過伺服器重啟）；改成
      * 立刻呼叫 [playerAreaPresenter.presentInitialDeal]，把等待時長（跟 [publishDiceRoll] 同一套
-     * [wallDropTicksByTable] 機制，涵蓋牌牆掉落與擲骰動畫時長）折算進
+     * [TableOpeningPresentationState.wallDropTicks] 機制，涵蓋牌牆掉落與擲骰動畫時長）折算進
      * [MahjongInitialDealPresentation.extraLeadDelayTicks]，變成每張牌自己動畫佇列最前面的一個等待
      * step（見 `FabricMahjongPlayerAreaPresenter.scheduleDealBatchAnimation`），理由見
      * `AnimatedMahjongEntity` KDoc。
@@ -670,7 +653,7 @@ class FabricGamePresentationPublisher(
             logger.warn("publishInitialDealAnimation gameId={} skipped: no active server", gameId)
             return
         }
-        val wallDropTicks = wallDropTicksByTable[gameId] ?: 0
+        val wallDropTicks = openingState.wallDropTicks(gameId)
         val diceTicks = if (diceCount > 0) MahjongDiceTableLayout.totalAnimationTicks(diceCount) else 0
         val openingOperation = openingOperations.capture(gameId)
         launchOpeningStage(gameId, "initial-deal", openingOperation, pendingOperation = "publishInitialDealAnimation") {
@@ -688,7 +671,7 @@ class FabricGamePresentationPublisher(
                 extraLeadDelayTicks = wallDropTicks + diceTicks,
             )
             val result = playerAreaPresenter.presentInitialDeal(presentation)
-            val opening = pendingWallOpeningByTable.remove(gameId)
+            val opening = openingState.consumeOpening(gameId)
             if (opening != null && result != MahjongPlayerAreaPresentationResult.TABLE_NOT_FOUND) {
                 val totalTurnCount = dealBatchSizes.size * handTileIdsBySeatIndex.size
                 val handFlipEndGameTime = resolved.world.time + presentation.extraLeadDelayTicks +
@@ -947,9 +930,7 @@ class FabricGamePresentationPublisher(
                     throw cause
                 } catch (cause: Throwable) {
                     if (openingOperation == null) throw cause
-                    pendingWallOpeningByTable.remove(gameId)
-                    wallDropTicksByTable.remove(gameId)
-                    wallStacksPerSideByTable.remove(gameId)
+                    openingState.clear(gameId)
                     throw openingOperations.fail(openingOperation, stage, cause)
                 }
             },
