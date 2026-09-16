@@ -195,6 +195,18 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun createInitialDynamicState(): DynamicRuleState?
 
     /**
+     * 由上一局結束時的動態桌況狀態，建立下一局起始的動態桌況狀態。
+     *
+     * 由 [GameInitializer] 在換局時寫入 `TableState.dynamicRuleState`。動態桌況同時可能保存跨局資料
+     * （例如尚未被收下的供託棒）與只屬於單局的資料（例如本局已完成的槓次），換局時哪些延續、哪些
+     * 歸零由規則自行決定——呼叫端不得整包沿用 [previous]。
+     *
+     * @param previous 上一局結束時的狀態；該對局的第一局或規則沒有動態狀態需求時為 null。
+     * @return 下一局起始的 [DynamicRuleState]，若無則為 null。
+     */
+    fun createNextRoundDynamicState(previous: DynamicRuleState?): DynamicRuleState?
+
+    /**
      * 建立該規則的初始玩家規則狀態。
      *
      * 由 [GameInitializer] 在開局時寫入每位 `MahjongPlayer.playerRuleState`。

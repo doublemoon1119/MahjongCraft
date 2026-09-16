@@ -90,6 +90,9 @@ class TaiwanRuleModule(
      */
     override fun createInitialDynamicState(): DynamicRuleState? = null
 
+    /** 沒有動態桌況需求，換局同樣沒有要延續的資料。 */
+    override fun createNextRoundDynamicState(previous: DynamicRuleState?): DynamicRuleState? = null
+
     /**
      * 台灣麻將目前沒有玩家規則狀態的需求。
      *

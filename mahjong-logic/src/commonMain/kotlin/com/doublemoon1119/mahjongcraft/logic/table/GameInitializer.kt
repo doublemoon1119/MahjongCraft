@@ -94,9 +94,12 @@ object GameInitializer {
     /**
      * 依連莊/過莊判定的結果（[roundAdvancement]），建立下一局的桌況：重新擲骰開門、重新建牌山、
      * 重新發手牌，並重置每局狀態（手牌、牌河、規則特有的玩家狀態），但保留跨局狀態（分數、局數/
-     * 本場數/場風/各玩家方位，皆直接沿用 [roundAdvancement] 算好的結果；供託等動態桌況狀態則沿用
-     * [previousDynamicRuleState]，是否歸零由胡牌結算階段的 [MahjongRuleModule.collectStickPot] 決定，
-     * 這裡單純延續、不重新判斷）。
+     * 本場數/場風/各玩家方位，皆直接沿用 [roundAdvancement] 算好的結果）。
+     *
+     * 動態桌況狀態交由 [MahjongRuleModule.createNextRoundDynamicState] 由 [previousDynamicRuleState]
+     * 推導，不整包沿用——同一個物件可能同時保存跨局資料（例如尚未被收下的供託）與只屬於單局的資料
+     * （例如本局已完成的槓次），哪些延續只有規則自己知道。供託本身是否歸零仍由胡牌結算階段的
+     * [MahjongRuleModule.collectStickPot] 決定，這裡單純延續、不重新判斷。
      *
      * 座位順序（[roundAdvancement] 的 `players` 列表順序）不會重新洗牌，只有發牌本身、每局狀態
      * 會全部重來——跟 [initialize] 開新對局時「連座位順序都重新洗牌、分數歸零」不同。連莊仍是新的
@@ -151,7 +154,7 @@ object GameInitializer {
             roundPosition = roundAdvancement.roundPosition,
             comboCount = roundAdvancement.comboCount,
             currentPlayerIndex = dealerIndex,
-            dynamicRuleState = previousDynamicRuleState,
+            dynamicRuleState = module.createNextRoundDynamicState(previousDynamicRuleState),
             wallOpening = openedWall.wallOpening,
             initialDeadWall = openedWall.reservedWallTiles,
             physicalWallLayout = physicalLayouts?.current,

@@ -198,6 +198,75 @@ class GameInitializerTest {
     }
 
     /**
+     * 驗證 [GameInitializer.startNextRound] 只延續跨局的動態桌況，不把每局狀態帶進新局。
+     *
+     * 日麻的 [RiichiDynamicState] 同時保存跨局的供託棒與每局的槓次、已公開槓寶牌數；整包沿用會讓新局
+     * 一開始就以為已經槓過，除了指示牌翻錯，也會吃掉新局可槓的次數。
+     */
+    @Test
+    fun `test startNextRound keeps only the cross round dynamic state`() {
+        val previous = RiichiDynamicState(
+            riichiStickCount = 2,
+            completedSupplementalDrawCount = 1,
+            revealedKanDoraCount = 1,
+            pendingKanDoraReveals = emptyList(),
+        )
+
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement(), previous, module).tableState
+
+        val dynamicState = assertIs<RiichiDynamicState>(table.dynamicRuleState)
+        assertEquals(2, dynamicState.riichiStickCount, "Expected the stick pot to carry into the next round.")
+        assertEquals(0, dynamicState.completedSupplementalDrawCount, "Expected the kan count to reset for the new round.")
+        assertEquals(0, dynamicState.revealedKanDoraCount, "Expected the revealed kan dora count to reset.")
+        assertEquals(emptyList(), dynamicState.pendingKanDoraReveals, "Expected no kan dora reveal to stay pending.")
+    }
+
+    /**
+     * 驗證上一局槓過之後，新局翻開的指示牌與從未槓過的新局完全相同。
+     *
+     * 指示牌索引依已完成補牌次數往深處位移，而王牌區每墩固定 `[上層, 下層]`，索引的奇偶決定上下層；
+     * 槓次沒歸零時起始索引奇偶翻轉，整排會改取下層（裏寶牌）那一排，公開張數也會多算。
+     */
+    @Test
+    fun `test startNextRound reveals the same indicators as a round without any kan`() {
+        val gameId = Uuid.random()
+        val advancement = roundAdvancement()
+
+        val afterKan = GameInitializer.startNextRound(
+            gameId,
+            advancement,
+            RiichiDynamicState(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1),
+            module,
+        ).tableState
+        val withoutKan = GameInitializer.startNextRound(gameId, advancement, RiichiDynamicState(), module).tableState
+
+        assertEquals(
+            indicatorPositions(withoutKan),
+            indicatorPositions(afterKan),
+            "Expected a kan in the previous round to leave the new round's indicators untouched.",
+        )
+    }
+
+    /** 取得公開指示牌在王牌區中的位置，與牌張 UUID 無關以便跨局比較。 */
+    private fun indicatorPositions(table: TableState): List<Int> {
+        val dynamicState = assertIs<RiichiDynamicState>(table.dynamicRuleState)
+        val visibleIds = dynamicState.getVisibleTileIds(table)
+        return table.reservedWallTiles.withIndex().filter { it.value.id in visibleIds }.map { it.index }
+    }
+
+    /** 建立測試用的連莊/過莊判定結果。 */
+    private fun roundAdvancement(): RoundAdvancementResult {
+        val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map(FakeMahjongPlayerFactory::create)
+        return RoundAdvancementResult(
+            players = players,
+            dealerPlayerId = players.first().id,
+            roundNumber = 2,
+            comboCount = 0,
+            prevalentWind = Wind.EAST,
+        )
+    }
+
+    /**
      * 驗證 [GameInitializer.startNextRound] 延續玩家分數，不像 [GameInitializer.initialize] 那樣重置。
      */
     @Test

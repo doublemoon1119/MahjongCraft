@@ -133,6 +133,14 @@ class RiichiRuleModule(
     override fun createInitialDynamicState(): RiichiDynamicState = RiichiDynamicState()
 
     /**
+     * 只延續尚未被收下的供託／立直棒；槓次與槓寶牌公開進度都只屬於單局，換局一律歸零。
+     *
+     * 這些每局欄位若跨局殘留，新局會以為已經槓過：指示牌索引往深處位移、公開張數多算，而且會吃掉
+     * 新局本來可槓的次數。
+     */
+    override fun createNextRoundDynamicState(previous: DynamicRuleState?): RiichiDynamicState = RiichiDynamicState(riichiStickCount = (previous as? RiichiDynamicState)?.riichiStickCount ?: 0)
+
+    /**
      * 建立日本麻將的初始玩家規則狀態。
      *
      * @return 全新的 [RiichiPlayerState]（尚未立直、無包牌責任）。
