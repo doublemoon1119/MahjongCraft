@@ -8,10 +8,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPr
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileSelectionConfirmEntity
@@ -24,6 +22,7 @@ import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
 import net.minecraft.util.ActionResult
 import net.minecraft.util.hit.EntityHitResult
+import net.minecraft.util.hit.HitResult
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import kotlin.math.ceil
@@ -304,72 +303,43 @@ class PlayerDecisionHudController(
         if (!configStore.current.presentationVisibility.compactPromptEnabled) return
         if (client.options.hudHidden || timerStore.reading() == null) return
         val prompt = promptStore.prompt
-        val groupWidth = COMPACT_HUD_WIDTH.coerceAtMost(context.scaledWindowWidth)
-        val tileSelectionState = currentTileSelectionProgress()
-        val showReopenReminder = prompt != null &&
-            dismissedDecisionKey == prompt.decisionKey &&
-            prompt.isInteractive &&
-            !isPhysicalSelectionActive(prompt)
-        val groupHeight = if (tileSelectionState != null || showReopenReminder) {
-            COMPACT_HUD_EXPANDED_HEIGHT
-        } else {
-            COMPACT_HUD_TIMER_HEIGHT
-        }
-        val layout = configStore.current.hudLayout
-        val groupLeft = hudCoordinate(layout.compactPromptX, context.scaledWindowWidth, groupWidth)
-        val groupTop = hudCoordinate(layout.compactPromptY, context.scaledWindowHeight, groupHeight)
-        val centerX = groupLeft + groupWidth / 2
-        val timerY = groupTop + groupHeight - COMPACT_HUD_TIMER_HEIGHT
-        renderTimerOverlay(context, timerY, centerX)
-        if (tileSelectionState != null) {
-            renderTileSelectionStatus(context, client, tileSelectionState, centerX, groupTop)
-        } else if (showReopenReminder) {
-            context.drawCenteredTextWithShadow(
-                client.textRenderer,
-                Text.translatable("mahjongcraft.hud.waiting_for_action"),
-                centerX,
-                groupTop,
-                0xFFD54F,
+        val content = compactDecisionHudContent(
+            prompt = prompt,
+            dismissedDecisionKey = dismissedDecisionKey,
+            isPhysicalSelectionActive = prompt != null && isPhysicalSelectionActive(prompt),
+            tileSelectionProgress = currentTileSelectionProgress(),
+        )
+        val hudLayout = configStore.current.hudLayout
+        val layout = CompactDecisionHudLayout(
+            screenWidth = context.scaledWindowWidth,
+            screenHeight = context.scaledWindowHeight,
+            ratioX = hudLayout.compactPromptX,
+            ratioY = hudLayout.compactPromptY,
+            expanded = content != CompactDecisionHudContent.TimerOnly,
+        )
+        renderTimerOverlay(context, layout.timerTop, layout.centerX)
+        when (content) {
+            CompactDecisionHudContent.TimerOnly -> Unit
+            is CompactDecisionHudContent.TileSelection -> renderCompactLines(
+                context,
+                layout,
+                Text.translatable("mahjongcraft.hud.tile_selection_in_progress"),
+                tileSelectionDetailText(content.progress),
             )
-            context.drawCenteredTextWithShadow(
-                client.textRenderer,
+            CompactDecisionHudContent.ReopenReminder -> renderCompactLines(
+                context,
+                layout,
+                Text.translatable("mahjongcraft.hud.waiting_for_action"),
                 Text.translatable("mahjongcraft.hud.reopen_action"),
-                centerX,
-                groupTop + 11,
-                0xFFFFFF,
             )
         }
     }
 
-    /**
-     * 選牌進度提示：還沒選到 `minCount` 張時提示還缺幾張，落在合法範圍內（含剛好選滿 `maxCount`）時
-     * 提示可以確認——選滿本身已經隱含「已達上限」，不需要額外的一次性提醒。
-     */
-    private fun renderTileSelectionStatus(
-        context: DrawContext,
-        client: MinecraftClient,
-        state: DecisionTileSelectionState.Progress,
-        centerX: Int,
-        groupTop: Int,
-    ) {
-        context.drawCenteredTextWithShadow(
-            client.textRenderer,
-            Text.translatable("mahjongcraft.hud.tile_selection_in_progress"),
-            centerX,
-            groupTop,
-            0xFFD54F,
-        )
-        val detail = if (state.selectedCount < state.validRange.first) {
-            Text.translatable(
-                "mahjongcraft.hud.tile_selection_need_more",
-                state.validRange.first - state.selectedCount,
-                state.selectedCount,
-                state.validRange.last,
-            )
-        } else {
-            Text.translatable("mahjongcraft.hud.tile_selection_ready", state.selectedCount, state.validRange.last)
-        }
-        context.drawCenteredTextWithShadow(client.textRenderer, detail, centerX, groupTop + 11, 0xFFFFFF)
+    /** 繪製精簡 HUD 倒數上方的兩行提示。 */
+    private fun renderCompactLines(context: DrawContext, layout: CompactDecisionHudLayout, title: Text, detail: Text) {
+        val renderer = MinecraftClient.getInstance().textRenderer
+        context.drawCenteredTextWithShadow(renderer, title, layout.centerX, layout.groupTop, COMPACT_HUD_TITLE_COLOR)
+        context.drawCenteredTextWithShadow(renderer, detail, layout.centerX, layout.detailTextTop, COMPACT_HUD_DETAIL_COLOR)
     }
 
     /** 玩家已明確進入實體牌選擇階段時，不再顯示「重新開啟操作介面」提醒。 */
@@ -421,91 +391,60 @@ class PlayerDecisionHudController(
         context.matrices.pop()
     }
 
-    /** 依準星指向的手牌 UUID 選擇一份權威分析並繪製牌面格；欄寬依實際文字寬度動態計算，避免不同語系下的
-     * 剩餘張數／和牌資格文字互相碰撞。 */
-    private fun renderDiscardAnalysis(context: DrawContext, prompt: PlayerDecisionPromptDto, hit: net.minecraft.util.hit.HitResult?) {
+    /**
+     * 依準星指向的手牌 UUID 選擇一份權威分析並繪製牌面格。
+     *
+     * 欄寬依實際文字寬度動態計算，避免不同語系下的剩餘張數與和牌資格文字互相碰撞，因此在這裡量測後交給
+     * [DiscardAnalysisLayout]。
+     */
+    private fun renderDiscardAnalysis(context: DrawContext, prompt: PlayerDecisionPromptDto, hit: HitResult?) {
         if (!configStore.current.presentationVisibility.discardAnalysisEnabled) return
         val tile = (hit as? EntityHitResult)?.entity as? MahjongTileEntity ?: return
         val analyses = prompt.discardAnalysesForAction(tileSelection.activeActionToken)
         val analysis = analyses.firstOrNull { it.discardTileId == tile.uuid.toString() } ?: return
-        val textRenderer = MinecraftClient.getInstance().textRenderer
-        val columns = minOf(MAX_WAIT_COLUMNS, analysis.waitingTiles.size.coerceAtLeast(1))
-        val rowCount = (analysis.waitingTiles.size + columns - 1) / columns
-        val sharedAvailability = analysis.waitingTiles.map { it.winAvailability }.distinct().singleOrNull()
-            ?.takeUnless { it == WIN_AVAILABLE_ID }
-        val statusTexts = listOfNotNull(
-            analysis.statusIndicatorId?.let { Text.translatable(it.translationKey()) },
-            sharedAvailability?.let { Text.translatable(it.translationKey()) },
-        )
-        val statusHeight = if (statusTexts.isEmpty()) 0 else statusTexts.size * STATUS_TEXT_HEIGHT + STATUS_DIVIDER_GAP + 1 + STATUS_TILE_GAP
-        val mixedAvailability = sharedAvailability == null &&
-            analysis.waitingTiles.any {
-                it.winAvailability != WIN_AVAILABLE_ID
-            }
-        val countTexts = analysis.waitingTiles.map { waiting -> Text.translatable("mahjongcraft.hud.remaining_tiles", waiting.remainingCount) }
-        val availabilityTexts = analysis.waitingTiles.map { waiting ->
-            if (mixedAvailability && waiting.winAvailability != WIN_AVAILABLE_ID) {
-                Text.translatable(waiting.winAvailability.translationKey())
-            } else {
-                null
-            }
-        }
-        val widestCellContent = maxOf(
-            TILE_WIDTH,
-            countTexts.maxOf(textRenderer::getWidth),
-            availabilityTexts.maxOf { it?.let(textRenderer::getWidth) ?: 0 },
-        )
-        val cellWidth = widestCellContent + CELL_GAP
-        val panelWidth = PADDING * 2 + columns * cellWidth
-        val cellHeight = TILE_HEIGHT + COUNT_HEIGHT + if (mixedAvailability) AVAILABILITY_HEIGHT else 0
-        val panelHeight = PADDING * 2 + statusHeight + rowCount * cellHeight
-        val left = (context.scaledWindowWidth - panelWidth) / 2
-        val top = hudCoordinate(
-            configStore.current.hudLayout.discardAnalysisY,
-            context.scaledWindowHeight,
-            panelHeight,
-        )
-        context.fill(left, top, left + panelWidth, top + panelHeight, 0xCC101820.toInt())
-        statusTexts.forEachIndexed { index, text ->
-            context.drawCenteredTextWithShadow(
-                textRenderer,
-                text,
-                left + panelWidth / 2,
-                top + PADDING + index * STATUS_TEXT_HEIGHT,
-                0xFF6B6B,
-            )
-        }
-        if (statusTexts.isNotEmpty()) {
-            val dividerY = top + PADDING + statusTexts.size * STATUS_TEXT_HEIGHT + STATUS_DIVIDER_GAP
-            context.fill(left + PADDING, dividerY, left + panelWidth - PADDING, dividerY + 1, STATUS_DIVIDER_COLOR)
-        }
-        analysis.waitingTiles.forEachIndexed { index, waiting ->
-            val row = index / columns
-            val column = index % columns
-            val cellLeft = left + PADDING + column * cellWidth
-            val tileX = cellLeft + (cellWidth - TILE_WIDTH) / 2
-            val tileY = top + PADDING + statusHeight + row * cellHeight
-            tileFaceRenderer.renderGui(context, waiting.tileAssetKey, tileX, tileY, TILE_WIDTH, TILE_HEIGHT)
-            val color = when (waiting.remainingCount) {
-                0 -> 0xAA4444
-                1 -> 0xFFD54F
-                else -> 0xFFFFFF
-            }
-            context.drawCenteredTextWithShadow(
-                textRenderer,
-                countTexts[index],
-                cellLeft + cellWidth / 2,
-                tileY + TILE_HEIGHT + 1,
-                color,
-            )
-            availabilityTexts[index]?.let { text ->
-                context.drawCenteredTextWithShadow(
-                    textRenderer,
-                    text,
-                    cellLeft + cellWidth / 2,
-                    tileY + TILE_HEIGHT + COUNT_HEIGHT,
-                    0xFFB05A,
+        val renderer = MinecraftClient.getInstance().textRenderer
+        val content = discardAnalysisContent(analysis)
+        val layout = DiscardAnalysisLayout(
+            screenWidth = context.scaledWindowWidth,
+            screenHeight = context.scaledWindowHeight,
+            cellCount = content.cells.size,
+            statusLineCount = content.statusTexts.size,
+            widestCellContentWidth = content.cells.maxOfOrNull { cell ->
+                maxOf(
+                    DiscardAnalysisLayout.TILE_WIDTH,
+                    renderer.getWidth(cell.countText),
+                    cell.availabilityText?.let(renderer::getWidth) ?: 0,
                 )
+            } ?: DiscardAnalysisLayout.TILE_WIDTH,
+            hasAvailabilityRow = content.hasAvailabilityRow,
+            ratioY = configStore.current.hudLayout.discardAnalysisY,
+        )
+        context.fill(
+            layout.panelLeft,
+            layout.panelTop,
+            layout.panelLeft + layout.panelWidth,
+            layout.panelTop + layout.panelHeight,
+            ANALYSIS_PANEL_BACKGROUND,
+        )
+        content.statusTexts.forEachIndexed { index, text ->
+            context.drawCenteredTextWithShadow(renderer, text, layout.panelCenterX, layout.statusTextTop(index), ANALYSIS_STATUS_COLOR)
+        }
+        if (content.statusTexts.isNotEmpty()) {
+            context.fill(
+                layout.panelLeft + DiscardAnalysisLayout.PADDING,
+                layout.dividerTop,
+                layout.panelLeft + layout.panelWidth - DiscardAnalysisLayout.PADDING,
+                layout.dividerTop + 1,
+                ANALYSIS_DIVIDER_COLOR,
+            )
+        }
+        content.cells.forEachIndexed { index, cell ->
+            val bounds = layout.tileBounds(index)
+            tileFaceRenderer.renderGui(context, cell.tileAssetKey, bounds.x, bounds.y, bounds.width, bounds.height)
+            val centerX = layout.cellCenterX(index)
+            context.drawCenteredTextWithShadow(renderer, cell.countText, centerX, layout.countTextTop(index), cell.countColor)
+            cell.availabilityText?.let { text ->
+                context.drawCenteredTextWithShadow(renderer, text, centerX, layout.availabilityTextTop(index), ANALYSIS_AVAILABILITY_COLOR)
             }
         }
     }
@@ -525,23 +464,13 @@ class PlayerDecisionHudController(
         @JvmStatic
         fun isTileSelectionConfirmable(): Boolean? = activeController?.currentTileSelectionConfirmable()
 
-        private const val MAX_WAIT_COLUMNS = 7
-        private const val PADDING = 6
-        private const val CELL_GAP = 6
-        private const val TILE_WIDTH = 18
-        private const val TILE_HEIGHT = 24
-        private const val AVAILABILITY_HEIGHT = 10
-        private const val TILE_TEXTURE_WIDTH = 48
-        private const val TILE_TEXTURE_HEIGHT = 64
-        private const val COUNT_HEIGHT = 11
-        private const val STATUS_TEXT_HEIGHT = 9
-        private const val STATUS_DIVIDER_GAP = 3
-        private const val STATUS_TILE_GAP = 5
-        private const val STATUS_DIVIDER_COLOR = 0x66708088
         private const val TIMER_SCALE = 1.5f
-        private const val COMPACT_HUD_WIDTH = 220
-        private const val COMPACT_HUD_TIMER_HEIGHT = 14
-        private const val COMPACT_HUD_EXPANDED_HEIGHT = 38
+        private const val COMPACT_HUD_TITLE_COLOR = 0xFFD54F
+        private const val COMPACT_HUD_DETAIL_COLOR = 0xFFFFFF
+        private const val ANALYSIS_PANEL_BACKGROUND = 0xCC101820.toInt()
+        private const val ANALYSIS_STATUS_COLOR = 0xFF6B6B
+        private const val ANALYSIS_AVAILABILITY_COLOR = 0xFFB05A
+        private const val ANALYSIS_DIVIDER_COLOR = 0x66708088
 
         /**
          * 多選選牌中已選取手牌的本地描邊色，跟 [MatchingTileHighlightController] 的青（準星目標）／
@@ -550,10 +479,6 @@ class PlayerDecisionHudController(
         private const val SELECTION_HIGHLIGHT_COLOR = 0x9D5DE8
     }
 }
-
-/** Prompt 是否包含需要玩家明確選擇的內容。 */
-private val PlayerDecisionPromptDto.isInteractive: Boolean
-    get() = actions.isNotEmpty() || preparation != null
 
 /**
  * 取得目前動作選牌情境的捨牌分析；該動作沒有專屬分析或已離開選牌情境時，沿用 prompt 的一般分析。
