@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
+import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -29,6 +30,6 @@ class MahjongHudLayoutGeometryTest {
         val coordinate = hudCoordinate(0.37, 427, 113)
         val restored = hudRatio(coordinate, 427, 113)
 
-        assertTrue(kotlin.math.abs(restored - 0.37) <= 1.0 / (427 - 113))
+        assertTrue(abs(restored - 0.37) <= 1.0 / (427 - 113))
     }
 }

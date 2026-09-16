@@ -38,6 +38,7 @@ import net.minecraft.client.render.entity.EntityRendererFactory
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.text.Text
 import net.minecraft.util.Identifier
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 
@@ -419,7 +420,7 @@ class WinSettlementPresentationEntityRenderer(
         renderAnimatedOverlay(effect.argb, left, y, PresentationNodeSize(effect.width, size.height), alpha * pulse(progress), matrices, consumers)
     }
 
-    private fun pulse(progress: Float): Float = 1f - kotlin.math.abs(progress * 2f - 1f)
+    private fun pulse(progress: Float): Float = 1f - abs(progress * 2f - 1f)
 
     private fun lerp(from: Float, to: Float, progress: Float): Float = from + (to - from) * progress
 

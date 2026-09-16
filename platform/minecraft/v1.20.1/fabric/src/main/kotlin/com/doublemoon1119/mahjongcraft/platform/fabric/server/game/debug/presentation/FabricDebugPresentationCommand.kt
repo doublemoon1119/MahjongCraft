@@ -585,7 +585,7 @@ class FabricDebugPresentationCommand(
             end,
             previewTilesBySeat.flatten().map(Pair<MahjongTileEntity, String>::first) + previewMeldTiles.flatten(),
         )
-        source.sendFeedback({ net.minecraft.text.Text.literal("Exhaustive draw settlement preview active until game time $end") }, false)
+        source.sendFeedback({ Text.literal("Exhaustive draw settlement preview active until game time $end") }, false)
         return COMMAND_SUCCESS
     }
 

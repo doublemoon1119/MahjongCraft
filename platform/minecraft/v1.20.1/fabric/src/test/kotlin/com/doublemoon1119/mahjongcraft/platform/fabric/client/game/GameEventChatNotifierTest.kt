@@ -18,6 +18,7 @@ import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.uuid.Uuid
 
 /**
  * [buildRoundResultChatMessage]／[buildMatchResultChatMessage] 的單元測試
@@ -43,7 +44,7 @@ class GameEventChatNotifierTest {
         val current = fakeSnapshot(scores = listOf(25000, 25000))
 
         val message = buildRoundResultChatMessage(
-            action = GameAction.Discard(kotlin.uuid.Uuid.random()),
+            action = GameAction.Discard(Uuid.random()),
             previousSnapshot = previous,
             newSnapshot = current,
             module = module,
@@ -80,10 +81,10 @@ class GameEventChatNotifierTest {
 
     @Test
     fun `builds a tsumo message listing every player's rank and score movement, not just the ones whose score changed`() {
-        val dId = kotlin.uuid.Uuid.random()
-        val bId = kotlin.uuid.Uuid.random()
-        val cId = kotlin.uuid.Uuid.random()
-        val aId = kotlin.uuid.Uuid.random()
+        val dId = Uuid.random()
+        val bId = Uuid.random()
+        val cId = Uuid.random()
+        val aId = Uuid.random()
         // B 自己的分數完全沒變（25000 → 25000），但 A 從 20000 衝到 26000 把 B 擠出第 2 名、
         // 掉到第 3 名——這是刻意設計的情境，證明「名次會不會變」不能只看自己的分數變化，B 這種
         // 玩家過去只看分數差異會被完全忽略，現在一定要出現在結果裡才對。
@@ -131,10 +132,10 @@ class GameEventChatNotifierTest {
 
     @Test
     fun `round result ranks players by this hand's seat when scores are tied, not the original seat`() {
-        val eastId = kotlin.uuid.Uuid.random()
-        val southId = kotlin.uuid.Uuid.random()
-        val westId = kotlin.uuid.Uuid.random()
-        val northId = kotlin.uuid.Uuid.random()
+        val eastId = Uuid.random()
+        val southId = Uuid.random()
+        val westId = Uuid.random()
+        val northId = Uuid.random()
         // 東家跟南家同分；起家（initialSeat）刻意跟這一局的座位（seatWind）反過來排——南家的
         // initialSeat 是西、seatWind 是東，東家的 initialSeat 是東、seatWind 是南——如果
         // 用錯欄位（誤用 initialSeat），排序會反過來，藉此確認回合排名真的是比 seatWind。
@@ -190,10 +191,10 @@ class GameEventChatNotifierTest {
 
     @Test
     fun `breaks tied final scores by seat proximity to the original dealer`() {
-        val eastId = kotlin.uuid.Uuid.random()
-        val southId = kotlin.uuid.Uuid.random()
-        val westId = kotlin.uuid.Uuid.random()
-        val northId = kotlin.uuid.Uuid.random()
+        val eastId = Uuid.random()
+        val southId = Uuid.random()
+        val westId = Uuid.random()
+        val northId = Uuid.random()
         // 起家第二位跟第三位同分（25000），照固定起家順位第二位名次要在第三位前面；
         // 同時刻意把兩人的本局風位反過來，確認終局同分判準不受 seatWind 影響。
         val snapshot = FakeTableStateFactory.create(
@@ -230,7 +231,7 @@ class GameEventChatNotifierTest {
     /** AI 玩家（`aiStrategyKey` 非 null）避免觸發需要真正 client 執行環境的名稱解析分支。 */
     private fun fakeSnapshot(
         scores: List<Int>,
-        ids: List<kotlin.uuid.Uuid> = scores.map { kotlin.uuid.Uuid.random() },
+        ids: List<Uuid> = scores.map { Uuid.random() },
     ) = FakeTableStateFactory.create(
         players = ids.zip(scores).map { (id, score) ->
             FakeMahjongPlayerFactory.create(id = id, aiStrategyKey = "fake").copy(score = score)

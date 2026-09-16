@@ -17,6 +17,7 @@ import net.minecraft.util.Identifier
 import net.minecraft.util.math.RotationAxis
 import org.joml.Matrix4f
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.sin
@@ -145,7 +146,7 @@ class WinCelebrationEffectEntityRenderer(
         val strikeProgress = effectProgress / LIGHTNING_DURATION_FRACTION
         if (strikeProgress !in 0.0..<1.0) return
 
-        val flash = kotlin.math.abs(sin(strikeProgress * LIGHTNING_FLASH_COUNT * PI))
+        val flash = abs(sin(strikeProgress * LIGHTNING_FLASH_COUNT * PI))
         if (flash < LIGHTNING_VISIBLE_THRESHOLD) return
         val shapeIndex = (strikeProgress * LIGHTNING_SHAPE_COUNT).toInt()
         val points = lightningPoints(seed, shapeIndex)
@@ -297,7 +298,7 @@ class WinCelebrationEffectEntityRenderer(
 
         val envelope = sin(dischargeProgress * PI).coerceAtLeast(0.0)
         val flicker = DISCHARGE_FLICKER_MIN + (1.0 - DISCHARGE_FLICKER_MIN) *
-            kotlin.math.abs(sin(dischargeProgress * DISCHARGE_FLICKER_COUNT * PI))
+            abs(sin(dischargeProgress * DISCHARGE_FLICKER_COUNT * PI))
         val intensity = envelope * flicker
         val shapeIndex = (dischargeProgress * DISCHARGE_SHAPE_COUNT).toInt()
         repeat(DISCHARGE_RAY_COUNT) { rayIndex ->

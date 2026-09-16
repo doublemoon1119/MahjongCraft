@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.table.layout
 
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
+import kotlin.math.abs
 
 /**
  * 固定於開門面的連續保留牌軌道。
@@ -67,7 +68,7 @@ object SingleSideReservedWallTrackPlanner {
         val maximumHead = stacksPerSide - 1 - extraStacksAfterHead
         if (minimumHead > maximumHead) return null
         return (minimumHead..maximumHead)
-            .sortedWith(compareBy<Int> { kotlin.math.abs(it - preferredHead) }.thenBy { it })
+            .sortedWith(compareBy<Int> { abs(it - preferredHead) }.thenBy { it })
             .firstNotNullOfOrNull { head ->
                 val indices = List(stackCount) { offset -> head - offset }
                 val trackPositions = buildSet {

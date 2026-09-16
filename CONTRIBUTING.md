@@ -22,7 +22,7 @@
 ### Import Conventions
 
 - Use file-level `import` directives and short names for Kotlin declarations. Do not use avoidable fully qualified
-  project names in type declarations, expressions, properties, functions, or annotations.
+  names in type declarations, expressions, properties, functions, or annotations.
 - When short names conflict, prefer an explicit import alias over repeating a fully qualified name in executable code.
 - Fully qualified names may remain when they are intentionally stored as strings for reflection, serialization,
   component scanning, interoperability, or another identifier contract, or when an import alias cannot reasonably
@@ -37,6 +37,10 @@
   `docs/temp/` references (see Temp File Management).
 - If it fails on ktlint violations, run `./gradlew ktlintFormat` to auto-fix them instead of fixing
   them by hand.
+- Run `./gradlew detektAll` before committing. It runs detekt with type resolution, limited to the rules enabled
+  in `config/detekt/detekt.yml` (unnecessary fully qualified names and unused private declarations). `build` does not
+  run detekt, and detekt does not auto-fix; fix the reported code, or suppress an intentional exception at the
+  declaration with `@Suppress("RuleName")` and a comment stating the reason.
 - `./gradlew build` also verifies the Minecraft language files (`platform/minecraft/common/.../lang/`)
   are sorted by translation key. If it fails, run `./gradlew sortMinecraftLangFiles` to auto-fix instead
   of reordering entries by hand. This check reads that fixed directory directly and always runs

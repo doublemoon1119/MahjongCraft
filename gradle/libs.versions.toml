@@ -26,6 +26,7 @@ koin-bom = "4.2.2"
 koin-plugin = "1.2.1"
 ktlint-gradle = "14.2.0"
 ktlint = "1.5.0"
+detekt = "2.0.0-alpha.6"
 slf4j = "2.0.17"
 
 # Minecraft v1.20.1 + Fabric target dependencies
@@ -47,6 +48,7 @@ ktlint-gradle-plugin = { group = "org.jlleitschuh.gradle", name = "ktlint-gradle
 ktlint-rule-engine-core = { group = "com.pinterest.ktlint", name = "ktlint-rule-engine-core", version.ref = "ktlint" }
 ktlint-rule-engine = { group = "com.pinterest.ktlint", name = "ktlint-rule-engine", version.ref = "ktlint" }
 ktlint-cli-ruleset-core = { group = "com.pinterest.ktlint", name = "ktlint-cli-ruleset-core", version.ref = "ktlint" }
+detekt-gradle-plugin = { group = "dev.detekt", name = "detekt-gradle-plugin", version.ref = "detekt" }
 slf4j-nop = { group = "org.slf4j", name = "slf4j-nop", version.ref = "slf4j" }
 
 # Kotlin ecosystem libraries

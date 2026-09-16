@@ -5,6 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class WinSettlementPresentationTemplateRegistryTest {
     @Test
@@ -33,11 +34,11 @@ class WinSettlementPresentationTemplateRegistryTest {
         registry.registerBuiltInWinSettlementTemplates()
         val rendered = registry.findTemplate("mahjongcraft:riichi").toString()
 
-        kotlin.test.assertTrue(rendered.contains("Animated"))
-        kotlin.test.assertTrue(rendered.contains("PlayerIdentity"))
-        kotlin.test.assertTrue(rendered.contains("Box"))
-        kotlin.test.assertTrue(rendered.contains("Positioned"))
-        kotlin.test.assertTrue(rendered.contains("TileGroups"))
+        assertTrue(rendered.contains("Animated"))
+        assertTrue(rendered.contains("PlayerIdentity"))
+        assertTrue(rendered.contains("Box"))
+        assertTrue(rendered.contains("Positioned"))
+        assertTrue(rendered.contains("TileGroups"))
     }
 
     @Test

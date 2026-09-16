@@ -2,7 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import kotlin.math.abs
 import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.hypot
 import kotlin.math.sqrt
 
@@ -99,7 +101,7 @@ object TileWallMotionPathPlanner {
         val startWorld = context.project(start)
         val endWorld = context.project(end)
         val horizontalDistance = hypot(endWorld.x - startWorld.x, endWorld.z - startWorld.z)
-        val verticalDistance = kotlin.math.abs(endWorld.y - startWorld.y)
+        val verticalDistance = abs(endWorld.y - startWorld.y)
         if (horizontalDistance > POSITION_EPSILON && verticalDistance > POSITION_EPSILON) {
             return TileWallMotionPathDecision.Rejected(TileWallMotionPathRejection.MIXED_HORIZONTAL_AND_VERTICAL)
         }
@@ -198,8 +200,8 @@ object TileWallMotionPathPlanner {
      * 列出起訖座標經過的牆角格；每一面最後一墩到下一面第一墩之間的完整單位區間視為牆角。
      */
     private fun traversedCornerCells(start: Double, end: Double, stacksPerSide: Int): Set<Int> {
-        val lower = kotlin.math.floor(minOf(start, end)).toInt()
-        val upper = kotlin.math.floor(maxOf(start, end) - POSITION_EPSILON).toInt()
+        val lower = floor(minOf(start, end)).toInt()
+        val upper = floor(maxOf(start, end) - POSITION_EPSILON).toInt()
         if (upper < lower) return emptySet()
         return (lower..upper).filterTo(mutableSetOf()) { coordinate ->
             coordinate.mod(stacksPerSide) == stacksPerSide - 1

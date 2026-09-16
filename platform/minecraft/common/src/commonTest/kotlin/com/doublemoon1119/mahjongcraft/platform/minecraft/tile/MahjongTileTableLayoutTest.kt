@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrien
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
+import kotlin.math.hypot
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -159,8 +160,8 @@ class MahjongTileTableLayoutTest {
         val shifted = wallPlacement(
             placement = TileWallPlacement(position, TileWallPlacementOffset(towardTableCenterTiles = 1.0)),
         )
-        val baseRadius = kotlin.math.hypot(base.x - CONTROLLER_CENTER_X, base.z - CONTROLLER_CENTER_Z)
-        val shiftedRadius = kotlin.math.hypot(shifted.x - CONTROLLER_CENTER_X, shifted.z - CONTROLLER_CENTER_Z)
+        val baseRadius = hypot(base.x - CONTROLLER_CENTER_X, base.z - CONTROLLER_CENTER_Z)
+        val shiftedRadius = hypot(shifted.x - CONTROLLER_CENTER_X, shifted.z - CONTROLLER_CENTER_Z)
 
         assertEquals(MahjongTileDimensions.TILE_HEIGHT, baseRadius - shiftedRadius, ABSOLUTE_TOLERANCE)
         assertEquals(base.y, shifted.y, ABSOLUTE_TOLERANCE)
@@ -216,7 +217,7 @@ class MahjongTileTableLayoutTest {
                     TileWallPlacementOffset(towardTableCenterTiles = 0.5, upwardLayers = 0.5),
                 ),
             )
-            val horizontalDistance = kotlin.math.hypot(shifted.x - base.x, shifted.z - base.z)
+            val horizontalDistance = hypot(shifted.x - base.x, shifted.z - base.z)
 
             assertEquals(MahjongTileDimensions.TILE_HEIGHT * 0.5, horizontalDistance, ABSOLUTE_TOLERANCE)
             assertEquals(

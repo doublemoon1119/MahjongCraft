@@ -25,6 +25,7 @@ import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
 import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
+import kotlin.math.abs
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -198,7 +199,7 @@ class FabricMahjongDiscardPresenter(
     private fun yawMatches(a: Float, b: Float): Boolean {
         val normalizedA = ((a % FULL_YAW_DEGREES) + FULL_YAW_DEGREES) % FULL_YAW_DEGREES
         val normalizedB = ((b % FULL_YAW_DEGREES) + FULL_YAW_DEGREES) % FULL_YAW_DEGREES
-        return kotlin.math.abs(normalizedA - normalizedB) < YAW_TOLERANCE_DEGREES
+        return abs(normalizedA - normalizedB) < YAW_TOLERANCE_DEGREES
     }
 
     /** 只查詢桌子結構附近並以同步 UUID 精確篩選，避免掃描整個 dimension。 */

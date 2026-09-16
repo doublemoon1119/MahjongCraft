@@ -51,6 +51,7 @@ gradlePlugin {
 dependencies {
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.ktlint.gradle.plugin)
+    implementation(libs.detekt.gradle.plugin)
     implementation(libs.ktoml.core)
     implementation(libs.kotlinx.serialization.json)
     testImplementation(kotlin("test"))

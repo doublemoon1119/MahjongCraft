@@ -61,8 +61,8 @@ class RoomScreen(
     private val portraitRenderer: PlayerPortraitRenderer,
     private val aiStrategies: MahjongAiStrategyRegistry,
     private val aiStrategyNames: AiStrategyDisplayNameRegistry,
-    private val appearanceSources: RoomMemberAppearanceSourceRegistry,
-    private val indicatorTextResolver: PublicPlayerIndicatorTextResolver,
+    appearanceSources: RoomMemberAppearanceSourceRegistry,
+    indicatorTextResolver: PublicPlayerIndicatorTextResolver,
     private val json: Json,
     private val networkRegistries: NetworkDtoRegistries,
     private val profileResolver: ClientPlayerProfileResolver,
@@ -1114,12 +1114,6 @@ class RoomScreen(
     )
 
     private fun optionText(optionId: String): Text = Text.translatable(MinecraftRoomScreenKeys.configOption(optionId))
-
-    private fun integerText(number: Int?, unit: String?): Text = when {
-        number == null -> Text.translatable(MinecraftRoomScreenKeys.NONE)
-        unit == null -> Text.literal(formatRoomInteger(number))
-        else -> Text.translatable(unit, number)
-    }
 
     /**
      * Esc 在設定頁沒有可套用草稿時直接返回玩家頁；有尚未套用的合法草稿時改顯示「套用並返回／放棄

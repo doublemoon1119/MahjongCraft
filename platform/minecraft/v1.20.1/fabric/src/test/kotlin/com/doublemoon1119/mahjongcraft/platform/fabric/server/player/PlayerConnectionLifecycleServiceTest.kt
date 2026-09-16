@@ -29,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -191,7 +192,7 @@ class PlayerConnectionLifecycleServiceTest {
     }
 
     /** 建立使用目前測試 scheduler 的斷線政策測試資料。 */
-    private suspend fun kotlinx.coroutines.test.TestScope.createFixture(
+    private suspend fun TestScope.createFixture(
         policy: DisconnectedPlayerPolicy,
         timeoutSeconds: Long = 300,
     ): Fixture {

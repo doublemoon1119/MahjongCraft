@@ -17,6 +17,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableL
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localWallVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.rotateForFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.rotateForSide
+import kotlin.math.floor
+import kotlin.math.sqrt
 
 /** 局部水平向量；沿用 [MahjongTableSide]／[MahjongTableFacing] 兩段式旋轉合成，Y 軸不受水平旋轉影響。 */
 private data class TileTableVector(val x: Double, val y: Double, val z: Double)
@@ -73,7 +75,7 @@ object MahjongTileTableLayout {
 
         val baseCoordinate = position.side * stacksPerSide + position.stack
         val targetCoordinate = baseCoordinate + placement.offset.alongWallStacks
-        val lowerCoordinate = kotlin.math.floor(targetCoordinate).toInt()
+        val lowerCoordinate = floor(targetCoordinate).toInt()
         val interpolation = targetCoordinate - lowerCoordinate
         val lower = baseWallPlacement(
             controllerX,
@@ -102,7 +104,7 @@ object MahjongTileTableLayout {
         val centerZ = controllerZ + BLOCK_CENTER
         val towardCenterX = centerX - interpolatedX
         val towardCenterZ = centerZ - interpolatedZ
-        val centerDistance = kotlin.math.sqrt(towardCenterX * towardCenterX + towardCenterZ * towardCenterZ)
+        val centerDistance = sqrt(towardCenterX * towardCenterX + towardCenterZ * towardCenterZ)
         val centerOffset = placement.offset.towardTableCenterTiles * MahjongTileDimensions.TILE_HEIGHT
         val layerOffset = placement.offset.upwardLayers *
             (MahjongTileDimensions.TILE_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING)

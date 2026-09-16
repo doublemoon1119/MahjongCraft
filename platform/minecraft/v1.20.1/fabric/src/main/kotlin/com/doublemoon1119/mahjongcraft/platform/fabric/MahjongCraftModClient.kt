@@ -62,6 +62,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
+import kotlinx.serialization.json.Json
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
@@ -98,7 +99,7 @@ class MahjongCraftModClient : ClientModInitializer {
         decisionHudController.registerEvents()
         koin.get<MatchingTileHighlightController>().register()
 
-        val json = koin.get<kotlinx.serialization.json.Json>()
+        val json = koin.get<Json>()
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val stateStore = koin.get<ClientMahjongStateStore>()
         val decisionTimerStore = koin.get<ClientDecisionTimerStateStore>()

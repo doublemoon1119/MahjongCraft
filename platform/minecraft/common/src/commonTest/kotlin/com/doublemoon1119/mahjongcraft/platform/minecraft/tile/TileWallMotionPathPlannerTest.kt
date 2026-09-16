@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOffse
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import kotlin.math.hypot
+import kotlin.math.sqrt
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -117,7 +118,7 @@ class TileWallMotionPathPlannerTest {
         val dx = segment.end.x - segment.start.x
         val dy = segment.end.y - segment.start.y
         val dz = segment.end.z - segment.start.z
-        return kotlin.math.sqrt(dx * dx + dy * dy + dz * dz)
+        return sqrt(dx * dx + dy * dy + dz * dz)
     }
 
     /** 測試共用桌面投影。 */

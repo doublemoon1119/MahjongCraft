@@ -56,6 +56,7 @@ import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.fabricmc.loader.api.FabricLoader
+import net.minecraft.server.MinecraftServer
 import org.koin.core.Koin
 import org.koin.plugin.module.dsl.startKoin
 import org.slf4j.LoggerFactory
@@ -163,7 +164,7 @@ class MahjongCraftMod : ModInitializer {
     private fun initializeServerConfig(
         configManager: FabricServerConfigManager,
         mahjongTileCollisionService: MahjongTileCollisionService,
-        server: net.minecraft.server.MinecraftServer,
+        server: MinecraftServer,
     ) {
         when (val result = configManager.attach(server)) {
             is MinecraftServerConfigUpdateResult.Success -> {

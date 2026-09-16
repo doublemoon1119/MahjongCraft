@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanScoreConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -78,7 +79,7 @@ class RoomPersistenceDtoTest {
     fun `unknown rule config type key is rejected`() {
         val registry = buildRuleConfigPersistenceRegistry()
         val dto = createRoom(RiichiRuleConfig()).toPersistenceDto(registry).copy(
-            config = TypedPersistenceDto("missing:rule", kotlinx.serialization.json.buildJsonObject { }),
+            config = TypedPersistenceDto("missing:rule", buildJsonObject { }),
         )
 
         assertFailsWith<IllegalStateException> { dto.toDomain(registry) }

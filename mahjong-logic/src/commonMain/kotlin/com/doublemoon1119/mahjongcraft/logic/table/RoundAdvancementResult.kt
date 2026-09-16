@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
+import kotlin.uuid.Uuid
+
 /**
  * 一局結束後，連莊/過莊判定與局數/場風推進的計算結果。
  *
@@ -12,7 +14,7 @@ package com.doublemoon1119.mahjongcraft.logic.table
  */
 data class RoundAdvancementResult(
     val players: List<MahjongPlayer>,
-    val dealerPlayerId: kotlin.uuid.Uuid,
+    val dealerPlayerId: Uuid,
     val roundNumber: Int,
     val comboCount: Int,
     val prevalentWind: Wind,

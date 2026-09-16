@@ -5,12 +5,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClie
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPresentationEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetPath
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.render.LightmapTextureManager
 import net.minecraft.client.render.VertexConsumer
@@ -23,6 +20,7 @@ import net.minecraft.util.Identifier
 import org.joml.Matrix4f
 import org.slf4j.LoggerFactory
 import kotlin.math.roundToInt
+import kotlin.math.sin
 import kotlin.uuid.Uuid
 
 /** 與回合結算共用視覺語言，但以冠軍為主角的 client-only 終局頒獎面板。 */
@@ -35,7 +33,6 @@ class MatchSettlementPresentationEntityRenderer(
 ) : EntityRenderer<MatchSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
     private val warnedUnknownTemplateKeys = mutableSetOf<String>()
-    private val unknownTileTexture = Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath(UNKNOWN_TILE_ASSET_KEY))
 
     /** 目前這次 [render] 呼叫所屬的桌子 ID，[resolvePlayerName] 解析名稱時查詢用；每次 render 開頭重設。 */
     private var currentTableId: Uuid? = null
@@ -154,7 +151,7 @@ class MatchSettlementPresentationEntityRenderer(
         renderCorner(buffer, matrix, left, bottom, 1f, -1f, a)
         renderCorner(buffer, matrix, right, bottom, -1f, -1f, a)
 
-        val starAlpha = (alpha * kotlin.math.sin(progress * Math.PI).toFloat() * 220f).roundToInt().coerceIn(0, 255)
+        val starAlpha = (alpha * sin(progress * Math.PI).toFloat() * 220f).roundToInt().coerceIn(0, 255)
         if (starAlpha > 0) {
             val starOffsets = listOf(
                 -halfWidth - STAR_DISTANCE to 7f,

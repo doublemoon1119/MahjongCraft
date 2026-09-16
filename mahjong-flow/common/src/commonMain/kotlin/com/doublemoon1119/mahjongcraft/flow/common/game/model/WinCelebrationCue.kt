@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
+import kotlin.uuid.Uuid
+
 /**
  * 規則層胡牌結果解析出的平台無關展示提示。
  *
@@ -14,7 +16,7 @@ data class WinCelebrationWinner(val seatIndex: Int, val cue: WinCelebrationCue?)
  * 一次胡牌共用的批次展示請求；多家榮和共享同一張 [winningTileId]。
  */
 data class WinCelebrationRequest(
-    val winningTileId: kotlin.uuid.Uuid,
+    val winningTileId: Uuid,
     val isTsumo: Boolean,
     val winners: List<WinCelebrationWinner>,
 )

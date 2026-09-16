@@ -7,6 +7,7 @@
 ## Responsibilities
 
 - Configure shared Kotlin Multiplatform and JVM compilation policies.
+- Apply ktlint and detekt to every Kotlin project, with detekt reading the shared rule file [`config/detekt/detekt.yml`](../config/detekt/detekt.yml) and a manual `detektAll` task that runs its type-resolved analysis outside `check`.
 - Configure Minecraft version-common and loader projects.
 - Parse and validate the platform target catalog.
 - Select core-only or platform-specific project graphs.
@@ -18,7 +19,7 @@ Build logic configures projects but does not contain runtime MahjongCraft code. 
 
 ## Dependencies
 
-The included build uses Gradle APIs, the Kotlin Gradle plugin, ktlint, KToml, and Kotlin Serialization. Its serialization compiler follows Gradle's embedded Kotlin version.
+The included build uses Gradle APIs, the Kotlin Gradle plugin, ktlint, detekt, KToml, and Kotlin Serialization. Its serialization compiler follows Gradle's embedded Kotlin version.
 
 ## Testing
 

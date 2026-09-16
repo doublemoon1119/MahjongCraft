@@ -158,11 +158,6 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         }
     }
 
-    private operator fun FloatArray.component1() = this[0]
-    private operator fun FloatArray.component2() = this[1]
-    private operator fun FloatArray.component3() = this[2]
-    private operator fun FloatArray.component4() = this[3]
-
     /**
      * 與 `mahjong_tile_base.json` 相同的立方體幾何（`from=[2,0,4]`、`to=[14,16,12]`，除以 16 換算為
      * 0..1 model 空間）。正面使用 runtime 材質，其餘五面沿用內建 `mahjong_tile_cover.png` 的 UV

@@ -1,0 +1,19 @@
+# MahjongCraft detekt configuration, run manually with `./gradlew detektAll`.
+# The build reads this file with buildUponDefaultConfig = false: only rules explicitly enabled here run.
+# To enable another rule, add it under its rule set with active: true.
+
+config:
+  validation: true
+
+style:
+  active: true
+  # Fully qualified names that an import and the simple name can replace.
+  UnnecessaryFullyQualifiedName:
+    active: true
+  # Unused private declarations, which the Kotlin compiler does not warn about.
+  UnusedPrivateClass:
+    active: true
+  UnusedPrivateFunction:
+    active: true
+  UnusedPrivateProperty:
+    active: true
