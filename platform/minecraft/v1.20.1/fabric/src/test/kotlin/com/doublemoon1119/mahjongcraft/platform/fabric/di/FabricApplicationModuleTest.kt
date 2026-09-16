@@ -193,7 +193,7 @@ class FabricApplicationModuleTest {
             koin.get<FabricDebugScenarioCommand>().build().build().children.map { it.name }.toSet(),
         )
         assertEquals(
-            setOf("next"),
+            setOf("next", "combo"),
             koin.get<FabricDebugRoundCommand>().buildRoundCommand().build().children.map { it.name }.toSet(),
         )
         val presentationCommand = koin.get<FabricDebugPresentationCommand>()
