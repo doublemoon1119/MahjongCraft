@@ -72,23 +72,29 @@ class WinCelebrationShowcaseEntityRenderer(
         if (duration <= 0.0 || elapsed !in 0.0..<duration) return
         val fadeStart = duration - WinCelebrationShowcaseEntity.FADE_OUT_TICKS
         val billboardRotation = Quaternionf(dispatcher.rotation)
-        val cardLayouts = buildCardLayouts(entity)
-        renderTntCinematic(entity, elapsed, billboardRotation, matrices, vertexConsumers, light)
+        val formation = ShowcaseFormationLayout(
+            wingCardOrders = entity.wings.map { wing -> wing.cards.map { it.order } },
+            includesWinningTile = entity.winningTileSnapshot != null,
+            metrics = FORMATION_METRICS,
+        )
+        val cardLayouts = buildCardLayouts(formation)
+        renderTntCinematic(entity, formation, elapsed, billboardRotation, matrices, vertexConsumers, light)
         entity.wings.forEachIndexed { wingIndex, wing ->
             wing.cards.forEach { card ->
-                val layout = cardLayouts[CardKey(wingIndex, card.order, false)] ?: return@forEach
-                renderCard(entity, card, wingIndex, elapsed, fadeStart, billboardRotation, matrices, vertexConsumers, light, layout.targetX, returnStartOverride = layout.returnStart)
+                val layout = cardLayouts[ShowcaseCardSlot.Hand(wingIndex, card.order)] ?: return@forEach
+                renderCard(entity, card, wingIndex, elapsed, fadeStart, billboardRotation, matrices, vertexConsumers, light, layout.targetX, layout.returnStart)
             }
         }
-        renderWinningTile(entity, elapsed, fadeStart, billboardRotation, matrices, vertexConsumers, light, cardLayouts[WINNING_CARD_KEY])
+        renderWinningTile(entity, formation, cardLayouts, elapsed, fadeStart, billboardRotation, matrices, vertexConsumers, light)
         if (elapsed >= TITLE_REVEAL_START_TICK) {
-            renderShowcaseCenter(entity, elapsed, fadeStart, duration, billboardRotation, matrices, vertexConsumers, light)
+            renderShowcaseCenter(entity, formation, elapsed, fadeStart, duration, billboardRotation, matrices, vertexConsumers, light)
         }
     }
 
     /** 單一低成本 TNT 模型、可辨識的引信閃白，以及向外擴張的原版風白色爆炸。 */
     private fun renderTntCinematic(
         entity: WinCelebrationShowcaseEntity,
+        formation: ShowcaseFormationLayout,
         elapsed: Double,
         billboardRotation: Quaternionf,
         matrices: MatrixStack,
@@ -111,7 +117,7 @@ class WinCelebrationShowcaseEntityRenderer(
         }
         if (elapsed in IGNITION_TICK..<FUSE_TICK) renderIgnitionSparks(entity, elapsed, billboardRotation, matrices, consumers)
         if (elapsed in EXPLOSION_TICK..<TITLE_TEXT_START_TICK) {
-            renderTntExplosion(entity, elapsed, billboardRotation, matrices, consumers)
+            renderTntExplosion(entity, formation, elapsed, billboardRotation, matrices, consumers)
         }
     }
 
@@ -164,6 +170,7 @@ class WinCelebrationShowcaseEntityRenderer(
 
     private fun renderTntExplosion(
         entity: WinCelebrationShowcaseEntity,
+        formation: ShowcaseFormationLayout,
         elapsed: Double,
         billboardRotation: Quaternionf,
         matrices: MatrixStack,
@@ -208,7 +215,7 @@ class WinCelebrationShowcaseEntityRenderer(
             val travel = easeOut(progress)
             val isShared = index < SHARED_SMOKE_COUNT
             val wingIndex = if (isShared) -1 else (index - SHARED_SMOKE_COUNT) % wingCount
-            val wingCenterX = if (isShared) 0.0 else formationWingCenterX(entity, wingIndex)
+            val wingCenterX = if (isShared) 0.0 else formation.wingCenters[wingIndex]
             val spread = if (isShared) SMOKE_SHARED_SPREAD else SMOKE_WING_SPREAD
             val radialDistance = (0.45 + seededUnit(entity.animationSeed, 1200 + index * 59) * spread) * travel
             val localX = wingCenterX * travel + cos(phase) * radialDistance
@@ -255,15 +262,18 @@ class WinCelebrationShowcaseEntityRenderer(
     /** 在共享舞台中央只繪製一張權威胡牌張的視覺代理。 */
     private fun renderWinningTile(
         entity: WinCelebrationShowcaseEntity,
+        formation: ShowcaseFormationLayout,
+        cardLayouts: Map<ShowcaseCardSlot, CardLayout>,
         elapsed: Double,
         fadeStart: Double,
         billboardRotation: Quaternionf,
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
         light: Int,
-        layout: CardLayout?,
     ) {
         entity.winningTileSnapshot?.let { winningTile ->
+            // 有和牌張時，編隊的歸位順序必定包含它。
+            val layout = cardLayouts.getValue(ShowcaseCardSlot.WinningTile)
             renderCard(
                 entity = entity,
                 card = ShowcaseCardSnapshot(
@@ -282,8 +292,8 @@ class WinCelebrationShowcaseEntityRenderer(
                 matrices = matrices,
                 vertexConsumers = consumers,
                 light = light,
-                targetXOverride = layout?.targetX ?: winningTileX(entity),
-                returnStartOverride = layout?.returnStart,
+                localTargetX = layout.targetX,
+                returnStart = layout.returnStart,
                 winningTile = true,
             )
             return
@@ -291,7 +301,7 @@ class WinCelebrationShowcaseEntityRenderer(
         if (elapsed < FLIGHT_END_TICK) return
         val fadeScale = if (elapsed < fadeStart) WINNING_TILE_SCALE else WINNING_TILE_SCALE * (1.0 - smoothStep((elapsed - fadeStart) / WinCelebrationShowcaseEntity.FADE_OUT_TICKS)).coerceAtLeast(0.0)
         matrices.push()
-        val localX = winningTileX(entity)
+        val localX = formation.winningTileX
         val offset = Vector3f(localX.toFloat(), 0.0f, 0.0f).rotate(billboardRotation)
         val fade = fadeScaleFactor(elapsed, fadeStart)
         val entranceProgress = ((elapsed - FLIGHT_END_TICK) / CARD_ENTRANCE_TICKS).coerceIn(0.0, 1.0)
@@ -330,16 +340,13 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices: MatrixStack,
         vertexConsumers: VertexConsumerProvider,
         light: Int,
-        targetXOverride: Double? = null,
-        returnStartOverride: Double? = null,
+        localTargetX: Double,
+        returnStart: Double,
         winningTile: Boolean = false,
     ) {
-        val count = entity.wings[wingIndex].cards.size.coerceAtLeast(1)
         val startX = card.startOffsetX
         val startY = card.startOffsetY
         val startZ = card.startOffsetZ
-        val localTargetX = targetXOverride ?: formationCardX(entity, card.order, count, wingIndex)
-        val returnStart = returnStartOverride ?: WinCelebrationCinematicTimeline.returnStartTick(formationReturnRank(entity, localTargetX, winningTile), totalVisualCardCount(entity))
         val returnProgress = smoothStep(((elapsed - returnStart) / RETURN_DURATION_TICKS).coerceIn(0.0, 1.0))
         val seededPhase = seededUnit(entity.animationSeed, wingIndex * 97 + card.order * 13) * PI * 2.0
         val entranceStart = returnStart
@@ -709,38 +716,9 @@ class WinCelebrationShowcaseEntityRenderer(
         return right.mul(localX.toFloat()).add(forward.mul(localZ.toFloat())).add(0.0f, y.toFloat(), 0.0f)
     }
 
-    private fun totalVisualCardCount(entity: WinCelebrationShowcaseEntity): Int = entity.wings.sumOf { it.cards.size } + if (entity.winningTileSnapshot != null) 1 else 0
-
-    /** 每幀只建立、排序一次最終版面，供全部牌的目標 X 與歸位起點共用。 */
-    private fun buildCardLayouts(entity: WinCelebrationShowcaseEntity): Map<CardKey, CardLayout> {
-        val centers = formationWingCenters(entity)
-        val targets = buildList {
-            entity.wings.forEachIndexed { wingIndex, wing ->
-                wing.cards.forEach { card ->
-                    add(CardKey(wingIndex, card.order, false) to (centers[wingIndex] + ((wing.cards.size - 1) / 2.0 - card.order) * DISPLAY_CARD_SPACING))
-                }
-            }
-            if (entity.winningTileSnapshot != null) {
-                val winningX = when (entity.wings.size) {
-                    1 -> centers[0] + winningTileRelativeX(entity.wings[0].cards.size.coerceAtLeast(1))
-                    3 -> centers[1] + winningTileRelativeX(entity.wings[1].cards.size.coerceAtLeast(1))
-                    else -> 0.0
-                }
-                add(WINNING_CARD_KEY to winningX)
-            }
-        }.sortedWith(compareByDescending<Pair<CardKey, Double>> { it.second }.thenBy { if (it.first.winningTile) 1 else 0 })
-        return targets.mapIndexed { rank, (key, targetX) ->
-            key to CardLayout(targetX, WinCelebrationCinematicTimeline.returnStartTick(rank, targets.size))
-        }.toMap()
-    }
-
-    private fun formationReturnRank(entity: WinCelebrationShowcaseEntity, targetX: Double, winningTile: Boolean): Int {
-        val targets = buildList {
-            entity.wings.forEachIndexed { wingIndex, wing -> wing.cards.forEach { add(formationCardX(entity, it.order, wing.cards.size.coerceAtLeast(1), wingIndex)) } }
-            if (entity.winningTileSnapshot != null) add(winningTileX(entity))
-        }.sortedDescending()
-        val matches = targets.withIndex().filter { kotlin.math.abs(it.value - targetX) < 0.0001 }
-        return if (winningTile) targets.lastIndex else matches.firstOrNull()?.index ?: 0
+    /** 每幀只建立一次最終版面，供全部牌的目標 X 與歸位起點共用。 */
+    private fun buildCardLayouts(formation: ShowcaseFormationLayout): Map<ShowcaseCardSlot, CardLayout> = formation.returnOrder.withIndex().associate { (rank, slot) ->
+        slot to CardLayout(formation.targetX(slot), WinCelebrationCinematicTimeline.returnStartTick(rank, formation.returnOrder.size))
     }
 
     /** 讓牌的長軸沿路徑切線，使牌面平面與飛行方向平行。 */
@@ -838,6 +816,7 @@ class WinCelebrationShowcaseEntityRenderer(
     /** 繪製徽記 billboard、役名以及金紅色抵達光場。 */
     private fun renderShowcaseCenter(
         entity: WinCelebrationShowcaseEntity,
+        formation: ShowcaseFormationLayout,
         elapsed: Double,
         fadeStart: Double,
         duration: Double,
@@ -871,7 +850,7 @@ class WinCelebrationShowcaseEntityRenderer(
                 wingDefinition,
                 elapsed,
                 fade,
-                formationWingCenterX(entity, index),
+                formation.wingCenters[index],
                 billboardRotation,
                 matrices,
                 consumers,
@@ -880,7 +859,7 @@ class WinCelebrationShowcaseEntityRenderer(
                 wingDefinition,
                 elapsed,
                 fade,
-                formationWingCenterX(entity, index),
+                formation.wingCenters[index],
                 billboardRotation,
                 matrices,
                 consumers,
@@ -1072,57 +1051,8 @@ class WinCelebrationShowcaseEntityRenderer(
         buffer.vertex(matrix, x, y, z).color(255, 255, 255, (alpha * 255).toInt()).texture(u, v).light(FULL_BRIGHT_LIGHT).next()
     }
 
-    private fun formationCardX(entity: WinCelebrationShowcaseEntity, order: Int, count: Int, wingIndex: Int): Double = formationWingCenterX(entity, wingIndex) +
-        ((count - 1) / 2.0 - order) * DISPLAY_CARD_SPACING
-
-    /** 以每翼實際左右邊界排版，三家和時把中央共享胡牌張納入中央群組寬度。 */
-    private fun formationWingCenters(entity: WinCelebrationShowcaseEntity): DoubleArray {
-        val wingCount = entity.wings.size
-        if (wingCount == 2) {
-            val halfGap = maxOf(MULTI_WINNER_GROUP_GAP, WINNING_TILE_RENDER_WIDTH + WINNING_TILE_GAP * 2.0) / 2.0
-            val leftHalf = formationBounds(entity, 0).width / 2.0
-            val rightHalf = formationBounds(entity, 1).width / 2.0
-            return doubleArrayOf(-(halfGap + leftHalf), halfGap + rightHalf)
-        }
-        val bounds = entity.wings.indices.map { formationBounds(entity, it) }
-        val centers = DoubleArray(wingCount)
-        var cursor = 0.0
-        bounds.forEachIndexed { index, bound ->
-            centers[index] = cursor - bound.minX
-            cursor += bound.width + MULTI_WINNER_GROUP_GAP
-        }
-        val totalWidth = cursor - MULTI_WINNER_GROUP_GAP
-        return centers.map { it - totalWidth / 2.0 }.toDoubleArray()
-    }
-
-    private fun formationWingCenterX(entity: WinCelebrationShowcaseEntity, wingIndex: Int): Double = formationWingCenters(entity)[wingIndex]
-
-    private fun formationBounds(entity: WinCelebrationShowcaseEntity, wingIndex: Int): HorizontalBounds {
-        val cardCount = entity.wings[wingIndex].cards.size.coerceAtLeast(1)
-        val handSpan = (cardCount - 1) * DISPLAY_CARD_SPACING + DISPLAY_CARD_RENDER_WIDTH
-        var minX = -maxOf(handSpan, TITLE_IMAGE_SCALE * TITLE_QUAD_WIDTH) / 2.0
-        val maxX = -minX
-        if ((entity.wings.size == 1 && wingIndex == 0) || (entity.wings.size == 3 && wingIndex == 1)) {
-            minX = minOf(minX, winningTileRelativeX(cardCount) - WINNING_TILE_RENDER_WIDTH / 2.0)
-        }
-        return HorizontalBounds(minX, maxX)
-    }
-
-    private fun winningTileRelativeX(handCardCount: Int): Double = -(handCardCount - 1) / 2.0 * DISPLAY_CARD_SPACING -
-        DISPLAY_CARD_RENDER_WIDTH / 2.0 - WINNING_TILE_GAP - WINNING_TILE_RENDER_WIDTH / 2.0
-
-    private fun winningTileX(entity: WinCelebrationShowcaseEntity): Double = when (entity.wings.size) {
-        1 -> formationWingCenterX(entity, 0) + winningTileRelativeX(entity.wings[0].cards.size.coerceAtLeast(1))
-        3 -> formationWingCenterX(entity, 1) + winningTileRelativeX(entity.wings[1].cards.size.coerceAtLeast(1))
-        else -> 0.0
-    }
-
     private data class FlightPose(val position: Vector3f, val velocity: Vector3f)
-    private data class CardKey(val wingIndex: Int, val order: Int, val winningTile: Boolean)
     private data class CardLayout(val targetX: Double, val returnStart: Double)
-    private data class HorizontalBounds(val minX: Double, val maxX: Double) {
-        val width: Double get() = maxX - minX
-    }
     private fun hermite(start: Vector3f, end: Vector3f, startTangent: Vector3f, endTangent: Vector3f, progress: Double): Vector3f {
         val t = progress.toFloat()
         val t2 = t * t
@@ -1143,7 +1073,6 @@ class WinCelebrationShowcaseEntityRenderer(
         val SMOKE_TEXTURES = Array(12) { frame -> Identifier("minecraft", "textures/particle/big_smoke_$frame.png") }
         val FALLBACK_TITLE_IMAGE = Identifier("mahjongcraft", "textures/showcase/generic.png")
         const val FULL_BRIGHT_LIGHT = 15728880
-        val WINNING_CARD_KEY = CardKey(WINNING_TILE_WING_INDEX, WINNING_TILE_ORDER, true)
         const val ARMING_START_TICK = 0.0
         const val LIFT_END_TICK = 7.0
         const val RIPPLE_START_TICK = 0.0
@@ -1302,6 +1231,14 @@ class WinCelebrationShowcaseEntityRenderer(
         val DISPLAY_CARD_RENDER_WIDTH = MahjongTileEntity.TILE_WIDTH * DISPLAY_CARD_SCALE
         val WINNING_TILE_RENDER_WIDTH = MahjongTileEntity.TILE_WIDTH * WINNING_TILE_SCALE
         val WINNING_TILE_RENDER_HEIGHT = MahjongTileEntity.TILE_HEIGHT * WINNING_TILE_SCALE
+        val FORMATION_METRICS = ShowcaseFormationMetrics(
+            cardSpacing = DISPLAY_CARD_SPACING,
+            cardWidth = DISPLAY_CARD_RENDER_WIDTH,
+            winningTileWidth = WINNING_TILE_RENDER_WIDTH,
+            winningTileGap = WINNING_TILE_GAP,
+            minimumWingWidth = TITLE_IMAGE_SCALE * TITLE_QUAD_WIDTH,
+            wingGap = MULTI_WINNER_GROUP_GAP,
+        )
         const val WINNING_RIPPLE_BOTTOM_GAP = 0.008
         const val TRAIL_SEGMENTS = 7
         const val TRAIL_SAMPLE_TICKS = 1.6
