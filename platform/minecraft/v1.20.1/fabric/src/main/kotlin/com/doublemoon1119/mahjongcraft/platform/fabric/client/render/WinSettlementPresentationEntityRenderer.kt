@@ -14,10 +14,16 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExtensionPresentationField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationAlignment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationAnimationEffect
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationArrangement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationContainerStyle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationFieldId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.anchorOffset
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.arrange
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.crossAxisOffset
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.unweighted
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationNodeSize
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTextMeasurer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTimelineAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldSnapshot
@@ -43,6 +49,16 @@ class WinSettlementPresentationEntityRenderer(
     private val configStore: MahjongClientConfigStore,
 ) : EntityRenderer<WinSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
+
+    /** 宣告式版面的量測與配置；文字寬度用本 renderer 的字型量測。 */
+    private val layoutSolver = PresentationLayoutSolver(
+        templateRegistry,
+        object : PresentationTextMeasurer {
+            override fun measure(text: PresentationValue.TextValue): Float = textRenderer.getWidth(Text.translatable(text.translationKey, *text.arguments.toTypedArray())).toFloat()
+
+            override fun measurePlain(text: String): Float = textRenderer.getWidth(text).toFloat()
+        },
+    )
 
     /** 目前這次 [render] 呼叫所屬的桌子 ID，[playerName] 解析名稱時查詢用；每次 render 開頭重設。 */
     private var currentTableId: Uuid? = null
@@ -104,8 +120,8 @@ class WinSettlementPresentationEntityRenderer(
         consumers: VertexConsumerProvider,
     ) {
         val snapshot = winner.toFieldSnapshot(entity)
-        val size = measure(root, snapshot)
-        val scale = minOf(1f, DECLARATIVE_MAX_WIDTH / size.width.coerceAtLeast(1f), DECLARATIVE_MAX_HEIGHT / size.height.coerceAtLeast(1f))
+        val size = layoutSolver.measure(root, snapshot)
+        val scale = minOf(1f, PresentationLayoutSolver.MAX_WIDTH / size.width.coerceAtLeast(1f), PresentationLayoutSolver.MAX_HEIGHT / size.height.coerceAtLeast(1f))
         matrices.push()
         matrices.scale(scale, scale, 1f)
         renderLayout(root, snapshot, -size.width / 2f, -size.height / 2f, local, alpha, matrices, consumers)
@@ -161,78 +177,6 @@ class WinSettlementPresentationEntityRenderer(
         )
     }
 
-    private fun resolve(layout: PresentationLayout, snapshot: WinSettlementPresentationFieldSnapshot): PresentationValue? {
-        val id = when (layout) {
-            is PresentationLayout.Text -> layout.fieldId
-            is PresentationLayout.PlayerIdentity -> layout.fieldId
-            is PresentationLayout.Tile -> layout.fieldId
-            is PresentationLayout.TileList -> layout.fieldId
-            is PresentationLayout.TileGroups -> layout.fieldId
-            is PresentationLayout.RepeatEntries -> layout.fieldId
-            else -> return null
-        }
-        return templateRegistry.findFieldProvider(id)?.provide(snapshot)
-    }
-
-    private fun measure(layout: PresentationLayout, snapshot: WinSettlementPresentationFieldSnapshot): NodeSize = when (layout) {
-        is PresentationLayout.Text -> (resolve(layout, snapshot) as? PresentationValue.TextValue)?.let {
-            NodeSize(textRenderer.getWidth(Text.translatable(it.translationKey, *it.arguments.toTypedArray())) * layout.scale, 10f * layout.scale)
-        } ?: NodeSize.ZERO
-        is PresentationLayout.PlayerIdentity -> (resolve(layout, snapshot) as? PresentationValue.PlayerIdentityValue)?.let {
-            val faceWidth = if (layout.showFace) FACE_SIZE * layout.scale else 0f
-            val nameWidth = if (layout.showName) textRenderer.getWidth(it.displayName) * layout.scale else 0f
-            val gap = if (layout.showFace && layout.showName) layout.spacing * layout.scale else 0f
-            NodeSize(faceWidth + gap + nameWidth, maxOf(faceWidth, 10f * layout.scale))
-        } ?: NodeSize.ZERO
-        is PresentationLayout.Tile -> if (resolve(layout, snapshot) is PresentationValue.TileValue) NodeSize(layout.width, layout.height) else NodeSize.ZERO
-        is PresentationLayout.TileList -> {
-            val count = (resolve(layout, snapshot) as? PresentationValue.TileListValue)?.assetKeys?.size ?: 0
-            NodeSize(tileSequenceWidth(count, layout.tileWidth, layout.spacing), if (count > 0) layout.tileHeight else 0f)
-        }
-        is PresentationLayout.TileGroups -> {
-            val groups = (resolve(layout, snapshot) as? PresentationValue.TileGroupsValue)?.groups.orEmpty().filter(List<String>::isNotEmpty)
-            val count = groups.sumOf(List<String>::size)
-            NodeSize(
-                tileSequenceWidth(count, layout.tileWidth, layout.tileSpacing) +
-                    (groups.size - 1).coerceAtLeast(0) * (layout.groupSpacing - layout.tileSpacing),
-                if (count > 0) layout.tileHeight else 0f,
-            )
-        }
-        is PresentationLayout.RepeatEntries -> {
-            val count = (resolve(layout, snapshot) as? PresentationValue.EntryListValue)?.entries?.size ?: 0
-            val columns = (count + layout.entriesPerColumn - 1) / layout.entriesPerColumn
-            NodeSize(if (count > 0) layout.width else 0f, minOf(count, layout.entriesPerColumn) * layout.rowHeight)
-        }
-        is PresentationLayout.Row -> {
-            val sizes = layout.children.map { measure(it, snapshot) }
-            val intrinsicWidth = sizes.sumOf { it.width.toDouble() }.toFloat() + (sizes.size - 1).coerceAtLeast(0) * layout.spacing
-            styledSize(if (layout.fillMaxWidth) DECLARATIVE_MAX_WIDTH - layout.style.padding * 2f else intrinsicWidth, sizes.maxOfOrNull(NodeSize::height) ?: 0f, layout.style)
-        }
-        is PresentationLayout.Column -> {
-            val sizes = layout.children.map { measure(it, snapshot) }
-            val intrinsicHeight = sizes.sumOf { it.height.toDouble() }.toFloat() + (sizes.size - 1).coerceAtLeast(0) * layout.spacing
-            styledSize(
-                sizes.maxOfOrNull(NodeSize::width) ?: 0f,
-                if (layout.fillMaxHeight) DECLARATIVE_MAX_HEIGHT - layout.style.padding * 2f else intrinsicHeight,
-                layout.style,
-            )
-        }
-        is PresentationLayout.Weighted -> measure(layout.child, snapshot)
-        is PresentationLayout.Grid -> {
-            val sizes = layout.children.map { measure(it, snapshot) }
-            val rows = (sizes.size + layout.columns - 1) / layout.columns
-            val cellWidth = sizes.maxOfOrNull(NodeSize::width) ?: 0f
-            val cellHeight = sizes.maxOfOrNull(NodeSize::height) ?: 0f
-            styledSize(layout.columns * cellWidth + (layout.columns - 1) * layout.horizontalSpacing, rows * cellHeight + (rows - 1).coerceAtLeast(0) * layout.verticalSpacing, layout.style)
-        }
-        is PresentationLayout.Spacer -> NodeSize(layout.width, layout.height)
-        is PresentationLayout.SizeConstraint -> measure(layout.child, snapshot).let { NodeSize(minOf(it.width, layout.maxWidth ?: it.width), minOf(it.height, layout.maxHeight ?: it.height)) }
-        is PresentationLayout.Box -> styledSize(layout.width, layout.height, layout.style)
-        is PresentationLayout.Positioned -> measure(layout.child, snapshot)
-        is PresentationLayout.IfPresent -> if (templateRegistry.findFieldProvider(layout.fieldId)?.provide(snapshot) != null) measure(layout.child, snapshot) else NodeSize.ZERO
-        is PresentationLayout.Animated -> measure(layout.child, snapshot)
-    }
-
     private fun renderLayout(
         layout: PresentationLayout,
         snapshot: WinSettlementPresentationFieldSnapshot,
@@ -244,10 +188,10 @@ class WinSettlementPresentationEntityRenderer(
         consumers: VertexConsumerProvider,
         allocatedWidth: Float? = null,
     ) {
-        val measured = measure(layout, snapshot)
-        val size = if (allocatedWidth != null) NodeSize(allocatedWidth, measured.height) else measured
+        val measured = layoutSolver.measure(layout, snapshot)
+        val size = if (allocatedWidth != null) PresentationNodeSize(allocatedWidth, measured.height) else measured
         when (layout) {
-            is PresentationLayout.Text -> (resolve(layout, snapshot) as? PresentationValue.TextValue)?.let {
+            is PresentationLayout.Text -> (layoutSolver.resolve(layout, snapshot) as? PresentationValue.TextValue)?.let {
                 val text = Text.translatable(it.translationKey, *it.arguments.toTypedArray())
                 if (allocatedWidth == null) {
                     draw(text, x, y, Align.LEFT, color(layout.argb and 0xFFFFFF, alpha * ((layout.argb ushr 24) / 255f)), layout.scale, matrices, consumers)
@@ -275,25 +219,25 @@ class WinSettlementPresentationEntityRenderer(
                     )
                 }
             }
-            is PresentationLayout.PlayerIdentity -> (resolve(layout, snapshot) as? PresentationValue.PlayerIdentityValue)?.let { identity ->
+            is PresentationLayout.PlayerIdentity -> (layoutSolver.resolve(layout, snapshot) as? PresentationValue.PlayerIdentityValue)?.let { identity ->
                 var cursor = x
                 if (layout.showFace) {
-                    renderPlayerFace(identity.playerId, identity.isAi, cursor, y, alpha, matrices, consumers, FACE_SIZE * layout.scale)
-                    cursor += FACE_SIZE * layout.scale + if (layout.showName) layout.spacing * layout.scale else 0f
+                    renderPlayerFace(identity.playerId, identity.isAi, cursor, y, alpha, matrices, consumers, PresentationLayoutSolver.FACE_SIZE * layout.scale)
+                    cursor += PresentationLayoutSolver.FACE_SIZE * layout.scale + if (layout.showName) layout.spacing * layout.scale else 0f
                 }
                 if (layout.showName) {
                     draw(Text.literal(identity.displayName), cursor, y, Align.LEFT, color(layout.argb and 0xFFFFFF, alpha * ((layout.argb ushr 24) / 255f)), layout.scale, matrices, consumers)
                 }
             }
-            is PresentationLayout.Tile -> (resolve(layout, snapshot) as? PresentationValue.TileValue)?.let {
+            is PresentationLayout.Tile -> (layoutSolver.resolve(layout, snapshot) as? PresentationValue.TileValue)?.let {
                 renderTile(it.assetKey, x + layout.width / 2f, y + layout.height / 2f, layout.width, layout.height, alpha, matrices, consumers)
             }
-            is PresentationLayout.TileList -> (resolve(layout, snapshot) as? PresentationValue.TileListValue)?.assetKeys.orEmpty().forEachIndexed { index, asset ->
+            is PresentationLayout.TileList -> (layoutSolver.resolve(layout, snapshot) as? PresentationValue.TileListValue)?.assetKeys.orEmpty().forEachIndexed { index, asset ->
                 renderTile(asset, x + layout.tileWidth / 2f + index * (layout.tileWidth + layout.spacing), y + layout.tileHeight / 2f, layout.tileWidth, layout.tileHeight, alpha, matrices, consumers)
             }
             is PresentationLayout.TileGroups -> {
                 var tileX = x + layout.tileWidth / 2f
-                val groups = (resolve(layout, snapshot) as? PresentationValue.TileGroupsValue)?.groups.orEmpty().filter(List<String>::isNotEmpty)
+                val groups = (layoutSolver.resolve(layout, snapshot) as? PresentationValue.TileGroupsValue)?.groups.orEmpty().filter(List<String>::isNotEmpty)
                 groups.forEachIndexed { groupIndex, group ->
                     group.forEach { asset ->
                         renderTile(asset, tileX, y + layout.tileHeight / 2f, layout.tileWidth, layout.tileHeight, alpha, matrices, consumers)
@@ -302,12 +246,12 @@ class WinSettlementPresentationEntityRenderer(
                     if (groupIndex != groups.lastIndex) tileX += layout.groupSpacing - layout.tileSpacing
                 }
             }
-            is PresentationLayout.RepeatEntries -> (resolve(layout, snapshot) as? PresentationValue.EntryListValue)?.entries.orEmpty().forEachIndexed { index, entry ->
+            is PresentationLayout.RepeatEntries -> (layoutSolver.resolve(layout, snapshot) as? PresentationValue.EntryListValue)?.entries.orEmpty().forEachIndexed { index, entry ->
                 val reveal = ((local - snapshot.initialFadeTicks - index * snapshot.entryStaggerTicks) / 6.0).coerceIn(0.0, 1.0).toFloat()
                 if (reveal <= MIN_VISIBLE_ALPHA) return@forEachIndexed
                 val entryScale = 0.85f
                 val emphasisScale = if (entry.trailingTranslationKey == null) 1f else lerp(1.08f, 1f, reveal)
-                val count = (resolve(layout, snapshot) as? PresentationValue.EntryListValue)?.entries?.size ?: 0
+                val count = (layoutSolver.resolve(layout, snapshot) as? PresentationValue.EntryListValue)?.entries?.size ?: 0
                 val columns = ((count + layout.entriesPerColumn - 1) / layout.entriesPerColumn).coerceAtLeast(1)
                 val columnWidth = layout.width / columns
                 val column = index / layout.entriesPerColumn
@@ -332,10 +276,10 @@ class WinSettlementPresentationEntityRenderer(
             is PresentationLayout.Row -> {
                 renderContainer(layout.style, x, y, size, alpha, matrices, consumers)
                 val contentWidth = size.width - layout.style.padding * 2f
-                val slots = allocateMainAxis(layout.children, contentWidth, layout.spacing, snapshot)
+                val slots = layoutSolver.allocateMainAxis(layout.children, contentWidth, layout.spacing, snapshot)
                 val positions = arrange(slots.map { it.second }, contentWidth, layout.spacing, layout.arrangement)
                 layout.children.forEachIndexed { index, child ->
-                    val childHeight = measure(child.unweighted(), snapshot).height
+                    val childHeight = layoutSolver.measure(child.unweighted(), snapshot).height
                     val childY = y + layout.style.padding + crossAxisOffset(size.height - layout.style.padding * 2f, childHeight, layout.alignment)
                     renderLayout(child.unweighted(), snapshot, x + layout.style.padding + positions[index], childY, local, alpha, matrices, consumers, slots[index].second)
                 }
@@ -343,11 +287,11 @@ class WinSettlementPresentationEntityRenderer(
             is PresentationLayout.Column -> {
                 renderContainer(layout.style, x, y, size, alpha, matrices, consumers)
                 val contentHeight = size.height - layout.style.padding * 2f
-                val heights = allocateVerticalMainAxis(layout.children, contentHeight, layout.spacing, snapshot)
+                val heights = layoutSolver.allocateVerticalMainAxis(layout.children, contentHeight, layout.spacing, snapshot)
                 val positions = arrange(heights, contentHeight, layout.spacing, layout.arrangement)
                 layout.children.forEachIndexed { index, child ->
                     val childLayout = child.unweighted()
-                    val childWidth = measure(childLayout, snapshot).width
+                    val childWidth = layoutSolver.measure(childLayout, snapshot).width
                     val childX = x + layout.style.padding + crossAxisOffset(size.width - layout.style.padding * 2f, childWidth, layout.alignment)
                     renderLayout(childLayout, snapshot, childX, y + layout.style.padding + positions[index], local, alpha, matrices, consumers)
                 }
@@ -355,9 +299,9 @@ class WinSettlementPresentationEntityRenderer(
             is PresentationLayout.Weighted -> renderLayout(layout.child, snapshot, x, y, local, alpha, matrices, consumers)
             is PresentationLayout.Grid -> {
                 renderContainer(layout.style, x, y, size, alpha, matrices, consumers)
-                val childSizes = layout.children.map { measure(it, snapshot) }
-                val cellWidth = childSizes.maxOfOrNull(NodeSize::width) ?: 0f
-                val cellHeight = childSizes.maxOfOrNull(NodeSize::height) ?: 0f
+                val childSizes = layout.children.map { layoutSolver.measure(it, snapshot) }
+                val cellWidth = childSizes.maxOfOrNull(PresentationNodeSize::width) ?: 0f
+                val cellHeight = childSizes.maxOfOrNull(PresentationNodeSize::height) ?: 0f
                 layout.children.forEachIndexed { index, child ->
                     renderLayout(child, snapshot, x + layout.style.padding + (index % layout.columns) * (cellWidth + layout.horizontalSpacing), y + layout.style.padding + (index / layout.columns) * (cellHeight + layout.verticalSpacing), local, alpha, matrices, consumers)
                 }
@@ -367,7 +311,7 @@ class WinSettlementPresentationEntityRenderer(
             is PresentationLayout.Box -> {
                 renderContainer(layout.style, x, y, size, alpha, matrices, consumers)
                 layout.children.forEach { positioned ->
-                    val childSize = measure(positioned.child, snapshot)
+                    val childSize = layoutSolver.measure(positioned.child, snapshot)
                     val childX = x + layout.style.padding + positioned.x - anchorOffset(childSize.width, positioned.horizontalAnchor)
                     val childY = y + layout.style.padding + positioned.y - anchorOffset(childSize.height, positioned.verticalAnchor)
                     renderLayout(positioned.child, snapshot, childX, childY, local, alpha, matrices, consumers)
@@ -395,7 +339,7 @@ class WinSettlementPresentationEntityRenderer(
         val start = animationAnchorTick(layout.timeline.anchor, snapshot) + layout.timeline.offsetTicks
         val progress = ((local - start) / layout.timeline.durationTicks).coerceIn(0.0, 1.0).toFloat()
         if (local < start) return
-        val size = measure(layout.child, snapshot).let { if (allocatedWidth == null) it else NodeSize(allocatedWidth, it.height) }
+        val size = layoutSolver.measure(layout.child, snapshot).let { if (allocatedWidth == null) it else PresentationNodeSize(allocatedWidth, it.height) }
         var animatedAlpha = alpha
         var translateX = 0f
         var translateY = 0f
@@ -454,7 +398,7 @@ class WinSettlementPresentationEntityRenderer(
         return lerp(left.scale, right.scale, local)
     }
 
-    private fun renderAnimatedOverlay(argb: Int, x: Float, y: Float, size: NodeSize, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
+    private fun renderAnimatedOverlay(argb: Int, x: Float, y: Float, size: PresentationNodeSize, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         renderContainer(PresentationContainerStyle(backgroundArgb = argb), x, y, size, alpha, matrices, consumers)
     }
 
@@ -462,96 +406,19 @@ class WinSettlementPresentationEntityRenderer(
         effect: PresentationAnimationEffect.HighlightSweep,
         x: Float,
         y: Float,
-        size: NodeSize,
+        size: PresentationNodeSize,
         progress: Float,
         alpha: Float,
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
     ) {
         val left = x - effect.width + (size.width + effect.width * 2f) * progress
-        renderAnimatedOverlay(effect.argb, left, y, NodeSize(effect.width, size.height), alpha * pulse(progress), matrices, consumers)
+        renderAnimatedOverlay(effect.argb, left, y, PresentationNodeSize(effect.width, size.height), alpha * pulse(progress), matrices, consumers)
     }
 
     private fun pulse(progress: Float): Float = 1f - kotlin.math.abs(progress * 2f - 1f)
 
     private fun lerp(from: Float, to: Float, progress: Float): Float = from + (to - from) * progress
-
-    private fun styledSize(width: Float, height: Float, style: PresentationContainerStyle) = NodeSize(width + style.padding * 2f, height + style.padding * 2f)
-
-    private fun tileSequenceWidth(count: Int, tileWidth: Float, gap: Float): Float = count * tileWidth + (count - 1).coerceAtLeast(0) * gap
-
-    private fun anchorOffset(size: Float, alignment: PresentationAlignment): Float = when (alignment) {
-        PresentationAlignment.START -> 0f
-        PresentationAlignment.CENTER -> size / 2f
-        PresentationAlignment.END -> size
-    }
-
-    private fun crossAxisOffset(available: Float, childSize: Float, alignment: PresentationAlignment): Float = when (alignment) {
-        PresentationAlignment.START -> 0f
-        PresentationAlignment.CENTER -> (available - childSize).coerceAtLeast(0f) / 2f
-        PresentationAlignment.END -> (available - childSize).coerceAtLeast(0f)
-    }
-
-    private fun PresentationLayout.unweighted(): PresentationLayout = (this as? PresentationLayout.Weighted)?.child ?: this
-
-    private fun allocateMainAxis(
-        children: List<PresentationLayout>,
-        available: Float,
-        spacing: Float,
-        snapshot: WinSettlementPresentationFieldSnapshot,
-    ): List<Pair<PresentationLayout, Float>> {
-        val spacingWidth = (children.size - 1).coerceAtLeast(0) * spacing
-        val fixed = children.filterNot { it is PresentationLayout.Weighted }.sumOf { measure(it, snapshot).width.toDouble() }.toFloat()
-        val weighted = children.filterIsInstance<PresentationLayout.Weighted>()
-        val remaining = (available - fixed - spacingWidth).coerceAtLeast(0f)
-        val totalWeight = weighted.sumOf { it.weight.toDouble() }.toFloat().coerceAtLeast(1f)
-        return children.map { child ->
-            val width = if (child is PresentationLayout.Weighted) {
-                val allocated = remaining * child.weight / totalWeight
-                if (child.fill) allocated else minOf(allocated, measure(child.child, snapshot).width)
-            } else {
-                measure(child, snapshot).width
-            }
-            child to width
-        }
-    }
-
-    private fun arrange(widths: List<Float>, available: Float, spacing: Float, arrangement: PresentationArrangement): List<Float> {
-        if (widths.isEmpty()) return emptyList()
-        val content = widths.sum() + spacing * (widths.size - 1).coerceAtLeast(0)
-        val free = (available - content).coerceAtLeast(0f)
-        val (start, extraGap) = when (arrangement) {
-            PresentationArrangement.START -> 0f to 0f
-            PresentationArrangement.CENTER -> free / 2f to 0f
-            PresentationArrangement.END -> free to 0f
-            PresentationArrangement.SPACE_BETWEEN -> 0f to if (widths.size > 1) free / (widths.size - 1) else 0f
-            PresentationArrangement.SPACE_AROUND -> free / widths.size / 2f to free / widths.size
-            PresentationArrangement.SPACE_EVENLY -> free / (widths.size + 1) to free / (widths.size + 1)
-        }
-        var cursor = start
-        return widths.map { width -> cursor.also { cursor += width + spacing + extraGap } }
-    }
-
-    private fun allocateVerticalMainAxis(
-        children: List<PresentationLayout>,
-        available: Float,
-        spacing: Float,
-        snapshot: WinSettlementPresentationFieldSnapshot,
-    ): List<Float> {
-        val spacingHeight = (children.size - 1).coerceAtLeast(0) * spacing
-        val fixed = children.filterNot { it is PresentationLayout.Weighted }.sumOf { measure(it, snapshot).height.toDouble() }.toFloat()
-        val weighted = children.filterIsInstance<PresentationLayout.Weighted>()
-        val remaining = (available - fixed - spacingHeight).coerceAtLeast(0f)
-        val totalWeight = weighted.sumOf { it.weight.toDouble() }.toFloat().coerceAtLeast(1f)
-        return children.map { child ->
-            if (child is PresentationLayout.Weighted) {
-                val allocated = remaining * child.weight / totalWeight
-                if (child.fill) allocated else minOf(allocated, measure(child.child, snapshot).height)
-            } else {
-                measure(child, snapshot).height
-            }
-        }
-    }
 
     private fun renderWinnerSummary(
         entity: WinSettlementPresentationEntity,
@@ -563,17 +430,17 @@ class WinSettlementPresentationEntityRenderer(
         consumers: VertexConsumerProvider,
     ) {
         val winnerName = Text.literal(playerName(winner.playerId))
-        val winnerWidth = FACE_SIZE + FACE_GAP + textRenderer.getWidth(winnerName)
+        val winnerWidth = PresentationLayoutSolver.FACE_SIZE + FACE_GAP + textRenderer.getWidth(winnerName)
         val responsibleId = winner.responsiblePlayerId.takeUnless { singlePlayer }
         val responsibleName = responsibleId?.let { Text.literal(playerName(it)) }
         val arrow = Text.literal("←")
         val relationshipWidth = responsibleName?.let {
             SUMMARY_RELATION_GAP + textRenderer.getWidth(arrow) + SUMMARY_RELATION_GAP +
-                FACE_SIZE + FACE_GAP + textRenderer.getWidth(it)
+                PresentationLayoutSolver.FACE_SIZE + FACE_GAP + textRenderer.getWidth(it)
         } ?: 0f
         var left = -(winnerWidth + relationshipWidth) / 2f
         renderPlayerFace(winner.playerId, winner.isAi, left, y - 1f, alpha, matrices, consumers)
-        left += FACE_SIZE + FACE_GAP
+        left += PresentationLayoutSolver.FACE_SIZE + FACE_GAP
         draw(winnerName, left, y, Align.LEFT, color(0xFFFFFF, alpha), 1f, matrices, consumers)
         left += textRenderer.getWidth(winnerName)
         if (responsibleId != null && responsibleName != null) {
@@ -582,7 +449,7 @@ class WinSettlementPresentationEntityRenderer(
             left += textRenderer.getWidth(arrow) + SUMMARY_RELATION_GAP
             val responsibleIsAi = entity.rankings.firstOrNull { it.playerId == responsibleId }?.isAi ?: false
             renderPlayerFace(responsibleId, responsibleIsAi, left, y - 1f, alpha, matrices, consumers)
-            left += FACE_SIZE + FACE_GAP
+            left += PresentationLayoutSolver.FACE_SIZE + FACE_GAP
             draw(responsibleName, left, y, Align.LEFT, color(0xFFFFFF, alpha), 1f, matrices, consumers)
         }
     }
@@ -597,10 +464,10 @@ class WinSettlementPresentationEntityRenderer(
         val titleWidth = textRenderer.getWidth(Text.translatable(titleKey)) * 1.35f
         val winnerNameWidth = textRenderer.getWidth(playerName(winner.playerId))
         val summaryWidth = if (entity.isTsumo || nagashi || winner.responsiblePlayerId == null) {
-            FACE_SIZE + FACE_GAP + winnerNameWidth
+            PresentationLayoutSolver.FACE_SIZE + FACE_GAP + winnerNameWidth
         } else {
-            FACE_SIZE + FACE_GAP + winnerNameWidth + SUMMARY_RELATION_GAP * 2f + textRenderer.getWidth("←") +
-                FACE_SIZE + FACE_GAP + textRenderer.getWidth(playerName(winner.responsiblePlayerId))
+            PresentationLayoutSolver.FACE_SIZE + FACE_GAP + winnerNameWidth + SUMMARY_RELATION_GAP * 2f + textRenderer.getWidth("←") +
+                PresentationLayoutSolver.FACE_SIZE + FACE_GAP + textRenderer.getWidth(playerName(winner.responsiblePlayerId))
         }
         val indicatorWidth = if (nagashi) {
             0f
@@ -632,7 +499,7 @@ class WinSettlementPresentationEntityRenderer(
         alpha: Float,
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
-        size: Float = FACE_SIZE,
+        size: Float = PresentationLayoutSolver.FACE_SIZE,
     ) = portraitRenderer.render(
         playerId = Uuid.parse(playerId),
         isAi = isAi,
@@ -645,7 +512,7 @@ class WinSettlementPresentationEntityRenderer(
         consumers = consumers,
     )
 
-    private fun renderContainer(style: PresentationContainerStyle, x: Float, y: Float, size: NodeSize, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
+    private fun renderContainer(style: PresentationContainerStyle, x: Float, y: Float, size: PresentationNodeSize, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         if ((style.backgroundArgb ushr 24) == 0 && style.borderWidth <= 0f) return
         val matrix = matrices.peek().positionMatrix
         val buffer = consumers.getBuffer(ExhaustiveDrawSettlementPanelRenderLayer.layer)
@@ -853,13 +720,13 @@ class WinSettlementPresentationEntityRenderer(
             players.maxOfOrNull { textRenderer.getWidth(formatDelta(it.currentScore - it.previousScore)) }
                 ?.plus(NUMERIC_COLUMN_PADDING * 2) ?: 0,
         ).toFloat()
-        val totalWidth = PANEL_PADDING * 2 + RANK_COLUMN_WIDTH + COLUMN_GAP + FACE_SIZE + COLUMN_GAP +
+        val totalWidth = PANEL_PADDING * 2 + RANK_COLUMN_WIDTH + COLUMN_GAP + PresentationLayoutSolver.FACE_SIZE + COLUMN_GAP +
             NAME_MAX_WIDTH + SECTION_GAP + scoreWidth + SECTION_GAP + deltaWidth
         var cursor = -totalWidth / 2f + PANEL_PADDING
         val rankRightX = cursor + RANK_COLUMN_WIDTH
         cursor = rankRightX + COLUMN_GAP
         val faceLeftX = cursor
-        cursor += FACE_SIZE + COLUMN_GAP
+        cursor += PresentationLayoutSolver.FACE_SIZE + COLUMN_GAP
         val nameLeftX = cursor
         cursor += NAME_MAX_WIDTH + SECTION_GAP
         val scoreRightX = cursor + scoreWidth
@@ -930,12 +797,6 @@ class WinSettlementPresentationEntityRenderer(
     override fun getTexture(entity: WinSettlementPresentationEntity): Identifier? = null
 
     private enum class Align { LEFT, CENTER, RIGHT }
-    private data class NodeSize(val width: Float, val height: Float) {
-        companion object {
-            val ZERO = NodeSize(0f, 0f)
-        }
-    }
-
     private data class TileRenderSnapshot(val assetKey: String, val faceDown: Boolean)
 
     private data class RankingLayout(
@@ -959,14 +820,11 @@ class WinSettlementPresentationEntityRenderer(
         const val DECLARATIVE_TILE_WIDTH = 11f
         const val DECLARATIVE_TILE_HEIGHT = 15f
         const val DECLARATIVE_GROUP_GAP = 5f
-        const val DECLARATIVE_MAX_WIDTH = 320f
-        const val DECLARATIVE_MAX_HEIGHT = 156f
         const val ENTRY_COLUMN_WIDTH = 118f
         const val ENTRY_ROW_HEIGHT = 11f
         const val ENTRY_AREA_WIDTH = 232f
         const val ENTRY_COLUMN_PADDING = 6f
         const val ENTRY_TEXT_GAP = 5f
-        const val FACE_SIZE = 10f
         const val FACE_GAP = 5f
         const val INDICATOR_SLOT_COUNT = 5
         const val INDICATOR_TILE_WIDTH = 8f
