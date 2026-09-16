@@ -9,8 +9,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 /**
  * 包牌（責任払い）觸發判定器。
  *
- * 負責判斷「碰或明槓三元牌／風牌」這個動作，是否讓玩家湊齊大三元（三組三元牌）
- * 或大四喜（四組風牌）所需的最後一組面子，進而觸發包牌責任。
+ * 負責判斷「碰或明槓三元牌／風牌」這個動作，是否正是大三元的第 3 組副露或大四喜的第 4 組副露，進而觸發
+ * 包牌責任。其餘各組必須都已經是副露（碰、明槓、加槓或暗槓）；手中的暗刻不算，即使湊得出役滿也不構成包牌。
  *
  * 此判定必須在該次碰／明槓「實際套用到手牌之前」呼叫，以取得鳴牌當下、
  * 尚未加入新副露的手牌狀態；加槓（[MeldType.ADDED_KAN]）
@@ -42,10 +42,9 @@ object PaoDetector {
     }
 
     /**
-     * 檢查扣除 [calledTile] 後，[group] 中其餘的牌是否都已經湊齊面子
-     * （不論是已經副露的面子，或是手牌中已有 3 張以上、足以形成暗刻的立牌）。
+     * 檢查扣除 [calledTile] 後，[group] 中其餘的牌是否都已經是副露。
      *
-     * 若成立，代表這次鳴牌正是湊齊大三元／大四喜的最後一組，須成立包牌責任。
+     * 若成立，代表這次鳴牌正是大三元／大四喜的最後一組副露，須成立包牌責任。
      */
     private fun checkGroup(
         hand: Hand,
@@ -60,15 +59,6 @@ object PaoDetector {
             .mapNotNull { it.tiles.firstOrNull()?.tile?.riichiCanonical }
             .toSet()
 
-        val standingCounts = hand.standingTiles
-            .map { it.tile.riichiCanonical }
-            .groupingBy { it }
-            .eachCount()
-
-        val othersAlreadyFormed = otherTiles.all { tile ->
-            tile in exposedGroupTiles || (standingCounts[tile] ?: 0) >= 3
-        }
-
-        return if (othersAlreadyFormed) PaoLiability(yaku, sourceDirection) else null
+        return if (otherTiles.all { it in exposedGroupTiles }) PaoLiability(yaku, sourceDirection) else null
     }
 }

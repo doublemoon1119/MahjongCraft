@@ -16,44 +16,13 @@ import kotlin.test.assertNull
 class PaoDetectorTest {
 
     /**
-     * 測試碰第三組三元牌時，另外兩組皆為手牌中的暗刻，應成立大三元包牌。
+     * 測試另外兩組三元牌都已碰出時，碰第三組（第 3 組副露）應成立大三元包牌。
      */
     @Test
-    fun `test daisangen pao when calling third dragon with two concealed triplets`() {
+    fun `test daisangen pao when calling the third dragon meld`() {
         val hand = FakeHandFactory.create(
-            listOf(
-                Tile.Honor.Red,
-                Tile.Honor.Red,
-                Tile.Honor.Red,
-                Tile.Honor.Green,
-                Tile.Honor.Green,
-                Tile.Honor.Green,
-            ),
-        )
-
-        val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Left)
-
-        assertEquals(PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left), result)
-    }
-
-    /**
-     * 測試碰第三組三元牌時，其中一組已經是先前碰過的副露，另一組為暗刻，應成立大三元包牌。
-     */
-    @Test
-    fun `test daisangen pao when calling third dragon with one exposed and one concealed`() {
-        val hand = FakeHandFactory.create(
-            tiles = listOf(Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green),
-            melds = listOf(
-                Meld(
-                    type = MeldType.PON,
-                    tiles = listOf(
-                        FakeIdentifiedTileFactory.create(Tile.Honor.Red),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.Red),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.Red),
-                    ),
-                    sourceDirection = RelativeDirection.Across,
-                ),
-            ),
+            tiles = listOf(Tile.Honor.White, Tile.Honor.White),
+            melds = listOf(meld(MeldType.PON, Tile.Honor.Red), meld(MeldType.PON, Tile.Honor.Green)),
         )
 
         val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Right)
@@ -62,26 +31,13 @@ class PaoDetectorTest {
     }
 
     /**
-     * 測試只有一組三元牌完成時，碰第二組不應成立包牌（尚未湊齊三組）。
+     * 測試另外兩組三元牌都是手中暗刻時，碰第三組只是第 1 組副露，不應成立包牌。
      */
     @Test
-    fun `test no pao when only one other dragon group is complete`() {
-        val hand = FakeHandFactory.create(
-            listOf(Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red),
-        )
-
-        val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Left)
-
-        assertNull(result, "Should not trigger pao when only one other dragon group is complete")
-    }
-
-    /**
-     * 測試另一組三元牌只有 2 張（尚未成刻）時，不應成立包牌。
-     */
-    @Test
-    fun `test no pao when other dragon group has fewer than three tiles`() {
+    fun `test no pao when the other dragon groups are concealed triplets`() {
         val hand = FakeHandFactory.create(
             listOf(
+                Tile.Honor.Red,
                 Tile.Honor.Red,
                 Tile.Honor.Red,
                 Tile.Honor.Green,
@@ -92,36 +48,65 @@ class PaoDetectorTest {
 
         val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Left)
 
-        assertNull(result, "Should not trigger pao when another dragon group only has 2 tiles")
+        assertNull(result, "Concealed triplets should not count toward pao")
     }
 
     /**
-     * 測試碰第四組風牌時，另外三組皆已完成（2 組副露 + 1 組暗刻），應成立大四喜包牌。
+     * 測試另外兩組三元牌一組碰出、一組暗刻時，碰第三組只是第 2 組副露，不應成立包牌。
      */
     @Test
-    fun `test daisuushii pao when calling fourth wind with three other groups complete`() {
+    fun `test no pao when one other dragon group is still concealed`() {
         val hand = FakeHandFactory.create(
-            tiles = listOf(Tile.Honor.West, Tile.Honor.West, Tile.Honor.West),
+            tiles = listOf(Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green),
+            melds = listOf(meld(MeldType.PON, Tile.Honor.Red)),
+        )
+
+        val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Right)
+
+        assertNull(result, "A concealed triplet should not count toward pao")
+    }
+
+    /**
+     * 測試暗槓也算副露：一組碰出、一組暗槓時，碰第三組應成立大三元包牌。
+     */
+    @Test
+    fun `test daisangen pao counts a closed kan as a meld`() {
+        val hand = FakeHandFactory.create(
+            tiles = listOf(Tile.Honor.White, Tile.Honor.White),
+            melds = listOf(meld(MeldType.PON, Tile.Honor.Red), meld(MeldType.CLOSED_KAN, Tile.Honor.Green)),
+        )
+
+        val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Across)
+
+        assertEquals(PaoLiability(PaoYaku.Daisangen, RelativeDirection.Across), result)
+    }
+
+    /**
+     * 測試只有一組三元牌碰出時，碰第二組不應成立包牌。
+     */
+    @Test
+    fun `test no pao when only one other dragon group is exposed`() {
+        val hand = FakeHandFactory.create(
+            tiles = listOf(Tile.Honor.White, Tile.Honor.White),
+            melds = listOf(meld(MeldType.PON, Tile.Honor.Red)),
+        )
+
+        val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Left)
+
+        assertNull(result, "Should not trigger pao when only one other dragon group is exposed")
+    }
+
+    /**
+     * 測試另外三組風牌都已副露（碰、明槓、暗槓）時，碰第四組應成立大四喜包牌。
+     */
+    @Test
+    fun `test daisuushii pao when calling the fourth wind meld`() {
+        val hand = FakeHandFactory.create(
+            tiles = listOf(Tile.Honor.North, Tile.Honor.North),
             melds = listOf(
-                Meld(
-                    type = MeldType.PON,
-                    tiles = listOf(
-                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.East),
-                    ),
-                    sourceDirection = RelativeDirection.Left,
-                ),
-                Meld(
-                    type = MeldType.OPEN_KAN,
-                    tiles = listOf(
-                        FakeIdentifiedTileFactory.create(Tile.Honor.South),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.South),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.South),
-                        FakeIdentifiedTileFactory.create(Tile.Honor.South),
-                    ),
-                    sourceDirection = RelativeDirection.Across,
-                ),
+                meld(MeldType.PON, Tile.Honor.East),
+                meld(MeldType.OPEN_KAN, Tile.Honor.South),
+                meld(MeldType.CLOSED_KAN, Tile.Honor.West),
             ),
         )
 
@@ -131,19 +116,28 @@ class PaoDetectorTest {
     }
 
     /**
+     * 測試另外三組風牌中仍有一組是手中暗刻時，碰第四組不應成立大四喜包牌。
+     */
+    @Test
+    fun `test no pao when one other wind group is still concealed`() {
+        val hand = FakeHandFactory.create(
+            tiles = listOf(Tile.Honor.West, Tile.Honor.West, Tile.Honor.West, Tile.Honor.North, Tile.Honor.North),
+            melds = listOf(meld(MeldType.PON, Tile.Honor.East), meld(MeldType.OPEN_KAN, Tile.Honor.South)),
+        )
+
+        val result = PaoDetector.check(hand, Tile.Honor.North, RelativeDirection.Right)
+
+        assertNull(result, "A concealed wind triplet should not count toward pao")
+    }
+
+    /**
      * 測試呼叫的牌不是三元牌或風牌時，一律不成立包牌。
      */
     @Test
     fun `test no pao when called tile is not dragon or wind`() {
         val hand = FakeHandFactory.create(
-            listOf(
-                Tile.Honor.Red,
-                Tile.Honor.Red,
-                Tile.Honor.Red,
-                Tile.Honor.Green,
-                Tile.Honor.Green,
-                Tile.Honor.Green,
-            ),
+            tiles = listOf(Tile.Numeric(Tile.Suit.Character, 5), Tile.Numeric(Tile.Suit.Character, 5)),
+            melds = listOf(meld(MeldType.PON, Tile.Honor.Red), meld(MeldType.PON, Tile.Honor.Green)),
         )
 
         val result = PaoDetector.check(
@@ -154,4 +148,14 @@ class PaoDetectorTest {
 
         assertNull(result, "Non-honor tiles should never trigger pao")
     }
+
+    /** 建立指定種類、由同一種牌組成的副露；槓為 4 張，其餘為 3 張。 */
+    private fun meld(
+        type: MeldType,
+        tile: Tile,
+    ): Meld = Meld(
+        type = type,
+        tiles = List(if (type == MeldType.OPEN_KAN || type == MeldType.CLOSED_KAN) 4 else 3) { FakeIdentifiedTileFactory.create(tile) },
+        sourceDirection = if (type == MeldType.CLOSED_KAN) RelativeDirection.Self else RelativeDirection.Across,
+    )
 }

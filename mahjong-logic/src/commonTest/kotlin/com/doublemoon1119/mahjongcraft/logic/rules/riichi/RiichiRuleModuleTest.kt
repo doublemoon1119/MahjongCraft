@@ -275,20 +275,11 @@ class RiichiRuleModuleTest {
     }
 
     /**
-     * 驗證碰第三組三元牌、湊齊大三元時，會將包牌責任寫入玩家的規則狀態。
+     * 驗證已碰出兩組三元牌、再碰第三組（第 3 組副露）時，會將包牌責任寫入玩家的規則狀態。
      */
     @Test
     fun `test applyPaoLiabilityIfTriggered writes liability when triggered`() {
-        val hand = FakeHandFactory.create(
-            listOf(
-                Tile.Honor.Red,
-                Tile.Honor.Red,
-                Tile.Honor.Red,
-                Tile.Honor.Green,
-                Tile.Honor.Green,
-                Tile.Honor.Green,
-            ),
-        )
+        val hand = twoDragonMeldsHand(whiteCount = 2)
         val player = FakeMahjongPlayerFactory.create(hand = hand, playerRuleState = RiichiPlayerState())
         val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
 
@@ -297,6 +288,18 @@ class RiichiRuleModuleTest {
         val riichiState = result.playerRuleState as RiichiPlayerState
         assertEquals(PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left), riichiState.paoLiability)
     }
+
+    /** 建立已碰出中、發兩組副露，並持有 [whiteCount] 張白的手牌。 */
+    private fun twoDragonMeldsHand(whiteCount: Int) = FakeHandFactory.create(
+        tiles = List(whiteCount) { Tile.Honor.White },
+        melds = listOf(Tile.Honor.Red, Tile.Honor.Green).map { tile ->
+            Meld(
+                type = MeldType.PON,
+                tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
+                sourceDirection = RelativeDirection.Across,
+            )
+        },
+    )
 
     /**
      * 驗證未觸發包牌責任時，玩家實例不應變動。

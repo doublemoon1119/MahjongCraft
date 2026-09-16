@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.registerRiichiWi
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -673,7 +674,7 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 驗證碰第三組三元牌、湊齊大三元時，會觸發包牌責任並寫入碰牌玩家的規則狀態。
+     * 驗證已碰出兩組三元牌、再碰第三組（第 3 組副露）時，會觸發包牌責任並寫入碰牌玩家的規則狀態。
      */
     @Test
     fun `test pon triggers pao liability`() = runTest {
@@ -684,20 +685,18 @@ class RespondToDiscardUseCaseTest {
             initialSeat = Wind.EAST,
             discardPile = FakeDiscardPile().discardTile(discardedTile),
         )
-        val handTiles = listOf(
-            Tile.Honor.Red,
-            Tile.Honor.Red,
-            Tile.Honor.Red,
-            Tile.Honor.Green,
-            Tile.Honor.Green,
-            Tile.Honor.Green,
-            Tile.Honor.White,
-            Tile.Honor.White,
-        ).map { FakeIdentifiedTileFactory.create(it) }
+        val handTiles = listOf(Tile.Honor.White, Tile.Honor.White).map { FakeIdentifiedTileFactory.create(it) }
+        val dragonMelds = listOf(Tile.Honor.Red, Tile.Honor.Green).map { tile ->
+            Meld(
+                type = MeldType.PON,
+                tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
+                sourceDirection = RelativeDirection.Across,
+            )
+        }
         val responder = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = handTiles),
+            hand = Hand(tiles = handTiles, melds = dragonMelds),
             playerRuleState = RiichiPlayerState(),
         )
         val table = FakeTableStateFactory.create(
@@ -709,7 +708,7 @@ class RespondToDiscardUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id, listOf(handTiles[6].id, handTiles[7].id)))
+        val result = fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id, listOf(handTiles[0].id, handTiles[1].id)))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
