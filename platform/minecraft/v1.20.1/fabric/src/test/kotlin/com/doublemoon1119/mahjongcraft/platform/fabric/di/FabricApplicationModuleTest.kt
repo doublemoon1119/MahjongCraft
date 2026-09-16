@@ -37,6 +37,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animati
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.FabricDebugDecisionCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.FabricDebugPresentationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugProgressionCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugRoundCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
@@ -182,6 +183,7 @@ class FabricApplicationModuleTest {
                 "continuing_win",
                 "win_showcase_override",
                 "preparation",
+                "round",
             ),
             debugNode.children.map { it.name }.toSet(),
             "every family subcommand is mounted under the debug root, and nothing else is",
@@ -189,6 +191,10 @@ class FabricApplicationModuleTest {
         assertEquals(
             setOf("list", "load", "stress"),
             koin.get<FabricDebugScenarioCommand>().build().build().children.map { it.name }.toSet(),
+        )
+        assertEquals(
+            setOf("next"),
+            koin.get<FabricDebugRoundCommand>().buildRoundCommand().build().children.map { it.name }.toSet(),
         )
         val presentationCommand = koin.get<FabricDebugPresentationCommand>()
         assertEquals(

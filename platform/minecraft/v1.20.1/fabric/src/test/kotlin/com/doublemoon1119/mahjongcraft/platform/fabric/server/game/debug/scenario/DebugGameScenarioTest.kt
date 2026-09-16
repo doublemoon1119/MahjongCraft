@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
@@ -368,9 +369,9 @@ class DebugGameScenarioTest {
     }
 
     /** 建立測試所需的正式日麻遊戲、module registry 與 validator。 */
-    private fun createFixture(): Fixture {
+    private fun createFixture(config: RiichiRuleConfig = RiichiRuleConfig()): Fixture {
         val playerIds = List(4) { Uuid.random() }
-        val module = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())
+        val module = RiichiRuleModule("mahjongcraft:riichi", config)
         val initialized = GameInitializer.initialize(Uuid.random(), playerIds, module)
         val game = Game(
             tableState = initialized.tableState,
@@ -403,6 +404,22 @@ class DebugGameScenarioTest {
         /** 權威情境 validator。 */
         val validator: DebugGameScenarioValidator,
     )
+
+    /**
+     * 驗證情境整份沿用目前這一桌的規則設定，不用預設值覆蓋任何一項。
+     *
+     * 情境是要重現這一桌的狀況，不是換一套規則；設定被覆蓋時，對局長度、紅寶牌與供託規則都會跟著變成
+     * 預設值，情境呈現的就不再是這一桌。
+     */
+    @Test
+    fun `scenario keeps the rule config of the current table`() {
+        val config = RiichiRuleConfig(gameLength = RiichiGameLength.TwoWinds)
+        val fixture = createFixture(config)
+
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_ankan_1")!!.build(fixture.context)
+
+        assertEquals(config, result.game.tableState.config)
+    }
 
     private companion object {
         /** 四人日麻完成開局發牌後離開牌牆的牌張數。 */

@@ -82,7 +82,7 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
         val invokingPlayerIndex = currentGame.tableState.players.indexOfFirst { it.id == context.invokingPlayerId }
         require(invokingPlayerIndex >= 0) { "Invoking player does not belong to the game" }
 
-        val config = RiichiRuleConfig()
+        val config = scenarioConfig(currentGame)
         val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
         val opening = DEFAULT_WALL_OPENING
         val inventory = module.createWallFactory().create().getAllTiles().sortedBy { it.tile.stableSortKey() }
@@ -241,7 +241,7 @@ private class RiichiBeforeAnkanScenario(
             "Invoking player does not belong to the game"
         }
 
-        val config = RiichiRuleConfig()
+        val config = scenarioConfig(currentGame)
         val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
         val inventory = module.createWallFactory().create().getAllTiles().sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
@@ -498,6 +498,15 @@ private class RiichiBeforeMinkanScenario(
         return base.copy(game = base.game.copy(tableState = tableState))
     }
 }
+
+/**
+ * 取得情境要沿用的日麻設定，也就是目前這一桌正在用的那一份。
+ *
+ * 情境的用途是重現這一桌的狀況，不是換一套規則，因此**整份設定原封不動沿用**，不用預設值覆蓋——對局
+ * 長度、紅寶牌、供託規則與初始點數都必須維持玩家在房間裡選的那一份。情境需要的張數與節奏本來就全部由
+ * 設定推導（牌張工廠、`deadTileCount`、`dealBatchSizes()`、初始點數），沿用設定不會破壞可重現性。
+ */
+private fun scenarioConfig(currentGame: Game): RiichiRuleConfig = currentGame.tableState.config as RiichiRuleConfig
 
 /** 從牌庫依指定牌種順序各取出一張具有唯一 UUID 的實體牌。 */
 private fun takeTiles(
