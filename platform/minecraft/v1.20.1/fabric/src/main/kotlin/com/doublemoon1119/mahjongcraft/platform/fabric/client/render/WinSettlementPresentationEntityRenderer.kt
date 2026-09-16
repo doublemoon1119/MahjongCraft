@@ -420,68 +420,6 @@ class WinSettlementPresentationEntityRenderer(
 
     private fun lerp(from: Float, to: Float, progress: Float): Float = from + (to - from) * progress
 
-    private fun renderWinnerSummary(
-        entity: WinSettlementPresentationEntity,
-        winner: WinSettlementWinnerSnapshot,
-        singlePlayer: Boolean,
-        y: Float,
-        alpha: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
-    ) {
-        val winnerName = Text.literal(playerName(winner.playerId))
-        val winnerWidth = PresentationLayoutSolver.FACE_SIZE + FACE_GAP + textRenderer.getWidth(winnerName)
-        val responsibleId = winner.responsiblePlayerId.takeUnless { singlePlayer }
-        val responsibleName = responsibleId?.let { Text.literal(playerName(it)) }
-        val arrow = Text.literal("←")
-        val relationshipWidth = responsibleName?.let {
-            SUMMARY_RELATION_GAP + textRenderer.getWidth(arrow) + SUMMARY_RELATION_GAP +
-                PresentationLayoutSolver.FACE_SIZE + FACE_GAP + textRenderer.getWidth(it)
-        } ?: 0f
-        var left = -(winnerWidth + relationshipWidth) / 2f
-        renderPlayerFace(winner.playerId, winner.isAi, left, y - 1f, alpha, matrices, consumers)
-        left += PresentationLayoutSolver.FACE_SIZE + FACE_GAP
-        draw(winnerName, left, y, Align.LEFT, color(0xFFFFFF, alpha), 1f, matrices, consumers)
-        left += textRenderer.getWidth(winnerName)
-        if (responsibleId != null && responsibleName != null) {
-            left += SUMMARY_RELATION_GAP
-            draw(arrow, left, y, Align.LEFT, color(0xE5C16A, alpha), 1f, matrices, consumers)
-            left += textRenderer.getWidth(arrow) + SUMMARY_RELATION_GAP
-            val responsibleIsAi = entity.rankings.firstOrNull { it.playerId == responsibleId }?.isAi ?: false
-            renderPlayerFace(responsibleId, responsibleIsAi, left, y - 1f, alpha, matrices, consumers)
-            left += PresentationLayoutSolver.FACE_SIZE + FACE_GAP
-            draw(responsibleName, left, y, Align.LEFT, color(0xFFFFFF, alpha), 1f, matrices, consumers)
-        }
-    }
-
-    /** 以目前語言的實際字寬決定面板寬度；超長翻譯擴張背景，不讓文字覆蓋牌面。 */
-    private fun measureWinnerPanelHalfWidth(
-        entity: WinSettlementPresentationEntity,
-        winner: WinSettlementWinnerSnapshot,
-        titleKey: String,
-        nagashi: Boolean,
-    ): Float {
-        val titleWidth = textRenderer.getWidth(Text.translatable(titleKey)) * 1.35f
-        val winnerNameWidth = textRenderer.getWidth(playerName(winner.playerId))
-        val summaryWidth = if (entity.isTsumo || nagashi || winner.responsiblePlayerId == null) {
-            PresentationLayoutSolver.FACE_SIZE + FACE_GAP + winnerNameWidth
-        } else {
-            PresentationLayoutSolver.FACE_SIZE + FACE_GAP + winnerNameWidth + SUMMARY_RELATION_GAP * 2f + textRenderer.getWidth("←") +
-                PresentationLayoutSolver.FACE_SIZE + FACE_GAP + textRenderer.getWidth(playerName(winner.responsiblePlayerId))
-        }
-        val indicatorWidth = if (nagashi) {
-            0f
-        } else {
-            val tileSlotsWidth = INDICATOR_SLOT_COUNT * INDICATOR_TILE_WIDTH +
-                (INDICATOR_SLOT_COUNT - 1) * INDICATOR_TILE_GAP
-            val labelWidths = listOf(WinSettlementTranslationKeys.DORA, WinSettlementTranslationKeys.URA_DORA)
-                .sumOf { textRenderer.getWidth(Text.translatable(it)).toDouble() }.toFloat() * 0.82f
-            labelWidths + tileSlotsWidth * 2f + INDICATOR_LABEL_GAP * 2f + INDICATOR_MINIMUM_SPACE * 3f
-        }
-        val contentWidth = maxOf(titleWidth, summaryWidth, indicatorWidth, ENTRY_AREA_WIDTH)
-        return maxOf(PANEL_HALF_WIDTH, contentWidth / 2f + PANEL_PADDING)
-    }
-
     private fun renderRankingPortrait(
         player: WinSettlementRankingSnapshot,
         x: Float,
@@ -533,82 +471,6 @@ class WinSettlementPresentationEntityRenderer(
             quad(x, y + size.height - w, x + size.width, y + size.height, style.borderArgb)
             quad(x, y, x + w, y + size.height, style.borderArgb)
             quad(x + size.width - w, y, x + size.width, y + size.height, style.borderArgb)
-        }
-    }
-
-    private fun renderHand(winner: WinSettlementWinnerSnapshot, y: Float, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
-        val groups = buildList {
-            add(winner.handAssetKeys.map { TileRenderSnapshot(it, false) })
-            addAll(winner.melds.map { meld -> meld.assetKeys.mapIndexed { index, asset -> TileRenderSnapshot(asset, index in meld.faceDownIndices) } })
-            add(listOf(TileRenderSnapshot(winner.winningTileAssetKey, false)))
-        }.filter { it.isNotEmpty() }
-        val tileCount = groups.sumOf(List<TileRenderSnapshot>::size)
-        val gaps = (tileCount - 1).coerceAtLeast(0) * TILE_GAP + (groups.size - 1).coerceAtLeast(0) * GROUP_GAP
-        val total = tileCount * TILE_WIDTH + gaps
-        var x = -total / 2f + TILE_WIDTH / 2f
-        groups.forEachIndexed { groupIndex, group ->
-            group.forEach { tile ->
-                renderTile(if (tile.faceDown) TILE_BACK_ASSET_KEY else tile.assetKey, x, y, TILE_WIDTH, TILE_HEIGHT, alpha, matrices, consumers)
-                x += TILE_WIDTH + TILE_GAP
-            }
-            if (groupIndex != groups.lastIndex) x += GROUP_GAP
-        }
-    }
-
-    private fun renderIndicatorRow(
-        label: Text,
-        detail: WinSettlementDetailSnapshot?,
-        x: Float,
-        y: Float,
-        alpha: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
-    ) {
-        val labelWidth = textRenderer.getWidth(label) * 0.82f
-        draw(label, x, y, Align.LEFT, color(0xE5C16A, alpha), 0.82f, matrices, consumers)
-        var tileX = x + labelWidth + INDICATOR_LABEL_GAP + INDICATOR_TILE_WIDTH / 2f
-        val assets = detail?.values.orEmpty().take(INDICATOR_SLOT_COUNT) + List((INDICATOR_SLOT_COUNT - detail?.values.orEmpty().size).coerceAtLeast(0)) { TILE_BACK_ASSET_KEY }
-        assets.forEach { asset ->
-            renderTile(asset, tileX, y + 2f, INDICATOR_TILE_WIDTH, 11f, alpha, matrices, consumers)
-            tileX += INDICATOR_TILE_WIDTH + INDICATOR_TILE_GAP
-        }
-    }
-
-    private fun indicatorContentWidth(label: Text): Float {
-        val labelWidth = textRenderer.getWidth(label) * 0.82f
-        val tilesWidth = INDICATOR_SLOT_COUNT * INDICATOR_TILE_WIDTH + (INDICATOR_SLOT_COUNT - 1) * INDICATOR_TILE_GAP
-        return labelWidth + INDICATOR_LABEL_GAP + tilesWidth
-    }
-
-    private fun renderEntries(detail: WinSettlementDetailSnapshot?, local: Double, panelAlpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider, startY: Float) {
-        val pairs = detail?.values.orEmpty().chunked(WinSettlementPresentationEntity.ENTRY_VALUE_COUNT)
-            .filter { it.size == WinSettlementPresentationEntity.ENTRY_VALUE_COUNT }
-        val columnCount = ((pairs.size + 3) / 4).coerceAtLeast(1)
-        val columnWidth = ENTRY_AREA_WIDTH / columnCount
-        pairs.forEachIndexed { index, pair ->
-            val reveal = ((local - WinSettlementPresentationEntity.INITIAL_FADE_TICKS - index * WinSettlementPresentationEntity.ENTRY_STAGGER_TICKS) / 6.0).coerceIn(0.0, 1.0).toFloat()
-            if (reveal <= 0f) return@forEachIndexed
-            val column = index / 4
-            val row = index % 4
-            val x = -ENTRY_AREA_WIDTH / 2f + column * columnWidth
-            val y = startY + row * 11f
-            val trailing = pair[2].takeIf(String::isNotBlank)?.let { key ->
-                pair[3].takeIf(String::isNotBlank)?.let { Text.translatable(key, it) } ?: Text.translatable(key)
-            } ?: pair[1].takeIf(String::isNotBlank)?.let { Text.translatable(WinSettlementTranslationKeys.HAN, it) }
-            val trailingWidth = trailing?.let(textRenderer::getWidth)?.times(0.85f) ?: 0f
-            drawFitted(
-                Text.translatable(pair[0]),
-                x,
-                y,
-                columnWidth - trailingWidth - ENTRY_TEXT_GAP - ENTRY_COLUMN_PADDING,
-                color(0xFFFFFF, panelAlpha * reveal),
-                0.85f,
-                matrices,
-                consumers,
-            )
-            if (trailing != null) {
-                draw(requireNotNull(trailing), x + columnWidth - ENTRY_COLUMN_PADDING, y, Align.RIGHT, color(0xFFE08A, panelAlpha * reveal), 0.85f, matrices, consumers)
-            }
         }
     }
 
@@ -768,19 +630,6 @@ class WinSettlementPresentationEntityRenderer(
         matrices.pop()
     }
 
-    private fun drawFitted(
-        text: Text,
-        x: Float,
-        y: Float,
-        maxWidth: Float,
-        color: Int,
-        preferredScale: Float,
-        matrices: MatrixStack,
-        consumers: VertexConsumerProvider,
-    ) {
-        draw(text, x, y, Align.LEFT, color, fittedTextScale(text, maxWidth, preferredScale), matrices, consumers)
-    }
-
     private fun fittedTextScale(text: Text, maxWidth: Float, preferredScale: Float): Float {
         val naturalWidth = textRenderer.getWidth(text).toFloat().coerceAtLeast(1f)
         return minOf(preferredScale, maxWidth.coerceAtLeast(1f) / naturalWidth)
@@ -797,7 +646,6 @@ class WinSettlementPresentationEntityRenderer(
     override fun getTexture(entity: WinSettlementPresentationEntity): Identifier? = null
 
     private enum class Align { LEFT, CENTER, RIGHT }
-    private data class TileRenderSnapshot(val assetKey: String, val faceDown: Boolean)
 
     private data class RankingLayout(
         val panelHalfWidth: Float,
@@ -810,28 +658,6 @@ class WinSettlementPresentationEntityRenderer(
 
     private companion object {
         const val SCALE = 0.02f
-        const val PANEL_HALF_WIDTH = 160f
-        const val PANEL_TOP = -78f
-        const val PANEL_BOTTOM = 78f
-        const val TILE_WIDTH = 11f
-        const val TILE_HEIGHT = 15f
-        const val TILE_GAP = 1.2f
-        const val GROUP_GAP = 5f
-        const val DECLARATIVE_TILE_WIDTH = 11f
-        const val DECLARATIVE_TILE_HEIGHT = 15f
-        const val DECLARATIVE_GROUP_GAP = 5f
-        const val ENTRY_COLUMN_WIDTH = 118f
-        const val ENTRY_ROW_HEIGHT = 11f
-        const val ENTRY_AREA_WIDTH = 232f
-        const val ENTRY_COLUMN_PADDING = 6f
-        const val ENTRY_TEXT_GAP = 5f
-        const val FACE_GAP = 5f
-        const val INDICATOR_SLOT_COUNT = 5
-        const val INDICATOR_TILE_WIDTH = 8f
-        const val INDICATOR_TILE_GAP = 2f
-        const val INDICATOR_LABEL_GAP = 7f
-        const val INDICATOR_MINIMUM_SPACE = 8f
-        const val SUMMARY_RELATION_GAP = 8f
         const val PANEL_PADDING = 12f
         const val RANK_COLUMN_WIDTH = 12f
         const val COLUMN_GAP = 7f
