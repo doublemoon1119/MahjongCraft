@@ -14,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -65,6 +64,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.exhaustiveDrawSettlementStageInputs
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.findTile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.tileAssetKeysById
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
@@ -213,30 +215,11 @@ class FabricGamePresentationPublisher(
         )
         launchPendingPresentation(gameId, "publishExhaustiveDrawSettlement") {
             val resolved = resolveTableContext(gameId, "publishExhaustiveDrawSettlement") ?: return@launchPendingPresentation
-            val waitingAssets = request.players.associate { player ->
-                player.ranking.seatIndex to player.waitingTiles.map { it.toAssetKey(tileAssetRegistry) }
-            }
-            val tableState = gameRepository.getTableState(gameId)
-            val revealedAssets = request.players.flatMap { it.revealedHandTileIds }.distinct().mapNotNull { tileId ->
-                tableState?.findTile(tileId)?.let { tileId to it.tile.toAssetKey(tileAssetRegistry) }
-            }.toMap()
-            val reservedCornerWidths = tableState?.players?.mapIndexed { seatIndex, player ->
-                val melds = player.hand.melds.map { meld -> meld.toPresentation(tableState.config.revealsClosedKanTiles) }
-                    .map { presentation ->
-                        MahjongMeldTileGroup(
-                            presentation.type,
-                            presentation.tileIds,
-                            presentation.calledTileId,
-                            presentation.sourceDirection,
-                            presentation.allTilesFaceDown,
-                        )
-                    }
-                val comboStickCount = if (seatIndex == tableState.dealerIndex) tableState.comboCount else 0
-                seatIndex to (
-                    MahjongTileTableLayout.stickAreaWidth(comboStickCount) +
-                        MahjongTileTableLayout.meldAreaWidth(melds)
-                    )
-            }?.toMap().orEmpty()
+            val stageInputs = exhaustiveDrawSettlementStageInputs(
+                request,
+                gameRepository.getTableState(gameId),
+                tileAssetRegistry,
+            )
             val endGameTime = exhaustiveDrawSettlementScheduler.schedule(
                 world = resolved.world,
                 tableId = gameId,
@@ -248,9 +231,9 @@ class FabricGamePresentationPublisher(
                     resolved.location.z,
                 ),
                 request = request,
-                waitingTileAssetsBySeat = waitingAssets,
-                revealedTileAssetsById = revealedAssets,
-                reservedCornerWidthsBySeat = reservedCornerWidths,
+                waitingTileAssetsBySeat = stageInputs.waitingTileAssetsBySeat,
+                revealedTileAssetsById = stageInputs.revealedTileAssetsById,
+                reservedCornerWidthsBySeat = stageInputs.reservedCornerWidthsBySeat,
             )
             if (endGameTime == null) {
                 logger.warn("publishExhaustiveDrawSettlement gameId={} skipped: stage spawn failed", gameId)
@@ -1110,7 +1093,7 @@ class FabricGamePresentationPublisher(
                 }
             }
         }
-        val assets = tileIds.mapNotNull { id -> state.findTile(id)?.let { id to it.tile.toAssetKey(tileAssetRegistry) } }.toMap()
+        val assets = state.tileAssetKeysById(tileIds, tileAssetRegistry)
         val end = winSettlementScheduler.schedule(
             world = resolved.world,
             tableId = gameId,
@@ -1176,11 +1159,6 @@ class FabricGamePresentationPublisher(
 
     /** 依 UUID 取得這桌世界裡的牌實體。 */
     private fun ResolvedTableContext.findTile(tileId: Uuid): MahjongTileEntity? = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity
-
-    /** 依 UUID 從所有權威牌區尋找牌面。 */
-    private fun TableState.findTile(tileId: Uuid): IdentifiedTile? = players.asSequence().flatMap { player ->
-        (player.hand.allTiles + player.discardPile.entries.map { it.tile }).asSequence()
-    }.plus(tileWall.getAllTiles().asSequence()).plus(reservedWallTiles.asSequence()).firstOrNull { it.id == tileId }
 
     /** 由版本無關 dimension ID 取得目前 server session 的世界。 */
     private fun resolveWorld(location: TableLocation): ServerWorld? {
