@@ -48,7 +48,7 @@ import kotlin.math.abs
  * @property useLocalYaku 是否啟用古役（Local Yaku）。TODO: 回頭實作古役邏輯。
  */
 // 古役尚未實作，useLocalYaku 先保留在建構子上維持 RiichiRuleModule 的注入形狀，實作後才會有使用點。
-@Suppress("ktlint:mahjongcraft:no-unused-constructor-property", "UnusedPrivateProperty")
+@Suppress("UnusedPrivateProperty")
 class RiichiHandValueCalculator(
     private val useLocalYaku: Boolean = false,
 ) : HandValueCalculator<RiichiHandValueContext, RiichiHandValueResult> {

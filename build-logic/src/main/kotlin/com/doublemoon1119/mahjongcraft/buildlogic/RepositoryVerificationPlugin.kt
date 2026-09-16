@@ -116,7 +116,6 @@ abstract class VerifyProjectVersionPolicyTask : DefaultTask() {
                 candidate.path == ":mahjong-extension-api" -> extensionApiVersion
                 candidate.path == ":mahjong-flow" || candidate.path.startsWith(":mahjong-flow:") -> flowVersion
                 candidate.path == ":testing" || candidate.path.startsWith(":testing:") -> "0.0.0-dev"
-                candidate.path == ":ktlint-rules" -> "0.0.0-dev"
                 candidate.projectDir.toPath().startsWith(project.rootDir.resolve("platform/minecraft").toPath()) -> minecraftVersion
                 else -> return@mapNotNull "${candidate.path} has no version policy"
             }

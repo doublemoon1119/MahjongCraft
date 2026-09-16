@@ -82,8 +82,8 @@
   Minecraft version-common and loader modules use the Java policy declared by their selected
   platform target.
 - MahjongCraft release trains are independent: Minecraft modules, logic, flow, AI, and extension
-  API each read their own version from `gradle/libs.versions.toml`. The root, testing, and
-  `ktlint-rules` projects remain `0.0.0-dev` because they are not published.
+  API each read their own version from `gradle/libs.versions.toml`. The root and testing projects remain
+  `0.0.0-dev` because they are not published.
 
 ## Git Commit Conventions
 

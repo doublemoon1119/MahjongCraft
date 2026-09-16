@@ -44,17 +44,10 @@ class MahjongCraftKotlinJvmPlugin : Plugin<Project> {
     }
 }
 
-/**
- * 排除所有 convention 共用的 generated source，並掛上專案自訂 rule set。
- *
- * `:ktlint-rules` 自己不掛——它就是規則的來源，掛上去會讓它的 ktlint 任務依賴自身產物。
- */
+/** 排除所有 convention 共用的 generated source。 */
 private fun Project.configureKtlint() {
     extensions.configure<KtlintExtension> {
         filter { exclude("**/generated/**") }
-    }
-    if (path != CUSTOM_RULE_SET_PROJECT_PATH) {
-        dependencies.add("ktlintRuleset", dependencies.project(mapOf("path" to CUSTOM_RULE_SET_PROJECT_PATH)))
     }
 }
 
@@ -96,6 +89,3 @@ private const val PLAIN_DETEKT_TASK_NAME: String = "detekt"
 
 /** detekt 外掛為各 source set 建立、不做型別解析的任務名稱後綴。 */
 private const val SOURCE_SET_DETEKT_TASK_SUFFIX: String = "SourceSet"
-
-/** 提供專案自訂 ktlint rule set 的模組路徑。 */
-private const val CUSTOM_RULE_SET_PROJECT_PATH: String = ":ktlint-rules"

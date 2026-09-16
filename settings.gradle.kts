@@ -33,7 +33,6 @@ dependencyResolutionManagement {
 }
 
 // 預設始終加載的核心模組
-include(":ktlint-rules")
 include(":mahjong-logic")
 include(":mahjong-ai")
 
