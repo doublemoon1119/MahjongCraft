@@ -170,12 +170,16 @@ class RiichiRuleModule(
 
     /**
      * 檢查本次碰／明槓是否觸發大三元／大四喜的包牌責任，若觸發則寫入 [claimingPlayer] 的 [RiichiPlayerState]。
+     *
+     * 吃不構成包牌，直接回傳 [claimingPlayer]。
      */
-    override fun applyPaoLiabilityIfTriggered(
+    override fun beforeDiscardClaimed(
         claimingPlayer: MahjongPlayer,
+        meldType: MeldType,
         calledTile: IdentifiedTile,
         sourceDirection: RelativeDirection,
     ): MahjongPlayer {
+        if (meldType != MeldType.PON && meldType != MeldType.OPEN_KAN) return claimingPlayer
         val riichiState = claimingPlayer.playerRuleState as? RiichiPlayerState ?: return claimingPlayer
         val liability = PaoDetector.check(claimingPlayer.hand, calledTile.tile, sourceDirection) ?: return claimingPlayer
         return claimingPlayer.copy(playerRuleState = riichiState.copy(paoLiability = liability))

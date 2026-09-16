@@ -50,6 +50,7 @@ object RiichiDebugGameScenarios {
         RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_at_break_4", 3, AT_BREAK_WALL_OPENING),
         RiichiBeforeMinkanScenario("mahjongcraft:riichi_before_minkan_1"),
         RiichiBeforeMinkanScenario("mahjongcraft:riichi_before_minkan_at_break_1", AT_BREAK_WALL_OPENING),
+        RiichiBeforePaoPonScenario,
         RiichiBeforeSuuchaRiichiScenario,
         RiichiWallOpeningScenario,
     )
@@ -152,6 +153,126 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
             roundPosition = MatchRoundPosition(sequenceIndex = 0, prevalentWind = Wind.EAST, localRoundNumber = 1),
             currentPlayerIndex = invokingPlayerIndex,
             dynamicRuleState = RiichiDynamicState(riichiStickCount = PLAYER_COUNT - 1),
+            wallOpening = opening,
+            initialDeadWall = initialReservedTiles,
+            physicalWallLayout = physicalLayout,
+        )
+        return DebugGameScenarioResult(
+            game = Game(
+                tableState = state,
+                flowConfig = currentGame.flowConfig,
+                hostId = currentGame.hostId,
+                roomPlayerIds = currentGame.roomPlayerIds,
+            ),
+            wallStructure = structure,
+            wallLayout = initialPhysicalLayout,
+        )
+    }
+}
+
+/**
+ * 建立呼叫者可碰上家剛打出的白、以第 3 組三元牌副露湊齊大三元並讓上家成為包牌責任者的四人日麻情境。
+ *
+ * 呼叫者為莊家，已碰出發、中兩組，立牌為白白、二三萬、五五筒與一張北；碰白後打出北即聽一、四萬。活牌最前端
+ * 交錯排著四萬與一萬：其他三家摸到後打出即可榮和（包牌榮和），輪到呼叫者時第一張即可自摸（包牌自摸）。
+ *
+ * 其他三家的立牌固定為 [PAO_OPPONENT_TILES]：不含一、四萬與三元牌，無法聽牌，也無法吃碰呼叫者的北與和牌張。
+ */
+private object RiichiBeforePaoPonScenario : DebugGameScenario {
+    override val id: String = "mahjongcraft:riichi_before_pao_pon"
+
+    override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
+        val currentGame = context.currentGame
+        require(currentGame.tableState.players.size == PLAYER_COUNT) { "Riichi debug scenarios require four players" }
+        require(currentGame.tableState.config is RiichiRuleConfig) { "Riichi debug scenarios require a Riichi game" }
+        val invokingPlayerIndex = currentGame.tableState.players.indexOfFirst { it.id == context.invokingPlayerId }
+        require(invokingPlayerIndex >= 0) { "Invoking player does not belong to the game" }
+        val discarderIndex = (invokingPlayerIndex + PLAYER_COUNT - 1) % PLAYER_COUNT
+
+        val config = scenarioConfig(currentGame)
+        val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
+        val opening = DEFAULT_WALL_OPENING
+        val inventory = module.createWallFactory().create().getAllTiles().sortedBy { it.tile.stableSortKey() }
+        val availableTiles = inventory.toMutableList()
+        val invokingMelds = PAO_INVOKING_MELD_TILES.map { tile ->
+            Meld(
+                type = MeldType.PON,
+                tiles = takeTiles(availableTiles, List(3) { tile }),
+                sourceDirection = RelativeDirection.Across,
+            )
+        }
+        val invokingStandingTiles = takeTiles(availableTiles, PAO_INVOKING_TILES)
+        val calledTile = takeTiles(availableTiles, listOf(Tile.Honor.White)).single()
+        val winningDraws = takeTiles(
+            availableTiles,
+            List(PAO_WINNING_DRAW_COUNT) { index ->
+                Tile.Numeric(Tile.Suit.Character, if (index % 2 == 0) 4 else 1)
+            },
+        )
+        val opponentHands = List(PLAYER_COUNT - 1) { takeTiles(availableTiles, PAO_OPPONENT_TILES) }
+        val consumedTiles = invokingMelds.flatMap { it.tiles } + invokingStandingTiles + calledTile + opponentHands.flatten()
+        val initialReservedTiles = takeFirst(availableTiles, config.deadTileCount)
+        val liveTiles = winningDraws + availableTiles
+        val initialLiveTiles = consumedTiles + liveTiles
+        val templateLayout = requireNotNull(module.createWallLayout()).resolve(inventory, opening)
+        val structure = remapStructure(templateLayout, initialLiveTiles, initialReservedTiles)
+        val layoutResult = TileWallLayoutResult(initialLiveTiles, initialReservedTiles, structure)
+        val visibleWallTileIds = (liveTiles + initialReservedTiles).mapTo(mutableSetOf()) { tile -> tile.id }
+        val initialPhysicalLayout = when (
+            val decision = module.createPhysicalWallLayoutPolicy().createInitialLayoutValidated(
+                InitialPhysicalWallLayoutContext(layoutResult, opening, visibleWallTileIds),
+            )
+        ) {
+            is InitialPhysicalWallLayoutDecision.Completed -> decision.layout
+            is InitialPhysicalWallLayoutDecision.Rejected -> error(decision.reasonId)
+        }
+        val physicalLayout = TileWallPhysicalLayout(
+            initialPhysicalLayout.placements.filterKeys { tileId -> tileId in visibleWallTileIds },
+        )
+
+        var opponentIndex = 0
+        val players = currentGame.tableState.players.mapIndexed { index, oldPlayer ->
+            val seatWind = Wind.entries[(index - invokingPlayerIndex + PLAYER_COUNT) % PLAYER_COUNT]
+            if (index == invokingPlayerIndex) {
+                MahjongPlayer(
+                    id = oldPlayer.id,
+                    initialSeatIndex = oldPlayer.initialSeatIndex,
+                    hand = Hand(tiles = invokingStandingTiles, melds = invokingMelds),
+                    discardPile = RiichiDiscardPile(),
+                    playerRuleState = RiichiPlayerState(),
+                    score = config.scoreConfig.initialScore,
+                    aiStrategyKey = oldPlayer.aiStrategyKey,
+                    seatWind = seatWind,
+                )
+            } else {
+                val discards = index == discarderIndex
+                MahjongPlayer(
+                    id = oldPlayer.id,
+                    initialSeatIndex = oldPlayer.initialSeatIndex,
+                    hand = Hand(tiles = opponentHands[opponentIndex]),
+                    discardPile = if (discards) RiichiDiscardPile().discardTile(calledTile) else RiichiDiscardPile(),
+                    playerRuleState = RiichiPlayerState(),
+                    score = config.scoreConfig.initialScore,
+                    aiStrategyKey = oldPlayer.aiStrategyKey,
+                    actionHistory = if (discards) listOf(GameAction.Discard(calledTile.id)) else emptyList(),
+                    seatWind = seatWind,
+                ).also { opponentIndex++ }
+            }
+        }
+        val state = TableState(
+            id = currentGame.id,
+            players = players,
+            config = config,
+            tileWall = TileWall(liveTiles),
+            dealerPlayerId = context.invokingPlayerId,
+            roundPosition = MatchRoundPosition(sequenceIndex = 0, prevalentWind = Wind.EAST, localRoundNumber = 1),
+            currentPlayerIndex = discarderIndex,
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 0),
+            pendingReaction = PendingReaction(
+                discarderId = players[discarderIndex].id,
+                tileId = calledTile.id,
+                eligiblePlayerIds = setOf(context.invokingPlayerId),
+            ),
             wallOpening = opening,
             initialDeadWall = initialReservedTiles,
             physicalWallLayout = physicalLayout,
@@ -561,6 +682,44 @@ private const val INITIAL_HAND_SIZE: Int = 13
 
 /** 宣告立直時支付的點棒分數。 */
 private const val RIICHI_STICK_SCORE: Int = 1000
+
+/** 包牌情境中呼叫者已碰出的兩組三元牌。 */
+private val PAO_INVOKING_MELD_TILES: List<Tile> = listOf(Tile.Honor.Green, Tile.Honor.Red)
+
+/** 包牌情境中呼叫者的立牌：碰白即為第 3 組三元牌副露，打出北後聽一、四萬。 */
+private val PAO_INVOKING_TILES: List<Tile> = listOf(
+    Tile.Honor.White,
+    Tile.Honor.White,
+    Tile.Numeric(Tile.Suit.Character, 2),
+    Tile.Numeric(Tile.Suit.Character, 3),
+    Tile.Numeric(Tile.Suit.Dot, 5),
+    Tile.Numeric(Tile.Suit.Dot, 5),
+    Tile.Honor.North,
+)
+
+/**
+ * 包牌情境中其他三家的立牌：筒 147、索 258、萬 369 與四張風牌。
+ *
+ * 各牌種互相隔開，無法聽牌；不含一、四萬與三元牌，每家的北也只有一張，因此無法吃碰呼叫者打出的北與和牌張。
+ */
+private val PAO_OPPONENT_TILES: List<Tile> = listOf(
+    Tile.Numeric(Tile.Suit.Dot, 1),
+    Tile.Numeric(Tile.Suit.Dot, 4),
+    Tile.Numeric(Tile.Suit.Dot, 7),
+    Tile.Numeric(Tile.Suit.Bamboo, 2),
+    Tile.Numeric(Tile.Suit.Bamboo, 5),
+    Tile.Numeric(Tile.Suit.Bamboo, 8),
+    Tile.Numeric(Tile.Suit.Character, 3),
+    Tile.Numeric(Tile.Suit.Character, 6),
+    Tile.Numeric(Tile.Suit.Character, 9),
+    Tile.Honor.East,
+    Tile.Honor.South,
+    Tile.Honor.West,
+    Tile.Honor.North,
+)
+
+/** 包牌情境活牌最前端交錯排列的和牌張張數：一萬與四萬各三張。 */
+private const val PAO_WINNING_DRAW_COUNT: Int = 6
 
 /** 字牌的穩定排序順序。 */
 private val HONORS: List<Tile.Honor> = listOf(

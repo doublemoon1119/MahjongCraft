@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
@@ -239,22 +240,25 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun onMeldClaimed(players: List<MahjongPlayer>): List<MahjongPlayer>
 
     /**
-     * 檢查本次碰／明槓是否觸發包牌責任，若觸發則寫入 [claimingPlayer] 的規則狀態。
+     * 玩家鳴取他家捨牌（吃／碰／明槓）、副露尚未套用到手牌之前，讓規則依這次鳴牌更新該玩家的規則狀態。
      *
-     * 必須在鳴牌動作實際套用到 [claimingPlayer] 手牌「之前」呼叫，以取得鳴牌當下、
-     * 尚未加入新副露的手牌狀態。不支援包牌概念的規則應直接回傳
-     * [claimingPlayer] 本身，不做任何事。
+     * 每一次鳴取捨牌都會呼叫，不論鳴牌種類；哪些鳴牌與自己的狀態有關由規則自行判斷（例如日麻只在碰／明槓
+     * 湊成大三元、大四喜時記錄包牌責任）。暗槓與加槓不是鳴取他家捨牌，不會呼叫。
      *
-     * @param claimingPlayer 執行碰／明槓的玩家（尚未套用本次鳴牌）。
+     * 呼叫時 [claimingPlayer] 的手牌仍是鳴牌當下、尚未加入新副露的狀態。預設不做任何事。
+     *
+     * @param claimingPlayer 鳴牌的玩家（尚未套用本次鳴牌）。
+     * @param meldType 本次鳴牌的種類。
      * @param calledTile 本次鳴取的他家捨牌。
      * @param sourceDirection 本次鳴取的來源相對方位。
-     * @return 套用包牌責任（若觸發）後的新玩家實例。
+     * @return 更新規則狀態後的玩家實例；沒有變化時回傳 [claimingPlayer] 本身。
      */
-    fun applyPaoLiabilityIfTriggered(
+    fun beforeDiscardClaimed(
         claimingPlayer: MahjongPlayer,
+        meldType: MeldType,
         calledTile: IdentifiedTile,
         sourceDirection: RelativeDirection,
-    ): MahjongPlayer
+    ): MahjongPlayer = claimingPlayer
 
     /**
      * 計算一次自摸胡牌（[GameAction.Tsumo]）的點數結算：贏家實際獲得的點數，以及各應付款玩家

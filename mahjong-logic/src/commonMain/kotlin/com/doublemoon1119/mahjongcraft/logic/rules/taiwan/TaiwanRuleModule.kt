@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
@@ -113,17 +112,6 @@ class TaiwanRuleModule(
      * @return 固定回傳 [players] 本身。
      */
     override fun onMeldClaimed(players: List<MahjongPlayer>): List<MahjongPlayer> = players
-
-    /**
-     * 台灣麻將目前沒有包牌這個機制。
-     *
-     * @return 固定回傳 [claimingPlayer] 本身。
-     */
-    override fun applyPaoLiabilityIfTriggered(
-        claimingPlayer: MahjongPlayer,
-        calledTile: IdentifiedTile,
-        sourceDirection: RelativeDirection,
-    ): MahjongPlayer = claimingPlayer
 
     /**
      * 台灣麻將目前沒有自摸結算的實作。

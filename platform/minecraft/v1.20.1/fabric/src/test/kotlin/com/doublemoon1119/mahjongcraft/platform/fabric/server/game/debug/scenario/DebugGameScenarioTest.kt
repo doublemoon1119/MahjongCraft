@@ -395,6 +395,15 @@ class DebugGameScenarioTest {
             ).mapTo(mutableSetOf()) { it.id }
     }
 
+    /** 包牌碰牌情境的牌張分布、牌牆結構與實體配置應通過權威情境驗證。 */
+    @Test
+    fun `test pao pon scenario passes the authoritative validation`() {
+        val fixture = createFixture()
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_pao_pon")!!.build(fixture.context)
+
+        fixture.validator.validate(fixture.context, result)
+    }
+
     /** 測試共用的遊戲 context 與規則依賴。 */
     private data class Fixture(
         /** 情境建構輸入。 */
@@ -440,6 +449,7 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi_before_ankan_at_break_4",
             "mahjongcraft:riichi_before_minkan_1",
             "mahjongcraft:riichi_before_minkan_at_break_1",
+            "mahjongcraft:riichi_before_pao_pon",
             "mahjongcraft:riichi_before_suucha_riichi",
             "mahjongcraft:riichi_wall_opening",
         )

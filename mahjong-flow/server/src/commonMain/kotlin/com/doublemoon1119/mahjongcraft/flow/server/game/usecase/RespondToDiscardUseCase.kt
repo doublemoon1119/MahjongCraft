@@ -396,13 +396,9 @@ class RespondToDiscardUseCase(
             is GameAction.Pon -> winnerAction.withTiles.mapNotNull { id -> winner.hand.standingTiles.find { it.id == id } }
         }
 
-        val winnerWithPao = if (meldType == MeldType.PON || meldType == MeldType.OPEN_KAN) {
-            module.applyPaoLiabilityIfTriggered(winner, discardedTile, winnerDirection)
-        } else {
-            winner
-        }
+        val claimingWinner = module.beforeDiscardClaimed(winner, meldType, discardedTile, winnerDirection)
         val calledHand =
-            winnerWithPao.hand.call(meldType, handTilesUsed + discardedTile, discardedTile, winnerDirection)
+            claimingWinner.hand.call(meldType, handTilesUsed + discardedTile, discardedTile, winnerDirection)
         // 明槓得標後緊接著補摸嶺上牌（見下方 lastDrawn 賦值），這裡先不整理——理由同 DeclareKanUseCase
         // 沒有整理手牌時機點的說明：整理只在 lastDrawn == null（沒有還沒決定的摸牌）時才適用。
         val organizedHand = if (meldType != MeldType.OPEN_KAN && handSortPreferenceStore.isEnabled(winnerId)) {
@@ -410,7 +406,7 @@ class RespondToDiscardUseCase(
         } else {
             calledHand
         }
-        val winnerAfterMeld = winnerWithPao.copy(hand = organizedHand).recordAction(winnerAction)
+        val winnerAfterMeld = claimingWinner.copy(hand = organizedHand).recordAction(winnerAction)
 
         val playersAfterMeld = players.map { player ->
             when (player.id) {

@@ -40,9 +40,8 @@ import kotlin.uuid.Uuid
  * Flow 會記錄 [GameAction.Draw]；
  * 規則層可依動作歷史判斷其專屬役種或狀態。
  *
- * 不涉及包牌（Pao）：加槓沿用
- * `Hand.upgradeToAddedKan` 保留的原碰副露來源方位，暗槓沒有鳴牌來源，兩者皆不構成包牌，不呼叫
- * `applyPaoLiabilityIfTriggered`。
+ * 暗槓與加槓都不是鳴取他家捨牌，不呼叫 [MahjongRuleModule.beforeDiscardClaimed]；加槓沿用
+ * `Hand.upgradeToAddedKan` 保留的原碰副露來源方位。
  *
  * 明牌（[GameAction.KanType.OPEN_KAN]，反應別人的捨牌）不在本用例範圍內，走 [RespondToDiscardUseCase]。
  *

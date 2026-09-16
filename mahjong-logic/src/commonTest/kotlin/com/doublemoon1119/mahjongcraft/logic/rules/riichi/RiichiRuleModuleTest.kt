@@ -278,15 +278,43 @@ class RiichiRuleModuleTest {
      * 驗證已碰出兩組三元牌、再碰第三組（第 3 組副露）時，會將包牌責任寫入玩家的規則狀態。
      */
     @Test
-    fun `test applyPaoLiabilityIfTriggered writes liability when triggered`() {
+    fun `test beforeDiscardClaimed writes liability when triggered`() {
         val hand = twoDragonMeldsHand(whiteCount = 2)
         val player = FakeMahjongPlayerFactory.create(hand = hand, playerRuleState = RiichiPlayerState())
         val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
 
-        val result = module.applyPaoLiabilityIfTriggered(player, calledTile, RelativeDirection.Left)
+        val result = module.beforeDiscardClaimed(player, MeldType.PON, calledTile, RelativeDirection.Left)
 
         val riichiState = result.playerRuleState as RiichiPlayerState
         assertEquals(PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left), riichiState.paoLiability)
+    }
+
+    /**
+     * 驗證吃不構成包牌責任，即使手牌已碰出兩組三元牌。
+     */
+    @Test
+    fun `test beforeDiscardClaimed ignores a chi`() {
+        val hand = twoDragonMeldsHand(whiteCount = 2)
+        val player = FakeMahjongPlayerFactory.create(hand = hand, playerRuleState = RiichiPlayerState())
+        val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+        val result = module.beforeDiscardClaimed(player, MeldType.CHI, calledTile, RelativeDirection.Left)
+
+        assertSame(player, result)
+    }
+
+    /**
+     * 驗證已碰出兩組三元牌、再明槓第三組時同樣寫入包牌責任。
+     */
+    @Test
+    fun `test beforeDiscardClaimed writes liability for an open kan`() {
+        val hand = twoDragonMeldsHand(whiteCount = 3)
+        val player = FakeMahjongPlayerFactory.create(hand = hand, playerRuleState = RiichiPlayerState())
+        val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+        val result = module.beforeDiscardClaimed(player, MeldType.OPEN_KAN, calledTile, RelativeDirection.Right)
+
+        assertEquals(PaoLiability(PaoYaku.Daisangen, RelativeDirection.Right), (result.playerRuleState as RiichiPlayerState).paoLiability)
     }
 
     /** 建立已碰出中、發兩組副露，並持有 [whiteCount] 張白的手牌。 */
@@ -305,11 +333,11 @@ class RiichiRuleModuleTest {
      * 驗證未觸發包牌責任時，玩家實例不應變動。
      */
     @Test
-    fun `test applyPaoLiabilityIfTriggered is a no-op when not triggered`() {
+    fun `test beforeDiscardClaimed is a no-op when not triggered`() {
         val player = FakeMahjongPlayerFactory.create(playerRuleState = RiichiPlayerState())
         val calledTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
 
-        val result = module.applyPaoLiabilityIfTriggered(player, calledTile, RelativeDirection.Left)
+        val result = module.beforeDiscardClaimed(player, MeldType.PON, calledTile, RelativeDirection.Left)
 
         assertSame(player, result)
     }
@@ -318,11 +346,11 @@ class RiichiRuleModuleTest {
      * 驗證玩家的規則狀態不是 [RiichiPlayerState] 時，回傳玩家本身（防呆）。
      */
     @Test
-    fun `test applyPaoLiabilityIfTriggered is a no-op when player rule state is not riichi`() {
+    fun `test beforeDiscardClaimed is a no-op when player rule state is not riichi`() {
         val player = FakeMahjongPlayerFactory.create(playerRuleState = null)
         val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
 
-        val result = module.applyPaoLiabilityIfTriggered(player, calledTile, RelativeDirection.Left)
+        val result = module.beforeDiscardClaimed(player, MeldType.PON, calledTile, RelativeDirection.Left)
 
         assertSame(player, result)
     }
