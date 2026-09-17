@@ -4,8 +4,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPhaseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.LeaveReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerRiichiGameActionDtos
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
@@ -88,5 +91,41 @@ class ClientMahjongStateStoreTest {
         )
 
         assertEquals(seatedTableId, store.findTableWhereSeated(localPlayerId))
+    }
+
+    /**
+     * 解散事件附帶的是解散前的快照。保存它會讓畫面退回解散前的內容，因此這個事件必須清除已存的房間
+     * 資料並把大廳狀態標為空桌。
+     */
+    @Test
+    fun `a dissolved leave event clears the stored room instead of storing its stale snapshot`() {
+        val store = ClientMahjongStateStore(registries)
+        val tableId = Uuid.random()
+        val hostId = Uuid.random()
+        val memberId = Uuid.random()
+        val snapshot = RoomSnapshot(
+            id = tableId,
+            hostId = hostId,
+            gameConfig = GameConfig(RiichiRuleConfig()),
+            playerIds = listOf(hostId, memberId),
+            readyPlayerIds = emptyList(),
+            aiPlayerIds = emptyList(),
+            canStart = false,
+            isHost = false,
+            isInRoom = true,
+        )
+        store.apply(TableLobbyPayloadDto(tableId.toString(), TableLobbyPhaseDto.WAITING, snapshot.toDto(registries)))
+        store.applyRoomSnapshot(tableId, snapshot)
+
+        store.apply(
+            RoomUpdatePayloadDto(
+                roomId = tableId.toString(),
+                event = RoomUpdateEventDto.Leave(memberId.toString(), LeaveReasonDto.Dissolved),
+                snapshot = snapshot.toDto(registries),
+            ),
+        )
+
+        assertNull(store.roomSnapshot(tableId))
+        assertEquals(TableLobbyPhaseDto.EMPTY, store.tableLobby(tableId)?.phase)
     }
 }

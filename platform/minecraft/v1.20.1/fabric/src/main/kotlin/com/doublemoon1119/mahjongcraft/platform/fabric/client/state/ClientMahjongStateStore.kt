@@ -4,9 +4,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSn
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPhaseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.LeaveReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTileSnapshot
@@ -90,9 +92,19 @@ class ClientMahjongStateStore(
         state.roomSnapshot?.isInRoom == true || state.gameSnapshot?.players?.any { it.id == localPlayerId } == true
     }?.key
 
-    /** 接收帶事件的房間更新並保存其最新快照；同一張桌子不會同時是房間又是對局，一併清掉舊的遊戲快照。 */
+    /**
+     * 接收帶事件的房間更新並保存其最新快照；同一張桌子不會同時是房間又是對局，一併清掉舊的遊戲快照。
+     *
+     * 解散是唯一看事件種類的情況：房間已經不存在，payload 附帶的是解散前的快照，保存它會讓畫面退回
+     * 解散前的內容，因此改為清除（[applySnapshotCleared]）。
+     */
     fun apply(payload: RoomUpdatePayloadDto) {
         val tableId = Uuid.parse(payload.roomId)
+        val event = payload.event
+        if (event is RoomUpdateEventDto.Leave && event.reason == LeaveReasonDto.Dissolved) {
+            applySnapshotCleared(tableId)
+            return
+        }
         updateTable(tableId) { current ->
             current.withGameSnapshot(null).copy(
                 roomSnapshot = payload.snapshot.toDomain(networkRegistries),
