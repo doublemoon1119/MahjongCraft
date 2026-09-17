@@ -51,6 +51,24 @@ class GameConfigPresentationRegistryTest {
     }
 
     @Test
+    fun `malformed config IDs are rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            GameConfigEditorSpec.SingleChoice(listOf("test:option", "Test:Option"))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            GameConfigFieldDefinition(
+                id = "test:Field",
+                categoryId = "test:category",
+                nameTranslationKey = "test.field",
+                descriptionTranslationKey = "test.field.description",
+                editor = GameConfigEditorSpec.BooleanToggle,
+                isEditable = false,
+                read = { GameConfigPresentationValue.BooleanValue(true) },
+            )
+        }
+    }
+
+    @Test
     fun `frozen registry rejects later registration`() {
         val registry = GameConfigPresentationRegistryImpl()
         registry.freeze()

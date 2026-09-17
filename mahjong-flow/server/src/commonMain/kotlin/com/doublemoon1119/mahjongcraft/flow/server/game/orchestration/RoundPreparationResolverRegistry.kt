@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.defaultSubmission
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -60,7 +61,7 @@ class RoundPreparationResolverRegistry {
     /** 登記一個規則模組的解析器。 */
     fun register(resolver: RoundPreparationResolver) {
         check(!frozen) { "Round preparation resolver registry is frozen" }
-        require(':' in resolver.ruleModuleId && resolver.ruleModuleId.substringAfter(':').isNotBlank()) {
+        NamespacedId.requireValid(resolver.ruleModuleId) {
             "Round preparation rule module ID must be namespaced: ${resolver.ruleModuleId}"
         }
         require(resolver.ruleModuleId !in resolvers) {

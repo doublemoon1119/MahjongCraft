@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import kotlin.uuid.Uuid
 
@@ -30,7 +31,7 @@ sealed interface WinSettlementDetailValue {
 /** 不使用字串 Map 的單一規則擴充欄位。 */
 data class WinSettlementDetailField(val id: String, val value: WinSettlementDetailValue) {
     init {
-        require(id.substringBefore(':', "").isNotBlank() && id.substringAfter(':', "").isNotBlank())
+        NamespacedId.requireValid(id) { "Win settlement detail field ID must be namespaced: $id" }
     }
 }
 
@@ -90,8 +91,8 @@ data class WinSettlementPresentationRequest(
     init {
         require(winners.isNotEmpty())
         require(paymentReasonIdsByPlayerId.keys.all { playerId -> ranking.players.any { it.playerId == playerId } })
-        require(paymentReasonIdsByPlayerId.values.all { ':' in it })
-        require(outcomeId.substringBefore(':', "").isNotBlank() && outcomeId.substringAfter(':', "").isNotBlank())
-        require(templateKey.substringBefore(':', "").isNotBlank() && templateKey.substringAfter(':', "").isNotBlank())
+        require(paymentReasonIdsByPlayerId.values.all(NamespacedId::isValid)) { "Payment reason IDs must be namespaced" }
+        NamespacedId.requireValid(outcomeId) { "Win settlement outcome ID must be namespaced: $outcomeId" }
+        NamespacedId.requireValid(templateKey) { "Win settlement template key must be namespaced: $templateKey" }
     }
 }

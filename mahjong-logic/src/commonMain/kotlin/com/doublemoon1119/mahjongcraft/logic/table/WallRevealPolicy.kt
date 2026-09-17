@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import kotlin.uuid.Uuid
 
@@ -57,13 +58,8 @@ sealed interface WallRevealDecision {
      */
     data class Rejected(val reasonId: String) : WallRevealDecision {
         init {
-            require(NAMESPACED_ID.matches(reasonId)) { "Wall reveal rejection must use a namespaced id: $reasonId" }
+            NamespacedId.requireValid(reasonId) { "Wall reveal rejection must use a namespaced id: $reasonId" }
         }
-    }
-
-    private companion object {
-        /** 完整 namespaced ID 的格式。 */
-        val NAMESPACED_ID = Regex("^[a-z0-9_.-]+:[a-z0-9/._-]+$")
     }
 }
 

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.player
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+
 /**
  * 玩家相關公開標記在 Minecraft 面板使用的本地化名稱與 RGB 顏色。
  *
@@ -37,7 +39,7 @@ class PublicPlayerIndicatorDisplayRegistryImpl : PublicPlayerIndicatorDisplayReg
 
     override fun register(id: String, display: PublicPlayerIndicatorDisplay) {
         check(!isFrozen) { "Public player indicator display registry is frozen" }
-        require(':' in id) { "Public player indicator display ID must be namespaced: $id" }
+        NamespacedId.requireValid(id) { "Public player indicator display ID must be namespaced: $id" }
         require(displays.putIfAbsent(id, display) == null) { "Duplicate public player indicator display ID: $id" }
     }
 

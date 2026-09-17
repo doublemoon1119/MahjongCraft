@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 
@@ -33,7 +34,7 @@ class ExhaustiveDrawReasonDisplayNameRegistryImpl : ExhaustiveDrawReasonDisplayN
 
     override fun register(reasonId: String, translationKey: String) {
         check(!isFrozen) { "Exhaustive-draw reason display-name registry is frozen" }
-        require(':' in reasonId) { "Exhaustive-draw reason ID must be namespaced: $reasonId" }
+        NamespacedId.requireValid(reasonId) { "Exhaustive-draw reason ID must be namespaced: $reasonId" }
         require(translationKey.isNotBlank()) { "Translation key must not be blank" }
         require(translations.putIfAbsent(reasonId, translationKey) == null) { "Duplicate exhaustive-draw reason: $reasonId" }
     }

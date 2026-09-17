@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.module
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+
 /** 規則可安全公開給所有玩家與旁觀者的座位狀態。 */
 sealed interface PublicPlayerIndicatorValue {
     /** 只有存在與否的公開標記。 */
@@ -15,7 +17,7 @@ sealed interface PublicPlayerIndicatorValue {
     /** 由規則定義、具完整 namespaced ID 的公開選項。 */
     data class Option(val optionId: String) : PublicPlayerIndicatorValue {
         init {
-            require(':' in optionId) { "Public player indicator option ID must be namespaced: $optionId" }
+            NamespacedId.requireValid(optionId) { "Public player indicator option ID must be namespaced: $optionId" }
         }
     }
 }
@@ -26,6 +28,6 @@ data class PublicPlayerIndicator(
     val indicatorValue: PublicPlayerIndicatorValue = PublicPlayerIndicatorValue.Marker,
 ) {
     init {
-        require(':' in id) { "Public player indicator ID must be namespaced: $id" }
+        NamespacedId.requireValid(id) { "Public player indicator ID must be namespaced: $id" }
     }
 }

@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.sound
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
 
 /** Minecraft 呈現層播放規則動作語音所需的宣告式資料。 */
 data class GameActionSoundPresentation(
@@ -14,7 +16,7 @@ data class GameActionSoundPresentation(
     val pitch: Float = 1.0f,
 ) {
     init {
-        require(':' in soundId) { "Sound ID must be namespaced: $soundId" }
+        MinecraftResourceIds.requireValid(soundId) { "Sound ID must be namespaced: $soundId" }
         require(volume >= 0.0f) { "Sound volume must not be negative" }
         require(pitch > 0.0f) { "Sound pitch must be positive" }
     }
@@ -30,8 +32,8 @@ data class GameActionSoundDefinition(
     val presentation: GameActionSoundPresentation,
 ) {
     init {
-        require(':' in ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
-        require(':' in actionId) { "Game action ID must be namespaced: $actionId" }
+        NamespacedId.requireValid(ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
+        NamespacedId.requireValid(actionId) { "Game action ID must be namespaced: $actionId" }
     }
 }
 

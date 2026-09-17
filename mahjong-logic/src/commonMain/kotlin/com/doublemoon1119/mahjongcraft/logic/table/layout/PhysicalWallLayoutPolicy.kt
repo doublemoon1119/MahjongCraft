@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.table.layout
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlin.uuid.Uuid
@@ -230,10 +231,7 @@ private fun TableState.physicalWallTileIds(): Set<Uuid> = (tileWall.getAllTiles(
 
 /** 驗證實體牌牆拒絕原因使用完整 namespaced ID。 */
 private fun requirePhysicalWallReasonId(reasonId: String) {
-    require(PHYSICAL_WALL_REASON_ID_PATTERN.matches(reasonId)) {
+    NamespacedId.requireValid(reasonId) {
         "Physical wall layout rejection must use a namespaced id: $reasonId"
     }
 }
-
-/** 完整 namespaced ID 的格式。 */
-private val PHYSICAL_WALL_REASON_ID_PATTERN: Regex = Regex("^[a-z0-9_.-]+:[a-z0-9/._-]+$")

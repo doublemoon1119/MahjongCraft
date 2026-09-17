@@ -1,10 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
+
 /** 胡牌結算模板可讀取的完整 namespaced 欄位識別碼。 */
 @JvmInline
 value class PresentationFieldId(val value: String) {
     init {
-        require(value.substringBefore(':', "").isNotBlank() && value.substringAfter(':', "").isNotBlank()) {
+        NamespacedId.requireValid(value) {
             "Presentation field ID must be namespaced: $value"
         }
     }
@@ -278,7 +281,7 @@ data class PresentationSoundCue(
     val pitch: Float = 1f,
 ) {
     init {
-        require(soundId.substringBefore(':', "").isNotBlank() && soundId.substringAfter(':', "").isNotBlank())
+        MinecraftResourceIds.requireValid(soundId) { "Invalid presentation sound ID: $soundId" }
         require(offsetTicks in -1200..1200 && volume in 0f..4f && pitch in 0.1f..4f)
     }
 }
@@ -309,7 +312,7 @@ data class WinSettlementPresentationTemplate(
     val reveal: WinSettlementRevealSequence = WinSettlementRevealSequence(),
 ) {
     init {
-        require(key.substringBefore(':', "").isNotBlank() && key.substringAfter(':', "").isNotBlank()) {
+        NamespacedId.requireValid(key) {
             "Win settlement template key must be namespaced: $key"
         }
     }

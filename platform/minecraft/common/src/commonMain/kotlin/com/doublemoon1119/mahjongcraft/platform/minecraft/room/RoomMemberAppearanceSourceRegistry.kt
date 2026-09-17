@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import kotlin.uuid.Uuid
 
 /** RoomScreen 可安全解讀的成員外觀來源。 */
@@ -8,7 +9,7 @@ sealed interface RoomMemberAppearanceSource {
     data object Portrait : RoomMemberAppearanceSource
     data class ActorPreview(val actorKey: String) : RoomMemberAppearanceSource {
         init {
-            require(':' in actorKey) { "Room actor preview key must be namespaced: $actorKey" }
+            NamespacedId.requireValid(actorKey) { "Room actor preview key must be namespaced: $actorKey" }
         }
     }
 }
@@ -50,7 +51,7 @@ class RoomMemberAppearanceSourceRegistryImpl : RoomMemberAppearanceSourceRegistr
 
     override fun register(providerId: String, priority: Int, provider: RoomMemberAppearanceSourceProvider) {
         check(!isFrozen) { "Room member appearance registry is frozen" }
-        require(':' in providerId) { "Room appearance provider ID must be namespaced: $providerId" }
+        NamespacedId.requireValid(providerId) { "Room appearance provider ID must be namespaced: $providerId" }
         require(entries.putIfAbsent(providerId, Entry(providerId, priority, provider)) == null) {
             "Duplicate room appearance provider ID: $providerId"
         }

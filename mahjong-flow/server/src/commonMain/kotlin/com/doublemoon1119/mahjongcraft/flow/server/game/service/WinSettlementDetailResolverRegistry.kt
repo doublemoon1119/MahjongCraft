@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
@@ -34,7 +35,7 @@ class WinSettlementDetailResolverRegistry {
 
     fun register(ruleModuleId: String, resolver: WinSettlementDetailResolver) {
         check(!isFrozen) { "Win settlement detail resolver registry is frozen" }
-        require(':' in ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
+        NamespacedId.requireValid(ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
         require(resolvers.putIfAbsent(ruleModuleId, resolver) == null) { "Duplicate win settlement detail resolver: $ruleModuleId" }
     }
 

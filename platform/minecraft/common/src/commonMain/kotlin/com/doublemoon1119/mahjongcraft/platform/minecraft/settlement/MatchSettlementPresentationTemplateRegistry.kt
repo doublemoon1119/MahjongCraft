@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 
 /** 終局名次的宣告式揭曉方向。 */
@@ -43,14 +45,12 @@ data class MatchSettlementPresentationTemplate(
     val championSoundId: String = "minecraft:ui.toast.challenge_complete",
 ) {
     init {
-        require(key.substringBefore(':', "").isNotBlank() && key.substringAfter(':', "").isNotBlank())
+        NamespacedId.requireValid(key) { "Match settlement template key must be namespaced: $key" }
         require(titleTranslationKey.isNotBlank())
         require(rowRevealIntervalTicks in 1..100 && readingTicks in 20..1200)
-        require(rowSoundId.isNamespaced() && championSoundId.isNamespaced())
+        MinecraftResourceIds.requireValid(rowSoundId) { "Invalid match settlement row sound ID: $rowSoundId" }
+        MinecraftResourceIds.requireValid(championSoundId) { "Invalid match settlement champion sound ID: $championSoundId" }
     }
-
-    /** 判斷 resource ID 是否包含非空 namespace 與 path。 */
-    private fun String.isNamespaced(): Boolean = substringBefore(':', "").isNotBlank() && substringAfter(':', "").isNotBlank()
 }
 
 /** 終局面板模板的凍結式 registry。 */

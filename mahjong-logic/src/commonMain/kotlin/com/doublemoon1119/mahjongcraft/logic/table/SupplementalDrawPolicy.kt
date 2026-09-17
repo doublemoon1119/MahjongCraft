@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import kotlin.uuid.Uuid
 
@@ -58,13 +59,8 @@ sealed interface SupplementalDrawDecision {
      */
     data class Rejected(val reasonId: String) : SupplementalDrawDecision {
         init {
-            require(NAMESPACED_ID.matches(reasonId)) { "Supplemental draw rejection must use a namespaced id: $reasonId" }
+            NamespacedId.requireValid(reasonId) { "Supplemental draw rejection must use a namespaced id: $reasonId" }
         }
-    }
-
-    private companion object {
-        /** 完整 namespaced ID 的格式。 */
-        val NAMESPACED_ID = Regex("^[a-z0-9_.-]+:[a-z0-9/._-]+$")
     }
 }
 

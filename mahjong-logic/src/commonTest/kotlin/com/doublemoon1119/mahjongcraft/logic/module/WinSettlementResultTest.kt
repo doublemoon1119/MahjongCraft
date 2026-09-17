@@ -27,17 +27,19 @@ class WinSettlementResultTest {
         }
     }
 
-    /** 付款原因 ID 必須帶命名空間。 */
+    /** 付款原因 ID 必須是完整合法的 namespaced ID。 */
     @Test
-    fun `rejects a payment reason without a namespace`() {
+    fun `rejects a payment reason that is not a valid namespaced id`() {
         val payer = Uuid.random()
 
-        assertFailsWith<IllegalArgumentException> {
-            WinSettlementResult(
-                totalGained = 1000,
-                paymentsByPlayerId = mapOf(payer to 1000),
-                paymentReasonIdsByPlayerId = mapOf(payer to "reason"),
-            )
+        listOf("reason", "Example:Pao", "example:pao reason").forEach { reasonId ->
+            assertFailsWith<IllegalArgumentException>("Expected payment reason to be rejected: $reasonId") {
+                WinSettlementResult(
+                    totalGained = 1000,
+                    paymentsByPlayerId = mapOf(payer to 1000),
+                    paymentReasonIdsByPlayerId = mapOf(payer to reasonId),
+                )
+            }
         }
     }
 }

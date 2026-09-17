@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.metadata
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+
 /**
  * MahjongCraft 跨平台共用的專案識別資訊。
  *
@@ -18,11 +20,13 @@ object MahjongCraftMetadata {
      *
      * @param path 不含 namespace 與冒號的相對識別路徑。
      * @return 使用 [PROJECT_ID] 作為 namespace 的完整識別碼。
-     * @throws IllegalArgumentException 若 [path] 為空或已包含 namespace。
+     * @throws IllegalArgumentException 若 [path] 為空、已包含 namespace，或組出的 ID 不符合 [NamespacedId] 格式。
      */
     fun id(path: String): String {
         require(path.isNotBlank()) { "ID path must not be blank." }
         require(':' !in path) { "ID path must not contain a namespace: $path" }
-        return "$PROJECT_ID:$path"
+        val id = "$PROJECT_ID:$path"
+        NamespacedId.requireValid(id) { "ID path contains characters outside the namespaced ID format: $path" }
+        return id
     }
 }

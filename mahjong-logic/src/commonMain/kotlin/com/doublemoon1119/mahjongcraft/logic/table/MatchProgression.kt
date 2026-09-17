@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import kotlin.uuid.Uuid
 
 /** 本局結算後應採用的明確莊家推進決策。 */
@@ -45,14 +46,9 @@ data class RoundCompletionSummary(
     val settledScoresByPlayerId: Map<Uuid, Int>,
 ) {
     init {
-        require(ID_PATTERN.matches(outcomeId)) { "Round completion outcomeId must be a full namespaced id: $outcomeId" }
+        NamespacedId.requireValid(outcomeId) { "Round completion outcomeId must be a full namespaced id: $outcomeId" }
         require(beneficiaryPlayerIds.all { it in settledScoresByPlayerId }) { "Round completion beneficiaries must belong to the table" }
         require(responsiblePlayerIds.all { it in settledScoresByPlayerId }) { "Round completion responsible players must belong to the table" }
-    }
-
-    private companion object {
-        /** `namespace:path` 形式的完整識別碼格式。 */
-        val ID_PATTERN = Regex("[a-z0-9_.-]+:[a-z0-9/._-]+")
     }
 }
 
@@ -81,17 +77,12 @@ sealed interface MatchProgressionDecision {
     /** 立即結束整場對局。 */
     data class EndMatch(val reasonId: String) : MatchProgressionDecision {
         init {
-            require(ID_PATTERN.matches(reasonId)) { "Match end reason must be a full namespaced id: $reasonId" }
+            NamespacedId.requireValid(reasonId) { "Match end reason must be a full namespaced id: $reasonId" }
         }
     }
 
     /** 繼續整場對局。 */
     data class ContinueMatch(val transition: MatchRoundTransition) : MatchProgressionDecision
-
-    private companion object {
-        /** `namespace:path` 形式的完整識別碼格式。 */
-        val ID_PATTERN = Regex("[a-z0-9_.-]+:[a-z0-9/._-]+")
-    }
 }
 
 /** 繼續整場對局時採用的局位變化。 */

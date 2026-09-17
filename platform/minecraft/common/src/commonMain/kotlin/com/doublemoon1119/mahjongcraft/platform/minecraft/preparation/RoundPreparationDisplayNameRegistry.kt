@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.preparation
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+
 /** 將開局準備 step／option 的完整 ID 映射到 Minecraft translation key。 */
 interface RoundPreparationDisplayNameRegistry {
     /** 目前已登記準備項目 ID 的快照。 */
@@ -30,7 +32,7 @@ class RoundPreparationDisplayNameRegistryImpl : RoundPreparationDisplayNameRegis
 
     override fun register(id: String, translationKey: String) {
         check(!isFrozen) { "Round-preparation display-name registry is frozen" }
-        require(':' in id && id.substringAfter(':').isNotBlank()) {
+        NamespacedId.requireValid(id) {
             "Round-preparation display ID must be namespaced: $id"
         }
         require(translationKey.isNotBlank()) { "Translation key must not be blank" }

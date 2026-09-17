@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.animation
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
+
 /**
  * 描述動畫佇列裡的一個步驟。[WaitUntil]／[Teleport]／[SetInvisible]／[PlayMotion] 是所有動畫實體共用的
  * 最小集合；[Custom] 讓個別實體類型（例如麻將牌的姿態切換）附加自己專屬的瞬間動作，用型別 [C]
@@ -39,7 +41,7 @@ sealed interface AnimationStep<out C> {
         val expiresAtGameTime: Long,
     ) : AnimationStep<Nothing> {
         init {
-            require(soundId.substringBefore(':', "").isNotBlank() && soundId.substringAfter(':', "").isNotBlank()) {
+            MinecraftResourceIds.requireValid(soundId) {
                 "Animation sound ID must be namespaced: $soundId"
             }
             require(volume.isFinite() && volume >= 0.0f) { "Animation sound volume must be finite and non-negative" }

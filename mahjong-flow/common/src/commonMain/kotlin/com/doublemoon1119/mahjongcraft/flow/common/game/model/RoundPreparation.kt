@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import kotlin.uuid.Uuid
 
 /** 開局準備步驟要求玩家提交的受控輸入。 */
@@ -12,7 +13,7 @@ sealed interface RoundPreparationInputSpec {
         init {
             require(optionIds.isNotEmpty()) { "Round preparation choices must not be empty" }
             require(optionIds.distinct().size == optionIds.size) { "Round preparation choices must be unique" }
-            require(optionIds.all { ':' in it && it.substringAfter(':').isNotBlank() }) {
+            require(optionIds.all(NamespacedId::isValid)) {
                 "Round preparation choices must use namespaced IDs"
             }
         }
@@ -52,7 +53,7 @@ data class PendingRoundPreparation(
     val submissionsByPlayerId: Map<Uuid, RoundPreparationSubmission> = emptyMap(),
 ) {
     init {
-        require(stepId.contains(':') && stepId.substringAfter(':').isNotBlank()) {
+        NamespacedId.requireValid(stepId) {
             "Round preparation step ID must be namespaced: $stepId"
         }
         require(stepIndex >= 0) { "Round preparation step index must not be negative" }

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 
 /** 設定畫面與聊天摘要共用的受控欄位值。 */
@@ -31,7 +32,7 @@ sealed interface GameConfigEditorSpec {
         init {
             require(optionIds.isNotEmpty()) { "Config choice must contain at least one option" }
             require(optionIds.distinct().size == optionIds.size) { "Config choice options must be unique" }
-            require(optionIds.all { ':' in it }) { "Config choice option IDs must be namespaced" }
+            require(optionIds.all(NamespacedId::isValid)) { "Config choice option IDs must be namespaced" }
         }
     }
 }
@@ -42,7 +43,7 @@ data class GameConfigCategoryDefinition(
     val nameTranslationKey: String,
 ) {
     init {
-        require(':' in id) { "Config category ID must be namespaced: $id" }
+        NamespacedId.requireValid(id) { "Config category ID must be namespaced: $id" }
         require(nameTranslationKey.isNotBlank()) { "Config category translation key must not be blank" }
     }
 }
@@ -61,8 +62,8 @@ data class GameConfigFieldDefinition(
     val update: ((GameConfig, GameConfigPresentationValue) -> GameConfig)? = null,
 ) {
     init {
-        require(':' in id) { "Config field ID must be namespaced: $id" }
-        require(':' in categoryId) { "Config field category ID must be namespaced: $categoryId" }
+        NamespacedId.requireValid(id) { "Config field ID must be namespaced: $id" }
+        NamespacedId.requireValid(categoryId) { "Config field category ID must be namespaced: $categoryId" }
         require(nameTranslationKey.isNotBlank()) { "Config field name translation key must not be blank" }
         require(descriptionTranslationKey.isNotBlank()) { "Config field description translation key must not be blank" }
         require(!isEditable || update != null) { "Editable config field must provide an updater: $id" }
@@ -80,7 +81,7 @@ data class GameConfigPresentationDefinition(
     val fields: List<GameConfigFieldDefinition>,
 ) {
     init {
-        require(':' in ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
+        NamespacedId.requireValid(ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
         require(selectable || unavailableReasonTranslationKey != null) {
             "Unselectable rule presentation must provide an unavailable reason: $ruleModuleId"
         }

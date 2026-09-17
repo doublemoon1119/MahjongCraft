@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
@@ -14,6 +15,17 @@ class RoundPreparationTest {
         val spec = RoundPreparationInputSpec.SingleChoice(listOf("example:first", "example:second"))
 
         assertEquals(RoundPreparationSubmission.Choice("example:first"), spec.defaultSubmission())
+    }
+
+    /** 選項與步驟 ID 必須是完整合法的 namespaced ID。 */
+    @Test
+    fun `malformed namespaced ids are rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            RoundPreparationInputSpec.SingleChoice(listOf("example:first", "Example:Second"))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            PendingRoundPreparation(stepId = "example:bad step", stepIndex = 0, inputSpecsByPlayerId = emptyMap())
+        }
     }
 
     /** 選牌預設提交依 Uuid 穩定排序並只選最少張數。 */

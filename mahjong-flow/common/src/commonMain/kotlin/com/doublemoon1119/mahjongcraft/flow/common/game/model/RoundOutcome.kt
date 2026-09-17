@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
@@ -47,16 +48,11 @@ data class ResolvedRoundOutcome(
     val extensionDetail: ExtensionRoundOutcomeDetail? = null,
 ) {
     init {
-        require(ID_PATTERN.matches(id)) { "Round outcome id must be a full namespaced id: $id" }
+        NamespacedId.requireValid(id) { "Round outcome id must be a full namespaced id: $id" }
         val playerIds = settledTableState.players.mapTo(mutableSetOf()) { it.id }
         require(beneficiaryPlayerIds.all { it in playerIds }) { "Outcome beneficiaries must belong to the table" }
         require(responsiblePlayerIds.all { it in playerIds }) { "Outcome responsible players must belong to the table" }
         require(stickPotCollectorPlayerIds.all { it in playerIds }) { "Stick pot collectors must belong to the table" }
         require(scoreDeltas.keys == playerIds) { "Outcome score deltas must contain exactly the table players" }
-    }
-
-    private companion object {
-        /** 接受 `namespace:path` 形式的完整識別碼格式。 */
-        val ID_PATTERN = Regex("[a-z0-9_.-]+:[a-z0-9/._-]+")
     }
 }

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.module
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
@@ -30,7 +31,7 @@ data class WinSettlementResult(
         require(paymentReasonIdsByPlayerId.keys.all { it in paymentsByPlayerId }) {
             "Payment reasons must belong to paying players"
         }
-        require(paymentReasonIdsByPlayerId.values.all { ':' in it }) {
+        require(paymentReasonIdsByPlayerId.values.all(NamespacedId::isValid)) {
             "Payment reason IDs must be namespaced"
         }
     }

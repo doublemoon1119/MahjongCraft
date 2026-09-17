@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.player
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
 import kotlin.uuid.Uuid
 
 /** Renderer 可安全解讀的玩家頭像來源；不向 extension 暴露 Minecraft render callback。 */
@@ -23,7 +25,7 @@ sealed interface PlayerPortraitSource {
         val v1: Float,
     ) : PlayerPortraitSource {
         init {
-            require(':' in resourceId) { "Portrait texture resource ID must be namespaced: $resourceId" }
+            MinecraftResourceIds.requireValid(resourceId) { "Portrait texture resource ID must be namespaced: $resourceId" }
             require(listOf(u0, v0, u1, v1).all { it.isFinite() && it in 0f..1f }) {
                 "Portrait texture UV values must be finite and normalized"
             }
@@ -85,7 +87,7 @@ class PlayerPortraitSourceRegistryImpl : PlayerPortraitSourceRegistry {
 
     override fun register(providerId: String, priority: Int, provider: PlayerPortraitSourceProvider) {
         check(!isFrozen) { "Player portrait source registry is frozen" }
-        require(':' in providerId) { "Player portrait provider ID must be namespaced: $providerId" }
+        NamespacedId.requireValid(providerId) { "Player portrait provider ID must be namespaced: $providerId" }
         require(entries.putIfAbsent(providerId, Entry(providerId, priority, provider)) == null) {
             "Duplicate player portrait provider ID: $providerId"
         }
