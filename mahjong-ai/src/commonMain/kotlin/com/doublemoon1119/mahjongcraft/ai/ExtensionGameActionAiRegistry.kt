@@ -1,13 +1,7 @@
 package com.doublemoon1119.mahjongcraft.ai
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
-import com.doublemoon1119.mahjongcraft.logic.base.Hand
-import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import kotlin.reflect.KClass
 
 /** 將一種擴充動作轉換成 AI 可執行命令的策略。 */
@@ -53,21 +47,5 @@ class ExtensionGameActionAiRegistry {
     fun createCommands(action: ExtensionGameAction, context: AiDecisionContext): List<GameCommand> {
         val entry = entries[action::class] as? Entry<ExtensionGameAction> ?: return emptyList()
         return entry.handler.createCommands(action, context)
-    }
-}
-
-/** 登記 MahjongCraft 內建規則提供的 AI action handler。 */
-fun ExtensionGameActionAiRegistry.registerRiichiGameActionHandler(moduleRegistry: MahjongModuleRegistry) {
-    register(RiichiGameAction.Riichi::class) { _, context ->
-        val player = context.snapshot.players.first { it.id == context.selfId }
-        val calculator = moduleRegistry.getModule(context.snapshot.config).createShantenCalculator()
-        val visibleTiles = (player.hand.standingTiles + listOfNotNull(player.hand.lastDrawn)).mapNotNull { snapshot ->
-            snapshot.tile?.let { IdentifiedTile(snapshot.id, it) }
-        }
-        val candidates = visibleTiles.filter { candidate ->
-            val remainingTiles = visibleTiles.filterNot { it.id == candidate.id }
-            calculator.calculate(Hand(tiles = remainingTiles)) is ShantenResult.Tenpai
-        }
-        candidates.map { GameCommand.Extension(RiichiGameCommand(it.id)) }
     }
 }

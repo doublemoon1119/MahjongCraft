@@ -1,8 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-
 /** 局況顯示單一數值參數在翻譯句子裡代表的意義。 */
 enum class RoundInfoLineArgumentKind {
     /** 直接當數字代入翻譯參數。 */
@@ -63,17 +60,4 @@ class RoundInfoLineDisplayRegistryImpl : RoundInfoLineDisplayRegistry {
     override fun freeze() {
         isFrozen = true
     }
-}
-
-/** 登記內建日麻的局況顯示行。 */
-fun RoundInfoLineDisplayRegistry.registerBuiltInRiichiRoundInfoLineDisplays() {
-    register(
-        RiichiRuleModule.TITLE_KEY,
-        RoundInfoLineDisplay(
-            MinecraftMessageKeys.ROUND_INFO_TITLE,
-            listOf(RoundInfoLineArgumentKind.WIND, RoundInfoLineArgumentKind.NUMBER, RoundInfoLineArgumentKind.NUMBER),
-        ),
-    )
-    register(RiichiRuleModule.WALL_REMAINING_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING))
-    register(RiichiRuleModule.STICK_POT_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_STICK_POT))
 }

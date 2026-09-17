@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementYakuTranslationKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.WinSettlementYakuTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata

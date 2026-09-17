@@ -2,8 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.sound
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
-import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
 
 /** Minecraft 呈現層播放規則動作語音所需的宣告式資料。 */
@@ -110,27 +108,6 @@ object BuiltInGameActionSoundIds {
 
     /** 自摸。 */
     const val TSUMO: String = "mahjongcraft:tsumo"
-}
-
-/** 登記內建日本麻將使用的六種暫用宣告語音。 */
-fun GameActionSoundPresentationRegistry.registerBuiltInRiichiActionSounds() {
-    val definitions = listOf(
-        BuiltInGameActionSoundIds.CHII to BuiltInGameActionVoiceSoundIds.CHII,
-        BuiltInGameActionSoundIds.PON to BuiltInGameActionVoiceSoundIds.PON,
-        BuiltInGameActionSoundIds.KAN to BuiltInGameActionVoiceSoundIds.KAN,
-        RiichiGameAction.Riichi.id to BuiltInGameActionVoiceSoundIds.RIICHI,
-        BuiltInGameActionSoundIds.RON to BuiltInGameActionVoiceSoundIds.RON,
-        BuiltInGameActionSoundIds.TSUMO to BuiltInGameActionVoiceSoundIds.TSUMO,
-    )
-    definitions.forEach { (actionId, soundId) ->
-        register(
-            GameActionSoundDefinition(
-                ruleModuleId = BuiltInRuleModuleIds.RIICHI,
-                actionId = actionId,
-                presentation = GameActionSoundPresentation(soundId),
-            ),
-        )
-    }
 }
 
 /** MahjongCraft 內建日本麻將宣告語音的 Minecraft sound ID。 */

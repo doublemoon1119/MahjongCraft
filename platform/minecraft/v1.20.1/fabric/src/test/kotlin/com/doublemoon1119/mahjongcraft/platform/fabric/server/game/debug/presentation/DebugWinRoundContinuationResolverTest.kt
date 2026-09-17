@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
+package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation
 
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode

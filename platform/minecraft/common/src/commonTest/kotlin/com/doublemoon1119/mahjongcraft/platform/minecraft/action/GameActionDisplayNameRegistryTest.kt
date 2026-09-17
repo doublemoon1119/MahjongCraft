@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.action
 
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerRiichiGameActionDisplayName
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

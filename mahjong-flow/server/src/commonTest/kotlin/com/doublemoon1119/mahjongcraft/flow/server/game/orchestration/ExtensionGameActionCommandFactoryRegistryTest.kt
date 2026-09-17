@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameActionCommandFactory
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import kotlin.test.Test

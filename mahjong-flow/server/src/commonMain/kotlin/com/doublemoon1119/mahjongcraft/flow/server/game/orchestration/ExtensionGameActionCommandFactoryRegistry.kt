@@ -1,9 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import kotlin.reflect.KClass
 import kotlin.uuid.Uuid
 
@@ -50,12 +48,5 @@ class ExtensionGameActionCommandFactoryRegistry {
     fun createCommand(action: ExtensionGameAction, selectedTileIds: List<Uuid>): ExtensionGameCommand? {
         val entry = entries[action::class] as? Entry<ExtensionGameAction> ?: return null
         return entry.factory.create(action, selectedTileIds)
-    }
-}
-
-/** 登記 MahjongCraft 內建日麻立直動作的命令 factory。 */
-fun ExtensionGameActionCommandFactoryRegistry.registerRiichiGameActionCommandFactory() {
-    register(RiichiGameAction.Riichi::class) { _, selectedTileIds ->
-        selectedTileIds.singleOrNull()?.let(::RiichiGameCommand)
     }
 }

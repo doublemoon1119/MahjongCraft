@@ -1,11 +1,14 @@
-package com.doublemoon1119.mahjongcraft.flow.server.game.service
+package com.doublemoon1119.mahjongcraft.flow.server.game.riichi
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementYakuTranslationKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.WinSettlementYakuTranslationKeys
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementResolvedDetails
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState

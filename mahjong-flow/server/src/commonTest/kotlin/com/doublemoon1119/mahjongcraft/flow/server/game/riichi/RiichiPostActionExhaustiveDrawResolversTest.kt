@@ -1,5 +1,6 @@
-package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
+package com.doublemoon1119.mahjongcraft.flow.server.game.riichi
 
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld

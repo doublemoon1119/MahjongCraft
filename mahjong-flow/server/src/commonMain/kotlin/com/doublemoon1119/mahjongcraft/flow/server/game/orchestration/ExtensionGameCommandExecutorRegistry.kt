@@ -2,9 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
 import kotlin.reflect.KClass
 import kotlin.uuid.Uuid
 
@@ -57,18 +55,4 @@ class ExtensionGameCommandExecutorRegistry {
             ?: return Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
         return entry.handler.execute(gameId, playerId, command)
     }
-}
-
-/** 登記 MahjongCraft 內建規則提供的擴充命令 handler。 */
-fun ExtensionGameCommandExecutorRegistry.registerRiichiGameCommandHandler(declareRiichiUseCase: DeclareRiichiUseCase) {
-    register(
-        RiichiGameCommand::class,
-        object : ExtensionGameCommandHandler<RiichiGameCommand> {
-            override suspend fun execute(
-                gameId: Uuid,
-                playerId: Uuid,
-                command: RiichiGameCommand,
-            ): Outcome<Unit, GameError> = declareRiichiUseCase(gameId, playerId, command.tileId)
-        },
-    )
 }

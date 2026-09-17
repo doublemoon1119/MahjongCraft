@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
+package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolution

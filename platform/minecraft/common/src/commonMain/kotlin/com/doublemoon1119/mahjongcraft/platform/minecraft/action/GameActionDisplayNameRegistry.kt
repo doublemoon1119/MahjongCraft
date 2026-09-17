@@ -1,8 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.action
 
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 
 /** 管理規則擴充動作 ID 對應之 Minecraft 翻譯 key。 */
 interface GameActionDisplayNameRegistry {
@@ -47,9 +45,4 @@ class GameActionDisplayNameRegistryImpl : GameActionDisplayNameRegistry {
     override fun freeze() {
         isFrozen = true
     }
-}
-
-/** 登記 MahjongCraft 內建規則擴充動作的顯示名稱。 */
-fun GameActionDisplayNameRegistry.registerRiichiGameActionDisplayName() {
-    register(RiichiGameAction.Riichi.id, MinecraftMessageKeys.GAME_ACTION_RIICHI)
 }

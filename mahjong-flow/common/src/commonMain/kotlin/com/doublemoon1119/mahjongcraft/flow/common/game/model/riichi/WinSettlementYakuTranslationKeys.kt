@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.flow.common.game.model
+package com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata

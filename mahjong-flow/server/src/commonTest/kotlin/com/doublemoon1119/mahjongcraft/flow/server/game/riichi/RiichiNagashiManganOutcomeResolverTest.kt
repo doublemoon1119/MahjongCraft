@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
+package com.doublemoon1119.mahjongcraft.flow.server.game.riichi
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification

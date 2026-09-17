@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
-import com.doublemoon1119.mahjongcraft.ai.registerRiichiGameActionHandler
+import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiGameActionHandler
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationCategory
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReport
@@ -13,22 +13,22 @@ import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInWinCelebrat
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerRiichiGameActionDtos
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.registerRiichiGameActionPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiGameActionCommandFactory
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiGameCommandHandler
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiNagashiManganOutcomeResolver
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.registerRiichiPostActionExhaustiveDrawResolvers
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.registerRiichiWinSettlementDetailResolver
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareRiichiUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameActionCommandFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameCommandHandler
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiNagashiManganOutcomeResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiPostActionExhaustiveDrawResolvers
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugRoundPreparationResolver
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.DebugWinRoundContinuationState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.registerDebugWinRoundContinuationResolvers
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.registerRiichiGameActionDisplayName
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugRoundPreparationResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.registerDebugWinRoundContinuationResolvers
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerRiichiGameActionDisplayName
 import net.fabricmc.loader.api.FabricLoader
 import org.slf4j.LoggerFactory
 

@@ -1,8 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 
 /** 將完整流局原因 ID 映射至 Minecraft translation key。 */
 interface ExhaustiveDrawReasonDisplayNameRegistry {
@@ -44,14 +42,4 @@ class ExhaustiveDrawReasonDisplayNameRegistryImpl : ExhaustiveDrawReasonDisplayN
     override fun freeze() {
         isFrozen = true
     }
-}
-
-/** 登記內建日麻流局原因。 */
-fun ExhaustiveDrawReasonDisplayNameRegistry.registerBuiltInRiichiReasons() {
-    register(RiichiExhaustiveDrawReason.Normal.id, MinecraftMessageKeys.EXHAUSTIVE_DRAW_REASON_NORMAL)
-    register(RiichiExhaustiveDrawReason.KyuushuKyuuhai.id, MinecraftMessageKeys.GAME_ACTION_KYUUSHU_KYUUHAI)
-    register(RiichiExhaustiveDrawReason.SuufonRenda.id, MinecraftMessageKeys.GAME_ACTION_SUUFON_RENDA)
-    register(RiichiExhaustiveDrawReason.SuukanNagare.id, MinecraftMessageKeys.GAME_ACTION_SUUKAN_NAGARE)
-    register(RiichiExhaustiveDrawReason.SuuchaRiichi.id, MinecraftMessageKeys.GAME_ACTION_SUUCHA_RIICHI)
-    register(RiichiExhaustiveDrawReason.SanchaHou.id, MinecraftMessageKeys.GAME_ACTION_SANCHA_HOU)
 }

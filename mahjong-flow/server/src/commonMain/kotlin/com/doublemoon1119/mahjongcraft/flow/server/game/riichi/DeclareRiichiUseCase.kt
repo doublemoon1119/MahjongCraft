@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
+package com.doublemoon1119.mahjongcraft.flow.server.game.riichi
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordExha
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardReactionResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
