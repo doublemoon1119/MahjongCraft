@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
+
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -312,5 +314,93 @@ class RiichiLegalActionValidatorFuritenTest {
         )
 
         assertFalse(actions.any { it is GameAction.Ron })
+    }
+
+    /** 兩面聽的其中一張在自己牌河時，另一張和牌張同樣不能榮和（捨牌振聽）。 */
+    @Test
+    fun `cannot ron on any wait when another wait is in own discards`() {
+        val player = twoSidedWaitPlayer(discardPile = discardPileOf(Tile.Numeric(Tile.Suit.Character, 1)))
+
+        assertFalse(canRon(player, Tile.Numeric(Tile.Suit.Character, 4)), "4m should be furiten while 1m is in own discards")
+        assertFalse(canRon(player, Tile.Numeric(Tile.Suit.Character, 1)), "1m should be furiten while it is in own discards")
+    }
+
+    /** 牌河沒有任何和牌張時，兩張和牌張都能榮和。 */
+    @Test
+    fun `can ron on both waits when no wait is in own discards`() {
+        val player = twoSidedWaitPlayer(discardPile = discardPileOf(Tile.Honor.North))
+
+        assertTrue(canRon(player, Tile.Numeric(Tile.Suit.Character, 1)), "1m should be a legal ron")
+        assertTrue(canRon(player, Tile.Numeric(Tile.Suit.Character, 4)), "4m should be a legal ron")
+    }
+
+    /** 被他家鳴走的自己捨牌仍算在牌河裡，同樣造成捨牌振聽。 */
+    @Test
+    fun `a discard claimed by another player still causes furiten`() {
+        val player = twoSidedWaitPlayer(discardPile = discardPileOf(Tile.Numeric(Tile.Suit.Character, 1)).takeLast())
+
+        assertFalse(canRon(player, Tile.Numeric(Tile.Suit.Character, 4)), "A claimed 1m discard should still cause furiten")
+    }
+
+    /** 本巡放過其中一張和牌張時，另一張和牌張同樣不能榮和（同巡振聽）。 */
+    @Test
+    fun `cannot ron on any wait after passing another wait in the same go-around`() {
+        val player = twoSidedWaitPlayer(discardPile = FakeDiscardPile())
+            .addPassedTile(Tile.Numeric(Tile.Suit.Character, 1))
+
+        assertFalse(canRon(player, Tile.Numeric(Tile.Suit.Character, 4)), "4m should be furiten after passing 1m this go-around")
+    }
+
+    /** 捨牌振聽時仍可自摸。 */
+    @Test
+    fun `can still tsumo while in discard furiten`() {
+        val player = twoSidedWaitPlayer(discardPile = discardPileOf(Tile.Numeric(Tile.Suit.Character, 1)))
+        val drawnTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4))
+
+        val actions = validator.getLegalActions(
+            tableState = FakeTableStateFactory.create(players = listOf(player)),
+            player = player,
+            sourceAction = GameAction.Draw,
+            sourceDirection = RelativeDirection.Self,
+            incomingTile = drawnTile,
+        )
+
+        assertTrue(actions.any { it is GameAction.Tsumo }, "Tsumo should stay legal while in discard furiten")
+    }
+
+    /** 23萬＋456筒＋789筒＋中中中＋22條，聽 1-4 萬，門前有役牌。 */
+    private fun twoSidedWaitPlayer(discardPile: FakeDiscardPile) = FakeMahjongPlayerFactory.create(
+        hand = FakeHandFactory.create(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+                Tile.Numeric(Tile.Suit.Dot, 6),
+                Tile.Numeric(Tile.Suit.Dot, 7),
+                Tile.Numeric(Tile.Suit.Dot, 8),
+                Tile.Numeric(Tile.Suit.Dot, 9),
+                Tile.Honor.Red,
+                Tile.Honor.Red,
+                Tile.Honor.Red,
+                Tile.Numeric(Tile.Suit.Bamboo, 2),
+                Tile.Numeric(Tile.Suit.Bamboo, 2),
+            ),
+        ),
+        discardPile = discardPile,
+        playerRuleState = RiichiPlayerState(),
+    )
+
+    private fun discardPileOf(tile: Tile) = FakeDiscardPile().discard(FakeDiscardPile.FakeEntry(FakeIdentifiedTileFactory.create(tile)))
+
+    private fun canRon(player: MahjongPlayer, tile: Tile): Boolean {
+        val incomingTile = FakeIdentifiedTileFactory.create(tile)
+        return validator.getLegalActions(
+            tableState = FakeTableStateFactory.create(players = listOf(player)),
+            player = player,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
+            incomingTile = incomingTile,
+        ).any { it is GameAction.Ron }
     }
 }

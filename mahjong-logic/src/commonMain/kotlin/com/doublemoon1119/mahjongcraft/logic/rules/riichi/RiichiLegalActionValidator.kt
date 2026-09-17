@@ -208,9 +208,8 @@ class RiichiLegalActionValidator(
             val ronResult = shantenCalculator.calculate(tempHandRon)
 
             if (ronResult is ShantenResult.Complete) {
-                // 振聽檢查：
-                // 1. 先檢查玩家在收到這張牌前是否已經聽牌
-                // 2. 如果已經聽牌，檢查這張牌是否在振聽列表中
+                // 振聽檢查：收到這張牌前的聽牌中，只要任何一種和牌張在自己的牌河或本巡放過的牌裡，
+                // 所有和牌張都不能榮和（捨牌振聽、同巡振聽）。
                 val currentHandResult = shantenCalculator.calculate(
                     Hand(
                         player.hand.standingTiles.toMutableList(),
@@ -228,7 +227,7 @@ class RiichiLegalActionValidator(
                         passedTilesInRound = player.passedTilesInRound,
                     ) ?: emptySet()
 
-                    furitenTiles.contains(incomingBaseTile)
+                    currentHandResult.winningTiles.any { it.riichiCanonical in furitenTiles }
                 } else {
                     // 手牌原本未聽牌，不可能是振聽
                     false
