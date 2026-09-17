@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomScreenAction
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
@@ -46,6 +47,7 @@ import net.minecraft.client.network.OtherClientPlayerEntity
 import net.minecraft.entity.LivingEntity
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
+import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -684,7 +686,7 @@ class RoomScreen(
             clearAndInit()
             return
         }
-        if (!isTableStillReachable()) {
+        if (!isTableStillAvailable()) {
             closeEntireScreen()
             return
         }
@@ -729,15 +731,23 @@ class RoomScreen(
     }
 
     /** 離開桌旁或切換維度時關閉畫面，讓 removed() 清除暫時 observer。 */
-    private fun isTableStillReachable(): Boolean {
+    /**
+     * 這張桌子目前是否仍可使用：玩家在同一個維度、距離夠近，而且桌子本身還在。
+     *
+     * 桌子可能在畫面開著時被其他玩家破壞，因此距離之外還要確認方塊實體仍然存在；距離條件已經保證所在
+     * 區塊是載入的，查不到方塊實體就代表桌子真的沒了。payload 沒有帶座標時無從判斷，一律視為仍可使用。
+     */
+    private fun isTableStillAvailable(): Boolean {
         val lobby = stateStore.tableLobby(tableId) ?: return false
         val x = lobby.tableX ?: return true
         val y = lobby.tableY ?: return true
         val z = lobby.tableZ ?: return true
         val expectedDimension = lobby.dimensionId ?: return true
         val player = client?.player ?: return false
-        val actualDimension = client?.world?.registryKey?.value?.toString() ?: return false
-        return actualDimension == expectedDimension && player.squaredDistanceTo(x + 0.5, y + 0.5, z + 0.5) <= 64.0
+        val world = client?.world ?: return false
+        if (world.registryKey.value.toString() != expectedDimension) return false
+        if (player.squaredDistanceTo(x + 0.5, y + 0.5, z + 0.5) > 64.0) return false
+        return world.getBlockEntity(BlockPos(x, y, z)) is MahjongTableBlockEntity
     }
 
     private fun renderRoom(context: DrawContext, mouseX: Int, mouseY: Int) {
