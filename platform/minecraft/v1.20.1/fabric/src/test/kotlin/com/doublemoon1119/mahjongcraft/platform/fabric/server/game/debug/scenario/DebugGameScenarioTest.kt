@@ -372,7 +372,12 @@ class DebugGameScenarioTest {
     private fun createFixture(config: RiichiRuleConfig = RiichiRuleConfig()): Fixture {
         val playerIds = List(4) { Uuid.random() }
         val module = RiichiRuleModule("mahjongcraft:riichi", config)
-        val initialized = GameInitializer.initialize(Uuid.random(), playerIds, module)
+        val initialized = GameInitializer.initialize(
+            id = Uuid.random(),
+            playerIds = playerIds,
+            module = module,
+            aiPlayerStrategyKeys = playerIds.drop(1).associateWith { "random" },
+        )
         val game = Game(
             tableState = initialized.tableState,
             flowConfig = GameFlowConfig(),
@@ -451,6 +456,13 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi_before_minkan_at_break_1",
             "mahjongcraft:riichi_before_pao_pon",
             "mahjongcraft:riichi_before_suucha_riichi",
+            "mahjongcraft:riichi_furiten_cleared_by_call",
+            "mahjongcraft:riichi_furiten_closed_kan_not_offered",
+            "mahjongcraft:riichi_furiten_declined_chankan",
+            "mahjongcraft:riichi_furiten_declined_ron",
+            "mahjongcraft:riichi_furiten_discarded_wait",
+            "mahjongcraft:riichi_furiten_head_bump_chankan",
+            "mahjongcraft:riichi_furiten_unoffered_wait",
             "mahjongcraft:riichi_wall_opening",
         )
     }

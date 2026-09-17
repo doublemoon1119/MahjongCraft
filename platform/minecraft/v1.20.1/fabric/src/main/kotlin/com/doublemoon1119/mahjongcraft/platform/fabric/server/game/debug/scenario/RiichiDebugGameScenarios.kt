@@ -53,7 +53,7 @@ object RiichiDebugGameScenarios {
         RiichiBeforePaoPonScenario,
         RiichiBeforeSuuchaRiichiScenario,
         RiichiWallOpeningScenario,
-    )
+    ) + RiichiFuritenDebugGameScenarios.all
 }
 
 /**
@@ -62,7 +62,7 @@ object RiichiDebugGameScenarios {
  * 這個位置下保留牌軌道的頭端會被 `SingleSideReservedWallTrackPlanner` 的最小頭端限制推離開門點，王牌區
  * 因此不與活牌末端相鄰。
  */
-private val DEFAULT_WALL_OPENING = WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 8)
+internal val DEFAULT_WALL_OPENING = WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 8)
 
 /**
  * 王牌區緊貼開門點、因此與活牌末端相鄰的開門位置。
@@ -627,10 +627,10 @@ private class RiichiBeforeMinkanScenario(
  * 長度、紅寶牌、供託規則與初始點數都必須維持玩家在房間裡選的那一份。情境需要的張數與節奏本來就全部由
  * 設定推導（牌張工廠、`deadTileCount`、`dealBatchSizes()`、初始點數），沿用設定不會破壞可重現性。
  */
-private fun scenarioConfig(currentGame: Game): RiichiRuleConfig = currentGame.tableState.config as RiichiRuleConfig
+internal fun scenarioConfig(currentGame: Game): RiichiRuleConfig = currentGame.tableState.config as RiichiRuleConfig
 
 /** 從牌庫依指定牌種順序各取出一張具有唯一 UUID 的實體牌。 */
-private fun takeTiles(
+internal fun takeTiles(
     tiles: MutableList<IdentifiedTile>,
     requestedTiles: List<Tile>,
 ): List<IdentifiedTile> = requestedTiles.map { requested ->
@@ -640,7 +640,7 @@ private fun takeTiles(
 }
 
 /** 取出牌種互異的情境填充牌，避免意外建立特殊牌型。 */
-private fun takeDistinctFillers(tiles: MutableList<IdentifiedTile>, count: Int): List<IdentifiedTile> {
+internal fun takeDistinctFillers(tiles: MutableList<IdentifiedTile>, count: Int): List<IdentifiedTile> {
     val selected = tiles.distinctBy { tile -> tile.tile }.take(count)
     require(selected.size == count) { "Not enough distinct filler tiles" }
     selected.forEach(tiles::remove)
@@ -648,13 +648,13 @@ private fun takeDistinctFillers(tiles: MutableList<IdentifiedTile>, count: Int):
 }
 
 /** 從清單前端取出固定張數並同步移除。 */
-private fun takeFirst(tiles: MutableList<IdentifiedTile>, count: Int): List<IdentifiedTile> = List(count) {
+internal fun takeFirst(tiles: MutableList<IdentifiedTile>, count: Int): List<IdentifiedTile> = List(count) {
     require(tiles.isNotEmpty()) { "Debug scenario ran out of tiles" }
     tiles.removeAt(0)
 }
 
 /** 把情境指定的活牌與保留牌配置到正式 layout 的物理格位。 */
-private fun remapStructure(
+internal fun remapStructure(
     template: TileWallLayoutResult,
     liveTiles: List<IdentifiedTile>,
     reservedTiles: List<IdentifiedTile>,
@@ -668,20 +668,20 @@ private fun remapStructure(
 }
 
 /** 產生不受 factory 洗牌結果影響的牌種排序鍵。 */
-private fun Tile.stableSortKey(): String = when (this) {
+internal fun Tile.stableSortKey(): String = when (this) {
     is Tile.Numeric -> "0:${suit.ordinal}:$value"
     is Tile.Honor -> "1:${HONORS.indexOf(this)}"
     is Tile.Extension -> "2:${typeId.namespace}:${typeId.path}"
 }
 
 /** 四人日麻固定玩家數。 */
-private const val PLAYER_COUNT: Int = 4
+internal const val PLAYER_COUNT: Int = 4
 
 /** 未副露時的立牌張數。 */
-private const val INITIAL_HAND_SIZE: Int = 13
+internal const val INITIAL_HAND_SIZE: Int = 13
 
 /** 宣告立直時支付的點棒分數。 */
-private const val RIICHI_STICK_SCORE: Int = 1000
+internal const val RIICHI_STICK_SCORE: Int = 1000
 
 /** 包牌情境中呼叫者已碰出的兩組三元牌。 */
 private val PAO_INVOKING_MELD_TILES: List<Tile> = listOf(Tile.Honor.Green, Tile.Honor.Red)
