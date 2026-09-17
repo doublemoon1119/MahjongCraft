@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomScreenActionDto
@@ -133,38 +134,6 @@ class RoomScreen(
                     button(MinecraftRoomScreenKeys.ADD_AI, RoomScreenActionDto.AddAi(lobby.tableId), room.playerIds.size < room.gameConfig.ruleConfig.maxPlayers)
                     button(MinecraftRoomScreenKeys.START, RoomScreenActionDto.Start(lobby.tableId), room.canStart)
                     button(MinecraftRoomScreenKeys.DISBAND, RoomScreenActionDto.Disband(lobby.tableId))
-                    val grid = memberGrid(room.playerIds.size)
-                    memberScroll.clamp(grid.rows - grid.visibleRows)
-                    val visibleRows = grid.visibleGridRows
-                    val gridWidth = grid.columns * grid.cardWidth
-                    room.playerIds.forEachIndexed { index, targetId ->
-                        if (targetId == room.hostId) return@forEachIndexed
-                        val row = index / grid.columns
-                        if (row !in visibleRows) return@forEachIndexed
-                        val cardX = width / 2 - gridWidth / 2 + (index % grid.columns) * grid.cardWidth
-                        val cardY = grid.cardTop(row)
-                        if (targetId in room.aiPlayerIds) {
-                            val current = room.aiPlayerStrategyKeys[targetId]
-                            addDrawableChild(
-                                RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.AI_STRATEGY, aiStrategyText(current))) {
-                                    val keys = aiStrategies.getAllStrategyKeys().sorted()
-                                    if (keys.isNotEmpty()) {
-                                        val next = keys[(keys.indexOf(current).coerceAtLeast(0) + 1) % keys.size]
-                                        send(RoomScreenActionDto.ChangeAiStrategy(lobby.tableId, targetId.toString(), next))
-                                    }
-                                }.dimensions(cardX + 8, cardY + AI_STRATEGY_BUTTON_OFFSET_Y, grid.cardWidth - 20, 18).build().also {
-                                    it.tooltip = Tooltip.of(aiStrategyTooltip(current))
-                                },
-                            )
-                        }
-                        addDrawableChild(
-                            RestartableMarqueeButtonWidget.builder(Text.literal("×")) {
-                                send(RoomScreenActionDto.Kick(lobby.tableId, targetId.toString()))
-                            }.dimensions(cardX + grid.cardWidth - 23, cardY + KICK_BUTTON_OFFSET_Y, 16, 16).build().also {
-                                it.tooltip = Tooltip.of(Text.translatable(MinecraftRoomScreenKeys.KICK))
-                            },
-                        )
-                    }
                 } else {
                     val selfId = client?.player?.uuid?.let(UUID::toString)
                     val ready = room.readyPlayerIds.any { it.toString() == selfId }
@@ -174,8 +143,52 @@ class RoomScreen(
                     )
                     button(MinecraftRoomScreenKeys.LEAVE, RoomScreenActionDto.Leave(lobby.tableId))
                 }
+                addMemberCardWidgets(lobby.tableId, room)
                 addCenteredActions(actions, bottom)
             }
+        }
+    }
+
+    /**
+     * 在等待室的成員卡片上加入 AI 策略與踢除按鈕。
+     *
+     * AI 策略對所有觀看者都顯示，非房主取得的是不可點擊的版本——策略是房間的公開資訊，只有變更它需要
+     * 房主身分。踢除按鈕只有房主才有。房主本人的卡片兩者都不加。
+     */
+    private fun addMemberCardWidgets(tableIdText: String, room: RoomSnapshot) {
+        val grid = memberGrid(room.playerIds.size)
+        memberScroll.clamp(grid.rows - grid.visibleRows)
+        val visibleRows = grid.visibleGridRows
+        val gridWidth = grid.columns * grid.cardWidth
+        room.playerIds.forEachIndexed { index, targetId ->
+            if (targetId == room.hostId) return@forEachIndexed
+            val row = index / grid.columns
+            if (row !in visibleRows) return@forEachIndexed
+            val cardX = width / 2 - gridWidth / 2 + (index % grid.columns) * grid.cardWidth
+            val cardY = grid.cardTop(row)
+            if (targetId in room.aiPlayerIds) {
+                val current = room.aiPlayerStrategyKeys[targetId]
+                addDrawableChild(
+                    RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.AI_STRATEGY, aiStrategyText(current))) {
+                        val keys = aiStrategies.getAllStrategyKeys().sorted()
+                        if (keys.isNotEmpty()) {
+                            val next = keys[(keys.indexOf(current).coerceAtLeast(0) + 1) % keys.size]
+                            send(RoomScreenActionDto.ChangeAiStrategy(tableIdText, targetId.toString(), next))
+                        }
+                    }.dimensions(cardX + 8, cardY + AI_STRATEGY_BUTTON_OFFSET_Y, grid.cardWidth - 20, 18).build().also {
+                        it.tooltip = Tooltip.of(aiStrategyTooltip(current))
+                        it.active = room.isHost
+                    },
+                )
+            }
+            if (!room.isHost) return@forEachIndexed
+            addDrawableChild(
+                RestartableMarqueeButtonWidget.builder(Text.literal("×")) {
+                    send(RoomScreenActionDto.Kick(tableIdText, targetId.toString()))
+                }.dimensions(cardX + grid.cardWidth - 23, cardY + KICK_BUTTON_OFFSET_Y, 16, 16).build().also {
+                    it.tooltip = Tooltip.of(Text.translatable(MinecraftRoomScreenKeys.KICK))
+                },
+            )
         }
     }
 
