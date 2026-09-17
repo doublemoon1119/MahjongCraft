@@ -116,7 +116,7 @@ class FabricPlayerFeedbackPublisher(
                 MinecraftPlayerFeedback.PlayerKicked ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.PLAYER_KICKED))
                 MinecraftPlayerFeedback.KickedFromGame ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.KICKED_FROM_GAME), true)
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.KICKED_FROM_GAME))
                 MinecraftPlayerFeedback.CannotKickSelf ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.CANNOT_KICK_SELF), true)
                 MinecraftPlayerFeedback.KickFailed ->
