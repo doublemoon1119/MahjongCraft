@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordExhaustiveDrawForAllPlayers
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -17,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
@@ -30,8 +30,11 @@ import kotlin.uuid.Uuid
  * 負責處理玩家的捨牌請求，包含回合驗證、手牌與牌河狀態更新，以及快照與事件的同步。
  *
  * 捨牌後其他玩家是否有資格吃/碰/槓/榮和這張牌、一炮多響時依 [MultiRonPolicy]
- * 決定實際開放給誰、[RonResolution.ABORTIVE_DRAW] 是否直接觸發流局，這些邏輯與 [DeclareRiichiUseCase]
- * （立直宣告牌）共用，交給 [DiscardReactionResolver] 處理，詳見其 KDoc。
+ * 決定實際開放給誰、[RonResolution.ABORTIVE_DRAW] 是否直接觸發流局，這些邏輯與其他會打出一張牌的宣告
+ * 用例共用，交給 [DiscardReactionResolver] 處理，詳見其 KDoc。
+ *
+ * 規則可透過 [MahjongRuleModule.forcedDiscardTileId] 限定這次只能打出的牌；玩家摸牌後原本可以自摸卻選擇
+ * 捨牌時，一律呼叫 [MahjongRuleModule.onPlayerDeclinedWin]，由規則決定是否產生後果。
  *
  * 除了一炮多響判定為流局之外，這張捨牌若沒有任何人可以吃/碰/槓/榮和，還會額外透過
  * [postActionExhaustiveDrawResolverRegistry] 檢查是否構成主動觸發的途中流局（例如日麻的四風連打）。
@@ -84,10 +87,9 @@ class DiscardTileUseCase(
                         val module = moduleRegistry.getModule(state.config)
                         val lastDrawn = state.currentPlayer.hand.lastDrawn
 
-                        // 立直鎖定手牌結構：只能打剛摸到的牌（摸切），不能改打手牌裡其他牌——立直宣告
-                        // 本身一定是門前清，鳴牌後準備捨牌（justClaimedMeld、lastDrawn == null）不會
-                        // 發生在立直玩家身上，這裡不需要另外排除。
-                        if (module.isPlayerInRiichi(state.currentPlayer) && lastDrawn != null && lastDrawn.id != tileId) {
+                        // 規則可以限定這次只能打出哪一張牌。
+                        val forcedTileId = module.forcedDiscardTileId(state, state.currentPlayer)
+                        if (forcedTileId != null && forcedTileId != tileId) {
                             return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Discard(tileId)))
                         }
 
@@ -98,13 +100,9 @@ class DiscardTileUseCase(
                             discardResult.hand
                         }
 
-                        // 立直中摸切棄胡（原本自摸合法卻選擇打出摸到的牌）視同見逃す，本局起永久振聽——
-                        // 手法比照 GetLegalActionsUseCase own-turn 分支：先把 lastDrawn 移除、再當
-                        // incomingTile 傳入，避免在 standingTiles 裡重複計算這張牌。
-                        val playerAfterDeclineCheck = if (module.isPlayerInRiichi(state.currentPlayer) &&
-                            lastDrawn != null &&
-                            lastDrawn.id == tileId
-                        ) {
+                        // 摸牌後原本可以自摸卻選擇捨牌，視為放棄和牌，後果交給規則決定。lastDrawn 先從手牌
+                        // 移除、再當 incomingTile 傳入，避免在 standingTiles 裡重複計算這張牌。
+                        val playerAfterDeclineCheck = if (lastDrawn != null) {
                             val playerForCheck = state.currentPlayer.copy(hand = state.currentPlayer.hand.copy(lastDrawn = null))
                             val ownTurnActions = module.createLegalActionValidator().getLegalActions(
                                 tableState = state,
@@ -156,7 +154,7 @@ class DiscardTileUseCase(
                         val resolvedAfterReveal = resolved.copy(tableState = revealResult.tableState)
 
                         // 沒有觸發一炮多響流局、也沒有人可反應時，額外檢查是否構成主動觸發的途中流局。
-                        val suufonReason =
+                        val postActionExhaustiveDrawReason =
                             if (
                                 resolvedAfterReveal.abortiveDrawReason == null &&
                                 resolvedAfterReveal.tableState.pendingReaction == null
@@ -172,10 +170,12 @@ class DiscardTileUseCase(
                             } else {
                                 null
                             }
-                        val finalResult = if (suufonReason != null) {
+                        val finalResult = if (postActionExhaustiveDrawReason != null) {
                             resolvedAfterReveal.copy(
-                                tableState = resolvedAfterReveal.tableState.recordExhaustiveDrawForAllPlayers(suufonReason),
-                                abortiveDrawReason = suufonReason,
+                                tableState = resolvedAfterReveal.tableState.recordExhaustiveDrawForAllPlayers(
+                                    postActionExhaustiveDrawReason,
+                                ),
+                                abortiveDrawReason = postActionExhaustiveDrawReason,
                             )
                         } else {
                             resolvedAfterReveal

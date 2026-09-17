@@ -14,7 +14,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
@@ -22,7 +24,10 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawRe
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
@@ -35,6 +40,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -52,9 +58,10 @@ class DiscardTileUseCaseTest {
     private val currentPlayerId = Uuid.random()
     private val otherPlayerId = Uuid.random()
 
-    private class Fixtures {
+    private class Fixtures(
+        val moduleRegistry: MahjongModuleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() },
+    ) {
         val gameRepo = FakeGameRepository()
-        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val handSortPreferenceStore = HandSortPreferenceStore()
@@ -310,6 +317,64 @@ class DiscardTileUseCaseTest {
         val updatedPlayer = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == currentPlayerId }
         val riichiState = updatedPlayer.playerRuleState as RiichiPlayerState
         assertTrue(riichiState.isPermanentlyFuriten, "Declining a legal tsumo while riichi-locked should mark permanent furiten.")
+    }
+
+    /** 規則以 [MahjongRuleModule.forcedDiscardTileId] 限定捨牌時，打出其他牌被拒絕、打出指定牌成功。 */
+    @Test
+    fun `forced discard tile from the rule module rejects any other tile`() = runTest {
+        val probe = HookProbe(forcedTileId = drawnTile.id)
+        val fixtures = Fixtures(probe.registry())
+        fixtures.gameRepo.setTableState(singlePlayerTable(Hand(tiles = listOf(handTile), lastDrawn = drawnTile)))
+
+        val rejected = fixtures.useCase(gameId, currentPlayerId, handTile.id)
+        val accepted = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertEquals(GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(handTile.id)), (rejected as Outcome.Error).error)
+        assertTrue(accepted is Outcome.Success, "Expected the forced tile to be accepted but got $accepted")
+    }
+
+    /** 摸牌後可以自摸卻打出手牌時，同樣通知規則玩家放棄了和牌。 */
+    @Test
+    fun `discarding a hand tile while a tsumo is legal notifies the rule module`() = runTest {
+        val probe = HookProbe()
+        val fixtures = Fixtures(probe.registry())
+        val hand = westWaitHand()
+        fixtures.gameRepo.setTableState(singlePlayerTable(hand))
+
+        val result = fixtures.useCase(gameId, currentPlayerId, hand.tiles.first().id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertEquals(listOf(currentPlayerId), probe.declinedPlayerIds)
+    }
+
+    /** 摸到的牌無法自摸時，不通知規則放棄和牌。 */
+    @Test
+    fun `discarding without a legal tsumo does not notify the rule module`() = runTest {
+        val probe = HookProbe()
+        val fixtures = Fixtures(probe.registry())
+        fixtures.gameRepo.setTableState(singlePlayerTable(Hand(tiles = listOf(handTile), lastDrawn = drawnTile)))
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertEquals(emptyList(), probe.declinedPlayerIds)
+    }
+
+    /** 日麻未立直玩家放棄自摸時不會永久振聽。 */
+    @Test
+    fun `declining a legal tsumo without riichi does not mark permanent furiten`() = runTest {
+        val fixtures = Fixtures()
+        val hand = westWaitHand()
+        fixtures.gameRepo.setTableState(singlePlayerTable(hand))
+
+        val result = fixtures.useCase(gameId, currentPlayerId, hand.lastDrawn!!.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val updatedPlayer = fixtures.gameRepo.getTableState(gameId)!!.players.single()
+        assertFalse(
+            (updatedPlayer.playerRuleState as? RiichiPlayerState)?.isPermanentlyFuriten == true,
+            "Declining a tsumo without riichi should not mark permanent furiten.",
+        )
     }
 
     /**
@@ -1210,5 +1275,57 @@ class DiscardTileUseCaseTest {
                 (table.dynamicRuleState as RiichiDynamicState).getVisibleTileIds(table),
             fixtures.presentationPublisher.getPublishedDeadWallReveal(gameId),
         )
+    }
+
+    /** 只有目前玩家的日麻桌況。 */
+    private fun singlePlayerTable(hand: Hand) = FakeTableStateFactory.create(
+        id = gameId,
+        players = listOf(FakeMahjongPlayerFactory.create(id = currentPlayerId, initialSeat = Wind.EAST, hand = hand)),
+        config = RiichiRuleConfig(),
+        tileWall = TileWall(emptyList()),
+        currentPlayerIndex = 0,
+    )
+
+    /** 門前清單騎聽西風、剛摸到第二張西風，可以門前清自摸。 */
+    private fun westWaitHand() = Hand(
+        tiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 2),
+            Tile.Numeric(Tile.Suit.Character, 3),
+            Tile.Numeric(Tile.Suit.Character, 7),
+            Tile.Numeric(Tile.Suit.Character, 8),
+            Tile.Numeric(Tile.Suit.Character, 9),
+            Tile.Numeric(Tile.Suit.Dot, 4),
+            Tile.Numeric(Tile.Suit.Dot, 5),
+            Tile.Numeric(Tile.Suit.Dot, 6),
+            Tile.Numeric(Tile.Suit.Bamboo, 2),
+            Tile.Numeric(Tile.Suit.Bamboo, 3),
+            Tile.Numeric(Tile.Suit.Bamboo, 4),
+            Tile.Honor.West,
+        ).map(FakeIdentifiedTileFactory::create),
+        lastDrawn = FakeIdentifiedTileFactory.create(Tile.Honor.West),
+    )
+
+    /** 以日麻模組為基礎、只替換捨牌相關 hook 並記錄呼叫的測試規則。 */
+    private class HookProbe(private val forcedTileId: Uuid? = null) {
+        val declinedPlayerIds = mutableListOf<Uuid>()
+
+        fun registry(): MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
+            register(RiichiRuleConfig::class, "test:hook_probe") { config, id ->
+                ProbeRuleModule(delegate = RiichiRuleModule(id, config), probe = this@HookProbe)
+            }
+        }
+
+        private class ProbeRuleModule(
+            delegate: RiichiRuleModule,
+            private val probe: HookProbe,
+        ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
+            override fun forcedDiscardTileId(tableState: TableState, player: MahjongPlayer): Uuid? = probe.forcedTileId
+
+            override fun onPlayerDeclinedWin(player: MahjongPlayer): MahjongPlayer {
+                probe.declinedPlayerIds += player.id
+                return player
+            }
+        }
     }
 }
