@@ -45,10 +45,10 @@ data class RiichiPlayerState(
      *
      * 振聽牌來源：
      * 1. 自己打過的牌（discardPile，包含被鳴走的牌）
-     * 2. 當前巡迴放過的榮和（passedTilesInRound）
+     * 2. 自己上次取牌後放過的牌（passedTilesInRound，用於同巡振聽）
      *
      * @param discardPile 玩家的牌河。
-     * @param passedTilesInRound 當前巡迴中放過的牌（用於同巡振聽）。
+     * @param passedTilesInRound 自己上次取牌後放過的牌。
      * @return 玩家當前振聽的牌集合。
      */
     fun getFuritenTiles(

@@ -99,8 +99,14 @@ internal object DiscardReactionResolver {
         } else {
             val eligiblePlayerIds = meldEligiblePlayerIds + ronWinningPlayerIds
             if (eligiblePlayerIds.isEmpty()) {
+                // 沒有人能反應：這張牌已經交給每位其他玩家而沒有人榮和。
                 val nextPlayer = stateAfterDiscard.nextActivePlayerAfter(discarderId)
-                stateAfterDiscard.copy(currentPlayerIndex = stateAfterDiscard.players.indexOf(nextPlayer))
+                PassedTileRecorder.record(
+                    tableState = stateAfterDiscard.copy(currentPlayerIndex = stateAfterDiscard.players.indexOf(nextPlayer)),
+                    tile = discardedTile,
+                    playerIds = legalActionsByOtherPlayer.keys,
+                    module = module,
+                )
             } else {
                 stateAfterDiscard.copy(
                     pendingReaction = PendingReaction(

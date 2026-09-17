@@ -1503,4 +1503,130 @@ class RespondToDiscardUseCaseTest {
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.IllegalAction(responderId, gameId, GameAction.Pon(discardedTile.id, emptyList())), result.error)
     }
+
+    /** 反應視窗結束且沒有人榮和時，捨牌記入打牌者以外每位玩家的放過清單，包含沒被詢問的玩家。 */
+    @Test
+    fun `closing the reaction window without a ron records the discard for every other player`() = runTest {
+        val fixtures = Fixtures()
+        val bystanderId = Uuid.random()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(
+                FakeMahjongPlayerFactory.create(
+                    id = discarderId,
+                    initialSeat = Wind.EAST,
+                    discardPile = FakeDiscardPile().discardTile(discardedTile),
+                ),
+                FakeMahjongPlayerFactory.create(
+                    id = responderId,
+                    initialSeat = Wind.SOUTH,
+                    hand = Hand(tiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }),
+                ),
+                FakeMahjongPlayerFactory.create(id = bystanderId, initialSeat = Wind.WEST),
+            ),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, responderId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val players = fixtures.gameRepo.getTableState(gameId)!!.players.associateBy { it.id }
+        assertEquals(setOf(Tile.Honor.White), players.getValue(responderId).passedTilesInRound)
+        assertEquals(setOf(Tile.Honor.White), players.getValue(bystanderId).passedTilesInRound)
+        assertEquals(emptySet(), players.getValue(discarderId).passedTilesInRound)
+    }
+
+    /** 鳴牌成立時清除鳴牌者的放過清單，其他玩家仍記入這張捨牌。 */
+    @Test
+    fun `claiming a discard clears the passed tiles of the claiming player`() = runTest {
+        val fixtures = Fixtures()
+        val bystanderId = Uuid.random()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val handTiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(
+                FakeMahjongPlayerFactory.create(
+                    id = discarderId,
+                    initialSeat = Wind.EAST,
+                    discardPile = FakeDiscardPile().discardTile(discardedTile),
+                ),
+                FakeMahjongPlayerFactory.create(
+                    id = responderId,
+                    initialSeat = Wind.SOUTH,
+                    hand = Hand(tiles = handTiles),
+                ).addPassedTile(Tile.Honor.North),
+                FakeMahjongPlayerFactory.create(id = bystanderId, initialSeat = Wind.WEST),
+            ),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id, handTiles.map { it.id }))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val players = fixtures.gameRepo.getTableState(gameId)!!.players.associateBy { it.id }
+        assertEquals(emptySet(), players.getValue(responderId).passedTilesInRound, "Calling should clear the passed tiles.")
+        assertEquals(setOf(Tile.Honor.White), players.getValue(bystanderId).passedTilesInRound)
+    }
+
+    /**
+     * 鳴牌前放過的和牌張不會讓鳴牌後的捨牌分析顯示同巡振聽：碰白前放過北，碰後打出 9 萬即單騎聽北，
+     * 分析應列出北為聽牌且沒有振聽狀態。
+     */
+    @Test
+    fun `discard analysis after claiming does not report temporary furiten from earlier passes`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val ponTiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
+        val nineCharacter = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
+        val remainingTiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 2),
+            Tile.Numeric(Tile.Suit.Character, 3),
+            Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Dot, 5),
+            Tile.Numeric(Tile.Suit.Dot, 6),
+            Tile.Numeric(Tile.Suit.Dot, 7),
+            Tile.Numeric(Tile.Suit.Bamboo, 6),
+            Tile.Numeric(Tile.Suit.Bamboo, 7),
+            Tile.Numeric(Tile.Suit.Bamboo, 8),
+            Tile.Honor.North,
+        ).map(FakeIdentifiedTileFactory::create)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(
+                FakeMahjongPlayerFactory.create(
+                    id = discarderId,
+                    initialSeat = Wind.EAST,
+                    discardPile = FakeDiscardPile().discardTile(discardedTile),
+                ),
+                FakeMahjongPlayerFactory.create(
+                    id = responderId,
+                    initialSeat = Wind.SOUTH,
+                    hand = Hand(tiles = ponTiles + remainingTiles + nineCharacter),
+                    playerRuleState = RiichiPlayerState(),
+                ).addPassedTile(Tile.Honor.North),
+            ),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id, ponTiles.map { it.id }))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        val claimer = newState.players.first { it.id == responderId }
+        val analyzer = assertNotNull(fixtures.moduleRegistry.getModule(newState.config).createDiscardReadinessAnalyzer())
+        val analysis = analyzer.analyze(newState, claimer).single { it.discardTileId == nineCharacter.id }
+        assertEquals(listOf(Tile.Honor.North), analysis.waitingTiles.map { it.tile })
+        assertNull(analysis.statusIndicatorId, "Passes before the claim should not show as temporary furiten after it.")
+    }
 }

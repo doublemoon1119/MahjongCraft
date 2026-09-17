@@ -26,9 +26,9 @@ import kotlin.uuid.Uuid
  *                策略的解析（key → `MahjongAiStrategy` 實例）不在這一層，見 `:mahjong-ai` 的
  *                `MahjongAiStrategyRegistry`。
  * @property seatWind 玩家本局由規則指派的自風／門風；不得用來反推莊家。
- * @property passedTilesInRound 當前巡迴中玩家放過的牌（用於過水碰及同巡振聽判定）：
- *                              放過碰牌機會 → 過水碰（之後不能碰）；放過榮和機會 → 同巡振聽（之後不能榮和）。
- *                              當玩家摸牌時（新的巡迴開始）應清除此集合。
+ * @property passedTilesInRound 玩家上次取牌（摸牌或鳴牌）後，交給玩家、但玩家沒有榮和的牌：他家每一張沒有被
+ *                              榮和的捨牌，以及玩家有資格搶槓卻放過的槓牌。規則以此判斷下次取牌前的限制（例如
+ *                              日麻的同巡振聽）；玩家摸牌或鳴牌時清除。
  * @property actionHistory 記錄玩家執行的動作歷史，用於判斷特定的胡牌役（如嶺上開花需要「槓牌 → 摸牌」的動作序列）。
  */
 data class MahjongPlayer(
@@ -60,9 +60,9 @@ data class MahjongPlayer(
         get() = actionHistory.lastOrNull().let { it is GameAction.Chi || it is GameAction.Pon }
 
     /**
-     * 記錄玩家放過的牌（用於過水碰及同巡振聽判定）。
+     * 記錄一張交給玩家、但玩家沒有榮和的牌，見 [passedTilesInRound]。
      *
-     * @param tile 放過的原始牌；規則特有的等價轉換由規則層處理。
+     * @param tile 放過的牌，由呼叫端先依規則的牌面解讀正規化。
      * @return 記錄後的新 [MahjongPlayer] 實例。
      */
     fun addPassedTile(tile: Tile): MahjongPlayer = copy(passedTilesInRound = passedTilesInRound + tile)
@@ -70,7 +70,7 @@ data class MahjongPlayer(
     /**
      * 清除當前巡迴中放過的牌。
      *
-     * 通常在玩家摸牌（新的巡迴開始）時呼叫。
+     * 玩家摸牌或鳴牌時呼叫。
      *
      * @return 清除後的新 [MahjongPlayer] 實例。
      */

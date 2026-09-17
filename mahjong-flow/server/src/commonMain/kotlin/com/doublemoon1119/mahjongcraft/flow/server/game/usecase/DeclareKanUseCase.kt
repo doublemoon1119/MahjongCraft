@@ -121,22 +121,13 @@ class DeclareKanUseCase(
                             GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
                         )
 
-                    // 搶槓資格：這張牌尚未套用進副露，其他玩家只需要各自問一次 getLegalActions
-                    // 就能判斷是否能榮和它，不需要先套用副露。「反應」分支不分辨 sourceAction 種類，
-                    // 會一併算出 Pon/Chi/OpenKan 資格，但搶槓情境下這些都不合法，只看 Ron。
-                    val ronEligiblePlayerIds = state.players
-                        .filter { it.id != playerId && state.isPlayerActive(it.id) }
-                        .filter { candidate ->
-                            module.createLegalActionValidator().getLegalActions(
-                                tableState = state,
-                                player = candidate,
-                                sourceAction = kanAction,
-                                sourceDirection = state.relativeDirectionOf(candidate.id, playerId),
-                                incomingTile = declaredTile,
-                            ).any { it is GameAction.Ron }
-                        }
-                        .map { it.id }
-                        .toSet()
+                    val ronEligiblePlayerIds = ChankanEligibility.ronEligiblePlayerIds(
+                        tableState = state,
+                        declarerId = playerId,
+                        kanAction = kanAction,
+                        robbedTile = declaredTile,
+                        module = module,
+                    )
 
                     // 搶槓多響（罕見：多位玩家同時可搶同一次加槓）依 MultiRonPolicy 決定實際開放給誰，
                     // 跟一般捨牌榮和共用同一套判定（見 DiscardReactionResolver）——搶槓本質上就是

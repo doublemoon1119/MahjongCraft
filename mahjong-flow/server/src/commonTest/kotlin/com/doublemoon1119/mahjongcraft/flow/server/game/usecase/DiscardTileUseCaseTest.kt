@@ -1328,4 +1328,70 @@ class DiscardTileUseCaseTest {
             }
         }
     }
+
+    /**
+     * 他家打出自己無役的和牌張、沒有被詢問時，同一巡仍會同巡振聽：23萬＋456筒＋555筒＋234條＋66條聽 1-4 萬，
+     * 1 萬無役（不是斷么），4 萬有斷么。打牌者打出 1 萬後，4 萬也不能榮和。
+     */
+    @Test
+    fun `an unclaimable wait discarded by another player causes temporary furiten`() = runTest {
+        val fixtures = Fixtures()
+        val waitingPlayerId = Uuid.random()
+        val oneCharacter = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+        val waitingPlayer = FakeMahjongPlayerFactory.create(
+            id = waitingPlayerId,
+            initialSeat = Wind.WEST,
+            hand = Hand(
+                tiles = listOf(
+                    Tile.Numeric(Tile.Suit.Character, 2),
+                    Tile.Numeric(Tile.Suit.Character, 3),
+                    Tile.Numeric(Tile.Suit.Dot, 4),
+                    Tile.Numeric(Tile.Suit.Dot, 5),
+                    Tile.Numeric(Tile.Suit.Dot, 6),
+                    Tile.Numeric(Tile.Suit.Dot, 5),
+                    Tile.Numeric(Tile.Suit.Dot, 5),
+                    Tile.Numeric(Tile.Suit.Dot, 5),
+                    Tile.Numeric(Tile.Suit.Bamboo, 2),
+                    Tile.Numeric(Tile.Suit.Bamboo, 3),
+                    Tile.Numeric(Tile.Suit.Bamboo, 4),
+                    Tile.Numeric(Tile.Suit.Bamboo, 6),
+                    Tile.Numeric(Tile.Suit.Bamboo, 6),
+                ).map(FakeIdentifiedTileFactory::create),
+            ),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(
+                FakeMahjongPlayerFactory.create(
+                    id = currentPlayerId,
+                    initialSeat = Wind.EAST,
+                    hand = Hand(tiles = listOf(handTile), lastDrawn = oneCharacter),
+                ),
+                FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH),
+                waitingPlayer,
+            ),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(List(10) { FakeIdentifiedTileFactory.create(Tile.Honor.North) }),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+        val fourCharacter = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4))
+        val validator = fixtures.moduleRegistry.getModule(table.config).createLegalActionValidator()
+        fun canRonFourCharacter(state: TableState) = validator.getLegalActions(
+            tableState = state,
+            player = state.players.first { it.id == waitingPlayerId },
+            sourceAction = GameAction.Discard(fourCharacter.id),
+            sourceDirection = state.relativeDirectionOf(waitingPlayerId, otherPlayerId),
+            incomingTile = fourCharacter,
+        ).any { it is GameAction.Ron }
+        assertTrue(canRonFourCharacter(table), "4m should be a legal ron before 1m passes by")
+
+        val result = fixtures.useCase(gameId, currentPlayerId, oneCharacter.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertNull(newState.pendingReaction, "Nobody can claim the no-yaku 1m, so no reaction window should open.")
+        assertFalse(canRonFourCharacter(newState), "4m should be temporarily furiten after passing the 1m wait")
+    }
 }

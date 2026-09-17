@@ -103,6 +103,7 @@ class RespondToKanUseCaseTest {
 
     private fun setUpTable(
         initialDeadWall: List<IdentifiedTile> = completeRiichiReservedWall(rinshanTile),
+        robberRuleState: RiichiPlayerState = RiichiPlayerState(),
     ): TableState {
         val declarer = FakeMahjongPlayerFactory.create(
             id = declarerId,
@@ -113,7 +114,7 @@ class RespondToKanUseCaseTest {
             id = robberId,
             initialSeat = Wind.SOUTH,
             hand = robberHand(),
-            playerRuleState = RiichiPlayerState(),
+            playerRuleState = robberRuleState,
         )
         return FakeTableStateFactory.create(
             id = gameId,
@@ -354,5 +355,58 @@ class RespondToKanUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.IllegalAction(robberId, gameId, GameAction.Pass), result.error)
+    }
+
+    /** 全員放過搶槓時，被搶的牌記入放過者的清單。 */
+    @Test
+    fun `passing a robbable kan records the robbed tile`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.gameRepo.setTableState(setUpTable())
+
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val robber = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == robberId }
+        assertEquals(setOf(Tile.Honor.White), robber.passedTilesInRound)
+    }
+
+    /** 立直中放過搶槓時永久振聽。 */
+    @Test
+    fun `passing a robbable kan while in riichi marks permanent furiten`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.gameRepo.setTableState(
+            setUpTable(robberRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East))),
+        )
+
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val robber = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == robberId }
+        assertTrue(
+            (robber.playerRuleState as RiichiPlayerState).isPermanentlyFuriten,
+            "Passing a robbable kan while in riichi should mark permanent furiten.",
+        )
+    }
+
+    /** 頭跳只詢問最近一家時，同樣可以搶槓卻沒被詢問的玩家在全員放過後也記入被搶的牌。 */
+    @Test
+    fun `a player who can rob but was not asked also records the robbed tile`() = runTest {
+        val fixtures = Fixtures()
+        val secondRobberId = Uuid.random()
+        val baseTable = setUpTable()
+        val secondRobber = FakeMahjongPlayerFactory.create(
+            id = secondRobberId,
+            initialSeat = Wind.WEST,
+            hand = robberHand(),
+            playerRuleState = RiichiPlayerState(),
+        )
+        fixtures.gameRepo.setTableState(baseTable.copy(players = baseTable.players + secondRobber))
+
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val players = fixtures.gameRepo.getTableState(gameId)!!.players.associateBy { it.id }
+        assertEquals(setOf(Tile.Honor.White), players.getValue(robberId).passedTilesInRound)
+        assertEquals(setOf(Tile.Honor.White), players.getValue(secondRobberId).passedTilesInRound)
     }
 }

@@ -115,25 +115,12 @@ class RespondToDiscardUseCase(
                         return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
                     }
 
-                    // 過水：放過的當下若原本可以碰或榮和，記錄下來——碰用於本巡過水碰，
-                    // 榮和用於同巡振聽判定（見 MahjongPlayer.passedTilesInRound 的用途說明）
-                    val responderAfterPassedTile = if (action == GameAction.Pass &&
-                        legalActions.any { it is GameAction.Pon || it is GameAction.Ron }
-                    ) {
-                        responder.addPassedTile(
-                            module.createTileInterpretationPolicy().canonicalize(discardedTile.tile),
-                        )
+                    // 放過原本合法的榮和：後果交給規則決定，見 MahjongRuleModule.onPlayerDeclinedWin。
+                    // 這張牌記入放過清單的時機是反應視窗結束且沒有人榮和時，見 resolvePendingReaction。
+                    val updatedResponder = if (action == GameAction.Pass && legalActions.any { it is GameAction.Ron }) {
+                        module.onPlayerDeclinedWin(responder)
                     } else {
                         responder
-                    }
-
-                    // 立直後放過原本合法的榮和機會即永久振聽，見 MahjongRuleModule.onPlayerDeclinedWin
-                    // KDoc；未立直時放過榮和只構成一般同巡振聽，交給 module 內部依 isRiichi 判斷是否要
-                    // 真的設定永久旗標，這裡不需要重複檢查。
-                    val updatedResponder = if (action == GameAction.Pass && legalActions.any { it is GameAction.Ron }) {
-                        module.onPlayerDeclinedWin(responderAfterPassedTile)
-                    } else {
-                        responderAfterPassedTile
                     }
                     val playersAfterResponse = state.players.map { if (it.id == playerId) updatedResponder else it }
                     val newPendingReaction =
@@ -301,10 +288,12 @@ class RespondToDiscardUseCase(
 
     /**
      * 所有有資格的玩家皆已回應，進行結算：找出優先權最高的非過牌回應套用鳴牌，或在全員過牌時單純推進回合。
+     *
+     * 沒有人榮和時，這張捨牌記入打牌者以外每位仍在本局玩家的放過清單；鳴牌者隨即清除自己的清單。
      */
     private fun resolvePendingReaction(
         state: TableState,
-        players: List<MahjongPlayer>,
+        respondedPlayers: List<MahjongPlayer>,
         pendingReaction: PendingReaction,
         discardedTile: IdentifiedTile,
         module: MahjongRuleModule<*>,
@@ -313,7 +302,7 @@ class RespondToDiscardUseCase(
         if (ronWinnerIds.isNotEmpty()) {
             val resolved = RonSettlementResolver.resolve(
                 state = state,
-                players = players,
+                players = respondedPlayers,
                 discarderId = pendingReaction.discarderId,
                 winningTile = discardedTile,
                 module = module,
@@ -321,12 +310,12 @@ class RespondToDiscardUseCase(
             )
             val result = RespondResult(
                 tableState = resolved?.tableState?.copy(pendingReaction = null)
-                    ?: state.copy(players = players, pendingReaction = pendingReaction),
+                    ?: state.copy(players = respondedPlayers, pendingReaction = pendingReaction),
                 ronWinnerIds = if (resolved != null) ronWinnerIds else emptySet(),
                 ronWinningTileId = if (resolved != null) discardedTile.id else null,
                 ronResolutions = resolved?.resolutions.orEmpty(),
                 ruleModuleId = if (resolved != null) module.id else null,
-                previousTableState = if (resolved != null) state.copy(players = players) else null,
+                previousTableState = if (resolved != null) state.copy(players = respondedPlayers) else null,
                 ronDiscarderId = if (resolved != null) pendingReaction.discarderId else null,
             )
             return if (resolved != null) {
@@ -340,6 +329,14 @@ class RespondToDiscardUseCase(
             }
         }
 
+        val players = PassedTileRecorder.record(
+            tableState = state.copy(players = respondedPlayers),
+            tile = discardedTile,
+            playerIds = respondedPlayers
+                .filter { it.id != pendingReaction.discarderId && state.isPlayerActive(it.id) }
+                .mapTo(mutableSetOf()) { it.id },
+            module = module,
+        ).players
         val stateAfterResponses = state.copy(players = players, pendingReaction = null)
         val completedDiscard = GameAction.Discard(pendingReaction.tileId)
         val abortiveDrawReason = postActionExhaustiveDrawResolverRegistry.resolve(
@@ -406,7 +403,7 @@ class RespondToDiscardUseCase(
         } else {
             calledHand
         }
-        val winnerAfterMeld = claimingWinner.copy(hand = organizedHand).recordAction(winnerAction)
+        val winnerAfterMeld = claimingWinner.copy(hand = organizedHand).clearPassedTiles().recordAction(winnerAction)
 
         val playersAfterMeld = players.map { player ->
             when (player.id) {

@@ -95,9 +95,16 @@ class RespondToKanUseCase(
                         return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
                     }
 
+                    // 放過原本合法的搶槓：後果交給規則決定，見 MahjongRuleModule.onPlayerDeclinedWin。
+                    val stateAfterResponse = if (action == GameAction.Pass && legalActions.any { it is GameAction.Ron }) {
+                        val declinedResponder = module.onPlayerDeclinedWin(responder)
+                        state.copy(players = state.players.map { if (it.id == playerId) declinedResponder else it })
+                    } else {
+                        state
+                    }
                     val newPending = pending.copy(responses = pending.responses + (playerId to action))
                     if (!newPending.isComplete) {
-                        val newState = state.copy(pendingKanReaction = newPending)
+                        val newState = stateAfterResponse.copy(pendingKanReaction = newPending)
                         return@update newState to Outcome.Success(ChankanResult(newState, drawHappened = false))
                     }
 
@@ -147,8 +154,28 @@ class RespondToKanUseCase(
                             ),
                         )
                     } else {
-                        // 全員放過：槓真的成立，補做副露套用，並讓宣告者摸嶺上牌。
-                        val applied = KanDeclarationApplier.apply(state, pending.declarerId, pending.kanAction, pending.robbedTile, module)
+                        // 全員放過：可以搶槓卻沒有榮和的玩家（含一炮多響設定下沒被詢問的玩家）記入被搶的牌，
+                        // 槓真的成立，補做副露套用，並讓宣告者摸嶺上牌。
+                        val passedPlayerIds = newPending.responses.keys + ChankanEligibility.ronEligiblePlayerIds(
+                            tableState = state,
+                            declarerId = pending.declarerId,
+                            kanAction = pending.kanAction,
+                            robbedTile = pending.robbedTile,
+                            module = module,
+                        )
+                        val stateAfterPasses = PassedTileRecorder.record(
+                            tableState = stateAfterResponse,
+                            tile = pending.robbedTile,
+                            playerIds = passedPlayerIds,
+                            module = module,
+                        )
+                        val applied = KanDeclarationApplier.apply(
+                            stateAfterPasses,
+                            pending.declarerId,
+                            pending.kanAction,
+                            pending.robbedTile,
+                            module,
+                        )
                         if (applied is KanDeclarationApplier.Result.Rejected) {
                             val error = if (applied.reasonId == SupplementalDrawReasonIds.WALL_EXHAUSTED) {
                                 GameError.WallExhausted(gameId)
