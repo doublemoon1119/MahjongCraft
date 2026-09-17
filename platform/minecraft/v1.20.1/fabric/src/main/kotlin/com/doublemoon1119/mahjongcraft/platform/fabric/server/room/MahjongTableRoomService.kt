@@ -552,10 +552,6 @@ class MahjongTableRoomService(
             }
             when (val result = changeAiStrategy(tableId, playerId, targetAiId, strategyKey)) {
                 is Outcome.Success -> {
-                    // 更換策略不伴隨房間事件，直接把含新策略的快照送給所有觀察者。
-                    syncRoomToObservers(tableId, roomSnapshotRepository, syncRoom) { observerId ->
-                        roomSnapshotSender.send(tableId, observerId)
-                    }
                     // 換策略成功後 targetAiId 一定還在房間裡，序號查不到理論上不會發生，仍優雅退回 0。
                     val aiSequence = memberCandidateResolver.listAiCandidates(playerId)
                         .firstOrNull { it.playerId == targetAiId }

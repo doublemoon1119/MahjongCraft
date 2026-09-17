@@ -16,6 +16,17 @@ data class RoomSnapshotSyncPayloadDto(
     val snapshot: RoomSnapshotDto,
 )
 
+/**
+ * 房間與對局都不存在時使用的 S2C payload。
+ *
+ * 只清除該玩家手上這個識別碼的房間與對局快照，不攜帶任何動作語意，也不會開啟任何畫面。
+ */
+@Serializable
+data class SnapshotClearedPayloadDto(
+    /** 房間或對局 UUID 的字串表示。 */
+    val id: String,
+)
+
 /** 沒有伴隨遊戲動作、單純重新同步最新 [TableStateSnapshot] 時使用的 S2C payload。 */
 @Serializable
 data class GameSnapshotSyncPayloadDto(

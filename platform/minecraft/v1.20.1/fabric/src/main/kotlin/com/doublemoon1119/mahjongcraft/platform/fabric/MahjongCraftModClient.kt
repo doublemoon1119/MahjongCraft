@@ -184,6 +184,9 @@ class MahjongCraftModClient : ClientModInitializer {
                 )
             }
         }
+        MahjongChannels.snapshotCleared.registerClientReceiver(json) { payload ->
+            stateStore.applySnapshotCleared(Uuid.parse(payload.id))
+        }
         MahjongChannels.gameSnapshot.registerClientReceiver(json) { payload ->
             stateStore.applyGameSnapshot(
                 Uuid.parse(payload.gameId),

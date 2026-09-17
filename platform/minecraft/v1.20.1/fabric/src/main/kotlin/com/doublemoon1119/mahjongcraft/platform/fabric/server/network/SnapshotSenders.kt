@@ -1,9 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.network
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.flow.common.observer.model.ObserverSnapshot
+import com.doublemoon1119.mahjongcraft.flow.common.observer.service.ObserverSnapshotSender
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.SnapshotClearedPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -51,5 +54,43 @@ class GameSnapshotSender(
             json,
             GameSnapshotSyncPayloadDto(gameId.toString(), snapshot.toDto(networkRegistries), preparation?.toDto()),
         )
+    }
+}
+
+/**
+ * [ObserverSnapshotSender] 的 Fabric 實作：房間內容走 [MahjongChannels.roomSnapshot]、對局內容走
+ * [MahjongChannels.gameSnapshot]，兩者都不存在時走 [MahjongChannels.snapshotCleared] 清除玩家手上的
+ * 內容。
+ *
+ * 這些 payload 只更新客戶端保存的狀態，不攜帶動作語意也不產生文字訊息。玩家不在線時直接跳過，下次
+ * 再成為觀察者時會重新收到完整內容。
+ */
+@Single(binds = [ObserverSnapshotSender::class])
+class FabricObserverSnapshotSender(
+    private val serverHolder: FabricServerHolder,
+    @Provided private val json: Json,
+    @Provided private val networkRegistries: NetworkDtoRegistries,
+) : ObserverSnapshotSender {
+    override suspend fun send(id: Uuid, observerId: Uuid, snapshot: ObserverSnapshot?) {
+        val player = serverHolder.findPlayer(observerId) ?: return
+        when (snapshot) {
+            is ObserverSnapshot.OfRoom -> MahjongChannels.roomSnapshot.sendTo(
+                player,
+                json,
+                RoomSnapshotSyncPayloadDto(id.toString(), snapshot.room.toDto(networkRegistries)),
+            )
+
+            is ObserverSnapshot.OfGame -> MahjongChannels.gameSnapshot.sendTo(
+                player,
+                json,
+                GameSnapshotSyncPayloadDto(
+                    gameId = id.toString(),
+                    snapshot = snapshot.game.toDto(networkRegistries),
+                    roundPreparation = snapshot.roundPreparation?.toDto(),
+                ),
+            )
+
+            null -> MahjongChannels.snapshotCleared.sendTo(player, json, SnapshotClearedPayloadDto(id = id.toString()))
+        }
     }
 }

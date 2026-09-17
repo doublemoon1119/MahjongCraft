@@ -139,6 +139,23 @@ class ClientMahjongStateStore(
         }
     }
 
+    /** 清除一張桌子的房間與對局快照；房間與對局都不存在，已保存的大廳狀態改為空桌。 */
+    fun applySnapshotCleared(tableId: Uuid) {
+        updateTable(tableId) { current ->
+            current.withGameSnapshot(null).copy(
+                roomSnapshot = null,
+                roundPreparationSnapshot = null,
+                tableLobby = current.tableLobby?.copy(
+                    phase = TableLobbyPhaseDto.EMPTY,
+                    roomSnapshot = null,
+                    playingPlayerIds = emptyList(),
+                    playingAiPlayerIds = emptyList(),
+                    playingGameConfig = null,
+                ),
+            )
+        }
+    }
+
     /** 保存沒有伴隨遊戲動作的主動同步快照。 */
     fun applyGameSnapshot(
         gameId: Uuid,

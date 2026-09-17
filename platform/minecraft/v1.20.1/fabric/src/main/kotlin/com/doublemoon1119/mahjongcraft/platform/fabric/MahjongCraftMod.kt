@@ -36,6 +36,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableG
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.registerDebugScriptedAiStrategies
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.FabricObserverSnapshotBroadcastService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
@@ -108,7 +109,9 @@ class MahjongCraftMod : ModInitializer {
         val mahjongTileCollisionService = koin.get<MahjongTileCollisionService>()
         val openingPresentationOperations = koin.get<TableOpeningPresentationOperationTracker>()
         val presentationBusyTracker = koin.get<TablePresentationBusyTracker>()
+        val observerBroadcast = koin.get<FabricObserverSnapshotBroadcastService>()
         mahjongTileCollisionService.registerEvents()
+        observerBroadcast.registerEvents()
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             initializeServerConfig(configManager, mahjongTileCollisionService, server)
             runBlocking { statePersistence.attach(server) }
@@ -116,6 +119,7 @@ class MahjongCraftMod : ModInitializer {
             tableLocationValidation.startSession(server)
             serverHolder.set(server)
             appScope.startSession()
+            observerBroadcast.startSession()
         }
         ServerLifecycleEvents.SERVER_STOPPING.register {
             tableLocationValidation.stopSession()
@@ -127,6 +131,7 @@ class MahjongCraftMod : ModInitializer {
                 // 比照 GameDecisionTimerManager.settleAll() 自己 KDoc 要求的「先停止新命令、再結算、
                 // 最後才解除 persistence dirty listener」。
                 appScope.shutdown()
+                observerBroadcast.stopSession()
                 presentationBusyTracker.clearAll()
                 openingPresentationOperations.clearAll()
                 decisionTimerManager.settleAll()

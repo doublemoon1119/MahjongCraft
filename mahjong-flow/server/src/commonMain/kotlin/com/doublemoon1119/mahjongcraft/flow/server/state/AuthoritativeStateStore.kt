@@ -2,6 +2,9 @@ package com.doublemoon1119.mahjongcraft.flow.server.state
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.koin.core.annotation.Single
@@ -40,7 +43,8 @@ data class AuthoritativeStateUpdate<T>(
 /**
  * 以同一把互斥鎖管理 Room 與 Game 的共用狀態儲存。
  *
- * 所有變更皆透過 [update] 提交，使 Room → Game 等跨集合操作能在單次交易內完成。
+ * 所有變更皆透過 [update] 提交，使 Room → Game 等跨集合操作能在單次交易內完成。變更後的狀態同時
+ * 發布到 [state]，供需要在狀態改變時反應的服務訂閱。
  */
 @Single
 class AuthoritativeStateStore {
@@ -48,7 +52,21 @@ class AuthoritativeStateStore {
     private val mutex = Mutex()
 
     /** 目前的不可變伺服器權威狀態。 */
-    private var currentState = AuthoritativeStateSnapshot()
+    private val mutableState = MutableStateFlow(AuthoritativeStateSnapshot())
+
+    /**
+     * 目前狀態，並在每次實際變更後發出新值。
+     *
+     * 訂閱者取得的是已提交的狀態；發出時機在 [update] 的交易內，因此不會觀察到中間狀態。
+     */
+    val state: StateFlow<AuthoritativeStateSnapshot> = mutableState.asStateFlow()
+
+    /** 目前狀態的內部存取捷徑。 */
+    private var currentState: AuthoritativeStateSnapshot
+        get() = mutableState.value
+        set(value) {
+            mutableState.value = value
+        }
 
     /** 目前狀態是否包含尚未由平台保存的變更。 */
     private var dirty = false

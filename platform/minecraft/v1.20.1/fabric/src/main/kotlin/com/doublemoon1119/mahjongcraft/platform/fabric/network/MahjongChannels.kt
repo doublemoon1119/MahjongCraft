@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSu
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomScreenActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.SnapshotClearedPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPayloadDto
 import kotlinx.serialization.builtins.serializer
 
@@ -45,4 +46,10 @@ object MahjongChannels {
     val gameSnapshot = S2CChannel("game_snapshot", GameSnapshotSyncPayloadDto.serializer())
     val roomSnapshot = S2CChannel("room_snapshot", RoomSnapshotSyncPayloadDto.serializer())
     val tableLobby = S2CChannel("table_lobby", TableLobbyPayloadDto.serializer())
+
+    /**
+     * 房間與對局都不存在時清除該玩家手上的快照，見 `ObserverSnapshotSender`。與 [tableLobby] 不同，
+     * 這個頻道不會開啟任何畫面，收到時只更新已保存的狀態。
+     */
+    val snapshotCleared = S2CChannel("snapshot_cleared", SnapshotClearedPayloadDto.serializer())
 }
