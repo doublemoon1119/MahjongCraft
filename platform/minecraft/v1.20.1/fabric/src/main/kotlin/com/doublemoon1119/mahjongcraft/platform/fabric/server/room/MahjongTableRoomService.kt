@@ -80,7 +80,6 @@ class MahjongTableRoomService(
     private val memberCandidateResolver: RoomMemberCandidateResolver,
     private val gameFlowCoordinator: GameFlowCoordinator,
     private val autoDrawService: MahjongAutoDrawService,
-    private val lobbyInfoPresenter: FabricMahjongLobbyInfoPresenter,
     private val serverHolder: FabricServerHolder,
     private val dispatchers: CoroutineDispatchers,
     @Provided private val json: Json,
@@ -444,7 +443,6 @@ class MahjongTableRoomService(
             when (val result = startGame(tableId, playerId)) {
                 is Outcome.Success -> {
                     val gameId = result.value
-                    lobbyInfoPresenter.clear(gameId)
                     gameFlowCoordinator.driveAutomatedPlayers(gameId)
                     autoDrawService.checkAndAutoDraw(gameId)
                 }

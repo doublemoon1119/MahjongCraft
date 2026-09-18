@@ -93,7 +93,8 @@ class MahjongCraftMod : ModInitializer {
         ModItemGroups.register()
         tableLifecycleService.registerEvents()
         tableLocationValidation.registerEvents()
-        koin.get<FabricMahjongLobbyInfoLifecycleService>().registerEvents()
+        val lobbyInfoLifecycle = koin.get<FabricMahjongLobbyInfoLifecycleService>()
+        lobbyInfoLifecycle.registerEvents()
         koin.get<FabricDecisionTimerScheduler>().registerEvents()
         koin.get<FabricTickMonotonicClock>().registerEvents()
         koin.get<FabricWinCelebrationEffectScheduler>().registerEvents()
@@ -120,6 +121,7 @@ class MahjongCraftMod : ModInitializer {
             serverHolder.set(server)
             appScope.startSession()
             observerBroadcast.startSession()
+            lobbyInfoLifecycle.startSession()
         }
         ServerLifecycleEvents.SERVER_STOPPING.register {
             tableLocationValidation.stopSession()
@@ -132,6 +134,7 @@ class MahjongCraftMod : ModInitializer {
                 // 最後才解除 persistence dirty listener」。
                 appScope.shutdown()
                 observerBroadcast.stopSession()
+                lobbyInfoLifecycle.stopSession()
                 presentationBusyTracker.clearAll()
                 openingPresentationOperations.clearAll()
                 decisionTimerManager.settleAll()
