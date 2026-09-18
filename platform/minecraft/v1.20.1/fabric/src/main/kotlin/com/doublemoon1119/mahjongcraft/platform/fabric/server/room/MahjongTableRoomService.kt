@@ -8,12 +8,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.RoomSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -123,6 +125,35 @@ class MahjongTableRoomService(
         }
     }
 
+    /**
+     * 組出一份桌子佔用狀態 payload，一律附上桌子座標。
+     *
+     * 座標是客戶端判斷「玩家是否還在桌子附近」與「桌子是否還在」的依據；少帶座標的話，該關閉的畫面會
+     * 一直留著。集中在這裡建立，就不會有呼叫端漏帶。
+     */
+    private fun tableOccupancyPayload(
+        tableId: Uuid,
+        occupancy: TableOccupancyDto,
+        roomSnapshot: RoomSnapshotDto? = null,
+        playingPlayerIds: List<String> = emptyList(),
+        playingAiPlayerIds: List<String> = emptyList(),
+        playingGameConfig: GameConfigDto? = null,
+    ): TableOccupancyPayloadDto {
+        val location = tableLocationRegistry.get(tableId)?.location
+        return TableOccupancyPayloadDto(
+            tableId = tableId.toString(),
+            occupancy = occupancy,
+            roomSnapshot = roomSnapshot,
+            playingPlayerIds = playingPlayerIds,
+            playingAiPlayerIds = playingAiPlayerIds,
+            playingGameConfig = playingGameConfig,
+            dimensionId = location?.dimensionId,
+            tableX = location?.x,
+            tableY = location?.y,
+            tableZ = location?.z,
+        )
+    }
+
     /** 只送出桌子目前的公開佔用狀態並開啟 RoomScreen，不建立、加入或離開房間。 */
     fun openRoomScreen(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
         val tableId = table.tableId
@@ -135,16 +166,12 @@ class MahjongTableRoomService(
                 MahjongChannels.tableOccupancy.sendTo(
                     player,
                     json,
-                    TableOccupancyPayloadDto(
-                        tableId = tableId.toString(),
+                    tableOccupancyPayload(
+                        tableId = tableId,
                         occupancy = TableOccupancyDto.GAME,
                         playingPlayerIds = game.players.map { it.id.toString() },
                         playingAiPlayerIds = game.players.filter { it.isAi }.map { it.id.toString() },
                         playingGameConfig = GameConfig(game.config, runtimeGame.flowConfig).toDto(networkRegistries),
-                        dimensionId = location?.dimensionId,
-                        tableX = location?.x,
-                        tableY = location?.y,
-                        tableZ = location?.z,
                     ),
                 )
                 return@launch
@@ -155,14 +182,7 @@ class MahjongTableRoomService(
                 MahjongChannels.tableOccupancy.sendTo(
                     player,
                     json,
-                    TableOccupancyPayloadDto(
-                        tableId.toString(),
-                        TableOccupancyDto.VACANT,
-                        dimensionId = location?.dimensionId,
-                        tableX = location?.x,
-                        tableY = location?.y,
-                        tableZ = location?.z,
-                    ),
+                    tableOccupancyPayload(tableId = tableId, occupancy = TableOccupancyDto.VACANT),
                 )
                 return@launch
             }
@@ -175,14 +195,10 @@ class MahjongTableRoomService(
             MahjongChannels.tableOccupancy.sendTo(
                 player,
                 json,
-                TableOccupancyPayloadDto(
-                    tableId.toString(),
-                    TableOccupancyDto.ROOM,
-                    room.toSnapshot(playerId).toDto(networkRegistries),
-                    dimensionId = location?.dimensionId,
-                    tableX = location?.x,
-                    tableY = location?.y,
-                    tableZ = location?.z,
+                tableOccupancyPayload(
+                    tableId = tableId,
+                    occupancy = TableOccupancyDto.ROOM,
+                    roomSnapshot = room.toSnapshot(playerId).toDto(networkRegistries),
                 ),
             )
         }
@@ -251,7 +267,7 @@ class MahjongTableRoomService(
                         MahjongChannels.tableOccupancy.sendTo(
                             player,
                             json,
-                            TableOccupancyPayloadDto(tableId.toString(), TableOccupancyDto.VACANT),
+                            tableOccupancyPayload(tableId = tableId, occupancy = TableOccupancyDto.VACANT),
                         )
                     } else {
                         val updatedRoom = roomRepository.getRoom(tableId)
@@ -260,10 +276,10 @@ class MahjongTableRoomService(
                             MahjongChannels.tableOccupancy.sendTo(
                                 player,
                                 json,
-                                TableOccupancyPayloadDto(
-                                    tableId.toString(),
-                                    TableOccupancyDto.ROOM,
-                                    updatedRoom.toSnapshot(playerId).toDto(networkRegistries),
+                                tableOccupancyPayload(
+                                    tableId = tableId,
+                                    occupancy = TableOccupancyDto.ROOM,
+                                    roomSnapshot = updatedRoom.toSnapshot(playerId).toDto(networkRegistries),
                                 ),
                             )
                         }
@@ -502,10 +518,10 @@ class MahjongTableRoomService(
                         MahjongChannels.tableOccupancy.sendTo(
                             target,
                             json,
-                            TableOccupancyPayloadDto(
-                                tableId.toString(),
-                                TableOccupancyDto.ROOM,
-                                updatedRoom.toSnapshot(targetPlayerId).toDto(networkRegistries),
+                            tableOccupancyPayload(
+                                tableId = tableId,
+                                occupancy = TableOccupancyDto.ROOM,
+                                roomSnapshot = updatedRoom.toSnapshot(targetPlayerId).toDto(networkRegistries),
                             ),
                         )
                     }
