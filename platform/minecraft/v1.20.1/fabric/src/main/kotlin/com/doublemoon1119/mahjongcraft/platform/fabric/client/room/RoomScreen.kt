@@ -89,7 +89,14 @@ class RoomScreen(
     private var rebuildRequested = false
     private var lastRoomSnapshot = stateStore.roomSnapshot(tableId)
     private var lastTable = stateStore.tableOccupancy(tableId)
-    private var wasWaitingRoomMember = stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.ROOM && stateStore.roomSnapshot(tableId)?.isInRoom == true
+
+    /**
+     * 上一次看到房間資料時，自己是不是房間成員。
+     *
+     * 開局的瞬間房間資料會被對局資料取代，當下已經查不到自己是不是成員，因此在每次收到房間資料時記下來。
+     * 記錄的是「當時」的身分，不是「曾經加入過」——加入後又離開的玩家，開局時不該被關閉畫面。
+     */
+    private var wasRoomMember = stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.ROOM && stateStore.roomSnapshot(tableId)?.isInRoom == true
     private val profilePreviews = mutableMapOf<Uuid, OtherClientPlayerEntity>()
     private val appearanceResolver = RoomMemberAppearanceResolver(appearanceSources)
     private val memberPresentation = RoomMemberPresentation(indicatorTextResolver)
@@ -694,13 +701,13 @@ class RoomScreen(
             val previousTable = lastTable
             val previousRoom = lastRoomSnapshot
             val currentTable = stateStore.tableOccupancy(tableId)
-            if (previousTable?.occupancy == TableOccupancyDto.ROOM && previousRoom?.isInRoom == true) {
-                wasWaitingRoomMember = true
+            if (previousTable?.occupancy == TableOccupancyDto.ROOM && previousRoom != null) {
+                wasRoomMember = previousRoom.isInRoom
             }
             if (
                 previousTable?.occupancy == TableOccupancyDto.ROOM &&
                 currentTable?.occupancy == TableOccupancyDto.GAME &&
-                wasWaitingRoomMember
+                wasRoomMember
             ) {
                 closeEntireScreen()
                 return
@@ -712,7 +719,7 @@ class RoomScreen(
                 page = Page.ROOM
             }
             if (stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.VACANT) {
-                wasWaitingRoomMember = false
+                wasRoomMember = false
                 page = Page.ROOM
                 draft.clear()
             }
