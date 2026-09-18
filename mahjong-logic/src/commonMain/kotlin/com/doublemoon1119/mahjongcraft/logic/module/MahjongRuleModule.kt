@@ -386,19 +386,6 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun isHighlightedTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = false
 
     /**
-     * 這位玩家目前算不算「立直中」——用來讓呈現層知道該不該在這個座位面前顯示立直棒。目前只有日麻
-     * 有立直這個概念，故僅該規則需要覆寫；刻意不用 [PlayerRuleState] 以外任何規則專屬的具體型別
-     * 命名，呼叫端也不該自行轉型成特定規則的 [PlayerRuleState] 實作（例如 `RiichiPlayerState`）來
-     * 回答這個問題——理由同 `DeclareRiichiUseCase` KDoc「刻意不轉型成任何規則專屬的具體型別」的說明。
-     *
-     * 沒有立直（或對應概念）的規則固定回傳 `false`。
-     *
-     * @param player 欲判斷的玩家。
-     * @return 這位玩家目前是否算立直中。
-     */
-    fun isPlayerInRiichi(player: MahjongPlayer): Boolean = false
-
-    /**
      * 取得規則要求玩家本次一般捨牌必須打出的牌；預設不限制。
      *
      * 正式捨牌用例以此拒絕打出其他牌；AI 與其他自動決策者也以此避免送出違反規則狀態的捨牌命令。
@@ -415,18 +402,6 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 實作不得回傳振聽、手牌或其他只有本人可見的資訊。
      */
     fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = emptyList()
-
-    /**
-     * 場上目前尚未被任何人收下的供託數量——純查詢，不像 [collectStickPot] 會連帶把狀態歸零，用來讓
-     * 呈現層在收下之前（例如流局延續到下一局、或宣告供託當下）也能知道場上目前累積多少供託。是供託
-     * 本身的數量（例如日麻立直棒的支數），不是換算後的點數——換算成點數是 [collectStickPot] 的職責。
-     *
-     * 不支援供託機制的規則維持預設值 `0`。
-     *
-     * @param tableState 目前的桌況。
-     * @return 場上目前尚未被收下的供託數量。
-     */
-    fun getStickPotCount(tableState: TableState): Int = 0
 
     /**
      * 桌面中央局況顯示的完整內容——場風、局數、本場數、牌山剩餘等要不要顯示、怎麼顯示，全部由規則

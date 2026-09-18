@@ -176,44 +176,17 @@ interface GamePresentationPublisher {
     fun publishWallTilesRevealed(gameId: Uuid, revealedTileIds: Set<Uuid>)
 
     /**
-     * 通知平台呈現層本局莊家角落的積棒（連莊棒）數量。
+     * 通知平台：桌況在呈現流程的這個時間點更新了，規則自己負責擺在桌上的物件需要依目前桌況更新。
      *
-     * 跟牌牆同一個時機點觸發（呼叫端緊接在 [publishWallStructure] 之後呼叫），不是每次打牌/摸牌/
-     * 鳴牌都觸發——積棒數量整局固定（等於 `TableState.comboCount`），只有連莊/換局時才變，生命週期
-     * 綁在牌牆生成，不是綁在 [publishPlayerAreaUpdated]。
+     * 這裡不帶任何規則專屬的資料，也不假設桌上會有什麼物件；要不要擺、擺什麼、擺在哪，完全由平台上該規則
+     * 登記的描述決定。沒有登記描述的規則，桌上不會多出任何東西。
      *
-     * @param gameId 對局 Uuid。
-     * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index——積棒只在莊家角落顯示。
-     * @param stickCount 該顯示的積棒支數，恆等於 `TableState.comboCount`；`0` 代表這局還沒連莊過，
-     * 等同只清除舊積棒。
-     */
-    fun publishScoringSticksUpdated(gameId: Uuid, dealerSeatIndex: Int, stickCount: Int)
-
-    /**
-     * 通知平台呈現層本局目前的全部供託棒——刻意用泛用的「供託」措辭而非「立直」，讓這個介面本身維持
-     * 規則無關，比照 [publishWallTilesRevealed] 的既有慣例；不支援供託概念的規則永遠不會呼叫這個
-     * 方法。內容分兩層：這局場上宣告中的座位集合，以及延續自前局、尚未被任何人收下的供託堆支數
-     * （兩者相加恆等於 `MahjongRuleModule.getStickPotCount`）。
-     *
-     * 供託棒不是「換局一律清空」——流局後沒被收下的供託延續到下一局，只有真正被贏家收下、或整場
-     * 對局結束時才會消失，跟 [publishScoringSticksUpdated]（綁在牌牆生成）各自獨立更新。
+     * 呼叫時機屬於呈現編排的一部分，呼叫端依既有順序在固定時間點呼叫：開局與換局緊接在 [publishWallStructure]
+     * 之後，以及規則狀態改變了桌上物件之後（例如宣告成立）。
      *
      * @param gameId 對局 Uuid。
-     * @param declaredSeatIndices 目前場上有宣告中供託棒的座位 index 集合（例如日麻的
-     * `MahjongRuleModule.isPlayerInRiichi`）；空集合代表這局目前沒有人宣告。
-     * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index——延續自前局的供託堆只在
-     * 莊家角落顯示，跟積棒同一個角落。
-     * @param comboStickCount 目前積棒（本場棒）支數，恆等於 `TableState.comboCount`——延續自前局的供託
-     * 堆疊放時從這個支數之後接續，視覺上跟積棒同一疊。
-     * @param pooledStickCount 延續自前局、尚未被任何人收下的供託堆支數；`0` 代表沒有延續的供託。
      */
-    fun publishStickPotUpdated(
-        gameId: Uuid,
-        declaredSeatIndices: Set<Int>,
-        dealerSeatIndex: Int,
-        comboStickCount: Int,
-        pooledStickCount: Int,
-    )
+    fun publishTablePropsUpdated(gameId: Uuid)
 
     /**
      * 通知平台呈現層桌面中央局況顯示需要更新為目前狀態——實際顯示什麼內容完全由規則模組決定
@@ -250,7 +223,7 @@ interface GamePresentationPublisher {
      * 錨點外緣（積棒外緣），後續每組依序往玩家自己手牌方向排開，呼叫端不需要另外傳遞位置索引。
      * @param comboStickCount 這位玩家目前該顯示的積棒支數——只有莊家非零，等於 `TableState.comboCount`；
      * 只用來讓手牌／副露正確讓開積棒佔用的空間，不會觸發積棒呈現本身的生成／清除（那是
-     * [publishScoringSticksUpdated] 的職責）。
+     * [publishTablePropsUpdated] 的職責）。
      * @param animateDrawnTile [drawnTileId] 非 `null` 時，是否要播放「牌從牌山原位面朝下起飛、隱形
      * 傳送到摸牌位、傳送同一瞬間切換成面向玩家、解除隱形後落下」的動畫——只有真正的摸牌事件
      * （`DrawTileUseCase`）該傳 `true`；其餘呼叫端（捨牌、鳴牌、副露相關回應）即使當下摸牌位仍有牌，

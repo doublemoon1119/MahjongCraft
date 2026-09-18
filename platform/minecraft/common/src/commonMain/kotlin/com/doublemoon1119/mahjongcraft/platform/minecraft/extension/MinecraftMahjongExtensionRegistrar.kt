@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.registerBuiltInRu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiActionSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiReasons
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiRoundInfoLineDisplays
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiTableProps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInMatchSettlementTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInWinSettlementTemplates
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.registerBuiltInWinCelebrationShowcases
@@ -65,6 +66,7 @@ object MinecraftMahjongExtensionRegistrar {
         registries.gameConfigPresentationRegistry.registerBuiltInGameConfigPresentations()
         registries.gameActionSoundPresentationRegistry.registerBuiltInRiichiActionSounds()
         registries.roundInfoLineDisplayRegistry.registerBuiltInRiichiRoundInfoLineDisplays()
+        registries.tablePropDescriberRegistry.registerBuiltInRiichiTableProps()
         val baseline = registries.registrationSnapshot()
 
         val registeredExtensionIds = mutableSetOf<String>()
@@ -94,6 +96,7 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerGameConfigPresentations(registries.gameConfigPresentationRegistry)
                 extension.registerRoomMemberAppearanceSources(registries.roomMemberAppearanceSourceRegistry)
                 extension.registerRoundInfoLineDisplays(registries.roundInfoLineDisplayRegistry)
+                extension.registerTablePropDescribers(registries.tablePropDescriberRegistry)
             } catch (cause: Exception) {
                 throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
             }

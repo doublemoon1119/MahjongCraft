@@ -229,16 +229,8 @@ class DeclareRiichiUseCase(
             newlyDiscardedTileId = tileId,
         )
 
-        // 5. 通知平台呈現層更新立直棒——用規則無關的 isPlayerInRiichi hook 掃過全體玩家算出目前立直
-        // 中的座位集合，不假設剛宣告的這位玩家一定在集合裡（雖然目前唯一支援立直的規則必然如此）。
-        // 延續自前局的供託堆支數 = 場上目前總供託 - 這局自己宣告貢獻的支數，見 GamePresentationPublisher
-        // KDoc；每次立直宣告固定貢獻剛好 1 支，公式恆成立。
-        val riichiSeatIndices = newState.players.withIndex()
-            .filter { (_, player) -> module.isPlayerInRiichi(player) }
-            .map { (playerSeatIndex, _) -> playerSeatIndex }
-            .toSet()
-        val pooledStickCount = module.getStickPotCount(newState) - riichiSeatIndices.size
-        presentationPublisher.publishStickPotUpdated(gameId, riichiSeatIndices, dealerSeatIndex, newState.comboCount, pooledStickCount)
+        // 5. 宣告成立後立直棒要出現在桌上，通知平台依目前桌況更新桌上物件。
+        presentationPublisher.publishTablePropsUpdated(gameId)
 
         // 6. 通知平台呈現層更新桌面局況顯示——立直宣告當下供託支數馬上 +1，若不在這裡也更新一次，
         // 顯示要等到下一次摸牌才會跟著變，體驗不一致。

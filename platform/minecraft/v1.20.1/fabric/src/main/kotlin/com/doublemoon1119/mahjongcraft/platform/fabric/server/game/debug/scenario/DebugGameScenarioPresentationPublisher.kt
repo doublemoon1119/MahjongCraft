@@ -89,21 +89,12 @@ class DebugGameScenarioPresentationPublisher(
         }
     }
 
-    /** 發布靜態情境與完整開局共用的點棒、供託及局況資訊。 */
+    /** 發布靜態情境與完整開局共用的桌上物件及局況資訊。 */
     private fun publishTableInformation(result: DebugGameScenarioResult) {
         val game = result.game
         val state = game.tableState
         val module = moduleRegistry.getModule(state.config)
-        publisher.publishScoringSticksUpdated(game.id, state.dealerIndex, state.comboCount)
-        publisher.publishStickPotUpdated(
-            gameId = game.id,
-            declaredSeatIndices = state.players.mapIndexedNotNull { index, player ->
-                index.takeIf { module.isPlayerInRiichi(player) }
-            }.toSet(),
-            dealerSeatIndex = state.dealerIndex,
-            comboStickCount = state.comboCount,
-            pooledStickCount = module.getStickPotCount(state),
-        )
+        publisher.publishTablePropsUpdated(game.id)
         publisher.publishRoundInfoUpdated(game.id, module.getRoundInfoLines(state))
     }
 }

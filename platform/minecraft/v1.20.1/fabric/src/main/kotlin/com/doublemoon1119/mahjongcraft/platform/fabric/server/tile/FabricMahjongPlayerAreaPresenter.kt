@@ -13,8 +13,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MeldActionPopupTil
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentation
@@ -548,7 +548,7 @@ class FabricMahjongPlayerAreaPresenter(
      * 清除指定 controller 周圍且 table UUID 相符的所有正式管理中麻將牌——跟
      * [FabricMahjongTileWallPresenter.clear] 效果相同（都是清這張桌子的全部管理中麻將牌，不分子
      * 系統），保留成獨立方法只是維持介面對稱，呼叫端仍可能只想觸發這條路徑的清除。積棒不在這裡清除
-     * （見 [MahjongScoringStickPresenter]）。
+     * （見 [TablePropPresenter]）。
      */
     override fun clear(tableId: Uuid, tableLocation: TableLocation): Int {
         val world = resolveWorld(tableLocation) ?: return 0

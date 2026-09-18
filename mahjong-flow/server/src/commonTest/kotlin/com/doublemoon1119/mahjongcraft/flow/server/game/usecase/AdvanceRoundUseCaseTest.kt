@@ -460,7 +460,8 @@ class AdvanceRoundUseCaseTest {
     }
 
     /**
-     * 驗證開新的一局後，所有觀察者的快照皆同步更新，且所有玩家皆收到 [GameAction.RoundStarted] 事件通知。
+     * 驗證開新的一局後，所有觀察者的快照皆同步更新、所有玩家皆收到 [GameAction.RoundStarted] 事件通知，
+     * 且平台收到一次桌上物件更新通知。
      */
     @Test
     fun `test advance round syncs snapshot and notifies all players`() = runTest {
@@ -488,6 +489,7 @@ class AdvanceRoundUseCaseTest {
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, p2.id))
         assertTrue(GameAction.RoundStarted in fixtures.eventPublisher.getNotifiedActions(gameId, dealerId, dealerId))
         assertTrue(GameAction.RoundStarted in fixtures.eventPublisher.getNotifiedActions(gameId, p2.id, dealerId))
+        assertEquals(1, fixtures.presentationPublisher.getTablePropsUpdateCount(gameId))
     }
 
     /**

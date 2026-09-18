@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
@@ -36,6 +37,7 @@ class MinecraftPresentationRegistriesTest {
             exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl(),
             roundPreparationDisplayNameRegistry = RoundPreparationDisplayNameRegistryImpl(),
             roundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl(),
+            tablePropDescriberRegistry = TablePropDescriberRegistryImpl(),
             winCelebrationShowcaseRegistry = WinCelebrationShowcaseRegistryImpl(),
             winSettlementTemplateRegistry = WinSettlementPresentationTemplateRegistryImpl(),
             matchSettlementTemplateRegistry = MatchSettlementPresentationTemplateRegistryImpl(),

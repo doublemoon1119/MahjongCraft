@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatOffset
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.advance
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localDiscardVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localHandVector
@@ -569,7 +571,7 @@ object MahjongTileTableLayout {
 
     /**
      * 積棒區沿排列方向（局部 X 軸）總共消耗的世界寬度——同一排最多 [STICKS_PER_ROW] 支，超過的部分
-     * 往局部 Y 軸疊下一層（見 [stickPlacement]），不會增加寬度，所以寬度只會隨 [stickCount] 成長到
+     * 往局部 Y 軸疊下一層，不會增加寬度，所以寬度只會隨 [stickCount] 成長到
      * [STICKS_PER_ROW] 支就不再變化。
      */
     fun stickAreaWidth(stickCount: Int): Double {
@@ -605,98 +607,56 @@ object MahjongTileTableLayout {
     }
 
     /**
-     * 依 controller 座標、桌子世界朝向與座位 index，算出這位玩家積棒區中第 [stickIndex]
-     * （`0` 起算，依生成順序排列）支積棒的世界座標——積棒直接佔用 [MELD_AREA_CORNER_OFFSET] 桌角
-     * 錨點本身（副露從積棒外緣往手牌方向接續排開，見 [meldPlacement] 呼叫端如何把
-     * [stickAreaWidth] 當成副露游標起始值），刻意的設計決定。
+     * 把座位錨點加上本地偏移，換算成世界座標與朝向。
      *
-     * 短邊（[MahjongScoringStickDimensions.STICK_DEPTH]）朝向玩家自己、沿排列方向（局部 X 軸）決定
-     * 同一排能塞幾支；長邊（[MahjongScoringStickDimensions.STICK_WIDTH]）往桌子中心延伸（垂直排列
-     * 方向，局部 Z 軸）。同一排最多 [STICKS_PER_ROW] 支，超過往局部 Y 軸疊下一層，同樣從第一支排到
-     * 第 [STICKS_PER_ROW] 支，Y 軸層數無上限——同樣是刻意的設計決定。
+     * 錨點與偏移都以「坐在桌子南側的玩家」為基準；這裡依座位所在的桌子側面與桌子朝向旋轉，呼叫端不需要
+     * 處理旋轉。跟座位一樣直接用座位 index 算側面，不經過莊家相對旋轉。
+     *
+     * @param anchor 座位上的基準位置。
+     * @param offset 相對於 [anchor] 的偏移。
+     * @param yawOffset 在座位原本朝向之上額外轉動的角度（度）。
      */
-    fun stickPlacement(
+    fun seatAnchorPlacement(
         controllerX: Int,
         controllerY: Int,
         controllerZ: Int,
         tableFacing: MahjongTableFacing,
         seatIndex: Int,
-        stickIndex: Int,
+        anchor: TableSeatAnchor,
+        offset: TableSeatOffset,
+        yawOffset: Float = 0f,
     ): MahjongTileWallPlacement {
-        require(stickIndex >= 0) { "Stick index must not be negative" }
-
         val physicalSide = seatIndexToTableSide(seatIndex)
-        val local = localStickVector(stickIndex)
+        val anchorVector = localAnchorVector(anchor)
+        val local = TileTableVector(
+            x = anchorVector.x + offset.x,
+            y = anchorVector.y + offset.y,
+            z = anchorVector.z + offset.z,
+        )
         val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
-        val baseYaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES)
         return MahjongTileWallPlacement(
             x = controllerX + BLOCK_CENTER + worldOffset.x,
             y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
             z = controllerZ + BLOCK_CENTER + worldOffset.z,
-            yaw = (baseYaw + SIDEWAYS_YAW_OFFSET).mod(FULL_YAW_DEGREES),
+            yaw = (yawForSide(physicalSide) + yawForFacing(tableFacing) + yawOffset).mod(FULL_YAW_DEGREES),
         )
     }
 
     /**
-     * 以局部南側玩家為基準的單支積棒位置：沿排列方向（局部 X 軸）從 [MELD_AREA_CORNER_OFFSET] 桌角
-     * 錨點往負向排開，每排（[STICKS_PER_ROW] 支）用一個 [MahjongScoringStickDimensions.STICK_DEPTH]
-     * 加 [MahjongTileDimensions.TILE_SMALL_PADDING] 的步距；垂直排列方向（局部 Z 軸）固定貼齊
-     * [MELD_NEAR_EDGE_LINE] 往桌子中心扣除半個 [MahjongScoringStickDimensions.STICK_WIDTH]（長邊朝
-     * 桌子中心延伸）；局部 Y 軸依層數（`stickIndex / STICKS_PER_ROW`）疊高，層高為
-     * [MahjongScoringStickDimensions.STICK_HEIGHT] 加一層 [MahjongTileDimensions.TILE_SMALL_PADDING]。
+     * 以局部南側玩家為基準的錨點位置。
+     *
+     * - [TableSeatAnchor.DISCARD_INNER_EDGE]：牌河第一排（[DISCARD_ROW_BASE_OFFSET] 是牌中心點）往桌子中心退半張牌
+     *   高，即牌河靠桌子中心那條邊；沿排列方向置中。
+     * - [TableSeatAnchor.MELD_CORNER]：副露角落，沿排列方向位於 [MELD_AREA_CORNER_OFFSET]，垂直方向位於
+     *   [MELD_NEAR_EDGE_LINE]。
      */
-    private fun localStickVector(stickIndex: Int): TileTableVector {
-        val column = stickIndex % STICKS_PER_ROW
-        val layer = stickIndex / STICKS_PER_ROW
-        val stepAlong = MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING
-        val alongSide = MELD_AREA_CORNER_OFFSET - (column + 0.5) * stepAlong
-        val perpendicular = MELD_NEAR_EDGE_LINE - MahjongScoringStickDimensions.STICK_WIDTH / 2.0
-        val layerHeight = layer * (MahjongScoringStickDimensions.STICK_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING)
-        return TileTableVector(x = alongSide, y = layerHeight, z = perpendicular)
-    }
-
-    /**
-     * 依 controller 座標、桌子世界朝向與座位 index，算出這位玩家立直棒該擺放的世界座標——立直棒放在
-     * 這位玩家牌河（[DISCARD_ROW_BASE_OFFSET]）更靠近桌子中心那一側、緊鄰牌河第一排的位置、沿排列
-     * 方向（局部 X 軸）置中，代表「立直棒放在桌子中央附近、緊鄰自己牌河」的實際擺法——遊戲內比對過
-     * 截圖後確認：不是放在手牌與牌河之間（那個位置太靠近玩家自己、而非桌子中央）。跟 [discardPlacement]／
-     * [stickPlacement] 同樣直接用座位 index 算局部側面，不經過莊家相對旋轉——立直棒屬於宣告立直的
-     * 玩家自己，跟座位一樣整場對局固定不變。
-     */
-    fun riichiStickPlacement(
-        controllerX: Int,
-        controllerY: Int,
-        controllerZ: Int,
-        tableFacing: MahjongTableFacing,
-        seatIndex: Int,
-    ): MahjongTileWallPlacement {
-        val physicalSide = seatIndexToTableSide(seatIndex)
-        val local = localRiichiStickVector()
-        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
-        val baseYaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES)
-        return MahjongTileWallPlacement(
-            x = controllerX + BLOCK_CENTER + worldOffset.x,
-            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
-            z = controllerZ + BLOCK_CENTER + worldOffset.z,
-            yaw = baseYaw,
+    private fun localAnchorVector(anchor: TableSeatAnchor): TileTableVector = when (anchor) {
+        TableSeatAnchor.DISCARD_INNER_EDGE -> TileTableVector(
+            x = 0.0,
+            y = 0.0,
+            z = DISCARD_ROW_BASE_OFFSET - MahjongTileDimensions.TILE_HEIGHT / 2.0,
         )
-    }
-
-    /**
-     * 以局部南側玩家為基準的立直棒位置：沿排列方向（局部 X 軸）置中（`alongSide = 0`）；垂直於排列
-     * 方向（局部 Z 軸）從 [DISCARD_ROW_BASE_OFFSET]（牌河第一排「牌中心點」，不是牌的近緣）往桌子
-     * 中心方向退開：先扣掉牌河第一排那張牌自己一半的 [MahjongTileDimensions.TILE_HEIGHT]（牌本身
-     * 佔用的範圍，[DISCARD_ROW_BASE_OFFSET] 本身只是牌中心點座標，直接拿來當立直棒邊界會讓立直棒疊進
-     * 牌河第一排——這是遊戲內實際驗證過的問題），再扣掉立直棒自己一半的
-     * [MahjongScoringStickDimensions.STICK_DEPTH]，最後扣掉 [RIICHI_STICK_CLEARANCE_GAP] 讓兩者之間
-     * 保留一點肉眼可辨的縫隙，不是只夠避免 Z-fighting 的極小留白。
-     */
-    private fun localRiichiStickVector(): TileTableVector {
-        val clearance = MahjongTileDimensions.TILE_HEIGHT / 2.0 +
-            MahjongScoringStickDimensions.STICK_DEPTH / 2.0 +
-            RIICHI_STICK_CLEARANCE_GAP
-        val perpendicular = DISCARD_ROW_BASE_OFFSET - clearance
-        return TileTableVector(x = 0.0, y = 0.0, z = perpendicular)
+        TableSeatAnchor.MELD_CORNER -> TileTableVector(x = MELD_AREA_CORNER_OFFSET, y = 0.0, z = MELD_NEAR_EDGE_LINE)
     }
 
     /**
@@ -1015,9 +975,6 @@ object MahjongTileTableLayout {
      */
     internal const val DISCARD_ROW_BASE_OFFSET: Double =
         DISCARD_WALL_NEAR_EDGE - DISCARD_SAFE_ROWS * (MahjongTileDimensions.TILE_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING)
-
-    /** 立直棒跟牌河第一排之間，肉眼可辨的留白距離，起始估算值，預期進遊戲後用截圖比對調整。 */
-    internal const val RIICHI_STICK_CLEARANCE_GAP: Double = 0.05
 
     /** 側身標記的牌額外旋轉角度。 */
     internal const val SIDEWAYS_YAW_OFFSET: Float = 90.0f

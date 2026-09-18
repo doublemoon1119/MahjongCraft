@@ -11,12 +11,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.TableBreakPolic
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.allowsTableBreak
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongStickPotPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
@@ -42,8 +41,7 @@ class FabricTableLifecycleService(
     private val diceRollPresenter: MahjongDiceRollPresenter,
     private val tileWallPresenter: MahjongTileWallPresenter,
     private val playerAreaPresenter: MahjongPlayerAreaPresenter,
-    private val scoringStickPresenter: MahjongScoringStickPresenter,
-    private val stickPotPresenter: MahjongStickPotPresenter,
+    private val tablePropPresenter: TablePropPresenter,
     private val discardPresenter: MahjongDiscardPresenter,
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
     private val playerInfoPresenter: MahjongPlayerInfoPresenter,
@@ -71,8 +69,7 @@ class FabricTableLifecycleService(
         val removedDiceCount = diceRollPresenter.clear(table.tableId, tableLocation)
         val removedWallTileCount = tileWallPresenter.clear(table.tableId, tableLocation)
         val removedPlayerAreaTileCount = playerAreaPresenter.clear(table.tableId, tableLocation)
-        val removedStickCount = scoringStickPresenter.clear(table.tableId, tableLocation)
-        val removedStickPotCount = stickPotPresenter.clear(table.tableId, tableLocation)
+        val removedTablePropCount = tablePropPresenter.clear(table.tableId, tableLocation)
         val removedDiscardTileCount = discardPresenter.clear(table.tableId, tableLocation)
         val removedRoundInfoCount = roundInfoPresenter.clear(table.tableId, tableLocation)
         val removedPlayerInfoCount = playerInfoPresenter.clear(table.tableId, tableLocation)
@@ -82,14 +79,13 @@ class FabricTableLifecycleService(
         val entry = locations.put(table.tableId, tableLocation)
         val result = runBlocking { cleanupService.cleanupMissing(table.tableId, entry.revision) }
         logger.debug(
-            "Handled replaced Mahjong table {} with cleanup result {}, removed {} managed dice, {} managed wall tiles, {} managed player area tiles, {} managed sticks, {} managed stick-pot sticks, {} managed discard tiles, {} managed round info displays, {} managed player info displays, {} managed lobby info displays, {} managed tile selection confirm panels and {} transient presentations",
+            "Handled replaced Mahjong table {} with cleanup result {}, removed {} managed dice, {} managed wall tiles, {} managed player area tiles, {} managed table props, {} managed discard tiles, {} managed round info displays, {} managed player info displays, {} managed lobby info displays, {} managed tile selection confirm panels and {} transient presentations",
             table.tableId,
             result,
             removedDiceCount,
             removedWallTileCount,
             removedPlayerAreaTileCount,
-            removedStickCount,
-            removedStickPotCount,
+            removedTablePropCount,
             removedDiscardTileCount,
             removedRoundInfoCount,
             removedPlayerInfoCount,

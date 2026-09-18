@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import kotlin.uuid.Uuid
 
@@ -40,9 +39,8 @@ enum class MahjongRoundInfoPresentationResult {
  * （見 `MahjongRuleModule.getRoundInfoLines`），這裡不假設任何固定欄位。
  *
  * 每張桌子固定只有一個常駐 entity，找不到既有的才生成新的（不是每次都清除重建，比照
- * [MahjongTileWallPresenter] 的「找到、
- * 更新」慣例，而不是 [MahjongScoringStickPresenter]
- * 那種按需生成模式——局況顯示沒有「整批換新」的需求，通常只是文字內容更新）。
+ * [MahjongTileWallPresenter] 的「找到、更新」慣例——局況顯示沒有「整批換新」的需求，通常只是文字內容
+ * 更新）。
  */
 interface MahjongRoundInfoPresenter {
     /** 在指定桌面呈現目前局況；找不到既有 entity 時建立一個。 */

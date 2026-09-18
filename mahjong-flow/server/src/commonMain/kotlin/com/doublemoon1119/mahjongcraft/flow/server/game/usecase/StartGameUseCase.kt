@@ -140,17 +140,9 @@ class StartGameUseCase(
             // 的快照反推點數（快照本來就不帶開門用的擲骰資料）。
             eventPublisher.publishToTable(roomId, seatedPlayerIds, operatorId, GameAction.DiceRolled(diceRoll))
         }
-        // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；開局第一局 comboCount 恆為 0，
-        // 呼叫本身仍需要，確保積棒呈現從上一局殘留（理論上不會發生，但保持呼叫語意一致）清乾淨。
-        presentationPublisher.publishScoringSticksUpdated(roomId, dealerSeatIndex, tableState.comboCount)
-        // 開局第一局，不可能有任何延續的供託，全部固定為空／0。
-        presentationPublisher.publishStickPotUpdated(
-            roomId,
-            declaredSeatIndices = emptySet(),
-            dealerSeatIndex = dealerSeatIndex,
-            comboStickCount = 0,
-            pooledStickCount = 0,
-        )
+        // 桌上由規則擺放的物件跟牌牆同時更新，緊接在 publishWallStructure 之後呼叫；開局時也要呼叫，
+        // 確保上一場殘留的物件被清乾淨。
+        presentationPublisher.publishTablePropsUpdated(roomId)
         presentationPublisher.publishRoundInfoUpdated(roomId, moduleRegistry.getModule(tableState.config).getRoundInfoLines(tableState))
         // 翻牌完成那一刻起的最終落地格位——tableState 此時已經是整理過的順序（見上方 organizedState），
         // 跟決定發牌動畫節奏本身的 startOutcome.dealOrderHandTileIdsBySeatIndex 分開，見

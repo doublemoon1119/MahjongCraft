@@ -52,10 +52,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongStickPotPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongStickPotPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentation
@@ -64,6 +60,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.exhaustiveDrawSettlementStageInputs
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.findTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.tileAssetKeysById
@@ -108,10 +107,8 @@ import kotlin.uuid.toJavaUuid
  * @property playerAreaPresenter 正式手牌／摸牌位／副露（合併，理由見 [MahjongPlayerAreaPresenter]
  *   KDoc）的實際呈現邏輯。
  * @property discardPresenter 正式牌河的實際呈現邏輯。
- * @property scoringStickPresenter 正式積棒的實際呈現邏輯，生命週期跟牌牆同時生成/清除，見
- *   [MahjongScoringStickPresenter] KDoc。
- * @property stickPotPresenter 正式供託棒的實際呈現邏輯，生命週期綁在宣告成立，見
- *   [MahjongStickPotPresenter] KDoc。
+ * @property tablePropPresenter 規則桌面物件（例如點棒）的差量同步邏輯。
+ * @property tablePropDescriberRegistry 依規則模組查詢桌上應擺哪些物件的描述。
  * @property roundInfoPresenter 桌面中央局況顯示的實際呈現邏輯。
  * @property tableLocationRegistry 麻將桌最後已知位置索引。
  * @property serverHolder 目前運行中的 server，供世界／方塊狀態查詢使用。
@@ -132,8 +129,8 @@ class FabricGamePresentationPublisher(
     private val tileWallPresenter: MahjongTileWallPresenter,
     private val playerAreaPresenter: MahjongPlayerAreaPresenter,
     private val discardPresenter: MahjongDiscardPresenter,
-    private val scoringStickPresenter: MahjongScoringStickPresenter,
-    private val stickPotPresenter: MahjongStickPotPresenter,
+    private val tablePropPresenter: TablePropPresenter,
+    private val tablePropDescriberRegistry: TablePropDescriberRegistry,
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
     private val playerInfoPresenter: MahjongPlayerInfoPresenter,
     private val tileSelectionConfirmPresenter: MahjongTileSelectionConfirmPresenter,
@@ -460,28 +457,30 @@ class FabricGamePresentationPublisher(
     }
 
     /**
-     * 積棒跟牌牆同一個時機點觸發（呼叫端緊接在 [publishWallStructure] 之後呼叫，見
-     * [MahjongScoringStickPresenter] KDoc）——每回合結束（換局）就重新生成一批，不是每次打牌/摸牌/
-     * 鳴牌都觸發。一般回合動作不會呼叫這個方法，不需要 [busyTracker] 或延遲，直接同步呈現；跟
-     * [publishDiceRoll] 同理，世界／entity 存取一併丟回伺服器主執行緒執行。
+     * 呼叫端在開局／換局緊接 [publishWallStructure] 之後、以及規則狀態改變桌上物件之後呼叫；依對局規則在
+     * [tablePropDescriberRegistry] 登記的描述算出桌上應有的物件，交給 [tablePropPresenter] 差量同步。
+     * 規則沒有登記描述時，同步為空清單。不需要 [busyTracker] 或延遲，世界／entity 存取丟回伺服器主執行緒
+     * 執行。
      */
-    override fun publishScoringSticksUpdated(gameId: Uuid, dealerSeatIndex: Int, stickCount: Int) {
+    override fun publishTablePropsUpdated(gameId: Uuid) {
         if (serverHolder.current() == null) {
-            logger.warn("publishScoringSticksUpdated gameId={} skipped: no active server", gameId)
+            logger.warn("publishTablePropsUpdated gameId={} skipped: no active server", gameId)
             return
         }
         val openingOperation = openingOperations.capture(gameId)
-        launchOpeningStage(gameId, "scoring-sticks", openingOperation) {
-            val resolved = resolveTableContext(gameId, "publishScoringSticksUpdated") ?: return@launchOpeningStage
-
-            val presentation = MahjongScoringStickPresentation(
-                tableId = gameId,
-                tableLocation = resolved.location,
-                tableFacing = resolved.facing,
-                dealerSeatIndex = dealerSeatIndex,
-                stickCount = stickCount,
+        launchOpeningStage(gameId, "table-props", openingOperation) {
+            val resolved = resolveTableContext(gameId, "publishTablePropsUpdated") ?: return@launchOpeningStage
+            val tableState = gameRepository.getTableState(gameId) ?: return@launchOpeningStage
+            val ruleModuleId = moduleRegistry.getModule(tableState.config).id
+            val placements = tablePropDescriberRegistry.find(ruleModuleId)?.describe(tableState).orEmpty()
+            tablePropPresenter.present(
+                TablePropPresentation(
+                    tableId = gameId,
+                    tableLocation = resolved.location,
+                    tableFacing = resolved.facing,
+                    placements = placements,
+                ),
             )
-            scoringStickPresenter.present(presentation)
         }
     }
 
@@ -518,39 +517,6 @@ class FabricGamePresentationPublisher(
         scope.launch(dispatchers.main) {
             val resolved = resolveTableContext(gameId, "publishTileSelectionEnded") ?: return@launch
             tileSelectionConfirmPresenter.clearForPlayer(gameId, resolved.location, playerId)
-        }
-    }
-
-    /**
-     * 供託棒綁在**宣告成立**的時間點觸發（呼叫端緊接在宣告成立、廣播事件之後呼叫，見
-     * [MahjongStickPotPresenter] KDoc）——跟 [publishScoringSticksUpdated]（綁在牌牆生成）各自
-     * 獨立觸發時機；不需要 [busyTracker] 或延遲，直接同步呈現，跟 [publishScoringSticksUpdated] 同理。
-     */
-    override fun publishStickPotUpdated(
-        gameId: Uuid,
-        declaredSeatIndices: Set<Int>,
-        dealerSeatIndex: Int,
-        comboStickCount: Int,
-        pooledStickCount: Int,
-    ) {
-        if (serverHolder.current() == null) {
-            logger.warn("publishStickPotUpdated gameId={} skipped: no active server", gameId)
-            return
-        }
-        val openingOperation = openingOperations.capture(gameId)
-        launchOpeningStage(gameId, "stick-pot", openingOperation) {
-            val resolved = resolveTableContext(gameId, "publishStickPotUpdated") ?: return@launchOpeningStage
-
-            val presentation = MahjongStickPotPresentation(
-                tableId = gameId,
-                tableLocation = resolved.location,
-                tableFacing = resolved.facing,
-                declaredSeatIndices = declaredSeatIndices,
-                dealerSeatIndex = dealerSeatIndex,
-                comboStickCount = comboStickCount,
-                pooledStickCount = pooledStickCount,
-            )
-            stickPotPresenter.present(presentation)
         }
     }
 
@@ -715,10 +681,10 @@ class FabricGamePresentationPublisher(
     }
 
     /**
-     * 清除整桌所有玩家的手牌/摸牌位/副露/積棒/供託棒/局況顯示呈現——回房間等清空情境使用（見
+     * 清除整桌所有玩家的手牌/摸牌位/副露/規則桌面物件/局況顯示呈現——回房間等清空情境使用（見
      * `ReturnToRoomUseCase`），沒有座位分組資料可傳，直接呼叫 [playerAreaPresenter]／
-     * [scoringStickPresenter]／[stickPotPresenter]／[roundInfoPresenter] 各自的 `clear()`（以
-     * `managedTableId` 範圍搜尋清除，不需要逐座位資料）。
+     * [tablePropPresenter]／[roundInfoPresenter] 各自的 `clear()`（以 `managedTableId` 範圍搜尋清除，
+     * 不需要逐座位資料）。
      */
     override fun clearPlayerAreas(gameId: Uuid) {
         if (serverHolder.current() == null) {
@@ -732,8 +698,7 @@ class FabricGamePresentationPublisher(
                 return@launch
             }
             playerAreaPresenter.clear(gameId, location)
-            scoringStickPresenter.clear(gameId, location)
-            stickPotPresenter.clear(gameId, location)
+            tablePropPresenter.clear(gameId, location)
             roundInfoPresenter.clear(gameId, location)
             playerInfoPresenter.clear(gameId, location)
         }

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
 import kotlin.uuid.Uuid
 
 /**
@@ -48,7 +49,7 @@ data class MahjongMeldTileGroup(
  * 另外傳遞位置索引。
  * @property comboStickCount 這位玩家目前該顯示的積棒（連莊棒）支數——只有莊家非零，等於
  * `TableState.comboCount`；只用來讓手牌／副露正確讓開積棒佔用的空間，這個 presenter 本身不負責
- * 積棒 entity 的生成／清除，見 [MahjongScoringStickPresenter]。
+ * 積棒 entity 的生成／清除，見 [TablePropPresenter]。
  * @property animateDrawnTile [drawnTileId] 非 `null` 時，是否要播放摸牌動畫（牌從牌牆原位面朝下起飛、
  * 短暫隱形傳送到摸牌位、傳送的同一瞬間切換成面向玩家的姿態、解除隱形後再落下）——姿態切換發生在
  * 隱形期間，玩家看不到旋轉過程，不像開局發牌動畫那樣需要落地後另外播放看得見的翻牌動畫。只有真正的
@@ -197,9 +198,8 @@ data class MahjongWinCelebrationResult(
  * [MahjongTileWallPresenter] 的 best-effort 慣例。
  *
  * 積棒（[MahjongPlayerAreaPresentation.comboStickCount]）本身的 entity 生成／清除**不**歸這個
- * presenter 管——積棒數量整局固定、跟牌牆同時生成，生命週期完全不同步於手牌／副露（每次打牌/摸牌/
- * 鳴牌都會觸發），交給獨立的 [MahjongScoringStickPresenter]；這裡只把 `comboStickCount` 當成算讓開
- * 寬度用的數字。
+ * presenter 管——積棒在開局／換局時更新，生命週期完全不同步於手牌／副露（每次打牌/摸牌/鳴牌都會觸發），
+ * 交給獨立的 [TablePropPresenter]；這裡只把 `comboStickCount` 當成算讓開寬度用的數字。
  *
  * [MahjongTileTableLayout.meldPlacement]／[MahjongTileTableLayout.handPlacement] 只負責單一格位／
  * 單張牌座標，把多組副露、各組張數、各組內鳴取牌位置、積棒佔用寬度換算成這些函式需要的參數是實作的

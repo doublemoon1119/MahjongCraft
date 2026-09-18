@@ -540,20 +540,16 @@ class RiichiRuleModule(
     override fun isHighlightedTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = RiichiTileInterpretationPolicy.isRedDora(tile) ||
         revealedWallTiles.any { indicator -> tile.riichiCanonical == getNextDora(indicator).riichiCanonical }
 
-    /**
-     * 直接查詢 [RiichiPlayerState.isRiichi]，轉型手法同 [resolveSuuchaRiichi]。
-     */
-    override fun isPlayerInRiichi(player: MahjongPlayer): Boolean = (player.playerRuleState as? RiichiPlayerState)?.isRiichi ?: false
+    /** 這位玩家目前是否立直中；直接查詢 [RiichiPlayerState.isRiichi]。 */
+    fun isPlayerInRiichi(player: MahjongPlayer): Boolean = (player.playerRuleState as? RiichiPlayerState)?.isRiichi ?: false
 
     /**
      * 立直後只能摸切，因此回傳玩家剛摸入的牌；未立直或尚未摸牌時不額外限制。
      */
     override fun forcedDiscardTileId(tableState: TableState, player: MahjongPlayer): Uuid? = player.hand.lastDrawn?.id?.takeIf { isPlayerInRiichi(player) }
 
-    /**
-     * 直接讀取 [RiichiDynamicState.riichiStickCount]，不像 [collectStickPot] 會連帶歸零。
-     */
-    override fun getStickPotCount(tableState: TableState): Int = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
+    /** 場上尚未被收下的供託支數；直接讀取 [RiichiDynamicState.riichiStickCount]，不像 [collectStickPot] 會連帶歸零。 */
+    fun getStickPotCount(tableState: TableState): Int = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
 
     /**
      * 日麻桌面局況顯示依序：場風＋局數＋本場數合併一行（標題）、立直棒累積供託數量（沒有供託時

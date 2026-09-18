@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -60,6 +61,7 @@ class MinecraftMahjongExtensionRegistrarTest {
             exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl(),
             roundPreparationDisplayNameRegistry = RoundPreparationDisplayNameRegistryImpl(),
             roundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl(),
+            tablePropDescriberRegistry = TablePropDescriberRegistryImpl(),
             winCelebrationShowcaseRegistry = WinCelebrationShowcaseRegistryImpl(),
             winSettlementTemplateRegistry = WinSettlementPresentationTemplateRegistryImpl(),
             matchSettlementTemplateRegistry = MatchSettlementPresentationTemplateRegistryImpl(),

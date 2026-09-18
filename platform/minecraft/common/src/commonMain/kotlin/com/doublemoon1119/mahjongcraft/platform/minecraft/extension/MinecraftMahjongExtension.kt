@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -55,6 +56,14 @@ interface MinecraftMahjongExtension {
 
     /** 登記規則動作成立後在 Minecraft 世界中播放的宣告式語音。 */
     fun registerGameActionSounds(registry: GameActionSoundPresentationRegistry) = Unit
+
+    /**
+     * 登記第三方規則在桌上要擺哪些物件的描述，依規則模組識別碼登記。
+     *
+     * 描述裡使用的物件種類若不是內建種類，需另外在該 Minecraft 版本的平台端登記種類，說明如何生成與辨識
+     * 對應的 entity。預設不登記，桌上就不會擺任何由規則描述的物件。
+     */
+    fun registerTablePropDescribers(registry: TablePropDescriberRegistry) = Unit
 
     /** 登記第三方流局原因在 Minecraft 中使用的本地化顯示名稱。 */
     fun registerExhaustiveDrawReasonDisplayNames(registry: ExhaustiveDrawReasonDisplayNameRegistry) = Unit

@@ -31,6 +31,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundP
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -62,6 +64,7 @@ class MinecraftCommonModule {
         winCelebrationShowcaseRegistry: WinCelebrationShowcaseRegistry,
         gameActionSoundPresentationRegistry: GameActionSoundPresentationRegistry,
         roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
+        tablePropDescriberRegistry: TablePropDescriberRegistry,
         tileAssetRegistry: MinecraftTileAssetRegistry,
         @Provided tileDisplayNameRegistry: TileDisplayNameRegistry,
         tileEmojiRegistry: TileEmojiRegistry,
@@ -76,6 +79,7 @@ class MinecraftCommonModule {
         exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
         roundPreparationDisplayNameRegistry = roundPreparationDisplayNameRegistry,
         roundInfoLineDisplayRegistry = roundInfoLineDisplayRegistry,
+        tablePropDescriberRegistry = tablePropDescriberRegistry,
         winCelebrationShowcaseRegistry = winCelebrationShowcaseRegistry,
         winSettlementTemplateRegistry = winSettlementTemplateRegistry,
         matchSettlementTemplateRegistry = matchSettlementTemplateRegistry,
@@ -137,6 +141,10 @@ class MinecraftCommonModule {
     /** 建立供內建與第三方 extension 登記的局況顯示行 registry。 */
     @Single
     fun provideRoundInfoLineDisplayRegistry(): RoundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl()
+
+    /** 建立供內建與第三方 extension 登記的規則桌面物件描述 registry。 */
+    @Single
+    fun provideTablePropDescriberRegistry(): TablePropDescriberRegistry = TablePropDescriberRegistryImpl()
 
     /** 建立供內建與第三方 extension 登記的胡牌 showcase registry。 */
     @Single

@@ -40,7 +40,7 @@ import kotlin.uuid.Uuid
  */
 class RiichiRuleModuleTest {
 
-    private val module: MahjongRuleModule<RiichiRuleConfig> = RiichiRuleModule(
+    private val module: RiichiRuleModule = RiichiRuleModule(
         id = "mahjongcraft:riichi",
         config = RiichiRuleConfig(),
     )
@@ -783,7 +783,7 @@ class RiichiRuleModuleTest {
     }
 
     /**
-     * 驗證 [MahjongRuleModule.getStickPotCount] 純查詢場上目前立直棒數量，不像 [collectStickPot]
+     * 驗證 [RiichiRuleModule.getStickPotCount] 純查詢場上目前立直棒數量，不像 [collectStickPot]
      * 會連帶把狀態歸零。
      */
     @Test

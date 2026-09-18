@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -34,6 +35,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
  * @property exhaustiveDrawReasonDisplayNameRegistry 流局原因顯示名稱 registry。
  * @property roundPreparationDisplayNameRegistry 開局準備顯示名稱 registry。
  * @property roundInfoLineDisplayRegistry 局況資訊行顯示 registry。
+ * @property tablePropDescriberRegistry 規則桌面物件描述 registry。
  * @property winCelebrationShowcaseRegistry 胡牌 showcase registry。
  * @property winSettlementTemplateRegistry 胡牌結算模板 registry。
  * @property matchSettlementTemplateRegistry 終局結算模板 registry。
@@ -56,6 +58,7 @@ class MinecraftPresentationRegistries(
     val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
     val roundPreparationDisplayNameRegistry: RoundPreparationDisplayNameRegistry,
     val roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
+    val tablePropDescriberRegistry: TablePropDescriberRegistry,
     // 胡牌與結算呈現
     val winCelebrationShowcaseRegistry: WinCelebrationShowcaseRegistry,
     val winSettlementTemplateRegistry: WinSettlementPresentationTemplateRegistry,
@@ -80,6 +83,7 @@ class MinecraftPresentationRegistries(
             snapshotCategory("mahjongcraft:exhaustive_draw_reason_display_name", "Exhaustive Draw Reason Display Name", exhaustiveDrawReasonDisplayNameRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:round_preparation_display_name", "Round Preparation Display Name", roundPreparationDisplayNameRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:round_info_line_display", "Round Info Line Display", roundInfoLineDisplayRegistry.registrationKeys),
+            snapshotCategory("mahjongcraft:table_prop_describer", "Table Prop Describer", tablePropDescriberRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:win_celebration_showcase", "Win Celebration Showcase", winCelebrationShowcaseRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:win_settlement_presentation", "Win Settlement Presentation", winSettlementTemplateRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:match_settlement_template", "Match Settlement Template", matchSettlementTemplateRegistry.registrationKeys),
@@ -103,6 +107,7 @@ class MinecraftPresentationRegistries(
         exhaustiveDrawReasonDisplayNameRegistry.freeze()
         roundPreparationDisplayNameRegistry.freeze()
         roundInfoLineDisplayRegistry.freeze()
+        tablePropDescriberRegistry.freeze()
         winCelebrationShowcaseRegistry.freeze()
         winSettlementTemplateRegistry.freeze()
         matchSettlementTemplateRegistry.freeze()

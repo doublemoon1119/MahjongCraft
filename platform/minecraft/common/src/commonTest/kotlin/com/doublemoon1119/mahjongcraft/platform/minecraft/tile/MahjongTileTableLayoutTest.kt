@@ -496,38 +496,6 @@ class MahjongTileTableLayoutTest {
         assertEquals((HAND_SIZE - 1) * stackStep, shiftedFirst.x - shiftedLast.x, ABSOLUTE_TOLERANCE)
     }
 
-    /** 積棒同一排內每支之間應等距排列，短邊（[MahjongScoringStickDimensions.STICK_DEPTH]）決定步距。 */
-    @Test
-    fun `stick placement spaces sticks evenly within a row`() {
-        val first = stickPlacement(stickIndex = 0)
-        val second = stickPlacement(stickIndex = 1)
-        val stepWidth = MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING
-
-        assertEquals(stepWidth, first.x - second.x, ABSOLUTE_TOLERANCE)
-        assertEquals(first.z, second.z, ABSOLUTE_TOLERANCE)
-        assertEquals(first.y, second.y, ABSOLUTE_TOLERANCE)
-    }
-
-    /** 超過每排上限（[MahjongTileTableLayout.STICKS_PER_ROW]）的積棒應疊到下一層，水平座標回到第一欄、Y 軸升高一層。 */
-    @Test
-    fun `stick placement stacks onto a new layer past the row limit`() {
-        val lastOfFirstRow = stickPlacement(stickIndex = MahjongTileTableLayout.STICKS_PER_ROW - 1)
-        val firstOfFirstRow = stickPlacement(stickIndex = 0)
-        val firstOfSecondRow = stickPlacement(stickIndex = MahjongTileTableLayout.STICKS_PER_ROW)
-        val expectedLayerHeight = MahjongScoringStickDimensions.STICK_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING
-
-        assertEquals(firstOfFirstRow.x, firstOfSecondRow.x, ABSOLUTE_TOLERANCE)
-        assertEquals(firstOfFirstRow.z, firstOfSecondRow.z, ABSOLUTE_TOLERANCE)
-        assertEquals(expectedLayerHeight, firstOfSecondRow.y - firstOfFirstRow.y, ABSOLUTE_TOLERANCE)
-        assertNotEquals(lastOfFirstRow.x, firstOfSecondRow.x)
-    }
-
-    /** 負數 stickIndex 應直接拒絕。 */
-    @Test
-    fun `stick placement rejects negative index`() {
-        assertFailsWith<IllegalArgumentException> { stickPlacement(stickIndex = -1) }
-    }
-
     /** `stack` 每加 1，掉落動畫延遲該多加一個 `WAVE_STEP_TICKS`；`stack = 0` 完全不延遲。 */
     @Test
     fun `wall drop start delay grows linearly with stack`() {
@@ -635,20 +603,6 @@ class MahjongTileTableLayoutTest {
         handSize = handSize,
         tileIndex = tileIndex,
         cornerYieldShift = cornerYieldShift,
-    )
-
-    /** 建立固定 controller 與可覆寫輸入的測試積棒 placement。 */
-    private fun stickPlacement(
-        tableFacing: MahjongTableFacing = MahjongTableFacing.NORTH,
-        seatIndex: Int = 0,
-        stickIndex: Int = 0,
-    ): MahjongTileWallPlacement = MahjongTileTableLayout.stickPlacement(
-        controllerX = 10,
-        controllerY = 64,
-        controllerZ = -4,
-        tableFacing = tableFacing,
-        seatIndex = seatIndex,
-        stickIndex = stickIndex,
     )
 
     /** 建立固定 controller 與可覆寫輸入的測試摸牌位 placement。 */

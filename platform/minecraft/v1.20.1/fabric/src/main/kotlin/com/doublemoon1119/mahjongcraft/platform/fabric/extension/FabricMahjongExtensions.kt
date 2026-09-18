@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugRoundPreparationResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.registerDebugWinRoundContinuationResolvers
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
@@ -49,6 +50,7 @@ object FabricMahjongExtensions {
     fun initialize(
         coreRegistries: CoreExtensionRegistries,
         presentationRegistries: MinecraftPresentationRegistries,
+        tablePropKindRegistry: FabricTablePropKindRegistry,
         declareRiichiUseCase: DeclareRiichiUseCase,
         debugWinRoundContinuationState: DebugWinRoundContinuationState,
         minecraftEnvironment: MinecraftEnvironment,
@@ -59,6 +61,7 @@ object FabricMahjongExtensions {
             val result = initialize(
                 coreRegistries = coreRegistries,
                 presentationRegistries = presentationRegistries,
+                tablePropKindRegistry = tablePropKindRegistry,
                 declareRiichiUseCase = declareRiichiUseCase,
                 debugWinRoundContinuationState = debugWinRoundContinuationState,
                 minecraftEnvironment = minecraftEnvironment,
@@ -81,11 +84,12 @@ object FabricMahjongExtensions {
     /**
      * 使用明確提供的 [extensions] 初始化，供平台測試驗證組裝順序。
      *
-     * @return Core 與 Minecraft presentation 的第三方登記分類。
+     * @return Core、Minecraft presentation 與 Fabric 的第三方登記分類。
      */
     internal fun initialize(
         coreRegistries: CoreExtensionRegistries,
         presentationRegistries: MinecraftPresentationRegistries,
+        tablePropKindRegistry: FabricTablePropKindRegistry,
         declareRiichiUseCase: DeclareRiichiUseCase,
         debugWinRoundContinuationState: DebugWinRoundContinuationState = DebugWinRoundContinuationState(),
         // 預設不註冊開發用的中途胡牌 resolver：這個多載的其他測試呼叫端只關心依賴圖，正式呼叫端
@@ -129,7 +133,13 @@ object FabricMahjongExtensions {
         val minecraftCategories = minecraftResult.categories.map { category ->
             ExtensionRegistrationCategory(category.id, category.displayName, category.registrationKeys.sorted())
         }
-        return FabricExtensionRegistrationResult(coreCategories + minecraftCategories)
+        val tablePropKindIds = tablePropKindRegistry.registerAndFreeze(
+            extensions = extensions.filterIsInstance<FabricMahjongExtension>(),
+        )
+        val fabricCategories = listOf(
+            ExtensionRegistrationCategory(TABLE_PROP_KIND_CATEGORY_ID, "Table Prop Kind", tablePropKindIds.sorted()),
+        )
+        return FabricExtensionRegistrationResult(coreCategories + minecraftCategories + fabricCategories)
     }
 
     /** [initialize] 預設使用的環境查詢：一律回報非開發環境，見該參數上方註解。 */

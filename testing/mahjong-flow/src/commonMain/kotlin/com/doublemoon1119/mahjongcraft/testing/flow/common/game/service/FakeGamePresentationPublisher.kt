@@ -53,11 +53,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的牌牆結構隨附桌況資料。 */
     private val wallStructureContexts = mutableMapOf<Uuid, WallStructureContext>()
 
-    /** 依對局 Uuid 紀錄最後一次收到的積棒呈現資料。 */
-    private val scoringSticks = mutableMapOf<Uuid, ScoringStickContext>()
-
-    /** 依對局 Uuid 紀錄最後一次收到的立直棒呈現資料。 */
-    private val stickPots = mutableMapOf<Uuid, StickPotContext>()
+    /** 依對局 Uuid 紀錄收到桌上物件更新通知的次數。 */
+    private val tablePropsUpdateCounts = mutableMapOf<Uuid, Int>()
 
     /** 依對局 Uuid 紀錄最後一次收到的桌面局況顯示內容。 */
     private val roundInfos = mutableMapOf<Uuid, List<RoundInfoLine>>()
@@ -128,18 +125,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         deadWallReveals[gameId] = revealedTileIds
     }
 
-    override fun publishScoringSticksUpdated(gameId: Uuid, dealerSeatIndex: Int, stickCount: Int) {
-        scoringSticks[gameId] = ScoringStickContext(dealerSeatIndex, stickCount)
-    }
-
-    override fun publishStickPotUpdated(
-        gameId: Uuid,
-        declaredSeatIndices: Set<Int>,
-        dealerSeatIndex: Int,
-        comboStickCount: Int,
-        pooledStickCount: Int,
-    ) {
-        stickPots[gameId] = StickPotContext(declaredSeatIndices, dealerSeatIndex, comboStickCount, pooledStickCount)
+    override fun publishTablePropsUpdated(gameId: Uuid) {
+        tablePropsUpdateCounts[gameId] = getTablePropsUpdateCount(gameId) + 1
     }
 
     override fun publishRoundInfoUpdated(gameId: Uuid, lines: List<RoundInfoLine>) {
@@ -234,11 +221,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 取得指定對局最後一次收到的牌牆結構隨附桌況資料；若無紀錄則回傳 null。 */
     fun getPublishedWallStructureContext(gameId: Uuid): WallStructureContext? = wallStructureContexts[gameId]
 
-    /** 取得指定對局最後一次收到的積棒呈現資料；若無紀錄則回傳 null。 */
-    fun getPublishedScoringSticks(gameId: Uuid): ScoringStickContext? = scoringSticks[gameId]
-
-    /** 取得指定對局最後一次收到的供託棒呈現資料；若無紀錄則回傳 null。 */
-    fun getPublishedStickPot(gameId: Uuid): StickPotContext? = stickPots[gameId]
+    /** 取得指定對局收到桌上物件更新通知的次數；沒有收到過則為 0。 */
+    fun getTablePropsUpdateCount(gameId: Uuid): Int = tablePropsUpdateCounts[gameId] ?: 0
 
     /** 取得指定對局最後一次收到的桌面局況顯示內容；若無紀錄則回傳 null。 */
     fun getPublishedRoundInfo(gameId: Uuid): List<RoundInfoLine>? = roundInfos[gameId]
@@ -297,20 +281,6 @@ data class WallStructureContext(
     val diceCount: Int,
     val animateOpening: Boolean,
     val revealedTileIds: Set<Uuid>,
-)
-
-/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishScoringSticksUpdated] 資料。 */
-data class ScoringStickContext(
-    val dealerSeatIndex: Int,
-    val stickCount: Int,
-)
-
-/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishStickPotUpdated] 資料。 */
-data class StickPotContext(
-    val declaredSeatIndices: Set<Int>,
-    val dealerSeatIndex: Int,
-    val comboStickCount: Int,
-    val pooledStickCount: Int,
 )
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishPlayerAreaUpdated] 資料。 */

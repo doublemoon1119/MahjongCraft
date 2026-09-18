@@ -173,6 +173,17 @@ class StartGameUseCaseTest {
         assertTrue(wallContext.animateOpening)
     }
 
+    /** 驗證開局時通知平台更新一次桌上由規則擺放的物件。 */
+    @Test
+    fun `test start game publishes table props update once`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.roomRepo.setRoom(readyRoom())
+
+        fixtures.useCase(roomId, hostId)
+
+        assertEquals(1, fixtures.presentationPublisher.getTablePropsUpdateCount(roomId))
+    }
+
     /** 驗證開局發布完整 136 張初始布局，而不是已排除發牌張的目前牌牆布局。 */
     @Test
     fun `test start game publishes complete initial physical wall layout`() = runTest {

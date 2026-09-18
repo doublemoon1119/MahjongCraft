@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseC
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetPlayerDecisionOptionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
@@ -51,13 +52,16 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableR
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTableCleanupService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -108,6 +112,7 @@ class FabricApplicationModuleTest {
         FabricMahjongExtensions.initialize(
             coreRegistries = coreRegistries,
             presentationRegistries = presentationRegistries,
+            tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>(),
             declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
             extensions = emptyList(),
         )
@@ -139,6 +144,12 @@ class FabricApplicationModuleTest {
         assertTrue(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertTrue(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
         assertEquals(MinecraftMessageKeys.GAME_ACTION_RIICHI, gameActionDisplayNameRegistry.find(RiichiGameAction.Riichi))
+        assertTrue(presentationRegistries.tablePropDescriberRegistry.find(BuiltInRuleModuleIds.RIICHI) != null)
+        assertTrue(presentationRegistries.tablePropDescriberRegistry.isFrozen)
+        val tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>()
+        assertTrue(tablePropKindRegistry.find(BuiltInTablePropKinds.SCORING_STICK) != null)
+        assertTrue(tablePropKindRegistry.isFrozen)
+        koin.get<TablePropPresenter>()
         koin.get<GameFlowCoordinator>()
         koin.get<GameEventPublisher>()
         koin.get<DecisionTimerUpdatePublisher>()

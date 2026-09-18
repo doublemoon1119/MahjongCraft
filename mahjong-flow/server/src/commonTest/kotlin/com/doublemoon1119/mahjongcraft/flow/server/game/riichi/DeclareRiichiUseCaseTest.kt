@@ -177,7 +177,8 @@ class DeclareRiichiUseCaseTest {
     }
 
     /**
-     * 驗證捨牌後所有觀察者的快照皆同步更新，且所有玩家皆先收到 Riichi、再收到 Discard 事件通知。
+     * 驗證捨牌後所有觀察者的快照皆同步更新、所有玩家皆先收到 Riichi 再收到 Discard 事件通知，且平台收到
+     * 一次桌上物件更新通知。
      */
     @Test
     fun `test declare riichi syncs snapshot and notifies riichi then discard`() = runTest {
@@ -203,6 +204,7 @@ class DeclareRiichiUseCaseTest {
             listOf(RIICHI_GAME_ACTION, GameAction.Discard(drawnTile.id)),
             fixtures.eventPublisher.getNotifiedActions(gameId, otherPlayerId, currentPlayerId),
         )
+        assertEquals(1, fixtures.presentationPublisher.getTablePropsUpdateCount(gameId))
     }
 
     /**

@@ -70,8 +70,8 @@ class FabricDebugRoundCommand(
     /**
      * 直接把本場數設成指定值，並重新發布受它影響的呈現。
      *
-     * 本場數決定莊家桌角的積棒支數；供託堆疊在積棒後方，局況顯示也帶本場數，因此三者一起重新發布，
-     * 與正式換局路徑（`AdvanceRoundUseCase`）發布的內容相同。
+     * 本場數決定莊家桌角的積棒支數，局況顯示也帶本場數，因此桌上物件與局況顯示一起重新發布，與正式換局
+     * 路徑（`AdvanceRoundUseCase`）發布的內容相同。
      */
     private fun setComboCount(source: ServerCommandSource, comboCount: Int): Int = playerTableScope.runSuspending(source) { tableId, _ ->
         val state = gameRepository.updateGame(tableId) { game ->
@@ -84,21 +84,10 @@ class FabricDebugRoundCommand(
         "Set the combo count to $comboCount"
     }
 
-    /** 重新發布積棒、供託與局況顯示。 */
+    /** 重新發布桌上物件與局況顯示。 */
     private suspend fun publishStickPresentation(tableId: Uuid, state: TableState) {
         val module = moduleRegistry.getModule(state.config)
-        val dealerSeatIndex = state.dealerIndex
-        presentationPublisher.publishScoringSticksUpdated(tableId, dealerSeatIndex, state.comboCount)
-        val declaredSeatIndices = state.players.withIndex()
-            .filter { (_, player) -> module.isPlayerInRiichi(player) }
-            .mapTo(mutableSetOf()) { (seatIndex, _) -> seatIndex }
-        presentationPublisher.publishStickPotUpdated(
-            gameId = tableId,
-            declaredSeatIndices = declaredSeatIndices,
-            dealerSeatIndex = dealerSeatIndex,
-            comboStickCount = state.comboCount,
-            pooledStickCount = module.getStickPotCount(state) - declaredSeatIndices.size,
-        )
+        presentationPublisher.publishTablePropsUpdated(tableId)
         presentationPublisher.publishRoundInfoUpdated(tableId, module.getRoundInfoLines(state))
     }
 

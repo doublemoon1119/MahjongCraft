@@ -23,8 +23,8 @@ import kotlin.uuid.Uuid
 /**
  * 可自由放置的麻將點棒 entity。
  *
- * 正式牌局接線後代表立直棒（千分棒，放在牌河前方）與積棒（百分棒，放在莊家副露右側），管理中的
- * entity 由 [managedByGame]／[managedTableId] 區分自由放置模式，比照 [MahjongTileEntity] 的雙態設計。
+ * 正式牌局中由規則的桌面物件描述擺上桌（例如日麻的立直棒與積棒），管理中的 entity 由
+ * [managedByGame]／[managedTableId] 區分自由放置模式，比照 [MahjongTileEntity] 的雙態設計。
  */
 class MahjongScoringStickEntity(
     type: EntityType<out MahjongScoringStickEntity> = ModEntities.mahjongScoringStick,
@@ -84,9 +84,9 @@ class MahjongScoringStickEntity(
     private var firstTickWorldTime: Long = Long.MIN_VALUE
 
     /**
-     * 管理中積棒的 fallback 自動清除——**不是主要清除路徑**。積棒的正常生命週期是跟牌牆同時生成、
-     * 每次換局由 `FabricMahjongScoringStickPresenter.present()` 在新積棒生成成功後才刪除舊的，或由
-     * 對局結束的顯式清除觸發；這裡只是意外情境（伺服器崩潰、對局非正常結束導致沒有機會走到正常清除
+     * 管理中積棒的 fallback 自動清除——**不是主要清除路徑**。積棒的正常生命週期由
+     * `FabricTablePropPresenter` 依桌況差量同步，不再需要的積棒在新物件生成成功後才移除，或由對局結束的
+     * 顯式清除觸發；這裡只是意外情境（伺服器崩潰、對局非正常結束導致沒有機會走到正常清除
      * 流程）的保險，門檻抓得遠大於正常一局遊戲時長，不能像 `MahjongDiceEntity` 那樣抓短動畫時長——
      * 積棒沒有「動畫播完」的概念，太短的門檻會在正常對局進行中就把還在使用的積棒清掉。
      */

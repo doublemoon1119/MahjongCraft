@@ -260,19 +260,10 @@ class AdvanceRoundUseCase(
             // 廣播擲骰點數本身；跟第 3 步的 RoundStarted 是兩則獨立事件，理由同 StartGameUseCase。
             eventPublisher.publishToTable(gameId, seatedPlayerIds, newDealerId, GameAction.DiceRolled(diceRoll))
         }
-        // 積棒跟牌牆同時生成，緊接在 publishWallStructure 之後呼叫；新局手牌一定沒有副露，只是靠
-        // publishInitialDealAnimation 的 comboStickCount 讓手牌正確讓開積棒佔用的空間。
-        presentationPublisher.publishScoringSticksUpdated(gameId, dealerSeatIndex, newState.comboCount)
-        // 宣告本身每局歸零（新局還沒有人宣告），但延續自前局、尚未被收下的供託堆要跟著顯示出來，
-        // 不是無條件清空——流局後沒被收走的供託棒延續到下一局，見 GamePresentationPublisher KDoc。
+        // 桌上由規則擺放的物件跟牌牆同時更新，緊接在 publishWallStructure 之後呼叫；新局手牌一定沒有
+        // 副露，只是靠 publishInitialDealAnimation 的 comboStickCount 讓手牌正確讓開角落佔用的空間。
+        presentationPublisher.publishTablePropsUpdated(gameId)
         val module = moduleRegistry.getModule(newState.config)
-        presentationPublisher.publishStickPotUpdated(
-            gameId,
-            declaredSeatIndices = emptySet(),
-            dealerSeatIndex = dealerSeatIndex,
-            comboStickCount = newState.comboCount,
-            pooledStickCount = module.getStickPotCount(newState),
-        )
         presentationPublisher.publishRoundInfoUpdated(gameId, module.getRoundInfoLines(newState))
         // 翻牌完成那一刻起的最終落地格位——newState 此時已經是整理過的順序，跟決定發牌動畫節奏本身的
         // advanceOutcome.dealOrderHandTileIdsBySeatIndex 分開，見 MahjongInitialDealPresentation KDoc。
