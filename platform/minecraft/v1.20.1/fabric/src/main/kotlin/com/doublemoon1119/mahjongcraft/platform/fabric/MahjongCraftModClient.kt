@@ -161,7 +161,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 payload.snapshot.toDomain(networkRegistries),
             )
         }
-        MahjongChannels.tableLobby.registerClientReceiver(json) { payload ->
+        MahjongChannels.tableOccupancy.registerClientReceiver(json) { payload ->
             stateStore.apply(payload)
             val client = MinecraftClient.getInstance()
             if (client.currentScreen !is RoomScreen) {

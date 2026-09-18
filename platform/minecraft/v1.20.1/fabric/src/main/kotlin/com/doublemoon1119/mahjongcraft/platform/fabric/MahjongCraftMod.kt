@@ -146,7 +146,7 @@ class MahjongCraftMod : ModInitializer {
         }
 
         registerGameCommandReceiver(koin)
-        registerRoomScreenActionReceiver(koin)
+        registerRoomActionReceiver(koin)
         registerRequestSnapshotReceiver(koin)
         registerSetAutoSortHandReceiver(koin)
         registerPlayerConnectionEvents(koin)
@@ -159,11 +159,11 @@ class MahjongCraftMod : ModInitializer {
     }
 
     /** 將 RoomScreen 的受控操作交給桌級房間服務執行。 */
-    private fun registerRoomScreenActionReceiver(koin: Koin) {
+    private fun registerRoomActionReceiver(koin: Koin) {
         val json = koin.get<Json>()
         val service = koin.get<MahjongTableRoomService>()
-        MahjongChannels.roomScreenAction.registerServerReceiver(json) { _, player, action ->
-            service.handleRoomScreenAction(player, action)
+        MahjongChannels.roomAction.registerServerReceiver(json) { _, player, action ->
+            service.handleRoomAction(player, action)
         }
     }
 

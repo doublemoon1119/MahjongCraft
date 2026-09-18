@@ -6,8 +6,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPayloadDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPhaseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.LeaveReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerRiichiGameActionDtos
@@ -43,8 +43,8 @@ class ClientMahjongStateStoreTest {
         val tableAId = Uuid.random()
         val tableBId = Uuid.random()
 
-        val lobbyA = TableLobbyPayloadDto(tableId = tableAId.toString(), phase = TableLobbyPhaseDto.WAITING)
-        store.apply(lobbyA)
+        val occupancyA = TableOccupancyPayloadDto(tableId = tableAId.toString(), occupancy = TableOccupancyDto.ROOM)
+        store.apply(occupancyA)
 
         val playerB = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
         val snapshotB = FakeTableStateFactory.create(id = tableBId, players = listOf(playerB), config = RiichiRuleConfig())
@@ -57,7 +57,7 @@ class ClientMahjongStateStoreTest {
         )
         store.apply(gameUpdateB)
 
-        assertEquals(lobbyA, store.tableLobby(tableAId), "Table B's game update must not affect table A's lobby state")
+        assertEquals(occupancyA, store.tableOccupancy(tableAId), "Table B's game update must not affect table A's lobby state")
         assertEquals(snapshotB, store.gameSnapshot(tableBId))
         assertNull(store.gameSnapshot(tableAId))
     }
@@ -114,7 +114,7 @@ class ClientMahjongStateStoreTest {
             isHost = false,
             isInRoom = true,
         )
-        store.apply(TableLobbyPayloadDto(tableId.toString(), TableLobbyPhaseDto.WAITING, snapshot.toDto(registries)))
+        store.apply(TableOccupancyPayloadDto(tableId.toString(), TableOccupancyDto.ROOM, snapshot.toDto(registries)))
         store.applyRoomSnapshot(tableId, snapshot)
 
         store.apply(
@@ -126,6 +126,6 @@ class ClientMahjongStateStoreTest {
         )
 
         assertNull(store.roomSnapshot(tableId))
-        assertEquals(TableLobbyPhaseDto.EMPTY, store.tableLobby(tableId)?.phase)
+        assertEquals(TableOccupancyDto.VACANT, store.tableOccupancy(tableId)?.occupancy)
     }
 }

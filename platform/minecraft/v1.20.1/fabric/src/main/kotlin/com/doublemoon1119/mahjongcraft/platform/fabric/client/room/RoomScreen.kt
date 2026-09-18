@@ -5,8 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomScreenActionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPhaseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
@@ -88,8 +88,8 @@ class RoomScreen(
     private var doneButton: ButtonWidget? = null
     private var rebuildRequested = false
     private var lastRoomSnapshot = stateStore.roomSnapshot(tableId)
-    private var lastLobby = stateStore.tableLobby(tableId)
-    private var wasWaitingRoomMember = stateStore.tableLobby(tableId)?.phase == TableLobbyPhaseDto.WAITING && stateStore.roomSnapshot(tableId)?.isInRoom == true
+    private var lastTable = stateStore.tableOccupancy(tableId)
+    private var wasWaitingRoomMember = stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.ROOM && stateStore.roomSnapshot(tableId)?.isInRoom == true
     private val profilePreviews = mutableMapOf<Uuid, OtherClientPlayerEntity>()
     private val appearanceResolver = RoomMemberAppearanceResolver(appearanceSources)
     private val memberPresentation = RoomMemberPresentation(indicatorTextResolver)
@@ -117,35 +117,35 @@ class RoomScreen(
     }.dimensions(x, 24, 100, 20).build().also { it.active = page != target }
 
     private fun initRoomPage() {
-        val lobby = stateStore.tableLobby(tableId) ?: return
+        val table = stateStore.tableOccupancy(tableId) ?: return
         val room = stateStore.roomSnapshot(tableId)
         val bottom = height - 30
-        when (lobby.phase) {
-            TableLobbyPhaseDto.EMPTY -> addCenteredActions(
-                listOf(ActionButton(MinecraftRoomScreenKeys.CREATE, RoomScreenActionDto.Create(lobby.tableId), true)),
+        when (table.occupancy) {
+            TableOccupancyDto.VACANT -> addCenteredActions(
+                listOf(ActionButton(MinecraftRoomScreenKeys.CREATE, RoomActionDto.Create(table.tableId), true)),
                 bottom,
             )
-            TableLobbyPhaseDto.PLAYING -> addCenteredActions(emptyList(), bottom)
-            TableLobbyPhaseDto.WAITING -> {
+            TableOccupancyDto.GAME -> addCenteredActions(emptyList(), bottom)
+            TableOccupancyDto.ROOM -> {
                 if (room == null) return
                 val actions = mutableListOf<ActionButton>()
-                fun button(key: String, action: RoomScreenActionDto, active: Boolean = true) = actions.add(ActionButton(key, action, active))
+                fun button(key: String, action: RoomActionDto, active: Boolean = true) = actions.add(ActionButton(key, action, active))
                 if (!room.isInRoom) {
-                    button(MinecraftRoomScreenKeys.JOIN, RoomScreenActionDto.Join(lobby.tableId), room.playerIds.size < room.gameConfig.ruleConfig.maxPlayers)
+                    button(MinecraftRoomScreenKeys.JOIN, RoomActionDto.Join(table.tableId), room.playerIds.size < room.gameConfig.ruleConfig.maxPlayers)
                 } else if (room.isHost) {
-                    button(MinecraftRoomScreenKeys.ADD_AI, RoomScreenActionDto.AddAi(lobby.tableId), room.playerIds.size < room.gameConfig.ruleConfig.maxPlayers)
-                    button(MinecraftRoomScreenKeys.START, RoomScreenActionDto.Start(lobby.tableId), room.canStart)
-                    button(MinecraftRoomScreenKeys.DISBAND, RoomScreenActionDto.Disband(lobby.tableId))
+                    button(MinecraftRoomScreenKeys.ADD_AI, RoomActionDto.AddAi(table.tableId), room.playerIds.size < room.gameConfig.ruleConfig.maxPlayers)
+                    button(MinecraftRoomScreenKeys.START, RoomActionDto.Start(table.tableId), room.canStart)
+                    button(MinecraftRoomScreenKeys.DISBAND, RoomActionDto.Disband(table.tableId))
                 } else {
                     val selfId = client?.player?.uuid?.let(UUID::toString)
                     val ready = room.readyPlayerIds.any { it.toString() == selfId }
                     button(
                         if (ready) MinecraftRoomScreenKeys.CANCEL_READY else MinecraftRoomScreenKeys.READY,
-                        RoomScreenActionDto.ToggleReady(lobby.tableId),
+                        RoomActionDto.ToggleReady(table.tableId),
                     )
-                    button(MinecraftRoomScreenKeys.LEAVE, RoomScreenActionDto.Leave(lobby.tableId))
+                    button(MinecraftRoomScreenKeys.LEAVE, RoomActionDto.Leave(table.tableId))
                 }
-                addMemberCardWidgets(lobby.tableId, room)
+                addMemberCardWidgets(table.tableId, room)
                 addCenteredActions(actions, bottom)
             }
         }
@@ -175,7 +175,7 @@ class RoomScreen(
                         val keys = aiStrategies.getAllStrategyKeys().sorted()
                         if (keys.isNotEmpty()) {
                             val next = keys[(keys.indexOf(current).coerceAtLeast(0) + 1) % keys.size]
-                            send(RoomScreenActionDto.ChangeAiStrategy(tableIdText, targetId.toString(), next))
+                            send(RoomActionDto.ChangeAiStrategy(tableIdText, targetId.toString(), next))
                         }
                     }.dimensions(cardX + 8, cardY + AI_STRATEGY_BUTTON_OFFSET_Y, grid.cardWidth - 20, 18).build().also {
                         it.tooltip = Tooltip.of(aiStrategyTooltip(current))
@@ -186,7 +186,7 @@ class RoomScreen(
             if (!room.isHost) return@forEachIndexed
             addDrawableChild(
                 RestartableMarqueeButtonWidget.builder(Text.literal("×")) {
-                    send(RoomScreenActionDto.Kick(tableIdText, targetId.toString()))
+                    send(RoomActionDto.Kick(tableIdText, targetId.toString()))
                 }.dimensions(cardX + grid.cardWidth - 23, cardY + KICK_BUTTON_OFFSET_Y, 16, 16).build().also {
                     it.tooltip = Tooltip.of(Text.translatable(MinecraftRoomScreenKeys.KICK))
                 },
@@ -202,7 +202,7 @@ class RoomScreen(
         val resolved = configResolver.resolve(config)
         val moduleId = resolved.ruleModuleId
         val definition = resolved.definition ?: return
-        val canEditRoom = stateStore.tableLobby(tableId)?.phase == TableLobbyPhaseDto.WAITING && room?.isHost == true
+        val canEditRoom = stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.ROOM && room?.isHost == true
         val editable = canEditRoom && definition.selectable
         val categories = definition.categories
         if (selectedCategoryId !in categories.map { it.id }) selectedCategoryId = categories.firstOrNull()?.id
@@ -529,9 +529,9 @@ class RoomScreen(
 
     private fun applyDraft() {
         if (!draft.canDone()) return
-        val lobby = stateStore.tableLobby(tableId) ?: return
+        val table = stateStore.tableOccupancy(tableId) ?: return
         val config = draft.config ?: return
-        MahjongChannels.roomScreenAction.sendToServer(json, RoomScreenActionDto.UpdateConfig(lobby.tableId, config.toDto(networkRegistries)))
+        MahjongChannels.roomAction.sendToServer(json, RoomActionDto.UpdateConfig(table.tableId, config.toDto(networkRegistries)))
     }
 
     /** 有變更時提交並等待權威 snapshot，沒有變更時立即返回玩家頁。 */
@@ -585,7 +585,7 @@ class RoomScreen(
         .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS).formatted(Formatting.WHITE))
         .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.RESET_NOT_SAVED).formatted(Formatting.GRAY))
 
-    private fun addActionButton(x: Int, y: Int, width: Int, key: String, action: RoomScreenActionDto, active: Boolean = true) {
+    private fun addActionButton(x: Int, y: Int, width: Int, key: String, action: RoomActionDto, active: Boolean = true) {
         addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(key)) {
                 send(action)
@@ -593,7 +593,7 @@ class RoomScreen(
         )
     }
 
-    private fun send(action: RoomScreenActionDto) = MahjongChannels.roomScreenAction.sendToServer(json, action)
+    private fun send(action: RoomActionDto) = MahjongChannels.roomAction.sendToServer(json, action)
 
     private fun aiStrategyText(strategyKey: String?): Text = strategyKey?.let { key ->
         aiStrategyNames.find(key)?.let(Text::translatable) ?: Text.literal(key)
@@ -620,7 +620,7 @@ class RoomScreen(
             return true
         }
         val playingInfoScrollMaximum = playingGrid().maximumInfoScroll(totalPlayingInfoRows())
-        if (page == Page.ROOM && stateStore.tableLobby(tableId)?.phase == TableLobbyPhaseDto.PLAYING && playingInfoScrollMaximum > 0) {
+        if (page == Page.ROOM && stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.GAME && playingInfoScrollMaximum > 0) {
             playingInfoScroll.scrollBy(amount, playingInfoScrollMaximum)
             return true
         }
@@ -690,28 +690,28 @@ class RoomScreen(
             closeEntireScreen()
             return
         }
-        if (stateStore.tableLobby(tableId) != lastLobby || stateStore.roomSnapshot(tableId) != lastRoomSnapshot) {
-            val previousLobby = lastLobby
+        if (stateStore.tableOccupancy(tableId) != lastTable || stateStore.roomSnapshot(tableId) != lastRoomSnapshot) {
+            val previousTable = lastTable
             val previousRoom = lastRoomSnapshot
-            val currentLobby = stateStore.tableLobby(tableId)
-            if (previousLobby?.phase == TableLobbyPhaseDto.WAITING && previousRoom?.isInRoom == true) {
+            val currentTable = stateStore.tableOccupancy(tableId)
+            if (previousTable?.occupancy == TableOccupancyDto.ROOM && previousRoom?.isInRoom == true) {
                 wasWaitingRoomMember = true
             }
             if (
-                previousLobby?.phase == TableLobbyPhaseDto.WAITING &&
-                currentLobby?.phase == TableLobbyPhaseDto.PLAYING &&
+                previousTable?.occupancy == TableOccupancyDto.ROOM &&
+                currentTable?.occupancy == TableOccupancyDto.GAME &&
                 wasWaitingRoomMember
             ) {
                 closeEntireScreen()
                 return
             }
-            lastLobby = stateStore.tableLobby(tableId)
+            lastTable = stateStore.tableOccupancy(tableId)
             lastRoomSnapshot = stateStore.roomSnapshot(tableId)
             if (draft.isReturningToRoomAfterApply && currentConfig() == draft.config) {
                 draft.adoptAuthoritative(currentConfig())
                 page = Page.ROOM
             }
-            if (stateStore.tableLobby(tableId)?.phase == TableLobbyPhaseDto.EMPTY) {
+            if (stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.VACANT) {
                 wasWaitingRoomMember = false
                 page = Page.ROOM
                 draft.clear()
@@ -738,11 +738,11 @@ class RoomScreen(
      * 區塊是載入的，查不到方塊實體就代表桌子真的沒了。payload 沒有帶座標時無從判斷，一律視為仍可使用。
      */
     private fun isTableStillAvailable(): Boolean {
-        val lobby = stateStore.tableLobby(tableId) ?: return false
-        val x = lobby.tableX ?: return true
-        val y = lobby.tableY ?: return true
-        val z = lobby.tableZ ?: return true
-        val expectedDimension = lobby.dimensionId ?: return true
+        val table = stateStore.tableOccupancy(tableId) ?: return false
+        val x = table.tableX ?: return true
+        val y = table.tableY ?: return true
+        val z = table.tableZ ?: return true
+        val expectedDimension = table.dimensionId ?: return true
         val player = client?.player ?: return false
         val world = client?.world ?: return false
         if (world.registryKey.value.toString() != expectedDimension) return false
@@ -751,14 +751,14 @@ class RoomScreen(
     }
 
     private fun renderRoom(context: DrawContext, mouseX: Int, mouseY: Int) {
-        val lobby = stateStore.tableLobby(tableId) ?: return
-        when (lobby.phase) {
-            TableLobbyPhaseDto.EMPTY -> context.drawCenteredTextWithShadow(textRenderer, Text.translatable(MinecraftRoomScreenKeys.EMPTY), width / 2, 70, 0xFFFFFF)
-            TableLobbyPhaseDto.PLAYING -> {
+        val table = stateStore.tableOccupancy(tableId) ?: return
+        when (table.occupancy) {
+            TableOccupancyDto.VACANT -> context.drawCenteredTextWithShadow(textRenderer, Text.translatable(MinecraftRoomScreenKeys.EMPTY), width / 2, 70, 0xFFFFFF)
+            TableOccupancyDto.GAME -> {
                 context.drawCenteredTextWithShadow(textRenderer, Text.translatable(MinecraftRoomScreenKeys.PLAYING), width / 2, 50, 0xFFCC55)
                 renderPlayingMembers(context, resolvePlayingPlayerInfo(), mouseX, mouseY)
             }
-            TableLobbyPhaseDto.WAITING -> stateStore.roomSnapshot(tableId)?.let { room ->
+            TableOccupancyDto.ROOM -> stateStore.roomSnapshot(tableId)?.let { room ->
                 renderMembers(
                     context,
                     room.playerIds,
@@ -827,11 +827,11 @@ class RoomScreen(
     }
 
     private fun resolvePlayerInfoEntity(): MahjongPlayerInfoEntity? {
-        val lobby = stateStore.tableLobby(tableId) ?: return null
+        val table = stateStore.tableOccupancy(tableId) ?: return null
         val world = client?.world ?: return null
-        val x = lobby.tableX ?: return null
-        val y = lobby.tableY ?: return null
-        val z = lobby.tableZ ?: return null
+        val x = table.tableX ?: return null
+        val y = table.tableY ?: return null
+        val z = table.tableZ ?: return null
         return world.getEntitiesByClass(
             MahjongPlayerInfoEntity::class.java,
             Box(x - 4.0, y - 4.0, z - 4.0, x + 5.0, y + 5.0, z + 5.0),
@@ -1038,7 +1038,7 @@ class RoomScreen(
     }
 
     private fun currentConfig(): GameConfig? = stateStore.roomSnapshot(tableId)?.gameConfig
-        ?: stateStore.tableLobby(tableId)?.playingGameConfig?.let { dto -> dto.toDomain(networkRegistries) }
+        ?: stateStore.tableOccupancy(tableId)?.playingGameConfig?.let { dto -> dto.toDomain(networkRegistries) }
 
     private fun memberName(playerId: Uuid, ai: Boolean, orderedAiPlayerIds: List<Uuid>): Text {
         if (ai) return Text.literal(aiPlayerDisplayName(playerId, orderedAiPlayerIds))
@@ -1068,9 +1068,9 @@ class RoomScreen(
      * 目前畫面上實際顯示的卡片 grid 版面（等待室或進行中對局）；兩者共用同一套固定列高與
      * [memberScroll] 捲動機制，不在這兩種狀態時為 null。
      */
-    private fun currentMemberGrid(): RoomMemberGridLayout? = when (stateStore.tableLobby(tableId)?.phase) {
-        TableLobbyPhaseDto.WAITING -> stateStore.roomSnapshot(tableId)?.let { memberGrid(it.playerIds.size) }
-        TableLobbyPhaseDto.PLAYING -> playingGrid()
+    private fun currentMemberGrid(): RoomMemberGridLayout? = when (stateStore.tableOccupancy(tableId)?.occupancy) {
+        TableOccupancyDto.ROOM -> stateStore.roomSnapshot(tableId)?.let { memberGrid(it.playerIds.size) }
+        TableOccupancyDto.GAME -> playingGrid()
         else -> null
     }
 
@@ -1194,7 +1194,7 @@ class RoomScreen(
 
     private data class ActionButton(
         val key: String,
-        val action: RoomScreenActionDto,
+        val action: RoomActionDto,
         val active: Boolean,
     )
 

@@ -10,9 +10,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomScreenActionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPayloadDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPhaseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
@@ -86,26 +86,26 @@ class MahjongTableRoomService(
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) {
     /** 將 RoomScreen 的強型別操作路由到既有權威 use case；封包中的玩家身分一律忽略。 */
-    fun handleRoomScreenAction(player: ServerPlayerEntity, action: RoomScreenActionDto) {
+    fun handleRoomAction(player: ServerPlayerEntity, action: RoomActionDto) {
         val tableId = runCatching { Uuid.parse(action.tableId) }.getOrNull() ?: return
         when (action) {
-            is RoomScreenActionDto.Create -> createFromScreen(tableId, player)
-            is RoomScreenActionDto.Join -> joinFromScreen(tableId, player)
-            is RoomScreenActionDto.ToggleReady -> withMatchingMembership(player, tableId, ::ready)
-            is RoomScreenActionDto.Start -> withMatchingMembership(player, tableId, ::start)
-            is RoomScreenActionDto.Leave,
-            is RoomScreenActionDto.Disband,
+            is RoomActionDto.Create -> createFromScreen(tableId, player)
+            is RoomActionDto.Join -> joinFromScreen(tableId, player)
+            is RoomActionDto.ToggleReady -> withMatchingMembership(player, tableId, ::ready)
+            is RoomActionDto.Start -> withMatchingMembership(player, tableId, ::start)
+            is RoomActionDto.Leave,
+            is RoomActionDto.Disband,
             -> leaveFromScreen(tableId, player)
-            is RoomScreenActionDto.AddAi -> withMatchingMembership(player, tableId) { addAi(it, action.strategyKey) }
-            is RoomScreenActionDto.ChangeAiStrategy -> withMatchingMembership(player, tableId) {
+            is RoomActionDto.AddAi -> withMatchingMembership(player, tableId) { addAi(it, action.strategyKey) }
+            is RoomActionDto.ChangeAiStrategy -> withMatchingMembership(player, tableId) {
                 val targetId = runCatching { Uuid.parse(action.targetPlayerId) }.getOrNull() ?: return@withMatchingMembership
                 changeAiStrategy(it, targetId, action.strategyKey)
             }
-            is RoomScreenActionDto.Kick -> withMatchingMembership(player, tableId) {
+            is RoomActionDto.Kick -> withMatchingMembership(player, tableId) {
                 val targetId = runCatching { Uuid.parse(action.targetPlayerId) }.getOrNull() ?: return@withMatchingMembership
                 kick(it, targetId)
             }
-            is RoomScreenActionDto.UpdateConfig -> withMatchingMembership(player, tableId) {
+            is RoomActionDto.UpdateConfig -> withMatchingMembership(player, tableId) {
                 updateConfig(it, action.config.toDomain(networkRegistries))
             }
         }
@@ -123,7 +123,7 @@ class MahjongTableRoomService(
         }
     }
 
-    /** 只同步桌子的公開 lobby 狀態並開啟 RoomScreen，不建立、加入或離開房間。 */
+    /** 只送出桌子目前的公開佔用狀態並開啟 RoomScreen，不建立、加入或離開房間。 */
     fun openRoomScreen(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
         val tableId = table.tableId
         val playerId = player.uuid.toKotlinUuid()
@@ -132,12 +132,12 @@ class MahjongTableRoomService(
             val runtimeGame = gameRepository.getGame(tableId)
             val game = runtimeGame?.tableState
             if (game != null) {
-                MahjongChannels.tableLobby.sendTo(
+                MahjongChannels.tableOccupancy.sendTo(
                     player,
                     json,
-                    TableLobbyPayloadDto(
+                    TableOccupancyPayloadDto(
                         tableId = tableId.toString(),
-                        phase = TableLobbyPhaseDto.PLAYING,
+                        occupancy = TableOccupancyDto.GAME,
                         playingPlayerIds = game.players.map { it.id.toString() },
                         playingAiPlayerIds = game.players.filter { it.isAi }.map { it.id.toString() },
                         playingGameConfig = GameConfig(game.config, runtimeGame.flowConfig).toDto(networkRegistries),
@@ -152,12 +152,12 @@ class MahjongTableRoomService(
 
             val room = roomRepository.getRoom(tableId)
             if (room == null) {
-                MahjongChannels.tableLobby.sendTo(
+                MahjongChannels.tableOccupancy.sendTo(
                     player,
                     json,
-                    TableLobbyPayloadDto(
+                    TableOccupancyPayloadDto(
                         tableId.toString(),
-                        TableLobbyPhaseDto.EMPTY,
+                        TableOccupancyDto.VACANT,
                         dimensionId = location?.dimensionId,
                         tableX = location?.x,
                         tableY = location?.y,
@@ -172,12 +172,12 @@ class MahjongTableRoomService(
             // 非成員畫面上的內容另有來源：剛開啟時由下面的 payload 當場帶一份，之後的變動由觀察者推送
             // 送達，兩者都不經過倉庫。
             if (playerId in room.playerIds) syncRoom(tableId, playerId)
-            MahjongChannels.tableLobby.sendTo(
+            MahjongChannels.tableOccupancy.sendTo(
                 player,
                 json,
-                TableLobbyPayloadDto(
+                TableOccupancyPayloadDto(
                     tableId.toString(),
-                    TableLobbyPhaseDto.WAITING,
+                    TableOccupancyDto.ROOM,
                     room.toSnapshot(playerId).toDto(networkRegistries),
                     dimensionId = location?.dimensionId,
                     tableX = location?.x,
@@ -248,21 +248,21 @@ class MahjongTableRoomService(
                     feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.successfulLeave(wasHost))
                     if (wasHost) {
                         roomSnapshotRepository.removeSnapshot(tableId, playerId)
-                        MahjongChannels.tableLobby.sendTo(
+                        MahjongChannels.tableOccupancy.sendTo(
                             player,
                             json,
-                            TableLobbyPayloadDto(tableId.toString(), TableLobbyPhaseDto.EMPTY),
+                            TableOccupancyPayloadDto(tableId.toString(), TableOccupancyDto.VACANT),
                         )
                     } else {
                         val updatedRoom = roomRepository.getRoom(tableId)
                         if (updatedRoom != null) {
                             syncRoom(tableId, playerId)
-                            MahjongChannels.tableLobby.sendTo(
+                            MahjongChannels.tableOccupancy.sendTo(
                                 player,
                                 json,
-                                TableLobbyPayloadDto(
+                                TableOccupancyPayloadDto(
                                     tableId.toString(),
-                                    TableLobbyPhaseDto.WAITING,
+                                    TableOccupancyDto.ROOM,
                                     updatedRoom.toSnapshot(playerId).toDto(networkRegistries),
                                 ),
                             )
@@ -499,12 +499,12 @@ class MahjongTableRoomService(
                     val updatedRoom = roomRepository.getRoom(tableId)
                     if (target != null && updatedRoom != null) {
                         syncRoom(tableId, targetPlayerId)
-                        MahjongChannels.tableLobby.sendTo(
+                        MahjongChannels.tableOccupancy.sendTo(
                             target,
                             json,
-                            TableLobbyPayloadDto(
+                            TableOccupancyPayloadDto(
                                 tableId.toString(),
-                                TableLobbyPhaseDto.WAITING,
+                                TableOccupancyDto.ROOM,
                                 updatedRoom.toSnapshot(targetPlayerId).toDto(networkRegistries),
                             ),
                         )

@@ -6,8 +6,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPayloadDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPhaseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.LeaveReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
@@ -22,7 +22,7 @@ import kotlin.uuid.Uuid
  * 單一桌子的 read-side 快照集合；[ClientMahjongStateStore] 依桌子 UUID 各自保存一份，互不覆蓋。
  */
 private data class ClientTableState(
-    val tableLobby: TableLobbyPayloadDto? = null,
+    val tableOccupancy: TableOccupancyPayloadDto? = null,
     val roomSnapshot: RoomSnapshot? = null,
     val gameSnapshot: TableStateSnapshot? = null,
     val roundPreparationSnapshot: RoundPreparationSnapshot? = null,
@@ -73,7 +73,7 @@ class ClientMahjongStateStore(
 ) {
     private val tables = mutableMapOf<Uuid, ClientTableState>()
 
-    fun tableLobby(tableId: Uuid): TableLobbyPayloadDto? = tables[tableId]?.tableLobby
+    fun tableOccupancy(tableId: Uuid): TableOccupancyPayloadDto? = tables[tableId]?.tableOccupancy
 
     fun roomSnapshot(tableId: Uuid): RoomSnapshot? = tables[tableId]?.roomSnapshot
 
@@ -108,18 +108,18 @@ class ClientMahjongStateStore(
         updateTable(tableId) { current ->
             current.withGameSnapshot(null).copy(
                 roomSnapshot = payload.snapshot.toDomain(networkRegistries),
-                tableLobby = current.tableLobby?.copy(phase = TableLobbyPhaseDto.WAITING),
+                tableOccupancy = current.tableOccupancy?.copy(occupancy = TableOccupancyDto.ROOM),
                 roundPreparationSnapshot = null,
             )
         }
     }
 
     /** 保存 RoomScreen 的桌級狀態；等待房間 payload 同時更新其內嵌快照。 */
-    fun apply(payload: TableLobbyPayloadDto) {
+    fun apply(payload: TableOccupancyPayloadDto) {
         val tableId = Uuid.parse(payload.tableId)
         updateTable(tableId) { current ->
             current.copy(
-                tableLobby = payload,
+                tableOccupancy = payload,
                 roomSnapshot = payload.roomSnapshot?.toDomain(networkRegistries) ?: current.roomSnapshot,
             )
         }
@@ -131,9 +131,9 @@ class ClientMahjongStateStore(
         updateTable(tableId) { current ->
             val waitingConfig = current.roomSnapshot?.gameConfig?.toDto(networkRegistries)
             current.withGameSnapshot(payload.snapshot.toDomain(networkRegistries)).copy(
-                tableLobby = current.tableLobby?.copy(
-                    phase = TableLobbyPhaseDto.PLAYING,
-                    playingGameConfig = current.tableLobby.playingGameConfig ?: waitingConfig,
+                tableOccupancy = current.tableOccupancy?.copy(
+                    occupancy = TableOccupancyDto.GAME,
+                    playingGameConfig = current.tableOccupancy.playingGameConfig ?: waitingConfig,
                 ),
                 roomSnapshot = null,
             )
@@ -146,7 +146,7 @@ class ClientMahjongStateStore(
         updateTable(roomId) { current ->
             current.withGameSnapshot(null).copy(
                 roomSnapshot = snapshot,
-                tableLobby = current.tableLobby?.copy(phase = TableLobbyPhaseDto.WAITING),
+                tableOccupancy = current.tableOccupancy?.copy(occupancy = TableOccupancyDto.ROOM),
             )
         }
     }
@@ -157,8 +157,8 @@ class ClientMahjongStateStore(
             current.withGameSnapshot(null).copy(
                 roomSnapshot = null,
                 roundPreparationSnapshot = null,
-                tableLobby = current.tableLobby?.copy(
-                    phase = TableLobbyPhaseDto.EMPTY,
+                tableOccupancy = current.tableOccupancy?.copy(
+                    occupancy = TableOccupancyDto.VACANT,
                     roomSnapshot = null,
                     playingPlayerIds = emptyList(),
                     playingAiPlayerIds = emptyList(),
@@ -178,9 +178,9 @@ class ClientMahjongStateStore(
         updateTable(gameId) { current ->
             val waitingConfig = current.roomSnapshot?.gameConfig?.toDto(networkRegistries)
             current.withGameSnapshot(snapshot).copy(
-                tableLobby = current.tableLobby?.copy(
-                    phase = TableLobbyPhaseDto.PLAYING,
-                    playingGameConfig = current.tableLobby.playingGameConfig ?: waitingConfig,
+                tableOccupancy = current.tableOccupancy?.copy(
+                    occupancy = TableOccupancyDto.GAME,
+                    playingGameConfig = current.tableOccupancy.playingGameConfig ?: waitingConfig,
                 ),
                 roundPreparationSnapshot = roundPreparation,
                 roomSnapshot = null,

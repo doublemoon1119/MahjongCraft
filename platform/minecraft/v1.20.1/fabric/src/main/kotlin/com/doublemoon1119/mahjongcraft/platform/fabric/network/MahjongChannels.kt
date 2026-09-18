@@ -6,11 +6,11 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomScreenActionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.SnapshotClearedPayloadDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableLobbyPayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyPayloadDto
 import kotlinx.serialization.builtins.serializer
 
 /** `mahjongcraft:` 命名空間下實際使用的命令、事件更新與主動快照同步頻道。 */
@@ -18,7 +18,7 @@ object MahjongChannels {
     val gameCommand = C2SChannel("game_command", GameCommandEnvelopeDto.serializer())
     val decisionSelection = C2SChannel("decision_selection", PlayerDecisionSelectionDto.serializer())
 
-    val roomScreenAction = C2SChannel("room_screen_action", RoomScreenActionDto.serializer())
+    val roomAction = C2SChannel("room_action", RoomActionDto.serializer())
 
     /**
      * 玩家（重新）加入世界後，主動要求伺服器重建一份目前歸屬的房間／對局快照，見
@@ -45,10 +45,10 @@ object MahjongChannels {
     val roomUpdate = S2CChannel("room_update", RoomUpdatePayloadDto.serializer())
     val gameSnapshot = S2CChannel("game_snapshot", GameSnapshotSyncPayloadDto.serializer())
     val roomSnapshot = S2CChannel("room_snapshot", RoomSnapshotSyncPayloadDto.serializer())
-    val tableLobby = S2CChannel("table_lobby", TableLobbyPayloadDto.serializer())
+    val tableOccupancy = S2CChannel("table_occupancy", TableOccupancyPayloadDto.serializer())
 
     /**
-     * 房間與對局都不存在時清除該玩家手上的快照，見 `ObserverSnapshotSender`。與 [tableLobby] 不同，
+     * 房間與對局都不存在時清除該玩家手上的快照，見 `ObserverSnapshotSender`。與 [tableOccupancy] 不同，
      * 這個頻道不會開啟任何畫面，收到時只更新已保存的狀態。
      */
     val snapshotCleared = S2CChannel("snapshot_cleared", SnapshotClearedPayloadDto.serializer())

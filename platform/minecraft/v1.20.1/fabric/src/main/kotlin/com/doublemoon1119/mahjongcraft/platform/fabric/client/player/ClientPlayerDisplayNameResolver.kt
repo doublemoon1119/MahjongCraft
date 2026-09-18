@@ -13,7 +13,7 @@ class ClientPlayerDisplayNameResolver(
     private val stateStore: ClientMahjongStateStore,
 ) {
     /**
-     * 以房間持久化 AI 順序為優先，無 lobby 時才退回目前遊戲快照順序。[tableId] 為 `null`（呼叫端一時
+     * 以房間持久化 AI 順序為優先，沒有房間資料時才退回目前遊戲快照順序。[tableId] 為 `null`（呼叫端一時
      * 拿不到管理中的桌子 ID）時，AI 順序退回空清單、真人名稱解析不受影響。
      */
     fun resolve(tableId: Uuid?, playerId: String, isAiHint: Boolean? = null): String {
@@ -28,7 +28,7 @@ class ClientPlayerDisplayNameResolver(
 
     private fun orderedAiPlayerIds(tableId: Uuid?): List<Uuid> {
         if (tableId == null) return emptyList()
-        val lobbyIds = stateStore.tableLobby(tableId)?.playingAiPlayerIds.orEmpty().mapNotNull { runCatching { Uuid.parse(it) }.getOrNull() }
+        val lobbyIds = stateStore.tableOccupancy(tableId)?.playingAiPlayerIds.orEmpty().mapNotNull { runCatching { Uuid.parse(it) }.getOrNull() }
         if (lobbyIds.isNotEmpty()) return lobbyIds
         stateStore.roomSnapshot(tableId)?.aiPlayerIds?.takeIf { it.isNotEmpty() }?.let { return it }
         return stateStore.gameSnapshot(tableId)?.players.orEmpty().filter { it.isAi }.map { it.id }
