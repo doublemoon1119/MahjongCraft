@@ -251,9 +251,9 @@ class RiichiLegalActionValidator(
             // 2. 檢查是否可以碰 (Pon)
             // 立直後不能碰、河底牌不能碰
             // 赤五與普通五視為同一張牌，故使用日麻標準牌比較
-            // 過水碰：若玩家在當前巡迴中已放過此牌，則不可碰
+            // 放過碰之後同巡仍然可以碰：日麻沒有過水碰的限制，放過清單只用於同巡振聽（見 Ron 的判定）
             val matchingForPon = player.hand.standingTiles.filter { it.tile.riichiCanonical == incomingBaseTile }
-            if (matchingForPon.size >= 2 && !isRiichi && wallHasMoreTiles && incomingBaseTile !in player.passedTilesInRound) {
+            if (matchingForPon.size >= 2 && !isRiichi && wallHasMoreTiles) {
                 // 優先用一般牌組成刻子，赤五只在數量不足時才會被選中，讓玩家自然保留手上的赤寶牌。
                 legalActions.add(GameAction.Pon(incomingTile.id, matchingForPon.preferPlainTiles(2).map { it.id }))
             }

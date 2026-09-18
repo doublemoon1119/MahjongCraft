@@ -14,6 +14,10 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
  *
  * 負責根據台灣麻將的規則（包含過水、補花、槓牌等）分析玩家的合法動作。
  *
+ * 過水碰：台灣麻將**不允許**放過碰之後，在自己下次取牌前碰同一種牌，實作時以
+ * [MahjongPlayer.passedTilesInRound] 判斷（該清單記錄自己上次取牌後放過的牌，摸牌或鳴牌時清空）。
+ * 日本麻將沒有這項限制，見 `RiichiLegalActionValidator`。
+ *
  * ## 牌型 (Pattern) 結構規劃
  *
  * 台灣麻將的牌型計算與日本麻將類似，但使用「台」而非「番」作為單位。

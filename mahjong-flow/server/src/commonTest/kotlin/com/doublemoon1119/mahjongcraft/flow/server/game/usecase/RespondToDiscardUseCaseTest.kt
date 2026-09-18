@@ -53,7 +53,7 @@ import kotlin.uuid.Uuid
 /**
  * [RespondToDiscardUseCase] 的單元測試類別。
  *
- * 驗證捨牌反應視窗的回應、過水碰記錄、碰/槓優先於吃的結算順序、多人等待到齊才結算、
+ * 驗證捨牌反應視窗的回應、放過的牌的記錄、碰/槓優先於吃的結算順序、多人等待到齊才結算、
  * 包牌責任觸發、一發失效，以及各種驗證失敗案例。
  */
 class RespondToDiscardUseCaseTest {
@@ -112,7 +112,7 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 驗證唯一有資格的玩家選擇過牌時：若原本可以碰，記錄過水碰；且因反應視窗已經齊全（無人動作），
+     * 驗證唯一有資格的玩家選擇過牌時：若原本可以碰，把該牌記入放過清單；且因反應視窗已經齊全（無人動作），
      * 直接推進到下一位玩家並清除反應視窗。
      */
     @Test
@@ -147,7 +147,7 @@ class RespondToDiscardUseCaseTest {
         val updatedResponder = newState.players.first { it.id == responderId }
         assertTrue(
             Tile.Honor.White in updatedResponder.passedTilesInRound,
-            "Passing on an available Pon should be recorded as a temporary pass (過水碰).",
+            "Passing on an available Pon should record the tile for the rules to judge (temporary furiten in riichi).",
         )
     }
 

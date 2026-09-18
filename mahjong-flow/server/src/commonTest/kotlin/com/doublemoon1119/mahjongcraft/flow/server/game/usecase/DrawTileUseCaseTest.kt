@@ -55,7 +55,7 @@ class DrawTileUseCaseTest {
     private val drawnTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
 
     /**
-     * 驗證輪到該玩家時，摸牌成功並正確更新手牌、牌山與過水記錄。
+     * 驗證輪到該玩家時，摸牌成功並正確更新手牌、牌山與放過清單。
      */
     @Test
     fun `test draw tile updates hand and wall and clears passed tiles`() = runTest {
