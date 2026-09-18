@@ -1190,13 +1190,6 @@ class RoomScreen(
 
     override fun shouldPause(): Boolean = false
 
-    override fun removed() {
-        super.removed()
-        stateStore.tableLobby(tableId)?.let { lobby ->
-            MahjongChannels.roomScreenAction.sendToServer(json, RoomScreenActionDto.Close(lobby.tableId))
-        }
-    }
-
     private enum class Page { ROOM, SETTINGS }
 
     private data class ActionButton(

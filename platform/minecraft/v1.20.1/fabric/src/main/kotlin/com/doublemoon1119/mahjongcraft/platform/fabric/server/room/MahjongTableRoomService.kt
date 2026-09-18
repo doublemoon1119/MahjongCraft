@@ -96,7 +96,6 @@ class MahjongTableRoomService(
             is RoomScreenActionDto.Leave,
             is RoomScreenActionDto.Disband,
             -> leaveFromScreen(tableId, player)
-            is RoomScreenActionDto.Close -> closeRoomScreen(tableId, player)
             is RoomScreenActionDto.AddAi -> withMatchingMembership(player, tableId) { addAi(it, action.strategyKey) }
             is RoomScreenActionDto.ChangeAiStrategy -> withMatchingMembership(player, tableId) {
                 val targetId = runCatching { Uuid.parse(action.targetPlayerId) }.getOrNull() ?: return@withMatchingMembership
@@ -108,17 +107,6 @@ class MahjongTableRoomService(
             }
             is RoomScreenActionDto.UpdateConfig -> withMatchingMembership(player, tableId) {
                 updateConfig(it, action.config.toDomain(networkRegistries))
-            }
-        }
-    }
-
-    /** 關閉畫面時只清除非成員建立的暫時 observer。 */
-    private fun closeRoomScreen(tableId: Uuid, player: ServerPlayerEntity) {
-        val playerId = player.uuid.toKotlinUuid()
-        scope.launch {
-            val room = roomRepository.getRoom(tableId)
-            if (room == null || playerId !in room.playerIds) {
-                roomSnapshotRepository.removeSnapshot(tableId, playerId)
             }
         }
     }
@@ -179,7 +167,11 @@ class MahjongTableRoomService(
                 return@launch
             }
 
-            syncRoom(tableId, playerId)
+            // 這份快照的用途是「夾在房間事件裡送出」：房間有變動時，伺服器送事件給成員，並從倉庫取出
+            // 該成員的快照一起送。非成員收不到房間事件，替他存的那份不會有人讀，所以只有成員需要存。
+            // 非成員畫面上的內容另有來源：剛開啟時由下面的 payload 當場帶一份，之後的變動由觀察者推送
+            // 送達，兩者都不經過倉庫。
+            if (playerId in room.playerIds) syncRoom(tableId, playerId)
             MahjongChannels.tableLobby.sendTo(
                 player,
                 json,

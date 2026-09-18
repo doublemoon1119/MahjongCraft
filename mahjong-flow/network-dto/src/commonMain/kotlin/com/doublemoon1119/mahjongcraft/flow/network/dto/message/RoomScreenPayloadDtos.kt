@@ -40,8 +40,6 @@ sealed interface RoomScreenActionDto {
 
     @Serializable data class Disband(override val tableId: String) : RoomScreenActionDto
 
-    @Serializable data class Close(override val tableId: String) : RoomScreenActionDto
-
     @Serializable data class AddAi(override val tableId: String, val strategyKey: String? = null) : RoomScreenActionDto
 
     @Serializable data class ChangeAiStrategy(
