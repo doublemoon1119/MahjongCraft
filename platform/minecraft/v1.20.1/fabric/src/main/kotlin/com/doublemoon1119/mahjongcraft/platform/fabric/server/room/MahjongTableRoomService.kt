@@ -34,8 +34,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongAutoDrawService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
@@ -76,8 +74,6 @@ class MahjongTableRoomService(
     private val updateConfig: UpdateConfigUseCase,
     private val syncRoom: SyncRoomSnapshotUseCase,
     private val syncGame: SyncGameSnapshotUseCase,
-    private val roomSnapshotSender: RoomSnapshotSender,
-    private val gameSnapshotSender: GameSnapshotSender,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val tableLocationRegistry: TableLocationRegistry,
     private val reachableTableResolver: ReachableMahjongTableResolver,
@@ -185,7 +181,6 @@ class MahjongTableRoomService(
             }
 
             syncRoom(tableId, playerId)
-            roomSnapshotSender.send(tableId, playerId)
             MahjongChannels.tableLobby.sendTo(
                 player,
                 json,
@@ -213,7 +208,6 @@ class MahjongTableRoomService(
             when (val result = createRoom(tableId, playerId, defaultGameConfigProvider.create())) {
                 is Outcome.Success -> {
                     syncRoom(tableId, playerId)
-                    roomSnapshotSender.send(tableId, playerId)
                     feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameCreated(tableLocationRegistry.get(tableId)?.location))
                 }
                 is Outcome.Error -> publishRoomError(playerId, result.error)
@@ -272,7 +266,6 @@ class MahjongTableRoomService(
                         val updatedRoom = roomRepository.getRoom(tableId)
                         if (updatedRoom != null) {
                             syncRoom(tableId, playerId)
-                            roomSnapshotSender.send(tableId, playerId)
                             MahjongChannels.tableLobby.sendTo(
                                 player,
                                 json,
@@ -306,7 +299,6 @@ class MahjongTableRoomService(
                     return@launch
                 }
                 syncGame(tableId, playerId)
-                gameSnapshotSender.send(tableId, playerId)
                 return@launch
             }
 
@@ -315,7 +307,6 @@ class MahjongTableRoomService(
                 when (val result = createRoom(tableId, playerId, defaultGameConfigProvider.create())) {
                     is Outcome.Success -> {
                         syncRoom(tableId, playerId)
-                        roomSnapshotSender.send(tableId, playerId)
                         val location = tableLocationRegistry.get(tableId)?.location
                         feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameCreated(location))
                     }
@@ -330,7 +321,6 @@ class MahjongTableRoomService(
                     return@launch
                 }
                 syncRoom(tableId, playerId)
-                roomSnapshotSender.send(tableId, playerId)
                 return@launch
             }
 
@@ -519,7 +509,6 @@ class MahjongTableRoomService(
                     val updatedRoom = roomRepository.getRoom(tableId)
                     if (target != null && updatedRoom != null) {
                         syncRoom(tableId, targetPlayerId)
-                        roomSnapshotSender.send(tableId, targetPlayerId)
                         MahjongChannels.tableLobby.sendTo(
                             target,
                             json,

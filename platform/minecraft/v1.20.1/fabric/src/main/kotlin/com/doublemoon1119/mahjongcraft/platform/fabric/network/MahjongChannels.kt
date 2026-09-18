@@ -21,7 +21,7 @@ object MahjongChannels {
     val roomScreenAction = C2SChannel("room_screen_action", RoomScreenActionDto.serializer())
 
     /**
-     * 玩家（重新）加入世界後，主動向伺服器要求補送一份目前歸屬的房間／對局快照，見
+     * 玩家（重新）加入世界後，主動要求伺服器重建一份目前歸屬的房間／對局快照，見
      * `PlayerConnectionLifecycleService.onSnapshotRequested`——由客戶端自己決定「我剛加入、還沒有任何
      * 快照」這件事並主動詢問，不依賴伺服器猜測何時該推送，理由見該方法 KDoc。沒有實際內容，用
      * `Unit` 表示純粹的請求信號。

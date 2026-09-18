@@ -9,8 +9,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -21,7 +19,6 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -117,7 +114,6 @@ class SpectatorObservationServiceTest {
             scope,
             gameRepository,
             SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl())),
-            GameSnapshotSender(gameSnapshotRepository, FabricServerHolder(), Json, networkRegistries),
             gameSnapshotRepository,
         )
         return Fixture(service, gameRepository, gameSnapshotRepository, tableId, seatedPlayerId, spectatorId)

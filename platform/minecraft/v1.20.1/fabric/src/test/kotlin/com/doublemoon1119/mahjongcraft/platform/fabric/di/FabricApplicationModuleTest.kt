@@ -44,8 +44,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugTilePreviewSupport
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.text.FabricDebugTextCommand
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.BuiltInDefaultGameConfigProvider
@@ -147,8 +145,6 @@ class FabricApplicationModuleTest {
         koin.get<RoomEventPublisher>()
         assertTrue(koin.get<DefaultGameConfigProvider>() is BuiltInDefaultGameConfigProvider)
         koin.get<MahjongTableRoomService>()
-        koin.get<RoomSnapshotSender>()
-        koin.get<GameSnapshotSender>()
         koin.get<ServerSessionStateCleaner>()
         koin.get<ServerSessionStateRestorer>()
         koin.get<AuthoritativeStatePersistenceCodec>()

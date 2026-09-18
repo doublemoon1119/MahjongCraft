@@ -13,9 +13,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.GameSnapshotSender
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoomSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPlayerPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
@@ -34,7 +31,6 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -242,8 +238,6 @@ class PlayerConnectionLifecycleServiceTest {
             leaveRoom,
             SyncRoomSnapshotUseCase(roomRepository, roomSnapshotRepository),
             SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl())),
-            RoomSnapshotSender(roomSnapshotRepository, FabricServerHolder(), Json, networkRegistries),
-            GameSnapshotSender(gameSnapshotRepository, FabricServerHolder(), Json, networkRegistries),
         )
         return Fixture(
             service,
