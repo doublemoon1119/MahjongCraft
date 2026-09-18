@@ -91,14 +91,16 @@ class FabricWinSettlementPresentationScheduler(
                 paymentReasonId = request.paymentReasonIdsByPlayerId[it.playerId],
             )
         }
-        val reveal = templateRegistry.findTemplate(request.templateKey)?.reveal ?: WinSettlementRevealSequence()
+        val template = templateRegistry.findTemplate(request.templateKey)
+        val reveal = template?.reveal ?: WinSettlementRevealSequence()
+        val scoreRevealDelayTicks = WinSettlementPresentationEntity.scoreRevealDelayTicks(template?.root)
         val timing = WinSettlementRevealTimingSnapshot(
             reveal.initialFadeTicks,
             reveal.entryStaggerTicks,
             reveal.scoreRevealTicks,
             reveal.readingTicks,
         )
-        val soundCues = buildSoundCues(winners, reveal, timing)
+        val soundCues = buildSoundCues(winners, reveal, timing, scoreRevealDelayTicks)
         val stage = WinSettlementPresentationEntity(world = world).apply {
             configure(tableId, start, request.outcomeId, request.templateKey, request.isTsumo, winners, rankings, timing, soundCues)
             refreshPositionAndAngles(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
@@ -116,6 +118,7 @@ class FabricWinSettlementPresentationScheduler(
         winners: List<WinSettlementWinnerSnapshot>,
         reveal: WinSettlementRevealSequence,
         timing: WinSettlementRevealTimingSnapshot,
+        scoreRevealDelayTicks: Long,
     ): List<WinSettlementSoundCueSnapshot> {
         if (reveal.sounds.isEmpty() && reveal.entrySoundId == null && reveal.scoreSoundId == null) return emptyList()
         var winnerStart = 0L
@@ -128,8 +131,8 @@ class FabricWinSettlementPresentationScheduler(
                         PresentationTimelineAnchor.PANEL_START -> 0L
                         PresentationTimelineAnchor.ENTRIES_START -> timing.initialFadeTicks.toLong()
                         PresentationTimelineAnchor.AFTER_ENTRIES -> timing.initialFadeTicks + entries.toLong() * timing.entryStaggerTicks
-                        PresentationTimelineAnchor.SCORE_REVEAL -> timing.initialFadeTicks + entries.toLong() * timing.entryStaggerTicks +
-                            if (winner.hasPostEntrySummary) WinSettlementPresentationEntity.HAN_FU_REVEAL_TICKS else 0L
+                        PresentationTimelineAnchor.SCORE_REVEAL ->
+                            timing.initialFadeTicks + entries.toLong() * timing.entryStaggerTicks + scoreRevealDelayTicks
                     }
                     add(WinSettlementSoundCueSnapshot(winnerStart + anchorTick + cue.offsetTicks, cue.soundId, cue.volume, cue.pitch))
                 }
@@ -155,7 +158,7 @@ class FabricWinSettlementPresentationScheduler(
                         ),
                     )
                 }
-                winnerStart += WinSettlementPresentationEntity.winnerDurationTicks(winner, timing)
+                winnerStart += WinSettlementPresentationEntity.winnerDurationTicks(winner, timing, scoreRevealDelayTicks)
             }
         }
     }
@@ -164,7 +167,4 @@ class FabricWinSettlementPresentationScheduler(
         const val STAGE_HEIGHT_OFFSET = 1.6
         const val BRIEF_PRESENTATION_HANDOFF_GRACE_TICKS = 5L
     }
-
-    private val WinSettlementWinnerSnapshot.hasPostEntrySummary: Boolean
-        get() = details.any { it.id.endsWith(":riichi_han_fu") || it.id.endsWith(":riichi_yakuman_total") }
 }

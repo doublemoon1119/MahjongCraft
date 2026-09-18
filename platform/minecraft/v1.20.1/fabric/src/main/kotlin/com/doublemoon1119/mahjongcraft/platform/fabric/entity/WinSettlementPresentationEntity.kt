@@ -2,11 +2,16 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationFieldId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRevealTimeline
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker
 import net.minecraft.entity.data.TrackedDataHandlerRegistry
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.world.World
+import org.koin.core.context.GlobalContext
 import kotlin.uuid.Uuid
 
 data class WinSettlementDetailSnapshot(val id: String, val type: String, val values: List<String>)
@@ -26,7 +31,11 @@ data class WinSettlementWinnerSnapshot(
     val melds: List<WinSettlementMeldSnapshot>,
     val winningTileAssetKey: String,
     val details: List<WinSettlementDetailSnapshot>,
-)
+) {
+    /** 這位贏家實際有內容的細項欄位；版面裡「有資料才顯示」的部分以此判斷。 */
+    val presentFieldIds: Set<PresentationFieldId>
+        get() = details.mapNotNullTo(mutableSetOf()) { detail -> runCatching { PresentationFieldId(detail.id) }.getOrNull() }
+}
 
 data class WinSettlementRankingSnapshot(
     val playerId: String,
@@ -99,7 +108,7 @@ class WinSettlementPresentationEntity(
         dataTracker.set(START_GAME_TIME, startGameTime)
         dataTracker.set(REVEAL_TIMING, encodeRevealTiming(revealTiming))
         dataTracker.set(CUSTOM_SOUND_CUES, encodeSoundCues(customSoundCues))
-        dataTracker.set(END_GAME_TIME, startGameTime + durationTicks(winners, revealTiming))
+        dataTracker.set(END_GAME_TIME, startGameTime + durationTicks(winners, revealTiming, scoreRevealDelayTicks(layoutOf(templateKey))))
         dataTracker.set(OUTCOME_ID, outcomeId)
         dataTracker.set(TEMPLATE_KEY, templateKey)
         dataTracker.set(IS_TSUMO, isTsumo)
@@ -109,9 +118,9 @@ class WinSettlementPresentationEntity(
     }
 
     fun elapsedTicks(tickDelta: Float): Double = world.time + tickDelta.toDouble() - startGameTime
-    fun winnerStartTick(index: Int): Long = winners.take(index).sumOf { winnerDurationTicks(it, revealTiming) }
-    fun rankingStartTick(): Long = winners.sumOf { winnerDurationTicks(it, revealTiming) }
-    fun winnerDurationTicks(winner: WinSettlementWinnerSnapshot): Long = winnerDurationTicks(winner, revealTiming)
+    fun winnerStartTick(index: Int): Long = winners.take(index).sumOf(::winnerDurationTicks)
+    fun rankingStartTick(): Long = winners.sumOf(::winnerDurationTicks)
+    fun winnerDurationTicks(winner: WinSettlementWinnerSnapshot): Long = winnerDurationTicks(winner, revealTiming, scoreRevealDelayTicks(layoutOf(templateKey)))
 
     override fun tick() {
         super.tick()
@@ -130,22 +139,30 @@ class WinSettlementPresentationEntity(
         winners.forEachIndexed { winnerIndex, winner ->
             val winnerStart = winnerStartTick(winnerIndex)
             val entries = winner.details.filter { it.type == DETAIL_ENTRIES }.sumOf { it.values.size / ENTRY_VALUE_COUNT }
-            val summaryCount = if (winner.hasPostEntrySummary) 1 else 0
-            repeat(entries + summaryCount) { entryIndex ->
+            val layout = layoutOf(templateKey)
+            val afterEntriesTick = winnerStart + revealTiming.initialFadeTicks + entries * revealTiming.entryStaggerTicks
+            // 役種每一條出現時響一聲；版面上排在逐條揭示之後的每一行（例如翻符）出現時也各響一聲，音高接續往上。
+            val entryBeatTicks = List(entries) { entryIndex ->
+                winnerStart + revealTiming.initialFadeTicks + entryIndex * revealTiming.entryStaggerTicks
+            }
+            val lineBeatTicks = layout
+                ?.let { WinSettlementRevealTimeline.lineRevealDelaysTicks(it, winner.presentFieldIds) }
+                .orEmpty()
+                .map { delay -> afterEntriesTick + delay }
+            (entryBeatTicks + lineBeatTicks).forEachIndexed { beatIndex, eventTick ->
                 add(
                     WinSettlementSoundCueSnapshot(
-                        eventTick = winnerStart + revealTiming.initialFadeTicks + entryIndex * revealTiming.entryStaggerTicks,
+                        eventTick = eventTick,
                         soundId = DETAIL_SOUND_ID,
                         volume = SettlementPresentationSoundSpec.DETAIL_VOLUME,
                         pitch = (
                             SettlementPresentationSoundSpec.DETAIL_BASE_PITCH +
-                                entryIndex * SettlementPresentationSoundSpec.DETAIL_PITCH_STEP
+                                beatIndex * SettlementPresentationSoundSpec.DETAIL_PITCH_STEP
                             ).coerceAtMost(1.55f),
                     ),
                 )
             }
-            val scoreTick = winnerStart + revealTiming.initialFadeTicks +
-                (entries + summaryCount) * revealTiming.entryStaggerTicks
+            val scoreTick = afterEntriesTick + scoreRevealDelayTicks(layout)
             SettlementPresentationSoundSpec.TOTAL_SCORE_MELODY_PITCHES.forEachIndexed { noteIndex, pitch ->
                 add(
                     WinSettlementSoundCueSnapshot(
@@ -248,7 +265,6 @@ class WinSettlementPresentationEntity(
         const val INITIAL_FADE_TICKS = 16L
         const val ENTRY_STAGGER_TICKS = 8L
         const val SCORE_REVEAL_TICKS = 18L
-        const val HAN_FU_REVEAL_TICKS = 8L
         const val READING_TICKS = 60L
         const val TRANSITION_TICKS = 12L
         const val RANKING_TICKS = 150L
@@ -267,17 +283,33 @@ class WinSettlementPresentationEntity(
         private const val L = '\u001d'
         private const val G = '\u001c'
 
-        fun winnerDurationTicks(winner: WinSettlementWinnerSnapshot, timing: WinSettlementRevealTimingSnapshot): Long {
+        /**
+         * 一位贏家的段落長度。
+         *
+         * @param scoreRevealDelayTicks 分數在逐條揭示結束後多久出現，由模板的版面決定，見 [scoreRevealDelayTicks]。
+         */
+        fun winnerDurationTicks(
+            winner: WinSettlementWinnerSnapshot,
+            timing: WinSettlementRevealTimingSnapshot,
+            scoreRevealDelayTicks: Long,
+        ): Long {
             val entries = winner.details.filter { it.type == DETAIL_ENTRIES }.sumOf { it.values.size / ENTRY_VALUE_COUNT }
             return timing.initialFadeTicks + entries * timing.entryStaggerTicks +
-                (if (winner.hasPostEntrySummary) HAN_FU_REVEAL_TICKS else 0L) + timing.scoreRevealTicks + timing.readingTicks + TRANSITION_TICKS
+                scoreRevealDelayTicks + timing.scoreRevealTicks + timing.readingTicks + TRANSITION_TICKS
         }
 
-        private val WinSettlementWinnerSnapshot.hasPostEntrySummary: Boolean
-            get() = details.any { it.id.endsWith(":riichi_han_fu") || it.id.endsWith(":riichi_yakuman_total") }
+        /** 整面面板的長度；[scoreRevealDelayTicks] 同 [winnerDurationTicks]。 */
+        fun durationTicks(
+            winners: List<WinSettlementWinnerSnapshot>,
+            timing: WinSettlementRevealTimingSnapshot,
+            scoreRevealDelayTicks: Long,
+        ): Long = winners.sumOf { winnerDurationTicks(it, timing, scoreRevealDelayTicks) } + RANKING_TICKS + FADE_OUT_TICKS
 
-        fun durationTicks(winners: List<WinSettlementWinnerSnapshot>, timing: WinSettlementRevealTimingSnapshot): Long = winners
-            .sumOf { winnerDurationTicks(it, timing) } + RANKING_TICKS + FADE_OUT_TICKS
+        /** 分數在逐條揭示結束後多久出現；找不到模板時視為 0，逐條揭示一結束就出現。 */
+        fun scoreRevealDelayTicks(layout: PresentationLayout?): Long = layout?.let { WinSettlementRevealTimeline.scoreRevealDelayTicks(it).toLong() } ?: 0L
+
+        /** 依模板識別碼取得版面設計；模板不存在時為 `null`。 */
+        fun layoutOf(templateKey: String): PresentationLayout? = GlobalContext.get().get<WinSettlementPresentationTemplateRegistry>().findTemplate(templateKey)?.root
 
         private val TABLE_ID = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
         private val START_GAME_TIME = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.LONG)

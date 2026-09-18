@@ -178,6 +178,9 @@ class WinSettlementPresentationEntityRenderer(
             initialFadeTicks = entity.revealTiming.initialFadeTicks,
             entryStaggerTicks = entity.revealTiming.entryStaggerTicks,
             scoreRevealTicks = entity.revealTiming.scoreRevealTicks,
+            scoreRevealDelayTicks = WinSettlementPresentationEntity.scoreRevealDelayTicks(
+                WinSettlementPresentationEntity.layoutOf(entity.templateKey),
+            ).toInt(),
         )
     }
 
@@ -383,14 +386,8 @@ class WinSettlementPresentationEntityRenderer(
             PresentationTimelineAnchor.PANEL_START -> 0
             PresentationTimelineAnchor.ENTRIES_START -> snapshot.initialFadeTicks
             PresentationTimelineAnchor.AFTER_ENTRIES -> snapshot.initialFadeTicks + entries * snapshot.entryStaggerTicks
-            PresentationTimelineAnchor.SCORE_REVEAL -> {
-                snapshot.initialFadeTicks + entries * snapshot.entryStaggerTicks +
-                    if (snapshot.extensionFields.any { it.id.value.endsWith(":riichi_han_fu") || it.id.value.endsWith(":riichi_yakuman_total") }) {
-                        WinSettlementPresentationEntity.HAN_FU_REVEAL_TICKS.toInt()
-                    } else {
-                        0
-                    }
-            }
+            PresentationTimelineAnchor.SCORE_REVEAL ->
+                snapshot.initialFadeTicks + entries * snapshot.entryStaggerTicks + snapshot.scoreRevealDelayTicks
         }
     }
 

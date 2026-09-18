@@ -37,6 +37,7 @@ data class WinSettlementPresentationFieldSnapshot(
     val initialFadeTicks: Int = 16,
     val entryStaggerTicks: Int = 8,
     val scoreRevealTicks: Int = 18,
+    val scoreRevealDelayTicks: Int = 0,
 ) {
     /** 依完整 ID 取得強型別 extension 欄位；重複 ID 由建構端拒絕。 */
     fun extensionField(id: PresentationFieldId): PresentationValue? = extensionFields.firstOrNull { it.id == id }?.value
