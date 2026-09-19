@@ -87,7 +87,7 @@ class SettlementStageInputsTest {
             playerPresentation(seatIndex = 1, waitingTiles = listOf(Tile.Numeric(Tile.Suit.Bamboo, 2))),
         )
 
-        val inputs = exhaustiveDrawSettlementStageInputs(request, stateWith(), FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(request, stateWith(), emptyMap(), FakeTileAssetRegistry)
 
         assertEquals(
             mapOf(0 to listOf("east", "p9"), 1 to listOf("s2")),
@@ -102,7 +102,7 @@ class SettlementStageInputsTest {
         val state = stateWith(handTiles = listOf(revealed))
         val request = requestOf(playerPresentation(seatIndex = 0, revealedHandTileIds = listOf(revealed.id)))
 
-        val inputs = exhaustiveDrawSettlementStageInputs(request, state, FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(request, state, emptyMap(), FakeTileAssetRegistry)
 
         assertEquals(mapOf(revealed.id to "m5"), inputs.revealedTileAssetsById)
     }
@@ -114,7 +114,12 @@ class SettlementStageInputsTest {
             playerPresentation(seatIndex = 0, waitingTiles = listOf(Tile.Honor.South), revealedHandTileIds = listOf(Uuid.random())),
         )
 
-        val inputs = exhaustiveDrawSettlementStageInputs(request, tableState = null, tileAssetRegistry = FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(
+            request = request,
+            tableState = null,
+            cornerWidthsBySeat = emptyMap(),
+            tileAssetRegistry = FakeTileAssetRegistry,
+        )
 
         assertEquals(mapOf(0 to listOf("south")), inputs.waitingTileAssetsBySeat)
         assertEquals(emptyMap(), inputs.revealedTileAssetsById)
@@ -124,27 +129,28 @@ class SettlementStageInputsTest {
     /** 每個座位都有一份桌角預留寬度。 */
     @Test
     fun `reserves a corner width for every seat`() {
-        val inputs = exhaustiveDrawSettlementStageInputs(requestOf(playerPresentation(seatIndex = 0)), stateWith(), FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(requestOf(playerPresentation(seatIndex = 0)), stateWith(), emptyMap(), FakeTileAssetRegistry)
 
         assertEquals(setOf(0, 1), inputs.reservedCornerWidthsBySeat.keys)
         assertTrue(inputs.reservedCornerWidthsBySeat.values.all { it >= 0.0 })
     }
 
-    /** 連莊棒只佔莊家的桌角。 */
+    /** 角落物件寬度只加在指定的座位上，沒有列出的座位不佔用。 */
     @Test
-    fun `charges the combo sticks to the dealer only`() {
-        val withoutCombo = cornerWidths(comboCount = 0)
-        val withCombo = cornerWidths(comboCount = 3)
+    fun `adds the corner prop width to the listed seat only`() {
+        val without = cornerWidths(emptyMap())
+        val with = cornerWidths(mapOf(0 to 0.5))
 
-        assertTrue(withCombo.getValue(0) > withoutCombo.getValue(0), "Expected the dealer's corner to grow with the combo sticks.")
-        assertEquals(withoutCombo.getValue(1), withCombo.getValue(1), "Expected a non dealer's corner to ignore the combo sticks.")
+        assertEquals(without.getValue(0) + 0.5, with.getValue(0), "Expected the listed seat to reserve the corner prop width.")
+        assertEquals(without.getValue(1), with.getValue(1), "Expected an unlisted seat to reserve no corner prop width.")
     }
 
     /** 取得各座位的桌角預留寬度。 */
-    private fun cornerWidths(comboCount: Int) = exhaustiveDrawSettlementStageInputs(
-        requestOf(playerPresentation(seatIndex = 0)),
-        stateWith(comboCount = comboCount),
-        FakeTileAssetRegistry,
+    private fun cornerWidths(cornerWidthsBySeat: Map<Int, Double>) = exhaustiveDrawSettlementStageInputs(
+        request = requestOf(playerPresentation(seatIndex = 0)),
+        tableState = stateWith(),
+        cornerWidthsBySeat = cornerWidthsBySeat,
+        tileAssetRegistry = FakeTileAssetRegistry,
     ).reservedCornerWidthsBySeat
 
     /** 建立測試用的牌張。 */
@@ -155,7 +161,6 @@ class SettlementStageInputsTest {
         handTiles: List<IdentifiedTile> = emptyList(),
         wallTiles: List<IdentifiedTile> = emptyList(),
         deadWallTiles: List<IdentifiedTile> = emptyList(),
-        comboCount: Int = 0,
     ): TableState {
         val dealer = FakeMahjongPlayerFactory.create(Wind.EAST, hand = Hand(tiles = handTiles))
         val opponent = FakeMahjongPlayerFactory.create(Wind.SOUTH)
@@ -163,7 +168,6 @@ class SettlementStageInputsTest {
             players = listOf(dealer, opponent),
             dealerPlayerId = dealer.id,
             tileWall = TileWall(wallTiles),
-            comboCount = comboCount,
             initialDeadWall = deadWallTiles,
         )
     }

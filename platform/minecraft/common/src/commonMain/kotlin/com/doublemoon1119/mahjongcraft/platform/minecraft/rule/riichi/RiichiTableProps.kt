@@ -32,18 +32,41 @@ object RiichiTableProps : TablePropDescriber {
     /** 立直棒與牌河之間留下的縫隙，讓兩者看得出是分開的（單位：方塊）。 */
     internal const val RIICHI_STICK_CLEARANCE_GAP: Double = 0.05
 
+    /** 角落一疊每排最多的根數，排滿往上疊一層。 */
+    internal const val STICKS_PER_ROW: Int = 4
+
+    /** 角落一疊相鄰兩根沿排列方向的間距（單位：方塊）。 */
+    private const val CORNER_STICK_STEP: Double = MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING
+
     override fun describe(tableState: TableState): List<TablePropPlacement> {
-        val riichiSeatIndices = tableState.players.withIndex()
-            .filter { (_, player) -> (player.playerRuleState as? RiichiPlayerState)?.isRiichi == true }
-            .map { (seatIndex, _) -> seatIndex }
-        val stickPotCount = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
-        val pooledStickCount = (stickPotCount - riichiSeatIndices.size).coerceAtLeast(0)
+        val pooledStickCount = pooledStickCount(tableState)
         val dealerSeatIndex = tableState.dealerIndex
-        return riichiSeatIndices.map(::riichiStick) +
+        return riichiSeatIndices(tableState).map(::riichiStick) +
             List(tableState.comboCount) { stackIndex -> cornerStick(dealerSeatIndex, stackIndex, COMBO_STICK_VARIANT) } +
             List(pooledStickCount) { poolIndex ->
                 cornerStick(dealerSeatIndex, tableState.comboCount + poolIndex, STICK_POT_VARIANT)
             }
+    }
+
+    /**
+     * 只有莊家角落有棒子（積棒加延續供託）；每排最多 [STICKS_PER_ROW] 根，排滿往上疊一層不加寬，所以寬度只隨
+     * 支數成長到一整排為止。
+     */
+    override fun cornerWidth(tableState: TableState, seatIndex: Int): Double {
+        if (seatIndex != tableState.dealerIndex) return 0.0
+        val cornerStickCount = tableState.comboCount + pooledStickCount(tableState)
+        return cornerStickCount.coerceAtMost(STICKS_PER_ROW) * CORNER_STICK_STEP
+    }
+
+    /** 目前立直中的座位。 */
+    private fun riichiSeatIndices(tableState: TableState): List<Int> = tableState.players.withIndex()
+        .filter { (_, player) -> (player.playerRuleState as? RiichiPlayerState)?.isRiichi == true }
+        .map { (seatIndex, _) -> seatIndex }
+
+    /** 延續自前局、尚未被收下的供託支數：場上總供託扣掉這局宣告中的立直棒。 */
+    private fun pooledStickCount(tableState: TableState): Int {
+        val stickPotCount = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
+        return (stickPotCount - riichiSeatIndices(tableState).size).coerceAtLeast(0)
     }
 
     /** 立直棒：從牌河內緣再往桌子中心退半根棒子厚度與一道縫隙，沿排列方向置中。 */
@@ -56,13 +79,12 @@ object RiichiTableProps : TablePropDescriber {
     )
 
     /**
-     * 角落那一疊的第 [stackIndex] 根：從副露角落往手牌方向排，每排最多
-     * [MahjongTileTableLayout.STICKS_PER_ROW] 根，排滿往上疊一層；棒子橫放，長邊朝桌子中心。
+     * 角落那一疊的第 [stackIndex] 根：從副露角落往手牌方向排，每排最多 [STICKS_PER_ROW] 根，排滿往上疊一層；
+     * 棒子橫放，長邊朝桌子中心。
      */
     private fun cornerStick(seatIndex: Int, stackIndex: Int, variant: String): TablePropPlacement {
-        val column = stackIndex % MahjongTileTableLayout.STICKS_PER_ROW
-        val layer = stackIndex / MahjongTileTableLayout.STICKS_PER_ROW
-        val stepAlong = MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val column = stackIndex % STICKS_PER_ROW
+        val layer = stackIndex / STICKS_PER_ROW
         val layerHeight = MahjongScoringStickDimensions.STICK_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING
         return TablePropPlacement(
             kind = BuiltInTablePropKinds.SCORING_STICK,
@@ -70,7 +92,7 @@ object RiichiTableProps : TablePropDescriber {
             seatIndex = seatIndex,
             anchor = TableSeatAnchor.MELD_CORNER,
             offset = TableSeatOffset(
-                x = -(column + 0.5) * stepAlong,
+                x = -(column + 0.5) * CORNER_STICK_STEP,
                 y = layer * layerHeight,
                 z = -MahjongScoringStickDimensions.STICK_WIDTH / 2.0,
             ),

@@ -50,7 +50,6 @@ class DebugGameScenarioPresentationPublisher(
                 handTileIdsBySeatIndex = presentation.dealOrderHandTileIdsBySeatIndex,
                 postFlipHandTileIdsBySeatIndex = presentation.postFlipHandTileIdsBySeatIndex,
                 dealerSeatIndex = state.dealerIndex,
-                comboStickCount = state.comboCount,
                 dealBatchSizes = state.config.dealBatchSizes(),
                 diceCount = presentation.diceRoll.values.size,
             )
@@ -78,7 +77,6 @@ class DebugGameScenarioPresentationPublisher(
                 standingTileIds = player.hand.tiles.map { tile -> tile.id },
                 drawnTileId = player.hand.lastDrawn?.id,
                 melds = player.hand.melds.map { meld -> meld.toPresentation(state.config.revealsClosedKanTiles) },
-                comboStickCount = state.comboCount.takeIf { state.isDealer(player.id) } ?: 0,
             )
             publisher.publishDiscardPileUpdated(
                 gameId = game.id,

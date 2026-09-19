@@ -91,14 +91,12 @@ class DrawTileUseCase(
         // GamePresentationPublisher.publishPlayerAreaUpdated 的同名參數 KDoc。
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val drawnPlayer = newState.players[seatIndex]
-        val dealerSeatIndex = newState.dealerIndex
         presentationPublisher.publishPlayerAreaUpdated(
             gameId,
             seatIndex,
             drawnPlayer.hand.tiles.map { it.id },
             drawnPlayer.hand.lastDrawn?.id,
             drawnPlayer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-            comboStickCount = if (seatIndex == dealerSeatIndex) newState.comboCount else 0,
             animateDrawnTile = true,
         )
         // 牌山剩餘張數每次摸牌都會變，桌面局況顯示要跟著更新——這份呈現是「找到既有的就地更新」

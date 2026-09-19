@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerWidthTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -31,6 +32,7 @@ class FabricTableLocationValidationService(
     private val tileWallPresenter: MahjongTileWallPresenter,
     private val playerAreaPresenter: MahjongPlayerAreaPresenter,
     private val tablePropPresenter: TablePropPresenter,
+    private val tableCornerWidths: TableCornerWidthTracker,
     private val discardPresenter: MahjongDiscardPresenter,
 ) {
     /** 回報相同 UUID 移動與位置驗證結果。 */
@@ -138,6 +140,7 @@ class FabricTableLocationValidationService(
         val removedWallTileCount = tileWallPresenter.clear(entry.tableId, entry.location)
         val removedPlayerAreaTileCount = playerAreaPresenter.clear(entry.tableId, entry.location)
         val removedTablePropCount = tablePropPresenter.clear(entry.tableId, entry.location)
+        tableCornerWidths.clear(entry.tableId)
         val removedDiscardTileCount = discardPresenter.clear(entry.tableId, entry.location)
         logger.debug(
             "Removed {} managed dice, {} managed wall tiles, {} managed player area tiles, {} managed table props and {} managed discard tiles for missing Mahjong table {}",

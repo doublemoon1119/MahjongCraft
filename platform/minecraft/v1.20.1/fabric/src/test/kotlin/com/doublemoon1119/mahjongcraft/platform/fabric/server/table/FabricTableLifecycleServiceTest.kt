@@ -31,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerWidthTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentation
@@ -167,6 +168,7 @@ class FabricTableLifecycleServiceTest {
             tileWallPresenter = tileWallPresenter,
             playerAreaPresenter = playerAreaPresenter,
             tablePropPresenter = tablePropPresenter,
+            tableCornerWidths = TableCornerWidthTracker(),
             discardPresenter = discardPresenter,
             roundInfoPresenter = roundInfoPresenter,
             playerInfoPresenter = playerInfoPresenter,

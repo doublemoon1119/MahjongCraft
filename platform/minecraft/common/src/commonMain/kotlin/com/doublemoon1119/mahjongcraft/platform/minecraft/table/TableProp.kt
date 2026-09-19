@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
+import kotlin.uuid.Uuid
 
 /**
  * 每個座位上可以擺放桌面物件的固定位置。
@@ -72,6 +73,43 @@ fun interface TablePropDescriber {
      * @return 桌上應有的全部物件；沒有任何物件時為空清單。
      */
     fun describe(tableState: TableState): List<TablePropPlacement>
+
+    /**
+     * 這個座位的副露角落被自己描述的物件佔用的寬度（單位：方塊），沿副露往手牌排列的方向量測。
+     *
+     * 副露從角落往手牌方向排開時會先讓開這段寬度，手牌也以此避開角落。預設不佔用。
+     *
+     * @param tableState 目前的權威桌況。
+     * @param seatIndex 座位，即 `TableState.players` 的 index。
+     */
+    fun cornerWidth(tableState: TableState, seatIndex: Int): Double = 0.0
+}
+
+/** 依描述算出每個座位副露角落被佔用的寬度，鍵為座位；沒有描述的規則每個座位都是 `0.0`。 */
+fun TablePropDescriber?.cornerWidthsBySeat(tableState: TableState): Map<Int, Double> = tableState.players.indices.associateWith { seatIndex -> this?.cornerWidth(tableState, seatIndex) ?: 0.0 }
+
+/**
+ * 每張桌子目前桌上物件佔用的副露角落寬度紀錄。
+ *
+ * 寬度跟著桌上實際擺放的物件走：物件只在特定時間點更新，權威桌況在兩次更新之間可能已經不同（例如和牌收走
+ * 供託後，供託棒要到下一局才移除），擺手牌時讀這份紀錄，才能避開仍在桌上的物件。
+ */
+class TableCornerWidthTracker {
+    /** 依桌子 UUID 索引的各座位寬度。 */
+    private val widthsByTableId = mutableMapOf<Uuid, Map<Int, Double>>()
+
+    /** 記錄指定桌子目前各座位的角落寬度，取代先前的紀錄。 */
+    fun record(tableId: Uuid, widthsBySeat: Map<Int, Double>) {
+        widthsByTableId[tableId] = widthsBySeat
+    }
+
+    /** 查詢指定桌子的紀錄；尚未記錄時回傳 null。 */
+    fun find(tableId: Uuid): Map<Int, Double>? = widthsByTableId[tableId]
+
+    /** 移除指定桌子的紀錄。 */
+    fun clear(tableId: Uuid) {
+        widthsByTableId.remove(tableId)
+    }
 }
 
 /** 依規則模組識別碼登記 [TablePropDescriber]；沒有登記的規則，桌上不會擺任何由規則描述的物件。 */

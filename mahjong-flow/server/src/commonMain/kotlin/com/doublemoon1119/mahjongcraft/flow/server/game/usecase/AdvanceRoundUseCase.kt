@@ -260,8 +260,7 @@ class AdvanceRoundUseCase(
             // 廣播擲骰點數本身；跟第 3 步的 RoundStarted 是兩則獨立事件，理由同 StartGameUseCase。
             eventPublisher.publishToTable(gameId, seatedPlayerIds, newDealerId, GameAction.DiceRolled(diceRoll))
         }
-        // 桌上由規則擺放的物件跟牌牆同時更新，緊接在 publishWallStructure 之後呼叫；新局手牌一定沒有
-        // 副露，只是靠 publishInitialDealAnimation 的 comboStickCount 讓手牌正確讓開角落佔用的空間。
+        // 桌上由規則擺放的物件跟牌牆同時更新，緊接在 publishWallStructure 之後呼叫。
         presentationPublisher.publishTablePropsUpdated(gameId)
         val module = moduleRegistry.getModule(newState.config)
         presentationPublisher.publishRoundInfoUpdated(gameId, module.getRoundInfoLines(newState))
@@ -275,7 +274,6 @@ class AdvanceRoundUseCase(
             advanceOutcome.dealOrderHandTileIdsBySeatIndex,
             postFlipHandTileIdsBySeatIndex,
             dealerSeatIndex,
-            comboStickCount = newState.comboCount,
             dealBatchSizes = newState.config.dealBatchSizes(),
             diceCount = advanceOutcome.diceRoll?.values?.size ?: 0,
         )

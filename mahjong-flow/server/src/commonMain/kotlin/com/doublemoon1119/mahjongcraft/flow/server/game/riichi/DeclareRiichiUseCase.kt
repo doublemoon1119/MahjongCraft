@@ -212,14 +212,12 @@ class DeclareRiichiUseCase(
         val module = moduleRegistry.getModule(newState.config)
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val discarder = newState.players[seatIndex]
-        val dealerSeatIndex = newState.dealerIndex
         presentationPublisher.publishPlayerAreaUpdated(
             gameId,
             seatIndex,
             discarder.hand.tiles.map { it.id },
             null,
             discarder.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-            comboStickCount = if (seatIndex == dealerSeatIndex) newState.comboCount else 0,
         )
         presentationPublisher.publishDiscardPileUpdated(
             gameId,

@@ -139,11 +139,10 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         standingTileIds: List<Uuid>,
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
-        comboStickCount: Int,
         animateDrawnTile: Boolean,
         animatedMeldClaimTileIds: Set<Uuid>,
     ) {
-        playerAreas[gameId] = PlayerAreaContext(seatIndex, standingTileIds, drawnTileId, melds, comboStickCount, animateDrawnTile, animatedMeldClaimTileIds)
+        playerAreas[gameId] = PlayerAreaContext(seatIndex, standingTileIds, drawnTileId, melds, animateDrawnTile, animatedMeldClaimTileIds)
     }
 
     override fun publishInitialDealAnimation(
@@ -151,7 +150,6 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
         postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
         dealerSeatIndex: Int,
-        comboStickCount: Int,
         dealBatchSizes: List<Int>,
         diceCount: Int,
     ) {
@@ -159,7 +157,6 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
             handTileIdsBySeatIndex,
             postFlipHandTileIdsBySeatIndex,
             dealerSeatIndex,
-            comboStickCount,
             dealBatchSizes,
             diceCount,
         )
@@ -289,7 +286,6 @@ data class PlayerAreaContext(
     val standingTileIds: List<Uuid>,
     val drawnTileId: Uuid?,
     val melds: List<MeldPresentation>,
-    val comboStickCount: Int,
     val animateDrawnTile: Boolean,
     val animatedMeldClaimTileIds: Set<Uuid>,
 )
@@ -299,7 +295,6 @@ data class InitialDealAnimationContext(
     val handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     val postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     val dealerSeatIndex: Int,
-    val comboStickCount: Int,
     val dealBatchSizes: List<Int>,
     val diceCount: Int,
 )

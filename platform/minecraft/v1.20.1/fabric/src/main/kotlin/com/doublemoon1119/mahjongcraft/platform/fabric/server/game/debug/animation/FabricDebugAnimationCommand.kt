@@ -278,7 +278,7 @@ class FabricDebugAnimationCommand(
         val sourcePlacements = (0 until MELD_KAN_TILE_COUNT).map { slot ->
             layout.handPlacement(handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize, tileIndex = slot)
         }
-        var cursorAlong = MahjongTileTableLayout.stickAreaWidth(stickCount = 0)
+        var cursorAlong = 0.0
         var sidewaysAlongOffset = 0.0
         val basePlacements = (DebugPreviewDefaults.MELD_TILE_COUNT - 1 downTo 0).map { slot ->
             val isSideways = slot == sidewaysSlot

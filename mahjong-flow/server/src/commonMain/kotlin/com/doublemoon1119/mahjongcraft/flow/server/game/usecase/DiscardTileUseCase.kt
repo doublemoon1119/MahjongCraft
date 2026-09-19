@@ -207,14 +207,12 @@ class DiscardTileUseCase(
         // 沒變，仍要一併帶上讓手牌讓開偏移量算得準），並把捨棄的牌移到牌河
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val discarder = newState.players[seatIndex]
-        val dealerSeatIndex = newState.dealerIndex
         presentationPublisher.publishPlayerAreaUpdated(
             gameId,
             seatIndex,
             discarder.hand.tiles.map { it.id },
             null,
             discarder.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-            comboStickCount = if (seatIndex == dealerSeatIndex) newState.comboCount else 0,
         )
         presentationPublisher.publishDiscardPileUpdated(
             gameId,

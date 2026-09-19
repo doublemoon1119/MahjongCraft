@@ -91,7 +91,7 @@ data class DebugVirtualTableLayout(
     fun meldPlacements(type: MeldType, tileCount: Int): List<MahjongTileWallPlacement> {
         val sourceDirection = if (type == MeldType.CHI) RelativeDirection.Left else RelativeDirection.Across
         val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(sourceDirection, tileCount)
-        var cursorAlong = MahjongTileTableLayout.stickAreaWidth(stickCount = 0)
+        var cursorAlong = 0.0
         return (tileCount - 1 downTo 0).map { slot ->
             val isSideways = slot == sidewaysSlot
             val halfWidth = if (isSideways) MahjongTileDimensions.TILE_HEIGHT / 2.0 else MahjongTileDimensions.TILE_WIDTH / 2.0
@@ -113,7 +113,7 @@ data class DebugVirtualTableLayout(
     /** 依正式副露游標規則取得多組副露中每張牌的格位。 */
     fun meldPlacements(melds: List<MahjongMeldTileGroup>): Map<Uuid, MahjongTileWallPlacement> {
         val placements = mutableMapOf<Uuid, MahjongTileWallPlacement>()
-        var cursorAlong = MahjongTileTableLayout.stickAreaWidth(stickCount = 0)
+        var cursorAlong = 0.0
         melds.forEachIndexed { meldIndex, meld ->
             if (meldIndex > 0) cursorAlong += MahjongTileTableLayout.MELD_GROUP_GAP
             val sidewaysSlot = meld.calledTileId?.let {

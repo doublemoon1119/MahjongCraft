@@ -58,11 +58,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerWidthTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriber
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.cornerWidthsBySeat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.exhaustiveDrawSettlementStageInputs
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.findTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.tileAssetKeysById
@@ -109,6 +112,7 @@ import kotlin.uuid.toJavaUuid
  * @property discardPresenter 正式牌河的實際呈現邏輯。
  * @property tablePropPresenter 規則桌面物件（例如點棒）的差量同步邏輯。
  * @property tablePropDescriberRegistry 依規則模組查詢桌上應擺哪些物件的描述。
+ * @property tableCornerWidths 桌上物件目前佔用的副露角落寬度紀錄，手牌、胡牌演出與結算舞台依此讓開角落。
  * @property roundInfoPresenter 桌面中央局況顯示的實際呈現邏輯。
  * @property tableLocationRegistry 麻將桌最後已知位置索引。
  * @property serverHolder 目前運行中的 server，供世界／方塊狀態查詢使用。
@@ -131,6 +135,7 @@ class FabricGamePresentationPublisher(
     private val discardPresenter: MahjongDiscardPresenter,
     private val tablePropPresenter: TablePropPresenter,
     private val tablePropDescriberRegistry: TablePropDescriberRegistry,
+    private val tableCornerWidths: TableCornerWidthTracker,
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
     private val playerInfoPresenter: MahjongPlayerInfoPresenter,
     private val tileSelectionConfirmPresenter: MahjongTileSelectionConfirmPresenter,
@@ -212,10 +217,12 @@ class FabricGamePresentationPublisher(
         )
         launchPendingPresentation(gameId, "publishExhaustiveDrawSettlement") {
             val resolved = resolveTableContext(gameId, "publishExhaustiveDrawSettlement") ?: return@launchPendingPresentation
+            val tableState = gameRepository.getTableState(gameId)
             val stageInputs = exhaustiveDrawSettlementStageInputs(
-                request,
-                gameRepository.getTableState(gameId),
-                tileAssetRegistry,
+                request = request,
+                tableState = tableState,
+                cornerWidthsBySeat = cornerWidthsBySeat(gameId, tableState),
+                tileAssetRegistry = tileAssetRegistry,
             )
             val endGameTime = exhaustiveDrawSettlementScheduler.schedule(
                 world = resolved.world,
@@ -458,9 +465,9 @@ class FabricGamePresentationPublisher(
 
     /**
      * 呼叫端在開局／換局緊接 [publishWallStructure] 之後、以及規則狀態改變桌上物件之後呼叫；依對局規則在
-     * [tablePropDescriberRegistry] 登記的描述算出桌上應有的物件，交給 [tablePropPresenter] 差量同步。
-     * 規則沒有登記描述時，同步為空清單。不需要 [busyTracker] 或延遲，世界／entity 存取丟回伺服器主執行緒
-     * 執行。
+     * [tablePropDescriberRegistry] 登記的描述算出桌上應有的物件，交給 [tablePropPresenter] 差量同步，並把
+     * 同一份桌況算出的角落寬度記進 [tableCornerWidths]。規則沒有登記描述時，同步為空清單、寬度皆為 `0.0`。
+     * 不需要 [busyTracker] 或延遲，世界／entity 存取丟回伺服器主執行緒執行。
      */
     override fun publishTablePropsUpdated(gameId: Uuid) {
         if (serverHolder.current() == null) {
@@ -471,8 +478,9 @@ class FabricGamePresentationPublisher(
         launchOpeningStage(gameId, "table-props", openingOperation) {
             val resolved = resolveTableContext(gameId, "publishTablePropsUpdated") ?: return@launchOpeningStage
             val tableState = gameRepository.getTableState(gameId) ?: return@launchOpeningStage
-            val ruleModuleId = moduleRegistry.getModule(tableState.config).id
-            val placements = tablePropDescriberRegistry.find(ruleModuleId)?.describe(tableState).orEmpty()
+            val describer = describerFor(tableState)
+            tableCornerWidths.record(gameId, describer.cornerWidthsBySeat(tableState))
+            val placements = describer?.describe(tableState).orEmpty()
             tablePropPresenter.present(
                 TablePropPresentation(
                     tableId = gameId,
@@ -563,7 +571,6 @@ class FabricGamePresentationPublisher(
         standingTileIds: List<Uuid>,
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
-        comboStickCount: Int,
         animateDrawnTile: Boolean,
         animatedMeldClaimTileIds: Set<Uuid>,
     ) {
@@ -571,7 +578,7 @@ class FabricGamePresentationPublisher(
             logger.warn("publishPlayerAreaUpdated gameId={} skipped: no active server", gameId)
             return
         }
-        presentPlayerArea(gameId, seatIndex, standingTileIds, drawnTileId, melds, comboStickCount, animateDrawnTile, animatedMeldClaimTileIds)
+        presentPlayerArea(gameId, seatIndex, standingTileIds, drawnTileId, melds, animateDrawnTile, animatedMeldClaimTileIds)
     }
 
     /**
@@ -594,7 +601,6 @@ class FabricGamePresentationPublisher(
         handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
         postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
         dealerSeatIndex: Int,
-        comboStickCount: Int,
         dealBatchSizes: List<Int>,
         diceCount: Int,
     ) {
@@ -607,6 +613,12 @@ class FabricGamePresentationPublisher(
         val openingOperation = openingOperations.capture(gameId)
         launchOpeningStage(gameId, "initial-deal", openingOperation, pendingOperation = "publishInitialDealAnimation") {
             val resolved = resolveTableContext(gameId, "publishInitialDealAnimation") ?: return@launchOpeningStage
+            // 開局發牌與這一局的桌上物件更新讀的是同一份新局桌況；直接由它算出寬度並記錄，不依賴兩個呈現
+            // 工作在主執行緒上的先後順序。
+            val cornerWidthBySeatIndex = gameRepository.getTableState(gameId)
+                ?.let { tableState -> describerFor(tableState).cornerWidthsBySeat(tableState) }
+                ?.also { widths -> tableCornerWidths.record(gameId, widths) }
+                .orEmpty()
 
             val presentation = MahjongInitialDealPresentation(
                 tableId = gameId,
@@ -615,7 +627,7 @@ class FabricGamePresentationPublisher(
                 handTileIdsBySeatIndex = handTileIdsBySeatIndex,
                 postFlipHandTileIdsBySeatIndex = postFlipHandTileIdsBySeatIndex,
                 dealerSeatIndex = dealerSeatIndex,
-                comboStickCount = comboStickCount,
+                cornerWidthBySeatIndex = cornerWidthBySeatIndex,
                 dealBatchSizes = dealBatchSizes,
                 extraLeadDelayTicks = wallDropTicks + diceTicks,
             )
@@ -655,12 +667,12 @@ class FabricGamePresentationPublisher(
         standingTileIds: List<Uuid>,
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
-        comboStickCount: Int,
         animateDrawnTile: Boolean,
         animatedMeldClaimTileIds: Set<Uuid>,
     ) {
         launchPendingPresentation(gameId, "publishPlayerAreaUpdated") {
             val resolved = resolveTableContext(gameId, "publishPlayerAreaUpdated") ?: return@launchPendingPresentation
+            val cornerWidthsBySeat = tableCornerWidths.find(gameId) ?: cornerWidthsBySeat(gameId, gameRepository.getTableState(gameId))
 
             val presentation = MahjongPlayerAreaPresentation(
                 tableId = gameId,
@@ -672,7 +684,7 @@ class FabricGamePresentationPublisher(
                 melds = melds.map {
                     MahjongMeldTileGroup(it.type, it.tileIds, it.calledTileId, it.sourceDirection, it.allTilesFaceDown)
                 },
-                comboStickCount = comboStickCount,
+                cornerWidth = cornerWidthsBySeat[seatIndex] ?: 0.0,
                 animateDrawnTile = animateDrawnTile,
                 animatedMeldClaimTileIds = animatedMeldClaimTileIds,
             )
@@ -699,6 +711,7 @@ class FabricGamePresentationPublisher(
             }
             playerAreaPresenter.clear(gameId, location)
             tablePropPresenter.clear(gameId, location)
+            tableCornerWidths.clear(gameId)
             roundInfoPresenter.clear(gameId, location)
             playerInfoPresenter.clear(gameId, location)
         }
@@ -947,7 +960,7 @@ class FabricGamePresentationPublisher(
             return null
         }
         val module = moduleRegistry.getModule(state.config)
-        val dealerSeatIndex = state.dealerIndex
+        val cornerWidthsBySeat = cornerWidthsBySeat(gameId, state)
         var handLaydownEndGameTime: Long? = null
         val organizedBySeat = request.winners.associate { requestedWinner ->
             val winner = state.players[requestedWinner.seatIndex]
@@ -968,7 +981,7 @@ class FabricGamePresentationPublisher(
                 seatIndex = requestedWinner.seatIndex,
                 organizedStandingTileIds = organizedHand.tiles.map { it.id },
                 melds = melds,
-                comboStickCount = if (requestedWinner.seatIndex == dealerSeatIndex) state.comboCount else 0,
+                cornerWidth = cornerWidthsBySeat[requestedWinner.seatIndex] ?: 0.0,
                 winningTileId = request.winningTileId,
                 isTsumo = request.isTsumo,
                 earliestStartGameTime = earliestStartGameTime,
@@ -1139,6 +1152,17 @@ class FabricGamePresentationPublisher(
      * [methodName] 方便追蹤是哪個呼叫端放棄的），呼叫端收到 `null` 直接 `return@launch`，比照本介面
      * best-effort 的既有慣例。
      */
+    /** 對局規則登記的桌面物件描述；沒有登記時為 null。 */
+    private fun describerFor(tableState: TableState): TablePropDescriber? = tablePropDescriberRegistry.find(moduleRegistry.getModule(tableState.config).id)
+
+    /**
+     * 目前桌上物件佔用的各座位角落寬度，鍵為座位。
+     *
+     * 優先讀 [tableCornerWidths] 的紀錄，讓寬度對應桌上實際擺放的物件；沒有紀錄時（例如伺服器重啟後）依
+     * [tableState] 向規則查詢，桌況也不存在時為空。
+     */
+    private fun cornerWidthsBySeat(gameId: Uuid, tableState: TableState?): Map<Int, Double> = tableCornerWidths.find(gameId) ?: tableState?.let { state -> describerFor(state).cornerWidthsBySeat(state) }.orEmpty()
+
     private fun resolveTableContext(gameId: Uuid, methodName: String): ResolvedTableContext? {
         val location = tableLocationRegistry.get(gameId)?.location
         if (location == null) {

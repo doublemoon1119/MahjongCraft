@@ -6,9 +6,11 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -85,6 +87,32 @@ class RiichiTablePropsTest {
     @Test
     fun `an empty table has no sticks`() {
         assertEquals(emptyList(), RiichiTableProps.describe(state()))
+    }
+
+    /** 只有莊家角落佔寬度；寬度隨角落棒子支數成長，一整排之後往上疊不再加寬。 */
+    @Test
+    fun `only the dealer corner is reserved and it grows up to one row`() {
+        val step = MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING
+
+        assertEquals(0.0, RiichiTableProps.cornerWidth(state(dealerSeatIndex = 1), seatIndex = 1))
+        assertEquals(0.0, RiichiTableProps.cornerWidth(state(dealerSeatIndex = 1, comboCount = 2), seatIndex = 0))
+        assertEquals(step, RiichiTableProps.cornerWidth(state(comboCount = 1), seatIndex = 0), EPSILON)
+        assertEquals(3 * step, RiichiTableProps.cornerWidth(state(comboCount = 3), seatIndex = 0), EPSILON)
+        assertEquals(4 * step, RiichiTableProps.cornerWidth(state(comboCount = 4, stickPotCount = 2), seatIndex = 0), EPSILON)
+    }
+
+    /** 延續的供託也疊在莊家角落，算進寬度；這局宣告中的立直棒擺在牌河旁，不算。 */
+    @Test
+    fun `the carried-over pot counts toward the corner but declared riichi sticks do not`() {
+        val step = MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING
+
+        assertEquals(2 * step, RiichiTableProps.cornerWidth(state(stickPotCount = 2), seatIndex = 0), EPSILON)
+        assertEquals(0.0, RiichiTableProps.cornerWidth(state(riichiSeatIndices = setOf(1), stickPotCount = 1), seatIndex = 0))
+        assertEquals(
+            3 * step,
+            RiichiTableProps.cornerWidth(state(riichiSeatIndices = setOf(1), comboCount = 1, stickPotCount = 3), seatIndex = 0),
+            EPSILON,
+        )
     }
 
     /**

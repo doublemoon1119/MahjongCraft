@@ -220,14 +220,12 @@ class RespondToKanUseCase(
         result.declarerId?.let { declarerId ->
             val declarerSeatIndex = newState.players.indexOfFirst { it.id == declarerId }
             val declarer = newState.players[declarerSeatIndex]
-            val dealerSeatIndex = newState.dealerIndex
             presentationPublisher.publishPlayerAreaUpdated(
                 gameId,
                 declarerSeatIndex,
                 declarer.hand.tiles.map { it.id },
                 declarer.hand.lastDrawn?.id,
                 declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-                comboStickCount = if (declarerSeatIndex == dealerSeatIndex) newState.comboCount else 0,
             )
         }
 

@@ -38,7 +38,7 @@ fun TableState.tileAssetKeysById(
  *
  * @property waitingTileAssetsBySeat 各座位聽牌的牌面資產，順序與請求中的等待牌相同。
  * @property revealedTileAssetsById 公開手牌的牌面資產。
- * @property reservedCornerWidthsBySeat 各座位桌角已被積棒與副露佔用的寬度，讓舞台避開這塊區域。
+ * @property reservedCornerWidthsBySeat 各座位桌角已被角落物件與副露佔用的寬度，讓舞台避開這塊區域。
  */
 data class ExhaustiveDrawSettlementStageInputs(
     val waitingTileAssetsBySeat: Map<Int, List<String>>,
@@ -51,10 +51,13 @@ data class ExhaustiveDrawSettlementStageInputs(
  *
  * [tableState] 為 `null`（桌況已不存在）時仍會回傳聽牌資產——那份資料來自請求本身；另外兩份需要查詢
  * 桌況，因此為空。
+ *
+ * @param cornerWidthsBySeat 各座位副露角落被規則桌面物件佔用的寬度；沒有列出的座位視為 `0.0`。
  */
 fun exhaustiveDrawSettlementStageInputs(
     request: ExhaustiveDrawSettlementPresentationRequest,
     tableState: TableState?,
+    cornerWidthsBySeat: Map<Int, Double>,
     tileAssetRegistry: MinecraftTileAssetRegistry,
 ): ExhaustiveDrawSettlementStageInputs = ExhaustiveDrawSettlementStageInputs(
     waitingTileAssetsBySeat = request.players.associate { player ->
@@ -63,15 +66,15 @@ fun exhaustiveDrawSettlementStageInputs(
     revealedTileAssetsById = tableState
         ?.tileAssetKeysById(request.players.flatMap { it.revealedHandTileIds }, tileAssetRegistry)
         .orEmpty(),
-    reservedCornerWidthsBySeat = tableState?.reservedCornerWidthsBySeat().orEmpty(),
+    reservedCornerWidthsBySeat = tableState?.reservedCornerWidthsBySeat(cornerWidthsBySeat).orEmpty(),
 )
 
 /**
  * 各座位桌角已被佔用的寬度。
  *
- * 連莊棒只算在莊家身上；副露寬度依該座位目前的副露內容計算，暗槓是否翻開由規則設定決定。
+ * 角落物件寬度由呼叫端提供；副露寬度依該座位目前的副露內容計算，暗槓是否翻開由規則設定決定。
  */
-private fun TableState.reservedCornerWidthsBySeat(): Map<Int, Double> = players.mapIndexed { seatIndex, player ->
+private fun TableState.reservedCornerWidthsBySeat(cornerWidthsBySeat: Map<Int, Double>): Map<Int, Double> = players.mapIndexed { seatIndex, player ->
     val melds = player.hand.melds.map { meld ->
         val presentation = meld.toPresentation(config.revealsClosedKanTiles)
         MahjongMeldTileGroup(
@@ -82,6 +85,5 @@ private fun TableState.reservedCornerWidthsBySeat(): Map<Int, Double> = players.
             presentation.allTilesFaceDown,
         )
     }
-    val comboStickCount = if (seatIndex == dealerIndex) comboCount else 0
-    seatIndex to (MahjongTileTableLayout.stickAreaWidth(comboStickCount) + MahjongTileTableLayout.meldAreaWidth(melds))
+    seatIndex to MahjongTileTableLayout.cornerAreaWidth(cornerWidthsBySeat[seatIndex] ?: 0.0, melds)
 }.toMap()

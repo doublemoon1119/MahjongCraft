@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.di
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigTomlCodec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerWidthTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Single
@@ -21,4 +22,8 @@ class MinecraftServerModule {
     /** 建立目前 server session 使用的桌子位置索引。 */
     @Single
     fun provideTableLocationRegistry(): TableLocationRegistry = TableLocationRegistry()
+
+    /** 建立目前 server session 使用的桌上物件角落寬度紀錄。 */
+    @Single
+    fun provideTableCornerWidthTracker(): TableCornerWidthTracker = TableCornerWidthTracker()
 }

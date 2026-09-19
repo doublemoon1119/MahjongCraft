@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOffse
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrientation
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
 import kotlin.math.hypot
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -407,6 +406,28 @@ class MahjongTileTableLayoutTest {
         )
     }
 
+    /** 角落有物件時，第一組副露與物件之間隔一個 [MahjongTileTableLayout.MELD_GROUP_GAP]；沒有物件時從桌角開始。 */
+    @Test
+    fun `meld start leaves a group gap after corner props only when there are any`() {
+        assertEquals(0.0, MahjongTileTableLayout.meldStartOffset(0.0), ABSOLUTE_TOLERANCE)
+        assertEquals(0.3 + MahjongTileTableLayout.MELD_GROUP_GAP, MahjongTileTableLayout.meldStartOffset(0.3), ABSOLUTE_TOLERANCE)
+    }
+
+    /** 角落總寬度：沒有副露時只有角落物件；有副露時為副露起點加副露寬度。 */
+    @Test
+    fun `corner area width covers the props and the melds after them`() {
+        val meld = fakeMeld(type = MeldType.CLOSED_KAN, tileCount = 4, calledTileId = null)
+        val meldWidth = MahjongTileTableLayout.meldAreaWidth(listOf(meld))
+
+        assertEquals(0.3, MahjongTileTableLayout.cornerAreaWidth(0.3, emptyList()), ABSOLUTE_TOLERANCE)
+        assertEquals(meldWidth, MahjongTileTableLayout.cornerAreaWidth(0.0, listOf(meld)), ABSOLUTE_TOLERANCE)
+        assertEquals(
+            0.3 + MahjongTileTableLayout.MELD_GROUP_GAP + meldWidth,
+            MahjongTileTableLayout.cornerAreaWidth(0.3, listOf(meld)),
+            ABSOLUTE_TOLERANCE,
+        )
+    }
+
     /** 兩組副露之間應額外跳過一個 [MahjongTileTableLayout.MELD_GROUP_GAP]。 */
     @Test
     fun `meld area width adds a gap between groups`() {
@@ -417,32 +438,7 @@ class MahjongTileTableLayoutTest {
         assertEquals(2 * oneGroup + MahjongTileTableLayout.MELD_GROUP_GAP, twoGroups, ABSOLUTE_TOLERANCE)
     }
 
-    /** 沒有積棒時，積棒區寬度應為零。 */
-    @Test
-    fun `stick area width is zero when there are no sticks`() {
-        assertEquals(0.0, MahjongTileTableLayout.stickAreaWidth(0), ABSOLUTE_TOLERANCE)
-    }
-
-    /** 積棒支數不超過每排上限時，寬度隨支數線性增加。 */
-    @Test
-    fun `stick area width grows linearly up to one row`() {
-        val stepWidth = MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING
-
-        assertEquals(stepWidth, MahjongTileTableLayout.stickAreaWidth(1), ABSOLUTE_TOLERANCE)
-        assertEquals(3 * stepWidth, MahjongTileTableLayout.stickAreaWidth(3), ABSOLUTE_TOLERANCE)
-        assertEquals(MahjongTileTableLayout.STICKS_PER_ROW * stepWidth, MahjongTileTableLayout.stickAreaWidth(MahjongTileTableLayout.STICKS_PER_ROW), ABSOLUTE_TOLERANCE)
-    }
-
-    /** 超過每排上限的積棒往 Y 軸疊層，不再增加寬度。 */
-    @Test
-    fun `stick area width stops growing once sticks stack into a new layer`() {
-        val oneRowWidth = MahjongTileTableLayout.stickAreaWidth(MahjongTileTableLayout.STICKS_PER_ROW)
-        val twoLayersWidth = MahjongTileTableLayout.stickAreaWidth(MahjongTileTableLayout.STICKS_PER_ROW + 2)
-
-        assertEquals(oneRowWidth, twoLayersWidth, ABSOLUTE_TOLERANCE)
-    }
-
-    /** 手牌張數不多或副露／積棒沒有佔用空間時，不需要讓開。 */
+    /** 手牌張數不多或角落沒有被佔用時，不需要讓開。 */
     @Test
     fun `hand corner yield shift is zero when nothing needs to be avoided`() {
         assertEquals(0.0, MahjongTileTableLayout.handCornerYieldShift(0, 10.0), ABSOLUTE_TOLERANCE)

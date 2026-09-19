@@ -10,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatOffset
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.advance
@@ -570,20 +569,21 @@ object MahjongTileTableLayout {
     }
 
     /**
-     * 積棒區沿排列方向（局部 X 軸）總共消耗的世界寬度——同一排最多 [STICKS_PER_ROW] 支，超過的部分
-     * 往局部 Y 軸疊下一層，不會增加寬度，所以寬度只會隨 [stickCount] 成長到
-     * [STICKS_PER_ROW] 支就不再變化。
+     * 第一組副露距離桌角錨點的起點：角落有規則桌面物件時，先讓開 [cornerPropWidth]，再隔一個 [MELD_GROUP_GAP]；
+     * 角落沒有物件時從桌角開始。
      */
-    fun stickAreaWidth(stickCount: Int): Double {
-        if (stickCount <= 0) return 0.0
-        val columns = stickCount.coerceAtMost(STICKS_PER_ROW)
-        return columns * (MahjongScoringStickDimensions.STICK_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING)
-    }
+    fun meldStartOffset(cornerPropWidth: Double): Double = if (cornerPropWidth > 0.0) cornerPropWidth + MELD_GROUP_GAP else 0.0
 
     /**
-     * 手牌整列（含摸牌位）需要往玩家自己方向（局部 X 軸負向）平移多少距離，才不會跟副露＋積棒區
-     * （[reservedCornerWidth]，即 [stickAreaWidth] 加 [meldAreaWidth] 的總和）重疊——`0.0` 代表目前
-     * 手牌長度不足以碰到副露／積棒區，不需要讓開。
+     * 角落區沿排列方向總共佔用的寬度，供手牌讓開（[handCornerYieldShift]）與結算舞台避開：沒有副露時只有角落物件
+     * 本身；有副露時為 [meldStartOffset] 加上 [meldAreaWidth]。
+     */
+    fun cornerAreaWidth(cornerPropWidth: Double, melds: List<MahjongMeldTileGroup>): Double = if (melds.isEmpty()) cornerPropWidth else meldStartOffset(cornerPropWidth) + meldAreaWidth(melds)
+
+    /**
+     * 手牌整列（含摸牌位）需要往玩家自己方向（局部 X 軸負向）平移多少距離，才不會跟角落區
+     * （[reservedCornerWidth]，見 [cornerAreaWidth]）重疊——`0.0` 代表目前
+     * 手牌長度不足以碰到角落區，不需要讓開。
      *
      * 手牌本來就以桌子中心對稱置中（見 [localHandVector]），最靠近桌角那一側的外緣（`tileIndex = 0`
      * 那張牌的外緣）天生會隨手牌張數增加往桌角方向逼近；[reservedCornerWidth] 越大，[MELD_AREA_CORNER_OFFSET]
@@ -1038,13 +1038,10 @@ object MahjongTileTableLayout {
      */
     const val SIDEWAYS_SLOT_ACROSS: Int = 1
 
-    /** 積棒同一排最多排放的支數，超過往局部 Y 軸疊下一層——刻意的設計決定。 */
-    const val STICKS_PER_ROW: Int = 4
-
     /**
-     * 手牌／摸牌位讓開副露＋積棒區時，額外多留的縫隙——避免 [handCornerYieldShift] 算出來的偏移
+     * 手牌／摸牌位讓開角落區時，額外多留的縫隙——避免 [handCornerYieldShift] 算出來的偏移
      * 只是讓兩者剛好貼齊、外觀上完全不留空隙。使用起始估算值，跟 [MELD_GROUP_GAP] 同一數量級但
-     * 不共用同一個值，因為這裡是手牌區跟副露／積棒區兩個不同子系統之間的縫隙，不是同一副露內部的
+     * 不共用同一個值，因為這裡是手牌區跟角落區兩個不同子系統之間的縫隙，不是同一副露內部的
      * 組間縫隙，兩者觀感上不必然要一致；預期進遊戲後用截圖比對調整。
      */
     internal const val HAND_CORNER_GAP: Double = MahjongTileDimensions.TILE_WIDTH * 0.2

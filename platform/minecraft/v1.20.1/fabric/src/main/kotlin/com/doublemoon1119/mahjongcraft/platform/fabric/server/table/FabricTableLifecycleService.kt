@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerWidthTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
@@ -42,6 +43,7 @@ class FabricTableLifecycleService(
     private val tileWallPresenter: MahjongTileWallPresenter,
     private val playerAreaPresenter: MahjongPlayerAreaPresenter,
     private val tablePropPresenter: TablePropPresenter,
+    private val tableCornerWidths: TableCornerWidthTracker,
     private val discardPresenter: MahjongDiscardPresenter,
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
     private val playerInfoPresenter: MahjongPlayerInfoPresenter,
@@ -70,6 +72,7 @@ class FabricTableLifecycleService(
         val removedWallTileCount = tileWallPresenter.clear(table.tableId, tableLocation)
         val removedPlayerAreaTileCount = playerAreaPresenter.clear(table.tableId, tableLocation)
         val removedTablePropCount = tablePropPresenter.clear(table.tableId, tableLocation)
+        tableCornerWidths.clear(table.tableId)
         val removedDiscardTileCount = discardPresenter.clear(table.tableId, tableLocation)
         val removedRoundInfoCount = roundInfoPresenter.clear(table.tableId, tableLocation)
         val removedPlayerInfoCount = playerInfoPresenter.clear(table.tableId, tableLocation)

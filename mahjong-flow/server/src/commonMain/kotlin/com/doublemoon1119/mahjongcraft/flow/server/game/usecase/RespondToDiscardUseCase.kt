@@ -191,14 +191,12 @@ class RespondToDiscardUseCase(
             }
             val winnerSeatIndex = newState.players.indexOfFirst { it.id == winnerId }
             val winner = newState.players[winnerSeatIndex]
-            val dealerSeatIndex = newState.dealerIndex
             presentationPublisher.publishPlayerAreaUpdated(
                 gameId,
                 winnerSeatIndex,
                 winner.hand.tiles.map { it.id },
                 winner.hand.lastDrawn?.id,
                 winner.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-                comboStickCount = if (winnerSeatIndex == dealerSeatIndex) newState.comboCount else 0,
                 // 吃/碰/明槓永遠整組一次成立新副露（附加到 exposedMelds 尾端，不是原地修改既有組），
                 // 最後一組必定就是這次剛成立的那組，組內全部牌都該播放鳴牌動畫。
                 animatedMeldClaimTileIds = winner.hand.melds.last().tiles.map { it.id }.toSet(),

@@ -155,7 +155,6 @@ class StartGameUseCase(
             startOutcome.dealOrderHandTileIdsBySeatIndex,
             postFlipHandTileIdsBySeatIndex,
             dealerSeatIndex,
-            comboStickCount = tableState.comboCount,
             dealBatchSizes = tableState.config.dealBatchSizes(),
             diceCount = initializationResult.diceRoll?.values?.size ?: 0,
         )

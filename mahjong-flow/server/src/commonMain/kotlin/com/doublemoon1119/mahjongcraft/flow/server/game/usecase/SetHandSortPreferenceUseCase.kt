@@ -66,14 +66,12 @@ class SetHandSortPreferenceUseCase(
 
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val player = newState.players[seatIndex]
-        val dealerSeatIndex = newState.dealerIndex
         presentationPublisher.publishPlayerAreaUpdated(
             gameId,
             seatIndex,
             player.hand.tiles.map { it.id },
             player.hand.lastDrawn?.id,
             player.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-            comboStickCount = if (seatIndex == dealerSeatIndex) newState.comboCount else 0,
         )
     }
 }

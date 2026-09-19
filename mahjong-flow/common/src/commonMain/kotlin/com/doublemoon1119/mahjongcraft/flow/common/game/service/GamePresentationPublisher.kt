@@ -207,8 +207,8 @@ interface GamePresentationPublisher {
      * 通知平台呈現層某玩家目前的手牌（含摸牌位）與副露需要更新為目前狀態。
      *
      * 原本是 `publishHandTiles`／`publishTileDrawn`／`publishMeldsUpdated` 三個獨立方法，合併成這一個
-     * 的理由：手牌（含摸牌位）要能對副露＋積棒讓開空間，前提是同一次呼叫必須同時知道「立牌、摸牌、
-     * 副露、積棒支數」四種狀態——平台實作才能一次算出正確的讓開偏移，不能分開觸發、各自為政。
+     * 的理由：手牌（含摸牌位）要能對副露讓開空間，前提是同一次呼叫必須同時知道「立牌、摸牌、副露」
+     * 三種狀態——平台實作才能一次算出正確的讓開偏移，不能分開觸發、各自為政。
      *
      * 開局/換局的初次發牌不走這個方法——那有專屬的分批動畫節奏，見 [publishInitialDealAnimation]；
      * 這個方法固定同步呈現，適用一般回合動作（捨牌、摸牌、鳴牌）。
@@ -219,11 +219,8 @@ interface GamePresentationPublisher {
      * [drawnTileId]），鍵為 [IdentifiedTile.id]；空清單代表這局結束，只需要清除舊牌。
      * @param drawnTileId 這位玩家目前摸到、尚未併入立牌或打出的那張牌 Uuid（`Hand.lastDrawn`）；
      * `null` 代表目前沒有摸牌位要呈現。
-     * @param melds 這位玩家目前所有副露，依宣告順序排列——第一組（最早宣告）位於副露區固定的桌角
-     * 錨點外緣（積棒外緣），後續每組依序往玩家自己手牌方向排開，呼叫端不需要另外傳遞位置索引。
-     * @param comboStickCount 這位玩家目前該顯示的積棒支數——只有莊家非零，等於 `TableState.comboCount`；
-     * 只用來讓手牌／副露正確讓開積棒佔用的空間，不會觸發積棒呈現本身的生成／清除（那是
-     * [publishTablePropsUpdated] 的職責）。
+     * @param melds 這位玩家目前所有副露，依宣告順序排列——第一組（最早宣告）最靠近副露區的桌角，後續
+     * 每組依序往玩家自己手牌方向排開，呼叫端不需要另外傳遞位置索引。
      * @param animateDrawnTile [drawnTileId] 非 `null` 時，是否要播放「牌從牌山原位面朝下起飛、隱形
      * 傳送到摸牌位、傳送同一瞬間切換成面向玩家、解除隱形後落下」的動畫——只有真正的摸牌事件
      * （`DrawTileUseCase`）該傳 `true`；其餘呼叫端（捨牌、鳴牌、副露相關回應）即使當下摸牌位仍有牌，
@@ -241,7 +238,6 @@ interface GamePresentationPublisher {
         standingTileIds: List<Uuid>,
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
-        comboStickCount: Int,
         animateDrawnTile: Boolean = false,
         animatedMeldClaimTileIds: Set<Uuid> = emptySet(),
     )
@@ -265,10 +261,7 @@ interface GamePresentationPublisher {
      * @param postFlipHandTileIdsBySeatIndex 每個座位翻牌完成那一刻起、牌實際該停留的最終牌 Uuid 順序，
      * 鍵同上——沒有啟用自動整理手牌的座位這裡跟 [handTileIdsBySeatIndex] 內容相同；有啟用的座位這裡是
      * 已經整理過的順序。
-     * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index，只用來換算積棒佔用
-     * 寬度（[comboStickCount] 只有莊家非零）。
-     * @param comboStickCount 開局當下該顯示的積棒支數，等於 `TableState.comboCount`；理由同
-     * [publishPlayerAreaUpdated] 的同名參數。
+     * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index，發牌從這個座位開始輪。
      * @param dealBatchSizes 依序播放的批次大小列表，由呼叫端依規則模組的
      * `MahjongRuleModule.dealBatchSizes` 算出；平台實作依序播放，不驗證總和是否等於各座位手牌張數。
      * @param diceCount 本次開局擲骰的骰子數量，供平台實作換算「發牌動畫該等擲骰動畫播完才開始」的
@@ -279,13 +272,12 @@ interface GamePresentationPublisher {
         handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
         postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
         dealerSeatIndex: Int,
-        comboStickCount: Int,
         dealBatchSizes: List<Int>,
         diceCount: Int,
     )
 
     /**
-     * 清除整桌所有玩家的手牌/摸牌位/副露/積棒呈現——對局結束、回房間等清空情境使用，沒有座位分組
+     * 清除整桌所有玩家的手牌/摸牌位/副露呈現——對局結束、回房間等清空情境使用，沒有座位分組
      * 資料可傳時呼叫這個方法，取代原本 `publishHandTiles(gameId, emptyMap(), 0)` 的空 map 清空語意。
      *
      * @param gameId 對局 Uuid。

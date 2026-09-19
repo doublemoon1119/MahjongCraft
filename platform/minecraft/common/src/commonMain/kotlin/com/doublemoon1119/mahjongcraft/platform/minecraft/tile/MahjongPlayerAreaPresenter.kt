@@ -45,11 +45,10 @@ data class MahjongMeldTileGroup(
  * @property drawnTileId 這位玩家目前摸到、尚未併入立牌或打出的那張牌 Uuid（`Hand.lastDrawn`）；
  * `null` 代表目前沒有摸牌位要呈現。
  * @property melds 這位玩家目前所有副露，依宣告順序排列——第一組（最早宣告）位於副露區固定的桌角
- * 錨點外緣（積棒外緣，見 [comboStickCount]），後續每組依序往玩家自己手牌方向排開，呼叫端不需要
- * 另外傳遞位置索引。
- * @property comboStickCount 這位玩家目前該顯示的積棒（連莊棒）支數——只有莊家非零，等於
- * `TableState.comboCount`；只用來讓手牌／副露正確讓開積棒佔用的空間，這個 presenter 本身不負責
- * 積棒 entity 的生成／清除，見 [TablePropPresenter]。
+ * 錨點讓開 [cornerWidth] 之後的位置，後續每組依序往玩家自己手牌方向排開，呼叫端不需要另外傳遞
+ * 位置索引。
+ * @property cornerWidth 這個座位副露角落被規則桌面物件佔用的寬度（見 `TablePropDescriber.cornerWidth`）；
+ * 只用來讓手牌／副露正確讓開，這個 presenter 本身不負責那些物件的生成／清除，見 [TablePropPresenter]。
  * @property animateDrawnTile [drawnTileId] 非 `null` 時，是否要播放摸牌動畫（牌從牌牆原位面朝下起飛、
  * 短暫隱形傳送到摸牌位、傳送的同一瞬間切換成面向玩家的姿態、解除隱形後再落下）——姿態切換發生在
  * 隱形期間，玩家看不到旋轉過程，不像開局發牌動畫那樣需要落地後另外播放看得見的翻牌動畫。只有真正的
@@ -70,15 +69,14 @@ data class MahjongPlayerAreaPresentation(
     val standingTileIds: List<Uuid>,
     val drawnTileId: Uuid?,
     val melds: List<MahjongMeldTileGroup>,
-    val comboStickCount: Int,
+    val cornerWidth: Double,
     val animateDrawnTile: Boolean = false,
     val animatedMeldClaimTileIds: Set<Uuid> = emptySet(),
 )
 
 /**
- * 已由伺服器決定的開局發牌動畫呈現資料——只涵蓋立牌本身，不含摸牌位／副露／積棒：開局當下沒有人已經
- * 摸牌、也沒有任何副露，理由同 [MahjongPlayerAreaPresentation.comboStickCount] 只在有副露/積棒時才有
- * 意義。
+ * 已由伺服器決定的開局發牌動畫呈現資料——只涵蓋立牌本身，不含摸牌位／副露／角落物件：開局當下沒有人已經
+ * 摸牌、也沒有任何副露。
  *
  * @property tableId 所屬麻將桌的穩定 UUID。
  * @property tableLocation 麻將桌 controller 的位置。
@@ -90,11 +88,9 @@ data class MahjongPlayerAreaPresentation(
  * 鍵為座位 index——沒有啟用自動整理手牌的座位這裡跟 [handTileIdsBySeatIndex] 內容相同（翻牌後原地不動）；
  * 有啟用的座位這裡是已經整理過的順序，讓那個座位的牌翻起來之後立刻多一步瞬間移動到整理後的格位，發牌
  * 動畫本身（起飛／落下／翻牌的節奏與順序）完全不受影響。
- * @property dealerSeatIndex 本局莊家座位 index，只用來換算積棒佔用寬度（[comboStickCount] 只有莊家
- * 非零），跟牌牆的莊家相對旋轉無關——理由同 [MahjongPlayerAreaPresentation]，手牌位置不需要莊家相對
- * 旋轉。
- * @property comboStickCount 開局當下該顯示的積棒（連莊棒）支數，只用來讓手牌正確讓開積棒佔用的空間，
- * 理由同 [MahjongPlayerAreaPresentation.comboStickCount]。
+ * @property dealerSeatIndex 本局莊家座位 index，決定發牌從哪個座位開始輪。
+ * @property cornerWidthBySeatIndex 開局當下每個座位副露角落被佔用的寬度，鍵為座位 index；沒有列出的座位
+ * 視為 `0.0`。理由同 [MahjongPlayerAreaPresentation.cornerWidth]。
  * @property dealBatchSizes 依序播放的批次大小列表，見 `MahjongRuleConfig.dealBatchSizes()`；呼叫端
  * 不驗證總和是否等於各座位手牌張數，由該函式自己保證。
  * @property extraLeadDelayTicks 這次發牌動畫在每張牌自己的動畫佇列最前面該多等待的 tick 數（等牌牆
@@ -109,7 +105,7 @@ data class MahjongInitialDealPresentation(
     val handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     val postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     val dealerSeatIndex: Int,
-    val comboStickCount: Int,
+    val cornerWidthBySeatIndex: Map<Int, Double>,
     val dealBatchSizes: List<Int>,
     val extraLeadDelayTicks: Int = 0,
 )
@@ -117,7 +113,7 @@ data class MahjongInitialDealPresentation(
 /**
  * 已由伺服器決定的胡牌慶祝演出呈現資料——只涵蓋贏家自己這側需要重排／倒牌的立牌，不含摸牌位（贏家
  * 手牌到此已經沒有懸而未決的摸牌位：自摸的胡牌張已經併入 [organizedStandingTileIds]，榮和／搶槓則
- * 從頭就沒有摸牌位），也不含積棒 entity 本身生成／清除（理由同 [MahjongPlayerAreaPresentation]）。
+ * 從頭就沒有摸牌位），也不含角落物件 entity 本身生成／清除（理由同 [MahjongPlayerAreaPresentation]）。
  *
  * @property tableId 所屬麻將桌的穩定 UUID。
  * @property tableLocation 麻將桌 controller 的位置。
@@ -130,7 +126,7 @@ data class MahjongInitialDealPresentation(
  * 副露區，不屬於贏家手牌）。
  * @property melds 贏家目前所有副露，排列規則同 [MahjongPlayerAreaPresentation.melds]，只用來正確計算
  * 立牌讓開副露的偏移，這個方法不重新呈現副露本身（副露的位置/姿態不受胡牌影響）。
- * @property comboStickCount 贏家目前該顯示的積棒支數，只用來換算讓開偏移，理由同 [MahjongPlayerAreaPresentation.comboStickCount]。
+ * @property cornerWidth 贏家副露角落被佔用的寬度，只用來換算讓開偏移，理由同 [MahjongPlayerAreaPresentation.cornerWidth]。
  * @property winningTileId 胡的那張牌 Uuid——自摸時是原本的摸牌位那張，此時已併入 [organizedStandingTileIds]；
  * 榮和／搶槓時是放銃者打出的那張捨牌，或搶槓來源的那張加槓/暗槓牌，仍在放銃者／宣告者的區域。
  * @property isTsumo `true` 代表自摸（[winningTileId] 需要先單獨倒下、再等其餘立牌一起倒下）；`false`
@@ -147,7 +143,7 @@ data class MahjongWinCelebrationPresentation(
     val seatIndex: Int,
     val organizedStandingTileIds: List<Uuid>,
     val melds: List<MahjongMeldTileGroup>,
-    val comboStickCount: Int,
+    val cornerWidth: Double,
     val winningTileId: Uuid,
     val isTsumo: Boolean,
     val earliestStartGameTime: Long = 0L,
@@ -187,7 +183,7 @@ data class MahjongWinCelebrationResult(
  * 將權威手牌／摸牌位／副露呈現於 Minecraft 世界的版本 adapter 邊界。
  *
  * 三者原本各自獨立成 `MahjongHandTilesPresenter`／`MahjongMeldPresenter`，但手牌／摸牌位要能對副露
- * （以及積棒）讓開空間，前提是同一次計算必須同時知道「這一側總共被佔用多少寬度」——手牌被觸發呈現
+ * （以及角落物件）讓開空間，前提是同一次計算必須同時知道「這一側總共被佔用多少寬度」——手牌被觸發呈現
  * 的當下，如果不知道目前副露佔了多寬，就沒辦法算出正確的讓開偏移；反之亦然。這幾個東西必須包裝成
  * 同一個方法呼叫，才有辦法完整地透過計算算出退讓的偏移，因此合併成這一個 presenter，每次呼叫都帶齊
  * 立牌、摸牌、副露三者目前的完整狀態。
@@ -197,14 +193,13 @@ data class MahjongWinCelebrationResult(
  * [MahjongTileWallPresenter] 已經生成好的既有 entity，直接改標記、改姿態、移動位置，比照
  * [MahjongTileWallPresenter] 的 best-effort 慣例。
  *
- * 積棒（[MahjongPlayerAreaPresentation.comboStickCount]）本身的 entity 生成／清除**不**歸這個
- * presenter 管——積棒在開局／換局時更新，生命週期完全不同步於手牌／副露（每次打牌/摸牌/鳴牌都會觸發），
- * 交給獨立的 [TablePropPresenter]；這裡只把 `comboStickCount` 當成算讓開寬度用的數字。
+ * 角落裡的規則桌面物件（佔用寬度見 [MahjongPlayerAreaPresentation.cornerWidth]）本身的 entity 生成／清除
+ * **不**歸這個 presenter 管——那些物件只在特定時間點更新，生命週期完全不同步於手牌／副露（每次打牌/
+ * 摸牌/鳴牌都會觸發），交給獨立的 [TablePropPresenter]；這裡只把寬度當成算讓開偏移用的數字。
  *
  * [MahjongTileTableLayout.meldPlacement]／[MahjongTileTableLayout.handPlacement] 只負責單一格位／
- * 單張牌座標，把多組副露、各組張數、各組內鳴取牌位置、積棒佔用寬度換算成這些函式需要的參數是實作的
- * 責任——見 [MahjongTileTableLayout.meldAreaWidth]／[MahjongTileTableLayout.stickAreaWidth]／
- * [MahjongTileTableLayout.handCornerYieldShift] 的 KDoc。
+ * 單張牌座標，把多組副露、各組張數、各組內鳴取牌位置、角落佔用寬度換算成這些函式需要的參數是實作的
+ * 責任——見 [MahjongTileTableLayout.meldAreaWidth]／[MahjongTileTableLayout.handCornerYieldShift] 的 KDoc。
  */
 interface MahjongPlayerAreaPresenter {
     /**

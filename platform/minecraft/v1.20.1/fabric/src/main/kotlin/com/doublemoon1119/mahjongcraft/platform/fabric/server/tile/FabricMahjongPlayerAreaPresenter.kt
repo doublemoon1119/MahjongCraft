@@ -51,10 +51,9 @@ class FabricMahjongPlayerAreaPresenter(
 
     /**
      * 依序完成三件事：
-     * 1. 算出副露＋積棒（[MahjongPlayerAreaPresentation.comboStickCount]，只用來算寬度，不管理積棒
-     *    entity 本身）總共佔用的寬度（[MahjongTileTableLayout.meldAreaWidth]／
-     *    [MahjongTileTableLayout.stickAreaWidth]），換算成整排立牌／摸牌位需要往玩家自己方向平移的
-     *    距離（[MahjongTileTableLayout.handCornerYieldShift]）。
+     * 1. 算出角落物件（[MahjongPlayerAreaPresentation.cornerWidth]，只用來算寬度，不管理那些 entity
+     *    本身）與副露總共佔用的寬度（[MahjongTileTableLayout.cornerAreaWidth]），換算成整排立牌／摸牌位
+     *    需要往玩家自己方向平移的距離（[MahjongTileTableLayout.handCornerYieldShift]）。
      * 2. 用 [MahjongTileTableLayout.handPlacement]／[MahjongTileTableLayout.drawnTilePlacement] 帶著
      *    這個平移量，逐張擺放立牌與摸牌位（[MahjongTilePose.STANDING]）——摸牌位在
      *    [MahjongPlayerAreaPresentation.animateDrawnTile] 為 `true` 時改排定
@@ -64,8 +63,8 @@ class FabricMahjongPlayerAreaPresenter(
      *    邊）——最後加入立牌的那張牌（例如非摸切捨牌時併入的 `lastDrawn`）因此會落在最右手邊，符合
      *    真實麻將摸牌後插入手牌的直覺方向。
      * 3. 用 [MahjongTileTableLayout.meldPlacement] 逐格擺放副露——邏輯照搬原本
-     *    `FabricMahjongMeldPresenter.present()`，起始游標從 [MahjongTileTableLayout.stickAreaWidth]
-     *    開始（讓副露自然接在積棒外緣），其餘不變，含 [closedKanPose]／加槓 depth-offset。
+     *    `FabricMahjongMeldPresenter.present()`，起始游標從 [MahjongTileTableLayout.meldStartOffset]
+     *    開始（角落有物件時隔一段縫接在其外緣），其餘不變，含 [closedKanPose]／加槓 depth-offset。
      *
      * 找不到對應 UUID 的既有 entity 時該筆直接跳過並記警告 log，不中斷其餘牌的呈現，比照本介面
      * best-effort 的既有慣例。
@@ -95,9 +94,7 @@ class FabricMahjongPlayerAreaPresenter(
             return tile
         }
 
-        val reservedCornerWidth =
-            MahjongTileTableLayout.stickAreaWidth(presentation.comboStickCount) +
-                MahjongTileTableLayout.meldAreaWidth(presentation.melds)
+        val reservedCornerWidth = MahjongTileTableLayout.cornerAreaWidth(presentation.cornerWidth, presentation.melds)
         val cornerYieldShift = MahjongTileTableLayout.handCornerYieldShift(
             presentation.standingTileIds.size,
             reservedCornerWidth,
@@ -182,7 +179,7 @@ class FabricMahjongPlayerAreaPresenter(
             return tile
         }
 
-        var cursorAlong = MahjongTileTableLayout.stickAreaWidth(presentation.comboStickCount)
+        var cursorAlong = MahjongTileTableLayout.meldStartOffset(presentation.cornerWidth)
         presentation.melds.forEachIndexed { meldIndex, meld ->
             if (meldIndex > 0) cursorAlong += MahjongTileTableLayout.MELD_GROUP_GAP
             val addedTileId = if (meld.type == MeldType.ADDED_KAN) meld.tileIds.last() else null
@@ -308,9 +305,7 @@ class FabricMahjongPlayerAreaPresenter(
             return tile
         }
 
-        val reservedCornerWidth =
-            MahjongTileTableLayout.stickAreaWidth(presentation.comboStickCount) +
-                MahjongTileTableLayout.meldAreaWidth(presentation.melds)
+        val reservedCornerWidth = MahjongTileTableLayout.cornerAreaWidth(presentation.cornerWidth, presentation.melds)
         val standingHandTileIds = if (presentation.isTsumo) {
             presentation.organizedStandingTileIds.filterNot { tileId -> tileId == presentation.winningTileId }
         } else {
@@ -448,10 +443,9 @@ class FabricMahjongPlayerAreaPresenter(
         val seatCount = presentation.handTileIdsBySeatIndex.size
         val dealOrderSeatIndices = List(seatCount) { offset -> (presentation.dealerSeatIndex + offset) % seatCount }
         val cornerYieldShiftBySeat = presentation.handTileIdsBySeatIndex.mapValues { (seatIndex, tileIds) ->
-            val comboStickCount = if (seatIndex == presentation.dealerSeatIndex) presentation.comboStickCount else 0
             MahjongTileTableLayout.handCornerYieldShift(
-                tileIds.size,
-                MahjongTileTableLayout.stickAreaWidth(comboStickCount),
+                handSize = tileIds.size,
+                reservedCornerWidth = presentation.cornerWidthBySeatIndex[seatIndex] ?: 0.0,
                 hasDrawnTile = false,
             )
         }
@@ -547,7 +541,7 @@ class FabricMahjongPlayerAreaPresenter(
     /**
      * 清除指定 controller 周圍且 table UUID 相符的所有正式管理中麻將牌——跟
      * [FabricMahjongTileWallPresenter.clear] 效果相同（都是清這張桌子的全部管理中麻將牌，不分子
-     * 系統），保留成獨立方法只是維持介面對稱，呼叫端仍可能只想觸發這條路徑的清除。積棒不在這裡清除
+     * 系統），保留成獨立方法只是維持介面對稱，呼叫端仍可能只想觸發這條路徑的清除。角落物件不在這裡清除
      * （見 [TablePropPresenter]）。
      */
     override fun clear(tableId: Uuid, tableLocation: TableLocation): Int {
