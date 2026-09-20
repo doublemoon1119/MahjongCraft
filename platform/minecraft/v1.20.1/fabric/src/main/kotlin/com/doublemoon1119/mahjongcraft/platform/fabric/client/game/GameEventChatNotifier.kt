@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildMatchResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
@@ -45,7 +45,7 @@ fun buildRoundResultChatMessage(
     previousSnapshot: TableStateSnapshot?,
     newSnapshot: TableStateSnapshot,
     module: MahjongRuleModule<*>,
-    actionDisplayNameRegistry: GameActionDisplayNameRegistry,
+    actionVocabularyRegistry: GameActionVocabularyRegistry,
     displayNameRegistry: TileDisplayNameRegistry,
     tileAssetRegistry: MinecraftTileAssetRegistry,
     tileEmojiRegistry: TileEmojiRegistry,
@@ -60,7 +60,8 @@ fun buildRoundResultChatMessage(
     } else {
         action.toDisplayText(
             referenceTile = null,
-            actionDisplayNameRegistry = actionDisplayNameRegistry,
+            ruleModuleId = module.id,
+            actionVocabularyRegistry = actionVocabularyRegistry,
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,

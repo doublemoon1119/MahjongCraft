@@ -39,7 +39,11 @@ internal data class DiscardAnalysisContent(
  * 全部等待牌共用同一種非預設和牌資格時，該資格提升到狀態列只講一次；資格不一致時改為逐格標示，只標非
  * 預設的那幾張。[WIN_AVAILABLE_ID] 代表沒有特殊限制，任何情況都不顯示。
  */
-internal fun discardAnalysisContent(analysis: DiscardReadinessAnalysisDto): DiscardAnalysisContent {
+internal fun discardAnalysisContent(
+    texts: DecisionTextResolver,
+    ruleModuleId: String?,
+    analysis: DiscardReadinessAnalysisDto,
+): DiscardAnalysisContent {
     val sharedAvailability = analysis.waitingTiles.map { it.winAvailability }
         .distinct()
         .singleOrNull()
@@ -48,8 +52,8 @@ internal fun discardAnalysisContent(analysis: DiscardReadinessAnalysisDto): Disc
         analysis.waitingTiles.any { it.winAvailability != WIN_AVAILABLE_ID }
     return DiscardAnalysisContent(
         statusTexts = listOfNotNull(
-            analysis.statusIndicatorId?.let { Text.translatable(it.translationKey()) },
-            sharedAvailability?.let { Text.translatable(it.translationKey()) },
+            analysis.statusIndicatorId?.let { texts.statusText(ruleModuleId, it) },
+            sharedAvailability?.let { texts.statusText(ruleModuleId, it) },
         ),
         cells = analysis.waitingTiles.map { waiting ->
             DiscardAnalysisCell(
@@ -61,7 +65,7 @@ internal fun discardAnalysisContent(analysis: DiscardReadinessAnalysisDto): Disc
                     else -> 0xFFFFFF
                 },
                 availabilityText = if (hasAvailabilityRow && waiting.winAvailability != WIN_AVAILABLE_ID) {
-                    Text.translatable(waiting.winAvailability.translationKey())
+                    texts.statusText(ruleModuleId, waiting.winAvailability)
                 } else {
                     null
                 },

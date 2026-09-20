@@ -1,7 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
@@ -32,7 +33,8 @@ class MinecraftPresentationRegistriesTest {
             tileDisplayNameRegistry = TileDisplayNameRegistryImpl(),
             tileEmojiRegistry = TileEmojiRegistryImpl(),
             tileLabelRegistry = TileLabelRegistryImpl(),
-            gameActionDisplayNameRegistry = GameActionDisplayNameRegistryImpl(),
+            gameActionVocabularyRegistry = GameActionVocabularyRegistryImpl(),
+            decisionStatusDisplayNameRegistry = DecisionStatusDisplayNameRegistryImpl(),
             gameActionSoundPresentationRegistry = GameActionSoundPresentationRegistryImpl(),
             exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl(),
             roundPreparationDisplayNameRegistry = RoundPreparationDisplayNameRegistryImpl(),
@@ -55,7 +57,7 @@ class MinecraftPresentationRegistriesTest {
         assertTrue(registries.tileDisplayNameRegistry.isFrozen)
         assertTrue(registries.tileEmojiRegistry.isFrozen)
         assertTrue(registries.tileLabelRegistry.isFrozen)
-        assertTrue(registries.gameActionDisplayNameRegistry.isFrozen)
+        assertTrue(registries.gameActionVocabularyRegistry.isFrozen)
         assertTrue(registries.gameActionSoundPresentationRegistry.isFrozen)
         assertTrue(registries.exhaustiveDrawReasonDisplayNameRegistry.isFrozen)
         assertTrue(registries.roundPreparationDisplayNameRegistry.isFrozen)

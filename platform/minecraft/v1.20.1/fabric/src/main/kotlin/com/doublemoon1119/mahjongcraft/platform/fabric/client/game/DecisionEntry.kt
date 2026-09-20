@@ -41,19 +41,22 @@ internal data class DecisionEntry(
     fun layoutCard(): DecisionCard = DecisionCard(previewTileAssetKeys.size, claimedTileIndex != null)
 }
 
+/** 未登記順序的動作排在所有已登記之後，並維持原始相對順序。 */
+private const val UNREGISTERED_ACTION_ORDER: Int = Int.MAX_VALUE
+
 /**
  * 由權威 prompt 組出由左至右的操作卡清單。
  *
  * 動作卡在前並依固定顯示順序排列，「跳過」不佔卡片位置（由 header 右側的專屬按鈕負責）；開局準備的三種
  * 型態各自展開成確認、每個選項一張，或單一張選牌卡。
  */
-internal fun decisionEntriesFrom(prompt: PlayerDecisionPromptDto): List<DecisionEntry> = buildList {
+internal fun decisionEntriesFrom(texts: DecisionTextResolver, prompt: PlayerDecisionPromptDto): List<DecisionEntry> = buildList {
     prompt.actions.filterNot { it.actionId == PASS_ACTION_ID }
-        .sortedBy { it.actionId.actionDisplayPriority() }
+        .sortedBy { texts.actionOrder(prompt.ruleModuleId, it.actionId) ?: UNREGISTERED_ACTION_ORDER }
         .forEach { action ->
             add(
                 DecisionEntry(
-                    label = Text.translatable(action.actionId.translationKey()),
+                    label = texts.actionLabel(prompt.ruleModuleId, action.actionId),
                     previewTileAssetKeys = action.previewTileAssetKeys,
                     claimedTileIndex = action.claimedTileIndex,
                     intent = if (action.tileSelection != null) {
@@ -76,7 +79,7 @@ internal fun decisionEntriesFrom(prompt: PlayerDecisionPromptDto): List<Decision
         is RoundPreparationPromptDto.SingleChoice -> preparation.optionIds.forEach { option ->
             add(
                 DecisionEntry(
-                    label = Text.translatable(option.translationKey()),
+                    label = texts.actionLabel(prompt.ruleModuleId, option),
                     previewTileAssetKeys = emptyList(),
                     claimedTileIndex = null,
                     intent = DecisionEntryIntent.ChoosePreparationOption(option),

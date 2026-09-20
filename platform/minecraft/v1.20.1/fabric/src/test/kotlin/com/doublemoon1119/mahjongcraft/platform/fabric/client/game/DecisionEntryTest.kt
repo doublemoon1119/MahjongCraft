@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionAc
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -12,11 +13,15 @@ import kotlin.test.assertNull
 
 /** 驗證由權威 prompt 組出的操作卡清單。 */
 class DecisionEntryTest {
+    /** 以內建登記解析文字與順序的測試解析器。 */
+    private val texts = testDecisionTextResolver()
+
     /** 動作卡依固定顯示順序排列。 */
     @Test
     fun `orders the action cards by their display priority`() {
         val entries = decisionEntriesFrom(
-            promptOf("mahjongcraft:tsumo", "mahjongcraft:kan_open", "mahjongcraft:ron", "mahjongcraft:chi", "mahjongcraft:pon"),
+            texts = texts,
+            prompt = promptOf("mahjongcraft:tsumo", "mahjongcraft:kan_open", "mahjongcraft:ron", "mahjongcraft:chi", "mahjongcraft:pon"),
         )
 
         assertEquals(
@@ -28,7 +33,7 @@ class DecisionEntryTest {
     /** 跳過不佔卡片位置。 */
     @Test
     fun `leaves the pass action out of the cards`() {
-        val entries = decisionEntriesFrom(promptOf("mahjongcraft:pass", "mahjongcraft:ron"))
+        val entries = decisionEntriesFrom(texts, promptOf("mahjongcraft:pass", "mahjongcraft:ron"))
 
         assertEquals(1, entries.size)
         assertEquals("mahjongcraft.hud.action.ron", translationKeyOf(entries.single()))
@@ -37,7 +42,7 @@ class DecisionEntryTest {
     /** 不需選牌的動作點擊後直接送出該候選。 */
     @Test
     fun `submits an action that needs no tile selection`() {
-        val entries = decisionEntriesFrom(promptOf("mahjongcraft:ron"))
+        val entries = decisionEntriesFrom(texts, promptOf("mahjongcraft:ron"))
 
         val intent = assertIs<DecisionEntryIntent.SubmitAction>(entries.single().intent)
         assertEquals("token-mahjongcraft:ron", intent.token)
@@ -57,7 +62,7 @@ class DecisionEntryTest {
             ),
         )
 
-        val intent = assertIs<DecisionEntryIntent.BeginActionTileSelection>(decisionEntriesFrom(prompt).single().intent)
+        val intent = assertIs<DecisionEntryIntent.BeginActionTileSelection>(decisionEntriesFrom(texts, prompt).single().intent)
         assertEquals("token-riichi", intent.action.token)
     }
 
@@ -76,7 +81,7 @@ class DecisionEntryTest {
             ),
         )
 
-        val entry = decisionEntriesFrom(prompt).single()
+        val entry = decisionEntriesFrom(texts, prompt).single()
         assertEquals(listOf("a", "b", "c"), entry.previewTileAssetKeys)
         assertEquals(1, entry.claimedTileIndex)
         assertEquals(DecisionCard(previewTileCount = 3, hasClaimedTileMarker = true), entry.layoutCard())
@@ -85,7 +90,7 @@ class DecisionEntryTest {
     /** 沒有鳴牌指標的卡片不為指標保留高度。 */
     @Test
     fun `marks no claimed tile without an index`() {
-        val entry = decisionEntriesFrom(promptOf("mahjongcraft:ron")).single()
+        val entry = decisionEntriesFrom(texts, promptOf("mahjongcraft:ron")).single()
 
         assertNull(entry.claimedTileIndex)
         assertEquals(DecisionCard(previewTileCount = 0, hasClaimedTileMarker = false), entry.layoutCard())
@@ -94,7 +99,7 @@ class DecisionEntryTest {
     /** 只需確認的開局準備展開成一張確認卡。 */
     @Test
     fun `builds one card for a preparation confirmation`() {
-        val entries = decisionEntriesFrom(preparationPrompt(RoundPreparationPromptDto.Confirmation))
+        val entries = decisionEntriesFrom(texts, preparationPrompt(RoundPreparationPromptDto.Confirmation))
 
         assertEquals(DecisionEntryIntent.ConfirmPreparation, entries.single().intent)
         assertEquals("mahjongcraft.hud.action.confirm", translationKeyOf(entries.single()))
@@ -104,6 +109,7 @@ class DecisionEntryTest {
     @Test
     fun `builds one card per preparation option`() {
         val entries = decisionEntriesFrom(
+            texts,
             preparationPrompt(RoundPreparationPromptDto.SingleChoice(listOf("mahjongcraft:accept", "mahjongcraft:decline"))),
         )
 
@@ -117,6 +123,7 @@ class DecisionEntryTest {
     @Test
     fun `builds one card carrying the eligible tiles of a preparation selection`() {
         val entries = decisionEntriesFrom(
+            texts,
             preparationPrompt(
                 RoundPreparationPromptDto.TileSelection(
                     eligibleTileIds = listOf("tile-a", "tile-b"),
@@ -137,7 +144,7 @@ class DecisionEntryTest {
     fun `puts the action cards before the preparation card`() {
         val prompt = promptOf("mahjongcraft:ron").copy(preparation = RoundPreparationPromptDto.Confirmation)
 
-        val entries = decisionEntriesFrom(prompt)
+        val entries = decisionEntriesFrom(texts, prompt)
 
         assertIs<DecisionEntryIntent.SubmitAction>(entries.first().intent)
         assertEquals(DecisionEntryIntent.ConfirmPreparation, entries.last().intent)
@@ -146,13 +153,13 @@ class DecisionEntryTest {
     /** 沒有動作也沒有開局準備時沒有任何卡片。 */
     @Test
     fun `builds no card for an empty prompt`() {
-        assertEquals(emptyList(), decisionEntriesFrom(PlayerDecisionPromptDto(decisionKey = DECISION_KEY)))
+        assertEquals(emptyList(), decisionEntriesFrom(texts, PlayerDecisionPromptDto(decisionKey = DECISION_KEY)))
     }
 
     /** 未知的動作 ID 排在內建動作之後並維持原始相對順序。 */
     @Test
     fun `keeps unknown actions last in their original order`() {
-        val entries = decisionEntriesFrom(promptOf("example:first", "example:second", "mahjongcraft:ron"))
+        val entries = decisionEntriesFrom(texts, promptOf("example:first", "example:second", "mahjongcraft:ron"))
 
         assertEquals(
             listOf("mahjongcraft.hud.action.ron", "example:first", "example:second"),
@@ -166,11 +173,16 @@ class DecisionEntryTest {
     /** 建立只含指定動作的 prompt。 */
     private fun promptOf(vararg actionIds: String) = PlayerDecisionPromptDto(
         decisionKey = DECISION_KEY,
+        ruleModuleId = BuiltInRuleModuleIds.RIICHI,
         actions = actionIds.map { PlayerDecisionActionDto(token = "token-$it", actionId = it) },
     )
 
     /** 建立只含開局準備的 prompt。 */
-    private fun preparationPrompt(preparation: RoundPreparationPromptDto) = PlayerDecisionPromptDto(decisionKey = DECISION_KEY, preparation = preparation)
+    private fun preparationPrompt(preparation: RoundPreparationPromptDto) = PlayerDecisionPromptDto(
+        decisionKey = DECISION_KEY,
+        ruleModuleId = BuiltInRuleModuleIds.RIICHI,
+        preparation = preparation,
+    )
 
     private companion object {
         const val DECISION_KEY = "decision-1"

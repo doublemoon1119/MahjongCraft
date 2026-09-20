@@ -1,7 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
@@ -51,8 +52,19 @@ interface MinecraftMahjongExtension {
      */
     fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) = Unit
 
-    /** 登記規則擴充動作在 Minecraft 中使用的本地化顯示名稱。 */
-    fun registerGameActionDisplayNames(registry: GameActionDisplayNameRegistry) = Unit
+    /**
+     * 登記規則動作在 Minecraft 中使用的用語與操作卡順序。
+     *
+     * 同一個動作在不同規則可能有不同說法，登記同一個動作 ID 即可覆寫中立預設。
+     */
+    fun registerGameActionVocabulary(registry: GameActionVocabularyRegistry) = Unit
+
+    /**
+     * 登記捨牌分析狀態（例如振聽、和牌資格）在 Minecraft 中使用的顯示名稱。
+     *
+     * 與動作用語相同，登記同一個狀態 ID 即可覆寫中立預設。
+     */
+    fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistry) = Unit
 
     /** 登記規則動作成立後在 Minecraft 世界中播放的宣告式語音。 */
     fun registerGameActionSounds(registry: GameActionSoundPresentationRegistry) = Unit

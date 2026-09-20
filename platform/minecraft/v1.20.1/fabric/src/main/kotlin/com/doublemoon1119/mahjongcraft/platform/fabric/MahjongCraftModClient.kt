@@ -46,7 +46,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickI
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
@@ -109,7 +109,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val tileEmojiRegistry = koin.get<TileEmojiRegistry>()
         val tileLabelRegistry = koin.get<TileLabelRegistry>()
         val tileFaceRenderer = koin.get<MahjongTileFaceRenderer>()
-        val gameActionDisplayNames = koin.get<GameActionDisplayNameRegistry>()
+        val actionVocabulary = koin.get<GameActionVocabularyRegistry>()
         val moduleRegistry = koin.get<MahjongModuleRegistry>()
         val showcaseRegistry = koin.get<WinCelebrationShowcaseRegistry>()
         val exhaustiveDrawReasonDisplayNames = koin.get<ExhaustiveDrawReasonDisplayNameRegistry>()
@@ -142,7 +142,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 previousSnapshot = previousSnapshot,
                 newSnapshot = newSnapshot,
                 module = module,
-                actionDisplayNameRegistry = gameActionDisplayNames,
+                actionVocabularyRegistry = actionVocabulary,
                 displayNameRegistry = tileDisplayNames,
                 tileAssetRegistry = tileAssetRegistry,
                 tileEmojiRegistry = tileEmojiRegistry,

@@ -5,7 +5,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.registerBuiltInGameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
@@ -28,7 +29,7 @@ import kotlin.uuid.Uuid
 class GameEventChatNotifierTest {
 
     private val displayNameRegistry = TileDisplayNameRegistryImpl()
-    private val actionDisplayNameRegistry = GameActionDisplayNameRegistryImpl()
+    private val actionVocabularyRegistry = GameActionVocabularyRegistryImpl().apply { registerBuiltInGameActionVocabulary() }
     private val tileAssetRegistry = MinecraftTileAssetRegistryImpl()
     private val tileEmojiRegistry = TileEmojiRegistryImpl()
     private val exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl()
@@ -48,7 +49,7 @@ class GameEventChatNotifierTest {
             previousSnapshot = previous,
             newSnapshot = current,
             module = module,
-            actionDisplayNameRegistry = actionDisplayNameRegistry,
+            actionVocabularyRegistry = actionVocabularyRegistry,
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
@@ -68,7 +69,7 @@ class GameEventChatNotifierTest {
             previousSnapshot = null,
             newSnapshot = current,
             module = module,
-            actionDisplayNameRegistry = actionDisplayNameRegistry,
+            actionVocabularyRegistry = actionVocabularyRegistry,
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
@@ -102,7 +103,7 @@ class GameEventChatNotifierTest {
             previousSnapshot = previous,
             newSnapshot = current,
             module = module,
-            actionDisplayNameRegistry = actionDisplayNameRegistry,
+            actionVocabularyRegistry = actionVocabularyRegistry,
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
@@ -157,7 +158,7 @@ class GameEventChatNotifierTest {
             previousSnapshot = previous,
             newSnapshot = current,
             module = module,
-            actionDisplayNameRegistry = actionDisplayNameRegistry,
+            actionVocabularyRegistry = actionVocabularyRegistry,
             displayNameRegistry = displayNameRegistry,
             tileAssetRegistry = tileAssetRegistry,
             tileEmojiRegistry = tileEmojiRegistry,

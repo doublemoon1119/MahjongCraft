@@ -2,7 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.text
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.vocabularyActionId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
@@ -13,6 +14,9 @@ import net.minecraft.text.Text
 /**
  * 將 [GameAction] 轉成人類可讀的顯示文字，供對局指令的候選 tooltip 與回饋訊息共用。放在 Fabric 模組
  * 的理由見 [toDisplayText]（[Tile] 版本）的 KDoc。
+ *
+ * 動作的說法屬於規則（例如榮和與胡牌、捨牌與丟牌），因此文字一律向 [actionVocabularyRegistry] 以
+ * 「[ruleModuleId] + 動作 ID」查詢，該規則沒有登記時退回中立預設。
  *
  * 部分動作（[GameAction.Chi]／[GameAction.Pon]／[GameAction.Kan]／[GameAction.Ron]／
  * [GameAction.Discard]）本身只帶 tileId，不帶完整 [Tile]，需要呼叫端另外解析出對應的 [referenceTile]
@@ -26,58 +30,36 @@ import net.minecraft.text.Text
  */
 fun GameAction.toDisplayText(
     referenceTile: Tile?,
-    actionDisplayNameRegistry: GameActionDisplayNameRegistry,
+    ruleModuleId: String?,
+    actionVocabularyRegistry: GameActionVocabularyRegistry,
     displayNameRegistry: TileDisplayNameRegistry,
     tileAssetRegistry: MinecraftTileAssetRegistry,
     tileEmojiRegistry: TileEmojiRegistry,
     exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
-): Text = when (this) {
-    is GameAction.Discard -> tileActionText(
-        key = MinecraftMessageKeys.GAME_ACTION_DISCARD,
-        referenceTile = referenceTile,
-        displayNameRegistry = displayNameRegistry,
-        tileAssetRegistry = tileAssetRegistry,
-        tileEmojiRegistry = tileEmojiRegistry,
-    )
-    is GameAction.Extension -> extensionDisplayText(actionDisplayNameRegistry)
-    GameAction.Tsumo -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_TSUMO)
-    is GameAction.Chi -> tileActionText(
-        key = MinecraftMessageKeys.GAME_ACTION_CHI,
-        referenceTile = referenceTile,
-        displayNameRegistry = displayNameRegistry,
-        tileAssetRegistry = tileAssetRegistry,
-        tileEmojiRegistry = tileEmojiRegistry,
-    )
-    is GameAction.Pon -> tileActionText(
-        key = MinecraftMessageKeys.GAME_ACTION_PON,
-        referenceTile = referenceTile,
-        displayNameRegistry = displayNameRegistry,
-        tileAssetRegistry = tileAssetRegistry,
-        tileEmojiRegistry = tileEmojiRegistry,
-    )
-    is GameAction.Kan -> tileActionText(
-        key = type.toMessageKey(),
-        referenceTile = referenceTile,
-        displayNameRegistry = displayNameRegistry,
-        tileAssetRegistry = tileAssetRegistry,
-        tileEmojiRegistry = tileEmojiRegistry,
-    )
-    is GameAction.Ron -> tileActionText(
-        key = MinecraftMessageKeys.GAME_ACTION_RON,
-        referenceTile = referenceTile,
-        displayNameRegistry = displayNameRegistry,
-        tileAssetRegistry = tileAssetRegistry,
-        tileEmojiRegistry = tileEmojiRegistry,
-    )
-    GameAction.Pass -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_PASS)
-    is GameAction.ExhaustiveDraw -> exhaustiveDrawText(exhaustiveDrawReasonDisplayNameRegistry)
-    GameAction.MatchEnded -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_MATCH_ENDED)
-    is GameAction.DiceRolled -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_DICE_ROLLED)
-    GameAction.GameStarted, GameAction.RoundStarted, GameAction.Draw -> Text.literal(this::class.simpleName ?: "")
+): Text {
+    val actionId = vocabularyActionId()
+    val messageKey = actionVocabularyRegistry.find(ruleModuleId, actionId)?.messageKey
+    return when (this) {
+        is GameAction.Discard, is GameAction.Chi, is GameAction.Pon, is GameAction.Kan, is GameAction.Ron ->
+            messageKey
+                ?.let { key ->
+                    tileActionText(
+                        key = key,
+                        referenceTile = referenceTile,
+                        displayNameRegistry = displayNameRegistry,
+                        tileAssetRegistry = tileAssetRegistry,
+                        tileEmojiRegistry = tileEmojiRegistry,
+                    )
+                }
+                ?: Text.literal(actionId)
+        GameAction.Tsumo, GameAction.Pass -> messageKey?.let(Text::translatable) ?: Text.literal(actionId)
+        is GameAction.Extension -> messageKey?.let(Text::translatable) ?: Text.literal(value.id)
+        is GameAction.ExhaustiveDraw -> exhaustiveDrawText(messageKey, exhaustiveDrawReasonDisplayNameRegistry)
+        GameAction.MatchEnded -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_MATCH_ENDED)
+        is GameAction.DiceRolled -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_DICE_ROLLED)
+        GameAction.GameStarted, GameAction.RoundStarted, GameAction.Draw -> Text.literal(this::class.simpleName ?: "")
+    }
 }
-
-/** 透過 registry 顯示規則擴充動作；未知動作安全顯示其穩定 ID。 */
-private fun GameAction.Extension.extensionDisplayText(registry: GameActionDisplayNameRegistry): Text = registry.find(value)?.let(Text::translatable) ?: Text.literal(value.id)
 
 /** 組出「動作 + 牌面」形式的顯示文字，[referenceTile] 為 null 時退回顯示 `?`。 */
 private fun tileActionText(
@@ -91,14 +73,14 @@ private fun tileActionText(
     referenceTile?.toDisplayText(displayNameRegistry, tileAssetRegistry, tileEmojiRegistry) ?: Text.literal("?"),
 )
 
-/** 將槓牌種類映射到對應的翻譯 key。 */
-private fun GameAction.KanType.toMessageKey(): String = when (this) {
-    GameAction.KanType.OPEN_KAN -> MinecraftMessageKeys.GAME_ACTION_KAN_OPEN
-    GameAction.KanType.CLOSED_KAN -> MinecraftMessageKeys.GAME_ACTION_KAN_CLOSED
-    GameAction.KanType.ADDED_KAN -> MinecraftMessageKeys.GAME_ACTION_KAN_ADDED
-}
-
-/** 透過 registry 解析規則專屬流局名稱；未知原因安全退回通用流局文字。 */
-private fun GameAction.ExhaustiveDraw.exhaustiveDrawText(registry: ExhaustiveDrawReasonDisplayNameRegistry): Text = registry
-    .find(reason.id)?.let(Text::translatable)
+/**
+ * 解析流局宣告的顯示文字。
+ *
+ * 規則若已在動作用語中登記這個宣告（例如日麻的九種九牌），直接使用；否則查流局原因名稱，最後退回通用
+ * 流局文字。
+ */
+private fun GameAction.ExhaustiveDraw.exhaustiveDrawText(
+    messageKey: String?,
+    registry: ExhaustiveDrawReasonDisplayNameRegistry,
+): Text = (messageKey ?: registry.find(reason.id))?.let(Text::translatable)
     ?: Text.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW)

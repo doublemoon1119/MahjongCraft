@@ -36,6 +36,7 @@ class PlayerDecisionHudController(
     private val promptStore: ClientDecisionPromptStore,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
     private val configStore: MahjongClientConfigStore,
+    val decisionTexts: DecisionTextResolver,
     @Provided private val json: Json,
 ) {
     /** 玩家以 Esc 暫時收起的 decision key。 */
@@ -403,7 +404,7 @@ class PlayerDecisionHudController(
         val analyses = prompt.discardAnalysesForAction(tileSelection.activeActionToken)
         val analysis = analyses.firstOrNull { it.discardTileId == tile.uuid.toString() } ?: return
         val renderer = MinecraftClient.getInstance().textRenderer
-        val content = discardAnalysisContent(analysis)
+        val content = discardAnalysisContent(decisionTexts, prompt.ruleModuleId, analysis)
         val layout = DiscardAnalysisLayout(
             screenWidth = context.scaledWindowWidth,
             screenHeight = context.scaledWindowHeight,
@@ -489,28 +490,6 @@ internal fun PlayerDecisionPromptDto.discardAnalysesForAction(actionToken: Strin
     ?.discardAnalyses
     .orEmpty()
     .ifEmpty { discardAnalyses }
-
-/** 操作卡由左至右的顯示順序；未列出的 ID（含第三方規則模組的特殊動作）維持原始相對順序排在最後。 */
-internal fun String.actionDisplayPriority(): Int = when (this) {
-    "mahjongcraft:chi" -> 0
-    "mahjongcraft:pon" -> 1
-    "mahjongcraft:kan_open", "mahjongcraft:kan_closed", "mahjongcraft:kan_added" -> 2
-    "mahjongcraft:ron" -> 3
-    "mahjongcraft:tsumo" -> 4
-    else -> 5
-}
-
-/** 將 namespaced ID 映射至內建語言鍵，未知 ID 仍以完整 ID 顯示。 */
-internal fun String.translationKey(): String = when (this) {
-    "mahjongcraft:discard_furiten" -> "mahjongcraft.hud.furiten.discard"
-    "mahjongcraft:temporary_furiten" -> "mahjongcraft.hud.furiten.temporary"
-    "mahjongcraft:permanent_furiten" -> "mahjongcraft.hud.furiten.permanent"
-    "mahjongcraft:win_available" -> "mahjongcraft.hud.win_availability.available"
-    "mahjongcraft:win_tsumo_only" -> "mahjongcraft.hud.win_availability.tsumo_only"
-    "mahjongcraft:win_no_yaku" -> "mahjongcraft.hud.win_availability.no_yaku"
-    "mahjongcraft:win_below_minimum" -> "mahjongcraft.hud.win_availability.below_minimum"
-    else -> if (startsWith("mahjongcraft:")) "mahjongcraft.hud.action.${substringAfter(':')}" else this
-}
 
 /** 只有他家捨牌與搶槓視窗的跳過會提交正式 Pass。 */
 private val PlayerDecisionPhase.isReaction: Boolean

@@ -2,8 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.registerBuiltInGameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.registerBuiltInAiStrategyDisplayNames
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.registerBuiltInDecisionStatusDisplayNames
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.registerBuiltInGameConfigPresentations
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
@@ -12,6 +14,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiReasons
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiRoundInfoLineDisplays
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiTableProps
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerRiichiDecisionStatusDisplayNames
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerRiichiGameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInMatchSettlementTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInWinSettlementTemplates
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.registerBuiltInWinCelebrationShowcases
@@ -66,6 +70,10 @@ object MinecraftMahjongExtensionRegistrar {
         registries.gameConfigPresentationRegistry.registerBuiltInGameConfigPresentations()
         registries.gameActionSoundPresentationRegistry.registerBuiltInRiichiActionSounds()
         registries.roundInfoLineDisplayRegistry.registerBuiltInRiichiRoundInfoLineDisplays()
+        registries.gameActionVocabularyRegistry.registerBuiltInGameActionVocabulary()
+        registries.gameActionVocabularyRegistry.registerRiichiGameActionVocabulary()
+        registries.decisionStatusDisplayNameRegistry.registerBuiltInDecisionStatusDisplayNames()
+        registries.decisionStatusDisplayNameRegistry.registerRiichiDecisionStatusDisplayNames()
         registries.tablePropDescriberRegistry.registerBuiltInRiichiTableProps()
         val baseline = registries.registrationSnapshot()
 
@@ -85,7 +93,8 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerTileEmojis(registries.tileEmojiRegistry)
                 extension.registerTileLabels(registries.tileLabelRegistry)
                 extension.registerWinCelebrationShowcases(registries.winCelebrationShowcaseRegistry)
-                extension.registerGameActionDisplayNames(registries.gameActionDisplayNameRegistry)
+                extension.registerGameActionVocabulary(registries.gameActionVocabularyRegistry)
+                extension.registerDecisionStatusDisplayNames(registries.decisionStatusDisplayNameRegistry)
                 extension.registerGameActionSounds(registries.gameActionSoundPresentationRegistry)
                 extension.registerExhaustiveDrawReasonDisplayNames(registries.exhaustiveDrawReasonDisplayNameRegistry)
                 extension.registerRoundPreparationDisplayNames(registries.roundPreparationDisplayNameRegistry)

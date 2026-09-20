@@ -92,20 +92,45 @@ class RiichiDiscardReadinessAnalyzer(
 
     /** 將日麻的和牌可用性判定轉為 [WaitingTileAvailability.winAvailability] 用的命名字串。 */
     private fun RiichiWinAvailability.toStatusId(): String = when (this) {
-        RiichiWinAvailability.AVAILABLE -> WIN_AVAILABLE
-        RiichiWinAvailability.TSUMO_ONLY -> WIN_TSUMO_ONLY
-        RiichiWinAvailability.NO_YAKU -> WIN_NO_YAKU
-        RiichiWinAvailability.BELOW_MINIMUM -> WIN_BELOW_MINIMUM
+        RiichiWinAvailability.AVAILABLE -> StatusIds.WIN_AVAILABLE
+        RiichiWinAvailability.TSUMO_ONLY -> StatusIds.WIN_TSUMO_ONLY
+        RiichiWinAvailability.NO_YAKU -> StatusIds.WIN_NO_YAKU
+        RiichiWinAvailability.BELOW_MINIMUM -> StatusIds.WIN_BELOW_MINIMUM
+    }
+
+    /**
+     * 這個分析器產生的狀態命名字串。
+     *
+     * 呈現層依這些 ID 決定顯示什麼文字，因此是公開契約的一部分；[StatusIds.WIN_AVAILABLE] 是所有規則共用的
+     * 中立預設，見 [DiscardReadinessAnalysis.statusIndicatorId] 與 [WaitingTileAvailability.winAvailability]。
+     */
+    object StatusIds {
+        /** 捨牌振聽。 */
+        const val DISCARD_FURITEN = "mahjongcraft:discard_furiten"
+
+        /** 同巡振聽。 */
+        const val TEMPORARY_FURITEN = "mahjongcraft:temporary_furiten"
+
+        /** 立直後振聽，直到本局結束。 */
+        const val PERMANENT_FURITEN = "mahjongcraft:permanent_furiten"
+
+        /** 和牌資格沒有特殊限制。 */
+        const val WIN_AVAILABLE = "mahjongcraft:win_available"
+
+        /** 只能自摸和牌。 */
+        const val WIN_TSUMO_ONLY = "mahjongcraft:win_tsumo_only"
+
+        /** 無役，不能和牌。 */
+        const val WIN_NO_YAKU = "mahjongcraft:win_no_yaku"
+
+        /** 未達最低翻符要求。 */
+        const val WIN_BELOW_MINIMUM = "mahjongcraft:win_below_minimum"
     }
 
     private companion object {
         const val COPIES_PER_TILE = 4
-        const val DISCARD_FURITEN = "mahjongcraft:discard_furiten"
-        const val TEMPORARY_FURITEN = "mahjongcraft:temporary_furiten"
-        const val PERMANENT_FURITEN = "mahjongcraft:permanent_furiten"
-        const val WIN_AVAILABLE = "mahjongcraft:win_available"
-        const val WIN_TSUMO_ONLY = "mahjongcraft:win_tsumo_only"
-        const val WIN_NO_YAKU = "mahjongcraft:win_no_yaku"
-        const val WIN_BELOW_MINIMUM = "mahjongcraft:win_below_minimum"
+        const val DISCARD_FURITEN = StatusIds.DISCARD_FURITEN
+        const val TEMPORARY_FURITEN = StatusIds.TEMPORARY_FURITEN
+        const val PERMANENT_FURITEN = StatusIds.PERMANENT_FURITEN
     }
 }

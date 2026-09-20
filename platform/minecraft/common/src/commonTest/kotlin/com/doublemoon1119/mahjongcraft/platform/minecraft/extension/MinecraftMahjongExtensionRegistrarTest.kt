@@ -4,9 +4,10 @@ import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
@@ -56,7 +57,8 @@ class MinecraftMahjongExtensionRegistrarTest {
             tileDisplayNameRegistry = tileDisplayNameRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
             tileLabelRegistry = tileLabelRegistry,
-            gameActionDisplayNameRegistry = GameActionDisplayNameRegistryImpl(),
+            gameActionVocabularyRegistry = GameActionVocabularyRegistryImpl(),
+            decisionStatusDisplayNameRegistry = DecisionStatusDisplayNameRegistryImpl(),
             gameActionSoundPresentationRegistry = GameActionSoundPresentationRegistryImpl(),
             exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl(),
             roundPreparationDisplayNameRegistry = RoundPreparationDisplayNameRegistryImpl(),

@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalysis
 import com.doublemoon1119.mahjongcraft.logic.judgment.TileSelectionRequirement
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
@@ -36,10 +37,12 @@ data class GameActionCandidate(
 /**
  * 同一次 Flow 查詢建立的特殊動作候選與一般捨牌分析。
  *
+ * @property ruleModuleId 這局採用的規則模組 ID，決定動作用語。
  * @property actions Minecraft 指令與 HUD 共用的特殊動作候選。
  * @property discardAnalyses 自己回合的一般捨牌分析；不適用時為空。
  */
 data class ResolvedGameActionCandidates(
+    val ruleModuleId: String,
     val actions: List<GameActionCandidate>,
     val discardAnalyses: List<DiscardReadinessAnalysis>,
 )
@@ -59,6 +62,7 @@ data class ResolvedGameActionCandidates(
 @Single
 class GameActionCandidateResolver(
     private val gameRepository: GameRepository,
+    private val moduleRegistry: MahjongModuleRegistry,
     private val membershipRepository: PlayerMembershipRepository,
     private val getPlayerDecisionOptions: GetPlayerDecisionOptionsUseCase,
 ) {
@@ -84,11 +88,12 @@ class GameActionCandidateResolver(
     suspend fun resolveActionCandidates(gameId: Uuid, playerId: Uuid): ResolvedGameActionCandidates? {
         val outcome = getPlayerDecisionOptions(gameId, playerId)
         if (outcome !is Outcome.Success) return null
-        return outcome.value.toCandidates()
+        val state = gameRepository.getTableState(gameId) ?: return null
+        return outcome.value.toCandidates(moduleRegistry.getModule(state.config).id)
     }
 
     /** 將 Flow 的完整決策選項映射成 Minecraft 指令與 HUD 共用的候選資料。 */
-    private fun PlayerDecisionOptions.toCandidates(): ResolvedGameActionCandidates {
+    private fun PlayerDecisionOptions.toCandidates(ruleModuleId: String): ResolvedGameActionCandidates {
         val candidates = disambiguateTokens(actions, { it.action.baseToken() }) { option, token ->
             GameActionCandidate(
                 action = option.action,
@@ -98,7 +103,7 @@ class GameActionCandidateResolver(
                 discardAnalyses = option.discardAnalyses,
             )
         }
-        return ResolvedGameActionCandidates(candidates, discardAnalyses)
+        return ResolvedGameActionCandidates(ruleModuleId, candidates, discardAnalyses)
     }
 
     /** 列出指定動作契約允許選取的手牌候選。 */

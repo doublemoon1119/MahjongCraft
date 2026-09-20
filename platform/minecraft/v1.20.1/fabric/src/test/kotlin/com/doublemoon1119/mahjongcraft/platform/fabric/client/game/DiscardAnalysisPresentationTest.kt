@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -13,10 +14,13 @@ import kotlin.test.assertTrue
 
 /** 驗證捨牌分析面板的內容組成與版面幾何。 */
 class DiscardAnalysisPresentationTest {
+    /** 以內建登記解析狀態文字的測試解析器。 */
+    private val texts = testDecisionTextResolver()
+
     /** 每張等待牌各一格，並帶自己的剩餘張數。 */
     @Test
     fun `builds one cell per waiting tile`() {
-        val content = discardAnalysisContent(analysisOf(waiting("a", 4), waiting("b", 2)))
+        val content = discardAnalysisContent(texts, BuiltInRuleModuleIds.RIICHI, analysisOf(waiting("a", 4), waiting("b", 2)))
 
         assertEquals(listOf("a", "b"), content.cells.map { it.tileAssetKey })
         assertEquals(
@@ -28,7 +32,7 @@ class DiscardAnalysisPresentationTest {
     /** 剩餘張數越少顏色越醒目。 */
     @Test
     fun `colours the count by how few tiles remain`() {
-        val content = discardAnalysisContent(analysisOf(waiting("a", 0), waiting("b", 1), waiting("c", 3)))
+        val content = discardAnalysisContent(texts, BuiltInRuleModuleIds.RIICHI, analysisOf(waiting("a", 0), waiting("b", 1), waiting("c", 3)))
 
         assertEquals(3, content.cells.map { it.countColor }.distinct().size)
     }
@@ -36,13 +40,15 @@ class DiscardAnalysisPresentationTest {
     /** 沒有狀態指示與特殊和牌資格時沒有狀態列。 */
     @Test
     fun `builds no status line for a plain analysis`() {
-        assertEquals(emptyList(), discardAnalysisContent(analysisOf(waiting("a", 4))).statusTexts)
+        assertEquals(emptyList(), discardAnalysisContent(texts, BuiltInRuleModuleIds.RIICHI, analysisOf(waiting("a", 4))).statusTexts)
     }
 
     /** 分析本身的狀態指示佔一行狀態列。 */
     @Test
     fun `puts the status indicator on its own line`() {
         val content = discardAnalysisContent(
+            texts,
+            BuiltInRuleModuleIds.RIICHI,
             analysisOf(waiting("a", 4), statusIndicatorId = "mahjongcraft:discard_furiten"),
         )
 
@@ -56,6 +62,8 @@ class DiscardAnalysisPresentationTest {
     @Test
     fun `lifts a shared availability into the status line`() {
         val content = discardAnalysisContent(
+            texts,
+            BuiltInRuleModuleIds.RIICHI,
             analysisOf(waiting("a", 4, "mahjongcraft:win_no_yaku"), waiting("b", 2, "mahjongcraft:win_no_yaku")),
         )
 
@@ -70,7 +78,7 @@ class DiscardAnalysisPresentationTest {
     /** 全部等待牌都沒有特殊限制時不顯示任何和牌資格。 */
     @Test
     fun `shows no availability while every tile is unrestricted`() {
-        val content = discardAnalysisContent(analysisOf(waiting("a", 4), waiting("b", 2)))
+        val content = discardAnalysisContent(texts, BuiltInRuleModuleIds.RIICHI, analysisOf(waiting("a", 4), waiting("b", 2)))
 
         assertEquals(emptyList(), content.statusTexts)
         assertFalse(content.hasAvailabilityRow)
@@ -80,6 +88,8 @@ class DiscardAnalysisPresentationTest {
     @Test
     fun `marks each restricted tile when the availability differs`() {
         val content = discardAnalysisContent(
+            texts,
+            BuiltInRuleModuleIds.RIICHI,
             analysisOf(waiting("a", 4, "mahjongcraft:win_tsumo_only"), waiting("b", 2, WIN_AVAILABLE_ID)),
         )
 
@@ -96,6 +106,8 @@ class DiscardAnalysisPresentationTest {
     @Test
     fun `stacks the status indicator above a shared availability`() {
         val content = discardAnalysisContent(
+            texts,
+            BuiltInRuleModuleIds.RIICHI,
             analysisOf(waiting("a", 4, "mahjongcraft:win_no_yaku"), statusIndicatorId = "mahjongcraft:temporary_furiten"),
         )
 

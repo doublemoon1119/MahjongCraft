@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
@@ -52,7 +53,7 @@ internal class PlayerDecisionScreen(
 
     /** 建立固定單列、可水平捲動的半透明選項卡。 */
     override fun init() {
-        visibleEntries = decisionEntriesFrom(prompt)
+        visibleEntries = decisionEntriesFrom(controller.decisionTexts, prompt)
         val layout = layout()
         horizontalScroll = if (horizontalScrollInitialized) {
             horizontalScroll.coerceIn(0.0, layout.maximumScroll)
@@ -260,7 +261,7 @@ internal class PlayerDecisionScreen(
             DecisionPlayerRelationDto.RIGHT -> "mahjongcraft.hud.relation.right"
             null -> return null
         }
-        val action = Text.translatable((prompt.triggerActionId ?: "mahjongcraft:discard").translationKey())
+        val action = controller.decisionTexts.actionLabel(prompt.ruleModuleId, prompt.triggerActionId ?: BuiltInGameActionIds.DISCARD)
         return Text.translatable("mahjongcraft.hud.trigger", playerName, Text.translatable(relationKey), action)
     }
 

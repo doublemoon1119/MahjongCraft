@@ -209,6 +209,7 @@ sealed interface MinecraftPlayerFeedback {
     /**
      * 顯示玩家目前的手牌、副露與可執行的特殊動作，供 `/mahjongcraft game hand` 使用。
      *
+     * @property ruleModuleId 這局採用的規則模組 ID，決定動作用語。
      * @property standingTiles 立牌（含剛摸到的牌）。
      * @property melds 副露列表。
      * @property turnStatus 目前是否輪到自己／有資格回應／純粹等待，決定 [legalActions] 為空時要顯示
@@ -220,6 +221,7 @@ sealed interface MinecraftPlayerFeedback {
      *   `/mahjongcraft game action` 指令 Tab 補全候選項目使用同一份查詢結果、同一個順序。
      */
     data class ShowHand(
+        val ruleModuleId: String,
         val standingTiles: List<Tile>,
         val melds: List<Meld>,
         val turnStatus: GameTurnStatus,

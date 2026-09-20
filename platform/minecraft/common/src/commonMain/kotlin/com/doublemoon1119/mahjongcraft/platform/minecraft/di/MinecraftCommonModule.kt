@@ -2,9 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.di
 
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
@@ -50,7 +52,8 @@ class MinecraftCommonModule {
     /** 將 Koin 管理的 Minecraft presentation registry single 組成 bootstrap 專用集合。 */
     @Single
     fun provideMinecraftPresentationRegistries(
-        gameActionDisplayNameRegistry: GameActionDisplayNameRegistry,
+        gameActionVocabularyRegistry: GameActionVocabularyRegistry,
+        decisionStatusDisplayNameRegistry: DecisionStatusDisplayNameRegistry,
         @Provided aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
         playerPortraitSourceRegistry: PlayerPortraitSourceRegistry,
         publicPlayerIndicatorDisplayRegistry: PublicPlayerIndicatorDisplayRegistry,
@@ -74,7 +77,8 @@ class MinecraftCommonModule {
         tileDisplayNameRegistry = tileDisplayNameRegistry,
         tileEmojiRegistry = tileEmojiRegistry,
         tileLabelRegistry = tileLabelRegistry,
-        gameActionDisplayNameRegistry = gameActionDisplayNameRegistry,
+        gameActionVocabularyRegistry = gameActionVocabularyRegistry,
+        decisionStatusDisplayNameRegistry = decisionStatusDisplayNameRegistry,
         gameActionSoundPresentationRegistry = gameActionSoundPresentationRegistry,
         exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
         roundPreparationDisplayNameRegistry = roundPreparationDisplayNameRegistry,
@@ -136,7 +140,11 @@ class MinecraftCommonModule {
 
     /** 建立供內建與第三方 extension 登記的動作顯示名稱 registry。 */
     @Single
-    fun provideGameActionDisplayNameRegistry(): GameActionDisplayNameRegistry = GameActionDisplayNameRegistryImpl()
+    fun provideGameActionVocabularyRegistry(): GameActionVocabularyRegistry = GameActionVocabularyRegistryImpl()
+
+    /** 建立捨牌分析狀態顯示名稱 registry。 */
+    @Single
+    fun provideDecisionStatusDisplayNameRegistry(): DecisionStatusDisplayNameRegistry = DecisionStatusDisplayNameRegistryImpl()
 
     /** 建立供內建與第三方 extension 登記的局況顯示行 registry。 */
     @Single

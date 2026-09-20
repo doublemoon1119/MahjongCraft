@@ -107,10 +107,13 @@ sealed interface RoundPreparationPromptDto {
  * 只傳給取得決策權玩家的決策提示。
  *
  * 所有牌張 ID 都是該玩家已知的實體手牌；分析結果只包含自身與公開資訊，不包含暗手或牌山內容。
+ *
+ * @property ruleModuleId 這局採用的規則模組 ID，決定動作與狀態的用語；規則未知時為 null，呈現層改用中立預設。
  */
 @Serializable
 data class PlayerDecisionPromptDto(
     val decisionKey: String,
+    val ruleModuleId: String? = null,
     val actions: List<PlayerDecisionActionDto> = emptyList(),
     val triggerTileAssetKey: String? = null,
     val triggerPlayerId: String? = null,

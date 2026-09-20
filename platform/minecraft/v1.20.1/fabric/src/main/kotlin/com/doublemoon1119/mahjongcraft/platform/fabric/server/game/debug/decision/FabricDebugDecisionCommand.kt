@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -372,6 +373,8 @@ class FabricDebugDecisionCommand(
 
         fun prompt(decisionKey: String, analysisTileId: String?): PlayerDecisionPromptDto = PlayerDecisionPromptDto(
             decisionKey = decisionKey,
+            // 預覽情境使用日麻的動作與振聽用語。
+            ruleModuleId = BuiltInRuleModuleIds.RIICHI,
             actions = actions(),
             triggerTileAssetKey = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "s5" else selfDrawTileAssetKey,
             triggerPlayerId = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) Uuid.random().toString() else null,

@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
@@ -41,6 +41,7 @@ import kotlin.uuid.toKotlinUuid
  * @property candidateResolver 依玩家目前桌況列出手牌／合法動作候選項目。
  * @property gameActionService 實際執行對局動作的服務。
  * @property feedbackPublisher 候選 token 無法解析時的回饋。
+ * @property actionVocabularyRegistry 依對局規則解析候選動作的用語。
  * @property exhaustiveDrawReasonDisplayNameRegistry 解析規則專屬流局動作名稱。
  * @property tileDisplayNameRegistry 解析候選 tooltip 用的牌面顯示名稱。
  * @property tileAssetRegistry 解析候選 tooltip 牌面 emoji 用的 asset key。
@@ -52,7 +53,7 @@ class FabricGameCommand(
     private val candidateResolver: GameActionCandidateResolver,
     private val gameActionService: MahjongTableGameActionService,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
-    private val gameActionDisplayNameRegistry: GameActionDisplayNameRegistry,
+    private val actionVocabularyRegistry: GameActionVocabularyRegistry,
     private val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
     private val tileDisplayNameRegistry: TileDisplayNameRegistry,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
@@ -177,12 +178,14 @@ class FabricGameCommand(
             return future
         }
         scope.launch {
-            candidateResolver.listActionCandidates(player.uuid.toKotlinUuid()).forEach { candidate ->
+            val resolved = candidateResolver.resolveActionCandidates(player.uuid.toKotlinUuid())
+            resolved?.actions.orEmpty().forEach { candidate ->
                 builder.suggest(
                     StringArgumentType.escapeIfRequired(candidate.token),
                     candidate.action.toDisplayText(
                         candidate.referenceTile,
-                        gameActionDisplayNameRegistry,
+                        resolved?.ruleModuleId,
+                        actionVocabularyRegistry,
                         tileDisplayNameRegistry,
                         tileAssetRegistry,
                         tileEmojiRegistry,

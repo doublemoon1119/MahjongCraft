@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.resolveKnow
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.resolveDisplayText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.bracketedInteractiveLabel
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -40,7 +40,7 @@ import kotlin.uuid.Uuid
 class FabricPlayerFeedbackPublisher(
     private val serverHolder: FabricServerHolder,
     private val aiStrategyDisplayNames: AiStrategyDisplayNameRegistry,
-    private val gameActionDisplayNames: GameActionDisplayNameRegistry,
+    private val actionVocabulary: GameActionVocabularyRegistry,
     private val exhaustiveDrawReasonDisplayNames: ExhaustiveDrawReasonDisplayNameRegistry,
     private val tileDisplayNames: TileDisplayNameRegistry,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
@@ -307,7 +307,8 @@ class FabricPlayerFeedbackPublisher(
                     .append(
                         action.toDisplayText(
                             referenceTile,
-                            gameActionDisplayNames,
+                            feedback.ruleModuleId,
+                            actionVocabulary,
                             tileDisplayNames,
                             tileAssetRegistry,
                             tileEmojiRegistry,

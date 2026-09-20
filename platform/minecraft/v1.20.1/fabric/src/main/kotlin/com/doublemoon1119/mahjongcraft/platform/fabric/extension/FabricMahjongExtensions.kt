@@ -29,7 +29,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMah
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerRiichiGameActionDisplayName
 import net.fabricmc.loader.api.FabricLoader
 import org.slf4j.LoggerFactory
 
@@ -101,11 +100,7 @@ object FabricMahjongExtensions {
         coreRegistries.tileTypeRegistry.registerBuiltInTileTypes()
         coreRegistries.networkRegistries.registerBuiltInRuleConfigDtos()
         coreRegistries.winCelebrationCueResolverRegistry.registerBuiltInWinCelebrationCueResolvers()
-        registerBundledRiichiExtension(
-            coreRegistries = coreRegistries,
-            presentationRegistries = presentationRegistries,
-            declareRiichiUseCase = declareRiichiUseCase,
-        )
+        registerBundledRiichiExtension(coreRegistries = coreRegistries, declareRiichiUseCase = declareRiichiUseCase)
         // 開發環境限定：讓「胡牌後本局繼續」這條路徑在還沒有任何規則支援它時就能進遊戲驗證，
         // 比照 FabricDebugCommand 的 gating——正式產物裡根本沒註冊過。預設 inert。
         if (minecraftEnvironment.isDevelopment) {
@@ -148,11 +143,7 @@ object FabricMahjongExtensions {
     }
 
     /** 將日麻限定的 action／command 整合集中安裝為 bundled Riichi extension。 */
-    private fun registerBundledRiichiExtension(
-        coreRegistries: CoreExtensionRegistries,
-        presentationRegistries: MinecraftPresentationRegistries,
-        declareRiichiUseCase: DeclareRiichiUseCase,
-    ) {
+    private fun registerBundledRiichiExtension(coreRegistries: CoreExtensionRegistries, declareRiichiUseCase: DeclareRiichiUseCase) {
         coreRegistries.networkRegistries.registerRiichiGameActionDtos()
         coreRegistries.persistenceRegistries.extensionGameActions.registerRiichiGameActionPersistenceDto()
         coreRegistries.gameActionAiRegistry.registerRiichiGameActionHandler(coreRegistries.moduleRegistry)
@@ -161,7 +152,6 @@ object FabricMahjongExtensions {
         coreRegistries.postReactionRoundOutcomeResolverRegistry.registerRiichiNagashiManganOutcomeResolver()
         coreRegistries.postActionExhaustiveDrawResolverRegistry.registerRiichiPostActionExhaustiveDrawResolvers()
         coreRegistries.winSettlementDetailResolverRegistry.registerRiichiWinSettlementDetailResolver()
-        presentationRegistries.gameActionDisplayNameRegistry.registerRiichiGameActionDisplayName()
     }
 }
 

@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionCont
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
@@ -76,6 +77,7 @@ class MahjongTableGameActionService(
     private val presentationPublisher: GamePresentationPublisher,
     private val actionContextResolver: PlayerActionContextResolver,
     private val actionCommandFactoryRegistry: ExtensionGameActionCommandFactoryRegistry,
+    private val moduleRegistry: MahjongModuleRegistry,
     @Provided private val json: Json,
 ) {
     /** 對局命令與自動銜接失敗時的專用 logger。 */
@@ -307,6 +309,7 @@ class MahjongTableGameActionService(
             feedbackPublisher.publish(
                 playerId,
                 MinecraftPlayerFeedback.ShowHand(
+                    ruleModuleId = moduleRegistry.getModule(state.config).id,
                     standingTiles = playerState.hand.standingTiles.map { it.tile },
                     melds = playerState.hand.exposedMelds,
                     turnStatus = actionContextResolver.resolveFor(state, playerId).toTurnStatus(),

@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateC
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
@@ -53,9 +54,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableL
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTableCleanupService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.BuiltInDecisionStatusIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
@@ -103,7 +106,8 @@ class FabricApplicationModuleTest {
         val gameActionAiRegistry = koin.get<ExtensionGameActionAiRegistry>()
         val gameActionCommandFactoryRegistry = koin.get<ExtensionGameActionCommandFactoryRegistry>()
         val gameCommandRegistry = koin.get<ExtensionGameCommandExecutorRegistry>()
-        val gameActionDisplayNameRegistry = koin.get<GameActionDisplayNameRegistry>()
+        val actionVocabularyRegistry = koin.get<GameActionVocabularyRegistry>()
+        val decisionStatusDisplayNameRegistry = koin.get<DecisionStatusDisplayNameRegistry>()
         val coreRegistries = koin.get<CoreExtensionRegistries>()
         val presentationRegistries = koin.get<MinecraftPresentationRegistries>()
         assertFalse(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
@@ -143,7 +147,19 @@ class FabricApplicationModuleTest {
         assertTrue(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertTrue(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertTrue(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
-        assertEquals(MinecraftMessageKeys.GAME_ACTION_RIICHI, gameActionDisplayNameRegistry.find(RiichiGameAction.Riichi))
+        assertEquals(
+            MinecraftMessageKeys.GAME_ACTION_RIICHI,
+            actionVocabularyRegistry.find(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id)?.labelKey,
+        )
+        assertTrue(actionVocabularyRegistry.isFrozen)
+        assertTrue(decisionStatusDisplayNameRegistry.find(BuiltInRuleModuleIds.RIICHI, BuiltInDecisionStatusIds.WIN_AVAILABLE) != null)
+        assertTrue(
+            decisionStatusDisplayNameRegistry.find(
+                BuiltInRuleModuleIds.RIICHI,
+                RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN,
+            ) != null,
+        )
+        assertTrue(decisionStatusDisplayNameRegistry.isFrozen)
         assertTrue(presentationRegistries.tablePropDescriberRegistry.find(BuiltInRuleModuleIds.RIICHI) != null)
         assertTrue(presentationRegistries.tablePropDescriberRegistry.isFrozen)
         val tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>()

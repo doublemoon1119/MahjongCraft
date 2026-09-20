@@ -18,6 +18,8 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalysis
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.vocabularyActionId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
@@ -55,6 +57,7 @@ class PlayerDecisionPromptFactory(
         val trigger = state.triggerContext(playerId)
         val orderedAiPlayerIds = game.roomPlayerIds.filter { id -> state.players.any { it.id == id && it.isAi } }
         return PlayerDecisionPromptDto(
+            ruleModuleId = resolvedCandidates.ruleModuleId,
             decisionKey = buildDecisionKey(
                 gameId,
                 playerId,
@@ -80,7 +83,7 @@ class PlayerDecisionPromptFactory(
                 }
                 PlayerDecisionActionDto(
                     token = candidate.token,
-                    actionId = candidate.action.presentationId(),
+                    actionId = candidate.action.vocabularyActionId(),
                     referenceTileAssetKey = candidate.referenceTile?.toAssetKey(tileAssetRegistry),
                     previewTileAssetKeys = if (requirement == null) {
                         preview.tiles.map { it.toAssetKey(tileAssetRegistry) }
@@ -155,27 +158,6 @@ private fun RoundPreparationInputSpec.toPrompt(resolveAssetKey: (Uuid) -> String
 }
 
 /**
- * 將內建與第三方動作轉成穩定顯示 ID，client 端 [translationKey] 依此組出完整翻譯鍵。
- *
- * 槓的三種類型字尾須與語系檔 `hud.action.kan_open`／`kan_closed`／`kan_added` 一致。
- */
-internal fun GameAction.presentationId(): String = when (this) {
-    GameAction.Tsumo -> "mahjongcraft:tsumo"
-    is GameAction.Ron -> "mahjongcraft:ron"
-    is GameAction.Chi -> "mahjongcraft:chi"
-    is GameAction.Pon -> "mahjongcraft:pon"
-    is GameAction.Kan -> when (type) {
-        GameAction.KanType.OPEN_KAN -> "mahjongcraft:kan_open"
-        GameAction.KanType.CLOSED_KAN -> "mahjongcraft:kan_closed"
-        GameAction.KanType.ADDED_KAN -> "mahjongcraft:kan_added"
-    }
-    GameAction.Pass -> "mahjongcraft:pass"
-    is GameAction.ExhaustiveDraw -> reason.id
-    is GameAction.Extension -> value.id
-    else -> "mahjongcraft:action"
-}
-
-/**
  * 建立動作完成後的牌組預覽；第三方動作沒有受控牌組資料時安全地只顯示參考牌。
  *
  * 卡片預覽一律直立顯示，不套用鳴牌後最終桌面朝向——那是給實際擺上桌的牌用的空間慣例，套在決策卡片上
@@ -225,7 +207,7 @@ private fun TableState.claimSource(playerId: Uuid): ClaimSource {
 private fun TableState.triggerContext(playerId: Uuid): TriggerContext? {
     val sourceId = pendingReaction?.discarderId ?: pendingKanReaction?.declarerId ?: return null
     val source = claimSource(playerId)
-    val actionId = pendingKanReaction?.kanAction?.presentationId() ?: "mahjongcraft:discard"
+    val actionId = pendingKanReaction?.kanAction?.vocabularyActionId() ?: BuiltInGameActionIds.DISCARD
     return TriggerContext(
         playerId = sourceId,
         relation = when (source) {
