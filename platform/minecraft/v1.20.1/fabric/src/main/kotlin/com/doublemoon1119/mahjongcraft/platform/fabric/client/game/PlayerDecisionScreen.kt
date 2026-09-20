@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ClaimedTileMarker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
@@ -299,9 +300,9 @@ internal class PlayerDecisionScreen(
      * 不依賴字型字符，形狀比例可完全自訂。
      */
     private fun drawClaimedTileMarker(context: DrawContext, centerX: Int, top: Int) {
-        DecisionCardLayout.CLAIMED_TILE_MARKER_ROW_WIDTHS.forEachIndexed { row, width ->
+        ClaimedTileMarker.ROW_WIDTHS.forEachIndexed { row, width ->
             val left = centerX - width / 2
-            context.fill(left, top + row, left + width, top + row + 1, CLAIMED_TILE_MARKER_COLOR)
+            context.fill(left, top + row, left + width, top + row + 1, ClaimedTileMarker.COLOR)
         }
     }
 
@@ -330,8 +331,5 @@ internal class PlayerDecisionScreen(
         const val CARD_HOVER_BACKGROUND = 0xDD3A4B59.toInt()
         const val SCROLLBAR_TRACK_COLOR = 0xFF26333D.toInt()
         const val SCROLLBAR_THUMB_COLOR = 0xFF8796A3.toInt()
-
-        /** 鳴牌指標的顏色，用鮮明的紅色與牌面色調完全區隔，不受任何背景深淺影響辨識度。 */
-        const val CLAIMED_TILE_MARKER_COLOR = 0xFFFF5555.toInt()
     }
 }

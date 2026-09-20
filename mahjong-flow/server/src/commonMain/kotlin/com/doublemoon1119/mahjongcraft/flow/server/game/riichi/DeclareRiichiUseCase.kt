@@ -217,7 +217,7 @@ class DeclareRiichiUseCase(
             seatIndex,
             discarder.hand.tiles.map { it.id },
             null,
-            discarder.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+            discarder.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
         )
         presentationPublisher.publishDiscardPileUpdated(
             gameId,

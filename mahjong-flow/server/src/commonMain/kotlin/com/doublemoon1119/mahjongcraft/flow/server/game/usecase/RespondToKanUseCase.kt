@@ -220,12 +220,13 @@ class RespondToKanUseCase(
         result.declarerId?.let { declarerId ->
             val declarerSeatIndex = newState.players.indexOfFirst { it.id == declarerId }
             val declarer = newState.players[declarerSeatIndex]
+            val module = moduleRegistry.getModule(newState.config)
             presentationPublisher.publishPlayerAreaUpdated(
                 gameId,
                 declarerSeatIndex,
                 declarer.hand.tiles.map { it.id },
                 declarer.hand.lastDrawn?.id,
-                declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+                declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
             )
         }
 

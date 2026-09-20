@@ -222,6 +222,7 @@ class FabricGamePresentationPublisher(
                 request = request,
                 tableState = tableState,
                 cornerWidthsBySeat = cornerWidthsBySeat(gameId, tableState),
+                tileOrder = moduleRegistry.getModule(checkNotNull(tableState).config).tileOrder,
                 tileAssetRegistry = tileAssetRegistry,
             )
             val endGameTime = exhaustiveDrawSettlementScheduler.schedule(
@@ -965,7 +966,7 @@ class FabricGamePresentationPublisher(
         val organizedBySeat = request.winners.associate { requestedWinner ->
             val winner = state.players[requestedWinner.seatIndex]
             val organizedHand = winner.hand.organize(module.tileOrder)
-            val melds = winner.hand.melds.map { it.toPresentation(state.config.revealsClosedKanTiles) }.map { p ->
+            val melds = winner.hand.melds.map { it.toPresentation(state.config.revealsClosedKanTiles, module.tileOrder) }.map { p ->
                 MahjongMeldTileGroup(
                     type = p.type,
                     tileIds = p.tileIds,

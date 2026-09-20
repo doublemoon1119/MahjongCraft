@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
@@ -26,7 +27,8 @@ import kotlin.uuid.Uuid
  * 知道怎麼擺位置。
  *
  * @property type 副露種類，決定橫放張數與位置排列。
- * @property tileIds 組成這組副露的所有牌 Uuid，依 [Meld.tiles] 原始順序排列。
+ * @property tileIds 組成這組副露的所有牌 Uuid，依規則牌序排列；鳴取的那張由 [calledTileId] 指出，不靠位置
+ * 辨識。加槓補上的第四張固定排在最後，呈現層依此辨識要疊在鳴取牌上的那張。
  * @property calledTileId 鳴取自他家的那張牌 Uuid；暗槓沒有鳴牌來源時為 `null`。
  * @property sourceDirection 鳴取來源的相對方位，決定 [calledTileId] 在組內橫放的位置（左／中／右）；
  * 暗槓沒有鳴牌來源時為 [RelativeDirection.Self]。
@@ -45,12 +47,22 @@ data class MeldPresentation(
 /**
  * 剝除 [Meld] 的實際牌面，只保留 [MeldPresentation] 需要的位置呈現資訊。
  *
+ * 牌面順序依 [tileOrder] 排列：[Meld.tiles] 的順序來自鳴牌當下的宣告（鳴取的那張排在最後），呈現層要的是
+ * 玩家讀得懂的牌序，桌面副露與鳴牌提示都依這份順序排列。鳴取的那張由 [MeldPresentation.calledTileId] 指出，
+ * 不靠位置辨識；[MeldType.ADDED_KAN] 補上的第四張（[Meld.tiles] 的最後一張）則維持在最後，呈現層才找得到
+ * 要疊在鳴取牌上的那張。
+ *
  * @param revealsClosedKanTiles 該規則是否公開暗槓身份（[MahjongRuleConfig.revealsClosedKanTiles]），
  * 只影響 [MeldPresentation.allTilesFaceDown] 的計算，非暗槓時傳入的值不影響結果。
+ * @param tileOrder 該規則的牌序。
  */
-fun Meld.toPresentation(revealsClosedKanTiles: Boolean): MeldPresentation = MeldPresentation(
+fun Meld.toPresentation(revealsClosedKanTiles: Boolean, tileOrder: TileOrder): MeldPresentation = MeldPresentation(
     type = type,
-    tileIds = tiles.map { it.id },
+    tileIds = if (type == MeldType.ADDED_KAN) {
+        tiles.dropLast(1).sortedWith(compareBy(tileOrder) { it.tile }).map { it.id } + tiles.last().id
+    } else {
+        tiles.sortedWith(compareBy(tileOrder) { it.tile }).map { it.id }
+    },
     calledTileId = sourceTile?.id,
     sourceDirection = sourceDirection,
     allTilesFaceDown = type == MeldType.CLOSED_KAN && !revealsClosedKanTiles,

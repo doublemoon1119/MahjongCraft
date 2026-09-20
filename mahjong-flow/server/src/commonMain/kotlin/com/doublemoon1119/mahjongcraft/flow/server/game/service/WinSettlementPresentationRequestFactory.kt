@@ -36,7 +36,7 @@ object WinSettlementPresentationRequestFactory {
                     responsiblePlayerId = outcome.responsiblePlayerIds.singleOrNull(),
                     totalScore = outcome.scoreDeltas.getValue(winnerId),
                     standingTileIds = player.hand.standingTiles.map { it.id },
-                    melds = player.hand.melds.map { it.toPresentation(currentState.config.revealsClosedKanTiles) },
+                    melds = player.hand.melds.map { it.toPresentation(currentState.config.revealsClosedKanTiles, module.tileOrder) },
                     winningTileId = null,
                     detailFields = resolvedDetails.fields,
                 )
@@ -88,7 +88,7 @@ object WinSettlementPresentationRequestFactory {
                     responsiblePlayerId = responsiblePlayerId,
                     totalScore = resolution.totalGained,
                     standingTileIds = player.hand.standingTiles.map { it.id }.filterNot { it == winningTileId },
-                    melds = player.hand.melds.map { it.toPresentation(currentState.config.revealsClosedKanTiles) },
+                    melds = player.hand.melds.map { it.toPresentation(currentState.config.revealsClosedKanTiles, module.tileOrder) },
                     winningTileId = winningTileId,
                     detailFields = resolvedDetails.getValue(winnerId).fields,
                 )

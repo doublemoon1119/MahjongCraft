@@ -70,13 +70,14 @@ class DebugGameScenarioPresentationPublisher(
             animateOpening = false,
             revealedTileIds = revealedTileIds,
         )
+        val module = moduleRegistry.getModule(state.config)
         state.players.forEachIndexed { seatIndex, player ->
             publisher.publishPlayerAreaUpdated(
                 gameId = game.id,
                 seatIndex = seatIndex,
                 standingTileIds = player.hand.tiles.map { tile -> tile.id },
                 drawnTileId = player.hand.lastDrawn?.id,
-                melds = player.hand.melds.map { meld -> meld.toPresentation(state.config.revealsClosedKanTiles) },
+                melds = player.hand.melds.map { meld -> meld.toPresentation(state.config.revealsClosedKanTiles, module.tileOrder) },
             )
             publisher.publishDiscardPileUpdated(
                 gameId = game.id,

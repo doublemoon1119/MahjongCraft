@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
@@ -239,11 +238,7 @@ class FabricDebugAnimationCommand(
             )
         }
         val popupTiles = tiles.mapIndexed { slot, tile ->
-            MeldActionPopupTile(
-                tileId = tile.uuid.toKotlinUuid(),
-                orientation = if (slot == sidewaysSlot) claimedOrientation else DecisionTileOrientationDto.UPRIGHT,
-                stacked = false,
-            )
+            MeldActionPopupTile(tileId = tile.uuid.toKotlinUuid(), claimed = type == MeldType.CHI && slot == sidewaysSlot)
         }
         val landingTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
         tiles.first().showMeldActionPopup(
@@ -284,13 +279,8 @@ class FabricDebugAnimationCommand(
                 playLandingSound = index == 0,
             )
         }
-        val popupTiles = tiles.take(DebugPreviewDefaults.MELD_TILE_COUNT).mapIndexed { slot, tile ->
-            MeldActionPopupTile(
-                tileId = tile.uuid.toKotlinUuid(),
-                orientation = if (slot == sidewaysSlot) claimedOrientation else DecisionTileOrientationDto.UPRIGHT,
-                stacked = false,
-            )
-        } + MeldActionPopupTile(tiles[DebugPreviewDefaults.MELD_TILE_COUNT].uuid.toKotlinUuid(), claimedOrientation, stacked = true)
+        // 加槓的四張牌面相同，比照決策卡片不標鳴取牌。
+        val popupTiles = tiles.map { tile -> MeldActionPopupTile(tileId = tile.uuid.toKotlinUuid(), claimed = false) }
         val landingTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
         tiles.first().showMeldActionPopup(
             popupTiles,

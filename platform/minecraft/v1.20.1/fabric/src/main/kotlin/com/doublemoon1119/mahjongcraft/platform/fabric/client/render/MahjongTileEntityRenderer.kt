@@ -1,9 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.ClientDecisionPromptStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.DecisionCardLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ClaimedTileMarker
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
@@ -183,7 +184,7 @@ class MahjongTileEntityRenderer(
         matrices.pop()
     }
 
-    /** 由單一錨點依實際副露順序繪製一個共用面板，橫置牌與加槓疊牌維持其排列語意。 */
+    /** 由單一錨點繪製一個共用面板：一列直立的牌，鳴取的那張上方加註指標，比照決策卡片。 */
     private fun renderMeldActionPopup(
         entity: MahjongTileEntity,
         alpha: Float,
@@ -195,7 +196,7 @@ class MahjongTileEntityRenderer(
         val entries = popupTiles.map { popupTile ->
             val javaTileId = popupTile.tileId.toJavaUuid()
             val tile = managedTiles.firstOrNull { it.uuid == javaTileId } ?: return
-            TileGroupPreviewEntry(tile.resolvedTileAssetKey(), popupTile.orientation, popupTile.stacked)
+            TileGroupPreviewEntry(tile.resolvedTileAssetKey(), popupTile.claimed)
         }
         val layout = TileGroupPreviewLayoutCalculator.calculate(
             entries,
@@ -204,8 +205,9 @@ class MahjongTileEntityRenderer(
             ACTION_POPUP_TILE_GAP,
         )
         if (layout.placements.isEmpty()) return
+        val markerHeight = if (layout.placements.any { it.claimed }) CLAIMED_MARKER_HEIGHT + CLAIMED_MARKER_GAP else 0f
         val panelWidth = layout.contentWidth + ACTION_POPUP_GROUP_PADDING * 2
-        val panelHeight = layout.contentHeight + ACTION_POPUP_GROUP_PADDING * 2
+        val panelHeight = layout.contentHeight + markerHeight + ACTION_POPUP_GROUP_PADDING * 2
         matrices.push()
         matrices.translate(0.0, ACTION_POPUP_WORLD_HEIGHT, 0.0)
         matrices.multiply(dispatcher.rotation)
@@ -220,27 +222,30 @@ class MahjongTileEntityRenderer(
             matrices,
             consumers,
         )
+        // 有指標時整列牌往下讓出指標高度，面板仍以內容整體置中。
+        val tileCenterY = markerHeight / 2f
         layout.placements.forEachIndexed { index, placement ->
-            renderPopupTile(
-                placement.assetKey,
-                placement.centerX,
-                placement.centerY,
-                placement.orientation,
-                alpha,
-                -0.02f - index * 0.001f,
-                matrices,
-                consumers,
-            )
+            val z = -0.02f - index * 0.001f
+            renderPopupTile(placement.assetKey, placement.centerX, placement.centerY + tileCenterY, alpha, z, matrices, consumers)
+            if (placement.claimed) {
+                renderClaimedTileMarker(
+                    placement.centerX,
+                    placement.centerY + tileCenterY - ACTION_POPUP_TILE_HEIGHT / 2f - CLAIMED_MARKER_GAP,
+                    alpha,
+                    z,
+                    matrices,
+                    consumers,
+                )
+            }
         }
         matrices.pop()
     }
 
-    /** 以牌面中心為軸旋轉副露中的橫置牌，避免以交換寬高裁切貼圖。 */
+    /** 以牌面中心為錨點畫一張直立的提示牌。 */
     private fun renderPopupTile(
         assetKey: String,
         centerX: Float,
         centerY: Float,
-        orientation: DecisionTileOrientationDto,
         alpha: Float,
         z: Float,
         matrices: MatrixStack,
@@ -248,11 +253,6 @@ class MahjongTileEntityRenderer(
     ) {
         matrices.push()
         matrices.translate(centerX.toDouble(), centerY.toDouble(), 0.0)
-        when (orientation) {
-            DecisionTileOrientationDto.UPRIGHT -> Unit
-            DecisionTileOrientationDto.ROTATED_LEFT -> matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(-90f))
-            DecisionTileOrientationDto.ROTATED_RIGHT -> matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(90f))
-        }
         tileFaceRenderer.renderWorldPanel(
             assetKey,
             0f,
@@ -265,6 +265,37 @@ class MahjongTileEntityRenderer(
             consumers,
         )
         matrices.pop()
+    }
+
+    /**
+     * 在鳴取牌正上方畫出與決策卡片相同的倒三角形指標。
+     *
+     * 列寬以決策卡片的像素描述，依牌寬比例換算成提示的單位，相對於一張牌看起來與介面一致；逐列色塊的
+     * 階梯狀外觀刻意保留。
+     */
+    private fun renderClaimedTileMarker(
+        centerX: Float,
+        bottom: Float,
+        alpha: Float,
+        z: Float,
+        matrices: MatrixStack,
+        consumers: VertexConsumerProvider,
+    ) {
+        val color = WorldPanelRenderer.withAlpha(ClaimedTileMarker.COLOR, alpha)
+        ClaimedTileMarker.ROW_WIDTHS.forEachIndexed { row, width ->
+            val halfWidth = width * CLAIMED_MARKER_UNIT / 2f
+            val rowBottom = bottom - (ClaimedTileMarker.ROW_WIDTHS.size - 1 - row) * CLAIMED_MARKER_UNIT
+            WorldPanelRenderer.drawBackground(
+                centerX - halfWidth,
+                rowBottom - CLAIMED_MARKER_UNIT,
+                centerX + halfWidth,
+                rowBottom,
+                color,
+                z,
+                matrices,
+                consumers,
+            )
+        }
     }
 
     /**
@@ -391,6 +422,15 @@ class MahjongTileEntityRenderer(
 
         /** 副露提示中相鄰牌面的間距。 */
         private const val ACTION_POPUP_TILE_GAP = 2f
+
+        /** 鳴牌指標一格（決策卡片的一個像素）在提示中的大小。 */
+        private const val CLAIMED_MARKER_UNIT = ACTION_POPUP_TILE_WIDTH / DecisionCardLayout.PREVIEW_TILE_WIDTH
+
+        /** 鳴牌指標的總高度。 */
+        private val CLAIMED_MARKER_HEIGHT = ClaimedTileMarker.ROW_WIDTHS.size * CLAIMED_MARKER_UNIT
+
+        /** 鳴牌指標與牌面之間的間距。 */
+        private const val CLAIMED_MARKER_GAP = ClaimedTileMarker.GAP * CLAIMED_MARKER_UNIT
 
         /** 副露提示內容左右內距。 */
         private const val ACTION_POPUP_GROUP_PADDING = 4f

@@ -1,35 +1,51 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
-
-/** 一張牌在橫向牌組預覽中的宣告式輸入。 */
+/**
+ * 一張牌在橫向牌組預覽中的宣告式輸入。
+ *
+ * @property assetKey 牌面資產。
+ * @property claimed 是否為鳴取自他家的那張牌，決定要不要畫鳴牌指標。
+ */
 data class TileGroupPreviewEntry(
     val assetKey: String,
-    val orientation: DecisionTileOrientationDto = DecisionTileOrientationDto.UPRIGHT,
-    val stacked: Boolean = false,
+    val claimed: Boolean = false,
 )
 
-/** 一張牌經過牌組排列後的中心位置與方向。 */
+/**
+ * 一張牌經過牌組排列後的中心位置。
+ *
+ * @property assetKey 牌面資產。
+ * @property centerX 水平中心。
+ * @property centerY 垂直中心。
+ * @property claimed 是否要在這張牌上方畫鳴牌指標。
+ */
 data class TileGroupPreviewPlacement(
     val assetKey: String,
     val centerX: Float,
     val centerY: Float,
-    val orientation: DecisionTileOrientationDto,
+    val claimed: Boolean,
 )
 
-/** 橫向牌組預覽的完整測量與排列結果。 */
+/**
+ * 橫向牌組預覽的完整測量與排列結果。
+ *
+ * @property contentWidth 內容總寬度。
+ * @property contentHeight 內容總高度。
+ * @property placements 每張牌的位置。
+ */
 data class TileGroupPreviewLayout(
     val contentWidth: Float,
     val contentHeight: Float,
     val placements: List<TileGroupPreviewPlacement>,
 )
 
-/** 統一計算操作 HUD 與副露提示使用的橫向牌組排列。 */
+/** 計算鳴牌提示使用的橫向牌組排列：一列等距的直立牌，水平與垂直皆置中於原點。 */
 object TileGroupPreviewLayoutCalculator {
     /**
-     * 依牌面尺寸與間距建立置中的牌組排列；疊放牌（加槓補上的第 4 張）依各自方向換算實際螢幕高度，
-     * 緊鄰錨點牌堆疊——橫置牌旋轉 90 度後螢幕高度等於原本的牌寬，用固定的直立牌高度間距會讓橫置的
-     * 錨點牌與疊放牌互相重疊。
+     * 依牌面尺寸與間距建立置中的牌組排列。
+     *
+     * 牌一律直立、依傳入順序排列，比照決策卡片的呈現；鳴取的那張由 [TileGroupPreviewEntry.claimed] 指出，
+     * 位置不因此改變。
      */
     fun calculate(
         entries: List<TileGroupPreviewEntry>,
@@ -37,45 +53,19 @@ object TileGroupPreviewLayoutCalculator {
         tileHeight: Float,
         gap: Float,
     ): TileGroupPreviewLayout {
-        val baseEntries = entries.filterNot(TileGroupPreviewEntry::stacked)
-        if (baseEntries.isEmpty()) return TileGroupPreviewLayout(0f, 0f, emptyList())
-        val widths = baseEntries.map { entry ->
-            if (entry.orientation == DecisionTileOrientationDto.UPRIGHT) tileWidth else tileHeight
-        }
-        val contentWidth = widths.sum() + gap * (widths.size - 1).coerceAtLeast(0)
-        val basePlacements = mutableListOf<TileGroupPreviewPlacement>()
+        if (entries.isEmpty()) return TileGroupPreviewLayout(0f, 0f, emptyList())
+        val contentWidth = tileWidth * entries.size + gap * (entries.size - 1)
         var cursor = -contentWidth / 2f
-        baseEntries.forEachIndexed { index, entry ->
-            val occupiedWidth = widths[index]
-            basePlacements += TileGroupPreviewPlacement(
+        val placements = entries.map { entry ->
+            val placement = TileGroupPreviewPlacement(
                 assetKey = entry.assetKey,
-                centerX = cursor + occupiedWidth / 2f,
-                centerY = if (entry.orientation == DecisionTileOrientationDto.UPRIGHT) 0f else (tileHeight - tileWidth) / 2f,
-                orientation = entry.orientation,
+                centerX = cursor + tileWidth / 2f,
+                centerY = 0f,
+                claimed = entry.claimed,
             )
-            cursor += occupiedWidth + gap
-        }
-        val stackAnchor = basePlacements.firstOrNull { it.orientation != DecisionTileOrientationDto.UPRIGHT }
-            ?: basePlacements.last()
-        var stackCursorY = stackAnchor.centerY - onScreenHalfHeight(stackAnchor.orientation, tileWidth, tileHeight)
-        val stackedPlacements = entries.filter(TileGroupPreviewEntry::stacked).map { entry ->
-            val half = onScreenHalfHeight(entry.orientation, tileWidth, tileHeight)
-            stackCursorY -= gap + half
-            val placement = TileGroupPreviewPlacement(entry.assetKey, stackAnchor.centerX, stackCursorY, entry.orientation)
-            stackCursorY -= half
+            cursor += tileWidth + gap
             placement
         }
-        val placements = basePlacements + stackedPlacements
-        val minimumY = placements.minOf { placement -> placement.centerY - onScreenHalfHeight(placement.orientation, tileWidth, tileHeight) }
-        val maximumY = placements.maxOf { placement -> placement.centerY + onScreenHalfHeight(placement.orientation, tileWidth, tileHeight) }
-        // 加槓疊放牌只往其中一側延伸，實際內容的垂直範圍不會自然對稱分佈在 0 兩側；呼叫端把背景畫在
-        // 「置中於 0」的假設下，這裡把每張牌的 centerY 平移，讓內容垂直中心真正落在 0，背景才會跟牌面
-        // 對齊。
-        val verticalCenter = (minimumY + maximumY) / 2f
-        val centeredPlacements = placements.map { placement -> placement.copy(centerY = placement.centerY - verticalCenter) }
-        return TileGroupPreviewLayout(contentWidth, maximumY - minimumY, centeredPlacements)
+        return TileGroupPreviewLayout(contentWidth, tileHeight, placements)
     }
-
-    /** 一張牌在目前 2D 排列中的實際螢幕高度一半；橫置牌旋轉 90 度後，螢幕高度等於原本的牌寬。 */
-    private fun onScreenHalfHeight(orientation: DecisionTileOrientationDto, tileWidth: Float, tileHeight: Float): Float = if (orientation == DecisionTileOrientationDto.UPRIGHT) tileHeight / 2f else tileWidth / 2f
 }

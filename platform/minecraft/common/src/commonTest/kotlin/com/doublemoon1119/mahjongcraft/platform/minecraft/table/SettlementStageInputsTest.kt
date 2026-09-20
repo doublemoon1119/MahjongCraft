@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -87,7 +88,7 @@ class SettlementStageInputsTest {
             playerPresentation(seatIndex = 1, waitingTiles = listOf(Tile.Numeric(Tile.Suit.Bamboo, 2))),
         )
 
-        val inputs = exhaustiveDrawSettlementStageInputs(request, stateWith(), emptyMap(), FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(request, stateWith(), emptyMap(), FakeTileOrder, FakeTileAssetRegistry)
 
         assertEquals(
             mapOf(0 to listOf("east", "p9"), 1 to listOf("s2")),
@@ -102,7 +103,7 @@ class SettlementStageInputsTest {
         val state = stateWith(handTiles = listOf(revealed))
         val request = requestOf(playerPresentation(seatIndex = 0, revealedHandTileIds = listOf(revealed.id)))
 
-        val inputs = exhaustiveDrawSettlementStageInputs(request, state, emptyMap(), FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(request, state, emptyMap(), FakeTileOrder, FakeTileAssetRegistry)
 
         assertEquals(mapOf(revealed.id to "m5"), inputs.revealedTileAssetsById)
     }
@@ -118,6 +119,7 @@ class SettlementStageInputsTest {
             request = request,
             tableState = null,
             cornerWidthsBySeat = emptyMap(),
+            tileOrder = FakeTileOrder,
             tileAssetRegistry = FakeTileAssetRegistry,
         )
 
@@ -129,7 +131,13 @@ class SettlementStageInputsTest {
     /** 每個座位都有一份桌角預留寬度。 */
     @Test
     fun `reserves a corner width for every seat`() {
-        val inputs = exhaustiveDrawSettlementStageInputs(requestOf(playerPresentation(seatIndex = 0)), stateWith(), emptyMap(), FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(
+            request = requestOf(playerPresentation(seatIndex = 0)),
+            tableState = stateWith(),
+            cornerWidthsBySeat = emptyMap(),
+            tileOrder = FakeTileOrder,
+            tileAssetRegistry = FakeTileAssetRegistry,
+        )
 
         assertEquals(setOf(0, 1), inputs.reservedCornerWidthsBySeat.keys)
         assertTrue(inputs.reservedCornerWidthsBySeat.values.all { it >= 0.0 })
@@ -150,6 +158,7 @@ class SettlementStageInputsTest {
         request = requestOf(playerPresentation(seatIndex = 0)),
         tableState = stateWith(),
         cornerWidthsBySeat = cornerWidthsBySeat,
+        tileOrder = FakeTileOrder,
         tileAssetRegistry = FakeTileAssetRegistry,
     ).reservedCornerWidthsBySeat
 
@@ -203,6 +212,11 @@ class SettlementStageInputsTest {
      *
      * 內建牌種的資產名稱不經過 registry（見 `Tile.toAssetKey`），本測試也只使用內建牌種。
      */
+    /** 副露寬度與牌序無關，測試只需要一個穩定的比較器。 */
+    private object FakeTileOrder : TileOrder {
+        override fun compare(first: Tile, second: Tile): Int = 0
+    }
+
     private object FakeTileAssetRegistry : MinecraftTileAssetRegistry {
         override val registrationKeys: Set<String> get() = emptySet()
 

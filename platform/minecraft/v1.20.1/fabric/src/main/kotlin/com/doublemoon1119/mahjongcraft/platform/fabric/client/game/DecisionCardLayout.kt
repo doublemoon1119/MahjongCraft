@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ClaimedTileMarker
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.HorizontalScrollLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.HorizontalScrollThumb
 
@@ -65,7 +66,7 @@ internal data class DecisionCardLayout(
     fun cardHeight(card: DecisionCard): Int {
         val columns = previewColumns(cardWidth(card))
         val tileRows = ((card.previewTileCount + columns - 1) / columns).coerceAtLeast(1)
-        val markerHeight = if (card.hasClaimedTileMarker) CLAIMED_TILE_MARKER_ROW_WIDTHS.size + CLAIMED_TILE_MARKER_GAP else 0
+        val markerHeight = if (card.hasClaimedTileMarker) ClaimedTileMarker.height + ClaimedTileMarker.GAP else 0
         return maxOf(
             MIN_CARD_HEIGHT,
             CARD_PADDING * 2 + markerHeight + tileRows * PREVIEW_TILE_HEIGHT + (tileRows - 1) * PREVIEW_TILE_GAP + BUTTON_HEIGHT,
@@ -219,7 +220,7 @@ internal data class DecisionCardLayout(
     }
 
     /** 鳴牌指標的上界，位於指定預覽牌的正上方。 */
-    fun claimedTileMarkerTop(tile: DecisionBounds): Int = tile.y - CLAIMED_TILE_MARKER_GAP - CLAIMED_TILE_MARKER_ROW_WIDTHS.size
+    fun claimedTileMarkerTop(tile: DecisionBounds): Int = tile.y - ClaimedTileMarker.GAP - ClaimedTileMarker.height
 
     /** 依可見比例縮放的 scrollbar thumb。 */
     fun scrollbarThumb(scroll: Double): HorizontalScrollThumb = this.scroll.thumb(scroll)
@@ -288,14 +289,5 @@ internal data class DecisionCardLayout(
 
         /** 滾輪一格捲動的距離。 */
         const val SCROLL_STEP = 48.0
-
-        /** 鳴牌指標與預覽牌之間的間距（像素）。 */
-        const val CLAIMED_TILE_MARKER_GAP = 3
-
-        /**
-         * 吃卡片標出鳴來那張牌的倒三角形指標，由上而下每列的寬度（像素，皆為奇數以確保左右對稱）；
-         * 碰／槓不使用，牌面彼此完全相同，標記沒有辨識意義。
-         */
-        val CLAIMED_TILE_MARKER_ROW_WIDTHS = intArrayOf(9, 7, 5, 3, 1)
     }
 }

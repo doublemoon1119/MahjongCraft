@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -143,10 +142,7 @@ class MahjongTileEntity(
         get() = dataTracker[MELD_ACTION_POPUP_TILES].split(";").mapNotNull { encoded ->
             val parts = encoded.split(",")
             val tileId = parts.getOrNull(0)?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: return@mapNotNull null
-            val orientation = parts.getOrNull(1)
-                ?.let { name -> runCatching { DecisionTileOrientationDto.valueOf(name) }.getOrNull() }
-                ?: DecisionTileOrientationDto.UPRIGHT
-            MeldActionPopupTile(tileId, orientation, parts.getOrNull(2) == "1")
+            MeldActionPopupTile(tileId, claimed = parts.getOrNull(1) == "1")
         }
 
     /** 在 server 端設定一次可持久化的落地牌面提示時間線。 */
@@ -159,14 +155,14 @@ class MahjongTileEntity(
         dataTracker.set(ACTION_POPUP_END_GAME_TIME, endGameTime)
     }
 
-    /** 在一張錨點牌上保存整組副露的實際順序、橫置方向與顯示時間線。 */
+    /** 在一張錨點牌上保存整組副露的顯示順序、哪一張是鳴取牌，以及顯示時間線。 */
     fun showMeldActionPopup(tiles: List<MeldActionPopupTile>, startGameTime: Long, endGameTime: Long) {
         require(tiles.isNotEmpty()) { "Meld action popup must contain tiles" }
         showActionPopup(TileActionPopupKind.MELD, startGameTime, endGameTime)
         dataTracker.set(
             MELD_ACTION_POPUP_TILES,
             tiles.joinToString(";") { tile ->
-                "${tile.tileId},${tile.orientation.name},${if (tile.stacked) 1 else 0}"
+                "${tile.tileId},${if (tile.claimed) 1 else 0}"
             },
         )
     }

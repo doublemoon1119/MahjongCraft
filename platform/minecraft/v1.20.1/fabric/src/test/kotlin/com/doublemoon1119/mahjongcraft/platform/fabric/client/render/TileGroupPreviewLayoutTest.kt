@@ -1,57 +1,61 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import kotlin.math.abs
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** 驗證橫向牌組排列中，疊放牌不會跟橫置錨點牌重疊。 */
+/** 驗證鳴牌提示的牌組排列：一列等距的直立牌，置中於原點。 */
 class TileGroupPreviewLayoutTest {
-    /**
-     * 加槓補上的第 4 張牌與副露來源的橫置錨點牌都是橫置方向，旋轉 90 度後螢幕高度等於原本的牌寬，
-     * 疊放距離必須依此換算，不能沿用直立牌高度算出的固定間距，否則兩張牌會互相重疊（曾經發生過的
-     * 問題）。
-     */
+    private val tileWidth = 20f
+    private val tileHeight = 28f
+    private val gap = 2f
+
+    private fun layoutOf(vararg entries: TileGroupPreviewEntry) = TileGroupPreviewLayoutCalculator.calculate(entries.toList(), tileWidth, tileHeight, gap)
+
+    /** 牌依傳入順序等距排開，整列水平置中於原點，垂直維持同一列。 */
     @Test
-    fun `stacked sideways tile does not overlap a sideways anchor`() {
-        val entries = listOf(
-            TileGroupPreviewEntry("m1", DecisionTileOrientationDto.UPRIGHT, stacked = false),
-            TileGroupPreviewEntry("m2", DecisionTileOrientationDto.ROTATED_RIGHT, stacked = false),
-            TileGroupPreviewEntry("m3", DecisionTileOrientationDto.UPRIGHT, stacked = false),
-            TileGroupPreviewEntry("m2", DecisionTileOrientationDto.ROTATED_RIGHT, stacked = true),
+    fun `tiles are evenly spaced and centered on zero`() {
+        val layout = layoutOf(
+            TileGroupPreviewEntry("m1"),
+            TileGroupPreviewEntry("m2"),
+            TileGroupPreviewEntry("m3"),
         )
 
-        val layout = TileGroupPreviewLayoutCalculator.calculate(entries, tileWidth = 20f, tileHeight = 28f, gap = 2f)
-
-        val anchor = layout.placements[1]
-        val stacked = layout.placements.last()
-        val minimumSeparation = 20f / 2f + 20f / 2f
-        assertTrue(
-            anchor.centerY - stacked.centerY >= minimumSeparation,
-            "Stacked tile must clear the sideways anchor's rotated on-screen height, " +
-                "was ${anchor.centerY - stacked.centerY}, needed >= $minimumSeparation",
-        )
+        assertEquals(listOf("m1", "m2", "m3"), layout.placements.map { it.assetKey })
+        assertEquals(tileWidth * 3 + gap * 2, layout.contentWidth)
+        assertEquals(tileHeight, layout.contentHeight)
+        assertTrue(abs(layout.placements[1].centerX) < 0.001f, "the middle tile sits on the origin")
+        assertEquals(tileWidth + gap, layout.placements[1].centerX - layout.placements[0].centerX)
+        assertEquals(tileWidth + gap, layout.placements[2].centerX - layout.placements[1].centerX)
+        assertTrue(layout.placements.all { it.centerY == 0f }, "every tile stays on the same row")
     }
 
-    /**
-     * 呼叫端（[MahjongTileEntityRenderer]）把半透明背景畫在「內容垂直置中於 0」的假設下；加槓疊放牌
-     * 只往其中一側延伸，實際內容的垂直範圍天生不會對稱分佈在 0 兩側，[calculate] 必須自行平移每張牌
-     * 的 `centerY`，否則背景會跟牌面對不齊（曾經發生過的問題）。
-     */
+    /** 鳴取的那張只是被標記，位置與其他牌一致。 */
     @Test
-    fun `content is vertically centered on zero even with an asymmetric stack`() {
-        val entries = listOf(
-            TileGroupPreviewEntry("m1", DecisionTileOrientationDto.UPRIGHT, stacked = false),
-            TileGroupPreviewEntry("m2", DecisionTileOrientationDto.ROTATED_RIGHT, stacked = false),
-            TileGroupPreviewEntry("m3", DecisionTileOrientationDto.UPRIGHT, stacked = false),
-            TileGroupPreviewEntry("m2", DecisionTileOrientationDto.ROTATED_RIGHT, stacked = true),
+    fun `the claimed tile keeps its place in the row`() {
+        val marked = layoutOf(
+            TileGroupPreviewEntry("m1"),
+            TileGroupPreviewEntry("m2", claimed = true),
+            TileGroupPreviewEntry("m3"),
+        )
+        val unmarked = layoutOf(
+            TileGroupPreviewEntry("m1"),
+            TileGroupPreviewEntry("m2"),
+            TileGroupPreviewEntry("m3"),
         )
 
-        val layout = TileGroupPreviewLayoutCalculator.calculate(entries, tileWidth = 20f, tileHeight = 28f, gap = 2f)
+        assertEquals(listOf(false, true, false), marked.placements.map { it.claimed })
+        assertEquals(unmarked.placements.map { it.centerX }, marked.placements.map { it.centerX })
+    }
 
-        fun onScreenHalfHeight(orientation: DecisionTileOrientationDto) = if (orientation == DecisionTileOrientationDto.UPRIGHT) 28f / 2f else 20f / 2f
-        val minimumY = layout.placements.minOf { it.centerY - onScreenHalfHeight(it.orientation) }
-        val maximumY = layout.placements.maxOf { it.centerY + onScreenHalfHeight(it.orientation) }
-        assertTrue(abs(minimumY + maximumY) < 0.001f, "Content must be vertically centered on zero, was minimumY=$minimumY maximumY=$maximumY")
+    /** 沒有牌時沒有內容。 */
+    @Test
+    fun `an empty group has no content`() {
+        val layout = layoutOf()
+
+        assertEquals(0f, layout.contentWidth)
+        assertEquals(0f, layout.contentHeight)
+        assertTrue(layout.placements.isEmpty())
     }
 }

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ClaimedTileMarker
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -286,7 +287,7 @@ class DecisionCardLayoutTest {
         val tile = layout.previewTilePlacements(layout.cardPlacements(scroll = 0.0).single(), 3).first()
 
         assertEquals(
-            tile.y - DecisionCardLayout.CLAIMED_TILE_MARKER_GAP - DecisionCardLayout.CLAIMED_TILE_MARKER_ROW_WIDTHS.size,
+            tile.y - ClaimedTileMarker.GAP - ClaimedTileMarker.height,
             layout.claimedTileMarkerTop(tile),
         )
     }

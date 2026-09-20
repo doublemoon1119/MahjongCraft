@@ -91,17 +91,17 @@ class DrawTileUseCase(
         // GamePresentationPublisher.publishPlayerAreaUpdated 的同名參數 KDoc。
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val drawnPlayer = newState.players[seatIndex]
+        val module = moduleRegistry.getModule(newState.config)
         presentationPublisher.publishPlayerAreaUpdated(
             gameId,
             seatIndex,
             drawnPlayer.hand.tiles.map { it.id },
             drawnPlayer.hand.lastDrawn?.id,
-            drawnPlayer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+            drawnPlayer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
             animateDrawnTile = true,
         )
         // 牌山剩餘張數每次摸牌都會變，桌面局況顯示要跟著更新——這份呈現是「找到既有的就地更新」
         // 模式，沒帶上完整內容就會把之前顯示的內容覆蓋回空清單。
-        val module = moduleRegistry.getModule(newState.config)
         presentationPublisher.publishRoundInfoUpdated(gameId, module.getRoundInfoLines(newState))
 
         return Outcome.Success(Unit)

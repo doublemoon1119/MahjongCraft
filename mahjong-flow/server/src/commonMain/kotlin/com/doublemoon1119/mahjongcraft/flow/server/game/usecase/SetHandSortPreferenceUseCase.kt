@@ -66,12 +66,13 @@ class SetHandSortPreferenceUseCase(
 
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val player = newState.players[seatIndex]
+        val module = moduleRegistry.getModule(newState.config)
         presentationPublisher.publishPlayerAreaUpdated(
             gameId,
             seatIndex,
             player.hand.tiles.map { it.id },
             player.hand.lastDrawn?.id,
-            player.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+            player.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
         )
     }
 }
