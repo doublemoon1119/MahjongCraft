@@ -32,9 +32,9 @@ import kotlin.uuid.Uuid
  * [MahjongRuleModule.declareExhaustiveDraw]
  * 處理——這裡刻意不轉型成任何規則專屬的具體型別，理由與 [DeclareTsumoUseCase] 相同。
  *
- * 只把 [GameAction.ExhaustiveDraw] 記錄進聽牌玩家的 `actionHistory`，
- * 不聽的玩家不記錄——[AdvanceRoundUseCase] 判斷連莊與否時，只要檢查莊家的 `actionHistory`
- * 裡有沒有 `ExhaustiveDraw`，即可暫時涵蓋尚未遷移為明確 transition directive 的普通流局連莊依據。
+ * 只把 [GameAction.ExhaustiveDraw] 記錄進聽牌玩家的 `actionHistory`，不聽的玩家不記錄，
+ * 供後續事件與呈現流程保留這次流局的玩家狀態。連莊與否則會明確寫入局結束摘要的
+ * [RoundTransitionDirective]，不從動作紀錄反向推定。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。

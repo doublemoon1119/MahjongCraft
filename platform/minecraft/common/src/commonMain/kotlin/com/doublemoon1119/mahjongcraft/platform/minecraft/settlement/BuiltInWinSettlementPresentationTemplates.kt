@@ -187,7 +187,7 @@ private fun WinSettlementPresentationTemplateRegistry.registerBuiltInRiichiWinSe
                             PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE, argb = 0xFFFFD45A.toInt()),
                             // 翻符／役滿那一行錨在逐條揭示之後，佔一條役種的間隔（8 tick）；分數接在它後面出現。
                             PresentationTimeline(PresentationTimelineAnchor.AFTER_ENTRIES, offsetTicks = 8, durationTicks = 18),
-                            listOf(PresentationAnimationEffect.Fade(), legacyScoreScale()),
+                            listOf(PresentationAnimationEffect.Fade(), scoreRevealScale()),
                             transformOriginX = PresentationAlignment.END,
                             transformOriginY = PresentationAlignment.START,
                         ),
@@ -269,7 +269,7 @@ private fun positioned(child: PresentationLayout, x: Float, y: Float): Presentat
     horizontalAnchor = PresentationAlignment.CENTER,
 )
 
-private fun legacyScoreScale() = PresentationAnimationEffect.ScaleKeyframes(
+private fun scoreRevealScale() = PresentationAnimationEffect.ScaleKeyframes(
     listOf(ScaleKeyframe(0f, 1.35f), ScaleKeyframe(1f, 1f)),
 )
 

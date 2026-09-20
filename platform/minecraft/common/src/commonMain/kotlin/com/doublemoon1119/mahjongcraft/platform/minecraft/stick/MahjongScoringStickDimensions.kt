@@ -9,7 +9,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.stick
  * common 座標計算共用同一組數值，避免兩處各自定義後跑掉。
  */
 object MahjongScoringStickDimensions {
-    /** 舊版驗證過的點棒世界縮放。 */
+    /** 點棒世界縮放係數。 */
     private const val STICK_SCALE: Double = 0.4
 
     /** 點棒世界寬度（沿桌面長邊）。 */

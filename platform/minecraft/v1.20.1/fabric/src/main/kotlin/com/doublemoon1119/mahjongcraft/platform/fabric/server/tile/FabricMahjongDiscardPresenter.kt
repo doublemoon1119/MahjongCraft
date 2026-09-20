@@ -167,9 +167,8 @@ class FabricMahjongDiscardPresenter(
      *    排除手牌、副露、牌河，不需要另外比對 UUID 是否還在牌牆結構裡。
      * 3. 再篩選 yaw 跟 [seatIndex] 自己那面牆的 yaw 一致——四面牆都是 `FACE_DOWN`，需要 yaw 才能
      *    分辨是哪一面；`seatIndex` 自己那面牆的 yaw 直接用
-     *    `wallPlacement(dealerSeatIndex = seatIndex, position.side = 0, ...)` 算，理由同舊版
-     *    KDoc：`advance` 步數為 0 時直接等於 `seatIndexToTableSide(seatIndex)`，不需要另外知道莊家
-     *    是誰。
+     *    `wallPlacement(dealerSeatIndex = seatIndex, position.side = 0, ...)` 算；`advance` 步數為 0 時
+     *    直接等於 `seatIndexToTableSide(seatIndex)`，不需要另外知道莊家是誰。
      *
      * 王牌區的牌被移出開門位置（[FabricMahjongTileWallPresenter.moveDeadWallToOpenPosition]）時只改
      * 位置，姿態與 yaw 都不變，因此天然滿足「王牌區視同牌牆」——不需要額外標記或排除。

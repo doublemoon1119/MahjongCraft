@@ -258,7 +258,7 @@ class MahjongDiceEntity(
     }
 
     companion object {
-        /** 舊版驗證過的骰子世界邊長。 */
+        /** 骰子世界邊長。 */
         const val SIZE = 0.125f
 
         /** 點數世界存檔 key。 */

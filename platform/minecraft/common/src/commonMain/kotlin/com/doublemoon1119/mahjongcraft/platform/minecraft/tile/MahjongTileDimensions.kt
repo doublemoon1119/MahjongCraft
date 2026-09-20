@@ -9,7 +9,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
  * 計算（[MahjongTileTableLayout]）共用同一組數值，避免兩處各自定義後跑掉。
  */
 object MahjongTileDimensions {
-    /** 舊版驗證過的麻將牌世界縮放。 */
+    /** 麻將牌世界縮放係數。 */
     private const val TILE_SCALE: Double = 0.15
 
     /** 麻將牌世界寬度。 */
