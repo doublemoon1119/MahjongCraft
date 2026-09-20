@@ -126,7 +126,7 @@ internal class PlayerDecisionScreen(
             mouseX in layout.viewportLeft.toDouble()..layout.viewportRight.toDouble() &&
             mouseY in layout.panelTop.toDouble()..layout.panelBottom.toDouble()
         ) {
-            horizontalScroll = (horizontalScroll - amount * SCROLL_STEP).coerceIn(0.0, layout.maximumScroll)
+            horizontalScroll = layout.scrollFromWheel(horizontalScroll, amount)
             return true
         }
         return super.mouseScrolled(mouseX, mouseY, amount)
@@ -163,10 +163,7 @@ internal class PlayerDecisionScreen(
     /** 拖曳 thumb 時依 track 的可移動比例更新內容 offset。 */
     override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
         if (draggingScrollbar && button == 0) {
-            val layout = layout()
-            val travel = (layout.viewportWidth - layout.scrollbarThumb(horizontalScroll).width).coerceAtLeast(1)
-            horizontalScroll = (scrollbarDragStartScroll + (mouseX - scrollbarDragStartX) / travel * layout.maximumScroll)
-                .coerceIn(0.0, layout.maximumScroll)
+            horizontalScroll = layout().scrollFromDrag(scrollbarDragStartScroll, mouseX - scrollbarDragStartX)
             return true
         }
         return false
@@ -327,7 +324,6 @@ internal class PlayerDecisionScreen(
     }
 
     private companion object {
-        const val SCROLL_STEP = 48.0
         const val PANEL_BACKGROUND = 0xCC101820.toInt()
         const val HEADER_TEXT_COLOR = 0xFFD54F
         const val CARD_BACKGROUND = 0xCC2A3844.toInt()

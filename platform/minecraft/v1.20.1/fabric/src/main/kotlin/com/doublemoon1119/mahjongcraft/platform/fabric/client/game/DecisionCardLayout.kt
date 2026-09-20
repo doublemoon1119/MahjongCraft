@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.HorizontalScrollLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.HorizontalScrollThumb
 
 /** 一個矩形版位。 */
 internal data class DecisionBounds(
@@ -9,13 +11,6 @@ internal data class DecisionBounds(
     val width: Int,
     val height: Int,
 )
-
-/** Scrollbar thumb 的水平邊界。 */
-internal data class DecisionScrollbarThumb(val left: Int, val right: Int) {
-    /** 寬度。 */
-    val width: Int
-        get() = right - left
-}
 
 /**
  * 單一操作卡片會影響版面的特徵。
@@ -92,9 +87,18 @@ internal data class DecisionCardLayout(
     val hasOverflow: Boolean
         get() = contentWidth > viewportWidth
 
+    /** 操作卡列的水平捲動幾何。 */
+    private val scroll: HorizontalScrollLayout
+        get() = HorizontalScrollLayout(
+            viewportLeft = viewportLeft,
+            viewportWidth = viewportWidth,
+            contentWidth = contentWidth,
+            minimumThumbWidth = MIN_SCROLLBAR_THUMB_WIDTH,
+        )
+
     /** 可捲動的最大距離。 */
     val maximumScroll: Double
-        get() = (contentWidth - viewportWidth).coerceAtLeast(0).toDouble()
+        get() = scroll.maximumScroll
 
     /** 面板寬度；內容可容納時收合，溢出時使用整個安全畫面寬度。 */
     val panelWidth: Int
@@ -217,31 +221,17 @@ internal data class DecisionCardLayout(
     /** 鳴牌指標的上界，位於指定預覽牌的正上方。 */
     fun claimedTileMarkerTop(tile: DecisionBounds): Int = tile.y - CLAIMED_TILE_MARKER_GAP - CLAIMED_TILE_MARKER_ROW_WIDTHS.size
 
-    /**
-     * 依可見比例縮放的 scrollbar thumb。
-     *
-     * 高 GUI scale 搭配小解析度時 [viewportWidth] 可能比 [MIN_SCROLLBAR_THUMB_WIDTH] 還窄，此時最小寬度
-     * 本身必須先讓給可見寬度，否則下界會大於上界（比照 `MahjongHudToolbarLayout.thumb` KDoc）。
-     */
-    fun scrollbarThumb(scroll: Double): DecisionScrollbarThumb {
-        val viewportWidth = viewportWidth
-        val thumbWidth = if (maximumScroll <= 0.0) {
-            viewportWidth
-        } else {
-            (viewportWidth.toDouble() * viewportWidth / contentWidth).toInt()
-                .coerceIn(MIN_SCROLLBAR_THUMB_WIDTH.coerceAtMost(viewportWidth), viewportWidth)
-        }
-        val travel = viewportWidth - thumbWidth
-        val left = viewportLeft + if (maximumScroll <= 0.0) 0 else (scroll / maximumScroll * travel).toInt()
-        return DecisionScrollbarThumb(left, left + thumbWidth)
-    }
+    /** 依可見比例縮放的 scrollbar thumb。 */
+    fun scrollbarThumb(scroll: Double): HorizontalScrollThumb = this.scroll.thumb(scroll)
 
     /** 將 thumb 左界換算回內容捲動量。 */
-    fun scrollFromThumbLeft(thumbLeft: Double, scroll: Double): Double {
-        val travel = (viewportWidth - scrollbarThumb(scroll).width).coerceAtLeast(1)
-        val relative = (thumbLeft - viewportLeft).coerceIn(0.0, travel.toDouble())
-        return relative / travel * maximumScroll
-    }
+    fun scrollFromThumbLeft(thumbLeft: Double, scroll: Double): Double = this.scroll.scrollFromThumbLeft(thumbLeft, scroll)
+
+    /** 依 thumb 拖曳位移計算新的捲動量。 */
+    fun scrollFromDrag(startScroll: Double, pointerDelta: Double): Double = scroll.scrollFromDrag(startScroll, pointerDelta)
+
+    /** 依滾輪量計算新的捲動量。 */
+    fun scrollFromWheel(currentScroll: Double, amount: Double): Double = scroll.scrollFromWheel(currentScroll, amount, SCROLL_STEP)
 
     /** 觸發牌面板的版位；高度只由觸發文字行數決定。 */
     val triggerPanelBounds: DecisionBounds
@@ -295,6 +285,9 @@ internal data class DecisionCardLayout(
         const val SCROLLBAR_GAP = 4
         const val SCROLLBAR_HEIGHT = 4
         const val MIN_SCROLLBAR_THUMB_WIDTH = 18
+
+        /** 滾輪一格捲動的距離。 */
+        const val SCROLL_STEP = 48.0
 
         /** 鳴牌指標與預覽牌之間的間距（像素）。 */
         const val CLAIMED_TILE_MARKER_GAP = 3

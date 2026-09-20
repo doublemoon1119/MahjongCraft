@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
@@ -10,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MeldActionPopupTile
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.claimedTileOrientation
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
@@ -220,11 +220,7 @@ class FabricMahjongPlayerAreaPresenter(
             }
             if (meld.tileIds.any { it in presentation.animatedMeldClaimTileIds }) {
                 val landingTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
-                val claimedOrientation = when (meld.sourceDirection) {
-                    RelativeDirection.Left -> DecisionTileOrientationDto.ROTATED_LEFT
-                    RelativeDirection.Across, RelativeDirection.Right -> DecisionTileOrientationDto.ROTATED_RIGHT
-                    RelativeDirection.Self -> DecisionTileOrientationDto.UPRIGHT
-                }
+                val claimedOrientation = meld.sourceDirection.claimedTileOrientation()
                 val popupTiles = tileAtSlot.mapIndexed { slot, tileId ->
                     MeldActionPopupTile(
                         tileId = tileId,

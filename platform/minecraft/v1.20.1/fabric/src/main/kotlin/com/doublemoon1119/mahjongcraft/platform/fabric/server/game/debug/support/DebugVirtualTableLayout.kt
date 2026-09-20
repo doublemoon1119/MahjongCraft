@@ -90,12 +90,40 @@ data class DebugVirtualTableLayout(
     /** 依正式副露游標、鳴牌來源與牌寬規則，取得單組吃、碰或明槓的格位。 */
     fun meldPlacements(type: MeldType, tileCount: Int): List<MahjongTileWallPlacement> {
         val sourceDirection = if (type == MeldType.CHI) RelativeDirection.Left else RelativeDirection.Across
+        return singleMeld(sourceDirection, tileCount).placements
+    }
+
+    /**
+     * 取得一組加槓的格位：先照碰的排法排出 [tileCount] 張，最後一個格位是加槓疊上去的第四張。
+     *
+     * 疊放位置與正式路徑相同：沿排列方向對齊橫置的鳴取牌，往桌子深度方向讓開一個
+     * [MahjongTileTableLayout.ADDED_KAN_DEPTH_OFFSET]。
+     */
+    fun addedKanMeldPlacements(tileCount: Int): List<MahjongTileWallPlacement> {
+        val meld = singleMeld(RelativeDirection.Across, tileCount)
+        val addedPlacement = MahjongTileTableLayout.meldPlacement(
+            controllerX = controllerX,
+            controllerY = controllerY,
+            controllerZ = controllerZ,
+            tableFacing = tableFacing,
+            seatIndex = DEBUG_SEAT_INDEX,
+            alongOffsetFromCorner = meld.sidewaysAlongOffset,
+            isSidewaysTile = true,
+            depthOffsetFromEdge = MahjongTileTableLayout.ADDED_KAN_DEPTH_OFFSET,
+        )
+        return meld.placements + addedPlacement
+    }
+
+    /** 依正式副露游標排出單一組副露，並記下橫置鳴取牌的游標位移供加槓疊放使用。 */
+    private fun singleMeld(sourceDirection: RelativeDirection, tileCount: Int): SingleMeldPlacements {
         val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(sourceDirection, tileCount)
         var cursorAlong = 0.0
-        return (tileCount - 1 downTo 0).map { slot ->
+        var sidewaysAlongOffset = 0.0
+        val placements = (tileCount - 1 downTo 0).map { slot ->
             val isSideways = slot == sidewaysSlot
             val halfWidth = if (isSideways) MahjongTileDimensions.TILE_HEIGHT / 2.0 else MahjongTileDimensions.TILE_WIDTH / 2.0
             cursorAlong += halfWidth
+            if (isSideways) sidewaysAlongOffset = cursorAlong
             val placement = MahjongTileTableLayout.meldPlacement(
                 controllerX = controllerX,
                 controllerY = controllerY,
@@ -108,7 +136,19 @@ data class DebugVirtualTableLayout(
             cursorAlong += halfWidth + MahjongTileDimensions.TILE_SMALL_PADDING
             placement
         }.reversed()
+        return SingleMeldPlacements(placements, sidewaysAlongOffset)
     }
+
+    /**
+     * 單一組副露的格位與橫置鳴取牌的游標位移。
+     *
+     * @property placements 這組副露由桌角往手牌方向的格位。
+     * @property sidewaysAlongOffset 橫置鳴取牌沿排列方向距離桌角的位移；沒有橫置牌時為 `0.0`。
+     */
+    private data class SingleMeldPlacements(
+        val placements: List<MahjongTileWallPlacement>,
+        val sidewaysAlongOffset: Double,
+    )
 
     /** 依正式副露游標規則取得多組副露中每張牌的格位。 */
     fun meldPlacements(melds: List<MahjongMeldTileGroup>): Map<Uuid, MahjongTileWallPlacement> {

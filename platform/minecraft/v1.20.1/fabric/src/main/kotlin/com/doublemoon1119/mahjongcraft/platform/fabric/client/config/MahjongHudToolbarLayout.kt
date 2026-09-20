@@ -1,21 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
-import kotlin.math.roundToInt
-
-/**
- * 工具列 scrollbar thumb 的水平邊界。
- *
- * @property left 左邊界。
- * @property right 右邊界。
- */
-internal data class MahjongHudToolbarThumb(
-    val left: Int,
-    val right: Int,
-) {
-    /** 寬度。 */
-    val width: Int
-        get() = right - left
-}
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.HorizontalScrollLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.HorizontalScrollThumb
 
 /**
  * HUD 位置編輯器頂部工具列的版位計算，與原版 widget 完全分離。
@@ -40,9 +26,18 @@ internal data class MahjongHudToolbarLayout(
     val hasOverflow: Boolean
         get() = contentWidth > viewportWidth
 
+    /** 這一行的水平捲動幾何。 */
+    private val scroll: HorizontalScrollLayout
+        get() = HorizontalScrollLayout(
+            viewportLeft = MARGIN,
+            viewportWidth = viewportWidth,
+            contentWidth = contentWidth,
+            minimumThumbWidth = MIN_THUMB_WIDTH,
+        )
+
     /** 最大水平捲動量；沒有溢出時為零。 */
     val maximumScroll: Double
-        get() = (contentWidth - viewportWidth).coerceAtLeast(0).toDouble()
+        get() = scroll.maximumScroll
 
     /**
      * 依捲動量計算這一行內容的實際起始 X；一律靠左對齊，未溢出時 [scroll] 必為 0，公式自然回到
@@ -50,40 +45,17 @@ internal data class MahjongHudToolbarLayout(
      */
     fun contentOffset(scroll: Double): Int = MARGIN - scroll.toInt()
 
-    /**
-     * 依可見比例與目前捲動量計算 scrollbar thumb 邊界。
-     *
-     * 高 GUI scale 搭配小解析度時 [viewportWidth] 可能比 [MIN_THUMB_WIDTH] 還窄，此時最小寬度本身
-     * 必須先讓給可見寬度，否則下界會大於上界。
-     */
-    fun thumb(scroll: Double): MahjongHudToolbarThumb {
-        val thumbWidth = if (contentWidth <= 0) {
-            viewportWidth
-        } else {
-            (viewportWidth.toDouble() * viewportWidth / contentWidth)
-                .roundToInt()
-                .coerceIn(MIN_THUMB_WIDTH.coerceAtMost(viewportWidth), viewportWidth)
-        }
-        val travel = viewportWidth - thumbWidth
-        val left = MARGIN + if (maximumScroll == 0.0) 0 else (scroll / maximumScroll * travel).roundToInt()
-        return MahjongHudToolbarThumb(left = left, right = left + thumbWidth)
-    }
+    /** 依可見比例與目前捲動量計算 scrollbar thumb 邊界。 */
+    fun thumb(scroll: Double): HorizontalScrollThumb = this.scroll.thumb(scroll)
 
     /** 將 thumb 左界轉換回捲動量，供直接點擊或拖曳 scrollbar 使用。 */
-    fun scrollFromThumb(thumbLeft: Double): Double {
-        val travel = (viewportWidth - thumb(0.0).width).coerceAtLeast(1)
-        val relative = (thumbLeft - MARGIN).coerceIn(0.0, travel.toDouble())
-        return relative / travel * maximumScroll
-    }
+    fun scrollFromThumb(thumbLeft: Double): Double = scroll.scrollFromThumbLeft(thumbLeft)
 
     /** 依 thumb 拖曳位移計算新的捲動量，並限制在合法範圍內。 */
-    fun scrollFromDrag(startScroll: Double, pointerDelta: Double): Double {
-        val travel = (viewportWidth - thumb(startScroll).width).coerceAtLeast(1)
-        return (startScroll + pointerDelta / travel * maximumScroll).coerceIn(0.0, maximumScroll)
-    }
+    fun scrollFromDrag(startScroll: Double, pointerDelta: Double): Double = scroll.scrollFromDrag(startScroll, pointerDelta)
 
     /** 依滾輪量計算新的捲動量，並限制在合法範圍內。 */
-    fun scrollFromWheel(currentScroll: Double, amount: Double): Double = (currentScroll - amount * SCROLL_STEP).coerceIn(0.0, maximumScroll)
+    fun scrollFromWheel(currentScroll: Double, amount: Double): Double = scroll.scrollFromWheel(currentScroll, amount, SCROLL_STEP)
 
     /** 版位常數。 */
     internal companion object {

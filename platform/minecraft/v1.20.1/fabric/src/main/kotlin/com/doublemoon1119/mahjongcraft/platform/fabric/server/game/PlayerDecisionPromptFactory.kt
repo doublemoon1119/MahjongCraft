@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvail
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalysis
@@ -190,37 +191,26 @@ private data class ActionTilePreview(
     val claimedTileIndex: Int? = null,
 )
 
-/** 從目前等待捨牌反應的出牌者解析相對來源方向。 */
-private fun TableState.claimSource(playerId: Uuid): ClaimSource {
-    val sourceId = pendingReaction?.discarderId ?: pendingKanReaction?.declarerId ?: return ClaimSource.ACROSS
-    val playerIndex = players.indexOfFirst { it.id == playerId }
-    val sourceIndex = players.indexOfFirst { it.id == sourceId }
-    val offset = (sourceIndex - playerIndex + players.size) % players.size
-    return when {
-        offset == players.lastIndex -> ClaimSource.LEFT
-        offset == 1 -> ClaimSource.RIGHT
-        else -> ClaimSource.ACROSS
-    }
-}
-
-/** 建立反應 HUD 的來源玩家、相對位置及動作語意。 */
+/**
+ * 建立反應 HUD 的來源玩家、相對位置及動作語意。
+ *
+ * 相對位置沿用 [TableState.relativeDirectionOf]；觸發者是自己（[RelativeDirection.Self]）在反應情境不會
+ * 發生，視為沒有觸發者。
+ */
 private fun TableState.triggerContext(playerId: Uuid): TriggerContext? {
     val sourceId = pendingReaction?.discarderId ?: pendingKanReaction?.declarerId ?: return null
-    val source = claimSource(playerId)
-    val actionId = pendingKanReaction?.kanAction?.vocabularyActionId() ?: BuiltInGameActionIds.DISCARD
+    val relation = when (relativeDirectionOf(playerId, sourceId)) {
+        RelativeDirection.Left -> DecisionPlayerRelationDto.LEFT
+        RelativeDirection.Across -> DecisionPlayerRelationDto.ACROSS
+        RelativeDirection.Right -> DecisionPlayerRelationDto.RIGHT
+        RelativeDirection.Self -> return null
+    }
     return TriggerContext(
         playerId = sourceId,
-        relation = when (source) {
-            ClaimSource.LEFT -> DecisionPlayerRelationDto.LEFT
-            ClaimSource.ACROSS -> DecisionPlayerRelationDto.ACROSS
-            ClaimSource.RIGHT -> DecisionPlayerRelationDto.RIGHT
-        },
-        actionId = actionId,
+        relation = relation,
+        actionId = pendingKanReaction?.kanAction?.vocabularyActionId() ?: BuiltInGameActionIds.DISCARD,
     )
 }
 
 /** 一次他家反應的公開來源資訊。 */
 private data class TriggerContext(val playerId: Uuid, val relation: DecisionPlayerRelationDto, val actionId: String)
-
-/** 被鳴牌相對於操作玩家的來源。 */
-private enum class ClaimSource { LEFT, ACROSS, RIGHT }

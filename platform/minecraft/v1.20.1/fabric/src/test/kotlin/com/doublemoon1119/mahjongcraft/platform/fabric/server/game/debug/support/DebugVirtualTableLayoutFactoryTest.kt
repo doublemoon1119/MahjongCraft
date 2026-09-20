@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.suppor
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory.Companion.VIRTUAL_CONTROLLER_FORWARD_BLOCKS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -52,6 +53,23 @@ class DebugVirtualTableLayoutFactoryTest {
         )
     }
 
+    /** 加槓格位是碰的三張加上疊在橫置鳴取牌上的第四張。 */
+    @Test
+    fun `stacks the added kan tile onto the claimed tile`() {
+        val layout = factory.create(0, 64, 0, MahjongTableFacing.NORTH)
+        val ponPlacements = layout.meldPlacements(type = MeldType.PON, tileCount = 3)
+
+        val addedKanPlacements = layout.addedKanMeldPlacements(tileCount = 3)
+
+        assertEquals(ponPlacements.size + 1, addedKanPlacements.size)
+        assertEquals(ponPlacements, addedKanPlacements.dropLast(1))
+        val claimed = ponPlacements[MahjongTileTableLayout.SIDEWAYS_SLOT_ACROSS]
+        val added = addedKanPlacements.last()
+        assertEquals(claimed.yaw, added.yaw, "the added tile keeps the claimed tile's sideways yaw")
+        assertEquals(claimed.x, added.x, TOLERANCE, "the added tile stays aligned along the meld row")
+        assertNotEquals(claimed.z, added.z, "the added tile sits deeper than the claimed tile")
+    }
+
     /** 手牌格位沿牌列前進，相鄰格位不會重疊。 */
     @Test
     fun `spaces adjacent hand tiles apart`() {
@@ -72,5 +90,10 @@ class DebugVirtualTableLayoutFactoryTest {
 
         assertEquals(4, placements.size)
         assertEquals(4, placements.distinct().size)
+    }
+
+    private companion object {
+        /** 世界座標比對容差。 */
+        const val TOLERANCE = 1.0e-6
     }
 }

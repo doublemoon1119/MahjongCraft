@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
@@ -218,5 +219,37 @@ class TableStateTest {
                 finishedPlayerIds = fourPlayers.map { it.id }.toSet(),
             )
         }
+    }
+
+    /** 四人桌的相對方位依座位順序：下一位是下家、上一位是上家、隔一位是對家、自己是 Self。 */
+    @Test
+    fun `test relativeDirectionOf maps seat distance to a relative direction`() {
+        val players = Wind.entries.map { wind -> FakeMahjongPlayerFactory.create(wind) }
+        val state = FakeTableStateFactory.create(players = players, dealerPlayerId = players.first().id)
+
+        assertEquals(RelativeDirection.Self, state.relativeDirectionOf(players[0].id, players[0].id))
+        assertEquals(RelativeDirection.Right, state.relativeDirectionOf(players[0].id, players[1].id))
+        assertEquals(RelativeDirection.Across, state.relativeDirectionOf(players[0].id, players[2].id))
+        assertEquals(RelativeDirection.Left, state.relativeDirectionOf(players[0].id, players[3].id))
+        assertEquals(RelativeDirection.Right, state.relativeDirectionOf(players[3].id, players[0].id))
+    }
+
+    /** 兩人桌的另一位同時是上家與下家；判定順序讓上家先成立，雙向都回報上家。 */
+    @Test
+    fun `test relativeDirectionOf reports the only opponent of a two player table as the left player`() {
+        val state = FakeTableStateFactory.create()
+        val players = state.players
+
+        assertEquals(RelativeDirection.Left, state.relativeDirectionOf(players[0].id, players[1].id))
+        assertEquals(RelativeDirection.Left, state.relativeDirectionOf(players[1].id, players[0].id))
+    }
+
+    /** 查詢不在這張桌子的玩家會被擋下。 */
+    @Test
+    fun `test relativeDirectionOf throws for a player outside the table`() {
+        val state = FakeTableStateFactory.create()
+
+        assertFailsWith<IllegalArgumentException> { state.relativeDirectionOf(Uuid.random(), state.players[0].id) }
+        assertFailsWith<IllegalArgumentException> { state.relativeDirectionOf(state.players[0].id, Uuid.random()) }
     }
 }

@@ -9,17 +9,16 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MeldActionPopupTile
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.claimedTileOrientation
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewDefaults
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugTilePreviewSupport
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import net.minecraft.server.command.CommandManager.literal
@@ -224,11 +223,7 @@ class FabricDebugAnimationCommand(
         val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
         val sourceDirection = if (type == MeldType.CHI) RelativeDirection.Left else RelativeDirection.Across
         val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(sourceDirection, tileCount)
-        val claimedOrientation = when (sourceDirection) {
-            RelativeDirection.Left -> DecisionTileOrientationDto.ROTATED_LEFT
-            RelativeDirection.Across, RelativeDirection.Right -> DecisionTileOrientationDto.ROTATED_RIGHT
-            RelativeDirection.Self -> DecisionTileOrientationDto.UPRIGHT
-        }
+        val claimedOrientation = sourceDirection.claimedTileOrientation()
 
         val sourcePlacements = (0 until tileCount).map { slot ->
             layout.handPlacement(handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize, tileIndex = slot)
@@ -272,42 +267,13 @@ class FabricDebugAnimationCommand(
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
         val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
         val sourceDirection = RelativeDirection.Across
-        val claimedOrientation = DecisionTileOrientationDto.ROTATED_RIGHT
+        val claimedOrientation = sourceDirection.claimedTileOrientation()
         val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(sourceDirection, DebugPreviewDefaults.MELD_TILE_COUNT)
 
         val sourcePlacements = (0 until MELD_KAN_TILE_COUNT).map { slot ->
             layout.handPlacement(handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize, tileIndex = slot)
         }
-        var cursorAlong = 0.0
-        var sidewaysAlongOffset = 0.0
-        val basePlacements = (DebugPreviewDefaults.MELD_TILE_COUNT - 1 downTo 0).map { slot ->
-            val isSideways = slot == sidewaysSlot
-            val halfWidth = if (isSideways) MahjongTileDimensions.TILE_HEIGHT / 2.0 else MahjongTileDimensions.TILE_WIDTH / 2.0
-            cursorAlong += halfWidth
-            if (isSideways) sidewaysAlongOffset = cursorAlong
-            val placement = MahjongTileTableLayout.meldPlacement(
-                controllerX = layout.controllerX,
-                controllerY = layout.controllerY,
-                controllerZ = layout.controllerZ,
-                tableFacing = layout.tableFacing,
-                seatIndex = DebugVirtualTableLayout.DEBUG_SEAT_INDEX,
-                alongOffsetFromCorner = cursorAlong,
-                isSidewaysTile = isSideways,
-            )
-            cursorAlong += halfWidth + MahjongTileDimensions.TILE_SMALL_PADDING
-            placement
-        }.reversed()
-        val addedPlacement = MahjongTileTableLayout.meldPlacement(
-            controllerX = layout.controllerX,
-            controllerY = layout.controllerY,
-            controllerZ = layout.controllerZ,
-            tableFacing = layout.tableFacing,
-            seatIndex = DebugVirtualTableLayout.DEBUG_SEAT_INDEX,
-            alongOffsetFromCorner = sidewaysAlongOffset,
-            isSidewaysTile = true,
-            depthOffsetFromEdge = MahjongTileTableLayout.ADDED_KAN_DEPTH_OFFSET,
-        )
-        val finalPlacements = basePlacements + addedPlacement
+        val finalPlacements = layout.addedKanMeldPlacements(tileCount = DebugPreviewDefaults.MELD_TILE_COUNT)
 
         val tiles = sourcePlacements.map { placement -> tilePreviewSupport.spawnFreeTile(world, placement, MahjongTilePose.STANDING, assetKey) }
         tiles.forEachIndexed { index, tile ->
