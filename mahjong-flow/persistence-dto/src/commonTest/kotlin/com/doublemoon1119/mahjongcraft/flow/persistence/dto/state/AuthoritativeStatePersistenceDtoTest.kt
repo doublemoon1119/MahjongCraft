@@ -214,6 +214,63 @@ class AuthoritativeStatePersistenceDtoTest {
         assertEquals(setOf(playerId), restored.forcedAutoPlayPlayerIds)
     }
 
+    /** 驗證本局自動操作控制會隨權威遊戲保存及恢復。 */
+    @Test
+    fun `round automatic controls round-trip`() {
+        val tableState = createGame()
+        val playerId = tableState.players.single().id
+        val game = Game(
+            tableState = tableState,
+            flowConfig = GameFlowConfig(),
+            enabledAutomaticControlIdsByPlayerId = mapOf(playerId to setOf("example:auto_action")),
+        )
+        val state = createAuthoritativeStatePersistenceDto(
+            rooms = emptyList(),
+            games = listOf(game),
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            playerRuleStateRegistry = playerRuleStateRegistry,
+            dynamicRuleStateRegistry = dynamicRuleStateRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            json = json,
+        )
+
+        val restored = state.toGames(
+            ruleConfigRegistry,
+            discardPileRegistry,
+            playerRuleStateRegistry,
+            dynamicRuleStateRegistry,
+            exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry,
+            json,
+        ).getValue(game.id)
+
+        assertEquals(
+            mapOf(playerId to setOf("example:auto_action")),
+            restored.enabledAutomaticControlIdsByPlayerId,
+        )
+    }
+
+    /** 驗證舊存檔缺少本局自動操作欄位時還原為空 map。 */
+    @Test
+    fun `missing round automatic controls default to empty on legacy saves`() {
+        val state = createState(emptyList(), listOf(createGame()))
+        val gameIdString = state.games.keys.single()
+
+        val restored = state.toGames(
+            ruleConfigRegistry,
+            discardPileRegistry,
+            playerRuleStateRegistry,
+            dynamicRuleStateRegistry,
+            exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry,
+            json,
+        ).getValue(Uuid.parse(gameIdString))
+
+        assertTrue(restored.enabledAutomaticControlIdsByPlayerId.isEmpty())
+    }
+
     /**
      * 驗證中斷基本思考時間能完整存檔與還原，不受存在於還原後 `Game.interruptedBaseMillisByPlayerId` 上的 mock 影響，
      * 以免玩家退出重進 server session 後這筆權威資料實際逐行遺失。

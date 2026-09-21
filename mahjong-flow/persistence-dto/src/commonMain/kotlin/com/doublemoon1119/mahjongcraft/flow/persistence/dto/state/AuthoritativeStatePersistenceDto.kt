@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceSche
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.GameRuntimeStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.TableStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toDomain
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toEnabledAutomaticControlIdsByPlayerId
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toForcedAutoPlayPlayerIds
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toInterruptedBaseMillisByPlayerId
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toPersistenceDto
@@ -23,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.requireValidAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import kotlinx.serialization.Serializable
@@ -62,6 +64,12 @@ data class AuthoritativeStatePersistenceDto(
             require(gameRuntimeStates.getValue(gameId).forcedAutoPlayPlayerIds.all { it in playerIds }) {
                 "Forced auto-play players must belong to the game"
             }
+            require(gameRuntimeStates.getValue(gameId).enabledAutomaticControlIdsByPlayerId.keys.all { it in playerIds }) {
+                "Automatic control players must belong to the game"
+            }
+            gameRuntimeStates.getValue(gameId).enabledAutomaticControlIdsByPlayerId.values.forEach(
+                ::requireValidAutomaticControlIds,
+            )
         }
         require(rooms.keys.intersect(games.keys).isEmpty()) {
             "The same table ID must not exist as both a room and a game"
@@ -136,6 +144,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
         flowConfig = gameFlowConfigs.getValue(id.toString()).toDomain(),
         remainingReserveMillisByPlayerId = runtimeState.toRemainingReserveMillisByPlayerId(),
         forcedAutoPlayPlayerIds = runtimeState.toForcedAutoPlayPlayerIds(),
+        enabledAutomaticControlIdsByPlayerId = runtimeState.toEnabledAutomaticControlIdsByPlayerId(),
         isMatchOver = runtimeState.isMatchOver,
         pendingTransition = runtimeState.pendingTransition?.toDomain(),
         roundCompletion = runtimeState.roundCompletion?.toDomain(),

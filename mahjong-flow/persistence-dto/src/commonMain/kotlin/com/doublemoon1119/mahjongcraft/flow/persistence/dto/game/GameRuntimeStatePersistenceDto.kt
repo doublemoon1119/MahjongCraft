@@ -10,6 +10,8 @@ import kotlin.uuid.Uuid
  *
  * @property remainingReserveMillisByPlayerId 以玩家 UUID 字串索引的剩餘保留思考時間毫秒數。
  * @property forcedAutoPlayPlayerIds 已進入強制自動操作的玩家 UUID 字串集合。
+ * @property enabledAutomaticControlIdsByPlayerId 以玩家 UUID 字串索引的本局自動操作控制 ID；舊存檔缺少此欄位時
+ *   退回空 map。
  * @property isMatchOver 整場對局是否已結束，見 [Game.isMatchOver]。
  * @property pendingTransition 呈現結束後尚待完成的權威流程，見 [Game.pendingTransition]。
  * @property roundCompletion 最近一次本局結算的權威摘要。
@@ -25,6 +27,7 @@ import kotlin.uuid.Uuid
 data class GameRuntimeStatePersistenceDto(
     val remainingReserveMillisByPlayerId: Map<String, Long>,
     val forcedAutoPlayPlayerIds: Set<String> = emptySet(),
+    val enabledAutomaticControlIdsByPlayerId: Map<String, Set<String>> = emptyMap(),
     val isMatchOver: Boolean = false,
     val pendingTransition: PendingGameTransitionPersistenceDto? = null,
     val roundCompletion: RoundCompletionSummaryPersistenceDto? = null,
@@ -39,6 +42,9 @@ data class GameRuntimeStatePersistenceDto(
 fun Game.toRuntimeStatePersistenceDto(): GameRuntimeStatePersistenceDto = GameRuntimeStatePersistenceDto(
     remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId.mapKeys { (playerId, _) -> playerId.toString() },
     forcedAutoPlayPlayerIds = forcedAutoPlayPlayerIds.mapTo(mutableSetOf(), Uuid::toString),
+    enabledAutomaticControlIdsByPlayerId = enabledAutomaticControlIdsByPlayerId.mapKeys { (playerId, _) ->
+        playerId.toString()
+    },
     isMatchOver = isMatchOver,
     pendingTransition = pendingTransition?.toPersistenceDto(),
     roundCompletion = roundCompletion?.toPersistenceDto(),
@@ -57,6 +63,9 @@ fun GameRuntimeStatePersistenceDto.toForcedAutoPlayPlayerIds(): Set<Uuid> = forc
     mutableSetOf(),
     Uuid::parse,
 )
+
+/** 將 persistence DTO 中的本局自動操作控制還原成以玩家 UUID 索引的資料。 */
+fun GameRuntimeStatePersistenceDto.toEnabledAutomaticControlIdsByPlayerId(): Map<Uuid, Set<String>> = enabledAutomaticControlIdsByPlayerId.mapKeys { (playerId, _) -> Uuid.parse(playerId) }
 
 /** 將 persistence DTO 中的中斷基本思考時間還原成以玩家 UUID 索引的資料。 */
 fun GameRuntimeStatePersistenceDto.toInterruptedBaseMillisByPlayerId(): Map<Uuid, Long> = interruptedBaseMillisByPlayerId.mapKeys { (playerId, _) -> Uuid.parse(playerId) }

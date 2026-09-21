@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -44,6 +45,19 @@ class RiichiRuleModuleTest {
         id = "mahjongcraft:riichi",
         config = RiichiRuleConfig(),
     )
+
+    /** 驗證四人日本麻將公開三項本局自動操作能力。 */
+    @Test
+    fun `test supported automatic controls contain built-in riichi controls`() {
+        assertEquals(
+            setOf(
+                BuiltInAutomaticControlIds.AUTO_WIN,
+                BuiltInAutomaticControlIds.DECLINE_CALLS,
+                BuiltInAutomaticControlIds.AUTO_TSUMOGIRI,
+            ),
+            module.getSupportedAutomaticControlIds(),
+        )
+    }
 
     /**
      * 驗證建立的牌山工廠是否為日本麻將實作。

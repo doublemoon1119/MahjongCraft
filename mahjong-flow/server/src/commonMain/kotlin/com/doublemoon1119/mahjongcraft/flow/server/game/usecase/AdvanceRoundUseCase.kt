@@ -181,6 +181,7 @@ class AdvanceRoundUseCase(
                         )
                         game.copy(
                             tableState = newState,
+                            enabledAutomaticControlIdsByPlayerId = emptyMap(),
                             pendingTransition = null,
                             roundCompletion = null,
                             matchEndReasonId = null,

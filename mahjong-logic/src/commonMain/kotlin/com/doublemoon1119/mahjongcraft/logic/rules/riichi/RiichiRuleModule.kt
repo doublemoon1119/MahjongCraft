@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -43,7 +44,14 @@ class RiichiRuleModule(
     override val id: String,
     override val config: RiichiRuleConfig,
 ) : MahjongRuleModule<RiichiRuleConfig> {
-    /** 日麻首版只公開已經能從桌面立直棒觀察到的立直狀態。 */
+    /** 四人日本麻將支援的本局自動操作控制。 */
+    override fun getSupportedAutomaticControlIds(): Set<String> = setOf(
+        BuiltInAutomaticControlIds.AUTO_WIN,
+        BuiltInAutomaticControlIds.DECLINE_CALLS,
+        BuiltInAutomaticControlIds.AUTO_TSUMOGIRI,
+    )
+
+    /** 日麻只公開已經能從桌面立直棒觀察到的立直狀態。 */
     override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = if (isPlayerInRiichi(player)) listOf(PublicPlayerIndicator(RIICHI_INDICATOR_ID)) else emptyList()
 
     /** 日本麻將手牌整理排序規則。 */

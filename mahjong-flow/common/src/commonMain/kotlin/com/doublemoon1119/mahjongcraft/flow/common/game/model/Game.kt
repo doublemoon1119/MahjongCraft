@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
+import com.doublemoon1119.mahjongcraft.logic.module.requireValidAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -17,6 +18,8 @@ import kotlin.uuid.Uuid
  *   逾時當下那一次決策——`com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator`
  *   每次替這裡的玩家送出自動命令後就會立即移除，玩家的下一次決策仍會拿到自己完整的
  *   `baseSeconds`，不會被永久接管。
+ * @property enabledAutomaticControlIdsByPlayerId 每位玩家在目前這一局啟用的自動操作控制 ID。沒有出現在
+ *   map 中的玩家視為未啟用任何控制；本狀態與逾時用的 [forcedAutoPlayPlayerIds] 無關，並在換局時清空。
  * @property isMatchOver 整場對局是否已依規則的 `GameLength` 結束（見
  *   `com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase`）。一旦成立，
  *   `tableState` 維持結束當下的樣子不再變動；`AiTurnDriver`／`ForcedAutoPlayDriver` 都會檢查這個
@@ -42,6 +45,7 @@ data class Game(
         it.id to flowConfig.timeControl.reserveSeconds * 1_000L
     },
     val forcedAutoPlayPlayerIds: Set<Uuid> = emptySet(),
+    val enabledAutomaticControlIdsByPlayerId: Map<Uuid, Set<String>> = emptyMap(),
     val isMatchOver: Boolean = false,
     val pendingTransition: PendingGameTransition? = null,
     val roundCompletion: RoundCompletionSummary? = null,
@@ -62,6 +66,10 @@ data class Game(
         require(forcedAutoPlayPlayerIds.all { it in playerIds }) {
             "Forced auto-play players must belong to the game"
         }
+        require(enabledAutomaticControlIdsByPlayerId.keys.all { it in playerIds }) {
+            "Automatic control players must belong to the game"
+        }
+        enabledAutomaticControlIdsByPlayerId.values.forEach(::requireValidAutomaticControlIds)
         require(pendingRoundPreparation?.participantPlayerIds?.all { it in playerIds } != false) {
             "Round preparation participants must belong to the game"
         }

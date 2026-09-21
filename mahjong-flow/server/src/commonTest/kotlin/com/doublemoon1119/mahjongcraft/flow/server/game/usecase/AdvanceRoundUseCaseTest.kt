@@ -66,6 +66,7 @@ class AdvanceRoundUseCaseTest {
         suspend fun setCompletedState(
             tableState: TableState,
             remainingReserveMillisByPlayerId: Map<Uuid, Long>? = null,
+            enabledAutomaticControlIdsByPlayerId: Map<Uuid, Set<String>> = emptyMap(),
         ) {
             val winners = tableState.players.filter { player ->
                 player.actionHistory.any { it is GameAction.Tsumo || it is GameAction.Ron }
@@ -103,6 +104,7 @@ class AdvanceRoundUseCaseTest {
                     flowConfig = GameFlowConfig(),
                     remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId
                         ?: tableState.players.associate { it.id to GameFlowConfig().timeControl.reserveSeconds * 1_000L },
+                    enabledAutomaticControlIdsByPlayerId = enabledAutomaticControlIdsByPlayerId,
                     roundCompletion = completion,
                 ),
             )
@@ -136,7 +138,11 @@ class AdvanceRoundUseCaseTest {
             prevalentWind = Wind.EAST,
         )
         val remainingReserveMillisByPlayerId = players.associate { it.id to 12_345L }
-        fixtures.setCompletedState(table, remainingReserveMillisByPlayerId)
+        fixtures.setCompletedState(
+            table,
+            remainingReserveMillisByPlayerId,
+            enabledAutomaticControlIdsByPlayerId = mapOf(dealerId to setOf("example:auto_action")),
+        )
 
         val result = fixtures.useCase(gameId)
 
@@ -151,6 +157,7 @@ class AdvanceRoundUseCaseTest {
             remainingReserveMillisByPlayerId,
             fixtures.gameRepo.getGame(gameId)?.remainingReserveMillisByPlayerId,
         )
+        assertTrue(fixtures.gameRepo.getGame(gameId)?.enabledAutomaticControlIdsByPlayerId.isNullOrEmpty())
         assertEquals(
             dealerId,
             newState.dealerPlayerId,

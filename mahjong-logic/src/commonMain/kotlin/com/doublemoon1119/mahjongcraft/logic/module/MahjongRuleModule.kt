@@ -65,6 +65,14 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     val tileOrder: TileOrder
 
     /**
+     * 回傳此規則支援的本局自動操作控制 ID。
+     *
+     * 控制 ID 只宣告能力；如何依合法動作解析並提交自動決策由 Flow 層 policy 負責。沒有本局自動操作能力的
+     * 規則沿用空集合。
+     */
+    fun getSupportedAutomaticControlIds(): Set<String> = emptySet()
+
+    /**
      * 建立整場對局的局位與終局 progression policy。
      *
      * 未覆寫的規則沿用 [MahjongRuleConfig.gameLength] 的固定局數，不啟用延長賽。
