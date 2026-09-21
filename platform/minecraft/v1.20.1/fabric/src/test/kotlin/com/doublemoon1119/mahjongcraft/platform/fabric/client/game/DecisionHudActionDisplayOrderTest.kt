@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -49,12 +50,23 @@ class DecisionHudActionDisplayOrderTest {
     /** 日麻登記的動作排在核心動作之後，立直在九種九牌之前。 */
     @Test
     fun `riichi actions sort after the built-in ones`() {
-        val tsumo = texts.actionOrder(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.TSUMO)
-        val riichi = texts.actionOrder(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id)
-        val kyuushuKyuuhai = texts.actionOrder(BuiltInRuleModuleIds.RIICHI, "mahjongcraft:kyuushu_kyuuhai")
+        val tsumo = assertNotNull(
+            texts.actionOrder(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.TSUMO),
+            "expected tsumo to be registered",
+        )
+        val riichi = assertNotNull(
+            texts.actionOrder(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id),
+            "expected riichi to be registered",
+        )
+        val kyuushuKyuuhai = assertNotNull(
+            texts.actionOrder(BuiltInRuleModuleIds.RIICHI, "mahjongcraft:kyuushu_kyuuhai"),
+            "expected kyuushu kyuuhai to be registered",
+        )
 
-        assertTrue(tsumo != null && riichi != null && kyuushuKyuuhai != null, "expected every built-in action to be registered")
-        assertTrue(tsumo!! < riichi!! && riichi < kyuushuKyuuhai!!, "expected tsumo < riichi < kyuushu kyuuhai: $tsumo, $riichi, $kyuushuKyuuhai")
+        assertTrue(
+            tsumo < riichi && riichi < kyuushuKyuuhai,
+            "expected tsumo < riichi < kyuushu kyuuhai: $tsumo, $riichi, $kyuushuKyuuhai",
+        )
     }
 
     /** 沒有登記順序的動作（例如第三方規則的特殊動作）由呼叫端排在最後。 */
