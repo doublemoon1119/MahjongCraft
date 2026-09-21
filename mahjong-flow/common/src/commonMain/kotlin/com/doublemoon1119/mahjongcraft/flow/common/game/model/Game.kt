@@ -20,6 +20,8 @@ import kotlin.uuid.Uuid
  *   `baseSeconds`，不會被永久接管。
  * @property enabledAutomaticControlIdsByPlayerId 每位玩家在目前這一局啟用的自動操作控制 ID。沒有出現在
  *   map 中的玩家視為未啟用任何控制；本狀態與逾時用的 [forcedAutoPlayPlayerIds] 無關，並在換局時清空。
+ * @property automaticControlRevision 本局自動操作集合的單調 revision；接受實際變更或進入下一局時遞增，
+ *   供更新用例拒絕以舊快照為基礎的提交。
  * @property isMatchOver 整場對局是否已依規則的 `GameLength` 結束（見
  *   `com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase`）。一旦成立，
  *   `tableState` 維持結束當下的樣子不再變動；`AiTurnDriver`／`ForcedAutoPlayDriver` 都會檢查這個
@@ -46,6 +48,7 @@ data class Game(
     },
     val forcedAutoPlayPlayerIds: Set<Uuid> = emptySet(),
     val enabledAutomaticControlIdsByPlayerId: Map<Uuid, Set<String>> = emptyMap(),
+    val automaticControlRevision: Long = 0L,
     val isMatchOver: Boolean = false,
     val pendingTransition: PendingGameTransition? = null,
     val roundCompletion: RoundCompletionSummary? = null,
@@ -70,6 +73,7 @@ data class Game(
             "Automatic control players must belong to the game"
         }
         enabledAutomaticControlIdsByPlayerId.values.forEach(::requireValidAutomaticControlIds)
+        require(automaticControlRevision >= 0L) { "Automatic control revision must not be negative" }
         require(pendingRoundPreparation?.participantPlayerIds?.all { it in playerIds } != false) {
             "Round preparation participants must belong to the game"
         }

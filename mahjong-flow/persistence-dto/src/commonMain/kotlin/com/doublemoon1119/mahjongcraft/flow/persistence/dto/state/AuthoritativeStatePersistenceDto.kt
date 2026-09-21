@@ -145,6 +145,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
         remainingReserveMillisByPlayerId = runtimeState.toRemainingReserveMillisByPlayerId(),
         forcedAutoPlayPlayerIds = runtimeState.toForcedAutoPlayPlayerIds(),
         enabledAutomaticControlIdsByPlayerId = runtimeState.toEnabledAutomaticControlIdsByPlayerId(),
+        automaticControlRevision = runtimeState.automaticControlRevision,
         isMatchOver = runtimeState.isMatchOver,
         pendingTransition = runtimeState.pendingTransition?.toDomain(),
         roundCompletion = runtimeState.roundCompletion?.toDomain(),

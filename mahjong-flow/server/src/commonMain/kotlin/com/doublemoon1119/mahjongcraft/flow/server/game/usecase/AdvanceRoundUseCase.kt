@@ -182,6 +182,7 @@ class AdvanceRoundUseCase(
                         game.copy(
                             tableState = newState,
                             enabledAutomaticControlIdsByPlayerId = emptyMap(),
+                            automaticControlRevision = game.automaticControlRevision + 1L,
                             pendingTransition = null,
                             roundCompletion = null,
                             matchEndReasonId = null,

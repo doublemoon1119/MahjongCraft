@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.dto.game
 
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /** [GameRuntimeStatePersistenceDto] 的向後相容解碼測試。 */
@@ -14,5 +15,6 @@ class GameRuntimeStatePersistenceDtoTest {
         )
 
         assertTrue(decoded.enabledAutomaticControlIdsByPlayerId.isEmpty())
+        assertEquals(0L, decoded.automaticControlRevision)
     }
 }

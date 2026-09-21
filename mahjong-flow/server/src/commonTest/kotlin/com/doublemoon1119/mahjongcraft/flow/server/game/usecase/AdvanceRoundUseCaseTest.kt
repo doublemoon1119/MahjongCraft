@@ -158,6 +158,7 @@ class AdvanceRoundUseCaseTest {
             fixtures.gameRepo.getGame(gameId)?.remainingReserveMillisByPlayerId,
         )
         assertTrue(fixtures.gameRepo.getGame(gameId)?.enabledAutomaticControlIdsByPlayerId.isNullOrEmpty())
+        assertEquals(1L, fixtures.gameRepo.getGame(gameId)?.automaticControlRevision)
         assertEquals(
             dealerId,
             newState.dealerPlayerId,

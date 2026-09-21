@@ -12,6 +12,7 @@ import kotlin.uuid.Uuid
  * @property forcedAutoPlayPlayerIds 已進入強制自動操作的玩家 UUID 字串集合。
  * @property enabledAutomaticControlIdsByPlayerId 以玩家 UUID 字串索引的本局自動操作控制 ID；舊存檔缺少此欄位時
  *   退回空 map。
+ * @property automaticControlRevision 本局自動操作集合的權威 revision；舊存檔缺少此欄位時退回 0。
  * @property isMatchOver 整場對局是否已結束，見 [Game.isMatchOver]。
  * @property pendingTransition 呈現結束後尚待完成的權威流程，見 [Game.pendingTransition]。
  * @property roundCompletion 最近一次本局結算的權威摘要。
@@ -28,6 +29,7 @@ data class GameRuntimeStatePersistenceDto(
     val remainingReserveMillisByPlayerId: Map<String, Long>,
     val forcedAutoPlayPlayerIds: Set<String> = emptySet(),
     val enabledAutomaticControlIdsByPlayerId: Map<String, Set<String>> = emptyMap(),
+    val automaticControlRevision: Long = 0L,
     val isMatchOver: Boolean = false,
     val pendingTransition: PendingGameTransitionPersistenceDto? = null,
     val roundCompletion: RoundCompletionSummaryPersistenceDto? = null,
@@ -45,6 +47,7 @@ fun Game.toRuntimeStatePersistenceDto(): GameRuntimeStatePersistenceDto = GameRu
     enabledAutomaticControlIdsByPlayerId = enabledAutomaticControlIdsByPlayerId.mapKeys { (playerId, _) ->
         playerId.toString()
     },
+    automaticControlRevision = automaticControlRevision,
     isMatchOver = isMatchOver,
     pendingTransition = pendingTransition?.toPersistenceDto(),
     roundCompletion = roundCompletion?.toPersistenceDto(),

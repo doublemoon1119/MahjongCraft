@@ -223,6 +223,7 @@ class AuthoritativeStatePersistenceDtoTest {
             tableState = tableState,
             flowConfig = GameFlowConfig(),
             enabledAutomaticControlIdsByPlayerId = mapOf(playerId to setOf("example:auto_action")),
+            automaticControlRevision = 12L,
         )
         val state = createAuthoritativeStatePersistenceDto(
             rooms = emptyList(),
@@ -250,6 +251,7 @@ class AuthoritativeStatePersistenceDtoTest {
             mapOf(playerId to setOf("example:auto_action")),
             restored.enabledAutomaticControlIdsByPlayerId,
         )
+        assertEquals(12L, restored.automaticControlRevision)
     }
 
     /** 驗證舊存檔缺少本局自動操作欄位時還原為空 map。 */
@@ -269,6 +271,7 @@ class AuthoritativeStatePersistenceDtoTest {
         ).getValue(Uuid.parse(gameIdString))
 
         assertTrue(restored.enabledAutomaticControlIdsByPlayerId.isEmpty())
+        assertEquals(0L, restored.automaticControlRevision)
     }
 
     /**

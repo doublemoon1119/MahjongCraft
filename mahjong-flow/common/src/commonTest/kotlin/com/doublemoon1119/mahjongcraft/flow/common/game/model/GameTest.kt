@@ -97,4 +97,16 @@ class GameTest {
 
         assertTrue(error.message.orEmpty().contains("namespaced"))
     }
+
+    /** 本局自動操作 revision 不得為負數。 */
+    @Test
+    fun `game rejects negative automatic control revision`() {
+        assertFailsWith<IllegalArgumentException> {
+            Game(
+                tableState = FakeTableStateFactory.create(),
+                flowConfig = GameFlowConfig(),
+                automaticControlRevision = -1L,
+            )
+        }
+    }
 }
