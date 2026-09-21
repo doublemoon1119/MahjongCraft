@@ -29,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServe
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TableOpeningPresentationOperationTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.AutomaticControlUpdateService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricGameCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
@@ -151,6 +152,7 @@ class MahjongCraftMod : ModInitializer {
         registerRoomActionReceiver(koin)
         registerRequestSnapshotReceiver(koin)
         registerSetAutoSortHandReceiver(koin)
+        registerAutomaticControlUpdateReceiver(koin)
         registerPlayerConnectionEvents(koin)
         koin.get<FabricServerConfigCommand>().register()
         koin.get<FabricRoomCommand>().register()
@@ -263,6 +265,19 @@ class MahjongCraftMod : ModInitializer {
         MahjongChannels.setAutoSortHand.registerServerReceiver(json) { _, player, enabled ->
             scope.launch {
                 useCase(player.uuid.toKotlinUuid(), enabled, HandSortPreferenceUpdateMode.USER_CHANGE)
+            }
+        }
+    }
+
+    /** 接收本局自動操作集合更新，只使用連線玩家身分並回覆可配對的權威結果。 */
+    private fun registerAutomaticControlUpdateReceiver(koin: Koin) {
+        val json = koin.get<Json>()
+        val service = koin.get<AutomaticControlUpdateService>()
+        val scope = koin.get<AppCoroutineScope>()
+        MahjongChannels.automaticControlUpdate.registerServerReceiver(json) { _, player, request ->
+            scope.launch {
+                val result = service(player.uuid.toKotlinUuid(), request)
+                MahjongChannels.automaticControlUpdateResult.sendTo(player, json, result)
             }
         }
     }

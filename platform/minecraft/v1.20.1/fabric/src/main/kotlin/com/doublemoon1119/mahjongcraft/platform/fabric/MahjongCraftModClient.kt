@@ -38,6 +38,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrat
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.RoomScreen
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientAutomaticControlStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
@@ -102,6 +103,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val json = koin.get<Json>()
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val stateStore = koin.get<ClientMahjongStateStore>()
+        val automaticControlStateStore = koin.get<ClientAutomaticControlStateStore>()
         val decisionTimerStore = koin.get<ClientDecisionTimerStateStore>()
         val decisionPromptStore = koin.get<ClientDecisionPromptStore>()
         val tileDisplayNames = koin.get<TileDisplayNameRegistry>()
@@ -156,6 +158,7 @@ class MahjongCraftModClient : ClientModInitializer {
             MinecraftClient.getInstance().player?.sendMessage(message)
         }
         MahjongChannels.roomSnapshot.registerClientReceiver(json) { payload ->
+            automaticControlStateStore.clear()
             stateStore.applyRoomSnapshot(
                 Uuid.parse(payload.roomId),
                 payload.snapshot.toDomain(networkRegistries),
@@ -186,6 +189,7 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         MahjongChannels.snapshotCleared.registerClientReceiver(json) { payload ->
             stateStore.applySnapshotCleared(Uuid.parse(payload.id))
+            automaticControlStateStore.clear()
         }
         MahjongChannels.gameSnapshot.registerClientReceiver(json) { payload ->
             stateStore.applyGameSnapshot(
@@ -194,6 +198,17 @@ class MahjongCraftModClient : ClientModInitializer {
                 payload.roundPreparation?.toDomain(),
             )
         }
+        MahjongChannels.automaticControlSnapshot.registerClientReceiver(json) { snapshot ->
+            if (snapshot == null) {
+                automaticControlStateStore.clear()
+            } else {
+                automaticControlStateStore.applySnapshot(snapshot)
+            }
+        }
+        MahjongChannels.automaticControlUpdateResult.registerClientReceiver(
+            json,
+            automaticControlStateStore::applyResult,
+        )
         EntityRendererRegistry.register(ModEntities.mahjongDice, ::MahjongDiceEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongSoundTimeline, ::MahjongSoundTimelineEntityRenderer)
         EntityRendererRegistry.register(ModEntities.diceRollPresentation) { context -> DiceRollPresentationEntityRenderer(context, clientConfigStore) }
@@ -257,6 +272,7 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
             stateStore.clear()
+            automaticControlStateStore.clear()
             decisionTimerStore.clear()
             decisionPromptStore.clear()
             decisionHudController.clear()

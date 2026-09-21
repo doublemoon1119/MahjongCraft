@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.network
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlSnapshotDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameCommandEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSyncPayloadDto
@@ -11,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.SnapshotClearedPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyPayloadDto
+import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.builtins.serializer
 
 /** `mahjongcraft:` 命名空間下實際使用的命令、事件更新與主動快照同步頻道。 */
@@ -39,6 +43,10 @@ object MahjongChannels {
      * 知道才能實際重新排列座標，不像牌角標籤那種純客戶端疊加。
      */
     val setAutoSortHand = C2SChannel("set_auto_sort_hand", Boolean.serializer())
+    val automaticControlUpdate = C2SChannel(
+        "automatic_control_update",
+        AutomaticControlUpdateRequestDto.serializer(),
+    )
     val decisionTimerUpdate = S2CChannel("decision_timer_update", DecisionTimerUpdatePayloadDto.serializer())
     val decisionSubmissionResult = S2CChannel("decision_submission_result", PlayerDecisionSubmissionResultDto.serializer())
     val gameUpdate = S2CChannel("game_update", GameUpdatePayloadDto.serializer())
@@ -52,4 +60,12 @@ object MahjongChannels {
      * 這個頻道不會開啟任何畫面，收到時只更新已保存的狀態。
      */
     val snapshotCleared = S2CChannel("snapshot_cleared", SnapshotClearedPayloadDto.serializer())
+    val automaticControlUpdateResult = S2CChannel(
+        "automatic_control_update_result",
+        AutomaticControlUpdateResultDto.serializer(),
+    )
+    val automaticControlSnapshot = S2CChannel(
+        "automatic_control_snapshot",
+        AutomaticControlSnapshotDto.serializer().nullable,
+    )
 }

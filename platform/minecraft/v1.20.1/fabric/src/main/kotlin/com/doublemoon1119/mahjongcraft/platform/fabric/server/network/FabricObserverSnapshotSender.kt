@@ -27,29 +27,39 @@ import kotlin.uuid.Uuid
 @Single(binds = [ObserverSnapshotSender::class])
 class FabricObserverSnapshotSender(
     private val serverHolder: FabricServerHolder,
+    private val automaticControlSnapshotSender: AutomaticControlSnapshotSender,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) : ObserverSnapshotSender {
     override suspend fun send(id: Uuid, observerId: Uuid, snapshot: ObserverSnapshot?) {
         val player = serverHolder.findPlayer(observerId) ?: return
         when (snapshot) {
-            is ObserverSnapshot.OfRoom -> MahjongChannels.roomSnapshot.sendTo(
-                player,
-                json,
-                RoomSnapshotSyncPayloadDto(id.toString(), snapshot.room.toDto(networkRegistries)),
-            )
+            is ObserverSnapshot.OfRoom -> {
+                MahjongChannels.roomSnapshot.sendTo(
+                    player,
+                    json,
+                    RoomSnapshotSyncPayloadDto(id.toString(), snapshot.room.toDto(networkRegistries)),
+                )
+                automaticControlSnapshotSender.clear(observerId)
+            }
 
-            is ObserverSnapshot.OfGame -> MahjongChannels.gameSnapshot.sendTo(
-                player,
-                json,
-                GameSnapshotSyncPayloadDto(
-                    gameId = id.toString(),
-                    snapshot = snapshot.game.toDto(networkRegistries),
-                    roundPreparation = snapshot.roundPreparation?.toDto(),
-                ),
-            )
+            is ObserverSnapshot.OfGame -> {
+                MahjongChannels.gameSnapshot.sendTo(
+                    player,
+                    json,
+                    GameSnapshotSyncPayloadDto(
+                        gameId = id.toString(),
+                        snapshot = snapshot.game.toDto(networkRegistries),
+                        roundPreparation = snapshot.roundPreparation?.toDto(),
+                    ),
+                )
+                automaticControlSnapshotSender.send(id, observerId)
+            }
 
-            null -> MahjongChannels.snapshotCleared.sendTo(player, json, SnapshotClearedPayloadDto(id = id.toString()))
+            null -> {
+                MahjongChannels.snapshotCleared.sendTo(player, json, SnapshotClearedPayloadDto(id = id.toString()))
+                automaticControlSnapshotSender.clear(observerId)
+            }
         }
     }
 }

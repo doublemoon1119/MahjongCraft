@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerM
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AutomaticControlSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPlayerPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
@@ -35,6 +36,7 @@ class PlayerConnectionLifecycleService(
     private val leaveRoom: LeaveRoomUseCase,
     private val syncRoom: SyncRoomSnapshotUseCase,
     private val syncGame: SyncGameSnapshotUseCase,
+    private val automaticControlSnapshotSender: AutomaticControlSnapshotSender,
 ) {
     /** 記錄斷線政策、延遲工作與略過離開的原因。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -88,11 +90,13 @@ class PlayerConnectionLifecycleService(
         }
         if (gameRepository.getTableState(tableId) != null) {
             syncGame(tableId, playerId)
+            automaticControlSnapshotSender.send(tableId, playerId)
             logger.debug("Resynced game snapshot for player {} in table {} after reconnect", playerId, tableId)
             return
         }
         if (roomRepository.getRoom(tableId) != null) {
             syncRoom(tableId, playerId)
+            automaticControlSnapshotSender.clear(playerId)
             logger.debug("Resynced room snapshot for player {} in table {} after reconnect", playerId, tableId)
         }
     }

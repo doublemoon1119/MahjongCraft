@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.player
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -13,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AutomaticControlSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPlayerPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
@@ -111,6 +111,7 @@ class PlayerConnectionLifecycleServiceTest {
         advanceUntilIdle()
 
         assertNotNull(fixture.roomSnapshotRepository.getSnapshot(fixture.tableId, fixture.playerId))
+        assertEquals(listOf(fixture.playerId), fixture.automaticControlSnapshots.clearedPlayerIds)
     }
 
     /** 對局已開始時，快照補送請求應改補送對局快照，而不是等待室快照。 */
@@ -127,6 +128,10 @@ class PlayerConnectionLifecycleServiceTest {
         advanceUntilIdle()
 
         assertNotNull(fixture.gameSnapshotRepository.getSnapshot(fixture.tableId, fixture.playerId))
+        assertEquals(
+            listOf(fixture.tableId to fixture.playerId),
+            fixture.automaticControlSnapshots.sentSnapshots,
+        )
     }
 
     /** 進行中的 Game 不受斷線離開政策影響。 */
@@ -228,7 +233,7 @@ class PlayerConnectionLifecycleServiceTest {
                 disconnectedPlayerTimeoutSeconds = timeoutSeconds,
             ),
         )
-        val networkRegistries = DefaultNetworkDtoRegistries()
+        val automaticControlSnapshots = RecordingAutomaticControlSnapshotSender()
         val service = PlayerConnectionLifecycleService(
             scope,
             configState,
@@ -238,6 +243,7 @@ class PlayerConnectionLifecycleServiceTest {
             leaveRoom,
             SyncRoomSnapshotUseCase(roomRepository, roomSnapshotRepository),
             SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl())),
+            automaticControlSnapshots,
         )
         return Fixture(
             service,
@@ -247,6 +253,7 @@ class PlayerConnectionLifecycleServiceTest {
             memberships,
             roomSnapshotRepository,
             gameSnapshotRepository,
+            automaticControlSnapshots,
             tableId,
             playerId,
             players,
@@ -275,8 +282,23 @@ class PlayerConnectionLifecycleServiceTest {
         val memberships: PlayerMembershipRepositoryImpl,
         val roomSnapshotRepository: FakeRoomSnapshotRepository,
         val gameSnapshotRepository: FakeGameSnapshotRepository,
+        val automaticControlSnapshots: RecordingAutomaticControlSnapshotSender,
         val tableId: Uuid,
         val playerId: Uuid,
         val players: List<MahjongPlayer>,
     )
+
+    /** 記錄重連流程要求送出或清除的個人自動操作快照。 */
+    private class RecordingAutomaticControlSnapshotSender : AutomaticControlSnapshotSender {
+        val sentSnapshots = mutableListOf<Pair<Uuid, Uuid>>()
+        val clearedPlayerIds = mutableListOf<Uuid>()
+
+        override suspend fun send(gameId: Uuid, playerId: Uuid) {
+            sentSnapshots += gameId to playerId
+        }
+
+        override fun clear(playerId: Uuid) {
+            clearedPlayerIds += playerId
+        }
+    }
 }
