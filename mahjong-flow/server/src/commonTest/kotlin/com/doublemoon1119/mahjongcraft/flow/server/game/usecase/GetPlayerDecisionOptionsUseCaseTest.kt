@@ -1,13 +1,17 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.AutomaticDecisionEvaluator
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
@@ -45,8 +49,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
         /** 待測的完整決策查詢 use case。 */
         val useCase = GetPlayerDecisionOptionsUseCase(
             gameRepository,
-            moduleRegistry,
-            PlayerActionContextResolver(),
+            AutomaticDecisionEvaluator(moduleRegistry, PlayerActionContextResolver()),
         )
     }
 
@@ -135,6 +138,43 @@ class GetPlayerDecisionOptionsUseCaseTest {
         assertTrue(result.value.discardAnalyses.isEmpty())
         assertTrue(result.value.actions.all { it.discardAnalyses.isEmpty() })
         assertEquals(discarded.tile, result.value.referenceTile)
+    }
+
+    /** 驗證不吃碰槓由同一查詢邊界隱藏鳴牌選項，而不是交由平台自行過濾。 */
+    @Test
+    fun `test decline calls filters call actions from decision options`() = runTest {
+        val fixtures = Fixtures()
+        val discarded = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val discarder = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discarded),
+        )
+        val matchingTiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.South) }
+        val respondent = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = matchingTiles),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val state = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, respondent),
+            config = RiichiRuleConfig(),
+            pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id)),
+        )
+        fixtures.gameRepository.setGame(
+            Game(
+                tableState = state,
+                flowConfig = GameFlowConfig(),
+                enabledAutomaticControlIdsByPlayerId = mapOf(
+                    respondent.id to setOf(BuiltInAutomaticControlIds.DECLINE_CALLS),
+                ),
+            ),
+        )
+
+        val result = fixtures.useCase(gameId, respondent.id)
+
+        assertTrue(result is Outcome.Success)
+        assertEquals(listOf(GameAction.Pass), result.value.actions.map { it.action })
     }
 
     /** 驗證未提供捨牌分析器的規則仍可安全回傳決策結果。 */

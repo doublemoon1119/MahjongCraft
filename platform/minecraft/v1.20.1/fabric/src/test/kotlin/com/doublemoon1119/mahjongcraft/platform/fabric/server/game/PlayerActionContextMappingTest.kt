@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionCommandMapper
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContext
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -15,6 +17,9 @@ import kotlin.uuid.Uuid
 
 /** Minecraft 平台玩家操作情境映射的單元測試。 */
 class PlayerActionContextMappingTest {
+    /** 待測的共用動作命令 mapper。 */
+    private val commandMapper = GameActionCommandMapper(ExtensionGameActionCommandFactoryRegistry())
+
     /** 驗證搶槓與捨牌反應使用各自的回應命令信封。 */
     @Test
     fun `test reaction contexts wrap action in matching command`() {
@@ -34,8 +39,11 @@ class PlayerActionContextMappingTest {
             PendingReaction(Uuid.random(), tile.id, setOf(playerId)),
         )
 
-        assertEquals(GameCommand.RespondToKan(GameAction.Pass), kanContext.toGameCommand(GameAction.Pass))
-        assertEquals(GameCommand.RespondToDiscard(GameAction.Pass), discardContext.toGameCommand(GameAction.Pass))
+        assertEquals(GameCommand.RespondToKan(GameAction.Pass), commandMapper.toCommand(kanContext, GameAction.Pass))
+        assertEquals(
+            GameCommand.RespondToDiscard(GameAction.Pass),
+            commandMapper.toCommand(discardContext, GameAction.Pass),
+        )
     }
 
     /** 驗證自己回合只接受可映射的額外合法動作。 */
@@ -43,8 +51,8 @@ class PlayerActionContextMappingTest {
     fun `test own turn context maps supported action only`() {
         val context = PlayerActionContext.OwnTurn(Uuid.random())
 
-        assertEquals(GameCommand.Tsumo, context.toGameCommand(GameAction.Tsumo))
-        assertNull(context.toGameCommand(GameAction.Pass))
+        assertEquals(GameCommand.Tsumo, commandMapper.toCommand(context, GameAction.Tsumo))
+        assertNull(commandMapper.toCommand(context, GameAction.Pass))
     }
 
     /** 驗證三種操作情境及無情境對應到正確的手牌顯示狀態。 */

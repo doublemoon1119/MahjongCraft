@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
@@ -8,8 +9,13 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -146,6 +152,36 @@ class GameDecisionAuthorityResolverTest {
         )
 
         assertEquals(emptyMap(), resolver.resolve(game))
+    }
+
+    /** 驗證能由本局自動控制立即完成的決策不會建立思考計時。 */
+    @Test
+    fun `test immediate automatic decision is excluded from authority`() {
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+        val contextResolver = PlayerActionContextResolver()
+        val automaticResolver = GameDecisionAuthorityResolver(
+            contextResolver,
+            AutomaticDecisionEvaluator(moduleRegistry, contextResolver),
+        )
+        val discarded = IdentifiedTile(Uuid.random(), Tile.Honor.South)
+        val discarder = FakeMahjongPlayerFactory.create(discardPile = FakeDiscardPile().discardTile(discarded))
+        val respondent = FakeMahjongPlayerFactory.create(
+            hand = Hand(tiles = List(2) { IdentifiedTile(Uuid.random(), Tile.Honor.South) }),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val game = Game(
+            tableState = FakeTableStateFactory.create(
+                players = listOf(discarder, respondent),
+                config = RiichiRuleConfig(),
+                pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id)),
+            ),
+            flowConfig = GameFlowConfig(),
+            enabledAutomaticControlIdsByPlayerId = mapOf(
+                respondent.id to setOf(BuiltInAutomaticControlIds.DECLINE_CALLS),
+            ),
+        )
+
+        assertEquals(emptyMap(), automaticResolver.resolve(game))
     }
 
     /**

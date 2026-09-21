@@ -14,6 +14,7 @@ import kotlin.uuid.Uuid
 @Single
 class GameDecisionAuthorityResolver(
     private val actionContextResolver: PlayerActionContextResolver = PlayerActionContextResolver(),
+    private val automaticDecisionEvaluator: AutomaticDecisionEvaluator? = null,
 ) {
     /**
      * 解析目前所有尚未完成的玩家決策。
@@ -43,6 +44,15 @@ class GameDecisionAuthorityResolver(
         }
         return actionContextResolver.resolve(state)
             .filterKeys { it in humanPlayerIds && it !in game.forcedAutoPlayPlayerIds }
+            .filterKeys { playerId ->
+                if (game.enabledAutomaticControlIdsByPlayerId[playerId].isNullOrEmpty()) {
+                    true
+                } else {
+                    requireNotNull(automaticDecisionEvaluator) {
+                        "AutomaticDecisionEvaluator is required when automatic controls are enabled"
+                    }.evaluate(game, playerId)?.immediateAction == null
+                }
+            }
             .mapValues { it.value.phase }
     }
 }

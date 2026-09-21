@@ -39,7 +39,7 @@ import kotlin.uuid.Uuid
  * [AdvanceRoundUseCase]）的呼叫時機，讓呼叫端只需要送出玩家的
  * [GameCommand]，不需要自己判斷「這個結果是不是代表本局已經結束、該推進到下一局了」。
  *
- * 未來真正的呼叫端（例如 Minecraft 平台層）應該呼叫這裡，而不是直接呼叫 [GameActionRouter]——
+ * 實際的外部整合層應該呼叫這裡，而不是直接呼叫 [GameActionRouter]——
  * 後者只做單純分派，不含這裡的自動銜接邏輯。
  *
  * 三種銜接時機：
@@ -70,6 +70,7 @@ import kotlin.uuid.Uuid
  *   會先持久化 [PendingGameTransition.ReturnToRoom]，再於同一次待完成流程收斂中呼叫此用例。
  * @property aiTurnDriver 找出下一個該行動的 AI 玩家與其命令。
  * @property forcedAutoPlayDriver 找出下一個必須由伺服器固定操作的真人玩家與命令。
+ * @property automaticDecisionDriver 找出下一個由真人玩家本局自動設定立即執行的命令。
  * @property decisionAvailabilityService 在呈現忙碌時暫停玩家決策，閒置時恢復或調整計時並立即同步。
  * @property winPresentationHandoff 胡牌 use case 建構好的演出內容交接點，見 [WinPresentationHandoff]。
  * @property presentationBusyGate 查詢平台呈現層是否仍在播放動畫；[driveAutomatedPlayers] 與
@@ -89,6 +90,7 @@ class GameFlowCoordinator(
     private val returnToRoomUseCase: ReturnToRoomUseCase,
     private val aiTurnDriver: AiTurnDriver,
     private val forcedAutoPlayDriver: ForcedAutoPlayDriver,
+    private val automaticDecisionDriver: AutomaticDecisionDriver? = null,
     private val decisionAvailabilityService: GameDecisionAvailabilityService,
     private val exhaustiveDrawSettlementPresentationService: ExhaustiveDrawSettlementPresentationService,
     private val winPresentationHandoff: WinPresentationHandoff,
@@ -164,7 +166,7 @@ class GameFlowCoordinator(
     }
 
     /**
-     * 依序驅動強制自動操作玩家與 AI，直到目前沒有任何自動決策需要執行。
+     * 依序驅動強制自動操作、真人自動設定與 AI，直到目前沒有任何自動決策需要執行。
      *
      * 每次迭代前後比較 `TableState`；若命令未造成進展便立即停止。理論上這個迴圈一定會自然收斂
      * （沒有更多自動決策要做，或桌況沒有任何進展），但仍設 [MAX_ITERATIONS] 作為上限而非單純
@@ -207,7 +209,8 @@ class GameFlowCoordinator(
                 return@repeat
             }
             val forcedAction = forcedAutoPlayDriver.resolveNextAction(gameId)
-            val (playerId, command) = forcedAction ?: aiTurnDriver.resolveNextAction(gameId) ?: return
+            val automaticAction = if (forcedAction == null) automaticDecisionDriver?.resolveNextAction(gameId) else null
+            val (playerId, command) = forcedAction ?: automaticAction ?: aiTurnDriver.resolveNextAction(gameId) ?: return
             if (forcedAction != null) clearForcedAutoPlay(gameId, playerId)
             val stateBefore = gameRepository.getTableState(gameId)
             dispatchAndReconcile(gameId, playerId, command)

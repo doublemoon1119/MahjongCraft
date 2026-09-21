@@ -51,6 +51,9 @@ class RiichiRuleModule(
         BuiltInAutomaticControlIds.AUTO_TSUMOGIRI,
     )
 
+    /** 建立日本麻將本局自動操作 policy。 */
+    override fun createAutomaticControlPolicy(): RiichiAutomaticControlPolicy = RiichiAutomaticControlPolicy
+
     /** 日麻只公開已經能從桌面立直棒觀察到的立直狀態。 */
     override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = if (isPlayerInRiichi(player)) listOf(PublicPlayerIndicator(RIICHI_INDICATOR_ID)) else emptyList()
 

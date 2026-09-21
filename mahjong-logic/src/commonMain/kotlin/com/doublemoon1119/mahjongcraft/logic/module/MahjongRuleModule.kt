@@ -73,6 +73,13 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun getSupportedAutomaticControlIds(): Set<String> = emptySet()
 
     /**
+     * 建立解析本局自動操作行為的規則 policy。
+     *
+     * 沒有自動操作行為的規則沿用 no-op；通用 Flow 不得自行套用其他玩法的動作分類。
+     */
+    fun createAutomaticControlPolicy(): AutomaticControlPolicy = NoOpAutomaticControlPolicy
+
+    /**
      * 建立整場對局的局位與終局 progression policy。
      *
      * 未覆寫的規則沿用 [MahjongRuleConfig.gameLength] 的固定局數，不啟用延長賽。

@@ -13,13 +13,12 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSe
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultKindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionCommandMapper
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
-import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
@@ -61,7 +60,7 @@ import kotlin.uuid.toKotlinUuid
  * @property presentationPublisher 選牌需要多選（`maxCount > 1`）時，通知平台呈現層生成／清除選牌確認
  *   面板 entity。
  * @property actionContextResolver 玩家目前操作情境的權威解析器。
- * @property actionCommandFactoryRegistry 將規則擴充動作與其選牌結果轉成強型別命令。
+ * @property actionCommandMapper 將合法動作與選牌結果轉成 Flow 命令的共用 mapper。
  */
 @Single
 class MahjongTableGameActionService(
@@ -76,7 +75,7 @@ class MahjongTableGameActionService(
     private val promptFactory: PlayerDecisionPromptFactory,
     private val presentationPublisher: GamePresentationPublisher,
     private val actionContextResolver: PlayerActionContextResolver,
-    private val actionCommandFactoryRegistry: ExtensionGameActionCommandFactoryRegistry,
+    private val actionCommandMapper: GameActionCommandMapper,
     private val moduleRegistry: MahjongModuleRegistry,
     @Provided private val json: Json,
 ) {
@@ -277,12 +276,7 @@ class MahjongTableGameActionService(
             return PlayerDecisionSubmissionResultKindDto.REJECTED
         }
         val context = actionContextResolver.resolveFor(state, playerId)
-        val command = when (val action = candidate.action) {
-            is GameAction.Extension -> actionCommandFactoryRegistry.createCommand(action.value, selectedTileIds)
-                ?.let(GameCommand::Extension)
-                ?: if (requirement == null) context?.toGameCommand(action) else null
-            else -> if (selectedTileIds.isEmpty()) context?.toGameCommand(action) else null
-        }
+        val command = context?.let { actionCommandMapper.toCommand(it, candidate.action, selectedTileIds) }
         if (command == null) {
             feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)
             return PlayerDecisionSubmissionResultKindDto.REJECTED
@@ -369,19 +363,4 @@ internal fun PlayerActionContext?.toTurnStatus(): GameTurnStatus = when (this) {
     is PlayerActionContext.KanReaction, is PlayerActionContext.DiscardReaction -> GameTurnStatus.AWAITING_RESPONSE
     is PlayerActionContext.OwnTurn -> GameTurnStatus.OWN_TURN
     null -> GameTurnStatus.WAITING
-}
-
-/** 依玩家操作情境把合法動作包裝成對應的對局命令。 */
-internal fun PlayerActionContext.toGameCommand(action: GameAction): GameCommand? = when (this) {
-    is PlayerActionContext.KanReaction -> GameCommand.RespondToKan(action)
-    is PlayerActionContext.DiscardReaction -> GameCommand.RespondToDiscard(action)
-    is PlayerActionContext.OwnTurn -> action.toOwnTurnCommand()
-}
-
-/** 將自己回合的額外合法動作轉換成對應命令，不支援的動作回傳 null。 */
-private fun GameAction.toOwnTurnCommand(): GameCommand? = when (this) {
-    GameAction.Tsumo -> GameCommand.Tsumo
-    is GameAction.Kan -> GameCommand.Kan(type, tileId)
-    is GameAction.ExhaustiveDraw -> GameCommand.DeclareExhaustiveDraw(reason)
-    else -> null
 }

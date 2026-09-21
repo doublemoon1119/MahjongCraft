@@ -4,9 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.model.PlayerDecisionOptions
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionOptionsResolver
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.AutomaticDecisionEvaluator
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
@@ -14,8 +12,7 @@ import kotlin.uuid.Uuid
 @Factory
 class GetPlayerDecisionOptionsUseCase(
     private val gameRepository: GameRepository,
-    private val moduleRegistry: MahjongModuleRegistry,
-    private val actionContextResolver: PlayerActionContextResolver = PlayerActionContextResolver(),
+    private val automaticDecisionEvaluator: AutomaticDecisionEvaluator,
 ) {
     /**
      * 查詢合法動作、選牌需求、捨牌分析與決策觸發牌。
@@ -24,12 +21,12 @@ class GetPlayerDecisionOptionsUseCase(
      * @param playerId 欲查詢的玩家 Uuid。
      */
     suspend operator fun invoke(gameId: Uuid, playerId: Uuid): Outcome<PlayerDecisionOptions, GameError> {
-        val state = gameRepository.getTableState(gameId)
+        val game = gameRepository.getGame(gameId)
             ?: return Outcome.Error(GameError.GameNotFound(gameId))
-        val player = state.players.firstOrNull { it.id == playerId }
+        val player = game.tableState.players.firstOrNull { it.id == playerId }
             ?: return Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
         return Outcome.Success(
-            PlayerDecisionOptionsResolver.resolve(state, player, moduleRegistry, actionContextResolver),
+            requireNotNull(automaticDecisionEvaluator.evaluate(game, player.id)).options,
         )
     }
 }
