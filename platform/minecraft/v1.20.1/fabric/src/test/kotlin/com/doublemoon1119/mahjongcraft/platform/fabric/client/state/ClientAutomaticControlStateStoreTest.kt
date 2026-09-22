@@ -31,7 +31,7 @@ class ClientAutomaticControlStateStoreTest {
         val firstGame = Uuid.random().toString()
         val secondGame = Uuid.random().toString()
         store.applySnapshot(snapshot(firstGame, 9L, setOf("auto:first")))
-        store.setPendingRequest(request("old-game").copy(gameId = firstGame))
+        assertTrue(store.trySetPendingRequest(request("old-game").copy(gameId = firstGame)))
 
         val replacement = snapshot(secondGame, 1L, setOf("auto:second"))
         assertTrue(store.applySnapshot(replacement))
@@ -40,17 +40,17 @@ class ClientAutomaticControlStateStoreTest {
     }
 
     @Test
-    fun `only one pending request is retained and matching result clears it`() {
+    fun `pending request cannot be replaced and matching result clears it`() {
         val store = ClientAutomaticControlStateStore()
         val first = request("first")
         val second = request("second")
-        store.setPendingRequest(first)
-        store.setPendingRequest(second)
+        assertTrue(store.trySetPendingRequest(first))
+        assertFalse(store.trySetPendingRequest(second))
 
-        assertEquals(second, store.pendingRequest())
-        assertFalse(store.applyResult(result("first", null)))
-        assertEquals(second, store.pendingRequest())
-        assertTrue(store.applyResult(result("second", snapshot(second.gameId, 2L, setOf("auto:accepted")))))
+        assertEquals(first, store.pendingRequest())
+        assertFalse(store.applyResult(result(second.requestId, second.gameId, null)))
+        assertEquals(first, store.pendingRequest())
+        assertTrue(store.applyResult(result(first.requestId, first.gameId, snapshot(first.gameId, 2L, setOf("auto:accepted")))))
         assertNull(store.pendingRequest())
         assertEquals(setOf("auto:accepted"), store.snapshot()?.enabledControlIds)
     }
@@ -59,7 +59,7 @@ class ClientAutomaticControlStateStoreTest {
     fun `matching request id from another game does not clear pending request`() {
         val store = ClientAutomaticControlStateStore()
         val pending = request("same-id")
-        store.setPendingRequest(pending)
+        assertTrue(store.trySetPendingRequest(pending))
         val otherGameResult = AutomaticControlUpdateResultDto(
             requestId = pending.requestId,
             gameId = Uuid.random().toString(),
@@ -74,11 +74,11 @@ class ClientAutomaticControlStateStoreTest {
     fun `matching result cannot overwrite a newer local snapshot with stale snapshot`() {
         val store = ClientAutomaticControlStateStore()
         val request = request("request")
-        store.setPendingRequest(request)
+        assertTrue(store.trySetPendingRequest(request))
         val current = snapshot(request.gameId, 5L, setOf("auto:current"))
         store.applySnapshot(current)
 
-        assertTrue(store.applyResult(result(request.requestId, snapshot(request.gameId, 4L, setOf("auto:stale")))))
+        assertTrue(store.applyResult(result(request.requestId, request.gameId, snapshot(request.gameId, 4L, setOf("auto:stale")))))
         assertEquals(current, store.snapshot())
         assertNull(store.pendingRequest())
     }
@@ -87,7 +87,7 @@ class ClientAutomaticControlStateStoreTest {
     fun `clear removes snapshot and pending request but keeps notification monotonicity`() {
         val store = ClientAutomaticControlStateStore()
         store.applySnapshot(snapshot(Uuid.random().toString(), 1L, emptySet()))
-        store.setPendingRequest(request("request"))
+        assertTrue(store.trySetPendingRequest(request("request")))
         val revisionBeforeClear = store.notificationRevision()
 
         store.clear()
@@ -114,9 +114,13 @@ class ClientAutomaticControlStateStoreTest {
         enabledControlIds = enabled,
     )
 
-    private fun result(requestId: String, snapshot: AutomaticControlSnapshotDto?): AutomaticControlUpdateResultDto = AutomaticControlUpdateResultDto(
+    private fun result(
+        requestId: String,
+        gameId: String,
+        snapshot: AutomaticControlSnapshotDto?,
+    ): AutomaticControlUpdateResultDto = AutomaticControlUpdateResultDto(
         requestId = requestId,
-        gameId = snapshot?.gameId ?: Uuid.random().toString(),
+        gameId = gameId,
         result = AutomaticControlUpdateResultKindDto.ACCEPTED,
         snapshot = snapshot,
     )

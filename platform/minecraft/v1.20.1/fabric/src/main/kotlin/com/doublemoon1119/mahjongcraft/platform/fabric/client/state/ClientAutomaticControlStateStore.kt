@@ -26,11 +26,20 @@ class ClientAutomaticControlStateStore {
     /** 目前狀態的本地通知序號；任何可觀察狀態變更都會遞增，清除後不會回退。 */
     fun notificationRevision(): Long = notificationRevision
 
-    /** 保存新的請求，取代先前尚未完成的請求。 */
-    fun setPendingRequest(request: AutomaticControlUpdateRequestDto) {
-        if (currentPendingRequest == request) return
+    /** 尚無等待中請求時保存 [request]；回傳是否成功，避免新請求取代仍待確認的更新。 */
+    fun trySetPendingRequest(request: AutomaticControlUpdateRequestDto): Boolean {
+        if (currentPendingRequest != null) return false
         currentPendingRequest = request
         notificationRevision += 1L
+        return true
+    }
+
+    /** 送出失敗時移除與 [requestId] 相符的 pending request；其他請求不受影響。 */
+    fun discardPendingRequest(requestId: String): Boolean {
+        if (currentPendingRequest?.requestId != requestId) return false
+        currentPendingRequest = null
+        notificationRevision += 1L
+        return true
     }
 
     /**

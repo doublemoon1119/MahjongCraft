@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlUpdateCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
@@ -38,7 +39,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrat
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.RoomScreen
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientAutomaticControlStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
@@ -103,7 +103,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val json = koin.get<Json>()
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val stateStore = koin.get<ClientMahjongStateStore>()
-        val automaticControlStateStore = koin.get<ClientAutomaticControlStateStore>()
+        val automaticControlUpdateCoordinator = koin.get<ClientAutomaticControlUpdateCoordinator>()
         val decisionTimerStore = koin.get<ClientDecisionTimerStateStore>()
         val decisionPromptStore = koin.get<ClientDecisionPromptStore>()
         val tileDisplayNames = koin.get<TileDisplayNameRegistry>()
@@ -158,7 +158,7 @@ class MahjongCraftModClient : ClientModInitializer {
             MinecraftClient.getInstance().player?.sendMessage(message)
         }
         MahjongChannels.roomSnapshot.registerClientReceiver(json) { payload ->
-            automaticControlStateStore.clear()
+            automaticControlUpdateCoordinator.clear()
             stateStore.applyRoomSnapshot(
                 Uuid.parse(payload.roomId),
                 payload.snapshot.toDomain(networkRegistries),
@@ -189,7 +189,7 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         MahjongChannels.snapshotCleared.registerClientReceiver(json) { payload ->
             stateStore.applySnapshotCleared(Uuid.parse(payload.id))
-            automaticControlStateStore.clear()
+            automaticControlUpdateCoordinator.clear()
         }
         MahjongChannels.gameSnapshot.registerClientReceiver(json) { payload ->
             stateStore.applyGameSnapshot(
@@ -201,14 +201,14 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         MahjongChannels.automaticControlSnapshot.registerClientReceiver(json) { snapshot ->
             if (snapshot == null) {
-                automaticControlStateStore.clear()
+                automaticControlUpdateCoordinator.clear()
             } else {
-                automaticControlStateStore.applySnapshot(snapshot)
+                automaticControlUpdateCoordinator.applySnapshot(snapshot)
             }
         }
         MahjongChannels.automaticControlUpdateResult.registerClientReceiver(
             json,
-            automaticControlStateStore::applyResult,
+            automaticControlUpdateCoordinator::applyResult,
         )
         EntityRendererRegistry.register(ModEntities.mahjongDice, ::MahjongDiceEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongSoundTimeline, ::MahjongSoundTimelineEntityRenderer)
@@ -273,7 +273,7 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
             stateStore.clear()
-            automaticControlStateStore.clear()
+            automaticControlUpdateCoordinator.clear()
             decisionTimerStore.clear()
             decisionPromptStore.clear()
             decisionHudController.clear()
