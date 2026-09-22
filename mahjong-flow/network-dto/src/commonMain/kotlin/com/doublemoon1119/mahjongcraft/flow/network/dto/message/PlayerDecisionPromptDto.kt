@@ -81,6 +81,14 @@ data class DiscardReadinessAnalysisDto(
     val statusIndicatorId: String? = null,
 )
 
+/** 玩家目前手牌的等待牌與整體狀態，不包含任何假想捨牌。 */
+@Serializable
+data class HandReadinessAnalysisDto(
+    val ruleModuleId: String,
+    val waitingTiles: List<WaitingTileAvailabilityDto>,
+    val statusIndicatorId: String? = null,
+)
+
 /** 開局準備輸入供呈現層顯示的受控網路表示。 */
 @Serializable
 sealed interface RoundPreparationPromptDto {

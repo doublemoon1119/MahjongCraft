@@ -27,7 +27,7 @@ internal enum class HudElement(
         adjustsHorizontally = true,
     ),
 
-    /** 打牌分析；寬度隨分析內容變動，固定水平置中。 */
+    /** 手牌分析；寬度隨分析內容變動，固定水平置中。 */
     ANALYSIS(
         translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_DISCARD_ANALYSIS,
         adjustsHorizontally = false,
@@ -319,10 +319,10 @@ internal data class MahjongHudLayoutEditorModel(
         /** 一般倒數與等待提醒的預覽高度。 */
         internal const val COMPACT_PREVIEW_HEIGHT = 46
 
-        /** 打牌分析的預覽寬度。 */
+        /** 手牌分析的預覽寬度。 */
         internal const val ANALYSIS_PREVIEW_WIDTH = 220
 
-        /** 打牌分析的預覽高度。 */
+        /** 手牌分析的預覽高度。 */
         internal const val ANALYSIS_PREVIEW_HEIGHT = 72
     }
 }

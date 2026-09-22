@@ -15,11 +15,12 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * 立直麻將打牌分析器之單元測試。
+ * 立直麻將手牌分析器之單元測試。
  *
  * 測試內容涵蓋只回傳仍聽牌的捨牌候選、等待牌剩餘張數估算，以及三種振聽狀態的優先順序。
  *
@@ -341,5 +342,26 @@ class RiichiDiscardReadinessAnalyzerTest {
 
         assertEquals("mahjongcraft:win_tsumo_only", ordinary.waitingTiles.single().winAvailability)
         assertEquals("mahjongcraft:win_available", projected.waitingTiles.single().winAvailability)
+    }
+
+    @Test
+    fun `test analyze current hand returns waits without requiring a discard`() {
+        val hand = FakeHandFactory.create(tiles = tenpaiTiles)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+
+        val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player))
+
+        assertEquals(setOf<Tile>(threeSou, sixSou), analysis.waitingTiles.mapTo(linkedSetOf()) { it.tile })
+        assertNull(analysis.statusIndicatorId)
+    }
+
+    @Test
+    fun `test analyze current hand returns null when the standing tiles are not tenpai`() {
+        val hand = FakeHandFactory.create(tiles = tenpaiTiles + floatingTile)
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+
+        assertNull(analyzer.analyzeCurrentHand(tableState, player))
     }
 }

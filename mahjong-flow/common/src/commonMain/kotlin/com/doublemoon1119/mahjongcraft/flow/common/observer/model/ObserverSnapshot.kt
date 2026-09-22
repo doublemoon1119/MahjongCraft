@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.observer.model
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.HandReadinessSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
@@ -23,9 +24,11 @@ sealed interface ObserverSnapshot {
      *
      * @property game 依觀看政策裁切過的對局快照。
      * @property roundPreparation 只向本人公開的開局準備內容；沒有進行中的準備步驟時為 `null`。
+     * @property handReadinessAnalysis 只向該局參與者本人公開的目前手牌分析；沒有聽牌或規則不支援時為 `null`。
      */
     data class OfGame(
         val game: TableStateSnapshot,
         val roundPreparation: RoundPreparationSnapshot?,
+        val handReadinessAnalysis: HandReadinessSnapshot? = null,
     ) : ObserverSnapshot
 }

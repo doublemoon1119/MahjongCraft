@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.ReadinessAnalysisDtoMapper
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
@@ -28,6 +29,7 @@ import kotlin.uuid.Uuid
 class FabricObserverSnapshotSender(
     private val serverHolder: FabricServerHolder,
     private val automaticControlSnapshotSender: AutomaticControlSnapshotSender,
+    private val analysisDtoMapper: ReadinessAnalysisDtoMapper,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) : ObserverSnapshotSender {
@@ -51,6 +53,9 @@ class FabricObserverSnapshotSender(
                         gameId = id.toString(),
                         snapshot = snapshot.game.toDto(networkRegistries),
                         roundPreparation = snapshot.roundPreparation?.toDto(),
+                        handReadinessAnalysis = snapshot.handReadinessAnalysis?.let { readiness ->
+                            analysisDtoMapper.toDto(readiness.ruleModuleId, readiness.analysis)
+                        },
                     ),
                 )
                 automaticControlSnapshotSender.send(id, observerId)

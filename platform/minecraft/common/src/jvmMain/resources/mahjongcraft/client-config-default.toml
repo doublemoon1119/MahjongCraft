@@ -40,6 +40,6 @@ meld-popup-enabled = true
 # 0.0 means the left/top edge and 1.0 means the right/bottom edge.
 [hud-layout]
 decision-panel-y = 0.88
-compact-prompt-x = 0.5
-compact-prompt-y = 0.9
+compact-prompt-x = 0.95
+compact-prompt-y = 0.78
 discard-analysis-y = 0.8

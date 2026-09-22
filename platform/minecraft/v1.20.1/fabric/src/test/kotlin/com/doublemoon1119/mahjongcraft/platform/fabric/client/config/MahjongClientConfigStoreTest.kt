@@ -17,7 +17,12 @@ class MahjongClientConfigStoreTest {
 
         assertTrue(result.createdDefaultFile)
         assertEquals(MahjongClientConfigState(), result.config)
+        assertEquals(0.95, result.config.hudLayout.compactPromptX)
+        assertEquals(0.78, result.config.hudLayout.compactPromptY)
         assertTrue(Files.readString(path).contains("# MahjongCraft client configuration."))
+        assertTrue(Files.readString(path).contains("compact-prompt-x = 0.95"))
+        assertTrue(Files.readString(path).contains("compact-prompt-y = 0.78"))
+        assertTrue(Files.readString(path).contains("discard-analysis-y = 0.8"))
         assertEquals(1L, store.revision)
     }
 

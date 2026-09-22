@@ -173,7 +173,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun createLegalActionValidator(): LegalActionValidator
 
     /**
-     * 建立適用於該規則的打牌分析器，供呈現層顯示打某張牌之後的等待牌與風險（例如振聽狀態）。
+     * 建立適用於該規則的手牌分析器，供呼叫端取得目前手牌或假想捨牌後的等待牌與狀態。
      *
      * 不支援此分析（例如尚未實作聽牌概念的規則）的規則回傳 `null`。
      *

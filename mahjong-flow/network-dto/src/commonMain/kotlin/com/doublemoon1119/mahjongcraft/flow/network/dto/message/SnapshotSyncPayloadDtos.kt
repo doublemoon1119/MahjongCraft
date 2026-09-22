@@ -36,4 +36,6 @@ data class GameSnapshotSyncPayloadDto(
     val snapshot: TableStateSnapshotDto,
     /** 指定 observer 可見的開局準備狀態。 */
     val roundPreparation: RoundPreparationSnapshotDto? = null,
+    /** 只向參與者本人公開的目前手牌分析；未聽牌或規則不支援時為 `null`。 */
+    val handReadinessAnalysis: HandReadinessAnalysisDto? = null,
 )

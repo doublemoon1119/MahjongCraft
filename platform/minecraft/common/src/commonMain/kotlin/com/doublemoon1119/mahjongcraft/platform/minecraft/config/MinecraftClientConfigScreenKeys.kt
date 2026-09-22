@@ -50,7 +50,7 @@ object MinecraftClientConfigScreenKeys {
     /** 一般倒數與等待提醒預覽名稱。 */
     const val HUD_LAYOUT_COMPACT_PROMPT: String = "mahjongcraft.hud_layout.compact_prompt"
 
-    /** 打牌分析預覽名稱。 */
+    /** 手牌分析預覽名稱。 */
     const val HUD_LAYOUT_DISCARD_ANALYSIS: String = "mahjongcraft.hud_layout.discard_analysis"
 
     /** 重設 HUD 配置按鈕。 */

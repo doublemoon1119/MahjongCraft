@@ -8,13 +8,21 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
 /**
- * 分析捨牌後聽牌狀態的介面，供呈現層顯示打某張牌之後的等待牌與風險，讓玩家判斷該不該打這張牌。
+ * 分析目前手牌及捨牌後聽牌狀態的介面，供呼叫端取得等待牌、剩餘張數與和牌資格。
  *
  * 目前只有日麻有具體實作；規則模組透過
  * [MahjongRuleModule.createDiscardReadinessAnalyzer]
  * 提供，不支援此分析（例如尚未實作聽牌概念的規則）時回傳 null，不需要實作這個介面。
  */
 interface DiscardReadinessAnalyzer {
+    /**
+     * 分析玩家目前手牌是否已經聽牌；不支援目前手牌分析的規則維持預設 `null`。
+     *
+     * @param tableState 目前的權威桌況。
+     * @param player 欲分析的玩家。
+     */
+    fun analyzeCurrentHand(tableState: TableState, player: MahjongPlayer): HandReadinessAnalysis? = null
+
     /**
      * 逐張立牌假想捨牌後分析聽牌狀態，只回傳打出後仍聽牌的候選。
      *
@@ -35,6 +43,12 @@ interface DiscardReadinessAnalyzer {
         action: GameAction,
     ): List<DiscardReadinessAnalysis> = analyze(tableState, player)
 }
+
+/** 玩家目前手牌的等待牌與整體狀態，不包含任何假想捨牌。 */
+data class HandReadinessAnalysis(
+    val waitingTiles: List<WaitingTileAvailability>,
+    val statusIndicatorId: String?,
+)
 
 /** 假想捨出 [discardTileId] 後的聽牌分析結果。 */
 data class DiscardReadinessAnalysis(

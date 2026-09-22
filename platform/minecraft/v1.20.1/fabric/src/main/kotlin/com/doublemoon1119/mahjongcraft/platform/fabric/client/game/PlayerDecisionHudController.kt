@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSu
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileSelectionConfirmEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -29,13 +30,14 @@ import kotlin.math.ceil
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
-/** 管理操作介面、精簡倒數與打牌分析 HUD 的共用客戶端生命週期。 */
+/** 管理操作介面、精簡倒數與手牌分析 HUD 的共用客戶端生命週期。 */
 @Single
 class PlayerDecisionHudController(
     private val timerStore: ClientDecisionTimerStateStore,
     private val promptStore: ClientDecisionPromptStore,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
     private val configStore: MahjongClientConfigStore,
+    private val stateStore: ClientMahjongStateStore,
     val decisionTexts: DecisionTextResolver,
     @Provided private val json: Json,
 ) {
@@ -294,8 +296,7 @@ class PlayerDecisionHudController(
         if (client.currentScreen !is PlayerDecisionScreen) {
             renderCompactDecisionHud(context)
         }
-        val prompt = promptStore.prompt
-        if (client.currentScreen == null && prompt != null) renderDiscardAnalysis(context, prompt, client.crosshairTarget)
+        if (client.currentScreen == null) renderHandAnalysis(context, promptStore.prompt, client.crosshairTarget)
     }
 
     /** 繪製一般遊戲畫面與聊天畫面共用的等待提示及倒數；正在多選選牌時改顯示選牌進度提示。 */
@@ -393,18 +394,30 @@ class PlayerDecisionHudController(
     }
 
     /**
-     * 依準星指向的手牌 UUID 選擇一份權威分析並繪製牌面格。
+     * 優先依準星指向的手牌 UUID 顯示捨牌後預測，沒有合法候選時顯示目前手牌的權威分析。
      *
      * 欄寬依實際文字寬度動態計算，避免不同語系下的剩餘張數與和牌資格文字互相碰撞，因此在這裡量測後交給
      * [DiscardAnalysisLayout]。
      */
-    private fun renderDiscardAnalysis(context: DrawContext, prompt: PlayerDecisionPromptDto, hit: HitResult?) {
+    private fun renderHandAnalysis(context: DrawContext, prompt: PlayerDecisionPromptDto?, hit: HitResult?) {
         if (!configStore.current.presentationVisibility.discardAnalysisEnabled) return
-        val tile = (hit as? EntityHitResult)?.entity as? MahjongTileEntity ?: return
-        val analyses = prompt.discardAnalysesForAction(tileSelection.activeActionToken)
-        val analysis = analyses.firstOrNull { it.discardTileId == tile.uuid.toString() } ?: return
+        val pointedTile = (hit as? EntityHitResult)?.entity as? MahjongTileEntity
+        val client = MinecraftClient.getInstance()
+        val playerId = client.player?.uuid?.toKotlinUuid()
+        val tableId = playerId?.let(stateStore::findTableWhereSeated)
+        val selection = selectHandAnalysis(
+            prompt = prompt,
+            activeActionToken = tileSelection.activeActionToken,
+            pointedTileId = pointedTile?.uuid?.toString(),
+            currentAnalysis = tableId?.let(stateStore::handReadinessAnalysis),
+        ) ?: return
+        val content = when (selection) {
+            is HandAnalysisSelection.AfterDiscard ->
+                discardAnalysisContent(decisionTexts, selection.ruleModuleId, selection.analysis)
+            is HandAnalysisSelection.Current -> handAnalysisContent(decisionTexts, selection.analysis)
+        }
+        if (content.cells.isEmpty()) return
         val renderer = MinecraftClient.getInstance().textRenderer
-        val content = discardAnalysisContent(decisionTexts, prompt.ruleModuleId, analysis)
         val layout = DiscardAnalysisLayout(
             screenWidth = context.scaledWindowWidth,
             screenHeight = context.scaledWindowHeight,

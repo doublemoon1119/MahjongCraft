@@ -1,13 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HandReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
-/** 動作選牌期間打牌分析來源切換的測試。 */
+/** 動作選牌期間手牌分析來源切換的測試。 */
 class DecisionHudDiscardAnalysisScopeTest {
     /** 進入立直選牌後使用立直專屬分析，離開後恢復一般分析。 */
     @Test
@@ -57,6 +59,34 @@ class DecisionHudDiscardAnalysisScopeTest {
 
         assertEquals(listOf(ordinary), prompt.discardAnalysesForAction("action"))
         assertEquals(listOf(ordinary), prompt.discardAnalysesForAction("missing"))
+    }
+
+    @Test
+    fun `pointing at a legal discard prefers its projected analysis`() {
+        val projected = analysis("tile")
+        val current = HandReadinessAnalysisDto("mahjongcraft:riichi", emptyList())
+        val prompt = PlayerDecisionPromptDto(
+            decisionKey = "decision",
+            ruleModuleId = "mahjongcraft:riichi",
+            discardAnalyses = listOf(projected),
+        )
+
+        val selected = assertIs<HandAnalysisSelection.AfterDiscard>(
+            selectHandAnalysis(prompt, null, "tile", current),
+        )
+
+        assertEquals(projected, selected.analysis)
+    }
+
+    @Test
+    fun `current hand analysis is used without a legal pointed discard`() {
+        val current = HandReadinessAnalysisDto("mahjongcraft:riichi", emptyList())
+
+        val selected = assertIs<HandAnalysisSelection.Current>(
+            selectHandAnalysis(null, null, null, current),
+        )
+
+        assertEquals(current, selected.analysis)
     }
 
     /** 建立只需辨識來源的最小捨牌分析。 */

@@ -196,6 +196,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 Uuid.parse(payload.gameId),
                 payload.snapshot.toDomain(networkRegistries),
                 payload.roundPreparation?.toDomain(),
+                payload.handReadinessAnalysis,
             )
         }
         MahjongChannels.automaticControlSnapshot.registerClientReceiver(json) { snapshot ->

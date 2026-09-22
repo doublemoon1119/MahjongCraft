@@ -114,7 +114,7 @@ class RiichiRuleModule(
     )
 
     /**
-     * 建立日本麻將的打牌分析器。
+     * 建立日本麻將的手牌分析器。
      *
      * @return [RiichiDiscardReadinessAnalyzer] 實體。
      */

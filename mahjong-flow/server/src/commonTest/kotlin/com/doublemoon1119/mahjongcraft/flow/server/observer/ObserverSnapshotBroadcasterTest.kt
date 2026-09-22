@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.observer
 
+import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.observer.model.ObserverSnapshot
@@ -7,8 +8,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.observer.service.ObserverAudi
 import com.doublemoon1119.mahjongcraft.flow.common.observer.service.ObserverSnapshotSender
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.HandReadinessVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -88,6 +91,9 @@ class ObserverSnapshotBroadcasterTest {
     ) = ObserverSnapshotBroadcaster(
         store = store,
         visibilityPolicy = GameVisibilityPolicyImpl(),
+        handReadinessVisibilityPolicy = HandReadinessVisibilityPolicy(
+            MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() },
+        ),
         audienceSource = audience,
         sender = sender,
     )

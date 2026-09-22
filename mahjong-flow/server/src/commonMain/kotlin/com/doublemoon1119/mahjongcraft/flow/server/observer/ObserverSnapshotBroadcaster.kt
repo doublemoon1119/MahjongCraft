@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.observer.service.ObserverAudi
 import com.doublemoon1119.mahjongcraft.flow.common.observer.service.ObserverSnapshotSender
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.HandReadinessVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import kotlinx.coroutines.flow.collect
@@ -33,6 +34,7 @@ import kotlin.uuid.Uuid
 class ObserverSnapshotBroadcaster(
     private val store: AuthoritativeStateStore,
     private val visibilityPolicy: GameVisibilityPolicy,
+    private val handReadinessVisibilityPolicy: HandReadinessVisibilityPolicy,
     @Provided private val audienceSource: ObserverAudienceSource,
     @Provided private val sender: ObserverSnapshotSender,
 ) {
@@ -96,6 +98,7 @@ class ObserverSnapshotBroadcaster(
             return ObserverSnapshot.OfGame(
                 game = visibilityPolicy.snapshotFor(game, observerId),
                 roundPreparation = visibilityPolicy.roundPreparationSnapshotFor(game, observerId),
+                handReadinessAnalysis = handReadinessVisibilityPolicy.snapshotFor(game, observerId),
             )
         }
         val room = state.rooms[id] ?: return null

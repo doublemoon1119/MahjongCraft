@@ -3,20 +3,16 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
-import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalysis
-import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
@@ -34,6 +30,7 @@ class PlayerDecisionPromptFactory(
     private val candidateResolver: GameActionCandidateResolver,
     private val moduleRegistry: MahjongModuleRegistry,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
+    private val analysisDtoMapper: ReadinessAnalysisDtoMapper,
 ) {
     /** 建立目前決策的私人 prompt；遊戲或玩家已失效時回傳 null。 */
     suspend fun create(gameId: Uuid, playerId: Uuid, phase: PlayerDecisionPhase): PlayerDecisionPromptDto? {
@@ -51,7 +48,7 @@ class PlayerDecisionPromptFactory(
                 player.hand.tiles.firstOrNull { it.id == tileId }?.tile?.toAssetKey(tileAssetRegistry)
             }
         val analyses = if (phase == PlayerDecisionPhase.OWN_TURN) {
-            resolvedCandidates.discardAnalyses.map { it.toDto() }
+            resolvedCandidates.discardAnalyses.map(analysisDtoMapper::toDto)
         } else {
             emptyList()
         }
@@ -78,7 +75,7 @@ class PlayerDecisionPromptFactory(
                     candidateResolver.listTileSelectionCandidates(playerId, candidate)
                 }.orEmpty()
                 val actionAnalyses = if (phase == PlayerDecisionPhase.OWN_TURN && requirement != null) {
-                    candidate.discardAnalyses.map { it.toDto() }
+                    candidate.discardAnalyses.map(analysisDtoMapper::toDto)
                 } else {
                     emptyList()
                 }
@@ -118,20 +115,6 @@ class PlayerDecisionPromptFactory(
             discardAnalyses = analyses,
         )
     }
-
-    /** 將規則模組打牌分析結果轉為私人 prompt 網路值；牌面轉 asset key 是平台層的職責，規則層只回傳 [Tile]。 */
-    private fun DiscardReadinessAnalysis.toDto(): DiscardReadinessAnalysisDto = DiscardReadinessAnalysisDto(
-        discardTileId = discardTileId.toString(),
-        waitingTiles = waitingTiles.map { it.toDto() },
-        statusIndicatorId = statusIndicatorId,
-    )
-
-    /** 將一張等待牌的規則層可用性轉為私人 prompt 網路值。 */
-    private fun WaitingTileAvailability.toDto(): WaitingTileAvailabilityDto = WaitingTileAvailabilityDto(
-        tileAssetKey = tile.toAssetKey(tileAssetRegistry),
-        remainingCount = remainingCount,
-        winAvailability = winAvailability,
-    )
 
     /** 組合不依同步時間變化的決策識別碼。 */
     private fun buildDecisionKey(

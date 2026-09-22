@@ -75,13 +75,13 @@ data class MahjongHudLayoutConfig(
 
     /** 一般倒數與等待提醒的水平位置比例。 */
     @SerialName("compact-prompt-x")
-    val compactPromptX: Double = 0.5,
+    val compactPromptX: Double = 0.95,
 
     /** 一般倒數與等待提醒的垂直位置比例。 */
     @SerialName("compact-prompt-y")
-    val compactPromptY: Double = 0.90,
+    val compactPromptY: Double = 0.78,
 
-    /** 打牌分析面板的垂直位置比例。 */
+    /** 手牌分析面板的垂直位置比例。 */
     @SerialName("discard-analysis-y")
     val discardAnalysisY: Double = 0.8,
 ) {

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSn
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HandReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyDto
@@ -26,11 +27,13 @@ private data class ClientTableState(
     val roomSnapshot: RoomSnapshot? = null,
     val gameSnapshot: TableStateSnapshot? = null,
     val roundPreparationSnapshot: RoundPreparationSnapshot? = null,
+    val handReadinessAnalysis: HandReadinessAnalysisDto? = null,
     val managedTileSnapshotsByTileId: Map<Uuid, IdentifiedTileSnapshot> = emptyMap(),
 ) {
     /** 更新 [gameSnapshot] 時一併重建 [managedTileSnapshotsByTileId]，兩者不會不同步。 */
     fun withGameSnapshot(snapshot: TableStateSnapshot?): ClientTableState = copy(
         gameSnapshot = snapshot,
+        handReadinessAnalysis = if (snapshot == null) null else handReadinessAnalysis,
         managedTileSnapshotsByTileId = buildManagedTileIndex(snapshot),
     )
 
@@ -81,6 +84,9 @@ class ClientMahjongStateStore(
 
     fun roundPreparationSnapshot(tableId: Uuid): RoundPreparationSnapshot? = tables[tableId]?.roundPreparationSnapshot
 
+    /** 取得只向該桌參與者本人同步的目前手牌分析。 */
+    fun handReadinessAnalysis(tableId: Uuid): HandReadinessAnalysisDto? = tables[tableId]?.handReadinessAnalysis
+
     /** 依管理中麻將牌 entity UUID 查詢指定桌子目前快照中的可見性與牌面；查不到代表這張牌不在目前對局範圍內。 */
     fun findManagedTileSnapshot(tableId: Uuid, tileEntityId: Uuid): IdentifiedTileSnapshot? = tables[tableId]?.managedTileSnapshotsByTileId?.get(tileEntityId)
 
@@ -110,6 +116,7 @@ class ClientMahjongStateStore(
                 roomSnapshot = payload.snapshot.toDomain(networkRegistries),
                 tableOccupancy = current.tableOccupancy?.copy(occupancy = TableOccupancyDto.ROOM),
                 roundPreparationSnapshot = null,
+                handReadinessAnalysis = null,
             )
         }
     }
@@ -136,6 +143,7 @@ class ClientMahjongStateStore(
                     playingGameConfig = current.tableOccupancy.playingGameConfig ?: waitingConfig,
                 ),
                 roomSnapshot = null,
+                handReadinessAnalysis = null,
             )
         }
     }
@@ -157,6 +165,7 @@ class ClientMahjongStateStore(
             current.withGameSnapshot(null).copy(
                 roomSnapshot = null,
                 roundPreparationSnapshot = null,
+                handReadinessAnalysis = null,
                 tableOccupancy = current.tableOccupancy?.copy(
                     occupancy = TableOccupancyDto.VACANT,
                     roomSnapshot = null,
@@ -173,6 +182,7 @@ class ClientMahjongStateStore(
         gameId: Uuid,
         snapshot: TableStateSnapshot,
         roundPreparation: RoundPreparationSnapshot? = null,
+        handReadinessAnalysis: HandReadinessAnalysisDto? = null,
     ) {
         require(snapshot.id == gameId) { "Game snapshot ID does not match its payload ID." }
         updateTable(gameId) { current ->
@@ -183,6 +193,7 @@ class ClientMahjongStateStore(
                     playingGameConfig = current.tableOccupancy.playingGameConfig ?: waitingConfig,
                 ),
                 roundPreparationSnapshot = roundPreparation,
+                handReadinessAnalysis = handReadinessAnalysis,
                 roomSnapshot = null,
             )
         }

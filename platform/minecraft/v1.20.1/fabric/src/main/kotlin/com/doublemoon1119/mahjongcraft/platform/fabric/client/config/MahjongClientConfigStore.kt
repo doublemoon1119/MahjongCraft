@@ -225,7 +225,7 @@ class MahjongClientConfigStore() {
         /** 一般倒數垂直比例的 TOML 欄位鍵。 */
         const val COMPACT_PROMPT_Y_KEY: String = "compact-prompt-y"
 
-        /** 打牌分析垂直比例的 TOML 欄位鍵。 */
+        /** 手牌分析垂直比例的 TOML 欄位鍵。 */
         const val DISCARD_ANALYSIS_Y_KEY: String = "discard-analysis-y"
 
         /** HUD layout TOML section 名稱。 */
@@ -240,7 +240,7 @@ class MahjongClientConfigStore() {
         /** 比對一般倒數垂直比例欄位。 */
         val COMPACT_PROMPT_Y_LINE = doubleLine(COMPACT_PROMPT_Y_KEY)
 
-        /** 比對打牌分析垂直比例欄位。 */
+        /** 比對手牌分析垂直比例欄位。 */
         val DISCARD_ANALYSIS_Y_LINE = doubleLine(DISCARD_ANALYSIS_Y_KEY)
 
         /** 所有受控 HUD 欄位比對式。 */
@@ -257,9 +257,9 @@ class MahjongClientConfigStore() {
             # 0.0 means the left/top edge and 1.0 means the right/bottom edge.
             [$HUD_LAYOUT_SECTION]
             $DECISION_PANEL_Y_KEY = 0.88
-            $COMPACT_PROMPT_X_KEY = 0.5
-            $COMPACT_PROMPT_Y_KEY = 0.9
-            $DISCARD_ANALYSIS_Y_KEY = 0.86
+            $COMPACT_PROMPT_X_KEY = 0.95
+            $COMPACT_PROMPT_Y_KEY = 0.78
+            $DISCARD_ANALYSIS_Y_KEY = 0.8
         """.trimIndent()
 
         /** 可選呈現開關的 TOML section 名稱。 */

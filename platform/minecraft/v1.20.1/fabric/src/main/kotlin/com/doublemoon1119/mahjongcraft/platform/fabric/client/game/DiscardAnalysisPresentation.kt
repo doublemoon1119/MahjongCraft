@@ -1,7 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HandReadinessAnalysisDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
 import net.minecraft.text.Text
 
@@ -33,6 +36,34 @@ internal data class DiscardAnalysisContent(
     val hasAvailabilityRow: Boolean,
 )
 
+/** 手牌分析 HUD 目前應採用的權威資料來源。 */
+internal sealed interface HandAnalysisSelection {
+    data class AfterDiscard(
+        val ruleModuleId: String?,
+        val analysis: DiscardReadinessAnalysisDto,
+    ) : HandAnalysisSelection
+
+    data class Current(val analysis: HandReadinessAnalysisDto) : HandAnalysisSelection
+}
+
+/** 合法捨牌預測優先；沒有指向合法候選時退回目前手牌分析。 */
+internal fun selectHandAnalysis(
+    prompt: PlayerDecisionPromptDto?,
+    activeActionToken: String?,
+    pointedTileId: String?,
+    currentAnalysis: HandReadinessAnalysisDto?,
+): HandAnalysisSelection? {
+    val afterDiscard = pointedTileId?.let { tileId ->
+        prompt?.discardAnalysesForAction(activeActionToken)
+            ?.firstOrNull { it.discardTileId == tileId }
+    }
+    return when {
+        afterDiscard != null -> HandAnalysisSelection.AfterDiscard(prompt?.ruleModuleId, afterDiscard)
+        currentAnalysis != null -> HandAnalysisSelection.Current(currentAnalysis)
+        else -> null
+    }
+}
+
 /**
  * 由權威分析組出面板內容。
  *
@@ -43,19 +74,37 @@ internal fun discardAnalysisContent(
     texts: DecisionTextResolver,
     ruleModuleId: String?,
     analysis: DiscardReadinessAnalysisDto,
+): DiscardAnalysisContent = readinessAnalysisContent(texts, ruleModuleId, analysis.waitingTiles, analysis.statusIndicatorId)
+
+/** 由目前手牌的權威分析組出與捨牌預測完全相同的面板內容。 */
+internal fun handAnalysisContent(
+    texts: DecisionTextResolver,
+    analysis: HandReadinessAnalysisDto,
+): DiscardAnalysisContent = readinessAnalysisContent(
+    texts,
+    analysis.ruleModuleId,
+    analysis.waitingTiles,
+    analysis.statusIndicatorId,
+)
+
+private fun readinessAnalysisContent(
+    texts: DecisionTextResolver,
+    ruleModuleId: String?,
+    waitingTiles: List<WaitingTileAvailabilityDto>,
+    statusIndicatorId: String?,
 ): DiscardAnalysisContent {
-    val sharedAvailability = analysis.waitingTiles.map { it.winAvailability }
+    val sharedAvailability = waitingTiles.map { it.winAvailability }
         .distinct()
         .singleOrNull()
         ?.takeUnless { it == WIN_AVAILABLE_ID }
     val hasAvailabilityRow = sharedAvailability == null &&
-        analysis.waitingTiles.any { it.winAvailability != WIN_AVAILABLE_ID }
+        waitingTiles.any { it.winAvailability != WIN_AVAILABLE_ID }
     return DiscardAnalysisContent(
         statusTexts = listOfNotNull(
-            analysis.statusIndicatorId?.let { texts.statusText(ruleModuleId, it) },
+            statusIndicatorId?.let { texts.statusText(ruleModuleId, it) },
             sharedAvailability?.let { texts.statusText(ruleModuleId, it) },
         ),
-        cells = analysis.waitingTiles.map { waiting ->
+        cells = waitingTiles.map { waiting ->
             DiscardAnalysisCell(
                 tileAssetKey = waiting.tileAssetKey,
                 countText = Text.translatable("mahjongcraft.hud.remaining_tiles", waiting.remainingCount),

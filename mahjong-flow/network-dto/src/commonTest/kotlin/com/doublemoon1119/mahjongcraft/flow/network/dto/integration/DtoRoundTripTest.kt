@@ -14,9 +14,11 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HandReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.JoinReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.LeaveReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
@@ -327,6 +329,16 @@ class DtoRoundTripTest {
         val gamePayload = GameSnapshotSyncPayloadDto(
             gameId = gameSnapshot.id.toString(),
             snapshot = gameSnapshot.toDto(registries),
+            handReadinessAnalysis = HandReadinessAnalysisDto(
+                ruleModuleId = "mahjongcraft:riichi",
+                waitingTiles = listOf(
+                    WaitingTileAvailabilityDto(
+                        tileAssetKey = "mahjongcraft:riichi/man_1",
+                        remainingCount = 2,
+                    ),
+                ),
+                statusIndicatorId = "mahjongcraft:riichi/discard_furiten",
+            ),
         )
         val encodedGame = json.encodeToString(GameSnapshotSyncPayloadDto.serializer(), gamePayload)
         assertEquals(gamePayload, json.decodeFromString(GameSnapshotSyncPayloadDto.serializer(), encodedGame))

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HandReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyDto
@@ -127,5 +128,29 @@ class ClientMahjongStateStoreTest {
 
         assertNull(store.roomSnapshot(tableId))
         assertEquals(TableOccupancyDto.VACANT, store.tableOccupancy(tableId)?.occupancy)
+    }
+
+    @Test
+    fun `private hand analysis follows authoritative game snapshots and clears on newer action`() {
+        val store = ClientMahjongStateStore(registries)
+        val tableId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
+        val snapshot = FakeTableStateFactory.create(id = tableId, players = listOf(player), config = RiichiRuleConfig())
+            .toSnapshot(visibleHandPlayerIds = setOf(player.id))
+        val analysis = HandReadinessAnalysisDto("mahjongcraft:riichi", emptyList())
+        store.applyGameSnapshot(tableId, snapshot, handReadinessAnalysis = analysis)
+
+        assertEquals(analysis, store.handReadinessAnalysis(tableId))
+
+        store.apply(
+            GameUpdatePayloadDto(
+                gameId = tableId.toString(),
+                actorId = player.id.toString(),
+                action = GameAction.Draw.toDto(registries),
+                snapshot = snapshot.toDto(registries),
+            ),
+        )
+
+        assertNull(store.handReadinessAnalysis(tableId))
     }
 }
