@@ -405,6 +405,42 @@ object MinecraftMessageKeys {
     /** 「關閉」狀態文字，用於自動整理手牌切換訊息中上色顯示。 */
     const val HAND_SORT_STATE_OFF = PREFIX + "hand_sort_state_off"
 
+    /** 自動操作已套用，帶控制名稱與狀態參數。 */
+    const val AUTOMATIC_CONTROL_UPDATED = PREFIX + "automatic_control_updated"
+
+    /** 自動操作原本已是要求狀態，帶控制名稱與狀態參數。 */
+    const val AUTOMATIC_CONTROL_UNCHANGED = PREFIX + "automatic_control_unchanged"
+
+    /** 自動操作請求正在等待伺服器確認，帶控制名稱參數。 */
+    const val AUTOMATIC_CONTROL_WAITING = PREFIX + "automatic_control_waiting"
+
+    /** 已有另一筆自動操作更新等待伺服器確認。 */
+    const val AUTOMATIC_CONTROL_PENDING = PREFIX + "automatic_control_pending"
+
+    /** 目前沒有可調整的本局自動操作。 */
+    const val AUTOMATIC_CONTROL_UNAVAILABLE = PREFIX + "automatic_control_unavailable"
+
+    /** 目前規則不支援指定自動操作，帶控制名稱參數。 */
+    const val AUTOMATIC_CONTROL_UNSUPPORTED = PREFIX + "automatic_control_unsupported"
+
+    /** 自動操作請求未能送出。 */
+    const val AUTOMATIC_CONTROL_SEND_FAILED = PREFIX + "automatic_control_send_failed"
+
+    /** 永久偏好已保存，但無法同步至伺服器。 */
+    const val AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED = PREFIX + "automatic_control_preference_sync_failed"
+
+    /** 伺服器拒絕自動操作更新。 */
+    const val AUTOMATIC_CONTROL_REJECTED = PREFIX + "automatic_control_rejected"
+
+    /** 自動操作資料已過期。 */
+    const val AUTOMATIC_CONTROL_STALE = PREFIX + "automatic_control_stale"
+
+    /** 自動操作狀態文字「開啟」。 */
+    const val AUTOMATIC_CONTROL_STATE_ON = PREFIX + "automatic_control_state_on"
+
+    /** 自動操作狀態文字「關閉」。 */
+    const val AUTOMATIC_CONTROL_STATE_OFF = PREFIX + "automatic_control_state_off"
+
     /** Minecraft 語系資源必須提供的全部玩家回饋 key。 */
     val ALL: Set<String> = setOf(
         GAME_ALREADY_STARTED,
@@ -520,5 +556,17 @@ object MinecraftMessageKeys {
         HAND_SORT_TOGGLE_PREFIX,
         HAND_SORT_STATE_ON,
         HAND_SORT_STATE_OFF,
+        AUTOMATIC_CONTROL_UPDATED,
+        AUTOMATIC_CONTROL_UNCHANGED,
+        AUTOMATIC_CONTROL_WAITING,
+        AUTOMATIC_CONTROL_PENDING,
+        AUTOMATIC_CONTROL_UNAVAILABLE,
+        AUTOMATIC_CONTROL_UNSUPPORTED,
+        AUTOMATIC_CONTROL_SEND_FAILED,
+        AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED,
+        AUTOMATIC_CONTROL_REJECTED,
+        AUTOMATIC_CONTROL_STALE,
+        AUTOMATIC_CONTROL_STATE_ON,
+        AUTOMATIC_CONTROL_STATE_OFF,
     )
 }

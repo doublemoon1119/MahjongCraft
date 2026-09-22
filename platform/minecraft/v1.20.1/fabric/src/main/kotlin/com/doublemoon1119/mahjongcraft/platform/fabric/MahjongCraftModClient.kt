@@ -7,7 +7,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutoSortHandPreferenceService
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlUpdateCoordinator
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.FabricAutomaticControlCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
@@ -95,6 +97,7 @@ class MahjongCraftModClient : ClientModInitializer {
         koin.get<MahjongClientConfigScreenController>().register()
         koin.get<FabricTileLabelCommand>().register()
         koin.get<FabricHandSortCommand>().register()
+        koin.get<FabricAutomaticControlCommand>().register()
         koin.get<FabricClientConfigCommand>().register()
         val decisionHudController = koin.get<PlayerDecisionHudController>()
         decisionHudController.registerEvents()
@@ -104,6 +107,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val stateStore = koin.get<ClientMahjongStateStore>()
         val automaticControlUpdateCoordinator = koin.get<ClientAutomaticControlUpdateCoordinator>()
+        val autoSortHandPreferenceService = koin.get<ClientAutoSortHandPreferenceService>()
         val decisionTimerStore = koin.get<ClientDecisionTimerStateStore>()
         val decisionPromptStore = koin.get<ClientDecisionPromptStore>()
         val tileDisplayNames = koin.get<TileDisplayNameRegistry>()
@@ -269,7 +273,7 @@ class MahjongCraftModClient : ClientModInitializer {
             MahjongChannels.requestSnapshot.sendToServer(json, Unit)
             // 伺服器端的自動整理手牌偏好純記憶體、不撐過伺服器重啟（見 HandSortPreferenceStore KDoc），
             // 每次加入世界都重送一次 client 本地記得的偏好，確保重啟後不需要玩家手動再切一次。
-            MahjongChannels.restoreAutoSortHand.sendToServer(json, clientConfigStore.current.autoSortHandEnabled)
+            autoSortHandPreferenceService.restoreToServer()
         }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
             stateStore.clear()
