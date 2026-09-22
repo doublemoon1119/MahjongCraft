@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
@@ -32,6 +33,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
  * @property tileEmojiRegistry 牌面 emoji registry。
  * @property tileLabelRegistry 牌面輔助標籤 registry。
  * @property gameActionVocabularyRegistry 遊戲動作顯示名稱 registry。
+ * @property automaticControlDisplayRegistry 自動操作顯示資料 registry。
  * @property gameActionSoundPresentationRegistry 遊戲動作音效呈現 registry。
  * @property exhaustiveDrawReasonDisplayNameRegistry 流局原因顯示名稱 registry。
  * @property roundPreparationDisplayNameRegistry 開局準備顯示名稱 registry。
@@ -55,6 +57,7 @@ class MinecraftPresentationRegistries(
     val tileLabelRegistry: TileLabelRegistry,
     // 動作與局況呈現
     val gameActionVocabularyRegistry: GameActionVocabularyRegistry,
+    val automaticControlDisplayRegistry: AutomaticControlDisplayRegistry,
     val decisionStatusDisplayNameRegistry: DecisionStatusDisplayNameRegistry,
     val gameActionSoundPresentationRegistry: GameActionSoundPresentationRegistry,
     val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
@@ -81,6 +84,7 @@ class MinecraftPresentationRegistries(
             snapshotCategory("mahjongcraft:tile_emoji", "Tile Emoji", tileEmojiRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:tile_label", "Tile Label", tileLabelRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:game_action_vocabulary", "Game Action Vocabulary", gameActionVocabularyRegistry.registrationKeys),
+            snapshotCategory("mahjongcraft:automatic_control_display", "Automatic Control Display", automaticControlDisplayRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:decision_status_display_name", "Decision Status Display Name", decisionStatusDisplayNameRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:game_action_sound", "Game Action Sound", gameActionSoundPresentationRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:exhaustive_draw_reason_display_name", "Exhaustive Draw Reason Display Name", exhaustiveDrawReasonDisplayNameRegistry.registrationKeys),
@@ -106,6 +110,7 @@ class MinecraftPresentationRegistries(
         tileEmojiRegistry.freeze()
         tileLabelRegistry.freeze()
         gameActionVocabularyRegistry.freeze()
+        automaticControlDisplayRegistry.freeze()
         decisionStatusDisplayNameRegistry.freeze()
         gameActionSoundPresentationRegistry.freeze()
         exhaustiveDrawReasonDisplayNameRegistry.freeze()

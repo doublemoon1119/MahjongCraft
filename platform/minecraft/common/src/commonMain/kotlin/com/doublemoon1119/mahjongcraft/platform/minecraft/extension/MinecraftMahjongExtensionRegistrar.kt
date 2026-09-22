@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.registerBuiltInGameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.registerBuiltInAiStrategyDisplayNames
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.registerBuiltInAutomaticControlDisplays
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.registerBuiltInDecisionStatusDisplayNames
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.registerBuiltInGameConfigPresentations
@@ -51,6 +52,7 @@ object MinecraftMahjongExtensionRegistrar {
     ): MinecraftMahjongExtensionRegistrationResult {
         registries.tileAssetRegistry.registerBuiltInTileAssets()
         registries.aiStrategyDisplayNameRegistry.registerBuiltInAiStrategyDisplayNames()
+        registries.automaticControlDisplayRegistry.registerBuiltInAutomaticControlDisplays()
         registries.tileDisplayNameRegistry.registerBuiltInTileDisplayNames()
         registries.ruleModuleDisplayNameRegistry.registerBuiltInRuleModuleDisplayNames()
         registries.tileEmojiRegistry.registerBuiltInTileEmojis()
@@ -88,6 +90,7 @@ object MinecraftMahjongExtensionRegistrar {
             try {
                 extension.registerTileAssets(registries.tileAssetRegistry)
                 extension.registerAiStrategyDisplayNames(registries.aiStrategyDisplayNameRegistry)
+                extension.registerAutomaticControlDisplays(registries.automaticControlDisplayRegistry)
                 extension.registerTileDisplayNames(registries.tileDisplayNameRegistry)
                 extension.registerRuleModuleDisplayNames(registries.ruleModuleDisplayNameRegistry)
                 extension.registerTileEmojis(registries.tileEmojiRegistry)

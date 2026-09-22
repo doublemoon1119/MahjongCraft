@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
@@ -53,6 +55,7 @@ class MinecraftCommonModule {
     @Single
     fun provideMinecraftPresentationRegistries(
         gameActionVocabularyRegistry: GameActionVocabularyRegistry,
+        automaticControlDisplayRegistry: AutomaticControlDisplayRegistry,
         decisionStatusDisplayNameRegistry: DecisionStatusDisplayNameRegistry,
         @Provided aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
         playerPortraitSourceRegistry: PlayerPortraitSourceRegistry,
@@ -78,6 +81,7 @@ class MinecraftCommonModule {
         tileEmojiRegistry = tileEmojiRegistry,
         tileLabelRegistry = tileLabelRegistry,
         gameActionVocabularyRegistry = gameActionVocabularyRegistry,
+        automaticControlDisplayRegistry = automaticControlDisplayRegistry,
         decisionStatusDisplayNameRegistry = decisionStatusDisplayNameRegistry,
         gameActionSoundPresentationRegistry = gameActionSoundPresentationRegistry,
         exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
@@ -94,6 +98,10 @@ class MinecraftCommonModule {
         roomMemberAppearanceSourceRegistry = roomMemberAppearanceSourceRegistry,
         gameConfigPresentationRegistry = gameConfigPresentationRegistry,
     )
+
+    /** 建立供內建與第三方 extension 登記的自動操作顯示 registry。 */
+    @Single
+    fun provideAutomaticControlDisplayRegistry(): AutomaticControlDisplayRegistry = AutomaticControlDisplayRegistryImpl()
 
     /** 建立供內建與第三方規則登記動作語音的 registry。 */
     @Single

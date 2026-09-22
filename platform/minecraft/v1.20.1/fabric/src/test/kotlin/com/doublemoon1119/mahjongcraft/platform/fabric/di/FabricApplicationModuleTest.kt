@@ -56,6 +56,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTabl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.BuiltInDecisionStatusIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
@@ -107,6 +108,7 @@ class FabricApplicationModuleTest {
         val gameActionCommandFactoryRegistry = koin.get<ExtensionGameActionCommandFactoryRegistry>()
         val gameCommandRegistry = koin.get<ExtensionGameCommandExecutorRegistry>()
         val actionVocabularyRegistry = koin.get<GameActionVocabularyRegistry>()
+        val automaticControlDisplayRegistry = koin.get<AutomaticControlDisplayRegistry>()
         val decisionStatusDisplayNameRegistry = koin.get<DecisionStatusDisplayNameRegistry>()
         val coreRegistries = koin.get<CoreExtensionRegistries>()
         val presentationRegistries = koin.get<MinecraftPresentationRegistries>()
@@ -137,6 +139,7 @@ class FabricApplicationModuleTest {
         assertSame(persistenceRegistries, coreRegistries.persistenceRegistries)
         assertSame(minecraftTileAssetRegistry, presentationRegistries.tileAssetRegistry)
         assertSame(tileDisplayNameRegistry, presentationRegistries.tileDisplayNameRegistry)
+        assertSame(automaticControlDisplayRegistry, presentationRegistries.automaticControlDisplayRegistry)
         assertEquals(RiichiTileTypes.ALL + TaiwanTileTypes.ALL, tileTypeRegistry.getAll().map { it.id })
         assertTrue(minecraftTileAssetRegistry.isFrozen)
         assertTrue(aiStrategyDisplayNameRegistry.isFrozen)
@@ -152,6 +155,7 @@ class FabricApplicationModuleTest {
             actionVocabularyRegistry.find(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id)?.labelKey,
         )
         assertTrue(actionVocabularyRegistry.isFrozen)
+        assertTrue(automaticControlDisplayRegistry.isFrozen)
         assertTrue(decisionStatusDisplayNameRegistry.find(BuiltInRuleModuleIds.RIICHI, BuiltInDecisionStatusIds.WIN_AVAILABLE) != null)
         assertTrue(
             decisionStatusDisplayNameRegistry.find(

@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.WinSettlementYakuTranslationKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.registerBuiltInAutomaticControlDisplays
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
@@ -155,6 +157,26 @@ class MinecraftLanguageFilesTest {
             val translations = loadTranslations(locale)
             keys.forEach { key ->
                 assertTrue(key in translations, "$locale is missing game config key $key")
+            }
+        }
+    }
+
+    /** 驗證所有語系都提供內建自動操作 registry 宣告的名稱與說明。 */
+    @Test
+    fun `all built-in automatic control displays have translations in every language`() {
+        val registry = AutomaticControlDisplayRegistryImpl().apply {
+            registerBuiltInAutomaticControlDisplays()
+            freeze()
+        }
+        val keys = registry.registrationKeys.flatMapTo(mutableSetOf()) { controlId ->
+            val display = checkNotNull(registry.find(controlId)) { "Missing automatic control display: $controlId" }
+            listOf(display.labelTranslationKey, display.descriptionTranslationKey)
+        }
+
+        locales.forEach { locale ->
+            val translations = loadTranslations(locale)
+            keys.forEach { key ->
+                assertTrue(key in translations, "$locale is missing automatic control key $key")
             }
         }
     }

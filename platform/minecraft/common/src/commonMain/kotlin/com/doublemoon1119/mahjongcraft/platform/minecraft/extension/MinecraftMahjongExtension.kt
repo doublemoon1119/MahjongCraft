@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
@@ -51,6 +52,9 @@ interface MinecraftMahjongExtension {
      * 預設不註冊任何映射，使不提供 AI 策略的 extension 不必加入空實作。
      */
     fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) = Unit
+
+    /** 登記第三方自動操作在 Minecraft 中使用的名稱、說明與排列順序。 */
+    fun registerAutomaticControlDisplays(registry: AutomaticControlDisplayRegistry) = Unit
 
     /**
      * 登記規則動作在 Minecraft 中使用的用語與操作卡順序。

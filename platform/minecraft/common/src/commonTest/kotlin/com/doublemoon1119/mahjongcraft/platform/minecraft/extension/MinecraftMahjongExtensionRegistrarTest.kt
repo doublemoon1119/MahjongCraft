@@ -7,6 +7,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
@@ -50,6 +53,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
         tileEmojiRegistry: TileEmojiRegistry,
         tileLabelRegistry: TileLabelRegistry,
+        automaticControlDisplayRegistry: AutomaticControlDisplayRegistry = AutomaticControlDisplayRegistryImpl(),
     ): MinecraftMahjongExtensionRegistrationResult = MinecraftMahjongExtensionRegistrar.registerAndFreeze(
         extensions = extensions,
         registries = MinecraftPresentationRegistries(
@@ -58,6 +62,7 @@ class MinecraftMahjongExtensionRegistrarTest {
             tileEmojiRegistry = tileEmojiRegistry,
             tileLabelRegistry = tileLabelRegistry,
             gameActionVocabularyRegistry = GameActionVocabularyRegistryImpl(),
+            automaticControlDisplayRegistry = automaticControlDisplayRegistry,
             decisionStatusDisplayNameRegistry = DecisionStatusDisplayNameRegistryImpl(),
             gameActionSoundPresentationRegistry = GameActionSoundPresentationRegistryImpl(),
             exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl(),
@@ -85,6 +90,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         val ruleModuleDisplayNameRegistry = RuleModuleDisplayNameRegistryImpl()
         val tileEmojiRegistry = TileEmojiRegistryImpl()
         val tileLabelRegistry = TileLabelRegistryImpl()
+        val automaticControlDisplayRegistry = AutomaticControlDisplayRegistryImpl()
         val thirdPartyId = TileTypeId.parse("example:animal/cat")
         val exampleLabel = TileLabel(topLeft = null, topRight = TileLabelText("C", TileLabelColor.RED))
         val extension = object : MinecraftMahjongExtension {
@@ -96,6 +102,13 @@ class MinecraftMahjongExtensionRegistrarTest {
 
             override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) {
                 registry.register("example:aggressive", "example.ai_strategy.aggressive")
+            }
+
+            override fun registerAutomaticControlDisplays(registry: AutomaticControlDisplayRegistry) {
+                registry.register(
+                    "example:auto_flower",
+                    AutomaticControlDisplay("example.auto_flower", "example.auto_flower.description", 40),
+                )
             }
 
             override fun registerTileDisplayNames(registry: TileDisplayNameRegistry) {
@@ -123,6 +136,7 @@ class MinecraftMahjongExtensionRegistrarTest {
             ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
             tileLabelRegistry = tileLabelRegistry,
+            automaticControlDisplayRegistry = automaticControlDisplayRegistry,
         )
 
         assertEquals("m5_red", tileAssetRegistry.find(RiichiTileTypes.RED_FIVE_CHARACTER))
@@ -142,6 +156,13 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertFailsWith<IllegalStateException> {
             aiStrategyDisplayNameRegistry.register("example:late", "example.ai_strategy.late")
         }
+
+        assertEquals("example.auto_flower", automaticControlDisplayRegistry.find("example:auto_flower")?.labelTranslationKey)
+        assertEquals(
+            setOf("example:auto_flower"),
+            result.registrationKeys("mahjongcraft:automatic_control_display"),
+        )
+        assertTrue(automaticControlDisplayRegistry.isFrozen)
 
         assertTrue(tileDisplayNameRegistry.find(RiichiTileTypes.RED_FIVE_CHARACTER) != null)
         assertEquals("example.tile.cat", tileDisplayNameRegistry.find(thirdPartyId))
