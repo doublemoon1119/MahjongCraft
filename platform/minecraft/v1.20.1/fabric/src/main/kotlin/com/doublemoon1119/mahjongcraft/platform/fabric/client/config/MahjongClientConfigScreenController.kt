@@ -1,14 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlDisplayResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutoSortHandPreferenceService
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlUpdateCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
-import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.option.KeyBinding
 import net.minecraft.client.util.InputUtil
-import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import org.lwjgl.glfw.GLFW
 
@@ -16,7 +17,9 @@ import org.lwjgl.glfw.GLFW
 @Single
 class MahjongClientConfigScreenController(
     private val configStore: MahjongClientConfigStore,
-    @Provided private val json: Json,
+    private val automaticCoordinator: ClientAutomaticControlUpdateCoordinator,
+    private val displayResolver: AutomaticControlDisplayResolver,
+    private val preferenceService: ClientAutoSortHandPreferenceService,
 ) {
     /** 預設以分號開啟 Client Config Screen 的按鍵綁定。 */
     private lateinit var openKeyBinding: KeyBinding
@@ -56,6 +59,6 @@ class MahjongClientConfigScreenController(
 
     /** 建立設定畫面並保留指定 parent。 */
     private fun open(client: MinecraftClient, parent: Screen?) {
-        client.setScreen(MahjongClientConfigScreen(parent, configStore, json))
+        client.setScreen(MahjongClientConfigScreen(parent, configStore, automaticCoordinator, displayResolver, preferenceService))
     }
 }

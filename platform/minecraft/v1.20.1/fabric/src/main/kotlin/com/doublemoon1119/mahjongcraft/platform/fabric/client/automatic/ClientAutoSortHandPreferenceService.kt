@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -74,16 +75,50 @@ class ClientAutoSortHandPreferenceService(
 
     /** 先原子保存 [enabled]，成功後才送出 USER_CHANGE。 */
     fun set(enabled: Boolean): ClientAutoSortHandPreferenceUpdateResult {
-        if (enabled == current()) return ClientAutoSortHandPreferenceUpdateResult.Unchanged(enabled)
+        if (enabled == current()) {
+            if (!syncRetryPending) return ClientAutoSortHandPreferenceUpdateResult.Unchanged(enabled)
+            return sendUserChange(enabled)
+        }
         return when (val result = configStore.setAutoSortHandEnabled(enabled)) {
             is MahjongClientConfigUpdateResult.Failure -> ClientAutoSortHandPreferenceUpdateResult.SaveFailed(result)
-            is MahjongClientConfigUpdateResult.Success -> try {
-                sender.sendUserChange(enabled)
-                ClientAutoSortHandPreferenceUpdateResult.Updated(enabled)
-            } catch (exception: RuntimeException) {
-                ClientAutoSortHandPreferenceUpdateResult.SyncFailed(enabled, exception)
+            is MahjongClientConfigUpdateResult.Success -> sendUserChange(enabled)
+        }
+    }
+
+    /** 保存完整設定草稿，並在需要時同步自動理牌偏好；同步失敗可由下一次呼叫重試。 */
+    fun saveDraft(config: MahjongClientConfigState, connected: Boolean): ClientAutoSortHandPreferenceUpdateResult {
+        val previous = current()
+        val needsSave = configStore.current != config
+        if (needsSave) {
+            when (val result = configStore.save(config)) {
+                is MahjongClientConfigUpdateResult.Failure -> return ClientAutoSortHandPreferenceUpdateResult.SaveFailed(result)
+                is MahjongClientConfigUpdateResult.Success -> Unit
             }
         }
+        if (!connected) {
+            syncRetryPending = false
+            return ClientAutoSortHandPreferenceUpdateResult.Unchanged(config.autoSortHandEnabled)
+        }
+        if (previous == config.autoSortHandEnabled && !syncRetryPending) {
+            return ClientAutoSortHandPreferenceUpdateResult.Unchanged(config.autoSortHandEnabled)
+        }
+        return sendUserChange(config.autoSortHandEnabled)
+    }
+
+    /** 前次已保存但尚未成功同步的偏好仍須重送。 */
+    val hasPendingSync: Boolean
+        get() = syncRetryPending
+
+    private var syncRetryPending = false
+
+    /** 只在封包送出後清除重試標記。 */
+    private fun sendUserChange(enabled: Boolean): ClientAutoSortHandPreferenceUpdateResult = try {
+        sender.sendUserChange(enabled)
+        syncRetryPending = false
+        ClientAutoSortHandPreferenceUpdateResult.Updated(enabled)
+    } catch (exception: RuntimeException) {
+        syncRetryPending = true
+        ClientAutoSortHandPreferenceUpdateResult.SyncFailed(enabled, exception)
     }
 
     /** 將本機已保存值以 RESTORE 語意同步至剛加入的伺服器。 */

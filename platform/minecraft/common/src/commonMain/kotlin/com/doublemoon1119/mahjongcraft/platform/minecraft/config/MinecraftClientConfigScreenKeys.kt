@@ -5,8 +5,23 @@ object MinecraftClientConfigScreenKeys {
     /** 畫面標題。 */
     const val TITLE: String = "mahjongcraft.client_config.title"
 
-    /** 一般分類。 */
-    const val CATEGORY_GENERAL: String = "mahjongcraft.client_config.category.general"
+    /** 自動操作分類。 */
+    const val CATEGORY_AUTOMATIC: String = "mahjongcraft.client_config.category.automatic"
+
+    /** 本局控制與永久偏好的分隔說明。 */
+    const val AUTOMATIC_ROUND_ONLY: String = "mahjongcraft.client_config.automatic.round_only"
+
+    /** 不在對局時的說明。 */
+    const val AUTOMATIC_UNAVAILABLE: String = "mahjongcraft.client_config.automatic.unavailable"
+
+    /** 目前規則未提供本局控制時的說明。 */
+    const val AUTOMATIC_EMPTY: String = "mahjongcraft.client_config.automatic.empty"
+
+    /** 等待伺服器確認。 */
+    const val AUTOMATIC_PENDING: String = "mahjongcraft.client_config.automatic.pending"
+
+    /** 本局控制草稿因權威狀態更新而過期。 */
+    const val AUTOMATIC_STALE: String = "mahjongcraft.client_config.automatic.stale"
 
     /** HUD 類別。 */
     const val CATEGORY_HUD: String = "mahjongcraft.client_config.category.hud"

@@ -1,13 +1,18 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultKindDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlDisplayResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutoSortHandPreferenceService
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutoSortHandPreferenceUpdateResult
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlDraftSession
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlSubmitResult
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlUpdateCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
-import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
-import kotlinx.serialization.json.Json
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
@@ -15,14 +20,25 @@ import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 
-/** 原生 MahjongCraft client 設定畫面；只編輯本機設定草稿，不接觸房間規則。 */
+/** 原生 MahjongCraft client 設定畫面；分開編輯本機設定與本局自動操作草稿，不接觸房間規則。 */
 class MahjongClientConfigScreen(
     private val parent: Screen?,
     private val configStore: MahjongClientConfigStore,
-    private val json: Json,
+    private val automaticCoordinator: ClientAutomaticControlUpdateCoordinator,
+    private val displayResolver: AutomaticControlDisplayResolver,
+    private val preferenceService: ClientAutoSortHandPreferenceService,
 ) : Screen(Text.translatable(MinecraftClientConfigScreenKeys.TITLE)) {
+    /** 伺服器權威狀態之外的畫面專用本局草稿。 */
+    private val automaticDraft = ClientAutomaticControlDraftSession(automaticCoordinator.snapshot())
+
+    /** 最近一次送出／確認失敗的本局控制狀態。 */
+    private var automaticError: String? = null
+
+    /** 本機保存成功但偏好封包未送出。 */
+    private var preferenceSyncFailed = false
+
     /** 目前顯示的設定分類。 */
-    private var category = Category.GENERAL
+    private var category = Category.HUD
 
     /** 使用者尚未套用的完整設定草稿。 */
     private var draft = configStore.current
@@ -54,6 +70,9 @@ class MahjongClientConfigScreen(
     /** 重設按鈕，供草稿狀態即時更新。 */
     private var resetButton: ButtonWidget? = null
 
+    /** 完成按鈕，等待 ACK 時禁止離開。 */
+    private var doneButton: ButtonWidget? = null
+
     override fun init() {
         applyButton = null
         undoButton = null
@@ -64,7 +83,7 @@ class MahjongClientConfigScreen(
             Category.entries.forEachIndexed { index, entry ->
                 addCategoryButton(
                     bounds.left + PANEL_PADDING + index % 2 * (categoryWidth + BOTTOM_BUTTON_GAP),
-                    bounds.contentTop + index / 2 * CATEGORY_BUTTON_GAP,
+                    bounds.contentTop + index / 2 * ClientConfigCategoryLayout.CATEGORY_ROW_HEIGHT,
                     categoryWidth,
                     entry,
                 )
@@ -89,15 +108,19 @@ class MahjongClientConfigScreen(
 
     /** Esc 在無變更時返回；有未套用草稿時顯示明確的三選項確認畫面。 */
     override fun close() {
-        if (draftStale || draft == baseline) {
+        if (automaticDraft.state().pending) return
+        if (!hasChanges()) {
             client?.setScreen(parent)
         } else {
             client?.setScreen(
                 UnsavedChangesConfirmationScreen(
                     this,
-                    { applyDraft(closeAfterSave = true) },
+                    {
+                        client?.setScreen(this)
+                        applyDraft(closeAfterSave = true)
+                    },
                     { client?.setScreen(parent) },
-                    clientConfigDifferenceText(baseline, draft),
+                    differenceText(),
                 ),
             )
         }
@@ -116,6 +139,21 @@ class MahjongClientConfigScreen(
             saveFailed = false
             refreshButtons()
         }
+        val oldRemote = automaticDraft.state()
+        automaticDraft.applySnapshot(automaticCoordinator.snapshot())
+        if (oldRemote != automaticDraft.state()) rebuild()
+        automaticDraft.state().pendingRequestId?.let { requestId ->
+            automaticCoordinator.takeCompletion(requestId)?.let { completion ->
+                val result = automaticDraft.applyCompletion(completion)
+                automaticError = if (result?.accepted == true) null else completion.result.result.name
+                if (result?.closeAfterAcceptance == true) {
+                    client?.setScreen(parent)
+                    return
+                }
+                rebuild()
+            }
+        }
+        refreshButtons()
     }
 
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
@@ -187,9 +225,10 @@ class MahjongClientConfigScreen(
         val visible = visibleRowCount(bounds)
         rowScroll.clamp(rows.size - visible)
         rows.drop(rowScroll.index).take(visible).forEachIndexed { index, row ->
+            if (row.information) return@forEachIndexed
             val y = rowsTop(bounds) + index * FIELD_ROW_HEIGHT
             val message = if (bounds.compact) {
-                Text.translatable(row.nameKey).append(": ").append(row.valueText(draft))
+                row.nameText().copy().append(": ").append(row.valueText(draft))
             } else {
                 row.valueText(draft)
             }
@@ -204,8 +243,11 @@ class MahjongClientConfigScreen(
                     }
                 }
             }.dimensions(bounds.controlLeft, y, bounds.controlWidth, BUTTON_HEIGHT).build().also {
-                it.active = (row.update != null || row.onActivate != null) && !draftStale
-                it.tooltip = Tooltip.of(Text.translatable(row.descriptionKey))
+                it.active = (row.update != null || row.onActivate != null) &&
+                    !draftStale &&
+                    !automaticDraft.state().pending &&
+                    (!row.remote || !automaticDraft.state().stale)
+                it.tooltip = row.descriptionText()?.let(Tooltip::of) ?: row.nameOverride?.let(Tooltip::of)
             }
             addDrawableChild(button)
         }
@@ -224,6 +266,7 @@ class MahjongClientConfigScreen(
         resetButton = addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.RESET_DEFAULTS)) {
                 draft = MahjongClientConfigState()
+                automaticDraft.reset()
                 saveFailed = false
                 rebuild()
             }.dimensions(footer.resetX, y, footer.resetWidth, BUTTON_HEIGHT).build(),
@@ -238,39 +281,65 @@ class MahjongClientConfigScreen(
                 applyDraft(closeAfterSave = false)
             }.dimensions(footer.applyX, y, footer.actionWidth, BUTTON_HEIGHT).build(),
         )
-        addDrawableChild(
+        doneButton = addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.DONE)) {
-                if (draftStale || draft == baseline) close() else applyDraft(closeAfterSave = true)
+                if (draftStale || (!hasChanges() && !preferenceService.hasPendingSync)) {
+                    close()
+                } else {
+                    applyDraft(closeAfterSave = true)
+                }
             }.dimensions(footer.doneX, y, footer.actionWidth, BUTTON_HEIGHT).build(),
         )
     }
 
-    /** 原子保存草稿；自動整理偏好變更時才同步伺服器。 */
+    /** 先保存本機設定，再送出本局草稿並等待配對的伺服器確認。 */
     private fun applyDraft(closeAfterSave: Boolean): Boolean {
-        if (draftStale) return false
-        if (draft == baseline) {
-            if (closeAfterSave) close()
-            return true
-        }
-        val previous = configStore.current
-        return when (configStore.save(draft)) {
-            is MahjongClientConfigUpdateResult.Success -> {
-                if (previous.autoSortHandEnabled != draft.autoSortHandEnabled && client?.networkHandler != null) {
-                    MahjongChannels.setAutoSortHand.sendToServer(json, draft.autoSortHandEnabled)
+        if (draftStale || automaticDraft.state().pending) return false
+        if (draft != baseline || preferenceService.hasPendingSync) {
+            when (preferenceService.saveDraft(draft, client?.networkHandler != null)) {
+                is ClientAutoSortHandPreferenceUpdateResult.SaveFailed -> {
+                    saveFailed = true
+                    refreshButtons()
+                    return false
                 }
-                baseline = draft
-                baselineRevision = configStore.revision
-                saveFailed = false
-                if (closeAfterSave) close() else rebuild()
-                true
+                is ClientAutoSortHandPreferenceUpdateResult.SyncFailed -> {
+                    baseline = configStore.current
+                    baselineRevision = configStore.revision
+                    preferenceSyncFailed = true
+                    refreshButtons()
+                    return false
+                }
+                else -> Unit
             }
-
-            is MahjongClientConfigUpdateResult.Failure -> {
-                saveFailed = true
-                refreshButtons()
-                false
-            }
+            baseline = configStore.current
+            baselineRevision = configStore.revision
+            preferenceSyncFailed = false
+            saveFailed = false
         }
+        val remote = automaticDraft.state()
+        if (remote.stale) {
+            automaticError = AutomaticControlUpdateResultKindDto.STALE.name
+            refreshButtons()
+            return false
+        }
+        if (remote.dirty) {
+            when (val submission = automaticCoordinator.submit(remote.enabledControlIds)) {
+                is ClientAutomaticControlSubmitResult.Submitted -> {
+                    check(automaticDraft.markSubmitted(submission.request, closeAfterSave))
+                    automaticError = null
+                    rebuild()
+                    return true
+                }
+                is ClientAutomaticControlSubmitResult.Pending -> automaticError = "PENDING"
+                is ClientAutomaticControlSubmitResult.Unavailable -> automaticError = "UNAVAILABLE"
+                is ClientAutomaticControlSubmitResult.Unsupported -> automaticError = "UNSUPPORTED"
+                is ClientAutomaticControlSubmitResult.SendFailed -> automaticError = "SEND_FAILED"
+            }
+            refreshButtons()
+            return false
+        }
+        if (closeAfterSave) client?.setScreen(parent) else rebuild()
+        return true
     }
 
     /** 目前完整草稿，供 HUD editor 在不建立第二份設定來源的情況下承接。 */
@@ -278,16 +347,38 @@ class MahjongClientConfigScreen(
 
     /** 將 HUD 配置併入完整草稿並透過既有原子保存流程套用。 */
     internal fun applyHudLayout(layout: MahjongHudLayoutConfig): Boolean {
+        if (draftStale || automaticDraft.state().pending) return false
         draft = draft.copy(hudLayout = layout)
-        return applyDraft(closeAfterSave = false)
+        return when (preferenceService.saveDraft(draft, client?.networkHandler != null)) {
+            is ClientAutoSortHandPreferenceUpdateResult.SaveFailed -> {
+                saveFailed = true
+                false
+            }
+            is ClientAutoSortHandPreferenceUpdateResult.SyncFailed -> {
+                baseline = configStore.current
+                baselineRevision = configStore.revision
+                preferenceSyncFailed = true
+                false
+            }
+            else -> {
+                baseline = configStore.current
+                baselineRevision = configStore.revision
+                saveFailed = false
+                preferenceSyncFailed = false
+                rebuild()
+                true
+            }
+        }
     }
 
     /** 依目前草稿、預設值與 revision 更新底部按鈕狀態。 */
     private fun refreshButtons() {
-        resetButton?.active = !draftStale && draft != MahjongClientConfigState()
-        applyButton?.active = !draftStale && draft != baseline
-        undoButton?.active = draftStale || draft != baseline
-        val changes = if (!draftStale && draft != baseline) Tooltip.of(clientConfigDifferenceText(baseline, draft)) else null
+        val remote = automaticDraft.state()
+        resetButton?.active = !draftStale && !remote.pending && (draft != MahjongClientConfigState() || remote.enabledControlIds.isNotEmpty())
+        applyButton?.active = !draftStale && !remote.pending && (hasChanges() || preferenceService.hasPendingSync)
+        undoButton?.active = !remote.pending && (draftStale || hasChanges() || remote.stale)
+        doneButton?.active = !remote.pending
+        val changes = if (hasChanges()) Tooltip.of(differenceText()) else null
         applyButton?.tooltip = changes
         undoButton?.tooltip = changes
     }
@@ -300,28 +391,37 @@ class MahjongClientConfigScreen(
             draftStale = false
         }
         draft = baseline
+        automaticDraft.undo()
+        automaticError = null
+        preferenceSyncFailed = preferenceService.hasPendingSync
         saveFailed = false
         rebuild()
     }
+
+    /** 兩份草稿中任一份尚未套用。 */
+    private fun hasChanges(): Boolean = draft != baseline || automaticDraft.state().dirty
+
+    /** 所有套用入口使用同一份本機與本局草稿差異。 */
+    private fun differenceText(): Text = clientConfigDifferenceText(baseline, draft, automaticDraft.state(), displayResolver)
 
     /**
      * 繪製欄位名稱，控制項寬度固定且名稱依實際像素寬度安全截斷；名稱被截斷且滑鼠懸停時回傳完整
      * 名稱供呼叫端繪製 tooltip。
      */
     private fun renderFieldLabels(context: DrawContext, bounds: PanelBounds, mouseX: Int, mouseY: Int): Text? {
-        if (bounds.compact) return null
         var hoveredLabel: Text? = null
         val rows = rows()
         rows.drop(rowScroll.index).take(visibleRowCount(bounds)).forEachIndexed { index, row ->
-            val label = Text.translatable(row.nameKey)
+            if (bounds.compact && !row.information) return@forEachIndexed
+            val label = row.nameText()
             val y = rowsTop(bounds) + index * FIELD_ROW_HEIGHT + VANILLA_TEXT_OFFSET_Y
-            val left = bounds.left + SIDEBAR_WIDTH + PANEL_PADDING
-            val available = bounds.controlLeft - PANEL_PADDING - left
+            val left = if (row.information) bounds.contentLeft else bounds.left + SIDEBAR_WIDTH + PANEL_PADDING
+            val available = if (row.information) bounds.right - PANEL_PADDING - left else bounds.controlLeft - PANEL_PADDING - left
             val fittedLabel = fitText(label, available)
             context.drawTextWithShadow(textRenderer, fittedLabel, left, y, TEXT_COLOR)
             if (
                 fittedLabel.string != label.string &&
-                mouseX in left until bounds.controlLeft - PANEL_PADDING &&
+                mouseX in left until left + available &&
                 mouseY in y until y + textRenderer.fontHeight
             ) {
                 hoveredLabel = label
@@ -335,6 +435,10 @@ class MahjongClientConfigScreen(
         val status = when {
             draftStale -> Text.translatable(MinecraftClientConfigScreenKeys.DRAFT_STALE).formatted(Formatting.RED)
             saveFailed -> Text.translatable(MinecraftClientConfigScreenKeys.SAVE_FAILED).formatted(Formatting.RED)
+            preferenceSyncFailed -> Text.translatable("mahjongcraft.message.automatic_control_preference_sync_failed").formatted(Formatting.RED)
+            automaticDraft.state().pending -> Text.translatable(MinecraftClientConfigScreenKeys.AUTOMATIC_PENDING)
+            automaticDraft.state().stale -> Text.translatable(MinecraftClientConfigScreenKeys.AUTOMATIC_STALE).formatted(Formatting.RED)
+            automaticError != null -> Text.translatable(automaticErrorKey(checkNotNull(automaticError))).formatted(Formatting.RED)
             else -> return
         }
         context.drawTextWithShadow(
@@ -344,6 +448,16 @@ class MahjongClientConfigScreen(
             bounds.bottom - BOTTOM_AREA_HEIGHT + STATUS_OFFSET_Y,
             TEXT_COLOR,
         )
+    }
+
+    /** 將本地提交錯誤與 ACK 結果映射到既有玩家訊息。 */
+    private fun automaticErrorKey(error: String): String = when (error) {
+        "PENDING" -> "mahjongcraft.message.automatic_control_pending"
+        "UNAVAILABLE" -> "mahjongcraft.message.automatic_control_unavailable"
+        "UNSUPPORTED" -> "mahjongcraft.message.automatic_control_rejected"
+        "SEND_FAILED" -> "mahjongcraft.message.automatic_control_send_failed"
+        "STALE" -> MinecraftClientConfigScreenKeys.AUTOMATIC_STALE
+        else -> "mahjongcraft.message.automatic_control_rejected"
     }
 
     /** 只有欄位超出可見範圍時繪製 scrollbar。 */
@@ -386,14 +500,14 @@ class MahjongClientConfigScreen(
 
     /** 取得目前分類的宣告式欄位。 */
     private fun rows(): List<ConfigRow> = when (category) {
-        Category.GENERAL -> listOf(
+        Category.AUTOMATIC -> listOf(
             ConfigRow(
                 MinecraftClientConfigScreenKeys.AUTO_SORT_HAND,
                 MinecraftClientConfigScreenKeys.AUTO_SORT_HAND_DESCRIPTION,
                 { booleanText(it.autoSortHandEnabled) },
                 { it.copy(autoSortHandEnabled = !it.autoSortHandEnabled) },
             ),
-        )
+        ) + automaticRows()
 
         Category.HUD -> listOf(
             ConfigRow(
@@ -425,6 +539,37 @@ class MahjongClientConfigScreen(
                 { it.copy(tileLabelsEnabled = !it.tileLabelsEnabled) },
             ),
         ) + presentationRows("matching_tile_highlight", "discard_popup", "meld_popup")
+    }
+
+    /** 依權威支援集合建立本局控制列，不憑規則名稱猜測可用功能。 */
+    private fun automaticRows(): List<ConfigRow> {
+        val remote = automaticDraft.state()
+        val snapshot = remote.baseline
+        val explanation = when {
+            snapshot == null -> MinecraftClientConfigScreenKeys.AUTOMATIC_UNAVAILABLE
+            snapshot.supportedControlIds.isEmpty() -> MinecraftClientConfigScreenKeys.AUTOMATIC_EMPTY
+            else -> MinecraftClientConfigScreenKeys.AUTOMATIC_ROUND_ONLY
+        }
+        val heading = ConfigRow(explanation, explanation, { Text.empty() }, information = true)
+        if (snapshot == null) return listOf(heading)
+        return listOf(heading) + displayResolver.resolveAll(snapshot.supportedControlIds).map { display ->
+            ConfigRow(
+                nameKey = display.controlId,
+                descriptionKey = display.controlId,
+                valueText = { booleanText(display.controlId in automaticDraft.state().enabledControlIds) },
+                onActivate = {
+                    val enabled = automaticDraft.state().enabledControlIds
+                    val next = if (display.controlId in enabled) enabled - display.controlId else enabled + display.controlId
+                    if (automaticDraft.replaceDraft(next)) {
+                        automaticError = null
+                        rebuild()
+                    }
+                },
+                nameOverride = display.label,
+                descriptionOverride = display.description?.let { display.label.copy().append("\n").append(it) } ?: display.label,
+                remote = true,
+            )
+        }
     }
 
     /** 建立 HUD、遊戲面板與視覺效果的個別開關列。 */
@@ -500,9 +645,6 @@ class MahjongClientConfigScreen(
 
     /** 設定分類。 */
     private enum class Category(val translationKey: String) {
-        /** 一般行為。 */
-        GENERAL(MinecraftClientConfigScreenKeys.CATEGORY_GENERAL),
-
         /** HUD 顯示。 */
         HUD(MinecraftClientConfigScreenKeys.CATEGORY_HUD),
 
@@ -511,6 +653,9 @@ class MahjongClientConfigScreen(
 
         /** 世界視覺提示。 */
         VISUAL_FEEDBACK(MinecraftClientConfigScreenKeys.CATEGORY_VISUAL_FEEDBACK),
+
+        /** 永久理牌偏好與本局自動操作。 */
+        AUTOMATIC(MinecraftClientConfigScreenKeys.CATEGORY_AUTOMATIC),
     }
 
     /** 一列設定的宣告式內容與 immutable updater。 */
@@ -527,7 +672,19 @@ class MahjongClientConfigScreen(
         val onActivate: (() -> Unit)? = null,
         /** 供呈現分類過濾使用的穩定識別字。 */
         val id: String = nameKey,
-    )
+        /** 動態 registry 名稱。 */
+        val nameOverride: Text? = null,
+        /** 動態 registry 說明。 */
+        val descriptionOverride: Text? = null,
+        /** 說明列沒有可編輯控制項。 */
+        val information: Boolean = false,
+        /** 本局權威狀態過期時不可切換。 */
+        val remote: Boolean = false,
+    ) {
+        fun nameText(): Text = nameOverride ?: Text.translatable(nameKey)
+
+        fun descriptionText(): Text? = descriptionOverride ?: if (information) null else Text.translatable(descriptionKey)
+    }
 
     /** 中央面板邊界。 */
     private data class PanelBounds(
@@ -554,7 +711,7 @@ class MahjongClientConfigScreen(
 
         /** 欄位內容起始 Y。 */
         val fieldsTop: Int
-            get() = top + if (compact) COMPACT_FIELDS_OFFSET_Y else FIELDS_OFFSET_Y
+            get() = if (compact) ClientConfigCategoryLayout.compactFieldsTop(top, Category.entries.size) else top + FIELDS_OFFSET_Y
 
         /** 是否改用頂部分類 tab 與單欄設定按鈕。 */
         val compact: Boolean
@@ -602,14 +759,12 @@ class MahjongClientConfigScreen(
         const val TITLE_OFFSET_Y = 12
 
         /** 分類按鈕相對面板上緣的 Y 位移。 */
-        const val CONTENT_OFFSET_Y = 42
+        const val CONTENT_OFFSET_Y = ClientConfigCategoryLayout.CATEGORY_TOP_OFFSET
 
         /** 欄位相對面板上緣的 Y 位移。 */
         const val FIELDS_OFFSET_Y = 50
 
-        /** 單欄版面欄位相對面板上緣的 Y 位移。 */
-        const val COMPACT_FIELDS_OFFSET_Y = 96
-
+        /** 單欄版面分類按鈕結束後的欄位間距。 */
         /** 低於此面板寬度時改用單欄版面。 */
         const val TWO_COLUMN_MIN_WIDTH = 400
 
@@ -620,7 +775,7 @@ class MahjongClientConfigScreen(
         const val BUTTON_HEIGHT = 20
 
         /** 分類按鈕垂直間距。 */
-        const val CATEGORY_BUTTON_GAP = 25
+        const val CATEGORY_BUTTON_GAP = ClientConfigCategoryLayout.CATEGORY_ROW_HEIGHT
 
         /** 欄位控制項寬度。 */
         const val CONTROL_WIDTH = 180

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlDisplayResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlDraftState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
@@ -25,6 +27,28 @@ fun clientConfigDifferenceText(from: MahjongClientConfigState, to: MahjongClient
     }
     result.appendPresentationVisibilityChanges(from.presentationVisibility, to.presentationVisibility)
     result.appendHudLayoutChanges(from.hudLayout, to.hudLayout)
+    return result
+}
+
+/** 在既有本機差異後附加本局自動操作草稿差異，供設定畫面所有套用入口共用。 */
+fun clientConfigDifferenceText(
+    from: MahjongClientConfigState,
+    to: MahjongClientConfigState,
+    automaticDraft: ClientAutomaticControlDraftState,
+    displayResolver: AutomaticControlDisplayResolver,
+): Text {
+    val result = clientConfigDifferenceText(from, to).copy()
+    val baseline = automaticDraft.baseline ?: return result
+    val changedIds = baseline.supportedControlIds.filter { id ->
+        (id in baseline.enabledControlIds) != (id in automaticDraft.enabledControlIds)
+    }
+    displayResolver.resolveAll(changedIds).forEach { display ->
+        result.appendValueChange(
+            display.label,
+            booleanText(display.controlId in baseline.enabledControlIds),
+            booleanText(display.controlId in automaticDraft.enabledControlIds),
+        )
+    }
     return result
 }
 
@@ -94,10 +118,15 @@ private fun MutableText.appendHudLayoutChanges(from: MahjongHudLayoutConfig, to:
 
 /** 附加一般設定值差異。 */
 private fun MutableText.appendValueChange(nameKey: String, from: Text, to: Text) {
+    appendValueChange(Text.translatable(nameKey), from, to)
+}
+
+/** 附加已解析名稱的差異，讓第三方自動操作顯示資料也能使用相同格式。 */
+private fun MutableText.appendValueChange(name: Text, from: Text, to: Text) {
     append("\n").append(
         Text.translatable(
             MinecraftClientConfigScreenKeys.CONFIG_VALUE_CHANGE,
-            Text.translatable(nameKey),
+            name,
             from,
             to,
         ).formatted(Formatting.GRAY),

@@ -56,6 +56,36 @@ class ClientAutoSortHandPreferenceServiceTest {
     }
 
     @Test
+    fun `full draft saves once and retries failed preference sync`() = withService { service, sender, store ->
+        assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
+        val changed = store.current.copy(tileLabelsEnabled = false, autoSortHandEnabled = false)
+        sender.failure = IllegalStateException("temporarily offline")
+
+        assertIs<ClientAutoSortHandPreferenceUpdateResult.SyncFailed>(service.saveDraft(changed, connected = true))
+        assertEquals(changed, store.current)
+        assertTrue(service.hasPendingSync)
+        val savedRevision = store.revision
+
+        sender.failure = null
+        assertIs<ClientAutoSortHandPreferenceUpdateResult.Updated>(service.saveDraft(changed, connected = true))
+        assertEquals(savedRevision, store.revision)
+        assertEquals(listOf(false), sender.userChanges)
+        assertFalse(service.hasPendingSync)
+    }
+
+    @Test
+    fun `full draft does not send preference while disconnected`() = withService { service, sender, store ->
+        assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
+
+        assertIs<ClientAutoSortHandPreferenceUpdateResult.Unchanged>(
+            service.saveDraft(store.current.copy(autoSortHandEnabled = false), connected = false),
+        )
+
+        assertFalse(service.current())
+        assertTrue(sender.userChanges.isEmpty())
+    }
+
+    @Test
     fun `restore sends current value without modifying config`() = withService { service, sender, store ->
         assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
         val revision = store.revision
@@ -89,7 +119,7 @@ class ClientAutoSortHandPreferenceServiceTest {
     }
 
     /** 記錄兩種偏好同步語意。 */
-    private class RecordingSender(private val failure: RuntimeException?) : ClientAutoSortHandPreferenceSender {
+    private class RecordingSender(var failure: RuntimeException?) : ClientAutoSortHandPreferenceSender {
         /** 玩家主動變更紀錄。 */
         val userChanges = mutableListOf<Boolean>()
 
