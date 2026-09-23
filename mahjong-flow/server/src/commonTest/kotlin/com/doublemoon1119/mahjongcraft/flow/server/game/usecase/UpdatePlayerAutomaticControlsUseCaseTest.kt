@@ -162,6 +162,29 @@ class UpdatePlayerAutomaticControlsUseCaseTest {
         assertNull(rejected.snapshot)
     }
 
+    /** 每位成員只取得自己的控制集合，另一位玩家的變更不得混入快照。 */
+    @Test
+    fun `member snapshots expose only their own enabled controls`() = runTest {
+        val fixtures = Fixtures()
+        val (game, firstPlayerId) = fixtures.createGame()
+        val secondPlayerId = game.tableState.players.first { it.id != firstPlayerId }.id
+
+        val first = assertIs<UpdatePlayerAutomaticControlsResult.Accepted>(
+            fixtures.useCase(game.id, firstPlayerId, 0L, setOf(BuiltInAutomaticControlIds.AUTO_WIN)),
+        )
+        val second = assertIs<UpdatePlayerAutomaticControlsResult.Accepted>(
+            fixtures.useCase(game.id, secondPlayerId, 1L, setOf(BuiltInAutomaticControlIds.DECLINE_CALLS)),
+        )
+        val firstNoOp = assertIs<UpdatePlayerAutomaticControlsResult.Accepted>(
+            fixtures.useCase(game.id, firstPlayerId, 2L, setOf(BuiltInAutomaticControlIds.AUTO_WIN)),
+        )
+
+        assertEquals(setOf(BuiltInAutomaticControlIds.AUTO_WIN), first.snapshot.enabledControlIds)
+        assertEquals(setOf(BuiltInAutomaticControlIds.DECLINE_CALLS), second.snapshot.enabledControlIds)
+        assertEquals(setOf(BuiltInAutomaticControlIds.AUTO_WIN), firstNoOp.snapshot.enabledControlIds)
+        assertEquals(2L, firstNoOp.snapshot.revision)
+    }
+
     /** 不存在或已結束的對局不得接受更新。 */
     @Test
     fun `unavailable games reject updates`() = runTest {

@@ -114,6 +114,23 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         assertNull(fixture.coordinator.takeCompletion(nextRequest.requestId))
     }
 
+    @Test
+    fun `old game result cannot complete a request after a new game snapshot`() {
+        val fixture = fixture()
+        fixture.coordinator.applySnapshot(snapshot(supported = setOf("test:auto_a")))
+        val oldRequest = assertIs<ClientAutomaticControlSubmitResult.Submitted>(
+            fixture.coordinator.submit(setOf("test:auto_a")),
+        ).request
+        val newGame = snapshot(supported = setOf("test:auto_b"))
+
+        fixture.coordinator.applySnapshot(newGame)
+
+        assertNull(fixture.coordinator.pendingRequest())
+        assertEquals(newGame, fixture.coordinator.snapshot())
+        assertTrue(!fixture.coordinator.applyResult(result(oldRequest, AutomaticControlUpdateResultKindDto.ACCEPTED)))
+        assertNull(fixture.coordinator.takeCompletion(oldRequest.requestId))
+    }
+
     /** 建立隔離的 coordinator 與記錄型 sender。 */
     private fun fixture(sendFailure: RuntimeException? = null): Fixture {
         val sender = RecordingSender(sendFailure)
