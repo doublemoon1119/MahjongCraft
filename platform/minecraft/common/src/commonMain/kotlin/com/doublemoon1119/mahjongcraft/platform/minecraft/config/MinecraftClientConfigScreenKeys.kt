@@ -56,6 +56,9 @@ object MinecraftClientConfigScreenKeys {
     /** HUD 位置編輯器入口說明。 */
     const val EDIT_HUD_LAYOUT_DESCRIPTION: String = "mahjongcraft.client_config.edit_hud_layout.description"
 
+    /** 自動操作狀態 HUD 顯示的溢出摘要。 */
+    const val HUD_AUTOMATIC_CONTROL_MORE: String = "mahjongcraft.hud.automatic_control_more"
+
     /** HUD 位置編輯器標題。 */
     const val HUD_LAYOUT_TITLE: String = "mahjongcraft.hud_layout.title"
 

@@ -70,6 +70,7 @@ private fun MutableText.appendPresentationVisibilityChanges(
         "matching_tile_highlight" to (from.matchingTileHighlightEnabled to to.matchingTileHighlightEnabled),
         "discard_popup" to (from.discardPopupEnabled to to.discardPopupEnabled),
         "meld_popup" to (from.meldPopupEnabled to to.meldPopupEnabled),
+        "automatic_control_status" to (from.automaticControlStatusEnabled to to.automaticControlStatusEnabled),
     )
     entries.filter { (_, values) -> values.first != values.second }.forEach { (id, values) ->
         appendValueChange(

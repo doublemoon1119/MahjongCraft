@@ -35,6 +35,7 @@ match-settlement-enabled = true
 matching-tile-highlight-enabled = true
 discard-popup-enabled = true
 meld-popup-enabled = true
+automatic-control-status-enabled = true
 
 # HUD positions are ratios inside the area where the complete HUD can fit on screen.
 # 0.0 means the left/top edge and 1.0 means the right/bottom edge.
@@ -43,3 +44,5 @@ decision-panel-y = 0.88
 compact-prompt-x = 0.95
 compact-prompt-y = 0.78
 discard-analysis-y = 0.8
+automatic-control-status-x = 0.03
+automatic-control-status-y = 0.22

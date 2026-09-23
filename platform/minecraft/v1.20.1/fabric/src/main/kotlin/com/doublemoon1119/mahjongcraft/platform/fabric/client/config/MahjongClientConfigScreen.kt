@@ -520,6 +520,9 @@ class MahjongClientConfigScreen(
             ),
             presentationRow("compact_prompt", { it.compactPromptEnabled }) { state, enabled -> state.copy(compactPromptEnabled = enabled) },
             presentationRow("discard_analysis", { it.discardAnalysisEnabled }) { state, enabled -> state.copy(discardAnalysisEnabled = enabled) },
+            presentationRow("automatic_control_status", { it.automaticControlStatusEnabled }) { state, enabled ->
+                state.copy(automaticControlStatusEnabled = enabled)
+            },
         )
 
         Category.GAME_PANELS -> presentationRows(

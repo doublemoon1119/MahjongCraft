@@ -15,6 +15,23 @@ import kotlin.test.assertTrue
 /** 設定頁底部與未保存變更確認畫面共用的差異文字。 */
 class MahjongClientConfigDifferenceFormatterTest {
     @Test
+    fun `visibility changes include automatic control status`() {
+        val from = MahjongClientConfigState()
+        val to = from.copy(
+            presentationVisibility = from.presentationVisibility.copy(automaticControlStatusEnabled = false),
+        )
+
+        val summary = clientConfigDifferenceText(from, to)
+
+        val changeNames = summary.siblings.mapNotNull { sibling ->
+            val change = sibling.content as? TranslatableTextContent ?: return@mapNotNull null
+            (change.args.firstOrNull() as? Text)?.content as? TranslatableTextContent
+        }
+
+        assertTrue(changeNames.any { it.key == "mahjongcraft.client_config.presentation.automatic_control_status" })
+    }
+
+    @Test
     fun `remote-only changes include registered and unknown control names`() {
         val registry = AutomaticControlDisplayRegistryImpl().apply {
             register("example:auto", AutomaticControlDisplay("example.auto", "example.auto.description", 1))

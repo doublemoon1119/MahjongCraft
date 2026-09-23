@@ -61,6 +61,8 @@ data class MahjongPresentationVisibilityConfig(
     @SerialName("discard-popup-enabled") val discardPopupEnabled: Boolean = true,
     /** 是否顯示鳴牌落地後的短暫牌組提示。 */
     @SerialName("meld-popup-enabled") val meldPopupEnabled: Boolean = true,
+    /** 是否顯示目前已啟用的自動操作狀態 HUD。 */
+    @SerialName("automatic-control-status-enabled") val automaticControlStatusEnabled: Boolean = true,
 )
 
 /**
@@ -84,11 +86,21 @@ data class MahjongHudLayoutConfig(
     /** 手牌分析面板的垂直位置比例。 */
     @SerialName("discard-analysis-y")
     val discardAnalysisY: Double = 0.8,
+
+    /** 自動操作狀態 HUD 的水平位置比例。 */
+    @SerialName("automatic-control-status-x")
+    val automaticControlStatusX: Double = 0.03,
+
+    /** 自動操作狀態 HUD 的垂直位置比例。 */
+    @SerialName("automatic-control-status-y")
+    val automaticControlStatusY: Double = 0.22,
 ) {
     init {
         require(decisionPanelY in 0.0..1.0) { "decision-panel-y must be between 0.0 and 1.0" }
         require(compactPromptX in 0.0..1.0) { "compact-prompt-x must be between 0.0 and 1.0" }
         require(compactPromptY in 0.0..1.0) { "compact-prompt-y must be between 0.0 and 1.0" }
         require(discardAnalysisY in 0.0..1.0) { "discard-analysis-y must be between 0.0 and 1.0" }
+        require(automaticControlStatusX in 0.0..1.0) { "automatic-control-status-x must be between 0.0 and 1.0" }
+        require(automaticControlStatusY in 0.0..1.0) { "automatic-control-status-y must be between 0.0 and 1.0" }
     }
 }

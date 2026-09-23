@@ -126,7 +126,27 @@ class MahjongClientConfigStore() {
                 .let { updateDouble(it, COMPACT_PROMPT_X_KEY, COMPACT_PROMPT_X_LINE, config.hudLayout.compactPromptX) }
                 .let { updateDouble(it, COMPACT_PROMPT_Y_KEY, COMPACT_PROMPT_Y_LINE, config.hudLayout.compactPromptY) }
                 .let { updateDouble(it, DISCARD_ANALYSIS_Y_KEY, DISCARD_ANALYSIS_Y_LINE, config.hudLayout.discardAnalysisY) }
-                .let { content -> VISIBILITY_FIELDS.fold(content) { result, field -> updateBoolean(result, field.key, field.line, field.read(config.presentationVisibility)) } }
+                .let {
+                    updateDouble(
+                        it,
+                        AUTOMATIC_CONTROL_STATUS_X_KEY,
+                        AUTOMATIC_CONTROL_STATUS_X_LINE,
+                        config.hudLayout.automaticControlStatusX,
+                    )
+                }
+                .let {
+                    updateDouble(
+                        it,
+                        AUTOMATIC_CONTROL_STATUS_Y_KEY,
+                        AUTOMATIC_CONTROL_STATUS_Y_LINE,
+                        config.hudLayout.automaticControlStatusY,
+                    )
+                }
+                .let { content ->
+                    VISIBILITY_FIELDS.fold(content) { result, field ->
+                        updateBoolean(result, field.key, field.line, field.read(config.presentationVisibility))
+                    }
+                }
             check(toml.decodeFromString<MahjongClientConfigState>(updated) == config) {
                 "Updated client config did not decode to the requested state"
             }
@@ -163,18 +183,56 @@ class MahjongClientConfigStore() {
     }
 
     /**
-     * 舊版 client config 沒有 HUD section 時附加受控預設欄位；既有文件內容與註解保持不變。
-     * 只要任一 HUD 欄位已存在便交由後續完整驗證拒絕不完整 section，避免猜測人工修改內容。
+     * 舊版 client config 沒有受控 section 時附加預設欄位；完整的舊版 section 只補入本次新增欄位，
+     * 並保留既有文件內容與註解。若 section 只有部分欄位，則拒絕猜測人工修改內容。
      */
     private fun ensureControlledSections(content: String): String {
         val fieldCount = HUD_LAYOUT_LINES.count { it.containsMatchIn(content) }
-        check(fieldCount == 0 || fieldCount == HUD_LAYOUT_LINES.size) { "Incomplete controlled client config section '$HUD_LAYOUT_SECTION'" }
-        val withHud = if (fieldCount == 0) content.trimEnd() + "\n\n" + DEFAULT_HUD_LAYOUT_SECTION + "\n" else content
+        check(fieldCount == 0 || fieldCount == LEGACY_HUD_LAYOUT_FIELD_COUNT || fieldCount == HUD_LAYOUT_LINES.size) {
+            "Incomplete controlled client config section '$HUD_LAYOUT_SECTION'"
+        }
+        val withHud = when (fieldCount) {
+            0 -> content.trimEnd() + "\n\n" + DEFAULT_HUD_LAYOUT_SECTION + "\n"
+            LEGACY_HUD_LAYOUT_FIELD_COUNT -> appendFieldsToSection(
+                content,
+                HUD_LAYOUT_SECTION,
+                listOf(
+                    "$AUTOMATIC_CONTROL_STATUS_X_KEY = 0.03",
+                    "$AUTOMATIC_CONTROL_STATUS_Y_KEY = 0.22",
+                ),
+            )
+            else -> content
+        }
         val visibilityCount = VISIBILITY_FIELDS.count { it.line.containsMatchIn(withHud) }
-        check(visibilityCount == 0 || visibilityCount == VISIBILITY_FIELDS.size) {
+        check(visibilityCount == 0 || visibilityCount == LEGACY_VISIBILITY_FIELD_COUNT || visibilityCount == VISIBILITY_FIELDS.size) {
             "Incomplete controlled client config section '$VISIBILITY_SECTION'"
         }
-        return if (visibilityCount == 0) withHud.trimEnd() + "\n\n" + DEFAULT_VISIBILITY_SECTION + "\n" else withHud
+        return when (visibilityCount) {
+            0 -> withHud.trimEnd() + "\n\n" + DEFAULT_VISIBILITY_SECTION + "\n"
+            LEGACY_VISIBILITY_FIELD_COUNT -> appendFieldsToSection(
+                withHud,
+                VISIBILITY_SECTION,
+                listOf("$AUTOMATIC_CONTROL_STATUS_ENABLED_KEY = true"),
+            )
+            else -> withHud
+        }
+    }
+
+    /** 在既有完整舊 section 尾端補入新增欄位，避免重建或改寫使用者的 TOML 排版。 */
+    private fun appendFieldsToSection(content: String, section: String, fields: List<String>): String {
+        val sectionMatch = Regex("(?m)^\\[$section]\\s*${'$'}\\r?\\n?").find(content)
+            ?: error("Missing controlled client config section '$section'")
+        val nextSection = Regex("(?m)^\\[[^\\r\\n]+]\\s*$").find(content, sectionMatch.range.last + 1)
+        val insertionIndex = nextSection?.range?.first ?: content.length
+        val before = content.substring(0, insertionIndex)
+        val after = content.substring(insertionIndex)
+        return buildString {
+            append(before)
+            if (before.isNotEmpty() && before.last() != '\n') append('\n')
+            append(fields.joinToString("\n"))
+            append('\n')
+            append(after)
+        }
     }
 
     /** 在設定檔缺少時原樣複製打包的帶註解 template。 */
@@ -216,6 +274,14 @@ class MahjongClientConfigStore() {
             """(?m)^(\s*$AUTO_SORT_HAND_ENABLED_KEY\s*=\s*)\S+(\s*(?:#.*)?)$""",
         )
 
+        /** 自動操作狀態 HUD 開關的 TOML 欄位鍵。 */
+        const val AUTOMATIC_CONTROL_STATUS_ENABLED_KEY: String = "automatic-control-status-enabled"
+
+        /** 比對自動操作狀態 HUD 開關欄位。 */
+        val AUTOMATIC_CONTROL_STATUS_ENABLED_LINE = Regex(
+            """(?m)^(\s*$AUTOMATIC_CONTROL_STATUS_ENABLED_KEY\s*=\s*)\S+(\s*(?:#.*)?)$""",
+        )
+
         /** 操作面板垂直比例的 TOML 欄位鍵。 */
         const val DECISION_PANEL_Y_KEY: String = "decision-panel-y"
 
@@ -228,8 +294,17 @@ class MahjongClientConfigStore() {
         /** 手牌分析垂直比例的 TOML 欄位鍵。 */
         const val DISCARD_ANALYSIS_Y_KEY: String = "discard-analysis-y"
 
+        /** 自動操作狀態 HUD 水平比例的 TOML 欄位鍵。 */
+        const val AUTOMATIC_CONTROL_STATUS_X_KEY: String = "automatic-control-status-x"
+
+        /** 自動操作狀態 HUD 垂直比例的 TOML 欄位鍵。 */
+        const val AUTOMATIC_CONTROL_STATUS_Y_KEY: String = "automatic-control-status-y"
+
         /** HUD layout TOML section 名稱。 */
         const val HUD_LAYOUT_SECTION: String = "hud-layout"
+
+        /** 舊版 HUD section 的完整欄位數量。 */
+        const val LEGACY_HUD_LAYOUT_FIELD_COUNT: Int = 4
 
         /** 比對操作面板垂直比例欄位。 */
         val DECISION_PANEL_Y_LINE = doubleLine(DECISION_PANEL_Y_KEY)
@@ -243,12 +318,20 @@ class MahjongClientConfigStore() {
         /** 比對手牌分析垂直比例欄位。 */
         val DISCARD_ANALYSIS_Y_LINE = doubleLine(DISCARD_ANALYSIS_Y_KEY)
 
+        /** 比對自動操作狀態 HUD 水平欄位。 */
+        val AUTOMATIC_CONTROL_STATUS_X_LINE = doubleLine(AUTOMATIC_CONTROL_STATUS_X_KEY)
+
+        /** 比對自動操作狀態 HUD 垂直欄位。 */
+        val AUTOMATIC_CONTROL_STATUS_Y_LINE = doubleLine(AUTOMATIC_CONTROL_STATUS_Y_KEY)
+
         /** 所有受控 HUD 欄位比對式。 */
         val HUD_LAYOUT_LINES: List<Regex> = listOf(
             DECISION_PANEL_Y_LINE,
             COMPACT_PROMPT_X_LINE,
             COMPACT_PROMPT_Y_LINE,
             DISCARD_ANALYSIS_Y_LINE,
+            AUTOMATIC_CONTROL_STATUS_X_LINE,
+            AUTOMATIC_CONTROL_STATUS_Y_LINE,
         )
 
         /** 舊設定保存時附加的預設 HUD section。 */
@@ -260,10 +343,15 @@ class MahjongClientConfigStore() {
             $COMPACT_PROMPT_X_KEY = 0.95
             $COMPACT_PROMPT_Y_KEY = 0.78
             $DISCARD_ANALYSIS_Y_KEY = 0.8
+            $AUTOMATIC_CONTROL_STATUS_X_KEY = 0.03
+            $AUTOMATIC_CONTROL_STATUS_Y_KEY = 0.22
         """.trimIndent()
 
         /** 可選呈現開關的 TOML section 名稱。 */
         const val VISIBILITY_SECTION: String = "presentation-visibility"
+
+        /** 舊版呈現開關 section 的完整欄位數量。 */
+        const val LEGACY_VISIBILITY_FIELD_COUNT: Int = 12
 
         /** 一個可選呈現欄位的保存描述。 */
         private data class VisibilityField(
@@ -289,6 +377,10 @@ class MahjongClientConfigStore() {
             visibilityField("matching-tile-highlight-enabled", MahjongPresentationVisibilityConfig::matchingTileHighlightEnabled),
             visibilityField("discard-popup-enabled", MahjongPresentationVisibilityConfig::discardPopupEnabled),
             visibilityField("meld-popup-enabled", MahjongPresentationVisibilityConfig::meldPopupEnabled),
+            visibilityField(
+                AUTOMATIC_CONTROL_STATUS_ENABLED_KEY,
+                MahjongPresentationVisibilityConfig::automaticControlStatusEnabled,
+            ),
         )
 
         /** 舊設定保存時附加的預設呈現開關 section。 */

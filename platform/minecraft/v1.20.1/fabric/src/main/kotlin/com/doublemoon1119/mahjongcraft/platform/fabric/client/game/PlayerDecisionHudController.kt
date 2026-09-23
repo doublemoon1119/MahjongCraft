@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPr
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlStatusHudRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
@@ -38,6 +39,7 @@ class PlayerDecisionHudController(
     private val tileFaceRenderer: MahjongTileFaceRenderer,
     private val configStore: MahjongClientConfigStore,
     private val stateStore: ClientMahjongStateStore,
+    private val automaticControlStatusHudRenderer: AutomaticControlStatusHudRenderer,
     val decisionTexts: DecisionTextResolver,
     @Provided private val json: Json,
 ) {
@@ -293,6 +295,7 @@ class PlayerDecisionHudController(
         val client = MinecraftClient.getInstance()
         if (client.options.hudHidden) return
         if (client.currentScreen is MahjongHudLayoutEditorScreen) return
+        automaticControlStatusHudRenderer.render(context)
         if (client.currentScreen !is PlayerDecisionScreen) {
             renderCompactDecisionHud(context)
         }
