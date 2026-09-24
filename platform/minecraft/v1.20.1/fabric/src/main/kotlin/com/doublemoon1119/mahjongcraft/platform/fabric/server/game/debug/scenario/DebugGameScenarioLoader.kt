@@ -71,7 +71,7 @@ class DebugGameScenarioLoader(
                 require(!currentGame.isMatchOver) { "The game has already ended" }
                 require(currentGame.pendingTransition == null) { "The game has a pending transition" }
                 val context = DebugGameScenarioContext(currentGame, playerId)
-                val result = scenario.build(context)
+                val result = scenario.build(context).continueAutomaticControls(currentGame)
                 validator.validate(context, result)
                 result.game to result
             }
