@@ -355,6 +355,7 @@ class RiichiHandValueCalculator(
         // 計算字牌役
         val honorResults = calculateHonorYaku(
             handTiles = handTiles,
+            winningTile = context.winningTile.riichiCanonical,
             fuuro = fuuro,
             roundWind = context.roundWind,
             seatWind = context.seatWind,

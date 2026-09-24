@@ -447,6 +447,51 @@ class RiichiLegalActionValidatorTest {
     }
 
     /**
+     * 測試雙碰聽三元牌時可以榮和。
+     *
+     * 手上兩張中、第三張由和牌張補成刻子，役牌因此成立，這手牌不是無役。
+     */
+    @Test
+    fun `test can ron on a shanpon wait that completes a dragon triplet`() {
+        val playerHand = FakeHandFactory.create(
+            listOf(
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+                Tile.Numeric(Tile.Suit.Dot, 6),
+                Tile.Numeric(Tile.Suit.Dot, 7),
+                Tile.Numeric(Tile.Suit.Dot, 8),
+                Tile.Numeric(Tile.Suit.Dot, 9),
+                Tile.Numeric(Tile.Suit.Bamboo, 2),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 4),
+                Tile.Honor.Red,
+                Tile.Honor.Red,
+                Tile.Numeric(Tile.Suit.Bamboo, 7),
+                Tile.Numeric(Tile.Suit.Bamboo, 7),
+            ),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = playerHand,
+            playerRuleState = RiichiPlayerState(),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+        )
+        val incomingTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+
+        val actions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Discard(incomingTile.id),
+            sourceDirection = RelativeDirection.Across,
+            incomingTile = incomingTile,
+        )
+
+        assertTrue(actions.any { it is GameAction.Ron && it.tileId == incomingTile.id })
+    }
+
+    /**
      * 測試可執行自摸動作之情況。
      *
      * 當摸入的牌可使手牌形成胡牌結構時，應可執行自摸動作。

@@ -14,7 +14,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * - 自風 (Tonmyakze/SeatWind)：手牌中有與自風相同的風牌刻子/槓
  * - 役牌 (Yakuhai/Dragon)：手牌中有三元牌（中、發、白）的刻子/槓
  *
- * @param handTiles 手牌中的牌（不含副露，不含赤寶牌標記）。
+ * @param handTiles 手牌中的牌（不含副露、不含和牌張，不含赤寶牌標記）。
+ * @param winningTile 和牌張；靠它補成的刻子同樣成立字牌役，因此必須一併統計。
  * @param fuuro 副露列表。
  * @param roundWind 圈風。
  * @param seatWind 自風。
@@ -22,14 +23,16 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  */
 fun calculateHonorYaku(
     handTiles: List<Tile>,
+    winningTile: Tile,
     fuuro: List<Fuuro>,
     roundWind: Wind,
     seatWind: Wind,
 ): List<YakuResult> {
     val results = mutableListOf<YakuResult>()
 
-    // 收集所有牌（手牌 + 副露中的牌）
+    // 收集所有牌（手牌 + 和牌張 + 副露中的牌）
     val allTiles = handTiles.toMutableList()
+    allTiles.add(winningTile)
     for (f in fuuro) {
         allTiles.addAll(f.mentsu.tiles)
     }

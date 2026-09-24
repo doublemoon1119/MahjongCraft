@@ -218,4 +218,110 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
         val roundWindResult = result.yakuResults.find { it.yaku == YakuType.RoundWind }
         assertNull(roundWindResult, "Should not have RoundWind with only 2 honors")
     }
+
+    /**
+     * 測試和牌張補成三元牌刻子。
+     *
+     * 手上兩張中、第三張由榮和補齊，役牌同樣成立。
+     */
+    @Test
+    fun `test dragon yakuhai completed by the winning tile on ron`() {
+        val context = FakeRiichiHandValueContextFactory.create(
+            hand = FakeHandFactory.create(shanponOnRedDragon()),
+            winningTile = Tile.Honor.Red,
+            isTsumo = false,
+            roundWind = Wind.EAST,
+            seatWind = Wind.SOUTH,
+        )
+
+        val result = calculator.calculate(context)
+
+        assertEquals(1, result.yakuResults.filter { it.yaku == YakuType.Dragon }.sumOf { it.han })
+    }
+
+    /** 自摸補成三元牌刻子時同樣成立，與榮和走同一條統計路徑。 */
+    @Test
+    fun `test dragon yakuhai completed by the winning tile on tsumo`() {
+        val context = FakeRiichiHandValueContextFactory.create(
+            hand = FakeHandFactory.create(shanponOnRedDragon()),
+            winningTile = Tile.Honor.Red,
+            isTsumo = true,
+            roundWind = Wind.EAST,
+            seatWind = Wind.SOUTH,
+        )
+
+        val result = calculator.calculate(context)
+
+        assertEquals(1, result.yakuResults.filter { it.yaku == YakuType.Dragon }.sumOf { it.han })
+    }
+
+    /** 自風也適用：手上兩張南、第三張由和牌張補齊。 */
+    @Test
+    fun `test seat wind completed by the winning tile`() {
+        val context = FakeRiichiHandValueContextFactory.create(
+            hand = FakeHandFactory.create(shanponOnWind(Tile.Honor.South)),
+            winningTile = Tile.Honor.South,
+            isTsumo = false,
+            roundWind = Wind.EAST,
+            seatWind = Wind.SOUTH,
+        )
+
+        val result = calculator.calculate(context)
+
+        assertEquals(1, result.yakuResults.find { it.yaku == YakuType.SeatWind }?.han)
+    }
+
+    /** 場風也適用：手上兩張東、第三張由和牌張補齊。 */
+    @Test
+    fun `test round wind completed by the winning tile`() {
+        val context = FakeRiichiHandValueContextFactory.create(
+            hand = FakeHandFactory.create(shanponOnWind(Tile.Honor.East)),
+            winningTile = Tile.Honor.East,
+            isTsumo = false,
+            roundWind = Wind.EAST,
+            seatWind = Wind.SOUTH,
+        )
+
+        val result = calculator.calculate(context)
+
+        assertEquals(1, result.yakuResults.find { it.yaku == YakuType.RoundWind }?.han)
+    }
+
+    /** 和牌張是別的牌時，手上那兩張三元牌仍然只是雀頭，不成立役牌。 */
+    @Test
+    fun `test dragon pair without the third tile stays a pair`() {
+        val context = FakeRiichiHandValueContextFactory.create(
+            hand = FakeHandFactory.create(shanponOnRedDragon()),
+            winningTile = Tile.Numeric(Tile.Suit.Bamboo, 2),
+            isTsumo = false,
+            roundWind = Wind.EAST,
+            seatWind = Wind.SOUTH,
+        )
+
+        val result = calculator.calculate(context)
+
+        assertNull(result.yakuResults.find { it.yaku == YakuType.Dragon })
+    }
+
+    /** 四五六筒、七八九筒、二三四條、中中、二二條：雙碰聽中與二條。 */
+    private fun shanponOnRedDragon(): List<Tile> = listOf(
+        Tile.Numeric(Tile.Suit.Dot, 4),
+        Tile.Numeric(Tile.Suit.Dot, 5),
+        Tile.Numeric(Tile.Suit.Dot, 6),
+        Tile.Numeric(Tile.Suit.Dot, 7),
+        Tile.Numeric(Tile.Suit.Dot, 8),
+        Tile.Numeric(Tile.Suit.Dot, 9),
+        Tile.Numeric(Tile.Suit.Bamboo, 2),
+        Tile.Numeric(Tile.Suit.Bamboo, 3),
+        Tile.Numeric(Tile.Suit.Bamboo, 4),
+        Tile.Honor.Red,
+        Tile.Honor.Red,
+        Tile.Numeric(Tile.Suit.Bamboo, 2),
+        Tile.Numeric(Tile.Suit.Bamboo, 2),
+    )
+
+    /** 以 [wind] 取代三元牌的同型雙碰手牌。 */
+    private fun shanponOnWind(wind: Tile.Honor): List<Tile> = shanponOnRedDragon().map { tile ->
+        if (tile == Tile.Honor.Red) wind else tile
+    }
 }
