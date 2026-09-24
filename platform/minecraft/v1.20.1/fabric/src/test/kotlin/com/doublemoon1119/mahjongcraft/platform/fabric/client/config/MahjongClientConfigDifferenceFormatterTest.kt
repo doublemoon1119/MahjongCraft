@@ -32,6 +32,26 @@ class MahjongClientConfigDifferenceFormatterTest {
     }
 
     @Test
+    fun `hud layout changes include the automatic control status position`() {
+        val from = MahjongClientConfigState()
+        val to = from.copy(
+            hudLayout = from.hudLayout.copy(
+                automaticControlStatusX = from.hudLayout.automaticControlStatusX + 0.1,
+                automaticControlStatusY = from.hudLayout.automaticControlStatusY + 0.1,
+            ),
+        )
+
+        val summary = clientConfigDifferenceText(from, to)
+
+        val change = summary.siblings
+            .mapNotNull { it.content as? TranslatableTextContent }
+            .single { it.key == "mahjongcraft.hud_layout.change.xy" }
+        val name = assertIs<TranslatableTextContent>(assertIs<Text>(change.args[0]).content)
+
+        assertEquals("mahjongcraft.hud_layout.automatic_control_status", name.key)
+    }
+
+    @Test
     fun `remote-only changes include registered and unknown control names`() {
         val registry = AutomaticControlDisplayRegistryImpl().apply {
             register("example:auto", AutomaticControlDisplay("example.auto", "example.auto.description", 1))

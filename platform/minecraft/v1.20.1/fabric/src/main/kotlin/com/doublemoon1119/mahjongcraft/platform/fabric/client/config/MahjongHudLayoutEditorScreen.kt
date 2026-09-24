@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlStatusHudText
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.automaticControlStatusHudLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
@@ -18,10 +20,15 @@ import kotlin.math.roundToInt
  * 這個畫面只負責原版 widget 生命週期與繪製：全部狀態轉換（拖曳、選取、草稿比較）委派給
  * [MahjongHudLayoutEditorModel]，第二行二級選項的水平捲動幾何計算委派給 [MahjongHudToolbarLayout]，
  * 兩者都不依賴 Minecraft 型別，因此可以直接以 JVM 測試驗證。
+ *
+ * @property parent 開啟這個編輯器的設定畫面，套用草稿與返回都交由它處理。
+ * @property automaticControlLabels 自動操作狀態面板要呈現的項目名稱，由父畫面決定內容；編輯器只用它量測
+ * 預覽框大小，使預覽與實際面板同寬同高。
  */
 class MahjongHudLayoutEditorScreen(
     private val parent: MahjongClientConfigScreen,
     initialLayout: MahjongHudLayoutConfig,
+    private val automaticControlLabels: List<Text>,
 ) : Screen(Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_TITLE)) {
     /** 編輯器的全部可測試狀態；拖曳、選取、草稿與控制項顯示都由它決定。 */
     private var model = MahjongHudLayoutEditorModel(baseline = initialLayout)
@@ -243,8 +250,9 @@ class MahjongHudLayoutEditorScreen(
         }
     }
 
-    /** 繪製背景、參考線與三個實際可拖曳的 HUD 預覽。 */
+    /** 繪製背景、參考線與全部可拖曳的 HUD 預覽。 */
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+        measureAutomaticControlPreview()
         context.fill(0, 0, width, height, SCREEN_OVERLAY_COLOR)
         context.fill(width / 2, 24, width / 2 + 1, height - 34, GUIDE_COLOR)
         context.fill(0, height / 2, width, height / 2 + 1, GUIDE_COLOR)
@@ -282,6 +290,31 @@ class MahjongHudLayoutEditorScreen(
                 0xB0B0B0,
             )
         }
+        renderTrimmedPreviewTooltip(context, mouseX, mouseY)
+    }
+
+    /**
+     * 預覽框太窄而讓內容被截斷時，補一個完整內容的 tooltip。
+     *
+     * 位置百分比只畫在選取中的元素上，因此只有選取中的元素會把它納入截斷判斷；外框模式只看名稱。
+     * 只在沒有拖曳、且游標不在任何工具列按鈕上時顯示，避免與按鈕本身的 tooltip 疊在一起。
+     */
+    private fun renderTrimmedPreviewTooltip(context: DrawContext, mouseX: Int, mouseY: Int) {
+        if (model.dragging != null) return
+        if (toolbarTooltips.keys.any { it.visible && it.isMouseOver(mouseX.toDouble(), mouseY.toDouble()) }) return
+        val element = model.hitTest(
+            mouseX = mouseX.toDouble(),
+            mouseY = mouseY.toDouble(),
+            screenWidth = width,
+            screenHeight = height,
+        ) ?: return
+        val name = Text.translatable(element.translationKey)
+        val position = positionText(element)
+        val maxWidth = previewTextWidth(bounds(element))
+        val trimmed = textRenderer.getWidth(name) > maxWidth ||
+            (element == model.selectedElement && textRenderer.getWidth(position) > maxWidth)
+        if (!trimmed) return
+        context.drawTooltip(textRenderer, listOf(name, Text.literal(position)), mouseX, mouseY)
     }
 
     /** 左鍵按住任一預覽框時開始拖曳；按鈕點擊完全交由原版流程處理。 */
@@ -473,6 +506,46 @@ class MahjongHudLayoutEditorScreen(
             ?.let { (_, tooltip) -> context.drawTooltip(textRenderer, tooltip, mouseX, mouseY) }
     }
 
+    /**
+     * 以正式 HUD 的同一份排列計算量測自動操作狀態面板，讓預覽框反映實際的換欄與縮放結果；
+     * 沒有任何項目可量測時沿用模型的內建預設尺寸。
+     */
+    private fun measureAutomaticControlPreview() {
+        if (automaticControlLabels.isEmpty()) return
+        val layout = automaticControlStatusHudLayout(
+            rowWidths = AutomaticControlStatusHudText.rowWidths(textRenderer, automaticControlLabels),
+            textHeight = AutomaticControlStatusHudText.textHeight(textRenderer),
+            screenWidth = width,
+            screenHeight = height,
+            ratioX = model.draft.automaticControlStatusX,
+            ratioY = model.draft.automaticControlStatusY,
+            summaryWidth = { AutomaticControlStatusHudText.summaryWidth(textRenderer, it) },
+        ) ?: return
+        val size = MahjongHudPreviewSize(width = layout.bounds.width, height = layout.bounds.height)
+        if (model.automaticControlSize != size) model = model.withAutomaticControlSize(size)
+    }
+
+    /** 預覽框內可用於文字的寬度，左右各留一點內距。 */
+    private fun previewTextWidth(bounds: MahjongHudBounds): Int = (bounds.width - PREVIEW_TEXT_PADDING * 2).coerceAtLeast(1)
+
+    /** 依可用寬度截斷預覽框內的文字。 */
+    private fun trimToPreview(text: Text, maxWidth: Int): Text = Text.literal(
+        trimPreviewText(
+            text = text.string,
+            maxWidth = maxWidth,
+            widthOf = textRenderer::getWidth,
+        ),
+    )
+
+    /** 預覽框內顯示的位置百分比；只可調整垂直位置的元素不顯示 X。 */
+    private fun positionText(element: HudElement): String = when (element) {
+        HudElement.DECISION -> "Y ${percent(model.draft.decisionPanelY)}%"
+        HudElement.COMPACT -> "X ${percent(model.draft.compactPromptX)}%  Y ${percent(model.draft.compactPromptY)}%"
+        HudElement.ANALYSIS -> "Y ${percent(model.draft.discardAnalysisY)}%"
+        HudElement.AUTOMATIC_CONTROL ->
+            "X ${percent(model.draft.automaticControlStatusX)}%  Y ${percent(model.draft.automaticControlStatusY)}%"
+    }
+
     /** 將比例轉為整數百分比。 */
     private fun percent(value: Double): Int = (value * 100).roundToInt()
 
@@ -493,33 +566,38 @@ class MahjongHudLayoutEditorScreen(
     ) {
         val hovered = bounds.contains(mouseX.toDouble(), mouseY.toDouble())
         val background = if (hovered) PREVIEW_HOVER_COLOR else PREVIEW_COLOR
+        val maxWidth = previewTextWidth(bounds)
         context.fill(bounds.left, bounds.top, bounds.right, bounds.bottom, background)
         context.drawBorder(bounds.left, bounds.top, bounds.width, bounds.height, SELECTED_BORDER_COLOR)
         context.drawCenteredTextWithShadow(
             textRenderer,
-            Text.translatable(element.translationKey),
+            trimToPreview(Text.translatable(element.translationKey), maxWidth),
             bounds.left + bounds.width / 2,
             bounds.top + 7,
             if (hovered) TITLE_COLOR else 0xFFFFFF,
         )
-        val position = when (element) {
-            HudElement.DECISION -> "Y ${percent(model.draft.decisionPanelY)}%"
-            HudElement.COMPACT -> "X ${percent(model.draft.compactPromptX)}%  Y ${percent(model.draft.compactPromptY)}%"
-            HudElement.ANALYSIS -> "Y ${percent(model.draft.discardAnalysisY)}%"
-        }
-        context.drawCenteredTextWithShadow(textRenderer, position, bounds.left + bounds.width / 2, bounds.top + 22, 0xB0B0B0)
+        context.drawCenteredTextWithShadow(
+            textRenderer,
+            trimToPreview(Text.literal(positionText(element)), maxWidth),
+            bounds.left + bounds.width / 2,
+            bounds.top + 22,
+            0xB0B0B0,
+        )
     }
 
     /** 非作用中 HUD 以淡暗背景、外框與置中名稱表示，不使用額外名稱色塊。 */
     private fun renderOutline(context: DrawContext, element: HudElement, bounds: MahjongHudBounds) {
         context.fill(bounds.left, bounds.top, bounds.right, bounds.bottom, OUTLINE_BACKGROUND_COLOR)
         context.drawBorder(bounds.left, bounds.top, bounds.width, bounds.height, OUTLINE_COLOR)
-        val label = Text.translatable(element.translationKey)
+        val label = trimToPreview(Text.translatable(element.translationKey), previewTextWidth(bounds))
         context.drawCenteredTextWithShadow(textRenderer, label, bounds.left + bounds.width / 2, bounds.top + 7, OUTLINE_TEXT_COLOR)
     }
 
     /** Editor 配色與 Z 位移常數；第二行捲動幾何常數見 [MahjongHudToolbarLayout]。 */
     private companion object {
+        /** 預覽框內文字與左右邊界之間的內距。 */
+        const val PREVIEW_TEXT_PADDING = 2
+
         /** 第二行 scrollbar 軌道色。 */
         const val TOOLBAR_TRACK_COLOR = 0xFF26333D.toInt()
 

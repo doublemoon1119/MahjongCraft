@@ -165,6 +165,7 @@
   "mahjongcraft.hud.win_availability.below_minimum": "最低翻数未満",
   "mahjongcraft.hud.win_availability.no_yaku": "役なし",
   "mahjongcraft.hud.win_availability.tsumo_only": "ツモのみ",
+  "mahjongcraft.hud_layout.automatic_control_status": "自動操作",
   "mahjongcraft.hud_layout.change.xy": "%s：(X %s%%、Y %s%%) → (X %s%%、Y %s%%)",
   "mahjongcraft.hud_layout.change.y": "%s：Y %s%% → %s%%",
   "mahjongcraft.hud_layout.changes": "HUD 配置の変更：",

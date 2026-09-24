@@ -5,7 +5,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * 可拖曳的三個 HUD 配置區塊。
+ * 可拖曳的 HUD 配置區塊。
  *
  * @property translationKey 區塊名稱翻譯鍵。
  * @property adjustsHorizontally 這個區塊是否可調整水平位置；固定水平置中的動態寬度面板為 `false`，
@@ -31,6 +31,12 @@ internal enum class HudElement(
     ANALYSIS(
         translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_DISCARD_ANALYSIS,
         adjustsHorizontally = false,
+    ),
+
+    /** 自動操作狀態；整組共用一個位置，兩軸皆可調整。 */
+    AUTOMATIC_CONTROL(
+        translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_AUTOMATIC_CONTROL_STATUS,
+        adjustsHorizontally = true,
     ),
 }
 
@@ -103,6 +109,8 @@ internal data class MahjongHudPreviewSize(
  * @property selectedElement 目前取得完整預覽與拖曳焦點的 HUD。
  * @property scenario 操作面板目前使用的尺寸預覽情境。
  * @property otherHudVisibility 所有未選取 HUD 共用的預覽方式。
+ * @property automaticControlSize 自動操作狀態面板在目前畫面上量到的實際尺寸；量測需要文字寬高，
+ * 由編輯器畫面在每次重建版面時寫入，尚未量測時退回保守的內建預設值。
  * @property controlsManuallyHidden 玩家是否手動隱藏所有編輯器控制項。
  * @property dragging 目前被拖曳的 HUD 區塊；`null` 代表沒有拖曳進行中。
  * @property dragOffsetX 拖曳起點相對 HUD 左上角的 X。
@@ -114,6 +122,7 @@ internal data class MahjongHudLayoutEditorModel(
     val selectedElement: HudElement = HudElement.DECISION,
     val scenario: HudPreviewScenario = HudPreviewScenario.CALL,
     val otherHudVisibility: HudPreviewVisibility = HudPreviewVisibility.HIDDEN,
+    val automaticControlSize: MahjongHudPreviewSize? = null,
     val controlsManuallyHidden: Boolean = false,
     val dragging: HudElement? = null,
     val dragOffsetX: Double = 0.0,
@@ -141,6 +150,11 @@ internal data class MahjongHudLayoutEditorModel(
             HudElement.DECISION -> scenario.width to scenario.height
             HudElement.COMPACT -> COMPACT_PREVIEW_WIDTH to COMPACT_PREVIEW_HEIGHT
             HudElement.ANALYSIS -> ANALYSIS_PREVIEW_WIDTH to ANALYSIS_PREVIEW_HEIGHT
+            HudElement.AUTOMATIC_CONTROL -> {
+                val measured = automaticControlSize
+                    ?: MahjongHudPreviewSize(AUTOMATIC_CONTROL_PREVIEW_WIDTH, AUTOMATIC_CONTROL_PREVIEW_HEIGHT)
+                measured.width to measured.height
+            }
         }
         return MahjongHudPreviewSize(
             width = minOf(preferredWidth, screenWidth - PREVIEW_SCREEN_MARGIN).coerceAtLeast(1),
@@ -261,6 +275,10 @@ internal data class MahjongHudLayoutEditorModel(
             HudElement.DECISION -> draft.copy(decisionPanelY = vertical)
             HudElement.COMPACT -> draft.copy(compactPromptX = horizontal, compactPromptY = vertical)
             HudElement.ANALYSIS -> draft.copy(discardAnalysisY = vertical)
+            HudElement.AUTOMATIC_CONTROL -> draft.copy(
+                automaticControlStatusX = horizontal,
+                automaticControlStatusY = vertical,
+            )
         }
         return copy(draft = updated)
     }
@@ -283,6 +301,9 @@ internal data class MahjongHudLayoutEditorModel(
     /** 切換操作面板的尺寸預覽情境。 */
     fun selectScenario(scenario: HudPreviewScenario): MahjongHudLayoutEditorModel = copy(scenario = scenario)
 
+    /** 記錄自動操作狀態面板量到的實際尺寸，讓預覽框與實際 HUD 一樣大。 */
+    fun withAutomaticControlSize(size: MahjongHudPreviewSize): MahjongHudLayoutEditorModel = copy(automaticControlSize = size)
+
     /** 切換未選取 HUD 的預覽方式。 */
     fun selectVisibility(visibility: HudPreviewVisibility): MahjongHudLayoutEditorModel = copy(otherHudVisibility = visibility)
 
@@ -292,6 +313,7 @@ internal data class MahjongHudLayoutEditorModel(
     /** 取得指定區塊目前的水平位置比例；不可水平調整的區塊回傳置中比例。 */
     private fun horizontalRatio(element: HudElement): Double = when (element) {
         HudElement.COMPACT -> draft.compactPromptX
+        HudElement.AUTOMATIC_CONTROL -> draft.automaticControlStatusX
         else -> CENTER_RATIO
     }
 
@@ -300,6 +322,7 @@ internal data class MahjongHudLayoutEditorModel(
         HudElement.DECISION -> draft.decisionPanelY
         HudElement.COMPACT -> draft.compactPromptY
         HudElement.ANALYSIS -> draft.discardAnalysisY
+        HudElement.AUTOMATIC_CONTROL -> draft.automaticControlStatusY
     }
 
     /** 編輯器的吸附與預覽尺寸常數。 */
@@ -324,6 +347,12 @@ internal data class MahjongHudLayoutEditorModel(
 
         /** 手牌分析的預覽高度。 */
         internal const val ANALYSIS_PREVIEW_HEIGHT = 72
+
+        /** 尚未量測到文字寬高時，自動操作狀態的預覽寬度。 */
+        internal const val AUTOMATIC_CONTROL_PREVIEW_WIDTH = 96
+
+        /** 尚未量測到文字寬高時，自動操作狀態的預覽高度。 */
+        internal const val AUTOMATIC_CONTROL_PREVIEW_HEIGHT = 44
     }
 }
 

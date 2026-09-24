@@ -115,6 +115,18 @@ private fun MutableText.appendHudLayoutChanges(from: MahjongHudLayoutConfig, to:
             ).formatted(Formatting.GRAY),
         )
     }
+    if (from.automaticControlStatusX != to.automaticControlStatusX || from.automaticControlStatusY != to.automaticControlStatusY) {
+        append("\n").append(
+            Text.translatable(
+                MinecraftClientConfigScreenKeys.HUD_LAYOUT_XY_CHANGE,
+                Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_AUTOMATIC_CONTROL_STATUS),
+                percent(from.automaticControlStatusX),
+                percent(from.automaticControlStatusY),
+                percent(to.automaticControlStatusX),
+                percent(to.automaticControlStatusY),
+            ).formatted(Formatting.GRAY),
+        )
+    }
 }
 
 /** 附加一般設定值差異。 */

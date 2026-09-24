@@ -71,6 +71,9 @@ object MinecraftClientConfigScreenKeys {
     /** 手牌分析預覽名稱。 */
     const val HUD_LAYOUT_DISCARD_ANALYSIS: String = "mahjongcraft.hud_layout.discard_analysis"
 
+    /** HUD 位置編輯器中的自動操作狀態元素名稱。 */
+    const val HUD_LAYOUT_AUTOMATIC_CONTROL_STATUS: String = "mahjongcraft.hud_layout.automatic_control_status"
+
     /** 重設 HUD 配置按鈕。 */
     const val HUD_LAYOUT_RESET: String = "mahjongcraft.hud_layout.reset"
 

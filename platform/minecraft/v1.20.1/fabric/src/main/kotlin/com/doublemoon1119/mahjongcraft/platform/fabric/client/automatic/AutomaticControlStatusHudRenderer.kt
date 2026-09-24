@@ -2,11 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
-import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.ChatScreen
-import net.minecraft.text.Text
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -39,16 +37,15 @@ class AutomaticControlStatusHudRenderer(
         if (rows.isEmpty()) return
 
         val renderer = client.textRenderer
-        val dotWidth = maxOf(renderer.getWidth(ENABLED_DOT), renderer.getWidth(DISABLED_DOT))
-        val rowWidths = rows.map { dotWidth + DOT_LABEL_GAP + renderer.getWidth(it.label) + SHADOW_EXTENT }
+        val dotWidth = AutomaticControlStatusHudText.dotWidth(renderer)
         val layout = automaticControlStatusHudLayout(
-            rowWidths = rowWidths,
-            textHeight = renderer.fontHeight + SHADOW_EXTENT,
+            rowWidths = AutomaticControlStatusHudText.rowWidths(renderer, rows.map { it.label }),
+            textHeight = AutomaticControlStatusHudText.textHeight(renderer),
             screenWidth = context.scaledWindowWidth,
             screenHeight = context.scaledWindowHeight,
             ratioX = configStore.current.hudLayout.automaticControlStatusX,
             ratioY = configStore.current.hudLayout.automaticControlStatusY,
-            summaryWidth = { renderer.getWidth(summaryText(it)) + SHADOW_EXTENT },
+            summaryWidth = { AutomaticControlStatusHudText.summaryWidth(renderer, it) },
         ) ?: return
 
         context.matrices.push()
@@ -58,12 +55,18 @@ class AutomaticControlStatusHudRenderer(
         layout.placements.forEach { placement ->
             val index = placement.rowIndex
             if (index == null) {
-                context.drawTextWithShadow(renderer, summaryText(layout.hiddenCount), placement.x, placement.y, SUMMARY_COLOR)
+                context.drawTextWithShadow(
+                    renderer,
+                    AutomaticControlStatusHudText.summaryText(layout.hiddenCount),
+                    placement.x,
+                    placement.y,
+                    SUMMARY_COLOR,
+                )
             } else {
                 val row = rows[index]
                 context.drawTextWithShadow(
                     renderer,
-                    if (row.enabled) ENABLED_DOT else DISABLED_DOT,
+                    if (row.enabled) AutomaticControlStatusHudText.ENABLED_DOT else AutomaticControlStatusHudText.DISABLED_DOT,
                     placement.x,
                     placement.y,
                     if (row.enabled) ENABLED_COLOR else DISABLED_COLOR,
@@ -71,7 +74,7 @@ class AutomaticControlStatusHudRenderer(
                 context.drawTextWithShadow(
                     renderer,
                     row.label,
-                    placement.x + dotWidth + DOT_LABEL_GAP,
+                    placement.x + dotWidth + AutomaticControlStatusHudText.DOT_LABEL_GAP,
                     placement.y,
                     if (row.enabled) ENABLED_COLOR else DISABLED_COLOR,
                 )
@@ -80,16 +83,7 @@ class AutomaticControlStatusHudRenderer(
         context.matrices.pop()
     }
 
-    private fun summaryText(hiddenCount: Int): Text = Text.translatable(
-        MinecraftClientConfigScreenKeys.HUD_AUTOMATIC_CONTROL_MORE,
-        hiddenCount,
-    )
-
     private companion object {
-        val ENABLED_DOT: Text = Text.literal("●")
-        val DISABLED_DOT: Text = Text.literal("○")
-        const val DOT_LABEL_GAP = 5
-        const val SHADOW_EXTENT = 1
         val BACKGROUND_COLOR = 0xB0182028.toInt()
         val ENABLED_COLOR = 0xFFA8D8A0.toInt()
         val DISABLED_COLOR = 0xFFB6B6B6.toInt()

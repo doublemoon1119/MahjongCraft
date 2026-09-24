@@ -165,6 +165,7 @@
   "mahjongcraft.hud.win_availability.below_minimum": "Below minimum han",
   "mahjongcraft.hud.win_availability.no_yaku": "No yaku",
   "mahjongcraft.hud.win_availability.tsumo_only": "Tsumo only",
+  "mahjongcraft.hud_layout.automatic_control_status": "Auto Controls",
   "mahjongcraft.hud_layout.change.xy": "%s: (X %s%%, Y %s%%) → (X %s%%, Y %s%%)",
   "mahjongcraft.hud_layout.change.y": "%s: Y %s%% → %s%%",
   "mahjongcraft.hud_layout.changes": "HUD layout changes:",

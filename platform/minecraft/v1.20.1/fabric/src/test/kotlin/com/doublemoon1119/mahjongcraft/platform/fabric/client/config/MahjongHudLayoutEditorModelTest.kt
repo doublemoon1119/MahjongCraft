@@ -141,6 +141,78 @@ class MahjongHudLayoutEditorModelTest {
         assertEquals(initial.draft.compactPromptX, dragged.draft.compactPromptX)
         assertEquals(initial.draft.compactPromptY, dragged.draft.compactPromptY)
         assertEquals(initial.draft.discardAnalysisY, dragged.draft.discardAnalysisY)
+        assertEquals(initial.draft.automaticControlStatusX, dragged.draft.automaticControlStatusX)
+        assertEquals(initial.draft.automaticControlStatusY, dragged.draft.automaticControlStatusY)
+    }
+
+    /** 自動操作狀態整組共用一個位置，兩軸都可調整。 */
+    @Test
+    fun `automatic control status accepts both horizontal and vertical adjustment`() {
+        val initial = model()
+        val dragged = initial
+            .selectElement(HudElement.AUTOMATIC_CONTROL)
+            .beginDrag(
+                element = HudElement.AUTOMATIC_CONTROL,
+                mouseX = 0.0,
+                mouseY = 0.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+            .dragTo(
+                mouseX = 120.0,
+                mouseY = 120.0,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+
+        assertNotEquals(initial.draft.automaticControlStatusX, dragged.draft.automaticControlStatusX)
+        assertNotEquals(initial.draft.automaticControlStatusY, dragged.draft.automaticControlStatusY)
+    }
+
+    /** 尚未收到量測結果前，自動操作狀態沿用內建預設尺寸。 */
+    @Test
+    fun `automatic control status uses the built-in size before it is measured`() {
+        val size = model().previewSize(
+            element = HudElement.AUTOMATIC_CONTROL,
+            screenWidth = SCREEN_WIDTH,
+            screenHeight = SCREEN_HEIGHT,
+        )
+
+        assertEquals(MahjongHudLayoutEditorModel.AUTOMATIC_CONTROL_PREVIEW_WIDTH, size.width)
+        assertEquals(MahjongHudLayoutEditorModel.AUTOMATIC_CONTROL_PREVIEW_HEIGHT, size.height)
+    }
+
+    /** 收到實際量測結果後，預覽框改用量到的尺寸，位置也跟著重新計算。 */
+    @Test
+    fun `automatic control status follows the reported measurement`() {
+        val measured = MahjongHudPreviewSize(width = 168, height = 58)
+        val model = model().withAutomaticControlSize(measured)
+
+        val bounds = model.bounds(
+            element = HudElement.AUTOMATIC_CONTROL,
+            screenWidth = SCREEN_WIDTH,
+            screenHeight = SCREEN_HEIGHT,
+        )
+
+        assertEquals(measured.width, bounds.width)
+        assertEquals(measured.height, bounds.height)
+    }
+
+    /** 量到的尺寸超過畫面時仍被限制在畫面內。 */
+    @Test
+    fun `an oversized measurement is clamped to the screen`() {
+        val model = model().withAutomaticControlSize(MahjongHudPreviewSize(width = 10_000, height = 10_000))
+
+        val bounds = model.bounds(
+            element = HudElement.AUTOMATIC_CONTROL,
+            screenWidth = SCREEN_WIDTH,
+            screenHeight = SCREEN_HEIGHT,
+        )
+
+        assertTrue(bounds.left >= 0)
+        assertTrue(bounds.top >= 0)
+        assertTrue(bounds.right <= SCREEN_WIDTH)
+        assertTrue(bounds.bottom <= SCREEN_HEIGHT)
     }
 
     /** 換成更大的預覽情境後，原本合法的位置仍必須被重新限制在畫面內。 */

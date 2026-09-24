@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultKindDto
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlDisplayResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutoSortHandPreferenceService
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutoSortHandPreferenceUpdateResult
@@ -12,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
@@ -515,7 +517,13 @@ class MahjongClientConfigScreen(
                 MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT_DESCRIPTION,
                 { Text.translatable(MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT) },
                 onActivate = {
-                    client?.setScreen(MahjongHudLayoutEditorScreen(this, currentDraft().hudLayout))
+                    client?.setScreen(
+                        MahjongHudLayoutEditorScreen(
+                            parent = this,
+                            initialLayout = currentDraft().hudLayout,
+                            automaticControlLabels = automaticControlPreviewLabels(),
+                        ),
+                    )
                 },
             ),
             presentationRow("compact_prompt", { it.compactPromptEnabled }) { state, enabled -> state.copy(compactPromptEnabled = enabled) },
@@ -542,6 +550,18 @@ class MahjongClientConfigScreen(
                 { it.copy(tileLabelsEnabled = !it.tileLabelsEnabled) },
             ),
         ) + presentationRows("matching_tile_highlight", "discard_popup", "meld_popup")
+    }
+
+    /**
+     * 供 HUD 位置編輯器量測自動操作狀態預覽的項目名稱；本局有權威快照時用實際支援的項目，
+     * 不在對局中則改用內建項目當樣本，讓玩家在任何時候都能先安排位置。
+     */
+    private fun automaticControlPreviewLabels(): List<Text> {
+        val supported = automaticDraft.state().baseline?.supportedControlIds?.takeIf { it.isNotEmpty() }
+            ?: AUTOMATIC_CONTROL_PREVIEW_SAMPLE_IDS
+        val sortId = BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND
+        return listOf(displayResolver.resolve(sortId).label) +
+            displayResolver.resolveAll(supported - sortId).map { it.label }
     }
 
     /** 依權威支援集合建立本局控制列，不憑規則名稱猜測可用功能。 */
@@ -743,6 +763,13 @@ class MahjongClientConfigScreen(
 
     /** 畫面尺寸與配色常數。 */
     private companion object {
+        /** 不在對局中時，用來量測自動操作狀態預覽的內建項目樣本。 */
+        val AUTOMATIC_CONTROL_PREVIEW_SAMPLE_IDS = setOf(
+            BuiltInAutomaticControlIds.AUTO_WIN,
+            BuiltInAutomaticControlIds.DECLINE_CALLS,
+            BuiltInAutomaticControlIds.AUTO_TSUMOGIRI,
+        )
+
         /** 面板最大寬度。 */
         const val MAX_PANEL_WIDTH = 560
 
