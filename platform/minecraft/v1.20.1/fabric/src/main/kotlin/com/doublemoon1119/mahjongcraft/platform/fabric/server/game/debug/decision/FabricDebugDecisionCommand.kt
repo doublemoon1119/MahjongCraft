@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvai
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -360,6 +361,7 @@ class FabricDebugDecisionCommand(
         MIXED("mixed", PlayerDecisionPhaseDto.DISCARD_REACTION),
         DISCARD_ANALYSIS("discard_analysis", isDiscardAnalysis = true),
         DISCARD_FURITEN("discard_furiten", isDiscardAnalysis = true),
+        DISCARD_PERMANENT_FURITEN("discard_permanent_furiten", isDiscardAnalysis = true),
         DISCARD_MANY_WAITS("discard_many_waits", isDiscardAnalysis = true),
         DISCARD_NO_YAKU("discard_no_yaku", isDiscardAnalysis = true),
         DISCARD_BELOW_MINIMUM("discard_below_minimum", isDiscardAnalysis = true),
@@ -468,7 +470,11 @@ class FabricDebugDecisionCommand(
                         },
                     )
                 },
-                if (this == DISCARD_FURITEN || this == DISCARD_FURITEN_UNAVAILABLE) "mahjongcraft:discard_furiten" else null,
+                when (this) {
+                    DISCARD_FURITEN, DISCARD_FURITEN_UNAVAILABLE -> RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN
+                    DISCARD_PERMANENT_FURITEN -> RiichiDiscardReadinessAnalyzer.StatusIds.PERMANENT_FURITEN
+                    else -> null
+                },
             )
         }
 
