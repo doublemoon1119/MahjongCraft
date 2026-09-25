@@ -244,6 +244,38 @@ class DiscardAnalysisPresentationTest {
         assertTrue(last.y + layout.cellHeight <= layout.panelTop + layout.panelHeight - DiscardAnalysisLayout.PADDING)
     }
 
+    /** 狀態列比格子區寬時，面板跟著變寬讓文字完整落在背景內。 */
+    @Test
+    fun `widens the panel for a long status line`() {
+        val narrow = layout(cellCount = 2, statusLineCount = 1)
+        val wide = layout(cellCount = 2, statusLineCount = 1, widestStatusTextWidth = narrow.gridWidth + 40)
+
+        assertEquals(DiscardAnalysisLayout.PADDING * 2 + narrow.gridWidth + 40, wide.panelWidth)
+        assertTrue(wide.panelLeft + DiscardAnalysisLayout.PADDING + wide.widestStatusTextWidth <= wide.panelLeft + wide.panelWidth)
+    }
+
+    /** 狀態列撐寬面板後，格子區仍維持置中而不是靠左。 */
+    @Test
+    fun `keeps the cells centered inside a widened panel`() {
+        val wide = layout(cellCount = 2, statusLineCount = 1, widestStatusTextWidth = 200)
+
+        val leftMargin = wide.gridLeft - wide.panelLeft
+        val rightMargin = wide.panelLeft + wide.panelWidth - (wide.gridLeft + wide.gridWidth)
+
+        assertEquals(leftMargin, rightMargin)
+        assertEquals(wide.panelCenterX, wide.gridLeft + wide.gridWidth / 2)
+    }
+
+    /** 狀態列比格子區窄時面板寬度不受影響，維持既有版面。 */
+    @Test
+    fun `keeps the panel width when the status line is narrow`() {
+        val withoutStatus = layout(cellCount = 4)
+        val withNarrowStatus = layout(cellCount = 4, statusLineCount = 1, widestStatusTextWidth = 10)
+
+        assertEquals(withoutStatus.panelWidth, withNarrowStatus.panelWidth)
+        assertEquals(withoutStatus.gridLeft, withNarrowStatus.gridLeft)
+    }
+
     /** 建立測試用的分析。 */
     private fun analysisOf(vararg waiting: WaitingTileAvailabilityDto, statusIndicatorId: String? = null) = DiscardReadinessAnalysisDto(
         discardTileId = "tile-1",
@@ -259,6 +291,7 @@ class DiscardAnalysisPresentationTest {
         cellCount: Int,
         statusLineCount: Int = 0,
         widestCellContentWidth: Int = 24,
+        widestStatusTextWidth: Int = 0,
         hasAvailabilityRow: Boolean = false,
         screenWidth: Int = 854,
         screenHeight: Int = 480,
@@ -269,6 +302,7 @@ class DiscardAnalysisPresentationTest {
         cellCount = cellCount,
         statusLineCount = statusLineCount,
         widestCellContentWidth = widestCellContentWidth,
+        widestStatusTextWidth = widestStatusTextWidth,
         hasAvailabilityRow = hasAvailabilityRow,
         ratioY = ratioY,
     )

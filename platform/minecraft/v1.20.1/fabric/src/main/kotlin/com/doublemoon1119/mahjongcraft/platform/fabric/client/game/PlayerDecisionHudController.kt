@@ -399,8 +399,8 @@ class PlayerDecisionHudController(
     /**
      * 優先依準星指向的手牌 UUID 顯示捨牌後預測，沒有合法候選時顯示目前手牌的權威分析。
      *
-     * 欄寬依實際文字寬度動態計算，避免不同語系下的剩餘張數與和牌資格文字互相碰撞，因此在這裡量測後交給
-     * [DiscardAnalysisLayout]。
+     * 欄寬與狀態列寬度都依實際文字寬度動態計算：前者避免不同語系下的剩餘張數與和牌資格文字互相碰撞，
+     * 後者讓較長的狀態列不會超出面板背景，兩者都在這裡量測後交給 [DiscardAnalysisLayout]。
      */
     private fun renderHandAnalysis(context: DrawContext, prompt: PlayerDecisionPromptDto?, hit: HitResult?) {
         if (!configStore.current.presentationVisibility.discardAnalysisEnabled) return
@@ -433,6 +433,7 @@ class PlayerDecisionHudController(
                     cell.availabilityText?.let(renderer::getWidth) ?: 0,
                 )
             } ?: DiscardAnalysisLayout.TILE_WIDTH,
+            widestStatusTextWidth = content.statusTexts.maxOfOrNull(renderer::getWidth) ?: 0,
             hasAvailabilityRow = content.hasAvailabilityRow,
             ratioY = configStore.current.hudLayout.discardAnalysisY,
         )

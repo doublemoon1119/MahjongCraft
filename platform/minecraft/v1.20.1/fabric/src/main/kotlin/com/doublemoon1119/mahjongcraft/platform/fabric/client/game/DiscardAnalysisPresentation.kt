@@ -144,6 +144,7 @@ internal data class DiscardAnalysisLayout(
     val cellCount: Int,
     val statusLineCount: Int,
     val widestCellContentWidth: Int,
+    val widestStatusTextWidth: Int,
     val hasAvailabilityRow: Boolean,
     val ratioY: Double,
 ) {
@@ -167,9 +168,13 @@ internal data class DiscardAnalysisLayout(
     val statusHeight: Int
         get() = if (statusLineCount == 0) 0 else statusLineCount * STATUS_TEXT_HEIGHT + STATUS_DIVIDER_GAP + 1 + STATUS_TILE_GAP
 
-    /** 面板寬度。 */
+    /** 格子區寬度。 */
+    val gridWidth: Int
+        get() = columns * cellWidth
+
+    /** 面板寬度；狀態列比格子區寬時由狀態列決定，文字才不會超出背景。 */
     val panelWidth: Int
-        get() = PADDING * 2 + columns * cellWidth
+        get() = PADDING * 2 + maxOf(gridWidth, widestStatusTextWidth)
 
     /** 面板高度。 */
     val panelHeight: Int
@@ -187,6 +192,10 @@ internal data class DiscardAnalysisLayout(
     val panelCenterX: Int
         get() = panelLeft + panelWidth / 2
 
+    /** 格子區左界；狀態列撐寬面板時格子仍維持置中。 */
+    val gridLeft: Int
+        get() = panelLeft + (panelWidth - gridWidth) / 2
+
     /** 狀態列第 [index] 行的上緣。 */
     fun statusTextTop(index: Int): Int = panelTop + PADDING + index * STATUS_TEXT_HEIGHT
 
@@ -196,7 +205,7 @@ internal data class DiscardAnalysisLayout(
 
     /** 第 [index] 格的牌面版位。 */
     fun tileBounds(index: Int): DecisionBounds {
-        val cellLeft = panelLeft + PADDING + (index % columns) * cellWidth
+        val cellLeft = gridLeft + (index % columns) * cellWidth
         return DecisionBounds(
             x = cellLeft + (cellWidth - TILE_WIDTH) / 2,
             y = panelTop + PADDING + statusHeight + (index / columns) * cellHeight,
@@ -206,7 +215,7 @@ internal data class DiscardAnalysisLayout(
     }
 
     /** 第 [index] 格的水平中心。 */
-    fun cellCenterX(index: Int): Int = panelLeft + PADDING + (index % columns) * cellWidth + cellWidth / 2
+    fun cellCenterX(index: Int): Int = gridLeft + (index % columns) * cellWidth + cellWidth / 2
 
     /** 第 [index] 格剩餘張數文字的上緣。 */
     fun countTextTop(index: Int): Int = tileBounds(index).let { it.y + it.height + 1 }
