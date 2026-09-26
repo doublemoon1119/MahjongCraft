@@ -212,6 +212,41 @@ All modules must strictly follow the rules below to form a one-way dependency ch
   - Current example: `:minecraft_v1.20.1_fabric` -> `:minecraft_v1.20.1_common` and `:minecraft_common`.
   - These are Gradle project paths, not source directory paths; see the platform table above for the mapping.
 
+## Persistence Evolution
+
+Every persisted format is versioned on its own. A single schema version must not be stretched to cover
+unrelated formats: the authoritative Room/Game state, each platform storage surface, the configuration files,
+and any future format each evolve separately.
+
+Classify a format before changing it, and follow that class's compatibility strategy:
+
+- **Authoritative and not rebuildable**: carries an explicit schema version and evolves through consecutive
+  migrations, one per version step. Data from an unknown newer version, or a gap in the migration chain, is
+  rejected loudly. Never treat state you cannot understand as empty state.
+- **Owned by the player and must survive**: keep field names stable and keep reading the previous shape until
+  a migration exists. Add a version field at the first change that alters the meaning of an existing field
+  rather than in advance.
+- **Rebuildable from authoritative state**: unreadable data is skipped and logged, never fatal. State that
+  self heals must say in its code how it heals, so the choice to discard can be reviewed.
+- **Transient presentation**: no long term migrations. Unknown or stale content is discarded safely and must
+  never prevent the platform from starting up.
+
+Rules that apply to all of them:
+
+- **Enums are persisted by name.** An ordinal silently changes meaning when the enum is reordered, which turns
+  stored data into wrong data instead of missing data. Add a legacy reader only when compatibility with a released
+  format is required.
+- **Raise a version only for a real incompatibility**: a renamed, split, retyped, or re-meaning field. Adding a
+  field that older defaults already cover is not a reason to raise it. Configuration files stay version free
+  while field names and defaults keep them compatible.
+- **Migrations stay consecutive.** Each migration converts exactly one version to the next; do not collapse
+  several steps into one function, and do not skip versions.
+- **Document the recovery path** where the format is loaded: what is rejected, what is skipped, and what
+  restores the skipped data.
+
+Platform storage details belong with the platform code that owns them, not here. Each platform decides how a
+class is stored; this policy only fixes which class a format belongs to and how it may evolve.
+
 ## Temp File Management
 
 - All temporary instructions, logic drafts, or one-shot prompt files generated during development must be placed under `docs/temp/`.

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.item
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickDenomination
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickDenominationNbt
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
 import net.minecraft.entity.player.PlayerEntity
@@ -52,18 +53,18 @@ class MahjongScoringStickItem(settings: Settings) : Item(settings) {
     }
 
     companion object {
-        /** ItemStack 自訂資料內保存面額 ordinal 的名稱。 */
+        /** ItemStack 自訂資料內保存面額的欄位名稱。 */
         const val NBT_KEY_DENOMINATION = "denomination"
 
         /** 讀取 item 保存的面額；缺失或非法值使用百分棒。 */
         fun readDenomination(stack: ItemStack): MahjongScoringStickDenomination {
-            val storedOrdinal = stack.nbt?.takeIf { it.contains(NBT_KEY_DENOMINATION) }?.getInt(NBT_KEY_DENOMINATION)
-            return MahjongScoringStickDenomination.fromOrdinalOrDefault(storedOrdinal ?: 0)
+            val nbt = stack.nbt ?: return MahjongScoringStickDenomination.P100
+            return MahjongScoringStickDenominationNbt.read(nbt, NBT_KEY_DENOMINATION)
         }
 
-        /** 寫入面額 ordinal。 */
+        /** 以名稱寫入面額。 */
         fun writeDenomination(stack: ItemStack, denomination: MahjongScoringStickDenomination) {
-            stack.orCreateNbt.putInt(NBT_KEY_DENOMINATION, denomination.ordinal)
+            MahjongScoringStickDenominationNbt.write(stack.orCreateNbt, NBT_KEY_DENOMINATION, denomination)
         }
 
         /** 將 item 循環至下一個面額；無自訂資料的配方產物以目前顯示的百分棒為起點。 */

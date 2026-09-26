@@ -208,7 +208,7 @@ class MahjongScoringStickEntity(
      * [MahjongTileEntity.readCustomDataFromNbt]。
      */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        denomination = MahjongScoringStickDenomination.fromOrdinalOrDefault(nbt.getInt(NBT_KEY_DENOMINATION))
+        denomination = MahjongScoringStickDenominationNbt.read(nbt, NBT_KEY_DENOMINATION)
         managedByGame = nbt.getBoolean(NBT_KEY_MANAGED_BY_GAME)
         managedTableId = nbt.getString(NBT_KEY_MANAGED_TABLE_ID)
             .takeIf(String::isNotBlank)
@@ -218,7 +218,7 @@ class MahjongScoringStickEntity(
 
     /** 將面額、管理狀態與動畫佇列寫入世界存檔。 */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
-        nbt.putInt(NBT_KEY_DENOMINATION, denomination.ordinal)
+        MahjongScoringStickDenominationNbt.write(nbt, NBT_KEY_DENOMINATION, denomination)
         nbt.putBoolean(NBT_KEY_MANAGED_BY_GAME, managedByGame)
         managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
         writeAnimationQueueToNbt(nbt)

@@ -13,9 +13,9 @@ class MahjongTilePoseTest {
         assertEquals(MahjongTilePose.STANDING, MahjongTilePose.FACE_DOWN.next())
     }
 
-    /** 驗證非法 ordinal 與名稱使用直立姿態。 */
+    /** 驗證非法同步 ordinal 與持久化名稱使用直立姿態。 */
     @Test
-    fun `invalid persisted poses fall back to standing`() {
+    fun `invalid synchronized and persisted poses fall back to standing`() {
         assertEquals(MahjongTilePose.STANDING, MahjongTilePose.fromOrdinalOrDefault(-1))
         assertEquals(MahjongTilePose.STANDING, MahjongTilePose.fromNameOrDefault("SIDEWAYS"))
         assertEquals(MahjongTilePose.FACE_DOWN, MahjongTilePose.fromNameOrDefault("FACE_DOWN"))

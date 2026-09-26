@@ -488,7 +488,7 @@ class MahjongTileEntity(
         tilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
         dataTracker.set(PRESENTATION_ASSET_KEY, nbt.getString(NBT_KEY_PRESENTATION_ASSET))
         dataTracker.set(PRESENTATION_ASSET_END_GAME_TIME, nbt.getLong(NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME))
-        dataTracker.set(ACTION_POPUP_KIND, nbt.getInt(NBT_KEY_ACTION_POPUP_KIND))
+        dataTracker.set(ACTION_POPUP_KIND, TileActionPopupKindNbt.read(nbt, NBT_KEY_ACTION_POPUP_KIND).ordinal)
         dataTracker.set(ACTION_POPUP_START_GAME_TIME, nbt.getLong(NBT_KEY_ACTION_POPUP_START_GAME_TIME))
         dataTracker.set(ACTION_POPUP_END_GAME_TIME, nbt.getLong(NBT_KEY_ACTION_POPUP_END_GAME_TIME))
         dataTracker.set(MELD_ACTION_POPUP_TILES, nbt.getString(NBT_KEY_MELD_ACTION_POPUP_TILES))
@@ -504,7 +504,7 @@ class MahjongTileEntity(
         managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
         nbt.putString(NBT_KEY_PRESENTATION_ASSET, presentationAssetKey)
         nbt.putLong(NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME, presentationAssetEndGameTime)
-        nbt.putInt(NBT_KEY_ACTION_POPUP_KIND, actionPopupKind.ordinal)
+        TileActionPopupKindNbt.write(nbt, NBT_KEY_ACTION_POPUP_KIND, actionPopupKind)
         nbt.putLong(NBT_KEY_ACTION_POPUP_START_GAME_TIME, actionPopupStartGameTime)
         nbt.putLong(NBT_KEY_ACTION_POPUP_END_GAME_TIME, actionPopupEndGameTime)
         nbt.putString(NBT_KEY_MELD_ACTION_POPUP_TILES, dataTracker[MELD_ACTION_POPUP_TILES])
