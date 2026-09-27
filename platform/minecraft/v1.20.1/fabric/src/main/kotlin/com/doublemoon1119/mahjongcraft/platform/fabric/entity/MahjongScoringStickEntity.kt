@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
@@ -188,6 +189,9 @@ class MahjongScoringStickEntity(
     private fun asItemStack(): ItemStack = ItemStack(ModItems.MAHJONG_SCORING_STICK).also {
         MahjongScoringStickItem.writeDenomination(it, denomination)
     }
+
+    /** 創造模式中鍵複製自由點棒；牌局管理中的點棒不提供物品。 */
+    override fun getPickBlockStack(): ItemStack? = if (managedByGame) null else asItemStack()
 
     /** 初始化 client/server 同步的面額、管理狀態與動畫欄位。 */
     override fun initDataTracker() {

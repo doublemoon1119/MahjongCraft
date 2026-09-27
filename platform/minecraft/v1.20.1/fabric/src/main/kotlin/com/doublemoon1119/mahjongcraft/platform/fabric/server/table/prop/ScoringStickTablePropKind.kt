@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickDenomination
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
 import net.minecraft.entity.Entity

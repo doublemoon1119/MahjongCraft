@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDenomination
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.nbt.NbtElement
 

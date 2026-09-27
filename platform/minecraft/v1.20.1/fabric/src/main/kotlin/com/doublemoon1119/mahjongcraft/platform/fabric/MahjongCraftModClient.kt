@@ -46,6 +46,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSor
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickItem
+import com.doublemoon1119.mahjongcraft.platform.fabric.item.toModelPredicateValue
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
@@ -90,7 +91,7 @@ class MahjongCraftModClient : ClientModInitializer {
         ModelPredicateProviderRegistry.register(
             ModItems.MAHJONG_SCORING_STICK,
             Identifier(MinecraftModMetadata.MOD_ID, "denomination"),
-        ) { stack, _, _, _ -> MahjongScoringStickItem.readDenomination(stack).normalizedPredicateValue }
+        ) { stack, _, _, _ -> MahjongScoringStickItem.readDenomination(stack).toModelPredicateValue() }
         val clientConfigStore = koin.get<MahjongClientConfigStore>()
         koin.get<FabricRoomConfigScreenCommand>().register()
         initializeClientConfig(clientConfigStore)

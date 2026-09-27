@@ -448,6 +448,9 @@ class MahjongTileEntity(
         MahjongTileItem.writeTileAssetKey(it, tileAssetKey)
     }
 
+    /** 創造模式中鍵複製自由牌；牌局管理中的牌不公開其隱藏牌面。 */
+    override fun getPickBlockStack(): ItemStack? = if (managedByGame) null else asItemStack()
+
     /** 初始化 client/server 同步的牌面、姿態與管理狀態。 */
     override fun initDataTracker() {
         dataTracker.startTracking(TILE_ASSET_KEY, UNKNOWN_TILE_ASSET_KEY)

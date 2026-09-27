@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.entity
+package com.doublemoon1119.mahjongcraft.platform.minecraft.stick
 
 /**
  * 麻將點棒面額；固定四種，對應日麻點棒的通用面額慣例，目前不開放第三方擴充。
@@ -25,17 +25,6 @@ enum class MahjongScoringStickDenomination(
 
     /** 依固定順序循環至下一面額。 */
     fun next(): MahjongScoringStickDenomination = entries[(ordinal + 1) % entries.size]
-
-    /**
-     * 供 item model predicate 使用的正規化值，落在 `[0, 1]` 區間。
-     *
-     * `FabricModelPredicateProviderRegistry.register` 底層實際接收的是 `ClampedModelPredicateProvider`，
-     * model override 比對讀的是夾在 `[0, 1]` 的 `call()`，不是 lambda 實作的 `unclampedCall()` 原始
-     * 回傳值；直接回傳 `ordinal`（0..3）會讓面額 2、3 的值被夾成 1.0，跟面額 1 撞在一起、外觀顯示成
-     * 千分棒——這裡改成除以最大 ordinal 正規化，確保四個面額的值都落在 `[0, 1]` 內、彼此不重疊。
-     */
-    val normalizedPredicateValue: Float
-        get() = ordinal.toFloat() / (entries.size - 1)
 
     companion object {
         /** 由同步或持久化名稱取得面額；無效值使用百分棒。 */
