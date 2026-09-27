@@ -15,7 +15,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
@@ -58,6 +57,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerWidthTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -114,6 +114,7 @@ import kotlin.uuid.toJavaUuid
  * @property tablePropDescriberRegistry 依規則模組查詢桌上應擺哪些物件的描述。
  * @property tableCornerWidths 桌上物件目前佔用的副露角落寬度紀錄，手牌、胡牌演出與結算舞台依此讓開角落。
  * @property roundInfoPresenter 桌面中央局況顯示的實際呈現邏輯。
+ * @property roundInfoLineDisplayRegistry 依規則模組建立局況行並查詢其翻譯資訊。
  * @property tableLocationRegistry 麻將桌最後已知位置索引。
  * @property serverHolder 目前運行中的 server，供世界／方塊狀態查詢使用。
  * @property busyTracker 查詢／標記該桌是否呈現動畫播放中，供輸入分派入口與自動操作心跳擋下操作，見
@@ -137,6 +138,7 @@ class FabricGamePresentationPublisher(
     private val tablePropDescriberRegistry: TablePropDescriberRegistry,
     private val tableCornerWidths: TableCornerWidthTracker,
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
+    private val roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
     private val playerInfoPresenter: MahjongPlayerInfoPresenter,
     private val tileSelectionConfirmPresenter: MahjongTileSelectionConfirmPresenter,
     private val tableLocationRegistry: TableLocationRegistry,
@@ -534,11 +536,13 @@ class FabricGamePresentationPublisher(
      * 延遲——純文字更新是瞬間的；跟 [publishDiceRoll] 同理，世界／entity 存取一併丟回伺服器主執行緒
      * 執行。
      */
-    override fun publishRoundInfoUpdated(gameId: Uuid, lines: List<RoundInfoLine>) {
+    override fun publishRoundInfoUpdated(gameId: Uuid, tableState: TableState) {
         if (serverHolder.current() == null) {
             logger.warn("publishRoundInfoUpdated gameId={} skipped: no active server", gameId)
             return
         }
+        val ruleModuleId = moduleRegistry.getModule(tableState.config).id
+        val lines = roundInfoLineDisplayRegistry.buildLines(ruleModuleId, tableState)
         val openingOperation = openingOperations.capture(gameId)
         launchOpeningStage(gameId, "round-info", openingOperation) {
             val resolved = resolveTableContext(gameId, "publishRoundInfoUpdated") ?: return@launchOpeningStage

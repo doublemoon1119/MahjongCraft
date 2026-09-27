@@ -92,8 +92,7 @@ class DebugGameScenarioPresentationPublisher(
     private fun publishTableInformation(result: DebugGameScenarioResult) {
         val game = result.game
         val state = game.tableState
-        val module = moduleRegistry.getModule(state.config)
         publisher.publishTablePropsUpdated(game.id)
-        publisher.publishRoundInfoUpdated(game.id, module.getRoundInfoLines(state))
+        publisher.publishRoundInfoUpdated(game.id, state)
     }
 }

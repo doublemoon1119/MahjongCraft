@@ -1,9 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.SpectatorObservationService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineCodec
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker
 import net.minecraft.entity.data.TrackedData
@@ -35,19 +36,13 @@ class MahjongRoundInfoEntity(
     world: World,
 ) : AnimatedMahjongEntity<Nothing>(type, world) {
     /**
-     * 要顯示的完整內容，依序顯示——`DataTracker` 只能同步基本型別，這裡編碼成
-     * `"key1:1,2;key2:5"` 存進一個 `TrackedData<String>`（`:` 分隔 key 與參數列表，`,` 分隔參數
-     * 列表本身，沒有任何內容時為空字串），client 端 renderer 解碼後才依認得的 key 翻譯成文字，見
+     * 要顯示的完整內容，依序顯示——`DataTracker` 只能同步基本型別，這裡編碼成 JSON 存進一個
+     * `TrackedData<String>`，client 端 renderer 解碼後才依認得的 key 翻譯成文字，見
      * [MahjongRoundInfoEntity] KDoc 同一套分工。
      */
     var lines: List<RoundInfoLine>
-        get() = dataTracker[LINES].takeIf(String::isNotBlank)?.split(";")?.mapNotNull { entry ->
-            val parts = entry.split(":", limit = 2)
-            if (parts.size != 2) return@mapNotNull null
-            val args = parts[1].takeIf(String::isNotEmpty)?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
-            RoundInfoLine(parts[0], args)
-        } ?: emptyList()
-        set(value) = dataTracker.set(LINES, value.joinToString(";") { "${it.key}:${it.args.joinToString(",")}" })
+        get() = RoundInfoLineCodec.decode(dataTracker[LINES])
+        set(value) = dataTracker.set(LINES, RoundInfoLineCodec.encode(value))
 
     /** 正式牌局所屬麻將桌；未指派時為 `null`。 */
     var managedTableId: Uuid?

@@ -38,10 +38,7 @@ enum class MahjongScoringStickDenomination(
         get() = ordinal.toFloat() / (entries.size - 1)
 
     companion object {
-        /** 由名稱取得面額；無效值使用百分棒。持久化一律使用名稱，見 [MahjongScoringStickDenominationNbt]。 */
+        /** 由同步或持久化名稱取得面額；無效值使用百分棒。 */
         fun fromNameOrDefault(name: String): MahjongScoringStickDenomination = entries.firstOrNull { it.name == name } ?: P100
-
-        /** 由同步資料的 ordinal 取得面額；無效值使用百分棒。 */
-        fun fromOrdinalOrDefault(ordinal: Int): MahjongScoringStickDenomination = entries.getOrElse(ordinal) { P100 }
     }
 }

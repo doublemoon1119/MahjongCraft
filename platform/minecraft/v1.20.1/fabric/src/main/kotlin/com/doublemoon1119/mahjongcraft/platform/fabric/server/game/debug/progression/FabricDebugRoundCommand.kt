@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
 import com.mojang.brigadier.arguments.IntegerArgumentType
@@ -30,7 +29,6 @@ import kotlin.uuid.Uuid
  *
  * @property gameRepository 讀取桌況、登記待進行的換局並寫入本場數。
  * @property declareExhaustiveDrawUseCase 正式的流局結算用例。
- * @property moduleRegistry 解析對局採用的規則模組，取得供託支數與局況顯示內容。
  * @property snapshotSynchronizer 本場數變更後同步快照給觀察中的玩家。
  * @property presentationPublisher 重新發布積棒、供託與局況顯示。
  * @property playerTableScope 解析呼叫者目前入座的桌子。
@@ -39,7 +37,6 @@ import kotlin.uuid.Uuid
 class FabricDebugRoundCommand(
     private val gameRepository: GameRepository,
     private val declareExhaustiveDrawUseCase: DeclareExhaustiveDrawUseCase,
-    private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val presentationPublisher: GamePresentationPublisher,
     private val playerTableScope: DebugPlayerTableScope,
@@ -86,9 +83,8 @@ class FabricDebugRoundCommand(
 
     /** 重新發布桌上物件與局況顯示。 */
     private suspend fun publishStickPresentation(tableId: Uuid, state: TableState) {
-        val module = moduleRegistry.getModule(state.config)
         presentationPublisher.publishTablePropsUpdated(tableId)
-        presentationPublisher.publishRoundInfoUpdated(tableId, module.getRoundInfoLines(state))
+        presentationPublisher.publishRoundInfoUpdated(tableId, state)
     }
 
     private companion object {

@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
@@ -201,19 +201,18 @@ interface GamePresentationPublisher {
     fun publishTablePropsUpdated(gameId: Uuid)
 
     /**
-     * 通知平台呈現層桌面中央局況顯示需要更新為目前狀態——實際顯示什麼內容完全由規則模組決定
-     * （見 `MahjongRuleModule.getRoundInfoLines`），這裡不假設任何固定欄位。
+     * 通知平台呈現層桌面中央局況顯示需要更新為目前的權威桌況快照。
+     *
+     * Flow 只傳遞遊戲狀態，不決定顯示哪些欄位、翻譯 key 或排列順序；這些屬於平台呈現層的規則
+     * provider。呼叫端應在局況改變後傳入剛保存的完整 [tableState]，讓呈現層自行建立完整局況內容。
      *
      * 觸發時機：開局/換局（跟 [publishWallStructure] 同一批呼叫）、每次摸牌（牌山剩餘張數可能會變）、
-     * 以及任何會改變 [lines] 內容的事件（例如立直宣告後供託支數改變）。這份呈現是「找到既有的
-     * 就地更新」模式，每個呼叫點都要重新算好完整的 [lines]（不能只在部分呼叫點帶上），否則沒帶的
-     * 呼叫會把之前顯示的內容覆蓋回空清單。
+     * 以及任何會改變局況內容的事件（例如立直宣告後供託支數改變）。
      *
      * @param gameId 對局 Uuid。
-     * @param lines 要顯示的完整內容，恆等於呼叫端當下算好的 `MahjongRuleModule.getRoundInfoLines`
-     * 結果。
+     * @param tableState 呼叫端當下已保存的權威桌況快照。
      */
-    fun publishRoundInfoUpdated(gameId: Uuid, lines: List<RoundInfoLine>)
+    fun publishRoundInfoUpdated(gameId: Uuid, tableState: TableState)
 
     /**
      * 通知平台呈現層某玩家目前的手牌（含摸牌位）與副露需要更新為目前狀態。

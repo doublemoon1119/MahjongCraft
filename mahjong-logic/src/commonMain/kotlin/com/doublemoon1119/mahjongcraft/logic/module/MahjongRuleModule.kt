@@ -419,16 +419,6 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = emptyList()
 
     /**
-     * 桌面中央局況顯示的完整內容——場風、局數、本場數、牌山剩餘等要不要顯示、怎麼顯示，全部由規則
-     * 自己的覆寫決定（見 [RoundInfoLine] KDoc），呈現層不預設任何固定欄位。不支援局況顯示、或尚未
-     * 實作的規則維持預設空清單，代表這桌完全不顯示局況面板內容，不是報錯。
-     *
-     * @param tableState 目前的桌況。
-     * @return 這個規則想顯示的局況項目列表，依序顯示。
-     */
-    fun getRoundInfoLines(tableState: TableState): List<RoundInfoLine> = emptyList()
-
-    /**
      * 同一局結束時的名次排序：分數高者優先，同分時依這一局的座位（越接近這一局東家名次越前面）。
      * 用於回合結束的名次升降呈現，不是終局排名——同分決勝的座位基準不同，見 [compareForMatchRanking]。
      *

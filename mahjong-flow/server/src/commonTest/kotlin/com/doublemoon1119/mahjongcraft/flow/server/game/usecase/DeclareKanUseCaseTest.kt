@@ -108,7 +108,7 @@ class DeclareKanUseCaseTest {
         assertEquals(table.tileWall.getAllTiles().last(), newState.initialDeadWall.last())
         assertEquals(1, (newState.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
         assertEquals(
-            fixtures.moduleRegistry.getModule(newState.config).getRoundInfoLines(newState),
+            newState,
             fixtures.presentationPublisher.getPublishedRoundInfo(gameId),
             "A completed supplemental draw should immediately refresh round information from the updated state.",
         )

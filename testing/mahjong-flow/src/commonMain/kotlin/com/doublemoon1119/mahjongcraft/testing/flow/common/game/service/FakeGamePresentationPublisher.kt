@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
@@ -56,8 +56,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄收到桌上物件更新通知的次數。 */
     private val tablePropsUpdateCounts = mutableMapOf<Uuid, Int>()
 
-    /** 依對局 Uuid 紀錄最後一次收到的桌面局況顯示內容。 */
-    private val roundInfos = mutableMapOf<Uuid, List<RoundInfoLine>>()
+    /** 依對局 Uuid 紀錄最後一次收到的局況更新快照。 */
+    private val roundInfos = mutableMapOf<Uuid, TableState>()
 
     /** 依對局 Uuid 紀錄最後一次收到的桌角區域（手牌/摸牌位/副露）呈現資料。 */
     private val playerAreas = mutableMapOf<Uuid, PlayerAreaContext>()
@@ -129,8 +129,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         tablePropsUpdateCounts[gameId] = getTablePropsUpdateCount(gameId) + 1
     }
 
-    override fun publishRoundInfoUpdated(gameId: Uuid, lines: List<RoundInfoLine>) {
-        roundInfos[gameId] = lines
+    override fun publishRoundInfoUpdated(gameId: Uuid, tableState: TableState) {
+        roundInfos[gameId] = tableState
     }
 
     override fun publishPlayerAreaUpdated(
@@ -221,8 +221,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 取得指定對局收到桌上物件更新通知的次數；沒有收到過則為 0。 */
     fun getTablePropsUpdateCount(gameId: Uuid): Int = tablePropsUpdateCounts[gameId] ?: 0
 
-    /** 取得指定對局最後一次收到的桌面局況顯示內容；若無紀錄則回傳 null。 */
-    fun getPublishedRoundInfo(gameId: Uuid): List<RoundInfoLine>? = roundInfos[gameId]
+    /** 取得指定對局最後一次收到的局況更新快照；若無紀錄則回傳 null。 */
+    fun getPublishedRoundInfo(gameId: Uuid): TableState? = roundInfos[gameId]
 
     /** 取得指定對局最後一次收到的桌角區域（手牌/摸牌位/副露）呈現資料；若無紀錄則回傳 null。 */
     fun getPublishedPlayerArea(gameId: Uuid): PlayerAreaContext? = playerAreas[gameId]

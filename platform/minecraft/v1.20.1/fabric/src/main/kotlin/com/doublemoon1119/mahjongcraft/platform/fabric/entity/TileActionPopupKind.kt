@@ -13,7 +13,7 @@ enum class TileActionPopupKind {
     ;
 
     companion object {
-        /** 從同步 ordinal 解析種類，非法值安全回退為 [NONE]。 */
-        fun fromOrdinal(ordinal: Int): TileActionPopupKind = entries.getOrElse(ordinal) { NONE }
+        /** 從同步名稱解析種類，未知值安全回退為 [NONE]。 */
+        fun fromNameOrDefault(name: String): TileActionPopupKind = entries.firstOrNull { it.name == name } ?: NONE
     }
 }

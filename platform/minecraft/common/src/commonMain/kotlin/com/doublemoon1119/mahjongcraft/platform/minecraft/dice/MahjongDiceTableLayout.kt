@@ -17,6 +17,12 @@ enum class MahjongTableFacing {
 
     /** 朝向世界西方。 */
     WEST,
+    ;
+
+    companion object {
+        /** 由穩定名稱解析桌面朝向；未知值使用北方作為安全預設。 */
+        fun fromNameOrDefault(name: String?): MahjongTableFacing = entries.firstOrNull { it.name == name } ?: NORTH
+    }
 }
 
 /** 擲骰者相對麻將桌的局部側面；不受桌子在世界中的朝向影響。 */

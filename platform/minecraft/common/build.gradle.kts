@@ -19,6 +19,7 @@ kotlin {
                 implementation(libs.koin.core)
                 implementation(libs.koin.annotations)
                 implementation(libs.ktoml.core)
+                implementation(libs.kotlinx.serialization.json)
             }
         }
 

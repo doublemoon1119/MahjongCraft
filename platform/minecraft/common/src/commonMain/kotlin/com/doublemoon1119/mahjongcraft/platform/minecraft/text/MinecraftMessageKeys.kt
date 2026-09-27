@@ -382,8 +382,8 @@ object MinecraftMessageKeys {
 
     /**
      * 局況顯示的累積供託數量行，帶一個數量參數（一個 `%d`）——對應規則自訂顯示項目 key（日麻是
-     * `RiichiRuleModule.STICK_POT_KEY`），只有支援供託概念的規則會貢獻這個項目，見
-     * `MahjongRuleModule.getRoundInfoLines` KDoc。
+     * `riichiStickPot`），只有支援供託概念的規則會貢獻這個項目，並由各自的 Minecraft 局況 provider
+     * 建立資料。
      */
     const val ROUND_INFO_STICK_POT = PREFIX + "round_info_stick_pot"
 

@@ -197,7 +197,7 @@ class RespondToKanUseCaseTest {
         assertEquals(rinshanTile, declarer.hand.lastDrawn)
         assertEquals(listOf(kanAction, GameAction.Draw), declarer.actionHistory.takeLast(2))
         assertEquals(
-            fixtures.moduleRegistry.getModule(newState.config).getRoundInfoLines(newState),
+            newState,
             fixtures.presentationPublisher.getPublishedRoundInfo(gameId),
             "Passing the robbing-kan window should refresh round information after the supplemental draw completes.",
         )

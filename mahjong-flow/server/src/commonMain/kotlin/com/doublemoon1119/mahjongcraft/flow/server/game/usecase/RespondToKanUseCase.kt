@@ -211,7 +211,7 @@ class RespondToKanUseCase(
         if (result.drawHappened) {
             eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.Draw)
             val module = moduleRegistry.getModule(newState.config)
-            presentationPublisher.publishRoundInfoUpdated(gameId, module.getRoundInfoLines(newState))
+            presentationPublisher.publishRoundInfoUpdated(gameId, newState)
         }
 
         // declarerId 只在「全員放過、槓真的成立」時才有值（見上面 KanDeclarationApplier 那個分支）；

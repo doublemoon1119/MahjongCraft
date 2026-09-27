@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineArgumentKind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoArgument
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import net.minecraft.client.font.TextRenderer
@@ -92,10 +92,10 @@ class MahjongRoundInfoEntityRenderer(
     /** 依 [roundInfoLineDisplayRegistry] 查到的翻譯資訊組出 [line] 對應文字；查不到 key 時退回顯示原始 key。 */
     private fun buildLineText(line: RoundInfoLine): Text {
         val display = roundInfoLineDisplayRegistry.find(line.key) ?: return Text.literal(line.key)
-        val arguments = line.args.mapIndexed { index, value ->
-            when (display.argumentKinds.getOrNull(index)) {
-                RoundInfoLineArgumentKind.WIND -> Text.translatable(Wind.entries.getOrElse(value) { Wind.EAST }.toMessageKey())
-                RoundInfoLineArgumentKind.NUMBER, null -> value
+        val arguments = line.args.map { argument ->
+            when (argument) {
+                is RoundInfoArgument.WindValue -> Text.translatable(argument.value.toMessageKey())
+                is RoundInfoArgument.Number -> argument.value
             }
         }
         return Text.translatable(display.translationKey, *arguments.toTypedArray())

@@ -165,7 +165,7 @@ class RespondToDiscardUseCase(
         if (result.supplementalDrawHappened) {
             eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.Draw)
             val module = moduleRegistry.getModule(newState.config)
-            presentationPublisher.publishRoundInfoUpdated(gameId, module.getRoundInfoLines(newState))
+            presentationPublisher.publishRoundInfoUpdated(gameId, newState)
         }
 
         // 觸發平台呈現層：碰/吃/明槓得標時，丟牌者的 discardPile 被 takeLast() 標記，即使沒有新增

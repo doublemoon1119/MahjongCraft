@@ -486,7 +486,7 @@ class RespondToDiscardUseCaseTest {
         assertEquals(table.tileWall.getAllTiles().last(), newState.initialDeadWall.last())
         assertEquals(1, (newState.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
         assertEquals(
-            fixtures.moduleRegistry.getModule(newState.config).getRoundInfoLines(newState),
+            newState,
             fixtures.presentationPublisher.getPublishedRoundInfo(gameId),
             "An open kan supplemental draw should immediately refresh round information.",
         )

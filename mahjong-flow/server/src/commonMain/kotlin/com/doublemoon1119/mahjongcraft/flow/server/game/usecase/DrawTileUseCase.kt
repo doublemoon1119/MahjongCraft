@@ -102,7 +102,7 @@ class DrawTileUseCase(
         )
         // 牌山剩餘張數每次摸牌都會變，桌面局況顯示要跟著更新——這份呈現是「找到既有的就地更新」
         // 模式，沒帶上完整內容就會把之前顯示的內容覆蓋回空清單。
-        presentationPublisher.publishRoundInfoUpdated(gameId, module.getRoundInfoLines(newState))
+        presentationPublisher.publishRoundInfoUpdated(gameId, newState)
 
         return Outcome.Success(Unit)
     }

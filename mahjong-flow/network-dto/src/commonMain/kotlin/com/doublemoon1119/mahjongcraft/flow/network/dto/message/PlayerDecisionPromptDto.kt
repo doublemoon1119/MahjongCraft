@@ -60,7 +60,7 @@ enum class DecisionPlayerRelationDto {
  * 慣例：預設值 [WIN_AVAILABLE_ID] 代表「沒有任何和牌資格上的特殊限制」，這是所有規則模組共通的中立
  * 預設；有更細分和牌可用性概念的規則模組（例如日麻的自摸限定、無役、未達最低翻符）另外提供各自的
  * 命名字串，client 端依 namespaced ID 映射顯示文字，查不到時安全 fallback 顯示原始字串（同
- * [DiscardReadinessAnalysisDto.statusIndicatorId] 與 `RoundInfoLine`／`PublicPlayerIndicator` 的
+ * [DiscardReadinessAnalysisDto.statusIndicatorId] 與局況／公開玩家指示的
  * 既有慣例）。
  */
 @Serializable

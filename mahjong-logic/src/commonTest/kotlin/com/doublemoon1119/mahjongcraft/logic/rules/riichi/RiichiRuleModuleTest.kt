@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiPhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
@@ -17,7 +16,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpen
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -812,52 +810,6 @@ class RiichiRuleModuleTest {
 
         assertEquals(3, count)
         assertEquals(3, (table.dynamicRuleState as RiichiDynamicState).riichiStickCount, "getStickPotCount must be a pure query, not mutate the table state.")
-    }
-
-    /**
-     * 驗證 [MahjongRuleModule.getRoundInfoLines] 依序回傳 3 行：場風＋局數＋本場數合併標題、立直棒
-     * 累積供託數量、牌山剩餘張數（固定排在最後），各行的 key 與 args 正確對應目前桌況。
-     */
-    @Test
-    fun `test getRoundInfoLines returns title stick pot and wall remaining in order`() {
-        val players = List(4) { FakeMahjongPlayerFactory.create() }
-        val table = FakeTableStateFactory.create(
-            players = players,
-            config = module.config,
-            tileWall = TileWall(List(50) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)) }),
-            prevalentWind = Wind.SOUTH,
-            roundNumber = 2,
-            comboCount = 1,
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
-        )
-
-        val lines = module.getRoundInfoLines(table)
-
-        assertEquals(
-            listOf(
-                RoundInfoLine(RiichiRuleModule.TITLE_KEY, listOf(Wind.SOUTH.ordinal, table.localRoundNumber, 1)),
-                RoundInfoLine(RiichiRuleModule.STICK_POT_KEY, listOf(2)),
-                RoundInfoLine(RiichiRuleModule.WALL_REMAINING_KEY, listOf(50)),
-            ),
-            lines,
-        )
-    }
-
-    /**
-     * 驗證場上沒有供託（[getStickPotCount] 為 0）時，[MahjongRuleModule.getRoundInfoLines] 不會產生
-     * 供託那一行——不顯示「供託：0」，避免平常沒人立直時桌面也掛著一行沒意義的數字。
-     */
-    @Test
-    fun `test getRoundInfoLines omits stick pot line when there are no sticks on the table`() {
-        val table = FakeTableStateFactory.create(
-            players = listOf(FakeMahjongPlayerFactory.create()),
-            config = module.config,
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 0),
-        )
-
-        val lines = module.getRoundInfoLines(table)
-
-        assertEquals(emptyList<RoundInfoLine>(), lines.filter { it.key == RiichiRuleModule.STICK_POT_KEY })
     }
 
     /**

@@ -29,10 +29,7 @@ enum class MahjongTilePose {
         }
 
     companion object {
-        /** 從同步資料的 ordinal 安全還原姿態，非法值回退為 [STANDING]。 */
-        fun fromOrdinalOrDefault(ordinal: Int): MahjongTilePose = entries.getOrNull(ordinal) ?: STANDING
-
-        /** 從持久化名稱安全還原姿態，非法值回退為 [STANDING]。 */
+        /** 從同步或持久化名稱安全還原姿態，非法值回退為 [STANDING]。 */
         fun fromNameOrDefault(name: String?): MahjongTilePose = entries.firstOrNull { it.name == name } ?: STANDING
     }
 }

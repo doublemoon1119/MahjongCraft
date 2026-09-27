@@ -12,8 +12,7 @@ internal object TileActionPopupKindNbt {
 
     /** 未知名稱或型別錯誤時不顯示短暫提示。 */
     fun read(nbt: NbtCompound, key: String): TileActionPopupKind = when {
-        nbt.contains(key, NbtElement.STRING_TYPE.toInt()) ->
-            TileActionPopupKind.entries.firstOrNull { it.name == nbt.getString(key) } ?: TileActionPopupKind.NONE
+        nbt.contains(key, NbtElement.STRING_TYPE.toInt()) -> TileActionPopupKind.fromNameOrDefault(nbt.getString(key))
 
         else -> TileActionPopupKind.NONE
     }

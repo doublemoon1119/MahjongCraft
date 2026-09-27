@@ -107,7 +107,7 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerPublicPlayerIndicatorDisplays(registries.publicPlayerIndicatorDisplayRegistry)
                 extension.registerGameConfigPresentations(registries.gameConfigPresentationRegistry)
                 extension.registerRoomMemberAppearanceSources(registries.roomMemberAppearanceSourceRegistry)
-                extension.registerRoundInfoLineDisplays(registries.roundInfoLineDisplayRegistry)
+                extension.registerRoundInfoPresentations(registries.roundInfoLineDisplayRegistry)
                 extension.registerTablePropDescribers(registries.tablePropDescriberRegistry)
             } catch (cause: Exception) {
                 throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)

@@ -220,7 +220,7 @@ class DeclareKanUseCase(
         if (result.drawHappened) {
             eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.Draw)
             val module = moduleRegistry.getModule(newState.config)
-            presentationPublisher.publishRoundInfoUpdated(gameId, module.getRoundInfoLines(newState))
+            presentationPublisher.publishRoundInfoUpdated(gameId, newState)
         }
         result.abortiveDrawReason?.let { reason ->
             eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.ExhaustiveDraw(reason))

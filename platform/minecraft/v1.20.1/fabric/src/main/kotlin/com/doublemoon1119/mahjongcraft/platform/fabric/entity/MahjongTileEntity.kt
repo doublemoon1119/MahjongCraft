@@ -102,8 +102,8 @@ class MahjongTileEntity(
 
     /** 牌相對於表面的姿態；改變後立即更新 bounding box。 */
     var tilePose: MahjongTilePose
-        get() = MahjongTilePose.fromOrdinalOrDefault(dataTracker[TILE_POSE])
-        set(value) = dataTracker.set(TILE_POSE, value.ordinal)
+        get() = MahjongTilePose.fromNameOrDefault(dataTracker[TILE_POSE])
+        set(value) = dataTracker.set(TILE_POSE, value.name)
 
     /** 是否阻擋玩家及其他非麻將牌 entity；由目前 server config 同步，不寫入世界存檔。 */
     var physicalCollisionEnabled: Boolean
@@ -129,7 +129,7 @@ class MahjongTileEntity(
     val presentationAssetEndGameTime: Long get() = dataTracker[PRESENTATION_ASSET_END_GAME_TIME]
 
     /** 最近一次捨牌或鳴牌落地後的短暫提示種類。 */
-    val actionPopupKind: TileActionPopupKind get() = TileActionPopupKind.fromOrdinal(dataTracker[ACTION_POPUP_KIND])
+    val actionPopupKind: TileActionPopupKind get() = TileActionPopupKind.fromNameOrDefault(dataTracker[ACTION_POPUP_KIND])
 
     /** 短暫牌面提示開始淡入的絕對時間。 */
     val actionPopupStartGameTime: Long get() = dataTracker[ACTION_POPUP_START_GAME_TIME]
@@ -150,7 +150,7 @@ class MahjongTileEntity(
         check(!world.isClient) { "Tile action popup is server-only" }
         require(kind != TileActionPopupKind.NONE) { "Tile action popup kind must be visible" }
         require(endGameTime > startGameTime) { "Tile action popup must have a positive duration" }
-        dataTracker.set(ACTION_POPUP_KIND, kind.ordinal)
+        dataTracker.set(ACTION_POPUP_KIND, kind.name)
         dataTracker.set(ACTION_POPUP_START_GAME_TIME, startGameTime)
         dataTracker.set(ACTION_POPUP_END_GAME_TIME, endGameTime)
     }
@@ -451,7 +451,7 @@ class MahjongTileEntity(
     /** 初始化 client/server 同步的牌面、姿態與管理狀態。 */
     override fun initDataTracker() {
         dataTracker.startTracking(TILE_ASSET_KEY, UNKNOWN_TILE_ASSET_KEY)
-        dataTracker.startTracking(TILE_POSE, MahjongTilePose.STANDING.ordinal)
+        dataTracker.startTracking(TILE_POSE, MahjongTilePose.STANDING.name)
         dataTracker.startTracking(PHYSICAL_COLLISION_ENABLED, true)
         dataTracker.startTracking(MANAGED_BY_GAME, false)
         dataTracker.startTracking(MANAGED_TABLE_ID, "")
@@ -468,7 +468,7 @@ class MahjongTileEntity(
         dataTracker.startTracking(ANIMATION_START_YAW_OFFSET, 0.0f)
         dataTracker.startTracking(PRESENTATION_ASSET_KEY, UNKNOWN_TILE_ASSET_KEY)
         dataTracker.startTracking(PRESENTATION_ASSET_END_GAME_TIME, 0L)
-        dataTracker.startTracking(ACTION_POPUP_KIND, TileActionPopupKind.NONE.ordinal)
+        dataTracker.startTracking(ACTION_POPUP_KIND, TileActionPopupKind.NONE.name)
         dataTracker.startTracking(ACTION_POPUP_START_GAME_TIME, 0L)
         dataTracker.startTracking(ACTION_POPUP_END_GAME_TIME, 0L)
         dataTracker.startTracking(MELD_ACTION_POPUP_TILES, "")
@@ -488,7 +488,7 @@ class MahjongTileEntity(
         tilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
         dataTracker.set(PRESENTATION_ASSET_KEY, nbt.getString(NBT_KEY_PRESENTATION_ASSET))
         dataTracker.set(PRESENTATION_ASSET_END_GAME_TIME, nbt.getLong(NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME))
-        dataTracker.set(ACTION_POPUP_KIND, TileActionPopupKindNbt.read(nbt, NBT_KEY_ACTION_POPUP_KIND).ordinal)
+        dataTracker.set(ACTION_POPUP_KIND, TileActionPopupKindNbt.read(nbt, NBT_KEY_ACTION_POPUP_KIND).name)
         dataTracker.set(ACTION_POPUP_START_GAME_TIME, nbt.getLong(NBT_KEY_ACTION_POPUP_START_GAME_TIME))
         dataTracker.set(ACTION_POPUP_END_GAME_TIME, nbt.getLong(NBT_KEY_ACTION_POPUP_END_GAME_TIME))
         dataTracker.set(MELD_ACTION_POPUP_TILES, nbt.getString(NBT_KEY_MELD_ACTION_POPUP_TILES))
@@ -550,8 +550,8 @@ class MahjongTileEntity(
         private val PRESENTATION_ASSET_END_GAME_TIME: TrackedData<Long> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
 
-        private val ACTION_POPUP_KIND: TrackedData<Int> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
+        private val ACTION_POPUP_KIND: TrackedData<String> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
         private val ACTION_POPUP_START_GAME_TIME: TrackedData<Long> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
@@ -563,9 +563,9 @@ class MahjongTileEntity(
         private val MELD_ACTION_POPUP_TILES: TrackedData<String> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
-        /** 同步姿態 ordinal；持久化仍使用名稱以避免 enum 重排影響存檔。 */
-        private val TILE_POSE: TrackedData<Int> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
+        /** 以名稱同步姿態；宣告順序不影響同步語意。 */
+        private val TILE_POSE: TrackedData<String> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
         /** 同步目前 server policy 決定的物理碰撞開關。 */
         private val PHYSICAL_COLLISION_ENABLED: TrackedData<Boolean> =

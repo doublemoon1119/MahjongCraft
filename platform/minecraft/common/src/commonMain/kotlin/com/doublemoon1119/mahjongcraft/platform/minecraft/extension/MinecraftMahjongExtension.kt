@@ -139,6 +139,6 @@ interface MinecraftMahjongExtension {
     /** 登記第三方房間成員外觀來源；完整 entity factory 留待 SeatActorProvider 階段。 */
     fun registerRoomMemberAppearanceSources(registry: RoomMemberAppearanceSourceRegistry) = Unit
 
-    /** 登記第三方規則的桌面局況顯示行翻譯資訊。 */
-    fun registerRoundInfoLineDisplays(registry: RoundInfoLineDisplayRegistry) = Unit
+    /** 登記第三方規則的桌面局況 provider 與其顯示行翻譯資訊。 */
+    fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistry) = Unit
 }

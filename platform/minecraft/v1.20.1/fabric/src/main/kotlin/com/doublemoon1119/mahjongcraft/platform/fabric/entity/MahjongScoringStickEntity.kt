@@ -32,8 +32,8 @@ class MahjongScoringStickEntity(
 ) : AnimatedMahjongEntity<Nothing>(type, world) {
     /** 目前的點棒面額。 */
     var denomination: MahjongScoringStickDenomination
-        get() = MahjongScoringStickDenomination.fromOrdinalOrDefault(dataTracker[DENOMINATION])
-        set(value) = dataTracker.set(DENOMINATION, value.ordinal)
+        get() = MahjongScoringStickDenomination.fromNameOrDefault(dataTracker[DENOMINATION])
+        set(value) = dataTracker.set(DENOMINATION, value.name)
 
     /** 是否由正式牌局管理；管理中的點棒不接受自由放置互動。 */
     var managedByGame: Boolean
@@ -191,7 +191,7 @@ class MahjongScoringStickEntity(
 
     /** 初始化 client/server 同步的面額、管理狀態與動畫欄位。 */
     override fun initDataTracker() {
-        dataTracker.startTracking(DENOMINATION, MahjongScoringStickDenomination.P100.ordinal)
+        dataTracker.startTracking(DENOMINATION, MahjongScoringStickDenomination.P100.name)
         dataTracker.startTracking(MANAGED_BY_GAME, false)
         dataTracker.startTracking(MANAGED_TABLE_ID, "")
         dataTracker.startTracking(ANIMATING, false)
@@ -255,9 +255,9 @@ class MahjongScoringStickEntity(
          */
         private const val FALLBACK_DESPAWN_AFTER_TICKS = 20L * 60L * 60L
 
-        /** 同步目前面額 ordinal。 */
-        private val DENOMINATION: TrackedData<Int> =
-            DataTracker.registerData(MahjongScoringStickEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
+        /** 以名稱同步目前面額。 */
+        private val DENOMINATION: TrackedData<String> =
+            DataTracker.registerData(MahjongScoringStickEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
         /** 同步是否由正式牌局管理。 */
         private val MANAGED_BY_GAME: TrackedData<Boolean> =

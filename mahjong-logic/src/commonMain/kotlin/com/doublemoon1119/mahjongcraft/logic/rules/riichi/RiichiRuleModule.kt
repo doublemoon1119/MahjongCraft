@@ -14,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResu
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
-import com.doublemoon1119.mahjongcraft.logic.module.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiPhysicalWallLayoutPolicy
@@ -563,19 +562,6 @@ class RiichiRuleModule(
     fun getStickPotCount(tableState: TableState): Int = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
 
     /**
-     * 日麻桌面局況顯示依序：場風＋局數＋本場數合併一行（標題）、立直棒累積供託數量（沒有供託時
-     * 略過這行，不顯示「供託：0」）、牌山剩餘張數（固定排在最後）。
-     */
-    override fun getRoundInfoLines(tableState: TableState): List<RoundInfoLine> {
-        val stickPotCount = getStickPotCount(tableState)
-        return listOfNotNull(
-            RoundInfoLine(TITLE_KEY, listOf(tableState.prevalentWind.ordinal, tableState.localRoundNumber, tableState.comboCount)),
-            if (stickPotCount > 0) RoundInfoLine(STICK_POT_KEY, listOf(stickPotCount)) else null,
-            RoundInfoLine(WALL_REMAINING_KEY, listOf(tableState.tileWall.remainingCount)),
-        )
-    }
-
-    /**
      * 只有立直中的玩家才需要記錄永久振聽——未立直時放過和牌只構成一般同巡振聽，不需要這個永久旗標，
      * 轉型手法同 [isPlayerInRiichi]。
      */
@@ -588,14 +574,5 @@ class RiichiRuleModule(
     companion object {
         /** 玩家已公開宣告立直的 indicator ID。 */
         const val RIICHI_INDICATOR_ID = "mahjongcraft:riichi"
-
-        /** [getRoundInfoLines] 場風＋局數＋本場數合併標題行的 key，供呈現層辨識。 */
-        const val TITLE_KEY = "riichiTitle"
-
-        /** [getRoundInfoLines] 牌山剩餘張數行的 key，供呈現層辨識。 */
-        const val WALL_REMAINING_KEY = "riichiWallRemaining"
-
-        /** [getRoundInfoLines] 立直棒累積供託數量行的 key，供呈現層辨識。 */
-        const val STICK_POT_KEY = "riichiStickPot"
     }
 }

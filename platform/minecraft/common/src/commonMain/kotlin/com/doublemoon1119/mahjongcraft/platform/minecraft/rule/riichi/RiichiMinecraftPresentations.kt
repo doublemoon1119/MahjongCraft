@@ -2,9 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
@@ -15,9 +16,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineArgumentKind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoArgument
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 
 /**
@@ -109,12 +112,43 @@ fun GameActionSoundPresentationRegistry.registerBuiltInRiichiActionSounds() {
 /** 登記內建日麻的局況顯示行。 */
 fun RoundInfoLineDisplayRegistry.registerBuiltInRiichiRoundInfoLineDisplays() {
     register(
-        RiichiRuleModule.TITLE_KEY,
-        RoundInfoLineDisplay(
-            MinecraftMessageKeys.ROUND_INFO_TITLE,
-            listOf(RoundInfoLineArgumentKind.WIND, RoundInfoLineArgumentKind.NUMBER, RoundInfoLineArgumentKind.NUMBER),
+        RIICHI_TITLE_KEY,
+        RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_TITLE),
+    )
+    register(RIICHI_WALL_REMAINING_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING))
+    register(RIICHI_STICK_POT_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_STICK_POT))
+    register(BuiltInRuleModuleIds.RIICHI, RoundInfoLineProvider(::buildRiichiRoundInfoLines))
+}
+
+/** 依目前桌況建立日麻局況行；供託為零時省略供託行。 */
+private fun buildRiichiRoundInfoLines(tableState: TableState): List<RoundInfoLine> {
+    val stickPotCount = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
+    return listOfNotNull(
+        RoundInfoLine(
+            RIICHI_TITLE_KEY,
+            listOf(
+                RoundInfoArgument.WindValue(tableState.prevalentWind),
+                RoundInfoArgument.Number(tableState.localRoundNumber),
+                RoundInfoArgument.Number(tableState.comboCount),
+            ),
+        ),
+        if (stickPotCount > 0) {
+            RoundInfoLine(RIICHI_STICK_POT_KEY, listOf(RoundInfoArgument.Number(stickPotCount)))
+        } else {
+            null
+        },
+        RoundInfoLine(
+            RIICHI_WALL_REMAINING_KEY,
+            listOf(RoundInfoArgument.Number(tableState.tileWall.remainingCount)),
         ),
     )
-    register(RiichiRuleModule.WALL_REMAINING_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING))
-    register(RiichiRuleModule.STICK_POT_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_STICK_POT))
 }
+
+/** 場風、局數與本場數組成的標題行 key。 */
+private const val RIICHI_TITLE_KEY: String = "riichiTitle"
+
+/** 活牌區剩餘張數行的 key。 */
+private const val RIICHI_WALL_REMAINING_KEY: String = "riichiWallRemaining"
+
+/** 累積供託立直棒數量行的 key。 */
+private const val RIICHI_STICK_POT_KEY: String = "riichiStickPot"

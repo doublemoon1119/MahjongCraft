@@ -27,7 +27,7 @@ class MahjongPlayerInfoEntity(
 ) : AnimatedMahjongEntity<Nothing>(type, world) {
     var players: List<MahjongPlayerInfoEntry>
         get() = runCatching { JSON.decodeFromString<List<PlayerEntryDto>>(dataTracker[PLAYERS]) }
-            .getOrDefault(emptyList()).map(PlayerEntryDto::toDomain)
+            .getOrDefault(emptyList()).mapNotNull(PlayerEntryDto::toDomain)
         set(value) = dataTracker.set(PLAYERS, JSON.encodeToString(value.map(PlayerEntryDto::fromDomain)))
 
     var dealerPlayerId: Uuid?
@@ -35,8 +35,8 @@ class MahjongPlayerInfoEntity(
         set(value) = dataTracker.set(DEALER_PLAYER_ID, value?.toString().orEmpty())
 
     var tableFacing: MahjongTableFacing
-        get() = MahjongTableFacing.entries.getOrElse(dataTracker[TABLE_FACING]) { MahjongTableFacing.NORTH }
-        set(value) = dataTracker.set(TABLE_FACING, value.ordinal)
+        get() = MahjongTableFacing.fromNameOrDefault(dataTracker[TABLE_FACING])
+        set(value) = dataTracker.set(TABLE_FACING, value.name)
 
     var managedTableId: Uuid?
         get() = dataTracker[MANAGED_TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
@@ -97,14 +97,14 @@ class MahjongPlayerInfoEntity(
     override fun initDataTracker() {
         dataTracker.startTracking(PLAYERS, "[]")
         dataTracker.startTracking(DEALER_PLAYER_ID, "")
-        dataTracker.startTracking(TABLE_FACING, MahjongTableFacing.NORTH.ordinal)
+        dataTracker.startTracking(TABLE_FACING, MahjongTableFacing.NORTH.name)
         dataTracker.startTracking(MANAGED_TABLE_ID, "")
     }
 
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
         dataTracker.set(PLAYERS, nbt.getString(NBT_PLAYERS).ifBlank { "[]" })
         dealerPlayerId = nbt.getString(NBT_DEALER).takeIf(String::isNotBlank)?.let { Uuid.parse(it) }
-        dataTracker.set(TABLE_FACING, nbt.getInt(NBT_FACING))
+        dataTracker.set(TABLE_FACING, MahjongTableFacing.fromNameOrDefault(nbt.getString(NBT_FACING)).name)
         managedTableId = nbt.getString(NBT_TABLE_ID).takeIf(String::isNotBlank)?.let { Uuid.parse(it) }
         if (nbt.contains(NBT_CONTROLLER_X)) {
             controllerPos = BlockPos(nbt.getInt(NBT_CONTROLLER_X), nbt.getInt(NBT_CONTROLLER_Y), nbt.getInt(NBT_CONTROLLER_Z))
@@ -116,7 +116,7 @@ class MahjongPlayerInfoEntity(
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         nbt.putString(NBT_PLAYERS, dataTracker[PLAYERS])
         dealerPlayerId?.let { nbt.putString(NBT_DEALER, it.toString()) }
-        nbt.putInt(NBT_FACING, dataTracker[TABLE_FACING])
+        nbt.putString(NBT_FACING, dataTracker[TABLE_FACING])
         managedTableId?.let { nbt.putString(NBT_TABLE_ID, it.toString()) }
         controllerPos?.let {
             nbt.putInt(NBT_CONTROLLER_X, it.x)
@@ -142,30 +142,39 @@ class MahjongPlayerInfoEntity(
         private val JSON = Json { ignoreUnknownKeys = true }
         private val PLAYERS: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
         private val DEALER_PLAYER_ID: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
-        private val TABLE_FACING: TrackedData<Int> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.INTEGER)
+        private val TABLE_FACING: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
         private val MANAGED_TABLE_ID: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
     }
 }
 
 @Serializable
-private data class PlayerEntryDto(
+internal data class PlayerEntryDto(
     val playerId: String,
     val playerName: String?,
     val isAi: Boolean,
     val seatIndex: Int,
-    val seatWind: Int,
+    val seatWind: String,
     val score: Int,
     val indicators: List<IndicatorDto>,
 ) {
-    fun toDomain() = MahjongPlayerInfoEntry(
-        Uuid.parse(playerId),
-        playerName,
-        isAi,
-        seatIndex,
-        Wind.entries[seatWind],
-        score,
-        indicators.map(IndicatorDto::toDomain),
-    )
+    /**
+     * 將同步快照轉成領域資料；未知座位風位會略過該筆，避免錯誤資料被當成其他風位。
+     */
+    fun toDomain(): MahjongPlayerInfoEntry? {
+        val wind = Wind.entries.firstOrNull { it.name == seatWind } ?: return null
+        val id = runCatching { Uuid.parse(playerId) }.getOrNull() ?: return null
+        return runCatching {
+            MahjongPlayerInfoEntry(
+                id,
+                playerName,
+                isAi,
+                seatIndex,
+                wind,
+                score,
+                indicators.map(IndicatorDto::toDomain),
+            )
+        }.getOrNull()
+    }
 
     companion object {
         fun fromDomain(value: MahjongPlayerInfoEntry) = PlayerEntryDto(
@@ -173,7 +182,7 @@ private data class PlayerEntryDto(
             value.playerName,
             value.isAi,
             value.seatIndex,
-            value.seatWind.ordinal,
+            value.seatWind.name,
             value.score,
             value.indicators.map(IndicatorDto::fromDomain),
         )
@@ -181,7 +190,7 @@ private data class PlayerEntryDto(
 }
 
 @Serializable
-private data class IndicatorDto(val id: String, val kind: String, val value: String = "") {
+internal data class IndicatorDto(val id: String, val kind: String, val value: String = "") {
     fun toDomain() = PublicPlayerIndicator(
         id,
         when (kind) {
