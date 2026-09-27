@@ -63,7 +63,7 @@ class RiichiRuleModuleTest {
     @Test
     fun `test create wall factory returns riichi implementation`() {
         val factory = module.createWallFactory()
-        assertTrue(factory is RiichiWallFactory)
+        assertEquals(RiichiWallFactory::class, factory::class)
     }
 
     /** 驗證規則模組提供四人日本麻將的雙骰開門 policy。 */
@@ -75,7 +75,7 @@ class RiichiRuleModuleTest {
     /** 驗證規則模組提供四人日本麻將固定 136 張的牌牆布局。 */
     @Test
     fun `test create wall layout returns riichi implementation`() {
-        assertTrue(module.createWallLayout() is RiichiWallLayout)
+        assertEquals(RiichiWallLayout::class, module.createWallLayout()::class)
     }
 
     /** 驗證規則模組提供日麻獨立王牌區與槓後補位 policy。 */
@@ -96,7 +96,7 @@ class RiichiRuleModuleTest {
     @Test
     fun `test create discard pile returns riichi implementation`() {
         val discardPile = module.createDiscardPile()
-        assertTrue(discardPile is RiichiDiscardPile)
+        assertEquals(RiichiDiscardPile::class, discardPile::class)
     }
 
     /**
@@ -105,7 +105,7 @@ class RiichiRuleModuleTest {
     @Test
     fun `test create shanten calculator returns riichi implementation`() {
         val discardPile = module.createShantenCalculator()
-        assertTrue(discardPile is RiichiShantenCalculator)
+        assertEquals(RiichiShantenCalculator::class, discardPile::class)
     }
 
     /**
@@ -114,7 +114,7 @@ class RiichiRuleModuleTest {
     @Test
     fun `test create legal action validator returns riichi implementation`() {
         val discardPile = module.createLegalActionValidator()
-        assertTrue(discardPile is RiichiLegalActionValidator)
+        assertEquals(RiichiLegalActionValidator::class, discardPile::class)
     }
 
     /**
@@ -123,7 +123,7 @@ class RiichiRuleModuleTest {
     @Test
     fun `test create hand value calculator returns riichi implementation`() {
         val discardPile = module.createHandValueCalculator()
-        assertTrue(discardPile is RiichiHandValueCalculator)
+        assertEquals(RiichiHandValueCalculator::class, discardPile::class)
     }
 
     /**
@@ -132,7 +132,7 @@ class RiichiRuleModuleTest {
     @Test
     fun `test create hand value context calculator returns riichi implementation`() {
         val discardPile = module.createHandValueContextCalculator()
-        assertTrue(discardPile is RiichiHandValueContextCalculator)
+        assertEquals(RiichiHandValueContextCalculator::class, discardPile::class)
     }
 
     /**
@@ -141,7 +141,7 @@ class RiichiRuleModuleTest {
     @Test
     fun `test create initial dynamic state returns riichi implementation`() {
         val dynamicState = module.createInitialDynamicState()
-        assertTrue(dynamicState is RiichiDynamicState)
+        assertEquals(RiichiDynamicState::class, dynamicState::class)
     }
 
     /**
@@ -150,7 +150,7 @@ class RiichiRuleModuleTest {
     @Test
     fun `test create initial player rule state returns riichi implementation`() {
         val playerRuleState = module.createInitialPlayerRuleState()
-        assertTrue(playerRuleState is RiichiPlayerState)
+        assertEquals(RiichiPlayerState::class, playerRuleState::class)
     }
 
     /**
@@ -862,17 +862,17 @@ class RiichiRuleModuleTest {
 
         assertEquals(
             setOf(activeTenpai.id),
-            result?.tenpaiPlayerIds,
+            result.tenpaiPlayerIds,
             "A finished player must not be judged tenpai even with a tenpai hand.",
         )
         assertEquals(
             null,
-            result?.scoreDeltas?.get(finishedTenpai.id),
+            result.scoreDeltas[finishedTenpai.id],
             "A finished player must neither collect nor pay the noten penalty.",
         )
         // 仍在局中的只有 3 人，因此總額是 1000 * (3 - 1) = 2000，由唯一聽牌者收取、兩位不聽者均分支付。
-        assertEquals(2000, result?.scoreDeltas?.get(activeTenpai.id))
-        activeNoten.forEach { assertEquals(-1000, result?.scoreDeltas?.get(it.id)) }
+        assertEquals(2000, result.scoreDeltas[activeTenpai.id])
+        activeNoten.forEach { assertEquals(-1000, result.scoreDeltas[it.id]) }
     }
 
     /** 已退場玩家的牌河不得成立流局滿貫——他早就不再摸打，牌河只是停在退場那一刻的樣子。 */
@@ -885,7 +885,7 @@ class RiichiRuleModuleTest {
             config = module.config,
         ).copy(finishedPlayerIds = setOf(finished.id))
 
-        assertEquals(null, (module as RiichiRuleModule).resolveNagashiMangan(table))
+        assertEquals(null, module.resolveNagashiMangan(table))
     }
 
     /**
@@ -969,8 +969,8 @@ class RiichiRuleModuleTest {
 
         val result = module.declareExhaustiveDraw(table)
 
-        assertEquals(players.map { it.id }.toSet(), result?.tenpaiPlayerIds)
-        assertEquals(emptyMap<Uuid, Int>(), result?.scoreDeltas)
+        assertEquals(players.map { it.id }.toSet(), result.tenpaiPlayerIds)
+        assertEquals(emptyMap<Uuid, Int>(), result.scoreDeltas)
     }
 
     /**
@@ -984,9 +984,9 @@ class RiichiRuleModuleTest {
 
         val result = module.declareExhaustiveDraw(table)
 
-        assertEquals(setOf(tenpaiPlayer.id), result?.tenpaiPlayerIds)
+        assertEquals(setOf(tenpaiPlayer.id), result.tenpaiPlayerIds)
         val expectedDeltas = mapOf(tenpaiPlayer.id to 3000) + notenPlayers.associate { it.id to -1000 }
-        assertEquals(expectedDeltas, result?.scoreDeltas)
+        assertEquals(expectedDeltas, result.scoreDeltas)
     }
 
     /**
@@ -1001,7 +1001,7 @@ class RiichiRuleModuleTest {
         val result = module.declareExhaustiveDraw(table)
 
         val expectedDeltas = tenpaiPlayers.associate { it.id to 1500 } + notenPlayers.associate { it.id to -1500 }
-        assertEquals(expectedDeltas, result?.scoreDeltas)
+        assertEquals(expectedDeltas, result.scoreDeltas)
     }
 
     /**
@@ -1016,7 +1016,7 @@ class RiichiRuleModuleTest {
         val result = module.declareExhaustiveDraw(table)
 
         val expectedDeltas = tenpaiPlayers.associate { it.id to 1000 } + mapOf(notenPlayer.id to -3000)
-        assertEquals(expectedDeltas, result?.scoreDeltas)
+        assertEquals(expectedDeltas, result.scoreDeltas)
     }
 
     /**
@@ -1033,7 +1033,7 @@ class RiichiRuleModuleTest {
         val others = List(3) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
         val table = FakeTableStateFactory.create(players = listOf(dealer) + others, config = module.config)
 
-        val result = (module as RiichiRuleModule).resolveNagashiMangan(table)
+        val result = module.resolveNagashiMangan(table)
 
         assertEquals(setOf(dealer.id), result?.achieverPlayerIds)
         val expectedDeltas = mapOf(dealer.id to 12000) + others.associate { it.id to -4000 }
@@ -1055,7 +1055,7 @@ class RiichiRuleModuleTest {
         val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, hand = notTenpaiHand())
         val table = FakeTableStateFactory.create(players = listOf(dealer, achiever, west, north), config = module.config)
 
-        val result = (module as RiichiRuleModule).resolveNagashiMangan(table)
+        val result = module.resolveNagashiMangan(table)
 
         assertEquals(setOf(achiever.id), result?.achieverPlayerIds)
         val expectedDeltas = mapOf(achiever.id to 8000, dealer.id to -4000, west.id to -2000, north.id to -2000)
@@ -1074,8 +1074,8 @@ class RiichiRuleModuleTest {
 
         val result = module.declareExhaustiveDraw(table)
 
-        assertEquals(emptySet<Uuid>(), result?.stickPotCollectorPlayerIds)
-        assertEquals(mapOf(player.id to 3000) + notenPlayers.associate { it.id to -1000 }, result?.scoreDeltas)
+        assertEquals(emptySet<Uuid>(), result.stickPotCollectorPlayerIds)
+        assertEquals(mapOf(player.id to 3000) + notenPlayers.associate { it.id to -1000 }, result.scoreDeltas)
     }
 
     /**
@@ -1092,8 +1092,8 @@ class RiichiRuleModuleTest {
 
         val result = module.declareExhaustiveDraw(table)
 
-        assertEquals(emptySet<Uuid>(), result?.stickPotCollectorPlayerIds)
-        assertEquals(mapOf(player.id to 3000) + notenPlayers.associate { it.id to -1000 }, result?.scoreDeltas)
+        assertEquals(emptySet<Uuid>(), result.stickPotCollectorPlayerIds)
+        assertEquals(mapOf(player.id to 3000) + notenPlayers.associate { it.id to -1000 }, result.scoreDeltas)
     }
 
     /**
@@ -1116,7 +1116,7 @@ class RiichiRuleModuleTest {
         val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, hand = notTenpaiHand())
         val table = FakeTableStateFactory.create(players = listOf(dealer, south, west, north), config = module.config)
 
-        val result = (module as RiichiRuleModule).resolveNagashiMangan(table)
+        val result = module.resolveNagashiMangan(table)
 
         assertEquals(setOf(south.id, west.id), result?.achieverPlayerIds)
         val expectedDeltas = mapOf(
@@ -1159,7 +1159,7 @@ class RiichiRuleModuleTest {
     fun `test resolveSuufonRenda returns SuufonRenda when all first discards are the same wind`() {
         val table = tableWithFirstDiscards(List(4) { Tile.Honor.East })
 
-        assertEquals(RiichiExhaustiveDrawReason.SuufonRenda, (module as RiichiRuleModule).resolveSuufonRenda(table))
+        assertEquals(RiichiExhaustiveDrawReason.SuufonRenda, module.resolveSuufonRenda(table))
     }
 
     /**
@@ -1169,7 +1169,7 @@ class RiichiRuleModuleTest {
     fun `test resolveSuufonRenda returns null when first discards differ`() {
         val table = tableWithFirstDiscards(listOf(Tile.Honor.East, Tile.Honor.East, Tile.Honor.South, Tile.Honor.East))
 
-        assertNull((module as RiichiRuleModule).resolveSuufonRenda(table))
+        assertNull(module.resolveSuufonRenda(table))
     }
 
     /**
@@ -1186,7 +1186,7 @@ class RiichiRuleModuleTest {
         )
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertNull((module as RiichiRuleModule).resolveSuufonRenda(table))
+        assertNull(module.resolveSuufonRenda(table))
     }
 
     /**
@@ -1209,7 +1209,7 @@ class RiichiRuleModuleTest {
         )
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertNull((module as RiichiRuleModule).resolveSuufonRenda(table))
+        assertNull(module.resolveSuufonRenda(table))
     }
 
     /**
@@ -1224,7 +1224,7 @@ class RiichiRuleModuleTest {
         }
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertEquals(RiichiExhaustiveDrawReason.SuuchaRiichi, (module as RiichiRuleModule).resolveSuuchaRiichi(table))
+        assertEquals(RiichiExhaustiveDrawReason.SuuchaRiichi, module.resolveSuuchaRiichi(table))
     }
 
     /**
@@ -1239,7 +1239,7 @@ class RiichiRuleModuleTest {
         } + FakeMahjongPlayerFactory.create(playerRuleState = RiichiPlayerState())
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertNull((module as RiichiRuleModule).resolveSuuchaRiichi(table))
+        assertNull(module.resolveSuuchaRiichi(table))
     }
 
     private fun kanMeld(type: MeldType): Meld {
@@ -1259,7 +1259,7 @@ class RiichiRuleModuleTest {
         val players = List(4) { playerWithKans(count = 1) }
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertEquals(RiichiExhaustiveDrawReason.SuukanNagare, (module as RiichiRuleModule).resolveSuukanNagare(table))
+        assertEquals(RiichiExhaustiveDrawReason.SuukanNagare, module.resolveSuukanNagare(table))
     }
 
     /**
@@ -1270,7 +1270,7 @@ class RiichiRuleModuleTest {
         val players = listOf(playerWithKans(count = 2)) + List(3) { playerWithKans(count = 1) }
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertEquals(RiichiExhaustiveDrawReason.SuukanNagare, (module as RiichiRuleModule).resolveSuukanNagare(table))
+        assertEquals(RiichiExhaustiveDrawReason.SuukanNagare, module.resolveSuukanNagare(table))
     }
 
     /**
@@ -1281,7 +1281,7 @@ class RiichiRuleModuleTest {
         val players = listOf(playerWithKans(count = 4)) + List(3) { FakeMahjongPlayerFactory.create() }
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertNull((module as RiichiRuleModule).resolveSuukanNagare(table))
+        assertNull(module.resolveSuukanNagare(table))
     }
 
     /**
@@ -1292,7 +1292,7 @@ class RiichiRuleModuleTest {
         val players = List(3) { playerWithKans(count = 1) } + FakeMahjongPlayerFactory.create()
         val table = FakeTableStateFactory.create(players = players, config = module.config)
 
-        assertNull((module as RiichiRuleModule).resolveSuukanNagare(table))
+        assertNull(module.resolveSuukanNagare(table))
     }
 
     /** 驗證指示牌的下一張數牌被判定為寶牌，循環邊界（9 → 1）也一併驗證。 */
