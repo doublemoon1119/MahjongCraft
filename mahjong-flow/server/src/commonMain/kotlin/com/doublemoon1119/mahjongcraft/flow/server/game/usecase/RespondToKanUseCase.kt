@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
@@ -10,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
@@ -69,7 +72,43 @@ class RespondToKanUseCase(
      * @return 回應結果，成功時為 [Unit]，失敗時為 [GameError]。
      */
     suspend operator fun invoke(gameId: Uuid, playerId: Uuid, action: GameAction): Outcome<Unit, GameError> {
-        val outcome = gameRepository.update(gameId) { state ->
+        val outcome = gameRepository.update(
+            gameId = gameId,
+            history = { before, after, result ->
+                if (result is Outcome.Success && before != null && after != null) {
+                    listOf(
+                        acceptedActionHistoryDraft(
+                            actorPlayerId = playerId,
+                            action = action,
+                            before = before,
+                            after = after,
+                            affectedTileIds = action.affectedTileIds(),
+                        ),
+                    ) + if (before.pendingKanReaction != null && after.pendingKanReaction == null) {
+                        val resolution = result.value
+                        val resolvedActor = resolution.declarerId ?: resolution.ronWinnerIds.singleOrNull()
+                        listOf(
+                            HistoryEventDraft(
+                                actorPlayerId = resolvedActor,
+                                fact = HistoryFact.ReactionResolved(
+                                    resolvedAction = if (resolution.drawHappened) {
+                                        before.pendingKanReaction?.kanAction
+                                    } else {
+                                        resolution.ronWinningTileId?.let(GameAction::Ron)
+                                    },
+                                    actorPlayerId = resolvedActor,
+                                    resultingTableState = after,
+                                ),
+                            ),
+                        )
+                    } else {
+                        emptyList()
+                    }
+                } else {
+                    emptyList()
+                }
+            },
+        ) { state ->
             val pending = state?.pendingKanReaction
             when {
                 state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
@@ -275,6 +314,12 @@ class RespondToKanUseCase(
         }
 
         return Outcome.Success(Unit)
+    }
+
+    /** 搶槓回應動作直接涉及的牌；過牌沒有牌面變更。 */
+    private fun GameAction.affectedTileIds(): List<Uuid> = when (this) {
+        is GameAction.Ron -> listOf(tileId)
+        else -> emptyList()
     }
 
     /**

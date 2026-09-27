@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
@@ -25,7 +27,26 @@ class ResolvePostReactionRoundOutcomeUseCase(
      * 原子判定並寫回特殊結果；沒有 resolver 成立時成功回傳 `null`，呼叫端應繼續普通流局。
      */
     suspend operator fun invoke(gameId: Uuid): Outcome<ResolvedRoundOutcome?, GameError> {
-        val result = gameRepository.updateGame(gameId) { game ->
+        val result = gameRepository.updateGame(
+            gameId,
+            history = { previous, next, outcome ->
+                val resolved = (outcome as? Outcome.Success)?.value
+                if (previous == null || next == null || resolved == null) {
+                    emptyList()
+                } else {
+                    listOf(
+                        HistoryEventDraft(
+                            actorPlayerId = null,
+                            fact = HistoryFact.RuleEffectResolved(
+                                reasonId = resolved.id,
+                                resultingTableState = next.tableState,
+                                roundCompletion = next.roundCompletion,
+                            ),
+                        ),
+                    )
+                }
+            },
+        ) { game ->
             if (game == null) return@updateGame game to Outcome.Error(GameError.GameNotFound(gameId))
             val state = game.tableState
             val module = moduleRegistry.getModule(state.config)

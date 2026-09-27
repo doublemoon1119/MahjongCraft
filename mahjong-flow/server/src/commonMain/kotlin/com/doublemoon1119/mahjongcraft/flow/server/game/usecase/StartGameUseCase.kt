@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
@@ -91,12 +93,21 @@ class StartGameUseCase(
                                 roomId to Game(
                                     tableState = organizedState,
                                     flowConfig = room.gameConfig.flowConfig,
+                                    matchId = Uuid.random(),
                                     hostId = room.hostId,
                                     roomPlayerIds = room.playerIds,
                                 )
                                 ),
                         ),
                         result = Outcome.Success(StartGameOutcome(organizedResult, dealOrderHandTileIdsBySeatIndex)),
+                        historyDraftsByTableId = mapOf(
+                            roomId to listOf(
+                                HistoryEventDraft(
+                                    actorPlayerId = null,
+                                    fact = HistoryFact.MatchStarted(organizedState, room.gameConfig.flowConfig),
+                                ),
+                            ),
+                        ),
                     )
                 }
             }

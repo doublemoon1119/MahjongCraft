@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
@@ -19,16 +21,42 @@ class BeginRoundPreparationUseCase(
 ) {
     /** 建立指定對局的第一個準備步驟；規則沒有步驟時維持 null。 */
     suspend operator fun invoke(gameId: Uuid): Outcome<Unit, GameError> {
-        val result = gameRepository.updateGame(gameId) { game ->
-            if (game == null) return@updateGame null to Outcome.Error(GameError.GameNotFound(gameId))
-            if (game.pendingRoundPreparation != null) return@updateGame game to Outcome.Success(Unit)
+        val result = gameRepository.updateGame(
+            gameId,
+            history = { _, _, update -> update.historyDraft?.let(::listOf).orEmpty() },
+        ) { game ->
+            if (game == null) {
+                return@updateGame null to PreparationBeginUpdate(
+                    Outcome.Error(GameError.GameNotFound(gameId)),
+                    null,
+                )
+            }
+            if (game.pendingRoundPreparation != null) {
+                return@updateGame game to PreparationBeginUpdate(
+                    Outcome.Success(Unit),
+                    null,
+                )
+            }
             val module = moduleRegistry.getModule(game.tableState.config)
             val resolver = resolverRegistry.find(module.id)
-                ?: return@updateGame game to Outcome.Success(Unit)
+                ?: return@updateGame game to PreparationBeginUpdate(Outcome.Success(Unit), null)
             val firstStep = resolver.begin(game.tableState, module)
-            game.copy(pendingRoundPreparation = firstStep) to Outcome.Success(Unit)
+            game.copy(pendingRoundPreparation = firstStep) to PreparationBeginUpdate(
+                Outcome.Success(Unit),
+                firstStep?.let {
+                    HistoryEventDraft(
+                        actorPlayerId = null,
+                        fact = HistoryFact.RoundPreparationStarted(it.stepId, it.stepIndex),
+                    )
+                },
+            )
         }
-        if (result is Outcome.Success) snapshotSynchronizer.syncAll(gameId)
-        return result
+        if (result.outcome is Outcome.Success) snapshotSynchronizer.syncAll(gameId)
+        return result.outcome
     }
+
+    private data class PreparationBeginUpdate(
+        val outcome: Outcome<Unit, GameError>,
+        val historyDraft: HistoryEventDraft?,
+    )
 }

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -22,16 +24,60 @@ class AdvanceAutomaticRoundPreparationUseCase(
      * @return 權威 preparation 或桌況是否實際改變。
      */
     suspend operator fun invoke(gameId: Uuid): Boolean {
-        val changed = gameRepository.updateGame(gameId) { game ->
-            val preparation = game?.pendingRoundPreparation
-                ?: return@updateGame game to false
-            if (preparation.participantPlayerIds.isNotEmpty()) return@updateGame game to false
-            val module = moduleRegistry.getModule(game.tableState.config)
-            val resolver = resolverRegistry.find(module.id) ?: return@updateGame game to false
-            val updated = resolveAutomaticSteps(game, resolver, module)
-            updated to (updated != game)
+        val update = gameRepository.updateGame(
+            gameId,
+            history = { _, _, result -> result.historyDrafts },
+        ) { game ->
+            val currentGame = game
+                ?: return@updateGame null to AutomaticPreparationUpdate(emptyList())
+            val preparation = currentGame.pendingRoundPreparation
+                ?: return@updateGame currentGame to AutomaticPreparationUpdate(emptyList())
+            if (preparation.participantPlayerIds.isNotEmpty()) {
+                return@updateGame currentGame to AutomaticPreparationUpdate(emptyList())
+            }
+            val module = moduleRegistry.getModule(currentGame.tableState.config)
+            val resolver = resolverRegistry.find(module.id)
+                ?: return@updateGame currentGame to AutomaticPreparationUpdate(emptyList())
+            var updated = currentGame
+            val drafts = buildList {
+                repeat(MAX_AUTOMATIC_PREPARATION_STEPS) {
+                    val currentPreparation = updated.pendingRoundPreparation
+                        ?: return@repeat
+                    if (currentPreparation.participantPlayerIds.isNotEmpty()) return@repeat
+                    val resolution = resolver.resolve(updated.tableState, currentPreparation, module)
+                    updated = updated.copy(
+                        tableState = resolution.tableState,
+                        pendingRoundPreparation = resolution.nextStep,
+                    )
+                    add(
+                        HistoryEventDraft(
+                            actorPlayerId = null,
+                            fact = HistoryFact.RoundPreparationAutomaticallyResolved(
+                                stepId = currentPreparation.stepId,
+                                stepIndex = currentPreparation.stepIndex,
+                                resultingTableState = resolution.tableState,
+                                nextStepId = resolution.nextStep?.stepId,
+                            ),
+                        ),
+                    )
+                }
+            }
+            if (updated.pendingRoundPreparation?.participantPlayerIds?.isEmpty() == true) {
+                error("Round preparation did not converge after $MAX_AUTOMATIC_PREPARATION_STEPS automatic steps")
+            }
+            updated to AutomaticPreparationUpdate(drafts)
         }
-        if (changed) snapshotSynchronizer.syncAll(gameId)
-        return changed
+        if (update.changed) snapshotSynchronizer.syncAll(gameId)
+        return update.changed
+    }
+
+    private data class AutomaticPreparationUpdate(
+        val historyDrafts: List<HistoryEventDraft>,
+    ) {
+        val changed: Boolean get() = historyDrafts.isNotEmpty()
+    }
+
+    private companion object {
+        const val MAX_AUTOMATIC_PREPARATION_STEPS: Int = 128
     }
 }

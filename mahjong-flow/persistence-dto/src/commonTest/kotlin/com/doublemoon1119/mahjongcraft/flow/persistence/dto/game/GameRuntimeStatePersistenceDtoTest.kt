@@ -16,5 +16,6 @@ class GameRuntimeStatePersistenceDtoTest {
 
         assertTrue(decoded.enabledAutomaticControlIdsByPlayerId.isEmpty())
         assertEquals(0L, decoded.automaticControlRevision)
+        assertEquals(null, decoded.matchId)
     }
 }

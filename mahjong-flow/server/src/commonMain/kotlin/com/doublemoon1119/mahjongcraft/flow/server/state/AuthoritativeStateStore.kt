@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.state
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryCaptureState
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -8,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.koin.core.annotation.Single
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 /**
@@ -15,10 +18,12 @@ import kotlin.uuid.Uuid
  *
  * @property rooms 以桌子 UUID 索引的等待階段狀態。
  * @property games 以桌子 UUID 索引的進行中狀態。
+ * @property historyCaptureState 與 Game 生命週期分離的待寫歷史事件。
  */
 data class AuthoritativeStateSnapshot(
     val rooms: Map<Uuid, Room> = emptyMap(),
     val games: Map<Uuid, Game> = emptyMap(),
+    val historyCaptureState: HistoryCaptureState = HistoryCaptureState(),
 ) {
     init {
         require(rooms.all { (id, room) -> id == room.id }) { "Room index must match its state ID" }
@@ -34,10 +39,14 @@ data class AuthoritativeStateSnapshot(
  *
  * @property state 交易完成後的完整狀態。
  * @property result 回傳給呼叫端的結果。
+ * @property historyDraftsByTableId 與本次狀態變更一起提交的權威歷史事實。
+ * @property historyCaptureFailures 歷史事件採集失敗的桌子 ID；提交狀態時為對應場次記錄序號缺口。
  */
 data class AuthoritativeStateUpdate<T>(
     val state: AuthoritativeStateSnapshot,
     val result: T,
+    val historyDraftsByTableId: Map<Uuid, List<HistoryEventDraft>> = emptyMap(),
+    val historyCaptureFailures: Set<Uuid> = emptySet(),
 )
 
 /**
@@ -45,9 +54,24 @@ data class AuthoritativeStateUpdate<T>(
  *
  * 所有變更皆透過 [update] 提交，使 Room → Game 等跨集合操作能在單次交易內完成。變更後的狀態同時
  * 發布到 [state]，供需要在狀態改變時反應的服務訂閱。
+ *
+ * @property historyCaptureEnabled 是否將交易內的歷史草稿加入待寫佇列；預設停用。
+ * @property historyClock 產生歷史事件 UTC 時間戳的時鐘；事件順序仍由序號決定。
+ * @property maxPendingHistoryEvents 待寫佇列的容量上限；超出時只保留序號缺口，不阻塞對局。
  */
 @Single
-class AuthoritativeStateStore {
+class AuthoritativeStateStore(
+    private val historyCaptureEnabled: Boolean = false,
+    private val historyClock: Clock = Clock.System,
+    private val maxPendingHistoryEvents: Int = 256,
+) {
+    init {
+        require(maxPendingHistoryEvents >= 0) { "Pending history capacity must not be negative" }
+    }
+
+    /** 28B 的 writer 接入前不在正式環境累積無界待寫資料。 */
+    val isHistoryCaptureEnabled: Boolean get() = historyCaptureEnabled
+
     /** 保護狀態、dirty flag 與 dirty listener 的互斥鎖。 */
     private val mutex = Mutex()
 
@@ -117,8 +141,24 @@ class AuthoritativeStateStore {
         block: suspend (AuthoritativeStateSnapshot) -> AuthoritativeStateUpdate<T>,
     ): T = mutex.withLock {
         val update = block(currentState)
-        if (update.state != currentState) {
-            currentState = update.state
+        val nextState = if (historyCaptureEnabled && update.state != currentState) {
+            val timestamp = historyClock.now().toEpochMilliseconds()
+            val withDrafts = update.historyDraftsByTableId.entries.fold(currentState.historyCaptureState) { capture, entry ->
+                val game = update.state.games[entry.key] ?: currentState.games[entry.key]
+                    ?: error("History event references unknown table ${entry.key}")
+                runCatching { capture.append(game, entry.value, timestamp, maxPendingHistoryEvents) }
+                    .getOrElse { capture.recordMissing(game) }
+            }
+            val captureState = update.historyCaptureFailures.fold(withDrafts) { capture, tableId ->
+                val game = update.state.games[tableId] ?: currentState.games[tableId]
+                if (game == null) capture else capture.recordMissing(game)
+            }
+            update.state.copy(historyCaptureState = captureState)
+        } else {
+            update.state
+        }
+        if (nextState != currentState) {
+            currentState = nextState
             dirty = true
             dirtyListener(currentState)
         }

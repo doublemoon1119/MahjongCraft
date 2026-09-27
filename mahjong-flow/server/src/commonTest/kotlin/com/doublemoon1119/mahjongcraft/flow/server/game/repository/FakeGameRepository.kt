@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.repository
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -38,13 +39,21 @@ class FakeGameRepository : GameRepository {
         games.clear()
     }
 
-    override suspend fun <T> updateGame(gameId: Uuid, block: suspend (Game?) -> Pair<Game?, T>): T {
+    override suspend fun <T> updateGame(
+        gameId: Uuid,
+        history: (Game?, Game?, T) -> List<HistoryEventDraft>,
+        block: suspend (Game?) -> Pair<Game?, T>,
+    ): T {
         val (next, result) = block(games[gameId])
         if (next == null) games.remove(gameId) else games[gameId] = next
         return result
     }
 
-    override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T = updateGame(gameId) { current ->
+    override suspend fun <T> update(
+        gameId: Uuid,
+        history: (TableState?, TableState?, T) -> List<HistoryEventDraft>,
+        block: suspend (TableState?) -> Pair<TableState?, T>,
+    ): T = updateGame(gameId) { current ->
         val (nextTableState, result) = block(current?.tableState)
         val nextGame = when {
             nextTableState == null -> null

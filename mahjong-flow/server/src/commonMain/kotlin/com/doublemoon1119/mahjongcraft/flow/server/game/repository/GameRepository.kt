@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.repository
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -53,10 +54,16 @@ interface GameRepository {
      *
      * @param T 呼叫端自訂的回傳型別。
      * @param gameId 欲更新的遊戲唯一識別碼。
+     * @param history 根據交易前後的完整遊戲與 [block] 的結果建立待寫歷史事件；未提供時不產生事件。
+     *   僅在遊戲狀態實際改變且歷史採集啟用時呼叫。
      * @param block 根據目前完整遊戲計算欲寫入的遊戲與回傳結果；遊戲為 null 時代表移除。
      * @return [block] 計算出的結果。
      */
-    suspend fun <T> updateGame(gameId: Uuid, block: suspend (Game?) -> Pair<Game?, T>): T
+    suspend fun <T> updateGame(
+        gameId: Uuid,
+        history: (Game?, Game?, T) -> List<HistoryEventDraft> = { _, _, _ -> emptyList() },
+        block: suspend (Game?) -> Pair<Game?, T>,
+    ): T
 
     /**
      * 以原子方式讀取並更新指定遊戲的桌況，確保「讀取現況、驗證業務規則、寫回」整個流程不被其他並發呼叫插入。
@@ -66,9 +73,15 @@ interface GameRepository {
      *
      * @param T 呼叫端自訂的回傳型別，通常用於攜帶驗證結果（如 [Outcome]）。
      * @param gameId 欲更新的遊戲唯一識別碼。
+     * @param history 根據交易前後的桌況與 [block] 的結果建立待寫歷史事件；未提供時不產生事件。
+     *   僅在桌況實際改變且歷史採集啟用時呼叫。
      * @param block 根據目前的桌況（不存在時為 null）計算「欲寫入的新狀態」與「回傳給呼叫端的結果」。
      *              回傳的桌況為 null 時代表該遊戲應被移除；若無需變更，回傳原本傳入的桌況即可（等同無操作）。
      * @return [block] 計算出的結果。
      */
-    suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T
+    suspend fun <T> update(
+        gameId: Uuid,
+        history: (TableState?, TableState?, T) -> List<HistoryEventDraft> = { _, _, _ -> emptyList() },
+        block: suspend (TableState?) -> Pair<TableState?, T>,
+    ): T
 }

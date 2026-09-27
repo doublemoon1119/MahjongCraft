@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -55,7 +57,23 @@ class DeclareAbortiveDrawUseCase(
         reason: ExhaustiveDrawReason,
     ): Outcome<Unit, GameError> {
         // 1. 以原子方式讀取桌況、驗證業務規則並寫回
-        val outcome = gameRepository.updateGame(gameId) { game ->
+        val outcome = gameRepository.updateGame(
+            gameId,
+            history = { before, after, result ->
+                if (result is Outcome.Success && before != null && after != null) {
+                    listOf(
+                        acceptedActionHistoryDraft(
+                            playerId,
+                            GameAction.ExhaustiveDraw(result.value.reason),
+                            before.tableState,
+                            after.tableState,
+                        ),
+                    )
+                } else {
+                    emptyList<HistoryEventDraft>()
+                }
+            },
+        ) { game ->
             val state = game?.tableState
             when {
                 game == null || state == null -> game to Outcome.Error(GameError.GameNotFound(gameId))

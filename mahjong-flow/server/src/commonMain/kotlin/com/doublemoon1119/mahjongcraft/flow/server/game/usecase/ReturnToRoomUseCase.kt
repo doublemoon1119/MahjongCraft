@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
@@ -74,6 +76,9 @@ class ReturnToRoomUseCase(
                             rooms = state.rooms + (gameId to newRoom),
                         ),
                         result = Outcome.Success(newRoom),
+                        historyDraftsByTableId = mapOf(
+                            gameId to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)),
+                        ),
                     )
                 }
             }

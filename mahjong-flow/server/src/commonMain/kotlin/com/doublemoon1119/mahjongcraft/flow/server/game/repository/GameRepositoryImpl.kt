@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.repository
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
@@ -31,16 +32,39 @@ class GameRepositoryImpl(
         AuthoritativeStateUpdate(state.copy(games = emptyMap()), Unit)
     }
 
-    override suspend fun <T> updateGame(gameId: Uuid, block: suspend (Game?) -> Pair<Game?, T>): T = store.update { state ->
-        val (next, result) = block(state.games[gameId])
+    override suspend fun <T> updateGame(
+        gameId: Uuid,
+        history: (Game?, Game?, T) -> List<HistoryEventDraft>,
+        block: suspend (Game?) -> Pair<Game?, T>,
+    ): T = store.update { state ->
+        val previous = state.games[gameId]
+        val (next, result) = block(previous)
         val games = when {
             next == null -> state.games - gameId
             else -> state.games + (gameId to next)
         }
-        AuthoritativeStateUpdate(state.copy(games = games), result)
+        val capture = if (store.isHistoryCaptureEnabled && next != previous) {
+            runCatching { history(previous, next, result) }
+        } else {
+            Result.success(emptyList())
+        }
+        val drafts = capture.getOrDefault(emptyList())
+        AuthoritativeStateUpdate(
+            state.copy(games = games),
+            result,
+            historyDraftsByTableId = if (drafts.isEmpty()) emptyMap() else mapOf(gameId to drafts),
+            historyCaptureFailures = if (capture.isFailure) setOf(gameId) else emptySet(),
+        )
     }
 
-    override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T = updateGame(gameId) { currentGame ->
+    override suspend fun <T> update(
+        gameId: Uuid,
+        history: (TableState?, TableState?, T) -> List<HistoryEventDraft>,
+        block: suspend (TableState?) -> Pair<TableState?, T>,
+    ): T = updateGame(
+        gameId,
+        history = { previous, next, result -> history(previous?.tableState, next?.tableState, result) },
+    ) { currentGame ->
         val (nextTableState, result) = block(currentGame?.tableState)
         val nextGame = when {
             nextTableState == null -> null

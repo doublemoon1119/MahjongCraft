@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
@@ -9,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublish
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -65,7 +67,24 @@ class DeclareTsumoUseCase(
      */
     suspend operator fun invoke(gameId: Uuid, playerId: Uuid): Outcome<Unit, GameError> {
         // 1. 以原子方式讀取桌況、驗證業務規則並寫回
-        val outcome = gameRepository.update(gameId) { state ->
+        val outcome = gameRepository.update(
+            gameId,
+            history = { before, after, result ->
+                if (result is Outcome.Success && before != null && after != null) {
+                    listOf(
+                        acceptedActionHistoryDraft(
+                            playerId,
+                            GameAction.Tsumo,
+                            before,
+                            after,
+                            listOfNotNull(before.players.first { it.id == playerId }.hand.lastDrawn?.id),
+                        ),
+                    )
+                } else {
+                    emptyList<HistoryEventDraft>()
+                }
+            },
+        ) { state ->
             when {
                 state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
                 state.players.none { it.id == playerId } ->

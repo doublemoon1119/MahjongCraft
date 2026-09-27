@@ -97,7 +97,7 @@ private fun RoundPreparationInputSpecPersistenceDto.toDomain(): RoundPreparation
 }
 
 /** 將提交轉為持久化資料。 */
-private fun RoundPreparationSubmission.toPersistenceDto(): RoundPreparationSubmissionPersistenceDto = when (this) {
+fun RoundPreparationSubmission.toPersistenceDto(): RoundPreparationSubmissionPersistenceDto = when (this) {
     RoundPreparationSubmission.Confirmed -> RoundPreparationSubmissionPersistenceDto.Confirmed
     is RoundPreparationSubmission.Choice -> RoundPreparationSubmissionPersistenceDto.Choice(optionId)
     is RoundPreparationSubmission.Tiles -> RoundPreparationSubmissionPersistenceDto.Tiles(
@@ -106,7 +106,7 @@ private fun RoundPreparationSubmission.toPersistenceDto(): RoundPreparationSubmi
 }
 
 /** 將持久化資料還原為提交。 */
-private fun RoundPreparationSubmissionPersistenceDto.toDomain(): RoundPreparationSubmission = when (this) {
+fun RoundPreparationSubmissionPersistenceDto.toDomain(): RoundPreparationSubmission = when (this) {
     RoundPreparationSubmissionPersistenceDto.Confirmed -> RoundPreparationSubmission.Confirmed
     is RoundPreparationSubmissionPersistenceDto.Choice -> RoundPreparationSubmission.Choice(optionId)
     is RoundPreparationSubmissionPersistenceDto.Tiles -> RoundPreparationSubmission.Tiles(

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPlayerPresentation
@@ -69,7 +71,28 @@ class AdvanceRoundUseCase(
      */
     suspend operator fun invoke(gameId: Uuid): Outcome<AdvanceRoundResult, GameError> {
         // 1. 以原子方式讀取桌況、計算連莊/過莊結果並寫回
-        val outcome = gameRepository.updateGame(gameId) { game ->
+        val outcome = gameRepository.updateGame(
+            gameId,
+            history = { before, after, result ->
+                if (result is Outcome.Success && before != null && after != null) {
+                    val completed = HistoryEventDraft(null, HistoryFact.RoundCompleted(checkNotNull(before.roundCompletion)))
+                    val next = if (after.isMatchOver) {
+                        HistoryEventDraft(
+                            null,
+                            HistoryFact.MatchCompleted(
+                                checkNotNull(after.matchEndReasonId),
+                                after.tableState.players.associate { it.id to it.score },
+                            ),
+                        )
+                    } else {
+                        HistoryEventDraft(null, HistoryFact.RoundStarted(after.tableState))
+                    }
+                    listOf(completed, next)
+                } else {
+                    emptyList<HistoryEventDraft>()
+                }
+            },
+        ) { game ->
             val state = game?.tableState
             when {
                 game == null || state == null -> game to Outcome.Error(GameError.GameNotFound(gameId))

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
@@ -57,7 +59,24 @@ class ResolveWinRoundContinuationUseCase(
         previousTableState: TableState,
         winnerPlayerIds: Set<Uuid>,
     ): Outcome<WinRoundDirective, GameError> {
-        val result = gameRepository.updateGame(gameId) { game ->
+        val result = gameRepository.updateGame(
+            gameId,
+            history = { previous, next, outcome ->
+                if (previous == null || next == null || outcome !is Outcome.Success) {
+                    emptyList()
+                } else {
+                    listOf(
+                        HistoryEventDraft(
+                            actorPlayerId = null,
+                            fact = HistoryFact.WinContinuationResolved(
+                                directive = outcome.value,
+                                resultingTableState = next.tableState.takeIf { it != previous.tableState },
+                            ),
+                        ),
+                    )
+                }
+            },
+        ) { game ->
             if (game == null) return@updateGame game to Outcome.Error(GameError.GameNotFound(gameId))
             val settledTableState = game.tableState
             val module = moduleRegistry.getModule(settledTableState.config)

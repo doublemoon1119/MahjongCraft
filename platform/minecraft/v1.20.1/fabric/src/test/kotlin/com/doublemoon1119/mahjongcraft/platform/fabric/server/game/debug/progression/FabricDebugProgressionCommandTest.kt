@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
@@ -79,9 +80,17 @@ class FabricDebugProgressionCommandTest {
 
         override suspend fun clearAll() = error("Unexpected repository access")
 
-        override suspend fun <T> updateGame(gameId: Uuid, block: suspend (Game?) -> Pair<Game?, T>): T = error("Unexpected repository access")
+        override suspend fun <T> updateGame(
+            gameId: Uuid,
+            history: (Game?, Game?, T) -> List<HistoryEventDraft>,
+            block: suspend (Game?) -> Pair<Game?, T>,
+        ): T = error("Unexpected repository access")
 
-        override suspend fun <T> update(gameId: Uuid, block: suspend (TableState?) -> Pair<TableState?, T>): T = error("Unexpected repository access")
+        override suspend fun <T> update(
+            gameId: Uuid,
+            history: (TableState?, TableState?, T) -> List<HistoryEventDraft>,
+            block: suspend (TableState?) -> Pair<TableState?, T>,
+        ): T = error("Unexpected repository access")
     }
 
     /** 指令樹建構不解析任何玩家入座狀態。 */

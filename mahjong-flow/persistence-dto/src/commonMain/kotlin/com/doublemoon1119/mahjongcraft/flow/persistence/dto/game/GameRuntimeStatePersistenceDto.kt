@@ -23,6 +23,7 @@ import kotlin.uuid.Uuid
  * @property interruptedBaseMillisByPlayerId 因 server session 結束而中斷的那一次決策，其尚未使用的
  *   基本思考時間毫秒數，以玩家 UUID 字串索引；早於此欄位新增的既有存檔沒有這筆資料，
  *   還原時退回空 map。
+ * @property matchId 整場對局的穩定 UUID 字串。
  */
 @Serializable
 data class GameRuntimeStatePersistenceDto(
@@ -38,6 +39,7 @@ data class GameRuntimeStatePersistenceDto(
     val hostId: String? = null,
     val roomPlayerIds: List<String>? = null,
     val interruptedBaseMillisByPlayerId: Map<String, Long> = emptyMap(),
+    val matchId: String? = null,
 )
 
 /** 將 [Game] 的 runtime 狀態轉換成 persistence DTO。 */
@@ -56,6 +58,7 @@ fun Game.toRuntimeStatePersistenceDto(): GameRuntimeStatePersistenceDto = GameRu
     hostId = hostId.toString(),
     roomPlayerIds = roomPlayerIds.map(Uuid::toString),
     interruptedBaseMillisByPlayerId = interruptedBaseMillisByPlayerId.mapKeys { (playerId, _) -> playerId.toString() },
+    matchId = matchId.toString(),
 )
 
 /** 將 persistence DTO 中的剩餘保留思考時間還原成以玩家 UUID 索引的資料。 */

@@ -12,6 +12,7 @@ import kotlin.uuid.Uuid
  * 不得直接作為網路傳輸模型。對外資料必須先依讀取者身分投影為快照。
  *
  * @property tableState 麻將規則運算使用的完整桌況。
+ * @property matchId 整場對局的穩定識別碼；與牌桌本身的 [tableState.id] 分離，讓同一牌桌可承載多場對局歷史。
  * @property flowConfig 不影響麻將規則的流程與觀看設定。
  * @property remainingReserveMillisByPlayerId 每位玩家在整場遊戲中尚未使用的保留思考時間毫秒數。
  * @property forcedAutoPlayPlayerIds 已耗盡思考時間、目前這一次決策必須由伺服器自動操作的玩家。只鎖住
@@ -57,6 +58,7 @@ data class Game(
     val hostId: Uuid = tableState.players.firstOrNull()?.id ?: Uuid.random(),
     val roomPlayerIds: List<Uuid> = tableState.players.map { it.id },
     val interruptedBaseMillisByPlayerId: Map<Uuid, Long> = emptyMap(),
+    val matchId: Uuid = Uuid.random(),
 ) {
     init {
         val playerIds = tableState.players.mapTo(mutableSetOf()) { it.id }
