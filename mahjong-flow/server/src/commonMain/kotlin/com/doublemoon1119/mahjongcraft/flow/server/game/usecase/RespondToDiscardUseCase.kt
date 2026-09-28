@@ -105,7 +105,6 @@ class RespondToDiscardUseCase(
                                     resolvedAction = resolution.resolvedAction
                                         ?: resolution.ronWinningTileId?.let(GameAction::Ron),
                                     actorPlayerId = resolution.winnerId ?: resolution.ronWinnerIds.singleOrNull(),
-                                    resultingTableState = after,
                                 ),
                             ),
                         )

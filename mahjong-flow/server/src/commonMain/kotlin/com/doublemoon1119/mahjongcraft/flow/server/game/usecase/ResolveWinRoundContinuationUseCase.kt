@@ -70,7 +70,6 @@ class ResolveWinRoundContinuationUseCase(
                             actorPlayerId = null,
                             fact = HistoryFact.WinContinuationResolved(
                                 directive = outcome.value,
-                                resultingTableState = next.tableState.takeIf { it != previous.tableState },
                             ),
                         ),
                     )

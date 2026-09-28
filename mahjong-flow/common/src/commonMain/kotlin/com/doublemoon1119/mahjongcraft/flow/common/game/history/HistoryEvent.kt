@@ -34,19 +34,17 @@ sealed interface HistoryFact {
     data class RoundPreparationStarted(val stepId: String, val stepIndex: Int) : HistoryFact
 
     /**
-     * 玩家提交開局準備資料；步驟完成時同時保存解析後的桌況。
+     * 玩家提交開局準備資料；桌況變化由同筆交易的結果事實保存。
      *
      * @property stepId 被提交的步驟 ID。
      * @property stepIndex 此局內的步驟順序。
      * @property submission 已接受的玩家選擇。
-     * @property resultingTableState 步驟完成後的桌況；仍等待其他玩家時為 null。
      * @property nextStepId 步驟完成後接續的步驟 ID；沒有後續步驟時為 null。
      */
     data class RoundPreparationSubmitted(
         val stepId: String,
         val stepIndex: Int,
         val submission: RoundPreparationSubmission,
-        val resultingTableState: TableState?,
         val nextStepId: String?,
     ) : HistoryFact
 
@@ -55,13 +53,11 @@ sealed interface HistoryFact {
      *
      * @property stepId 已完成的步驟 ID。
      * @property stepIndex 此局內的步驟順序。
-     * @property resultingTableState 自動步驟套用後的完整桌況。
      * @property nextStepId 接續的步驟 ID；準備流程結束時為 null。
      */
     data class RoundPreparationAutomaticallyResolved(
         val stepId: String,
         val stepIndex: Int,
-        val resultingTableState: TableState,
         val nextStepId: String?,
     ) : HistoryFact
 
@@ -78,12 +74,10 @@ sealed interface HistoryFact {
      *
      * @property resolvedAction 得標或胡牌的動作；全員過牌時為 null。
      * @property actorPlayerId 得標玩家；沒有單一得標者時為 null。
-     * @property resultingTableState 反應階段結束後的完整桌況。
      */
     data class ReactionResolved(
         val resolvedAction: GameAction?,
         val actorPlayerId: Uuid?,
-        val resultingTableState: TableState,
     ) : HistoryFact
 
     /**
@@ -105,24 +99,29 @@ sealed interface HistoryFact {
      * 胡牌結算後，規則決定本局繼續或結束的權威結果。
      *
      * @property directive 本局後續的規則決策。
-     * @property resultingTableState 繼續本局時套用決策後的桌況；未改動桌況時為 null。
      */
     data class WinContinuationResolved(
         val directive: WinRoundDirective,
-        val resultingTableState: TableState?,
     ) : HistoryFact
 
     /**
-     * 其他規則中立的後續效果及其套用後桌況。
+     * 其他規則中立的後續效果；桌況變化由同筆交易的結果事實保存。
      *
      * @property reasonId 識別這次規則效果的穩定 ID。
-     * @property resultingTableState 套用效果後的完整桌況。
      * @property roundCompletion 效果直接完成本局時的結算摘要；否則為 null。
      */
     data class RuleEffectResolved(
         val reasonId: String,
-        val resultingTableState: TableState,
         val roundCompletion: RoundCompletionSummary?,
+    ) : HistoryFact
+
+    /**
+     * 同一權威交易中所有語意事實後的唯一桌況結果。
+     *
+     * @property result 可重建的差異，或標示原因的完整檢查點。
+     */
+    data class TableChanged(
+        val result: HistoryTableResult,
     ) : HistoryFact
 
     /** 已結束的 Game 被移出權威狀態並返回 Room。 */
@@ -132,7 +131,6 @@ sealed interface HistoryFact {
 /**
  * 動作提交後的權威結果，不從玩家通知或各人本局 action history 回推。
  *
- * @property resultingTableState 交易提交後的完整伺服器桌況，包含未公開牌面。
  * @property affectedTileIds 動作直接涉及的牌 UUID。
  * @property newlyRevealedTileIds 本次交易新增公開的牌 UUID。
  * @property remainingWallTileCount 提交後活牌牆的剩餘張數。
@@ -141,7 +139,6 @@ sealed interface HistoryFact {
  * @property nextPlayerId 提交後輪到的玩家 UUID。
  */
 data class HistoryActionResult(
-    val resultingTableState: TableState,
     val affectedTileIds: List<Uuid>,
     val newlyRevealedTileIds: List<Uuid>,
     val remainingWallTileCount: Int,
@@ -168,6 +165,7 @@ data class HistoryEventDraft(
  * @property tableId 牌桌 UUID，同桌重開時保持不變。
  * @property roundNumber 此場次內的局數。
  * @property sequence 此場次內單調遞增的事件序號，從 1 開始。
+ * @property transactionFirstSequence 同一權威交易內第一筆事件的序號。
  * @property occurredAtEpochMillis 事件提交時的 UTC 毫秒時間戳，不用於排序。
  * @property actorPlayerId 發起動作的玩家；系統或規則事件為 null。
  * @property fact 已提交的權威事實。
@@ -177,12 +175,14 @@ data class HistoryOutboxEvent(
     val tableId: Uuid,
     val roundNumber: Int,
     val sequence: Long,
+    val transactionFirstSequence: Long = sequence,
     val occurredAtEpochMillis: Long,
     val actorPlayerId: Uuid?,
     val fact: HistoryFact,
 ) {
     init {
         require(sequence > 0L) { "History sequence must be positive" }
+        require(transactionFirstSequence in 1L..sequence) { "History transaction sequence must not exceed event sequence" }
         require(roundNumber > 0) { "History round number must be positive" }
     }
 }

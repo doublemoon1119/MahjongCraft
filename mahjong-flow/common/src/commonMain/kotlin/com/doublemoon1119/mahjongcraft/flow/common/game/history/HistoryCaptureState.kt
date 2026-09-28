@@ -50,6 +50,7 @@ data class HistoryCaptureState(
                 tableId = game.id,
                 roundNumber = game.tableState.roundNumber,
                 sequence = nextSequence + index,
+                transactionFirstSequence = nextSequence,
                 occurredAtEpochMillis = occurredAtEpochMillis,
                 actorPlayerId = draft.actorPlayerId,
                 fact = draft.fact,

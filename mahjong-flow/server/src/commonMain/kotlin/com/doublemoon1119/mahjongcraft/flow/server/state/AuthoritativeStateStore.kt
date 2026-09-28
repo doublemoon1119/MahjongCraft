@@ -2,6 +2,9 @@ package com.doublemoon1119.mahjongcraft.flow.server.state
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryCaptureState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -146,7 +149,22 @@ class AuthoritativeStateStore(
             val withDrafts = update.historyDraftsByTableId.entries.fold(currentState.historyCaptureState) { capture, entry ->
                 val game = update.state.games[entry.key] ?: currentState.games[entry.key]
                     ?: error("History event references unknown table ${entry.key}")
-                runCatching { capture.append(game, entry.value, timestamp, maxPendingHistoryEvents) }
+                val before = currentState.games[entry.key]?.tableState
+                val after = update.state.games[entry.key]?.tableState
+                val hasSnapshot = entry.value.any { it.fact is HistoryFact.MatchStarted || it.fact is HistoryFact.RoundStarted }
+                val resultDraft = if (after != null && before != after && !hasSnapshot) {
+                    val change = if (before == null) null else runCatching { HistoryTableChange.between(before, after) }.getOrNull()
+                    HistoryEventDraft(
+                        actorPlayerId = null,
+                        fact = HistoryFact.TableChanged(
+                            change?.let(HistoryTableResult::Change)
+                                ?: HistoryTableResult.Checkpoint("mahjongcraft:unsupported_structural_change", after),
+                        ),
+                    )
+                } else {
+                    null
+                }
+                runCatching { capture.append(game, entry.value + listOfNotNull(resultDraft), timestamp, maxPendingHistoryEvents) }
                     .getOrElse { capture.recordMissing(game) }
             }
             val captureState = update.historyCaptureFailures.fold(withDrafts) { capture, tableId ->

@@ -81,7 +81,6 @@ class SubmitRoundPreparationUseCase(
                         stepId = preparation.stepId,
                         stepIndex = preparation.stepIndex,
                         submission = submission,
-                        resultingTableState = updated.tableState.takeIf { submitted.isComplete },
                         nextStepId = updated.pendingRoundPreparation?.stepId,
                     ),
                 ),

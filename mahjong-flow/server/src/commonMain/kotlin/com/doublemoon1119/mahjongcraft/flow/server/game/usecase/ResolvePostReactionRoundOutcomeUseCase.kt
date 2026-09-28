@@ -39,7 +39,6 @@ class ResolvePostReactionRoundOutcomeUseCase(
                             actorPlayerId = null,
                             fact = HistoryFact.RuleEffectResolved(
                                 reasonId = resolved.id,
-                                resultingTableState = next.tableState,
                                 roundCompletion = next.roundCompletion,
                             ),
                         ),

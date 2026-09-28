@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -27,6 +28,18 @@ import kotlin.uuid.Uuid
 
 /** 驗證平台無關的伺服器權威狀態 persistence codec。 */
 class AuthoritativeStatePersistenceCodecTest {
+    /** 無法辨識的歷史資料不得被靜默清除。 */
+    @Test
+    fun `unknown unversioned history is rejected`() {
+        val envelope = json.decodeFromString(PersistenceEnvelopeDto.serializer(), codec.encode(emptyList(), emptyList()))
+        val unknown = json.parseToJsonElement("""{"unexpected":true}""")
+        val saved = envelope.copy(state = JsonObject(envelope.state + ("historyCaptureState" to unknown)))
+
+        assertFailsWith<SerializationException> {
+            codec.decode(json.encodeToString(PersistenceEnvelopeDto.serializer(), saved))
+        }
+    }
+
     /** persistence 測試使用的 JSON 編解碼器。 */
     private val json = Json
 

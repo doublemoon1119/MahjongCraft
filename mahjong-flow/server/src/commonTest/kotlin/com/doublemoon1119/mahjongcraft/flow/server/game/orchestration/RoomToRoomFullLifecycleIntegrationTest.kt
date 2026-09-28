@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
@@ -78,8 +79,8 @@ import kotlin.uuid.Uuid
  */
 class RoomToRoomFullLifecycleIntegrationTest {
 
-    private class Fixtures {
-        val store = AuthoritativeStateStore()
+    private class Fixtures(historyCaptureEnabled: Boolean = false) {
+        val store = AuthoritativeStateStore(historyCaptureEnabled = historyCaptureEnabled, maxPendingHistoryEvents = 10_000)
         val gameRepo = GameRepositoryImpl(store)
         val roomRepo = RoomRepositoryImpl(store)
         val membershipRepo = PlayerMembershipRepositoryImpl()
@@ -250,8 +251,17 @@ class RoomToRoomFullLifecycleIntegrationTest {
         testFullLifecycle(RiichiGameLength.TwoWinds)
     }
 
-    private suspend fun testFullLifecycle(gameLength: RiichiGameLength) {
-        val fixtures = Fixtures()
+    internal suspend fun measureFullLifecycle(gameLength: RiichiGameLength): List<List<HistoryOutboxEvent>> {
+        val measurements = mutableListOf<List<HistoryOutboxEvent>>()
+        testFullLifecycle(gameLength) { measurements += it }
+        return measurements
+    }
+
+    private suspend fun testFullLifecycle(
+        gameLength: RiichiGameLength,
+        recordMatch: ((List<HistoryOutboxEvent>) -> Unit)? = null,
+    ) {
+        val fixtures = Fixtures(historyCaptureEnabled = recordMatch != null)
         val hostId = Uuid.random()
         val roomId = Uuid.random()
         val config = GameConfig(ruleConfig = RiichiRuleConfig(gameLength = gameLength))
@@ -272,6 +282,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         val startResult = fixtures.startGameUseCase(roomId, hostId)
         assertTrue(startResult is Outcome.Success, "Starting the game should succeed: $startResult")
         val gameId = startResult.value
+        val firstMatchId = fixtures.store.getGame(gameId)!!.matchId
         assertEquals(roomId, gameId, "The game must reuse the room's own ID.")
         assertNull(fixtures.store.getRoom(roomId), "Room record must be gone once the game starts.")
 
@@ -279,6 +290,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         // 不會替他行動，這裡用 playFullMatch 額外替房主套用跟 AI 完全相同的固定決策邏輯，交錯呼叫
         // driveAutomatedPlayers（推進 3 個 AI）與房主自己的回合，直到整場對局結束、桌子真的退回房間。
         fixtures.playFullMatch(gameId, hostId)
+        recordMatch?.invoke(fixtures.store.snapshot().historyCaptureState.pendingEvents.filter { it.matchId == firstMatchId })
 
         assertNull(fixtures.store.getGame(gameId), "Game record must be removed once the match ends.")
         val roomAfterMatch = fixtures.store.getRoom(roomId)
@@ -296,10 +308,12 @@ class RoomToRoomFullLifecycleIntegrationTest {
 
         val secondGame = fixtures.store.getGame(secondGameId)
         assertNotNull(secondGame)
+        val secondMatchId = secondGame.matchId
         assertTrue(secondGame.tableState.players.all { it.score == config.ruleConfig.scoreConfig.initialScore }, "The second match must start with fresh initial scores, not carry over the first match's final scores.")
         assertEquals(1, secondGame.tableState.roundNumber, "The second match must start from round 1 again.")
 
         fixtures.playFullMatch(secondGameId, hostId)
+        recordMatch?.invoke(fixtures.store.snapshot().historyCaptureState.pendingEvents.filter { it.matchId == secondMatchId })
 
         assertNull(fixtures.store.getGame(secondGameId), "Second match's game record must also be removed once it ends.")
         assertNotNull(fixtures.store.getRoom(roomId), "Table must become a Room again after the second match too.")

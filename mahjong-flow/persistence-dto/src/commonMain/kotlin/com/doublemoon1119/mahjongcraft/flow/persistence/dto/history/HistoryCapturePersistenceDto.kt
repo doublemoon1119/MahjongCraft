@@ -17,21 +17,25 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 
-/** 權威歷史待寫事件的持久化快照；此格式與 SQLite schema 分開演進。 */
+/** 權威歷史待寫事件的持久化快照；此格式與 SQLite schema 分開演進。
+ *
+ * @property formatVersion 此快照格式的版本號。
+ * @property nextSequenceByMatchId 各對局下一個可分配的事件序號，鍵為對局 UUID 字串。
+ * @property pendingEvents 尚未交給歷史儲存端的事件；各場次的事件依序號排序。
+ * @property firstMissingSequenceByMatchId 各對局第一個無法完整還原的事件序號，鍵為對局 UUID 字串。
+ */
 @Serializable
 data class HistoryCapturePersistenceDto(
-    /** 此快照格式的版本號。 */
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     val formatVersion: Int = 1,
-    /** 各對局下一個可分配的事件序號，鍵為對局 UUID 字串。 */
     val nextSequenceByMatchId: Map<String, Long> = emptyMap(),
-    /** 尚未交給歷史儲存端的事件；各場次的事件依序號排序。 */
     val pendingEvents: List<HistoryOutboxEventPersistenceDto> = emptyList(),
-    /** 各對局第一個無法完整還原的事件序號，鍵為對局 UUID 字串。 */
     val firstMissingSequenceByMatchId: Map<String, Long> = emptyMap(),
 ) {
     init {
@@ -39,146 +43,172 @@ data class HistoryCapturePersistenceDto(
     }
 }
 
-/** 一筆已指派穩定鍵、可重試寫入的歷史事件。 */
+/** 一筆已指派穩定鍵、可重試寫入的歷史事件。
+ *
+ * @property matchId 事件所屬對局的 UUID 字串。
+ * @property tableId 事件所屬牌桌的 UUID 字串。
+ * @property roundNumber 事件發生時所在的局數。
+ * @property sequence 在同一對局內單調遞增的事件序號。
+ * @property occurredAtEpochMillis 事件發生時間的 Unix epoch 毫秒值。
+ * @property actorPlayerId 觸發事件的玩家 UUID 字串；系統事件為 null。
+ * @property fact 事件的具體歷史事實。
+ * @property transactionFirstSequence 同一權威交易第一筆事件的序號。
+ */
 @Serializable
 data class HistoryOutboxEventPersistenceDto(
-    /** 事件所屬對局的 UUID 字串。 */
     val matchId: String,
-    /** 事件所屬牌桌的 UUID 字串。 */
     val tableId: String,
-    /** 事件發生時所在的局數。 */
     val roundNumber: Int,
-    /** 在同一對局內單調遞增的事件序號。 */
     val sequence: Long,
-    /** 事件發生時間的 Unix epoch 毫秒值。 */
     val occurredAtEpochMillis: Long,
-    /** 觸發事件的玩家 UUID 字串；系統事件為 null。 */
     val actorPlayerId: String?,
-    /** 事件的具體歷史事實。 */
     val fact: HistoryFactPersistenceDto,
+    val transactionFirstSequence: Long = sequence,
 )
 
 /** 帶明確序列化種類的歷史事實 DTO。 */
 @Serializable
 sealed interface HistoryFactPersistenceDto {
-    /** 對局建立時的完整桌況與流程設定。 */
+    /** 對局建立時的完整桌況與流程設定。
+     *
+     * @property state 對局開始時的桌況。
+     * @property flowConfig 對局使用的流程設定。
+     */
     @Serializable
     @SerialName("match_started")
     data class MatchStarted(
-        /** 對局開始時的桌況。 */
         val state: TableStatePersistenceDto,
-        /** 對局使用的流程設定。 */
         val flowConfig: GameFlowConfigPersistenceDto,
     ) : HistoryFactPersistenceDto
 
-    /** 新局開始時的完整桌況。 */
+    /** 新局開始時的完整桌況。
+     *
+     * @property state 新局開始時的桌況。
+     */
     @Serializable
     @SerialName("round_started")
     data class RoundStarted(
-        /** 新局開始時的桌況。 */
         val state: TableStatePersistenceDto,
     ) : HistoryFactPersistenceDto
 
-    /** 開局準備流程開始執行一個步驟。 */
+    /** 開局準備流程開始執行一個步驟。
+     *
+     * @property stepId 準備步驟的穩定識別碼。
+     * @property stepIndex 準備步驟在流程中的索引。
+     */
     @Serializable
     @SerialName("round_preparation_started")
     data class RoundPreparationStarted(
-        /** 準備步驟的穩定識別碼。 */
         val stepId: String,
-        /** 準備步驟在流程中的索引。 */
         val stepIndex: Int,
     ) : HistoryFactPersistenceDto
 
-    /** 玩家提交開局準備內容後的結果。 */
+    /** 玩家提交開局準備內容後的結果。
+     *
+     * @property stepId 被提交的準備步驟識別碼。
+     * @property stepIndex 被提交的準備步驟索引。
+     * @property submission 玩家提交的準備內容。
+     * @property nextStepId 下一個準備步驟識別碼；沒有下一步時為 null。
+     */
     @Serializable
     @SerialName("round_preparation_submitted")
     data class RoundPreparationSubmitted(
-        /** 被提交的準備步驟識別碼。 */
         val stepId: String,
-        /** 被提交的準備步驟索引。 */
         val stepIndex: Int,
-        /** 玩家提交的準備內容。 */
         val submission: RoundPreparationSubmissionPersistenceDto,
-        /** 提交後的桌況；尚未完成步驟時可能為 null。 */
-        val resultingState: TableStatePersistenceDto?,
-        /** 下一個準備步驟識別碼；沒有下一步時為 null。 */
         val nextStepId: String?,
     ) : HistoryFactPersistenceDto
 
-    /** 系統自動完成開局準備步驟後的結果。 */
+    /** 系統自動完成開局準備步驟後的結果。
+     *
+     * @property stepId 被自動完成的準備步驟識別碼。
+     * @property stepIndex 被自動完成的準備步驟索引。
+     * @property nextStepId 下一個準備步驟識別碼；沒有下一步時為 null。
+     */
     @Serializable
     @SerialName("round_preparation_automatic_resolved")
     data class RoundPreparationAutomaticallyResolved(
-        /** 被自動完成的準備步驟識別碼。 */
         val stepId: String,
-        /** 被自動完成的準備步驟索引。 */
         val stepIndex: Int,
-        /** 自動完成後的桌況。 */
-        val resultingState: TableStatePersistenceDto,
-        /** 下一個準備步驟識別碼；沒有下一步時為 null。 */
         val nextStepId: String?,
     ) : HistoryFactPersistenceDto
 
-    /** 規則接受一個玩家動作後的結果。 */
+    /** 規則接受一個玩家動作後的結果。
+     *
+     * @property action 被接受的動作。
+     * @property result 動作套用後的權威結果。
+     */
     @Serializable
     @SerialName("action_accepted")
     data class ActionAccepted(
-        /** 被接受的動作。 */
         val action: GameActionPersistenceDto,
-        /** 動作套用後的權威結果。 */
         val result: HistoryActionResultPersistenceDto,
     ) : HistoryFactPersistenceDto
 
-    /** 多方反應結束後的實際結算結果。 */
+    /** 多方反應結束後的實際結算結果。
+     *
+     * @property resolvedAction 反應結算後實際成立的動作；沒有動作成立時為 null。
+     * @property actorPlayerId 單一得標玩家的 UUID 字串；全員過牌或多家和牌時為 null。
+     */
     @Serializable
     @SerialName("reaction_resolved")
     data class ReactionResolved(
-        /** 反應結算後實際成立的動作；沒有動作成立時為 null。 */
         val resolvedAction: GameActionPersistenceDto?,
-        /** 單一得標玩家的 UUID 字串；全員過牌或多家和牌時為 null。 */
         val actorPlayerId: String?,
-        /** 反應結算後的桌況。 */
-        val resultingState: TableStatePersistenceDto,
     ) : HistoryFactPersistenceDto
 
-    /** 本局結束時的結算摘要。 */
+    /** 本局結束時的結算摘要。
+     *
+     * @property summary 本局結算摘要。
+     */
     @Serializable
     @SerialName("round_completed")
     data class RoundCompleted(
-        /** 本局結算摘要。 */
         val summary: RoundCompletionSummaryPersistenceDto,
     ) : HistoryFactPersistenceDto
 
-    /** 整場對局結束時的原因與最終分數。 */
+    /** 整場對局結束時的原因與最終分數。
+     *
+     * @property reasonId 對局結束原因的 namespaced key。
+     * @property finalScoresByPlayerId 各玩家最終分數，鍵為玩家 UUID 字串。
+     */
     @Serializable
     @SerialName("match_completed")
     data class MatchCompleted(
-        /** 對局結束原因的 namespaced key。 */
         val reasonId: String,
-        /** 各玩家最終分數，鍵為玩家 UUID 字串。 */
         val finalScoresByPlayerId: Map<String, Int>,
     ) : HistoryFactPersistenceDto
 
-    /** 胡牌後續流程完成決策後的結果。 */
+    /** 胡牌後續流程完成決策後的結果。
+     *
+     * @property directive 胡牌後決定的本局後續。
+     */
     @Serializable
     @SerialName("win_continuation_resolved")
     data class WinContinuationResolved(
-        /** 胡牌後決定的本局後續。 */
         val directive: WinRoundDirectivePersistenceDto,
-        /** 套用決策後的桌況；桌況未改變時為 null。 */
-        val resultingState: TableStatePersistenceDto?,
     ) : HistoryFactPersistenceDto
 
-    /** 規則效果完成後的桌況與可能的本局結算。 */
+    /** 規則效果完成後的桌況與可能的本局結算。
+     *
+     * @property reasonId 規則效果的識別碼。
+     * @property roundCompletion 規則效果同時完成本局時的結算摘要；否則為 null。
+     */
     @Serializable
     @SerialName("rule_effect_resolved")
     data class RuleEffectResolved(
-        /** 規則效果的識別碼。 */
         val reasonId: String,
-        /** 規則效果套用後的桌況。 */
-        val resultingState: TableStatePersistenceDto,
-        /** 規則效果同時完成本局時的結算摘要；否則為 null。 */
         val roundCompletion: RoundCompletionSummaryPersistenceDto?,
+    ) : HistoryFactPersistenceDto
+
+    /** 同一權威交易內所有語意事實之後唯一的桌況結果。
+     *
+     * @property result 可重建的結構差異，或標示原因的完整檢查點。
+     */
+    @Serializable
+    @SerialName("table_changed")
+    data class TableChanged(
+        val result: HistoryTableResultPersistenceDto,
     ) : HistoryFactPersistenceDto
 
     /** 對局移除並返回房間。 */
@@ -195,43 +225,48 @@ sealed interface WinRoundDirectivePersistenceDto {
     @SerialName("end_round")
     data object EndRound : WinRoundDirectivePersistenceDto
 
-    /** 依指定結算模式繼續本局，並交由下一位玩家行動。 */
+    /** 依指定結算模式繼續本局，並交由下一位玩家行動。
+     *
+     * @property newlyFinishedPlayerIds 因本次結算而完成的玩家 UUID 字串。
+     * @property nextPlayerId 下一個行動玩家的 UUID 字串。
+     * @property settlementMode 結算模式的列舉名稱。
+     */
     @Serializable
     @SerialName("continue_round")
     data class ContinueRound(
-        /** 因本次結算而完成的玩家 UUID 字串。 */
         val newlyFinishedPlayerIds: Set<String>,
-        /** 下一個行動玩家的 UUID 字串。 */
         val nextPlayerId: String,
-        /** 結算模式的列舉名稱。 */
         val settlementMode: String,
     ) : WinRoundDirectivePersistenceDto
 }
 
-/** 動作提交後的完整權威桌況及相關索引資料。 */
+/** 動作提交後的相關索引資料；桌況另由同筆交易結果保存。
+ *
+ * @property affectedTileIds 動作直接影響的牌 UUID 字串。
+ * @property newlyRevealedTileIds 因本次動作新公開的牌 UUID 字串。
+ * @property remainingWallTileCount 動作完成後活牌牆剩餘牌數。
+ * @property reservedWallTileIds 動作完成後保留區中的牌 UUID 字串。
+ * @property scoresByPlayerId 動作完成後各玩家分數。
+ * @property nextPlayerId 下一個行動玩家的 UUID 字串。
+ */
 @Serializable
 data class HistoryActionResultPersistenceDto(
-    /** 動作完成後的桌況。 */
-    val resultingState: TableStatePersistenceDto,
-    /** 動作直接影響的牌 UUID 字串。 */
     val affectedTileIds: List<String>,
-    /** 因本次動作新公開的牌 UUID 字串。 */
     val newlyRevealedTileIds: List<String>,
-    /** 動作完成後活牌牆剩餘牌數。 */
     val remainingWallTileCount: Int,
-    /** 動作完成後保留區中的牌 UUID 字串。 */
     val reservedWallTileIds: List<String>,
-    /** 動作完成後各玩家分數。 */
     val scoresByPlayerId: Map<String, Int>,
-    /** 下一個行動玩家的 UUID 字串。 */
     val nextPlayerId: String,
 )
 
-/** 使用已凍結 registry 在 domain 事件與持久化 DTO 間轉換完整 outbox。 */
+/**
+ * 使用已凍結 registry 在 domain 事件與持久化 DTO 間轉換完整 outbox。
+ *
+ * @property registries 解碼規則、動作與桌況所需的持久化 registry。
+ * @property json 用於擴充動作內容序列化的 JSON 設定。
+ */
 class HistoryCapturePersistenceMapper(
-    /** 解碼規則、動作與桌況所需的持久化 registry。 */
     private val registries: PersistenceRegistries,
-    /** 用於擴充動作內容序列化的 JSON 設定。 */
     private val json: Json = Json,
 ) {
     /** 將待寫事件編成權威存檔 DTO；無法編碼的事件會記錄序號缺口並略過。 */
@@ -273,6 +308,7 @@ class HistoryCapturePersistenceMapper(
         tableId = event.tableId.toString(),
         roundNumber = event.roundNumber,
         sequence = event.sequence,
+        transactionFirstSequence = event.transactionFirstSequence,
         occurredAtEpochMillis = event.occurredAtEpochMillis,
         actorPlayerId = event.actorPlayerId?.toString(),
         fact = encodeFact(event.fact),
@@ -284,6 +320,7 @@ class HistoryCapturePersistenceMapper(
         tableId = Uuid.parse(dto.tableId),
         roundNumber = dto.roundNumber,
         sequence = dto.sequence,
+        transactionFirstSequence = dto.transactionFirstSequence,
         occurredAtEpochMillis = dto.occurredAtEpochMillis,
         actorPlayerId = dto.actorPlayerId?.let(Uuid::parse),
         fact = decodeFact(dto.fact),
@@ -298,23 +335,20 @@ class HistoryCapturePersistenceMapper(
             fact.stepId,
             fact.stepIndex,
             fact.submission.toPersistenceDto(),
-            fact.resultingTableState?.let(::encodeTable),
             fact.nextStepId,
         )
         is HistoryFact.RoundPreparationAutomaticallyResolved -> HistoryFactPersistenceDto.RoundPreparationAutomaticallyResolved(
             fact.stepId,
             fact.stepIndex,
-            encodeTable(fact.resultingTableState),
             fact.nextStepId,
         )
         is HistoryFact.ActionAccepted -> HistoryFactPersistenceDto.ActionAccepted(
             fact.action.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
-            fact.result.toPersistenceDto(::encodeTable),
+            fact.result.toPersistenceDto(),
         )
         is HistoryFact.ReactionResolved -> HistoryFactPersistenceDto.ReactionResolved(
             fact.resolvedAction?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
             fact.actorPlayerId?.toString(),
-            encodeTable(fact.resultingTableState),
         )
         is HistoryFact.RoundCompleted -> HistoryFactPersistenceDto.RoundCompleted(fact.summary.toPersistenceDto())
         is HistoryFact.MatchCompleted -> HistoryFactPersistenceDto.MatchCompleted(
@@ -323,14 +357,15 @@ class HistoryCapturePersistenceMapper(
         )
         is HistoryFact.WinContinuationResolved -> HistoryFactPersistenceDto.WinContinuationResolved(
             fact.directive.toPersistenceDto(),
-            fact.resultingTableState?.let(::encodeTable),
         )
         is HistoryFact.RuleEffectResolved -> HistoryFactPersistenceDto.RuleEffectResolved(
             fact.reasonId,
-            encodeTable(fact.resultingTableState),
             fact.roundCompletion?.toPersistenceDto(),
         )
         HistoryFact.ReturnedToRoom -> HistoryFactPersistenceDto.ReturnedToRoom
+        is HistoryFact.TableChanged -> HistoryFactPersistenceDto.TableChanged(
+            HistoryTableChangeMapper(registries, json).encode(fact.result),
+        )
     }
 
     /** 將持久化歷史事實還原成 domain 事實。 */
@@ -342,23 +377,20 @@ class HistoryCapturePersistenceMapper(
             dto.stepId,
             dto.stepIndex,
             dto.submission.toDomain(),
-            dto.resultingState?.let(::decodeTable),
             dto.nextStepId,
         )
         is HistoryFactPersistenceDto.RoundPreparationAutomaticallyResolved -> HistoryFact.RoundPreparationAutomaticallyResolved(
             dto.stepId,
             dto.stepIndex,
-            decodeTable(dto.resultingState),
             dto.nextStepId,
         )
         is HistoryFactPersistenceDto.ActionAccepted -> HistoryFact.ActionAccepted(
             dto.action.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
-            dto.result.toDomain(::decodeTable),
+            dto.result.toDomain(),
         )
         is HistoryFactPersistenceDto.ReactionResolved -> HistoryFact.ReactionResolved(
             dto.resolvedAction?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
             dto.actorPlayerId?.let(Uuid::parse),
-            decodeTable(dto.resultingState),
         )
         is HistoryFactPersistenceDto.RoundCompleted -> HistoryFact.RoundCompleted(dto.summary.toDomain())
         is HistoryFactPersistenceDto.MatchCompleted -> HistoryFact.MatchCompleted(
@@ -367,14 +399,15 @@ class HistoryCapturePersistenceMapper(
         )
         is HistoryFactPersistenceDto.WinContinuationResolved -> HistoryFact.WinContinuationResolved(
             dto.directive.toDomain(),
-            dto.resultingState?.let(::decodeTable),
         )
         is HistoryFactPersistenceDto.RuleEffectResolved -> HistoryFact.RuleEffectResolved(
             dto.reasonId,
-            decodeTable(dto.resultingState),
             dto.roundCompletion?.toDomain(),
         )
         HistoryFactPersistenceDto.ReturnedToRoom -> HistoryFact.ReturnedToRoom
+        is HistoryFactPersistenceDto.TableChanged -> HistoryFact.TableChanged(
+            HistoryTableChangeMapper(registries, json).decode(dto.result),
+        )
     }
 
     /** 使用 registry 將桌況編成持久化 DTO。 */
@@ -421,10 +454,7 @@ private fun WinRoundDirectivePersistenceDto.toDomain(): WinRoundDirective = when
 }
 
 /** 將動作結果轉成持久化 DTO。 */
-private fun HistoryActionResult.toPersistenceDto(
-    encodeTable: (TableState) -> TableStatePersistenceDto,
-) = HistoryActionResultPersistenceDto(
-    resultingState = encodeTable(resultingTableState),
+private fun HistoryActionResult.toPersistenceDto() = HistoryActionResultPersistenceDto(
     affectedTileIds = affectedTileIds.map(Uuid::toString),
     newlyRevealedTileIds = newlyRevealedTileIds.map(Uuid::toString),
     remainingWallTileCount = remainingWallTileCount,
@@ -434,10 +464,7 @@ private fun HistoryActionResult.toPersistenceDto(
 )
 
 /** 將動作結果 DTO 還原成 domain 結果。 */
-private fun HistoryActionResultPersistenceDto.toDomain(
-    decodeTable: (TableStatePersistenceDto) -> TableState,
-) = HistoryActionResult(
-    resultingTableState = decodeTable(resultingState),
+private fun HistoryActionResultPersistenceDto.toDomain() = HistoryActionResult(
     affectedTileIds = affectedTileIds.map(Uuid::parse),
     newlyRevealedTileIds = newlyRevealedTileIds.map(Uuid::parse),
     remainingWallTileCount = remainingWallTileCount,

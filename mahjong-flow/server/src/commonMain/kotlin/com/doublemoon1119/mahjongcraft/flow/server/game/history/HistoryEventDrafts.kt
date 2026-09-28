@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  * @param actorPlayerId 執行動作的玩家；規則自動動作可為 null。
  * @param action 已通過權威驗證的動作。
  * @param before 交易前的完整桌況，用來計算新增公開的牌。
- * @param after 交易提交後的完整桌況，保留為事件的權威結果。
+ * @param after 交易提交後的完整桌況，用來計算新增公開資訊與索引。
  * @param affectedTileIds 動作直接涉及的牌 UUID；未指定時為空清單。
  * @return 尚未指派場次內序號與時間戳的事件草稿。
  */
@@ -32,7 +32,6 @@ fun acceptedActionHistoryDraft(
         fact = HistoryFact.ActionAccepted(
             action = action,
             result = HistoryActionResult(
-                resultingTableState = after,
                 affectedTileIds = affectedTileIds,
                 newlyRevealedTileIds = (afterRevealed - beforeRevealed).sortedBy(Uuid::toString),
                 remainingWallTileCount = after.tileWall.remainingCount,

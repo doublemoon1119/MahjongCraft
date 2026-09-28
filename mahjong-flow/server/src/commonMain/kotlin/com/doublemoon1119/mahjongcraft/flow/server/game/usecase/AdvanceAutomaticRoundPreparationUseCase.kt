@@ -55,7 +55,6 @@ class AdvanceAutomaticRoundPreparationUseCase(
                             fact = HistoryFact.RoundPreparationAutomaticallyResolved(
                                 stepId = currentPreparation.stepId,
                                 stepIndex = currentPreparation.stepIndex,
-                                resultingTableState = resolution.tableState,
                                 nextStepId = resolution.nextStep?.stepId,
                             ),
                         ),

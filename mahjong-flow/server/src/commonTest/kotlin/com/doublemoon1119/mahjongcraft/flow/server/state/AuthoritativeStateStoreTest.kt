@@ -2,12 +2,15 @@ package com.doublemoon1119.mahjongcraft.flow.server.state
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -16,12 +19,80 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** 驗證 Room 與 Game 共用狀態儲存的交易與 dirty tracking。 */
 class AuthoritativeStateStoreTest {
+    /** 同筆交易有多個語意事實時，只在最後保存一次可還原的桌況差異。 */
+    @Test
+    fun `multiple facts in one transaction share one table change`() = runTest {
+        val store = AuthoritativeStateStore(historyCaptureEnabled = true)
+        val before = FakeTableStateFactory.create()
+        val after = before.copy(
+            players = before.players.mapIndexed { index, player ->
+                if (index == 0) player.copy(score = player.score + 100) else player
+            },
+            tileWall = before.tileWall.draw().wall,
+            currentPlayerIndex = 1,
+        )
+        GameRepositoryImpl(store).setTableState(before)
+        val game = checkNotNull(store.getGame(before.id))
+
+        store.update { state ->
+            AuthoritativeStateUpdate(
+                state = state.copy(games = state.games + (game.id to game.copy(tableState = after))),
+                result = Unit,
+                historyDraftsByTableId = mapOf(
+                    game.id to listOf(
+                        HistoryEventDraft(null, HistoryFact.ReturnedToRoom),
+                        HistoryEventDraft(null, HistoryFact.ReturnedToRoom),
+                    ),
+                ),
+            )
+        }
+
+        val events = store.snapshot().historyCaptureState.pendingEvents
+        assertEquals(listOf(1L, 2L, 3L), events.map { it.sequence })
+        assertEquals(listOf(1L, 1L, 1L), events.map { it.transactionFirstSequence })
+        val result = assertIs<HistoryTableResult.Change>(assertIs<HistoryFact.TableChanged>(events.last().fact).result)
+        assertEquals(after, result.change.applyTo(before))
+        assertEquals(1, events.count { it.fact is HistoryFact.TableChanged })
+    }
+
+    /** 未支援的桌況欄位變更必須留下標示原因的檢查點。 */
+    @Test
+    fun `unsupported table change uses one explicit checkpoint`() {
+        val before = FakeTableStateFactory.create()
+        val after = before.copy(comboCount = 1)
+
+        assertNull(HistoryTableChange.between(before, after))
+    }
+
+    /** 玩家動作紀錄只保存新增部分，仍可還原完整累積紀錄。 */
+    @Test
+    fun `player history change appends actions without repeating the prefix`() {
+        val before = FakeTableStateFactory.create().let { state ->
+            state.copy(
+                players = state.players.mapIndexed { index, player ->
+                    if (index == 0) player.copy(actionHistory = listOf(GameAction.Draw)) else player
+                },
+            )
+        }
+        val after = before.copy(
+            players = before.players.mapIndexed { index, player ->
+                if (index == 0) player.copy(actionHistory = player.actionHistory + GameAction.Draw) else player
+            },
+        )
+
+        val change = checkNotNull(HistoryTableChange.between(before, after))
+        assertEquals(1, change.changedPlayers.single().retainedActionCount)
+        assertEquals(listOf(GameAction.Draw), change.changedPlayers.single().appendedActions)
+        assertEquals(after, change.applyTo(before))
+    }
+
     /** 驗證兩個 repository 透過同一個 store 完成基本新增、讀取與刪除。 */
     @Test
     fun `room and game repositories share one store`() = runTest {

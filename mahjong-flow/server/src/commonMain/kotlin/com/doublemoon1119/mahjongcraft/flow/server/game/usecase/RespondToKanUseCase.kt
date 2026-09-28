@@ -97,7 +97,6 @@ class RespondToKanUseCase(
                                         resolution.ronWinningTileId?.let(GameAction::Ron)
                                     },
                                     actorPlayerId = resolvedActor,
-                                    resultingTableState = after,
                                 ),
                             ),
                         )
