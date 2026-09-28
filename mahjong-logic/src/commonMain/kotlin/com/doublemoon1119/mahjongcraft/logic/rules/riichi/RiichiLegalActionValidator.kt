@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.judgment.TileSelectionRequirement
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
@@ -103,9 +102,9 @@ class RiichiLegalActionValidator(
         // 此 Validator 只處理「額外動作」（鳴牌、胡牌、立直）
         if (incomingTile == null) {
             // 檢查是否可以立直 (Riichi)
-            // 條件：向聽數為 0 且門前清（無副露）且未曾立直且點數 >= 1000，且牌山剩餘張數至少還夠
+            // 條件：向聽數為 0 且門前清（無副露）且未曾立直且點數足夠支付一支立直棒，且牌山剩餘張數至少還夠
             // 自己再摸一次（>= 玩家人數，確保輪到自己之前不會被其他人摸盡）
-            if (!isRiichi && isMenzen && player.score >= 1000 && tableState.tileWall.remainingCount >= tableState.playerCount) {
+            if (!isRiichi && isMenzen && player.score >= RIICHI_STICK_POINTS && tableState.tileWall.remainingCount >= tableState.playerCount) {
                 val result = shantenCalculator.calculate(
                     Hand(
                         player.hand.standingTiles.toMutableList(),
@@ -395,36 +394,11 @@ class RiichiLegalActionValidator(
         incomingTile: IdentifiedTile,
         isTsumo: Boolean,
         isRobbingKan: Boolean = false,
-    ): QualifyingHan {
+    ): RiichiQualifyingHan {
         val context = contextCalculator.calculate(
             RiichiHandValueContextCalculator.Input(tableState, player, incomingTile, isTsumo, isRobbingKan),
         )
-        val result = handValueCalculator.calculate(context)
-        if (result.totalHan < 0) {
-            return QualifyingHan(
-                value = Int.MAX_VALUE,
-                yakuman = true,
-                isKokushi = result.yakuResults.any { it.yaku == YakuType.KokushiMusou || it.yaku == YakuType.KokushiMusou13 },
-            )
-        }
-        return QualifyingHan(
-            value = result.yakuResults
-                .filterNot { it.yaku == YakuType.Dora || it.yaku == YakuType.UraDora || it.yaku == YakuType.AkaDora }
-                .sumOf { it.han },
-        )
-    }
-
-    /** 起胡限制判定使用的非寶牌番數。 */
-    private data class QualifyingHan(
-        /** 非寶牌役種的總番數。 */
-        val value: Int,
-        /** 是否為役滿。 */
-        val yakuman: Boolean = false,
-        /** 是否為國士無雙役滿。 */
-        val isKokushi: Boolean = false,
-    ) {
-        /** 判斷此結果是否達到 [minimum]。 */
-        fun satisfies(minimum: Int): Boolean = yakuman || value >= minimum
+        return handValueCalculator.calculate(context).qualifyingHan()
     }
 
     /**

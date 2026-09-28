@@ -182,6 +182,13 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun createDiscardReadinessAnalyzer(): DiscardReadinessAnalyzer? = null
 
     /**
+     * 建立適用於該規則的局面評估，供需要依和牌價值、捨牌危險度與對手威脅做決策的呼叫端使用。
+     *
+     * 沒有專屬評估的規則沿用 [NeutralPositionEvaluator]，決策仍能正常運作，只是判斷較為保守。
+     */
+    fun createPositionEvaluator(): PositionEvaluator = NeutralPositionEvaluator
+
+    /**
      * 建立適用於該規則的手牌役種計算機 (Hand Value Calculator)。
      *
      * 負責計算手牌的役種、番數（或台數），用於胡牌結算與役種顯示。

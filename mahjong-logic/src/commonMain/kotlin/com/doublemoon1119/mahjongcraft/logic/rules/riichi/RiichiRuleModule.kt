@@ -122,6 +122,13 @@ class RiichiRuleModule(
         legalActionValidator = createLegalActionValidator(),
     )
 
+    /** 建立與正式結算共用役種、點數與起胡判定的日麻局面評估。 */
+    override fun createPositionEvaluator(): RiichiPositionEvaluator = RiichiPositionEvaluator(
+        config = config,
+        handValueCalculator = createHandValueCalculator(),
+        shantenCalculator = createShantenCalculator(),
+    )
+
     /**
      * 建立日本麻將的手牌價值計算機。
      *
@@ -365,14 +372,14 @@ class RiichiRuleModule(
     }
 
     /**
-     * 收下場上所有立直棒：贏家獲得「立直棒數量 * 1000」點，收下後立直棒數量歸零。
+     * 收下場上所有立直棒：贏家獲得「立直棒數量 × [RIICHI_STICK_POINTS]」點，收下後立直棒數量歸零。
      *
      * @return 若 [tableState] 的動態桌況狀態並非 [RiichiDynamicState]（理論上不會發生，僅作防呆），
      *         則回傳 null。
      */
     override fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>? {
         val riichiDynamicState = tableState.dynamicRuleState as? RiichiDynamicState ?: return null
-        return riichiDynamicState.copy(riichiStickCount = 0) to riichiDynamicState.riichiStickCount * 1000
+        return riichiDynamicState.copy(riichiStickCount = 0) to riichiDynamicState.riichiStickCount * RIICHI_STICK_POINTS
     }
 
     /**
