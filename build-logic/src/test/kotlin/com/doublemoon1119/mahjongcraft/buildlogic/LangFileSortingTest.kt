@@ -3,8 +3,10 @@ package com.doublemoon1119.mahjongcraft.buildlogic
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
-/** [sortedLangFileText] 的單元測試。 */
+/** [sortedLangFileText] 與 [isLangFileSorted] 的單元測試。 */
 class LangFileSortingTest {
     /** 已排序的內容原樣返回。 */
     @Test
@@ -76,6 +78,21 @@ class LangFileSortingTest {
         """.trimIndent()
 
         assertEquals(sortedLangFileText(text), sortedLangFileText(sortedLangFileText(text)))
+    }
+
+    /** CRLF 換行的內容照常排序，輸出一律使用 LF。 */
+    @Test
+    fun `crlf input is sorted into lf output`() {
+        val text = "{\r\n  \"b.second\": \"Second\",\r\n  \"a.first\": \"First\"\r\n}\r\n"
+
+        assertEquals("{\n  \"a.first\": \"First\",\n  \"b.second\": \"Second\"\n}\n", sortedLangFileText(text))
+    }
+
+    /** 已排序的 CRLF 內容視為已排序，換行符號不影響判斷。 */
+    @Test
+    fun `sorted crlf content counts as sorted`() {
+        assertTrue(isLangFileSorted("{\r\n  \"a.first\": \"First\",\r\n  \"b.second\": \"Second\"\r\n}\r\n"))
+        assertFalse(isLangFileSorted("{\r\n  \"b.second\": \"Second\",\r\n  \"a.first\": \"First\"\r\n}\r\n"))
     }
 
     /** 不符合固定單行格式（缺少開頭 `{`、結尾 `}` 或結尾換行）的內容一律拒絕。 */

@@ -1,0 +1,17 @@
+# Text files are stored and checked out with LF on every platform, so build checks see the same bytes
+# regardless of the local core.autocrlf setting.
+* text=auto eol=lf
+
+# Shell scripts explicitly require LF
+gradlew text eol=lf
+*.sh text eol=lf
+
+# Windows batch files need CRLF to run reliably
+gradlew.bat text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets are never converted.
+*.png binary
+*.ogg binary
+*.jar binary
