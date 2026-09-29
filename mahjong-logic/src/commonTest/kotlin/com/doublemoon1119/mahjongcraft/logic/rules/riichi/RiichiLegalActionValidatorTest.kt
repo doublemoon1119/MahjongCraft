@@ -34,8 +34,8 @@ class RiichiLegalActionValidatorTest {
         contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig()),
     )
 
-    /** 牌山還有牌可摸——鳴牌/槓牌測試預設用這個，避免被新加的「河底/海底不可鳴牌」限制誤擋。 */
-    private val nonEmptyWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))))
+    /** 牌山剩 2 張——鳴牌/槓牌測試預設用這個，避免被「河底/海底不可鳴牌」與「剩 1 張以下不可槓」的限制誤擋。 */
+    private val nonEmptyWall = TileWall(List(2) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)) })
 
     /**
      * 測試可執行碰牌動作之情況。
@@ -223,6 +223,47 @@ class RiichiLegalActionValidatorTest {
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN })
+    }
+
+    /**
+     * 驗證牌山只剩 1 張時，暗槓、加槓與大明槓都不能宣告：嶺上補牌後牌山末端那張會補進王牌區，
+     * 就沒有海底牌可摸；碰不受影響。
+     */
+    @Test
+    fun `test no kan of any type when only one live tile remains`() {
+        val oneTileWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))))
+        val ponMeld = Meld(
+            MeldType.PON,
+            List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)) },
+            sourceDirection = RelativeDirection.Left,
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            hand = FakeHandFactory.create(List(3) { Tile.Numeric(Tile.Suit.Character, 1) }).copy(melds = listOf(ponMeld)),
+        )
+        val tableState = FakeTableStateFactory.create(players = listOf(player), tileWall = oneTileWall)
+
+        val ownTurnActions = listOf(Tile.Numeric(Tile.Suit.Character, 1), Tile.Numeric(Tile.Suit.Character, 9)).flatMap { drawn ->
+            val incomingTile = FakeIdentifiedTileFactory.create(drawn)
+            validator.getLegalActions(
+                tableState = tableState,
+                player = player,
+                sourceAction = GameAction.Draw,
+                sourceDirection = RelativeDirection.Self,
+                incomingTile = incomingTile,
+            )
+        }
+        val discard = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+        val responseActions = validator.getLegalActions(
+            tableState = tableState,
+            player = player,
+            sourceAction = GameAction.Discard(discard.id),
+            sourceDirection = RelativeDirection.Across,
+            incomingTile = discard,
+        )
+
+        assertTrue(ownTurnActions.none { it is GameAction.Kan }, "own turn actions: $ownTurnActions")
+        assertTrue(responseActions.none { it is GameAction.Kan }, "response actions: $responseActions")
+        assertTrue(responseActions.any { it is GameAction.Pon }, "response actions: $responseActions")
     }
 
     /**

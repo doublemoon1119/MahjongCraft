@@ -280,7 +280,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer),
             config = RiichiRuleConfig(),
-            tileWall = TileWall(listOf(rinshanTile)),
+            tileWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)), rinshanTile)),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -540,7 +540,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer, robber),
             config = RiichiRuleConfig(),
-            tileWall = TileWall(listOf(rinshanTile)),
+            tileWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)), rinshanTile)),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -559,7 +559,7 @@ class DeclareKanUseCaseTest {
         val unchangedDeclarer = newState.players.first { it.id == playerId }
         assertEquals(MeldType.PON, unchangedDeclarer.hand.melds.single().type, "The meld must not be upgraded to ADDED_KAN yet.")
         assertEquals(white4, unchangedDeclarer.hand.lastDrawn, "The declarer's hand should be untouched while the window is open.")
-        assertEquals(1, newState.tileWall.remainingCount, "The dead wall should not be drawn from yet.")
+        assertEquals(2, newState.tileWall.remainingCount, "The dead wall should not be drawn from yet.")
 
         val expectedKan = GameAction.Kan(GameAction.KanType.ADDED_KAN, white4.id, emptyList())
         assertEquals(
@@ -653,7 +653,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer, robber1, robber2),
             config = RiichiRuleConfig(),
-            tileWall = TileWall(listOf(rinshanTile)),
+            tileWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)), rinshanTile)),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -696,7 +696,7 @@ class DeclareKanUseCaseTest {
                     tripleRonResolution = RonResolution.NEAREST_WINNER,
                 ),
             ),
-            tileWall = TileWall(listOf(rinshanTile)),
+            tileWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)), rinshanTile)),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -740,7 +740,7 @@ class DeclareKanUseCaseTest {
                     tripleRonResolution = RonResolution.ABORTIVE_DRAW,
                 ),
             ),
-            tileWall = TileWall(listOf(rinshanTile)),
+            tileWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)), rinshanTile)),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -751,7 +751,7 @@ class DeclareKanUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(null, newState.pendingKanReaction, "The multi-ron abortive draw should resolve immediately, not open a window.")
-        assertEquals(1, newState.tileWall.remainingCount, "No rinshan tile should be drawn; the kan is voided.")
+        assertEquals(2, newState.tileWall.remainingCount, "No rinshan tile should be drawn; the kan is voided.")
 
         val unchangedDeclarer = newState.players.first { it.id == playerId }
         assertEquals(MeldType.PON, unchangedDeclarer.hand.melds.single().type, "The added kan must not be applied.")

@@ -31,8 +31,8 @@ class RiichiLegalActionValidatorRedDoraTest {
         contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig()),
     )
 
-    /** 牌山還有牌可摸——鳴牌/槓牌測試預設用這個，避免被新加的「河底/海底不可鳴牌」限制誤擋。 */
-    private val nonEmptyWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))))
+    /** 牌山剩 2 張——鳴牌/槓牌測試預設用這個，避免被「河底/海底不可鳴牌」與「剩 1 張以下不可槓」的限制誤擋。 */
+    private val nonEmptyWall = TileWall(List(2) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)) })
 
     /**
      * 測試赤寶牌之情況：可執行碰牌動作（手牌有普通5萬，他家打赤5萬）。
