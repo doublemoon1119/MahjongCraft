@@ -106,10 +106,14 @@ internal object ExpectationFixtures {
         forcedDiscardTileId = module.forcedDiscardTileId(table, table.players.first { it.id == self.id }),
     )
 
-    /** 指定資訊範圍的策略。 */
-    fun strategy(level: InformationLevel): ExpectedValueAiStrategy = ExpectedValueAiStrategy(
+    /** 指定資訊範圍與估計參數的策略。 */
+    fun strategy(
+        level: InformationLevel,
+        parameters: ExpectationParameters = ExpectationParameters.DEFAULT,
+    ): ExpectedValueAiStrategy = ExpectedValueAiStrategy(
         level = level,
         moduleRegistry = moduleRegistry,
         extensionActionRegistry = extensionRegistry,
+        parameters = parameters,
     )
 }

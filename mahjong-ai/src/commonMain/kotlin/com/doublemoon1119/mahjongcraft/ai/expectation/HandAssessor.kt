@@ -59,6 +59,7 @@ internal class HypotheticalView(
  * 一向聽列舉聽牌後的點數時，使用列舉起點的假設視角，不另外把之後打出的牌加入牌河，因此不計入由那張牌造成的振聽。
  *
  * @property level 可使用的資訊範圍。
+ * @property parameters 估計參數。
  * @property selfId 評估者本人。
  * @property positionEvaluator 規則的局面評估。
  * @property shantenCalculator 規則的向聽計算。
@@ -71,6 +72,7 @@ internal class HypotheticalView(
  */
 internal class HandAssessor(
     private val level: InformationLevel,
+    private val parameters: ExpectationParameters,
     private val selfId: Uuid,
     private val positionEvaluator: PositionEvaluator,
     private val shantenCalculator: ShantenCalculator,
@@ -227,13 +229,13 @@ internal class HandAssessor(
             .filter { kind -> unseen[kind] > 0 && advances(hand, kind, shanten) }
             .sumOf { unseen[it] }
         val firstAdvanceRate = advancingCount.toDouble() / unseen.total
-        val typicalRate = ExpectationTuning.TYPICAL_WAIT_TILES.toDouble() / unseen.total
+        val typicalRate = parameters.typicalWaitTiles.toDouble() / unseen.total
         return HandAssessment(
             shanten = shanten,
             outlook = distantOutlook(
                 shanten = shanten,
                 firstAdvanceRate = firstAdvanceRate,
-                laterAdvanceRate = minOf(firstAdvanceRate, ExpectationTuning.TYPICAL_ADVANCE_TILES.toDouble() / unseen.total),
+                laterAdvanceRate = minOf(firstAdvanceRate, parameters.typicalAdvanceTiles.toDouble() / unseen.total),
                 tenpaiProfile = TenpaiProfile(tsumoRate = typicalRate, ronRate = typicalRate, tsumoValue = value, ronValue = value),
                 outlook = outlook,
             ),

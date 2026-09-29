@@ -26,23 +26,32 @@ class PlacementUtilityTest {
     /** 原定最後一局時，超過第一名的和牌多一個名次的價值，掉到第三名的放銃多一個名次的損失。 */
     @Test
     fun `in the final round a place change is worth extra points`() {
-        val utility = PlacementUtility.from(snapshotAt(sequenceIndex = 3), selfId, module.compareForMatchRanking(), considersPlacement = true)
+        val finalRound = utility(sequenceIndex = 3, considersPlacement = true)
 
-        assertEquals(5000.0 + ExpectationTuning.PLACEMENT_STEP_POINTS, utility.gain(5000.0))
-        assertEquals(1000.0, utility.gain(1000.0))
-        assertEquals(3000.0 + ExpectationTuning.PLACEMENT_STEP_POINTS, utility.loss(3000.0))
+        assertEquals(5000.0 + STEP_POINTS, finalRound.gain(5000.0))
+        assertEquals(1000.0, finalRound.gain(1000.0))
+        assertEquals(3000.0 + STEP_POINTS, finalRound.loss(3000.0))
     }
 
     /** 還沒到原定最後一局，或等級不考慮名次時，價值就是點數。 */
     @Test
     fun `before the final round or without placement the value is the points`() {
-        val early = PlacementUtility.from(snapshotAt(sequenceIndex = 1), selfId, module.compareForMatchRanking(), considersPlacement = true)
-        val disabled = PlacementUtility.from(snapshotAt(sequenceIndex = 3), selfId, module.compareForMatchRanking(), considersPlacement = false)
+        val early = utility(sequenceIndex = 1, considersPlacement = true)
+        val disabled = utility(sequenceIndex = 3, considersPlacement = false)
 
         assertEquals(5000.0, early.gain(5000.0))
         assertEquals(5000.0, disabled.gain(5000.0))
         assertEquals(3000.0, disabled.loss(3000.0))
     }
+
+    /** 東風戰第 [sequenceIndex] + 1 局、以南家為評估者的名次換算。 */
+    private fun utility(sequenceIndex: Int, considersPlacement: Boolean): PlacementUtility = PlacementUtility.from(
+        snapshot = snapshotAt(sequenceIndex),
+        selfId = selfId,
+        ranking = module.compareForMatchRanking(),
+        considersPlacement = considersPlacement,
+        stepPoints = STEP_POINTS,
+    )
 
     /** 東風戰第 [sequenceIndex] + 1 局的快照。 */
     private fun snapshotAt(sequenceIndex: Int): TableStateSnapshot = table(players)
@@ -52,4 +61,10 @@ class PlacementUtilityTest {
             roundPosition = MatchRoundPosition(sequenceIndex, Wind.EAST, sequenceIndex + 1),
         )
         .toSnapshot(setOf(selfId))
+
+    /** 測試常數。 */
+    private companion object {
+        /** 名次每升降一位相當的點數。 */
+        val STEP_POINTS: Int = ExpectationParameters.DEFAULT.placementStepPoints
+    }
 }

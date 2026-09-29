@@ -32,18 +32,20 @@ import kotlin.math.min
  *   避免拆掉接近聽牌的手牌只因為換成基準打點而顯得有利。
  * - 名次換算只用於和牌與放銃的點數；宣告成本在和牌時會以打點的一部分收回，因此以點數計算、不換算名次。
  * - 能和牌時一律和牌；可宣告途中流局時，最佳選項的和牌機率低於
- *   [ExpectationTuning.ABORTIVE_DRAW_WIN_PROBABILITY] 就宣告。
- * - 期望值差距小於 [ExpectationTuning.EXPECTED_VALUE_TIE_TOLERANCE] 時選擇候選清單中較前面的選項：過優先於鳴牌；
+ *   [ExpectationParameters.abortiveDrawWinProbability] 就宣告。
+ * - 期望值差距小於 [EXPECTED_VALUE_TIE_TOLERANCE] 時選擇候選清單中較前面的選項：過優先於鳴牌；
  *   捨牌依規則牌序排列，同一種牌優先打出剛摸到的那張；一般捨牌優先於附帶宣告的捨牌，再其次為槓。
  *
  * 規則擴充動作只評估 handler 說明了會打出哪張牌的候選；其他擴充命令無法評估，不會被選擇。
  *
  * @property level 可使用的資訊範圍。
+ * @property parameters 估計參數。
  * @property module 本局的規則模組。
  * @property context 本次決策的情境。
  */
 internal class ExpectedValueEvaluator(
     private val level: InformationLevel,
+    private val parameters: ExpectationParameters,
     private val module: MahjongRuleModule<*>,
     private val context: AiDecisionContext,
 ) {
@@ -68,6 +70,7 @@ internal class ExpectedValueEvaluator(
         selfId = selfId,
         ranking = module.compareForMatchRanking(),
         considersPlacement = level.considersPlacement,
+        stepPoints = parameters.placementStepPoints,
     )
 
     /** 評估者眼中的未見牌。 */
@@ -79,11 +82,12 @@ internal class ExpectedValueEvaluator(
     )
 
     /** 本局剩餘的和牌機會。 */
-    private val outlook = DrawOutlook.from(snapshot)
+    private val outlook = DrawOutlook.from(snapshot, parameters)
 
     /** 手牌和牌前景的評估。 */
     private val assessor = HandAssessor(
         level = level,
+        parameters = parameters,
         selfId = selfId,
         positionEvaluator = positionEvaluator,
         shantenCalculator = module.createShantenCalculator(),
@@ -135,7 +139,7 @@ internal class ExpectedValueEvaluator(
         var best: CandidateScore? = null
         scoreAll(candidates).forEach { score ->
             val current = best
-            if (current == null || score.expectedValue > current.expectedValue + ExpectationTuning.EXPECTED_VALUE_TIE_TOLERANCE) {
+            if (current == null || score.expectedValue > current.expectedValue + EXPECTED_VALUE_TIE_TOLERANCE) {
                 best = score
             }
         }
@@ -180,7 +184,7 @@ internal class ExpectedValueEvaluator(
         if (GameAction.Tsumo in context.legalActions) return GameCommand.Tsumo
         val best = choose(discardCandidates() + declarationCandidates(extensionRegistry) + selfKanCandidates())
         val abortiveDraw = context.legalActions.filterIsInstance<GameAction.ExhaustiveDraw>().firstOrNull()
-        if (abortiveDraw != null && best.winProbability < ExpectationTuning.ABORTIVE_DRAW_WIN_PROBABILITY) {
+        if (abortiveDraw != null && best.winProbability < parameters.abortiveDrawWinProbability) {
             return GameCommand.DeclareExhaustiveDraw(abortiveDraw.reason)
         }
         return best.candidate.command
@@ -332,7 +336,7 @@ internal class ExpectedValueEvaluator(
             val cycles = assessment.tenpaiProfile?.expectedCyclesInPlay(outlook.ownDraws, outlook) ?: outlook.ownDraws.toDouble()
             risk.averageLoss(unseen) * cycles
         } else {
-            val turns = min(outlook.ownDraws, (assessment.shanten.coerceAtLeast(0) + 1) * ExpectationTuning.ATTACK_TURNS_PER_SHANTEN)
+            val turns = min(outlook.ownDraws, (assessment.shanten.coerceAtLeast(0) + 1) * parameters.attackTurnsPerShanten)
             risk.averageLoss(hand.tiles.map { assessor.canonical(it.tile) }) * turns
         }
     }
@@ -392,7 +396,7 @@ internal class ExpectedValueEvaluator(
                 val threat = positionEvaluator.threat(currentView, opponent.id)
                 when (level.defenseScope) {
                     DefenseScope.NONE -> null
-                    DefenseScope.HIGH_THREAT_ONLY -> if (threat.readyProbability < ExpectationTuning.HIGH_THREAT_READY_PROBABILITY) {
+                    DefenseScope.HIGH_THREAT_ONLY -> if (threat.readyProbability < parameters.highThreatReadyProbability) {
                         null
                     } else {
                         OpponentThreat(
@@ -408,5 +412,11 @@ internal class ExpectedValueEvaluator(
                     )
                 }
             }
+    }
+
+    /** [ExpectedValueEvaluator] 的常數。 */
+    private companion object {
+        /** 兩個期望值視為相同的差距上限。 */
+        const val EXPECTED_VALUE_TIE_TOLERANCE: Double = 1e-9
     }
 }

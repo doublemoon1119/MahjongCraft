@@ -160,7 +160,7 @@ class ExpectedValueAiStrategyTest {
         )
 
         listOf(InformationLevel.INTERMEDIATE, InformationLevel.ADVANCED).forEach { level ->
-            val (damaScore, riichiScore) = ExpectedValueEvaluator(level, ExpectationFixtures.module, context).scoreAll(listOf(dama, riichi))
+            val (damaScore, riichiScore) = ExpectedValueEvaluator(level, ExpectationParameters.DEFAULT, ExpectationFixtures.module, context).scoreAll(listOf(dama, riichi))
             assertTrue(riichiScore.expectedValue > damaScore.expectedValue, "$level riichi $riichiScore dama $damaScore")
             assertTrue(riichiScore.winProbability > damaScore.winProbability)
         }
@@ -214,6 +214,12 @@ class ExpectedValueAiStrategyTest {
         )
         assertIs<GameCommand.Discard>(
             strategy(InformationLevel.INTERMEDIATE).decideGameCommand(context(fourPlayers(ready), ready, legalActions = listOf(kyuushu))),
+        )
+        val neverDeclares = ExpectationParameters(abortiveDrawWinProbability = 0.0)
+        assertIs<GameCommand.Discard>(
+            strategy(InformationLevel.INTERMEDIATE, neverDeclares)
+                .decideGameCommand(context(fourPlayers(hopeless), hopeless, legalActions = listOf(kyuushu))),
+            "the strategy must use the parameters it was given",
         )
     }
 
