@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.PositionRules
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
+import com.doublemoon1119.mahjongcraft.logic.tile.IdentityTileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
 import kotlin.uuid.Uuid
 
 /**
@@ -49,19 +51,32 @@ interface OpponentModel {
 /**
  * 不具任何規則知識的對手模型。
  *
- * 所有和牌與放銃都以相同的單位點數計算、捨牌危險度不區分牌張；對手的聽牌可能性只依副露數與捨牌數粗估。
- * 沒有登記專屬對手模型的規則因此仍能讓使用評估的決策正常運作，只是判斷較為保守。
+ * 所有和牌與放銃都以相同的單位點數計算；對手的聽牌可能性只依副露數與捨牌數粗估。捨牌危險度在基本深度不區分牌張，
+ * 進階深度另外套用 [OpponentReading] 的倍率，但限制在 [MIN_READING_FACTOR] 到 [MAX_READING_FACTOR] 之間，
+ * 因為不知道規則時無法確認讀牌的準確度。沒有登記專屬對手模型的規則因此仍能讓使用評估的決策正常運作，只是判斷較為保守。
  *
  * @property readingDepth 推測對手手牌的深度。
+ * @param interpretation 規則的牌面正規化，供讀牌比較牌面。
  */
-class NeutralOpponentModel(override val readingDepth: ReadingDepth) : OpponentModel {
+class NeutralOpponentModel(
+    override val readingDepth: ReadingDepth,
+    interpretation: TileInterpretationPolicy = IdentityTileInterpretationPolicy,
+) : OpponentModel {
+    /** 進階深度使用的讀牌。 */
+    private val reading = OpponentReading(interpretation)
+
     override fun baselineWinValue(view: PositionView, playerId: Uuid): Int = UNIT_WIN_VALUE
 
     override fun discardDanger(
         view: PositionView,
         opponentId: Uuid,
         tile: Tile,
-    ): Double = UNIFORM_DISCARD_DANGER
+    ): Double = when (readingDepth) {
+        ReadingDepth.BASIC -> UNIFORM_DISCARD_DANGER
+        ReadingDepth.ADVANCED ->
+            UNIFORM_DISCARD_DANGER *
+                reading.dangerFactor(view, opponentId, tile).coerceIn(MIN_READING_FACTOR, MAX_READING_FACTOR)
+    }
 
     override fun threat(view: PositionView, opponentId: Uuid): ThreatEstimate {
         val opponent = view.player(opponentId)
@@ -82,6 +97,12 @@ class NeutralOpponentModel(override val readingDepth: ReadingDepth) : OpponentMo
 
         /** 不區分牌張時使用的捨牌危險度。 */
         const val UNIFORM_DISCARD_DANGER: Double = 0.1
+
+        /** 進階深度的讀牌倍率下限。 */
+        const val MIN_READING_FACTOR: Double = 0.5
+
+        /** 進階深度的讀牌倍率上限。 */
+        const val MAX_READING_FACTOR: Double = 1.5
 
         /** 沒有副露也沒有捨牌時的聽牌可能性。 */
         private const val BASE_READY_PROBABILITY: Double = 0.05

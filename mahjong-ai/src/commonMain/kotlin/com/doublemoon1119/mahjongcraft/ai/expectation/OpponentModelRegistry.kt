@@ -34,5 +34,5 @@ class OpponentModelRegistry {
     }
 
     /** 建立 [module] 以 [depth] 讀牌的對手模型；沒有登記時為 [NeutralOpponentModel]。 */
-    fun create(module: MahjongRuleModule<*>, depth: ReadingDepth): OpponentModel = factoriesByRuleModuleId[module.id]?.invoke(module, depth) ?: NeutralOpponentModel(depth)
+    fun create(module: MahjongRuleModule<*>, depth: ReadingDepth): OpponentModel = factoriesByRuleModuleId[module.id]?.invoke(module, depth) ?: NeutralOpponentModel(readingDepth = depth, interpretation = module.createTileInterpretationPolicy())
 }

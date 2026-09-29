@@ -152,6 +152,29 @@ class RiichiOpponentModelTest {
         assertEquals(plainDanger, redDanger)
     }
 
+    /**
+     * 進階深度套用讀牌倍率：對手副露都是筒子、牌河沒有筒子時，筒子比基本深度危險、萬子比基本深度安全；
+     * 對手打過的牌仍然完全安全。
+     */
+    @Test
+    fun `advanced reading scales danger but own discards stay safe`() {
+        val advanced = RiichiOpponentModel(
+            rules = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, RiichiRuleConfig()).createPositionRules(),
+            readingDepth = ReadingDepth.ADVANCED,
+        )
+        val self = seat(Wind.SOUTH)
+        val flush = seat(
+            Wind.EAST,
+            discards = listOf(character(9), Tile.Honor.North, bamboo(1), character(1), bamboo(8)),
+            melds = listOf(pon(dot(3)), pon(dot(7))),
+        )
+        val view = view(table(listOf(flush, self)), self)
+
+        assertTrue(advanced.discardDanger(view, flush.id, dot(5)) > model.discardDanger(view, flush.id, dot(5)))
+        assertTrue(advanced.discardDanger(view, flush.id, character(5)) < model.discardDanger(view, flush.id, character(5)))
+        assertEquals(0.0, advanced.discardDanger(view, flush.id, character(9)))
+    }
+
     /** 剛摸到的牌只算一張可見牌：兩張八筒加摸到的八筒，與手中三張八筒的危險度相同。 */
     @Test
     fun `the drawn tile counts once when counting unseen tiles`() {
@@ -198,6 +221,8 @@ class RiichiOpponentModelTest {
     private fun character(value: Int): Tile = Tile.Numeric(Tile.Suit.Character, value)
 
     private fun dot(value: Int): Tile = Tile.Numeric(Tile.Suit.Dot, value)
+
+    private fun bamboo(value: Int): Tile = Tile.Numeric(Tile.Suit.Bamboo, value)
 
     private companion object {
         val RED_FIVE_DOT: Tile = RiichiTileTypes.redFive(Tile.Suit.Dot)

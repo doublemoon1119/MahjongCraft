@@ -57,6 +57,29 @@ class NeutralOpponentModelTest {
         )
     }
 
+    /**
+     * 進階深度套用讀牌倍率，但限制在溫和的範圍內：[active] 副露都是筒子、牌河沒有筒子，
+     * 打筒子較危險、打早外的萬子較安全；基本深度仍不區分牌張。
+     */
+    @Test
+    fun `advanced reading adjusts danger within mild bounds`() {
+        val advanced = NeutralOpponentModel(ReadingDepth.ADVANCED)
+        val dot = Tile.Numeric(Tile.Suit.Dot, 5)
+        val outsideCharacter = Tile.Numeric(Tile.Suit.Character, 1)
+
+        assertEquals(
+            NeutralOpponentModel.UNIFORM_DISCARD_DANGER * NeutralOpponentModel.MAX_READING_FACTOR,
+            advanced.discardDanger(view, active.id, dot),
+            absoluteTolerance = 1e-12,
+        )
+        assertEquals(
+            NeutralOpponentModel.UNIFORM_DISCARD_DANGER * NeutralOpponentModel.MIN_READING_FACTOR,
+            advanced.discardDanger(view, active.id, outsideCharacter),
+            absoluteTolerance = 1e-12,
+        )
+        assertEquals(model.discardDanger(view, active.id, dot), model.discardDanger(view, active.id, outsideCharacter))
+    }
+
     /** 副露與捨牌越多，聽牌可能性越高。 */
     @Test
     fun `melds and discards raise the ready probability`() {
