@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
+import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiGameActionHandler
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationCategory
@@ -23,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugRoundPreparationResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.registerDebugWinRoundContinuationResolvers
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.registerDebugScriptedAiStrategies
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
@@ -100,6 +102,10 @@ object FabricMahjongExtensions {
         coreRegistries.tileTypeRegistry.registerBuiltInTileTypes()
         coreRegistries.networkRegistries.registerBuiltInRuleConfigDtos()
         coreRegistries.winCelebrationCueResolverRegistry.registerBuiltInWinCelebrationCueResolvers()
+        coreRegistries.aiStrategyRegistry.registerBuiltInAiStrategies(
+            moduleRegistry = coreRegistries.moduleRegistry,
+            extensionActionRegistry = coreRegistries.gameActionAiRegistry,
+        )
         registerBundledRiichiExtension(coreRegistries = coreRegistries, declareRiichiUseCase = declareRiichiUseCase)
         // 開發環境限定：讓「胡牌後本局繼續」這條路徑在還沒有任何規則支援它時就能進遊戲驗證，
         // 比照 FabricDebugCommand 的 gating——正式產物裡根本沒註冊過。預設 inert。
@@ -112,6 +118,8 @@ object FabricMahjongExtensions {
             coreRegistries.winRoundContinuationResolverRegistry.registerDebugWinRoundContinuationResolvers(
                 state = debugWinRoundContinuationState,
             )
+            // debug 情境的對手使用腳本 AI
+            coreRegistries.aiStrategyRegistry.registerDebugScriptedAiStrategies()
         }
 
         val coreCategories = MahjongExtensionRegistrar.registerAndFreeze(

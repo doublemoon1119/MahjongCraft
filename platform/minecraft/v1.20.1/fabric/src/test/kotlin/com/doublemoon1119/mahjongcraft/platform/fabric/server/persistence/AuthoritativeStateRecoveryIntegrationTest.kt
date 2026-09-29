@@ -443,7 +443,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             gameRepository,
             GetLegalActionsUseCase(gameRepository, moduleRegistry),
             MahjongAiStrategyRegistryImpl(RandomAiStrategy.KEY).apply {
-                registerBuiltInAiStrategies(ExtensionGameActionAiRegistry())
+                registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry())
             },
             GameVisibilityPolicyImpl(),
             moduleRegistry,

@@ -1,10 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.server.di
 
+import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
-import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
-import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.flow.common.di.FlowCommonModule
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
@@ -20,10 +19,9 @@ import org.koin.core.annotation.Single
 /**
  * `:mahjong-flow-server` 的 Koin 模組。
  *
- * 絕大多數綁定靠 [ComponentScan] + 類別自身的 `@Factory` 標註自動完成。[mahjongAiStrategyRegistry]
- * 是目前唯一一處手動綁定——`:mahjong-ai` 刻意不依賴 Koin（比照 `:mahjong-logic` 維持框架無關），
- * [MahjongAiStrategyRegistryImpl] 因此不會被這裡的 [ComponentScan] 掃到（套件字首不同），需要顯式
- * 提供。
+ * 絕大多數綁定靠 [ComponentScan] + 類別自身的 `@Factory` 標註自動完成；各 registry 由這裡以 `@Single` 提供空的實例，
+ * 內容由 extension bootstrap 登記。`:mahjong-ai` 刻意不依賴 Koin（比照 `:mahjong-logic` 維持框架無關），
+ * [MahjongAiStrategyRegistryImpl] 因此不會被這裡的 [ComponentScan] 掃到（套件字首不同），需要顯式提供。
  */
 @Module(includes = [FlowCommonModule::class])
 @ComponentScan("com.doublemoon1119.mahjongcraft.flow.server")
@@ -60,8 +58,10 @@ class FlowServerModule {
     @Single
     fun winSettlementDetailResolverRegistry(): WinSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry()
 
+    /**
+     * 建立 AI 策略 registry；未知或未指定的策略 key 退回初級。內建策略由 extension bootstrap 與其他內建項目一起登記，
+     * 這裡不預先登記任何策略。
+     */
     @Single
-    fun mahjongAiStrategyRegistry(extensionActionRegistry: ExtensionGameActionAiRegistry): MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply {
-        registerBuiltInAiStrategies(extensionActionRegistry)
-    }
+    fun mahjongAiStrategyRegistry(): MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = BuiltInAiStrategyKeys.BEGINNER)
 }

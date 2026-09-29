@@ -136,6 +136,15 @@ object MinecraftMessageKeys {
      */
     const val AI_STRATEGY_RANDOM = PREFIX + "ai_strategy_random"
 
+    /** 內建初級 AI 策略的顯示名稱，用途同 [AI_STRATEGY_RANDOM]。 */
+    const val AI_STRATEGY_BEGINNER = PREFIX + "ai_strategy_beginner"
+
+    /** 內建中級 AI 策略的顯示名稱，用途同 [AI_STRATEGY_RANDOM]。 */
+    const val AI_STRATEGY_INTERMEDIATE = PREFIX + "ai_strategy_intermediate"
+
+    /** 內建高級 AI 策略的顯示名稱，用途同 [AI_STRATEGY_RANDOM]。 */
+    const val AI_STRATEGY_ADVANCED = PREFIX + "ai_strategy_advanced"
+
     /**
      * 已變更遊戲設定，依序帶舊設定、新設定兩個可互動文字參數（各一個 `%s`），措辭比照
      * [READY_TOGGLE_PREFIX] 準備狀態切換訊息的「舊狀態 → 新狀態」呈現方式。
@@ -475,6 +484,9 @@ object MinecraftMessageKeys {
         KICK_FAILED,
         KICK_CANDIDATE_AI_LABEL,
         AI_STRATEGY_RANDOM,
+        AI_STRATEGY_BEGINNER,
+        AI_STRATEGY_INTERMEDIATE,
+        AI_STRATEGY_ADVANCED,
         AI_STRATEGY_CHANGED,
         AI_STRATEGY_UNCHANGED,
         TARGET_NOT_AI,

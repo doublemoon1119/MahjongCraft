@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
  * @property extensionActionRegistry 將規則擴充動作轉成命令候選。
  */
 class ExpectedValueAiStrategy(
-    private val level: InformationLevel,
+    val level: InformationLevel,
     private val moduleRegistry: MahjongModuleRegistry,
     private val extensionActionRegistry: ExtensionGameActionAiRegistry,
 ) : MahjongAiStrategy {

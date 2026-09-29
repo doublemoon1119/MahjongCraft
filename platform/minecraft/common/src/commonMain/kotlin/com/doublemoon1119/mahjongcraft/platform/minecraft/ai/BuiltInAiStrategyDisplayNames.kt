@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.ai
 
+import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 
@@ -11,4 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageK
  */
 fun AiStrategyDisplayNameRegistry.registerBuiltInAiStrategyDisplayNames() {
     register(RandomAiStrategy.KEY, MinecraftMessageKeys.AI_STRATEGY_RANDOM)
+    register(BuiltInAiStrategyKeys.BEGINNER, MinecraftMessageKeys.AI_STRATEGY_BEGINNER)
+    register(BuiltInAiStrategyKeys.INTERMEDIATE, MinecraftMessageKeys.AI_STRATEGY_INTERMEDIATE)
+    register(BuiltInAiStrategyKeys.ADVANCED, MinecraftMessageKeys.AI_STRATEGY_ADVANCED)
 }

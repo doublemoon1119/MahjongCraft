@@ -159,7 +159,7 @@ class MahjongAutoDrawServiceTest {
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply {
-            registerBuiltInAiStrategies(ExtensionGameActionAiRegistry())
+            registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry())
         }
         val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(), moduleRegistry)
         val clock = MutableMonotonicClock()

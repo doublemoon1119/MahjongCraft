@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.di
 
+import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
+import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
@@ -40,6 +43,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decisio
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.FabricDebugPresentationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugProgressionCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugRoundCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.DebugScriptedAiStrategy
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
@@ -61,6 +65,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.BuiltInDecisionStatusIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
@@ -76,6 +81,7 @@ import org.koin.plugin.module.dsl.startKoin
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
@@ -89,6 +95,25 @@ class FabricApplicationModuleTest {
     @AfterTest
     fun tearDown() {
         stopKoin()
+    }
+
+    /** 開發環境在凍結前另外登記 debug 情境使用的腳本 AI。 */
+    @Test
+    fun `development environment registers scripted debug ai strategies before freezing`() {
+        val koin = startKoin<MahjongCraftServerApp>().koin
+
+        FabricMahjongExtensions.initialize(
+            coreRegistries = koin.get<CoreExtensionRegistries>(),
+            presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
+            tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>(),
+            declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
+            minecraftEnvironment = object : MinecraftEnvironment {
+                override val isDevelopment: Boolean = true
+            },
+            extensions = emptyList(),
+        )
+
+        assertTrue(DebugScriptedAiStrategy.TSUMOGIRI_KEY in koin.get<MahjongAiStrategyRegistry>().getAllStrategyKeys())
     }
 
     @Test
@@ -112,6 +137,9 @@ class FabricApplicationModuleTest {
         val decisionStatusDisplayNameRegistry = koin.get<DecisionStatusDisplayNameRegistry>()
         val coreRegistries = koin.get<CoreExtensionRegistries>()
         val presentationRegistries = koin.get<MinecraftPresentationRegistries>()
+        val aiStrategyRegistry = koin.get<MahjongAiStrategyRegistry>()
+        assertSame(aiStrategyRegistry, coreRegistries.aiStrategyRegistry)
+        assertTrue(aiStrategyRegistry.getAllStrategyKeys().isEmpty())
         assertFalse(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertFalse(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertFalse(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
@@ -148,6 +176,11 @@ class FabricApplicationModuleTest {
         assertTrue(tileEmojiRegistry.isFrozen)
         assertTrue(tileLabelRegistry.isFrozen)
         assertTrue(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
+        assertEquals(
+            listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY),
+            aiStrategyRegistry.getAllStrategyKeys().toList(),
+        )
+        assertFailsWith<IllegalStateException> { aiStrategyRegistry.register("example:late") { aiStrategyRegistry.resolve(null) } }
         assertTrue(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertTrue(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
         assertEquals(

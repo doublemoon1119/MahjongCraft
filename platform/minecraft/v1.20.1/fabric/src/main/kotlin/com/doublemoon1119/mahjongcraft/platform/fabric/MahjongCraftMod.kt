@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric
 
-import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
@@ -36,7 +35,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCele
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.registerDebugScriptedAiStrategies
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.FabricObserverSnapshotBroadcastService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
@@ -83,10 +81,6 @@ class MahjongCraftMod : ModInitializer {
             debugWinRoundContinuationState = koin.get<DebugWinRoundContinuationState>(),
             minecraftEnvironment = koin.get<MinecraftEnvironment>(),
         )
-        // 開發環境限定：debug 情境的對手使用腳本 AI，正式產物不註冊。
-        if (koin.get<MinecraftEnvironment>().isDevelopment) {
-            koin.get<MahjongAiStrategyRegistry>().registerDebugScriptedAiStrategies()
-        }
         ModItems.register()
         ModSounds.register()
         ModEntities.register()

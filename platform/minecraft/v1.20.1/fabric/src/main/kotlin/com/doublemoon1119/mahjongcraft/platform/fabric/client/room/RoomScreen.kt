@@ -179,7 +179,7 @@ class RoomScreen(
                 val current = room.aiPlayerStrategyKeys[targetId]
                 addDrawableChild(
                     RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.AI_STRATEGY, aiStrategyText(current))) {
-                        val keys = aiStrategies.getAllStrategyKeys().sorted()
+                        val keys = aiStrategies.getAllStrategyKeys().toList()
                         if (keys.isNotEmpty()) {
                             val next = keys[(keys.indexOf(current).coerceAtLeast(0) + 1) % keys.size]
                             send(RoomActionDto.ChangeAiStrategy(tableIdText, targetId.toString(), next))
@@ -529,7 +529,7 @@ class RoomScreen(
         .append("\n")
         .append(Text.translatable(MinecraftRoomScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
         .also { tooltip ->
-            aiStrategies.getAllStrategyKeys().sorted().forEach { key ->
+            aiStrategies.getAllStrategyKeys().forEach { key ->
                 tooltip.append("\n• ").append(aiStrategyText(key).copy().formatted(if (key == current) Formatting.GREEN else Formatting.WHITE))
             }
         }
