@@ -1226,6 +1226,97 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
+     * 驗證單一贏家榮和時由放銃者另外支付 本場數 × 300，其他玩家分數不變。
+     */
+    @Test
+    fun `test lone ron collects combo bonus from the discarder`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        ).copy(score = 25000)
+        val winner = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        ).copy(score = 25000)
+        val others = listOf(Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(initialSeat = it).copy(score = 25000) }
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, winner) + others,
+            config = RiichiRuleConfig(),
+            comboCount = 2,
+            dynamicRuleState = RiichiDynamicState(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, responderId, GameAction.Ron(discardedTile.id))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val scores = fixtures.gameRepo.getTableState(gameId)!!.players.associate { it.id to it.score }
+        assertEquals(25000 + 32000 + 600, scores.getValue(responderId))
+        assertEquals(25000 - 32000 - 600, scores.getValue(discarderId))
+        others.forEach { assertEquals(25000, scores.getValue(it.id)) }
+    }
+
+    /**
+     * 驗證多家和時本場與供託一樣，只由頭跳順位最近的贏家收取；放銃者支付兩位贏家的役種點數與一份本場。
+     */
+    @Test
+    fun `test multi-ron combo bonus goes to the nearest winner only`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.WEST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        ).copy(score = 25000)
+        val dealerWinnerId = Uuid.random()
+        val dealerWinner = FakeMahjongPlayerFactory.create(
+            id = dealerWinnerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        ).copy(score = 25000)
+        val nonDealerWinner = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+            playerRuleState = RiichiPlayerState(),
+        ).copy(score = 25000)
+        // players 順序：discarder → dealerWinner → nonDealerWinner，故 dealerWinner 是離放銃者
+        // 最近的下家（頭跳順位最前）
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, dealerWinner, nonDealerWinner),
+            dealerPlayerId = dealerWinnerId,
+            config = RiichiRuleConfig(),
+            comboCount = 2,
+            dynamicRuleState = RiichiDynamicState(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(dealerWinnerId, responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.useCase(gameId, dealerWinnerId, GameAction.Ron(discardedTile.id))
+        val result = fixtures.useCase(gameId, responderId, GameAction.Ron(discardedTile.id))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val scores = fixtures.gameRepo.getTableState(gameId)!!.players.associate { it.id to it.score }
+        assertEquals(25000 + 48000 + 600, scores.getValue(dealerWinnerId))
+        assertEquals(25000 + 32000, scores.getValue(responderId))
+        assertEquals(25000 - 48000 - 32000 - 600, scores.getValue(discarderId))
+    }
+
+    /**
      * 驗證放過原本可以榮和的牌時，也會記錄同巡振聽（不只放過碰牌需要記錄）。
      */
     @Test

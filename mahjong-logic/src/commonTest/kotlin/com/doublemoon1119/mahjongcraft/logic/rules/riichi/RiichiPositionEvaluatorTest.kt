@@ -29,19 +29,46 @@ class RiichiPositionEvaluatorTest {
     private val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, RiichiRuleConfig())
     private val evaluator = module.createPositionEvaluator()
 
-    /** 和牌價值等於正式榮和結算的點數，加上場上可收下的立直棒。 */
+    /** 和牌價值等於正式榮和結算的點數，加上場上可收下的立直棒與本場。 */
     @Test
-    fun `win value matches the formal ron settlement plus the stick pot`() {
+    fun `win value matches the formal ron settlement plus the stick pot and combo bonus`() {
         val winner = seat(Wind.SOUTH, hand = yakuhaiTankiOnTwoBamboo(), discards = listOf(Tile.Honor.North))
         val discarder = seat(Wind.EAST)
-        val table = table(listOf(discarder, winner), riichiSticks = 2)
+        val table = table(listOf(discarder, winner), riichiSticks = 2, comboCount = 2)
         val winningTile = FakeIdentifiedTileFactory.create(TWO_BAMBOO)
 
-        val settlement = module.declareRon(table, winner, winningTile, discarderId = discarder.id)?.settlement
+        val resolution = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
         val pot = module.collectStickPot(table)?.second ?: 0
+        val comboBonus = module.resolveComboBonusPayments(
+            tableState = table,
+            winnerId = winner.id,
+            discarderId = discarder.id,
+            resolution = resolution,
+        ).values.sum()
         val value = evaluator.winValue(view(table, winner), winner.hand, TWO_BAMBOO, isTsumo = false)
 
-        assertEquals(WinValue.Points(settlement!!.totalGained + pot), value)
+        assertEquals(600, comboBonus)
+        assertEquals(WinValue.Points(resolution!!.totalGained + pot + comboBonus), value)
+    }
+
+    /** 自摸的和牌價值等於正式自摸結算的點數，加上其他每家支付的本場。 */
+    @Test
+    fun `win value matches the formal tsumo settlement plus the combo bonus`() {
+        val winner = seat(Wind.SOUTH, hand = yakuhaiTankiOnTwoBamboo(), discards = listOf(Tile.Honor.North))
+        val table = table(listOf(seat(Wind.EAST), winner, seat(Wind.WEST), seat(Wind.NORTH)), comboCount = 1)
+        val drawnWinner = winner.copy(hand = winner.hand.copy(lastDrawn = FakeIdentifiedTileFactory.create(TWO_BAMBOO)))
+
+        val resolution = module.declareTsumo(table, drawnWinner)
+        val comboBonus = module.resolveComboBonusPayments(
+            tableState = table,
+            winnerId = winner.id,
+            discarderId = null,
+            resolution = resolution,
+        ).values.sum()
+        val value = evaluator.winValue(view(table, winner), winner.hand, TWO_BAMBOO, isTsumo = true)
+
+        assertEquals(300, comboBonus)
+        assertEquals(WinValue.Points(resolution!!.totalGained + comboBonus), value)
     }
 
     /** 沒有役的聽牌不能榮和，但門前自摸仍然成立。 */
@@ -298,10 +325,15 @@ class RiichiPositionEvaluatorTest {
         playerRuleState = RiichiPlayerState(riichiTile = if (riichi) FakeIdentifiedTileFactory.create(Tile.Honor.West) else null),
     )
 
-    private fun table(players: List<MahjongPlayer>, riichiSticks: Int = 0): TableState = FakeTableStateFactory.create(
+    private fun table(
+        players: List<MahjongPlayer>,
+        riichiSticks: Int = 0,
+        comboCount: Int = 0,
+    ): TableState = FakeTableStateFactory.create(
         players = players,
         dealerPlayerId = players.first().id,
         config = RiichiRuleConfig(),
+        comboCount = comboCount,
         dynamicRuleState = RiichiDynamicState(riichiStickCount = riichiSticks),
     )
 

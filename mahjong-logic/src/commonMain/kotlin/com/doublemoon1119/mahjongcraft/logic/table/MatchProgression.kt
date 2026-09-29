@@ -90,8 +90,16 @@ sealed interface MatchRoundTransition {
     /** 保留目前局位並連莊。 */
     data object RepeatCurrentRound : MatchRoundTransition
 
-    /** 過莊並前進到明確的下一局位。 */
-    data class AdvanceTo(val nextPosition: MatchRoundPosition) : MatchRoundTransition
+    /**
+     * 過莊並前進到明確的下一局位。
+     *
+     * @property nextPosition 下一局位。
+     * @property continuesCombo 過莊後本場數是否繼續累加；為 `false` 時歸零。
+     */
+    data class AdvanceTo(
+        val nextPosition: MatchRoundPosition,
+        val continuesCombo: Boolean = false,
+    ) : MatchRoundTransition
 }
 
 /** 由規則決定初始局位與每局結算後整場去向的純邏輯 policy。 */

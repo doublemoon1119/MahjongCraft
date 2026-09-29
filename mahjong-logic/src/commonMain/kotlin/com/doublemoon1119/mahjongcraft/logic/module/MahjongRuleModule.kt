@@ -356,6 +356,28 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>?
 
     /**
+     * 胡牌時，贏家依 [TableState.comboCount] 額外收取的連莊點數（如日麻的本場），以每位付款者支付的
+     * 金額表示。
+     *
+     * 與 [collectStickPot] 相同，由呼叫端決定「這次由誰收取」：自摸與單一贏家榮和是唯一贏家，多家和
+     * 則只有收下供託的那位贏家收取。這裡只負責依規則決定付款者與金額。
+     *
+     * 預設沒有連莊點數，回傳空 map。
+     *
+     * @param tableState 目前的桌況（尚未套用本次胡牌結算）。
+     * @param winnerId 收取連莊點數的贏家 Uuid。
+     * @param discarderId 放銃者 Uuid；自摸或與自摸等價的結果為 null。
+     * @param resolution 此贏家本次胡牌的結算結果；與胡牌等價但沒有手牌結算的結果為 null。
+     * @return 每位付款者應支付的連莊點數；金額皆為正數，不含 [winnerId]。
+     */
+    fun resolveComboBonusPayments(
+        tableState: TableState,
+        winnerId: Uuid,
+        discarderId: Uuid?,
+        resolution: WinResolutionResult?,
+    ): Map<Uuid, Int> = emptyMap()
+
+    /**
      * 計算一次一般流局（牌山摸盡）的點數結算——實際如何結算完全由各規則自己的覆寫決定
      * （例如日麻的聽牌／不聽罰符拆分），這裡不預設任何規則的具體公式。應優先於普通流局成立的
      * 特殊結果交由 Flow 的 post-reaction outcome resolver 判定，不應混入本 hook。

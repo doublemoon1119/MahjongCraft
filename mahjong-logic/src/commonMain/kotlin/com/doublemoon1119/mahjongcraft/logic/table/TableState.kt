@@ -261,7 +261,7 @@ data class TableState(
                 players = players,
                 dealerPlayerId = players[newDealerIndex].id,
                 roundNumber = transition.nextPosition.roundNumber,
-                comboCount = 0,
+                comboCount = if (transition.continuesCombo) comboCount + 1 else 0,
                 prevalentWind = transition.nextPosition.prevalentWind,
                 roundPosition = transition.nextPosition,
             )

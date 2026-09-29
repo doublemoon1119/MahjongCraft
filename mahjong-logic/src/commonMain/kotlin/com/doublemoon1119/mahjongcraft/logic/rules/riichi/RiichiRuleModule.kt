@@ -244,9 +244,7 @@ class RiichiRuleModule(
             is RiichiPointResult.PaoTsumo -> {
                 // 理論上不會發生：RiichiHandValueCalculator 只在 paoLiability 非 null 時才會回傳 PaoTsumo。
                 val paoLiability = result.paoLiability ?: return null
-                val paoPlayerId = tableState.players
-                    .first { tableState.relativeDirectionOf(player.id, it.id) == paoLiability.direction }
-                    .id
+                val paoPlayerId = tableState.riichiPaoPlayerId(player.id, paoLiability)
                 paymentReasons = mapOf(paoPlayerId to BuiltInPaymentReasonIds.PAO)
                 mergeTsumoRemainder(tableState, player.id, mapOf(paoPlayerId to pointResult.paoPayment), pointResult.remainder)
             }
@@ -300,9 +298,7 @@ class RiichiRuleModule(
             is RiichiPointResult.PaoRon -> {
                 // 理論上不會發生：RiichiHandValueCalculator 只在 paoLiability 非 null 時才會回傳 PaoRon。
                 val paoLiability = result.paoLiability ?: return null
-                val paoPlayerId = tableState.players
-                    .first { tableState.relativeDirectionOf(player.id, it.id) == paoLiability.direction }
-                    .id
+                val paoPlayerId = tableState.riichiPaoPlayerId(player.id, paoLiability)
                 // 包牌責任者剛好就是放銃者本人時，兩份「一半」其實是同一個人要付，直接歸戶成一筆
                 // 全額，避免兩筆同 key 的付款在合併時互相覆蓋掉一半金額。
                 paymentReasons = mapOf(paoPlayerId to BuiltInPaymentReasonIds.PAO)
@@ -380,6 +376,24 @@ class RiichiRuleModule(
     override fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>? {
         val riichiDynamicState = tableState.dynamicRuleState as? RiichiDynamicState ?: return null
         return riichiDynamicState.copy(riichiStickCount = 0) to riichiDynamicState.riichiStickCount * RIICHI_STICK_POINTS
+    }
+
+    /**
+     * 依 [riichiComboBonusPayments] 分攤本場點數；[resolution] 成立包牌時由包牌責任者承擔對應部分。
+     */
+    override fun resolveComboBonusPayments(
+        tableState: TableState,
+        winnerId: Uuid,
+        discarderId: Uuid?,
+        resolution: WinResolutionResult?,
+    ): Map<Uuid, Int> {
+        val paoLiability = (resolution?.handValueResult as? RiichiHandValueResult)?.paoLiability
+        return riichiComboBonusPayments(
+            tableState = tableState,
+            winnerId = winnerId,
+            discarderId = discarderId,
+            paoPlayerId = paoLiability?.let { tableState.riichiPaoPlayerId(winnerId, it) },
+        )
     }
 
     /**

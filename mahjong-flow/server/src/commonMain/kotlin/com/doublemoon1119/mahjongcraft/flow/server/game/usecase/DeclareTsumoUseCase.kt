@@ -138,20 +138,29 @@ class DeclareTsumoUseCase(
 
                     // 贏家同時收下場上所有供託（如立直棒），不支援此機制的規則回傳 null
                     val stickPot = module.collectStickPot(stateForSettlement)
+                    // 贏家另外依本場數收取連莊點數，沒有此機制的規則回傳空 map
+                    val comboBonusPayments = module.resolveComboBonusPayments(
+                        tableState = stateForSettlement,
+                        winnerId = playerId,
+                        discarderId = null,
+                        resolution = tsumoResult,
+                    )
 
                     val updatedWinner = stateForSettlement.currentPlayer
                         .copy(
                             score = stateForSettlement.currentPlayer.score +
                                 tsumoResult.totalGained +
-                                (stickPot?.second ?: 0),
+                                (stickPot?.second ?: 0) +
+                                comboBonusPayments.values.sum(),
                         )
                         .recordAction(GameAction.Tsumo)
                     val updatedPlayers = stateForSettlement.players.map { p ->
                         when {
                             p.id == playerId -> updatedWinner
-                            else -> tsumoResult.paymentsByPlayerId[p.id]
-                                ?.let { payment -> p.copy(score = p.score - payment) }
-                                ?: p
+                            else -> {
+                                val payment = (tsumoResult.paymentsByPlayerId[p.id] ?: 0) + (comboBonusPayments[p.id] ?: 0)
+                                if (payment == 0) p else p.copy(score = p.score - payment)
+                            }
                         }
                     }
                     val newState = stateForSettlement.copy(

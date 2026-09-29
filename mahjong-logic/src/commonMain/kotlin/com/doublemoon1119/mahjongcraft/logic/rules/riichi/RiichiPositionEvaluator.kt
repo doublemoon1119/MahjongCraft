@@ -21,7 +21,7 @@ import kotlin.uuid.Uuid
 /**
  * 日本麻將的局面評估。
  *
- * 和牌價值與正式結算使用同一套役種、點數與起胡判定，並加上場上可收下的立直棒。其餘估計只使用公開資訊：
+ * 和牌價值與正式結算使用同一套役種、點數與起胡判定，並加上場上可收下的立直棒與本場點數。其餘估計只使用公開資訊：
  *
  * - 捨牌危險度：列舉對手可能持有、並以這張牌和牌的聽牌型（兩面、坎張、邊張、雙碰、單騎），依評估者看不到的
  *   牌張數量加權。對手牌河裡的牌（現物）不可能榮和；對手捨過兩面另一側的牌時，這個兩面因振聽而排除，
@@ -73,7 +73,17 @@ class RiichiPositionEvaluator(
         if (!result.qualifyingHan().satisfies(config.minimumWinConstraint)) return WinValue.NotWinnable
 
         val sticks = riichiStickCount(view) + if (declaresRiichi) 1 else 0
-        return WinValue.Points(result.totalPoint + sticks * RIICHI_STICK_POINTS)
+        return WinValue.Points(result.totalPoint + sticks * RIICHI_STICK_POINTS + comboBonus(view, isTsumo))
+    }
+
+    /** 評估者以此次和牌收取的本場點數；自摸時其他每位玩家各付一份。 */
+    private fun comboBonus(view: PositionView, isTsumo: Boolean): Int {
+        val comboCount = view.snapshot.comboCount
+        return if (isTsumo) {
+            comboCount * RIICHI_COMBO_BONUS_TSUMO_POINTS_PER_PAYER * (view.snapshot.players.size - 1)
+        } else {
+            comboCount * RIICHI_COMBO_BONUS_RON_POINTS
+        }
     }
 
     override fun baselineWinValue(view: PositionView, playerId: Uuid): Int {
