@@ -26,6 +26,7 @@ import kotlin.uuid.Uuid
  *   快照沒有跨玩家的打牌先後，因此只把一定在宣告之後打出的牌算進去：每次鳴牌最多讓立直者少打一巡，
  *   也最多讓鳴牌者多打一張，因此其他玩家牌河中位置超過「立直宣告牌的位置加上兩倍全桌鳴牌次數」的牌必定在宣告之後打出。
  * - 寶牌：寶牌指示牌的下一張，加上赤寶牌。
+ * - 宣告聽牌時打出的牌：已經立直的對手宣告立直時打出的牌。
  *
  * @property config 本局日麻規則設定。
  * @property handValueCalculator 役種與點數計算。
@@ -98,6 +99,17 @@ class RiichiPositionRules(
             .flatMap { player -> player.discardPile.entries.drop(declarationIndex + 1 + 2 * callCount) }
             .mapTo(mutableSetOf()) { it.tile.tile.riichiCanonical }
         return RonExclusions(ownDiscards = ownDiscards, passedAfterDeclaration = passed)
+    }
+
+    /** 已經立直的對手宣告立直時打出的牌。 */
+    override fun declarationTile(view: PositionView, opponentId: Uuid): Tile? {
+        val opponent = view.player(opponentId)
+        if ((opponent.playerRuleState as? RiichiPlayerState)?.isRiichi != true) return null
+        return opponent.discardPile.entries
+            .firstOrNull { (it as? RiichiDiscardEntry)?.isRiichi == true }
+            ?.tile
+            ?.tile
+            ?.riichiCanonical
     }
 
     override fun bonusTileCount(view: PositionView, tile: Tile): Int {

@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 
 /** 驗證沒有規則知識的規則查詢不回報任何規則事實，以及規則模組如何提供規則查詢。 */
@@ -45,11 +46,12 @@ class NeutralPositionRulesTest {
         assertEquals(emptySet(), NeutralPositionRules.prospectiveDeclarations(view, Hand()))
     }
 
-    /** 不知道規則時，即使是對手自己打過的牌也不能確定他不能榮和，也沒有寶牌。 */
+    /** 不知道規則時，即使是對手自己打過的牌也不能確定他不能榮和，沒有依牌張加計的打點，也沒有宣告聽牌時打出的牌。 */
     @Test
-    fun `no tile is excluded from ron and no tile is a bonus tile`() {
+    fun `no tile is excluded bonus or declared`() {
         assertEquals(RonExclusions.NONE, NeutralPositionRules.ronExclusions(view, opponent.id))
         assertEquals(0, NeutralPositionRules.bonusTileCount(view, Tile.Honor.Red))
+        assertNull(NeutralPositionRules.declarationTile(view, opponent.id))
     }
 
     /** 沒有專屬規則查詢的規則使用規則中立的查詢，日麻使用自己的查詢。 */

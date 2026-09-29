@@ -125,12 +125,20 @@ interface PositionRules {
     /** 從公開資訊可以確定 [opponentId] 依規則不能榮和的牌；預設沒有。 */
     fun ronExclusions(view: PositionView, opponentId: Uuid): RonExclusions = RonExclusions.NONE
 
-    /** [tile] 目前算作幾張寶牌；沒有寶牌制度的規則恆為 0。 */
+    /** 持有 [tile] 時依規則額外加計的打點單位數，例如日麻的寶牌；規則沒有依牌張加計打點時恆為 0。 */
     fun bonusTileCount(view: PositionView, tile: Tile): Int = 0
+
+    /**
+     * [opponentId] 宣告聽牌時打出的牌，例如日麻的立直宣告牌，牌面以規則的牌面正規化表示。
+     *
+     * 對手沒有宣告，或規則沒有這種宣告時為 null；預設為 null。
+     */
+    fun declarationTile(view: PositionView, opponentId: Uuid): Tile? = null
 }
 
 /**
- * 不具任何規則知識的規則查詢：和牌價值一律回報無法判斷，宣告沒有效果，沒有不能榮和的牌，也沒有寶牌。
+ * 不具任何規則知識的規則查詢：和牌價值一律回報無法判斷，宣告沒有效果，沒有不能榮和的牌、沒有依牌張加計的打點，
+ * 也沒有宣告聽牌時打出的牌。
  */
 object NeutralPositionRules : PositionRules {
     override fun winValue(

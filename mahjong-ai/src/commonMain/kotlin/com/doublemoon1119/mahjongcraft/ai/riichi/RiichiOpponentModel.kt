@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.ai.riichi
 
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
-import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentReading
 import com.doublemoon1119.mahjongcraft.ai.expectation.ReadingDepth
 import com.doublemoon1119.mahjongcraft.ai.expectation.ThreatEstimate
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -18,12 +17,13 @@ import kotlin.uuid.Uuid
 /**
  * 日本麻將的對手模型，只使用公開資訊與規則查詢 [rules] 提供的規則事實。
  *
- * - 捨牌危險度：列舉對手可能持有、並以這張牌和牌的聽牌型（兩面、坎張、邊張、雙碰、單騎），依評估者看不到的
- *   牌張數量加權。對手自己打過的牌（現物）不可能榮和；對手捨過兩面另一側的牌時，這個兩面因振聽而排除，
- *   筋因此自然較安全；構成聽牌型所需的牌已全部出現時該聽牌型不成立，壁因此自然較安全。
- *   進階深度另外乘上 [OpponentReading] 的倍率（早外、染手訊號）；現物仍然完全安全。
+ * - 捨牌危險度：列舉對手可能用這張牌胡的每一種聽牌方式（兩面、坎張、邊張、雙碰、單騎），依評估者看不到的
+ *   牌張數量加權。對手自己打過的牌不可能讓他榮和；兩面聽牌的另一側若是他打過的牌，他也不能胡，
+ *   因此這種聽牌不列入；組成某種聽牌所需的牌已經全部看得到時，這種聽牌也不列入。
  * - 對手威脅：立直者視為確定聽牌；其餘依副露數與捨牌數估計聽牌可能性，打點依立直、門清或副露、
  *   副露中的寶牌與是否為莊家估計。
+ *
+ * 所有規則共用的讀牌由 [OpponentModelRegistry] 在進階深度時另外套用，不在這裡處理。
  *
  * @property rules 本局規則的規則查詢。
  * @property readingDepth 推測對手手牌的深度。
@@ -32,9 +32,6 @@ class RiichiOpponentModel(
     private val rules: PositionRules,
     override val readingDepth: ReadingDepth,
 ) : OpponentModel {
-    /** 進階深度使用的不限定規則讀牌。 */
-    private val reading = OpponentReading { it.riichiCanonical }
-
     override fun baselineWinValue(view: PositionView, playerId: Uuid): Int {
         val player = view.player(playerId)
         val isRiichi = (player.playerRuleState as? RiichiPlayerState)?.isRiichi == true
@@ -83,11 +80,7 @@ class RiichiOpponentModel(
             if (value == LOW_PENCHAN_VALUE) weight += PENCHAN_WEIGHT * holds(1, 2)
             if (value == HIGH_PENCHAN_VALUE) weight += PENCHAN_WEIGHT * holds(8, 9)
         }
-        val readingFactor = when (readingDepth) {
-            ReadingDepth.BASIC -> 1.0
-            ReadingDepth.ADVANCED -> reading.dangerFactor(view, opponentId, tile)
-        }
-        return (weight * DANGER_SCALE * readingFactor).coerceIn(0.0, 1.0)
+        return (weight * DANGER_SCALE).coerceIn(0.0, 1.0)
     }
 
     override fun threat(view: PositionView, opponentId: Uuid): ThreatEstimate {

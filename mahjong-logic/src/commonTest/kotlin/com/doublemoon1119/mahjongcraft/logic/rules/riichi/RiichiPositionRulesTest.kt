@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -233,6 +234,24 @@ class RiichiPositionRulesTest {
         assertEquals(setOf(character(5)), passed)
     }
 
+    /** 已經立直的對手，宣告聽牌時打出的牌就是立直宣告牌；赤五正規化為普通五。 */
+    @Test
+    fun `the declaration tile of a riichi opponent is the tile discarded to declare`() {
+        val self = seat(Wind.SOUTH)
+        val declarer = riichiDeclarer(discardsBefore = listOf(Tile.Honor.North), declarationTile = RED_FIVE_DOT)
+
+        assertEquals(dot(5), rules.declarationTile(view(table(listOf(declarer, self)), self), declarer.id))
+    }
+
+    /** 沒有立直的對手沒有宣告聽牌時打出的牌。 */
+    @Test
+    fun `an opponent without riichi has no declaration tile`() {
+        val self = seat(Wind.SOUTH)
+        val opponent = seat(Wind.EAST, discards = listOf(character(5), Tile.Honor.West))
+
+        assertNull(rules.declarationTile(view(table(listOf(opponent, self)), self), opponent.id))
+    }
+
     /** 寶牌指示牌的下一張每出現一張指示牌就算一張寶牌，赤五另外算一張。 */
     @Test
     fun `bonus tiles follow the visible indicators and red fives`() {
@@ -262,9 +281,9 @@ class RiichiPositionRulesTest {
             listOf(bamboo(2), bamboo(3), bamboo(4), FIVE_BAMBOO),
     )
 
-    /** 東家在打出 [discardsBefore] 之後，以西風宣告立直，宣告牌之後沒有再打牌。 */
-    private fun riichiDeclarer(discardsBefore: List<Tile>): MahjongPlayer {
-        val riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.West)
+    /** 東家在打出 [discardsBefore] 之後，以 [declarationTile] 宣告立直，宣告牌之後沒有再打牌。 */
+    private fun riichiDeclarer(discardsBefore: List<Tile>, declarationTile: Tile = Tile.Honor.West): MahjongPlayer {
+        val riichiTile = FakeIdentifiedTileFactory.create(declarationTile)
         val pile = discardsBefore
             .fold(RiichiDiscardPile()) { pile, tile -> pile.discardTile(FakeIdentifiedTileFactory.create(tile)) }
             .discard(RiichiDiscardEntry(riichiTile, isRiichi = true))

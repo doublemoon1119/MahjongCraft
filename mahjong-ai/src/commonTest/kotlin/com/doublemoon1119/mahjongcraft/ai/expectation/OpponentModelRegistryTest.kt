@@ -38,6 +38,17 @@ class OpponentModelRegistryTest {
         }
     }
 
+    /** 基本深度直接使用規則自己的模型；進階深度一律在外面套用共用讀牌，登記與未登記的規則皆然。 */
+    @Test
+    fun `advanced depth layers the shared reading on every model`() {
+        val registry = OpponentModelRegistry().apply { registerRiichiOpponentModel() }
+
+        assertIs<RiichiOpponentModel>(registry.create(riichi, ReadingDepth.BASIC))
+        assertIs<ReadingOpponentModel>(registry.create(riichi, ReadingDepth.ADVANCED))
+        assertIs<NeutralOpponentModel>(registry.create(taiwan, ReadingDepth.BASIC))
+        assertIs<ReadingOpponentModel>(registry.create(taiwan, ReadingDepth.ADVANCED))
+    }
+
     /** 同一個規則不能登記兩次。 */
     @Test
     fun `a rule cannot be registered twice`() {
