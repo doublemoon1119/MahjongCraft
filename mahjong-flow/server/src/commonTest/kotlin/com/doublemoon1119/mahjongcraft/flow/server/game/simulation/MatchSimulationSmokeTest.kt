@@ -21,7 +21,10 @@ import kotlin.uuid.Uuid
 
 /** 一般建置中執行的少量 AI 對局：確認所有內建策略能以正式流程打完整場，且模擬器能偵測並重播問題。 */
 class MatchSimulationSmokeTest {
-    /** 四個內建策略同桌打完一場東風戰，沒有不合法命令、流程沒有卡住、點數守恆、正常結束。 */
+    /**
+     * 四個內建策略同桌打完一場東風戰，沒有不合法命令、流程沒有卡住、點數守恆、正常結束；
+     * 每一局的榮和與放銃互相對應，榮和一定是和牌。
+     */
     @Test
     fun `every built-in strategy plays a full east match`() = runTest(timeout = SMOKE_TIMEOUT) {
         val lineup = listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY)
@@ -32,6 +35,10 @@ class MatchSimulationSmokeTest {
         assertTrue(result.rounds.size >= RiichiGameLength.East.totalRounds, "rounds played: ${result.rounds.size}")
         assertEquals(setOf(1, 2, 3, 4), result.placementsByPlayer.values.toSet())
         assertEquals(lineup.toSet(), result.strategyKeysByPlayer.values.toSet())
+        result.rounds.forEach { seats ->
+            assertEquals(seats.any { it.wonByRon }, seats.any { it.dealtIn }, "ron and deal-in must match: $seats")
+            assertTrue(seats.none { it.wonByRon && !it.won }, "a ron must be a win: $seats")
+        }
     }
 
     /** 送出不合法命令的策略會被偵測，且從那一局的開局桌況重新推進時同樣發生。 */

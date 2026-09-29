@@ -44,6 +44,12 @@ internal data class Estimate(
  * @property playerRounds 參與的局數（每位使用此策略的玩家每局算一次）。
  * @property wins 和牌次數。
  * @property dealIns 放銃次數。
+ * @property ronWins 榮和次數，也就是其他玩家放銃給這個策略的次數。
+ * @property scoreDeltas 每局的分數變化，包含立直棒與本場。
+ * @property winScoreDeltas 和牌那幾局的分數變化，包含立直棒與本場。
+ * @property opponentRiichiRounds 局結束時有其他玩家已經立直的局數。
+ * @property winsAgainstRiichi [opponentRiichiRounds] 中和牌的次數。
+ * @property dealInsAgainstRiichi [opponentRiichiRounds] 中放銃的次數。
  * @property placements 每場整場結束時的名次。
  * @property timing 決策時間。
  */
@@ -52,6 +58,12 @@ internal data class StrategyStatistics(
     val playerRounds: Int,
     val wins: Int,
     val dealIns: Int,
+    val ronWins: Int,
+    val scoreDeltas: List<Int>,
+    val winScoreDeltas: List<Int>,
+    val opponentRiichiRounds: Int,
+    val winsAgainstRiichi: Int,
+    val dealInsAgainstRiichi: Int,
     val placements: List<Int>,
     val timing: DecisionTiming,
 ) {
@@ -60,6 +72,21 @@ internal data class StrategyStatistics(
 
     /** 每局放銃率。 */
     val dealInRate: Estimate get() = Estimate.rate(dealIns, playerRounds)
+
+    /** 每局榮和率，也就是其他玩家每局放銃給這個策略的比例。 */
+    val ronWinRate: Estimate get() = Estimate.rate(ronWins, playerRounds)
+
+    /** 每局平均分數變化。 */
+    val averageScoreDelta: Estimate get() = Estimate.mean(scoreDeltas)
+
+    /** 和牌那幾局的平均分數變化。 */
+    val averageWinScoreDelta: Estimate get() = Estimate.mean(winScoreDeltas)
+
+    /** 有其他玩家立直的局中的和牌率。 */
+    val winRateAgainstRiichi: Estimate get() = Estimate.rate(winsAgainstRiichi, opponentRiichiRounds)
+
+    /** 有其他玩家立直的局中的放銃率。 */
+    val dealInRateAgainstRiichi: Estimate get() = Estimate.rate(dealInsAgainstRiichi, opponentRiichiRounds)
 
     /** 平均名次。 */
     val averagePlacement: Estimate get() = Estimate.mean(placements)
@@ -97,22 +124,33 @@ internal class SimulationStatistics {
         val keys = (order + seats.keys + timings.keys).distinct().filter { it in seats || it in timings }
         return keys.map { key ->
             val results = seats[key].orEmpty()
+            val againstRiichi = results.filter { it.opponentRiichi }
             StrategyStatistics(
                 strategyKey = key,
                 playerRounds = results.size,
                 wins = results.count { it.won },
                 dealIns = results.count { it.dealtIn },
+                ronWins = results.count { it.wonByRon },
+                scoreDeltas = results.map { it.scoreDelta },
+                winScoreDeltas = results.filter { it.won }.map { it.scoreDelta },
+                opponentRiichiRounds = againstRiichi.size,
+                winsAgainstRiichi = againstRiichi.count { it.won },
+                dealInsAgainstRiichi = againstRiichi.count { it.dealtIn },
                 placements = placements[key].orEmpty(),
                 timing = timings[key] ?: DecisionTiming(),
             )
         }
     }
 
-    /** 以文字表格呈現的彙整結果。 */
+    /**
+     * 以文字表格呈現的彙整結果：第一張表為和牌、放銃、名次與決策時間，第二張表為分數得失、
+     * 其他玩家放銃給它的比例，以及有其他玩家立直時的攻守。
+     */
     fun report(order: List<String> = emptyList()): String = buildString {
+        val statistics = byStrategy(order)
         appendLine("Matches: $matchCount")
         appendLine("strategy | player-rounds | win rate | deal-in rate | average placement | decisions | avg ms | max ms")
-        byStrategy(order).forEach { stats ->
+        statistics.forEach { stats ->
             appendLine(
                 listOf(
                     stats.strategyKey,
@@ -123,6 +161,24 @@ internal class SimulationStatistics {
                     stats.timing.count.toString(),
                     stats.timing.average.inWholeMilliseconds.toString(),
                     stats.timing.max.inWholeMilliseconds.toString(),
+                ).joinToString(" | "),
+            )
+        }
+        appendLine()
+        appendLine(
+            "strategy | score delta per round | score delta per win | ron win rate | " +
+                "rounds with opponent riichi | win rate vs riichi | deal-in rate vs riichi",
+        )
+        statistics.forEach { stats ->
+            appendLine(
+                listOf(
+                    stats.strategyKey,
+                    stats.averageScoreDelta.format(),
+                    stats.averageWinScoreDelta.format(),
+                    stats.ronWinRate.format(),
+                    stats.opponentRiichiRounds.toString(),
+                    stats.winRateAgainstRiichi.format(),
+                    stats.dealInRateAgainstRiichi.format(),
                 ).joinToString(" | "),
             )
         }

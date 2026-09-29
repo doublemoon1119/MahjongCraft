@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -22,6 +23,8 @@ import kotlin.uuid.Uuid
  * @property scoreDelta 這一局的分數變化，包含立直棒與本場。
  * @property won 是否以自摸或榮和和牌。
  * @property dealtIn 是否放銃。
+ * @property wonByRon 是否榮和，也就是其他玩家放銃給這位玩家。
+ * @property opponentRiichi 這一局結束時是否有其他玩家已經立直。
  */
 internal data class SeatRoundResult(
     val playerId: Uuid,
@@ -29,6 +32,8 @@ internal data class SeatRoundResult(
     val scoreDelta: Int,
     val won: Boolean,
     val dealtIn: Boolean,
+    val wonByRon: Boolean,
+    val opponentRiichi: Boolean,
 )
 
 /**
@@ -177,9 +182,12 @@ internal class MatchSimulator(
         return state.players.sumOf { it.score } + sticks * RIICHI_STICK_POINTS == state.players.size * config.scoreConfig.initialScore
     }
 
-    /** 一局中每位玩家的分數變化、和牌與放銃。 */
+    /** 一局中每位玩家的分數變化、和牌與放銃，以及局結束時是否有其他玩家已經立直。 */
     private fun roundResults(round: RecordedRound, strategyKeysByPlayer: Map<Uuid, String>): List<SeatRoundResult> {
         val final = round.final
+        val riichiIds = final.players
+            .filter { (it.playerRuleState as? RiichiPlayerState)?.isRiichi == true }
+            .mapTo(mutableSetOf()) { it.id }
         val winnerIds = final.players
             .filter { player -> player.actionHistory.any { it is GameAction.Ron || it == GameAction.Tsumo } }
             .mapTo(mutableSetOf()) { it.id }
@@ -197,6 +205,8 @@ internal class MatchSimulator(
                 scoreDelta = player.score - round.start.players.first { it.id == player.id }.score,
                 won = player.id in winnerIds,
                 dealtIn = player.id in dealtInIds,
+                wonByRon = player.actionHistory.any { it is GameAction.Ron },
+                opponentRiichi = (riichiIds - player.id).isNotEmpty(),
             )
         }
     }
