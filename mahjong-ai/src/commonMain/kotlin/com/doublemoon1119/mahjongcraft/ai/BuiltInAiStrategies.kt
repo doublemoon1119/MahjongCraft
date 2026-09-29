@@ -13,7 +13,7 @@ object BuiltInAiStrategyKeys {
     /** 中級：數場上的牌、區分打點，並對高威脅的對手防守。 */
     const val INTERMEDIATE: String = "mahjongcraft:intermediate"
 
-    /** 高級：使用全部資訊，包括後續風險與名次。 */
+    /** 高級：在中級之上對所有對手各自防守、考慮名次，並以進階深度讀牌。 */
     const val ADVANCED: String = "mahjongcraft:advanced"
 }
 

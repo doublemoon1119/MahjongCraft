@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.ai.riichi
 
+import com.doublemoon1119.mahjongcraft.ai.expectation.ReadingDepth
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -26,7 +27,10 @@ import kotlin.test.assertTrue
 
 /** 驗證日麻對手模型只依公開資訊估計捨牌危險度與對手威脅。 */
 class RiichiOpponentModelTest {
-    private val model = RiichiOpponentModel(RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, RiichiRuleConfig()).createPositionRules())
+    private val model = RiichiOpponentModel(
+        rules = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, RiichiRuleConfig()).createPositionRules(),
+        readingDepth = ReadingDepth.BASIC,
+    )
 
     /** 對手牌河裡的牌不可能讓他榮和。 */
     @Test

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.ai.riichi
 
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.ai.expectation.ReadingDepth
 import com.doublemoon1119.mahjongcraft.ai.expectation.ThreatEstimate
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -23,8 +24,12 @@ import kotlin.uuid.Uuid
  *   副露中的寶牌與是否為莊家估計。
  *
  * @property rules 本局規則的規則查詢。
+ * @property readingDepth 推測對手手牌的深度。
  */
-class RiichiOpponentModel(private val rules: PositionRules) : OpponentModel {
+class RiichiOpponentModel(
+    private val rules: PositionRules,
+    override val readingDepth: ReadingDepth,
+) : OpponentModel {
     override fun baselineWinValue(view: PositionView, playerId: Uuid): Int {
         val player = view.player(playerId)
         val isRiichi = (player.playerRuleState as? RiichiPlayerState)?.isRiichi == true
@@ -206,5 +211,5 @@ class RiichiOpponentModel(private val rules: PositionRules) : OpponentModel {
 
 /** 登記內建日麻的對手模型。 */
 fun OpponentModelRegistry.registerRiichiOpponentModel() {
-    register(BuiltInRuleModuleIds.RIICHI) { module -> RiichiOpponentModel(module.createPositionRules()) }
+    register(BuiltInRuleModuleIds.RIICHI) { module, depth -> RiichiOpponentModel(rules = module.createPositionRules(), readingDepth = depth) }
 }

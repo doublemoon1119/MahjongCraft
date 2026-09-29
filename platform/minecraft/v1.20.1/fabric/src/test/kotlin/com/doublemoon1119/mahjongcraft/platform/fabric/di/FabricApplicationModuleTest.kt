@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.ai.expectation.ReadingDepth
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
@@ -189,8 +190,8 @@ class FabricApplicationModuleTest {
             aiStrategyRegistry.getAllStrategyKeys().toList(),
         )
         assertFailsWith<IllegalStateException> { aiStrategyRegistry.register("example:late") { aiStrategyRegistry.resolve(null) } }
-        assertIs<RiichiOpponentModel>(opponentModelRegistry.create(moduleRegistry.getModule(RiichiRuleConfig())))
-        assertFailsWith<IllegalStateException> { opponentModelRegistry.register("example:late") { NeutralOpponentModel } }
+        assertIs<RiichiOpponentModel>(opponentModelRegistry.create(moduleRegistry.getModule(RiichiRuleConfig()), ReadingDepth.BASIC))
+        assertFailsWith<IllegalStateException> { opponentModelRegistry.register("example:late") { _, depth -> NeutralOpponentModel(depth) } }
         assertTrue(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertTrue(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
         assertEquals(

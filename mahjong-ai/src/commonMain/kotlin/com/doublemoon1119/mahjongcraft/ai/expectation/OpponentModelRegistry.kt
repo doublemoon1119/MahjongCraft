@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
  */
 class OpponentModelRegistry {
     /** 依規則模組 ID 索引的對手模型建立方式。 */
-    private val factoriesByRuleModuleId = linkedMapOf<String, (MahjongRuleModule<*>) -> OpponentModel>()
+    private val factoriesByRuleModuleId = linkedMapOf<String, (MahjongRuleModule<*>, ReadingDepth) -> OpponentModel>()
 
     /** 是否已禁止後續登記。 */
     private var frozen = false
@@ -18,11 +18,11 @@ class OpponentModelRegistry {
     val registrationKeys: Set<String> get() = factoriesByRuleModuleId.keys.toSet()
 
     /**
-     * 登記 [ruleModuleId] 使用的對手模型；[factory] 每次決策時以該局的規則模組呼叫一次。
+     * 登記 [ruleModuleId] 使用的對手模型；[factory] 每次決策時以該局的規則模組與決策者的讀牌深度呼叫一次。
      *
      * 凍結後或重複登記同一個規則時拋出例外。
      */
-    fun register(ruleModuleId: String, factory: (MahjongRuleModule<*>) -> OpponentModel) {
+    fun register(ruleModuleId: String, factory: (MahjongRuleModule<*>, ReadingDepth) -> OpponentModel) {
         check(!frozen) { "Opponent model registry is frozen" }
         require(ruleModuleId !in factoriesByRuleModuleId) { "Opponent model already registered for $ruleModuleId" }
         factoriesByRuleModuleId[ruleModuleId] = factory
@@ -33,6 +33,6 @@ class OpponentModelRegistry {
         frozen = true
     }
 
-    /** 建立 [module] 使用的對手模型；沒有登記時為 [NeutralOpponentModel]。 */
-    fun create(module: MahjongRuleModule<*>): OpponentModel = factoriesByRuleModuleId[module.id]?.invoke(module) ?: NeutralOpponentModel
+    /** 建立 [module] 以 [depth] 讀牌的對手模型；沒有登記時為 [NeutralOpponentModel]。 */
+    fun create(module: MahjongRuleModule<*>, depth: ReadingDepth): OpponentModel = factoriesByRuleModuleId[module.id]?.invoke(module, depth) ?: NeutralOpponentModel(depth)
 }

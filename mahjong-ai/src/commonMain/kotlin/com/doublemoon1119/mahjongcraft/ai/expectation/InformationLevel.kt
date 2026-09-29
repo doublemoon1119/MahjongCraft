@@ -22,6 +22,7 @@ enum class DefenseScope {
  * @property defenseScope 放銃損失列入計算的對手範圍。
  * @property considersFutureRisk 是否計入繼續進攻時後續捨牌的放銃風險。
  * @property considersPlacement 是否在接近終局時把點數得失換算為名次得失。
+ * @property readingDepth 對手模型推測對手手牌的深度。
  */
 data class InformationLevel(
     val countsVisibleTiles: Boolean,
@@ -29,6 +30,7 @@ data class InformationLevel(
     val defenseScope: DefenseScope,
     val considersFutureRisk: Boolean,
     val considersPlacement: Boolean,
+    val readingDepth: ReadingDepth,
 ) {
     /** 內建的三個等級。 */
     companion object {
@@ -39,6 +41,7 @@ data class InformationLevel(
             defenseScope = DefenseScope.NONE,
             considersFutureRisk = false,
             considersPlacement = false,
+            readingDepth = ReadingDepth.BASIC,
         )
 
         /** 中級：數場上的牌、區分打點，並對高威脅的對手防守。 */
@@ -48,15 +51,21 @@ data class InformationLevel(
             defenseScope = DefenseScope.HIGH_THREAT_ONLY,
             considersFutureRisk = false,
             considersPlacement = false,
+            readingDepth = ReadingDepth.BASIC,
         )
 
-        /** 高級：使用全部資訊，包括對所有對手的防守、後續風險與名次。 */
+        /**
+         * 高級：在中級之上對所有對手各自估計並防守、考慮名次，並以進階深度讀牌。
+         *
+         * 不計後續風險：後續風險讓繼續進攻的選項看起來過於危險，使手牌過早放棄。
+         */
         val ADVANCED: InformationLevel = InformationLevel(
             countsVisibleTiles = true,
             valuesWins = true,
             defenseScope = DefenseScope.ALL,
-            considersFutureRisk = true,
+            considersFutureRisk = false,
             considersPlacement = true,
+            readingDepth = ReadingDepth.ADVANCED,
         )
     }
 }

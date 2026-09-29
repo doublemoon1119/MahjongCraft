@@ -30,6 +30,37 @@ class ExpectedValueAiStrategyTest {
     /** 三個內建等級。 */
     private val allLevels = listOf(InformationLevel.BEGINNER, InformationLevel.INTERMEDIATE, InformationLevel.ADVANCED)
 
+    /** 初級與中級以基本深度讀牌；高級以進階深度讀牌，並且不計後續風險。 */
+    @Test
+    fun `only the advanced level reads at the advanced depth`() {
+        assertEquals(ReadingDepth.BASIC, InformationLevel.BEGINNER.readingDepth)
+        assertEquals(ReadingDepth.BASIC, InformationLevel.INTERMEDIATE.readingDepth)
+        assertEquals(ReadingDepth.ADVANCED, InformationLevel.ADVANCED.readingDepth)
+        assertEquals(false, InformationLevel.ADVANCED.considersFutureRisk)
+    }
+
+    /** 策略以自己的讀牌深度向 registry 建立對手模型。 */
+    @Test
+    fun `the strategy builds opponent models at its own reading depth`() = runTest {
+        val requested = mutableListOf<ReadingDepth>()
+        val registry = OpponentModelRegistry().apply {
+            register(ExpectationFixtures.module.id) { _, depth -> NeutralOpponentModel(depth).also { requested += depth } }
+        }
+        val self = player(Wind.SOUTH, hand = hand(listOf(m(1), m(2), m(3), p(4), p(5), p(6), s(7), s(8), m(6), m(7), s(9), s(9), Tile.Honor.East), drawn = Tile.Honor.North))
+        val table = fourPlayers(self)
+
+        allLevels.forEach { level ->
+            ExpectedValueAiStrategy(
+                level = level,
+                moduleRegistry = ExpectationFixtures.moduleRegistry,
+                extensionActionRegistry = ExpectationFixtures.extensionRegistry,
+                opponentModels = registry,
+            ).decideGameCommand(context(table, self))
+        }
+
+        assertEquals(allLevels.map { it.readingDepth }, requested)
+    }
+
     /** 一向聽時打出孤張字牌，不拆搭子。 */
     @Test
     fun `every level discards an isolated honor rather than breaking a shape`() = runTest {
@@ -160,15 +191,15 @@ class ExpectedValueAiStrategyTest {
         )
 
         listOf(InformationLevel.INTERMEDIATE, InformationLevel.ADVANCED).forEach { level ->
-            val (damaScore, riichiScore) = ExpectedValueEvaluator(level, ExpectationParameters.DEFAULT, ExpectationFixtures.module, ExpectationFixtures.opponentModel, context).scoreAll(listOf(dama, riichi))
+            val (damaScore, riichiScore) = ExpectedValueEvaluator(level, ExpectationParameters.DEFAULT, ExpectationFixtures.module, ExpectationFixtures.opponentModel(level), context).scoreAll(listOf(dama, riichi))
             assertTrue(riichiScore.expectedValue > damaScore.expectedValue, "$level riichi $riichiScore dama $damaScore")
             assertTrue(riichiScore.winProbability > damaScore.winProbability)
         }
     }
 
-    /** 莊家已立直、自己的單騎只剩一張時，高級考慮立直後不能換牌的風險而不立直。 */
+    /** 莊家已立直、自己的單騎只剩一張時，計入後續風險的等級考慮立直後不能換牌的風險而不立直。 */
     @Test
-    fun `the advanced level does not riichi a thin wait into a dealer riichi`() = runTest {
+    fun `future risk keeps a thin wait from riichi into a dealer riichi`() = runTest {
         val dealer = player(Wind.EAST, discards = listOf(Tile.Honor.North, Tile.Honor.West, s(1)), riichi = true)
         val self = player(
             Wind.SOUTH,
@@ -180,7 +211,7 @@ class ExpectedValueAiStrategyTest {
         val west = player(Wind.WEST, discards = listOf(s(5), s(5)))
         val table = table(listOf(dealer, self, west, player(Wind.NORTH)))
 
-        val command = strategy(InformationLevel.ADVANCED).decideGameCommand(context(table, self, legalActions = listOf(RIICHI_GAME_ACTION)))
+        val command = strategy(WITH_FUTURE_RISK).decideGameCommand(context(table, self, legalActions = listOf(RIICHI_GAME_ACTION)))
 
         assertIs<GameCommand.Discard>(command)
     }
@@ -207,7 +238,7 @@ class ExpectedValueAiStrategyTest {
         val context = context(table, self)
         val six = checkNotNull(self.hand.lastDrawn)
         val discard = DecisionCandidate.Discard(tile = six, declaration = null, command = GameCommand.Discard(six.id))
-        fun score(parameters: ExpectationParameters): Double = ExpectedValueEvaluator(InformationLevel.ADVANCED, parameters, ExpectationFixtures.module, ExpectationFixtures.opponentModel, context).scoreAll(listOf(discard)).single().expectedValue
+        fun score(parameters: ExpectationParameters): Double = ExpectedValueEvaluator(WITH_FUTURE_RISK, parameters, ExpectationFixtures.module, ExpectationFixtures.opponentModel(WITH_FUTURE_RISK), context).scoreAll(listOf(discard)).single().expectedValue
 
         assertTrue(score(ExpectationParameters(futureRiskHighThreatOnly = true)) > score(ExpectationParameters.DEFAULT))
     }
@@ -230,7 +261,7 @@ class ExpectedValueAiStrategyTest {
         val eight = checkNotNull(self.hand.lastDrawn)
         val dama = DecisionCandidate.Discard(tile = eight, declaration = null, command = GameCommand.Discard(eight.id))
         val riichi = DecisionCandidate.Discard(tile = eight, declaration = RIICHI_GAME_ACTION, command = GameCommand.Extension(RiichiGameCommand(eight.id)))
-        fun scores(parameters: ExpectationParameters): List<CandidateScore> = ExpectedValueEvaluator(InformationLevel.ADVANCED, parameters, ExpectationFixtures.module, ExpectationFixtures.opponentModel, context).scoreAll(listOf(dama, riichi))
+        fun scores(parameters: ExpectationParameters): List<CandidateScore> = ExpectedValueEvaluator(WITH_FUTURE_RISK, parameters, ExpectationFixtures.module, ExpectationFixtures.opponentModel(WITH_FUTURE_RISK), context).scoreAll(listOf(dama, riichi))
 
         val (defaultDama, defaultRiichi) = scores(ExpectationParameters.DEFAULT)
         val (_, discountedRiichi) = scores(ExpectationParameters(lockedFutureRiskFactor = 0.0))
@@ -343,5 +374,11 @@ class ExpectedValueAiStrategyTest {
         val claimed = table.players.first { it.id == west.id }.discardPile.entries.last().tile
         val withTiles = seatedSelf.hand.tiles.filter { it.tile == ponTile }.take(2).map { it.id }
         return Triple(table, seatedSelf, GameAction.Pon(tileId = claimed.id, withTiles = withTiles))
+    }
+
+    /** 測試常數。 */
+    private companion object {
+        /** 高級另外計入後續風險，用於驗證後續風險的計算。 */
+        val WITH_FUTURE_RISK: InformationLevel = InformationLevel.ADVANCED.copy(considersFutureRisk = true)
     }
 }

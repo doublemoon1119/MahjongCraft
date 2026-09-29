@@ -35,6 +35,7 @@ class NeutralOpponentModelTest {
             pile.discardTile(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, value)))
         },
     )
+    private val model = NeutralOpponentModel(ReadingDepth.BASIC)
     private val view = PositionView(
         snapshot = FakeTableStateFactory.create(players = listOf(quiet, self, active)).toSnapshot(visibleHandPlayerIds = setOf(self.id)),
         evaluatorId = self.id,
@@ -43,22 +44,22 @@ class NeutralOpponentModelTest {
     /** 所有和牌與放銃以相同單位計算。 */
     @Test
     fun `win values are measured in a single unit`() {
-        assertEquals(NeutralOpponentModel.UNIT_WIN_VALUE, NeutralOpponentModel.baselineWinValue(view, self.id))
-        assertEquals(NeutralOpponentModel.UNIT_WIN_VALUE, NeutralOpponentModel.threat(view, active.id).expectedWinValue)
+        assertEquals(NeutralOpponentModel.UNIT_WIN_VALUE, model.baselineWinValue(view, self.id))
+        assertEquals(NeutralOpponentModel.UNIT_WIN_VALUE, model.threat(view, active.id).expectedWinValue)
     }
 
     /** 捨牌危險度不區分牌張。 */
     @Test
     fun `discard danger does not distinguish tiles`() {
         assertEquals(
-            NeutralOpponentModel.discardDanger(view, active.id, Tile.Honor.Red),
-            NeutralOpponentModel.discardDanger(view, active.id, Tile.Numeric(Tile.Suit.Bamboo, 5)),
+            model.discardDanger(view, active.id, Tile.Honor.Red),
+            model.discardDanger(view, active.id, Tile.Numeric(Tile.Suit.Bamboo, 5)),
         )
     }
 
     /** 副露與捨牌越多，聽牌可能性越高。 */
     @Test
     fun `melds and discards raise the ready probability`() {
-        assertTrue(NeutralOpponentModel.threat(view, active.id).readyProbability > NeutralOpponentModel.threat(view, quiet.id).readyProbability)
+        assertTrue(model.threat(view, active.id).readyProbability > model.threat(view, quiet.id).readyProbability)
     }
 }

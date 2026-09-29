@@ -49,8 +49,8 @@ internal object ExpectationFixtures {
         freeze()
     }
 
-    /** 內建日麻的對手模型。 */
-    val opponentModel: OpponentModel = opponentModelRegistry.create(module)
+    /** 內建日麻以 [level] 的讀牌深度建立的對手模型。 */
+    fun opponentModel(level: InformationLevel): OpponentModel = opponentModelRegistry.create(module, level.readingDepth)
 
     /** 萬子。 */
     fun m(value: Int): Tile = Tile.Numeric(Tile.Suit.Character, value)

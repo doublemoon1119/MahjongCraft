@@ -39,7 +39,7 @@ class CoreExtensionRegistriesTest {
             registries.aiStrategyRegistry.register("late") { RandomAiStrategy(registries.gameActionAiRegistry) }
         }
         assertFailsWith<IllegalStateException> {
-            registries.opponentModelRegistry.register("example:late") { NeutralOpponentModel }
+            registries.opponentModelRegistry.register("example:late") { _, depth -> NeutralOpponentModel(depth) }
         }
     }
 

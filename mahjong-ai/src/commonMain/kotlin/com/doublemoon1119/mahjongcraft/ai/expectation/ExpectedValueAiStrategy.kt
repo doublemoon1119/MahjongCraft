@@ -31,7 +31,7 @@ class ExpectedValueAiStrategy(
             level = level,
             parameters = parameters,
             module = module,
-            opponentModel = opponentModels.create(module),
+            opponentModel = opponentModels.create(module, level.readingDepth),
             context = context,
         ).decide(extensionActionRegistry)
     }

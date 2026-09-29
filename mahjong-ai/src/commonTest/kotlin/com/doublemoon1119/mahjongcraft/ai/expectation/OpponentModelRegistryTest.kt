@@ -11,9 +11,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
-import kotlin.test.assertSame
 
-/** 驗證對手模型依規則登記、沒有登記時退回規則中立的模型，以及凍結後不能再登記。 */
+/** 驗證對手模型依規則登記、沒有登記時退回規則中立的模型、讀牌深度傳給建立的模型，以及凍結後不能再登記。 */
 class OpponentModelRegistryTest {
     private val riichi = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, RiichiRuleConfig())
     private val taiwan = TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, TaiwanRuleConfig())
@@ -23,9 +22,20 @@ class OpponentModelRegistryTest {
     fun `registered rules get their own model and others get the neutral one`() {
         val registry = OpponentModelRegistry().apply { registerRiichiOpponentModel() }
 
-        assertIs<RiichiOpponentModel>(registry.create(riichi))
-        assertSame(NeutralOpponentModel, registry.create(taiwan))
+        assertIs<RiichiOpponentModel>(registry.create(riichi, ReadingDepth.BASIC))
+        assertIs<NeutralOpponentModel>(registry.create(taiwan, ReadingDepth.BASIC))
         assertEquals(setOf(BuiltInRuleModuleIds.RIICHI), registry.registrationKeys)
+    }
+
+    /** 建立的模型使用決策者的讀牌深度，登記與未登記的規則皆然。 */
+    @Test
+    fun `created models read at the requested depth`() {
+        val registry = OpponentModelRegistry().apply { registerRiichiOpponentModel() }
+
+        ReadingDepth.entries.forEach { depth ->
+            assertEquals(depth, registry.create(riichi, depth).readingDepth)
+            assertEquals(depth, registry.create(taiwan, depth).readingDepth)
+        }
     }
 
     /** 同一個規則不能登記兩次。 */
@@ -41,6 +51,8 @@ class OpponentModelRegistryTest {
     fun `a frozen registry rejects registrations`() {
         val registry = OpponentModelRegistry().apply { freeze() }
 
-        assertFailsWith<IllegalStateException> { registry.register(BuiltInRuleModuleIds.TAIWAN) { NeutralOpponentModel } }
+        assertFailsWith<IllegalStateException> {
+            registry.register(BuiltInRuleModuleIds.TAIWAN) { _, depth -> NeutralOpponentModel(depth) }
+        }
     }
 }
