@@ -160,7 +160,7 @@ class ExpectedValueAiStrategyTest {
         )
 
         listOf(InformationLevel.INTERMEDIATE, InformationLevel.ADVANCED).forEach { level ->
-            val (damaScore, riichiScore) = ExpectedValueEvaluator(level, ExpectationParameters.DEFAULT, ExpectationFixtures.module, context).scoreAll(listOf(dama, riichi))
+            val (damaScore, riichiScore) = ExpectedValueEvaluator(level, ExpectationParameters.DEFAULT, ExpectationFixtures.module, ExpectationFixtures.opponentModel, context).scoreAll(listOf(dama, riichi))
             assertTrue(riichiScore.expectedValue > damaScore.expectedValue, "$level riichi $riichiScore dama $damaScore")
             assertTrue(riichiScore.winProbability > damaScore.winProbability)
         }
@@ -183,6 +183,61 @@ class ExpectedValueAiStrategyTest {
         val command = strategy(InformationLevel.ADVANCED).decideGameCommand(context(table, self, legalActions = listOf(RIICHI_GAME_ACTION)))
 
         assertIs<GameCommand.Discard>(command)
+    }
+
+    /** 沒有高威脅的對手時，後續風險只計高威脅對手就等於不計，同一手牌的期望值較高。 */
+    @Test
+    fun `future risk against high threats only ignores quiet opponents`() {
+        val quietDiscards = listOf(Tile.Honor.North, Tile.Honor.West, s(1), p(9), m(9), Tile.Honor.White)
+        val self = player(
+            Wind.SOUTH,
+            hand = hand(
+                listOf(m(1), m(2), m(3), m(4), m(5), m(6), m(7), m(8), m(9), p(1), p(1), s(3), s(4)),
+                drawn = s(6),
+            ),
+        )
+        val table = table(
+            listOf(
+                player(Wind.EAST, discards = quietDiscards),
+                self,
+                player(Wind.WEST, discards = quietDiscards),
+                player(Wind.NORTH, discards = quietDiscards),
+            ),
+        )
+        val context = context(table, self)
+        val six = checkNotNull(self.hand.lastDrawn)
+        val discard = DecisionCandidate.Discard(tile = six, declaration = null, command = GameCommand.Discard(six.id))
+        fun score(parameters: ExpectationParameters): Double = ExpectedValueEvaluator(InformationLevel.ADVANCED, parameters, ExpectationFixtures.module, ExpectationFixtures.opponentModel, context).scoreAll(listOf(discard)).single().expectedValue
+
+        assertTrue(score(ExpectationParameters(futureRiskHighThreatOnly = true)) > score(ExpectationParameters.DEFAULT))
+    }
+
+    /**
+     * 莊家已立直時：立直的後續風險折扣越低，立直的期望值越高；假設之後打出最安全的牌時，默聽的後續風險比全部平均小。
+     */
+    @Test
+    fun `future risk parameters change how risky continuing looks`() {
+        val dealer = player(Wind.EAST, discards = listOf(Tile.Honor.North, Tile.Honor.West, s(1)), riichi = true)
+        val self = player(
+            Wind.SOUTH,
+            hand = hand(
+                listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(6), p(7), p(8), s(2), s(3), s(4), s(5)),
+                drawn = m(8),
+            ),
+        )
+        val table = table(listOf(dealer, self, player(Wind.WEST), player(Wind.NORTH)))
+        val context = context(table, self, legalActions = listOf(RIICHI_GAME_ACTION))
+        val eight = checkNotNull(self.hand.lastDrawn)
+        val dama = DecisionCandidate.Discard(tile = eight, declaration = null, command = GameCommand.Discard(eight.id))
+        val riichi = DecisionCandidate.Discard(tile = eight, declaration = RIICHI_GAME_ACTION, command = GameCommand.Extension(RiichiGameCommand(eight.id)))
+        fun scores(parameters: ExpectationParameters): List<CandidateScore> = ExpectedValueEvaluator(InformationLevel.ADVANCED, parameters, ExpectationFixtures.module, ExpectationFixtures.opponentModel, context).scoreAll(listOf(dama, riichi))
+
+        val (defaultDama, defaultRiichi) = scores(ExpectationParameters.DEFAULT)
+        val (_, discountedRiichi) = scores(ExpectationParameters(lockedFutureRiskFactor = 0.0))
+        val (safestDama, _) = scores(ExpectationParameters(futureRiskTiles = FutureRiskTiles.SAFEST))
+
+        assertTrue(discountedRiichi.expectedValue > defaultRiichi.expectedValue, "discounted $discountedRiichi default $defaultRiichi")
+        assertTrue(safestDama.expectedValue >= defaultDama.expectedValue, "safest $safestDama default $defaultDama")
     }
 
     /** 剛好九種么九牌、其他牌也連不起來的手牌和牌機率很低，宣告途中流局；接近聽牌的手牌則繼續。 */

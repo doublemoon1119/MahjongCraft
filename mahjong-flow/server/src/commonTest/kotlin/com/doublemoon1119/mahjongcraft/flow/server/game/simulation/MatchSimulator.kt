@@ -94,6 +94,7 @@ internal class MatchSimulator(
         registry.registerBuiltInAiStrategies(
             moduleRegistry = runtime.moduleRegistry,
             extensionActionRegistry = runtime.extensionActionRegistry,
+            opponentModelRegistry = runtime.opponentModelRegistry,
         )
     },
 ) {

@@ -4,6 +4,9 @@ import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
@@ -25,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
@@ -83,6 +87,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -140,6 +145,9 @@ class FabricApplicationModuleTest {
         val aiStrategyRegistry = koin.get<MahjongAiStrategyRegistry>()
         assertSame(aiStrategyRegistry, coreRegistries.aiStrategyRegistry)
         assertTrue(aiStrategyRegistry.getAllStrategyKeys().isEmpty())
+        val opponentModelRegistry = koin.get<OpponentModelRegistry>()
+        assertSame(opponentModelRegistry, coreRegistries.opponentModelRegistry)
+        assertTrue(opponentModelRegistry.registrationKeys.isEmpty())
         assertFalse(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertFalse(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertFalse(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
@@ -181,6 +189,8 @@ class FabricApplicationModuleTest {
             aiStrategyRegistry.getAllStrategyKeys().toList(),
         )
         assertFailsWith<IllegalStateException> { aiStrategyRegistry.register("example:late") { aiStrategyRegistry.resolve(null) } }
+        assertIs<RiichiOpponentModel>(opponentModelRegistry.create(moduleRegistry.getModule(RiichiRuleConfig())))
+        assertFailsWith<IllegalStateException> { opponentModelRegistry.register("example:late") { NeutralOpponentModel } }
         assertTrue(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertTrue(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
         assertEquals(

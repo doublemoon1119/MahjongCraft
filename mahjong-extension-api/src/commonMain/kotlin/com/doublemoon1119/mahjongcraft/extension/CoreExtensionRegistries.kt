@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.extension
 
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
@@ -26,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
  * @property persistenceRegistries 權威狀態 persistence registry 集合。
  * @property gameActionAiRegistry 擴充動作 AI handler registry。
  * @property aiStrategyRegistry AI 策略 registry。
+ * @property opponentModelRegistry AI 對手模型 registry。
  * @property gameActionCommandFactoryRegistry 擴充動作命令 factory registry。
  * @property gameCommandRegistry 擴充遊戲命令 executor registry。
  * @property postReactionRoundOutcomeResolverRegistry 反應階段結束後的局結果 resolver registry。
@@ -47,6 +49,7 @@ class CoreExtensionRegistries(
     // 動作執行
     val gameActionAiRegistry: ExtensionGameActionAiRegistry,
     val aiStrategyRegistry: MahjongAiStrategyRegistry,
+    val opponentModelRegistry: OpponentModelRegistry,
     val gameActionCommandFactoryRegistry: ExtensionGameActionCommandFactoryRegistry,
     val gameCommandRegistry: ExtensionGameCommandExecutorRegistry,
     // 對局流程判定
@@ -70,6 +73,7 @@ class CoreExtensionRegistries(
             ),
             snapshotCategory("mahjongcraft:game_action_ai", "Game Action AI", gameActionAiRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:ai_strategy", "AI Strategy", aiStrategyRegistry.getAllStrategyKeys()),
+            snapshotCategory("mahjongcraft:opponent_model", "Opponent Model", opponentModelRegistry.registrationKeys),
             snapshotCategory(
                 "mahjongcraft:game_action_command_factory",
                 "Game Action Command Factory",
@@ -113,6 +117,7 @@ class CoreExtensionRegistries(
         winCelebrationCueResolverRegistry.freeze()
         gameActionAiRegistry.freeze()
         aiStrategyRegistry.freeze()
+        opponentModelRegistry.freeze()
         gameActionCommandFactoryRegistry.freeze()
         gameCommandRegistry.freeze()
         postReactionRoundOutcomeResolverRegistry.freeze()

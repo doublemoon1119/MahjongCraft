@@ -122,8 +122,8 @@ class RiichiRuleModule(
         legalActionValidator = createLegalActionValidator(),
     )
 
-    /** 建立與正式結算共用役種、點數與起胡判定的日麻局面評估。 */
-    override fun createPositionEvaluator(): RiichiPositionEvaluator = RiichiPositionEvaluator(
+    /** 建立與正式結算共用役種、點數與起胡判定的日麻規則查詢。 */
+    override fun createPositionRules(): RiichiPositionRules = RiichiPositionRules(
         config = config,
         handValueCalculator = createHandValueCalculator(),
         shantenCalculator = createShantenCalculator(),

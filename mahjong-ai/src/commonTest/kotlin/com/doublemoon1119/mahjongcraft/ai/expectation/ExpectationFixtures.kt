@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiGameActionHandler
+import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -41,6 +42,15 @@ internal object ExpectationFixtures {
         registerRiichiGameActionHandler(moduleRegistry)
         freeze()
     }
+
+    /** 登記日麻對手模型的 registry。 */
+    val opponentModelRegistry: OpponentModelRegistry = OpponentModelRegistry().apply {
+        registerRiichiOpponentModel()
+        freeze()
+    }
+
+    /** 內建日麻的對手模型。 */
+    val opponentModel: OpponentModel = opponentModelRegistry.create(module)
 
     /** 萬子。 */
     fun m(value: Int): Tile = Tile.Numeric(Tile.Suit.Character, value)
@@ -114,6 +124,7 @@ internal object ExpectationFixtures {
         level = level,
         moduleRegistry = moduleRegistry,
         extensionActionRegistry = extensionRegistry,
+        opponentModels = opponentModelRegistry,
         parameters = parameters,
     )
 }

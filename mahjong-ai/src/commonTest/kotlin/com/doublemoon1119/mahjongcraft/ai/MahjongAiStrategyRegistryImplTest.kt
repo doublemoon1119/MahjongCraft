@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.ai
 
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectedValueAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.InformationLevel
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -91,7 +92,7 @@ class MahjongAiStrategyRegistryImplTest {
     @Test
     fun `test registerBuiltInAiStrategies registers the three expected value levels then random`() {
         val registry = MahjongAiStrategyRegistryImpl(defaultKey = BuiltInAiStrategyKeys.BEGINNER).apply {
-            registerBuiltInAiStrategies(MahjongModuleRegistryImpl(), extensionActionRegistry)
+            registerBuiltInAiStrategies(MahjongModuleRegistryImpl(), extensionActionRegistry, OpponentModelRegistry())
         }
 
         assertEquals(

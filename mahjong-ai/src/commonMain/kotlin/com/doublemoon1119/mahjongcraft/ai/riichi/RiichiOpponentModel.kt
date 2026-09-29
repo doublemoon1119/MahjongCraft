@@ -1,91 +1,30 @@
-package com.doublemoon1119.mahjongcraft.logic.rules.riichi
+package com.doublemoon1119.mahjongcraft.ai.riichi
 
-import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.Hand
-import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModel
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.ai.expectation.ThreatEstimate
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
-import com.doublemoon1119.mahjongcraft.logic.module.DeclarationEffect
-import com.doublemoon1119.mahjongcraft.logic.module.PositionEvaluator
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.module.PositionRules
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
-import com.doublemoon1119.mahjongcraft.logic.module.ThreatEstimate
-import com.doublemoon1119.mahjongcraft.logic.module.WinValue
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.getNextDora
-import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 
 /**
- * 日本麻將的局面評估。
- *
- * 和牌價值與正式結算使用同一套役種、點數與起胡判定，並加上場上可收下的立直棒與本場點數。其餘估計只使用公開資訊：
+ * 日本麻將的對手模型，只使用公開資訊與規則查詢 [rules] 提供的規則事實。
  *
  * - 捨牌危險度：列舉對手可能持有、並以這張牌和牌的聽牌型（兩面、坎張、邊張、雙碰、單騎），依評估者看不到的
- *   牌張數量加權。對手牌河裡的牌（現物）不可能榮和；對手捨過兩面另一側的牌時，這個兩面因振聽而排除，
+ *   牌張數量加權。對手自己打過的牌（現物）不可能榮和；對手捨過兩面另一側的牌時，這個兩面因振聽而排除，
  *   筋因此自然較安全；構成聽牌型所需的牌已全部出現時該聽牌型不成立，壁因此自然較安全。
  * - 對手威脅：立直者視為確定聽牌；其餘依副露數與捨牌數估計聽牌可能性，打點依立直、門清或副露、
  *   副露中的寶牌與是否為莊家估計。
  *
- * 振聽只依評估者的牌河與立直後振聽判定：快照不包含本巡放過的牌，因此同巡振聽不列入。
- *
- * @property config 本局日麻規則設定。
- * @property handValueCalculator 役種與點數計算。
- * @property shantenCalculator 判斷手牌是否構成和牌型與聽哪些牌。
+ * @property rules 本局規則的規則查詢。
  */
-class RiichiPositionEvaluator(
-    private val config: RiichiRuleConfig,
-    private val handValueCalculator: RiichiHandValueCalculator,
-    private val shantenCalculator: RiichiShantenCalculator,
-) : PositionEvaluator {
-    override fun winValue(
-        view: PositionView,
-        hand: Hand,
-        winningTile: Tile,
-        isTsumo: Boolean,
-        declarations: Set<GameAction.Extension>,
-    ): WinValue {
-        val completed = Hand(tiles = hand.tiles + IdentifiedTile(Uuid.NIL, winningTile), melds = hand.melds)
-        if (shantenCalculator.calculate(completed) != ShantenResult.Complete) return WinValue.NotWinnable
-
-        val self = view.evaluator
-        val riichiState = self.playerRuleState as? RiichiPlayerState ?: RiichiPlayerState()
-        val declaresRiichi = !riichiState.isRiichi && declarations.any { it.value == RiichiGameAction.Riichi }
-        if (!isTsumo && isFuriten(self, riichiState, hand)) return WinValue.NotWinnable
-
-        val result = handValueCalculator.calculate(
-            RiichiHandValueContext(
-                hand = hand,
-                winningTile = winningTile,
-                isTsumo = isTsumo,
-                isMenzen = hand.melds.all { it.type == MeldType.CLOSED_KAN },
-                roundWind = view.snapshot.prevalentWind,
-                seatWind = self.seatWind,
-                isDealer = view.snapshot.dealerPlayerId == self.id,
-                isRiichi = riichiState.isRiichi || declaresRiichi,
-                isDoubleRiichi = riichiState.isDoubleRiichi,
-                allowOpenTanyao = config.allowOpenTanyao,
-                doraIndicators = visibleDoraIndicators(view),
-            ),
-        )
-        if (!result.qualifyingHan().satisfies(config.minimumWinConstraint)) return WinValue.NotWinnable
-
-        val sticks = riichiStickCount(view) + if (declaresRiichi) 1 else 0
-        return WinValue.Points(result.totalPoint + sticks * RIICHI_STICK_POINTS + comboBonus(view, isTsumo))
-    }
-
-    /** 評估者以此次和牌收取的本場點數；自摸時其他每位玩家各付一份。 */
-    private fun comboBonus(view: PositionView, isTsumo: Boolean): Int {
-        val comboCount = view.snapshot.comboCount
-        return if (isTsumo) {
-            comboCount * RIICHI_COMBO_BONUS_TSUMO_POINTS_PER_PAYER * (view.snapshot.players.size - 1)
-        } else {
-            comboCount * RIICHI_COMBO_BONUS_RON_POINTS
-        }
-    }
-
+class RiichiOpponentModel(private val rules: PositionRules) : OpponentModel {
     override fun baselineWinValue(view: PositionView, playerId: Uuid): Int {
         val player = view.player(playerId)
         val isRiichi = (player.playerRuleState as? RiichiPlayerState)?.isRiichi == true
@@ -95,7 +34,10 @@ class RiichiPositionEvaluator(
             isOpen -> OPEN_BASELINE_VALUE
             else -> CLOSED_BASELINE_VALUE
         }
-        val value = base + doraInMelds(view, player) * DORA_BASELINE_BONUS
+        val doraInMelds = player.hand.melds
+            .flatMap { meld -> meld.tiles.mapNotNull { it.tile } }
+            .sumOf { rules.bonusTileCount(view, it) }
+        val value = base + doraInMelds * DORA_BASELINE_BONUS
         return if (view.snapshot.dealerPlayerId == playerId) (value * DEALER_BASELINE_MULTIPLIER).roundToInt() else value
     }
 
@@ -105,7 +47,7 @@ class RiichiPositionEvaluator(
         tile: Tile,
     ): Double {
         val canonical = tile.riichiCanonical
-        val safeTiles = view.player(opponentId).discardPile.entries.mapTo(mutableSetOf()) { it.tile.tile.riichiCanonical }
+        val safeTiles = rules.ronExclusions(view, opponentId).ownDiscards
         if (canonical in safeTiles) return 0.0
 
         val unseen = unseenCounts(view)
@@ -149,49 +91,7 @@ class RiichiPositionEvaluator(
         )
     }
 
-    override fun declarationEffect(view: PositionView, action: GameAction.Extension): DeclarationEffect = if (action.value == RiichiGameAction.Riichi) {
-        DeclarationEffect(cost = RIICHI_STICK_POINTS, locksHand = true)
-    } else {
-        DeclarationEffect.NONE
-    }
-
-    /** 尚未立直、門清（暗槓不算副露）且點數足夠支付立直棒時，聽牌後可以立直。 */
-    override fun prospectiveDeclarations(view: PositionView, hand: Hand): Set<GameAction.Extension> {
-        val self = view.evaluator
-        val isRiichi = (self.playerRuleState as? RiichiPlayerState)?.isRiichi == true
-        val isClosed = hand.melds.all { it.type == MeldType.CLOSED_KAN }
-        return if (!isRiichi && isClosed && self.score >= RIICHI_STICK_POINTS) setOf(RIICHI_GAME_ACTION) else emptySet()
-    }
-
-    /** 評估者的牌河或立直後振聽是否讓 [hand] 不能榮和。 */
-    private fun isFuriten(
-        self: MahjongPlayerSnapshot,
-        riichiState: RiichiPlayerState,
-        hand: Hand,
-    ): Boolean {
-        if (riichiState.isPermanentlyFuriten) return true
-        val waits = (shantenCalculator.calculate(hand) as? ShantenResult.Tenpai)?.winningTiles ?: return false
-        val furitenTiles = riichiState.getFuritenTiles(self.discardPile, passedTilesInRound = emptySet())
-        return waits.any { it.riichiCanonical in furitenTiles }
-    }
-
-    /** 牌山中公開的牌；日麻只公開寶牌指示牌。 */
-    private fun visibleDoraIndicators(view: PositionView): List<Tile> = view.snapshot.tileWall.tiles.mapNotNull { it.tile }
-
-    /** 場上尚未被收下的立直棒數。 */
-    private fun riichiStickCount(view: PositionView): Int = (view.snapshot.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
-
-    /** [player] 公開副露中的寶牌與赤寶牌張數。 */
-    private fun doraInMelds(view: PositionView, player: MahjongPlayerSnapshot): Int {
-        val doraTiles = visibleDoraIndicators(view).map { getNextDora(it) }
-        return player.hand.melds
-            .flatMap { meld -> meld.tiles.mapNotNull { it.tile } }
-            .sumOf { tile ->
-                doraTiles.count { it == tile.riichiCanonical } + if (RiichiTileInterpretationPolicy.isRedDora(tile)) 1 else 0
-            }
-    }
-
-    /** 每種牌對評估者而言還沒看到的張數：總數扣除自己的手牌、所有牌河、所有公開副露與寶牌指示牌。 */
+    /** 每種牌對評估者而言還沒看到的張數：總數扣除自己的手牌、所有牌河、所有公開副露與牌山中公開的牌。 */
     private fun unseenCounts(view: PositionView): Map<Tile, Int> {
         val self = view.evaluator
         val visible = buildList {
@@ -201,7 +101,7 @@ class RiichiPositionEvaluator(
                 player.discardPile.entries.filterNot { it.isTaken }.forEach { add(it.tile.tile) }
                 player.hand.melds.forEach { meld -> addAll(meld.tiles.mapNotNull { it.tile }) }
             }
-            addAll(visibleDoraIndicators(view))
+            addAll(view.snapshot.tileWall.tiles.mapNotNull { it.tile })
         }
         val seen = visible.groupingBy { it.riichiCanonical }.eachCount()
         return TILE_KINDS.associateWith { kind -> (COPIES_PER_TILE - (seen[kind] ?: 0)).coerceAtLeast(0) }
@@ -223,7 +123,7 @@ class RiichiPositionEvaluator(
         val cap: Double,
     )
 
-    /** [RiichiPositionEvaluator] 的估計參數。 */
+    /** [RiichiOpponentModel] 的估計參數。 */
     private companion object {
         /** 每種牌的張數。 */
         const val COPIES_PER_TILE = 4
@@ -302,4 +202,9 @@ class RiichiPositionEvaluator(
                 Tile.Honor.Red,
             )
     }
+}
+
+/** 登記內建日麻的對手模型。 */
+fun OpponentModelRegistry.registerRiichiOpponentModel() {
+    register(BuiltInRuleModuleIds.RIICHI) { module -> RiichiOpponentModel(module.createPositionRules()) }
 }

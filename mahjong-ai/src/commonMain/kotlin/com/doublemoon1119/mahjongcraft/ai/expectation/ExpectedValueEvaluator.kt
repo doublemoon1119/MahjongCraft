@@ -41,12 +41,14 @@ import kotlin.math.min
  * @property level 可使用的資訊範圍。
  * @property parameters 估計參數。
  * @property module 本局的規則模組。
+ * @property opponentModel 本局規則的對手模型。
  * @property context 本次決策的情境。
  */
 internal class ExpectedValueEvaluator(
     private val level: InformationLevel,
     private val parameters: ExpectationParameters,
     private val module: MahjongRuleModule<*>,
+    private val opponentModel: OpponentModel,
     private val context: AiDecisionContext,
 ) {
     /** 以評估者本人為觀察者的快照。 */
@@ -61,8 +63,8 @@ internal class ExpectedValueEvaluator(
     /** 目前局面的視角。 */
     private val currentView = PositionView(snapshot = snapshot, evaluatorId = selfId)
 
-    /** 規則的局面評估。 */
-    private val positionEvaluator = module.createPositionEvaluator()
+    /** 本局規則的規則查詢。 */
+    private val rules = module.createPositionRules()
 
     /** 點數與名次的換算。 */
     private val placement = PlacementUtility.from(
@@ -89,21 +91,35 @@ internal class ExpectedValueEvaluator(
         level = level,
         parameters = parameters,
         selfId = selfId,
-        positionEvaluator = positionEvaluator,
+        rules = rules,
+        opponentModel = opponentModel,
         shantenCalculator = module.createShantenCalculator(),
         interpretation = module.createTileInterpretationPolicy(),
         tileOrder = module.tileOrder,
         unseen = unseen,
         outlook = outlook,
         placement = placement,
-        flatWinValue = placement.gain(positionEvaluator.baselineWinValue(currentView, selfId).toDouble()),
+        flatWinValue = placement.gain(opponentModel.baselineWinValue(currentView, selfId).toDouble()),
     )
+
+    /** 列入防守計算的對手。 */
+    private val defendedThreats = threats()
 
     /** 打出一張牌的放銃期望損失。 */
     private val risk = DealInRisk(
-        threats = threats(),
-        danger = { opponentId, tile -> positionEvaluator.discardDanger(currentView, opponentId, tile) },
+        threats = defendedThreats,
+        danger = { opponentId, tile -> opponentModel.discardDanger(currentView, opponentId, tile) },
     )
+
+    /** 估計後續風險時使用的放銃期望損失；依 [ExpectationParameters.futureRiskHighThreatOnly] 只計高威脅對手。 */
+    private val laterDiscardRisk = if (parameters.futureRiskHighThreatOnly) {
+        DealInRisk(
+            threats = defendedThreats.filter { it.readyProbability >= parameters.highThreatReadyProbability },
+            danger = { opponentId, tile -> opponentModel.discardDanger(currentView, opponentId, tile) },
+        )
+    } else {
+        risk
+    }
 
     /** 下一個假設視角的編號。 */
     private var nextViewId = 0
@@ -265,7 +281,7 @@ internal class ExpectedValueEvaluator(
     private fun evaluateDiscard(candidate: DecisionCandidate.Discard): Evaluation {
         val rest = ownHand.copy(tiles = ownHand.tiles.filterNot { it.id == candidate.tile.id })
         val declarations = setOfNotNull(candidate.declaration)
-        val effect = candidate.declaration?.let { positionEvaluator.declarationEffect(currentView, it) } ?: DeclarationEffect.NONE
+        val effect = candidate.declaration?.let { rules.declarationEffect(currentView, it) } ?: DeclarationEffect.NONE
         return Evaluation(
             candidate = candidate,
             hand = rest,
@@ -325,19 +341,27 @@ internal class ExpectedValueEvaluator(
         return if (locksHand) attackValue else attackValue.coerceAtLeast(0.0)
     }
 
-    /** 繼續進攻時，之後打出的牌的放銃風險。 */
+    /**
+     * 繼續進攻時，之後打出的牌的放銃風險。
+     *
+     * 宣告後不能換牌時，以未見牌的平均損失乘上預期進行的輪數，再乘上 [ExpectationParameters.lockedFutureRiskFactor]；
+     * 可換牌時，依 [ExpectationParameters.futureRiskTiles] 估計之後打出的牌。
+     */
     private fun futureRisk(
         hand: Hand,
         assessment: HandAssessment,
         locksHand: Boolean,
     ): Double {
         if (!level.considersFutureRisk) return 0.0
-        return if (locksHand) {
+        if (locksHand) {
             val cycles = assessment.tenpaiProfile?.expectedCyclesInPlay(outlook.ownDraws, outlook) ?: outlook.ownDraws.toDouble()
-            risk.averageLoss(unseen) * cycles
-        } else {
-            val turns = min(outlook.ownDraws, (assessment.shanten.coerceAtLeast(0) + 1) * parameters.attackTurnsPerShanten)
-            risk.averageLoss(hand.tiles.map { assessor.canonical(it.tile) }) * turns
+            return laterDiscardRisk.averageLoss(unseen) * cycles * parameters.lockedFutureRiskFactor
+        }
+        val turns = min(outlook.ownDraws, (assessment.shanten.coerceAtLeast(0) + 1) * parameters.attackTurnsPerShanten)
+        val tiles = hand.tiles.map { assessor.canonical(it.tile) }
+        return when (parameters.futureRiskTiles) {
+            FutureRiskTiles.AVERAGE -> laterDiscardRisk.averageLoss(tiles) * turns
+            FutureRiskTiles.SAFEST -> laterDiscardRisk.safestLosses(tiles, turns)
         }
     }
 
@@ -393,7 +417,7 @@ internal class ExpectedValueEvaluator(
         return snapshot.players
             .filter { it.id != selfId && it.id !in snapshot.finishedPlayerIds }
             .mapNotNull { opponent ->
-                val threat = positionEvaluator.threat(currentView, opponent.id)
+                val threat = opponentModel.threat(currentView, opponent.id)
                 when (level.defenseScope) {
                     DefenseScope.NONE -> null
                     DefenseScope.HIGH_THREAT_ONLY -> if (threat.readyProbability < parameters.highThreatReadyProbability) {
@@ -402,7 +426,7 @@ internal class ExpectedValueEvaluator(
                         OpponentThreat(
                             opponentId = opponent.id,
                             readyProbability = threat.readyProbability,
-                            lossOnDealIn = placement.loss(positionEvaluator.baselineWinValue(currentView, opponent.id).toDouble()),
+                            lossOnDealIn = placement.loss(opponentModel.baselineWinValue(currentView, opponent.id).toDouble()),
                         )
                     }
                     DefenseScope.ALL -> OpponentThreat(

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiGameActionHandler
+import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationCategory
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReport
@@ -105,6 +106,7 @@ object FabricMahjongExtensions {
         coreRegistries.aiStrategyRegistry.registerBuiltInAiStrategies(
             moduleRegistry = coreRegistries.moduleRegistry,
             extensionActionRegistry = coreRegistries.gameActionAiRegistry,
+            opponentModelRegistry = coreRegistries.opponentModelRegistry,
         )
         registerBundledRiichiExtension(coreRegistries = coreRegistries, declareRiichiUseCase = declareRiichiUseCase)
         // 開發環境限定：讓「胡牌後本局繼續」這條路徑在還沒有任何規則支援它時就能進遊戲驗證，
@@ -155,6 +157,7 @@ object FabricMahjongExtensions {
         coreRegistries.networkRegistries.registerRiichiGameActionDtos()
         coreRegistries.persistenceRegistries.extensionGameActions.registerRiichiGameActionPersistenceDto()
         coreRegistries.gameActionAiRegistry.registerRiichiGameActionHandler(coreRegistries.moduleRegistry)
+        coreRegistries.opponentModelRegistry.registerRiichiOpponentModel()
         coreRegistries.gameActionCommandFactoryRegistry.registerRiichiGameActionCommandFactory()
         coreRegistries.gameCommandRegistry.registerRiichiGameCommandHandler(declareRiichiUseCase)
         coreRegistries.postReactionRoundOutcomeResolverRegistry.registerRiichiNagashiManganOutcomeResolver()

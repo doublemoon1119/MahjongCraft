@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.ai
 
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectedValueAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.InformationLevel
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 
 /** `:mahjong-ai` 內建期望值策略的登記 key；[RandomAiStrategy.KEY] 維持原本的 key 以相容既有存檔。 */
@@ -22,10 +23,12 @@ object BuiltInAiStrategyKeys {
  *
  * @param moduleRegistry 期望值策略依對局設定取得規則模組。
  * @param extensionActionRegistry 將規則擴充動作轉成命令候選。
+ * @param opponentModelRegistry 期望值策略依規則取得對手模型。
  */
 fun MahjongAiStrategyRegistry.registerBuiltInAiStrategies(
     moduleRegistry: MahjongModuleRegistry,
     extensionActionRegistry: ExtensionGameActionAiRegistry,
+    opponentModelRegistry: OpponentModelRegistry,
 ) {
     mapOf(
         BuiltInAiStrategyKeys.BEGINNER to InformationLevel.BEGINNER,
@@ -37,6 +40,7 @@ fun MahjongAiStrategyRegistry.registerBuiltInAiStrategies(
                 level = level,
                 moduleRegistry = moduleRegistry,
                 extensionActionRegistry = extensionActionRegistry,
+                opponentModels = opponentModelRegistry,
             )
         }
     }

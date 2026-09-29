@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.di
 
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.di.NetworkDtoModule
@@ -60,6 +61,7 @@ class FabricServerModule {
         @Provided persistenceRegistries: PersistenceRegistries,
         @Provided gameActionAiRegistry: ExtensionGameActionAiRegistry,
         @Provided aiStrategyRegistry: MahjongAiStrategyRegistry,
+        @Provided opponentModelRegistry: OpponentModelRegistry,
         @Provided gameActionCommandFactoryRegistry: ExtensionGameActionCommandFactoryRegistry,
         @Provided gameCommandRegistry: ExtensionGameCommandExecutorRegistry,
         @Provided postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry,
@@ -75,6 +77,7 @@ class FabricServerModule {
         persistenceRegistries = persistenceRegistries,
         gameActionAiRegistry = gameActionAiRegistry,
         aiStrategyRegistry = aiStrategyRegistry,
+        opponentModelRegistry = opponentModelRegistry,
         gameActionCommandFactoryRegistry = gameActionCommandFactoryRegistry,
         gameCommandRegistry = gameCommandRegistry,
         postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolverRegistry,

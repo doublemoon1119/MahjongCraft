@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
-import com.doublemoon1119.mahjongcraft.logic.module.PositionEvaluator
+import com.doublemoon1119.mahjongcraft.logic.module.PositionRules
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
 import com.doublemoon1119.mahjongcraft.logic.module.WinValue
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
@@ -61,7 +61,8 @@ internal class HypotheticalView(
  * @property level 可使用的資訊範圍。
  * @property parameters 估計參數。
  * @property selfId 評估者本人。
- * @property positionEvaluator 規則的局面評估。
+ * @property rules 本局規則的規則查詢。
+ * @property opponentModel 本局規則的對手模型，提供無法具體估算時的基準打點。
  * @property shantenCalculator 規則的向聽計算。
  * @property interpretation 規則的牌面正規化。
  * @property tileOrder 規則牌序，用於穩定排序。
@@ -74,7 +75,8 @@ internal class HandAssessor(
     private val level: InformationLevel,
     private val parameters: ExpectationParameters,
     private val selfId: Uuid,
-    private val positionEvaluator: PositionEvaluator,
+    private val rules: PositionRules,
+    private val opponentModel: OpponentModel,
     private val shantenCalculator: ShantenCalculator,
     private val interpretation: TileInterpretationPolicy,
     private val tileOrder: TileOrder,
@@ -173,7 +175,7 @@ internal class HandAssessor(
     /**
      * 一向聽手牌每一種讓它聽牌的進張，以及進張後打出最佳一張牌的聽牌結果。
      *
-     * 聽牌時可選擇默聽，或宣告規則回報的 [PositionEvaluator.prospectiveDeclarations] 之一並付出宣告成本。
+     * 聽牌時可選擇默聽，或宣告規則回報的 [PositionRules.prospectiveDeclarations] 之一並付出宣告成本。
      */
     private fun tenpaiBranches(
         hand: Hand,
@@ -181,7 +183,7 @@ internal class HandAssessor(
         declarations: Set<GameAction.Extension>,
     ): List<TenpaiBranch> {
         if (unseen.total == 0) return emptyList()
-        val choices = listOf(declarations) + positionEvaluator.prospectiveDeclarations(view.view, hand)
+        val choices = listOf(declarations) + rules.prospectiveDeclarations(view.view, hand)
             .filterNot { it in declarations }
             .map { declarations + it }
         return unseen.kinds.mapNotNull { kind ->
@@ -209,7 +211,7 @@ internal class HandAssessor(
 
     /** 宣告 [declarations] 立即付出的點數；和牌時會以打點的一部分收回，因此不換算名次。 */
     private fun declarationCost(view: HypotheticalView, declarations: Set<GameAction.Extension>): Double = declarations.sumOf { declaration ->
-        positionEvaluator.declarationEffect(view.view, declaration).cost.toDouble()
+        rules.declarationEffect(view.view, declaration).cost.toDouble()
     }
 
     /**
@@ -218,7 +220,7 @@ internal class HandAssessor(
      */
     private fun distantHandAssessment(hand: Hand, view: HypotheticalView, shanten: Int): HandAssessment {
         val value = if (level.valuesWins) {
-            placement.gain(positionEvaluator.baselineWinValue(view.view, selfId).toDouble())
+            placement.gain(opponentModel.baselineWinValue(view.view, selfId).toDouble())
         } else {
             flatWinValue
         }
@@ -260,7 +262,7 @@ internal class HandAssessor(
     ): Double? {
         val key = WinValueKey(view.id, keyOf(hand), tile, isTsumo, declarations)
         val result = winValueByKey.getOrPut(key) {
-            positionEvaluator.winValue(
+            rules.winValue(
                 view = view.view,
                 hand = hand,
                 winningTile = tile,
@@ -271,7 +273,7 @@ internal class HandAssessor(
         return when (result) {
             is WinValue.Points -> if (level.valuesWins) placement.gain(result.points.toDouble()) else flatWinValue
             WinValue.Unknown -> if (level.valuesWins) {
-                placement.gain(positionEvaluator.baselineWinValue(view.view, selfId).toDouble())
+                placement.gain(opponentModel.baselineWinValue(view.view, selfId).toDouble())
             } else {
                 flatWinValue
             }

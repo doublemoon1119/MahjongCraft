@@ -3,7 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
+import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
@@ -443,7 +445,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             gameRepository,
             GetLegalActionsUseCase(gameRepository, moduleRegistry),
             MahjongAiStrategyRegistryImpl(RandomAiStrategy.KEY).apply {
-                registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry())
+                registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry(), OpponentModelRegistry().apply { registerRiichiOpponentModel() })
             },
             GameVisibilityPolicyImpl(),
             moduleRegistry,

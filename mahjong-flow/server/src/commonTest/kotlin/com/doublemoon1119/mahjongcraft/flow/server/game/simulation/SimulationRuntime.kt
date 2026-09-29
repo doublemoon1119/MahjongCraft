@@ -2,7 +2,9 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.simulation
 
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiGameActionHandler
+import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
@@ -74,6 +76,9 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
 
     /** 登記日麻立直 handler 的擴充動作 AI registry。 */
     val extensionActionRegistry = ExtensionGameActionAiRegistry().apply { registerRiichiGameActionHandler(moduleRegistry) }
+
+    /** 登記日麻對手模型的 registry。 */
+    val opponentModelRegistry = OpponentModelRegistry().apply { registerRiichiOpponentModel() }
 
     /** 由呼叫端登記策略的 AI 策略 registry。 */
     val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = defaultStrategyKey)
