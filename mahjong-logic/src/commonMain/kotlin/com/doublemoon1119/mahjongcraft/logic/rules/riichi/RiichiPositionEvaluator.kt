@@ -155,6 +155,14 @@ class RiichiPositionEvaluator(
         DeclarationEffect.NONE
     }
 
+    /** 尚未立直、門清（暗槓不算副露）且點數足夠支付立直棒時，聽牌後可以立直。 */
+    override fun prospectiveDeclarations(view: PositionView, hand: Hand): Set<GameAction.Extension> {
+        val self = view.evaluator
+        val isRiichi = (self.playerRuleState as? RiichiPlayerState)?.isRiichi == true
+        val isClosed = hand.melds.all { it.type == MeldType.CLOSED_KAN }
+        return if (!isRiichi && isClosed && self.score >= RIICHI_STICK_POINTS) setOf(RIICHI_GAME_ACTION) else emptySet()
+    }
+
     /** 評估者的牌河或立直後振聽是否讓 [hand] 不能榮和。 */
     private fun isFuriten(
         self: MahjongPlayerSnapshot,
@@ -187,8 +195,8 @@ class RiichiPositionEvaluator(
     private fun unseenCounts(view: PositionView): Map<Tile, Int> {
         val self = view.evaluator
         val visible = buildList {
-            addAll(self.hand.standingTiles.mapNotNull { it.tile })
-            self.hand.lastDrawn?.tile?.let(::add)
+            // 快照的立牌已包含剛摸到的牌
+            addAll(self.hand.standingTiles.distinctBy { it.id }.mapNotNull { it.tile })
             view.snapshot.players.forEach { player ->
                 player.discardPile.entries.filterNot { it.isTaken }.forEach { add(it.tile.tile) }
                 player.hand.melds.forEach { meld -> addAll(meld.tiles.mapNotNull { it.tile }) }

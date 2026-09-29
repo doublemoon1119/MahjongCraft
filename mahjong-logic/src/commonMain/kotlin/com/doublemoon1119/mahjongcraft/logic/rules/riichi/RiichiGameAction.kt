@@ -13,4 +13,4 @@ sealed interface RiichiGameAction : ExtensionGameAction {
 }
 
 /** 日本麻將的立直動作。 */
-val RIICHI_GAME_ACTION: GameAction = GameAction.Extension(RiichiGameAction.Riichi)
+val RIICHI_GAME_ACTION: GameAction.Extension = GameAction.Extension(RiichiGameAction.Riichi)

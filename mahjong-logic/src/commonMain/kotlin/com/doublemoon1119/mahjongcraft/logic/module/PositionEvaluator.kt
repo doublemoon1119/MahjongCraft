@@ -125,6 +125,15 @@ interface PositionEvaluator {
 
     /** 評估者宣告 [action] 的效果。 */
     fun declarationEffect(view: PositionView, action: GameAction.Extension): DeclarationEffect
+
+    /**
+     * 評估者的 [hand] 之後聽牌時可以選擇宣告的擴充動作，用於估計尚未聽牌的手牌聽牌後的打點。
+     *
+     * 只依手牌型態與評估者目前的狀態判斷，不保證聽牌當下一定合法；預設沒有任何動作。
+     *
+     * @param hand 尚未聽牌的手牌。
+     */
+    fun prospectiveDeclarations(view: PositionView, hand: Hand): Set<GameAction.Extension> = emptySet()
 }
 
 /**

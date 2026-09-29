@@ -74,10 +74,11 @@ class NeutralPositionEvaluatorTest {
         assertTrue(NeutralPositionEvaluator.threat(view, active.id).readyProbability > NeutralPositionEvaluator.threat(view, quiet.id).readyProbability)
     }
 
-    /** 宣告沒有任何效果。 */
+    /** 宣告沒有任何效果，聽牌後也沒有可以宣告的動作。 */
     @Test
     fun `declarations have no effect`() {
         assertEquals(DeclarationEffect.NONE, NeutralPositionEvaluator.declarationEffect(view, GameAction.Extension(OtherAction)))
+        assertEquals(emptySet(), NeutralPositionEvaluator.prospectiveDeclarations(view, Hand()))
     }
 
     /** 沒有專屬評估的規則使用規則中立的評估，日麻使用自己的評估。 */

@@ -92,7 +92,7 @@ class RiichiPositionEvaluatorTest {
             winner.hand,
             FIVE_BAMBOO,
             isTsumo = false,
-            declarations = setOf(RIICHI_GAME_ACTION as GameAction.Extension),
+            declarations = setOf(RIICHI_GAME_ACTION),
         )
 
         val points = assertIs<WinValue.Points>(value).points
@@ -199,7 +199,7 @@ class RiichiPositionEvaluatorTest {
 
         assertEquals(
             DeclarationEffect(cost = RIICHI_STICK_POINTS, locksHand = true),
-            evaluator.declarationEffect(view, RIICHI_GAME_ACTION as GameAction.Extension),
+            evaluator.declarationEffect(view, RIICHI_GAME_ACTION),
         )
         assertEquals(DeclarationEffect.NONE, evaluator.declarationEffect(view, GameAction.Extension(OtherAction)))
     }
@@ -285,6 +285,43 @@ class RiichiPositionEvaluatorTest {
         val plainDanger = evaluator.discardDanger(view(table(listOf(opponent, withPlain)), withPlain), opponent.id, dot(6))
 
         assertEquals(plainDanger, redDanger)
+    }
+
+    /** 尚未立直的門清手牌（含暗槓）聽牌後可以立直；有副露、已經立直或點數不足一支立直棒時不行。 */
+    @Test
+    fun `a closed hand that has not declared riichi can riichi once ready`() {
+        val riichi = setOf(RIICHI_GAME_ACTION)
+        val closedKan = Meld(
+            type = MeldType.CLOSED_KAN,
+            tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.White) },
+            sourceDirection = RelativeDirection.Self,
+        )
+        val closed = seat(Wind.SOUTH, hand = noYakuTankiOnFiveBamboo()).copy(score = RIICHI_STICK_POINTS)
+        val withClosedKan = seat(Wind.SOUTH, hand = handOf(listOf(character(2), character(3)), melds = listOf(closedKan))).copy(score = RIICHI_STICK_POINTS)
+        val open = seat(Wind.SOUTH, hand = handOf(listOf(character(2), character(3)), melds = listOf(pon(dot(7))))).copy(score = RIICHI_STICK_POINTS)
+        val declared = seat(Wind.SOUTH, hand = noYakuTankiOnFiveBamboo(), riichi = true).copy(score = RIICHI_STICK_POINTS)
+        val broke = seat(Wind.SOUTH, hand = noYakuTankiOnFiveBamboo()).copy(score = RIICHI_STICK_POINTS - 1)
+
+        fun prospective(player: MahjongPlayer) = evaluator.prospectiveDeclarations(view(table(listOf(seat(Wind.EAST), player)), player), player.hand)
+
+        assertEquals(riichi, prospective(closed))
+        assertEquals(riichi, prospective(withClosedKan))
+        assertEquals(emptySet(), prospective(open))
+        assertEquals(emptySet(), prospective(declared))
+        assertEquals(emptySet(), prospective(broke))
+    }
+
+    /** 剛摸到的牌只算一張可見牌：兩張八筒加摸到的八筒，與手中三張八筒的危險度相同。 */
+    @Test
+    fun `the drawn tile counts once when counting unseen tiles`() {
+        val opponent = seat(Wind.EAST, discards = listOf(Tile.Honor.North))
+        val withDrawn = seat(Wind.SOUTH, hand = handOf(List(2) { dot(8) }).copy(lastDrawn = FakeIdentifiedTileFactory.create(dot(8))))
+        val withoutDrawn = seat(Wind.SOUTH, hand = handOf(List(3) { dot(8) }))
+
+        val drawnDanger = evaluator.discardDanger(view(table(listOf(opponent, withDrawn)), withDrawn), opponent.id, dot(9))
+        val standingDanger = evaluator.discardDanger(view(table(listOf(opponent, withoutDrawn)), withoutDrawn), opponent.id, dot(9))
+
+        assertEquals(standingDanger, drawnDanger)
     }
 
     /** 測試用、不屬於日麻的擴充動作。 */
