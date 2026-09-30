@@ -28,7 +28,7 @@ fun applyRiichiDeclaration(
     val updatedPlayer = player.copy(
         hand = discardResult.hand,
         discardPile = riichiDiscardPile.discard(RiichiDiscardEntry(discardResult.tile, isRiichi = true)),
-        score = player.score - 1000,
+        score = player.score - RIICHI_STICK_POINTS,
         playerRuleState = updatedPlayerRuleState,
     )
     return RiichiDeclarationResult(

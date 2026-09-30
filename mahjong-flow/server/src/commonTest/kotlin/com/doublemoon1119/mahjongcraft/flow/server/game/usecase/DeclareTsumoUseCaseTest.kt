@@ -285,6 +285,40 @@ class DeclareTsumoUseCaseTest {
         )
     }
 
+    /** 驗證自摸贏家依本場數向其他每家各收 本場數 × 100，並與役種點數一起從付款者扣除。 */
+    @Test
+    fun `test declare tsumo collects combo bonus from every other player`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST).copy(score = 25000)
+        val winner = FakeMahjongPlayerFactory.create(
+            id = winnerId,
+            initialSeat = Wind.SOUTH,
+            hand = daisangenHand(),
+            discardPile = priorDiscardPile(),
+            playerRuleState = RiichiPlayerState(),
+        ).copy(score = 25000)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 25000)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH).copy(score = 25000)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(dealer, winner, west, north),
+            config = RiichiRuleConfig(),
+            comboCount = 2,
+            dynamicRuleState = RiichiDynamicState(),
+            currentPlayerIndex = 1,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, winnerId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val scores = fixtures.gameRepo.getTableState(gameId)!!.players.associate { it.id to it.score }
+        assertEquals(25000 + 32000 + 600, scores.getValue(winnerId))
+        assertEquals(25000 - 16000 - 200, scores.getValue(dealer.id))
+        assertEquals(25000 - 8000 - 200, scores.getValue(west.id))
+        assertEquals(25000 - 8000 - 200, scores.getValue(north.id))
+    }
+
     /**
      * 驗證自摸成功後所有觀察者的快照皆同步更新，且所有玩家皆收到 Tsumo 事件通知。
      */

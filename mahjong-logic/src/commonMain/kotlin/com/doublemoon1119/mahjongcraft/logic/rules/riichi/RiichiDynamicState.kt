@@ -7,6 +7,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import kotlin.uuid.Uuid
 
+/** 一支立直棒代表的點數：宣告立直時支付、和牌者收下場上立直棒時以此換算。 */
+const val RIICHI_STICK_POINTS: Int = 1000
+
 /**
  * 日本麻將特有的動態桌況狀態。
  *

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
-import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
@@ -58,10 +58,10 @@ class AddAiPlayerUseCaseTest {
     }
 
     /**
-     * 驗證不傳 strategyKey 時，預設存入 [RandomAiStrategy.KEY]。
+     * 驗證不傳 strategyKey 時，預設存入初級 [BuiltInAiStrategyKeys.BEGINNER]。
      */
     @Test
-    fun `test add ai without strategyKey defaults to RandomAiStrategy KEY`() = runTest {
+    fun `test add ai without strategyKey defaults to the beginner strategy`() = runTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
@@ -74,10 +74,10 @@ class AddAiPlayerUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val aiId = result.value.aiId
 
-        assertEquals(RandomAiStrategy.KEY, result.value.strategyKey)
+        assertEquals(BuiltInAiStrategyKeys.BEGINNER, result.value.strategyKey)
         val updatedRoom = roomRepo.getRoom(roomId)
         assertNotNull(updatedRoom)
-        assertEquals(RandomAiStrategy.KEY, updatedRoom.aiPlayerStrategyKeys[aiId])
+        assertEquals(BuiltInAiStrategyKeys.BEGINNER, updatedRoom.aiPlayerStrategyKeys[aiId])
     }
 
     /**

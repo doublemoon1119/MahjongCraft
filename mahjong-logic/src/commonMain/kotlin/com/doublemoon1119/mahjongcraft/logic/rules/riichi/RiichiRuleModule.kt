@@ -122,6 +122,13 @@ class RiichiRuleModule(
         legalActionValidator = createLegalActionValidator(),
     )
 
+    /** 建立與正式結算共用役種、點數與起胡判定的日麻規則查詢。 */
+    override fun createPositionRules(): RiichiPositionRules = RiichiPositionRules(
+        config = config,
+        handValueCalculator = createHandValueCalculator(),
+        shantenCalculator = createShantenCalculator(),
+    )
+
     /**
      * 建立日本麻將的手牌價值計算機。
      *
@@ -237,9 +244,7 @@ class RiichiRuleModule(
             is RiichiPointResult.PaoTsumo -> {
                 // 理論上不會發生：RiichiHandValueCalculator 只在 paoLiability 非 null 時才會回傳 PaoTsumo。
                 val paoLiability = result.paoLiability ?: return null
-                val paoPlayerId = tableState.players
-                    .first { tableState.relativeDirectionOf(player.id, it.id) == paoLiability.direction }
-                    .id
+                val paoPlayerId = tableState.riichiPaoPlayerId(player.id, paoLiability)
                 paymentReasons = mapOf(paoPlayerId to BuiltInPaymentReasonIds.PAO)
                 mergeTsumoRemainder(tableState, player.id, mapOf(paoPlayerId to pointResult.paoPayment), pointResult.remainder)
             }
@@ -293,9 +298,7 @@ class RiichiRuleModule(
             is RiichiPointResult.PaoRon -> {
                 // 理論上不會發生：RiichiHandValueCalculator 只在 paoLiability 非 null 時才會回傳 PaoRon。
                 val paoLiability = result.paoLiability ?: return null
-                val paoPlayerId = tableState.players
-                    .first { tableState.relativeDirectionOf(player.id, it.id) == paoLiability.direction }
-                    .id
+                val paoPlayerId = tableState.riichiPaoPlayerId(player.id, paoLiability)
                 // 包牌責任者剛好就是放銃者本人時，兩份「一半」其實是同一個人要付，直接歸戶成一筆
                 // 全額，避免兩筆同 key 的付款在合併時互相覆蓋掉一半金額。
                 paymentReasons = mapOf(paoPlayerId to BuiltInPaymentReasonIds.PAO)
@@ -365,14 +368,32 @@ class RiichiRuleModule(
     }
 
     /**
-     * 收下場上所有立直棒：贏家獲得「立直棒數量 * 1000」點，收下後立直棒數量歸零。
+     * 收下場上所有立直棒：贏家獲得「立直棒數量 × [RIICHI_STICK_POINTS]」點，收下後立直棒數量歸零。
      *
      * @return 若 [tableState] 的動態桌況狀態並非 [RiichiDynamicState]（理論上不會發生，僅作防呆），
      *         則回傳 null。
      */
     override fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>? {
         val riichiDynamicState = tableState.dynamicRuleState as? RiichiDynamicState ?: return null
-        return riichiDynamicState.copy(riichiStickCount = 0) to riichiDynamicState.riichiStickCount * 1000
+        return riichiDynamicState.copy(riichiStickCount = 0) to riichiDynamicState.riichiStickCount * RIICHI_STICK_POINTS
+    }
+
+    /**
+     * 依 [riichiComboBonusPayments] 分攤本場點數；[resolution] 成立包牌時由包牌責任者承擔對應部分。
+     */
+    override fun resolveComboBonusPayments(
+        tableState: TableState,
+        winnerId: Uuid,
+        discarderId: Uuid?,
+        resolution: WinResolutionResult?,
+    ): Map<Uuid, Int> {
+        val paoLiability = (resolution?.handValueResult as? RiichiHandValueResult)?.paoLiability
+        return riichiComboBonusPayments(
+            tableState = tableState,
+            winnerId = winnerId,
+            discarderId = discarderId,
+            paoPlayerId = paoLiability?.let { tableState.riichiPaoPlayerId(winnerId, it) },
+        )
     }
 
     /**

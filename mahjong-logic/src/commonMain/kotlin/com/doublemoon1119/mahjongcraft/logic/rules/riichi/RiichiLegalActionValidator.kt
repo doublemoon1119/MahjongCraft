@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.judgment.TileSelectionRequirement
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
@@ -92,20 +91,22 @@ class RiichiLegalActionValidator(
         val canDeclareAnotherKan = totalKanCount < MAX_KAN_COUNT
 
         // 牌山（不含王牌）是否還有牌可摸——恆等於這次判斷當下 tableState.tileWall.remainingCount。
-        // == 0 有兩種情境：(1) sourceDirection == Self 時，incomingTile 剛好是海底牌本身（摸完它之後
-        // 牌山正好摸盡），日麻規則海底牌不能拿來暗槓／加槓；(2) 反應他家捨牌時，這張捨牌是海底牌
-        // 摸盡後打出的河底牌，只能榮和（河底撈魚）或流局，不能吃/碰/大明槓——因為吃/碰之後下一位
-        // 仍須有正常摸牌機會，大明槓還涉及嶺上補牌，這個時間點都已經不成立。
+        // == 0 時，反應他家捨牌的這張牌是海底牌摸盡後打出的河底牌，只能榮和（河底撈魚）或流局，
+        // 不能吃/碰——吃/碰之後下一位仍須有正常摸牌機會，這個時間點已經不成立。
         val wallHasMoreTiles = tableState.tileWall.remainingCount > 0
+
+        // 槓（暗槓/加槓/大明槓）需要牌山至少剩 MIN_LIVE_TILES_FOR_KAN 張：嶺上補牌後，牌山末端的一張會補進
+        // 王牌區，牌山剩 1 張時補完就沒有海底牌可摸；剩 0 張時則是正在處理海底牌或河底牌。
+        val wallAllowsKan = tableState.tileWall.remainingCount >= MIN_LIVE_TILES_FOR_KAN
 
         // incomingTile == null 表示玩家正在打牌（準備捨牌）
         // 捨牌動作由 UI 層處理，讓玩家選擇要打的牌
         // 此 Validator 只處理「額外動作」（鳴牌、胡牌、立直）
         if (incomingTile == null) {
             // 檢查是否可以立直 (Riichi)
-            // 條件：向聽數為 0 且門前清（無副露）且未曾立直且點數 >= 1000，且牌山剩餘張數至少還夠
+            // 條件：向聽數為 0 且門前清（無副露）且未曾立直且點數足夠支付一支立直棒，且牌山剩餘張數至少還夠
             // 自己再摸一次（>= 玩家人數，確保輪到自己之前不會被其他人摸盡）
-            if (!isRiichi && isMenzen && player.score >= 1000 && tableState.tileWall.remainingCount >= tableState.playerCount) {
+            if (!isRiichi && isMenzen && player.score >= RIICHI_STICK_POINTS && tableState.tileWall.remainingCount >= tableState.playerCount) {
                 val result = shantenCalculator.calculate(
                     Hand(
                         player.hand.standingTiles.toMutableList(),
@@ -153,8 +154,8 @@ class RiichiLegalActionValidator(
                 }
             }
 
-            // 2. 檢查是否可以加槓 (Added Kan)——海底牌不能拿來加槓
-            if (canDeclareAnotherKan && wallHasMoreTiles) {
+            // 2. 檢查是否可以加槓 (Added Kan)——牌山剩 1 張以下時不能加槓
+            if (canDeclareAnotherKan && wallAllowsKan) {
                 player.hand.exposedMelds.forEach { meld ->
                     if (meld.type == MeldType.PON && meld.tiles.first().tile.riichiCanonical == incomingBaseTile) {
                         legalActions.add(GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()))
@@ -166,7 +167,7 @@ class RiichiLegalActionValidator(
             // 立直後暗槓限制：
             // - 暗槓前跟暗槓後聽的牌必須一模一樣才能暗槓
             // - 需要計算暗槓後的聽牌列表，與暗槓前的聽牌列表比對
-            if (canDeclareAnotherKan && wallHasMoreTiles) {
+            if (canDeclareAnotherKan && wallAllowsKan) {
                 val closedKanCandidates = (player.hand.standingTiles + incomingTile)
                     .groupBy { it.tile.riichiCanonical }
                     .values
@@ -301,10 +302,10 @@ class RiichiLegalActionValidator(
             }
 
             // 4. 檢查是否可以大明槓 (Open Kan)
-            // 立直後不能明槓、河底牌不能明槓
+            // 立直後不能明槓、牌山剩 1 張以下時不能明槓
             // 赤五與普通五視為同一張牌，故使用日麻標準牌比較
             val openKanCount = player.hand.standingTiles.count { it.tile.riichiCanonical == incomingBaseTile }
-            if (canDeclareAnotherKan && wallHasMoreTiles && openKanCount == 3 && !isRiichi) {
+            if (canDeclareAnotherKan && wallAllowsKan && openKanCount == 3 && !isRiichi) {
                 val withTiles =
                     player.hand.standingTiles.filter { it.tile.riichiCanonical == incomingBaseTile }.map { it.id }
                 legalActions.add(GameAction.Kan(GameAction.KanType.OPEN_KAN, incomingTile.id, withTiles))
@@ -395,36 +396,11 @@ class RiichiLegalActionValidator(
         incomingTile: IdentifiedTile,
         isTsumo: Boolean,
         isRobbingKan: Boolean = false,
-    ): QualifyingHan {
+    ): RiichiQualifyingHan {
         val context = contextCalculator.calculate(
             RiichiHandValueContextCalculator.Input(tableState, player, incomingTile, isTsumo, isRobbingKan),
         )
-        val result = handValueCalculator.calculate(context)
-        if (result.totalHan < 0) {
-            return QualifyingHan(
-                value = Int.MAX_VALUE,
-                yakuman = true,
-                isKokushi = result.yakuResults.any { it.yaku == YakuType.KokushiMusou || it.yaku == YakuType.KokushiMusou13 },
-            )
-        }
-        return QualifyingHan(
-            value = result.yakuResults
-                .filterNot { it.yaku == YakuType.Dora || it.yaku == YakuType.UraDora || it.yaku == YakuType.AkaDora }
-                .sumOf { it.han },
-        )
-    }
-
-    /** 起胡限制判定使用的非寶牌番數。 */
-    private data class QualifyingHan(
-        /** 非寶牌役種的總番數。 */
-        val value: Int,
-        /** 是否為役滿。 */
-        val yakuman: Boolean = false,
-        /** 是否為國士無雙役滿。 */
-        val isKokushi: Boolean = false,
-    ) {
-        /** 判斷此結果是否達到 [minimum]。 */
-        fun satisfies(minimum: Int): Boolean = yakuman || value >= minimum
+        return handValueCalculator.calculate(context).qualifyingHan()
     }
 
     /**
@@ -518,5 +494,8 @@ class RiichiLegalActionValidator(
     private companion object {
         /** 全場槓子數上限（明槓/暗槓/加槓皆算），見 [getLegalActions] 對這個上限的說明。 */
         const val MAX_KAN_COUNT = 4
+
+        /** 宣告任何一種槓時，牌山（不含王牌）最少要剩下的張數。 */
+        const val MIN_LIVE_TILES_FOR_KAN = 2
     }
 }

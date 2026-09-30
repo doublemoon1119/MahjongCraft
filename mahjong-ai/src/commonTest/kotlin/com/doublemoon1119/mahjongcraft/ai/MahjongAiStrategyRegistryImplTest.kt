@@ -1,7 +1,13 @@
 package com.doublemoon1119.mahjongcraft.ai
 
+import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectedValueAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.expectation.InformationLevel
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -53,29 +59,59 @@ class MahjongAiStrategyRegistryImplTest {
         assertSame(defaultStrategy, registry.resolve("unknown"))
     }
 
-    /**
-     * 驗證 [MahjongAiStrategyRegistryImpl.getAllStrategyKeys] 反映所有已註冊的 key。
-     */
+    /** 驗證 [MahjongAiStrategyRegistryImpl.getAllStrategyKeys] 依註冊順序列出所有 key。 */
     @Test
-    fun `test getAllStrategyKeys reflects registered keys`() {
-        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "a").apply {
-            register("a") { RandomAiStrategy(extensionActionRegistry) }
+    fun `test getAllStrategyKeys lists keys in registration order`() {
+        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "b").apply {
             register("b") { RandomAiStrategy(extensionActionRegistry) }
+            register("a") { RandomAiStrategy(extensionActionRegistry) }
         }
 
-        assertEquals(setOf("a", "b"), registry.getAllStrategyKeys())
+        assertEquals(listOf("b", "a"), registry.getAllStrategyKeys().toList())
+    }
+
+    /** 驗證同一個 key 不能註冊兩次，原本註冊的策略仍可解析。 */
+    @Test
+    fun `test register rejects a duplicate key`() {
+        val original = RandomAiStrategy(extensionActionRegistry)
+        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "default").apply {
+            register("custom") { original }
+        }
+
+        assertFailsWith<IllegalArgumentException> { registry.register("custom") { RandomAiStrategy(extensionActionRegistry) } }
+        assertSame(original, registry.resolve("custom"))
+    }
+
+    /** 驗證凍結後不能再註冊策略，已註冊的策略仍可解析。 */
+    @Test
+    fun `test register after freeze throws`() {
+        val strategy = RandomAiStrategy(extensionActionRegistry)
+        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "default").apply {
+            register("default") { strategy }
+            freeze()
+        }
+
+        assertFailsWith<IllegalStateException> { registry.register("late") { strategy } }
+        assertSame(strategy, registry.resolve("default"))
     }
 
     /**
-     * 驗證 [registerBuiltInAiStrategies] 會註冊 [RandomAiStrategy.KEY]，且能被 resolve。
+     * 驗證 [registerBuiltInAiStrategies] 依初級、中級、高級、隨機出牌的順序註冊，且各自解析成對應的資訊等級。
      */
     @Test
-    fun `test registerBuiltInAiStrategies registers RandomAiStrategy`() {
-        val registry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply {
-            registerBuiltInAiStrategies(extensionActionRegistry)
+    fun `test registerBuiltInAiStrategies registers the three expected value levels then random`() {
+        val registry = MahjongAiStrategyRegistryImpl(defaultKey = BuiltInAiStrategyKeys.BEGINNER).apply {
+            registerBuiltInAiStrategies(MahjongModuleRegistryImpl(), extensionActionRegistry, OpponentModelRegistry())
         }
 
-        assertTrue(registry.getAllStrategyKeys().contains(RandomAiStrategy.KEY))
+        assertEquals(
+            listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY),
+            registry.getAllStrategyKeys().toList(),
+        )
         assertTrue(registry.resolve(RandomAiStrategy.KEY) is RandomAiStrategy)
+        assertEquals(InformationLevel.BEGINNER, assertIs<ExpectedValueAiStrategy>(registry.resolve(BuiltInAiStrategyKeys.BEGINNER)).level)
+        assertEquals(InformationLevel.INTERMEDIATE, assertIs<ExpectedValueAiStrategy>(registry.resolve(BuiltInAiStrategyKeys.INTERMEDIATE)).level)
+        assertEquals(InformationLevel.ADVANCED, assertIs<ExpectedValueAiStrategy>(registry.resolve(BuiltInAiStrategyKeys.ADVANCED)).level)
+        assertEquals(InformationLevel.BEGINNER, assertIs<ExpectedValueAiStrategy>(registry.resolve("unknown")).level)
     }
 }

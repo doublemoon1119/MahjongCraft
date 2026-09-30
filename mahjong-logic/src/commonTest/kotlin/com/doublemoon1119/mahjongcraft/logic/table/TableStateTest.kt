@@ -185,6 +185,21 @@ class TableStateTest {
         assertEquals(players.map { it.seatWind }, advanced.players.map { it.seatWind })
     }
 
+    /** 過莊時依 transition 決定本場數累加或歸零；連莊一律累加。 */
+    @Test
+    fun `test round advancement accumulates or resets combo count by transition`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers, comboCount = 2)
+        val nextPosition = MatchRoundPosition(1, Wind.EAST, 2)
+
+        val repeated = state.advanceRound(MatchRoundTransition.RepeatCurrentRound)
+        val continued = state.advanceRound(MatchRoundTransition.AdvanceTo(nextPosition = nextPosition, continuesCombo = true))
+        val reset = state.advanceRound(MatchRoundTransition.AdvanceTo(nextPosition = nextPosition, continuesCombo = false))
+
+        assertEquals(3, repeated.comboCount)
+        assertEquals(3, continued.comboCount)
+        assertEquals(0, reset.comboCount)
+    }
+
     /** 起算玩家不在桌上時應拋出例外。 */
     @Test
     fun `test nextActivePlayerAfter throws when starting player is not seated`() {

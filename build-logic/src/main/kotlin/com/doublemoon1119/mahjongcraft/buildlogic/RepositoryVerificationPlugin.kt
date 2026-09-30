@@ -161,7 +161,7 @@ abstract class VerifyMinecraftLangFileKeyOrderTask : DefaultTask() {
     /** 逐檔比對排序前後內容，回報未排序的檔案。 */
     @TaskAction
     fun verifyOrder() {
-        val violations = minecraftLangFiles(project).filter { it.readText() != sortedLangFileText(it.readText()) }
+        val violations = minecraftLangFiles(project).filterNot { isLangFileSorted(it.readText()) }
         if (violations.isNotEmpty()) {
             throw GradleException(
                 "Language files are not sorted by translation key (run ./gradlew sortMinecraftLangFiles to fix):\n" +
@@ -181,15 +181,24 @@ internal fun minecraftLangFiles(project: Project): List<File> {
 }
 
 /**
+ * 判斷語系檔內容是否已依 key 字典序排列。
+ *
+ * 換行符號不影響判斷：CRLF 與 LF 內容相同的檔案視為相同。
+ *
+ * @throws IllegalArgumentException [text] 不符合 [sortedLangFileText] 要求的固定單行條目格式。
+ */
+internal fun isLangFileSorted(text: String): Boolean = text.withLfLineEndings() == sortedLangFileText(text)
+
+/**
  * 將語系檔內容依 key 字典序重排。
  *
  * 每個條目固定佔一整行（`  "key": "value",`），排序只搬動整行，不解析或改寫 value 內容與跳脫字元。
- * 純文字轉換，不特定於任何平台的語系檔格式。
+ * 純文字轉換，不特定於任何平台的語系檔格式。輸入可以是 CRLF 或 LF 換行，輸出一律使用 LF。
  *
  * @throws IllegalArgumentException [original] 不符合這個固定的單行條目格式。
  */
 internal fun sortedLangFileText(original: String): String {
-    val lines = original.split("\n")
+    val lines = original.withLfLineEndings().split("\n")
     require(lines.firstOrNull() == "{" && lines.getOrNull(lines.size - 2) == "}" && lines.lastOrNull() == "") {
         "Language file does not match the expected single-entry-per-line format"
     }
@@ -198,6 +207,9 @@ internal fun sortedLangFileText(original: String): String {
     val body = sortedEntries.mapIndexed { index, line -> if (index == sortedEntries.lastIndex) line else "$line," }
     return (listOf("{") + body + listOf("}", "")).joinToString("\n")
 }
+
+/** 將 CRLF 換行統一為 LF。 */
+private fun String.withLfLineEndings(): String = replace("\r\n", "\n")
 
 /** 即使在大小寫不敏感的檔案系統，也只接受精確的 `README.md` 名稱。 */
 private fun hasExactReadmeName(readme: File): Boolean = readme.parentFile

@@ -28,8 +28,8 @@ class RiichiLegalActionValidatorRiichiTest {
         contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig()),
     )
 
-    /** 牌山還有牌可摸——立直/暗槓測試預設用這個，避免被新加的「牌山剩餘不足」限制誤擋。 */
-    private val nonEmptyWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))))
+    /** 牌山剩 2 張——立直/暗槓測試預設用這個，避免被「牌山剩餘不足」與「剩 1 張以下不可槓」的限制誤擋。 */
+    private val nonEmptyWall = TileWall(List(2) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)) })
 
     /**
      * 測試可執行立直動作之情況（點數充足）。

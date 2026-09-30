@@ -48,6 +48,33 @@ class RiichiNagashiManganOutcomeResolverTest {
         assertEquals(0, (outcome.settledTableState.dynamicRuleState as RiichiDynamicState).riichiStickCount)
     }
 
+    /** 驗證流局滿貫比照自摸收取本場：其他每家各付 本場數 × 100，歸成立者所有。 */
+    @Test
+    fun `achiever collects combo bonus like a tsumo`() {
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST).copy(score = 25000)
+        val achiever = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            discardPile = allYaochuuDiscardPile(),
+        ).copy(score = 25000)
+        val others = listOf(Wind.WEST, Wind.NORTH).map { wind ->
+            FakeMahjongPlayerFactory.create(initialSeat = wind).copy(score = 25000)
+        }
+        val table = FakeTableStateFactory.create(
+            players = listOf(dealer, achiever) + others,
+            config = module.config,
+            comboCount = 3,
+            dynamicRuleState = RiichiDynamicState(),
+        )
+
+        val outcome = RiichiNagashiManganOutcomeResolver().resolve(table, module)!!
+
+        assertEquals(RoundTransitionDirective.ADVANCE_DEALER, outcome.transitionDirective)
+        assertEquals(8000 + 900, outcome.scoreDeltas.getValue(achiever.id))
+        assertEquals(-4000 - 300, outcome.scoreDeltas.getValue(dealer.id))
+        others.forEach { assertEquals(-2000 - 300, outcome.scoreDeltas.getValue(it.id)) }
+        assertEquals(25000 + 8900, outcome.settledTableState.players.first { it.id == achiever.id }.score)
+    }
+
     /** 驗證牌河曾被鳴走時不成立。 */
     @Test
     fun `taken discard prevents outcome`() {

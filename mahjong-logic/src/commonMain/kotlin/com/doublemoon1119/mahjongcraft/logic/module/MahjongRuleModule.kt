@@ -182,6 +182,13 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun createDiscardReadinessAnalyzer(): DiscardReadinessAnalyzer? = null
 
     /**
+     * 建立適用於該規則的規則查詢，供需要依和牌價值、宣告效果與不能榮和的牌做決策的呼叫端使用。
+     *
+     * 沒有專屬查詢的規則沿用 [NeutralPositionRules]。
+     */
+    fun createPositionRules(): PositionRules = NeutralPositionRules
+
+    /**
      * 建立適用於該規則的手牌役種計算機 (Hand Value Calculator)。
      *
      * 負責計算手牌的役種、番數（或台數），用於胡牌結算與役種顯示。
@@ -347,6 +354,28 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 收下供託後應套用的動態桌況狀態，以及贏家因此獲得的點數；若此規則沒有供託機制則為 null。
      */
     fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>?
+
+    /**
+     * 胡牌時，贏家依 [TableState.comboCount] 額外收取的連莊點數（如日麻的本場），以每位付款者支付的
+     * 金額表示。
+     *
+     * 與 [collectStickPot] 相同，由呼叫端決定「這次由誰收取」：自摸與單一贏家榮和是唯一贏家，多家和
+     * 則只有收下供託的那位贏家收取。這裡只負責依規則決定付款者與金額。
+     *
+     * 預設沒有連莊點數，回傳空 map。
+     *
+     * @param tableState 目前的桌況（尚未套用本次胡牌結算）。
+     * @param winnerId 收取連莊點數的贏家 Uuid。
+     * @param discarderId 放銃者 Uuid；自摸或與自摸等價的結果為 null。
+     * @param resolution 此贏家本次胡牌的結算結果；與胡牌等價但沒有手牌結算的結果為 null。
+     * @return 每位付款者應支付的連莊點數；金額皆為正數，不含 [winnerId]。
+     */
+    fun resolveComboBonusPayments(
+        tableState: TableState,
+        winnerId: Uuid,
+        discarderId: Uuid?,
+        resolution: WinResolutionResult?,
+    ): Map<Uuid, Int> = emptyMap()
 
     /**
      * 計算一次一般流局（牌山摸盡）的點數結算——實際如何結算完全由各規則自己的覆寫決定

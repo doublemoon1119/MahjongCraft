@@ -23,9 +23,21 @@ class RiichiNagashiManganOutcomeResolver : PostReactionRoundOutcomeResolver {
         val resolution = riichiModule.resolveNagashiMangan(tableState) ?: return null
         val stickPot = riichiModule.collectStickPot(tableState)
         val collectorId = chooseStickPotCollector(tableState, resolution.achieverPlayerIds)
+        // 本場比照自摸，由收下供託的同一位成立者收取
+        val comboBonusPayments = collectorId
+            ?.let {
+                riichiModule.resolveComboBonusPayments(
+                    tableState = tableState,
+                    winnerId = it,
+                    discarderId = null,
+                    resolution = null,
+                )
+            }
+            .orEmpty()
         val finalDeltas = tableState.players.associate { player ->
-            val stickDelta = if (player.id == collectorId) stickPot?.second ?: 0 else 0
-            player.id to (resolution.scoreDeltas.getValue(player.id) + stickDelta)
+            val collectorDelta = if (player.id == collectorId) (stickPot?.second ?: 0) + comboBonusPayments.values.sum() else 0
+            val comboBonusPayment = comboBonusPayments[player.id] ?: 0
+            player.id to (resolution.scoreDeltas.getValue(player.id) + collectorDelta - comboBonusPayment)
         }
         val settledState = tableState.copy(
             players = tableState.players.map { player ->
@@ -49,7 +61,7 @@ class RiichiNagashiManganOutcomeResolver : PostReactionRoundOutcomeResolver {
         )
     }
 
-    /** 多人成立時依莊家起算的頭跳順位決定唯一供託收取者。 */
+    /** 多人成立時依莊家起算的頭跳順位決定唯一的供託與本場收取者。 */
     private fun chooseStickPotCollector(tableState: TableState, achieverIds: Set<Uuid>): Uuid? {
         if (achieverIds.isEmpty()) return null
         if (achieverIds.size == 1) return achieverIds.first()

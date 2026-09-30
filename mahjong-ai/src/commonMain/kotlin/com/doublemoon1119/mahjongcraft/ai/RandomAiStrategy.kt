@@ -50,7 +50,7 @@ class RandomAiStrategy(
         GameAction.Tsumo -> listOf(GameCommand.Tsumo)
         is GameAction.Kan -> listOf(GameCommand.Kan(type, tileId))
         is GameAction.ExhaustiveDraw -> listOf(GameCommand.DeclareExhaustiveDraw(reason))
-        is GameAction.Extension -> extensionActionRegistry.createCommands(value, context)
+        is GameAction.Extension -> extensionActionRegistry.createCandidates(value, context).map { it.command }
         else -> emptyList()
     }
 
@@ -60,7 +60,6 @@ class RandomAiStrategy(
     private fun discardRandomTile(context: AiDecisionContext): GameCommand {
         context.forcedDiscardTileId?.let { return GameCommand.Discard(it) }
         val hand = context.snapshot.players.first { it.id == context.selfId }.hand
-        val candidateIds = hand.standingTiles.map { it.id } + listOfNotNull(hand.lastDrawn?.id)
-        return GameCommand.Discard(candidateIds.random(random))
+        return GameCommand.Discard(hand.standingTiles.map { it.id }.random(random))
     }
 }

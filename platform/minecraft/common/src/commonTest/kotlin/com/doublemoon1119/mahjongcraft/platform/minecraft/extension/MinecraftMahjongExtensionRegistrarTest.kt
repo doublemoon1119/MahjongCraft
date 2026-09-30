@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
+import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
@@ -25,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebratio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -225,6 +227,9 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertNull(tileAssetRegistry.find(TileTypeId.parse("example:unregistered")))
 
         assertTrue(aiStrategyDisplayNameRegistry.find(RandomAiStrategy.KEY) != null)
+        assertEquals(MinecraftMessageKeys.AI_STRATEGY_BEGINNER, aiStrategyDisplayNameRegistry.find(BuiltInAiStrategyKeys.BEGINNER))
+        assertEquals(MinecraftMessageKeys.AI_STRATEGY_INTERMEDIATE, aiStrategyDisplayNameRegistry.find(BuiltInAiStrategyKeys.INTERMEDIATE))
+        assertEquals(MinecraftMessageKeys.AI_STRATEGY_ADVANCED, aiStrategyDisplayNameRegistry.find(BuiltInAiStrategyKeys.ADVANCED))
         assertTrue(aiStrategyDisplayNameRegistry.isFrozen)
         assertNull(aiStrategyDisplayNameRegistry.find("example:unregistered"))
 

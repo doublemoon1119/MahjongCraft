@@ -21,8 +21,9 @@ import kotlin.uuid.Uuid
  * [MahjongRuleModule.declareRon] 獨立結算，再把所有結算金額加總到同一份分數異動——同一位玩家
  * 有可能同時是某人的贏家、又是另一人的包牌責任者，需要正確疊加而非互相覆蓋。
  *
- * 場上供託（如立直棒）由其中一位贏家收下：只有單一贏家時就是那位贏家；多家和時依頭跳順位
- * （[TableState.nearestPlayerInTurnOrder]，以 [discarderId] 為起點）由離放銃者最近的贏家收下，
+ * 場上供託（如立直棒）與連莊點數（如本場，見 [MahjongRuleModule.resolveComboBonusPayments]）由其中
+ * 一位贏家收取：只有單一贏家時就是那位贏家；多家和時依頭跳順位
+ * （[TableState.nearestPlayerInTurnOrder]，以 [discarderId] 為起點）由離放銃者最近的贏家收取，
  * 不是所有贏家均分。
  */
 internal object RonSettlementResolver {
@@ -70,16 +71,27 @@ internal object RonSettlementResolver {
             }
         }
 
-        // 場上供託由其中一位贏家收下：單一贏家時就是那位贏家，多家和時依頭跳順位由離放銃者最近的
-        // 贏家收下，不支援此機制的規則回傳 null
+        // 場上供託與連莊點數由同一位贏家收取：單一贏家時就是那位贏家，多家和時依頭跳順位由離放銃者
+        // 最近的贏家收取
+        val collectorId = if (winnerIds.size == 1) {
+            winnerIds.first()
+        } else {
+            state.nearestPlayerInTurnOrder(discarderId, winnerIds)
+        }
+        // 不支援供託機制的規則回傳 null
         val stickPot = module.collectStickPot(state)
         if (stickPot != null) {
-            val collectorId = if (winnerIds.size == 1) {
-                winnerIds.first()
-            } else {
-                state.nearestPlayerInTurnOrder(discarderId, winnerIds)
-            }
             scoreDeltas[collectorId] = (scoreDeltas[collectorId] ?: 0) + stickPot.second
+        }
+        // 沒有連莊點數機制的規則回傳空 map
+        module.resolveComboBonusPayments(
+            tableState = state,
+            winnerId = collectorId,
+            discarderId = discarderId,
+            resolution = settlements[collectorId],
+        ).forEach { (payerId, amount) ->
+            scoreDeltas[collectorId] = (scoreDeltas[collectorId] ?: 0) + amount
+            scoreDeltas[payerId] = (scoreDeltas[payerId] ?: 0) - amount
         }
 
         val updatedPlayers = players.map { p ->

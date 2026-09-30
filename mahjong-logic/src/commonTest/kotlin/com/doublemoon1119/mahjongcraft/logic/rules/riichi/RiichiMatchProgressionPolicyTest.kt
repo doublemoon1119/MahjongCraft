@@ -134,6 +134,70 @@ class RiichiMatchProgressionPolicyTest {
         )
     }
 
+    /** 荒牌流局與途中流局即使過莊，本場數仍繼續累加。 */
+    @Test
+    fun `draws that advance the dealer continue the combo`() {
+        listOf(RoundCompletionClassification.EXHAUSTIVE_DRAW, RoundCompletionClassification.ABORTIVE_DRAW).forEach { classification ->
+            val context = context(
+                RiichiGameLength.East,
+                2,
+                Wind.EAST,
+                MatchRoundPhase.REGULAR,
+                listOf(25_000, 25_000, 25_000, 25_000),
+                classification = classification,
+            )
+
+            assertEquals(
+                MatchProgressionDecision.ContinueMatch(
+                    MatchRoundTransition.AdvanceTo(
+                        nextPosition = MatchRoundPosition(2, Wind.EAST, 3),
+                        continuesCombo = true,
+                    ),
+                ),
+                policy(context).decide(context),
+            )
+        }
+    }
+
+    /** 子家和牌過莊時本場數歸零。 */
+    @Test
+    fun `non-dealer win resets the combo`() {
+        val context = context(RiichiGameLength.East, 2, Wind.EAST, MatchRoundPhase.REGULAR, listOf(25_000, 25_000, 25_000, 25_000))
+
+        assertEquals(
+            MatchProgressionDecision.ContinueMatch(
+                MatchRoundTransition.AdvanceTo(
+                    nextPosition = MatchRoundPosition(2, Wind.EAST, 3),
+                    continuesCombo = false,
+                ),
+            ),
+            policy(context).decide(context),
+        )
+    }
+
+    /** 原定最後局流局過莊進入延長局時，本場數仍繼續累加。 */
+    @Test
+    fun `final regular round draw into extra round continues the combo`() {
+        val context = context(
+            RiichiGameLength.East,
+            4,
+            Wind.EAST,
+            MatchRoundPhase.REGULAR,
+            listOf(29_900, 25_100, 25_000, 20_000),
+            classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
+        )
+
+        assertEquals(
+            MatchProgressionDecision.ContinueMatch(
+                MatchRoundTransition.AdvanceTo(
+                    nextPosition = MatchRoundPosition(4, Wind.SOUTH, 1, MatchRoundPhase.EXTRA),
+                    continuesCombo = true,
+                ),
+            ),
+            policy(context).decide(context),
+        )
+    }
+
     /** 擊飛優先於返點、連莊與延長判定。 */
     @Test
     fun `bust ends match before overtime decisions`() {

@@ -2,12 +2,30 @@ package com.doublemoon1119.mahjongcraft.ai
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import kotlin.reflect.KClass
+import kotlin.uuid.Uuid
+
+/**
+ * 擴充動作轉成的一個 AI 命令候選。
+ *
+ * 命令本身的內容由規則定義，AI 無法解讀；[discardTileId] 與 [declaration] 以規則中立的形式說明執行後的結果，
+ * 讓評估局面的策略可以把它當成「宣告後打出某張牌」比較。
+ *
+ * @property command 可直接送出的命令。
+ * @property discardTileId 命令執行時會打出的牌；不打牌的命令為 null。
+ * @property declaration 命令宣告的擴充動作；不宣告任何動作時為 null。
+ */
+data class ExtensionCommandCandidate(
+    val command: GameCommand,
+    val discardTileId: Uuid? = null,
+    val declaration: GameAction.Extension? = null,
+)
 
 /** 將一種擴充動作轉換成 AI 可執行命令的策略。 */
 fun interface ExtensionGameActionAiHandler<A : ExtensionGameAction> {
     /** 依目前情境建立所有可安全執行的命令候選。 */
-    fun createCommands(action: A, context: AiDecisionContext): List<GameCommand>
+    fun createCandidates(action: A, context: AiDecisionContext): List<ExtensionCommandCandidate>
 }
 
 /** 管理擴充動作型別與 AI handler 的可凍結註冊表。 */
@@ -44,8 +62,8 @@ class ExtensionGameActionAiRegistry {
 
     /** 將擴充動作轉換成命令候選；未知或無法安全決策的動作回傳空清單。 */
     @Suppress("UNCHECKED_CAST")
-    fun createCommands(action: ExtensionGameAction, context: AiDecisionContext): List<GameCommand> {
+    fun createCandidates(action: ExtensionGameAction, context: AiDecisionContext): List<ExtensionCommandCandidate> {
         val entry = entries[action::class] as? Entry<ExtensionGameAction> ?: return emptyList()
-        return entry.handler.createCommands(action, context)
+        return entry.handler.createCandidates(action, context)
     }
 }

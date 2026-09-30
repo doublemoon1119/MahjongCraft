@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.extension
 
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
+import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoRegistry
@@ -146,6 +149,8 @@ private fun testCoreRegistries(
     persistenceRegistries = persistenceRegistries,
     winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
     gameActionAiRegistry = ExtensionGameActionAiRegistry(),
+    aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY),
+    opponentModelRegistry = OpponentModelRegistry(),
     gameActionCommandFactoryRegistry = ExtensionGameActionCommandFactoryRegistry(),
     gameCommandRegistry = ExtensionGameCommandExecutorRegistry(),
     postReactionRoundOutcomeResolverRegistry = PostReactionRoundOutcomeResolverRegistry(),

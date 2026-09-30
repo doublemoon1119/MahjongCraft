@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.NoOpWallRevealPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -183,6 +184,22 @@ class TaiwanRuleModuleTest {
         val table = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create()))
 
         assertNull(module.collectStickPot(table))
+    }
+
+    /** 驗證沒有覆寫連莊點數的規則即使有連莊次數也不產生任何付款。 */
+    @Test
+    fun `test resolveComboBonusPayments defaults to no payments`() {
+        val winner = FakeMahjongPlayerFactory.create(Wind.EAST)
+        val table = FakeTableStateFactory.create(players = listOf(winner, FakeMahjongPlayerFactory.create(Wind.SOUTH)), comboCount = 3)
+
+        val payments = module.resolveComboBonusPayments(
+            tableState = table,
+            winnerId = winner.id,
+            discarderId = null,
+            resolution = null,
+        )
+
+        assertTrue(payments.isEmpty())
     }
 
     /**

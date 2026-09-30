@@ -37,17 +37,18 @@ class RiichiMatchProgressionPolicy(
         val topPlayer = state.players.first { it.id == context.rankedPlayerIds.first() }
         val targetReached = topPlayer.score >= config.scoreConfig.minPointsToWin
         val directive = context.completion.transitionDirective
+        val continuesCombo = context.completion.classification.continuesCombo()
 
         if (current.phase == MatchRoundPhase.EXTRA) {
             if (targetReached) return MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED)
             if (current.sequenceIndex >= schedule.extraLastIndex) {
                 return MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED)
             }
-            return continueByDirective(current, directive, schedule.regularLastIndex)
+            return continueByDirective(current, directive, schedule.regularLastIndex, continuesCombo)
         }
 
         if (current.sequenceIndex < schedule.regularLastIndex) {
-            return continueByDirective(current, directive, schedule.regularLastIndex)
+            return continueByDirective(current, directive, schedule.regularLastIndex, continuesCombo)
         }
 
         require(current.sequenceIndex == schedule.regularLastIndex) { "Regular riichi round exceeded its schedule: $current" }
@@ -69,20 +70,38 @@ class RiichiMatchProgressionPolicy(
         }
         if (targetReached) return MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED)
         return MatchProgressionDecision.ContinueMatch(
-            MatchRoundTransition.AdvanceTo(position(schedule.regularLastIndex + 1, schedule.regularLastIndex)),
+            MatchRoundTransition.AdvanceTo(
+                nextPosition = position(schedule.regularLastIndex + 1, schedule.regularLastIndex),
+                continuesCombo = continuesCombo,
+            ),
         )
     }
 
-    /** 依莊家 directive 產生連莊或下一局決策。 */
+    /** 依莊家 directive 產生連莊或下一局決策；過莊時依 [continuesCombo] 決定本場數累加或歸零。 */
     private fun continueByDirective(
         current: MatchRoundPosition,
         directive: RoundTransitionDirective,
         regularLastIndex: Int,
+        continuesCombo: Boolean,
     ): MatchProgressionDecision = when (directive) {
         RoundTransitionDirective.REPEAT_DEALER -> MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound)
         RoundTransitionDirective.ADVANCE_DEALER -> MatchProgressionDecision.ContinueMatch(
-            MatchRoundTransition.AdvanceTo(position(current.sequenceIndex + 1, regularLastIndex)),
+            MatchRoundTransition.AdvanceTo(
+                nextPosition = position(current.sequenceIndex + 1, regularLastIndex),
+                continuesCombo = continuesCombo,
+            ),
         )
+    }
+
+    /** 流局後即使過莊，本場數仍繼續累加；和牌與等同和牌的結果在過莊時歸零。 */
+    private fun RoundCompletionClassification.continuesCombo(): Boolean = when (this) {
+        RoundCompletionClassification.EXHAUSTIVE_DRAW,
+        RoundCompletionClassification.ABORTIVE_DRAW,
+        -> true
+
+        RoundCompletionClassification.WIN,
+        RoundCompletionClassification.EXTENSION,
+        -> false
     }
 
     /** 由明確四人日麻 sequence index 建立局位。 */

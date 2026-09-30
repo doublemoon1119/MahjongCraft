@@ -1,26 +1,35 @@
 package com.doublemoon1119.mahjongcraft.ai.riichi
 
+import com.doublemoon1119.mahjongcraft.ai.ExtensionCommandCandidate
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.ai.toOwnHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
-import com.doublemoon1119.mahjongcraft.logic.base.Hand
-import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 
-/** 登記內建日麻立直動作的 AI action handler。 */
+/**
+ * 登記內建日麻立直動作的 AI action handler。
+ *
+ * 每一張打出後仍然聽牌的牌各產生一個候選，候選說明它會打出哪張牌並宣告立直。
+ */
 fun ExtensionGameActionAiRegistry.registerRiichiGameActionHandler(moduleRegistry: MahjongModuleRegistry) {
-    register(RiichiGameAction.Riichi::class) { _, context ->
-        val player = context.snapshot.players.first { it.id == context.selfId }
+    register(RiichiGameAction.Riichi::class) { action, context ->
+        val hand = context.snapshot.players.first { it.id == context.selfId }.hand.toOwnHand()
         val calculator = moduleRegistry.getModule(context.snapshot.config).createShantenCalculator()
-        val visibleTiles = (player.hand.standingTiles + listOfNotNull(player.hand.lastDrawn)).mapNotNull { snapshot ->
-            snapshot.tile?.let { IdentifiedTile(snapshot.id, it) }
-        }
-        val candidates = visibleTiles.filter { candidate ->
-            val remainingTiles = visibleTiles.filterNot { it.id == candidate.id }
-            calculator.calculate(Hand(tiles = remainingTiles)) is ShantenResult.Tenpai
-        }
-        candidates.map { GameCommand.Extension(RiichiGameCommand(it.id)) }
+        hand.tiles
+            .filter { candidate ->
+                val remaining = hand.copy(tiles = hand.tiles.filterNot { it.id == candidate.id })
+                calculator.calculate(remaining) is ShantenResult.Tenpai
+            }
+            .map { tile ->
+                ExtensionCommandCandidate(
+                    command = GameCommand.Extension(RiichiGameCommand(tile.id)),
+                    discardTileId = tile.id,
+                    declaration = GameAction.Extension(action),
+                )
+            }
     }
 }
