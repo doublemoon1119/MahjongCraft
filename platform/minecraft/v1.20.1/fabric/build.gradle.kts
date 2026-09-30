@@ -85,11 +85,17 @@ dependencies {
     // Client 設定檔仍由 MahjongClientConfigStore 直接使用 ktoml；:minecraft_common 的
     // implementation 不會把 Toml symbol 透傳給 loader module，因此這裡保留直接依賴。
     implementation(libs.ktoml.core)
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.sqlite.jdbc)
 
     // 這幾個都是一般 JVM 專案，不是 Fabric mod，玩家的 classpath 上不會自動有它們，
     // 必須透過 Loom 的 include() 把它們打進最終 mod jar
     include(project(":minecraft_common"))
     include(libs.ktoml.core)
+    include(libs.exposed.core)
+    include(libs.exposed.jdbc)
+    include(libs.sqlite.jdbc)
     include(libs.kotlinx.datetime)
     include(project(":minecraft_v1.20.1_common"))
     include(project(":mahjong-logic"))

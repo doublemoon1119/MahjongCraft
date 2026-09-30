@@ -20,6 +20,8 @@ coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
 kotlinx-datetime = "0.7.1-0.6.x-compat"
 ktoml = "0.7.1"
+exposed = "1.5.0"
+sqlite-jdbc = "3.53.4.0"
 
 # Dependency injection and build tooling
 koin-bom = "4.2.2"
@@ -51,6 +53,9 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 ktoml-core = { group = "com.akuleshov7", name = "ktoml-core", version.ref = "ktoml" }
 kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinx-datetime" }
+exposed-core = { group = "org.jetbrains.exposed", name = "exposed-core", version.ref = "exposed" }
+exposed-jdbc = { group = "org.jetbrains.exposed", name = "exposed-jdbc", version.ref = "exposed" }
+sqlite-jdbc = { group = "org.xerial", name = "sqlite-jdbc", version.ref = "sqlite-jdbc" }
 
 # Dependency injection libraries
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
