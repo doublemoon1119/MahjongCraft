@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -237,6 +238,37 @@ class ExpectedValueAiStrategyTest {
 
         assertTrue(flat < middle, "flat $flat middle $middle")
         assertTrue(middle < exact, "middle $middle exact $exact")
+    }
+
+    /**
+     * 單騎聽五筒、剩下的五筒都是 2 張時：赤五筒還沒出現的一桌，其中一張胡到會多一張赤寶牌，
+     * 期望值高於赤五筒已經被打出的一桌。
+     */
+    @Test
+    fun `an unseen red five adds value to a wait on five`() {
+        fun expectedValue(visibleFive: Tile): Double {
+            val self = player(
+                Wind.SOUTH,
+                hand = hand(
+                    listOf(m(2), m(3), m(4), p(1), p(2), p(3), p(7), p(8), p(9), Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red, p(5)),
+                    drawn = Tile.Honor.North,
+                ),
+            )
+            val table = table(listOf(player(Wind.EAST, discards = listOf(visibleFive)), self, player(Wind.WEST), player(Wind.NORTH)))
+            val context = context(table, self)
+            val north = checkNotNull(self.hand.lastDrawn)
+            val discard = DecisionCandidate.Discard(tile = north, declaration = null, command = GameCommand.Discard(north.id))
+            val level = InformationLevel.ADVANCED
+            return ExpectedValueEvaluator(level, ExpectationParameters.DEFAULT, ExpectationFixtures.module, ExpectationFixtures.opponentModel(level), context)
+                .scoreAll(listOf(discard))
+                .single()
+                .expectedValue
+        }
+
+        val redStillUnseen = expectedValue(visibleFive = p(5))
+        val redAlreadyDiscarded = expectedValue(visibleFive = RiichiTileTypes.redFive(Tile.Suit.Dot))
+
+        assertTrue(redStillUnseen > redAlreadyDiscarded, "red unseen $redStillUnseen, red discarded $redAlreadyDiscarded")
     }
 
     /** 打點看得多仔細只能介於 0 到 1。 */

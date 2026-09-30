@@ -30,7 +30,7 @@ class UnseenTileCountsTest {
         assertEquals(136 - 3, counts.total)
     }
 
-    /** 扣除所有可見牌時，對手牌河中的牌也一併扣除。 */
+    /** 扣除所有可見牌時，對手牌河中的牌也一併扣除；看到的普通五萬多於牌山中的張數時，改從赤五萬扣除。 */
     @Test
     fun `counting visible tiles also deducts discards`() {
         val counts = UnseenTileCounts.from(table.toSnapshot(setOf(self.id)), self.id, module, countsVisibleTiles = true)
@@ -49,6 +49,27 @@ class UnseenTileCountsTest {
         assertEquals(34, counts.kinds.size)
     }
 
+    /** 赤五與普通五另外記錄各自的未見張數：手上一張普通五筒時，剩下普通五筒 2 張、赤五筒 1 張。 */
+    @Test
+    fun `red and plain fives are tracked separately`() {
+        val withPlain = player(Wind.SOUTH, hand = hand(listOf(p(5))))
+        val counts = UnseenTileCounts.from(table(listOf(opponent, withPlain)).toSnapshot(setOf(withPlain.id)), withPlain.id, module, countsVisibleTiles = false)
+
+        assertEquals(setOf(p(5) to 2, RED_FIVE_DOT to 1), counts.faces(p(5)).toSet())
+        assertEquals(listOf(Tile.Honor.North to 4), counts.faces(Tile.Honor.North))
+    }
+
+    /** 假設摸進赤五筒後，只少掉赤五筒；張數為 0 的牌面不列出。 */
+    @Test
+    fun `drawing a red five removes only the red copy`() {
+        val withPlain = player(Wind.SOUTH, hand = hand(listOf(p(5))))
+        val counts = UnseenTileCounts.from(table(listOf(opponent, withPlain)).toSnapshot(setOf(withPlain.id)), withPlain.id, module, countsVisibleTiles = false)
+            .without(RED_FIVE_DOT)
+
+        assertEquals(listOf(p(5) to 2), counts.faces(p(5)))
+        assertEquals(2, counts[p(5)])
+    }
+
     /** 假設摸進一張後，該種牌的未見張數減一。 */
     @Test
     fun `drawing a kind removes one unseen copy`() {
@@ -56,5 +77,9 @@ class UnseenTileCountsTest {
 
         assertEquals(3, counts.without(Tile.Honor.North)[Tile.Honor.North])
         assertEquals(counts.total - 1, counts.without(Tile.Honor.North).total)
+    }
+
+    private companion object {
+        val RED_FIVE_DOT: Tile = RiichiTileTypes.redFive(Tile.Suit.Dot)
     }
 }

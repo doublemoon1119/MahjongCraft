@@ -154,7 +154,11 @@ internal class HandAssessor(
     /** 依規則正規化的牌面。 */
     fun canonical(tile: Tile): Tile = interpretation.canonicalize(tile)
 
-    /** 聽牌手牌的和牌率與點數。 */
+    /**
+     * 聽牌手牌的和牌率與點數。
+     *
+     * 同一種聽牌有不同的實際牌面時（例如日麻的赤五與普通五），依各自的未見張數分別計算點數。
+     */
     private fun tenpaiProfile(
         hand: Hand,
         view: HypotheticalView,
@@ -162,12 +166,14 @@ internal class HandAssessor(
         declarations: Set<GameAction.Extension>,
         counts: UnseenTileCounts,
     ): TenpaiProfile {
-        val waitValues = waits.distinctBy { canonical(it) }.map { wait ->
-            WaitValue(
-                count = counts[canonical(wait)],
-                tsumoValue = winValue(hand, view, wait, isTsumo = true, declarations = declarations),
-                ronValue = winValue(hand, view, wait, isTsumo = false, declarations = declarations),
-            )
+        val waitValues = waits.map { canonical(it) }.distinct().flatMap { kind ->
+            counts.faces(kind).map { (face, count) ->
+                WaitValue(
+                    count = count,
+                    tsumoValue = winValue(hand, view, face, isTsumo = true, declarations = declarations),
+                    ronValue = winValue(hand, view, face, isTsumo = false, declarations = declarations),
+                )
+            }
         }
         return TenpaiProfile.of(waitValues, counts.total)
     }
@@ -175,7 +181,7 @@ internal class HandAssessor(
     /**
      * 一向聽手牌每一種讓它聽牌的進張，以及進張後打出最佳一張牌的聽牌結果。
      *
-     * 聽牌時可選擇默聽，或宣告規則回報的 [PositionRules.prospectiveDeclarations] 之一並付出宣告成本。
+     * 同一種牌的不同實際牌面（例如日麻的赤五與普通五）視為不同的進張，各自依未見張數計算。聽牌時可選擇默聽，或宣告規則回報的 [PositionRules.prospectiveDeclarations] 之一並付出宣告成本。
      */
     private fun tenpaiBranches(
         hand: Hand,
@@ -186,11 +192,9 @@ internal class HandAssessor(
         val choices = listOf(declarations) + rules.prospectiveDeclarations(view.view, hand)
             .filterNot { it in declarations }
             .map { declarations + it }
-        return unseen.kinds.mapNotNull { kind ->
-            val count = unseen[kind]
-            if (count == 0) return@mapNotNull null
-            val afterDraw = unseen.without(kind)
-            val drawn = hand.addTile(IdentifiedTile(Uuid.NIL, kind))
+        return unseen.kinds.flatMap { kind -> unseen.faces(kind) }.mapNotNull { (face, count) ->
+            val afterDraw = unseen.without(face)
+            val drawn = hand.addTile(IdentifiedTile(Uuid.NIL, face))
             distinctDiscardIndices(drawn)
                 .mapNotNull { index ->
                     val rest = drawn.withoutTileAt(index)
