@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
@@ -37,6 +38,16 @@ class ExpectedValueAiStrategyTest {
         assertEquals(ReadingDepth.BASIC, InformationLevel.INTERMEDIATE.readingDepth)
         assertEquals(ReadingDepth.ADVANCED, InformationLevel.ADVANCED.readingDepth)
         assertEquals(false, InformationLevel.ADVANCED.considersFutureRisk)
+    }
+
+    /** 初級不區分打點，中級只粗略區分，高級使用完整打點。 */
+    @Test
+    fun `the built-in levels see win values in increasing detail`() {
+        assertEquals(0.0, InformationLevel.BEGINNER.winValueDetail)
+        assertTrue(InformationLevel.INTERMEDIATE.winValueDetail in 0.0..1.0)
+        assertTrue(InformationLevel.INTERMEDIATE.winValueDetail > InformationLevel.BEGINNER.winValueDetail)
+        assertTrue(InformationLevel.INTERMEDIATE.winValueDetail < InformationLevel.ADVANCED.winValueDetail)
+        assertEquals(1.0, InformationLevel.ADVANCED.winValueDetail)
     }
 
     /** 策略以自己的讀牌深度向 registry 建立對手模型。 */
@@ -195,6 +206,44 @@ class ExpectedValueAiStrategyTest {
             assertTrue(riichiScore.expectedValue > damaScore.expectedValue, "$level riichi $riichiScore dama $damaScore")
             assertTrue(riichiScore.winProbability > damaScore.winProbability)
         }
+    }
+
+    /**
+     * 有役的聽牌立直後打點較高：打點看得越仔細，立直相對默聽的期望值優勢越大；
+     * 完全不區分打點時立直只剩成本，中間值介於兩者之間。
+     */
+    @Test
+    fun `win value detail scales how much riichi adds over dama`() {
+        val self = player(
+            Wind.SOUTH,
+            hand = hand(
+                listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(7), p(8), p(9), Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red, s(2)),
+                drawn = Tile.Honor.North,
+            ),
+        )
+        val context = context(fourPlayers(self), self, legalActions = listOf(RIICHI_GAME_ACTION))
+        val north = checkNotNull(self.hand.lastDrawn)
+        val dama = DecisionCandidate.Discard(tile = north, declaration = null, command = GameCommand.Discard(north.id))
+        val riichi = DecisionCandidate.Discard(tile = north, declaration = RIICHI_GAME_ACTION, command = GameCommand.Extension(RiichiGameCommand(north.id)))
+        fun riichiAdvantage(detail: Double): Double {
+            val level = InformationLevel.INTERMEDIATE.copy(winValueDetail = detail)
+            val (damaScore, riichiScore) = ExpectedValueEvaluator(level, ExpectationParameters.DEFAULT, ExpectationFixtures.module, ExpectationFixtures.opponentModel(level), context).scoreAll(listOf(dama, riichi))
+            return riichiScore.expectedValue - damaScore.expectedValue
+        }
+
+        val flat = riichiAdvantage(0.0)
+        val middle = riichiAdvantage(0.5)
+        val exact = riichiAdvantage(1.0)
+
+        assertTrue(flat < middle, "flat $flat middle $middle")
+        assertTrue(middle < exact, "middle $middle exact $exact")
+    }
+
+    /** 打點看得多仔細只能介於 0 到 1。 */
+    @Test
+    fun `win value detail must be between zero and one`() {
+        assertFailsWith<IllegalArgumentException> { InformationLevel.INTERMEDIATE.copy(winValueDetail = -0.1) }
+        assertFailsWith<IllegalArgumentException> { InformationLevel.INTERMEDIATE.copy(winValueDetail = 1.1) }
     }
 
     /** 莊家已立直、自己的單騎只剩一張時，計入後續風險的等級考慮立直後不能換牌的風險而不立直。 */

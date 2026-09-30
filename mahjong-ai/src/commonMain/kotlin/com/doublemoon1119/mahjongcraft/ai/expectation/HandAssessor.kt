@@ -69,7 +69,7 @@ internal class HypotheticalView(
  * @property unseen 評估者眼中的未見牌。
  * @property outlook 本局剩餘的和牌機會。
  * @property placement 點數與名次的換算。
- * @property flatWinValue 不區分打點時，每一種和牌共用的點數。
+ * @property flatWinPoints 目前手牌的基準打點；[InformationLevel.winValueDetail] 小於 1 時與規則算出的點數依比例混合。
  */
 internal class HandAssessor(
     private val level: InformationLevel,
@@ -83,7 +83,7 @@ internal class HandAssessor(
     private val unseen: UnseenTileCounts,
     private val outlook: DrawOutlook,
     private val placement: PlacementUtility,
-    private val flatWinValue: Double,
+    private val flatWinPoints: Double,
 ) {
     /** 手牌內容相同即視為相同的快取鍵。 */
     private data class HandKey(
@@ -219,11 +219,7 @@ internal class HandAssessor(
      * 聽牌後使用一般聽牌張數，打點使用規則的基準打點。
      */
     private fun distantHandAssessment(hand: Hand, view: HypotheticalView, shanten: Int): HandAssessment {
-        val value = if (level.valuesWins) {
-            placement.gain(opponentModel.baselineWinValue(view.view, selfId).toDouble())
-        } else {
-            flatWinValue
-        }
+        val value = detailedValue(opponentModel.baselineWinValue(view.view, selfId).toDouble())
         if (unseen.total == 0) {
             return HandAssessment(shanten = shanten, outlook = WinOutlook.NONE, tenpaiProfile = null, estimatedValuePerWin = value)
         }
@@ -271,14 +267,16 @@ internal class HandAssessor(
             )
         }
         return when (result) {
-            is WinValue.Points -> if (level.valuesWins) placement.gain(result.points.toDouble()) else flatWinValue
-            WinValue.Unknown -> if (level.valuesWins) {
-                placement.gain(opponentModel.baselineWinValue(view.view, selfId).toDouble())
-            } else {
-                flatWinValue
-            }
+            is WinValue.Points -> detailedValue(result.points.toDouble())
+            WinValue.Unknown -> detailedValue(opponentModel.baselineWinValue(view.view, selfId).toDouble())
             WinValue.NotWinnable -> null
         }
+    }
+
+    /** 依 [InformationLevel.winValueDetail] 混合 [points] 與目前手牌的基準打點，再換算為名次考量後的價值。 */
+    private fun detailedValue(points: Double): Double {
+        val detail = level.winValueDetail
+        return placement.gain((1 - detail) * flatWinPoints + detail * points)
     }
 
     /** 已快取的向聽計算。 */

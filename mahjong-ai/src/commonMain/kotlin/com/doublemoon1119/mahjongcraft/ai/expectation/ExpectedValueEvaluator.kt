@@ -99,7 +99,7 @@ internal class ExpectedValueEvaluator(
         unseen = unseen,
         outlook = outlook,
         placement = placement,
-        flatWinValue = placement.gain(opponentModel.baselineWinValue(currentView, selfId).toDouble()),
+        flatWinPoints = opponentModel.baselineWinValue(currentView, selfId).toDouble(),
     )
 
     /** 列入防守計算的對手。 */
