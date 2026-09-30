@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.state
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryCaptureState
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.config.GameFlowConfigPersistenceDto
@@ -18,8 +18,8 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toInterruptedBa
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toRemainingReserveMillisByPlayerId
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toRuntimeStatePersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryCapturePersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryCapturePersistenceMapper
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryRecordingPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.room.RoomPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.room.toDomain
@@ -43,7 +43,7 @@ import kotlin.uuid.Uuid
  * @property games 以 Game UUID 字串索引的進行中狀態。
  * @property gameFlowConfigs 以 Game UUID 字串索引的流程與觀看設定。
  * @property gameRuntimeStates 以 Game UUID 字串索引的流程 runtime 狀態。
- * @property historyCaptureState 與 Game 移除相互獨立的待寫歷史與 checkpoint。
+ * @property historyRecordingState 與 Game 移除相互獨立的待寫歷史與 checkpoint。
  * @throws IllegalArgumentException 若索引與 DTO 內部 ID 不一致，或相同 ID 同時存在於 Room 與 Game。
  */
 @Serializable
@@ -52,7 +52,7 @@ data class AuthoritativeStatePersistenceDto(
     val games: Map<String, TableStatePersistenceDto>,
     val gameFlowConfigs: Map<String, GameFlowConfigPersistenceDto>,
     val gameRuntimeStates: Map<String, GameRuntimeStatePersistenceDto>,
-    val historyCaptureState: HistoryCapturePersistenceDto = HistoryCapturePersistenceDto(),
+    val historyRecordingState: HistoryRecordingPersistenceDto = HistoryRecordingPersistenceDto(),
 ) {
     init {
         require(rooms.all { (id, room) -> id == room.id }) { "Room persistence index must match its DTO ID" }
@@ -94,7 +94,7 @@ fun createAuthoritativeStatePersistenceDto(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
     json: Json = Json,
-    historyCaptureState: HistoryCaptureState = HistoryCaptureState(),
+    historyRecordingState: HistoryRecordingState = HistoryRecordingState(),
 ): AuthoritativeStatePersistenceDto {
     require(rooms.map(Room::id).distinct().size == rooms.size) { "Room IDs must be unique" }
     require(games.map(Game::id).distinct().size == games.size) { "Game IDs must be unique" }
@@ -116,7 +116,7 @@ fun createAuthoritativeStatePersistenceDto(
         },
         gameFlowConfigs = games.associate { game -> game.id.toString() to game.flowConfig.toPersistenceDto() },
         gameRuntimeStates = games.associate { game -> game.id.toString() to game.toRuntimeStatePersistenceDto() },
-        historyCaptureState = HistoryCapturePersistenceMapper(
+        historyRecordingState = HistoryRecordingPersistenceMapper(
             PersistenceRegistries(
                 ruleConfigRegistry,
                 discardPileRegistry,
@@ -126,15 +126,15 @@ fun createAuthoritativeStatePersistenceDto(
                 extensionGameActionRegistry,
             ),
             json,
-        ).encode(historyCaptureState),
+        ).encode(historyRecordingState),
     )
 }
 
 /** 還原與 Game 生命週期分離的待寫歷史。 */
-fun AuthoritativeStatePersistenceDto.toHistoryCaptureState(
+fun AuthoritativeStatePersistenceDto.toHistoryRecordingState(
     registries: PersistenceRegistries,
     json: Json = Json,
-): HistoryCaptureState = HistoryCapturePersistenceMapper(registries, json).decode(historyCaptureState)
+): HistoryRecordingState = HistoryRecordingPersistenceMapper(registries, json).decode(historyRecordingState)
 
 /** 將伺服器權威狀態 DTO 內的所有 Room 還原成以 UUID 索引的領域狀態。 */
 fun AuthoritativeStatePersistenceDto.toRooms(

@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryCaptureState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryCapturePersistenceMapper
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -46,7 +46,7 @@ class CompactReplayPrototypeTest {
     private val priorPrototype = CompactHistoryPrototypeTest()
 
     /** 將權威歷史事實轉為 persistence DTO 的 mapper。 */
-    private val mapper = HistoryCapturePersistenceMapper(registries)
+    private val mapper = HistoryRecordingPersistenceMapper(registries)
 
     /** 驗證測試用 CBOR 編解碼器可往返基本 JSON 值。 */
     @Test
@@ -193,8 +193,8 @@ class CompactReplayPrototypeTest {
         flatPatches: Boolean = false,
     ): Result {
         require(events.isNotEmpty())
-        val encoded = mapper.encode(HistoryCaptureState(pendingEvents = events)).pendingEvents
-        assertEquals(events.size, encoded.size, "Persistence mapper omitted a captured fact")
+        val encoded = mapper.encode(HistoryRecordingState(pendingEvents = events)).pendingEvents
+        assertEquals(events.size, encoded.size, "Persistence mapper omitted a recorded fact")
         val encodedEvents = priorPrototype.slimActionResults(json.parseToJsonElement(json.encodeToString(encoded)) as JsonArray)
         val pairs = events.zip(encodedEvents.map { it as JsonObject })
         val first = events.first()

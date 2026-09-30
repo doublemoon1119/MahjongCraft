@@ -1,12 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.replay
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryCaptureState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryCapturePersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryOutboxEventPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlinx.serialization.json.Json
@@ -42,13 +42,13 @@ object CompactReplayCodec {
      */
     fun encodeCompact(
         events: List<HistoryOutboxEvent>,
-        mapper: HistoryCapturePersistenceMapper,
+        mapper: HistoryRecordingPersistenceMapper,
         registries: PersistenceRegistries,
         json: Json = Json,
     ): JsonObject {
         require(events.isNotEmpty()) { "Replay requires at least one history event" }
         validateDomainEvents(events)
-        val encodedEvents = mapper.encode(HistoryCaptureState(pendingEvents = events)).pendingEvents
+        val encodedEvents = mapper.encode(HistoryRecordingState(pendingEvents = events)).pendingEvents
         require(encodedEvents.size == events.size) { "Replay contains an event that cannot be encoded" }
         val serialized = encodedEvents.map { json.encodeToJsonElement(HistoryOutboxEventPersistenceDto.serializer(), it).jsonObject }
         val first = events.first()

@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryCapturePersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryOutboxEventPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -32,14 +32,14 @@ import kotlin.time.Duration.Companion.seconds
  * 管理員可見的歷史寫入狀態，不包含資料庫路徑或事件內容。
  *
  * @property databaseConnected 是否已開啟目前世界的資料庫。
- * @property captureEnabled 新權威交易是否正在採集歷史。
+ * @property recordingEnabled 新權威交易是否正在記錄歷史。
  * @property pendingEventCount 權威 outbox 尚待寫入的事件數。
  * @property knownGapCount 已知具有序號缺口的場次數。
  * @property lastError 最近是否發生錯誤；原始文字只供內部診斷，不傳給玩家。
  */
 data class HistoryWriterStatus(
     val databaseConnected: Boolean,
-    val captureEnabled: Boolean,
+    val recordingEnabled: Boolean,
     val pendingEventCount: Int,
     val knownGapCount: Int,
     val lastError: String?,
@@ -77,7 +77,7 @@ class FabricHistoryOutboxWriter(
     locations: TableLocationRegistry,
 ) {
     private val logger = LoggerFactory.getLogger(FabricHistoryOutboxWriter::class.java)
-    private val mapper = HistoryCapturePersistenceMapper(registries, json)
+    private val mapper = HistoryRecordingPersistenceMapper(registries, json)
     private val archiveService = HistoryArchiveService(mapper, registries, moduleRegistry, locations, json)
     private val sessionMutex = Mutex()
 
@@ -89,17 +89,17 @@ class FabricHistoryOutboxWriter(
     private var database: SqliteHistoryDatabase? = null
     private var worker: Job? = null
 
-    /** 開啟目前世界的資料庫；失敗時不啟用採集，也不影響對局。 */
+    /** 開啟目前世界的資料庫；失敗時不啟用記錄，也不影響對局。 */
     suspend fun attach(server: MinecraftServer) = attach(FabricHistoryDatabasePath.resolve(server))
 
     /** 回報連線與權威待寫狀態；原始錯誤只供內部 log 使用。 */
     suspend fun status(): HistoryWriterStatus {
-        val capture = store.snapshot().historyCaptureState
+        val recording = store.snapshot().historyRecordingState
         return HistoryWriterStatus(
             databaseConnected = connected,
-            captureEnabled = store.isHistoryCaptureEnabled,
-            pendingEventCount = capture.pendingEvents.size,
-            knownGapCount = (knownGaps.keys + capture.firstMissingSequenceByMatchId.keys.map { it.toString() }).size,
+            recordingEnabled = store.isHistoryRecordingEnabled,
+            pendingEventCount = recording.pendingEvents.size,
+            knownGapCount = (knownGaps.keys + recording.firstMissingSequenceByMatchId.keys.map { it.toString() }).size,
             lastError = lastError ?: archiveService.lastArchiveError,
         )
     }
@@ -118,20 +118,20 @@ class FabricHistoryOutboxWriter(
         open(path)
     }
 
-    /** 開啟、驗證並對帳；失敗時保留原資料與關閉的採集狀態。 */
+    /** 開啟、驗證並對帳；失敗時保留原資料與關閉的記錄狀態。 */
     private suspend fun open(path: Path): Boolean {
         val opened = try {
             withContext(dispatchers.io) { SqliteHistoryDatabase.open(path) }
         } catch (error: Exception) {
             lastError = error.message ?: error::class.simpleName
-            logger.error("History database could not be opened; capture is disabled for this session", error)
+            logger.error("History database could not be opened; recording is disabled for this session", error)
             return false
         }
         database = opened
         try {
             val snapshot = store.snapshot()
             knownGaps = withContext(dispatchers.io) {
-                archiveService.reconcile(opened, snapshot.historyCaptureState).also {
+                archiveService.reconcile(opened, snapshot.historyRecordingState).also {
                     archiveService.archiveReady(opened, snapshot)
                 }
             }
@@ -139,12 +139,12 @@ class FabricHistoryOutboxWriter(
             database = null
             connected = false
             lastError = error.message ?: error::class.simpleName
-            logger.error("History startup reconciliation failed; capture remains disabled", error)
+            logger.error("History startup reconciliation failed; recording remains disabled", error)
             return false
         }
         connected = true
         lastError = null
-        store.setHistoryCaptureEnabled(true)
+        store.setHistoryRecordingEnabled(true)
         worker = CoroutineScope(SupervisorJob() + dispatchers.io).launch {
             var retryDelay = INITIAL_RETRY_DELAY
             while (true) {
@@ -152,8 +152,8 @@ class FabricHistoryOutboxWriter(
                     val wrote = flushOneBatch(opened)
                     if (wrote) {
                         val snapshot = store.snapshot()
-                        if (snapshot.historyCaptureState.pendingEvents.isEmpty()) {
-                            knownGaps = archiveService.reconcile(opened, snapshot.historyCaptureState)
+                        if (snapshot.historyRecordingState.pendingEvents.isEmpty()) {
+                            knownGaps = archiveService.reconcile(opened, snapshot.historyRecordingState)
                             archiveService.archiveReady(opened, snapshot)
                         }
                     }
@@ -167,11 +167,11 @@ class FabricHistoryOutboxWriter(
                     if (error is SQLException) {
                         connected = false
                         database = null
-                        store.setHistoryCaptureEnabled(false)
+                        store.setHistoryRecordingEnabled(false)
                         return@launch
                     }
                     val snapshot = store.snapshot()
-                    knownGaps = archiveService.reconcile(opened, snapshot.historyCaptureState)
+                    knownGaps = archiveService.reconcile(opened, snapshot.historyRecordingState)
                     delay(retryDelay)
                     retryDelay = (retryDelay * 2).coerceAtMost(MAX_RETRY_DELAY)
                 }
@@ -184,7 +184,7 @@ class FabricHistoryOutboxWriter(
     suspend fun detach() = sessionMutex.withLock {
         worker?.cancelAndJoin()
         worker = null
-        store.setHistoryCaptureEnabled(false)
+        store.setHistoryRecordingEnabled(false)
         val activeDatabase = database ?: return@withLock
         withTimeoutOrNull(SHUTDOWN_FLUSH_TIMEOUT) {
             withContext(dispatchers.io) {
@@ -201,7 +201,7 @@ class FabricHistoryOutboxWriter(
 
     /** 對一份不可變快照提交最多一批，確認時只移除該批的穩定鍵。 */
     private suspend fun flushOneBatch(activeDatabase: SqliteHistoryDatabase): Boolean {
-        val batch = store.snapshot().historyCaptureState.pendingEvents
+        val batch = store.snapshot().historyRecordingState.pendingEvents
             .filterNot { it.matchId.toString() in archiveService.blockedMatchIds }
             .take(BATCH_SIZE)
         if (batch.isEmpty()) return false

@@ -79,8 +79,8 @@ import kotlin.uuid.Uuid
  */
 class RoomToRoomFullLifecycleIntegrationTest {
 
-    private class Fixtures(historyCaptureEnabled: Boolean = false) {
-        val store = AuthoritativeStateStore(historyCaptureEnabled = historyCaptureEnabled, maxPendingHistoryEvents = 10_000)
+    private class Fixtures(historyRecordingEnabled: Boolean = false) {
+        val store = AuthoritativeStateStore(historyRecordingEnabled = historyRecordingEnabled, maxPendingHistoryEvents = 10_000)
         val gameRepo = GameRepositoryImpl(store)
         val roomRepo = RoomRepositoryImpl(store)
         val membershipRepo = PlayerMembershipRepositoryImpl()
@@ -261,7 +261,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         gameLength: RiichiGameLength,
         recordMatch: ((List<HistoryOutboxEvent>) -> Unit)? = null,
     ) {
-        val fixtures = Fixtures(historyCaptureEnabled = recordMatch != null)
+        val fixtures = Fixtures(historyRecordingEnabled = recordMatch != null)
         val hostId = Uuid.random()
         val roomId = Uuid.random()
         val config = GameConfig(ruleConfig = RiichiRuleConfig(gameLength = gameLength))
@@ -290,7 +290,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         // 不會替他行動，這裡用 playFullMatch 額外替房主套用跟 AI 完全相同的固定決策邏輯，交錯呼叫
         // driveAutomatedPlayers（推進 3 個 AI）與房主自己的回合，直到整場對局結束、桌子真的退回房間。
         fixtures.playFullMatch(gameId, hostId)
-        recordMatch?.invoke(fixtures.store.snapshot().historyCaptureState.pendingEvents.filter { it.matchId == firstMatchId })
+        recordMatch?.invoke(fixtures.store.snapshot().historyRecordingState.pendingEvents.filter { it.matchId == firstMatchId })
 
         assertNull(fixtures.store.getGame(gameId), "Game record must be removed once the match ends.")
         val roomAfterMatch = fixtures.store.getRoom(roomId)
@@ -313,7 +313,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         assertEquals(1, secondGame.tableState.roundNumber, "The second match must start from round 1 again.")
 
         fixtures.playFullMatch(secondGameId, hostId)
-        recordMatch?.invoke(fixtures.store.snapshot().historyCaptureState.pendingEvents.filter { it.matchId == secondMatchId })
+        recordMatch?.invoke(fixtures.store.snapshot().historyRecordingState.pendingEvents.filter { it.matchId == secondMatchId })
 
         assertNull(fixtures.store.getGame(secondGameId), "Second match's game record must also be removed once it ends.")
         assertNotNull(fixtures.store.getRoom(roomId), "Table must become a Room again after the second match too.")

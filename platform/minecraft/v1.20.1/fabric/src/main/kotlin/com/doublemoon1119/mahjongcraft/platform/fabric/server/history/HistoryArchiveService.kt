@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryCaptureState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryCapturePersistenceMapper
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryOutboxEventPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory
  * @property json 原始事件與 Replay 的序列化設定。
  */
 internal class HistoryArchiveService(
-    private val mapper: HistoryCapturePersistenceMapper,
+    private val mapper: HistoryRecordingPersistenceMapper,
     private val registries: PersistenceRegistries,
     private val moduleRegistry: MahjongModuleRegistry,
     private val locations: TableLocationRegistry,
@@ -43,13 +43,13 @@ internal class HistoryArchiveService(
     private var warnedOrphanMatchIds: Set<String> = emptySet()
 
     /** 保留可證實的最早缺口；不從最高序號推斷中間一定連續。 */
-    fun reconcile(database: SqliteHistoryDatabase, capture: HistoryCaptureState): Map<String, Long> {
+    fun reconcile(database: SqliteHistoryDatabase, recording: HistoryRecordingState): Map<String, Long> {
         val existing = database.readAllPending().groupBy(PendingHistoryRecord::matchId)
-        val outbox = capture.pendingEvents.groupBy { it.matchId.toString() }
+        val outbox = recording.pendingEvents.groupBy { it.matchId.toString() }
         val archived = database.readReplayIds()
-        val candidates = existing.keys + outbox.keys + capture.nextSequenceByMatchId.keys.map { it.toString() } +
-            capture.firstMissingSequenceByMatchId.keys.map { it.toString() }
-        val gaps = capture.firstMissingSequenceByMatchId
+        val candidates = existing.keys + outbox.keys + recording.nextSequenceByMatchId.keys.map { it.toString() } +
+            recording.firstMissingSequenceByMatchId.keys.map { it.toString() }
+        val gaps = recording.firstMissingSequenceByMatchId
             .filterKeys { it.toString() !in archived }
             .mapKeys { it.key.toString() }
             .toMutableMap()
@@ -69,7 +69,7 @@ internal class HistoryArchiveService(
                 }
             }
             val available = (persisted.map { it.sequence } + staged.map { it.sequence }).distinct().sorted()
-            val nextSequence = capture.nextSequenceByMatchId.entries.firstOrNull { it.key.toString() == matchId }?.value ?: 1L
+            val nextSequence = recording.nextSequenceByMatchId.entries.firstOrNull { it.key.toString() == matchId }?.value ?: 1L
             if (persisted.isNotEmpty() && persisted.last().sequence >= nextSequence && staged.isEmpty()) {
                 lastArchiveError = "History database contains events beyond the authoritative save"
                 orphans += matchId
@@ -105,7 +105,7 @@ internal class HistoryArchiveService(
 
     /** 將已返回房間且無待寫事件的完整對局封存；單場失敗不阻止其他場次。 */
     fun archiveReady(database: SqliteHistoryDatabase, snapshot: AuthoritativeStateSnapshot): Int {
-        val staged = snapshot.historyCaptureState.pendingEvents.mapTo(mutableSetOf()) { it.matchId.toString() }
+        val staged = snapshot.historyRecordingState.pendingEvents.mapTo(mutableSetOf()) { it.matchId.toString() }
         val active = snapshot.games.values.mapTo(mutableSetOf()) { it.matchId.toString() }
         val gaps = database.readGaps().keys
         val archived = database.readReplayIds()

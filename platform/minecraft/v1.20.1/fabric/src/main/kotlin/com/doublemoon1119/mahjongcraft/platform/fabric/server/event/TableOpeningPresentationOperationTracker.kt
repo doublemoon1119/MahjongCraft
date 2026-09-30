@@ -7,7 +7,7 @@ import kotlin.uuid.Uuid
  * 追蹤 Fabric 同桌同一批開局 presentation 的世代與失敗狀態。
  *
  * Flow 的 publisher 契約刻意不攜帶平台 operation token；[begin] 在收到具有開門動畫的牌牆請求時建立
- * 新世代，後續同步發布的方法以 [capture] 取得同一張 [Ticket]，直到初次發牌完成註冊後由
+ * 新世代，後續同步發布的方法以 [getRegisteringTicket] 取得同一張 [Ticket]，直到初次發牌完成註冊後由
  * [finishRegistration] 關閉捕捉窗口。已經捕捉的工作仍可執行；新世代會使舊世代失效。
  *
  * 本類別只負責診斷期的同批 fail-stop，不取代 [TablePresentationBusyTracker]。第一次不可恢復例外會由
@@ -30,7 +30,7 @@ class TableOpeningPresentationOperationTracker {
 
     /** 取得目前仍在同步註冊中的開局批次；一般回合 presentation 回傳 `null`。 */
     @Synchronized
-    fun capture(tableId: Uuid): Ticket? = openRegistrationByTable[tableId]
+    fun getRegisteringTicket(tableId: Uuid): Ticket? = openRegistrationByTable[tableId]
 
     /** 關閉捕捉窗口；已排入 coroutine 的 [ticket] 仍保持有效。 */
     @Synchronized

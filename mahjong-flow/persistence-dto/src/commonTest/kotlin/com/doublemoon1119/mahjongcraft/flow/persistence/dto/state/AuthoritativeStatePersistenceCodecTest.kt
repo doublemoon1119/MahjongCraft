@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.state
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
@@ -28,12 +31,38 @@ import kotlin.uuid.Uuid
 
 /** 驗證平台無關的伺服器權威狀態 persistence codec。 */
 class AuthoritativeStatePersistenceCodecTest {
+    /** 完整 codec 使用統一的歷史欄位名稱，並還原待寫事件、下一序號及缺口。 */
+    @Test
+    fun `history recording round trips through its persisted field`() {
+        val matchId = Uuid.random()
+        val recording = HistoryRecordingState(
+            nextSequenceByMatchId = mapOf(matchId to 4L),
+            pendingEvents = listOf(
+                HistoryOutboxEvent(
+                    matchId = matchId,
+                    tableId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = 3L,
+                    occurredAtEpochMillis = 123L,
+                    actorPlayerId = null,
+                    fact = HistoryFact.ReturnedToRoom,
+                ),
+            ),
+            firstMissingSequenceByMatchId = mapOf(matchId to 2L),
+        )
+        val encoded = codec.encode(emptyList(), emptyList(), historyRecordingState = recording)
+        val envelope = json.decodeFromString(PersistenceEnvelopeDto.serializer(), encoded)
+
+        assertTrue("historyRecordingState" in envelope.state)
+        assertEquals(recording, codec.decode(encoded).historyRecordingState)
+    }
+
     /** 無法辨識的歷史資料不得被靜默清除。 */
     @Test
     fun `unknown unversioned history is rejected`() {
         val envelope = json.decodeFromString(PersistenceEnvelopeDto.serializer(), codec.encode(emptyList(), emptyList()))
         val unknown = json.parseToJsonElement("""{"unexpected":true}""")
-        val saved = envelope.copy(state = JsonObject(envelope.state + ("historyCaptureState" to unknown)))
+        val saved = envelope.copy(state = JsonObject(envelope.state + ("historyRecordingState" to unknown)))
 
         assertFailsWith<SerializationException> {
             codec.decode(json.encodeToString(PersistenceEnvelopeDto.serializer(), saved))

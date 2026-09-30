@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryActionResult
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryCaptureState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.config.GameFlowConfigPersistenceDto
@@ -31,7 +31,7 @@ import kotlin.uuid.Uuid
  * @property firstMissingSequenceByMatchId 各對局第一個無法完整還原的事件序號，鍵為對局 UUID 字串。
  */
 @Serializable
-data class HistoryCapturePersistenceDto(
+data class HistoryRecordingPersistenceDto(
     @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     val formatVersion: Int = 1,
     val nextSequenceByMatchId: Map<String, Long> = emptyMap(),
@@ -265,7 +265,7 @@ data class HistoryActionResultPersistenceDto(
  * @property registries 解碼規則、動作與桌況所需的持久化 registry。
  * @property json 用於擴充動作內容序列化的 JSON 設定。
  */
-class HistoryCapturePersistenceMapper(
+class HistoryRecordingPersistenceMapper(
     private val registries: PersistenceRegistries,
     private val json: Json = Json,
 ) {
@@ -276,7 +276,7 @@ class HistoryCapturePersistenceMapper(
     fun decodePendingEvent(event: HistoryOutboxEventPersistenceDto): HistoryOutboxEvent = decodeEvent(event)
 
     /** 將待寫事件編成權威存檔 DTO；無法編碼的事件會記錄序號缺口並略過。 */
-    fun encode(state: HistoryCaptureState): HistoryCapturePersistenceDto {
+    fun encode(state: HistoryRecordingState): HistoryRecordingPersistenceDto {
         val missing = state.firstMissingSequenceByMatchId.toMutableMap()
         val encoded = state.pendingEvents.mapNotNull { event ->
             runCatching { encodeEvent(event) }.getOrElse {
@@ -284,7 +284,7 @@ class HistoryCapturePersistenceMapper(
                 null
             }
         }
-        return HistoryCapturePersistenceDto(
+        return HistoryRecordingPersistenceDto(
             nextSequenceByMatchId = state.nextSequenceByMatchId.mapKeys { it.key.toString() },
             pendingEvents = encoded,
             firstMissingSequenceByMatchId = missing.mapKeys { it.key.toString() },
@@ -292,7 +292,7 @@ class HistoryCapturePersistenceMapper(
     }
 
     /** 驗證並還原權威待寫事件；無法解碼的事件會記錄序號缺口並略過。 */
-    fun decode(dto: HistoryCapturePersistenceDto): HistoryCaptureState {
+    fun decode(dto: HistoryRecordingPersistenceDto): HistoryRecordingState {
         val missing = dto.firstMissingSequenceByMatchId.mapKeys { Uuid.parse(it.key) }.toMutableMap()
         val decoded = dto.pendingEvents.mapNotNull { event ->
             val matchId = Uuid.parse(event.matchId)
@@ -301,7 +301,7 @@ class HistoryCapturePersistenceMapper(
                 null
             }
         }
-        return HistoryCaptureState(
+        return HistoryRecordingState(
             nextSequenceByMatchId = dto.nextSequenceByMatchId.mapKeys { Uuid.parse(it.key) },
             pendingEvents = decoded,
             firstMissingSequenceByMatchId = missing,

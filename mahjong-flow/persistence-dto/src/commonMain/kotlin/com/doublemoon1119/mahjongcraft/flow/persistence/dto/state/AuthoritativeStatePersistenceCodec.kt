@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.state
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryCaptureState
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceEnvelopeDto
@@ -15,12 +15,12 @@ import kotlin.uuid.Uuid
  *
  * @property rooms 以桌子 UUID 索引的等待階段狀態。
  * @property games 以桌子 UUID 索引的進行中狀態。
- * @property historyCaptureState 待寫歷史與重試 checkpoint。
+ * @property historyRecordingState 待寫歷史與重試 checkpoint。
  */
 data class DecodedAuthoritativeState(
     val rooms: Map<Uuid, Room>,
     val games: Map<Uuid, Game>,
-    val historyCaptureState: HistoryCaptureState = HistoryCaptureState(),
+    val historyRecordingState: HistoryRecordingState = HistoryRecordingState(),
 )
 
 /**
@@ -41,7 +41,7 @@ class AuthoritativeStatePersistenceCodec(
     fun encode(
         rooms: Collection<Room>,
         games: Collection<Game>,
-        historyCaptureState: HistoryCaptureState = HistoryCaptureState(),
+        historyRecordingState: HistoryRecordingState = HistoryRecordingState(),
     ): String {
         val state = createAuthoritativeStatePersistenceDto(
             rooms = rooms,
@@ -52,7 +52,7 @@ class AuthoritativeStatePersistenceCodec(
             dynamicRuleStateRegistry = registries.dynamicRuleStates,
             exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
             extensionGameActionRegistry = registries.extensionGameActions,
-            historyCaptureState = historyCaptureState,
+            historyRecordingState = historyRecordingState,
             json = json,
         )
         return json.encodeToString(PersistenceEnvelopeDto.serializer(), state.toEnvelope(json))
@@ -74,7 +74,7 @@ class AuthoritativeStatePersistenceCodec(
                 extensionGameActionRegistry = registries.extensionGameActions,
                 json = json,
             ),
-            historyCaptureState = state.toHistoryCaptureState(registries, json),
+            historyRecordingState = state.toHistoryRecordingState(registries, json),
         )
     }
 }

@@ -69,11 +69,11 @@ class ResolveWinRoundContinuationUseCaseTest {
             config = RiichiRuleConfig(),
         )
         gameRepo.setTableState(settledState)
-        val capturedContext = captureContext(previousState, setOf(winner.id))
+        val observedContext = observeContext(previousState, setOf(winner.id))
 
-        assertEquals(winningTile.id, capturedContext.winningTileId)
-        assertEquals(null, capturedContext.ronDiscarderId)
-        assertEquals(setOf(winner.id), capturedContext.winnerPlayerIds)
+        assertEquals(winningTile.id, observedContext.winningTileId)
+        assertEquals(null, observedContext.ronDiscarderId)
+        assertEquals(setOf(winner.id), observedContext.winnerPlayerIds)
     }
 
     /** 榮和時，放銃者應從 [TableState.pendingReaction]（結算前尚未清除）還原，胡牌張取自 `GameAction.Ron.tileId`。 */
@@ -94,10 +94,10 @@ class ResolveWinRoundContinuationUseCaseTest {
             config = RiichiRuleConfig(),
         )
         gameRepo.setTableState(settledState)
-        val capturedContext = captureContext(previousState, setOf(winner.id))
+        val observedContext = observeContext(previousState, setOf(winner.id))
 
-        assertEquals(discarderId, capturedContext.ronDiscarderId)
-        assertEquals(winningTile.id, capturedContext.winningTileId)
+        assertEquals(discarderId, observedContext.ronDiscarderId)
+        assertEquals(winningTile.id, observedContext.winningTileId)
     }
 
     /** [WinRoundDirective.ContinueRound] 應被原子套用到權威 [TableState]。 */
@@ -137,17 +137,17 @@ class ResolveWinRoundContinuationUseCaseTest {
     }
 
     /** 呼叫 [useCase] 一次並回傳唯一登記的 resolver 觀察到的 context（該 resolver 固定回傳 null）。 */
-    private suspend fun captureContext(previousState: TableState, winnerPlayerIds: Set<Uuid>): WinRoundContinuationContext {
-        var captured: WinRoundContinuationContext? = null
+    private suspend fun observeContext(previousState: TableState, winnerPlayerIds: Set<Uuid>): WinRoundContinuationContext {
+        var observed: WinRoundContinuationContext? = null
         val registry = WinRoundContinuationResolverRegistry().apply {
             register(
                 object : WinRoundContinuationResolver {
-                    override val id: String = "test:capture"
+                    override val id: String = "test:observe"
                     override val ruleModuleId: String = this@ResolveWinRoundContinuationUseCaseTest.ruleModuleId
                     override val priority: Int = 0
 
                     override fun resolve(context: WinRoundContinuationContext, ruleModule: MahjongRuleModule<*>): WinRoundDirective? {
-                        captured = context
+                        observed = context
                         return null
                     }
                 },
@@ -156,7 +156,7 @@ class ResolveWinRoundContinuationUseCaseTest {
         }
         val useCase = ResolveWinRoundContinuationUseCase(gameRepo, moduleRegistry, registry, snapshotSynchronizer)
         useCase(gameId, previousState, winnerPlayerIds)
-        return checkNotNull(captured) { "resolver was not invoked" }
+        return checkNotNull(observed) { "resolver was not invoked" }
     }
 
     /** 建立固定回傳 [directive] 的測試 resolver。 */

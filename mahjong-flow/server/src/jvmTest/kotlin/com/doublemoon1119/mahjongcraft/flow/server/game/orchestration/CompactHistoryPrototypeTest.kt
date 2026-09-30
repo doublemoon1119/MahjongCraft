@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryCaptureState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryCapturePersistenceMapper
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -29,12 +29,12 @@ class CompactHistoryPrototypeTest {
     /** 量測移除動作結果重複欄位前後的完整對局大小。 */
     @Test
     fun measureSlimActions() = runBlocking {
-        val mapper = HistoryCapturePersistenceMapper(buildBuiltInPersistenceRegistries())
+        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
         for (length in listOf(RiichiGameLength.East, RiichiGameLength.TwoWinds)) {
             val matches = RoomToRoomFullLifecycleIntegrationTest().measureFullLifecycle(length)
             for ((index, events) in matches.withIndex()) {
                 val validatedActions = verifyActionResultRedundancy(events)
-                val dto = mapper.encode(HistoryCaptureState(pendingEvents = events))
+                val dto = mapper.encode(HistoryRecordingState(pendingEvents = events))
                 assertEquals(events.size, dto.pendingEvents.size)
                 val raw = Json.encodeToString(dto.pendingEvents)
                 val withPlayerDeltas = replacePlayersWithDeltas(Json.parseToJsonElement(raw) as JsonArray)
@@ -101,11 +101,11 @@ class CompactHistoryPrototypeTest {
     /** 量測原始歷史、玩家差異及字典化格式的容量。 */
     @Test
     fun measure() = runBlocking {
-        val mapper = HistoryCapturePersistenceMapper(buildBuiltInPersistenceRegistries())
+        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
         for (length in listOf(RiichiGameLength.East, RiichiGameLength.TwoWinds)) {
             val matches = RoomToRoomFullLifecycleIntegrationTest().measureFullLifecycle(length)
             for ((index, events) in matches.withIndex()) {
-                val dto = mapper.encode(HistoryCaptureState(pendingEvents = events))
+                val dto = mapper.encode(HistoryRecordingState(pendingEvents = events))
                 assertEquals(events.size, dto.pendingEvents.size, "History encoding omitted events")
                 val raw = Json.encodeToString(dto.pendingEvents)
                 val rawElement = Json.parseToJsonElement(raw)

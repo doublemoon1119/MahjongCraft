@@ -29,9 +29,9 @@ private fun historyStatusEntries(status: HistoryWriterStatus): List<ConfigPresen
         ),
     ),
     ConfigPresentationEntry(
-        Text.translatable(MinecraftConfigCommandKeys.HISTORY_CAPTURE),
+        Text.translatable(MinecraftConfigCommandKeys.HISTORY_RECORDING),
         Text.translatable(
-            if (status.captureEnabled) MinecraftConfigCommandKeys.HISTORY_CAPTURE_ENABLED else MinecraftConfigCommandKeys.HISTORY_CAPTURE_DISABLED,
+            if (status.recordingEnabled) MinecraftConfigCommandKeys.HISTORY_RECORDING_ENABLED else MinecraftConfigCommandKeys.HISTORY_RECORDING_DISABLED,
         ),
     ),
     ConfigPresentationEntry(

@@ -13,16 +13,16 @@ import kotlin.uuid.Uuid
 class TableOpeningPresentationOperationTrackerTest {
     /** 同一捕捉窗口應讓後續開局 presentation 共用相同 ticket。 */
     @Test
-    fun `test capture returns current opening ticket until registration finishes`() {
+    fun `test registering ticket remains available until registration finishes`() {
         val tracker = TableOpeningPresentationOperationTracker()
         val tableId = Uuid.random()
 
         val ticket = tracker.begin(tableId)
 
-        assertEquals(ticket, tracker.capture(tableId))
+        assertEquals(ticket, tracker.getRegisteringTicket(tableId))
         assertTrue(tracker.mayRun(ticket))
         tracker.finishRegistration(ticket)
-        assertNull(tracker.capture(tableId))
+        assertNull(tracker.getRegisteringTicket(tableId))
         assertTrue(tracker.mayRun(ticket))
     }
 

@@ -5,8 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryCapturePersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryOutboxEventPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -44,7 +44,7 @@ class HistoryArchiveServiceTest {
             HistoryOutboxEvent(matchId, tableId, 1, 3, occurredAtEpochMillis = 300, actorPlayerId = null, fact = HistoryFact.ReturnedToRoom),
         )
         val registries = buildBuiltInPersistenceRegistries()
-        val mapper = HistoryCapturePersistenceMapper(registries, Json)
+        val mapper = HistoryRecordingPersistenceMapper(registries, Json)
         val modules = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry(), Json)
         val path = createTempDirectory("mahjongcraft-history-archive-").resolve("history.sqlite")

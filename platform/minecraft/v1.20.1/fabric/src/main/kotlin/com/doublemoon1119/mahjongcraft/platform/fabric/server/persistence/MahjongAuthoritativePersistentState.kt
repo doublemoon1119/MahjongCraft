@@ -31,7 +31,7 @@ class MahjongAuthoritativePersistentState private constructor(
     override fun writeNbt(nbt: NbtCompound): NbtCompound {
         nbt.putString(
             NBT_KEY_STATE,
-            codec.encode(snapshot.rooms.values, snapshot.games.values, snapshot.historyCaptureState),
+            codec.encode(snapshot.rooms.values, snapshot.games.values, snapshot.historyRecordingState),
         )
         return nbt
     }
@@ -60,7 +60,7 @@ class MahjongAuthoritativePersistentState private constructor(
             val decoded = codec.decode(nbt.getString(NBT_KEY_STATE))
             return MahjongAuthoritativePersistentState(
                 codec,
-                AuthoritativeStateSnapshot(decoded.rooms, decoded.games, decoded.historyCaptureState),
+                AuthoritativeStateSnapshot(decoded.rooms, decoded.games, decoded.historyRecordingState),
             )
         }
     }

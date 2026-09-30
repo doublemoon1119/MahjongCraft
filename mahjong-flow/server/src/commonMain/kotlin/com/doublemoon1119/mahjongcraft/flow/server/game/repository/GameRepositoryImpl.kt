@@ -43,17 +43,17 @@ class GameRepositoryImpl(
             next == null -> state.games - gameId
             else -> state.games + (gameId to next)
         }
-        val capture = if (store.isHistoryCaptureEnabled && next != previous) {
+        val recording = if (store.isHistoryRecordingEnabled && next != previous) {
             runCatching { history(previous, next, result) }
         } else {
             Result.success(emptyList())
         }
-        val drafts = capture.getOrDefault(emptyList())
+        val drafts = recording.getOrDefault(emptyList())
         AuthoritativeStateUpdate(
             state.copy(games = games),
             result,
             historyDraftsByTableId = if (drafts.isEmpty()) emptyMap() else mapOf(gameId to drafts),
-            historyCaptureFailures = if (capture.isFailure) setOf(gameId) else emptySet(),
+            historyRecordingFailures = if (recording.isFailure) setOf(gameId) else emptySet(),
         )
     }
 

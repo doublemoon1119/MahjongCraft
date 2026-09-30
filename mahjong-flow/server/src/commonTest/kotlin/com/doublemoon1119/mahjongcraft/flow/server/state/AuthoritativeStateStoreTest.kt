@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.server.state
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryCaptureState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
@@ -38,7 +38,7 @@ class AuthoritativeStateStoreTest {
         val second = first.copy(sequence = 2)
         store.load(
             AuthoritativeStateSnapshot(
-                historyCaptureState = HistoryCaptureState(
+                historyRecordingState = HistoryRecordingState(
                     nextSequenceByMatchId = mapOf(matchId to 4L),
                     pendingEvents = listOf(first),
                     firstMissingSequenceByMatchId = mapOf(matchId to 3L),
@@ -48,23 +48,23 @@ class AuthoritativeStateStoreTest {
         val batchIds = setOf(matchId to 1L)
         store.update { state ->
             AuthoritativeStateUpdate(
-                state.copy(historyCaptureState = state.historyCaptureState.copy(pendingEvents = listOf(first, second))),
+                state.copy(historyRecordingState = state.historyRecordingState.copy(pendingEvents = listOf(first, second))),
                 Unit,
             )
         }
 
         assertEquals(1, store.acknowledgeHistoryEvents(batchIds))
         assertEquals(0, store.acknowledgeHistoryEvents(batchIds))
-        val capture = store.snapshot().historyCaptureState
-        assertEquals(listOf(second), capture.pendingEvents)
-        assertEquals(4L, capture.nextSequenceByMatchId[matchId])
-        assertEquals(3L, capture.firstMissingSequenceByMatchId[matchId])
+        val recording = store.snapshot().historyRecordingState
+        assertEquals(listOf(second), recording.pendingEvents)
+        assertEquals(4L, recording.nextSequenceByMatchId[matchId])
+        assertEquals(3L, recording.firstMissingSequenceByMatchId[matchId])
     }
 
     /** 同筆交易有多個語意事實時，只在最後保存一次可還原的桌況差異。 */
     @Test
     fun `multiple facts in one transaction share one table change`() = runTest {
-        val store = AuthoritativeStateStore(historyCaptureEnabled = true)
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         val before = FakeTableStateFactory.create()
         val after = before.copy(
             players = before.players.mapIndexed { index, player ->
@@ -89,7 +89,7 @@ class AuthoritativeStateStoreTest {
             )
         }
 
-        val events = store.snapshot().historyCaptureState.pendingEvents
+        val events = store.snapshot().historyRecordingState.pendingEvents
         assertEquals(listOf(1L, 2L, 3L), events.map { it.sequence })
         assertEquals(listOf(1L, 1L, 1L), events.map { it.transactionFirstSequence })
         val result = assertIs<HistoryTableResult.Change>(assertIs<HistoryFact.TableChanged>(events.last().fact).result)
@@ -267,7 +267,7 @@ class AuthoritativeStateStoreTest {
     /** 驗證歷史 outbox 與遊戲狀態在同一筆 store 交易中一起提交。 */
     @Test
     fun `history outbox commits atomically with game state`() = runTest {
-        val store = AuthoritativeStateStore(historyCaptureEnabled = true)
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         val tableState = FakeTableStateFactory.create()
         GameRepositoryImpl(store).setTableState(tableState)
         val game = store.getGame(tableState.id)!!
@@ -292,13 +292,13 @@ class AuthoritativeStateStoreTest {
             setOf(1_000L),
             snapshot.games.getValue(game.id).remainingReserveMillisByPlayerId.values.toSet(),
         )
-        assertEquals(1L, snapshot.historyCaptureState.pendingEvents.single().sequence)
-        assertEquals(game.matchId, snapshot.historyCaptureState.pendingEvents.single().matchId)
+        assertEquals(1L, snapshot.historyRecordingState.pendingEvents.single().sequence)
+        assertEquals(game.matchId, snapshot.historyRecordingState.pendingEvents.single().matchId)
     }
 
     /** 驗證預設關閉時不會在權威狀態中累積歷史 outbox。 */
     @Test
-    fun `history capture is disabled by default`() = runTest {
+    fun `history recording is disabled by default`() = runTest {
         val store = AuthoritativeStateStore()
         val tableState = FakeTableStateFactory.create()
         GameRepositoryImpl(store).setTableState(tableState)
@@ -322,13 +322,13 @@ class AuthoritativeStateStoreTest {
             )
         }
 
-        assertTrue(store.snapshot().historyCaptureState.pendingEvents.isEmpty())
+        assertTrue(store.snapshot().historyRecordingState.pendingEvents.isEmpty())
     }
 
     /** 驗證事件容量耗盡時保留穩定序號缺口，而不阻塞狀態交易。 */
     @Test
-    fun `history capture records sequence gap when pending capacity is exhausted`() = runTest {
-        val store = AuthoritativeStateStore(historyCaptureEnabled = true, maxPendingHistoryEvents = 1)
+    fun `history recording records sequence gap when pending capacity is exhausted`() = runTest {
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true, maxPendingHistoryEvents = 1)
         val tableState = FakeTableStateFactory.create()
         GameRepositoryImpl(store).setTableState(tableState)
         val game = store.getGame(tableState.id)!!
@@ -353,16 +353,16 @@ class AuthoritativeStateStoreTest {
             )
         }
 
-        val capture = store.snapshot().historyCaptureState
-        assertEquals(listOf(1L), capture.pendingEvents.map { it.sequence })
-        assertEquals(3L, capture.nextSequenceByMatchId.getValue(game.matchId))
-        assertEquals(2L, capture.firstMissingSequenceByMatchId.getValue(game.matchId))
+        val recording = store.snapshot().historyRecordingState
+        assertEquals(listOf(1L), recording.pendingEvents.map { it.sequence })
+        assertEquals(3L, recording.nextSequenceByMatchId.getValue(game.matchId))
+        assertEquals(2L, recording.firstMissingSequenceByMatchId.getValue(game.matchId))
     }
 
-    /** 歷史採集函式失敗不能撤銷已接受的權威變更，且須留下可查的缺口。 */
+    /** 歷史記錄函式失敗不能撤銷已接受的權威變更，且須留下可查的缺口。 */
     @Test
     fun `history extractor failure does not block game update`() = runTest {
-        val store = AuthoritativeStateStore(historyCaptureEnabled = true)
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         val repository = GameRepositoryImpl(store)
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
@@ -370,7 +370,7 @@ class AuthoritativeStateStoreTest {
 
         repository.updateGame(
             gameId = game.id,
-            history = { _, _, _ -> error("history capture failed") },
+            history = { _, _, _ -> error("history recording failed") },
         ) { current ->
             current!!.copy(
                 remainingReserveMillisByPlayerId = current.tableState.players.associate { it.id to 1_000L },
@@ -379,15 +379,15 @@ class AuthoritativeStateStoreTest {
 
         val snapshot = store.snapshot()
         assertEquals(setOf(1_000L), snapshot.games.getValue(game.id).remainingReserveMillisByPlayerId.values.toSet())
-        assertTrue(snapshot.historyCaptureState.pendingEvents.isEmpty())
-        assertEquals(1L, snapshot.historyCaptureState.firstMissingSequenceByMatchId.getValue(game.matchId))
-        assertEquals(2L, snapshot.historyCaptureState.nextSequenceByMatchId.getValue(game.matchId))
+        assertTrue(snapshot.historyRecordingState.pendingEvents.isEmpty())
+        assertEquals(1L, snapshot.historyRecordingState.firstMissingSequenceByMatchId.getValue(game.matchId))
+        assertEquals(2L, snapshot.historyRecordingState.nextSequenceByMatchId.getValue(game.matchId))
     }
 
     /** 同桌重開須用新的場次身分；同筆交易內的事件依提交順序取得序號。 */
     @Test
     fun `history sequences are scoped to match rather than table`() = runTest {
-        val store = AuthoritativeStateStore(historyCaptureEnabled = true)
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         val tableState = FakeTableStateFactory.create()
         GameRepositoryImpl(store).setTableState(tableState)
         val firstGame = store.getGame(tableState.id)!!
@@ -413,7 +413,7 @@ class AuthoritativeStateStoreTest {
             )
         }
 
-        val events = store.snapshot().historyCaptureState.pendingEvents
+        val events = store.snapshot().historyRecordingState.pendingEvents
         assertEquals(listOf(1L, 2L), events.filter { it.matchId == firstGame.matchId }.map { it.sequence })
         assertEquals(listOf(1L), events.filter { it.matchId == secondGame.matchId }.map { it.sequence })
         assertEquals(setOf(tableState.id), events.map { it.tableId }.toSet())
@@ -421,8 +421,8 @@ class AuthoritativeStateStoreTest {
 
     /** 倉庫拒絕或無變更的交易不得產生歷史事件。 */
     @Test
-    fun `unchanged game update does not invoke history capture`() = runTest {
-        val store = AuthoritativeStateStore(historyCaptureEnabled = true)
+    fun `unchanged game update does not invoke history recording`() = runTest {
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         val repository = GameRepositoryImpl(store)
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
@@ -432,8 +432,8 @@ class AuthoritativeStateStoreTest {
             history = { _, _, _ -> error("History extractor must not run for unchanged state") },
         ) { game -> game to Unit }
 
-        assertTrue(store.snapshot().historyCaptureState.pendingEvents.isEmpty())
-        assertTrue(store.snapshot().historyCaptureState.firstMissingSequenceByMatchId.isEmpty())
+        assertTrue(store.snapshot().historyRecordingState.pendingEvents.isEmpty())
+        assertTrue(store.snapshot().historyRecordingState.firstMissingSequenceByMatchId.isEmpty())
     }
 
     /** 建立最小等待階段 Room。 */

@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.dto.history
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryCaptureState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryPlayerChange
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
@@ -18,7 +18,7 @@ import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** 驗證歷史 outbox 的持久化 DTO 可保存並還原穩定序號與事實。 */
-class HistoryCapturePersistenceDtoTest {
+class HistoryRecordingPersistenceDtoTest {
     /** 交易結果的局部差異在 JSON 與 DTO 往返後仍能重建玩家分數。 */
     @Test
     fun `table change round trips without full table snapshot`() {
@@ -27,7 +27,7 @@ class HistoryCapturePersistenceDtoTest {
         val change = HistoryTableChange(
             changedPlayers = listOf(HistoryPlayerChange(player.copy(score = 100), 0, listOf(GameAction.Draw))),
         )
-        val state = HistoryCaptureState(
+        val state = HistoryRecordingState(
             nextSequenceByMatchId = mapOf(matchId to 2L),
             pendingEvents = listOf(
                 HistoryOutboxEvent(
@@ -41,27 +41,27 @@ class HistoryCapturePersistenceDtoTest {
                 ),
             ),
         )
-        val mapper = HistoryCapturePersistenceMapper(buildBuiltInPersistenceRegistries())
+        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
         val dto = mapper.encode(state)
-        val encoded = Json.encodeToString(HistoryCapturePersistenceDto.serializer(), dto)
+        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), dto)
 
         assertTrue(!encoded.contains("resultingState"))
-        assertEquals(state, mapper.decode(Json.decodeFromString(HistoryCapturePersistenceDto.serializer(), encoded)))
+        assertEquals(state, mapper.decode(Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded)))
     }
 
     /** 即使版本為預設值，也必須明確輸出歷史格式版本。 */
     @Test
     fun `history format version is always serialized`() {
-        val encoded = Json.encodeToString(HistoryCapturePersistenceDto.serializer(), HistoryCapturePersistenceDto())
+        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), HistoryRecordingPersistenceDto())
         assertTrue(encoded.contains("\"formatVersion\":1"))
     }
 
     /** 驗證含待寫事件、下一序號與缺口 checkpoint 的完整 round-trip。 */
     @Test
-    fun `history capture state round trips through mapper`() {
+    fun `history recording state round trips through mapper`() {
         val matchId = Uuid.random()
         val tableId = Uuid.random()
-        val state = HistoryCaptureState(
+        val state = HistoryRecordingState(
             nextSequenceByMatchId = mapOf(matchId to 4L),
             pendingEvents = listOf(
                 HistoryOutboxEvent(
@@ -76,7 +76,7 @@ class HistoryCapturePersistenceDtoTest {
             ),
             firstMissingSequenceByMatchId = mapOf(matchId to 2L),
         )
-        val mapper = HistoryCapturePersistenceMapper(buildBuiltInPersistenceRegistries())
+        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
 
         assertEquals(state, mapper.decode(mapper.encode(state)))
     }
@@ -86,7 +86,7 @@ class HistoryCapturePersistenceDtoTest {
     fun `undecodable history event leaves a checkpoint gap`() {
         val matchId = Uuid.random()
         val tableId = Uuid.random()
-        val dto = HistoryCapturePersistenceDto(
+        val dto = HistoryRecordingPersistenceDto(
             nextSequenceByMatchId = mapOf(matchId.toString() to 3L),
             pendingEvents = listOf(
                 HistoryOutboxEventPersistenceDto(
@@ -110,7 +110,7 @@ class HistoryCapturePersistenceDtoTest {
             ),
         )
 
-        val decoded = HistoryCapturePersistenceMapper(buildBuiltInPersistenceRegistries()).decode(dto)
+        val decoded = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries()).decode(dto)
 
         assertEquals(listOf(2L), decoded.pendingEvents.map { it.sequence })
         assertEquals(1L, decoded.firstMissingSequenceByMatchId.getValue(matchId))

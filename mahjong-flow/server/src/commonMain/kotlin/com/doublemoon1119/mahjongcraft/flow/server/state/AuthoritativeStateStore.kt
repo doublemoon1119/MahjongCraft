@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.server.state
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryCaptureState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
@@ -21,12 +21,12 @@ import kotlin.uuid.Uuid
  *
  * @property rooms 以桌子 UUID 索引的等待階段狀態。
  * @property games 以桌子 UUID 索引的進行中狀態。
- * @property historyCaptureState 與 Game 生命週期分離的待寫歷史事件。
+ * @property historyRecordingState 與 Game 生命週期分離的待寫歷史事件。
  */
 data class AuthoritativeStateSnapshot(
     val rooms: Map<Uuid, Room> = emptyMap(),
     val games: Map<Uuid, Game> = emptyMap(),
-    val historyCaptureState: HistoryCaptureState = HistoryCaptureState(),
+    val historyRecordingState: HistoryRecordingState = HistoryRecordingState(),
 ) {
     init {
         require(rooms.all { (id, room) -> id == room.id }) { "Room index must match its state ID" }
@@ -43,13 +43,13 @@ data class AuthoritativeStateSnapshot(
  * @property state 交易完成後的完整狀態。
  * @property result 回傳給呼叫端的結果。
  * @property historyDraftsByTableId 與本次狀態變更一起提交的權威歷史事實。
- * @property historyCaptureFailures 歷史事件採集失敗的桌子 ID；提交狀態時為對應場次記錄序號缺口。
+ * @property historyRecordingFailures 歷史事件記錄失敗的桌子 ID；提交狀態時為對應場次記錄序號缺口。
  */
 data class AuthoritativeStateUpdate<T>(
     val state: AuthoritativeStateSnapshot,
     val result: T,
     val historyDraftsByTableId: Map<Uuid, List<HistoryEventDraft>> = emptyMap(),
-    val historyCaptureFailures: Set<Uuid> = emptySet(),
+    val historyRecordingFailures: Set<Uuid> = emptySet(),
 )
 
 /**
@@ -58,13 +58,13 @@ data class AuthoritativeStateUpdate<T>(
  * 所有變更皆透過 [update] 提交，使 Room → Game 等跨集合操作能在單次交易內完成。變更後的狀態同時
  * 發布到 [state]，供需要在狀態改變時反應的服務訂閱。
  *
- * @param historyCaptureEnabled 建立時是否將歷史草稿加入待寫佇列；正式伺服器依資料庫狀態切換。
+ * @param historyRecordingEnabled 建立時是否將歷史草稿加入待寫佇列；正式伺服器依資料庫狀態切換。
  * @property historyClock 產生歷史事件 UTC 時間戳的時鐘；事件順序仍由序號決定。
  * @property maxPendingHistoryEvents 待寫佇列的容量上限；超出時只保留序號缺口，不阻塞對局。
  */
 @Single
 class AuthoritativeStateStore(
-    historyCaptureEnabled: Boolean = false,
+    historyRecordingEnabled: Boolean = false,
     private val historyClock: Clock = Clock.System,
     private val maxPendingHistoryEvents: Int = 256,
 ) {
@@ -73,10 +73,10 @@ class AuthoritativeStateStore(
     }
 
     /** 僅在歷史資料庫可用的伺服器 session 內啟用。 */
-    @Volatile private var captureEnabled = historyCaptureEnabled
+    @Volatile private var recordingEnabled = historyRecordingEnabled
 
-    /** 目前是否採集歷史事件。 */
-    val isHistoryCaptureEnabled: Boolean get() = captureEnabled
+    /** 目前是否記錄歷史事件。 */
+    val isHistoryRecordingEnabled: Boolean get() = recordingEnabled
 
     /** 保護狀態、dirty flag 與 dirty listener 的互斥鎖。 */
     private val mutex = Mutex()
@@ -128,19 +128,19 @@ class AuthoritativeStateStore(
         dirtyListener = listener
     }
 
-    /** 在 session 啟停時切換採集；既有待寫事件不受影響。 */
-    suspend fun setHistoryCaptureEnabled(enabled: Boolean) = mutex.withLock {
-        captureEnabled = enabled
+    /** 在 session 啟停時切換記錄；既有待寫事件不受影響。 */
+    suspend fun setHistoryRecordingEnabled(enabled: Boolean) = mutex.withLock {
+        recordingEnabled = enabled
     }
 
     /** 僅確認資料庫已提交的事件 ID，保留同時新增的事件、下一序號與缺口。 */
     suspend fun acknowledgeHistoryEvents(ids: Set<Pair<Uuid, Long>>): Int = mutex.withLock {
         if (ids.isEmpty()) return@withLock 0
-        val capture = currentState.historyCaptureState
-        val remaining = capture.pendingEvents.filterNot { (it.matchId to it.sequence) in ids }
-        val acknowledged = capture.pendingEvents.size - remaining.size
+        val recording = currentState.historyRecordingState
+        val remaining = recording.pendingEvents.filterNot { (it.matchId to it.sequence) in ids }
+        val acknowledged = recording.pendingEvents.size - remaining.size
         if (acknowledged > 0) {
-            currentState = currentState.copy(historyCaptureState = capture.copy(pendingEvents = remaining))
+            currentState = currentState.copy(historyRecordingState = recording.copy(pendingEvents = remaining))
             dirty = true
             dirtyListener(currentState)
         }
@@ -166,9 +166,9 @@ class AuthoritativeStateStore(
         block: suspend (AuthoritativeStateSnapshot) -> AuthoritativeStateUpdate<T>,
     ): T = mutex.withLock {
         val update = block(currentState)
-        val nextState = if (captureEnabled && update.state != currentState) {
+        val nextState = if (recordingEnabled && update.state != currentState) {
             val timestamp = historyClock.now().toEpochMilliseconds()
-            val withDrafts = update.historyDraftsByTableId.entries.fold(currentState.historyCaptureState) { capture, entry ->
+            val withDrafts = update.historyDraftsByTableId.entries.fold(currentState.historyRecordingState) { recording, entry ->
                 val game = update.state.games[entry.key] ?: currentState.games[entry.key]
                     ?: error("History event references unknown table ${entry.key}")
                 val before = currentState.games[entry.key]?.tableState
@@ -186,14 +186,14 @@ class AuthoritativeStateStore(
                 } else {
                     null
                 }
-                runCatching { capture.append(game, entry.value + listOfNotNull(resultDraft), timestamp, maxPendingHistoryEvents) }
-                    .getOrElse { capture.recordMissing(game) }
+                runCatching { recording.append(game, entry.value + listOfNotNull(resultDraft), timestamp, maxPendingHistoryEvents) }
+                    .getOrElse { recording.recordMissing(game) }
             }
-            val captureState = update.historyCaptureFailures.fold(withDrafts) { capture, tableId ->
+            val recordingState = update.historyRecordingFailures.fold(withDrafts) { recording, tableId ->
                 val game = update.state.games[tableId] ?: currentState.games[tableId]
-                if (game == null) capture else capture.recordMissing(game)
+                if (game == null) recording else recording.recordMissing(game)
             }
-            update.state.copy(historyCaptureState = captureState)
+            update.state.copy(historyRecordingState = recordingState)
         } else {
             update.state
         }

@@ -35,8 +35,8 @@ object MinecraftConfigCommandKeys {
     /** 資料庫連線狀態欄位。 */
     const val HISTORY_DATABASE: String = "mahjongcraft.history.command.database"
 
-    /** 歷史事件採集狀態欄位。 */
-    const val HISTORY_CAPTURE: String = "mahjongcraft.history.command.capture"
+    /** 歷史事件記錄狀態欄位。 */
+    const val HISTORY_RECORDING: String = "mahjongcraft.history.command.recording"
 
     /** 權威 outbox 待寫事件數欄位。 */
     const val HISTORY_PENDING_EVENTS: String = "mahjongcraft.history.command.pending_events"
@@ -62,11 +62,11 @@ object MinecraftConfigCommandKeys {
     /** 歷史資料庫目前未連線狀態文字。 */
     const val HISTORY_DISCONNECTED: String = "mahjongcraft.history.command.disconnected"
 
-    /** 歷史事件採集目前啟用狀態文字。 */
-    const val HISTORY_CAPTURE_ENABLED: String = "mahjongcraft.history.command.capture_enabled"
+    /** 歷史事件記錄目前啟用狀態文字。 */
+    const val HISTORY_RECORDING_ENABLED: String = "mahjongcraft.history.command.recording_enabled"
 
-    /** 歷史事件採集目前停用狀態文字。 */
-    const val HISTORY_CAPTURE_DISABLED: String = "mahjongcraft.history.command.capture_disabled"
+    /** 歷史事件記錄目前停用狀態文字。 */
+    const val HISTORY_RECORDING_DISABLED: String = "mahjongcraft.history.command.recording_disabled"
 
     /** 歷史狀態有需查看伺服器 log 的錯誤時，避免公開原始例外內容。 */
     const val HISTORY_ERROR_PRESENT: String = "mahjongcraft.history.command.error_present"

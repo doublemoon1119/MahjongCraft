@@ -8,9 +8,9 @@ import kotlin.uuid.Uuid
  *
  * @property nextSequenceByMatchId 每場下一個可指派的序號，從 1 開始；即使事件遺失也會推進。
  * @property pendingEvents 尚待寫入歷史儲存系統的事件。
- * @property firstMissingSequenceByMatchId 每場最早遺失的序號；容量不足或採集失敗時供診斷使用。
+ * @property firstMissingSequenceByMatchId 每場最早遺失的序號；容量不足或記錄失敗時供診斷使用。
  */
-data class HistoryCaptureState(
+data class HistoryRecordingState(
     val nextSequenceByMatchId: Map<Uuid, Long> = emptyMap(),
     val pendingEvents: List<HistoryOutboxEvent> = emptyList(),
     val firstMissingSequenceByMatchId: Map<Uuid, Long> = emptyMap(),
@@ -37,7 +37,7 @@ data class HistoryCaptureState(
         drafts: List<HistoryEventDraft>,
         occurredAtEpochMillis: Long,
         maxPendingEvents: Int,
-    ): HistoryCaptureState {
+    ): HistoryRecordingState {
         require(maxPendingEvents >= 0) { "Pending history capacity must not be negative" }
         if (drafts.isEmpty()) return this
         val nextSequence = nextSequenceByMatchId[game.matchId] ?: 1L
@@ -71,12 +71,12 @@ data class HistoryCaptureState(
     }
 
     /**
-     * 採集失敗時為該場保留一個可診斷的序號缺口，不以空白事件冒充成功。
+     * 記錄失敗時為該場保留一個可診斷的序號缺口，不以空白事件冒充成功。
      *
-     * @param game 採集失敗時仍已成功提交的遊戲狀態。
+     * @param game 記錄失敗時仍已成功提交的遊戲狀態。
      * @return 保留最早缺口並推進下一序號後的新狀態。
      */
-    fun recordMissing(game: Game): HistoryCaptureState {
+    fun recordMissing(game: Game): HistoryRecordingState {
         val nextSequence = nextSequenceByMatchId[game.matchId] ?: 1L
         if (nextSequence == Long.MAX_VALUE) return this
         return copy(

@@ -336,7 +336,7 @@ class FabricGamePresentationPublisher(
             return
         }
         val wallDropTicks = openingState.wallDropTicks(gameId)
-        val openingOperation = openingOperations.capture(gameId)
+        val openingOperation = openingOperations.getRegisteringTicket(gameId)
         launchOpeningStage(gameId, "dice-roll", openingOperation, pendingOperation = "publishDiceRoll") {
             val resolved = resolveTableContext(gameId, "publishDiceRoll") ?: return@launchOpeningStage
 
@@ -477,7 +477,7 @@ class FabricGamePresentationPublisher(
             logger.warn("publishTablePropsUpdated gameId={} skipped: no active server", gameId)
             return
         }
-        val openingOperation = openingOperations.capture(gameId)
+        val openingOperation = openingOperations.getRegisteringTicket(gameId)
         launchOpeningStage(gameId, "table-props", openingOperation) {
             val resolved = resolveTableContext(gameId, "publishTablePropsUpdated") ?: return@launchOpeningStage
             val tableState = gameRepository.getTableState(gameId) ?: return@launchOpeningStage
@@ -543,7 +543,7 @@ class FabricGamePresentationPublisher(
         }
         val ruleModuleId = moduleRegistry.getModule(tableState.config).id
         val lines = roundInfoLineDisplayRegistry.buildLines(ruleModuleId, tableState)
-        val openingOperation = openingOperations.capture(gameId)
+        val openingOperation = openingOperations.getRegisteringTicket(gameId)
         launchOpeningStage(gameId, "round-info", openingOperation) {
             val resolved = resolveTableContext(gameId, "publishRoundInfoUpdated") ?: return@launchOpeningStage
 
@@ -615,7 +615,7 @@ class FabricGamePresentationPublisher(
         }
         val wallDropTicks = openingState.wallDropTicks(gameId)
         val diceTicks = if (diceCount > 0) MahjongDiceTableLayout.totalAnimationTicks(diceCount) else 0
-        val openingOperation = openingOperations.capture(gameId)
+        val openingOperation = openingOperations.getRegisteringTicket(gameId)
         launchOpeningStage(gameId, "initial-deal", openingOperation, pendingOperation = "publishInitialDealAnimation") {
             val resolved = resolveTableContext(gameId, "publishInitialDealAnimation") ?: return@launchOpeningStage
             // 開局發牌與這一局的桌上物件更新讀的是同一份新局桌況；直接由它算出寬度並記錄，不依賴兩個呈現
