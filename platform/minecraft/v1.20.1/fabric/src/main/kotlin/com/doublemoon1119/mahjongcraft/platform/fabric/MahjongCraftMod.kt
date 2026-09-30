@@ -35,6 +35,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCele
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.FabricObserverSnapshotBroadcastService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
@@ -101,6 +102,7 @@ class MahjongCraftMod : ModInitializer {
         val appScope = koin.get<FabricAppCoroutineScope>()
         val stateCleaner = koin.get<ServerSessionStateCleaner>()
         val statePersistence = koin.get<FabricAuthoritativeStatePersistence>()
+        val historyWriter = koin.get<FabricHistoryOutboxWriter>()
         val decisionTimerManager = koin.get<GameDecisionTimerManager>()
         val tableLocationPersistence = koin.get<FabricTableLocationPersistence>()
         val configManager = koin.get<FabricServerConfigManager>()
@@ -113,6 +115,7 @@ class MahjongCraftMod : ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             initializeServerConfig(configManager, mahjongTileCollisionService, server)
             runBlocking { statePersistence.attach(server) }
+            runBlocking { historyWriter.attach(server) }
             tableLocationPersistence.attach(server)
             tableLocationValidation.startSession(server)
             serverHolder.set(server)
@@ -135,6 +138,7 @@ class MahjongCraftMod : ModInitializer {
                 presentationBusyTracker.clearAll()
                 openingPresentationOperations.clearAll()
                 decisionTimerManager.settleAll()
+                historyWriter.detach()
                 statePersistence.detach()
                 stateCleaner.clear()
             }

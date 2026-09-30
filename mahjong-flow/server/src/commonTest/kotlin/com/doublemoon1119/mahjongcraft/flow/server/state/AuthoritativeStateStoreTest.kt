@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.server.state
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryCaptureState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
@@ -26,6 +28,39 @@ import kotlin.uuid.Uuid
 
 /** 驗證 Room 與 Game 共用狀態儲存的交易與 dirty tracking。 */
 class AuthoritativeStateStoreTest {
+    /** 確認舊快照只移除已提交的鍵，不會刪掉其後新增事件或清除缺口。 */
+    @Test
+    fun `history acknowledgement preserves later events and gaps`() = runTest {
+        val store = AuthoritativeStateStore()
+        val matchId = Uuid.random()
+        val tableId = Uuid.random()
+        val first = HistoryOutboxEvent(matchId, tableId, 1, 1, 1, 100L, null, HistoryFact.ReturnedToRoom)
+        val second = first.copy(sequence = 2)
+        store.load(
+            AuthoritativeStateSnapshot(
+                historyCaptureState = HistoryCaptureState(
+                    nextSequenceByMatchId = mapOf(matchId to 4L),
+                    pendingEvents = listOf(first),
+                    firstMissingSequenceByMatchId = mapOf(matchId to 3L),
+                ),
+            ),
+        )
+        val batchIds = setOf(matchId to 1L)
+        store.update { state ->
+            AuthoritativeStateUpdate(
+                state.copy(historyCaptureState = state.historyCaptureState.copy(pendingEvents = listOf(first, second))),
+                Unit,
+            )
+        }
+
+        assertEquals(1, store.acknowledgeHistoryEvents(batchIds))
+        assertEquals(0, store.acknowledgeHistoryEvents(batchIds))
+        val capture = store.snapshot().historyCaptureState
+        assertEquals(listOf(second), capture.pendingEvents)
+        assertEquals(4L, capture.nextSequenceByMatchId[matchId])
+        assertEquals(3L, capture.firstMissingSequenceByMatchId[matchId])
+    }
+
     /** 同筆交易有多個語意事實時，只在最後保存一次可還原的桌況差異。 */
     @Test
     fun `multiple facts in one transaction share one table change`() = runTest {

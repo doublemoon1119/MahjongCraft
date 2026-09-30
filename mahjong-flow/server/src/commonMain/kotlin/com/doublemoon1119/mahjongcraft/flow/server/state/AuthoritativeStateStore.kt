@@ -58,13 +58,13 @@ data class AuthoritativeStateUpdate<T>(
  * 所有變更皆透過 [update] 提交，使 Room → Game 等跨集合操作能在單次交易內完成。變更後的狀態同時
  * 發布到 [state]，供需要在狀態改變時反應的服務訂閱。
  *
- * @property historyCaptureEnabled 是否將交易內的歷史草稿加入待寫佇列；預設停用。
+ * @param historyCaptureEnabled 建立時是否將歷史草稿加入待寫佇列；正式伺服器依資料庫狀態切換。
  * @property historyClock 產生歷史事件 UTC 時間戳的時鐘；事件順序仍由序號決定。
  * @property maxPendingHistoryEvents 待寫佇列的容量上限；超出時只保留序號缺口，不阻塞對局。
  */
 @Single
 class AuthoritativeStateStore(
-    private val historyCaptureEnabled: Boolean = false,
+    historyCaptureEnabled: Boolean = false,
     private val historyClock: Clock = Clock.System,
     private val maxPendingHistoryEvents: Int = 256,
 ) {
@@ -72,8 +72,11 @@ class AuthoritativeStateStore(
         require(maxPendingHistoryEvents >= 0) { "Pending history capacity must not be negative" }
     }
 
-    /** 28B 的 writer 接入前不在正式環境累積無界待寫資料。 */
-    val isHistoryCaptureEnabled: Boolean get() = historyCaptureEnabled
+    /** 僅在歷史資料庫可用的伺服器 session 內啟用。 */
+    @Volatile private var captureEnabled = historyCaptureEnabled
+
+    /** 目前是否採集歷史事件。 */
+    val isHistoryCaptureEnabled: Boolean get() = captureEnabled
 
     /** 保護狀態、dirty flag 與 dirty listener 的互斥鎖。 */
     private val mutex = Mutex()
@@ -125,6 +128,25 @@ class AuthoritativeStateStore(
         dirtyListener = listener
     }
 
+    /** 在 session 啟停時切換採集；既有待寫事件不受影響。 */
+    suspend fun setHistoryCaptureEnabled(enabled: Boolean) = mutex.withLock {
+        captureEnabled = enabled
+    }
+
+    /** 僅確認資料庫已提交的事件 ID，保留同時新增的事件、下一序號與缺口。 */
+    suspend fun acknowledgeHistoryEvents(ids: Set<Pair<Uuid, Long>>): Int = mutex.withLock {
+        if (ids.isEmpty()) return@withLock 0
+        val capture = currentState.historyCaptureState
+        val remaining = capture.pendingEvents.filterNot { (it.matchId to it.sequence) in ids }
+        val acknowledged = capture.pendingEvents.size - remaining.size
+        if (acknowledged > 0) {
+            currentState = currentState.copy(historyCaptureState = capture.copy(pendingEvents = remaining))
+            dirty = true
+            dirtyListener(currentState)
+        }
+        acknowledged
+    }
+
     /**
      * 載入已保存的完整狀態並視為乾淨；不觸發 dirty callback。
      *
@@ -144,7 +166,7 @@ class AuthoritativeStateStore(
         block: suspend (AuthoritativeStateSnapshot) -> AuthoritativeStateUpdate<T>,
     ): T = mutex.withLock {
         val update = block(currentState)
-        val nextState = if (historyCaptureEnabled && update.state != currentState) {
+        val nextState = if (captureEnabled && update.state != currentState) {
             val timestamp = historyClock.now().toEpochMilliseconds()
             val withDrafts = update.historyDraftsByTableId.entries.fold(currentState.historyCaptureState) { capture, entry ->
                 val game = update.state.games[entry.key] ?: currentState.games[entry.key]

@@ -269,6 +269,9 @@ class HistoryCapturePersistenceMapper(
     private val registries: PersistenceRegistries,
     private val json: Json = Json,
 ) {
+    /** 將單筆待寫事件編碼；失敗時交由呼叫端保留並重試，絕不略過後確認。 */
+    fun encodePendingEvent(event: HistoryOutboxEvent): HistoryOutboxEventPersistenceDto = encodeEvent(event)
+
     /** 將待寫事件編成權威存檔 DTO；無法編碼的事件會記錄序號缺口並略過。 */
     fun encode(state: HistoryCaptureState): HistoryCapturePersistenceDto {
         val missing = state.firstMissingSequenceByMatchId.toMutableMap()
