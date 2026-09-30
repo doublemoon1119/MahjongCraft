@@ -59,18 +59,27 @@ class MahjongAiStrategyRegistryImplTest {
         assertSame(defaultStrategy, registry.resolve("unknown"))
     }
 
-    /**
-     * 驗證 [MahjongAiStrategyRegistryImpl.getAllStrategyKeys] 依第一次註冊的順序列出所有 key；重新註冊同一個 key 不改變順序。
-     */
+    /** 驗證 [MahjongAiStrategyRegistryImpl.getAllStrategyKeys] 依註冊順序列出所有 key。 */
     @Test
     fun `test getAllStrategyKeys lists keys in registration order`() {
         val registry = MahjongAiStrategyRegistryImpl(defaultKey = "b").apply {
             register("b") { RandomAiStrategy(extensionActionRegistry) }
             register("a") { RandomAiStrategy(extensionActionRegistry) }
-            register("b") { RandomAiStrategy(extensionActionRegistry) }
         }
 
         assertEquals(listOf("b", "a"), registry.getAllStrategyKeys().toList())
+    }
+
+    /** 驗證同一個 key 不能註冊兩次，原本註冊的策略仍可解析。 */
+    @Test
+    fun `test register rejects a duplicate key`() {
+        val original = RandomAiStrategy(extensionActionRegistry)
+        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "default").apply {
+            register("custom") { original }
+        }
+
+        assertFailsWith<IllegalArgumentException> { registry.register("custom") { RandomAiStrategy(extensionActionRegistry) } }
+        assertSame(original, registry.resolve("custom"))
     }
 
     /** 驗證凍結後不能再註冊策略，已註冊的策略仍可解析。 */

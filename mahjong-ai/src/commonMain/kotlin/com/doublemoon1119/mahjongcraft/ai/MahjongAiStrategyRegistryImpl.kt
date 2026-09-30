@@ -9,7 +9,7 @@ package com.doublemoon1119.mahjongcraft.ai
  *           不預設任何特定策略。
  */
 class MahjongAiStrategyRegistryImpl(private val defaultKey: String) : MahjongAiStrategyRegistry {
-    /** 依第一次註冊的順序保存的策略建構方式。 */
+    /** 依註冊順序保存的策略建構方式。 */
     private val factoriesByKey = linkedMapOf<String, () -> MahjongAiStrategy>()
 
     /** 是否已禁止後續註冊。 */
@@ -17,6 +17,7 @@ class MahjongAiStrategyRegistryImpl(private val defaultKey: String) : MahjongAiS
 
     override fun register(key: String, factory: () -> MahjongAiStrategy) {
         check(!frozen) { "AI strategy registry is frozen" }
+        require(key !in factoriesByKey) { "AI strategy already registered: $key" }
         factoriesByKey[key] = factory
     }
 

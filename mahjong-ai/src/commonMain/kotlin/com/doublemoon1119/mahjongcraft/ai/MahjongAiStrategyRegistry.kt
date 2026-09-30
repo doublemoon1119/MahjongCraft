@@ -9,7 +9,11 @@ package com.doublemoon1119.mahjongcraft.ai
  * 任何參數——避免這類設定被夾帶進 `Room`/`MahjongPlayer` 進而外洩到快照裡。
  */
 interface MahjongAiStrategyRegistry {
-    /** 註冊一個策略；[factory] 每次解析時呼叫一次，讓策略可以是 stateful 的獨立實例。凍結後呼叫會拋出例外。 */
+    /**
+     * 註冊一個策略；[factory] 每次解析時呼叫一次，讓策略可以是 stateful 的獨立實例。
+     *
+     * 凍結後呼叫，或 [key] 已經註冊過時拋出例外，避免兩個 extension 使用同一個 key 時後者悄悄取代前者。
+     */
     fun register(key: String, factory: () -> MahjongAiStrategy)
 
     /** 禁止後續註冊；由啟動流程在所有內建與第三方登記完成後呼叫。 */
@@ -18,6 +22,6 @@ interface MahjongAiStrategyRegistry {
     /** 解析 [key] 對應的策略；找不到對應 key（含 null、未知字串）時優雅退回預設策略。 */
     fun resolve(key: String?): MahjongAiStrategy
 
-    /** 目前已註冊的策略 key 集合，依第一次註冊的順序排列。 */
+    /** 目前已註冊的策略 key 集合，依註冊順序排列。 */
     fun getAllStrategyKeys(): Set<String>
 }
