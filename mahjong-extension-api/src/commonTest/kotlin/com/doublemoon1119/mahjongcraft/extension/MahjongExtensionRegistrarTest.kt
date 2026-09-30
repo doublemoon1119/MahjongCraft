@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.extension
 
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
@@ -47,6 +48,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistryImpl
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /** 驗證第三方 extension 的統一註冊順序、錯誤診斷與 registry freeze。 */
@@ -58,6 +60,7 @@ class MahjongExtensionRegistrarTest {
         val networkRegistries = TestNetworkDtoRegistries()
         val persistenceRegistries = buildBuiltInPersistenceRegistries()
         val tileTypeRegistry = TileTypeRegistryImpl()
+        val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY)
         val calls = mutableListOf<String>()
         val extension = RecordingExtension(calls)
 
@@ -68,18 +71,21 @@ class MahjongExtensionRegistrarTest {
                 tileTypeRegistry = tileTypeRegistry,
                 networkRegistries = networkRegistries,
                 persistenceRegistries = persistenceRegistries,
+                aiStrategyRegistry = aiStrategyRegistry,
             ),
         )
 
-        assertEquals(listOf("rule", "tile", "network", "persistence"), calls)
+        assertEquals(listOf("rule", "tile", "network", "persistence", "strategy"), calls)
         assertEquals(
             setOf(
                 "mahjongcraft:rule_module",
                 "mahjongcraft:tile_type",
+                "mahjongcraft:ai_strategy",
             ),
             categories.mapTo(mutableSetOf(), ExtensionRegistrationCategory::id),
         )
         assertTrue(moduleRegistry.getModule(RiichiRuleConfig()) is RiichiRuleModule)
+        assertIs<RandomAiStrategy>(aiStrategyRegistry.resolve(RecordingExtension.STRATEGY_KEY))
         assertEquals(
             TileTypeId.parse("example:flower/spring"),
             tileTypeRegistry.require(TileTypeId.parse("example:flower/spring")).id,
@@ -91,6 +97,9 @@ class MahjongExtensionRegistrarTest {
         }
         assertFailsWith<IllegalStateException> {
             tileTypeRegistry.register(TileTypeDefinition(TileTypeId.parse("example:late")))
+        }
+        assertFailsWith<IllegalStateException> {
+            aiStrategyRegistry.register("example:late") { RandomAiStrategy(ExtensionGameActionAiRegistry()) }
         }
     }
 
@@ -134,6 +143,22 @@ class MahjongExtensionRegistrarTest {
         assertTrue(error.message.orEmpty().contains(extension.id))
         assertTrue(error.cause?.message.orEmpty().contains("Duplicate"))
     }
+
+    /** 不同 extension 登記同一策略 key 時，錯誤指出後登記的 extension，原策略不被取代。 */
+    @Test
+    fun `duplicate ai strategy key identifies registering extension`() {
+        val registries = testCoreRegistries()
+        val error = assertFailsWith<MahjongExtensionRegistrationException> {
+            MahjongExtensionRegistrar.registerAndFreeze(
+                extensions = listOf(StrategyExtension("example:first"), StrategyExtension("example:second")),
+                registries = registries,
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("example:second"))
+        assertTrue(error.cause?.message.orEmpty().contains(StrategyExtension.STRATEGY_KEY))
+        assertIs<RandomAiStrategy>(registries.aiStrategyRegistry.resolve(StrategyExtension.STRATEGY_KEY))
+    }
 }
 
 /** 建立 registrar 測試使用的獨立 core registry 集合。 */
@@ -142,6 +167,7 @@ private fun testCoreRegistries(
     tileTypeRegistry: TileTypeRegistry = TileTypeRegistryImpl(),
     networkRegistries: NetworkDtoRegistries = TestNetworkDtoRegistries(),
     persistenceRegistries: PersistenceRegistries = buildBuiltInPersistenceRegistries(),
+    aiStrategyRegistry: MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY),
 ): CoreExtensionRegistries = CoreExtensionRegistries(
     moduleRegistry = moduleRegistry,
     tileTypeRegistry = tileTypeRegistry,
@@ -149,7 +175,7 @@ private fun testCoreRegistries(
     persistenceRegistries = persistenceRegistries,
     winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
     gameActionAiRegistry = ExtensionGameActionAiRegistry(),
-    aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY),
+    aiStrategyRegistry = aiStrategyRegistry,
     opponentModelRegistry = OpponentModelRegistry(),
     gameActionCommandFactoryRegistry = ExtensionGameActionCommandFactoryRegistry(),
     gameCommandRegistry = ExtensionGameCommandExecutorRegistry(),
@@ -182,6 +208,36 @@ private class RecordingExtension(
 
     override fun registerPersistenceDtos(registries: PersistenceRegistries) {
         calls += "persistence"
+    }
+
+    override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
+        calls += "strategy"
+        registry.register(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry()) }
+    }
+
+    /** 此測試 extension 的常數。 */
+    companion object {
+        /** 此 extension 登記的測試策略 key。 */
+        const val STRATEGY_KEY: String = "example:recorded_strategy"
+    }
+}
+
+/** 僅登記 AI 策略的第三方 extension 測試替身。 */
+private class StrategyExtension(override val id: String) : MahjongExtension {
+    override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+
+    override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+
+    override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+
+    override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
+        registry.register(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry()) }
+    }
+
+    /** 兩個測試 extension 共用的常數。 */
+    companion object {
+        /** 兩個測試 extension 故意重複登記的策略 key。 */
+        const val STRATEGY_KEY: String = "example:duplicate_strategy"
     }
 }
 

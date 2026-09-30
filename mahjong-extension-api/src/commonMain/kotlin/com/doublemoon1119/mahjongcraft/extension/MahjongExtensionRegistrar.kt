@@ -29,6 +29,7 @@ object MahjongExtensionRegistrar {
                 extension.registerPersistenceDtos(registries.persistenceRegistries)
                 extension.registerWinCelebrationCueResolvers(registries.winCelebrationCueResolverRegistry)
                 extension.registerGameActionAiHandlers(registries.gameActionAiRegistry)
+                extension.registerAiStrategies(registries.aiStrategyRegistry)
                 extension.registerGameActionCommandFactories(registries.gameActionCommandFactoryRegistry)
                 extension.registerGameCommandHandlers(registries.gameCommandRegistry)
                 extension.registerPostReactionRoundOutcomeResolvers(registries.postReactionRoundOutcomeResolverRegistry)

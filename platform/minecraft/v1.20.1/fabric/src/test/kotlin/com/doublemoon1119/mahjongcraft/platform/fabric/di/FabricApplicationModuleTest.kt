@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.ai.expectation.ReadingDepth
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
@@ -71,6 +72,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.BuiltInDecisi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
@@ -101,6 +103,47 @@ class FabricApplicationModuleTest {
     @AfterTest
     fun tearDown() {
         stopKoin()
+    }
+
+    /** 第三方策略與其 Minecraft 顯示名稱由同一個 extension 完成登記，並進入正式使用的 registry。 */
+    @Test
+    fun `third party ai strategy registers through fabric bootstrap`() {
+        val koin = startKoin<MahjongCraftServerApp>().koin
+        val strategyRegistry = koin.get<MahjongAiStrategyRegistry>()
+        val displayNames = koin.get<AiStrategyDisplayNameRegistry>()
+        val extension = object : MahjongExtension, MinecraftMahjongExtension {
+            override val id: String = "example:ai_strategy"
+
+            override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+
+            override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+
+            override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+
+            override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
+                registry.register("example:custom_strategy") { RandomAiStrategy(koin.get<ExtensionGameActionAiRegistry>()) }
+            }
+
+            override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) {
+                registry.register("example:custom_strategy", "example.ai.custom_strategy")
+            }
+        }
+
+        val result = FabricMahjongExtensions.initialize(
+            coreRegistries = koin.get<CoreExtensionRegistries>(),
+            presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
+            tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>(),
+            declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
+            extensions = listOf(extension),
+        )
+
+        assertTrue("example:custom_strategy" in strategyRegistry.getAllStrategyKeys())
+        assertIs<RandomAiStrategy>(strategyRegistry.resolve("example:custom_strategy"))
+        assertEquals("example.ai.custom_strategy", displayNames.find("example:custom_strategy"))
+        assertTrue(result.categories.any { it.id == "mahjongcraft:ai_strategy" && "example:custom_strategy" in it.registrationIds })
+        assertFailsWith<IllegalStateException> {
+            strategyRegistry.register("example:late") { RandomAiStrategy(koin.get<ExtensionGameActionAiRegistry>()) }
+        }
     }
 
     /** 開發環境在凍結前另外登記 debug 情境使用的腳本 AI。 */
