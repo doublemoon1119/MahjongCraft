@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEve
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryCapturePersistenceMapper
+import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -111,10 +112,10 @@ class CompactReplayPrototypeTest {
 
     /** 以兩種長度的完整對局驗證交易重建並量測格式大小。 */
     @Test
-    fun `compact replay reconstructs gameplay projection and measures four full matches`() = runBlocking {
+    fun `compact replay reconstructs gameplay projection for four full matches`() = runBlocking {
         for (length in listOf(RiichiGameLength.East, RiichiGameLength.TwoWinds)) {
             val matches = RoomToRoomFullLifecycleIntegrationTest().measureFullLifecycle(length)
-            for ((matchIndex, events) in matches.withIndex()) {
+            for (events in matches) {
                 val result = encodeMatch(events)
                 val flat = encodeMatch(events, flatPatches = true)
                 val flatRaw = flat.document.toString()
@@ -163,19 +164,19 @@ class CompactReplayPrototypeTest {
                     },
                 )
                 assertFalse(UUID_PATTERN.containsMatchIn(roundText))
-                println(
-                    "COMPACT_REPLAY $length #${matchIndex + 1} rounds=${result.roundCount} " +
-                        "events=${events.size} transactions=${result.transactionCount} " +
-                        "json=${raw.toByteArray().size} gzip=${priorPrototype.gzipSize(raw)} " +
-                        "cbor=${cborBytes.size} cborGzip=${gzipSize(cborBytes)} " +
-                        "keyedJson=${keyedDocument.toByteArray().size} keyedGzip=${priorPrototype.gzipSize(keyedDocument)} " +
-                        "keyedCbor=${keyedCborBytes.size} keyedCborGzip=${gzipSize(keyedCborBytes)} " +
-                        "flatJson=${flatRaw.toByteArray().size} flatGzip=${priorPrototype.gzipSize(flatRaw)} " +
-                        "flatDictionaryJson=${flatDictionaryRaw.toByteArray().size} " +
-                        "flatDictionaryGzip=${priorPrototype.gzipSize(flatDictionaryRaw)} " +
-                        "headerBytes=$headerBytes initialBytes=$initialBytes patchBytes=$patchBytes factBytes=$factBytes " +
-                        "tileTypes=${result.tileTypeCount} facts=${result.factCounts} patchFields=$patchFields",
+                val production = CompactReplayCodec.encodeCompact(events, mapper, registries, json)
+                val productionText = production.toString()
+                val decoded = CompactReplayCodec.decodeCompact(production)
+                assertEquals(result.expectedProjections, decoded.map { round -> round.map { it.projection } })
+                assertTrue(
+                    productionText.toByteArray().size <= 220_000,
+                    "Compact Replay JSON exceeds 220 KB: ${productionText.toByteArray().size} bytes",
                 )
+                assertTrue(priorPrototype.gzipSize(productionText) <= 35_000, "Compact Replay gzip exceeds 35 KB")
+                assertTrue(headerBytes > 0 && initialBytes > 0 && patchBytes > 0 && factBytes > 0)
+                assertTrue(patchFields.isNotEmpty() && result.factCounts.isNotEmpty() && result.tileTypeCount > 0)
+                assertTrue(raw.isNotEmpty() && flatRaw.isNotEmpty() && flatDictionaryRaw.isNotEmpty())
+                assertTrue(keyedDocument.isNotEmpty() && keyedCborBytes.isNotEmpty() && flatDictionaryRaw.isNotEmpty())
             }
         }
     }
@@ -236,7 +237,6 @@ class CompactReplayPrototypeTest {
                         val state = when (fact) {
                             is HistoryFact.MatchStarted -> fact.tableState
                             is HistoryFact.RoundStarted -> fact.tableState
-                            else -> error("Unexpected opening fact")
                         }
                         if (ruleConfig == null) {
                             val openingState = factJson.getValue("state") as JsonObject
@@ -356,7 +356,12 @@ class CompactReplayPrototypeTest {
         )
     }
 
-    /** 從解碼後文件重播所有交易，與權威投影逐筆比對。 */
+    /**
+     * 從解碼後文件重播所有交易，與權威投影逐筆比對。
+     *
+     * @param document 待驗證的原型 Replay 文件。
+     * @param expected 各局每筆交易後的權威投影。
+     */
     private fun assertReplayedProjections(document: JsonObject, expected: List<List<JsonElement>>) {
         val header = document.getValue("header") as JsonObject
         val paths = (header.getValue("patchPaths") as JsonArray).map { path -> (path as JsonArray).toList() }
@@ -376,7 +381,13 @@ class CompactReplayPrototypeTest {
         }
     }
 
-    /** 為本局已存在的實體牌建立穩定索引，並登錄牌種。 */
+    /**
+     * 為本局已存在的實體牌建立穩定索引，並登錄牌種。
+     *
+     * @param state 開局時的權威桌況。
+     * @param typeDictionary 跨局共用的牌種字典。
+     * @return 本局牌與玩家的索引。
+     */
     private fun createRoundIndex(state: TableState, typeDictionary: MutableMap<String, JsonElement>): RoundIndex {
         val tiles = state.tileWall.getAllTiles() + state.reservedWallTiles + state.players.flatMap { player ->
             player.hand.allTiles + player.discardPile.entries.map { it.tile }
@@ -398,7 +409,14 @@ class CompactReplayPrototypeTest {
         )
     }
 
-    /** 將局中新增牌追加至局內索引，回傳牌種代碼作為交易宣告。 */
+    /**
+     * 將局中新增牌追加至局內索引，回傳牌種代碼作為交易宣告。
+     *
+     * @param state 交易後的權威桌況。
+     * @param index 本局牌與玩家的索引。
+     * @param typeDictionary 跨局共用的牌種字典。
+     * @return 本次交易新宣告牌的牌種索引。
+     */
     private fun declareNewTiles(
         state: TableState,
         index: RoundIndex,
@@ -425,7 +443,13 @@ class CompactReplayPrototypeTest {
         return declarations
     }
 
-    /** 將權威桌況轉為歷史重播需要的遊戲內容投影。 */
+    /**
+     * 將權威桌況轉為歷史重播需要的遊戲內容投影。
+     *
+     * @param state 待投影的權威桌況。
+     * @param index 本局牌與玩家的索引。
+     * @return 使用局內索引的遊戲內容投影。
+     */
     private fun project(state: TableState, index: RoundIndex): JsonElement {
         val dto = state.toPersistenceDto(
             registries.ruleConfigs,
@@ -447,7 +471,13 @@ class CompactReplayPrototypeTest {
         return translate(JsonObject(gameplay), index)
     }
 
-    /** 將已知牌、玩家與牌種參照翻譯為索引；拒絕未宣告的 UUID。 */
+    /**
+     * 將已知牌、玩家與牌種參照翻譯為索引；拒絕未宣告的 UUID。
+     *
+     * @param element 待轉換的 JSON 節點。
+     * @param index 本局牌與玩家的索引。
+     * @return 使用局內索引的 JSON 節點。
+     */
     private fun translate(element: JsonElement, index: RoundIndex): JsonElement = when (element) {
         is JsonObject -> {
             val typeCode = index.typeDictionary.keys.indexOf(element.toString())
@@ -473,7 +503,13 @@ class CompactReplayPrototypeTest {
         }
     }
 
-    /** 將物件鍵中的牌或玩家 UUID 翻譯為索引字串。 */
+    /**
+     * 將物件鍵中的牌或玩家 UUID 翻譯為索引字串。
+     *
+     * @param key 待轉換的 JSON 欄位名稱。
+     * @param index 本局牌與玩家的索引。
+     * @return 對應的索引字串，或原本不是 UUID 的欄位名稱。
+     */
     private fun translateKey(key: String, index: RoundIndex): String = when {
         !UUID_PATTERN.matches(key) -> key
         key in index.tileIds -> index.tileIds.getValue(key).toString()

@@ -37,7 +37,12 @@ internal object JsonTreeCborCodec {
         return result
     }
 
-    /** 依 JSON 節點種類寫入對應的 CBOR major type 與內容。 */
+    /**
+     * 依 JSON 節點種類寫入對應的 CBOR 主型別與內容。
+     *
+     * @param output 接收編碼位元組的串流。
+     * @param value 待編碼的 JSON 節點。
+     */
     private fun encodeValue(output: ByteArrayOutputStream, value: JsonElement) {
         when (value) {
             JsonNull -> output.write(0xf6)
@@ -69,14 +74,25 @@ internal object JsonTreeCborCodec {
         }
     }
 
-    /** 以 UTF-8 位元組長度及內容寫入 CBOR 文字字串。 */
+    /**
+     * 以 UTF-8 位元組長度及內容寫入 CBOR 文字字串。
+     *
+     * @param output 接收編碼位元組的串流。
+     * @param value 待編碼的文字。
+     */
     private fun writeString(output: ByteArrayOutputStream, value: String) {
         val bytes = value.toByteArray(Charsets.UTF_8)
         writeHeader(output, 3, bytes.size.toLong())
         output.write(bytes)
     }
 
-    /** 使用能容納 [value] 的最短長度寫入 CBOR 項目標頭。 */
+    /**
+     * 使用能容納 [value] 的最短長度寫入 CBOR 項目標頭。
+     *
+     * @param output 接收編碼位元組的串流。
+     * @param major CBOR 主型別編號。
+     * @param value 標頭中的非負整數參數。
+     */
     private fun writeHeader(output: ByteArrayOutputStream, major: Int, value: Long) {
         require(value >= 0)
         val prefix = major shl 5
@@ -101,12 +117,23 @@ internal object JsonTreeCborCodec {
         }
     }
 
-    /** 以大端序寫入指定寬度的無號數值位元組。 */
+    /**
+     * 以大端序寫入指定寬度的無號數值位元組。
+     *
+     * @param output 接收編碼位元組的串流。
+     * @param value 待寫入的數值。
+     * @param size 寫入的位元組數。
+     */
     private fun writeUnsigned(output: ByteArrayOutputStream, value: Long, size: Int) {
         for (shift in (size - 1) downTo 0) output.write((value ushr (shift * 8)).toInt() and 0xff)
     }
 
-    /** 讀取單一 CBOR 項目，並拒絕測試原型未支援的型別。 */
+    /**
+     * 讀取單一 CBOR 項目，並拒絕測試原型未支援的型別。
+     *
+     * @param input 待解碼的位元組串流。
+     * @return 解碼後的 JSON 節點。
+     */
     private fun decodeValue(input: ByteArrayInputStream): JsonElement {
         val first = input.read()
         require(first >= 0) { "Truncated CBOR" }
@@ -141,7 +168,13 @@ internal object JsonTreeCborCodec {
         }
     }
 
-    /** 解析項目標頭中的附加資訊與後續無號整數。 */
+    /**
+     * 解析項目標頭中的附加資訊與後續無號整數。
+     *
+     * @param input 待解碼的位元組串流。
+     * @param additional CBOR 標頭的附加資訊值。
+     * @return 解析後的非負整數。
+     */
     private fun readArgument(input: ByteArrayInputStream, additional: Int): Long = when (additional) {
         in 0..23 -> additional.toLong()
         24 -> readUnsigned(input, 1)
@@ -151,7 +184,13 @@ internal object JsonTreeCborCodec {
         else -> error("Unsupported CBOR additional information: $additional")
     }
 
-    /** 以大端序讀取固定寬度的無號數值位元組。 */
+    /**
+     * 以大端序讀取固定寬度的無號數值位元組。
+     *
+     * @param input 待解碼的位元組串流。
+     * @param size 讀取的位元組數。
+     * @return 解析後的無號數值位元模式。
+     */
     private fun readUnsigned(input: ByteArrayInputStream, size: Int): Long {
         var value = 0L
         repeat(size) {
@@ -162,12 +201,23 @@ internal object JsonTreeCborCodec {
         return value
     }
 
-    /** 讀取指定長度的內容，資料不足時明確失敗。 */
+    /**
+     * 讀取指定長度的內容，資料不足時明確失敗。
+     *
+     * @param input 待解碼的位元組串流。
+     * @param size 預期讀取的位元組數。
+     * @return 讀取到的內容。
+     */
     private fun readBytes(input: ByteArrayInputStream, size: Int): ByteArray = ByteArray(size).also {
         require(input.read(it) == size) { "Truncated CBOR byte string" }
     }
 
-    /** 驗證容器長度可安全轉為 JVM 列表使用的整數。 */
+    /**
+     * 驗證容器長度可安全轉為 JVM 列表使用的整數。
+     *
+     * @param value CBOR 項目宣告的容器長度。
+     * @return 可供列表使用的整數長度。
+     */
     private fun checkedSize(value: Long): Int {
         require(value in 0..Int.MAX_VALUE.toLong()) { "CBOR collection too large" }
         return value.toInt()

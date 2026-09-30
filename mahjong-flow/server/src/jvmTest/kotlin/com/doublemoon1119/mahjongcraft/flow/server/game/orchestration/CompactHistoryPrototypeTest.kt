@@ -54,13 +54,9 @@ class CompactHistoryPrototypeTest {
                 val bytesByFact = withSlimActions.groupBy { event ->
                     ((event as JsonObject).getValue("fact") as JsonObject).getValue("type").jsonPrimitive.content
                 }.mapValues { (_, values) -> values.sumOf { it.toString().toByteArray().size } }
-                println(
-                    "SLIM_ACTIONS $length #${index + 1} events=${events.size} checkedActions=$validatedActions " +
-                        "raw=${raw.toByteArray().size} rawGzip=${gzipSize(raw)} " +
-                        "slimJson=${slimText.toByteArray().size} slimGzip=${gzipSize(slimText)} " +
-                        "slimDictionaryJson=${compactText.toByteArray().size} " +
-                        "slimDictionaryGzip=${gzipSize(compactText)} factBytes=$bytesByFact",
-                )
+                assertTrue(validatedActions > 0, "No actions were validated for match ${index + 1}")
+                assertTrue(bytesByFact.isNotEmpty(), "No facts were encoded for match ${index + 1}")
+                assertTrue(compactText.isNotEmpty() && slimText.isNotEmpty() && raw.isNotEmpty())
             }
         }
     }
@@ -99,7 +95,7 @@ class CompactHistoryPrototypeTest {
             }
         }
         assertTrue(changedPlayers > 0)
-        println("PLAYER_DELTA_REPLAY changedTables=$changedTables changedPlayers=$changedPlayers")
+        assertTrue(changedTables > 0)
     }
 
     /** 量測原始歷史、玩家差異及字典化格式的容量。 */
@@ -144,22 +140,20 @@ class CompactHistoryPrototypeTest {
                 val deltaBytesByFact = playerDeltaEvents.groupBy { event ->
                     ((event as JsonObject).getValue("fact") as JsonObject).getValue("type").jsonPrimitive.content
                 }.mapValues { (_, values) -> values.sumOf { it.toString().toByteArray().size } }
-                println(
-                    "COMPACT_HISTORY $length #${index + 1} events=${events.size} " +
-                        "raw=${raw.toByteArray().size} rawGzip=${gzipSize(raw)} " +
-                        "playerDeltaJson=${playerDeltaText.toByteArray().size} playerDeltaGzip=${gzipSize(playerDeltaText)} " +
-                        "playerDeltaPerEventGzip=$playerDeltaPerEventGzip playerDeltaMaxEvent=$playerDeltaMaxEvent " +
-                        "deltaDictionaryJson=${deltaDictionaryText.toByteArray().size} " +
-                        "deltaDictionaryGzip=${gzipSize(deltaDictionaryText)} " +
-                        "deltaWithoutUuidGzip=${gzipSize(deltaWithoutUuidDictionary)} " +
-                        "keys=${deltaKeys.size} uuids=${deltaUuids.size} roundTiles=$roundTileCounts " +
-                        "facts=$factCounts factBytes=$bytesByFact deltaFactBytes=$deltaBytesByFact",
-                )
+                assertTrue(raw.isNotEmpty() && playerDeltaText.isNotEmpty() && deltaDictionaryText.isNotEmpty())
+                assertTrue(playerDeltaPerEventGzip > 0 && playerDeltaMaxEvent > 0)
+                assertTrue(deltaWithoutUuidDictionary.isNotEmpty() && factCounts.isNotEmpty())
+                assertTrue(bytesByFact.isNotEmpty() && deltaBytesByFact.isNotEmpty())
             }
         }
     }
 
-    /** 收集開局牌牆、保留牌及玩家區域中的實體牌身分。 */
+    /**
+     * 收集開局牌牆、保留牌及玩家區域中的實體牌身分。
+     *
+     * @param state 開局時的權威桌況。
+     * @return 開局所有實體牌的識別碼。
+     */
     private fun initialTileInventory(state: TableState): List<String> {
         val tiles = state.tileWall.getAllTiles() + state.reservedWallTiles +
             state.players.flatMap { player ->
@@ -170,7 +164,12 @@ class CompactHistoryPrototypeTest {
         return ids
     }
 
-    /** 比對動作回傳的部分結果與交易後桌況，以確認哪些欄位重複。 */
+    /**
+     * 比對動作回傳的部分結果與交易後桌況，以確認哪些欄位重複。
+     *
+     * @param events 同一場對局的有序權威事件。
+     * @return 已比對的動作數量。
+     */
     private fun verifyActionResultRedundancy(events: List<HistoryOutboxEvent>): Int {
         var current: TableState? = null
         var actions = 0
@@ -200,7 +199,12 @@ class CompactHistoryPrototypeTest {
         return actions
     }
 
-    /** 保留動作語意並移除已可由交易後桌況讀取的結果欄位。 */
+    /**
+     * 保留動作語意並移除已可由交易後桌況讀取的結果欄位。
+     *
+     * @param events 待精簡的序列化事件。
+     * @return 精簡動作結果後的事件。
+     */
     internal fun slimActionResults(events: JsonArray): JsonArray = JsonArray(
         events.map { eventElement ->
             val event = eventElement as JsonObject
@@ -218,7 +222,12 @@ class CompactHistoryPrototypeTest {
         },
     )
 
-    /** 將事件中的完整玩家狀態改為相對於前次狀態的差異。 */
+    /**
+     * 將事件中的完整玩家狀態改為相對於前次狀態的差異。
+     *
+     * @param events 待轉換的序列化事件。
+     * @return 玩家狀態使用相對差異的事件。
+     */
     private fun replacePlayersWithDeltas(events: JsonArray): JsonArray {
         val previousPlayers = mutableMapOf<String, JsonObject>()
         return JsonArray(
@@ -272,7 +281,13 @@ class CompactHistoryPrototypeTest {
         )
     }
 
-    /** 遞迴計算兩份 JSON 值之間可套用的物件及列表差異。 */
+    /**
+     * 遞迴計算兩份 JSON 值之間可套用的物件及列表差異。
+     *
+     * @param before 變更前的 JSON 值。
+     * @param after 變更後的 JSON 值。
+     * @return 可套用的差異；內容相同時為 null。
+     */
     internal fun jsonDelta(before: JsonElement, after: JsonElement): JsonElement? {
         if (before == after) return null
         if (before is JsonObject && after is JsonObject) {
@@ -318,7 +333,13 @@ class CompactHistoryPrototypeTest {
         return JsonObject(mapOf("_v" to after))
     }
 
-    /** 套用 [jsonDelta] 產生的差異，還原交易後的 JSON 值。 */
+    /**
+     * 套用 [jsonDelta] 產生的差異，還原交易後的 JSON 值。
+     *
+     * @param before 變更前的 JSON 值。
+     * @param delta [jsonDelta] 產生的結構差異。
+     * @return 還原後的 JSON 值。
+     */
     internal fun applyJsonDelta(before: JsonElement, delta: JsonElement): JsonElement {
         val operation = delta as JsonObject
         operation["_v"]?.let { return it }
@@ -353,7 +374,14 @@ class CompactHistoryPrototypeTest {
         return JsonObject(result)
     }
 
-    /** 以共用欄位與 UUID 字典編碼 JSON 樹狀資料。 */
+    /**
+     * 以共用欄位與 UUID 字典編碼 JSON 樹狀資料。
+     *
+     * @param element 待編碼的 JSON 節點。
+     * @param keys 欄位名稱到字典索引的可變對照。
+     * @param uuids UUID 字串到字典索引的可變對照。
+     * @return 使用字典索引的 JSON 節點。
+     */
     internal fun compact(element: JsonElement, keys: MutableMap<String, Int>, uuids: MutableMap<String, Int>): JsonElement = when (element) {
         is JsonObject -> JsonObject(
             element.mapKeys { (key, _) -> (keys.getOrPut(key) { keys.size }).toString() }
@@ -370,7 +398,12 @@ class CompactHistoryPrototypeTest {
         }
     }
 
-    /** 計算一份 JSON 文字作為獨立 gzip 串流時的位元組數。 */
+    /**
+     * 計算一份 JSON 文字作為獨立 gzip 串流時的位元組數。
+     *
+     * @param value 待壓縮的 JSON 文字。
+     * @return 壓縮後的位元組數。
+     */
     internal fun gzipSize(value: String): Int {
         val output = ByteArrayOutputStream()
         GZIPOutputStream(output).use { it.write(value.toByteArray()) }
