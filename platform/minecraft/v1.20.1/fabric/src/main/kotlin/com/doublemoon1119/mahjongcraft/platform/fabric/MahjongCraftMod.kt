@@ -35,6 +35,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCele
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.FabricObserverSnapshotBroadcastService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
@@ -103,6 +104,7 @@ class MahjongCraftMod : ModInitializer {
         val stateCleaner = koin.get<ServerSessionStateCleaner>()
         val statePersistence = koin.get<FabricAuthoritativeStatePersistence>()
         val historyWriter = koin.get<FabricHistoryOutboxWriter>()
+        val historyCommand = koin.get<FabricHistoryCommand>()
         val decisionTimerManager = koin.get<GameDecisionTimerManager>()
         val tableLocationPersistence = koin.get<FabricTableLocationPersistence>()
         val configManager = koin.get<FabricServerConfigManager>()
@@ -115,8 +117,8 @@ class MahjongCraftMod : ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             initializeServerConfig(configManager, mahjongTileCollisionService, server)
             runBlocking { statePersistence.attach(server) }
-            runBlocking { historyWriter.attach(server) }
             tableLocationPersistence.attach(server)
+            runBlocking { historyWriter.attach(server) }
             tableLocationValidation.startSession(server)
             serverHolder.set(server)
             appScope.startSession()
@@ -153,6 +155,7 @@ class MahjongCraftMod : ModInitializer {
         registerAutomaticControlUpdateReceiver(koin)
         registerPlayerConnectionEvents(koin)
         koin.get<FabricServerConfigCommand>().register()
+        historyCommand.register()
         koin.get<FabricRoomCommand>().register()
         koin.get<FabricGameCommand>().register()
         koin.get<FabricDebugCommand>().register()

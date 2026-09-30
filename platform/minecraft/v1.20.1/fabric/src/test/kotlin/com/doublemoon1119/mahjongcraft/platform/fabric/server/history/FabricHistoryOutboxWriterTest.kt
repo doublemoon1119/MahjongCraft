@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEve
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -17,6 +19,7 @@ import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
@@ -49,7 +52,27 @@ class FabricHistoryOutboxWriterTest {
         assertEquals(1, SqliteHistoryDatabase.open(path).readPending(event.matchId.toString()).size)
         assertEquals(3L, store.snapshot().historyCaptureState.nextSequenceByMatchId[event.matchId])
         assertEquals(2L, store.snapshot().historyCaptureState.firstMissingSequenceByMatchId[event.matchId])
+        assertEquals(2L, SqliteHistoryDatabase.open(path).readGaps()[event.matchId.toString()])
         assertFalse(store.isHistoryCaptureEnabled)
+    }
+
+    /** 已寫入的同鍵異內容不可被重送覆寫，待寫事件與原始資料均保留。 */
+    @Test
+    fun `conflicting startup event remains pending and blocks its match`() = runBlocking {
+        val event = event()
+        val store = AuthoritativeStateStore()
+        store.load(AuthoritativeStateSnapshot(historyCaptureState = HistoryCaptureState(pendingEvents = listOf(event))))
+        val path = createTempDirectory("mahjongcraft-history-writer-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        database.appendPending(PendingHistoryRecord(event.matchId.toString(), 1, 1, 100, 1, "different"))
+
+        val writer = writer(store)
+        writer.attach(path)
+
+        assertEquals(listOf(event), store.snapshot().historyCaptureState.pendingEvents)
+        assertEquals("different", database.readPending(event.matchId.toString()).single().payload)
+        assertTrue(writer.status().knownGapCount > 0)
+        writer.detach()
     }
 
     /** 資料庫無法開啟時不啟用採集，也不移除既有待寫事件。 */
@@ -77,6 +100,8 @@ class FabricHistoryOutboxWriterTest {
         store = store,
         registries = buildBuiltInPersistenceRegistries(),
         json = Json,
+        moduleRegistry = MahjongModuleRegistryImpl(),
+        locations = TableLocationRegistry(),
         dispatchers = object : CoroutineDispatchers {
             override val default: CoroutineDispatcher = Dispatchers.Default
             override val io: CoroutineDispatcher = Dispatchers.IO

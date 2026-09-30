@@ -5,11 +5,12 @@ import kotlin.uuid.Uuid
 /**
  * 保存單次 server save 的麻將桌最後已知位置，並提供依 chunk 查詢的記憶體索引。
  *
- * 所有存取必須由 Minecraft server thread 呼叫。
+ * 變更與 chunk 索引查詢必須由 Minecraft server thread 呼叫；[snapshot] 與 [get] 讀取
+ * 不可變 map 的已發布版本，可供歷史 I/O 工作取得位置摘要。
  */
 class TableLocationRegistry {
     /** 以桌子 UUID 索引的持久化資料。 */
-    private var entriesByTableId: Map<Uuid, TableLocationEntry> = emptyMap()
+    @Volatile private var entriesByTableId: Map<Uuid, TableLocationEntry> = emptyMap()
 
     /** 由持久化資料重建、不另外保存的 chunk 反向索引。 */
     private var tableIdsByChunk: Map<DimensionChunkKey, Set<Uuid>> = emptyMap()

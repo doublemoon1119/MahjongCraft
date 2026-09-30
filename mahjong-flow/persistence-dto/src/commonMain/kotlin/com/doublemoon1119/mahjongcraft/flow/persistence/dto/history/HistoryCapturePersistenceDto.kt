@@ -272,6 +272,9 @@ class HistoryCapturePersistenceMapper(
     /** 將單筆待寫事件編碼；失敗時交由呼叫端保留並重試，絕不略過後確認。 */
     fun encodePendingEvent(event: HistoryOutboxEvent): HistoryOutboxEventPersistenceDto = encodeEvent(event)
 
+    /** 將單筆資料庫事件解回權威事實；失敗時交由呼叫端標記缺口，絕不略過後封存。 */
+    fun decodePendingEvent(event: HistoryOutboxEventPersistenceDto): HistoryOutboxEvent = decodeEvent(event)
+
     /** 將待寫事件編成權威存檔 DTO；無法編碼的事件會記錄序號缺口並略過。 */
     fun encode(state: HistoryCaptureState): HistoryCapturePersistenceDto {
         val missing = state.firstMissingSequenceByMatchId.toMutableMap()

@@ -26,6 +26,54 @@ object MinecraftConfigCommandKeys {
     /** 設定檔位置，帶路徑參數。 */
     const val PATH: String = "mahjongcraft.config.command.path"
 
+    /** 歷史狀態的單行訊息，帶可懸停的詳情標籤。 */
+    const val HISTORY_STATUS: String = "mahjongcraft.history.command.status"
+
+    /** 歷史狀態懸停內容的標題。 */
+    const val HISTORY_TITLE: String = "mahjongcraft.history.command.title"
+
+    /** 資料庫連線狀態欄位。 */
+    const val HISTORY_DATABASE: String = "mahjongcraft.history.command.database"
+
+    /** 歷史事件採集狀態欄位。 */
+    const val HISTORY_CAPTURE: String = "mahjongcraft.history.command.capture"
+
+    /** 權威 outbox 待寫事件數欄位。 */
+    const val HISTORY_PENDING_EVENTS: String = "mahjongcraft.history.command.pending_events"
+
+    /** 已知序號缺口的場次數欄位。 */
+    const val HISTORY_KNOWN_GAPS: String = "mahjongcraft.history.command.known_gaps"
+
+    /** 最近錯誤狀態欄位。 */
+    const val HISTORY_ERROR: String = "mahjongcraft.history.command.error"
+
+    /** 歷史資料庫重新連結成功訊息。 */
+    const val HISTORY_RECONNECTED: String = "mahjongcraft.history.command.reconnected"
+
+    /** 歷史資料庫已經連線訊息。 */
+    const val HISTORY_ALREADY_CONNECTED: String = "mahjongcraft.history.command.already_connected"
+
+    /** 歷史資料庫重新連結失敗訊息。 */
+    const val HISTORY_RECONNECT_FAILED: String = "mahjongcraft.history.command.reconnect_failed"
+
+    /** 歷史資料庫目前已連線狀態文字。 */
+    const val HISTORY_CONNECTED: String = "mahjongcraft.history.command.connected"
+
+    /** 歷史資料庫目前未連線狀態文字。 */
+    const val HISTORY_DISCONNECTED: String = "mahjongcraft.history.command.disconnected"
+
+    /** 歷史事件採集目前啟用狀態文字。 */
+    const val HISTORY_CAPTURE_ENABLED: String = "mahjongcraft.history.command.capture_enabled"
+
+    /** 歷史事件採集目前停用狀態文字。 */
+    const val HISTORY_CAPTURE_DISABLED: String = "mahjongcraft.history.command.capture_disabled"
+
+    /** 歷史狀態有需查看伺服器 log 的錯誤時，避免公開原始例外內容。 */
+    const val HISTORY_ERROR_PRESENT: String = "mahjongcraft.history.command.error_present"
+
+    /** 未偵測到錯誤時的安全摘要。 */
+    const val HISTORY_ERROR_NONE: String = "mahjongcraft.history.command.error_none"
+
     /** 斷線玩家政策欄位。 */
     const val DISCONNECTED_PLAYER_POLICY: String = "mahjongcraft.server_config.disconnected_player_policy"
 

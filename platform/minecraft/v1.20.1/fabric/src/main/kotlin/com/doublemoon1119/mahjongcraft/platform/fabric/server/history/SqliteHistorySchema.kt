@@ -14,7 +14,7 @@ internal object HistoryMatchTable : Table("history_match") {
     val matchId = varchar("match_id", 36)
     val tableId = varchar("table_id", 36)
     val ruleId = varchar("rule_id", 255)
-    val dimensionId = varchar("dimension_id", 255)
+    val dimensionId = varchar("dimension_id", 255).nullable()
     val status = varchar("status", 32)
     val startedAtEpochMillis = long("started_at_epoch_millis")
     val endedAtEpochMillis = long("ended_at_epoch_millis").nullable()

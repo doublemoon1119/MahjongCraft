@@ -1,13 +1,16 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertIgnore
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.update
 import java.nio.file.Files
 import java.nio.file.Path
 import java.sql.DriverManager
@@ -30,6 +33,49 @@ internal data class PendingHistoryRecord(
     val payloadVersion: Int,
     val payload: String,
 )
+
+/**
+ * 封存時由完整權威事件建立、與 Replay 一起提交的對局摘要。
+ *
+ * @property matchId 對局 ID。
+ * @property tableId 牌桌 ID。
+ * @property ruleId 開局規則模組 ID。
+ * @property dimensionId 可證實的牌桌維度；位置登記已不存在時為 null。
+ * @property startedAtEpochMillis 開局時間。
+ * @property endedAtEpochMillis 終局時間。
+ * @property participants 開局座位、玩家 ID 與 AI 策略 key。
+ * @property rounds 各局起訖時間。
+ * @property replayPayload 已完成並驗證的精簡 Replay JSON。
+ */
+internal data class HistoryArchiveRecord(
+    val matchId: String,
+    val tableId: String,
+    val ruleId: String,
+    val dimensionId: String?,
+    val startedAtEpochMillis: Long,
+    val endedAtEpochMillis: Long,
+    val participants: List<HistoryParticipantRecord>,
+    val rounds: List<HistoryRoundRecord>,
+    val replayPayload: String,
+)
+
+/**
+ * 對局開始時的參與者摘要。
+ *
+ * @property seatIndex 開局座位。
+ * @property playerId 玩家 ID。
+ * @property aiStrategyId AI 策略 key；真人玩家為 null。
+ */
+internal data class HistoryParticipantRecord(val seatIndex: Int, val playerId: String, val aiStrategyId: String?)
+
+/**
+ * 每局的起訖時間摘要。
+ *
+ * @property roundNumber 局數。
+ * @property startedAtEpochMillis 開局時間。
+ * @property endedAtEpochMillis 結束時間；未正常結束時為 null。
+ */
+internal data class HistoryRoundRecord(val roundNumber: Int, val startedAtEpochMillis: Long, val endedAtEpochMillis: Long?)
 
 /**
  * 單一伺服器存檔的 SQLite 歷史資料庫邊界。
@@ -97,6 +143,96 @@ internal class SqliteHistoryDatabase private constructor(
             }
     }
 
+    /** 讀取所有未封存事件，供啟動時與權威 outbox 對帳。 */
+    fun readAllPending(): List<PendingHistoryRecord> = transaction(database) {
+        HistoryPendingEventTable.selectAll()
+            .orderBy(HistoryPendingEventTable.matchId to SortOrder.ASC, HistoryPendingEventTable.sequence to SortOrder.ASC)
+            .map { row ->
+                PendingHistoryRecord(
+                    row[HistoryPendingEventTable.matchId],
+                    row[HistoryPendingEventTable.sequence],
+                    row[HistoryPendingEventTable.roundNumber],
+                    row[HistoryPendingEventTable.occurredAtEpochMillis],
+                    row[HistoryPendingEventTable.payloadVersion],
+                    row[HistoryPendingEventTable.payload],
+                )
+            }
+    }
+
+    /** 讀取已確認缺口，不以無內容事件填補。 */
+    fun readGaps(): Map<String, Long> = transaction(database) {
+        HistoryGapTable.selectAll().associate { it[HistoryGapTable.matchId] to it[HistoryGapTable.firstMissingSequence] }
+    }
+
+    /** 保留每場最早缺口；重複對帳不會將缺口推後。 */
+    fun recordGaps(gaps: Map<String, Long>) {
+        if (gaps.isEmpty()) return
+        transaction(database) {
+            gaps.forEach { (matchId, sequence) ->
+                require(sequence > 0L) { "Missing history sequence must be positive" }
+                HistoryGapTable.insertIgnore {
+                    it[HistoryGapTable.matchId] = matchId
+                    it[firstMissingSequence] = sequence
+                }
+                val existing = HistoryGapTable.selectAll().where { HistoryGapTable.matchId eq matchId }
+                    .single()[HistoryGapTable.firstMissingSequence]
+                HistoryGapTable.update({ HistoryGapTable.matchId eq matchId }) {
+                    it[firstMissingSequence] = minOf(existing, sequence)
+                }
+            }
+        }
+    }
+
+    /** 已封存場次 ID；用於略過其原始事件的缺口推導。 */
+    fun readReplayIds(): Set<String> = transaction(database) {
+        HistoryReplayTable.selectAll().mapTo(mutableSetOf()) { it[HistoryReplayTable.matchId] }
+    }
+
+    /** 完成資料表摘要與 Replay 的單一交易；成功後才刪除原始事件。 */
+    fun archive(record: HistoryArchiveRecord): Boolean = transaction(database) {
+        val existing = HistoryReplayTable.selectAll().where { HistoryReplayTable.matchId eq record.matchId }.singleOrNull()
+        if (existing != null) {
+            check(existing[HistoryReplayTable.payload] == record.replayPayload) { "History replay identity conflicts with existing content" }
+            return@transaction false
+        }
+        check(HistoryGapTable.selectAll().where { HistoryGapTable.matchId eq record.matchId }.empty()) {
+            "History replay cannot be archived with a known sequence gap"
+        }
+        HistoryReplayTable.insert {
+            it[matchId] = record.matchId
+            it[formatVersion] = 1
+            it[createdAtEpochMillis] = record.endedAtEpochMillis
+            it[payload] = record.replayPayload
+        }
+        HistoryMatchTable.insert {
+            it[matchId] = record.matchId
+            it[tableId] = record.tableId
+            it[ruleId] = record.ruleId
+            it[dimensionId] = record.dimensionId
+            it[status] = "COMPLETED"
+            it[startedAtEpochMillis] = record.startedAtEpochMillis
+            it[endedAtEpochMillis] = record.endedAtEpochMillis
+        }
+        record.participants.forEach { participant ->
+            HistoryParticipantTable.insert {
+                it[matchId] = record.matchId
+                it[seatIndex] = participant.seatIndex
+                it[playerId] = participant.playerId
+                it[aiStrategyId] = participant.aiStrategyId
+            }
+        }
+        record.rounds.forEach { round ->
+            HistoryRoundTable.insert {
+                it[matchId] = record.matchId
+                it[roundNumber] = round.roundNumber
+                it[startedAtEpochMillis] = round.startedAtEpochMillis
+                it[endedAtEpochMillis] = round.endedAtEpochMillis
+            }
+        }
+        HistoryPendingEventTable.deleteWhere { HistoryPendingEventTable.matchId eq record.matchId }
+        true
+    }
+
     companion object {
         /** 此 SQLite schema 的版本；與 Replay 文件及 Minecraft 權威存檔版本分離。 */
         const val SCHEMA_VERSION: Int = 1
@@ -126,11 +262,21 @@ internal class SqliteHistoryDatabase private constructor(
                         }
                         historySchemaV1Tables.forEach { table ->
                             val columns = mutableSetOf<String>()
+                            var dimensionIsNullable = false
                             statement.executeQuery("PRAGMA table_info('${table.tableName}')").use { result ->
-                                while (result.next()) columns += result.getString("name")
+                                while (result.next()) {
+                                    val name = result.getString("name")
+                                    columns += name
+                                    if (table == HistoryMatchTable && name == "dimension_id") {
+                                        dimensionIsNullable = result.getInt("notnull") == 0
+                                    }
+                                }
                             }
                             check(columns.containsAll(table.columns.map { it.name })) {
                                 "History database is missing required schema columns"
+                            }
+                            if (table == HistoryMatchTable) {
+                                check(dimensionIsNullable) { "History database has an incompatible dimension column" }
                             }
                         }
                     }

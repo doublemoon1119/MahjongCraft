@@ -127,12 +127,17 @@ fun configShowHoverText(displayPath: String, entries: List<ConfigPresentationEnt
     .translatable(MinecraftConfigCommandKeys.PATH, displayPath)
     .formatted(Formatting.DARK_GRAY)
     .also { hover ->
-        entries.forEach { entry ->
-            hover.append("\n").append(entry.name.copy().formatted(Formatting.GRAY))
-                .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
-                .append(entry.displayedValue.copy().formatted(Formatting.GREEN))
-        }
+        hover.append(presentationEntryLines(entries))
     }
+
+/** 將本地化欄位和值排成共用的懸停詳情列表。 */
+fun presentationEntryLines(entries: List<ConfigPresentationEntry>): MutableText = Text.empty().also { hover ->
+    entries.forEach { entry ->
+        hover.append("\n").append(entry.name.copy().formatted(Formatting.GRAY))
+            .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
+            .append(entry.displayedValue.copy().formatted(Formatting.GREEN))
+    }
+}
 
 /** 建立帶中括號、hover 與選用 click event 的互動標籤。 */
 fun bracketedInteractiveLabel(

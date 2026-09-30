@@ -129,6 +129,48 @@ class SqliteHistoryDatabaseTest {
         assertTrue(Files.exists(path))
     }
 
+    /** 摘要、Replay 與原始事件刪除必須共用交易；缺口場次不可封存。 */
+    @Test
+    fun `test archive is atomic and refuses known gaps`() {
+        val path = createTempDirectory("mahjongcraft-history-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        val event = pending(sequence = 1, payload = "original")
+        database.appendPending(event)
+        val archive = archive(event.matchId)
+
+        database.recordGaps(mapOf(event.matchId to 2L))
+        assertFailsWith<IllegalStateException> { database.archive(archive) }
+        assertEquals(listOf(event), database.readPending(event.matchId))
+        assertTrue(database.readReplayIds().isEmpty())
+    }
+
+    /** 成功封存後重新開庫，Replay 與摘要保留且原始事件已移除。 */
+    @Test
+    fun `test archive survives reopening without pending events`() {
+        val path = createTempDirectory("mahjongcraft-history-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        val event = pending(sequence = 1, payload = "original")
+        database.appendPending(event)
+
+        assertTrue(database.archive(archive(event.matchId)))
+        val reopened = SqliteHistoryDatabase.open(path)
+        assertEquals(emptyList(), reopened.readPending(event.matchId))
+        assertEquals(setOf(event.matchId), reopened.readReplayIds())
+    }
+
+    /** 最小但具備所有關聯列的封存測資。 */
+    private fun archive(matchId: String): HistoryArchiveRecord = HistoryArchiveRecord(
+        matchId = matchId,
+        tableId = "00000000-0000-0000-0000-000000000002",
+        ruleId = "mahjongcraft:riichi",
+        dimensionId = null,
+        startedAtEpochMillis = 100L,
+        endedAtEpochMillis = 200L,
+        participants = listOf(HistoryParticipantRecord(0, "player-1", null)),
+        rounds = listOf(HistoryRoundRecord(1, 100L, 200L)),
+        replayPayload = "{}",
+    )
+
     /** 建立固定的測試事件。 */
     private fun pending(sequence: Long, payload: String): PendingHistoryRecord = PendingHistoryRecord(
         matchId = "00000000-0000-0000-0000-000000000001",
