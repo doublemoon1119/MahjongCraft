@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
@@ -32,7 +33,7 @@ import kotlin.time.Duration.Companion.seconds
  * 管理員可見的歷史寫入狀態，不包含資料庫路徑或事件內容。
  *
  * @property databaseConnected 是否已開啟目前世界的資料庫。
- * @property recordingEnabled 新權威交易是否正在記錄歷史。
+ * @property recordingEnabled 有效政策是否允許新對局記錄歷史；不表示每場皆符合資格或資料庫已連線。
  * @property pendingEventCount 權威 outbox 尚待寫入的事件數。
  * @property knownGapCount 已知具有序號缺口的場次數。
  * @property lastError 最近是否發生錯誤；原始文字只供內部診斷，不傳給玩家。
@@ -86,10 +87,13 @@ class FabricHistoryOutboxWriter(
     @Volatile private var knownGaps: Map<String, Long> = emptyMap()
 
     @Volatile private var connected = false
+
+    /** 此連線已成功同步的設定停止診斷，避免輪詢時重複寫入相同資料。 */
+    private var synchronizedStops: Map<String, String> = emptyMap()
     private var database: SqliteHistoryDatabase? = null
     private var worker: Job? = null
 
-    /** 開啟目前世界的資料庫；失敗時不啟用記錄，也不影響對局。 */
+    /** 開啟目前世界的資料庫；連線狀態不改變資格政策，失敗時待寫事件仍由有界佇列保留。 */
     suspend fun attach(server: MinecraftServer) = attach(FabricHistoryDatabasePath.resolve(server))
 
     /** 回報連線與權威待寫狀態；原始錯誤只供內部 log 使用。 */
@@ -115,22 +119,28 @@ class FabricHistoryOutboxWriter(
     /** 路徑版本供無 Minecraft server 的整合測試使用。 */
     internal suspend fun attach(path: Path) = sessionMutex.withLock {
         check(worker == null && database == null) { "History writer is already attached" }
+        lastError = null
+        knownGaps = emptyMap()
+        synchronizedStops = emptyMap()
+        archiveService.resetSession()
         open(path)
     }
 
-    /** 開啟、驗證並對帳；失敗時保留原資料與關閉的記錄狀態。 */
+    /** 開啟、驗證並對帳；失敗時保留原資料與有效記錄政策。 */
     private suspend fun open(path: Path): Boolean {
         val opened = try {
             withContext(dispatchers.io) { SqliteHistoryDatabase.open(path) }
         } catch (error: Exception) {
             lastError = error.message ?: error::class.simpleName
-            logger.error("History database could not be opened; recording is disabled for this session", error)
+            logger.error("History database could not be opened; pending events remain in the bounded outbox", error)
             return false
         }
         database = opened
         try {
             val snapshot = store.snapshot()
             knownGaps = withContext(dispatchers.io) {
+                synchronizedStops = opened.readRecordingStops()
+                synchronizeRecordingDecisions(opened)
                 archiveService.reconcile(opened, snapshot.historyRecordingState).also {
                     archiveService.archiveReady(opened, snapshot)
                 }
@@ -139,12 +149,11 @@ class FabricHistoryOutboxWriter(
             database = null
             connected = false
             lastError = error.message ?: error::class.simpleName
-            logger.error("History startup reconciliation failed; recording remains disabled", error)
+            logger.error("History startup reconciliation failed; pending events remain in the bounded outbox", error)
             return false
         }
         connected = true
         lastError = null
-        store.setHistoryRecordingEnabled(true)
         worker = CoroutineScope(SupervisorJob() + dispatchers.io).launch {
             var retryDelay = INITIAL_RETRY_DELAY
             while (true) {
@@ -167,7 +176,6 @@ class FabricHistoryOutboxWriter(
                     if (error is SQLException) {
                         connected = false
                         database = null
-                        store.setHistoryRecordingEnabled(false)
                         return@launch
                     }
                     val snapshot = store.snapshot()
@@ -184,7 +192,6 @@ class FabricHistoryOutboxWriter(
     suspend fun detach() = sessionMutex.withLock {
         worker?.cancelAndJoin()
         worker = null
-        store.setHistoryRecordingEnabled(false)
         val activeDatabase = database ?: return@withLock
         withTimeoutOrNull(SHUTDOWN_FLUSH_TIMEOUT) {
             withContext(dispatchers.io) {
@@ -201,6 +208,7 @@ class FabricHistoryOutboxWriter(
 
     /** 對一份不可變快照提交最多一批，確認時只移除該批的穩定鍵。 */
     private suspend fun flushOneBatch(activeDatabase: SqliteHistoryDatabase): Boolean {
+        synchronizeRecordingDecisions(activeDatabase)
         val batch = store.snapshot().historyRecordingState.pendingEvents
             .filterNot { it.matchId.toString() in archiveService.blockedMatchIds }
             .take(BATCH_SIZE)
@@ -221,7 +229,34 @@ class FabricHistoryOutboxWriter(
         return true
     }
 
+    /**
+     * 將設定停止原因冪等同步至資料庫，再確認已離開權威狀態的診斷。
+     *
+     * @param activeDatabase 目前 session 的固定資料庫。
+     */
+    private suspend fun synchronizeRecordingDecisions(activeDatabase: SqliteHistoryDatabase) {
+        val recording = store.snapshot().historyRecordingState
+        val stopped = recording.decisionsByMatchId.filterValues { it == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED }
+        val stops = stopped.mapKeys { it.key.toString() }.mapValues { PARTIAL_CONFIG_DISABLED }
+        val unsynchronized = stops.filter { (matchId, reason) -> synchronizedStops[matchId] != reason }
+        if (unsynchronized.isNotEmpty()) {
+            activeDatabase.recordRecordingStops(unsynchronized)
+            synchronizedStops = synchronizedStops + unsynchronized
+        }
+        val gaps = recording.firstMissingSequenceByMatchId.mapKeys { it.key.toString() }
+            .filter { (matchId, sequence) -> sequence < (knownGaps[matchId] ?: Long.MAX_VALUE) }
+        if (gaps.isNotEmpty()) {
+            activeDatabase.recordGaps(gaps)
+            knownGaps = knownGaps + gaps
+        }
+        val archived = activeDatabase.readReplayIds()
+        val completed = recording.decisionsByMatchId.keys.filterTo(mutableSetOf()) { it.toString() in archived }
+        store.acknowledgeHistoryDecisions(completed + stopped.keys)
+    }
+
     private companion object {
+        /** 設定停止的穩定資料庫診斷名稱，不代表完整 Replay。 */
+        const val PARTIAL_CONFIG_DISABLED: String = "PARTIAL_CONFIG_DISABLED"
         const val BATCH_SIZE = 64
         const val PAYLOAD_VERSION = 1
         val IDLE_POLL_INTERVAL = 250.milliseconds

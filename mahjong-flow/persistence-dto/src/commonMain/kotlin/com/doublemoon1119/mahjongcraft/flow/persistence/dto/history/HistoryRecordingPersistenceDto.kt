@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.dto.history
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryActionResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
@@ -29,6 +30,7 @@ import kotlin.uuid.Uuid
  * @property nextSequenceByMatchId 各對局下一個可分配的事件序號，鍵為對局 UUID 字串。
  * @property pendingEvents 尚未交給歷史儲存端的事件；各場次的事件依序號排序。
  * @property firstMissingSequenceByMatchId 各對局第一個無法完整還原的事件序號，鍵為對局 UUID 字串。
+ * @property decisionsByMatchId 各對局固定的歷史記錄決策，值為列舉名稱。
  */
 @Serializable
 data class HistoryRecordingPersistenceDto(
@@ -37,6 +39,7 @@ data class HistoryRecordingPersistenceDto(
     val nextSequenceByMatchId: Map<String, Long> = emptyMap(),
     val pendingEvents: List<HistoryOutboxEventPersistenceDto> = emptyList(),
     val firstMissingSequenceByMatchId: Map<String, Long> = emptyMap(),
+    val decisionsByMatchId: Map<String, String> = emptyMap(),
 ) {
     init {
         require(formatVersion == 1) { "Unsupported history outbox format $formatVersion" }
@@ -288,6 +291,7 @@ class HistoryRecordingPersistenceMapper(
             nextSequenceByMatchId = state.nextSequenceByMatchId.mapKeys { it.key.toString() },
             pendingEvents = encoded,
             firstMissingSequenceByMatchId = missing.mapKeys { it.key.toString() },
+            decisionsByMatchId = state.decisionsByMatchId.mapKeys { it.key.toString() }.mapValues { it.value.name },
         )
     }
 
@@ -305,6 +309,8 @@ class HistoryRecordingPersistenceMapper(
             nextSequenceByMatchId = dto.nextSequenceByMatchId.mapKeys { Uuid.parse(it.key) },
             pendingEvents = decoded,
             firstMissingSequenceByMatchId = missing,
+            decisionsByMatchId = dto.decisionsByMatchId.mapKeys { Uuid.parse(it.key) }
+                .mapValues { HistoryRecordingDecision.valueOf(it.value) },
         )
     }
 

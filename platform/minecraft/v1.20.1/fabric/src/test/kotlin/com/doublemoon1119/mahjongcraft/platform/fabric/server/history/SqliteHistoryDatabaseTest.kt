@@ -125,7 +125,8 @@ class SqliteHistoryDatabaseTest {
             connection.createStatement().use { it.executeUpdate("DROP TABLE history_replay") }
         }
 
-        assertFailsWith<IllegalStateException> { SqliteHistoryDatabase.open(path) }
+        val failure = assertFailsWith<IllegalStateException> { SqliteHistoryDatabase.open(path) }
+        assertEquals("History database is missing required schema tables: history_replay", failure.message)
         assertTrue(Files.exists(path))
     }
 
@@ -140,6 +141,58 @@ class SqliteHistoryDatabaseTest {
 
         database.recordGaps(mapOf(event.matchId to 2L))
         assertFailsWith<IllegalStateException> { database.archive(archive) }
+        assertEquals(listOf(event), database.readPending(event.matchId))
+        assertTrue(database.readReplayIds().isEmpty())
+    }
+
+    /** 錄製停止診斷可跨重新開啟保留，且相同原因重送具備冪等性。 */
+    @Test
+    fun `test recording stops survive reopening and are idempotent`() {
+        val path = createTempDirectory("mahjongcraft-history-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        val matchId = "00000000-0000-0000-0000-000000000003"
+        val stops = mapOf(matchId to "PARTIAL_CONFIG_DISABLED")
+
+        database.recordRecordingStops(stops)
+        database.recordRecordingStops(stops)
+
+        assertEquals(stops, SqliteHistoryDatabase.open(path).readRecordingStops())
+    }
+
+    /** 缺少新增資料表的既有資料庫必須拒絕使用且保留原檔。 */
+    @Test
+    fun `test existing schema missing recording stop table is rejected without reset`() {
+        val path = createTempDirectory("mahjongcraft-history-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        val event = pending(sequence = 1, payload = "original")
+        database.appendPending(event)
+        DriverManager.getConnection("jdbc:sqlite:$path").use { connection ->
+            connection.createStatement().use { it.executeUpdate("DROP TABLE history_recording_stop") }
+        }
+
+        val failure = assertFailsWith<IllegalStateException> { SqliteHistoryDatabase.open(path) }
+        assertEquals("History database is missing required schema tables: history_recording_stop", failure.message)
+        assertTrue(Files.exists(path))
+        DriverManager.getConnection("jdbc:sqlite:$path").use { connection ->
+            connection.createStatement().use { statement ->
+                statement.executeQuery("SELECT payload FROM history_pending_event").use { rows ->
+                    assertTrue(rows.next())
+                    assertEquals(event.payload, rows.getString(1))
+                }
+            }
+        }
+    }
+
+    /** 已記錄停止診斷的對局即使沒有事件缺口，也不得封存。 */
+    @Test
+    fun `test archive refuses recording stop without a gap`() {
+        val path = createTempDirectory("mahjongcraft-history-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        val event = pending(sequence = 1, payload = "original")
+        database.appendPending(event)
+        database.recordRecordingStops(mapOf(event.matchId to "PARTIAL_CONFIG_DISABLED"))
+
+        assertFailsWith<IllegalStateException> { database.archive(archive(event.matchId)) }
         assertEquals(listOf(event), database.readPending(event.matchId))
         assertTrue(database.readReplayIds().isEmpty())
     }

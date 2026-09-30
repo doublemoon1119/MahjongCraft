@@ -9,6 +9,11 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
+/**
+ * 透過權威交易讀寫對局，並依同一份場次資格建立歷史草稿。
+ *
+ * @property store 共用狀態、記錄資格與歷史提交的交易邊界。
+ */
 @Single(binds = [GameRepository::class])
 class GameRepositoryImpl(
     private val store: AuthoritativeStateStore,
@@ -43,7 +48,8 @@ class GameRepositoryImpl(
             next == null -> state.games - gameId
             else -> state.games + (gameId to next)
         }
-        val recording = if (store.isHistoryRecordingEnabled && next != previous) {
+        val recordingGame = next ?: previous
+        val recording = if (recordingGame != null && store.shouldRecordHistory(state, recordingGame) && next != previous) {
             runCatching { history(previous, next, result) }
         } else {
             Result.success(emptyList())

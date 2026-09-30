@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTime
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.HandSortPreferenceUpdateMode
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SetHandSortPreferenceUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftClientApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftServerApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
@@ -25,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.historyRecordingPolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TableOpeningPresentationOperationTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
@@ -117,6 +119,7 @@ class MahjongCraftMod : ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             initializeServerConfig(configManager, mahjongTileCollisionService, server)
             runBlocking { statePersistence.attach(server) }
+            runBlocking { koin.get<AuthoritativeStateStore>().applyHistoryRecordingPolicy(configManager.current.historyRecordingPolicy()) }
             tableLocationPersistence.attach(server)
             runBlocking { historyWriter.attach(server) }
             tableLocationValidation.startSession(server)

@@ -8,6 +8,24 @@ object MinecraftConfigCommandKeys {
     /** Server 設定的顯示名稱。 */
     const val SERVER_CONFIG: String = "mahjongcraft.config.server"
 
+    /** 斷線玩家設定區段的顯示名稱。 */
+    const val SERVER_CONFIG_SECTION_PLAYER_DISCONNECTION: String = "mahjongcraft.config.section.player_disconnection"
+
+    /** 麻將桌設定區段的顯示名稱。 */
+    const val SERVER_CONFIG_SECTION_TABLE: String = "mahjongcraft.config.section.table"
+
+    /** 麻將牌設定區段的顯示名稱。 */
+    const val SERVER_CONFIG_SECTION_MAHJONG_TILE: String = "mahjongcraft.config.section.mahjong_tile"
+
+    /** 對局歷史設定區段的顯示名稱。 */
+    const val SERVER_CONFIG_SECTION_HISTORY: String = "mahjongcraft.config.section.history"
+
+    /** 設定頁面的顯示名稱。 */
+    const val SETTINGS: String = "mahjongcraft.config.settings"
+
+    /** 設定檔位置的顯示名稱。 */
+    const val FILE_LOCATION: String = "mahjongcraft.config.file_location"
+
     /** 重新載入成功，帶設定名稱參數。 */
     const val RELOADED: String = "mahjongcraft.config.command.reloaded"
 
@@ -88,6 +106,24 @@ object MinecraftConfigCommandKeys {
 
     /** 麻將牌實體碰撞欄位。 */
     const val TILE_COLLISION: String = "mahjongcraft.server_config.tile_collision"
+
+    /** 歷史資料是否啟用欄位。 */
+    const val HISTORY_ENABLED: String = "mahjongcraft.server_config.history_enabled"
+
+    /** 是否記錄 AI 牌局欄位。 */
+    const val HISTORY_INCLUDE_AI_MATCHES: String = "mahjongcraft.server_config.history_include_ai_matches"
+
+    /** 是否記錄中斷牌局欄位。 */
+    const val HISTORY_INCLUDE_INTERRUPTED_MATCHES: String = "mahjongcraft.server_config.history_include_interrupted_matches"
+
+    /** 歷史資料最多保留牌局數量欄位。 */
+    const val HISTORY_MAX_MATCHES: String = "mahjongcraft.server_config.history_max_matches"
+
+    /** 歷史資料保留天數欄位。 */
+    const val HISTORY_RETENTION_DAYS: String = "mahjongcraft.server_config.history_retention_days"
+
+    /** 歷史資料磁碟空間上限欄位。 */
+    const val HISTORY_MAX_DISK_MIB: String = "mahjongcraft.server_config.history_max_disk_mib"
 
     /** 保留斷線玩家座位選項。 */
     const val KEEP_SEAT: String = "mahjongcraft.server_config.option.keep_seat"

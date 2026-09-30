@@ -16,11 +16,14 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import kotlin.math.roundToInt
 
-/** 設定指令 hover 使用的一個本地化欄位與格式化值。 */
+/**
+ * 設定指令 hover 使用的一個本地化欄位與格式化值。
+ *
+ * @property name 欄位名稱。
+ * @property displayedValue 欄位目前值。
+ */
 data class ConfigPresentationEntry(
-    /** 欄位名稱。 */
     val name: Text,
-    /** 欄位目前值。 */
     val displayedValue: Text,
 )
 
@@ -57,29 +60,112 @@ fun clientConfigEntries(config: MahjongClientConfigState): List<ConfigPresentati
 /** 將 HUD 比例轉換為不受系統語系影響的整數百分比。 */
 private fun Double.asPercent(): Int = (this * 100).roundToInt()
 
-/** 建立 server 設定的本地化欄位。 */
-fun serverConfigEntries(config: MinecraftServerConfig): List<ConfigPresentationEntry> = listOf(
-    ConfigPresentationEntry(
-        Text.translatable(MinecraftConfigCommandKeys.DISCONNECTED_PLAYER_POLICY),
-        Text.translatable(config.disconnectedPlayerPolicy.translationKey),
+/**
+ * 對應 TOML 區塊的設定分類。
+ *
+ * @property name 分類的本地化名稱。
+ * @property entries 此分類的設定名稱與有效值。
+ */
+data class ConfigPresentationSection(val name: Text, val entries: List<ConfigPresentationEntry>)
+
+/** 建立 server 設定的平面欄位列表，供共用詳情呈現使用。 */
+fun serverConfigEntries(config: MinecraftServerConfig): List<ConfigPresentationEntry> = serverConfigSections(config).flatMap { it.entries }
+
+/** 依 TOML 的區塊順序建立 server 設定分類。 */
+fun serverConfigSections(config: MinecraftServerConfig): List<ConfigPresentationSection> = listOf(
+    ConfigPresentationSection(
+        Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_PLAYER_DISCONNECTION),
+        listOf(
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.DISCONNECTED_PLAYER_POLICY),
+                Text.translatable(config.disconnectedPlayerPolicy.translationKey),
+            ),
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.DISCONNECTED_PLAYER_TIMEOUT),
+                Text.literal(config.disconnectedPlayerTimeoutSeconds.toString()),
+            ),
+        ),
     ),
-    ConfigPresentationEntry(
-        Text.translatable(MinecraftConfigCommandKeys.DISCONNECTED_PLAYER_TIMEOUT),
-        Text.literal(config.disconnectedPlayerTimeoutSeconds.toString()),
+    ConfigPresentationSection(
+        Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_TABLE),
+        listOf(
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.TABLE_BREAK_POLICY),
+                Text.translatable(config.tableBreakPolicy.translationKey),
+            ),
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.ORPHANED_TABLE_POLICY),
+                Text.translatable(config.orphanedTablePolicy.translationKey),
+            ),
+        ),
     ),
-    ConfigPresentationEntry(
-        Text.translatable(MinecraftConfigCommandKeys.TABLE_BREAK_POLICY),
-        Text.translatable(config.tableBreakPolicy.translationKey),
+    ConfigPresentationSection(
+        Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_MAHJONG_TILE),
+        listOf(
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.TILE_COLLISION),
+                clientBooleanText(config.mahjongTilePhysicalCollisionEnabled),
+            ),
+        ),
     ),
-    ConfigPresentationEntry(
-        Text.translatable(MinecraftConfigCommandKeys.ORPHANED_TABLE_POLICY),
-        Text.translatable(config.orphanedTablePolicy.translationKey),
-    ),
-    ConfigPresentationEntry(
-        Text.translatable(MinecraftConfigCommandKeys.TILE_COLLISION),
-        clientBooleanText(config.mahjongTilePhysicalCollisionEnabled),
+    ConfigPresentationSection(
+        Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_HISTORY),
+        listOf(
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.HISTORY_ENABLED),
+                clientBooleanText(config.history.enabled),
+            ),
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.HISTORY_INCLUDE_AI_MATCHES),
+                clientBooleanText(config.history.includeAiMatches),
+            ),
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.HISTORY_INCLUDE_INTERRUPTED_MATCHES),
+                clientBooleanText(config.history.includeInterruptedMatches),
+            ),
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.HISTORY_MAX_MATCHES),
+                Text.literal(config.history.maxMatches.toString()),
+            ),
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.HISTORY_RETENTION_DAYS),
+                Text.literal(config.history.retentionDays.toString()),
+            ),
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.HISTORY_MAX_DISK_MIB),
+                Text.literal(config.history.maxDiskMiB.toString()),
+            ),
+        ),
     ),
 )
+
+/**
+ * 建立單則換行條列的 server 設定訊息，各分類具有獨立懸停內容。
+ *
+ * @param displayPath 設定檔路徑。
+ * @param config 目前生效的伺服器設定。
+ * @return 僅首行帶有 mod 前綴的完整訊息。
+ */
+fun serverConfigShowMessage(displayPath: String, config: MinecraftServerConfig): MutableText = prefixedConfigMessage(
+    Text.translatable(
+        MinecraftConfigCommandKeys.CURRENT,
+        Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG),
+        bracketedInteractiveLabel(Text.translatable(MinecraftConfigCommandKeys.FILE_LOCATION), Text.literal(displayPath)),
+    ),
+    Formatting.AQUA,
+).also { message ->
+    serverConfigSections(config).forEach { section ->
+        message.append(Text.literal("\n  • ").formatted(Formatting.GRAY))
+            .append(section.name.copy().formatted(Formatting.GRAY))
+            .append(" ")
+            .append(
+                bracketedInteractiveLabel(
+                    Text.translatable(MinecraftConfigCommandKeys.SETTINGS),
+                    section.name.copy().formatted(Formatting.GOLD).append(presentationEntryLines(section.entries)),
+                ),
+            )
+    }
+}
 
 /** 建立 server／client config reload 失敗的本地化訊息，技術原因只放在 hover。 */
 fun configReloadFailureMessage(configName: Text, details: String): MutableText = prefixedConfigMessage(

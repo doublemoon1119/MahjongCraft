@@ -42,6 +42,13 @@ internal class HistoryArchiveService(
         private set
     private var warnedOrphanMatchIds: Set<String> = emptySet()
 
+    /** 在開始另一個存檔 session 前清除錯誤與逐場對帳快取，不修改資料庫。 */
+    fun resetSession() {
+        lastArchiveError = null
+        blockedMatchIds = emptySet()
+        warnedOrphanMatchIds = emptySet()
+    }
+
     /** 保留可證實的最早缺口；不從最高序號推斷中間一定連續。 */
     fun reconcile(database: SqliteHistoryDatabase, recording: HistoryRecordingState): Map<String, Long> {
         val existing = database.readAllPending().groupBy(PendingHistoryRecord::matchId)
@@ -108,10 +115,11 @@ internal class HistoryArchiveService(
         val staged = snapshot.historyRecordingState.pendingEvents.mapTo(mutableSetOf()) { it.matchId.toString() }
         val active = snapshot.games.values.mapTo(mutableSetOf()) { it.matchId.toString() }
         val gaps = database.readGaps().keys
+        val stopped = database.readRecordingStops().keys
         val archived = database.readReplayIds()
         var completed = 0
         database.readAllPending().groupBy(PendingHistoryRecord::matchId).forEach { (matchId, records) ->
-            if (matchId in staged || matchId in active || matchId in gaps || matchId in archived) return@forEach
+            if (matchId in staged || matchId in active || matchId in gaps || matchId in stopped || matchId in archived) return@forEach
             try {
                 val events = records.map(::decodeRecord)
                 if (events.lastOrNull()?.fact !is HistoryFact.ReturnedToRoom) return@forEach

@@ -1,10 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPlayerPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigTomlCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import net.minecraft.server.MinecraftServer
 import java.nio.file.Files
 import java.nio.file.Path
@@ -54,6 +59,10 @@ class FabricServerConfigManagerTest {
 
             [mahjong-tile]
             physical-collision-enabled = false
+
+            [history]
+            enabled = false
+            include-ai-matches = false
             """.trimIndent(),
         )
 
@@ -61,7 +70,10 @@ class FabricServerConfigManagerTest {
 
         assertEquals(DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY, result.config.disconnectedPlayerPolicy)
         assertEquals(false, result.config.mahjongTilePhysicalCollisionEnabled)
+        assertEquals(false, result.config.history.enabled)
+        assertEquals(false, result.config.history.includeAiMatches)
         assertEquals(result.config, fixture.state.current)
+        assertFalse(fixture.store.isHistoryRecordingEnabled)
         assertTrue(fixture.manager.formattedCurrentToml().contains("policy = \"leave_immediately\""))
         assertTrue(fixture.manager.formattedCurrentToml().contains("physical-collision-enabled = false"))
         assertFalse(fixture.manager.formattedCurrentToml().contains("#"))
@@ -80,6 +92,7 @@ class FabricServerConfigManagerTest {
 
         assertTrue(result.message.contains("table.break-policy"))
         assertEquals(previous, fixture.state.current)
+        assertEquals(previous.history.enabled, fixture.store.isHistoryRecordingEnabled)
         assertEquals(invalidContent, Files.readString(fixture.path))
     }
 
@@ -124,21 +137,25 @@ class FabricServerConfigManagerTest {
     }
 
     /** 建立使用獨立暫存路徑的 manager 並於測試後移除。 */
-    private fun withFixture(block: (Fixture) -> Unit) {
+    private fun withFixture(block: suspend (Fixture) -> Unit) = runBlocking {
         val directory = createTempDirectory("mahjongcraft-server-config-test")
         try {
             val path = directory.resolve("mahjongcraft/server.toml")
             val location = FabricServerConfigLocation(path, "<test>/server.toml")
             val state = MinecraftServerConfigState()
+            val store = AuthoritativeStateStore(historyRecordingEnabled = true)
             block(
                 Fixture(
                     path = path,
                     location = location,
                     state = state,
+                    store = store,
                     manager = FabricServerConfigManager(
-                        state,
-                        MinecraftServerConfigTomlCodec(),
-                        UnusedPathProvider,
+                        state = state,
+                        codec = MinecraftServerConfigTomlCodec(),
+                        pathProvider = UnusedPathProvider,
+                        store = store,
+                        dispatchers = TestCoroutineDispatchers,
                     ),
                 ),
             )
@@ -153,12 +170,14 @@ class FabricServerConfigManagerTest {
      * @property path 測試設定檔路徑。
      * @property location 測試設定檔位置。
      * @property state 目前有效設定。
+     * @property store 歷史記錄政策的權威狀態儲存。
      * @property manager 受測檔案 manager。
      */
     private data class Fixture(
         val path: Path,
         val location: FabricServerConfigLocation,
         val state: MinecraftServerConfigState,
+        val store: AuthoritativeStateStore,
         val manager: FabricServerConfigManager,
     )
 
@@ -166,5 +185,17 @@ class FabricServerConfigManagerTest {
     private object UnusedPathProvider : FabricServerConfigPathProvider {
         /** 若測試誤用 server attach，立即回報測試設定錯誤。 */
         override fun get(server: MinecraftServer): FabricServerConfigLocation = error("Unexpected server path lookup")
+    }
+
+    /** 測試用的同步協程調度器，避免依賴平台執行緒。 */
+    private object TestCoroutineDispatchers : CoroutineDispatchers {
+        /** CPU 工作使用預設調度器。 */
+        override val default: CoroutineDispatcher = Dispatchers.Default
+
+        /** 檔案工作使用 I/O 調度器。 */
+        override val io: CoroutineDispatcher = Dispatchers.IO
+
+        /** 設定發布使用預設調度器。 */
+        override val main: CoroutineDispatcher = Dispatchers.Default
     }
 }

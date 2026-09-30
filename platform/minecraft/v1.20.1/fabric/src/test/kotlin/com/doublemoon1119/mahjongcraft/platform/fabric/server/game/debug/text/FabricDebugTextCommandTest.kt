@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.text
 
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigLocation
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigPathProvider
@@ -9,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.mojang.brigadier.tree.CommandNode
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.command.ServerCommandSource
@@ -23,9 +27,11 @@ class FabricDebugTextCommandTest {
     private val command = FabricDebugTextCommand(
         feedbackPublisher = RecordingFeedbackPublisher(),
         serverConfigManager = FabricServerConfigManager(
-            MinecraftServerConfigState(),
-            MinecraftServerConfigTomlCodec(),
-            UnusedPathProvider,
+            state = MinecraftServerConfigState(),
+            codec = MinecraftServerConfigTomlCodec(),
+            pathProvider = UnusedPathProvider,
+            store = AuthoritativeStateStore(),
+            dispatchers = TestCoroutineDispatchers,
         ),
         json = Json,
         networkRegistries = DefaultNetworkDtoRegistries(),
@@ -93,5 +99,17 @@ class FabricDebugTextCommandTest {
     private object UnusedPathProvider : FabricServerConfigPathProvider {
         /** 若測試誤用 server attach，立即回報測試設定錯誤。 */
         override fun get(server: MinecraftServer): FabricServerConfigLocation = error("Unexpected server path lookup")
+    }
+
+    /** 測試用的協程調度器。 */
+    private object TestCoroutineDispatchers : CoroutineDispatchers {
+        /** CPU 工作使用預設調度器。 */
+        override val default: CoroutineDispatcher = Dispatchers.Default
+
+        /** 檔案工作使用 I/O 調度器。 */
+        override val io: CoroutineDispatcher = Dispatchers.IO
+
+        /** 設定發布使用預設調度器。 */
+        override val main: CoroutineDispatcher = Dispatchers.Default
     }
 }

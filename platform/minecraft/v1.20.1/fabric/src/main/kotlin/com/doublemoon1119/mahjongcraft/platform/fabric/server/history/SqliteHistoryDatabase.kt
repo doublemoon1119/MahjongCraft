@@ -183,6 +183,40 @@ internal class SqliteHistoryDatabase private constructor(
         }
     }
 
+    /**
+     * 保存設定停止診斷；相同原因重送視為成功，不覆寫不同原因。
+     *
+     * @param stops 對局 UUID 字串與穩定停止原因的對照。
+     */
+    fun recordRecordingStops(stops: Map<String, String>) {
+        if (stops.isEmpty()) return
+        transaction(database) {
+            stops.forEach { (matchId, reason) ->
+                require(matchId.isNotBlank()) { "History match ID must not be blank" }
+                require(reason.isNotBlank()) { "History recording stop reason must not be blank" }
+                HistoryRecordingStopTable.insertIgnore {
+                    it[HistoryRecordingStopTable.matchId] = matchId
+                    it[HistoryRecordingStopTable.reason] = reason
+                }
+                val existing = HistoryRecordingStopTable.selectAll()
+                    .where { HistoryRecordingStopTable.matchId eq matchId }
+                    .single()[HistoryRecordingStopTable.reason]
+                check(existing == reason) { "History recording stop reason conflicts with existing content" }
+            }
+        }
+    }
+
+    /**
+     * 讀取設定停止診斷，供完整封存防護及記錄狀態確認。
+     *
+     * @return 對局 UUID 字串與穩定停止原因的對照。
+     */
+    fun readRecordingStops(): Map<String, String> = transaction(database) {
+        HistoryRecordingStopTable.selectAll().associate {
+            it[HistoryRecordingStopTable.matchId] to it[HistoryRecordingStopTable.reason]
+        }
+    }
+
     /** 已封存場次 ID；用於略過其原始事件的缺口推導。 */
     fun readReplayIds(): Set<String> = transaction(database) {
         HistoryReplayTable.selectAll().mapTo(mutableSetOf()) { it[HistoryReplayTable.matchId] }
@@ -190,6 +224,9 @@ internal class SqliteHistoryDatabase private constructor(
 
     /** 完成資料表摘要與 Replay 的單一交易；成功後才刪除原始事件。 */
     fun archive(record: HistoryArchiveRecord): Boolean = transaction(database) {
+        check(
+            HistoryRecordingStopTable.selectAll().where { HistoryRecordingStopTable.matchId eq record.matchId }.empty(),
+        ) { "History replay cannot be archived after recording stopped" }
         val existing = HistoryReplayTable.selectAll().where { HistoryReplayTable.matchId eq record.matchId }.singleOrNull()
         if (existing != null) {
             check(existing[HistoryReplayTable.payload] == record.replayPayload) { "History replay identity conflicts with existing content" }
@@ -257,8 +294,9 @@ internal class SqliteHistoryDatabase private constructor(
                         statement.executeQuery("SELECT name FROM sqlite_master WHERE type = 'table'").use { result ->
                             while (result.next()) present += result.getString(1)
                         }
-                        check(present.containsAll(historySchemaV1Tables.map { it.tableName })) {
-                            "History database is missing required schema tables"
+                        val missingTables = historySchemaV1Tables.map { it.tableName }.filterNot { it in present }.sorted()
+                        check(missingTables.isEmpty()) {
+                            "History database is missing required schema tables: ${missingTables.joinToString(", ")}"
                         }
                         historySchemaV1Tables.forEach { table ->
                             val columns = mutableSetOf<String>()

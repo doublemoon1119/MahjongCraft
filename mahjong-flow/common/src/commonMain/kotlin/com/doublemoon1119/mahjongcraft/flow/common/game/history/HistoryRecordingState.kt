@@ -9,11 +9,13 @@ import kotlin.uuid.Uuid
  * @property nextSequenceByMatchId 每場下一個可指派的序號，從 1 開始；即使事件遺失也會推進。
  * @property pendingEvents 尚待寫入歷史儲存系統的事件。
  * @property firstMissingSequenceByMatchId 每場最早遺失的序號；容量不足或記錄失敗時供診斷使用。
+ * @property decisionsByMatchId 每場固定的記錄資格與停止原因；與待寫事件一起持久化。
  */
 data class HistoryRecordingState(
     val nextSequenceByMatchId: Map<Uuid, Long> = emptyMap(),
     val pendingEvents: List<HistoryOutboxEvent> = emptyList(),
     val firstMissingSequenceByMatchId: Map<Uuid, Long> = emptyMap(),
+    val decisionsByMatchId: Map<Uuid, HistoryRecordingDecision> = emptyMap(),
 ) {
     init {
         require(nextSequenceByMatchId.values.all { it > 0L }) { "History sequence must be positive" }

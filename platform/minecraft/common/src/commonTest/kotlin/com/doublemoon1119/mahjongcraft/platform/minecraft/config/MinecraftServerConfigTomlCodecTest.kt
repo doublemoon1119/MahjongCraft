@@ -4,6 +4,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 
 /** [MinecraftServerConfigTomlCodec] 的嚴格解碼、驗證與標準輸出測試。 */
 class MinecraftServerConfigTomlCodecTest {
@@ -25,6 +27,14 @@ class MinecraftServerConfigTomlCodecTest {
 
             [mahjong-tile]
             physical-collision-enabled = false
+
+            [history]
+            enabled = false
+            include-ai-matches = false
+            include-interrupted-matches = true
+            max-matches = 250
+            retention-days = 120
+            max-disk-mib = 512
             """.trimIndent(),
         )
 
@@ -33,6 +43,12 @@ class MinecraftServerConfigTomlCodecTest {
         assertEquals(TableBreakPolicy.ALLOW_WAITING_ROOM_ONLY, config.tableBreakPolicy)
         assertEquals(OrphanedTablePolicy.KEEP_AND_WARN, config.orphanedTablePolicy)
         assertEquals(false, config.mahjongTilePhysicalCollisionEnabled)
+        assertEquals(false, config.history.enabled)
+        assertEquals(false, config.history.includeAiMatches)
+        assertEquals(true, config.history.includeInterruptedMatches)
+        assertEquals(250, config.history.maxMatches)
+        assertEquals(120, config.history.retentionDays)
+        assertEquals(512, config.history.maxDiskMiB)
     }
 
     /** 缺少可選 section 或欄位時應使用程式預設值。 */
@@ -50,6 +66,7 @@ class MinecraftServerConfigTomlCodecTest {
         assertEquals(TableBreakPolicy.DENY_WHILE_OCCUPIED, config.tableBreakPolicy)
         assertEquals(OrphanedTablePolicy.REMOVE_ALL, config.orphanedTablePolicy)
         assertEquals(true, config.mahjongTilePhysicalCollisionEnabled)
+        assertEquals(MinecraftHistoryConfig(), config.history)
     }
 
     /** 未知欄位不得被忽略。 */
@@ -107,6 +124,73 @@ class MinecraftServerConfigTomlCodecTest {
 
         assertTrue(belowMinimum.message.orEmpty().contains("1 and 3600"))
         assertTrue(aboveMaximum.message.orEmpty().contains("1 and 3600"))
+    }
+
+    /** 歷史資料整數欄位超出範圍時應拒絕設定。 */
+    @Test
+    fun `test history integer ranges fail validation`() {
+        val invalidValues = listOf(
+            "max-matches = -1",
+            "retention-days = -1",
+            "max-disk-mib = 0",
+            "max-disk-mib = 9223372036854775807",
+        )
+
+        invalidValues.forEach { value ->
+            val exception = assertFailsWith<InvalidMinecraftServerConfigException> {
+                codec.decode("[history]\n$value")
+            }
+            assertTrue(exception.message.orEmpty().contains("history"))
+        }
+    }
+
+    /** 歷史資料保留天數應轉換為對應的 Kotlin duration。 */
+    @Test
+    fun `test history retention converts days to duration`() {
+        val config = MinecraftHistoryConfig(retentionDays = 3)
+
+        assertEquals(3.days, config.retentionDuration)
+        assertEquals(256L * MinecraftHistoryConfig.BYTES_PER_MIB, config.maxDiskBytes)
+    }
+
+    /** 零值應代表牌局數量與保留天數不限制。 */
+    @Test
+    fun `test history zero limits are accepted`() {
+        val config = MinecraftHistoryConfig(maxMatches = 0, retentionDays = 0)
+
+        assertEquals(0, config.maxMatches)
+        assertEquals(0, config.retentionDays)
+        assertEquals(Duration.ZERO, config.retentionDuration)
+    }
+
+    /** TOML 錯誤型別與未知歷史設定欄位均不得靜默忽略。 */
+    @Test
+    fun `test history types and unknown keys are rejected`() {
+        listOf(
+            "enabled = \"true\"",
+            "include-ai-matches = 1",
+            "max-matches = 1.5",
+            "unknown = true",
+            "max-matches = 2147483648",
+            "retention-days = 2147483648",
+        ).forEach { entry ->
+            assertFailsWith<InvalidMinecraftServerConfigException>("Invalid history entry must be rejected: $entry") {
+                codec.decode("[history]\n$entry")
+            }
+        }
+    }
+
+    /** 可安全換算的最大設定值不應被任意上限拒絕。 */
+    @Test
+    fun `test largest safe history limits remain finite`() {
+        val config = MinecraftHistoryConfig(
+            maxMatches = Int.MAX_VALUE,
+            retentionDays = Int.MAX_VALUE,
+            maxDiskMiB = MinecraftHistoryConfig.MAX_MAX_DISK_MIB,
+        )
+        assertTrue(config.retentionDuration.isFinite(), "Maximum retention must remain finite")
+        assertTrue(config.maxDiskBytes > 0L, "Maximum disk byte count must not overflow")
+        assertEquals(config, codec.decode(codec.encode(MinecraftServerConfig(history = config))).history)
     }
 
     /** 標準化輸出應可完整 round-trip。 */

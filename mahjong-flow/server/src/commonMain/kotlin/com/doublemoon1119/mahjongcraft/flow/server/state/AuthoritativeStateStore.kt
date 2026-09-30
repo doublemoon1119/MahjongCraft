@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.flow.server.state
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
@@ -58,7 +60,7 @@ data class AuthoritativeStateUpdate<T>(
  * 所有變更皆透過 [update] 提交，使 Room → Game 等跨集合操作能在單次交易內完成。變更後的狀態同時
  * 發布到 [state]，供需要在狀態改變時反應的服務訂閱。
  *
- * @param historyRecordingEnabled 建立時是否將歷史草稿加入待寫佇列；正式伺服器依資料庫狀態切換。
+ * @param historyRecordingEnabled 建立時的新場記錄預設；正式政策由伺服器組合入口套用，與儲存連線無關。
  * @property historyClock 產生歷史事件 UTC 時間戳的時鐘；事件順序仍由序號決定。
  * @property maxPendingHistoryEvents 待寫佇列的容量上限；超出時只保留序號缺口，不阻塞對局。
  */
@@ -72,11 +74,11 @@ class AuthoritativeStateStore(
         require(maxPendingHistoryEvents >= 0) { "Pending history capacity must not be negative" }
     }
 
-    /** 僅在歷史資料庫可用的伺服器 session 內啟用。 */
-    @Volatile private var recordingEnabled = historyRecordingEnabled
+    /** 目前新場資格政策；變更及權威交易皆由同一 mutex 排序。 */
+    @Volatile private var recordingPolicy = HistoryRecordingPolicy(enabled = historyRecordingEnabled)
 
     /** 目前是否記錄歷史事件。 */
-    val isHistoryRecordingEnabled: Boolean get() = recordingEnabled
+    val isHistoryRecordingEnabled: Boolean get() = recordingPolicy.enabled
 
     /** 保護狀態、dirty flag 與 dirty listener 的互斥鎖。 */
     private val mutex = Mutex()
@@ -128,9 +130,89 @@ class AuthoritativeStateStore(
         dirtyListener = listener
     }
 
-    /** 在 session 啟停時切換記錄；既有待寫事件不受影響。 */
-    suspend fun setHistoryRecordingEnabled(enabled: Boolean) = mutex.withLock {
-        recordingEnabled = enabled
+    /**
+     * 以相同交易邊界更新政策與外部有效設定；關閉後不恢復已停止場次。
+     *
+     * @param policy 新場資格政策。
+     * @param onApplied 同步發布有效設定的非阻塞 callback；不得重入 store 或執行 I/O。
+     */
+    suspend fun applyHistoryRecordingPolicy(policy: HistoryRecordingPolicy, onApplied: () -> Unit = {}) = mutex.withLock {
+        var recording = restoreDecisions(currentState)
+        if (!policy.enabled) {
+            currentState.games.values.forEach { game ->
+                if (!game.isMatchOver && recording.decisionsByMatchId[game.matchId] == HistoryRecordingDecision.RECORDING) {
+                    recording = recording.recordMissing(game).copy(
+                        decisionsByMatchId = recording.decisionsByMatchId + (game.matchId to HistoryRecordingDecision.STOPPED_CONFIG_DISABLED),
+                    )
+                }
+            }
+        }
+        onApplied()
+        recordingPolicy = policy
+        commit(currentState.copy(historyRecordingState = recording))
+    }
+
+    /**
+     * 在已持有交易鎖的 repository 中查詢同一份記錄資格，不建立歷史快照。
+     *
+     * @param snapshot 交易讀取的權威快照。
+     * @param game 交易的原有或新建立對局。
+     * @return 是否允許為這次交易建立歷史草稿。
+     */
+    internal fun shouldRecordHistory(snapshot: AuthoritativeStateSnapshot, game: Game): Boolean {
+        val decision = snapshot.historyRecordingState.decisionsByMatchId[game.matchId]
+            ?: when {
+                snapshot.games[game.id]?.matchId != game.matchId -> recordingPolicy.decide(game)
+                game.matchId in snapshot.historyRecordingState.nextSequenceByMatchId -> HistoryRecordingDecision.RECORDING
+                else -> HistoryRecordingDecision.EXCLUDED_NO_OPENING
+            }
+        return (recordingPolicy.enabled || game.isMatchOver) && decision == HistoryRecordingDecision.RECORDING
+    }
+
+    /**
+     * 確認已同步的資格診斷，只移除已離開權威狀態且沒有待寫事件的場次。
+     *
+     * @param matchIds 儲存端已接收診斷或完整封存的場次。
+     */
+    suspend fun acknowledgeHistoryDecisions(matchIds: Set<Uuid>) = mutex.withLock {
+        val recording = currentState.historyRecordingState
+        val protected = currentState.games.values.map { it.matchId }.toSet() + recording.pendingEvents.map { it.matchId }
+        val removable = matchIds - protected
+        commit(currentState.copy(historyRecordingState = recording.copy(decisionsByMatchId = recording.decisionsByMatchId - removable)))
+    }
+
+    /**
+     * 由現存序號辨識原有記錄；缺少開局證據的對局不從中途新增。
+     *
+     * @param snapshot 待補足每場判定的權威快照。
+     * @return 帶固定資格的待寫歷史狀態。
+     */
+    private fun restoreDecisions(snapshot: AuthoritativeStateSnapshot): HistoryRecordingState {
+        val recording = snapshot.historyRecordingState
+        val decisions = recording.decisionsByMatchId.toMutableMap()
+        snapshot.games.values.forEach { game ->
+            if (game.matchId !in decisions) {
+                decisions[game.matchId] = if (game.matchId in recording.nextSequenceByMatchId) {
+                    HistoryRecordingDecision.RECORDING
+                } else {
+                    HistoryRecordingDecision.EXCLUDED_NO_OPENING
+                }
+            }
+        }
+        return recording.copy(decisionsByMatchId = decisions)
+    }
+
+    /**
+     * 發布實際變更並通知持久化 adapter。
+     *
+     * @param nextState 完成交易的不可變快照。
+     */
+    private fun commit(nextState: AuthoritativeStateSnapshot) {
+        if (nextState != currentState) {
+            currentState = nextState
+            dirty = true
+            dirtyListener(currentState)
+        }
     }
 
     /** 僅確認資料庫已提交的事件 ID，保留同時新增的事件、下一序號與缺口。 */
@@ -166,11 +248,19 @@ class AuthoritativeStateStore(
         block: suspend (AuthoritativeStateSnapshot) -> AuthoritativeStateUpdate<T>,
     ): T = mutex.withLock {
         val update = block(currentState)
-        val nextState = if (recordingEnabled && update.state != currentState) {
+        var recording = restoreDecisions(update.state)
+        update.state.games.values.forEach { game ->
+            if (currentState.games[game.id]?.matchId != game.matchId) {
+                recording = recording.copy(decisionsByMatchId = recording.decisionsByMatchId + (game.matchId to recordingPolicy.decide(game)))
+            }
+        }
+        val nextState = if (update.state != currentState) {
             val timestamp = historyClock.now().toEpochMilliseconds()
-            val withDrafts = update.historyDraftsByTableId.entries.fold(currentState.historyRecordingState) { recording, entry ->
+            val withDrafts = update.historyDraftsByTableId.entries.fold(recording) { recording, entry ->
                 val game = update.state.games[entry.key] ?: currentState.games[entry.key]
                     ?: error("History event references unknown table ${entry.key}")
+                val completedReturn = game.isMatchOver && entry.value.all { it.fact is HistoryFact.ReturnedToRoom }
+                if ((!recordingPolicy.enabled && !completedReturn) || recording.decisionsByMatchId[game.matchId] != HistoryRecordingDecision.RECORDING) return@fold recording
                 val before = currentState.games[entry.key]?.tableState
                 val after = update.state.games[entry.key]?.tableState
                 val hasSnapshot = entry.value.any { it.fact is HistoryFact.MatchStarted || it.fact is HistoryFact.RoundStarted }
@@ -191,17 +281,20 @@ class AuthoritativeStateStore(
             }
             val recordingState = update.historyRecordingFailures.fold(withDrafts) { recording, tableId ->
                 val game = update.state.games[tableId] ?: currentState.games[tableId]
-                if (game == null) recording else recording.recordMissing(game)
+                if (game == null || (!recordingPolicy.enabled && !game.isMatchOver) || recording.decisionsByMatchId[game.matchId] != HistoryRecordingDecision.RECORDING) recording else recording.recordMissing(game)
             }
-            update.state.copy(historyRecordingState = recordingState)
+            val active = update.state.games.values.mapTo(mutableSetOf()) { it.matchId }
+            update.state.copy(
+                historyRecordingState = recordingState.copy(
+                    decisionsByMatchId = recordingState.decisionsByMatchId.filter { (matchId, decision) ->
+                        matchId in active || decision == HistoryRecordingDecision.RECORDING || decision == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED
+                    },
+                ),
+            )
         } else {
             update.state
         }
-        if (nextState != currentState) {
-            currentState = nextState
-            dirty = true
-            dirtyListener(currentState)
-        }
+        commit(nextState)
         update.result
     }
 }

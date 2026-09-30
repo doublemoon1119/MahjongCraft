@@ -45,3 +45,29 @@ orphaned-policy = "remove_all"
 # Mahjong tiles never physically collide with other mahjong tiles.
 # Raycasting, right-click interaction, rendering, saving, and HUD targeting remain available when disabled.
 physical-collision-enabled = true
+
+[history]
+
+# Controls whether completed matches are archived to the local history database. Disabling stops active recording permanently;
+# re-enabling records only new matches.
+enabled = true
+
+# Controls whether matches containing any AI seat are archived.
+include-ai-matches = true
+
+# Keep interrupted or partial records only after they can no longer resume.
+# A normal shutdown with a resumable game is not an interruption. Disabling recording creates a partial record.
+include-interrupted-matches = false
+
+# Maximum ended matches to retain. A new completed match is saved before the oldest ended matches are removed.
+# 0 means unlimited matches. Active matches are protected and do not count toward this limit.
+max-matches = 100
+
+# Ended matches expire this many days after their end time in UTC, even when max-matches has not been reached.
+# 0 disables age-based cleanup. Interrupted records use the confirmed interruption time.
+retention-days = 90
+
+# Maximum actual disk space for the database and its WAL/SHM files, in MiB (1 MiB = 1,048,576 bytes).
+# Must be positive; 0 is invalid. All configured limits apply independently.
+# If only protected active data remains above the limit, stop appending history and mark a gap; gameplay continues.
+max-disk-mib = 256

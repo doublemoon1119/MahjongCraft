@@ -1,10 +1,16 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigTomlCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import net.minecraft.server.MinecraftServer
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
@@ -13,13 +19,26 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 
-/** Fabric config directory 與共用 server config codec 之間的檔案 adapter。 */
+/**
+ * Fabric config directory 與共用 server config codec 之間的檔案 adapter。
+ *
+ * @property state 目前有效的伺服器設定。
+ * @property codec 嚴格 TOML 解碼與驗證邊界。
+ * @property pathProvider 目前 session 的固定設定路徑。
+ * @property store 原子套用歷史政策的權威交易邊界。
+ * @property dispatchers 檔案 I/O 與設定發布的執行緒邊界。
+ */
 @Single
 class FabricServerConfigManager(
     @Provided private val state: MinecraftServerConfigState,
     @Provided private val codec: MinecraftServerConfigTomlCodec,
     private val pathProvider: FabricServerConfigPathProvider,
+    private val store: AuthoritativeStateStore,
+    private val dispatchers: CoroutineDispatchers,
 ) {
+    /** 排序多個 reload，避免先讀取的設定覆蓋後提交的設定。 */
+    private val reloadMutex = Mutex()
+
     /** 記錄設定檔建立、載入與失敗原因。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
@@ -72,8 +91,28 @@ class FabricServerConfigManager(
         return load(createdDefaultFile)
     }
 
-    /** 重新讀取完整 TOML；只有解碼與驗證全部成功才替換有效設定。 */
-    fun reload(): MinecraftServerConfigUpdateResult = load(createdDefaultFile = false)
+    /** 重新讀取並原子發布完整設定與記錄政策；檔案錯誤不修改有效值。 */
+    suspend fun reload(): MinecraftServerConfigUpdateResult = reloadMutex.withLock {
+        val attachedLocation = withContext(dispatchers.main) { requireLocation() }
+        try {
+            val config = withContext(dispatchers.io) {
+                codec.decode(Files.readString(attachedLocation.path, StandardCharsets.UTF_8))
+            }
+            withContext(dispatchers.main) {
+                check(location == attachedLocation) { "Server config session changed during reload" }
+                store.applyHistoryRecordingPolicy(config.historyRecordingPolicy()) { state.replace(config) }
+            }
+            MinecraftServerConfigUpdateResult.Success(config, createdDefaultFile = false)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (exception: Exception) {
+            failure(
+                userMessage = "Unable to load server config at ${attachedLocation.displayPath}: ${exception.message}",
+                logMessage = "Unable to load server config at ${attachedLocation.path}: ${exception.message}",
+                cause = exception,
+            )
+        }
+    }
 
     /** 將目前記憶體內的有效設定輸出成不含註解的標準 TOML。 */
     fun formattedCurrentToml(): String = codec.encode(state.current)

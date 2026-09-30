@@ -1,13 +1,16 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.configReloadFailureMessage
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.prefixedConfigMessage
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.serverConfigEntries
+import com.doublemoon1119.mahjongcraft.platform.fabric.text.serverConfigShowMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
@@ -21,6 +24,8 @@ import org.slf4j.LoggerFactory
 class FabricServerConfigCommand(
     private val configManager: FabricServerConfigManager,
     private val mahjongTileCollisionService: MahjongTileCollisionService,
+    private val scope: AppCoroutineScope,
+    private val dispatchers: CoroutineDispatchers,
 ) {
     /** 記錄 config 指令執行者與結果。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -47,7 +52,22 @@ class FabricServerConfigCommand(
     }
 
     /** 重新載入設定並向執行者回報結果。 */
-    private fun reload(source: ServerCommandSource): Int = when (val result = configManager.reload()) {
+    private fun reload(source: ServerCommandSource): Int {
+        scope.launch {
+            val result = configManager.reload()
+            withContext(dispatchers.main) { reportReload(source, result) }
+        }
+        return COMMAND_SUCCESS
+    }
+
+    /**
+     * 在主執行緒套用碰撞設定並回覆已完成的 reload。
+     *
+     * @param source 發起 reload 的管理員。
+     * @param result 完整設定與記錄政策的更新結果。
+     * @return Brigadier 結果碼。
+     */
+    private fun reportReload(source: ServerCommandSource, result: MinecraftServerConfigUpdateResult): Int = when (result) {
         is MinecraftServerConfigUpdateResult.Success -> {
             mahjongTileCollisionService.applyToLoaded(source.server, result.config)
             logger.info("Server config reloaded by {}", source.name)
@@ -75,7 +95,7 @@ class FabricServerConfigCommand(
     }
 
     /**
-     * 顯示目前記憶體內實際生效的本地化設定欄位；完整內容收進單行可 hover 的詳情標籤。
+     * 顯示目前生效的設定，以單則條列訊息提供各 TOML 分類的獨立懸停詳情。
      */
     private fun show(source: ServerCommandSource): Int {
         logger.debug(
@@ -86,11 +106,7 @@ class FabricServerConfigCommand(
         )
         source.sendFeedback(
             {
-                configShowMessage(
-                    Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG),
-                    configManager.displayPath,
-                    serverConfigEntries(configManager.current),
-                )
+                serverConfigShowMessage(configManager.displayPath, configManager.current)
             },
             false,
         )

@@ -50,6 +50,7 @@ class MinecraftServerConfigTomlCodec {
  * @property playerDisconnection 尚未開始的遊戲之玩家斷線設定。
  * @property table 麻將桌破壞與缺失資料設定。
  * @property mahjongTile 麻將牌世界呈現設定。
+ * @property history 歷史資料記錄與封存設定。
  */
 @Serializable
 private data class MinecraftServerConfigTomlDto(
@@ -58,6 +59,7 @@ private data class MinecraftServerConfigTomlDto(
     val table: TablePolicyTomlDto = TablePolicyTomlDto(),
     @SerialName("mahjong-tile")
     val mahjongTile: MahjongTileTomlDto = MahjongTileTomlDto(),
+    val history: HistoryTomlDto = HistoryTomlDto(),
 ) {
     /** 將字串欄位驗證並轉成 runtime config。 */
     fun toConfig(): MinecraftServerConfig = MinecraftServerConfig(
@@ -91,6 +93,7 @@ private data class MinecraftServerConfigTomlDto(
             configValue = OrphanedTablePolicy::configValue,
         ),
         mahjongTilePhysicalCollisionEnabled = mahjongTile.physicalCollisionEnabled,
+        history = history.toConfig(),
     )
 
     /** 建立反映目前 runtime config 的完整 TOML DTO。 */
@@ -108,6 +111,7 @@ private data class MinecraftServerConfigTomlDto(
             mahjongTile = MahjongTileTomlDto(
                 physicalCollisionEnabled = config.mahjongTilePhysicalCollisionEnabled,
             ),
+            history = HistoryTomlDto.fromConfig(config.history),
         )
     }
 }
@@ -149,6 +153,50 @@ private data class MahjongTileTomlDto(
     @SerialName("physical-collision-enabled")
     val physicalCollisionEnabled: Boolean = true,
 )
+
+/** 歷史資料記錄與封存 TOML 欄位。
+ *
+ * @property enabled 是否啟用歷史資料記錄；停用會停止目前記錄，重新啟用只會記錄之後的新牌局。
+ * @property includeAiMatches 是否記錄含有任一 AI 座位的牌局。
+ * @property includeInterruptedMatches 是否保留無法接續的中止或部分紀錄；正常關服後可接續的對局不算中止。
+ * @property maxMatches 最多保留的已完成牌局數量，零表示不限制數量。
+ * @property retentionDays 已完成牌局的保留天數，零表示不限制天數。
+ * @property maxDiskMiB 歷史資料磁碟空間上限，必須為正值。
+ */
+@Serializable
+private data class HistoryTomlDto(
+    val enabled: Boolean = MinecraftHistoryConfig.DEFAULT_ENABLED,
+    @SerialName("include-ai-matches") val includeAiMatches: Boolean = MinecraftHistoryConfig.DEFAULT_INCLUDE_AI_MATCHES,
+    @SerialName("include-interrupted-matches") val includeInterruptedMatches: Boolean = MinecraftHistoryConfig.DEFAULT_INCLUDE_INTERRUPTED_MATCHES,
+    @SerialName("max-matches") val maxMatches: Int = MinecraftHistoryConfig.DEFAULT_MAX_MATCHES,
+    @SerialName("retention-days") val retentionDays: Int = MinecraftHistoryConfig.DEFAULT_RETENTION_DAYS,
+    @SerialName("max-disk-mib") val maxDiskMiB: Long = MinecraftHistoryConfig.DEFAULT_MAX_DISK_MIB,
+) {
+    /** 驗證 TOML 欄位並建立歷史資料設定。 */
+    fun toConfig(): MinecraftHistoryConfig = try {
+        MinecraftHistoryConfig(enabled, includeAiMatches, includeInterruptedMatches, maxMatches, retentionDays, maxDiskMiB)
+    } catch (exception: IllegalArgumentException) {
+        throw InvalidMinecraftServerConfigException(exception.message ?: "Invalid history configuration", exception)
+    }
+
+    /** 將歷史資料設定映射成 TOML 欄位。 */
+    companion object {
+        /**
+         * 建立序列化用的歷史資料設定。
+         *
+         * @param config 已通過驗證的歷史設定。
+         * @return 使用穩定 TOML 欄位名稱的設定資料。
+         */
+        fun fromConfig(config: MinecraftHistoryConfig): HistoryTomlDto = HistoryTomlDto(
+            config.enabled,
+            config.includeAiMatches,
+            config.includeInterruptedMatches,
+            config.maxMatches,
+            config.retentionDays,
+            config.maxDiskMiB,
+        )
+    }
+}
 
 /** 將 config 字串驗證並映射到 enum。 */
 private fun <T> enumValue(

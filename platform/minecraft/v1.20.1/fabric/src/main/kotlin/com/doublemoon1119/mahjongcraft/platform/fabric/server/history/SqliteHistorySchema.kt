@@ -75,6 +75,18 @@ internal object HistoryGapTable : Table("history_gap") {
     override val primaryKey = PrimaryKey(matchId)
 }
 
+/** 因記錄設定停用而停止追加歷史的對局診斷。 */
+internal object HistoryRecordingStopTable : Table("history_recording_stop") {
+    /** 對局的穩定 UUID 字串。 */
+    val matchId = varchar("match_id", 36)
+
+    /** 停止記錄的穩定原因名稱。 */
+    val reason = varchar("reason", 255)
+
+    /** 每場只保存一份停止診斷。 */
+    override val primaryKey = PrimaryKey(matchId)
+}
+
 /** 僅在明確的 schema v1 初始化交易中建立的資料表。 */
 internal val historySchemaV1Tables: Array<Table> = arrayOf(
     HistorySchemaVersionTable,
@@ -84,4 +96,5 @@ internal val historySchemaV1Tables: Array<Table> = arrayOf(
     HistoryPendingEventTable,
     HistoryReplayTable,
     HistoryGapTable,
+    HistoryRecordingStopTable,
 )

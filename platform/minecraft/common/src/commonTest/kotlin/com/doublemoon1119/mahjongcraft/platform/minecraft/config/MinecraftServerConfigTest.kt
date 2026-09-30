@@ -15,6 +15,12 @@ class MinecraftServerConfigTest {
         assertEquals(OrphanedTablePolicy.REMOVE_ALL, config.orphanedTablePolicy)
         assertEquals(30, config.disconnectedPlayerTimeoutSeconds)
         assertEquals(true, config.mahjongTilePhysicalCollisionEnabled)
+        assertEquals(MinecraftHistoryConfig.DEFAULT_ENABLED, config.history.enabled)
+        assertEquals(MinecraftHistoryConfig.DEFAULT_INCLUDE_AI_MATCHES, config.history.includeAiMatches)
+        assertEquals(MinecraftHistoryConfig.DEFAULT_INCLUDE_INTERRUPTED_MATCHES, config.history.includeInterruptedMatches)
+        assertEquals(MinecraftHistoryConfig.DEFAULT_MAX_MATCHES, config.history.maxMatches)
+        assertEquals(MinecraftHistoryConfig.DEFAULT_RETENTION_DAYS, config.history.retentionDays)
+        assertEquals(MinecraftHistoryConfig.DEFAULT_MAX_DISK_MIB, config.history.maxDiskMiB)
     }
 
     /** 各破壞政策應依 Room／Game 占用狀態產生固定結果。 */

@@ -63,6 +63,7 @@ val OrphanedTablePolicy.configValue: String
  * @property orphanedTablePolicy 已確認桌子缺失時採用的資料清理政策。
  * @property disconnectedPlayerTimeoutSeconds `LEAVE_AFTER_TIMEOUT` 使用的離線寬限秒數。
  * @property mahjongTilePhysicalCollisionEnabled 麻將牌是否阻擋玩家及其他非麻將牌 entity。
+ * @property history 歷史資料記錄與封存設定。
  */
 data class MinecraftServerConfig(
     val disconnectedPlayerPolicy: DisconnectedPlayerPolicy = DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY,
@@ -70,6 +71,7 @@ data class MinecraftServerConfig(
     val orphanedTablePolicy: OrphanedTablePolicy = OrphanedTablePolicy.REMOVE_ALL,
     val disconnectedPlayerTimeoutSeconds: Long = DEFAULT_DISCONNECTED_PLAYER_TIMEOUT_SECONDS,
     val mahjongTilePhysicalCollisionEnabled: Boolean = true,
+    val history: MinecraftHistoryConfig = MinecraftHistoryConfig(),
 ) {
     /** Server config 數值邊界與預設值。 */
     companion object {

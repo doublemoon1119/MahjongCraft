@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.dto.history
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryPlayerChange
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
@@ -14,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -79,6 +81,31 @@ class HistoryRecordingPersistenceDtoTest {
         val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
 
         assertEquals(state, mapper.decode(mapper.encode(state)))
+    }
+
+    /** 驗證所有歷史記錄決策均以穩定列舉名稱往返持久化。 */
+    @Test
+    fun `all history recording decisions round trip through mapper`() {
+        val decisionsByMatchId = HistoryRecordingDecision.entries.associate { decision ->
+            Uuid.random() to decision
+        }
+        val state = HistoryRecordingState(decisionsByMatchId = decisionsByMatchId)
+        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
+
+        assertEquals(state, mapper.decode(mapper.encode(state)))
+    }
+
+    /** 未知的歷史記錄決策名稱必須拒絕載入，避免錯誤地視為可記錄。 */
+    @Test
+    fun `unknown history recording decision rejects decoding`() {
+        val matchId = Uuid.random()
+        val dto = HistoryRecordingPersistenceDto(
+            decisionsByMatchId = mapOf(matchId.toString() to "UNKNOWN_DECISION"),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries()).decode(dto)
+        }
     }
 
     /** 單筆事件無法解碼時留下序號缺口，不讓歷史附加資料阻止權威存檔載入。 */
