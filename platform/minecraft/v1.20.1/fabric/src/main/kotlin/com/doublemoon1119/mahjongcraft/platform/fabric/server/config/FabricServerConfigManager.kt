@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRetentionCoordinator
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.retentionPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigTomlCodec
@@ -27,6 +29,7 @@ import java.nio.file.Path
  * @property pathProvider 目前 session 的固定設定路徑。
  * @property store 原子套用歷史政策的權威交易邊界。
  * @property dispatchers 檔案 I/O 與設定發布的執行緒邊界。
+ * @property retentionCoordinator 排序有效設定發布與正在執行的歷史清理。
  */
 @Single
 class FabricServerConfigManager(
@@ -35,6 +38,7 @@ class FabricServerConfigManager(
     private val pathProvider: FabricServerConfigPathProvider,
     private val store: AuthoritativeStateStore,
     private val dispatchers: CoroutineDispatchers,
+    private val retentionCoordinator: HistoryRetentionCoordinator,
 ) {
     /** 排序多個 reload，避免先讀取的設定覆蓋後提交的設定。 */
     private val reloadMutex = Mutex()
@@ -98,9 +102,11 @@ class FabricServerConfigManager(
             val config = withContext(dispatchers.io) {
                 codec.decode(Files.readString(attachedLocation.path, StandardCharsets.UTF_8))
             }
-            withContext(dispatchers.main) {
-                check(location == attachedLocation) { "Server config session changed during reload" }
-                store.applyHistoryRecordingPolicy(config.historyRecordingPolicy()) { state.replace(config) }
+            retentionCoordinator.apply(config.history.retentionPolicy()) {
+                withContext(dispatchers.main) {
+                    check(location == attachedLocation) { "Server config session changed during reload" }
+                    store.applyHistoryRecordingPolicy(config.historyRecordingPolicy()) { state.replace(config) }
+                }
             }
             MinecraftServerConfigUpdateResult.Success(config, createdDefaultFile = false)
         } catch (cancelled: CancellationException) {

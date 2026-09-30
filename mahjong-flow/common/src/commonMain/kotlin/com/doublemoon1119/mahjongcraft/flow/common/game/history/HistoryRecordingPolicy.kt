@@ -41,4 +41,10 @@ enum class HistoryRecordingDecision {
 
     /** 原本正在記錄，因總開關關閉而永久停止該場追加。 */
     STOPPED_CONFIG_DISABLED,
+
+    /** 歷史儲存端容量不足或不可用，該場次保留缺口並停止追加。 */
+    STOPPED_STORAGE_UNAVAILABLE,
+
+    /** 已由封存清理標記為不可再追加的場次。 */
+    STOPPED_PRUNED,
 }

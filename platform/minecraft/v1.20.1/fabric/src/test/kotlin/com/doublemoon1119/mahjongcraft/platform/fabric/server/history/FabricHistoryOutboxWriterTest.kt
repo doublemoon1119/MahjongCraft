@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
@@ -13,6 +14,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistoryConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.CoroutineDispatcher
@@ -32,6 +36,114 @@ import kotlin.uuid.Uuid
 
 /** 驗證背景 writer 在 SQLite 提交後才確認權威 outbox。 */
 class FabricHistoryOutboxWriterTest {
+    /** 保留部分紀錄時，SQL 終止證據與缺口提交後可清除已排空的權威 metadata。 */
+    @Test
+    fun `retained partial metadata is acknowledged only after durable synchronization`() = runBlocking {
+        val pending = event()
+        val store = AuthoritativeStateStore()
+        store.load(
+            AuthoritativeStateSnapshot(
+                historyRecordingState = HistoryRecordingState(
+                    pendingEvents = listOf(pending),
+                    nextSequenceByMatchId = mapOf(pending.matchId to 3L),
+                    firstMissingSequenceByMatchId = mapOf(pending.matchId to 2L),
+                    terminalByMatchId = mapOf(pending.matchId to HistoryRecordingTerminal(100L, false, pending.tableId)),
+                ),
+            ),
+        )
+        val path = createTempDirectory("history-retained-partial-").resolve("history.sqlite")
+        val config = MinecraftServerConfigState(MinecraftServerConfig(history = MinecraftHistoryConfig(includeInterruptedMatches = true, retentionDays = 0)))
+        val writer = writer(store, config)
+        try {
+            writer.attach(path)
+            withTimeout(5.seconds) {
+                while (store.snapshot().historyRecordingState.terminalByMatchId.isNotEmpty()) delay(10.milliseconds)
+            }
+            val recording = store.snapshot().historyRecordingState
+            assertTrue(recording.pendingEvents.isEmpty())
+            assertTrue(recording.nextSequenceByMatchId.isEmpty())
+            val database = SqliteHistoryDatabase.open(path)
+            assertEquals(setOf(pending.matchId.toString()), database.readTerminalPartialIds())
+            assertEquals(2L, database.readGaps()[pending.matchId.toString()])
+            assertEquals(1, database.readPending(pending.matchId.toString()).size)
+            assertTrue(database.readReplayIds().isEmpty())
+        } finally {
+            writer.detach()
+        }
+    }
+
+    /** 已清理場次的舊 outbox 重啟後只丟棄已證明的場次，不製造新缺口。 */
+    @Test
+    fun `tombstoned inactive outbox is acknowledged without resurrection`() = runBlocking {
+        val pending = event()
+        val store = AuthoritativeStateStore()
+        store.load(AuthoritativeStateSnapshot(historyRecordingState = HistoryRecordingState(pendingEvents = listOf(pending))))
+        val path = createTempDirectory("history-tombstone-restart-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        database.recordTerminals(listOf(HistoryTerminalRecord(pending.matchId.toString(), pending.tableId.toString(), 100L, false)))
+        database.pruneMatches(mapOf(pending.matchId.toString() to "EXPIRED"), 101L)
+        val writer = writer(store)
+        try {
+            writer.attach(path)
+            assertTrue(store.snapshot().historyRecordingState.pendingEvents.isEmpty())
+            assertTrue(database.readPending(pending.matchId.toString()).isEmpty())
+            assertEquals(0, writer.status().knownGapCount)
+        } finally {
+            writer.detach()
+        }
+    }
+
+    /** 舊存檔中的可接續場次即使有 tombstone 也保留 Game 與原有待寫事件。 */
+    @Test
+    fun `tombstoned active outbox remains protected and stops appending`() = runBlocking {
+        val game = Game(FakeTableStateFactory.create(), GameFlowConfig())
+        val pending = event().copy(matchId = game.matchId, tableId = game.id)
+        val store = AuthoritativeStateStore()
+        store.load(
+            AuthoritativeStateSnapshot(
+                games = mapOf(game.id to game),
+                historyRecordingState = HistoryRecordingState(pendingEvents = listOf(pending)),
+            ),
+        )
+        val path = createTempDirectory("history-active-tombstone-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        database.recordTerminals(listOf(HistoryTerminalRecord(game.matchId.toString(), game.id.toString(), 100L, false)))
+        database.pruneMatches(mapOf(game.matchId.toString() to "EXPIRED"), 101L)
+        val writer = writer(store)
+        try {
+            writer.attach(path)
+            delay(50.milliseconds)
+            assertEquals(game, store.getGame(game.id))
+            assertEquals(listOf(pending), store.snapshot().historyRecordingState.pendingEvents)
+            assertEquals(HistoryRecordingDecision.STOPPED_PRUNED, store.snapshot().historyRecordingState.decisionsByMatchId[game.matchId])
+            assertTrue(database.readPending(game.matchId.toString()).isEmpty())
+        } finally {
+            writer.detach()
+        }
+    }
+
+    /** 容量不足與設定總開關分開回報，未知紀錄超標時不刪除資料。 */
+    @Test
+    fun `oversized unknown data pauses storage without disabling policy`() = runBlocking {
+        val path = createTempDirectory("history-capacity-pause-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        val id = Uuid.random().toString()
+        database.appendPending(PendingHistoryRecord(id, 1L, 1, 100L, 1, "x".repeat(2 * 1024 * 1024)))
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true)
+        val writer = writer(store, MinecraftServerConfigState(MinecraftServerConfig(history = MinecraftHistoryConfig(maxDiskMiB = 1L))))
+        try {
+            writer.attach(path)
+            val status = writer.status()
+            assertTrue(status.databaseConnected)
+            assertTrue(status.recordingEnabled)
+            assertTrue(status.storagePaused)
+            assertTrue(database.readTombstones().isEmpty())
+            assertEquals(1, database.readPending(id).size)
+        } finally {
+            writer.detach()
+        }
+    }
+
     /** 已保存的待寫事件能跨資料庫重新開啟讀回，且確認不清除缺口。 */
     @Test
     fun `committed events are acknowledged without clearing gaps`() = runBlocking {
@@ -226,14 +338,17 @@ class FabricHistoryOutboxWriterTest {
      * 建立與 production 相同的 mapper、JSON 與 I/O dispatcher 邊界。
      *
      * @param store 受測的權威歷史來源。
+     * @param configState 此 session 的有效設定。
      * @return 未附加資料庫的 writer。
      */
-    private fun writer(store: AuthoritativeStateStore): FabricHistoryOutboxWriter = FabricHistoryOutboxWriter(
+    private fun writer(store: AuthoritativeStateStore, configState: MinecraftServerConfigState = MinecraftServerConfigState()): FabricHistoryOutboxWriter = FabricHistoryOutboxWriter(
         store = store,
         registries = buildBuiltInPersistenceRegistries(),
         json = Json,
         moduleRegistry = MahjongModuleRegistryImpl(),
         locations = TableLocationRegistry(),
+        configState = configState,
+        retentionCoordinator = HistoryRetentionCoordinator(),
         dispatchers = object : CoroutineDispatchers {
             override val default: CoroutineDispatcher = Dispatchers.Default
             override val io: CoroutineDispatcher = Dispatchers.IO

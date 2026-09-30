@@ -53,7 +53,7 @@ internal class HistoryArchiveService(
     fun reconcile(database: SqliteHistoryDatabase, recording: HistoryRecordingState): Map<String, Long> {
         val existing = database.readAllPending().groupBy(PendingHistoryRecord::matchId)
         val outbox = recording.pendingEvents.groupBy { it.matchId.toString() }
-        val archived = database.readReplayIds()
+        val archived = database.readReplayIds() + database.readTombstones()
         val candidates = existing.keys + outbox.keys + recording.nextSequenceByMatchId.keys.map { it.toString() } +
             recording.firstMissingSequenceByMatchId.keys.map { it.toString() }
         val gaps = recording.firstMissingSequenceByMatchId
@@ -116,7 +116,7 @@ internal class HistoryArchiveService(
         val active = snapshot.games.values.mapTo(mutableSetOf()) { it.matchId.toString() }
         val gaps = database.readGaps().keys
         val stopped = database.readRecordingStops().keys
-        val archived = database.readReplayIds()
+        val archived = database.readReplayIds() + database.readTombstones()
         var completed = 0
         database.readAllPending().groupBy(PendingHistoryRecord::matchId).forEach { (matchId, records) ->
             if (matchId in staged || matchId in active || matchId in gaps || matchId in stopped || matchId in archived) return@forEach

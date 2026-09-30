@@ -87,6 +87,37 @@ internal object HistoryRecordingStopTable : Table("history_recording_stop") {
     override val primaryKey = PrimaryKey(matchId)
 }
 
+/** 已完成保留清理的場次墓碑，阻止延遲寫入重新建立資料。 */
+internal object HistoryTombstoneTable : Table("history_tombstone") {
+    /** 對局的穩定 UUID 字串。 */
+    val matchId = varchar("match_id", 36)
+
+    /** 清理完成的 UTC 毫秒時間戳。 */
+    val prunedAtEpochMillis = long("pruned_at_epoch_millis")
+
+    /** 清理原因。 */
+    val reason = varchar("reason", 255)
+
+    override val primaryKey = PrimaryKey(matchId)
+}
+
+/** 記錄器終局訊息；未完成終局可作為部分歷史保留候選。 */
+internal object HistoryTerminalTable : Table("history_terminal") {
+    /** 對局的穩定 UUID 字串。 */
+    val matchId = varchar("match_id", 36)
+
+    /** 終局所在牌桌的穩定 UUID 字串。 */
+    val tableId = varchar("table_id", 36)
+
+    /** 終局的 UTC 毫秒時間戳。 */
+    val endedAtEpochMillis = long("ended_at_epoch_millis")
+
+    /** 是否由完整終局流程確認。 */
+    val completed = bool("completed")
+
+    override val primaryKey = PrimaryKey(matchId, tableId)
+}
+
 /** 僅在明確的 schema v1 初始化交易中建立的資料表。 */
 internal val historySchemaV1Tables: Array<Table> = arrayOf(
     HistorySchemaVersionTable,
@@ -97,4 +128,6 @@ internal val historySchemaV1Tables: Array<Table> = arrayOf(
     HistoryReplayTable,
     HistoryGapTable,
     HistoryRecordingStopTable,
+    HistoryTombstoneTable,
+    HistoryTerminalTable,
 )

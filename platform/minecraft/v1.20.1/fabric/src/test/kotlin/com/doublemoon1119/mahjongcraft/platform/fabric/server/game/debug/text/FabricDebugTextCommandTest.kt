@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigLocation
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigPathProvider
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRetentionCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigTomlCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
@@ -32,6 +33,7 @@ class FabricDebugTextCommandTest {
             pathProvider = UnusedPathProvider,
             store = AuthoritativeStateStore(),
             dispatchers = TestCoroutineDispatchers,
+            retentionCoordinator = HistoryRetentionCoordinator(),
         ),
         json = Json,
         networkRegistries = DefaultNetworkDtoRegistries(),

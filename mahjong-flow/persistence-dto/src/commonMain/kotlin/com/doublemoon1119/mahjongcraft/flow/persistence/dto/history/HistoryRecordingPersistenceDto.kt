@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.config.GameFlowConfigPersistenceDto
@@ -40,11 +41,25 @@ data class HistoryRecordingPersistenceDto(
     val pendingEvents: List<HistoryOutboxEventPersistenceDto> = emptyList(),
     val firstMissingSequenceByMatchId: Map<String, Long> = emptyMap(),
     val decisionsByMatchId: Map<String, String> = emptyMap(),
+    val terminalByMatchId: Map<String, HistoryRecordingTerminalPersistenceDto> = emptyMap(),
 ) {
     init {
         require(formatVersion == 1) { "Unsupported history outbox format $formatVersion" }
     }
 }
+
+/** 已結束歷史場次的持久化終點證據。
+ *
+ * @property endedAtEpochMillis 場次結束的 UTC 毫秒時間戳。
+ * @property completed 場次是否正常完成整場對局。
+ * @property tableId 原牌桌 UUID 字串。
+ */
+@Serializable
+data class HistoryRecordingTerminalPersistenceDto(
+    val endedAtEpochMillis: Long,
+    val completed: Boolean,
+    val tableId: String,
+)
 
 /** 一筆已指派穩定鍵、可重試寫入的歷史事件。
  *
@@ -292,6 +307,13 @@ class HistoryRecordingPersistenceMapper(
             pendingEvents = encoded,
             firstMissingSequenceByMatchId = missing.mapKeys { it.key.toString() },
             decisionsByMatchId = state.decisionsByMatchId.mapKeys { it.key.toString() }.mapValues { it.value.name },
+            terminalByMatchId = state.terminalByMatchId.mapKeys { it.key.toString() }.mapValues { (_, terminal) ->
+                HistoryRecordingTerminalPersistenceDto(
+                    terminal.endedAtEpochMillis,
+                    terminal.completed,
+                    terminal.tableId.toString(),
+                )
+            },
         )
     }
 
@@ -311,6 +333,13 @@ class HistoryRecordingPersistenceMapper(
             firstMissingSequenceByMatchId = missing,
             decisionsByMatchId = dto.decisionsByMatchId.mapKeys { Uuid.parse(it.key) }
                 .mapValues { HistoryRecordingDecision.valueOf(it.value) },
+            terminalByMatchId = dto.terminalByMatchId.mapKeys { Uuid.parse(it.key) }.mapValues { (_, terminal) ->
+                HistoryRecordingTerminal(
+                    terminal.endedAtEpochMillis,
+                    terminal.completed,
+                    Uuid.parse(terminal.tableId),
+                )
+            },
         )
     }
 

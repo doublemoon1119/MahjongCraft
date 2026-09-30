@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEve
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryPlayerChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
@@ -21,6 +22,28 @@ import kotlin.uuid.Uuid
 
 /** 驗證歷史 outbox 的持久化 DTO 可保存並還原穩定序號與事實。 */
 class HistoryRecordingPersistenceDtoTest {
+    /** 終局 metadata 經持久化 DTO 往返後保持完整。 */
+    @Test
+    fun `terminal metadata round trips`() {
+        val matchId = Uuid.random()
+        val terminal = HistoryRecordingTerminal(42L, true, Uuid.random())
+        val state = HistoryRecordingState(terminalByMatchId = mapOf(matchId to terminal))
+        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
+        assertEquals(state, mapper.decode(mapper.encode(state)))
+    }
+
+    /** 終局 metadata 的牌桌 UUID 無法解析時必須拒絕資料。 */
+    @Test
+    fun `malformed terminal table ID fails decoding`() {
+        val dto = HistoryRecordingPersistenceDto(
+            terminalByMatchId = mapOf(
+                Uuid.random().toString() to HistoryRecordingTerminalPersistenceDto(1L, false, "not-a-uuid"),
+            ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
+        assertFailsWith<IllegalArgumentException> { mapper.decode(dto) }
+    }
+
     /** 交易結果的局部差異在 JSON 與 DTO 往返後仍能重建玩家分數。 */
     @Test
     fun `table change round trips without full table snapshot`() {

@@ -2,9 +2,11 @@ package com.doublemoon1119.mahjongcraft.flow.server.state
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryPruningConfirmation
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
@@ -76,6 +78,10 @@ class AuthoritativeStateStore(
 
     /** 目前新場資格政策；變更及權威交易皆由同一 mutex 排序。 */
     @Volatile private var recordingPolicy = HistoryRecordingPolicy(enabled = historyRecordingEnabled)
+
+    /** 歷史儲存端目前是否可接受新的事件。 */
+    @Volatile var isHistoryStorageAvailable: Boolean = true
+        private set
 
     /** 目前是否記錄歷史事件。 */
     val isHistoryRecordingEnabled: Boolean get() = recordingPolicy.enabled
@@ -166,7 +172,28 @@ class AuthoritativeStateStore(
                 game.matchId in snapshot.historyRecordingState.nextSequenceByMatchId -> HistoryRecordingDecision.RECORDING
                 else -> HistoryRecordingDecision.EXCLUDED_NO_OPENING
             }
-        return (recordingPolicy.enabled || game.isMatchOver) && decision == HistoryRecordingDecision.RECORDING
+        return isHistoryStorageAvailable &&
+            (recordingPolicy.enabled || game.isMatchOver) &&
+            decision == HistoryRecordingDecision.RECORDING
+    }
+
+    /** 更新歷史儲存端容量旗標；不可用期間仍保留權威交易，但不建立待寫事件。
+     *
+     * @param available 儲存端是否可接受新的歷史事件。
+     */
+    suspend fun applyHistoryStorageAvailability(available: Boolean) = mutex.withLock {
+        isHistoryStorageAvailable = available
+        if (available) return@withLock
+        var recording = restoreDecisions(currentState)
+        currentState.games.values.forEach { game ->
+            if (recording.decisionsByMatchId[game.matchId] == HistoryRecordingDecision.RECORDING) {
+                recording = recording.recordMissing(game).copy(
+                    decisionsByMatchId = recording.decisionsByMatchId +
+                        (game.matchId to HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE),
+                )
+            }
+        }
+        commit(currentState.copy(historyRecordingState = recording))
     }
 
     /**
@@ -179,6 +206,52 @@ class AuthoritativeStateStore(
         val protected = currentState.games.values.map { it.matchId }.toSet() + recording.pendingEvents.map { it.matchId }
         val removable = matchIds - protected
         commit(currentState.copy(historyRecordingState = recording.copy(decisionsByMatchId = recording.decisionsByMatchId - removable)))
+    }
+
+    /** 確認已同步的場次 metadata，僅清除沒有對局與待寫事件保護的項目。
+     *
+     * @param matchIds 已由儲存端確認的場次 UUID。
+     */
+    suspend fun acknowledgeHistoryMetadata(matchIds: Set<Uuid>) = mutex.withLock {
+        val recording = currentState.historyRecordingState
+        val protected = currentState.games.values.map { it.matchId }.toSet() + recording.pendingEvents.map { it.matchId }
+        val removable = matchIds - protected
+        val next = recording.copy(
+            nextSequenceByMatchId = recording.nextSequenceByMatchId - removable,
+            firstMissingSequenceByMatchId = recording.firstMissingSequenceByMatchId - removable,
+            decisionsByMatchId = recording.decisionsByMatchId - removable,
+            terminalByMatchId = recording.terminalByMatchId - removable,
+        )
+        commit(currentState.copy(historyRecordingState = next))
+    }
+
+    /**
+     * 確認儲存端已提交的清理收據，避免較舊待寫歷史重新建立已清理紀錄。
+     *
+     * 只丟棄收據涵蓋且已離開進行中集合的歷史事件；遊戲本身及其他場次不受影響。
+     * 可接續的同 ID 對局保留既有待寫資料並停止新增，待真正終止後再確認。
+     *
+     * @param confirmations 由儲存 adapter 讀取已提交 tombstone 所建立的收據，不得由玩家輸入建立。
+     */
+    suspend fun acknowledgePrunedHistory(confirmations: Collection<HistoryPruningConfirmation>) = mutex.withLock {
+        val confirmed = confirmations.mapTo(mutableSetOf()) { it.matchId }
+        if (confirmed.isEmpty()) return@withLock
+        val active = currentState.games.values.mapTo(mutableSetOf()) { it.matchId }
+        val removable = confirmed - active
+        val recording = currentState.historyRecordingState
+        val decisions = (recording.decisionsByMatchId - removable).toMutableMap()
+        (confirmed intersect active).forEach { decisions[it] = HistoryRecordingDecision.STOPPED_PRUNED }
+        commit(
+            currentState.copy(
+                historyRecordingState = recording.copy(
+                    pendingEvents = recording.pendingEvents.filterNot { it.matchId in removable },
+                    nextSequenceByMatchId = recording.nextSequenceByMatchId - removable,
+                    firstMissingSequenceByMatchId = recording.firstMissingSequenceByMatchId - removable,
+                    decisionsByMatchId = decisions,
+                    terminalByMatchId = recording.terminalByMatchId - removable,
+                ),
+            ),
+        )
     }
 
     /**
@@ -256,11 +329,39 @@ class AuthoritativeStateStore(
         }
         val nextState = if (update.state != currentState) {
             val timestamp = historyClock.now().toEpochMilliseconds()
+            val previousHistory = currentState.historyRecordingState
+            val removedOrReplaced = currentState.games.values.filter { old ->
+                val replacement = update.state.games[old.id]
+                replacement == null || replacement.matchId != old.matchId
+            }
+            val terminals = removedOrReplaced.filter { old ->
+                old.matchId in previousHistory.nextSequenceByMatchId ||
+                    old.matchId in previousHistory.pendingEvents.map { it.matchId } ||
+                    old.matchId in previousHistory.firstMissingSequenceByMatchId ||
+                    previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.RECORDING ||
+                    previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED ||
+                    previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE
+            }.associate { old ->
+                old.matchId to HistoryRecordingTerminal(timestamp, old.isMatchOver, old.id)
+            }
+            recording = recording.copy(terminalByMatchId = recording.terminalByMatchId + terminals)
+            if (!isHistoryStorageAvailable) {
+                update.state.games.values.forEach { game ->
+                    if (currentState.games[game.id] != game &&
+                        recording.decisionsByMatchId[game.matchId] == HistoryRecordingDecision.RECORDING
+                    ) {
+                        recording = recording.recordMissing(game).copy(
+                            decisionsByMatchId = recording.decisionsByMatchId +
+                                (game.matchId to HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE),
+                        )
+                    }
+                }
+            }
             val withDrafts = update.historyDraftsByTableId.entries.fold(recording) { recording, entry ->
                 val game = update.state.games[entry.key] ?: currentState.games[entry.key]
                     ?: error("History event references unknown table ${entry.key}")
                 val completedReturn = game.isMatchOver && entry.value.all { it.fact is HistoryFact.ReturnedToRoom }
-                if ((!recordingPolicy.enabled && !completedReturn) || recording.decisionsByMatchId[game.matchId] != HistoryRecordingDecision.RECORDING) return@fold recording
+                if (!isHistoryStorageAvailable || (!recordingPolicy.enabled && !completedReturn) || recording.decisionsByMatchId[game.matchId] != HistoryRecordingDecision.RECORDING) return@fold recording
                 val before = currentState.games[entry.key]?.tableState
                 val after = update.state.games[entry.key]?.tableState
                 val hasSnapshot = entry.value.any { it.fact is HistoryFact.MatchStarted || it.fact is HistoryFact.RoundStarted }
@@ -287,7 +388,11 @@ class AuthoritativeStateStore(
             update.state.copy(
                 historyRecordingState = recordingState.copy(
                     decisionsByMatchId = recordingState.decisionsByMatchId.filter { (matchId, decision) ->
-                        matchId in active || decision == HistoryRecordingDecision.RECORDING || decision == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED
+                        matchId in active ||
+                            decision == HistoryRecordingDecision.RECORDING ||
+                            decision == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED ||
+                            decision == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE ||
+                            decision == HistoryRecordingDecision.STOPPED_PRUNED
                     },
                 ),
             )

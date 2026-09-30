@@ -92,6 +92,15 @@ object MinecraftConfigCommandKeys {
     /** 未偵測到錯誤時的安全摘要。 */
     const val HISTORY_ERROR_NONE: String = "mahjongcraft.history.command.error_none"
 
+    /** 歷史資料容量狀態欄位。 */
+    const val HISTORY_STORAGE_STATE: String = "mahjongcraft.command.history.storage_state"
+
+    /** 歷史資料暫停新增狀態文字。 */
+    const val HISTORY_STORAGE_PAUSED: String = "mahjongcraft.command.history.storage_paused"
+
+    /** 歷史資料可正常記錄狀態文字。 */
+    const val HISTORY_STORAGE_AVAILABLE: String = "mahjongcraft.command.history.storage_available"
+
     /** 斷線玩家政策欄位。 */
     const val DISCONNECTED_PLAYER_POLICY: String = "mahjongcraft.server_config.disconnected_player_policy"
 

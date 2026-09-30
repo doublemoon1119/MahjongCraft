@@ -35,6 +35,12 @@ private fun historyStatusEntries(status: HistoryWriterStatus): List<ConfigPresen
         ),
     ),
     ConfigPresentationEntry(
+        Text.translatable(MinecraftConfigCommandKeys.HISTORY_STORAGE_STATE),
+        Text.translatable(
+            if (status.storagePaused) MinecraftConfigCommandKeys.HISTORY_STORAGE_PAUSED else MinecraftConfigCommandKeys.HISTORY_STORAGE_AVAILABLE,
+        ),
+    ),
+    ConfigPresentationEntry(
         Text.translatable(MinecraftConfigCommandKeys.HISTORY_PENDING_EVENTS),
         Text.literal(status.pendingEventCount.toString()),
     ),
