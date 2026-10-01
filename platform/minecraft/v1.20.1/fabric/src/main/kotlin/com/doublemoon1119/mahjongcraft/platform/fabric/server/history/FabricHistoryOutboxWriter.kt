@@ -6,6 +6,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTransferResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryListRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryAccess
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySummaryRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
@@ -331,6 +334,52 @@ class FabricHistoryOutboxWriter(
         val active = snapshot.games.values.mapTo(mutableSetOf()) { it.matchId.toString() } +
             snapshot.historyRecordingState.transfersByMatchId.keys.map { it.toString() }
         activeDatabase.readSummaryPage(limit, cursor, active)
+    }
+
+    /**
+     * 於唯一資料庫 session 內讀取經授權的玩家歷史清單。
+     *
+     * @param access 由連線提供的可信身分。
+     * @param request 已通過 Flow 驗證的要求。
+     * @param sessionId 收到要求時捕捉的世界 session。
+     * @return 同一政策 lease 下的有界資料庫結果。
+     */
+    internal suspend fun queryList(
+        access: HistoryQueryAccess,
+        request: HistoryListRequest,
+        sessionId: Uuid?,
+    ): HistoryManagementResult<SqliteHistoryQueryPage> = manage(sessionId) { activeDatabase, _ ->
+        activeDatabase.readHistoryQueryPage(request.toSqliteQuery(access, excludedHistoryMatches()))
+    }
+
+    /**
+     * 於唯一資料庫 session 內讀取經授權的單場摘要。
+     *
+     * @param access 由連線提供的可信身分。
+     * @param request 已通過 Flow 驗證的要求。
+     * @param sessionId 收到要求時捕捉的世界 session。
+     * @return 不存在、未公開或未授權皆為空頁，不揭露原因差異。
+     */
+    internal suspend fun querySummary(
+        access: HistoryQueryAccess,
+        request: HistorySummaryRequest,
+        sessionId: Uuid?,
+    ): HistoryManagementResult<SqliteHistoryQueryPage> = manage(sessionId) { activeDatabase, _ ->
+        activeDatabase.readHistoryQueryPage(
+            HistoryListRequest(scope = request.scope, pageSize = 1)
+                .toSqliteQuery(access, excludedHistoryMatches()).copy(matchId = request.matchId.toString()),
+        )
+    }
+
+    /**
+     * 取得目前仍能接續的對局，不因暫時缺少資料庫列而公開。
+     *
+     * @return 正式遊戲及隔離轉移中場次的識別碼。
+     */
+    private suspend fun excludedHistoryMatches(): Set<String> {
+        val snapshot = store.snapshot()
+        return snapshot.games.values.mapTo(mutableSetOf()) { it.matchId.toString() } +
+            snapshot.historyRecordingState.transfersByMatchId.keys.map { it.toString() }
     }
 
     /**

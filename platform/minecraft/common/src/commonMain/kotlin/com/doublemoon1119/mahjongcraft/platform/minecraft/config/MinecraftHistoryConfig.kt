@@ -8,6 +8,8 @@ import kotlin.time.Duration.Companion.days
  * @property enabled 是否啟用歷史資料記錄；停用會永久停止目前記錄，重新啟用只會記錄之後的新牌局。
  * @property includeAiMatches 是否記錄含有任一 AI 座位的牌局。
  * @property includeInterruptedMatches 是否保留已確認無法接續的中止或部分紀錄；正常關服後可接續的對局不算中止。
+ * @property queryEnabled 是否允許玩家與管理員查詢已保存的歷史資料；停用時所有查詢都會被拒絕，但不影響記錄政策。
+ * @property allowAdminQuery 是否允許具備管理員權限的使用者查詢全部已保存歷史；停用時管理員仍可查詢自己的對局。
  * @property maxMatches 最多保留的已結束對局數；新對局先保存，再清除最舊的已結束對局，0 表示不限制場數，進行中對局不計入。
  * @property retentionDays 已結束對局自結束 UTC 時間起的保留天數；獨立於場數限制，到期即清理，0 表示不按天數清理。
  * @property maxDiskMiB 資料庫主檔及 WAL／SHM 附屬檔的磁碟上限，必須為正 MiB；容量不足時停止新增並標記缺口，不阻擋對局。
@@ -16,6 +18,8 @@ data class MinecraftHistoryConfig(
     val enabled: Boolean = DEFAULT_ENABLED,
     val includeAiMatches: Boolean = DEFAULT_INCLUDE_AI_MATCHES,
     val includeInterruptedMatches: Boolean = DEFAULT_INCLUDE_INTERRUPTED_MATCHES,
+    val queryEnabled: Boolean = DEFAULT_QUERY_ENABLED,
+    val allowAdminQuery: Boolean = DEFAULT_ALLOW_ADMIN_QUERY,
     val maxMatches: Int = DEFAULT_MAX_MATCHES,
     val retentionDays: Int = DEFAULT_RETENTION_DAYS,
     val maxDiskMiB: Long = DEFAULT_MAX_DISK_MIB,
@@ -56,6 +60,12 @@ data class MinecraftHistoryConfig(
 
         /** 是否記錄中斷牌局的預設值。 */
         const val DEFAULT_INCLUDE_INTERRUPTED_MATCHES: Boolean = false
+
+        /** 是否允許歷史查詢的預設值。 */
+        const val DEFAULT_QUERY_ENABLED: Boolean = true
+
+        /** 是否允許管理員查詢全部歷史的預設值。 */
+        const val DEFAULT_ALLOW_ADMIN_QUERY: Boolean = true
 
         /** 最多保留牌局數量的預設值。 */
         const val DEFAULT_MAX_MATCHES: Int = 100

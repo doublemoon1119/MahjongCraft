@@ -7,6 +7,10 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerUpd
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameCommandEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
@@ -19,6 +23,17 @@ import kotlinx.serialization.builtins.serializer
 
 /** `mahjongcraft:` 命名空間下實際使用的命令、事件更新與主動快照同步頻道。 */
 object MahjongChannels {
+    /** 有界歷史清單要求，不允許攜帶他人的查詢身分。 */
+    val historyListRequest = C2SChannel("history_list_request", HistoryListRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES)
+
+    /** 有界歷史清單回應，不含手牌、牌山或原始事件。 */
+    val historyListResponse = S2CChannel("history_list_response", HistoryListResponseDto.serializer(), HistoryQueryLimits.RESPONSE_BYTES)
+
+    /** 有界單場摘要要求，伺服器仍須驗證公開條件。 */
+    val historySummaryRequest = C2SChannel("history_summary_request", HistorySummaryRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES)
+
+    /** 有界單場摘要與局級時間索引回應。 */
+    val historySummaryResponse = S2CChannel("history_summary_response", HistorySummaryResponseDto.serializer(), HistoryQueryLimits.RESPONSE_BYTES)
     val gameCommand = C2SChannel("game_command", GameCommandEnvelopeDto.serializer())
     val decisionSelection = C2SChannel("decision_selection", PlayerDecisionSelectionDto.serializer())
 

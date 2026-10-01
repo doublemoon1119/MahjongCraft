@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryPruningConfirmation
+import org.jetbrains.exposed.v1.core.ColumnType
+import org.jetbrains.exposed.v1.core.IntegerColumnType
 import org.jetbrains.exposed.v1.core.LongColumnType
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.VarCharColumnType
@@ -56,6 +58,7 @@ internal data class PendingHistoryRecord(
  * @property participants 開局座位、玩家 ID 與 AI 策略 key。
  * @property rounds 各局起訖時間。
  * @property replayPayload 已完成並驗證的精簡 Replay JSON。
+ * @property participantResults 可取得的最終分數與名次；無法取得時保持空集合。
  */
 internal data class HistoryArchiveRecord(
     val matchId: String,
@@ -67,6 +70,20 @@ internal data class HistoryArchiveRecord(
     val participants: List<HistoryParticipantRecord>,
     val rounds: List<HistoryRoundRecord>,
     val replayPayload: String,
+    val participantResults: List<HistoryParticipantResultRecord> = emptyList(),
+)
+
+/**
+ * 單一參與者的封存結果投影。
+ *
+ * @property seatIndex 參與者的開局座位。
+ * @property finalScore 最終分數；規則未提供時為 null。
+ * @property finalRank 最終名次；無法依規則比較時為 null。
+ */
+internal data class HistoryParticipantResultRecord(
+    val seatIndex: Int,
+    val finalScore: Int?,
+    val finalRank: Int?,
 )
 
 /**
@@ -326,6 +343,18 @@ internal class SqliteHistoryDatabase private constructor(
                 it[aiStrategyId] = participant.aiStrategyId
             }
         }
+        HistoryResultProjectionTable.insert {
+            it[matchId] = record.matchId
+            it[durationMillis] = (record.endedAtEpochMillis - record.startedAtEpochMillis).takeIf { duration -> duration >= 0L }
+        }
+        record.participantResults.forEach { result ->
+            HistoryParticipantResultTable.insert {
+                it[matchId] = record.matchId
+                it[seatIndex] = result.seatIndex
+                it[finalScore] = result.finalScore
+                it[finalRank] = result.finalRank
+            }
+        }
         record.rounds.forEach { round ->
             HistoryRoundTable.insert {
                 it[matchId] = record.matchId
@@ -512,6 +541,239 @@ internal class SqliteHistoryDatabase private constructor(
         )
     }
 
+    /**
+     * 依已驗證的 Flow 查詢要求讀取安全摘要，不解碼 Replay 內容。
+     *
+     * @param query 已完成權限驗證、範圍限制與游標驗證的查詢。
+     * @return 有界 keyset 摘要頁。
+     */
+    fun readHistoryQueryPage(query: SqliteHistoryQuery): SqliteHistoryQueryPage = transaction(database) {
+        require(query.pageSize in 1..50) { "History query page size is out of range" }
+        val arguments = mutableListOf<Pair<ColumnType<*>, Any?>>()
+
+        /**
+         * 將識別碼作為參數綁定，不將外部字串插入 SQL。
+         *
+         * @param value 識別碼或穩定狀態字串。
+         */
+        fun bindString(value: String) {
+            arguments += VarCharColumnType() to value
+        }
+
+        /**
+         * 將時間與游標值作為參數綁定。
+         *
+         * @param value 時間或排序界限。
+         */
+        fun bindLong(value: Long) {
+            arguments += LongColumnType() to value
+        }
+
+        /**
+         * 將名次界限作為參數綁定。
+         *
+         * @param value 名次界限。
+         */
+        fun bindInt(value: Int) {
+            arguments += IntegerColumnType() to value
+        }
+        val endedExpression = "COALESCE(m.ended_at_epoch_millis, (SELECT MAX(t.ended_at_epoch_millis) FROM history_terminal t WHERE t.match_id = m.match_id))"
+        val durationExpression = "CASE WHEN $endedExpression IS NULL OR m.started_at_epoch_millis IS NULL OR $endedExpression < m.started_at_epoch_millis THEN NULL ELSE $endedExpression - m.started_at_epoch_millis END"
+        val outcomeExpression = "CASE WHEN (m.status = 'COMPLETED' AND EXISTS (SELECT 1 FROM history_replay r WHERE r.match_id = m.match_id)) OR EXISTS (SELECT 1 FROM history_terminal t WHERE t.match_id = m.match_id AND t.completed = 1) THEN 'COMPLETED' WHEN EXISTS (SELECT 1 FROM history_terminal t WHERE t.match_id = m.match_id AND t.completed = 0) THEN 'INTERRUPTED' ELSE NULL END"
+        val conditions = mutableListOf<String>()
+        conditions += "NOT EXISTS (SELECT 1 FROM history_tombstone z WHERE z.match_id = m.match_id)"
+        if (!query.includeAll) {
+            conditions += "EXISTS (SELECT 1 FROM history_participant member WHERE member.match_id = m.match_id)"
+        }
+        conditions += "((m.status = 'COMPLETED' AND m.ended_at_epoch_millis IS NOT NULL AND EXISTS (SELECT 1 FROM history_replay r WHERE r.match_id = m.match_id)) OR EXISTS (SELECT 1 FROM history_terminal t WHERE t.match_id = m.match_id))"
+        query.excludedMatchIds.takeIf { it.isNotEmpty() }?.let { ids ->
+            conditions += "m.match_id NOT IN (${ids.joinToString(",") { "?" }})"
+            ids.forEach(::bindString)
+        }
+        query.matchId?.let {
+            conditions += "m.match_id = ?"
+            bindString(it)
+        }
+        if (!query.includeAll) {
+            val playerId = query.playerId ?: error("Own history query requires a player ID")
+            conditions += "EXISTS (SELECT 1 FROM history_participant owner WHERE owner.match_id = m.match_id AND owner.player_id = ?)"
+            bindString(playerId)
+        }
+        query.ruleId?.let {
+            conditions += "m.rule_id = ?"
+            bindString(it)
+        }
+        query.outcome?.let {
+            conditions += "($outcomeExpression) = ?"
+            bindString(if (it == SqliteHistoryOutcomeFilter.NORMAL_COMPLETED) "COMPLETED" else "INTERRUPTED")
+        }
+        query.aiFilter?.let {
+            conditions += if (it == SqliteHistoryAiFilter.CONTAINS_AI) {
+                "EXISTS (SELECT 1 FROM history_participant ai WHERE ai.match_id = m.match_id AND ai.ai_strategy_id IS NOT NULL)"
+            } else {
+                // 部分索引不能證明已列出所有參與者，因此不能由未見 AI 推論整場沒有 AI。
+                "EXISTS (SELECT 1 FROM history_replay complete WHERE complete.match_id = m.match_id) AND " +
+                    "EXISTS (SELECT 1 FROM history_participant known WHERE known.match_id = m.match_id) AND " +
+                    "NOT EXISTS (SELECT 1 FROM history_participant ai WHERE ai.match_id = m.match_id AND ai.ai_strategy_id IS NOT NULL)"
+            }
+        }
+        query.integrityFilter?.let {
+            conditions += if (it == SqliteHistoryIntegrityFilter.COMPLETE) {
+                "EXISTS (SELECT 1 FROM history_replay r WHERE r.match_id = m.match_id)"
+            } else {
+                "NOT EXISTS (SELECT 1 FROM history_replay r WHERE r.match_id = m.match_id)"
+            }
+        }
+        query.endedAtLowerInclusive?.let {
+            conditions += "$endedExpression >= ?"
+            bindLong(it)
+        }
+        query.endedAtUpperExclusive?.let {
+            conditions += "$endedExpression < ?"
+            bindLong(it)
+        }
+        val resultJoin = "LEFT JOIN history_participant_result opr ON opr.match_id = m.match_id AND opr.seat_index = owner.seat_index"
+        val ownRank = "opr.final_rank"
+        val ownScore = "opr.final_score"
+        query.minimumRank?.let {
+            conditions += "$ownRank >= ?"
+            bindInt(it)
+        }
+        query.maximumRank?.let {
+            conditions += "$ownRank <= ?"
+            bindInt(it)
+        }
+        val sortExpression = when (query.sortField) {
+            SqliteHistorySortField.ENDED_AT -> endedExpression
+            SqliteHistorySortField.DURATION -> durationExpression
+            SqliteHistorySortField.OWN_RANK -> ownRank
+            SqliteHistorySortField.OWN_SCORE -> ownScore
+        }
+        query.cursor?.let { cursor ->
+            val direction = if (query.sortDirection == SqliteHistorySortDirection.ASC) ">" else "<"
+            require(cursor.nullBucket == (cursor.sortValue == null)) { "History cursor null bucket does not match sort value" }
+            val valueCondition = if (cursor.sortValue == null) {
+                "($sortExpression IS NULL)"
+            } else {
+                bindLong(cursor.sortValue)
+                "($sortExpression $direction ? OR ($sortExpression = ? AND m.match_id > ?))"
+            }
+            if (cursor.sortValue != null) {
+                // 同值分支使用相同排序值，再以固定升序的對局 ID 接續。
+                bindLong(cursor.sortValue)
+                bindString(cursor.matchId)
+                conditions += "($sortExpression IS NULL OR $valueCondition)"
+            } else {
+                bindString(cursor.matchId)
+                conditions += "($sortExpression IS NULL AND m.match_id > ?)"
+            }
+        }
+        val nullOrder = "CASE WHEN $sortExpression IS NULL THEN 1 ELSE 0 END ASC"
+        val valueOrder = if (query.sortDirection == SqliteHistorySortDirection.ASC) "$sortExpression ASC" else "$sortExpression DESC"
+        val sql = """
+            SELECT m.match_id, m.status, m.started_at_epoch_millis, m.ended_at_epoch_millis, m.rule_id,
+                $endedExpression AS ended_value,
+                $sortExpression AS sort_value,
+                $durationExpression AS duration_value,
+                $ownRank AS own_rank, $ownScore AS own_score,
+                CASE WHEN EXISTS (SELECT 1 FROM history_replay r WHERE r.match_id = m.match_id)
+                    THEN 'COMPLETE' ELSE 'INCOMPLETE' END AS integrity,
+                $outcomeExpression AS outcome,
+                owner.player_id AS owner_player_id, owner.seat_index AS owner_seat_index
+            FROM (
+                SELECT match_id, table_id, rule_id, dimension_id, status,
+                    started_at_epoch_millis, ended_at_epoch_millis
+                FROM history_match
+                UNION ALL
+                SELECT t.match_id, MIN(t.table_id) AS table_id, NULL AS rule_id, NULL AS dimension_id,
+                    CASE WHEN MAX(t.completed) = 1 THEN 'COMPLETED' ELSE 'INTERRUPTED' END AS status,
+                    NULL AS started_at_epoch_millis, MAX(t.ended_at_epoch_millis) AS ended_at_epoch_millis
+                FROM history_terminal t
+                WHERE NOT EXISTS (SELECT 1 FROM history_match existing WHERE existing.match_id = t.match_id)
+                GROUP BY t.match_id
+            ) m
+            LEFT JOIN history_participant owner ON owner.match_id = m.match_id
+                ${if (query.includeAll) "AND owner.seat_index = (SELECT MIN(seat_index) FROM history_participant first_owner WHERE first_owner.match_id = m.match_id)" else "AND owner.player_id = ?"}
+            $resultJoin
+            WHERE ${conditions.joinToString(" AND ")}
+            ORDER BY $nullOrder, $valueOrder, m.match_id ASC
+            LIMIT ${query.pageSize + 1}
+        """.trimIndent()
+        if (!query.includeAll) {
+            val playerId = query.playerId ?: error("Own history query requires a player ID")
+            arguments.add(0, VarCharColumnType() to playerId)
+        }
+        val rows = mutableListOf<SqliteHistoryQueryEntry>()
+        exec(sql, arguments, explicitStatementType = StatementType.SELECT) { result ->
+            while (result.next()) {
+                val matchId = result.getString("match_id")
+                val participants = queryParticipants(matchId)
+                val rounds = HistoryRoundTable.selectAll().where { HistoryRoundTable.matchId eq matchId }
+                    .orderBy(HistoryRoundTable.roundNumber)
+                    .map {
+                        HistoryQueryRound(
+                            roundNumber = it[HistoryRoundTable.roundNumber],
+                            startedAtEpochMillis = it[HistoryRoundTable.startedAtEpochMillis],
+                            endedAtEpochMillis = it[HistoryRoundTable.endedAtEpochMillis],
+                        )
+                    }
+                val ended = result.getLong("ended_value").let { if (result.wasNull()) null else it }
+                val started = result.getLong("started_at_epoch_millis").let { if (result.wasNull()) null else it }
+                rows += SqliteHistoryQueryEntry(
+                    matchId = matchId,
+                    state = if (result.getString("integrity") == "COMPLETE") HistoryStoredMatchState.COMPLETED else HistoryStoredMatchState.PARTIAL,
+                    outcome = SqliteHistoryMatchOutcome.valueOf(result.getString("outcome")),
+                    startedAtEpochMillis = started,
+                    endedAtEpochMillis = ended,
+                    ruleId = result.getString("rule_id"),
+                    durationMillis = result.getLong("duration_value").let { if (result.wasNull()) null else it },
+                    participants = participants,
+                    ownFinalScore = result.getInt("own_score").let { if (result.wasNull()) null else it },
+                    ownFinalRank = result.getInt("own_rank").let { if (result.wasNull()) null else it },
+                    rounds = rounds,
+                )
+            }
+        }
+        val hasNext = rows.size > query.pageSize
+        val entries = rows.take(query.pageSize)
+        val next = if (hasNext) {
+            entries.lastOrNull()?.let { entry ->
+                val sortValue = when (query.sortField) {
+                    SqliteHistorySortField.ENDED_AT -> entry.endedAtEpochMillis
+                    SqliteHistorySortField.DURATION -> entry.durationMillis
+                    SqliteHistorySortField.OWN_RANK -> entry.ownFinalRank?.toLong()
+                    SqliteHistorySortField.OWN_SCORE -> entry.ownFinalScore?.toLong()
+                }
+                SqliteHistoryCursor(sortValue, entry.matchId, sortValue == null)
+            }
+        } else {
+            null
+        }
+        SqliteHistoryQueryPage(entries, next)
+    }
+
+    /**
+     * 在目前交易中讀取單一對局的參與者摘要。
+     *
+     * @param matchId 已通過查詢範圍與公開條件的對局 ID。
+     * @return 依開局座位排序的參與者及可證實結果。
+     */
+    private fun queryParticipants(matchId: String): List<HistoryQueryParticipant> = HistoryParticipantTable.selectAll().where { HistoryParticipantTable.matchId eq matchId }
+        .orderBy(HistoryParticipantTable.seatIndex)
+        .map {
+            val result = HistoryParticipantResultTable.selectAll().where {
+                (HistoryParticipantResultTable.matchId eq matchId) and
+                    (HistoryParticipantResultTable.seatIndex eq it[HistoryParticipantTable.seatIndex])
+            }.singleOrNull()
+            HistoryQueryParticipant(
+                seatIndex = it[HistoryParticipantTable.seatIndex],
+                playerId = it[HistoryParticipantTable.playerId],
+                aiStrategyId = it[HistoryParticipantTable.aiStrategyId],
+                finalScore = result?.get(HistoryParticipantResultTable.finalScore),
+                finalRank = result?.get(HistoryParticipantResultTable.finalRank),
+            )
+        }
+
     /** 以 SQLite UTF-8 BLOB 長度計算指定對局的邏輯 payload 大小。
      *
      * @param matchIds 要計算的對局 ID 集合。
@@ -633,6 +895,8 @@ internal class SqliteHistoryDatabase private constructor(
             if (HistoryTombstoneTable.selectAll().where { HistoryTombstoneTable.matchId eq matchId }.any()) return@forEach
             if (matchId !in eligible) return@forEach
             HistoryReplayTable.deleteWhere { HistoryReplayTable.matchId eq matchId }
+            HistoryParticipantResultTable.deleteWhere { HistoryParticipantResultTable.matchId eq matchId }
+            HistoryResultProjectionTable.deleteWhere { HistoryResultProjectionTable.matchId eq matchId }
             HistoryParticipantTable.deleteWhere { HistoryParticipantTable.matchId eq matchId }
             HistoryRoundTable.deleteWhere { HistoryRoundTable.matchId eq matchId }
             HistoryPendingEventTable.deleteWhere { HistoryPendingEventTable.matchId eq matchId }
@@ -724,9 +988,8 @@ internal class SqliteHistoryDatabase private constructor(
         /**
          * 開啟既有資料庫或建立全新的 schema v1。
          *
-         * 既有檔案若損壞、缺少版本或版本較新，保留原檔並回報失敗，不猜測或自動修復。
-         */
-        /**
+         * 既有檔案若損壞、缺少必要結構或版本不符，保留原檔並回報失敗，不猜測或自動修復。
+         *
          * @param path 歷史資料庫檔案位置。
          * @return 已驗證並準備交易的資料庫邊界。
          */

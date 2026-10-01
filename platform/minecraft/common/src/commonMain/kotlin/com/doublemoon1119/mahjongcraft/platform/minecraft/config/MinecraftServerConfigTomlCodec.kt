@@ -159,6 +159,8 @@ private data class MahjongTileTomlDto(
  * @property enabled 是否啟用歷史資料記錄；停用會停止目前記錄，重新啟用只會記錄之後的新牌局。
  * @property includeAiMatches 是否記錄含有任一 AI 座位的牌局。
  * @property includeInterruptedMatches 是否保留無法接續的中止或部分紀錄；正常關服後可接續的對局不算中止。
+ * @property queryEnabled 是否允許查詢已保存的歷史資料。
+ * @property allowAdminQuery 是否允許管理員查詢全部歷史資料。
  * @property maxMatches 最多保留的已完成牌局數量，零表示不限制數量。
  * @property retentionDays 已完成牌局的保留天數，零表示不限制天數。
  * @property maxDiskMiB 歷史資料磁碟空間上限，必須為正值。
@@ -168,13 +170,24 @@ private data class HistoryTomlDto(
     val enabled: Boolean = MinecraftHistoryConfig.DEFAULT_ENABLED,
     @SerialName("include-ai-matches") val includeAiMatches: Boolean = MinecraftHistoryConfig.DEFAULT_INCLUDE_AI_MATCHES,
     @SerialName("include-interrupted-matches") val includeInterruptedMatches: Boolean = MinecraftHistoryConfig.DEFAULT_INCLUDE_INTERRUPTED_MATCHES,
+    @SerialName("query-enabled") val queryEnabled: Boolean = MinecraftHistoryConfig.DEFAULT_QUERY_ENABLED,
+    @SerialName("allow-admin-query") val allowAdminQuery: Boolean = MinecraftHistoryConfig.DEFAULT_ALLOW_ADMIN_QUERY,
     @SerialName("max-matches") val maxMatches: Int = MinecraftHistoryConfig.DEFAULT_MAX_MATCHES,
     @SerialName("retention-days") val retentionDays: Int = MinecraftHistoryConfig.DEFAULT_RETENTION_DAYS,
     @SerialName("max-disk-mib") val maxDiskMiB: Long = MinecraftHistoryConfig.DEFAULT_MAX_DISK_MIB,
 ) {
     /** 驗證 TOML 欄位並建立歷史資料設定。 */
     fun toConfig(): MinecraftHistoryConfig = try {
-        MinecraftHistoryConfig(enabled, includeAiMatches, includeInterruptedMatches, maxMatches, retentionDays, maxDiskMiB)
+        MinecraftHistoryConfig(
+            enabled,
+            includeAiMatches,
+            includeInterruptedMatches,
+            queryEnabled,
+            allowAdminQuery,
+            maxMatches,
+            retentionDays,
+            maxDiskMiB,
+        )
     } catch (exception: IllegalArgumentException) {
         throw InvalidMinecraftServerConfigException(exception.message ?: "Invalid history configuration", exception)
     }
@@ -191,6 +204,8 @@ private data class HistoryTomlDto(
             config.enabled,
             config.includeAiMatches,
             config.includeInterruptedMatches,
+            config.queryEnabled,
+            config.allowAdminQuery,
             config.maxMatches,
             config.retentionDays,
             config.maxDiskMiB,

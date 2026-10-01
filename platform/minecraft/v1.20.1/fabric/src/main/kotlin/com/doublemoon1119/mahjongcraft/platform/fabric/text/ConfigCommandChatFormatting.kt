@@ -124,6 +124,14 @@ fun serverConfigSections(config: MinecraftServerConfig): List<ConfigPresentation
                 clientBooleanText(config.history.includeInterruptedMatches),
             ),
             ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_ENABLED),
+                clientBooleanText(config.history.queryEnabled),
+            ),
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.HISTORY_ALLOW_ADMIN_QUERY),
+                clientBooleanText(config.history.allowAdminQuery),
+            ),
+            ConfigPresentationEntry(
                 Text.translatable(MinecraftConfigCommandKeys.HISTORY_MAX_MATCHES),
                 Text.literal(config.history.maxMatches.toString()),
             ),

@@ -59,6 +59,12 @@ include-ai-matches = true
 # A normal shutdown with a resumable game is not an interruption. Disabling recording creates a partial record.
 include-interrupted-matches = false
 
+# Controls whether players and administrators may query archived history. Disabling does not stop recording.
+query-enabled = true
+
+# Controls whether operators may query all archived matches. Operators may still query their own matches when disabled.
+allow-admin-query = true
+
 # Maximum ended matches to retain. A new completed match is saved before the oldest ended matches are removed.
 # 0 means unlimited matches. Active matches are protected and do not count toward this limit.
 max-matches = 100

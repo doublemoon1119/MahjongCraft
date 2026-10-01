@@ -32,6 +32,8 @@ class MinecraftServerConfigTomlCodecTest {
             enabled = false
             include-ai-matches = false
             include-interrupted-matches = true
+            query-enabled = false
+            allow-admin-query = false
             max-matches = 250
             retention-days = 120
             max-disk-mib = 512
@@ -46,6 +48,8 @@ class MinecraftServerConfigTomlCodecTest {
         assertEquals(false, config.history.enabled)
         assertEquals(false, config.history.includeAiMatches)
         assertEquals(true, config.history.includeInterruptedMatches)
+        assertEquals(false, config.history.queryEnabled)
+        assertEquals(false, config.history.allowAdminQuery)
         assertEquals(250, config.history.maxMatches)
         assertEquals(120, config.history.retentionDays)
         assertEquals(512, config.history.maxDiskMiB)
@@ -169,6 +173,8 @@ class MinecraftServerConfigTomlCodecTest {
         listOf(
             "enabled = \"true\"",
             "include-ai-matches = 1",
+            "query-enabled = 1",
+            "allow-admin-query = 1",
             "max-matches = 1.5",
             "unknown = true",
             "max-matches = 2147483648",

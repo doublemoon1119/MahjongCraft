@@ -290,6 +290,12 @@ object MinecraftConfigCommandKeys {
     /** 是否記錄中斷牌局欄位。 */
     const val HISTORY_INCLUDE_INTERRUPTED_MATCHES: String = "mahjongcraft.server_config.history_include_interrupted_matches"
 
+    /** 是否允許歷史查詢欄位。 */
+    const val HISTORY_QUERY_ENABLED: String = "mahjongcraft.server_config.history_query_enabled"
+
+    /** 是否允許管理員查詢全部歷史欄位。 */
+    const val HISTORY_ALLOW_ADMIN_QUERY: String = "mahjongcraft.server_config.history_allow_admin_query"
+
     /** 歷史資料最多保留牌局數量欄位。 */
     const val HISTORY_MAX_MATCHES: String = "mahjongcraft.server_config.history_max_matches"
 

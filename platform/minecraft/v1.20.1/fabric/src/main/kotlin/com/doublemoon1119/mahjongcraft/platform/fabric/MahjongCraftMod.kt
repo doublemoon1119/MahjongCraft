@@ -39,6 +39,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricD
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryQueryService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.FabricObserverSnapshotBroadcastService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
@@ -159,6 +160,7 @@ class MahjongCraftMod : ModInitializer {
         registerPlayerConnectionEvents(koin)
         koin.get<FabricServerConfigCommand>().register()
         historyCommand.register()
+        koin.get<FabricHistoryQueryService>().register()
         koin.get<FabricRoomCommand>().register()
         koin.get<FabricGameCommand>().register()
         koin.get<FabricDebugCommand>().register()

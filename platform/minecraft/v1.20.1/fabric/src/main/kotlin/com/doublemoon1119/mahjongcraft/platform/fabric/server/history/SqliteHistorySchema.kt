@@ -33,6 +33,49 @@ internal object HistoryParticipantTable : Table("history_participant") {
     val playerId = varchar("player_id", 36)
     val aiStrategyId = varchar("ai_strategy_id", 255).nullable()
     override val primaryKey = PrimaryKey(matchId, seatIndex)
+
+    init {
+        index(false, playerId, matchId)
+    }
+}
+
+/** 已封存對局的可查詢結果投影；單場缺少投影列時，相關欄位保持未知。 */
+internal object HistoryResultProjectionTable : Table("history_result_projection") {
+    /** 對局的穩定 UUID 字串。 */
+    val matchId = varchar("match_id", 36)
+
+    /** 對局總持續時間；無法證實時為 null。 */
+    val durationMillis = long("duration_millis").nullable()
+
+    /** 每場對局只保存一份時間投影。 */
+    override val primaryKey = PrimaryKey(matchId)
+
+    init {
+        index(false, durationMillis, matchId)
+    }
+}
+
+/** 封存對局中每位參與者的最終結果投影。 */
+internal object HistoryParticipantResultTable : Table("history_participant_result") {
+    /** 對局的穩定 UUID 字串。 */
+    val matchId = varchar("match_id", 36)
+
+    /** 參與者的開局座位。 */
+    val seatIndex = integer("seat_index")
+
+    /** 最終分數；規則未提供時為 null。 */
+    val finalScore = integer("final_score").nullable()
+
+    /** 最終名次；規則未提供或無法排序時為 null。 */
+    val finalRank = integer("final_rank").nullable()
+
+    /** 每場對局的各開局座位只保存一份結果。 */
+    override val primaryKey = PrimaryKey(matchId, seatIndex)
+
+    init {
+        index(false, matchId, finalRank)
+        index(false, matchId, finalScore)
+    }
 }
 
 /** 各局的穩定識別與起訖時間。 */
@@ -130,4 +173,6 @@ internal val historySchemaV1Tables: Array<Table> = arrayOf(
     HistoryRecordingStopTable,
     HistoryTombstoneTable,
     HistoryTerminalTable,
+    HistoryResultProjectionTable,
+    HistoryParticipantResultTable,
 )

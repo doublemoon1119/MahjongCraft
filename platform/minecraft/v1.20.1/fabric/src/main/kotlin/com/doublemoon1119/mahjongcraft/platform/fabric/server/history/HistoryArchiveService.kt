@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOu
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryResultProjector
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -14,6 +15,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import org.slf4j.LoggerFactory
+import kotlin.uuid.Uuid
 
 /**
  * 對帳權威 outbox 與 SQLite，並只在完整返回房間後封存同場的連續事件。
@@ -152,11 +154,18 @@ internal class HistoryArchiveService(
         return mapper.decodePendingEvent(dto)
     }
 
-    /** 從開局、換局、終局事實建立可查閱摘要，不猜測不存在的維度位置。 */
+    /**
+     * 從開局、換局、終局事實建立可查閱摘要，不猜測不存在的維度位置。
+     *
+     * @param events 已驗證完整且依序排列的單場歷史事實。
+     * @param replay 已完成編碼與解碼驗證的 Replay。
+     * @return 包含規則排名投影與局級時間的原子封存資料。
+     */
     private fun buildArchive(events: List<HistoryOutboxEvent>, replay: JsonObject): HistoryArchiveRecord {
         val start = events.first()
         val opening = start.fact as HistoryFact.MatchStarted
         val completion = events.first { it.fact is HistoryFact.MatchCompleted }
+        val completionFact = completion.fact as HistoryFact.MatchCompleted
         val rounds = mutableListOf<HistoryRoundRecord>()
         events.forEach { event ->
             when (event.fact) {
@@ -171,6 +180,15 @@ internal class HistoryArchiveService(
         val players = opening.tableState.players.sortedBy { it.initialSeatIndex }.map {
             HistoryParticipantRecord(it.initialSeatIndex, it.id.toString(), it.aiStrategyKey)
         }
+        val projectedResults = HistoryResultProjector.project(events, moduleRegistry).associateBy { it.playerId.toString() }
+        val participantResults = players.map { participant ->
+            val projected = projectedResults[participant.playerId]
+            HistoryParticipantResultRecord(
+                seatIndex = participant.seatIndex,
+                finalScore = projected?.finalScore ?: completionFact.finalScoresByPlayerId[Uuid.parse(participant.playerId)],
+                finalRank = projected?.finalRank,
+            )
+        }
         return HistoryArchiveRecord(
             matchId = start.matchId.toString(),
             tableId = start.tableId.toString(),
@@ -181,6 +199,7 @@ internal class HistoryArchiveService(
             participants = players,
             rounds = rounds,
             replayPayload = json.encodeToString(JsonObject.serializer(), replay),
+            participantResults = participantResults,
         )
     }
 }

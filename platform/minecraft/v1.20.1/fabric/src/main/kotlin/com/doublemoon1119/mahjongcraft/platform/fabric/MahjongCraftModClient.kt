@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.ClientDecisio
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.PlayerDecisionHudController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildMatchResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildRoundResultChatMessage
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryQueryCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
@@ -105,6 +106,9 @@ class MahjongCraftModClient : ClientModInitializer {
         koin.get<MatchingTileHighlightController>().register()
 
         val json = koin.get<Json>()
+        val historyQueries = koin.get<ClientHistoryQueryCoordinator>()
+        MahjongChannels.historyListResponse.registerClientReceiver(json, historyQueries::applyList)
+        MahjongChannels.historySummaryResponse.registerClientReceiver(json, historyQueries::applySummary)
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val stateStore = koin.get<ClientMahjongStateStore>()
         val automaticControlUpdateCoordinator = koin.get<ClientAutomaticControlUpdateCoordinator>()
@@ -271,12 +275,14 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         MahjongChannels.decisionSubmissionResult.registerClientReceiver(json, decisionHudController::handleSubmissionResult)
         ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
+            historyQueries.clear()
             MahjongChannels.requestSnapshot.sendToServer(json, Unit)
             // 伺服器端的自動整理手牌偏好純記憶體、不撐過伺服器重啟（見 HandSortPreferenceStore KDoc），
             // 每次加入世界都重送一次 client 本地記得的偏好，確保重啟後不需要玩家手動再切一次。
             autoSortHandPreferenceService.restoreToServer()
         }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
+            historyQueries.clear()
             stateStore.clear()
             automaticControlUpdateCoordinator.clear()
             decisionTimerStore.clear()
