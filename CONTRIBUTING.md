@@ -144,13 +144,13 @@ Application service layer.
   - `:mahjong-flow:mahjong-flow-client`: Client-side state and Use Case implementations derived from authoritative updates.
   - `:mahjong-flow:mahjong-flow-server`: Authoritative Use Cases, orchestration, visibility, AI driving, and lifecycle.
   - `:mahjong-flow:mahjong-flow-network-dto`: Serializable transport DTOs, registries, and domain mappings.
-  - `:mahjong-flow:mahjong-flow-persistence-dto`: Serializable persisted state, codecs, migrations, and domain mappings.
+  - `:mahjong-flow:mahjong-flow-persistence-format`: Serializable persisted state, codecs, migrations, and domain mappings.
 - **Characteristics**:
   - Depends on `:mahjong-logic`.
   - Core of asynchronous operations — introduces Coroutines for non-blocking workflows.
   - Repository contracts live in Flow; platform adapters provide their runtime implementations.
 
-The source directories remain `mahjong-flow/common`, `client`, `server`, `network-dto`, and `persistence-dto`.
+The source directories remain `mahjong-flow/common`, `client`, `server`, `network-dto`, and `persistence-format`.
 Their Gradle project names are deliberately prefixed to avoid duplicate artifact names such as `common`.
 
 ### `:mahjong-extension-api`
@@ -159,7 +159,7 @@ Public extension registration layer.
 
 - **Purpose**: Exposes typed bootstrap and registrar contracts for rule modules, commands, DTO codecs, AI strategies, and server handlers.
 - **Package**: `com.doublemoon1119.mahjongcraft.extension.*`
-- **Dependencies**: Provides a facade over selected APIs from `:mahjong-logic`, `:mahjong-ai`, and the Flow common, server, network DTO, and persistence DTO modules.
+- **Dependencies**: Provides a facade over selected APIs from `:mahjong-logic`, `:mahjong-ai`, and the Flow common, server, network DTO, and persistence format modules.
 - **Boundary**: Registration does not grant direct access to authoritative mutation or platform render callbacks. Platform-specific extension surfaces belong to their platform module.
 
 ### `:testing`
@@ -201,7 +201,7 @@ All modules must strictly follow the rules below to form a one-way dependency ch
 - **Supporting modules**:
   - `:mahjong-ai` depends on logic and Flow common contracts; Flow server and platform composition may use its strategies.
   - `:mahjong-extension-api` intentionally exposes selected logic, AI, and Flow registration contracts as a typed public facade.
-  - Flow network and persistence DTO modules depend inward on logic and Flow common, and are used only at their explicit serialization boundaries.
+  - Flow network DTO and persistence format modules depend inward on logic and Flow common, and are used only at their explicit serialization boundaries.
   - `:testing:*` modules are test-only fixture providers and may only appear in test source-set dependencies.
 - **No reverse dependencies**: `:mahjong-logic` must not depend on any outer layer. `:mahjong-flow` must not depend on `platform`.
 - **Platform access to domain types**: `platform` modules may directly depend on `:mahjong-logic` for immutable domain models, value objects, rule-neutral contracts, and identifiers needed by adapters. This is still a one-way outer-to-inner dependency; it does not authorize the platform to own business rules.

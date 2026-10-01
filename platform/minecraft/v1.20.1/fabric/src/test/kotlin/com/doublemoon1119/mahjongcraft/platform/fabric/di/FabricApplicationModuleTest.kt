@@ -17,8 +17,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.DefaultGameConfi
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.state.AuthoritativeStatePersistenceCodec
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator

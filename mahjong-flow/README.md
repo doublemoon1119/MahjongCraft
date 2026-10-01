@@ -12,7 +12,7 @@
 | [client](client/README.md) | Client-side state derived from authoritative updates. |
 | [server](server/README.md) | Authoritative use cases, orchestration, visibility, AI driving, and lifecycle. |
 | [network-dto](network-dto/README.md) | Serializable transport DTOs and domain mappings. |
-| [persistence-dto](persistence-dto/README.md) | Serializable persisted state, codecs, and migrations. |
+| [persistence-format](persistence-format/README.md) | Serializable persisted state, codecs, and migrations. |
 
 ## Dependency direction
 

@@ -7,8 +7,8 @@ import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.di.NetworkDtoModule
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.di.PersistenceDtoModule
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.di.PersistenceFormatModule
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.di.FlowServerModule
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
@@ -34,7 +34,7 @@ import org.koin.core.annotation.Single
  * [MinecraftServerModule]、[FabricCommonModule] 與所有 server-side Fabric adapter，但不掃描
  * `platform.fabric.client`，因此不會把 HUD、renderer 或其他 Minecraft client-only 類別加入 server graph。
  *
- * [MinecraftCommonModule]、[NetworkDtoModule] 與 [PersistenceDtoModule] 已經透過 [FabricCommonModule] 間接
+ * [MinecraftCommonModule]、[NetworkDtoModule] 與 [PersistenceFormatModule] 已經透過 [FabricCommonModule] 間接
  * include，這裡重複列出是因為 Koin compiler plugin 組裝 full-graph 時，不會展開本地 module（例如
  * [FabricCommonModule]）自己的 `includes`；只經由它引入的 single 會被判成缺漏依賴，連 `koin.get<T>()`
  * 呼叫處也一併報錯。Koin runtime 對同一個 module 被多路徑重複 include 本來就會去重，不會造成
@@ -46,7 +46,7 @@ import org.koin.core.annotation.Single
         MinecraftServerModule::class,
         MinecraftCommonModule::class,
         NetworkDtoModule::class,
-        PersistenceDtoModule::class,
+        PersistenceFormatModule::class,
         FabricCommonModule::class,
     ],
 )

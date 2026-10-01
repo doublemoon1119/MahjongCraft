@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.state.AuthoritativeStatePersistenceCodec
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.minecraft.nbt.NbtCompound

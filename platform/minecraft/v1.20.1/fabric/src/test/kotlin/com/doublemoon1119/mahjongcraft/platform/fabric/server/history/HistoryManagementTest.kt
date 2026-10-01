@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistoryConfig

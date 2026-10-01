@@ -14,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInTileTypes
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInWinCelebrationCueResolvers
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerRiichiGameActionDtos
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.rule.registerRiichiGameActionPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.registerRiichiGameActionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameActionCommandFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameCommandHandler

@@ -4,10 +4,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.game.toPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryRecordingPersistenceMapper
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.replay.CompactReplayCodec
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId

@@ -3,10 +3,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryOutboxEventPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryRecordingPersistenceMapper
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.replay.CompactReplayCodec
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry

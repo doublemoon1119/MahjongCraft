@@ -12,7 +12,7 @@ kotlin {
             api(project(":mahjong-logic"))
             api(project(":mahjong-flow:mahjong-flow-common"))
             api(project(":mahjong-flow:mahjong-flow-network-dto"))
-            api(project(":mahjong-flow:mahjong-flow-persistence-dto"))
+            api(project(":mahjong-flow:mahjong-flow-persistence-format"))
             api(project(":mahjong-ai"))
             api(project(":mahjong-flow:mahjong-flow-server"))
         }

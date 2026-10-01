@@ -2,11 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceDtoRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.core.PersistenceEnvelopeDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.migration.UnsupportedPersistenceSchemaVersionException
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.buildBuiltInPersistenceRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.state.AuthoritativeStatePersistenceCodec
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.UnsupportedPersistenceSchemaVersionException
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig

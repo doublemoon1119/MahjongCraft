@@ -52,8 +52,8 @@ include(":mahjong-flow:common")
 project(":mahjong-flow:common").name = "mahjong-flow-common"
 include(":mahjong-flow:network-dto")
 project(":mahjong-flow:network-dto").name = "mahjong-flow-network-dto"
-include(":mahjong-flow:persistence-dto")
-project(":mahjong-flow:persistence-dto").name = "mahjong-flow-persistence-dto"
+include(":mahjong-flow:persistence-format")
+project(":mahjong-flow:persistence-format").name = "mahjong-flow-persistence-format"
 include(":mahjong-extension-api")
 include(":mahjong-flow:server")
 project(":mahjong-flow:server").name = "mahjong-flow-server"

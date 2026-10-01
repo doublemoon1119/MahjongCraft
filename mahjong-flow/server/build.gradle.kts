@@ -23,7 +23,7 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.kotlinx.serialization.json)
-            implementation(project(":mahjong-flow:mahjong-flow-persistence-dto"))
+            implementation(project(":mahjong-flow:mahjong-flow-persistence-format"))
             implementation(project(":testing:testing-mahjong-logic"))
             implementation(project(":testing:testing-mahjong-flow"))
         }

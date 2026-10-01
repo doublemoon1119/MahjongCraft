@@ -7,9 +7,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTransferResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryOutboxEventPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryRecordingPersistenceMapper
-import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
