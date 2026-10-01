@@ -1,9 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryPruningConfirmation
+import org.jetbrains.exposed.v1.core.LongColumnType
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.VarCharColumnType
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNotNull
+import org.jetbrains.exposed.v1.core.statements.StatementType
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
@@ -11,11 +15,13 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertIgnore
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 import java.nio.file.Files
 import java.nio.file.Path
 import java.sql.DriverManager
+import java.sql.ResultSet
 import java.sql.SQLException
 import kotlin.uuid.Uuid
 
@@ -359,6 +365,137 @@ internal class SqliteHistoryDatabase private constructor(
             .mapTo(mutableSetOf()) { it[HistoryTerminalTable.matchId] }
     }
 
+    /** 以資料表識別欄位讀取保存分類與列數，不載入任何事件或 Replay 內容。
+     *
+     * @return 單一交易內取得的資料庫統計。
+     */
+    fun readStatistics(): HistoryDatabaseStatistics = transaction(database) {
+        val tombstones = HistoryTombstoneTable.select(HistoryTombstoneTable.matchId)
+            .mapTo(mutableSetOf()) { it[HistoryTombstoneTable.matchId] }
+        val ids = mutableSetOf<String>().apply {
+            addAll(HistoryMatchTable.select(HistoryMatchTable.matchId).map { it[HistoryMatchTable.matchId] })
+            addAll(HistoryReplayTable.select(HistoryReplayTable.matchId).map { it[HistoryReplayTable.matchId] })
+            addAll(HistoryPendingEventTable.select(HistoryPendingEventTable.matchId).withDistinct().map { it[HistoryPendingEventTable.matchId] })
+            addAll(HistoryGapTable.select(HistoryGapTable.matchId).map { it[HistoryGapTable.matchId] })
+            addAll(HistoryRecordingStopTable.select(HistoryRecordingStopTable.matchId).map { it[HistoryRecordingStopTable.matchId] })
+            addAll(HistoryTerminalTable.select(HistoryTerminalTable.matchId).map { it[HistoryTerminalTable.matchId] })
+            addAll(HistoryParticipantTable.select(HistoryParticipantTable.matchId).withDistinct().map { it[HistoryParticipantTable.matchId] })
+            addAll(HistoryRoundTable.select(HistoryRoundTable.matchId).withDistinct().map { it[HistoryRoundTable.matchId] })
+        }
+        val complete = HistoryMatchTable.select(HistoryMatchTable.matchId).where {
+            (HistoryMatchTable.status eq "COMPLETED") and HistoryMatchTable.endedAtEpochMillis.isNotNull()
+        }.mapTo(mutableSetOf()) { it[HistoryMatchTable.matchId] }
+        val replay = HistoryReplayTable.select(HistoryReplayTable.matchId).mapTo(mutableSetOf()) {
+            it[HistoryReplayTable.matchId]
+        }
+        val interrupted = HistoryTerminalTable.select(HistoryTerminalTable.matchId).where { HistoryTerminalTable.completed eq false }
+            .mapTo(mutableSetOf()) { it[HistoryTerminalTable.matchId] }
+        val terminalIds = HistoryTerminalTable.select(HistoryTerminalTable.matchId).mapTo(mutableSetOf()) { it[HistoryTerminalTable.matchId] }
+        val diagnosed = (
+            HistoryGapTable.select(HistoryGapTable.matchId).map { it[HistoryGapTable.matchId] } +
+                HistoryRecordingStopTable.select(HistoryRecordingStopTable.matchId).map { it[HistoryRecordingStopTable.matchId] }
+            ).toSet()
+        val states = ids.filterNot { it in tombstones }.associateWith { matchId ->
+            when {
+                matchId in complete && matchId in replay -> HistoryStoredMatchState.COMPLETED
+                matchId in interrupted || (matchId in terminalIds && matchId in diagnosed) -> HistoryStoredMatchState.PARTIAL
+                else -> HistoryStoredMatchState.UNKNOWN
+            }
+        }
+        HistoryDatabaseStatistics(
+            matchStates = states,
+            pendingEventCount = HistoryPendingEventTable.selectAll().count(),
+            tombstoneCount = HistoryTombstoneTable.selectAll().count(),
+        )
+    }
+
+    /** 以結束時間與對局 ID 執行有界 keyset 分頁，不載入未回傳的摘要列。
+     *
+     * @param limit 單頁筆數，會限制在 1 至 100。
+     * @param cursor 上一頁最後一列的排序游標。
+     * @param excludedMatchIds 應在 SQL 限制與分頁前排除的對局 ID。
+     * @return 完整或已確認部分場次的摘要頁。
+     */
+    fun readSummaryPage(
+        limit: Int = 20,
+        cursor: HistorySummaryCursor? = null,
+        excludedMatchIds: Set<String> = emptySet(),
+    ): HistorySummaryPage = transaction(database) {
+        val boundedLimit = limit.coerceIn(1, 100)
+        val excluded = excludedMatchIds.joinToString(",") { "?" }
+        val exclusionSql = if (excluded.isEmpty()) "" else "AND match_id NOT IN ($excluded)"
+        val cursorSql = if (cursor == null) {
+            ""
+        } else {
+            "AND (ended_at_epoch_millis > ? OR (ended_at_epoch_millis = ? AND match_id > ?))"
+        }
+        val sql = """
+            WITH terminals AS (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY match_id ORDER BY ended_at_epoch_millis DESC, table_id ASC) AS row_rank
+                FROM history_terminal
+            ), candidates AS (
+                SELECT m.match_id, 'COMPLETED' AS state, m.started_at_epoch_millis,
+                    m.ended_at_epoch_millis, m.rule_id, m.table_id, m.dimension_id
+                FROM history_match m
+                JOIN history_replay r ON r.match_id = m.match_id
+                WHERE m.status = 'COMPLETED' AND m.ended_at_epoch_millis IS NOT NULL
+                    AND NOT EXISTS (SELECT 1 FROM history_tombstone z WHERE z.match_id = m.match_id)
+                UNION ALL
+                SELECT t.match_id, 'PARTIAL', m.started_at_epoch_millis,
+                    COALESCE(m.ended_at_epoch_millis, t.ended_at_epoch_millis),
+                    m.rule_id, COALESCE(m.table_id, t.table_id), m.dimension_id
+                FROM terminals t
+                LEFT JOIN history_match m ON m.match_id = t.match_id
+                WHERE t.row_rank = 1
+                    AND NOT EXISTS (SELECT 1 FROM history_replay r JOIN history_match c ON c.match_id = r.match_id
+                        WHERE r.match_id = t.match_id AND c.status = 'COMPLETED' AND c.ended_at_epoch_millis IS NOT NULL)
+                    AND (EXISTS (SELECT 1 FROM history_terminal i WHERE i.match_id = t.match_id AND i.completed = 0)
+                        OR EXISTS (SELECT 1 FROM history_gap g WHERE g.match_id = t.match_id)
+                        OR EXISTS (SELECT 1 FROM history_recording_stop s WHERE s.match_id = t.match_id))
+                    AND NOT EXISTS (SELECT 1 FROM history_tombstone z WHERE z.match_id = t.match_id)
+            )
+            SELECT match_id, state, started_at_epoch_millis, ended_at_epoch_millis, rule_id, table_id, dimension_id
+            FROM candidates
+            WHERE 1 = 1 $exclusionSql $cursorSql
+            ORDER BY ended_at_epoch_millis ASC, match_id ASC
+            LIMIT ${boundedLimit + 1}
+        """.trimIndent()
+        val rows = mutableListOf<HistoryStoredMatchSummary>()
+        val arguments = excludedMatchIds.map { VarCharColumnType() to it } + if (cursor == null) {
+            emptyList()
+        } else {
+            listOf(
+                LongColumnType() to cursor.endedAtEpochMillis,
+                LongColumnType() to cursor.endedAtEpochMillis,
+                VarCharColumnType() to cursor.matchId,
+            )
+        }
+        exec(sql, arguments, explicitStatementType = StatementType.SELECT) { result ->
+            while (result.next()) rows += result.toStoredMatchSummary()
+        }
+        val hasNext = rows.size > boundedLimit
+        val entries = rows.take(boundedLimit)
+        HistorySummaryPage(
+            entries = entries,
+            nextCursor = if (hasNext) {
+                entries.lastOrNull()?.let {
+                    HistorySummaryCursor(it.endedAtEpochMillis, it.matchId)
+                }
+            } else {
+                null
+            },
+        )
+    }
+
+    /** 以 SQLite UTF-8 BLOB 長度計算指定對局的邏輯 payload 大小。
+     *
+     * @param matchIds 要計算的對局 ID 集合。
+     * @return 指定對局的 Replay 與暫存事件 payload UTF-8 位元組總數。
+     */
+    fun logicalPayloadBytes(matchIds: Collection<String>): Long = transaction(database) {
+        logicalPayloadBytesInTransaction(matchIds)
+    }
+
     /** 讀取可供權威 outbox 對帳的清理確認；墓碑 ID 格式錯誤時拒絕啟動對帳。
      *
      * @return 已提交的清理確認清單。
@@ -391,8 +528,7 @@ internal class SqliteHistoryDatabase private constructor(
             ) {
                 return@mapNotNull null
             }
-            val bytes = HistoryReplayTable.select(HistoryReplayTable.payload).where { HistoryReplayTable.matchId eq matchId }
-                .single()[HistoryReplayTable.payload].toByteArray(Charsets.UTF_8).size.toLong()
+            val bytes = logicalPayloadBytesInTransaction(setOf(matchId))
             HistoryRetentionCandidate(matchId, summary[HistoryMatchTable.startedAtEpochMillis], ended, false, bytes)
         }
         val partial = HistoryTerminalTable.selectAll().mapNotNull { terminal ->
@@ -413,12 +549,48 @@ internal class SqliteHistoryDatabase private constructor(
                 startedAtEpochMillis = started,
                 endedAtEpochMillis = summary?.get(HistoryMatchTable.endedAtEpochMillis) ?: ended,
                 interrupted = interrupted,
-                logicalBytes = HistoryPendingEventTable.select(HistoryPendingEventTable.payload).where { HistoryPendingEventTable.matchId eq matchId }
-                    .sumOf { it[HistoryPendingEventTable.payload].toByteArray(Charsets.UTF_8).size.toLong() },
+                logicalBytes = logicalPayloadBytesInTransaction(setOf(matchId)),
             )
         }
         return (complete + partial).distinctBy { it.matchId }.sortedBy { it.endedAtEpochMillis }
     }
+
+    /**
+     * 在目前 SQLite 交易中計算 payload 的 UTF-8 位元組數，不載入文字內容。
+     *
+     * @param matchIds 要計算的場次，同一 ID 只計一次。
+     * @return Replay 與 SQL 暫存事件的邏輯大小。
+     */
+    private fun logicalPayloadBytesInTransaction(matchIds: Collection<String>): Long {
+        if (matchIds.isEmpty()) return 0L
+        var total = 0L
+        matchIds.distinct().chunked(PAYLOAD_QUERY_BATCH_SIZE).forEach { batch ->
+            val ids = batch.joinToString(",") { "?" }
+            val arguments = batch.map { VarCharColumnType() to it }
+            TransactionManager.current().exec("SELECT COALESCE(SUM(length(CAST(payload AS BLOB))), 0) FROM history_replay WHERE match_id IN ($ids)", arguments) { result ->
+                if (result.next()) total = Math.addExact(total, result.getLong(1))
+            }
+            TransactionManager.current().exec("SELECT COALESCE(SUM(length(CAST(payload AS BLOB))), 0) FROM history_pending_event WHERE match_id IN ($ids)", arguments) { result ->
+                if (result.next()) total = Math.addExact(total, result.getLong(1))
+            }
+        }
+        return total
+    }
+
+    /**
+     * 將摘要查詢列轉為保存場次摘要模型。
+     *
+     * @return 保留未知 metadata 的摘要。
+     */
+    private fun ResultSet.toStoredMatchSummary(): HistoryStoredMatchSummary = HistoryStoredMatchSummary(
+        matchId = getString("match_id"),
+        state = HistoryStoredMatchState.valueOf(getString("state")),
+        startedAtEpochMillis = getLong("started_at_epoch_millis").let { if (wasNull()) null else it },
+        endedAtEpochMillis = getLong("ended_at_epoch_millis"),
+        ruleId = getString("rule_id"),
+        tableId = getString("table_id"),
+        dimensionId = getString("dimension_id"),
+    )
 
     /** 原子地重新確認可清理條件、刪除場次資料並寫入墓碑。
      *
@@ -506,6 +678,9 @@ internal class SqliteHistoryDatabase private constructor(
     private fun sidecarSize(file: Path): Long = if (Files.notExists(file)) 0L else fileSize(file)
 
     companion object {
+        /** 單次大小查詢的參數數量上限，避免不限場數時超出 SQLite bind 限制。 */
+        private const val PAYLOAD_QUERY_BATCH_SIZE = 500
+
         /** SQLite incremental auto-vacuum 模式。 */
         private const val INCREMENTAL_AUTO_VACUUM_MODE = 2
 

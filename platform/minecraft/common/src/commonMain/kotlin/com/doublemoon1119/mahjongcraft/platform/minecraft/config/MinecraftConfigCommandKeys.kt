@@ -101,6 +101,171 @@ object MinecraftConfigCommandKeys {
     /** 歷史資料可正常記錄狀態文字。 */
     const val HISTORY_STORAGE_AVAILABLE: String = "mahjongcraft.command.history.storage_available"
 
+    /** 歷史用量快照標題。 */
+    const val HISTORY_STORAGE: String = "mahjongcraft.history.command.storage"
+
+    /** 對局分類標籤。 */
+    const val HISTORY_SECTION_MATCHES: String = "mahjongcraft.history.command.section.matches"
+
+    /** 事件分類標籤。 */
+    const val HISTORY_SECTION_EVENTS: String = "mahjongcraft.history.command.section.events"
+
+    /** 磁碟分類標籤。 */
+    const val HISTORY_SECTION_DISK: String = "mahjongcraft.history.command.section.disk"
+
+    /** 有效保留限制分類標籤。 */
+    const val HISTORY_SECTION_LIMITS: String = "mahjongcraft.history.command.section.limits"
+
+    /** 完整、活動、部分及待判定場數摘要。 */
+    const val HISTORY_MATCHES_SUMMARY: String = "mahjongcraft.history.command.matches_summary"
+
+    /** SQL、權威 outbox 與清理收據摘要。 */
+    const val HISTORY_EVENTS_SUMMARY: String = "mahjongcraft.history.command.events_summary"
+
+    /** 場數、天數及磁碟上限摘要。 */
+    const val HISTORY_LIMITS_SUMMARY: String = "mahjongcraft.history.command.limits_summary"
+
+    /** 無場數或天數上限文字。 */
+    const val HISTORY_UNLIMITED: String = "mahjongcraft.history.command.unlimited"
+
+    /** 主資料庫檔案大小。 */
+    const val HISTORY_DB_BYTES: String = "mahjongcraft.history.command.db_bytes"
+
+    /** WAL 檔案大小。 */
+    const val HISTORY_WAL_BYTES: String = "mahjongcraft.history.command.wal_bytes"
+
+    /** SHM 檔案大小。 */
+    const val HISTORY_SHM_BYTES: String = "mahjongcraft.history.command.shm_bytes"
+
+    /** 預覽中確定按政策清理的候選場數。 */
+    const val HISTORY_CANDIDATE_MATCHES: String = "mahjongcraft.history.command.candidate_matches"
+
+    /** 清理是否完成的欄位名稱。 */
+    const val HISTORY_RESULT_STATE: String = "mahjongcraft.history.command.result_state"
+
+    /** 肯定結果文字。 */
+    const val HISTORY_YES: String = "mahjongcraft.history.command.yes"
+
+    /** 否定結果文字。 */
+    const val HISTORY_NO: String = "mahjongcraft.history.command.no"
+
+    /** 未量得或未確認的結果文字。 */
+    const val HISTORY_UNKNOWN: String = "mahjongcraft.history.command.unknown"
+
+    /** 歷史管理工作進行中訊息。 */
+    const val HISTORY_MANAGEMENT_BUSY: String = "mahjongcraft.history.command.management_busy"
+
+    /** 歷史資料庫尚未連線訊息。 */
+    const val HISTORY_MANAGEMENT_DISCONNECTED: String = "mahjongcraft.history.command.management_disconnected"
+
+    /** 歷史管理工作失敗訊息。 */
+    const val HISTORY_MANAGEMENT_FAILED: String = "mahjongcraft.history.command.management_failed"
+
+    /** 開始讀取歷史用量訊息。 */
+    const val HISTORY_STORAGE_STARTED: String = "mahjongcraft.history.command.storage_started"
+
+    /** 開始產生清理預覽訊息。 */
+    const val HISTORY_PREVIEW_STARTED: String = "mahjongcraft.history.command.preview_started"
+
+    /** 開始執行清理訊息。 */
+    const val HISTORY_CLEANUP_STARTED: String = "mahjongcraft.history.command.cleanup_started"
+
+    /** 歷史用量快照的詳細欄位。 */
+    /** 已完成場次數量。 */
+    const val HISTORY_COMPLETED_MATCHES: String = "mahjongcraft.history.command.completed_matches"
+
+    /** 活動場次數量。 */
+    const val HISTORY_ACTIVE_MATCHES: String = "mahjongcraft.history.command.active_matches"
+
+    /** 部分場次數量。 */
+    const val HISTORY_PARTIAL_MATCHES: String = "mahjongcraft.history.command.partial_matches"
+
+    /** 未知分類場次數量。 */
+    const val HISTORY_UNKNOWN_MATCHES: String = "mahjongcraft.history.command.unknown_matches"
+
+    /** SQLite 待封存事件數量。 */
+    const val HISTORY_PENDING_SQL_EVENTS: String = "mahjongcraft.history.command.pending_sql_events"
+
+    /** 權威 outbox 待寫事件數量。 */
+    const val HISTORY_PENDING_OUTBOX_EVENTS: String = "mahjongcraft.history.command.pending_outbox_events"
+
+    /** 清理墓碑數量。 */
+    const val HISTORY_TOMBSTONES: String = "mahjongcraft.history.command.tombstones"
+
+    /** 歷史資料庫磁碟用量。 */
+    const val HISTORY_DISK_USAGE: String = "mahjongcraft.history.command.disk_usage"
+
+    /** 快照更新時間。 */
+    const val HISTORY_UPDATED_AT: String = "mahjongcraft.history.command.updated_at"
+
+    /** 快照是否已過期。 */
+    const val HISTORY_STALE: String = "mahjongcraft.history.command.stale"
+
+    /** 清理預覽標題與候選統計欄位。 */
+    /** 清理預覽標題。 */
+    const val HISTORY_CLEANUP_PREVIEW: String = "mahjongcraft.history.command.cleanup_preview"
+
+    /** 清理預覽標題文字。 */
+    const val HISTORY_CLEANUP_PREVIEW_TITLE: String = "mahjongcraft.history.command.cleanup_preview_title"
+
+    /** 清理報告標題文字。 */
+    const val HISTORY_CLEANUP_REPORT_TITLE: String = "mahjongcraft.history.command.cleanup_report_title"
+
+    /** 清理結果完成狀態文字。 */
+    const val HISTORY_RESULT_COMPLETED: String = "mahjongcraft.history.command.result_completed"
+
+    /** 清理結果部分狀態文字。 */
+    const val HISTORY_RESULT_PARTIAL: String = "mahjongcraft.history.command.result_partial"
+
+    /** 清理原因欄位。 */
+    const val HISTORY_CLEANUP_REASON: String = "mahjongcraft.history.command.cleanup_reason"
+
+    /** 候選資料邏輯大小欄位。 */
+    const val HISTORY_LOGICAL_BYTES: String = "mahjongcraft.history.command.logical_bytes"
+
+    /** 額外候選場次數量。 */
+    const val HISTORY_ADDITIONAL_CANDIDATES: String = "mahjongcraft.history.command.additional_candidates"
+
+    /** 額外候選邏輯大小。 */
+    const val HISTORY_ADDITIONAL_LOGICAL_BYTES: String = "mahjongcraft.history.command.additional_logical_bytes"
+
+    /** 候選評估時間。 */
+    const val HISTORY_EVALUATED_AT: String = "mahjongcraft.history.command.evaluated_at"
+
+    /** 無法精確承諾磁碟釋放量的說明。 */
+    const val HISTORY_NO_EXACT_DISK_PROMISE: String = "mahjongcraft.history.command.no_exact_disk_promise"
+
+    /** 清理執行報告欄位。 */
+    /** 清理是否完成。 */
+    const val HISTORY_CLEANUP_COMPLETE: String = "mahjongcraft.history.command.cleanup_complete"
+
+    /** 已移除場次數量。 */
+    const val HISTORY_REMOVED_MATCHES: String = "mahjongcraft.history.command.removed_matches"
+
+    /** 清理前磁碟大小。 */
+    const val HISTORY_DISK_BEFORE: String = "mahjongcraft.history.command.disk_before"
+
+    /** 清理後磁碟大小。 */
+    const val HISTORY_DISK_AFTER: String = "mahjongcraft.history.command.disk_after"
+
+    /** 磁碟大小淨變化。 */
+    const val HISTORY_NET_DISK_CHANGE: String = "mahjongcraft.history.command.net_disk_change"
+
+    /** 磁碟回收是否因忙碌而延後。 */
+    const val HISTORY_RECOVERY_BUSY: String = "mahjongcraft.history.command.recovery_busy"
+
+    /** 是否支援 incremental vacuum。 */
+    const val HISTORY_INCREMENTAL_SUPPORTED: String = "mahjongcraft.history.command.incremental_supported"
+
+    /** 歷史儲存可用結果文字。 */
+    const val HISTORY_STORAGE_AVAILABLE_RESULT: String = "mahjongcraft.history.command.storage_available_result"
+
+    /** 清理原因的本地化分類。 */
+    const val HISTORY_REASON_INTERRUPTED: String = "mahjongcraft.history.command.reason.interrupted"
+    const val HISTORY_REASON_EXPIRED: String = "mahjongcraft.history.command.reason.expired"
+    const val HISTORY_REASON_MATCH_LIMIT: String = "mahjongcraft.history.command.reason.match_limit"
+    const val HISTORY_REASON_DISK_LIMIT: String = "mahjongcraft.history.command.reason.disk_limit"
+
     /** 斷線玩家政策欄位。 */
     const val DISCONNECTED_PLAYER_POLICY: String = "mahjongcraft.server_config.disconnected_player_policy"
 

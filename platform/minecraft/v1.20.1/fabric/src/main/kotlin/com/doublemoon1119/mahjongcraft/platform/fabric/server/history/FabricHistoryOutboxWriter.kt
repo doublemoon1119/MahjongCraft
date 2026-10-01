@@ -14,7 +14,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -32,6 +34,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
+import kotlin.uuid.Uuid
 
 /**
  * 管理員可見的歷史寫入狀態，不包含資料庫路徑或事件內容。
@@ -99,6 +102,34 @@ class FabricHistoryOutboxWriter(
     /** 共用唯讀 preview 與清理政策的 I/O 維護服務。 */
     private val retentionService = HistoryRetentionService(store)
 
+    /** 與啟動 log 及管理指令共用的統計組合邊界。 */
+    private val storageQueryService = HistoryStorageQueryService(store)
+
+    /** 限制同時只存在一項管理工作，不累積無上限等待佇列。 */
+    private val managementMutex = Mutex()
+
+    /** 目前管理工作所屬協程，detach 時取消並等待其停止。 */
+    @Volatile private var managementJob: Job? = null
+
+    /** 目前存檔 session 識別碼；重連不改變，切換存檔時失效。 */
+    @Volatile internal var currentSessionId: Uuid? = null
+        private set
+
+    /** 正式 session 所屬 server；無平台實例的測試為 null。 */
+    private var attachedServer: MinecraftServer? = null
+
+    /** 此 session 最後一份成功統計；失敗回覆須明示舊快照。 */
+    @Volatile private var cachedStorageSnapshot: HistoryStorageSnapshot? = null
+
+    /** 最近一次統計嘗試的政策，失敗也記錄以避免每個 tick 重試。 */
+    private var attemptedStoragePolicy: HistoryRetentionPolicy? = null
+
+    /** 最近一次統計嘗試的單調時刻。 */
+    private var storageRefreshMark = TimeSource.Monotonic.markNow()
+
+    /** 每 session 最多一次成功的啟動用量摘要。 */
+    private var startupStorageLogged = false
+
     /** 保護資料庫連線與背景 worker 的 session 鎖。 */
     private val sessionMutex = Mutex()
 
@@ -124,7 +155,146 @@ class FabricHistoryOutboxWriter(
      *
      * @param server 目前執行中的 Minecraft 伺服器。
      */
-    suspend fun attach(server: MinecraftServer) = attach(FabricHistoryDatabasePath.resolve(server))
+    suspend fun attach(server: MinecraftServer) = attachSession(FabricHistoryDatabasePath.resolve(server), server)
+
+    /**
+     * 驗證管理要求仍屬於同一存檔；null 只代表目前未綁定 session。
+     *
+     * @param id 命令建立時捕捉的 session 識別碼。
+     * @return 是否仍屬於目前 session。
+     */
+    internal fun isCurrentSession(id: Uuid?): Boolean = currentSessionId == id
+
+    /**
+     * 非同步更新用量；未連線時不重新開庫，已有工作時不加入等待佇列。
+     *
+     * @param expectedSessionId 原要求所屬 session。
+     * @return 新快照或安全的管理狀態。
+     */
+    internal suspend fun storage(expectedSessionId: Uuid? = currentSessionId): HistoryManagementResult<HistoryStorageSnapshot> = manage(expectedSessionId) { activeDatabase, policy -> refreshStorage(activeDatabase, policy) }
+
+    /**
+     * 唯讀預覽目前政策，容量階段只提供追加候選範圍，不保證回收量。
+     *
+     * @param expectedSessionId 原要求所屬 session。
+     * @return 不含逐場 ID 或 payload 的清理預覽。
+     */
+    internal suspend fun previewCleanup(expectedSessionId: Uuid? = currentSessionId): HistoryManagementResult<HistoryCleanupPreview> = manage(expectedSessionId) { activeDatabase, policy ->
+        val plan = retentionService.preview(activeDatabase, policy)
+        val disk = activeDatabase.measureDiskUsage()
+        val additional = if (disk.totalBytes > policy.maxDiskBytes) plan.remaining else emptyList()
+        HistoryCleanupPreview(
+            countsByReason = plan.removals.values.groupingBy { it }.eachCount().mapValues { it.value.toLong() },
+            logicalBytes = activeDatabase.logicalPayloadBytes(plan.removals.keys),
+            disk = disk,
+            additionalCandidateCount = additional.size.toLong(),
+            additionalLogicalBytes = activeDatabase.logicalPayloadBytes(additional.map { it.matchId }),
+            policy = policy,
+            evaluatedAt = plan.evaluatedAt,
+        )
+    }
+
+    /**
+     * 手動觸發同一保留政策；部分失敗仍回報已提交的刪除事實。
+     *
+     * @param expectedSessionId 原要求所屬 session。
+     * @return 實際清理結果或附有部分結果的失敗。
+     */
+    internal suspend fun runCleanup(expectedSessionId: Uuid? = currentSessionId): HistoryManagementResult<HistoryCleanupReport> = manage(expectedSessionId) { activeDatabase, policy ->
+        var before: HistoryDiskUsage? = null
+        var committed = 0L
+        try {
+            before = activeDatabase.measureDiskUsage()
+            val result = retentionService.run(activeDatabase, policy) { committed = Math.addExact(committed, it.toLong()) }
+            knownGaps = activeDatabase.readGaps()
+            synchronizedStops = activeDatabase.readRecordingStops()
+            refreshStorageSafely(activeDatabase, policy)
+            val report = HistoryCleanupReport(
+                committed,
+                result.diskBefore,
+                result.diskAfter,
+                result.storageAvailable,
+                result.recoveryBusy,
+                result.incrementalSupported,
+                true,
+            )
+            logger.info(
+                "History cleanup completed: removedMatches={}, diskBeforeBytes={}, diskAfterBytes={}, storageAvailable={}, recoveryBusy={}",
+                report.removedMatches,
+                report.diskBefore?.totalBytes,
+                report.diskAfter?.totalBytes,
+                report.storageAvailable,
+                report.recoveryBusy,
+            )
+            report
+        } catch (cancelled: CancellationException) {
+            logger.info("History cleanup cancelled after {} committed match removal(s)", committed)
+            throw cancelled
+        } catch (error: Exception) {
+            store.applyHistoryStorageAvailability(false)
+            val after = runCatching { activeDatabase.measureDiskUsage() }.getOrNull()
+            throw HistoryManagementFailure(
+                HistoryCleanupReport(committed, before, after, store.isHistoryStorageAvailable, null, null, false),
+                error,
+            )
+        }
+    }
+
+    /**
+     * 查詢伺服器內部摘要，不授予一般玩家查閱權限。
+     *
+     * @param limit 每頁 1～100 筆，預設 20。
+     * @param cursor 上一頁的穩定游標。
+     * @param expectedSessionId 原要求所屬 session。
+     * @return 不含活動場次與牌面內容的摘要分頁。
+     */
+    internal suspend fun summaries(
+        limit: Int = 20,
+        cursor: HistorySummaryCursor? = null,
+        expectedSessionId: Uuid? = currentSessionId,
+    ): HistoryManagementResult<HistorySummaryPage> = manage(expectedSessionId) { activeDatabase, _ ->
+        val active = store.snapshot().games.values.mapTo(mutableSetOf()) { it.matchId.toString() }
+        activeDatabase.readSummaryPage(limit, cursor, active)
+    }
+
+    /**
+     * 在同一 session、I/O dispatcher 及政策 lease 下執行一項有界管理工作。
+     *
+     * @param expectedSessionId 原要求捕捉的 session。
+     * @param operation 型別化的資料庫管理工作，不得重入此入口。
+     * @return 工作結果；例外只寫入內部 log，不傳送原始原因。
+     */
+    private suspend fun <T> manage(
+        expectedSessionId: Uuid?,
+        operation: suspend (SqliteHistoryDatabase, HistoryRetentionPolicy) -> T,
+    ): HistoryManagementResult<T> {
+        if (!isCurrentSession(expectedSessionId)) return HistoryManagementResult.SessionChanged
+        if (!managementMutex.tryLock()) return HistoryManagementResult.Busy(cachedStorageSnapshot)
+        val job = currentCoroutineContext()[Job]
+        try {
+            managementJob = job
+            return withContext(dispatchers.io) {
+                retentionCoordinator.withPolicy { policy ->
+                    if (!isCurrentSession(expectedSessionId)) return@withPolicy HistoryManagementResult.SessionChanged
+                    val activeDatabase = database.takeIf { connected } ?: return@withPolicy HistoryManagementResult.Disconnected(cachedStorageSnapshot)
+                    val session = expectedSessionId ?: return@withPolicy HistoryManagementResult.Disconnected(cachedStorageSnapshot)
+                    currentCoroutineContext().ensureActive()
+                    val value = operation(activeDatabase, policy)
+                    currentCoroutineContext().ensureActive()
+                    if (!isCurrentSession(session)) HistoryManagementResult.SessionChanged else HistoryManagementResult.Success(value, session)
+                }
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            lastError = error.message ?: error::class.simpleName
+            logger.error("History management operation failed", error)
+            return HistoryManagementResult.Failed((error as? HistoryManagementFailure)?.report, cachedStorageSnapshot)
+        } finally {
+            if (managementJob === job) managementJob = null
+            managementMutex.unlock()
+        }
+    }
 
     /** 回報連線與權威待寫狀態；原始錯誤只供內部 log 使用。
      *
@@ -145,12 +315,20 @@ class FabricHistoryOutboxWriter(
     /** 僅在斷線時重新開啟目前存檔的固定資料庫，不建立第二個 worker。
      *
      * @param server 目前執行中的 Minecraft 伺服器。
+     * @param expectedSessionId 指令建立時的 session；等待鎖期間切換存檔時拒絕操作。
      * @return 重新連線、已連線或失敗結果。
      */
-    suspend fun retry(server: MinecraftServer): HistoryRetryResult = sessionMutex.withLock {
+    suspend fun retry(server: MinecraftServer, expectedSessionId: Uuid? = currentSessionId): HistoryRetryResult = sessionMutex.withLock {
+        if (!isCurrentSession(expectedSessionId)) return@withLock HistoryRetryResult.Failed
+        if (currentSessionId == null) return@withLock HistoryRetryResult.Failed
+        if (attachedServer != null && attachedServer !== server) return@withLock HistoryRetryResult.Failed
         if (connected) return@withLock HistoryRetryResult.AlreadyConnected
         worker?.cancelAndJoin()
+        managementJob?.cancelAndJoin()
         worker = null
+        cachedStorageSnapshot = null
+        attemptedStoragePolicy = null
+        lastError = null
         if (open(FabricHistoryDatabasePath.resolve(server))) HistoryRetryResult.Reconnected else HistoryRetryResult.Failed
     }
 
@@ -158,8 +336,22 @@ class FabricHistoryOutboxWriter(
      *
      * @param path 歷史資料庫檔案位置。
      */
-    internal suspend fun attach(path: Path) = sessionMutex.withLock {
-        check(worker == null && database == null) { "History writer is already attached" }
+    internal suspend fun attach(path: Path) = attachSession(path, null)
+
+    /**
+     * 初始化固定路徑與 session 身分，不沿用前一存檔的用量或工作。
+     *
+     * @param path 目前存檔的固定資料庫位置。
+     * @param server 正式 session 的平台實例；測試可為 null。
+     */
+    private suspend fun attachSession(path: Path, server: MinecraftServer?) = sessionMutex.withLock {
+        check(currentSessionId == null && worker == null && database == null) { "History writer is already attached" }
+        currentSessionId = Uuid.random()
+        attachedServer = server
+        cachedStorageSnapshot = null
+        attemptedStoragePolicy = null
+        startupStorageLogged = false
+        storageRefreshMark = TimeSource.Monotonic.markNow()
         lastError = null
         knownGaps = emptyMap()
         synchronizedStops = emptyMap()
@@ -196,6 +388,7 @@ class FabricHistoryOutboxWriter(
                         archiveService.archiveReady(opened, snapshot)
                     }
                     maintain(opened, policy)
+                    refreshStorageSafely(opened, policy)
                 }
             }
         } catch (cancelled: CancellationException) {
@@ -210,7 +403,6 @@ class FabricHistoryOutboxWriter(
             return false
         }
         connected = true
-        lastError = null
         worker = CoroutineScope(SupervisorJob() + dispatchers.io).launch {
             var retryDelay = INITIAL_RETRY_DELAY
             var maintenanceMark = TimeSource.Monotonic.markNow()
@@ -227,6 +419,9 @@ class FabricHistoryOutboxWriter(
                             maintain(opened, policy)
                             lastPolicy = policy
                             maintenanceMark = TimeSource.Monotonic.markNow()
+                        }
+                        if (attemptedStoragePolicy != policy || storageRefreshMark.elapsedNow() >= STORAGE_REFRESH_INTERVAL) {
+                            refreshStorageSafely(opened, policy)
                         }
                         if (!store.isHistoryStorageAvailable) return@withPolicy false
                         val wrote = flushOneBatch(opened)
@@ -263,8 +458,13 @@ class FabricHistoryOutboxWriter(
 
     /** 停止背景工作並有界嘗試提交最後的待寫事件；未提交者仍留在世界存檔。 */
     suspend fun detach() = sessionMutex.withLock {
+        currentSessionId = null
+        attachedServer = null
         worker?.cancelAndJoin()
+        managementJob?.cancelAndJoin()
         worker = null
+        cachedStorageSnapshot = null
+        attemptedStoragePolicy = null
         val activeDatabase = database ?: return@withLock
         withTimeoutOrNull(SHUTDOWN_FLUSH_TIMEOUT) {
             withContext(dispatchers.io) {
@@ -292,6 +492,7 @@ class FabricHistoryOutboxWriter(
      * @param policy 協調邊界固定的有效政策。
      */
     private suspend fun maintain(activeDatabase: SqliteHistoryDatabase, policy: HistoryRetentionPolicy) {
+        attemptedStoragePolicy = null
         try {
             retentionService.run(activeDatabase, policy)
         } catch (cancelled: CancellationException) {
@@ -302,6 +503,50 @@ class FabricHistoryOutboxWriter(
         }
         knownGaps = activeDatabase.readGaps()
         synchronizedStops = activeDatabase.readRecordingStops()
+    }
+
+    /**
+     * 完整更新共用快照，成功後才輸出一次 session 摘要。
+     *
+     * @param activeDatabase 同一 session 的已驗證資料庫。
+     * @param policy 查詢時固定的有效政策。
+     * @return 新的用量快照。
+     */
+    private suspend fun refreshStorage(activeDatabase: SqliteHistoryDatabase, policy: HistoryRetentionPolicy): HistoryStorageSnapshot {
+        val snapshot = storageQueryService.read(activeDatabase, policy)
+        currentCoroutineContext().ensureActive()
+        cachedStorageSnapshot = snapshot
+        attemptedStoragePolicy = policy
+        storageRefreshMark = TimeSource.Monotonic.markNow()
+        if (!startupStorageLogged) {
+            logger.info(
+                "History storage initialized: completedMatches={}, activeMatches={}, partialMatches={}, unknownMatches={}, pendingSqlEvents={}, pendingOutboxEvents={}, dbBytes={}, walBytes={}, shmBytes={}, maxDiskBytes={}, maxMatches={}, retentionDuration={}, includeInterrupted={}",
+                snapshot.completedMatchCount, snapshot.activeMatchCount, snapshot.partialMatchCount, snapshot.unknownMatchCount,
+                snapshot.pendingSqlEventCount, snapshot.pendingOutboxEventCount, snapshot.disk.dbBytes, snapshot.disk.walBytes,
+                snapshot.disk.shmBytes, policy.maxDiskBytes, policy.maxMatches, policy.retentionDuration, policy.includeInterruptedMatches,
+            )
+            startupStorageLogged = true
+        }
+        return snapshot
+    }
+
+    /**
+     * 背景統計失敗只使快照維持舊狀態，不將用量改成零或停止正常寫入。
+     *
+     * @param activeDatabase 同一 session 的資料庫。
+     * @param policy 固定的有效政策。
+     */
+    private suspend fun refreshStorageSafely(activeDatabase: SqliteHistoryDatabase, policy: HistoryRetentionPolicy) {
+        try {
+            refreshStorage(activeDatabase, policy)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            attemptedStoragePolicy = policy
+            storageRefreshMark = TimeSource.Monotonic.markNow()
+            lastError = error.message ?: error::class.simpleName
+            logger.error("History storage statistics could not be refreshed", error)
+        }
     }
 
     /** 對一份不可變快照提交最多一批，確認時只移除該批的穩定鍵。
@@ -393,6 +638,9 @@ class FabricHistoryOutboxWriter(
         /** 背景 worker 重試等待時間上限。 */
         val MAX_RETRY_DELAY = 16.seconds
 
+        /** 用量統計的最大背景更新頻率，不每次事件提交重建快照。 */
+        val STORAGE_REFRESH_INTERVAL = 30.seconds
+
         /** 正常關機時等待最後批次提交的時間上限。 */
         val SHUTDOWN_FLUSH_TIMEOUT = 5.seconds
 
@@ -400,3 +648,11 @@ class FabricHistoryOutboxWriter(
         val MAINTENANCE_INTERVAL = 1.minutes
     }
 }
+
+/**
+ * 保留已提交刪除結果的內部管理失敗，不直接傳送給玩家。
+ *
+ * @property report 失敗前可證實的部分清理結果。
+ * @param cause 原始內部例外，僅供 server log。
+ */
+private class HistoryManagementFailure(val report: HistoryCleanupReport, cause: Exception) : Exception("History cleanup did not finish", cause)
