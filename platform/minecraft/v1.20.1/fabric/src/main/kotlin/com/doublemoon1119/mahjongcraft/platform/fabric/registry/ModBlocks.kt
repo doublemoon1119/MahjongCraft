@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableDesign
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.fabric.api.`object`.builder.v1.block.entity.FabricBlockEntityTypeBuilder
@@ -44,10 +45,11 @@ object ModBlocks {
     lateinit var mahjongTableBlockEntity: BlockEntityType<MahjongTableBlockEntity>
         private set
 
-    /** 註冊麻將桌方塊、對應物品與方塊實體型別。 */
+    /** 註冊麻將桌與麻將凳方塊、對應物品與方塊實體型別。 */
     fun register(
         roomService: MahjongTableRoomService,
         tableLifecycleService: FabricTableLifecycleService,
+        seatService: MahjongStoolSeatService,
     ) {
         woodenMahjongTable = registerTable(
             path = "wooden_mahjong_table",
@@ -70,6 +72,7 @@ object ModBlocks {
                 .mapColor(MapColor.OAK_TAN)
                 .strength(0.0f)
                 .sounds(BlockSoundGroup.WOOD),
+            seatService = seatService,
         )
         plasticMahjongStool = registerStool(
             path = "plastic_mahjong_stool",
@@ -78,6 +81,7 @@ object ModBlocks {
                 .mapColor(MapColor.BRIGHT_RED)
                 .strength(0.0f)
                 .sounds(BlockSoundGroup.SCAFFOLDING),
+            seatService = seatService,
         )
         val blockEntityId = Identifier(MinecraftModMetadata.MOD_ID, "mahjong_table")
         mahjongTableBlockEntity = Registry.register(
@@ -121,6 +125,7 @@ object ModBlocks {
         path: String,
         design: MahjongStoolDesign,
         settings: AbstractBlock.Settings,
+        seatService: MahjongStoolSeatService,
     ): Block {
         val id = Identifier(MinecraftModMetadata.MOD_ID, path)
         val block = Registry.register(
@@ -129,6 +134,7 @@ object ModBlocks {
             MahjongStoolBlock(
                 settings = settings,
                 design = design,
+                seatService = seatService,
             ),
         )
         Registry.register(Registries.ITEM, id, BlockItem(block, Item.Settings()))
