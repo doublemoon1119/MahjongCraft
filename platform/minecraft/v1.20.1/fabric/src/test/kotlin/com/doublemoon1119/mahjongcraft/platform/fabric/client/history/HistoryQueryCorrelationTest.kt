@@ -28,4 +28,23 @@ class HistoryQueryCorrelationTest {
         assertFalse(correlation.complete("world-a"))
         assertTrue(correlation.complete("world-b"))
     }
+
+    /** 回應種類不符時不得消耗仍待回應的要求。 */
+    @Test
+    fun `test response kind mismatch preserves pending request`() {
+        val correlation = HistoryQueryCorrelation()
+        correlation.begin("list", HistoryQueryKind.LIST)
+        assertFalse(correlation.complete("list", HistoryQueryKind.SUMMARY))
+        assertTrue(correlation.complete("list", HistoryQueryKind.LIST))
+    }
+
+    /** 取消只接受目前待回應的相同識別碼，且重複取消會失敗。 */
+    @Test
+    fun `test cancellation only matches pending request`() {
+        val correlation = HistoryQueryCorrelation()
+        correlation.begin("pending", HistoryQueryKind.LIST)
+        assertFalse(correlation.cancel("older"))
+        assertTrue(correlation.cancel("pending"))
+        assertFalse(correlation.cancel("pending"))
+    }
 }
