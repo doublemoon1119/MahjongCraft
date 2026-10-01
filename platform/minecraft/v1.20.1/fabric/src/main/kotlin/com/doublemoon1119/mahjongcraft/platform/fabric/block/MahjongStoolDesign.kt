@@ -29,6 +29,9 @@ enum class MahjongStoolDesign(
         VoxelShapes.union(shape, cuboid.toVoxelShape())
     }
 
+    /** 凳面相對方塊底部的高度，以方塊為單位；坐下時乘客的屁股底面貼齊此高度。 */
+    val seatHeight: Double = cuboids.maxOf(MahjongStoolCuboid::maxY) / MahjongStoolCuboid.MODEL_SIZE
+
     /** 將北向 [shape] 旋轉為指定水平朝向。 */
     fun shapeFor(facing: Direction): VoxelShape = when (facing) {
         Direction.EAST,
@@ -75,7 +78,8 @@ data class MahjongStoolCuboid(
         maxZ = maxX,
     )
 
-    private companion object {
+    /** 模型像素與方塊單位的換算。 */
+    internal companion object {
         /** Minecraft 方塊模型每軸的像素數。 */
         const val MODEL_SIZE: Double = 16.0
     }

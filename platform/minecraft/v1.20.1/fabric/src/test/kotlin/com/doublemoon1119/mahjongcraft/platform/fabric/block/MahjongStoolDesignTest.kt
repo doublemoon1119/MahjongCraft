@@ -19,6 +19,15 @@ class MahjongStoolDesignTest {
         }
     }
 
+    /** 兩款凳子的凳面高度都等於碰撞最高點九像素。 */
+    @Test
+    fun `seat height matches the top of the collision shape`() {
+        MahjongStoolDesign.entries.forEach { design ->
+            assertEquals(9.0 / 16.0, design.seatHeight)
+            assertEquals(design.shape.boundingBox.maxY, design.seatHeight)
+        }
+    }
+
     /** 每個模型 cuboid 都應被合併後的 collision shape 完整覆蓋。 */
     @Test
     fun `collision shape covers every model cuboid`() {

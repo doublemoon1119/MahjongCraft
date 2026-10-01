@@ -17,10 +17,14 @@ class FabricEntitySpawnGateway {
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
     private val activeSpawn = AtomicReference<SpawnContext?>()
 
-    /** 只在 server thread 上檢查 UUID collision，然後原樣回傳或重拋 [ServerWorld.spawnEntity] 結果。 */
-    fun spawn(world: ServerWorld, entity: Entity, source: String, tableId: Uuid): Boolean {
+    /**
+     * 只在 server thread 上檢查 UUID collision，然後原樣回傳或重拋 [ServerWorld.spawnEntity] 結果。
+     *
+     * @param tableId 所屬麻將桌；不屬於任何麻將桌的 entity（例如麻將凳的座位）為 null。
+     */
+    fun spawn(world: ServerWorld, entity: Entity, source: String, tableId: Uuid?): Boolean {
         val serverIsOnThread = world.server.isOnThread
-        val context = "source=$source tableId=$tableId entity=${entity.javaClass.name} id=${entity.id} " +
+        val context = "source=$source tableId=${tableId ?: "none"} entity=${entity.javaClass.name} id=${entity.id} " +
             "uuid=${entity.uuid} thread=${Thread.currentThread().name} serverIsOnThread=$serverIsOnThread " +
             "world=${world.registryKey.value}"
         check(serverIsOnThread) { "Entity spawn attempted off server thread: $context" }
@@ -54,7 +58,7 @@ class FabricEntitySpawnGateway {
     /** 一次進行中 spawn mutation 的最小診斷資料。 */
     private data class SpawnContext(
         val source: String,
-        val tableId: Uuid,
+        val tableId: Uuid?,
         val entityId: Int,
         val entityUuid: String,
         val threadName: String,

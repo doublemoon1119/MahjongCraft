@@ -46,6 +46,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConne
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricRoomCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
@@ -90,7 +91,11 @@ class MahjongCraftMod : ModInitializer {
         ModEntities.register()
         val tableLifecycleService = koin.get<FabricTableLifecycleService>()
         val tableLocationValidation = koin.get<FabricTableLocationValidationService>()
-        ModBlocks.register(koin.get<MahjongTableRoomService>(), tableLifecycleService)
+        ModBlocks.register(
+            roomService = koin.get<MahjongTableRoomService>(),
+            tableLifecycleService = tableLifecycleService,
+            seatService = koin.get<MahjongStoolSeatService>(),
+        )
         ModItemGroups.register()
         tableLifecycleService.registerEvents()
         tableLocationValidation.registerEvents()
