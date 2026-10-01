@@ -38,12 +38,14 @@ class CreateRoomUseCase(
      * @param roomId 房間的唯一識別碼。
      * @param hostId 房主的玩家 Uuid。
      * @param gameConfig 房間開局時採用的完整遊戲設定。
+     * @param hostAiStrategyKey 房主的 AI 策略識別碼；為 null 時維持真人房主，否則保存 AI 身分並自動準備。
      * @return 創建結果，成功時包含 [Room] 實例，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
         roomId: Uuid,
         hostId: Uuid,
         gameConfig: GameConfig,
+        hostAiStrategyKey: String? = null,
     ): Outcome<Room, RoomError> {
         val existingTableId = membershipRepository.getTableId(hostId)
         if (existingTableId != null && existingTableId != roomId) {
@@ -62,13 +64,14 @@ class CreateRoomUseCase(
                 state.games[roomId] != null ->
                     AuthoritativeStateUpdate(state, Outcome.Error(RoomError.GameAlreadyInProgress(roomId)))
                 else -> {
-                    // 初始化房間物件，房主預設加入且不預設準備
+                    // 房主不參與準備集合；AI 房主只保存策略，與其餘 AI 的準備狀態分開。
                     val newRoom = Room(
                         id = roomId,
                         hostId = hostId,
                         gameConfig = gameConfig,
                         playerIds = listOf(hostId),
                         readyPlayerIds = emptyList(),
+                        aiPlayerStrategyKeys = if (hostAiStrategyKey == null) emptyMap() else mapOf(hostId to hostAiStrategyKey),
                     )
                     AuthoritativeStateUpdate(
                         state.copy(rooms = state.rooms + (roomId to newRoom)),

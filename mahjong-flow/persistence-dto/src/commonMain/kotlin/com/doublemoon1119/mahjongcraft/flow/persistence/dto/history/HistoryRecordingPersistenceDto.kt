@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEve
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTransfer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.config.GameFlowConfigPersistenceDto
@@ -32,6 +33,8 @@ import kotlin.uuid.Uuid
  * @property pendingEvents 尚未交給歷史儲存端的事件；各場次的事件依序號排序。
  * @property firstMissingSequenceByMatchId 各對局第一個無法完整還原的事件序號，鍵為對局 UUID 字串。
  * @property decisionsByMatchId 各對局固定的歷史記錄決策，值為列舉名稱。
+ * @property terminalByMatchId 已不可接續場次的權威終點證據。
+ * @property transfersByMatchId 未完成的隔離權威歷史轉移；載入後保留部分紀錄而不重新執行來源。
  */
 @Serializable
 data class HistoryRecordingPersistenceDto(
@@ -42,11 +45,26 @@ data class HistoryRecordingPersistenceDto(
     val firstMissingSequenceByMatchId: Map<String, Long> = emptyMap(),
     val decisionsByMatchId: Map<String, String> = emptyMap(),
     val terminalByMatchId: Map<String, HistoryRecordingTerminalPersistenceDto> = emptyMap(),
+    val transfersByMatchId: Map<String, HistoryRecordingTransferPersistenceDto> = emptyMap(),
 ) {
     init {
         require(formatVersion == 1) { "Unsupported history outbox format $formatVersion" }
     }
 }
+
+/**
+ * 未完成歷史轉移的持久化 metadata。
+ *
+ * @property tableId 來源牌桌 UUID 字串。
+ * @property lastAcceptedBatch 最近確認的完整交易批次。
+ * @property matchCompleted 是否已有整場完成事實。
+ */
+@Serializable
+data class HistoryRecordingTransferPersistenceDto(
+    val tableId: String,
+    val lastAcceptedBatch: List<HistoryOutboxEventPersistenceDto>,
+    val matchCompleted: Boolean,
+)
 
 /** 已結束歷史場次的持久化終點證據。
  *
@@ -314,6 +332,9 @@ class HistoryRecordingPersistenceMapper(
                     terminal.tableId.toString(),
                 )
             },
+            transfersByMatchId = state.transfersByMatchId.mapKeys { it.key.toString() }.mapValues { (_, transfer) ->
+                HistoryRecordingTransferPersistenceDto(transfer.tableId.toString(), transfer.lastAcceptedBatch.map(::encodeEvent), transfer.matchCompleted)
+            },
         )
     }
 
@@ -339,6 +360,9 @@ class HistoryRecordingPersistenceMapper(
                     terminal.completed,
                     Uuid.parse(terminal.tableId),
                 )
+            },
+            transfersByMatchId = dto.transfersByMatchId.mapKeys { Uuid.parse(it.key) }.mapValues { (_, transfer) ->
+                HistoryRecordingTransfer(Uuid.parse(transfer.tableId), transfer.lastAcceptedBatch.map(::decodeEvent), transfer.matchCompleted)
             },
         )
     }

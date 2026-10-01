@@ -308,6 +308,55 @@ class GameFlowCoordinatorTest {
         assertEquals(lastDrawn, updatedGame.tableState.players.first { it.id == forcedPlayerId }.discardPile.entries.single().tile)
     }
 
+    /** 驗證單步入口只執行一個自動命令，不會在同一次呼叫中遞迴驅動後續玩家。 */
+    @Test
+    fun `test advance automated player step performs one automatic action`() = runTest {
+        val fixtures = Fixtures()
+        val forcedPlayerId = Uuid.random()
+        val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val forcedPlayer = FakeMahjongPlayerFactory.create(
+            id = forcedPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = lastDrawn),
+        )
+        val ai = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            aiStrategyKey = RandomAiStrategy.KEY,
+            playerRuleState = RiichiPlayerState(),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(forcedPlayer, ai),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            tileWall = TileWall(List(20) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)) }),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setGame(Game(table, GameFlowConfig(), forcedAutoPlayPlayerIds = setOf(forcedPlayerId)))
+
+        assertTrue(fixtures.coordinator.advanceAutomatedPlayerStep(gameId))
+
+        val updated = fixtures.gameRepo.getGame(gameId)!!
+        assertTrue(forcedPlayerId !in updated.forcedAutoPlayPlayerIds, "The forced decision should be cleared.")
+        assertEquals(1, updated.tableState.players.first { it.id == forcedPlayerId }.discardPile.entries.size)
+        assertTrue(
+            updated.tableState.players.first { it.id == ai.id }.discardPile.entries.isEmpty(),
+            "A single step must not execute the following AI decision.",
+        )
+    }
+
+    /** 驗證呈現忙碌時單步入口回傳無進展，且不會修改權威桌況。 */
+    @Test
+    fun `test advance automated player step returns false while presentation is busy`() = runTest {
+        val fixtures = Fixtures()
+        val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(player))
+        fixtures.gameRepo.setTableState(table)
+        fixtures.presentationBusyGate.setBusy(gameId, true)
+
+        assertEquals(false, fixtures.coordinator.advanceAutomatedPlayerStep(gameId))
+        assertEquals(table, fixtures.gameRepo.getTableState(gameId))
+    }
+
     // ---- 一般流局：WallExhausted 銜接 ----
 
     /**
@@ -954,10 +1003,10 @@ class GameFlowCoordinatorTest {
             ) to Unit
         }
 
-        assertTrue(fixtures.coordinator.resumePendingGameTransition(gameId))
+        assertTrue(fixtures.coordinator.advanceAutomatedPlayerStep(gameId))
         val advancedState = fixtures.gameRepo.getTableState(gameId)!!
         assertTrue(advancedState.players.first { it.id == respondentId }.actionHistory.isEmpty())
-        assertTrue(!fixtures.coordinator.resumePendingGameTransition(gameId))
+        assertEquals(false, fixtures.coordinator.advanceAutomatedPlayerStep(gameId))
     }
 
     /**

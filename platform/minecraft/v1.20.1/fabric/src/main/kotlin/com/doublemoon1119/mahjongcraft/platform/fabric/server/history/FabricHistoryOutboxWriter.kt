@@ -1,7 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingPolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTransferResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.dto.registry.PersistenceRegistries
@@ -30,6 +35,7 @@ import org.koin.core.annotation.Single
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import java.sql.SQLException
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -163,7 +169,75 @@ class FabricHistoryOutboxWriter(
      * @param id 命令建立時捕捉的 session 識別碼。
      * @return 是否仍屬於目前 session。
      */
-    internal fun isCurrentSession(id: Uuid?): Boolean = currentSessionId == id
+    internal fun isCurrentSession(id: Uuid?): Boolean = id != null && currentSessionId == id
+
+    /**
+     * 在同一 session 與正式資格政策下建立隔離歷史轉移。
+     *
+     * @param game 已由隔離 Flow 建立的對局，不加入玩家集合。
+     * @param sessionId 生成命令建立時的存檔 session。
+     * @return 是否通過記錄資格與容量檢查。
+     */
+    internal suspend fun beginGeneration(game: Game, sessionId: Uuid): HistoryManagementResult<Boolean> = manage(sessionId) { _, _ ->
+        val config = configState.current.history
+        val eligibility = HistoryRecordingPolicy(config.enabled, config.includeAiMatches)
+        eligibility.decide(game) == HistoryRecordingDecision.RECORDING && store.beginHistoryTransfer(game)
+    }
+
+    /**
+     * 接收一批完整來源交易，沿用唯一正式 outbox 而不直接插入資料庫。
+     *
+     * @param matchId 來源場次 ID。
+     * @param events 有界且保持交易邊界的權威事件。
+     * @param sessionId 來源工作固定的存檔 session。
+     * @return 接收、背壓或安全停止結果。
+     */
+    internal suspend fun appendGeneration(matchId: Uuid, events: List<HistoryOutboxEvent>, sessionId: Uuid): HistoryManagementResult<HistoryTransferResult> = manage(sessionId) { activeDatabase, _ ->
+        val result = store.appendHistoryTransfer(matchId, events)
+        if (result != HistoryTransferResult.STOPPED) flushOneBatch(activeDatabase)
+        result
+    }
+
+    /**
+     * 提交已完成或已中止的來源終點，不改變正式封存驗證。
+     *
+     * @param matchId 來源場次 ID。
+     * @param terminal 來源權威終點。
+     * @param sessionId 固定的存檔 session。
+     * @return session 管理結果。
+     */
+    internal suspend fun finishGeneration(matchId: Uuid, terminal: HistoryRecordingTerminal, sessionId: Uuid): HistoryManagementResult<HistoryGenerationReceipt> = manage(sessionId) { activeDatabase, policy ->
+        store.finishHistoryTransfer(matchId, terminal)
+        synchronizeRecordingDecisions(activeDatabase)
+        archiveService.archiveReady(activeDatabase, store.snapshot())
+        synchronizeRecordingDecisions(activeDatabase)
+        val archived = activeDatabase.readGenerationReceipt(setOf(matchId.toString()))
+        maintain(activeDatabase, policy)
+        val maintained = activeDatabase.readGenerationReceipt(setOf(matchId.toString()))
+        maintained.copy(replayBytes = archived.replayBytes + maintained.replayBytes)
+    }
+
+    /**
+     * 查詢生成批次已提交的封存／清理證據及磁碟大小。
+     *
+     * @param matchIds 此批產生的場次 ID，最多一百筆。
+     * @param sessionId 固定的存檔 session。
+     * @return 有界儲存證據，不包含 Replay 內容。
+     */
+    internal suspend fun generationReceipt(matchIds: Set<Uuid>, sessionId: Uuid): HistoryManagementResult<HistoryGenerationReceipt> = manage(sessionId) { activeDatabase, _ -> activeDatabase.readGenerationReceipt(matchIds.mapTo(mutableSetOf()) { it.toString() }) }
+
+    /**
+     * 在來源失敗時提交中止證據；資料庫失聯亦可保存，不修改其他 session。
+     *
+     * @param matchId 欲中止的來源場次。
+     * @param terminal 來源桌子與中止時間；完整旗標在此強制為 false。
+     * @param sessionId 開始生成時固定的 session。
+     */
+    internal suspend fun abortGeneration(matchId: Uuid, terminal: HistoryRecordingTerminal, sessionId: Uuid) {
+        retentionCoordinator.withPolicy {
+            if (isCurrentSession(sessionId)) store.finishHistoryTransfer(matchId, terminal.copy(completed = false))
+        }
+    }
 
     /**
      * 非同步更新用量；未連線時不重新開庫，已有工作時不加入等待佇列。
@@ -253,7 +327,9 @@ class FabricHistoryOutboxWriter(
         cursor: HistorySummaryCursor? = null,
         expectedSessionId: Uuid? = currentSessionId,
     ): HistoryManagementResult<HistorySummaryPage> = manage(expectedSessionId) { activeDatabase, _ ->
-        val active = store.snapshot().games.values.mapTo(mutableSetOf()) { it.matchId.toString() }
+        val snapshot = store.snapshot()
+        val active = snapshot.games.values.mapTo(mutableSetOf()) { it.matchId.toString() } +
+            snapshot.historyRecordingState.transfersByMatchId.keys.map { it.toString() }
         activeDatabase.readSummaryPage(limit, cursor, active)
     }
 
@@ -268,6 +344,7 @@ class FabricHistoryOutboxWriter(
         expectedSessionId: Uuid?,
         operation: suspend (SqliteHistoryDatabase, HistoryRetentionPolicy) -> T,
     ): HistoryManagementResult<T> {
+        if (expectedSessionId == null && currentSessionId == null) return HistoryManagementResult.Disconnected(cachedStorageSnapshot)
         if (!isCurrentSession(expectedSessionId)) return HistoryManagementResult.SessionChanged
         if (!managementMutex.tryLock()) return HistoryManagementResult.Busy(cachedStorageSnapshot)
         val job = currentCoroutineContext()[Job]
@@ -326,6 +403,12 @@ class FabricHistoryOutboxWriter(
         worker?.cancelAndJoin()
         managementJob?.cancelAndJoin()
         worker = null
+        retentionCoordinator.withPolicy {
+            val transfers = store.snapshot().historyRecordingState.transfersByMatchId
+            transfers.forEach { (id, transfer) ->
+                store.finishHistoryTransfer(id, HistoryRecordingTerminal(Clock.System.now().toEpochMilliseconds(), false, transfer.tableId))
+            }
+        }
         cachedStorageSnapshot = null
         attemptedStoragePolicy = null
         lastError = null
@@ -463,6 +546,12 @@ class FabricHistoryOutboxWriter(
         worker?.cancelAndJoin()
         managementJob?.cancelAndJoin()
         worker = null
+        retentionCoordinator.withPolicy {
+            val transfers = store.snapshot().historyRecordingState.transfersByMatchId
+            transfers.forEach { (id, transfer) ->
+                store.finishHistoryTransfer(id, HistoryRecordingTerminal(Clock.System.now().toEpochMilliseconds(), false, transfer.tableId))
+            }
+        }
         cachedStorageSnapshot = null
         attemptedStoragePolicy = null
         val activeDatabase = database ?: return@withLock
@@ -591,10 +680,16 @@ class FabricHistoryOutboxWriter(
             },
         )
         val stopped = recording.decisionsByMatchId.filterValues {
-            it == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED || it == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE
+            it == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED ||
+                it == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE ||
+                it == HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED
         }
         val stops = stopped.mapKeys { it.key.toString() }.mapValues { (_, decision) ->
-            if (decision == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED) PARTIAL_CONFIG_DISABLED else PARTIAL_STORAGE_UNAVAILABLE
+            when (decision) {
+                HistoryRecordingDecision.STOPPED_CONFIG_DISABLED -> PARTIAL_CONFIG_DISABLED
+                HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED -> PARTIAL_TRANSFER_INTERRUPTED
+                else -> PARTIAL_STORAGE_UNAVAILABLE
+            }
         }
         val unsynchronized = stops.filter { (matchId, reason) -> synchronizedStops[matchId] != reason }
         if (unsynchronized.isNotEmpty()) {
@@ -617,6 +712,9 @@ class FabricHistoryOutboxWriter(
     }
 
     private companion object {
+        /** 隔離權威來源未完成或無法繼續的部分紀錄診斷。 */
+        const val PARTIAL_TRANSFER_INTERRUPTED: String = "PARTIAL_TRANSFER_INTERRUPTED"
+
         /** 設定停止的穩定資料庫診斷名稱，不代表完整 Replay。 */
         const val PARTIAL_CONFIG_DISABLED: String = "PARTIAL_CONFIG_DISABLED"
 

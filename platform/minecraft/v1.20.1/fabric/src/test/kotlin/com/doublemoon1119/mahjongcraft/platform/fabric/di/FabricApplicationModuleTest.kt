@@ -281,6 +281,8 @@ class FabricApplicationModuleTest {
         assertEquals(
             setOf(
                 "scenario",
+                "history",
+                "history",
                 "win",
                 "showcase",
                 "dice",

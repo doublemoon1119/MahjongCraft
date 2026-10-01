@@ -65,7 +65,7 @@ class ReturnToRoomUseCase(
                         hostId = game.hostId,
                         gameConfig = GameConfig(ruleConfig = tableState.config, flowConfig = game.flowConfig),
                         playerIds = game.roomPlayerIds,
-                        readyPlayerIds = aiPlayerIds,
+                        readyPlayerIds = aiPlayerIds - game.hostId,
                         aiPlayerStrategyKeys = tableState.players
                             .filter { it.isAi }
                             .associate { it.id to checkNotNull(it.aiStrategyKey) },

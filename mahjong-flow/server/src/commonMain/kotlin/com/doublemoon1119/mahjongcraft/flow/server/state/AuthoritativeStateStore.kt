@@ -2,13 +2,16 @@ package com.doublemoon1119.mahjongcraft.flow.server.state
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryPruningConfirmation
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTransfer
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTransferResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -145,6 +148,9 @@ class AuthoritativeStateStore(
     suspend fun applyHistoryRecordingPolicy(policy: HistoryRecordingPolicy, onApplied: () -> Unit = {}) = mutex.withLock {
         var recording = restoreDecisions(currentState)
         if (!policy.enabled) {
+            recording.transfersByMatchId.keys.forEach { id ->
+                recording = stopTransfer(recording, id, HistoryRecordingDecision.STOPPED_CONFIG_DISABLED)
+            }
             currentState.games.values.forEach { game ->
                 if (!game.isMatchOver && recording.decisionsByMatchId[game.matchId] == HistoryRecordingDecision.RECORDING) {
                     recording = recording.recordMissing(game).copy(
@@ -185,6 +191,9 @@ class AuthoritativeStateStore(
         isHistoryStorageAvailable = available
         if (available) return@withLock
         var recording = restoreDecisions(currentState)
+        recording.transfersByMatchId.keys.forEach { id ->
+            recording = stopTransfer(recording, id, HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE)
+        }
         currentState.games.values.forEach { game ->
             if (recording.decisionsByMatchId[game.matchId] == HistoryRecordingDecision.RECORDING) {
                 recording = recording.recordMissing(game).copy(
@@ -203,7 +212,7 @@ class AuthoritativeStateStore(
      */
     suspend fun acknowledgeHistoryDecisions(matchIds: Set<Uuid>) = mutex.withLock {
         val recording = currentState.historyRecordingState
-        val protected = currentState.games.values.map { it.matchId }.toSet() + recording.pendingEvents.map { it.matchId }
+        val protected = currentState.games.values.map { it.matchId }.toSet() + recording.pendingEvents.map { it.matchId } + recording.transfersByMatchId.keys
         val removable = matchIds - protected
         commit(currentState.copy(historyRecordingState = recording.copy(decisionsByMatchId = recording.decisionsByMatchId - removable)))
     }
@@ -214,7 +223,7 @@ class AuthoritativeStateStore(
      */
     suspend fun acknowledgeHistoryMetadata(matchIds: Set<Uuid>) = mutex.withLock {
         val recording = currentState.historyRecordingState
-        val protected = currentState.games.values.map { it.matchId }.toSet() + recording.pendingEvents.map { it.matchId }
+        val protected = currentState.games.values.map { it.matchId }.toSet() + recording.pendingEvents.map { it.matchId } + recording.transfersByMatchId.keys
         val removable = matchIds - protected
         val next = recording.copy(
             nextSequenceByMatchId = recording.nextSequenceByMatchId - removable,
@@ -236,7 +245,7 @@ class AuthoritativeStateStore(
     suspend fun acknowledgePrunedHistory(confirmations: Collection<HistoryPruningConfirmation>) = mutex.withLock {
         val confirmed = confirmations.mapTo(mutableSetOf()) { it.matchId }
         if (confirmed.isEmpty()) return@withLock
-        val active = currentState.games.values.mapTo(mutableSetOf()) { it.matchId }
+        val active = currentState.games.values.mapTo(mutableSetOf()) { it.matchId } + currentState.historyRecordingState.transfersByMatchId.keys
         val removable = confirmed - active
         val recording = currentState.historyRecordingState
         val decisions = (recording.decisionsByMatchId - removable).toMutableMap()
@@ -303,13 +312,143 @@ class AuthoritativeStateStore(
     }
 
     /**
-     * 載入已保存的完整狀態並視為乾淨；不觸發 dirty callback。
+     * 載入已保存的完整狀態；隔離來源不會重啟，未完成轉移固定為中止。
+     *
+     * 一般載入維持乾淨；轉移恢復產生的新終點標記為待保存，但不呼叫前一 session 的 callback。
      *
      * @param state 經 schema migration 與 DTO 驗證後的狀態。
      */
     suspend fun load(state: AuthoritativeStateSnapshot) = mutex.withLock {
-        currentState = state
-        dirty = false
+        var recording = state.historyRecordingState
+        recording.transfersByMatchId.forEach { (id, transfer) ->
+            recording = stopTransfer(recording, id, HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED).copy(
+                terminalByMatchId = recording.terminalByMatchId + (id to HistoryRecordingTerminal(historyClock.now().toEpochMilliseconds(), false, transfer.tableId)),
+            )
+        }
+        currentState = state.copy(historyRecordingState = recording.copy(transfersByMatchId = emptyMap()))
+        dirty = currentState != state
+    }
+
+    /**
+     * 為隔離的權威來源固定記錄資格，不將來源 Room 或 Game 加入目前狀態。
+     *
+     * @param game 已走正式開局流程的來源對局。
+     * @return 是否建立可接收事件的轉移。
+     */
+    suspend fun beginHistoryTransfer(game: Game): Boolean = mutex.withLock {
+        val recording = currentState.historyRecordingState
+        require(game.id !in currentState.games && game.id !in currentState.rooms) { "History transfer table conflicts with a live table" }
+        require(game.matchId !in recording.nextSequenceByMatchId && game.matchId !in recording.decisionsByMatchId && game.matchId !in recording.transfersByMatchId) {
+            "History transfer match already exists"
+        }
+        require(recording.transfersByMatchId.values.none { it.tableId == game.id }) { "History transfer table already exists" }
+        if (!isHistoryStorageAvailable || recordingPolicy.decide(game) != HistoryRecordingDecision.RECORDING) return@withLock false
+        commit(
+            currentState.copy(
+                historyRecordingState = recording.copy(
+                    nextSequenceByMatchId = recording.nextSequenceByMatchId + (game.matchId to 1L),
+                    decisionsByMatchId = recording.decisionsByMatchId + (game.matchId to HistoryRecordingDecision.RECORDING),
+                    transfersByMatchId = recording.transfersByMatchId + (game.matchId to HistoryRecordingTransfer(game.id)),
+                ),
+            ),
+        )
+        true
+    }
+
+    /**
+     * 接收完整交易批次並保留正常對局的待寫容量；滿載時不推進序號或產生缺口。
+     *
+     * @param matchId 已建立轉移的場次。
+     * @param events 原始權威事件；最多 64 筆，且不得切斷來源交易。
+     * @return 接收、等待容量或永久停止的結果。
+     */
+    suspend fun appendHistoryTransfer(matchId: Uuid, events: List<HistoryOutboxEvent>): HistoryTransferResult = mutex.withLock {
+        require(events.isNotEmpty() && events.size <= MAX_TRANSFER_BATCH) { "History transfer batch size must be between 1 and 64" }
+        val recording = currentState.historyRecordingState
+        val transfer = recording.transfersByMatchId[matchId] ?: error("History transfer is not active")
+        require(events.all { it.matchId == matchId && it.tableId == transfer.tableId }) { "History transfer event identity does not match" }
+        if (recording.decisionsByMatchId[matchId] != HistoryRecordingDecision.RECORDING || !recordingPolicy.enabled || !isHistoryStorageAvailable) {
+            return@withLock HistoryTransferResult.STOPPED
+        }
+        if (events == transfer.lastAcceptedBatch) return@withLock HistoryTransferResult.ACCEPTED
+        val next = recording.nextSequenceByMatchId.getValue(matchId)
+        require(events.first().sequence == next && events.zipWithNext().all { (a, b) -> a.sequence + 1 == b.sequence }) {
+            "History transfer sequence is not contiguous"
+        }
+        require(events.first().transactionFirstSequence == next && events.all { it.transactionFirstSequence in next..it.sequence }) {
+            "History transfer transaction boundary is invalid"
+        }
+        require(events.groupBy { it.transactionFirstSequence }.all { (first, transaction) -> transaction.first().sequence == first }) {
+            "History transfer transaction is incomplete"
+        }
+        require(events.zipWithNext().all { (a, b) -> a.transactionFirstSequence <= b.transactionFirstSequence }) {
+            "History transfer transactions are not ordered"
+        }
+        require(next != 1L || events.first().fact is HistoryFact.MatchStarted) { "History transfer must start with match opening" }
+        require(events.last().sequence < Long.MAX_VALUE) { "History transfer sequence exhausted" }
+        val transferCapacity = minOf(MAX_TRANSFER_BATCH * 2, maxPendingHistoryEvents / 2)
+        if (recording.pendingEvents.size + events.size > transferCapacity) return@withLock HistoryTransferResult.WAITING_FOR_CAPACITY
+        commit(
+            currentState.copy(
+                historyRecordingState = recording.copy(
+                    pendingEvents = recording.pendingEvents + events,
+                    nextSequenceByMatchId = recording.nextSequenceByMatchId + (matchId to events.last().sequence + 1L),
+                    transfersByMatchId = recording.transfersByMatchId + (
+                        matchId to transfer.copy(
+                            lastAcceptedBatch = events.toList(),
+                            matchCompleted = transfer.matchCompleted || events.any { it.fact is HistoryFact.MatchCompleted },
+                        )
+                        ),
+                ),
+            ),
+        )
+        HistoryTransferResult.ACCEPTED
+    }
+
+    /**
+     * 提交來源終點；完整場次須已接收 MatchCompleted 及 ReturnedToRoom。
+     *
+     * @param matchId 欲結束的隔離轉移。
+     * @param terminal 來源的權威終點證據；正常完成時保留原時間戳。
+     */
+    suspend fun finishHistoryTransfer(matchId: Uuid, terminal: HistoryRecordingTerminal) = mutex.withLock {
+        val recording = currentState.historyRecordingState
+        val transfer = recording.transfersByMatchId[matchId] ?: return@withLock
+        require(terminal.tableId == transfer.tableId) { "History transfer terminal table does not match" }
+        val completed = terminal.completed && recording.decisionsByMatchId[matchId] == HistoryRecordingDecision.RECORDING
+        require(!completed || (transfer.matchCompleted && transfer.lastAcceptedBatch.lastOrNull()?.fact is HistoryFact.ReturnedToRoom)) {
+            "History transfer cannot finish without complete match evidence"
+        }
+        val stopped = if (completed) recording else stopTransfer(recording, matchId, HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED)
+        commit(
+            currentState.copy(
+                historyRecordingState = stopped.copy(
+                    transfersByMatchId = stopped.transfersByMatchId - matchId,
+                    terminalByMatchId = stopped.terminalByMatchId + (matchId to terminal.copy(completed = completed)),
+                ),
+            ),
+        )
+    }
+
+    /**
+     * 永久停止來源並保留第一個缺口，不覆蓋已確認的停止原因。
+     *
+     * @param recording 欲更新的歷史狀態。
+     * @param matchId 欲停止的轉移。
+     * @param decision 停止原因。
+     * @return 帶缺口與固定原因的新狀態。
+     */
+    private fun stopTransfer(recording: HistoryRecordingState, matchId: Uuid, decision: HistoryRecordingDecision): HistoryRecordingState {
+        if (recording.decisionsByMatchId[matchId] != HistoryRecordingDecision.RECORDING) return recording
+        return recording.copy(
+            decisionsByMatchId = recording.decisionsByMatchId + (matchId to decision),
+            firstMissingSequenceByMatchId = recording.firstMissingSequenceByMatchId + (matchId to (recording.nextSequenceByMatchId[matchId] ?: 1L)),
+        )
+    }
+
+    private companion object {
+        /** 每次可接收的完整交易事件上限，避免隔離來源占滿共用待寫容量。 */
+        const val MAX_TRANSFER_BATCH: Int = 64
     }
 
     /**
@@ -384,7 +523,7 @@ class AuthoritativeStateStore(
                 val game = update.state.games[tableId] ?: currentState.games[tableId]
                 if (game == null || (!recordingPolicy.enabled && !game.isMatchOver) || recording.decisionsByMatchId[game.matchId] != HistoryRecordingDecision.RECORDING) recording else recording.recordMissing(game)
             }
-            val active = update.state.games.values.mapTo(mutableSetOf()) { it.matchId }
+            val active = update.state.games.values.mapTo(mutableSetOf()) { it.matchId } + recordingState.transfersByMatchId.keys
             update.state.copy(
                 historyRecordingState = recordingState.copy(
                     decisionsByMatchId = recordingState.decisionsByMatchId.filter { (matchId, decision) ->
@@ -392,6 +531,7 @@ class AuthoritativeStateStore(
                             decision == HistoryRecordingDecision.RECORDING ||
                             decision == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED ||
                             decision == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE ||
+                            decision == HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED ||
                             decision == HistoryRecordingDecision.STOPPED_PRUNED
                     },
                 ),

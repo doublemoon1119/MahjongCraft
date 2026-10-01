@@ -192,41 +192,55 @@ class GameFlowCoordinator(
      */
     suspend fun driveAutomatedPlayers(gameId: Uuid) {
         repeat(MAX_ITERATIONS) {
-            if (!decisionAvailabilityService.reconcile(gameId)) return
-            if (resumePendingGameTransition(gameId)) {
-                val resumedGame = gameRepository.getGame(gameId) ?: return
-                if (resumedGame.pendingTransition != null || presentationBusyGate.isBusy(gameId)) return
-                return@repeat
-            }
-            if (advanceAutomaticRoundPreparationUseCase?.invoke(gameId) == true) return@repeat
-            val preparationAction = roundPreparationAiDriver?.resolveNextAction(gameId)
-            if (preparationAction != null) {
-                if (preparationAction.clearsForcedAutoPlay) clearForcedAutoPlay(gameId, preparationAction.playerId)
-                val gameBefore = gameRepository.getGame(gameId)
-                dispatchAndReconcile(gameId, preparationAction.playerId, preparationAction.command)
-                val gameAfter = gameRepository.getGame(gameId)
-                if (gameBefore == gameAfter) return
-                return@repeat
-            }
-            val forcedAction = forcedAutoPlayDriver.resolveNextAction(gameId)
-            val automaticAction = if (forcedAction == null) automaticDecisionDriver?.resolveNextAction(gameId) else null
-            val (playerId, command) = forcedAction ?: automaticAction ?: aiTurnDriver.resolveNextAction(gameId) ?: return
-            if (forcedAction != null) clearForcedAutoPlay(gameId, playerId)
-            val stateBefore = gameRepository.getTableState(gameId)
-            dispatchAndReconcile(gameId, playerId, command)
-            if (presentationBusyGate.isBusy(gameId)) return
-            if (resumePendingGameTransition(gameId)) {
-                val resumedGame = gameRepository.getGame(gameId) ?: return
-                if (resumedGame.pendingTransition != null || presentationBusyGate.isBusy(gameId)) return
-                return@repeat
-            }
-            val stateAfter = gameRepository.getTableState(gameId)
-            if (stateBefore == stateAfter) return
+            if (!advanceAutomatedPlayerStep(gameId)) return
+            // 已排入下一段轉移或呈現忙碌時維持原本的交接節奏，留待後續恢復入口。
+            if (gameRepository.getGame(gameId)?.pendingTransition != null || presentationBusyGate.isBusy(gameId)) return
         }
         error(
             "driveAutomatedPlayers did not converge for game $gameId after $MAX_ITERATIONS iterations; " +
                 "automated player chain is likely stuck",
         )
+    }
+
+    /**
+     * 推進一次自動操作鏈中的單一步驟。
+     *
+     * 單步會依序處理待完成流程、回合準備、強制自動操作、真人自動設定與 AI 決策；呈現忙碌、沒有
+     * 可執行決策，或命令沒有改變權威 [Game] 時，會立即停止。此方法不會等待下一步，適合由外部
+     * 逐次收集自動操作事件並以背壓控制推進速度。
+     *
+     * @param gameId 欲推進的遊戲。
+     * @return 權威 [Game] 或其待完成流程確實改變時為 `true`；沒有可推進的工作、呈現忙碌或命令
+     *   未造成狀態變更時為 `false`。
+     */
+    suspend fun advanceAutomatedPlayerStep(gameId: Uuid): Boolean {
+        if (!decisionAvailabilityService.reconcile(gameId)) return false
+        val stepBefore = gameRepository.getGame(gameId) ?: return false
+
+        if (resumePendingGameTransition(gameId)) {
+            return stepBefore != gameRepository.getGame(gameId)
+        }
+        if (advanceAutomaticRoundPreparationUseCase?.invoke(gameId) == true) {
+            return stepBefore != gameRepository.getGame(gameId)
+        }
+
+        val preparationAction = roundPreparationAiDriver?.resolveNextAction(gameId)
+        if (preparationAction != null) {
+            if (preparationAction.clearsForcedAutoPlay) clearForcedAutoPlay(gameId, preparationAction.playerId)
+            dispatchAndReconcile(gameId, preparationAction.playerId, preparationAction.command)
+            return stepBefore != gameRepository.getGame(gameId)
+        }
+
+        val forcedAction = forcedAutoPlayDriver.resolveNextAction(gameId)
+        val automaticAction = if (forcedAction == null) automaticDecisionDriver?.resolveNextAction(gameId) else null
+        val (playerId, command) = forcedAction ?: automaticAction ?: aiTurnDriver.resolveNextAction(gameId) ?: return false
+        if (forcedAction != null) clearForcedAutoPlay(gameId, playerId)
+        dispatchAndReconcile(gameId, playerId, command)
+        if (presentationBusyGate.isBusy(gameId)) {
+            return stepBefore != gameRepository.getGame(gameId)
+        }
+        resumePendingGameTransition(gameId)
+        return stepBefore != gameRepository.getGame(gameId)
     }
 
     /**

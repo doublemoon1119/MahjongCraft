@@ -51,9 +51,30 @@ class CreateRoomUseCaseTest {
         val savedRoom = roomRepo.getRoom(roomId)
         assertNotNull(savedRoom, "The created room should be persisted.")
         assertEquals(hostId, savedRoom.hostId, "The host ID should match.")
+        assertTrue(savedRoom.aiPlayerStrategyKeys.isEmpty(), "A regular host must remain human.")
+        assertTrue(savedRoom.readyPlayerIds.isEmpty(), "A regular host must remain unready.")
 
         val savedSnapshot = snapshotRepo.getSnapshot(roomId, hostId)
         assertNotNull(savedSnapshot, "Observers should receive a room snapshot.")
+    }
+
+    /** 驗證明確指定的 AI 房主在建立房間時保存策略與準備狀態。 */
+    @Test
+    fun `test create room with an ai host preserves strategy and readiness`() = runTest {
+        val store = AuthoritativeStateStore()
+        val useCase = CreateRoomUseCase(
+            store,
+            PlayerMembershipRepositoryImpl(),
+            FakeRoomSnapshotRepository(),
+            FakeRoomEventPublisher(),
+        )
+        val strategyKey = "test:host_ai"
+        val result = useCase(roomId, hostId, GameConfig(config), hostAiStrategyKey = strategyKey)
+        assertTrue(result is Outcome.Success, "An AI host room should be created.")
+        val savedRoom = assertNotNull(store.getRoom(roomId))
+        assertEquals(mapOf(hostId to strategyKey), savedRoom.aiPlayerStrategyKeys)
+        assertTrue(savedRoom.readyPlayerIds.isEmpty(), "The host must remain outside the readiness collection.")
+        assertEquals(listOf(hostId), savedRoom.playerIds)
     }
 
     /** 測試當房間 ID 已存在時，應回傳 [RoomError.RoomAlreadyExists]。 */

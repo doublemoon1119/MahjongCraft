@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.FabricDebugDecisionCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricDebugHistoryCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.FabricDebugPresentationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugProgressionCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugRoundCommand
@@ -29,6 +30,7 @@ import org.koin.core.annotation.Single
  * - `decision_hud`、`preparation`：[FabricDebugDecisionCommand]
  * - `match_progression`：[FabricDebugProgressionCommand]
  * - `round`：[FabricDebugRoundCommand]
+ * - `history`：[FabricDebugHistoryCommand]
  *
  * 本類別只保留三項責任：development gating、op 權限，以及各 family 共用的臨時 entity 到期清除驅動
  * （[DebugPreviewEntityLifecycle] 的 tick 登記只在這裡做一次）。
@@ -46,6 +48,7 @@ import org.koin.core.annotation.Single
  * @property decisionCommand 建立玩家決策互動預覽子指令樹。
  * @property progressionCommand 建立終局推進預覽子指令樹。
  * @property roundCommand 建立換局推進子指令樹。
+ * @property historyCommand 建立隔離歷史生成子指令樹。
  * @property entityLifecycle 保管並驅動臨時 entity 的到期清除。
  */
 @Single
@@ -58,6 +61,7 @@ class FabricDebugCommand(
     private val decisionCommand: FabricDebugDecisionCommand,
     private val progressionCommand: FabricDebugProgressionCommand,
     private val roundCommand: FabricDebugRoundCommand,
+    private val historyCommand: FabricDebugHistoryCommand,
     private val entityLifecycle: DebugPreviewEntityLifecycle,
 ) {
     /** 註冊整組 debug 指令樹；只有開發環境才真的呼叫 `dispatcher.register`，見類別 KDoc。 */
@@ -90,7 +94,8 @@ class FabricDebugCommand(
             .then(presentationCommand.buildContinuingWinCommand())
             .then(presentationCommand.buildWinShowcaseOverrideCommand())
             .then(decisionCommand.buildPreparationCommand())
-            .then(roundCommand.buildRoundCommand()),
+            .then(roundCommand.buildRoundCommand())
+            .then(historyCommand.build()),
     )
 
     private companion object {

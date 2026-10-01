@@ -40,6 +40,7 @@ class FabricAuthoritativeStatePersistence(
                 )
             }
             store.setDirtyListener(state::update)
+            if (store.isDirty()) state.update(store.snapshot())
             persistentState = state
             logger.debug(
                 "Attached authoritative persistence with {} room(s), {} game(s), and {} membership conflict(s)",

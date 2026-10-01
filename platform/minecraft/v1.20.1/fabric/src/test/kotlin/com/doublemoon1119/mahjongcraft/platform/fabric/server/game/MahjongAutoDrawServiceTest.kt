@@ -390,6 +390,7 @@ class MahjongAutoDrawServiceTest {
         assertEquals(hostId, room.hostId, "Original room host must be preserved across the round trip.")
         assertEquals(playerIds.toSet(), room.playerIds.toSet())
         assertEquals(aiStrategyKeys, room.aiPlayerStrategyKeys)
-        assertEquals(playerIds.toSet(), room.readyPlayerIds.toSet(), "All-AI table means everyone (including the AI host) stays ready.")
+        assertEquals(playerIds.toSet() - hostId, room.readyPlayerIds.toSet(), "Only non-host AI seats belong in the ready set.")
+        assertTrue(room.canStart, "An all-AI room must remain ready to start without counting its host twice.")
     }
 }

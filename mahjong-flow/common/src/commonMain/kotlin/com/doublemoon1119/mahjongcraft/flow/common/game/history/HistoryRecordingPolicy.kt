@@ -47,4 +47,7 @@ enum class HistoryRecordingDecision {
 
     /** 已由封存清理標記為不可再追加的場次。 */
     STOPPED_PRUNED,
+
+    /** 隔離歷史來源已中止，保留部分事件而不重啟生成。 */
+    STOPPED_TRANSFER_INTERRUPTED,
 }

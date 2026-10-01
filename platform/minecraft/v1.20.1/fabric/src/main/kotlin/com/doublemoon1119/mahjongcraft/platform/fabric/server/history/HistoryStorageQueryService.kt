@@ -26,7 +26,10 @@ internal class HistoryStorageQueryService(
         val statistics = database.readStatistics()
         val authoritative = store.snapshot()
         val evidence = recordingEvidence(authoritative) + statistics.matchStates.keys
-        val active = authoritative.games.values.mapTo(mutableSetOf()) { it.matchId.toString() }.intersect(evidence)
+        val active = (
+            authoritative.games.values.mapTo(mutableSetOf()) { it.matchId.toString() } +
+                authoritative.historyRecordingState.transfersByMatchId.keys.map { it.toString() }
+            ).intersect(evidence)
         val states = evidence.associateWith { statistics.matchStates[it] ?: HistoryStoredMatchState.UNKNOWN }
         return HistoryStorageSnapshot(
             completedMatchCount = states.count { (id, state) -> id !in active && state == HistoryStoredMatchState.COMPLETED }.toLong(),
@@ -54,7 +57,8 @@ internal class HistoryStorageQueryService(
             it == HistoryRecordingDecision.RECORDING ||
                 it == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED ||
                 it == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE ||
-                it == HistoryRecordingDecision.STOPPED_PRUNED
+                it == HistoryRecordingDecision.STOPPED_PRUNED ||
+                it == HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED
         }.keys
         return (
             recording.nextSequenceByMatchId.keys + recording.firstMissingSequenceByMatchId.keys +

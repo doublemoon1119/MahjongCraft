@@ -81,7 +81,7 @@ internal data class HistoryParticipantRecord(val seatIndex: Int, val playerId: S
 /**
  * 每局的起訖時間摘要。
  *
- * @property roundNumber 局數。
+ * @property roundNumber 整場實際開局的連續序號，從 1 開始；連莊亦各占一個序號，不等同規則局號。
  * @property startedAtEpochMillis 開局時間。
  * @property endedAtEpochMillis 結束時間；未正常結束時為 null。
  */
@@ -262,6 +262,31 @@ internal class SqliteHistoryDatabase private constructor(
     /** 已封存場次 ID；用於略過其原始事件的缺口推導。 */
     fun readReplayIds(): Set<String> = transaction(database) {
         HistoryReplayTable.selectAll().mapTo(mutableSetOf()) { it[HistoryReplayTable.matchId] }
+    }
+
+    /**
+     * 查詢至多一百個生成場次的封存及清理證據，不反序列化 Replay。
+     *
+     * @param matchIds 此批工作建立的場次 ID。
+     * @return 仍存在的 Replay 大小、已清理 ID 及目前磁碟大小。
+     */
+    fun readGenerationReceipt(matchIds: Set<String>): HistoryGenerationReceipt {
+        require(matchIds.size <= 100) { "History generation receipt is limited to 100 matches" }
+        val sizes = mutableMapOf<String, Long>()
+        val pruned = mutableSetOf<String>()
+        if (matchIds.isNotEmpty()) {
+            transaction(database) {
+                val placeholders = matchIds.joinToString(",") { "?" }
+                val arguments = matchIds.map { VarCharColumnType() to it }
+                TransactionManager.current().exec("SELECT match_id, length(CAST(payload AS BLOB)) FROM history_replay WHERE match_id IN ($placeholders)", arguments) { rows ->
+                    while (rows.next()) sizes[rows.getString(1)] = rows.getLong(2)
+                }
+                TransactionManager.current().exec("SELECT match_id FROM history_tombstone WHERE match_id IN ($placeholders)", arguments) { rows ->
+                    while (rows.next()) pruned += rows.getString(1)
+                }
+            }
+        }
+        return HistoryGenerationReceipt(sizes, pruned, measureDiskUsage())
     }
 
     /** 完成資料表摘要與 Replay 的單一交易；成功後才刪除原始事件。 */

@@ -113,7 +113,8 @@ internal class HistoryArchiveService(
     /** 將已返回房間且無待寫事件的完整對局封存；單場失敗不阻止其他場次。 */
     fun archiveReady(database: SqliteHistoryDatabase, snapshot: AuthoritativeStateSnapshot): Int {
         val staged = snapshot.historyRecordingState.pendingEvents.mapTo(mutableSetOf()) { it.matchId.toString() }
-        val active = snapshot.games.values.mapTo(mutableSetOf()) { it.matchId.toString() }
+        val active = snapshot.games.values.mapTo(mutableSetOf()) { it.matchId.toString() } +
+            snapshot.historyRecordingState.transfersByMatchId.keys.map { it.toString() }
         val gaps = database.readGaps().keys
         val stopped = database.readRecordingStops().keys
         val archived = database.readReplayIds() + database.readTombstones()
@@ -159,7 +160,7 @@ internal class HistoryArchiveService(
         val rounds = mutableListOf<HistoryRoundRecord>()
         events.forEach { event ->
             when (event.fact) {
-                is HistoryFact.MatchStarted, is HistoryFact.RoundStarted -> rounds += HistoryRoundRecord(event.roundNumber, event.occurredAtEpochMillis, null)
+                is HistoryFact.MatchStarted, is HistoryFact.RoundStarted -> rounds += HistoryRoundRecord(rounds.size + 1, event.occurredAtEpochMillis, null)
                 is HistoryFact.RoundCompleted -> {
                     val last = rounds.last()
                     rounds[rounds.lastIndex] = last.copy(endedAtEpochMillis = event.occurredAtEpochMillis)

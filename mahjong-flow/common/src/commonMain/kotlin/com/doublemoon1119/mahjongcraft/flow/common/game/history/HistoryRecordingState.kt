@@ -11,6 +11,7 @@ import kotlin.uuid.Uuid
  * @property firstMissingSequenceByMatchId 每場最早遺失的序號；容量不足或記錄失敗時供診斷使用。
  * @property decisionsByMatchId 每場固定的記錄資格與停止原因；與待寫事件一起持久化。
  * @property terminalByMatchId 已離開權威遊戲集合的場次終點證據。
+ * @property transfersByMatchId 尚未完成的隔離歷史轉移；完成或確認中止前保護其事件與 metadata。
  */
 data class HistoryRecordingState(
     val nextSequenceByMatchId: Map<Uuid, Long> = emptyMap(),
@@ -18,6 +19,7 @@ data class HistoryRecordingState(
     val firstMissingSequenceByMatchId: Map<Uuid, Long> = emptyMap(),
     val decisionsByMatchId: Map<Uuid, HistoryRecordingDecision> = emptyMap(),
     val terminalByMatchId: Map<Uuid, HistoryRecordingTerminal> = emptyMap(),
+    val transfersByMatchId: Map<Uuid, HistoryRecordingTransfer> = emptyMap(),
 ) {
     init {
         require(nextSequenceByMatchId.values.all { it > 0L }) { "History sequence must be positive" }

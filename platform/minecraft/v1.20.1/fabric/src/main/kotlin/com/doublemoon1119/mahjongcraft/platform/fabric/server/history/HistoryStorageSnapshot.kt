@@ -31,7 +31,7 @@ internal data class HistoryDatabaseStatistics(
  * 目前存檔全部維度的歷史用量快照，未知或失敗不以零值取代。
  *
  * @property completedMatchCount 不在活動集合的完整場數。
- * @property activeMatchCount 具有記錄證據且仍存在權威 Game 的場數。
+ * @property activeMatchCount 具有記錄證據且仍存在權威 Game 或進行中隔離轉移的場數。
  * @property partialMatchCount 已確認終止、但不完整的非活動場數。
  * @property unknownMatchCount 無法證實完整或終止的非活動場數。
  * @property pendingSqlEventCount SQLite 尚待封存的事件數。
