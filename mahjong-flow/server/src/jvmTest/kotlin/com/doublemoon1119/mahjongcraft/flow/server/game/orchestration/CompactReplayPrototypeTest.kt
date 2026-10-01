@@ -23,6 +23,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonPrimitive
+import java.util.logging.Logger
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -110,75 +111,184 @@ class CompactReplayPrototypeTest {
         assertTrue(types.values.any { "example:flower" in it.toString() })
     }
 
-    /** 以兩種長度的完整對局驗證交易重建並量測格式大小。 */
+    /** 以固定權威事件驗證重播內容，並確認容量上限與重複編碼穩定性。 */
     @Test
-    fun `compact replay reconstructs gameplay projection for four full matches`() = runBlocking {
-        for (length in listOf(RiichiGameLength.East, RiichiGameLength.TwoWinds)) {
-            val matches = RoomToRoomFullLifecycleIntegrationTest().measureFullLifecycle(length)
-            for (events in matches) {
-                val result = encodeMatch(events)
-                val flat = encodeMatch(events, flatPatches = true)
-                val flatRaw = flat.document.toString()
-                val flatDictionary = CompactReplayDictionary.encode(flat.document)
-                assertEquals(flat.document, CompactReplayDictionary.decode(flatDictionary))
-                assertReplayedProjections(CompactReplayDictionary.decode(flatDictionary) as JsonObject, flat.expectedProjections)
-                val flatDictionaryRaw = flatDictionary.toString()
-                val raw = result.document.toString()
-                val cborBytes = JsonTreeCborCodec.encode(result.document)
-                assertEquals(result.document, JsonTreeCborCodec.decode(cborBytes))
-                val roundDocuments = result.document.getValue("rounds") as JsonArray
-                val headerBytes = result.document.getValue("header").toString().toByteArray().size
-                val initialBytes = roundDocuments.sumOf { (it as JsonObject).getValue("initial").toString().toByteArray().size }
-                val transactions = roundDocuments.flatMap { (it as JsonObject).getValue("transactions") as JsonArray }
-                val patchBytes = transactions.sumOf { (it as JsonObject)["p"]?.toString()?.toByteArray()?.size ?: 0 }
-                val factBytes = transactions.sumOf { (it as JsonObject)["e"]?.toString()?.toByteArray()?.size ?: 0 }
-                val patchFields = mutableMapOf<String, Int>()
-                for (transaction in transactions) {
-                    val patch = (transaction as JsonObject)["p"] as? JsonObject ?: continue
-                    val fields = patch["_o"] as? JsonObject ?: continue
-                    for ((field, value) in fields) patchFields.merge(field, value.toString().toByteArray().size, Int::plus)
+    fun `compact replay reconstructs fixed capacity fixtures`() {
+        for (fixture in ReplayCapacityFixtures.all) {
+            val measurement = verifyMatch(fixture.events)
+            assertTrue(
+                measurement.jsonBytes <= 220_000,
+                "Compact Replay JSON exceeds 220 KB: ${measurement.jsonBytes} bytes",
+            )
+            assertTrue(
+                measurement.gzipBytes <= 35_000,
+                "Compact Replay gzip exceeds 35 KB: ${measurement.gzipBytes} bytes",
+            )
+            val first = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries, json).toString()
+            val second = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries, json).toString()
+            assertEquals(first, second, "Repeated production encoding changed for ${fixture.gameLength}")
+        }
+    }
+
+    /** 以即時完整對局驗證交易重建；明確設定批次量測時才輸出容量分布。 */
+    @Test
+    fun `compact replay reconstructs random lifecycle measurements`() = runBlocking {
+        val configuredBatches = System.getenv("MAHJONGCRAFT_REPLAY_MEASUREMENT_BATCHES")
+        val batches = configuredBatches?.let { value ->
+            value.toIntOrNull() ?: error("MAHJONGCRAFT_REPLAY_MEASUREMENT_BATCHES must be an integer")
+        } ?: 1
+        require(batches in 1..25) { "MAHJONGCRAFT_REPLAY_MEASUREMENT_BATCHES must be between 1 and 25" }
+        val grouped = linkedMapOf<RiichiGameLength, MutableList<Measurement>>()
+        repeat(batches) {
+            for (length in listOf(RiichiGameLength.East, RiichiGameLength.TwoWinds)) {
+                val measurements = grouped.getOrPut(length) { mutableListOf() }
+                RoomToRoomFullLifecycleIntegrationTest().measureFullLifecycle(length).forEach { events ->
+                    measurements += verifyMatch(events)
                 }
-                val keyDictionary = linkedMapOf<String, Int>()
-                val unusedUuidDictionary = linkedMapOf<String, Int>()
-                val compressedTree = priorPrototype.compact(result.document, keyDictionary, unusedUuidDictionary)
-                val roundText = result.document.getValue("rounds").toString()
-                assertEquals(6, UUID_PATTERN.findAll(result.document.getValue("header").toString()).count())
-                assertEquals(6, unusedUuidDictionary.size)
-                val keyedDocument = JsonObject(
-                    mapOf(
-                        "k" to JsonArray(keyDictionary.keys.map(::JsonPrimitive)),
-                        "u" to JsonArray(unusedUuidDictionary.keys.map(::JsonPrimitive)),
-                        "d" to compressedTree,
-                    ),
-                ).toString()
-                val keyedCborBytes = JsonTreeCborCodec.encode(json.parseToJsonElement(keyedDocument))
-                assertEquals(json.parseToJsonElement(keyedDocument), JsonTreeCborCodec.decode(keyedCborBytes))
-                assertEquals(events.size, result.reconstructedEventCount)
-                assertEquals(
-                    events.size,
-                    transactions.sumOf { transactionElement ->
-                        val transaction = transactionElement as JsonObject
-                        (if ("h" in transaction) 1 else 0) +
-                            ((transaction["e"] as? JsonArray)?.size ?: 0) +
-                            (if ("p" in transaction) 1 else 0)
-                    },
-                )
-                assertFalse(UUID_PATTERN.containsMatchIn(roundText))
-                val production = CompactReplayCodec.encodeCompact(events, mapper, registries, json)
-                val productionText = production.toString()
-                val decoded = CompactReplayCodec.decodeCompact(production)
-                assertEquals(result.expectedProjections, decoded.map { round -> round.map { it.projection } })
-                assertTrue(
-                    productionText.toByteArray().size <= 220_000,
-                    "Compact Replay JSON exceeds 220 KB: ${productionText.toByteArray().size} bytes",
-                )
-                assertTrue(priorPrototype.gzipSize(productionText) <= 35_000, "Compact Replay gzip exceeds 35 KB")
-                assertTrue(headerBytes > 0 && initialBytes > 0 && patchBytes > 0 && factBytes > 0)
-                assertTrue(patchFields.isNotEmpty() && result.factCounts.isNotEmpty() && result.tileTypeCount > 0)
-                assertTrue(raw.isNotEmpty() && flatRaw.isNotEmpty() && flatDictionaryRaw.isNotEmpty())
-                assertTrue(keyedDocument.isNotEmpty() && keyedCborBytes.isNotEmpty() && flatDictionaryRaw.isNotEmpty())
             }
         }
+        if (configuredBatches != null) {
+            grouped.forEach { (length, measurements) -> logMetrics(length, measurements) }
+        }
+    }
+
+    /**
+     * 驗證單場事件的原型重建、字典編碼、CBOR 往返與正式 Replay 解碼。
+     *
+     * @param events 依事件序號排序的權威歷史事件。
+     * @return 此場事件的容量與數量量測結果。
+     */
+    private fun verifyMatch(events: List<HistoryOutboxEvent>): Measurement {
+        val result = encodeMatch(events)
+        val flat = encodeMatch(events, flatPatches = true)
+        val flatRaw = flat.document.toString()
+        val flatDictionary = CompactReplayDictionary.encode(flat.document)
+        assertEquals(flat.document, CompactReplayDictionary.decode(flatDictionary))
+        assertReplayedProjections(CompactReplayDictionary.decode(flatDictionary) as JsonObject, flat.expectedProjections)
+        val flatDictionaryRaw = flatDictionary.toString()
+        val raw = result.document.toString()
+        val cborBytes = JsonTreeCborCodec.encode(result.document)
+        assertEquals(result.document, JsonTreeCborCodec.decode(cborBytes))
+        val roundDocuments = result.document.getValue("rounds") as JsonArray
+        val headerBytes = result.document.getValue("header").toString().toByteArray().size
+        val initialBytes = roundDocuments.sumOf { (it as JsonObject).getValue("initial").toString().toByteArray().size }
+        val transactions = roundDocuments.flatMap { (it as JsonObject).getValue("transactions") as JsonArray }
+        val patchBytes = transactions.sumOf { (it as JsonObject)["p"]?.toString()?.toByteArray()?.size ?: 0 }
+        val factBytes = transactions.sumOf { (it as JsonObject)["e"]?.toString()?.toByteArray()?.size ?: 0 }
+        val patchFields = mutableMapOf<String, Int>()
+        for (transaction in transactions) {
+            val patch = (transaction as JsonObject)["p"] as? JsonObject ?: continue
+            val fields = patch["_o"] as? JsonObject ?: continue
+            for ((field, value) in fields) patchFields.merge(field, value.toString().toByteArray().size, Int::plus)
+        }
+        val keyDictionary = linkedMapOf<String, Int>()
+        val unusedUuidDictionary = linkedMapOf<String, Int>()
+        val compressedTree = priorPrototype.compact(result.document, keyDictionary, unusedUuidDictionary)
+        val roundText = result.document.getValue("rounds").toString()
+        assertEquals(6, UUID_PATTERN.findAll(result.document.getValue("header").toString()).count())
+        assertEquals(6, unusedUuidDictionary.size)
+        val keyedDocument = JsonObject(
+            mapOf(
+                "k" to JsonArray(keyDictionary.keys.map(::JsonPrimitive)),
+                "u" to JsonArray(unusedUuidDictionary.keys.map(::JsonPrimitive)),
+                "d" to compressedTree,
+            ),
+        ).toString()
+        val keyedCborBytes = JsonTreeCborCodec.encode(json.parseToJsonElement(keyedDocument))
+        assertEquals(json.parseToJsonElement(keyedDocument), JsonTreeCborCodec.decode(keyedCborBytes))
+        assertEquals(events.size, result.reconstructedEventCount)
+        assertEquals(
+            events.size,
+            transactions.sumOf { transactionElement ->
+                val transaction = transactionElement as JsonObject
+                (if ("h" in transaction) 1 else 0) +
+                    ((transaction["e"] as? JsonArray)?.size ?: 0) +
+                    (if ("p" in transaction) 1 else 0)
+            },
+        )
+        assertFalse(UUID_PATTERN.containsMatchIn(roundText))
+        val production = CompactReplayCodec.encodeCompact(events, mapper, registries, json)
+        val productionText = production.toString()
+        val decoded = CompactReplayCodec.decodeCompact(production)
+        assertEquals(result.expectedProjections, decoded.map { round -> round.map { it.projection } })
+        assertTrue(headerBytes > 0 && initialBytes > 0 && patchBytes > 0 && factBytes > 0)
+        assertTrue(patchFields.isNotEmpty() && result.factCounts.isNotEmpty() && result.tileTypeCount > 0)
+        assertTrue(raw.isNotEmpty() && flatRaw.isNotEmpty() && flatDictionaryRaw.isNotEmpty())
+        assertTrue(keyedDocument.isNotEmpty() && keyedCborBytes.isNotEmpty() && flatDictionaryRaw.isNotEmpty())
+        return Measurement(
+            jsonBytes = productionText.toByteArray().size,
+            gzipBytes = priorPrototype.gzipSize(productionText),
+            rounds = result.roundCount,
+            events = events.size,
+            transactions = result.transactionCount,
+        )
+    }
+
+    /**
+     * 將單一對局的容量與數量量測寫入測試記錄。
+     *
+     * @param length 對局使用的日麻長度。
+     * @param measurements 同一對局長度的量測結果。
+     */
+    private fun logMetrics(length: RiichiGameLength, measurements: List<Measurement>) {
+        /**
+         * 依最近秩次規則取得整數量測的百分位數。
+         *
+         * @param selector 從量測結果取得整數值的選擇器。
+         * @param percentile 要查詢的百分位數，範圍為 1 至 100。
+         * @return 使用最近秩次規則計算的百分位數值。
+         */
+        fun percentile(selector: (Measurement) -> Int, percentile: Int): Int {
+            val sorted = measurements.map(selector).sorted()
+            val rank = ((sorted.size * percentile) + 99) / 100
+            return sorted[rank.coerceAtLeast(1) - 1]
+        }
+
+        /**
+         * 格式化整數量測的最小值、中位數、P95 與最大值。
+         *
+         * @param selector 從量測結果取得整數值的選擇器。
+         * @return 包含四個摘要統計值的文字。
+         */
+        fun summary(selector: (Measurement) -> Int): String = "min=${measurements.minOf(selector)} median=${percentile(selector, 50)} " +
+            "p95=${percentile(selector, 95)} max=${measurements.maxOf(selector)}"
+
+        /**
+         * 依最近秩次規則取得小數量測的百分位數。
+         *
+         * @param selector 從量測結果取得小數值的選擇器。
+         * @param percentile 要查詢的百分位數，範圍為 1 至 100。
+         * @return 使用最近秩次規則計算的百分位數值。
+         */
+        fun decimalPercentile(selector: (Measurement) -> Double, percentile: Int): Double {
+            val sorted = measurements.map(selector).sorted()
+            val rank = ((sorted.size * percentile) + 99) / 100
+            return sorted[rank.coerceAtLeast(1) - 1]
+        }
+
+        /**
+         * 格式化小數量測的最小值、中位數、P95 與最大值。
+         *
+         * @param selector 從量測結果取得小數值的選擇器。
+         * @return 包含四個摘要統計值的文字。
+         */
+        fun decimalSummary(selector: (Measurement) -> Double): String = "min=%.1f median=%.1f p95=%.1f max=%.1f".format(
+            measurements.minOf(selector),
+            decimalPercentile(selector, 50),
+            decimalPercentile(selector, 95),
+            measurements.maxOf(selector),
+        )
+
+        logger.info(
+            "Replay measurements length=$length count=${measurements.size} " +
+                "jsonBytes[${summary(Measurement::jsonBytes)}] gzipBytes[${summary(Measurement::gzipBytes)}] " +
+                "rounds[${summary(Measurement::rounds)}] events[${summary(Measurement::events)}] " +
+                "transactions[${summary(Measurement::transactions)}] " +
+                "jsonBytesPerRound[${decimalSummary { it.jsonBytes.toDouble() / it.rounds }}] " +
+                "gzipBytesPerRound[${decimalSummary { it.gzipBytes.toDouble() / it.rounds }}] " +
+                "jsonBytesPerTransaction[${decimalSummary { it.jsonBytes.toDouble() / it.transactions }}] " +
+                "gzipBytesPerTransaction[${decimalSummary { it.gzipBytes.toDouble() / it.transactions }}]",
+        )
     }
 
     /**
@@ -574,8 +684,28 @@ class CompactReplayPrototypeTest {
         val expectedProjections: List<List<JsonElement>>,
     )
 
+    /**
+     * 單場 Replay 編碼的容量與結構量測結果。
+     *
+     * @property jsonBytes 正式 Replay JSON 的 UTF-8 位元組數。
+     * @property gzipBytes 正式 Replay JSON 經 GZIP 壓縮後的位元組數。
+     * @property rounds 文件中的局數。
+     * @property events 輸入權威事件數量。
+     * @property transactions 文件中的交易數量。
+     */
+    private data class Measurement(
+        val jsonBytes: Int,
+        val gzipBytes: Int,
+        val rounds: Int,
+        val events: Int,
+        val transactions: Int,
+    )
+
     /** 原型辨識 UUID 文字值時使用的共用格式。 */
     private companion object {
+        /** 將容量與結構量測寫入 JVM 測試記錄。 */
+        private val logger: Logger = Logger.getLogger(CompactReplayPrototypeTest::class.java.name)
+
         /** 驗證字串是否符合 UUID 文字格式。 */
         val UUID_PATTERN = Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
     }
