@@ -140,6 +140,72 @@ object MinecraftHistoryScreenKeys {
     /** 卡片 tooltip。 */
     const val CARD_TOOLTIP = "mahjongcraft.history_screen.card_tooltip"
 
+    /** 卡片開啟對局摘要提示。 */
+    const val CARD_OPEN_HINT = "mahjongcraft.history_screen.card_open_hint"
+
+    /** 對局摘要標題。 */
+    const val SUMMARY_TITLE = "mahjongcraft.history_screen.summary.title"
+
+    /** 對局摘要基本資料區段。 */
+    const val SUMMARY_BASIC = "mahjongcraft.history_screen.summary.basic"
+
+    /** 對局摘要排名區段。 */
+    const val SUMMARY_RANKING = "mahjongcraft.history_screen.summary.ranking"
+
+    /** 對局摘要局索引標籤。 */
+    const val SUMMARY_ROUND_INDEX = "mahjongcraft.history_screen.summary.round_index"
+
+    /** 對局摘要對局識別碼標籤。 */
+    const val SUMMARY_MATCH_ID = "mahjongcraft.history_screen.summary.match_id"
+
+    /** 摘要所用規則的標籤。 */
+    const val SUMMARY_RULE = "mahjongcraft.history_screen.summary.rule"
+
+    /** 點擊複製對局 ID 的提示。 */
+    const val SUMMARY_COPY_MATCH_ID = "mahjongcraft.history_screen.summary.copy_match_id"
+
+    /** 複製成功的短暫提示。 */
+    const val SUMMARY_MATCH_ID_COPIED = "mahjongcraft.history_screen.summary.match_id_copied"
+
+    /** 對局摘要開始時間標籤。 */
+    const val SUMMARY_STARTED_AT = "mahjongcraft.history_screen.summary.started_at"
+
+    /** 對局摘要結束時間標籤。 */
+    const val SUMMARY_ENDED_AT = "mahjongcraft.history_screen.summary.ended_at"
+
+    /** 對局摘要時長標籤。 */
+    const val SUMMARY_DURATION = "mahjongcraft.history_screen.summary.duration"
+
+    /** 對局摘要結果標籤。 */
+    const val SUMMARY_OUTCOME = "mahjongcraft.history_screen.summary.outcome"
+
+    /** 對局摘要完整性標籤。 */
+    const val SUMMARY_INTEGRITY = "mahjongcraft.history_screen.summary.integrity"
+
+    /** 對局摘要局數標籤。 */
+    const val SUMMARY_ROUND_COUNT = "mahjongcraft.history_screen.summary.round_count"
+
+    /** 對局摘要結果不可用提示。 */
+    const val SUMMARY_RESULTS_UNAVAILABLE = "mahjongcraft.history_screen.summary.results_unavailable"
+
+    /** 對局摘要沒有局資料提示。 */
+    const val SUMMARY_ROUNDS_EMPTY = "mahjongcraft.history_screen.summary.rounds_empty"
+
+    /** 對局摘要單列格式。 */
+    const val SUMMARY_ROUND_ROW = "mahjongcraft.history_screen.summary.round_row"
+
+    /** 對局摘要排名欄標題。 */
+    const val SUMMARY_RANK_HEADER = "mahjongcraft.history_screen.summary.rank_header"
+
+    /** 對局摘要玩家欄標題。 */
+    const val SUMMARY_PLAYER_HEADER = "mahjongcraft.history_screen.summary.player_header"
+
+    /** 對局摘要分數欄標題。 */
+    const val SUMMARY_SCORE_HEADER = "mahjongcraft.history_screen.summary.score_header"
+
+    /** 對局摘要完整性提示。 */
+    const val SUMMARY_INTEGRITY_TOOLTIP = "mahjongcraft.history_screen.summary.integrity_tooltip"
+
     /** 對局結果格式。 */
     const val RESULT = "mahjongcraft.history_screen.result"
 

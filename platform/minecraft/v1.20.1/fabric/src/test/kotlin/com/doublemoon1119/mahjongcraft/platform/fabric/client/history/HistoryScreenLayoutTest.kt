@@ -6,6 +6,22 @@ import kotlin.test.assertTrue
 
 /** 驗證歷史畫面在不同尺寸仍保留互不重疊的固定區域。 */
 class HistoryScreenLayoutTest {
+    /** 卡片點擊只落在背景可見範圍，不包含間隙、工具列、底列或捲軸。 */
+    @Test
+    fun `card hit testing excludes gaps clipping and scrollbar`() {
+        val layout = HistoryScreenLayout.measure(800, 240)
+        val heights = listOf(80, 80, 80)
+        val top = layout.contentTop + 4
+        assertEquals(0, layout.cardIndexAt(800, 16.0, top + 1.0, 0.0, heights))
+        assertEquals(null, layout.cardIndexAt(800, 16.0, top + 79.0, 0.0, heights))
+        assertEquals(1, layout.cardIndexAt(800, 16.0, top + 81.0, 0.0, heights))
+        assertEquals(null, layout.cardIndexAt(800, 790.0, top + 1.0, 0.0, heights))
+        assertEquals(null, layout.cardIndexAt(800, 16.0, layout.contentTop - 1.0, 0.0, heights))
+        assertEquals(null, layout.cardIndexAt(800, 16.0, layout.contentBottom.toDouble(), 0.0, heights))
+        assertEquals(1, layout.cardIndexAt(800, 16.0, top + 1.0, 80.0, heights))
+        assertEquals(null, layout.cardIndexAt(800, 16.0, top + 1.0, 0.0, emptyList()))
+    }
+
     /** 到達底端後連續向下捲動不得產生暫時越界的偏移。 */
     @Test
     fun `repeated scrolling beyond bottom keeps the same offset`() {

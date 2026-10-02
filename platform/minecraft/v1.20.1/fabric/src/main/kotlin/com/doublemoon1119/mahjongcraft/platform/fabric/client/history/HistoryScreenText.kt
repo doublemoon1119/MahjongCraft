@@ -30,14 +30,23 @@ internal object HistoryScreenText {
         is HistoryArchiveStatusView.Failed -> Text.translatable(MinecraftHistoryScreenKeys.ARCHIVE_UNAVAILABLE)
     }
 
-    /** 將對局結束時間格式化為本地時間。
+    /** 將對局起訖時間格式化為精確到秒的本地時間。
      * @param value Unix epoch 毫秒；null 表示未知。
      * @param zone 顯示使用的時區。
      * @return 格式化後的日期時間。
      */
     fun endedAt(value: Long?, zone: ZoneId = ZoneId.systemDefault()): String = value?.let {
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(Instant.ofEpochMilli(it).atZone(zone))
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(Instant.ofEpochMilli(it).atZone(zone))
     } ?: "—"
+
+    /**
+     * 格式化完整起訖時間的間隔；缺少任一端點或反向時間時保留未知。
+     *
+     * @param start 開始時間的 epoch milliseconds。
+     * @param end 結束時間的 epoch milliseconds。
+     * @return 分秒文字或未知佔位。
+     */
+    fun intervalDuration(start: Long?, end: Long?): String = if (start != null && end != null && start >= 0 && end >= start) duration(end - start) else duration(null)
 
     /** 將毫秒時長格式化為分秒。
      * @param value 毫秒時長；負值或 null 表示未知。

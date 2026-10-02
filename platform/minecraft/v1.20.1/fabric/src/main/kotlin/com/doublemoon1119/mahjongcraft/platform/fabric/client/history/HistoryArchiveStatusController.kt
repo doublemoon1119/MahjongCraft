@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -21,6 +22,7 @@ import kotlin.time.Duration.Companion.seconds
  * @property pollInterval PENDING 狀態之間的等待時間。
  * @property maxPolls 最多送出的狀態查詢次數。
  * @property responseTimeout 單次查詢等待上限。
+ * @property now 判斷查詢冷卻的單調時間來源。
  */
 internal class HistoryArchiveStatusController(
     private val transport: HistoryArchiveStatusTransport,
@@ -28,6 +30,7 @@ internal class HistoryArchiveStatusController(
     private val pollInterval: Duration = 1.seconds,
     private val maxPolls: Int = 10,
     private val responseTimeout: Duration = 5.seconds,
+    private val now: () -> Duration = { System.nanoTime().nanoseconds },
 ) {
     /** 供畫面觀察的狀態值。 */
     private val mutableView = MutableStateFlow<HistoryArchiveStatusView>(HistoryArchiveStatusView.Idle)
@@ -41,6 +44,12 @@ internal class HistoryArchiveStatusController(
     /** 目前監看的對局識別碼。 */
     private var target: String? = null
 
+    /** 摘要查詢期間停止發出新的保存狀態要求。 */
+    private var paused = false
+
+    /** 最近一次保存狀態要求的傳送時間。 */
+    private var lastSentAt: Duration? = null
+
     /** 建立監看時的連線工作階段版本。 */
     private var revision = transport.sessionRevision.value
 
@@ -49,8 +58,12 @@ internal class HistoryArchiveStatusController(
 
     /** 開始監看指定場次；重複指定相同場次不重置現有狀態。 */
     fun watch(matchId: String?) {
-        if (matchId == target && monitor?.isActive == true) return
+        if (matchId == target && monitor?.isActive == true) {
+            paused = false
+            return
+        }
         stop()
+        paused = false
         target = matchId
         revision = transport.sessionRevision.value
         if (matchId == null) {
@@ -64,6 +77,7 @@ internal class HistoryArchiveStatusController(
     /** 取消畫面關閉時仍在途的查詢。 */
     fun close() {
         stop()
+        paused = false
         target = null
         mutableView.value = HistoryArchiveStatusView.Idle
     }
@@ -73,6 +87,19 @@ internal class HistoryArchiveStatusController(
         watch(target)
     }
 
+    /** 等待目前保存狀態查詢結束及冷卻，讓摘要查詢不與其爭用伺服器配額。 */
+    suspend fun pause() {
+        paused = true
+        if (activeRequestId == null) {
+            monitor?.cancel()
+        } else {
+            monitor?.join()
+        }
+        monitor = null
+        val sentAt = lastSentAt ?: return
+        delay((sentAt + transport.minimumInterval.value - now()).coerceAtLeast(Duration.ZERO))
+    }
+
     /** 輪詢保存狀態直到取得終態或達到次數上限。
      *
      * @param matchId 欲查詢的對局識別碼。
@@ -80,7 +107,8 @@ internal class HistoryArchiveStatusController(
     private suspend fun poll(matchId: String) {
         repeat(maxPolls.coerceAtLeast(1)) {
             awaitInterval()
-            if (transport.sessionRevision.value != revision || target != matchId) return
+            if (paused || transport.sessionRevision.value != revision || target != matchId) return
+            lastSentAt = now()
             val requestId = runCatching { transport.query(matchId) }.getOrNull()
             if (requestId == null) {
                 if (target == matchId) mutableView.value = HistoryArchiveStatusView.Failed(matchId)
@@ -97,6 +125,7 @@ internal class HistoryArchiveStatusController(
                 HistoryArchiveStatusView.Resolved(result)
             }
             if (result != HistoryArchiveStatusDto.PENDING) return
+            if (paused) return
         }
         if (target == matchId) mutableView.value = HistoryArchiveStatusView.Failed(matchId)
     }

@@ -63,7 +63,7 @@ internal class HistoryListScreen(
     private var cachedEntries: List<HistoryMatchSummaryDto> = emptyList()
 
     /** 本幀滑過的卡片提示，待內容區 scissor 關閉後繪製。 */
-    private var hoveredEntry: Text? = null
+    private var hoveredEntry: List<Text>? = null
 
     /** 暫存卡片所屬條件，避免切換範圍或空結果沿用舊資料。 */
     private var cachedQuery: HistoryBrowseQuery? = null
@@ -118,6 +118,15 @@ internal class HistoryListScreen(
             scrollGrabOffset = scrollbar.grabOffset(mouseY)
             updateDragScroll(mouseY)
             return true
+        }
+        val list = session.controller.state.value.list
+        if (button == 0 && !scrollDragging && list.status == HistoryBrowseStatus.Ready) {
+            val index = layout.cardIndexAt(width, mouseX, mouseY, scroll, list.entries.map(::entryHeight))
+            if (index != null) {
+                val matchId = list.entries[index].matchId
+                session.controller.rememberListPosition(scroll, matchId)
+                if (session.openSummary(matchId)) return true
+            }
         }
         return super.mouseClicked(mouseX, mouseY, button)
     }
@@ -361,7 +370,7 @@ internal class HistoryListScreen(
      * @param mouseY 游標垂直座標。
      */
     private fun renderEntries(context: DrawContext, entries: List<HistoryMatchSummaryDto>, mouseX: Int, mouseY: Int) {
-        var hover: Text? = null
+        var hover: List<Text>? = null
         var y = layout.contentTop + 4 - scroll.toInt()
         val scrollbarVisible = layout.maximumScroll(contentHeight(entries)) > 0
         entries.forEach { entry ->
@@ -374,7 +383,10 @@ internal class HistoryListScreen(
                     mouseY in bounds.y until bounds.y + bounds.height
                 context.fill(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, if (hovered) CARD_HOVER_BACKGROUND else CARD_BACKGROUND)
                 if (hovered) {
-                    hover = Text.translatable(MinecraftHistoryScreenKeys.CARD_TOOLTIP, entry.matchId)
+                    hover = listOf(
+                        Text.translatable(MinecraftHistoryScreenKeys.CARD_TOOLTIP, entry.matchId),
+                        Text.translatable(MinecraftHistoryScreenKeys.CARD_OPEN_HINT).formatted(Formatting.AQUA),
+                    )
                 }
                 val metadata = metadataLines(entry)
                 metadata.forEachIndexed { index, line ->

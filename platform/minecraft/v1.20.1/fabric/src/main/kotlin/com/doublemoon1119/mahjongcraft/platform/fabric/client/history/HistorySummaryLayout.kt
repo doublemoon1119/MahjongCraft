@@ -1,0 +1,110 @@
+package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
+
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
+
+/** 歷史摘要固定標題、捲動內容與底列的版面幾何。
+ *
+ * @property contentTop 捲動內容上界。
+ * @property contentBottom 捲動內容下界。
+ * @property footerTop 固定底列上界。
+ * @property left 內容左界。
+ * @property right 內容右界。
+ */
+internal data class HistorySummaryLayout(
+    val contentTop: Int,
+    val contentBottom: Int,
+    val footerTop: Int,
+    val left: Int,
+    val right: Int,
+) {
+    /** 內容可視高度。 */
+    val viewportHeight: Int get() = (contentBottom - contentTop).coerceAtLeast(1)
+
+    /**
+     * 判斷游標是否位於可見資訊列，排除裁切區與捲軸。
+     *
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @param rowLeft 資訊列左界。
+     * @param rowTop 捲動後的資訊列上界。
+     * @param rowHeight 資訊列高度。
+     * @return 是否指向資訊列的可見部分。
+     */
+    fun containsContentRow(mouseX: Double, mouseY: Double, rowLeft: Int, rowTop: Int, rowHeight: Int): Boolean = mouseX >= rowLeft &&
+        mouseX < right - 14 &&
+        mouseY >= contentTop &&
+        mouseY < contentBottom &&
+        mouseY >= rowTop &&
+        mouseY < rowTop + rowHeight
+
+    /** 捲軸界線，固定為可見的六像素寬。 */
+    fun scrollbarBounds(): HistoryScreenLayout.Bounds = HistoryScreenLayout.Bounds(
+        right - 6,
+        contentTop,
+        6,
+        (contentBottom - contentTop).coerceAtLeast(0),
+    )
+
+    /** 依內容高度建立像素捲軸。
+     *
+     * @param contentHeight 捲動內容總高度。
+     * @param scrollOffset 目前捲動偏移。
+     * @return 捲軸幾何。
+     */
+    fun scrollbar(contentHeight: Int, scrollOffset: Double): ScrollbarLayout = ScrollbarLayout(
+        trackTop = contentTop,
+        trackBottom = contentBottom,
+        itemCount = contentHeight.coerceAtLeast(0),
+        visibleItemCount = viewportHeight,
+        scrollIndex = clampScroll(scrollOffset, contentHeight).toInt(),
+        minimumThumbHeight = 8.coerceAtMost(viewportHeight),
+    )
+
+    /**
+     * 保留滑塊內抓取位置，補償繪製時整數像素取整造成的偏移。
+     *
+     * @param contentHeight 內容總高度。
+     * @param scrollOffset 目前捲動偏移。
+     * @param mouseY 按下時的游標垂直座標。
+     * @return 滑塊內的連續座標偏移；點擊軌道空白處時使用滑塊中央。
+     */
+    fun grabOffset(contentHeight: Int, scrollOffset: Double, mouseY: Double): Double {
+        val bar = scrollbar(contentHeight, scrollOffset)
+        if (bar.maximumScroll == 0 || mouseY < bar.thumbTop || mouseY >= bar.thumbTop + bar.thumbHeight) return bar.grabOffset(mouseY)
+        val continuousTop = bar.trackTop + (bar.trackHeight - bar.thumbHeight) * clampScroll(scrollOffset, contentHeight) / bar.maximumScroll
+        return mouseY - continuousTop
+    }
+
+    /** 限制內容捲動偏移。
+     *
+     * @param offset 欲套用的偏移。
+     * @param contentHeight 內容總高度。
+     * @return 合法偏移。
+     */
+    fun clampScroll(offset: Double, contentHeight: Int): Double = offset.coerceIn(0.0, maximumScroll(contentHeight).toDouble())
+
+    /** 計算內容可捲動的最大偏移。
+     *
+     * @param contentHeight 內容總高度。
+     * @return 最大偏移。
+     */
+    fun maximumScroll(contentHeight: Int): Int = (contentHeight - viewportHeight).coerceAtLeast(0)
+
+    /** 摘要版面建立入口。 */
+    companion object {
+        /**
+         * 依畫面尺寸建立摘要版面。
+         *
+         * @param width 畫面寬度。
+         * @param height 畫面高度。
+         * @return 對應尺寸的幾何資料。
+         */
+        fun measure(width: Int, height: Int): HistorySummaryLayout {
+            val footer = (height - 28).coerceAtLeast(0)
+            val top = 24.coerceAtMost(footer)
+            val left = 10
+            val right = (width - 10).coerceAtLeast(left + 6)
+            return HistorySummaryLayout(top, (footer - 4).coerceAtLeast(top), footer, left, right)
+        }
+    }
+}

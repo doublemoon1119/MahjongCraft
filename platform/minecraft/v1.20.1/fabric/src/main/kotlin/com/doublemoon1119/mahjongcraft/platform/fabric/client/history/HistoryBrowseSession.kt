@@ -36,11 +36,17 @@ internal class HistoryBrowseSession(
     /** 此瀏覽獨立的主執行緒工作。 */
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
 
-    /** 列表與篩選共用的權威查詢結果。 */
-    val controller = HistoryBrowseController(transport, scope)
-
     /** 指定結算對局的保存狀態監看器。 */
     val archiveStatusController = HistoryArchiveStatusController(archiveStatus, scope)
+
+    /** 列表、篩選與摘要共用的權威查詢結果。 */
+    val controller = HistoryBrowseController(transport, scope, beforeSummaryQuery = {
+        archiveMonitoringPaused = true
+        archiveStatusController.pause()
+    })
+
+    /** 返回列表時是否需要恢復保存狀態監看。 */
+    private var archiveMonitoringPaused = false
 
     /** 保留未完成輸入，子頁切換不丟棄文字。 */
     val filterDraft = HistoryFilterDraft()
@@ -100,9 +106,27 @@ internal class HistoryBrowseSession(
         if (!closed && controller.showFilters()) navigate(HistoryFilterScreen(this))
     }
 
+    /**
+     * 開啟目前成功列表中的單場摘要，查詢與快取由共用 controller 管理。
+     *
+     * @param matchId 可見卡片對應的對局識別碼。
+     * @return 是否已接受並切換至摘要畫面。
+     */
+    fun openSummary(matchId: String): Boolean {
+        if (closed || !controller.showSummary(matchId)) return false
+        navigate(HistorySummaryScreen(this))
+        return true
+    }
+
     /** 返回列表，不重送已完成查詢。 */
     fun backToList() {
-        if (!closed && controller.backToList()) navigate(HistoryListScreen(this))
+        if (!closed && controller.backToList()) {
+            if (archiveMonitoringPaused) {
+                archiveMonitoringPaused = false
+                archiveStatusStarted = false
+            }
+            navigate(HistoryListScreen(this))
+        }
     }
 
     /** 關閉整個瀏覽並返回原設定頁或遊戲。 */
@@ -123,7 +147,7 @@ internal class HistoryBrowseSession(
 
     /** 原連線失效後隱藏資料，不返回舊世界的設定頁。 */
     fun tick() {
-        val matchId = requestedMatchId
+        val matchId = requestedMatchId.takeIf { controller.state.value.page == HistoryBrowsePage.LIST }
         if (matchId != null && !archiveStatusStarted && controller.state.value.list.status != HistoryBrowseStatus.Loading) {
             archiveStatusStarted = true
             archiveStatusController.watch(matchId)

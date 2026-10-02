@@ -59,6 +59,29 @@ internal data class HistoryScreenLayout(
         return Bounds(left, top, (right - left).coerceAtLeast(0), (height - 2).coerceAtLeast(0))
     }
 
+    /**
+     * 判斷游標指向的可見卡片，排除卡片間隙、捲軸與裁切範圍。
+     *
+     * @param width 畫面寬度。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @param scrollOffset 清單的像素捲動偏移。
+     * @param heights 每張卡片的完整高度。
+     * @return 指向卡片的索引；沒有可見卡片時為 null。
+     */
+    fun cardIndexAt(width: Int, mouseX: Double, mouseY: Double, scrollOffset: Double, heights: List<Int>): Int? {
+        if (mouseY < contentTop || mouseY >= contentBottom) return null
+        val total = heights.sum() + if (heights.isEmpty()) 0 else 4
+        val scrollbarVisible = maximumScroll(total) > 0
+        var top = contentTop + 4 - clampScroll(scrollOffset, total).toInt()
+        heights.forEachIndexed { index, height ->
+            val bounds = cardBounds(width, top, height, scrollbarVisible)
+            if (mouseX >= bounds.x && mouseX < bounds.x + bounds.width && mouseY >= bounds.y && mouseY < bounds.y + bounds.height) return index
+            top += height
+        }
+        return null
+    }
+
     /** 依內容像素高度建立歷史列表捲軸幾何。
      *
      * @param contentHeight 清單內容總高度。

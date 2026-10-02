@@ -49,4 +49,40 @@ class HistoryScreenTranslationKeysTest {
             keys.forEach { key -> assertTrue(key in translations, "$locale is missing $key") }
         }
     }
+
+    /** 摘要固定欄位與卡片開啟提示在所有語系均完整。 */
+    @Test
+    fun `summary history keys have translations in all languages`() {
+        val keys = listOf(
+            MinecraftHistoryScreenKeys.CARD_OPEN_HINT,
+            MinecraftHistoryScreenKeys.SUMMARY_TITLE,
+            MinecraftHistoryScreenKeys.SUMMARY_BASIC,
+            MinecraftHistoryScreenKeys.SUMMARY_RANKING,
+            MinecraftHistoryScreenKeys.SUMMARY_ROUND_INDEX,
+            MinecraftHistoryScreenKeys.SUMMARY_MATCH_ID,
+            MinecraftHistoryScreenKeys.SUMMARY_RULE,
+            MinecraftHistoryScreenKeys.SUMMARY_COPY_MATCH_ID,
+            MinecraftHistoryScreenKeys.SUMMARY_MATCH_ID_COPIED,
+            MinecraftHistoryScreenKeys.SUMMARY_STARTED_AT,
+            MinecraftHistoryScreenKeys.SUMMARY_ENDED_AT,
+            MinecraftHistoryScreenKeys.SUMMARY_DURATION,
+            MinecraftHistoryScreenKeys.SUMMARY_OUTCOME,
+            MinecraftHistoryScreenKeys.SUMMARY_INTEGRITY,
+            MinecraftHistoryScreenKeys.SUMMARY_ROUND_COUNT,
+            MinecraftHistoryScreenKeys.SUMMARY_RESULTS_UNAVAILABLE,
+            MinecraftHistoryScreenKeys.SUMMARY_ROUNDS_EMPTY,
+            MinecraftHistoryScreenKeys.SUMMARY_ROUND_ROW,
+            MinecraftHistoryScreenKeys.SUMMARY_RANK_HEADER,
+            MinecraftHistoryScreenKeys.SUMMARY_PLAYER_HEADER,
+            MinecraftHistoryScreenKeys.SUMMARY_SCORE_HEADER,
+            MinecraftHistoryScreenKeys.SUMMARY_INTEGRITY_TOOLTIP,
+        )
+        listOf("en_us", "ja_jp", "zh_cn", "zh_tw").forEach { locale ->
+            val resource = checkNotNull(javaClass.classLoader.getResourceAsStream("assets/mahjongcraft/lang/$locale.json")) {
+                "Missing language resource: $locale"
+            }
+            val translations = Json.parseToJsonElement(resource.bufferedReader().use { it.readText() }).jsonObject
+            keys.forEach { key -> assertTrue(key in translations, "$locale is missing $key") }
+        }
+    }
 }

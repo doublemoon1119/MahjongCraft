@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErro
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -20,6 +21,49 @@ import kotlin.time.Duration.Companion.seconds
 /** 驗證指定對局保存狀態的輪詢、終止與 timeout 行為。 */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryArchiveStatusControllerTest {
+    /** 摘要等待既有保存查詢完成後才取得配額，且不再輪詢下一筆。 */
+    @Test
+    fun `pause drains active status request without sending another poll`() = runTest {
+        val transport = FakeStatusTransport(emptyList())
+        val controller = HistoryArchiveStatusController(transport, backgroundScope, pollInterval = 10.milliseconds, now = { testScheduler.currentTime.milliseconds })
+        controller.watch("match")
+        advanceTimeBy(10)
+        runCurrent()
+        var released = false
+        backgroundScope.launch {
+            controller.pause()
+            released = true
+        }
+        runCurrent()
+        assertEquals(false, released)
+        transport.respond(HistoryArchiveStatusDto.PENDING)
+        runCurrent()
+        advanceTimeBy(10)
+        runCurrent()
+        assertTrue(released)
+        advanceTimeBy(100)
+        runCurrent()
+        assertEquals(1, transport.requests.size)
+        assertTrue(transport.cancelled.isEmpty())
+        controller.watch("match")
+        advanceTimeBy(10)
+        runCurrent()
+        assertEquals(2, transport.requests.size)
+    }
+
+    /** 摘要可安全暫停尚未傳送的輪詢，不必等待整個輪詢週期。 */
+    @Test
+    fun `pause before first request prevents background polling`() = runTest {
+        val transport = FakeStatusTransport(emptyList())
+        val controller = HistoryArchiveStatusController(transport, backgroundScope)
+        controller.watch("match")
+        runCurrent()
+        controller.pause()
+        advanceTimeBy(2000)
+        runCurrent()
+        assertTrue(transport.requests.isEmpty())
+    }
+
     /** PENDING 會有限輪詢，收到 SAVED 後停止並呈現完成狀態。 */
     @Test
     fun `pending status eventually resolves and stops polling`() = runTest {
@@ -107,6 +151,15 @@ class HistoryArchiveStatusControllerTest {
         override val minimumInterval = MutableStateFlow(10.milliseconds)
         val requests = mutableListOf<HistoryArchiveStatusRequestDto>()
         val cancelled = mutableListOf<String>()
+
+        /**
+         * 回覆最近一筆仍在途的保存狀態要求。
+         *
+         * @param status 欲回覆的保存狀態。
+         */
+        fun respond(status: HistoryArchiveStatusDto) {
+            mutableState.value = ClientHistoryArchiveStatusState.Result(HistoryArchiveStatusResponseDto(requests.last().requestId, status))
+        }
 
         override fun query(matchId: String): String {
             val request = HistoryArchiveStatusRequestDto("request-${requests.size}", matchId)

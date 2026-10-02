@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortField
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -328,6 +329,45 @@ class HistoryBrowseControllerTest {
         transport.respondList(entries = listOf(summary("new")))
         runCurrent()
         assertEquals(listOf("new"), controller.state.value.list.entries.map { it.matchId })
+    }
+
+    /** 摘要查詢先等待同 session 的保存狀態查詢釋放配額。 */
+    @Test
+    fun `summary waits for query coordination before sending`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = HistoryBrowseController(transport, backgroundScope, now = { testScheduler.currentTime.milliseconds }, beforeSummaryQuery = { delay(500.milliseconds) })
+        controller.open()
+        runCurrent()
+        transport.respondList(entries = listOf(summary("match")))
+        runCurrent()
+        assertTrue(controller.showSummary("match"))
+        advanceTimeBy(749)
+        runCurrent()
+        assertTrue(transport.summaryRequests.isEmpty())
+        advanceTimeBy(1)
+        runCurrent()
+        assertEquals(1, transport.summaryRequests.size)
+    }
+
+    /** 等待外部查詢期間返回列表，不再送出摘要或丟失列表位置。 */
+    @Test
+    fun `return during summary coordination cancels queued query`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = HistoryBrowseController(transport, backgroundScope, now = { testScheduler.currentTime.milliseconds }, beforeSummaryQuery = { delay(500.milliseconds) })
+        controller.open()
+        runCurrent()
+        transport.respondList(entries = listOf(summary("match")))
+        runCurrent()
+        controller.rememberListPosition(42.5, "match")
+        assertTrue(controller.showSummary("match"))
+        advanceTimeBy(250)
+        runCurrent()
+        assertTrue(controller.backToList())
+        advanceTimeBy(1000)
+        runCurrent()
+        assertTrue(transport.summaryRequests.isEmpty())
+        assertEquals(42.5, controller.state.value.list.scrollOffset)
+        assertEquals(1, transport.listRequests.size)
     }
 
     /** 返回列表後重開相同摘要會使用成功快取，不重新傳送要求。 */

@@ -26,11 +26,13 @@ import kotlin.time.Duration.Companion.nanoseconds
  * @property transport 有 requestId 配對及 session 失效通知的查詢傳輸。
  * @param parentScope 提供 client 排程的父作用域；關閉只取消本瀏覽自己的子作用域。
  * @property now 判斷間隔的單調時間來源，不使用可被調整的日曆時鐘。
+ * @property beforeSummaryQuery 在摘要傳送前等待同 session 的其他唯讀查詢釋放配額。
  */
 internal class HistoryBrowseController(
     private val transport: HistoryQueryTransport,
     parentScope: CoroutineScope,
     private val now: () -> Duration = { System.nanoTime().nanoseconds },
+    private val beforeSummaryQuery: suspend () -> Unit = {},
 ) {
     /** 此瀏覽獨立的協程生命週期，不取消父作用域或其他瀏覽。 */
     private val scope = CoroutineScope(parentScope.coroutineContext + SupervisorJob(parentScope.coroutineContext[Job]))
@@ -336,7 +338,8 @@ internal class HistoryBrowseController(
      *
      * @param intent 仍有效的最新待送意圖。
      */
-    private fun dispatch(intent: Intent) {
+    private suspend fun dispatch(intent: Intent) {
+        if (intent is Intent.Summary) beforeSummaryQuery()
         if (!available() || intent.generation != generation) return
         lastSentAt = now()
         val requestId = when (intent) {
