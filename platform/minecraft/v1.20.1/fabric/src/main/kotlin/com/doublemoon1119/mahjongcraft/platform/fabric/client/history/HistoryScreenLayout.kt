@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
+
 /** 歷史畫面固定列與捲動內容區的幾何資料。
  *
  * @property toolbarTop 工具列起點。
@@ -29,6 +31,52 @@ internal data class HistoryScreenLayout(
      * @return 允許的最大像素偏移。
      */
     fun maximumScroll(contentHeight: Int): Int = (contentHeight - (contentBottom - contentTop).coerceAtLeast(1)).coerceAtLeast(0)
+
+    /** 計算內容區右側捲軸的界線，並限制在內容裁切範圍內。
+     *
+     * @param width 畫面可用寬度。
+     * @return 捲軸軌道的界線。
+     */
+    fun scrollbarBounds(width: Int): Bounds {
+        val scissorLeft = 8
+        val scissorRight = (width - 8).coerceAtLeast(scissorLeft)
+        val barWidth = 6.coerceAtMost((scissorRight - scissorLeft).coerceAtLeast(0))
+        val x = (scissorRight - barWidth).coerceAtLeast(scissorLeft)
+        return Bounds(x, contentTop, barWidth, (contentBottom - contentTop).coerceAtLeast(0))
+    }
+
+    /** 計算單張歷史卡片的背景界線，為捲軸保留右側空間。
+     *
+     * @param width 畫面可用寬度。
+     * @param top 卡片上側座標。
+     * @param height 卡片完整高度。
+     * @param scrollbarVisible 是否顯示右側捲軸。
+     * @return 卡片背景的界線。
+     */
+    fun cardBounds(width: Int, top: Int, height: Int, scrollbarVisible: Boolean): Bounds {
+        val left = 10
+        val right = width - if (scrollbarVisible) 20 else 10
+        return Bounds(left, top, (right - left).coerceAtLeast(0), (height - 2).coerceAtLeast(0))
+    }
+
+    /** 依內容像素高度建立歷史列表捲軸幾何。
+     *
+     * @param contentHeight 清單內容總高度。
+     * @param scrollOffset 目前像素捲動偏移。
+     * @return 捲軸軌道、thumb 與目前位置的幾何資料。
+     */
+    fun scrollbar(contentHeight: Int, scrollOffset: Double): ScrollbarLayout {
+        val viewportHeight = (contentBottom - contentTop).coerceAtLeast(1)
+        val trackHeight = (contentBottom - contentTop).coerceAtLeast(1)
+        return ScrollbarLayout(
+            trackTop = contentTop,
+            trackBottom = contentBottom,
+            itemCount = contentHeight,
+            visibleItemCount = viewportHeight,
+            scrollIndex = clampScroll(scrollOffset, contentHeight).toInt(),
+            minimumThumbHeight = 8.coerceAtMost(trackHeight),
+        )
+    }
 
     /** 可重用的矩形控制項界線。
      *

@@ -56,6 +56,9 @@ internal class HistoryListScreen(
     /** 是否正在拖曳捲軸。 */
     private var scrollDragging = false
 
+    /** 拖曳時游標在捲軸滑塊內的抓取偏移。 */
+    private var scrollGrabOffset = 0.0
+
     /** 查詢載入期間仍可顯示的上一批資料。 */
     private var cachedEntries: List<HistoryMatchSummaryDto> = emptyList()
 
@@ -68,6 +71,7 @@ internal class HistoryListScreen(
     override fun init() {
         layout = HistoryScreenLayout.measure(width, height)
         scroll = session.controller.state.value.list.scrollOffset
+        scrollDragging = false
         clearChildren()
         val toolbar = layout.toolbarBounds(width)
         filterButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.FILTERS)) { session.openFilters() }.dimensions(toolbar[0].x, toolbar[0].y, toolbar[0].width, 20).build().also(::addDrawableChild)
@@ -95,15 +99,23 @@ internal class HistoryListScreen(
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (mouseY < layout.contentTop || mouseY > layout.contentBottom) return super.mouseScrolled(mouseX, mouseY, amount)
-        val entries = session.controller.state.value.list.entries.ifEmpty { cachedEntries }
-        scroll = layout.clampScroll(scroll - amount * 18.0, entries.sumOf(::entryHeight))
+        scroll = layout.clampScroll(scroll - amount * 18.0, contentHeight(displayEntries()))
         session.controller.rememberListPosition(scroll)
         return true
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (button == 0 && mouseX >= width - 10 && mouseY in layout.contentTop.toDouble()..layout.contentBottom.toDouble()) {
+        val scrollbar = layout.scrollbar(contentHeight(displayEntries()), scroll)
+        val bounds = layout.scrollbarBounds(width)
+        if (button == 0 &&
+            scrollbar.maximumScroll > 0 &&
+            mouseX >= bounds.x &&
+            mouseX < bounds.x + bounds.width &&
+            mouseY >= bounds.y &&
+            mouseY < bounds.y + bounds.height
+        ) {
             scrollDragging = true
+            scrollGrabOffset = scrollbar.grabOffset(mouseY)
             updateDragScroll(mouseY)
             return true
         }
@@ -111,7 +123,7 @@ internal class HistoryListScreen(
     }
 
     override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
-        if (scrollDragging) {
+        if (scrollDragging && button == 0) {
             updateDragScroll(mouseY)
             return true
         }
@@ -119,8 +131,9 @@ internal class HistoryListScreen(
     }
 
     override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        val handled = scrollDragging && button == 0
         scrollDragging = false
-        return super.mouseReleased(mouseX, mouseY, button)
+        return handled || super.mouseReleased(mouseX, mouseY, button)
     }
 
     /** 依拖曳位置更新列表捲動偏移。
@@ -128,12 +141,28 @@ internal class HistoryListScreen(
      * @param mouseY 游標垂直座標。
      */
     private fun updateDragScroll(mouseY: Double) {
-        val range = (layout.contentBottom - layout.contentTop).coerceAtLeast(1)
-        val entries = session.controller.state.value.list.entries
-        val total = entries.sumOf(::entryHeight)
-        scroll = layout.clampScroll((mouseY - layout.contentTop) / range * total, total)
+        val scrollbar = layout.scrollbar(contentHeight(displayEntries()), scroll)
+        scroll = scrollbar.scrollIndexFor(mouseY, scrollGrabOffset).toDouble()
         session.controller.rememberListPosition(scroll)
     }
+
+    /** 取得目前顯示的資料，讓繪製、滾輪與拖曳使用相同的內容高度。 */
+    private fun displayEntries(): List<HistoryMatchSummaryDto> {
+        val state = session.controller.state.value
+        return if (state.list.status == HistoryBrowseStatus.Loading && state.list.entries.isEmpty() && cachedQuery == state.query) {
+            cachedEntries
+        } else {
+            state.list.entries
+        }
+    }
+
+    /**
+     * 計算清單高度，包含第一張卡片前的留白。
+     *
+     * @param entries 目前顯示的對局摘要。
+     * @return 捲動內容的總像素高度。
+     */
+    private fun contentHeight(entries: List<HistoryMatchSummaryDto>): Int = entries.sumOf(::entryHeight) + if (entries.isEmpty()) 0 else 4
 
     /** 取得目前紀錄範圍的按鈕文字。 */
     private fun scopeText(): Text = Text.translatable("${MinecraftHistoryScreenKeys.SCOPE_PREFIX}${session.controller.state.value.query.scope.name.lowercase()}")
@@ -241,8 +270,8 @@ internal class HistoryListScreen(
             cachedEntries = emptyList()
         }
         if (list.status == HistoryBrowseStatus.Ready) cachedEntries = list.entries
-        val displayEntries = if (loading && list.entries.isEmpty()) cachedEntries else list.entries
-        val clampedScroll = layout.clampScroll(scroll, displayEntries.sumOf(::entryHeight))
+        val displayEntries = displayEntries()
+        val clampedScroll = layout.clampScroll(scroll, contentHeight(displayEntries))
         if (clampedScroll != scroll) {
             scroll = clampedScroll
             session.controller.rememberListPosition(scroll)
@@ -306,6 +335,7 @@ internal class HistoryListScreen(
             }
         }
         context.disableScissor()
+        renderScrollbar(context, displayEntries)
         val pageBounds = layout.footerBounds(width, layout.footerTop)[1]
         val pageLabel = Text.translatable(MinecraftHistoryScreenKeys.PAGE, list.pageNumber)
         val pageText = HistoryScreenText.trim(pageLabel.string, pageBounds.width, textRenderer::getWidth)
@@ -333,11 +363,17 @@ internal class HistoryListScreen(
     private fun renderEntries(context: DrawContext, entries: List<HistoryMatchSummaryDto>, mouseX: Int, mouseY: Int) {
         var hover: Text? = null
         var y = layout.contentTop + 4 - scroll.toInt()
+        val scrollbarVisible = layout.maximumScroll(contentHeight(entries)) > 0
         entries.forEach { entry ->
             val cardHeight = entryHeight(entry)
+            val bounds = layout.cardBounds(width, y, cardHeight, scrollbarVisible)
             if (y + cardHeight >= layout.contentTop && y <= layout.contentBottom) {
-                context.fill(10, y, width - 10, y + cardHeight - 2, 0x88333333.toInt())
-                if (mouseX in 10 until width - 10 && mouseY in layout.contentTop until layout.contentBottom && mouseY in y until y + cardHeight) {
+                val hovered = !scrollDragging &&
+                    mouseX in bounds.x until bounds.x + bounds.width &&
+                    mouseY in layout.contentTop until layout.contentBottom &&
+                    mouseY in bounds.y until bounds.y + bounds.height
+                context.fill(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, if (hovered) CARD_HOVER_BACKGROUND else CARD_BACKGROUND)
+                if (hovered) {
                     hover = Text.translatable(MinecraftHistoryScreenKeys.CARD_TOOLTIP, entry.matchId)
                 }
                 val metadata = metadataLines(entry)
@@ -346,7 +382,7 @@ internal class HistoryListScreen(
                 }
                 if (inlineHeader(entry)) {
                     val date = HistoryScreenText.endedAt(entry.endedAtEpochMillis)
-                    context.drawTextWithShadow(textRenderer, Text.literal(date), width - 20 - textRenderer.getWidth(date), y + 4, 0xaaaaaa)
+                    context.drawTextWithShadow(textRenderer, Text.literal(date), bounds.x + bounds.width - 10 - textRenderer.getWidth(date), y + 4, 0xaaaaaa)
                 }
                 val participantTop = y + 6 + metadata.size * 10
                 val results = entry.results.associateBy { it.playerId }
@@ -356,7 +392,7 @@ internal class HistoryListScreen(
                 val scoreWidth = ranked.maxOfOrNull { textRenderer.getWidth(results[it.playerId]?.finalScore?.toString() ?: "—") } ?: 0
                 val faceX = 16 + rankWidth + 8
                 val nameX = faceX + 14
-                val scoreRight = width - 20
+                val scoreRight = bounds.x + bounds.width - 10
                 ranked.forEachIndexed { index, participant ->
                     val rowY = participantTop + index * 14
                     val result = results[participant.playerId]
@@ -371,24 +407,21 @@ internal class HistoryListScreen(
             }
             y += cardHeight
         }
-        val range = (layout.contentBottom - layout.contentTop).coerceAtLeast(1)
-        val total = entries.sumOf(::entryHeight)
-        val maxScroll = maximumScroll(entries)
-        context.fill(width - 7, layout.contentTop, width - 4, layout.contentBottom, 0x55333333)
-        if (maxScroll > 0) {
-            val thumbHeight = (range.toDouble() * range / total).toInt().coerceAtLeast(8)
-            val thumbTop = layout.contentTop + (scroll / maxScroll * (range - thumbHeight)).toInt()
-            context.fill(width - 7, thumbTop, width - 4, thumbTop + thumbHeight, 0xffaaaaaa.toInt())
-        }
         hoveredEntry = hover
     }
 
-    /** 依目前卡片總高度計算列表允許的最大捲動偏移。
+    /** 繪製與拖曳共用幾何的捲軸，不受卡片內容裁切影響。
      *
-     * @param entries 清單中的對局摘要。
-     * @return 允許的最大像素偏移。
+     * @param context 畫面繪製上下文。
+     * @param entries 目前顯示的對局摘要。
      */
-    private fun maximumScroll(entries: List<HistoryMatchSummaryDto>): Int = layout.maximumScroll(entries.sumOf(::entryHeight))
+    private fun renderScrollbar(context: DrawContext, entries: List<HistoryMatchSummaryDto>) {
+        val scrollbar = layout.scrollbar(contentHeight(entries), scroll)
+        if (scrollbar.maximumScroll == 0 || !layout.hasContent) return
+        val bounds = layout.scrollbarBounds(width)
+        context.fill(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, SCROLLBAR_TRACK_COLOR)
+        context.fill(bounds.x, scrollbar.thumbTop, bounds.x + bounds.width, scrollbar.thumbTop + scrollbar.thumbHeight, SCROLLBAR_THUMB_COLOR)
+    }
 
     /** 計算單張對局卡片高度，供繪製與捲軸使用相同幾何資料。
      *
@@ -403,7 +436,7 @@ internal class HistoryListScreen(
      * @param entry 已保存對局摘要。
      * @return 是否有足夠寬度保留標題與日期間距。
      */
-    private fun inlineHeader(entry: HistoryMatchSummaryDto): Boolean = textRenderer.getWidth(HistoryScreenText.rule(entry.ruleId, session.ruleNames)) + textRenderer.getWidth(HistoryScreenText.endedAt(entry.endedAtEpochMillis)) + 24 <= width - 36
+    private fun inlineHeader(entry: HistoryMatchSummaryDto): Boolean = textRenderer.getWidth(HistoryScreenText.rule(entry.ruleId, session.ruleNames)) + textRenderer.getWidth(HistoryScreenText.endedAt(entry.endedAtEpochMillis)) + 24 <= width - 46
 
     /**
      * 按實際字寬換行卡片資訊，避免日期、時長與個人成績互相覆蓋。
@@ -421,7 +454,7 @@ internal class HistoryListScreen(
         val date = Text.literal(HistoryScreenText.endedAt(entry.endedAtEpochMillis)).formatted(Formatting.GRAY)
         val header = if (inlineHeader(entry)) listOf(rule) else listOf(rule, date)
         val details = Text.translatable(MinecraftHistoryScreenKeys.ROUNDS, entry.roundCount ?: "—").append(" • ").append(status)
-        return (header + details).flatMap { textRenderer.wrapLines(it, (width - 32).coerceAtLeast(1)) }
+        return (header + details).flatMap { textRenderer.wrapLines(it, (width - 42).coerceAtLeast(1)) }
     }
 
     override fun shouldPause(): Boolean = false
@@ -433,5 +466,20 @@ internal class HistoryListScreen(
     override fun removed() {
         session.removed(this)
         super.removed()
+    }
+
+    /** 卡片與捲軸的共用視覺色彩。 */
+    private companion object {
+        /** 卡片一般背景。 */
+        const val CARD_BACKGROUND: Int = 0x88333333.toInt()
+
+        /** 游標停留時稍亮的半透明卡片背景。 */
+        const val CARD_HOVER_BACKGROUND: Int = 0x99505050.toInt()
+
+        /** 與其他畫面一致的捲軸軌道顏色。 */
+        const val SCROLLBAR_TRACK_COLOR: Int = 0x80505050.toInt()
+
+        /** 與其他畫面一致的捲軸滑塊顏色。 */
+        const val SCROLLBAR_THUMB_COLOR: Int = 0xFFD0D0D0.toInt()
     }
 }
