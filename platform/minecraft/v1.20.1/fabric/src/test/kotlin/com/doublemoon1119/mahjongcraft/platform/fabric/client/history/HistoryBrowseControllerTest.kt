@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryIntegrityFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
@@ -9,10 +12,15 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFi
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortFieldDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -410,6 +418,29 @@ class HistoryBrowseControllerTest {
         assertEquals(42.5, controller.state.value.list.scrollOffset)
     }
 
+    /** 摘要頁位置只接受有限非負值，返回摘要時保留位置。 */
+    @Test
+    fun `summary position is validated and retained`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = controller(transport)
+        controller.open()
+        runCurrent()
+        transport.respondList(entries = listOf(summary("match")))
+        runCurrent()
+        assertTrue(controller.showSummary("match"))
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondSummary(detail("match"))
+        runCurrent()
+
+        assertFalse(controller.rememberSummaryPosition(-1.0))
+        assertFalse(controller.rememberSummaryPosition(Double.NaN))
+        assertTrue(controller.rememberSummaryPosition(17.25))
+        assertTrue(controller.backToList())
+        assertTrue(controller.showSummary("match"))
+        assertEquals(17.25, controller.state.value.summary?.scrollOffset)
+    }
+
     /** 摘要回覆缺少內容或對局識別碼不符時會回報無法取得。 */
     @Test
     fun `test malformed summary response is not available`() = runTest {
@@ -425,6 +456,172 @@ class HistoryBrowseControllerTest {
         transport.respondSummary(null)
         runCurrent()
         assertEquals(HistoryBrowseFailure.NOT_AVAILABLE, assertIs<HistoryBrowseStatus.Failed>(controller.state.value.summary?.status).reason)
+    }
+
+    /** 規則設定頁沿用摘要對局，並在缺少設定時保留明確失敗狀態。 */
+    @Test
+    fun `rule settings page queries selected summary and supports back`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = controller(transport)
+        controller.open()
+        runCurrent()
+        transport.respondList(entries = listOf(summary("match")))
+        runCurrent()
+        assertTrue(controller.showSummary("match"))
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondSummary(detail("match"))
+        runCurrent()
+
+        assertTrue(controller.showRuleSettings())
+        advanceTimeBy(250)
+        runCurrent()
+        assertEquals(1, transport.ruleSettingsRequests.size)
+        transport.respondRuleSettings()
+        runCurrent()
+        assertEquals(HistoryBrowsePage.RULE_SETTINGS, controller.state.value.page)
+        assertEquals(
+            HistoryBrowseFailure.NOT_AVAILABLE,
+            assertIs<HistoryBrowseStatus.Failed>(controller.state.value.ruleSettings?.status).reason,
+        )
+        assertTrue(controller.backToSummary())
+        assertEquals(HistoryBrowsePage.SUMMARY, controller.state.value.page)
+    }
+
+    /** 返回摘要後的遲到規則設定回應不得重新切換頁面或寫入狀態。 */
+    @Test
+    fun `late rule settings response after back is discarded`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = controller(transport)
+        controller.open()
+        runCurrent()
+        transport.respondList(entries = listOf(summary("match")))
+        runCurrent()
+        assertTrue(controller.showSummary("match"))
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondSummary(detail("match"))
+        runCurrent()
+        assertTrue(controller.showRuleSettings())
+        advanceTimeBy(250)
+        runCurrent()
+        assertTrue(controller.backToSummary())
+        transport.respondRuleSettings()
+        runCurrent()
+        assertEquals(HistoryBrowsePage.SUMMARY, controller.state.value.page)
+        assertEquals(null, controller.state.value.ruleSettings)
+    }
+
+    /** 規則設定只於點擊後查詢；返回與再次開啟使用同場快取並保留摘要位置。 */
+    @Test
+    fun `test rule settings loads lazily and reuses same match cache`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = controller(transport)
+        controller.open()
+        runCurrent()
+        transport.respondList(entries = listOf(summary("match")))
+        runCurrent()
+        assertTrue(controller.showSummary("match"))
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondSummary(detail("match"))
+        runCurrent()
+        assertTrue(transport.ruleSettingsRequests.isEmpty())
+        assertTrue(controller.rememberSummaryPosition(31.5))
+        assertTrue(controller.showRuleSettings())
+        advanceTimeBy(250)
+        runCurrent()
+        val config = ruleSettingsConfig()
+        transport.respondRuleSettings(config)
+        runCurrent()
+        assertEquals(HistoryBrowseStatus.Ready, controller.state.value.ruleSettings?.status)
+        assertTrue(controller.backToSummary())
+        assertEquals(31.5, controller.state.value.summary?.scrollOffset)
+        assertTrue(controller.showRuleSettings())
+        runCurrent()
+        assertEquals(1, transport.ruleSettingsRequests.size)
+        assertEquals(config, controller.state.value.ruleSettings?.config)
+    }
+
+    /** 規則設定失敗保留手動重試，冷卻期間不能重送。 */
+    @Test
+    fun `test rule settings retry waits for cooldown and preserves selected match`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = controller(transport)
+        controller.open()
+        runCurrent()
+        transport.respondList(entries = listOf(summary("match")))
+        runCurrent()
+        assertTrue(controller.showSummary("match"))
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondSummary(detail("match"))
+        runCurrent()
+        assertTrue(controller.showRuleSettings())
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondRuleSettings()
+        runCurrent()
+        assertFalse(controller.canRetry())
+        assertTrue(controller.retry())
+        runCurrent()
+        assertEquals(1, transport.ruleSettingsRequests.size)
+        advanceTimeBy(250)
+        runCurrent()
+        assertEquals(2, transport.ruleSettingsRequests.size)
+        assertEquals("match", transport.ruleSettingsRequests.last().matchId)
+        transport.respondRuleSettings(ruleSettingsConfig())
+        runCurrent()
+        assertEquals(HistoryBrowseStatus.Ready, controller.state.value.ruleSettings?.status)
+        assertFalse(controller.canRetry())
+    }
+
+    /** 規則設定等待逾時後取消該要求，不會清除成功摘要。 */
+    @Test
+    fun `test rule settings timeout can retry without losing summary`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = controller(transport)
+        controller.open()
+        runCurrent()
+        transport.respondList(entries = listOf(summary("match")))
+        runCurrent()
+        assertTrue(controller.showSummary("match"))
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondSummary(detail("match"))
+        runCurrent()
+        assertTrue(controller.showRuleSettings())
+        advanceTimeBy(250)
+        runCurrent()
+        val requestId = transport.ruleSettingsRequests.single().requestId
+        advanceTimeBy(10_000)
+        runCurrent()
+        assertTrue(requestId in transport.cancelledIds)
+        assertEquals(HistoryBrowseStatus.Failed(HistoryBrowseFailure.CLIENT_TIMEOUT), controller.state.value.ruleSettings?.status)
+        assertEquals(HistoryBrowseStatus.Ready, controller.state.value.summary?.status)
+        assertTrue(controller.retry())
+        runCurrent()
+        assertEquals(2, transport.ruleSettingsRequests.size)
+    }
+
+    /** 查詢條件更新會清除仍屬舊對局的規則設定狀態。 */
+    @Test
+    fun `query reset removes rule settings state`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = controller(transport)
+        controller.open()
+        runCurrent()
+        transport.respondList(entries = listOf(summary("match")))
+        runCurrent()
+        assertTrue(controller.showSummary("match"))
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondSummary(detail("match"))
+        runCurrent()
+        assertTrue(controller.showRuleSettings())
+        assertTrue(controller.state.value.ruleSettings != null)
+        assertTrue(controller.updateQuery(controller.state.value.query.copy(sortDirection = HistorySortDirectionDto.ASC)))
+        assertEquals(null, controller.state.value.ruleSettings)
     }
 
     /** client 等待十秒後會取消要求並可透過重試重新送出。 */
@@ -517,6 +714,13 @@ class HistoryBrowseControllerTest {
     /** 建立指定對局的摘要回覆內容。 */
     private fun detail(matchId: String): HistoryMatchDetailDto = HistoryMatchDetailDto(summary(matchId), emptyList())
 
+    /** 建立經正式 registry 編碼的規則設定回覆。
+     * @return 可用於驗證規則設定快取的 DTO。
+     */
+    private fun ruleSettingsConfig(): GameConfigDto = GameConfig(RiichiRuleConfig()).toDto(
+        DefaultNetworkDtoRegistries().apply { registerBuiltInRuleConfigDtos() },
+    )
+
     /** 以 MutableStateFlow 模擬 client 歷史查詢傳輸。
      *
      * @property sendFailed 是否讓下一次清單要求產生傳送失敗狀態。
@@ -542,6 +746,9 @@ class HistoryBrowseControllerTest {
         /** 已發出的摘要要求。 */
         val summaryRequests = mutableListOf<HistorySummaryRequestDto>()
 
+        /** 已發出的規則設定要求。 */
+        val ruleSettingsRequests = mutableListOf<HistoryRuleSettingsRequestDto>()
+
         /** 已取消的要求識別碼。 */
         val cancelledIds = mutableListOf<String>()
 
@@ -557,6 +764,14 @@ class HistoryBrowseControllerTest {
         override fun querySummary(request: HistorySummaryRequestDto): String {
             val actual = request.copy(requestId = "summary-${summaryRequests.size + 1}")
             summaryRequests += actual
+            mutableState.value = ClientHistoryQueryState.Loading(actual.requestId)
+            return actual.requestId
+        }
+
+        /** 發出規則設定要求並回報配對結果。 */
+        override fun queryRuleSettings(request: HistoryRuleSettingsRequestDto): String {
+            val actual = request.copy(requestId = "rules-${ruleSettingsRequests.size + 1}")
+            ruleSettingsRequests += actual
             mutableState.value = ClientHistoryQueryState.Loading(actual.requestId)
             return actual.requestId
         }
@@ -600,6 +815,14 @@ class HistoryBrowseControllerTest {
          */
         fun respondSummary(detail: HistoryMatchDetailDto?, requestId: String = summaryRequests.last().requestId) {
             mutableState.value = ClientHistoryQueryState.SummaryResult(HistorySummaryResponseDto(requestId, detail))
+        }
+
+        /** 發出規則設定回應。
+         * @param config 回應中的完整遊戲設定，可為 null。
+         * @param requestId 回應所配對的要求識別碼。
+         */
+        fun respondRuleSettings(config: GameConfigDto? = null, requestId: String = ruleSettingsRequests.last().requestId) {
+            mutableState.value = ClientHistoryQueryState.RuleSettingsResult(HistoryRuleSettingsResponseDto(requestId, config))
         }
     }
 }

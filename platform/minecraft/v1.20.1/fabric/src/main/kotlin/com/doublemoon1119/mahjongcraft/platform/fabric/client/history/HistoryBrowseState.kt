@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchDetailDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
@@ -14,6 +15,9 @@ internal enum class HistoryBrowsePage {
 
     /** 已選對局的摘要。 */
     SUMMARY,
+
+    /** 已選對局的規則設定。 */
+    RULE_SETTINGS,
 }
 
 /** 歷史瀏覽資料的載入結果，不將失敗當成空資料。 */
@@ -115,10 +119,24 @@ internal data class HistoryBrowseListState(
  * @property matchId 正在查閱的對局識別碼。
  * @property detail 最近成功取得的同場摘要；失敗不偽造內容。
  * @property status 目前摘要查詢結果。
+ * @property scrollOffset 返回摘要頁時保留的非負捲動位置。
  */
 internal data class HistoryBrowseSummaryState(
     val matchId: String,
     val detail: HistoryMatchDetailDto? = null,
+    val status: HistoryBrowseStatus = HistoryBrowseStatus.Idle,
+    val scrollOffset: Double = 0.0,
+)
+
+/** 已選對局的開局規則設定載入結果。
+ *
+ * @property matchId 正在查閱的對局識別碼。
+ * @property config 最近成功取得的完整開局設定。
+ * @property status 目前規則設定查詢結果。
+ */
+internal data class HistoryBrowseRuleSettingsState(
+    val matchId: String,
+    val config: GameConfigDto? = null,
     val status: HistoryBrowseStatus = HistoryBrowseStatus.Idle,
 )
 
@@ -129,6 +147,7 @@ internal data class HistoryBrowseSummaryState(
  * @property page 目前導航位置。
  * @property list 最近列表與位置。
  * @property summary 最近選取的單場摘要。
+ * @property ruleSettings 最近選取對局的開局規則設定。
  * @property closed 最外層瀏覽已關閉或原 session 已失效，不再接受操作。
  * @property allowAll 最近一次已配對伺服器回應是否允許查閱全部對局。
  */
@@ -137,6 +156,7 @@ internal data class HistoryBrowseState(
     val page: HistoryBrowsePage = HistoryBrowsePage.LIST,
     val list: HistoryBrowseListState = HistoryBrowseListState(),
     val summary: HistoryBrowseSummaryState? = null,
+    val ruleSettings: HistoryBrowseRuleSettingsState? = null,
     val closed: Boolean = false,
     val allowAll: Boolean = false,
 )

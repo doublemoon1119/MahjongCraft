@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +38,11 @@ sealed interface ClientHistoryQueryState {
      * @property response 不含牌面內容的摘要結果。
      */
     data class SummaryResult(val response: HistorySummaryResponseDto) : ClientHistoryQueryState
+
+    /** 最新單場規則設定的成功或穩定失敗回應。
+     * @property response 不含重播內容的歷史規則設定結果。
+     */
+    data class RuleSettingsResult(val response: HistoryRuleSettingsResponseDto) : ClientHistoryQueryState
 
     /**
      * 封包未送出，不將失敗誤認為空清單。
@@ -94,6 +101,15 @@ class ClientHistoryQueryCoordinator(
         return begin(pending.requestId, HistoryQueryKind.SUMMARY) { sender.sendSummary(pending) }
     }
 
+    /** 送出單場規則設定要求並使舊選取的回覆失效。
+     * @param request 目標對局與查閱範圍。
+     * @return 此次要求的配對識別碼。
+     */
+    override fun queryRuleSettings(request: HistoryRuleSettingsRequestDto): String {
+        val pending = request.copy(requestId = Uuid.random().toString())
+        return begin(pending.requestId, HistoryQueryKind.RULE_SETTINGS) { sender.sendRuleSettings(pending) }
+    }
+
     /**
      * 套用最新清單回應；過期或重複回應不更新狀態。
      *
@@ -113,6 +129,15 @@ class ClientHistoryQueryCoordinator(
     fun applySummary(response: HistorySummaryResponseDto) {
         if (correlation.complete(response.requestId, HistoryQueryKind.SUMMARY)) {
             mutableState.value = ClientHistoryQueryState.SummaryResult(response)
+        }
+    }
+
+    /** 套用最新規則設定回應；過期或重複回應不更新狀態。
+     * @param response 伺服器線路回應。
+     */
+    fun applyRuleSettings(response: HistoryRuleSettingsResponseDto) {
+        if (correlation.complete(response.requestId, HistoryQueryKind.RULE_SETTINGS)) {
+            mutableState.value = ClientHistoryQueryState.RuleSettingsResult(response)
         }
     }
 

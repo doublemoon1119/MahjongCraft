@@ -10,6 +10,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryRepository
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryScope
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettings
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettingsRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySummaryRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.MAX_HISTORY_PAGE_SIZE
@@ -149,5 +151,28 @@ class GetHistorySummaryUseCase(
         val policy = policyProvider()
         validateHistoryAccess(access, policy, request.scope)?.let { return HistoryQueryResult.Failure(it) }
         return repository.summary(access, request)
+    }
+}
+
+/** 以授權範圍查詢單一歷史對局開局規則設定的一次性伺服器用例。
+ * @property repository 提供已授權資料邊界的 repository。
+ * @property policyProvider 讀取當前伺服器查詢政策的函式。
+ */
+class GetHistoryRuleSettingsUseCase(
+    private val repository: HistoryQueryRepository,
+    private val policyProvider: () -> HistoryQueryPolicy,
+) {
+    /** 執行一次歷史對局規則設定查詢。
+     * @param access 可信任的發起者資訊。
+     * @param request 規則設定查詢要求。
+     * @return 對局規則設定或穩定錯誤。
+     */
+    suspend operator fun invoke(
+        access: HistoryQueryAccess,
+        request: HistoryRuleSettingsRequest,
+    ): HistoryQueryResult<HistoryRuleSettings> {
+        val policy = policyProvider()
+        validateHistoryAccess(access, policy, request.scope)?.let { return HistoryQueryResult.Failure(it) }
+        return repository.ruleSettings(access, request)
     }
 }

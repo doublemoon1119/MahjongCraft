@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveSt
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
@@ -50,6 +52,12 @@ object MahjongChannels {
 
     /** 有界單場摘要與局級時間索引回應。 */
     val historySummaryResponse = S2CChannel("history_summary_response", HistorySummaryResponseDto.serializer(), HistoryQueryLimits.RESPONSE_BYTES)
+
+    /** 延遲查閱指定歷史場次開局設定的有界要求。 */
+    val historyRuleSettingsRequest = C2SChannel("history_rule_settings_request", HistoryRuleSettingsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES)
+
+    /** 僅包含歷史開局設定或安全錯誤碼的有界回應。 */
+    val historyRuleSettingsResponse = S2CChannel("history_rule_settings_response", HistoryRuleSettingsResponseDto.serializer(), HistoryQueryLimits.RESPONSE_BYTES)
     val gameCommand = C2SChannel("game_command", GameCommandEnvelopeDto.serializer())
     val decisionSelection = C2SChannel("decision_selection", PlayerDecisionSelectionDto.serializer())
 

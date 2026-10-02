@@ -13,12 +13,16 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveSt
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.decodeHistoryCursor
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.encode
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistoryRuleSettingsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistorySummaryUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.ListHistoryUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
@@ -54,6 +58,7 @@ import kotlin.uuid.toKotlinUuid
  * @property scope 執行非同步查詢的應用作用域；世界有效性由 writer session 另行驗證。
  * @property dispatchers 確保資料讀取及回覆分別使用 I/O 與伺服器主執行緒。
  * @property json 線路序列化設定。
+ * @property networkRegistries 將已保存的規則設定映射為網路 DTO 的正式註冊表。
  * @property identityStore 伺服器已知的玩家名稱索引。
  * @property playerIdentities 向已授權玩家同步參與者名稱及外觀身分。
  */
@@ -65,6 +70,7 @@ class FabricHistoryQueryService(
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
     private val json: Json,
+    @Provided private val networkRegistries: NetworkDtoRegistries,
     private val playerIdentities: PlayerIdentitySender,
     private val identityStore: ServerPlayerIdentityStore,
 ) {
@@ -93,6 +99,7 @@ class FabricHistoryQueryService(
         }
         MahjongChannels.historyListRequest.registerServerReceiver(json, ::receiveList)
         MahjongChannels.historySummaryRequest.registerServerReceiver(json, ::receiveSummary)
+        MahjongChannels.historyRuleSettingsRequest.registerServerReceiver(json, ::receiveRuleSettings)
         MahjongChannels.historyArchiveStatusRequest.registerServerReceiver(json, ::receiveArchiveStatus)
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ -> admission.remove(handler.player.uuid.toKotlinUuid()) }
     }
@@ -295,6 +302,76 @@ class FabricHistoryQueryService(
             }
         }.invokeOnCompletion {
             // 未開始執行便取消的工作不會進入 finally；完成通知仍須解除名額，重複解除為無操作。
+            admission.release(access.principalId, accepted.token)
+        }
+    }
+
+    /**
+     * 接收單場歷史規則設定要求；只回覆 Replay 開局 header 的設定。
+     *
+     * @param server 目前伺服器。
+     * @param player 已驗證連線玩家。
+     * @param request 有界線路要求。
+     */
+    private fun receiveRuleSettings(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryRuleSettingsRequestDto) {
+        if (!validRequestId(request.requestId)) return
+        val access = player.queryAccess()
+        val sessionId = writer.currentSessionId
+        val accepted = admission.acquire(access.principalId)
+        if (accepted !is HistoryQueryAdmission.Admission.Accepted) {
+            if (admission.shouldSendRejection(access.principalId)) {
+                MahjongChannels.historyRuleSettingsResponse.sendTo(
+                    player,
+                    json,
+                    HistoryRuleSettingsResponseDto(request.requestId, errorCode = accepted.errorCode()),
+                )
+            }
+            return
+        }
+        scope.launch {
+            try {
+                var response = withTimeoutOrNull(HistoryQueryLimits.timeout) {
+                    try {
+                        val domain = request.toDomain()
+                        val repository = FabricHistoryQueryRepository(writer, sessionId, identityStore)
+                        when (val result = GetHistoryRuleSettingsUseCase(repository, ::policy)(access, domain)) {
+                            is HistoryQueryResult.Failure -> HistoryRuleSettingsResponseDto(request.requestId, errorCode = result.error.code.toDto())
+                            is HistoryQueryResult.Success -> boundedHistoryRuleSettings(request.requestId, result.value, networkRegistries, json)
+                        }
+                    } catch (_: IllegalArgumentException) {
+                        HistoryRuleSettingsResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.INVALID_REQUEST)
+                    }
+                } ?: HistoryRuleSettingsResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.TIMEOUT)
+                withContext(dispatchers.main) {
+                    if (!sameConnection(server, player, sessionId)) return@withContext
+                    val invalid = replyError(player.queryAccess(), policy(), request.scope.toDomain())
+                    if (invalid != null) response = HistoryRuleSettingsResponseDto(request.requestId, errorCode = invalid)
+                    val requestedMatchId = runCatching { Uuid.parse(request.matchId).toString() }.getOrNull()
+                    if (requestedMatchId != null && requestedMatchId in activeMatches()) {
+                        response = HistoryRuleSettingsResponseDto(
+                            request.requestId,
+                            errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE,
+                        )
+                    }
+                    MahjongChannels.historyRuleSettingsResponse.sendTo(player, json, response)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                logger.error("History rule settings query failed", error)
+                withContext(dispatchers.main) {
+                    if (sameConnection(server, player, sessionId)) {
+                        MahjongChannels.historyRuleSettingsResponse.sendTo(
+                            player,
+                            json,
+                            HistoryRuleSettingsResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE),
+                        )
+                    }
+                }
+            } finally {
+                admission.release(access.principalId, accepted.token)
+            }
+        }.invokeOnCompletion {
             admission.release(access.principalId, accepted.token)
         }
     }

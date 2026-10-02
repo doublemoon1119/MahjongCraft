@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import kotlinx.serialization.json.Json
@@ -31,5 +32,12 @@ class FabricHistoryQuerySender(
      */
     override fun sendSummary(request: HistorySummaryRequestDto) {
         MahjongChannels.historySummaryRequest.sendToServer(json, request)
+    }
+
+    /** 將規則設定要求交給 Fabric 客戶端頻道。
+     * @param request 已具備配對識別碼的規則設定要求。
+     */
+    override fun sendRuleSettings(request: HistoryRuleSettingsRequestDto) {
+        MahjongChannels.historyRuleSettingsRequest.sendToServer(json, request)
     }
 }

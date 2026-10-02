@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
 import kotlin.test.Test
@@ -65,6 +67,32 @@ class ClientHistoryQueryCoordinatorTest {
         assertIs<ClientHistoryQueryState.ListResult>(coordinator.state.value)
     }
 
+    /** 規則設定要求會產生識別碼並只接受同種類回應。 */
+    @Test
+    fun `test rule settings query correlates response kind`() {
+        val sender = FakeHistoryQuerySender()
+        val coordinator = ClientHistoryQueryCoordinator(sender, ClientHistoryQuerySettings())
+        val requestId = coordinator.queryRuleSettings(HistoryRuleSettingsRequestDto("caller-id", "match-id"))
+
+        assertEquals(requestId, sender.ruleSettingsRequest?.requestId)
+        coordinator.applyRuleSettings(HistoryRuleSettingsResponseDto("unrelated"))
+        assertIs<ClientHistoryQueryState.Loading>(coordinator.state.value)
+        coordinator.applySummary(HistorySummaryResponseDto(requestId))
+        assertIs<ClientHistoryQueryState.Loading>(coordinator.state.value)
+        coordinator.applyRuleSettings(HistoryRuleSettingsResponseDto(requestId))
+        assertIs<ClientHistoryQueryState.RuleSettingsResult>(coordinator.state.value)
+    }
+
+    /** 斷線清理後不接受原連線的規則設定回覆。 */
+    @Test
+    fun `test rule settings response is discarded after session clear`() {
+        val coordinator = ClientHistoryQueryCoordinator(FakeHistoryQuerySender(), ClientHistoryQuerySettings())
+        val requestId = coordinator.queryRuleSettings(HistoryRuleSettingsRequestDto("caller-id", "match-id"))
+        coordinator.clear()
+        coordinator.applyRuleSettings(HistoryRuleSettingsResponseDto(requestId))
+        assertEquals(ClientHistoryQueryState.Idle, coordinator.state.value)
+    }
+
     /** 清除會推進工作階段版本、回到閒置並拒絕舊回應。 */
     @Test
     fun `test clear advances session and rejects stale response`() {
@@ -95,6 +123,9 @@ class ClientHistoryQueryCoordinatorTest {
         /** 最近一次送出的摘要要求。 */
         var summaryRequest: HistorySummaryRequestDto? = null
 
+        /** 最近一次送出的規則設定要求。 */
+        var ruleSettingsRequest: HistoryRuleSettingsRequestDto? = null
+
         /** 保存清單要求或模擬傳送失敗。 */
         override fun sendList(request: HistoryListRequestDto) {
             if (shouldFail) throw IllegalStateException("simulated send failure")
@@ -105,6 +136,12 @@ class ClientHistoryQueryCoordinatorTest {
         override fun sendSummary(request: HistorySummaryRequestDto) {
             if (shouldFail) throw IllegalStateException("simulated send failure")
             summaryRequest = request
+        }
+
+        /** 保存規則設定要求或模擬傳送失敗。 */
+        override fun sendRuleSettings(request: HistoryRuleSettingsRequestDto) {
+            if (shouldFail) throw IllegalStateException("simulated send failure")
+            ruleSettingsRequest = request
         }
     }
 }

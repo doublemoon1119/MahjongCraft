@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistoryConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryQuerySettingsPayload
@@ -46,6 +47,7 @@ class ClientHistoryQuerySettingsTest {
             sender = object : HistoryQuerySender {
                 override fun sendList(request: HistoryListRequestDto) = Unit
                 override fun sendSummary(request: HistorySummaryRequestDto) = Unit
+                override fun sendRuleSettings(request: HistoryRuleSettingsRequestDto) = Unit
             },
             settings = settings,
         )

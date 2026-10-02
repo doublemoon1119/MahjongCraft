@@ -104,6 +104,21 @@ internal data class HistoryParticipantRecord(val seatIndex: Int, val playerId: S
  */
 internal data class HistoryRoundRecord(val roundNumber: Int, val startedAtEpochMillis: Long, val endedAtEpochMillis: Long?)
 
+/** 受大小限制的 Replay 讀取結果。 */
+internal sealed interface HistoryReplayPayloadRead {
+    /** 查無已完成 Replay。 */
+    data object Missing : HistoryReplayPayloadRead
+
+    /** Replay 超過查詢允許的解析大小。 */
+    data object TooLarge : HistoryReplayPayloadRead
+
+    /** 已讀取且尚未解碼的 Replay JSON。
+     *
+     * @property payload 通過大小限制的 Replay JSON 文字。
+     */
+    data class Found(val payload: String) : HistoryReplayPayloadRead
+}
+
 /**
  * 權威狀態移除對局時寫入的終端摘要，不以載入時缺少對局推測中止。
  *
@@ -279,6 +294,32 @@ internal class SqliteHistoryDatabase private constructor(
     /** 已封存場次 ID；用於略過其原始事件的缺口推導。 */
     fun readReplayIds(): Set<String> = transaction(database) {
         HistoryReplayTable.selectAll().mapTo(mutableSetOf()) { it[HistoryReplayTable.matchId] }
+    }
+
+    /**
+     * 以資料庫端大小檢查讀取單場 Replay；不把超大內容載入 Kotlin 記憶體。
+     *
+     * @param matchId 欲讀取的對局識別碼。
+     * @param maximumBytes 允許載入與解析的 UTF-8 位元組上限。
+     * @return 缺少、超過大小限制，或受限的 Replay JSON。
+     */
+    fun readReplayPayload(matchId: String, maximumBytes: Int): HistoryReplayPayloadRead = transaction(database) {
+        require(matchId.isNotBlank()) { "History match ID must not be blank" }
+        require(maximumBytes > 0) { "History replay size limit must be positive" }
+        val payloadBytes = TransactionManager.current().exec(
+            "SELECT length(CAST(payload AS BLOB)) FROM history_replay WHERE match_id = ?",
+            listOf(VarCharColumnType() to matchId),
+        ) { result ->
+            if (result.next()) result.getLong(1) else null
+        } ?: return@transaction HistoryReplayPayloadRead.Missing
+        if (payloadBytes > maximumBytes.toLong()) {
+            HistoryReplayPayloadRead.TooLarge
+        } else {
+            val payload = HistoryReplayTable.select(HistoryReplayTable.payload)
+                .where { HistoryReplayTable.matchId eq matchId }
+                .single()[HistoryReplayTable.payload]
+            HistoryReplayPayloadRead.Found(payload)
+        }
     }
 
     /**

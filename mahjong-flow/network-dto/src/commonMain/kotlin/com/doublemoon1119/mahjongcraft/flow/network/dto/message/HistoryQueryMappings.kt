@@ -14,9 +14,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRankRange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryResultSummary
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRoundSummary
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettings
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettingsRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortDirection
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortValue
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 
@@ -98,6 +103,28 @@ fun HistoryListRequestDto.toDomain(decodeCursor: (String?) -> HistoryQueryCursor
     pageSize = pageSize,
     cursor = decodeCursor(cursor),
 )
+
+/** 將網路規則設定查詢要求映射為 Flow 要求。
+ * @return 可交給規則設定查詢用例的要求。
+ */
+fun HistoryRuleSettingsRequestDto.toDomain(): HistoryRuleSettingsRequest = HistoryRuleSettingsRequest(
+    matchId = matchId.toHistoryUuid(),
+    scope = scope.toDomain(),
+)
+
+/** 將規則設定查詢請求 DTO 編碼為傳輸字串。
+ *
+ * @param json 使用的 JSON codec。
+ * @return 可傳送的 JSON 請求字串。
+ */
+fun HistoryRuleSettingsRequestDto.encode(json: Json): String = json.encodeToString(HistoryRuleSettingsRequestDto.serializer(), this)
+
+/** 將傳輸字串解碼為規則設定查詢請求 DTO。
+ *
+ * @param json 使用的 JSON codec。
+ * @return 解碼後的請求 DTO。
+ */
+fun String.decodeHistoryRuleSettingsRequest(json: Json): HistoryRuleSettingsRequestDto = json.decodeFromString(HistoryRuleSettingsRequestDto.serializer(), this)
 
 /** 將網路 cursor 內容映射為 Flow cursor。
  * @return 驗證後的 Flow cursor。
@@ -248,6 +275,27 @@ fun HistoryMatchDetail.toDto(): HistoryMatchDetailDto = HistoryMatchDetailDto(
     summary = summary.toDto(),
     rounds = rounds.map { it.toDto() },
 )
+
+/** 將 Flow 歷史規則設定映射為網路遊戲設定 DTO。
+ *
+ * @param registries 網路規則 DTO registry，用於支援已註冊的第三方規則。
+ * @return 可序列化的完整遊戲設定 DTO。
+ */
+fun HistoryRuleSettings.toDto(registries: NetworkDtoRegistries): GameConfigDto = config.toDto(registries)
+
+/** 將規則設定查詢回覆 DTO 編碼為傳輸字串。
+ *
+ * @param json 使用的 JSON codec。
+ * @return 可傳送的 JSON 回覆字串。
+ */
+fun HistoryRuleSettingsResponseDto.encode(json: Json): String = json.encodeToString(HistoryRuleSettingsResponseDto.serializer(), this)
+
+/** 將傳輸字串解碼為規則設定查詢回覆 DTO。
+ *
+ * @param json 使用的 JSON codec。
+ * @return 解碼後的回覆 DTO。
+ */
+fun String.decodeHistoryRuleSettingsResponse(json: Json): HistoryRuleSettingsResponseDto = json.decodeFromString(HistoryRuleSettingsResponseDto.serializer(), this)
 
 /** 將網路 UUID 字串解析為 Flow UUID，錯誤由呼叫端轉成無效請求。
  * @return 解析後的 UUID。

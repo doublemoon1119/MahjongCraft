@@ -206,6 +206,18 @@ object MinecraftHistoryScreenKeys {
     /** 對局摘要完整性提示。 */
     const val SUMMARY_INTEGRITY_TOOLTIP = "mahjongcraft.history_screen.summary.integrity_tooltip"
 
+    /** 規則設定標題。 */
+    const val RULE_SETTINGS_TITLE = "mahjongcraft.history_screen.rule_settings.title"
+
+    /** 規則設定入口提示。 */
+    const val RULE_SETTINGS_OPEN_HINT = "mahjongcraft.history_screen.rule_settings.open_hint"
+
+    /** 規則設定唯讀提示。 */
+    const val RULE_SETTINGS_READ_ONLY = "mahjongcraft.history_screen.rule_settings.read_only"
+
+    /** 規則設定資料不可用提示。 */
+    const val RULE_SETTINGS_UNAVAILABLE = "mahjongcraft.history_screen.rule_settings.unavailable"
+
     /** 對局結果格式。 */
     const val RESULT = "mahjongcraft.history_screen.result"
 

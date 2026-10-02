@@ -7,6 +7,9 @@ internal enum class HistoryQueryKind {
 
     /** 單場摘要要求。 */
     SUMMARY,
+
+    /** 單場規則設定要求。 */
+    RULE_SETTINGS,
 }
 
 /** 保存最新查詢的配對識別碼與種類；世界切換或新條件使舊回應失效。 */

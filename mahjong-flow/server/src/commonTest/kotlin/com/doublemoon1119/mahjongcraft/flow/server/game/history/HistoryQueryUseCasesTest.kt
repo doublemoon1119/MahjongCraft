@@ -14,10 +14,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRankRange
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettings
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettingsRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortDirection
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySummaryRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -61,6 +65,60 @@ class HistoryQueryUseCasesTest {
         assertTrue(result is HistoryQueryResult.Failure, "Expected a denied summary query")
         assertEquals("ACCESS_DENIED", result.error.code.name)
         assertEquals(0, repository.summaryCalls)
+    }
+
+    /** 驗證規則設定查詢沿用摘要查詢的範圍授權邊界。 */
+    @Test
+    fun `test rule settings all scope requires administrator`() = runTest {
+        val repository = RecordingHistoryQueryRepository()
+        val useCase = GetHistoryRuleSettingsUseCase(repository) { HistoryQueryPolicy() }
+        val result = useCase(
+            HistoryQueryAccess(Uuid.random(), false),
+            HistoryRuleSettingsRequest(Uuid.random(), HistoryQueryScope.ALL),
+        )
+        assertError(result, HistoryQueryErrorCode.ACCESS_DENIED)
+        assertEquals(0, repository.ruleSettingsCalls)
+    }
+
+    /** 驗證規則設定查詢停用時不會觸發 repository。 */
+    @Test
+    fun `test rule settings disabled policy rejects own query`() = runTest {
+        val repository = RecordingHistoryQueryRepository()
+        val useCase = GetHistoryRuleSettingsUseCase(repository) { HistoryQueryPolicy(queryEnabled = false) }
+        val result = useCase(
+            HistoryQueryAccess(Uuid.random(), false),
+            HistoryRuleSettingsRequest(Uuid.random()),
+        )
+        assertError(result, HistoryQueryErrorCode.QUERY_DISABLED)
+        assertEquals(0, repository.ruleSettingsCalls)
+    }
+
+    /** 驗證合法 OWN 規則設定查詢會傳遞授權身分並回傳完整設定。 */
+    @Test
+    fun `test valid own rule settings query forwards access and config`() = runTest {
+        val repository = RecordingHistoryQueryRepository()
+        val access = HistoryQueryAccess(Uuid.random(), false)
+        val result = GetHistoryRuleSettingsUseCase(repository) { HistoryQueryPolicy() }(
+            access,
+            HistoryRuleSettingsRequest(Uuid.random()),
+        )
+        assertTrue(result is HistoryQueryResult.Success, "Expected rule settings query to succeed")
+        assertEquals(access, repository.lastRuleSettingsAccess)
+        assertEquals(GameConfig(RiichiRuleConfig()), result.value.config)
+    }
+
+    /** 驗證管理員政策關閉時，規則設定 ALL 查詢也會被拒絕。 */
+    @Test
+    fun `test rule settings administrator policy denial`() = runTest {
+        val repository = RecordingHistoryQueryRepository()
+        val result = GetHistoryRuleSettingsUseCase(repository) {
+            HistoryQueryPolicy(allowAdministratorQuery = false)
+        }(
+            HistoryQueryAccess(Uuid.random(), true),
+            HistoryRuleSettingsRequest(Uuid.random(), HistoryQueryScope.ALL),
+        )
+        assertError(result, HistoryQueryErrorCode.ACCESS_DENIED)
+        assertEquals(0, repository.ruleSettingsCalls)
     }
 
     /** 驗證管理員查詢政策關閉時，管理員也不能查詢全部歷史。 */
@@ -191,11 +249,14 @@ class HistoryQueryUseCasesTest {
      *
      * @property listCalls 清單查詢呼叫次數。
      * @property summaryCalls 摘要查詢呼叫次數。
+     * @property ruleSettingsCalls 規則設定查詢呼叫次數。
      * @property lastListAccess 最近一次清單查詢的授權身分。
      */
     private class RecordingHistoryQueryRepository : HistoryQueryRepository {
         var listCalls: Int = 0
         var summaryCalls: Int = 0
+        var ruleSettingsCalls: Int = 0
+        var lastRuleSettingsAccess: HistoryQueryAccess? = null
         var lastListAccess: HistoryQueryAccess? = null
 
         /** 回傳空的成功頁並記錄授權身分。
@@ -224,6 +285,24 @@ class HistoryQueryUseCasesTest {
             summaryCalls++
             return HistoryQueryResult.Failure(
                 HistoryQueryError(HistoryQueryErrorCode.NOT_AVAILABLE, "No test history"),
+            )
+        }
+
+        /** 回傳成功設定，供授權測試驗證允許的要求會抵達此方法。
+         * @param access 查詢授權身分。
+         * @param request 規則設定查詢要求。
+         * @return 測試用開局設定。
+         */
+        override suspend fun ruleSettings(
+            access: HistoryQueryAccess,
+            request: HistoryRuleSettingsRequest,
+        ): HistoryQueryResult<HistoryRuleSettings> {
+            ruleSettingsCalls++
+            lastRuleSettingsAccess = access
+            return HistoryQueryResult.Success(
+                HistoryRuleSettings(
+                    GameConfig(RiichiRuleConfig()),
+                ),
             )
         }
     }

@@ -4,6 +4,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.GameFlowConfigPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toDomain
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
@@ -15,10 +19,12 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.uuid.Uuid
 
 /**
  * 將一整場已完成的權威歷史封裝成可查閱的精簡 Replay 文件。
@@ -30,6 +36,55 @@ import kotlinx.serialization.json.jsonPrimitive
 object CompactReplayCodec {
     /** 此 Replay 文件格式的版本號。 */
     const val FORMAT_VERSION: Int = 1
+
+    /**
+     * 只解碼已完成 Replay 的 header 規則設定，不重建交易或完整牌局投影。
+     *
+     * @param document 已封存的精簡 Replay 文件。
+     * @param registries 開局規則 persistence DTO 的註冊表。
+     * @param expectedMatchId 呼叫端已授權的對局 ID；不一致時拒絕文件。
+     * @param json Replay persistence DTO 的 JSON 設定。
+     * @return Replay 開局時保存的完整遊戲設定。
+     */
+    fun decodeRuleSettings(
+        document: JsonObject,
+        registries: PersistenceRegistries,
+        expectedMatchId: Uuid,
+        json: Json = Json,
+    ): GameConfig {
+        require(document.keys == setOf(ReplayFormatKeys.FORMAT_VERSION, ReplayFormatKeys.PAYLOAD)) {
+            "Replay document contains unexpected fields"
+        }
+        require(document[ReplayFormatKeys.FORMAT_VERSION]?.jsonPrimitive?.intOrNull == FORMAT_VERSION) {
+            "Unsupported replay format version"
+        }
+        val payload = document[ReplayFormatKeys.PAYLOAD] as? JsonObject ?: error("Replay payload must be an object")
+        val content = CompactReplayDictionary.decodeFields(
+            payload,
+            setOf(ReplayFormatKeys.VERSION, ReplayFormatKeys.HEADER),
+        )
+        require(content.keys == setOf(ReplayFormatKeys.VERSION, ReplayFormatKeys.HEADER)) {
+            "Replay content lacks rule settings header"
+        }
+        require(content[ReplayFormatKeys.VERSION]?.jsonPrimitive?.intOrNull == FORMAT_VERSION) {
+            "Unsupported replay content version"
+        }
+        val header = content[ReplayFormatKeys.HEADER] as? JsonObject ?: error("Replay header must be an object")
+        val matchId = header[ReplayFormatKeys.MATCH]?.jsonPrimitive?.contentOrNull
+            ?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+            ?: error("Replay header lacks a valid match ID")
+        require(expectedMatchId == matchId) { "Replay match ID does not match the request" }
+        val ruleDto = header[ReplayFormatKeys.RULE]?.let {
+            json.decodeFromJsonElement(TypedPersistenceDto.serializer(), it)
+        } ?: error("Replay header lacks rule configuration")
+        val flowDto = header[ReplayFormatKeys.FLOW]?.let {
+            json.decodeFromJsonElement(GameFlowConfigPersistenceDto.serializer(), it)
+        } ?: error("Replay header lacks flow configuration")
+        return GameConfig(
+            ruleConfig = registries.ruleConfigs.decode(ruleDto, json),
+            flowConfig = flowDto.toDomain(),
+        )
+    }
 
     /**
      * 將完整對局編碼為局內牌索引、玩家座位索引與逐交易投影差異。

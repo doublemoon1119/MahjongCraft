@@ -76,6 +76,10 @@ class HistoryScreenTranslationKeysTest {
             MinecraftHistoryScreenKeys.SUMMARY_PLAYER_HEADER,
             MinecraftHistoryScreenKeys.SUMMARY_SCORE_HEADER,
             MinecraftHistoryScreenKeys.SUMMARY_INTEGRITY_TOOLTIP,
+            MinecraftHistoryScreenKeys.RULE_SETTINGS_TITLE,
+            MinecraftHistoryScreenKeys.RULE_SETTINGS_OPEN_HINT,
+            MinecraftHistoryScreenKeys.RULE_SETTINGS_READ_ONLY,
+            MinecraftHistoryScreenKeys.RULE_SETTINGS_UNAVAILABLE,
         )
         listOf("en_us", "ja_jp", "zh_cn", "zh_tw").forEach { locale ->
             val resource = checkNotNull(javaClass.classLoader.getResourceAsStream("assets/mahjongcraft/lang/$locale.json")) {

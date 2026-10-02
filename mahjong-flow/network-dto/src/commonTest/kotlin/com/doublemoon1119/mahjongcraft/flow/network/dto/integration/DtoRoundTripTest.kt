@@ -1,4 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.integration
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettings
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
@@ -15,10 +16,14 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HandReadinessAnalysisDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.decodeHistoryRuleSettingsResponse
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.encode
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.JoinReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.LeaveReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
@@ -114,6 +119,21 @@ class DtoRoundTripTest {
         val decoded = earlyJson.decodeFromString(GameConfigDto.serializer(), encoded).toDomain(lateRegistries)
 
         assertEquals(config, decoded)
+    }
+
+    @Test
+    fun `test history rule settings response round-trips registered game config`() {
+        val config = GameConfig(RiichiRuleConfig())
+        val response = HistoryRuleSettingsResponseDto(
+            requestId = "history-rules",
+            config = HistoryRuleSettings(config).toDto(registries),
+        )
+
+        val encoded = response.encode(json)
+        val decoded = encoded.decodeHistoryRuleSettingsResponse(json)
+
+        assertEquals(response, decoded)
+        assertEquals(config, HistoryRuleSettings(decoded.config!!.toDomain(registries)).config)
     }
 
     @Test

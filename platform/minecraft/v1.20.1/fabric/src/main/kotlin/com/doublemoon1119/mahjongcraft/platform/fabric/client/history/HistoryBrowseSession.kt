@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -18,6 +20,8 @@ import kotlin.time.TimeSource
  * @param archiveStatus 單場保存狀態查詢邊界。
  * @property participants 共用玩家名稱與頭像來源。
  * @property ruleNames 規則顯示名稱 registry。
+ * @property configResolver 以已註冊呈現定義解析歷史規則設定。
+ * @property networkRegistries 解碼歷史規則設定所需的正式網路註冊表。
  * @param dispatcher 客戶端主執行緒排程。
  * @property parent 關閉後返回的原畫面，指令入口為 null。
  * @param initialMatchId 聊天入口指定的對局；null 表示一般列表。
@@ -28,6 +32,8 @@ internal class HistoryBrowseSession(
     archiveStatus: HistoryArchiveStatusTransport,
     val participants: HistoryParticipantPresentationResolver,
     val ruleNames: RuleModuleDisplayNameRegistry,
+    val configResolver: GameConfigPresentationResolver,
+    val networkRegistries: NetworkDtoRegistries,
     dispatcher: ClientThreadCoroutineDispatcher,
     private val parent: Screen?,
     initialMatchId: String?,
@@ -39,7 +45,7 @@ internal class HistoryBrowseSession(
     /** 指定結算對局的保存狀態監看器。 */
     val archiveStatusController = HistoryArchiveStatusController(archiveStatus, scope)
 
-    /** 列表、篩選與摘要共用的權威查詢結果。 */
+    /** 列表、篩選、摘要與規則設定共用的權威查詢結果。 */
     val controller = HistoryBrowseController(transport, scope, beforeSummaryQuery = {
         archiveMonitoringPaused = true
         archiveStatusController.pause()
@@ -114,6 +120,24 @@ internal class HistoryBrowseSession(
      */
     fun openSummary(matchId: String): Boolean {
         if (closed || !controller.showSummary(matchId)) return false
+        navigate(HistorySummaryScreen(this))
+        return true
+    }
+
+    /** 開啟目前摘要的規則設定唯讀頁。
+     * @return 是否接受導航並開啟規則設定頁。
+     */
+    fun openRuleSettings(): Boolean {
+        if (closed || !controller.showRuleSettings()) return false
+        navigate(HistoryRuleSettingsScreen(this))
+        return true
+    }
+
+    /** 從規則設定返回摘要，保留摘要查詢與捲動位置。
+     * @return 是否返回原摘要頁。
+     */
+    fun backToSummary(): Boolean {
+        if (closed || !controller.backToSummary()) return false
         navigate(HistorySummaryScreen(this))
         return true
     }

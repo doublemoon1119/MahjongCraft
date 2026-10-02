@@ -15,12 +15,23 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** 驗證終局 Replay 的 MatchCompleted、桌況結果與返回房間事件邊界。 */
 class CompactReplayCompletionTest {
+    /** 從正式終局 Replay 的字典 header 還原原始開局設定。 */
+    @Test
+    fun `completed replay exposes original rule settings without replaying transactions`() {
+        val registries = buildBuiltInPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(validEvents(), HistoryRecordingPersistenceMapper(registries, Json), registries, Json)
+        val settings = CompactReplayCodec.decodeRuleSettings(document, registries, matchId)
+        assertEquals(table.config, settings.ruleConfig)
+        assertEquals(GameFlowConfig(), settings.flowConfig)
+    }
+
     /** 驗證同一終局交易內的桌況結果可接續下一筆返回房間交易。 */
     @Test
     fun `completion and table change in one transaction are accepted`() {

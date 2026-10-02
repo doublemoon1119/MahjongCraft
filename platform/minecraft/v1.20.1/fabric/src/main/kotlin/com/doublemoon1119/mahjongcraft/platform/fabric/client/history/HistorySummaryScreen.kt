@@ -44,6 +44,7 @@ internal class HistorySummaryScreen(
     /** 建立固定 footer 與摘要內容的版面控制項。 */
     override fun init() {
         layout = HistorySummaryLayout.measure(width, height)
+        scroll = session.controller.state.value.summary?.scrollOffset ?: 0.0
         dragging = false
         clearChildren()
         val footerWidth = ((width - 24 - 4) / 2).coerceAtLeast(1)
@@ -52,7 +53,7 @@ internal class HistorySummaryScreen(
             ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToList() }
                 .dimensions(footerLeft, layout.footerTop, footerWidth, 20).build(),
         )
-        retryButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { if (session.controller.canRefresh()) session.controller.retry() }
+        retryButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { if (session.controller.canRetry()) session.controller.retry() }
             .dimensions(footerLeft + footerWidth + 4, layout.footerTop, footerWidth, 20).build().also(::addDrawableChild)
     }
 
@@ -78,6 +79,7 @@ internal class HistorySummaryScreen(
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (mouseY < layout.contentTop || mouseY >= layout.contentBottom) return super.mouseScrolled(mouseX, mouseY, amount)
         scroll = layout.clampScroll(scroll - amount * 18.0, contentHeight(detail()))
+        session.controller.rememberSummaryPosition(scroll)
         return true
     }
 
@@ -105,6 +107,10 @@ internal class HistorySummaryScreen(
                 copiedAt = TimeSource.Monotonic.markNow()
                 return true
             }
+            if (buildLines(detail).any { it.openRuleSettings && layout.containsContentRow(mouseX, mouseY, it.x, it.y - offset, 11) }) {
+                session.openRuleSettings()
+                return true
+            }
         }
         return super.mouseClicked(mouseX, mouseY, button)
     }
@@ -115,6 +121,7 @@ internal class HistorySummaryScreen(
      */
     private fun updateDrag(mouseY: Double) {
         scroll = layout.scrollbar(contentHeight(detail()), scroll).scrollIndexFor(mouseY, grabOffset).toDouble()
+        session.controller.rememberSummaryPosition(scroll)
     }
 
     /** 持續處理捲軸拖曳。
@@ -154,7 +161,7 @@ internal class HistorySummaryScreen(
         val status = summary?.status ?: HistoryBrowseStatus.Loading
         scroll = layout.clampScroll(scroll, contentHeight(detail()))
         var hoveredTooltip: List<Text>? = null
-        retryButton?.active = session.controller.canRefresh()
+        retryButton?.active = session.controller.canRetry()
         retryButton?.visible = status is HistoryBrowseStatus.Failed
         retryButton?.tooltip = if (session.controller.isRefreshCoolingDown()) Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.QUERY_COOLDOWN_TOOLTIP)) else null
         context.enableScissor(8, layout.contentTop, width - 8, layout.contentBottom)
@@ -198,7 +205,7 @@ internal class HistorySummaryScreen(
                     context.drawTextWithShadow(textRenderer, Text.literal(name), nameX, y, row.nameColor)
                     context.drawTextWithShadow(textRenderer, row.score, scoreRight - textRenderer.getWidth(row.score), y, 0xdddddd)
                     if (name != row.name.string && !dragging && layout.containsContentRow(mouseX.toDouble(), mouseY.toDouble(), nameX, y, 11)) tooltip = listOf(row.name)
-                } ?: context.drawTextWithShadow(textRenderer, line.text, line.x, y, if (line.copyMatchId && !dragging && layout.containsContentRow(mouseX.toDouble(), mouseY.toDouble(), line.x, y, 11)) 0x8ed5df else line.color)
+                } ?: context.drawTextWithShadow(textRenderer, line.text, line.x, y, if ((line.copyMatchId || line.openRuleSettings) && !dragging && layout.containsContentRow(mouseX.toDouble(), mouseY.toDouble(), line.x, y, 11)) 0x8ed5df else line.color)
                 if (line.tooltip != null && !dragging && layout.containsContentRow(mouseX.toDouble(), mouseY.toDouble(), line.x, y, 11)) {
                     tooltip = if (line.copyMatchId) {
                         val copied = copiedAt?.elapsedNow()?.let { it < 2.seconds } == true
@@ -231,18 +238,19 @@ internal class HistorySummaryScreen(
          * @param x 行左界。
          * @param tooltip 可選的完整值或說明。
          * @param copyMatchId 是否可複製對局 ID。
+         * @param openRuleSettings 是否可開啟唯讀歷史規則設定。
          */
-        fun add(text: Text, color: Int = 0xffffff, x: Int = layout.left + 8, tooltip: Text? = null, copyMatchId: Boolean = false) {
+        fun add(text: Text, color: Int = 0xffffff, x: Int = layout.left + 8, tooltip: Text? = null, copyMatchId: Boolean = false, openRuleSettings: Boolean = false) {
             val wrapped = textRenderer.wrapLines(text, (layout.right - x - 14).coerceAtLeast(1))
             wrapped.forEach { line ->
-                lines += Line(x, y, line, color, tooltip = tooltip, copyMatchId = copyMatchId)
+                lines += Line(x, y, line, color, tooltip = tooltip, copyMatchId = copyMatchId, openRuleSettings = openRuleSettings)
                 y += 11
             }
         }
         add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_BASIC), 0x8ed5df, layout.left)
         y += 4
         add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_MATCH_ID).append(": ").append(summary.matchId), tooltip = Text.literal(summary.matchId), copyMatchId = true)
-        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RULE).copy().append(": ").append(HistoryScreenText.rule(summary.ruleId, session.ruleNames)))
+        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RULE).copy().append(": ").append(HistoryScreenText.rule(summary.ruleId, session.ruleNames)), tooltip = Text.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_OPEN_HINT).formatted(Formatting.AQUA), openRuleSettings = true)
         add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_STARTED_AT).append(": ").append(HistoryScreenText.endedAt(summary.startedAtEpochMillis)))
         add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ENDED_AT).append(": ").append(HistoryScreenText.endedAt(summary.endedAtEpochMillis)))
         add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_DURATION).append(": ").append(HistoryScreenText.duration(summary.durationMillis)))
@@ -350,6 +358,7 @@ internal class HistorySummaryScreen(
      * @property participant 可選排名列。
      * @property tooltip 可見行的完整值或用途說明。
      * @property copyMatchId 此行是否提供對局 ID 複製。
+     * @property openRuleSettings 此行是否開啟規則設定。
      */
     private data class Line(
         val x: Int,
@@ -359,6 +368,7 @@ internal class HistorySummaryScreen(
         val participant: ParticipantRow? = null,
         val tooltip: Text? = null,
         val copyMatchId: Boolean = false,
+        val openRuleSettings: Boolean = false,
     )
 
     /**

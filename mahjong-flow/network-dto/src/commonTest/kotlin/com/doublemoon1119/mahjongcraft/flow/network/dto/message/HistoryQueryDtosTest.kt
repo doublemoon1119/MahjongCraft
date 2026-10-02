@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.uuid.Uuid
 
 /** 歷史查詢 DTO 的穩定 JSON 編碼測試。 */
 class HistoryQueryDtosTest {
@@ -76,5 +77,40 @@ class HistoryQueryDtosTest {
                 """{"requestId":"r","sortField":"unknown"}""",
             )
         }
+    }
+
+    /** 規則設定查詢請求保留識別碼、對局 UUID 與查詢範圍。 */
+    @Test
+    fun `history rule settings request round trips and maps to domain`() {
+        val expected = HistoryRuleSettingsRequestDto(
+            requestId = "request-rules",
+            matchId = Uuid.random().toString(),
+            scope = HistoryQueryScopeDto.ALL,
+        )
+        val encoded = expected.encode(Json)
+        val decoded = encoded.decodeHistoryRuleSettingsRequest(Json)
+
+        assertEquals(expected, decoded)
+        assertEquals(expected.matchId, decoded.toDomain().matchId.toString())
+        assertEquals(HistoryQueryScopeDto.ALL.toDomain(), decoded.toDomain().scope)
+    }
+
+    /** 不合法對局 UUID 不得由規則設定查詢 mapping 靜默接受。 */
+    @Test
+    fun `history rule settings request rejects malformed match id`() {
+        val request = HistoryRuleSettingsRequestDto("request-rules", "not-a-uuid")
+        assertFailsWith<IllegalArgumentException> { request.toDomain() }
+    }
+
+    /** 規則設定查詢回覆的可選設定與錯誤欄位可透過 JSON 往返。 */
+    @Test
+    fun `history rule settings response round trips nullable fields`() {
+        val expected = HistoryRuleSettingsResponseDto(
+            requestId = "request-rules",
+            errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE,
+        )
+        val encoded = expected.encode(Json)
+
+        assertEquals(expected, encoded.decodeHistoryRuleSettingsResponse(Json))
     }
 }

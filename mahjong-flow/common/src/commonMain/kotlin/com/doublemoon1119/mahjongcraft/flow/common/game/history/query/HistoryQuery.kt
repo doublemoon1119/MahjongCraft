@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.history.query
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ApplicationError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
@@ -193,6 +194,16 @@ data class HistorySummaryRequest(
     val scope: HistoryQueryScope = HistoryQueryScope.OWN,
 )
 
+/** 歷史對局規則設定查詢要求。
+ *
+ * @property matchId 欲查詢的對局 UUID。
+ * @property scope 查詢範圍。
+ */
+data class HistoryRuleSettingsRequest(
+    val matchId: Uuid,
+    val scope: HistoryQueryScope = HistoryQueryScope.OWN,
+)
+
 /** 歷史對局的參與者摘要。
  *
  * @property seatIndex 座位索引。
@@ -269,6 +280,14 @@ data class HistoryMatchDetail(
     val rounds: List<HistoryRoundSummary>,
 )
 
+/** 歷史對局開局時採用的完整遊戲設定。
+ *
+ * @property config 開局時採用的遊戲規則與流程設定。
+ */
+data class HistoryRuleSettings(
+    val config: GameConfig,
+)
+
 /** 歷史清單查詢成功結果。
  *
  * @property entries 本頁對局摘要。
@@ -340,6 +359,16 @@ interface HistoryQueryRepository {
         access: HistoryQueryAccess,
         request: HistorySummaryRequest,
     ): HistoryQueryResult<HistoryMatchDetail>
+
+    /** 讀取單一已公開對局的開局規則設定，不回傳目前房間設定。
+     * @param access 可信任的發起者資訊。
+     * @param request 規則設定查詢要求。
+     * @return 對局規則設定或穩定錯誤。
+     */
+    suspend fun ruleSettings(
+        access: HistoryQueryAccess,
+        request: HistoryRuleSettingsRequest,
+    ): HistoryQueryResult<HistoryRuleSettings>
 }
 
 /** 歷史查詢 repository 的成功或失敗結果。 */

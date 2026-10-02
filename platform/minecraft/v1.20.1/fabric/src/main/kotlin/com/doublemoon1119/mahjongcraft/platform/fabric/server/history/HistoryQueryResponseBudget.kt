@@ -4,11 +4,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryLis
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryListRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryMatchSummary
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryCursor
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettings
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortValue
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
@@ -42,6 +45,37 @@ internal fun boundedHistoryPage(
         if (json.encodeToString(HistoryListResponseDto.serializer(), response).toByteArray(Charsets.UTF_8).size <= limit) return response
         if (count <= 1) return HistoryListResponseDto(requestId, emptyList(), errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE)
         count--
+    }
+}
+
+/**
+ * 將已授權的開局設定編碼為有界回應；缺少網路 codec 不視為玩家要求無效。
+ *
+ * @param requestId 回應配對識別碼。
+ * @param settings 已從歷史文件讀取的開局設定。
+ * @param registries 正式網路 DTO registry。
+ * @param json 線路編碼設定。
+ * @param limit JSON UTF-8 上限。
+ * @return 完整設定或不含設定內容的穩定錯誤。
+ */
+internal fun boundedHistoryRuleSettings(
+    requestId: String,
+    settings: HistoryRuleSettings,
+    registries: NetworkDtoRegistries,
+    json: Json,
+    limit: Int = HistoryQueryLimits.RESPONSE_BYTES,
+): HistoryRuleSettingsResponseDto {
+    val response = try {
+        HistoryRuleSettingsResponseDto(requestId, config = settings.toDto(registries))
+    } catch (_: IllegalArgumentException) {
+        return HistoryRuleSettingsResponseDto(requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE)
+    } catch (_: IllegalStateException) {
+        return HistoryRuleSettingsResponseDto(requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE)
+    }
+    return if (json.encodeToString(HistoryRuleSettingsResponseDto.serializer(), response).toByteArray(Charsets.UTF_8).size <= limit) {
+        response
+    } else {
+        HistoryRuleSettingsResponseDto(requestId, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE)
     }
 }
 

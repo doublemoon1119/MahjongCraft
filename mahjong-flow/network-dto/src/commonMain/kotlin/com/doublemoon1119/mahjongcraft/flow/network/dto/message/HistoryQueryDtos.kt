@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.message
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -292,6 +293,19 @@ data class HistorySummaryRequestDto(
     val scope: HistoryQueryScopeDto = HistoryQueryScopeDto.OWN,
 )
 
+/** 單場歷史規則設定查詢的 C2S 請求。
+ *
+ * @property requestId 配對非同步回覆的請求識別碼。
+ * @property matchId 要查詢的對局識別碼。
+ * @property scope 要查詢的資料範圍。
+ */
+@Serializable
+data class HistoryRuleSettingsRequestDto(
+    val requestId: String,
+    val matchId: String,
+    val scope: HistoryQueryScopeDto = HistoryQueryScopeDto.OWN,
+)
+
 /** 單場歷史摘要查詢的 S2C 回覆。
  *
  * @property requestId 對應請求的識別碼。
@@ -302,5 +316,18 @@ data class HistorySummaryRequestDto(
 data class HistorySummaryResponseDto(
     val requestId: String,
     val detail: HistoryMatchDetailDto? = null,
+    val errorCode: HistoryQueryErrorCodeDto? = null,
+)
+
+/** 單場歷史規則設定查詢的 S2C 回覆。
+ *
+ * @property requestId 對應請求的識別碼。
+ * @property config 對局開局時採用的完整遊戲設定；不可提供時為 null。
+ * @property errorCode 安全的查詢錯誤代碼。
+ */
+@Serializable
+data class HistoryRuleSettingsResponseDto(
+    val requestId: String,
+    val config: GameConfigDto? = null,
     val errorCode: HistoryQueryErrorCodeDto? = null,
 )

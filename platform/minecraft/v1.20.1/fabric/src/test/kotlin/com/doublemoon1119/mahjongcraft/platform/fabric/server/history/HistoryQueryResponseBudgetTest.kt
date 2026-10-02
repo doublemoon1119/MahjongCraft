@@ -7,17 +7,53 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryMat
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryOutcomeFilter
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryParticipantSummary
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryResultSummary
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettings
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortField
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** 驗證歷史清單回覆的 UTF-8 大小限制與縮頁 cursor。 */
 class HistoryQueryResponseBudgetTest {
+    /** 規則設定回應通過正式 registry，大小超限時移除整份設定而不截斷欄位。 */
+    @Test
+    fun `rule settings budget keeps complete config or returns safe error`() {
+        val registries = DefaultNetworkDtoRegistries().apply { registerBuiltInRuleConfigDtos() }
+        val json = Json { serializersModule = buildMahjongDtoSerializersModule(registries) }
+        val config = GameConfig(RiichiRuleConfig())
+        val response = boundedHistoryRuleSettings("rules", HistoryRuleSettings(config), registries, json)
+        assertEquals(config, assertNotNull(response.config).toDomain(registries))
+        assertNull(response.errorCode)
+
+        val oversized = boundedHistoryRuleSettings("rules", HistoryRuleSettings(config), registries, json, limit = 1)
+        assertEquals(HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, oversized.errorCode)
+        assertNull(oversized.config)
+    }
+
+    /** 儲存端可解碼但網路 codec 未註冊時，不回傳預設設定或玩家參數錯誤。 */
+    @Test
+    fun `missing rule network codec returns not available`() {
+        val response = boundedHistoryRuleSettings(
+            "rules",
+            HistoryRuleSettings(GameConfig(RiichiRuleConfig())),
+            DefaultNetworkDtoRegistries(),
+            Json,
+        )
+        assertEquals(HistoryQueryErrorCodeDto.NOT_AVAILABLE, response.errorCode)
+        assertNull(response.config)
+    }
+
     /** 缩頁後 cursor 應指向實際傳出的最後一筆，不能跳過未傳資料。 */
     @Test
     fun `budget truncation uses last sent entry as cursor`() {

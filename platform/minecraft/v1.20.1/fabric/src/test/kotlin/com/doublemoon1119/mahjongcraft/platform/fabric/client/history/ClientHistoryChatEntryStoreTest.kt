@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -66,6 +67,9 @@ class ClientHistoryChatEntryStoreTest {
 
         /** 聊天入口不得自行查詢摘要。 */
         override fun querySummary(request: HistorySummaryRequestDto): String = error("Chat entries must not query summaries directly")
+
+        /** 聊天入口不得自行查詢規則設定。 */
+        override fun queryRuleSettings(request: HistoryRuleSettingsRequestDto): String = error("Chat entries must not query rule settings directly")
 
         /** 此替身不擁有在途要求。 */
         override fun cancel(requestId: String): Boolean = false

@@ -17,6 +17,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryResultSummary
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRoundSummary
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettings
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettingsRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortDirection
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortValue
@@ -72,6 +74,28 @@ internal class FabricHistoryQueryRepository(
                 )
             }
         }
+    }
+
+    /**
+     * 讀取已授權完整 Replay 的開局規則設定，不回傳 Replay 事件內容。
+     *
+     * @param access 可信連線身分。
+     * @param request 已通過 Flow 驗證的規則設定要求。
+     * @return Replay 開局時保存的設定，或穩定查詢錯誤。
+     */
+    override suspend fun ruleSettings(
+        access: HistoryQueryAccess,
+        request: HistoryRuleSettingsRequest,
+    ): HistoryQueryResult<HistoryRuleSettings> {
+        when (val authorized = writer.querySummary(access, HistorySummaryRequest(request.matchId, request.scope), sessionId).mapQueryResult { it.entries.singleOrNull() }) {
+            is HistoryQueryResult.Failure -> return authorized
+            is HistoryQueryResult.Success -> {
+                val summary = authorized.value ?: return queryFailure(HistoryQueryErrorCode.NOT_AVAILABLE)
+                if (!summary.toDomainSummary().resultsAvailable) return queryFailure(HistoryQueryErrorCode.NOT_AVAILABLE)
+            }
+        }
+        return writer.readRuleSettings(request.matchId, MAX_RULE_SETTINGS_REPLAY_BYTES, sessionId)
+            .mapQueryResult(::HistoryRuleSettings)
     }
 }
 
@@ -190,3 +214,6 @@ private fun queryFailure(code: HistoryQueryErrorCode): HistoryQueryResult.Failur
 
 /** 名稱比對可展開的最大玩家數，避免 SQL 參數數量超出查詢限制。 */
 private const val MAX_HISTORY_NAME_MATCHES = 512
+
+/** 規則設定查詢允許解析的完整 Replay 上限；不等同於線路回應大小上限。 */
+private const val MAX_RULE_SETTINGS_REPLAY_BYTES = 8 * 1024 * 1024

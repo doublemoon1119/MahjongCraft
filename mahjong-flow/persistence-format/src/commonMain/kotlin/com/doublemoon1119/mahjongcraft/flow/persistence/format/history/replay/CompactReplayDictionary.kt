@@ -50,6 +50,34 @@ object CompactReplayDictionary {
     }
 
     /**
+     * 只還原資料根物件指定欄位，避免查詢設定時展開完整交易內容。
+     *
+     * @param encoded 包含欄位字典、字串字典與資料樹的封套。
+     * @param fields 要還原的根欄位名稱。
+     * @return 只包含要求欄位的 JSON object。
+     */
+    fun decodeFields(encoded: JsonObject, fields: Set<String>): JsonObject {
+        require(encoded.keys == setOf(ReplayFormatKeys.KEY_DICTIONARY, ReplayFormatKeys.STRING_DICTIONARY, ReplayFormatKeys.DATA)) {
+            "Dictionary envelope must contain only k, s, and d"
+        }
+        val keys = readStrings(encoded.getValue(ReplayFormatKeys.KEY_DICTIONARY), "Key dictionary")
+        val strings = readStrings(encoded.getValue(ReplayFormatKeys.STRING_DICTIONARY), "String dictionary")
+        require(keys.distinct().size == keys.size) { "Key dictionary contains duplicate entries" }
+        require(strings.distinct().size == strings.size) { "String dictionary contains duplicate entries" }
+        val data = encoded.getValue(ReplayFormatKeys.DATA) as? JsonObject ?: error("Dictionary data must be an object")
+        val result = linkedMapOf<String, JsonElement>()
+        val visitedKeys = mutableSetOf<String>()
+        data.forEach { (encodedKey, value) ->
+            val keyIndex = encodedKey.toIntOrNull()
+            require(keyIndex != null && keyIndex in keys.indices) { "Invalid key dictionary index: $encodedKey" }
+            val key = keys[keyIndex]
+            require(visitedKeys.add(key)) { "Decoded object contains duplicate keys" }
+            if (key in fields) result[key] = expand(value, keys, strings)
+        }
+        return JsonObject(result)
+    }
+
+    /**
      * 驗證並讀取字典中的字串陣列。
      *
      * @param value 待驗證的 JSON 值。

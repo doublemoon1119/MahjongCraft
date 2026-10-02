@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.MinecraftClient
@@ -15,6 +17,8 @@ import kotlin.uuid.Uuid
  * @property transport 歷史連線配對與工作階段版本。
  * @property participants 玩家名稱與頭像解析。
  * @property ruleNames 規則名稱 registry。
+ * @property configResolver 將歷史開局設定轉為唯讀欄位的呈現解析器。
+ * @property networkRegistries 解碼歷史規則設定的正式網路註冊表。
  * @property archiveStatus 保存狀態查詢。
  * @property dispatcher 客戶端主執行緒排程。
  */
@@ -23,6 +27,8 @@ class HistoryScreenController internal constructor(
     private val transport: HistoryQueryTransport,
     private val participants: HistoryParticipantPresentationResolver,
     @Provided private val ruleNames: RuleModuleDisplayNameRegistry,
+    @Provided private val configResolver: GameConfigPresentationResolver,
+    @Provided private val networkRegistries: NetworkDtoRegistries,
     private val archiveStatus: HistoryArchiveStatusTransport,
     private val dispatcher: ClientThreadCoroutineDispatcher,
 ) {
@@ -84,7 +90,17 @@ class HistoryScreenController internal constructor(
         if (!request.isValid(client.networkHandler, transport.sessionRevision.value)) return
         if (client.world == null || client.player == null || active != null) return
         if (request.parent != null && client.currentScreen !== request.parent) return
-        val session = HistoryBrowseSession(transport, archiveStatus, participants, ruleNames, dispatcher, request.parent, request.matchId) { active = null }
+        val session = HistoryBrowseSession(
+            transport,
+            archiveStatus,
+            participants,
+            ruleNames,
+            configResolver,
+            networkRegistries,
+            dispatcher,
+            request.parent,
+            request.matchId,
+        ) { active = null }
         active = session
         session.open()
     }

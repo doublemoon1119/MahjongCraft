@@ -8,6 +8,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /** 每存檔路徑、schema v1 與暫存事件去重測試。 */
 class SqliteHistoryDatabaseTest {
@@ -43,6 +44,34 @@ class SqliteHistoryDatabaseTest {
                 }
             }
         }
+    }
+
+    /** 已封存 Replay 可讀取，且讀取前會套用位元組上限。 */
+    @Test
+    fun `test replay payload read is bounded`() {
+        val path = createTempDirectory("mahjongcraft-history-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        val matchId = Uuid.random().toString()
+        database.archive(
+            HistoryArchiveRecord(
+                matchId = matchId,
+                tableId = Uuid.random().toString(),
+                ruleId = "mahjongcraft:test",
+                dimensionId = null,
+                startedAtEpochMillis = 1L,
+                endedAtEpochMillis = 2L,
+                participants = emptyList(),
+                rounds = emptyList(),
+                replayPayload = "{\"payload\":true}",
+            ),
+        )
+
+        assertEquals(
+            HistoryReplayPayloadRead.Found("{\"payload\":true}"),
+            database.readReplayPayload(matchId, 64),
+        )
+        assertEquals(HistoryReplayPayloadRead.TooLarge, database.readReplayPayload(matchId, 4))
+        assertEquals(HistoryReplayPayloadRead.Missing, database.readReplayPayload(Uuid.random().toString(), 64))
     }
 
     /** 同鍵不同內容必須報錯，不覆寫資料庫內原本的權威事件。 */

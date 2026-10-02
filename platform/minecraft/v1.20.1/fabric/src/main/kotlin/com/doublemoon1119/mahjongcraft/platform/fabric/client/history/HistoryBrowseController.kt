@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
 import kotlinx.coroutines.CoroutineScope
@@ -26,7 +28,7 @@ import kotlin.time.Duration.Companion.nanoseconds
  * @property transport 有 requestId 配對及 session 失效通知的查詢傳輸。
  * @param parentScope 提供 client 排程的父作用域；關閉只取消本瀏覽自己的子作用域。
  * @property now 判斷間隔的單調時間來源，不使用可被調整的日曆時鐘。
- * @property beforeSummaryQuery 在摘要傳送前等待同 session 的其他唯讀查詢釋放配額。
+ * @property beforeSummaryQuery 在摘要或規則設定傳送前等待同 session 的其他唯讀查詢釋放配額。
  */
 internal class HistoryBrowseController(
     private val transport: HistoryQueryTransport,
@@ -111,7 +113,7 @@ internal class HistoryBrowseController(
         generation++
         mutableState.value = state.value.copy(
             query = normalized,
-            page = if (state.value.page == HistoryBrowsePage.SUMMARY) HistoryBrowsePage.LIST else state.value.page,
+            page = if (state.value.page == HistoryBrowsePage.SUMMARY || state.value.page == HistoryBrowsePage.RULE_SETTINGS) HistoryBrowsePage.LIST else state.value.page,
         )
         opened = true
         requestFirstPage(HistoryBrowseTiming.conditionDebounce)
@@ -141,6 +143,15 @@ internal class HistoryBrowseController(
         state.value.list.status != HistoryBrowseStatus.Loading &&
         active == null &&
         pending == null &&
+        !isRefreshCoolingDown()
+
+    /** 判斷目前是否有可重送的最新失敗查詢。
+     * @return 目前查詢失敗、無其他工作且未進入冷卻期時為 true。
+     */
+    fun canRetry(): Boolean = available() &&
+        active == null &&
+        pending == null &&
+        retryIntent?.takeIf { it.generation == generation } != null &&
         !isRefreshCoolingDown()
 
     /**
@@ -205,8 +216,45 @@ internal class HistoryBrowseController(
             page = HistoryBrowsePage.SUMMARY,
             list = state.value.list.copy(selectedMatchId = matchId),
             summary = previous ?: HistoryBrowseSummaryState(matchId, status = HistoryBrowseStatus.Loading),
+            ruleSettings = state.value.ruleSettings?.takeIf { it.matchId == matchId },
         )
         if (previous == null) enqueue(Intent.Summary(generation, matchId, state.value.query), Duration.ZERO)
+        return true
+    }
+
+    /** 開啟目前摘要對應的歷史規則設定；成功結果會保留於本瀏覽 session。
+     * @return 是否接受規則設定導航。
+     */
+    fun showRuleSettings(): Boolean {
+        if (!available() || state.value.page != HistoryBrowsePage.SUMMARY) return false
+        val summary = state.value.summary ?: return false
+        if (summary.status != HistoryBrowseStatus.Ready) return false
+        val matchId = summary.matchId
+        generation++
+        val cached = state.value.ruleSettings?.takeIf { it.matchId == matchId && it.status == HistoryBrowseStatus.Ready }
+        mutableState.value = state.value.copy(
+            page = HistoryBrowsePage.RULE_SETTINGS,
+            ruleSettings = cached ?: HistoryBrowseRuleSettingsState(matchId, status = HistoryBrowseStatus.Loading),
+        )
+        if (cached == null) enqueue(Intent.RuleSettings(generation, matchId, state.value.query), Duration.ZERO)
+        return true
+    }
+
+    /** 保留摘要頁的呈現位置，不改變查詢條件或摘要資料。
+     *
+     * @param scrollOffset 有限且非負的捲動位置。
+     * @return 是否接受位置更新。
+     */
+    fun rememberSummaryPosition(scrollOffset: Double): Boolean {
+        val summary = state.value.summary ?: return false
+        if (!available() ||
+            state.value.page != HistoryBrowsePage.SUMMARY ||
+            !scrollOffset.isFinite() ||
+            scrollOffset < 0.0
+        ) {
+            return false
+        }
+        mutableState.value = state.value.copy(summary = summary.copy(scrollOffset = scrollOffset))
         return true
     }
 
@@ -217,13 +265,29 @@ internal class HistoryBrowseController(
      */
     fun backToList(): Boolean {
         if (!available() || state.value.page == HistoryBrowsePage.LIST) return false
-        if (state.value.page == HistoryBrowsePage.SUMMARY) {
+        if (state.value.page == HistoryBrowsePage.SUMMARY || state.value.page == HistoryBrowsePage.RULE_SETTINGS) {
             generation++
             pending = null
             sendJob?.cancel()
             retryIntent = null
         }
         mutableState.value = state.value.copy(page = HistoryBrowsePage.LIST)
+        return true
+    }
+
+    /** 返回目前對局摘要，不重新查詢。
+     * @return 是否接受返回。
+     */
+    fun backToSummary(): Boolean {
+        if (!available() || state.value.page != HistoryBrowsePage.RULE_SETTINGS || state.value.summary == null) return false
+        generation++
+        pending = null
+        sendJob?.cancel()
+        retryIntent = null
+        mutableState.value = state.value.copy(
+            page = HistoryBrowsePage.SUMMARY,
+            ruleSettings = state.value.ruleSettings?.takeIf { it.status == HistoryBrowseStatus.Ready },
+        )
         return true
     }
 
@@ -242,7 +306,8 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 重送仍屬於目前條件的失敗要求；不自動重試伺服器忙碌或頻率限制。
+     * 接受仍屬於目前條件的手動重試；冷卻期間沿用有界排程，不提前傳送。
+     * 不自動重試伺服器忙碌或頻率限制，呈現端以 [canRetry] 控制立即重試的可用狀態。
      *
      * @return 是否接受重試。
      */
@@ -252,6 +317,7 @@ internal class HistoryBrowseController(
         when (intent) {
             is Intent.ListQuery -> mutableState.value = state.value.copy(list = state.value.list.copy(status = HistoryBrowseStatus.Loading))
             is Intent.Summary -> mutableState.value = state.value.copy(summary = state.value.summary?.copy(status = HistoryBrowseStatus.Loading))
+            is Intent.RuleSettings -> mutableState.value = state.value.copy(ruleSettings = state.value.ruleSettings?.copy(status = HistoryBrowseStatus.Loading))
         }
         enqueue(intent, Duration.ZERO)
         return true
@@ -292,7 +358,7 @@ internal class HistoryBrowseController(
     private fun requestFirstPage(debounce: Duration) {
         cursors = listOf(null)
         entryOffsets = listOf(0)
-        mutableState.value = state.value.copy(list = HistoryBrowseListState(status = HistoryBrowseStatus.Loading), summary = null)
+        mutableState.value = state.value.copy(list = HistoryBrowseListState(status = HistoryBrowseStatus.Loading), summary = null, ruleSettings = null)
         enqueue(Intent.ListQuery(generation, state.value.query, cursors, entryOffsets), debounce)
     }
 
@@ -303,7 +369,7 @@ internal class HistoryBrowseController(
      * @param requestedEntryOffsets 依實際回應筆數累積的各頁偏移。
      */
     private fun requestList(requestedCursors: List<String?>, requestedEntryOffsets: List<Int>) {
-        mutableState.value = state.value.copy(list = state.value.list.copy(status = HistoryBrowseStatus.Loading), summary = null)
+        mutableState.value = state.value.copy(list = state.value.list.copy(status = HistoryBrowseStatus.Loading), summary = null, ruleSettings = null)
         enqueue(Intent.ListQuery(generation, state.value.query, requestedCursors, requestedEntryOffsets), Duration.ZERO)
     }
 
@@ -339,12 +405,13 @@ internal class HistoryBrowseController(
      * @param intent 仍有效的最新待送意圖。
      */
     private suspend fun dispatch(intent: Intent) {
-        if (intent is Intent.Summary) beforeSummaryQuery()
+        if (intent is Intent.Summary || intent is Intent.RuleSettings) beforeSummaryQuery()
         if (!available() || intent.generation != generation) return
         lastSentAt = now()
         val requestId = when (intent) {
             is Intent.ListQuery -> transport.queryList(intent.query.toRequest(intent.cursors.last()))
             is Intent.Summary -> transport.querySummary(HistorySummaryRequestDto("", intent.matchId, intent.query.scope))
+            is Intent.RuleSettings -> transport.queryRuleSettings(HistoryRuleSettingsRequestDto("", intent.matchId, intent.query.scope))
         }
         active = Active(requestId, intent)
         timeoutJob = scope.launch {
@@ -374,6 +441,10 @@ internal class HistoryBrowseController(
             is ClientHistoryQueryState.SummaryResult -> {
                 if (result.response.requestId != request.requestId || request.intent !is Intent.Summary) return
                 if (request.intent.generation == generation) acceptSummary(result.response, request.intent)
+            }
+            is ClientHistoryQueryState.RuleSettingsResult -> {
+                if (result.response.requestId != request.requestId || request.intent !is Intent.RuleSettings) return
+                if (request.intent.generation == generation) acceptRuleSettings(result.response, request.intent)
             }
             is ClientHistoryQueryState.SendFailed -> {
                 if (result.requestId != request.requestId) return
@@ -435,6 +506,25 @@ internal class HistoryBrowseController(
         mutableState.value = state.value.copy(summary = HistoryBrowseSummaryState(intent.matchId, detail, HistoryBrowseStatus.Ready))
     }
 
+    /** 接受同場規則設定；缺少設定內容視為無法取得。
+     * @param response 已配對的規則設定回應。
+     * @param intent 本次對局規則設定查詢。
+     */
+    private fun acceptRuleSettings(response: HistoryRuleSettingsResponseDto, intent: Intent.RuleSettings) {
+        response.errorCode?.let {
+            fail(it.toBrowseFailure())
+            return
+        }
+        val config = response.config
+        if (config == null) {
+            fail(HistoryBrowseFailure.NOT_AVAILABLE)
+            return
+        }
+        mutableState.value = state.value.copy(
+            ruleSettings = HistoryBrowseRuleSettingsState(intent.matchId, config, HistoryBrowseStatus.Ready),
+        )
+    }
+
     /**
      * 只為目前世代保存失敗與可重試意圖。
      *
@@ -447,6 +537,7 @@ internal class HistoryBrowseController(
         mutableState.value = when (intent) {
             is Intent.ListQuery -> state.value.copy(list = state.value.list.copy(status = status))
             is Intent.Summary -> state.value.copy(summary = state.value.summary?.copy(status = status))
+            is Intent.RuleSettings -> state.value.copy(ruleSettings = state.value.ruleSettings?.copy(status = status))
         }
     }
 
@@ -507,6 +598,13 @@ internal class HistoryBrowseController(
          * @property query 當時的有效查閱範圍。
          */
         data class Summary(override val generation: Long, val matchId: String, val query: HistoryBrowseQuery) : Intent
+
+        /** 同場規則設定查詢。
+         * @property generation 提出意圖時的條件世代。
+         * @property matchId 欲查閱的對局。
+         * @property query 當時的有效查閱範圍。
+         */
+        data class RuleSettings(override val generation: Long, val matchId: String, val query: HistoryBrowseQuery) : Intent
     }
 
     /**
