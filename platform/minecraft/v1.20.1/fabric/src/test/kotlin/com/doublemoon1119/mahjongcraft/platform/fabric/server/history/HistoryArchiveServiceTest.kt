@@ -1,25 +1,36 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.sql.DriverManager
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
@@ -193,5 +204,124 @@ class HistoryArchiveServiceTest {
         val reopened = SqliteHistoryDatabase.open(path)
         assertEquals(emptyList(), reopened.readPending(matchId.toString()))
         assertTrue(matchId.toString() in reopened.readReplayIds())
+    }
+
+    /** 權威終局交易自動附加桌況變更時，封存仍須保留終局分數並移除原始事件。 */
+    @Test
+    fun `archive accepts store generated table change after match completion`() = runBlocking {
+        val table = FakeTableStateFactory.create(
+            players = listOf(
+                FakeMahjongPlayerFactory.create(Wind.EAST, discardPile = RiichiDiscardPile()),
+                FakeMahjongPlayerFactory.create(Wind.SOUTH, discardPile = RiichiDiscardPile()),
+                FakeMahjongPlayerFactory.create(Wind.WEST, discardPile = RiichiDiscardPile()),
+                FakeMahjongPlayerFactory.create(Wind.NORTH, discardPile = RiichiDiscardPile()),
+            ),
+            config = RiichiRuleConfig(),
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 1),
+        )
+        val matchId = Uuid.random()
+        val opening = HistoryOutboxEvent(
+            matchId,
+            table.id,
+            table.roundNumber,
+            sequence = 1,
+            occurredAtEpochMillis = 100,
+            actorPlayerId = null,
+            fact = HistoryFact.MatchStarted(table, GameFlowConfig()),
+        )
+        val game = Game(table, GameFlowConfig(), matchId = matchId)
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true)
+        store.load(
+            AuthoritativeStateSnapshot(
+                games = mapOf(table.id to game),
+                historyRecordingState = HistoryRecordingState(
+                    nextSequenceByMatchId = mapOf(matchId to 2),
+                    pendingEvents = listOf(opening),
+                    decisionsByMatchId = mapOf(matchId to HistoryRecordingDecision.RECORDING),
+                ),
+            ),
+        )
+        val finalTable = table.copy(
+            players = table.players.mapIndexed { index, player ->
+                if (index == 0) player.copy(score = player.score + 1_000) else player
+            },
+            dynamicRuleState = RiichiDynamicState(riichiStickCount = 0),
+        )
+        GameRepositoryImpl(store).updateGame(
+            table.id,
+            history = { _, after, _ ->
+                listOf(
+                    HistoryEventDraft(
+                        null,
+                        HistoryFact.MatchCompleted(
+                            "mahjongcraft:test_complete",
+                            after!!.tableState.players.associate { it.id to it.score },
+                        ),
+                    ),
+                )
+            },
+        ) { current ->
+            current!!.copy(tableState = finalTable, isMatchOver = true, matchEndReasonId = "mahjongcraft:test_complete") to Unit
+        }
+        store.update { state ->
+            AuthoritativeStateUpdate(
+                state.copy(games = emptyMap()),
+                Unit,
+                historyDraftsByTableId = mapOf(
+                    table.id to listOf(
+                        HistoryEventDraft(
+                            null,
+                            HistoryFact.ReturnedToRoom,
+                        ),
+                    ),
+                ),
+            )
+        }
+        val events = store.snapshot().historyRecordingState.pendingEvents
+        assertEquals(HistoryFact.MatchCompleted::class, events[1].fact::class)
+        assertEquals(HistoryFact.TableChanged::class, events[2].fact::class)
+        assertEquals(events[1].transactionFirstSequence, events[2].transactionFirstSequence)
+        assertEquals(HistoryFact.ReturnedToRoom, events[3].fact)
+
+        val registries = buildBuiltInPersistenceRegistries()
+        val mapper = HistoryRecordingPersistenceMapper(registries, Json)
+        val modules = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+        val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry(), Json)
+        val path = createTempDirectory("mahjongcraft-history-generated-table-change-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        database.appendPendingBatch(
+            events.map { event ->
+                PendingHistoryRecord(
+                    event.matchId.toString(),
+                    event.sequence,
+                    event.roundNumber,
+                    event.occurredAtEpochMillis,
+                    1,
+                    Json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event)),
+                )
+            },
+        )
+
+        assertEquals(1, service.archiveReady(database, AuthoritativeStateSnapshot()))
+        assertEquals(emptyList(), database.readPending(matchId.toString()))
+        assertTrue(matchId.toString() in database.readReplayIds())
+        DriverManager.getConnection("jdbc:sqlite:${path.toAbsolutePath()}").use { connection ->
+            connection.prepareStatement("SELECT payload FROM history_replay WHERE match_id = ?").use { statement ->
+                statement.setString(1, matchId.toString())
+                statement.executeQuery().use { rows ->
+                    assertTrue(rows.next())
+                    val replay = CompactReplayCodec.decodeCompact(Json.parseToJsonElement(rows.getString(1)).jsonObject)
+                    val players = replay.last().last().projection.jsonObject.getValue("players").jsonArray
+                    assertEquals(finalTable.players.first().score, players.first().jsonObject.getValue("score").jsonPrimitive.int)
+                }
+            }
+            connection.prepareStatement("SELECT final_score FROM history_participant_result WHERE match_id = ? AND seat_index = 0").use { statement ->
+                statement.setString(1, matchId.toString())
+                statement.executeQuery().use { rows ->
+                    assertTrue(rows.next())
+                    assertEquals(finalTable.players.first().score, rows.getInt(1))
+                }
+            }
+        }
     }
 }

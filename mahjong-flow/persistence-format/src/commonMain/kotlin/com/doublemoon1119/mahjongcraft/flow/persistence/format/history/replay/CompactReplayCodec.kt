@@ -306,9 +306,22 @@ object CompactReplayCodec {
             }
         }
         require(events.count { it.fact is HistoryFact.MatchStarted } == 1) { "Replay must contain exactly one match start" }
+        require(events.count { it.fact is HistoryFact.MatchCompleted } == 1) { "Replay must contain exactly one match completion" }
         val completionIndex = events.indexOfFirst { it.fact is HistoryFact.MatchCompleted }
-        require(completionIndex >= 0 && events.drop(completionIndex + 1).all { it.fact is HistoryFact.ReturnedToRoom }) {
-            "Replay requires match completion followed only by return-to-room events"
+        val completion = events[completionIndex]
+        var tailIndex = completionIndex + 1
+        // 權威交易在語意事實之後附加唯一桌況結果；終局收取供託的分數變更也屬於同一交易。
+        if (events.getOrNull(tailIndex)?.fact is HistoryFact.TableChanged) {
+            require(events[tailIndex].transactionFirstSequence == completion.transactionFirstSequence) {
+                "Replay table result after match completion must belong to the completion transaction"
+            }
+            tailIndex++
+            require(events.getOrNull(tailIndex)?.transactionFirstSequence != completion.transactionFirstSequence) {
+                "Replay completion table result must be the last event of its transaction"
+            }
+        }
+        require(events.drop(tailIndex).all { it.fact is HistoryFact.ReturnedToRoom }) {
+            "Replay permits only return-to-room events after the completion transaction"
         }
     }
 
