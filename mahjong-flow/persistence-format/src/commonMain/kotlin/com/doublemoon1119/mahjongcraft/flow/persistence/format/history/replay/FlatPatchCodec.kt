@@ -29,12 +29,113 @@ object FlatPatchCodec {
      * @param paths 依索引排列的操作路徑。
      * @return 套用所有操作後的 JSON 節點。
      */
-    fun apply(before: JsonElement, operations: JsonArray, paths: List<List<JsonElement>>): JsonElement = operations.fold(before) { current, encodedElement ->
+    fun apply(before: JsonElement, operations: JsonArray, paths: List<List<JsonElement>>): JsonElement = applyInternal(before, operations, paths, null)
+
+    /**
+     * 在歷史查閱的共用工作預算內套用差異，不改變操作格式。
+     * @param before 更新前的投影。
+     * @param operations 有序差異操作。
+     * @param paths 共用路徑字典。
+     * @param budget 本次讀取的預算與取消邊界。
+     * @return 更新後投影。
+     */
+    internal fun applyBounded(before: JsonElement, operations: JsonArray, paths: List<List<JsonElement>>, budget: ReplayReadBudget): JsonElement = applyInternal(before, operations, paths, budget)
+
+    /**
+     * 共用操作解讀入口；正式完整解碼與局級有界解碼使用同一演算法。
+     * @param before 更新前的投影。
+     * @param operations 有序差異操作。
+     * @param paths 共用路徑字典。
+     * @param budget 有界讀取預算；完整解碼時為 null。
+     * @return 更新後投影。
+     */
+    private fun applyInternal(before: JsonElement, operations: JsonArray, paths: List<List<JsonElement>>, budget: ReplayReadBudget?): JsonElement = operations.fold(before) { current, encodedElement ->
+        budget?.charge()
         val encoded = encodedElement as? JsonArray ?: error("Patch operation must be an array")
         require(encoded.size >= 2) { "Patch operation must contain at least two elements" }
         val id = nonNegativeInt(encoded[0], "Path index")
         require(id in paths.indices) { "Invalid path index" }
-        update(current, paths[id], encoded)
+        if (budget != null && paths[id].size > budget.limits.maxDepth) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
+        if (budget != null) preflight(current, paths[id], encoded, budget)
+        update(current, paths[id], encoded, budget).also { budget?.inspectProjection(it) }
+    }
+
+    /**
+     * 在配置更新後容器前計算存活節點變化，避免小型差異持續放大桌況。
+     * @param root 更新前完整投影。
+     * @param path 操作路徑。
+     * @param operation 精簡操作。
+     * @param budget 工作與存活節點上限。
+     */
+    private fun preflight(root: JsonElement, path: List<JsonElement>, operation: JsonArray, budget: ReplayReadBudget) {
+        var target = root
+        var exists = true
+        for (segment in path) {
+            budget.charge()
+            target = when (val parent = target) {
+                is JsonObject -> {
+                    val key = (segment as? JsonPrimitive)?.takeIf { it.isString }?.content ?: error("Object path segment must be a string")
+                    exists = key in parent
+                    parent[key] ?: JsonNull
+                }
+                is JsonArray -> parent.getOrNull(nonNegativeInt(segment, "Array path index")) ?: error("Invalid array path index")
+                else -> error("Invalid patch target")
+            }
+        }
+        val original = nodeCount(root, 0, budget)
+        val opcode = nonNegativeInt(operation[1], "Opcode")
+        val change = when (opcode) {
+            0 -> {
+                require(operation.size == 3)
+                nodeCount(operation[2], path.size, budget) - if (exists) nodeCount(target, path.size, budget) else 0L
+            }
+            1 -> if (exists) -nodeCount(target, path.size, budget) else 0L
+            2 -> {
+                require(operation.size == 6)
+                val source = target as? JsonArray ?: error("Target is not an array")
+                val prefix = nonNegativeInt(operation[2], "prefix")
+                val removed = nonNegativeInt(operation[3], "removed")
+                val suffix = nonNegativeInt(operation[5], "suffix")
+                require(prefix.toLong() + removed + suffix == source.size.toLong())
+                val inserted = operation[4] as? JsonArray ?: error("inserted must be an array")
+                inserted.sumOf { nodeCount(it, path.size + 1, budget) } - (prefix until prefix + removed).sumOf { nodeCount(source[it], path.size + 1, budget) }
+            }
+            3 -> {
+                val source = target as? JsonArray ?: error("Target is not an array")
+                require(source.isNotEmpty())
+                -nodeCount(source.first(), path.size + 1, budget)
+            }
+            4 -> {
+                require(operation.size == 4)
+                nodeCount(operation[3], path.size + 1, budget)
+            }
+            5 -> 1L - nodeCount(target, path.size, budget)
+            else -> error("Invalid opcode: $opcode")
+        }
+        if (original + change > budget.limits.maxProjectionNodes) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
+    }
+
+    /**
+     * 在有界深度內計算子樹節點，不建立另一份 JSON 投影。
+     * @param value 子樹根節點。
+     * @param depth 相對於完整投影的深度。
+     * @param budget 走訪預算。
+     * @return 子樹總節點數。
+     */
+    private fun nodeCount(value: JsonElement, depth: Int, budget: ReplayReadBudget): Long {
+        budget.charge()
+        if (depth >= budget.limits.maxDepth) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
+        val children = when (value) {
+            is JsonObject -> value.values
+            is JsonArray -> value
+            else -> emptyList()
+        }
+        var count = 1L
+        children.forEach {
+            count += nodeCount(it, depth + 1, budget)
+            if (count > budget.limits.maxProjectionNodes) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
+        }
+        return count
     }
 
     /**
@@ -91,9 +192,11 @@ object FlatPatchCodec {
      * @param value 目前的 JSON 節點。
      * @param path 從目前節點到更新位置的路徑。
      * @param operation 待執行的精簡操作。
+     * @param budget 有界讀取預算；完整解碼時為 null。
      * @return 更新後的 JSON 節點。
      */
-    private fun update(value: JsonElement, path: List<JsonElement>, operation: JsonArray): JsonElement {
+    private fun update(value: JsonElement, path: List<JsonElement>, operation: JsonArray, budget: ReplayReadBudget? = null): JsonElement {
+        budget?.charge(path.size.toLong() + 1)
         val opcode = nonNegativeInt(operation[1], "Opcode")
         if (path.isEmpty()) {
             return when (opcode) {
@@ -107,14 +210,18 @@ object FlatPatchCodec {
                     val prefix = nonNegativeInt(operation[2], "prefix")
                     val removed = nonNegativeInt(operation[3], "removed")
                     val suffix = nonNegativeInt(operation[5], "suffix")
-                    require(prefix + removed + suffix == source.size)
-                    JsonArray(source.take(prefix) + (operation[4] as? JsonArray ?: error("inserted must be an array")) + source.takeLast(suffix))
+                    require(prefix.toLong() + removed + suffix == source.size.toLong())
+                    val inserted = operation[4] as? JsonArray ?: error("inserted must be an array")
+                    budget?.charge(prefix.toLong() + suffix + inserted.size)
+                    if (budget != null && prefix.toLong() + suffix + inserted.size > budget.limits.maxProjectionNodes) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
+                    JsonArray(source.take(prefix) + inserted + source.takeLast(suffix))
                 }
                 3 -> {
                     require(operation.size == 3)
                     val source = value as? JsonArray ?: error("Target is not an array")
                     val suffix = nonNegativeInt(operation[2], "suffix")
-                    require(source.size == suffix + 1)
+                    require(source.size.toLong() == suffix.toLong() + 1)
+                    budget?.charge(source.size.toLong())
                     JsonArray(source.drop(1))
                 }
                 4 -> {
@@ -122,6 +229,7 @@ object FlatPatchCodec {
                     val source = value as? JsonArray ?: error("Target is not an array")
                     val prefix = nonNegativeInt(operation[2], "prefix")
                     require(source.size == prefix)
+                    budget?.charge(source.size.toLong() + 1)
                     JsonArray(source + operation[3])
                 }
                 5 -> {
@@ -138,19 +246,27 @@ object FlatPatchCodec {
         val tail = path.drop(1)
         if (value is JsonObject) {
             val key = head as? JsonPrimitive ?: error("Object path segment must be a string")
+            require(key.isString) { "Object path segment must be a string" }
+            budget?.charge(value.size.toLong())
             val fields = value.toMutableMap()
             if (tail.isEmpty() && opcode == 1) {
                 require(operation.size == 2)
                 fields.remove(key.content)
             } else {
-                fields[key.content] = update(fields[key.content] ?: JsonNull, tail, operation)
+                fields[key.content] = update(fields[key.content] ?: JsonNull, tail, operation, budget)
             }
             return JsonObject(fields)
         }
         val source = value as? JsonArray ?: error("Path target is neither an object nor an array")
         val index = nonNegativeInt(head, "Array path index")
         require(index in source.indices)
-        return JsonArray(source.mapIndexed { position, entry -> if (position == index) update(entry, tail, operation) else entry })
+        budget?.charge(source.size.toLong())
+        return JsonArray(
+            source.mapIndexed { position, entry ->
+                budget?.charge()
+                if (position == index) update(entry, tail, operation, budget) else entry
+            },
+        )
     }
 
     /**

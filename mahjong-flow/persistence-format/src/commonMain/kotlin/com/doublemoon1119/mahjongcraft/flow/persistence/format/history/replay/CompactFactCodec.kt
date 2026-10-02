@@ -49,20 +49,29 @@ object CompactFactCodec {
         if (type != ReplaySourceKeys.ACTION_ACCEPTED) {
             require(encoded.size == 2)
             val payload = encoded[1] as? JsonObject ?: error("Fact payload must be an object")
+            require(ReplaySourceKeys.TYPE !in payload) { "Fact payload must not override its type" }
             return JsonObject(linkedMapOf(ReplaySourceKeys.TYPE to JsonPrimitive(type)) + payload)
         }
         val actionType = requireNotNull(actionTypes.getOrNull(index(encoded[1]))) { "Invalid action type index" }
         val simple = encoded.size == 2 || (encoded.size == 3 && encoded[2] is JsonArray)
         require(encoded.size <= if (simple) 3 else 5)
         val action = linkedMapOf<String, JsonElement>(ReplaySourceKeys.TYPE to JsonPrimitive(actionType))
-        if (!simple && encoded.size > 2 && encoded[2] != JsonNull) action.putAll(encoded[2] as? JsonObject ?: error("Action payload must be an object"))
+        if (!simple && encoded.size > 2 && encoded[2] != JsonNull) {
+            val payload = encoded[2] as? JsonObject ?: error("Action payload must be an object")
+            require(ReplaySourceKeys.TYPE !in payload) { "Action payload must not override its type" }
+            action.putAll(payload)
+        }
         val result = linkedMapOf<String, JsonElement>(ReplaySourceKeys.TYPE to JsonPrimitive(type), ReplaySourceKeys.ACTION to JsonObject(action))
         val directTiles = if (simple) encoded.getOrNull(2) else encoded.getOrNull(3)
         if (directTiles != null && directTiles != JsonNull) {
             require(directTiles is JsonArray)
             result[ReplaySourceKeys.DIRECT_TILES] = directTiles
         }
-        if (!simple && encoded.size > 4 && encoded[4] != JsonNull) result.putAll(encoded[4] as? JsonObject ?: error("Fact extras must be an object"))
+        if (!simple && encoded.size > 4 && encoded[4] != JsonNull) {
+            val extras = encoded[4] as? JsonObject ?: error("Fact extras must be an object")
+            require(extras.keys.none { it in setOf(ReplaySourceKeys.TYPE, ReplaySourceKeys.ACTION, ReplaySourceKeys.DIRECT_TILES) }) { "Fact extras must not override structural fields" }
+            result.putAll(extras)
+        }
         return JsonObject(result)
     }
 

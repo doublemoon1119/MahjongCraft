@@ -11,6 +11,64 @@ import kotlinx.serialization.json.JsonPrimitive
  */
 object CompactReplayDictionary {
     /**
+     * 建立可逐層選取欄位的字典讀取器，不展開未要求的子樹。
+     *
+     * @param encoded 已檢查輸入預算的字典封套。
+     * @param budget 本次讀取共用的工作預算。
+     * @return 使用同一套字典驗證與展開演算法的唯讀檢視。
+     */
+    internal fun open(encoded: JsonObject, budget: ReplayReadBudget): View {
+        require(encoded.keys == setOf(ReplayFormatKeys.KEY_DICTIONARY, ReplayFormatKeys.STRING_DICTIONARY, ReplayFormatKeys.DATA)) {
+            "Dictionary envelope must contain only k, s, and d"
+        }
+        val keys = readStrings(encoded.getValue(ReplayFormatKeys.KEY_DICTIONARY), "Key dictionary", budget)
+        val strings = readStrings(encoded.getValue(ReplayFormatKeys.STRING_DICTIONARY), "String dictionary", budget)
+        require(keys.distinct().size == keys.size) { "Key dictionary contains duplicate entries" }
+        require(strings.distinct().size == strings.size) { "String dictionary contains duplicate entries" }
+        return View(encoded.getValue(ReplayFormatKeys.DATA), keys, strings, budget)
+    }
+
+    /**
+     * 未展開的資料樹與其已驗證字典。
+     *
+     * @property data 未展開的根資料。
+     * @property keys 已驗證的欄位字典。
+     * @property strings 已驗證的字串字典。
+     * @property budget 共用工作預算。
+     */
+    internal class View(
+        val data: JsonElement,
+        private val keys: List<String>,
+        private val strings: List<String>,
+        private val budget: ReplayReadBudget,
+    ) {
+        /**
+         * 解讀單層物件欄位名稱，保留子節點的字典編碼。
+         * @param value 未展開的物件。
+         * @return 已還原欄位名稱的單層唯讀物件。
+         */
+        fun fields(value: JsonElement): JsonObject {
+            require(value is JsonObject) { "Dictionary object must be an object" }
+            budget.charge(value.size.toLong() + 1)
+            val result = linkedMapOf<String, JsonElement>()
+            value.forEach { (key, child) ->
+                budget.charge()
+                val index = key.toIntOrNull()
+                require(index != null && index in keys.indices) { "Invalid key dictionary index" }
+                require(result.put(keys[index], child) == null) { "Decoded object contains duplicate keys" }
+            }
+            return JsonObject(result)
+        }
+
+        /**
+         * 使用既有演算法還原指定子樹。
+         * @param value 欲展開的資料節點。
+         * @return 經預算檢查的還原資料。
+         */
+        fun expand(value: JsonElement): JsonElement = CompactReplayDictionary.expand(value, keys, strings, budget)
+    }
+
+    /**
      * 將文件編碼成含欄位字典、字串字典與資料樹的 JSON 封套。
      *
      * @param document 待字典化的完整 JSON 文件。
@@ -82,11 +140,14 @@ object CompactReplayDictionary {
      *
      * @param value 待驗證的 JSON 值。
      * @param name 用於錯誤訊息的字典名稱。
+     * @param budget 有界讀取預算；完整解碼時為 null。
      * @return 字典中的有序字串。
      */
-    private fun readStrings(value: JsonElement, name: String): List<String> {
+    private fun readStrings(value: JsonElement, name: String, budget: ReplayReadBudget? = null): List<String> {
         require(value is JsonArray) { "$name must be an array" }
+        budget?.charge(value.size.toLong() + 1)
         return value.map { item ->
+            budget?.charge()
             require(item is JsonPrimitive && item.isString) { "$name entries must be strings" }
             item.content
         }
@@ -133,28 +194,42 @@ object CompactReplayDictionary {
      * @param value 待還原的 JSON 節點。
      * @param keys 依索引排列的欄位名稱。
      * @param strings 依索引排列的字串值。
+     * @param budget 有界讀取預算；完整解碼時為 null。
      * @return 展開字典引用後的 JSON 節點。
      */
-    private fun expand(value: JsonElement, keys: List<String>, strings: List<String>): JsonElement = when (value) {
-        is JsonObject -> {
-            val result = linkedMapOf<String, JsonElement>()
-            value.forEach { (encodedKey, child) ->
-                val index = encodedKey.toIntOrNull()
-                require(index != null && index in keys.indices) { "Invalid key dictionary index: $encodedKey" }
-                require(result.put(keys[index], expand(child, keys, strings)) == null) { "Decoded object contains duplicate keys" }
+    private fun expand(value: JsonElement, keys: List<String>, strings: List<String>, budget: ReplayReadBudget? = null): JsonElement {
+        budget?.charge()
+        budget?.expandedNode()
+        return when (value) {
+            is JsonObject -> {
+                budget?.charge(value.size.toLong())
+                val result = linkedMapOf<String, JsonElement>()
+                value.forEach { (encodedKey, child) ->
+                    val index = encodedKey.toIntOrNull()
+                    require(index != null && index in keys.indices) { "Invalid key dictionary index: $encodedKey" }
+                    budget?.expandedString(keys[index])
+                    require(result.put(keys[index], expand(child, keys, strings, budget)) == null) { "Decoded object contains duplicate keys" }
+                }
+                JsonObject(result)
             }
-            JsonObject(result)
-        }
-        is JsonArray -> JsonArray(value.map { expand(it, keys, strings) })
-        is JsonPrimitive -> when {
-            !value.isString -> value
-            value.content.startsWith("~~") -> JsonPrimitive(value.content.drop(1))
-            value.content.startsWith("~") -> {
-                val index = value.content.drop(1).toIntOrNull()
-                require(index != null && index in strings.indices) { "Invalid string dictionary index: ${value.content}" }
-                JsonPrimitive(strings[index])
+            is JsonArray -> {
+                budget?.charge(value.size.toLong())
+                JsonArray(value.map { expand(it, keys, strings, budget) })
             }
-            else -> value
+            is JsonPrimitive -> {
+                val expanded = when {
+                    !value.isString -> value
+                    value.content.startsWith("~~") -> JsonPrimitive(value.content.drop(1))
+                    value.content.startsWith("~") -> {
+                        val index = value.content.drop(1).toIntOrNull()
+                        require(index != null && index in strings.indices) { "Invalid string dictionary index: ${value.content}" }
+                        JsonPrimitive(strings[index])
+                    }
+                    else -> value
+                }
+                if (expanded.isString) budget?.expandedString(expanded.content)
+                expanded
+            }
         }
     }
 }

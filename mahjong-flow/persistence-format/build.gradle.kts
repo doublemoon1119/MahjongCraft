@@ -14,6 +14,7 @@ kotlin {
             implementation(project(":mahjong-logic"))
             implementation(project(":mahjong-flow:mahjong-flow-common"))
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.coroutines)
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)
             implementation(libs.koin.annotations)
@@ -21,6 +22,7 @@ kotlin {
 
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }

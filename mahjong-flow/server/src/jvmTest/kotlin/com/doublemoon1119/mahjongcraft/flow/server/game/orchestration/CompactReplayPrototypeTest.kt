@@ -575,7 +575,7 @@ class CompactReplayPrototypeTest {
         gameplay["players"] = JsonArray(
             (encoded.getValue("players") as JsonArray).map { playerElement ->
                 val player = playerElement as JsonObject
-                JsonObject(player.filterKeys { it !in setOf("id", "initialSeatIndex", "aiStrategyKey", "actionHistory") })
+                JsonObject(player.filterKeys { it !in setOf("id", "aiStrategyKey", "actionHistory") })
             },
         )
         return translate(JsonObject(gameplay), index)

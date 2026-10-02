@@ -320,17 +320,23 @@ object CompactReplayCodec {
      * @param value 交易中的事實資料；缺少時代表沒有語意事實。
      * @param factTypes 依索引排列的語意事實種類。
      * @param actionTypes 依索引排列的動作種類。
+     * @param budget 有界讀取預算；完整解碼時為 null。
      * @return 依原順序排列的語意事實。
      */
-    private fun decodeFacts(value: JsonElement?, factTypes: List<String>, actionTypes: List<String>): List<JsonObject> {
+    internal fun decodeFacts(value: JsonElement?, factTypes: List<String>, actionTypes: List<String>, budget: ReplayReadBudget? = null): List<JsonObject> {
         if (value == null) return emptyList()
         val encoded = value as? JsonArray ?: error("Replay facts must be an array")
+        if (budget != null && encoded.firstOrNull() is JsonArray && encoded.size > budget.limits.maxFactsPerTransaction) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
         val facts = if (encoded.firstOrNull() is JsonArray) {
             encoded.map { it as? JsonArray ?: error("Replay fact must be an array") }
         } else {
             listOf(encoded)
         }
-        return facts.map { CompactFactCodec.decode(it, factTypes, actionTypes) }
+        if (budget != null && facts.size > budget.limits.maxFactsPerTransaction) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
+        return facts.map {
+            budget?.charge(it.size.toLong() + 1)
+            CompactFactCodec.decode(it, factTypes, actionTypes)
+        }
     }
 
     /**
@@ -441,7 +447,7 @@ object CompactReplayCodec {
             (encoded[ReplayFormatKeys.PLAYERS] as JsonArray).map { player ->
                 JsonObject(
                     (player as JsonObject).filterKeys {
-                        it !in setOf(ReplaySourceKeys.ID, ReplaySourceKeys.INITIAL_SEAT_INDEX, ReplaySourceKeys.AI_STRATEGY_KEY, ReplaySourceKeys.ACTION_HISTORY)
+                        it !in setOf(ReplaySourceKeys.ID, ReplaySourceKeys.AI_STRATEGY_KEY, ReplaySourceKeys.ACTION_HISTORY)
                     },
                 )
             },
